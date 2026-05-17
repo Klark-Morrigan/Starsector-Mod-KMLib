@@ -1,0 +1,13 @@
+.claude/
+.codex/
+.compile-check/
+.gradle/
+.idea/
+.vscode/
+bin/
+build/
+dist/
+jars/*.jar
+out/
+*.bat
+*.class
