@@ -1,0 +1,32 @@
+# Compares mod_info.json's version to the latest git tag in the caller's
+# checkout and emits whether the release pipeline should proceed.
+#
+# Delegates to scripts/check_version.sh so the logic is unit-tested with
+# bats. Composite actions themselves are not unit-testable.
+name: Check version
+description: >-
+  Reads the version from mod_info.json and compares it to the latest git
+  tag in the caller checkout. Emits the version and a flag indicating
+  whether the version differs from the latest tag (i.e. needs releasing).
+
+outputs:
+  version:
+    description: "Mod version from mod_info.json (.version)."
+    value: ${{ steps.check.outputs.version }}
+  version-updated:
+    description: >-
+      "true" when mod_info.json's version differs from the latest git tag,
+      "false" otherwise. Drives whether the release pipeline runs.
+    # The script writes the underscored name (version_updated) to keep its
+    # bats tests stable. The action surfaces the conventional hyphenated
+    # name to consumers.
+    value: ${{ steps.check.outputs.version_updated }}
+
+runs:
+  using: composite
+  steps:
+    - id: check
+      shell: bash
+      # GITHUB_ACTION_PATH points at this action's directory regardless
+      # of the caller's working directory, so the script path is stable.
+      run: "$GITHUB_ACTION_PATH/scripts/check_version.sh"
