@@ -86,6 +86,15 @@ jacocoTestReport {
         xml.required = true
         csv.required = true
     }
+
+    // The 'testing' package ships test fixtures (e.g. StarsectorSettingsFake)
+    // in main so downstream mods can reuse them; they're production-located
+    // but test-only, so excluding them keeps the coverage signal honest.
+    classDirectories.setFrom(
+        files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: ['kmlib/starsector/testing/**'])
+        })
+    )
 }
 
 tasks.register('coverage') {
