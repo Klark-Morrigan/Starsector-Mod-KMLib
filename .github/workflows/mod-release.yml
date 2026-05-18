@@ -125,7 +125,7 @@ jobs:
       # Build on the mod's own runner: it carries STARSECTOR_HOME and the
       # install that starfarer.api.jar resolves against, which a hosted
       # runner lacks. setup-java is off because that runner provides the JDK.
-      runs-on: ${{ needs.config.outputs.runner-json }}
+      runner: ${{ needs.config.outputs.runner-json }}
       gradle-tasks: coverage
       setup-java: false
     secrets: inherit
