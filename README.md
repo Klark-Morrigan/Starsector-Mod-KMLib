@@ -30,6 +30,9 @@ jars/                  - build output (gitignored); KMLib.jar
     the latest git tag; gates the release pipeline
   actions/extract-changelog/  - writes a CHANGELOG.md section into
     release-notes.md for the GitHub release body
+  actions/validate-versioning/ - enforces the versioning policy at
+    release time (changelog section, mod_info.json version match,
+    kmlib dep SemVer pin)
   tests/                       - bats-core tests for the action scripts
   workflows/                   - reusable workflows
 ```
@@ -56,6 +59,12 @@ from the KMLib root (requires `bats-core` and `jq`).
   section from the caller's `CHANGELOG.md`, writes it to
   `release-notes.md`, and emits that path as `notes-file`. Fails if the
   section is missing rather than publishing an empty release body.
+- [validate-versioning](.github/actions/validate-versioning/action.yml)
+  takes a `version` input and fails the release if the caller's
+  `CHANGELOG.md` has no `## [<version>]` section, `mod_info.json`
+  `.version` does not equal the input, or a declared `kmlib` dependency
+  lacks a well-formed `MAJOR.MINOR.PATCH` `version`. Policy itself
+  lives in [docs/dev/versioning.md](docs/dev/versioning.md).
 
 ## Build & Test
 
