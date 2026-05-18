@@ -23,28 +23,39 @@ src/main/java/kmlib/
 src/test/java/kmlib/  - JUnit 5 + Mockito unit tests
 jars/                  - build output (gitignored); KMLib.jar
 .github/
-  actions/read-mod-info/ - composite action that derives mod-id,
-    version, runner label, dist dir, zip name, and jar source from
-    a caller's mod_info.json
-  tests/                  - bats-core tests for the action scripts
-  workflows/              - reusable workflows (added in later steps)
+  actions/read-mod-info/      - derives mod-id, version, runner
+    label, dist dir, zip name, and jar source from a caller's
+    mod_info.json
+  actions/check-version/      - compares mod_info.json's version to
+    the latest git tag; gates the release pipeline
+  actions/extract-changelog/  - writes a CHANGELOG.md section into
+    release-notes.md for the GitHub release body
+  tests/                       - bats-core tests for the action scripts
+  workflows/                   - reusable workflows
 ```
 
 ## Reusable CI / release actions
 
-KMLib hosts composite actions and (later) reusable workflows that other
-mods in the KM series consume via
-`uses: <owner>/KMLib/.github/actions/<name>@<tag>`. The first such
-action is
-[read-mod-info](.github/actions/read-mod-info/action.yml), which reads
-the caller's `mod_info.json` and emits the derived values defined in
-[docs/dev/implementation/001-reusable-ci-release-workflows/problem.md](docs/dev/implementation/001-reusable-ci-release-workflows/problem.md#convention-derived-from-modinfojson).
-The action delegates to
-[scripts/read_mod_info.sh](.github/actions/read-mod-info/scripts/read_mod_info.sh)
-so the logic is unit-tested by
-[read_mod_info.bats](.github/tests/read_mod_info.bats). Run the tests
-with `bats .github/tests/` from the KMLib root (requires `bats-core`
-and `jq`).
+KMLib hosts composite actions and reusable workflows that other mods in
+the KM series consume via
+`uses: <owner>/KMLib/.github/actions/<name>@<tag>`. Each action
+delegates to a shell script under its own `scripts/` directory so the
+logic stays unit-testable with bats-core; the matching tests live in
+[.github/tests/](.github/tests/). Run them with `bats .github/tests/`
+from the KMLib root (requires `bats-core` and `jq`).
+
+- [read-mod-info](.github/actions/read-mod-info/action.yml) reads the
+  caller's `mod_info.json` and emits the derived values defined in
+  [docs/dev/implementation/001-reusable-ci-release-workflows/problem.md](docs/dev/implementation/001-reusable-ci-release-workflows/problem.md#convention-derived-from-modinfojson).
+- [check-version](.github/actions/check-version/action.yml) compares
+  `mod_info.json`'s `.version` to the latest git tag in the caller
+  checkout and emits `version` plus `version-updated`, which gates the
+  release pipeline.
+- [extract-changelog](.github/actions/extract-changelog/action.yml)
+  takes a `version` input, extracts the matching `## [<version>]`
+  section from the caller's `CHANGELOG.md`, writes it to
+  `release-notes.md`, and emits that path as `notes-file`. Fails if the
+  section is missing rather than publishing an empty release body.
 
 ## Build & Test
 
