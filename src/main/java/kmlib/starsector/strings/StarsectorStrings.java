@@ -7,7 +7,7 @@ import java.util.Locale;
 import java.util.Objects;
 
 /**
- * Thin facade over Starsector's
+ * Defensive wrapper around Starsector's
  * {@link com.fs.starfarer.api.SettingsAPI#getString(String, String)}
  * for mods that want a uniform "fetch and forget" entry point with
  * loud failure on missing or malformed strings.
