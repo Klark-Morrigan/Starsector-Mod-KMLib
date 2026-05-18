@@ -9,6 +9,7 @@ on at compile and runtime.
 
 - [Layout](#layout)
 - [Build & Test](#build--test)
+- [Reusable CI / release actions](#reusable-ci--release-actions)
 - [Consuming KMLib](#consuming-kmlib)
 - [UI Colour Palette](#ui-colour-palette)
 
@@ -21,7 +22,29 @@ src/main/java/kmlib/
   starsector/ui/color/ - palette enum + Misc-backed resolver
 src/test/java/kmlib/  - JUnit 5 + Mockito unit tests
 jars/                  - build output (gitignored); KMLib.jar
+.github/
+  actions/read-mod-info/ - composite action that derives mod-id,
+    version, runner label, dist dir, zip name, and jar source from
+    a caller's mod_info.json
+  tests/                  - bats-core tests for the action scripts
+  workflows/              - reusable workflows (added in later steps)
 ```
+
+## Reusable CI / release actions
+
+KMLib hosts composite actions and (later) reusable workflows that other
+mods in the KM series consume via
+`uses: <owner>/KMLib/.github/actions/<name>@<tag>`. The first such
+action is
+[read-mod-info](.github/actions/read-mod-info/action.yml), which reads
+the caller's `mod_info.json` and emits the derived values defined in
+[docs/dev/implementation/001-reusable-ci-release-workflows/problem.md](docs/dev/implementation/001-reusable-ci-release-workflows/problem.md#convention-derived-from-modinfojson).
+The action delegates to
+[scripts/read_mod_info.sh](.github/actions/read-mod-info/scripts/read_mod_info.sh)
+so the logic is unit-tested by
+[read_mod_info.bats](.github/tests/read_mod_info.bats). Run the tests
+with `bats .github/tests/` from the KMLib root (requires `bats-core`
+and `jq`).
 
 ## Build & Test
 
