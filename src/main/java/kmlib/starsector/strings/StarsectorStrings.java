@@ -12,14 +12,14 @@ import java.util.Objects;
  * for mods that want a uniform "fetch and forget" entry point with
  * loud failure on missing or malformed strings.
  *
- * <p>Two failure modes are collapsed to the same {@link #REDACTED}
+ * <p>Three failure modes collapse to the same {@link #REDACTED}
  * sentinel so missing localisation shows up visibly during playtest
  * rather than rendering as an empty label:
  * <ul>
  *   <li>The settings call returns {@code null}, an empty string, or
  *       whitespace.</li>
- *   <li>The settings call throws (e.g. unknown category before tests
- *       install a fake).</li>
+ *   <li>The settings call throws (e.g. the category is not registered
+ *       in any loaded mod's {@code data/strings/strings.json}).</li>
  *   <li>{@link #format(String, String, Object...)} sees an
  *       {@link IllegalFormatException} because the template and the
  *       args drifted apart.</li>
@@ -64,10 +64,10 @@ public final class StarsectorStrings {
     }
 
     /**
-     * Package-private overload that lets tests inject a deterministic
-     * {@link StringSource} without booting {@link Global}. Production
-     * code goes through {@link #get(String, String)} which pins the
-     * source to the live {@code SettingsAPI}.
+     * Package-private overload taking an explicit {@link StringSource}.
+     * The public {@link #get(String, String)} entry point pins the
+     * source to the live {@code SettingsAPI}; callers that already
+     * hold a resolver use this overload to avoid the extra hop.
      */
     static String get(String category, String key, StringSource source) {
         Objects.requireNonNull(category, "category");
@@ -98,7 +98,8 @@ public final class StarsectorStrings {
         return Global.getSettings().getString(category, key);
     }
 
-    /** Resolver hook for the package-private test overloads. */
+    /** Resolver hook for the package-private overloads that take an
+     *  explicit source. */
     @FunctionalInterface
     interface StringSource {
         String get(String category, String key);
