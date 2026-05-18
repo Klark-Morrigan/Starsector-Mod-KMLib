@@ -34,7 +34,7 @@ jars/                  - build output (gitignored); KMLib.jar
     release time (changelog section, mod_info.json version match,
     kmlib dep SemVer pin)
   tests/                       - bats-core tests for the action scripts
-  workflows/                   - reusable workflows
+  workflows/ci.yml             - KMLib's own CI; runs the bats tests
 ```
 
 ## Reusable CI / release actions
@@ -45,7 +45,12 @@ the KM series consume via
 delegates to a shell script under its own `scripts/` directory so the
 logic stays unit-testable with bats-core; the matching tests live in
 [.github/tests/](.github/tests/). Run them with `bats .github/tests/`
-from the KMLib root (requires `bats-core` and `jq`).
+from the KMLib root (requires `bats-core` and `jq`). KMLib's own
+[ci.yml](.github/workflows/ci.yml) workflow runs the same bats suite on
+GitHub-hosted `ubuntu-latest` for every pull request, and also exposes
+`workflow_call` so other workflows can re-trigger it. The Gradle build
+is not gated in this workflow because it depends on Starsector binaries
+that the hosted runner does not have.
 
 - [read-mod-info](.github/actions/read-mod-info/action.yml) reads the
   caller's `mod_info.json` and emits the derived values defined in
