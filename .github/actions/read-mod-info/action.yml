@@ -1,0 +1,40 @@
+# Reads the caller's mod_info.json and emits the derived values shared by
+# KMLib's reusable CI and release workflows. See:
+#   docs/dev/implementation/001-reusable-ci-release-workflows/problem.md
+#   (section: Convention - derived from mod_info.json).
+#
+# The action shells out to scripts/read_mod_info.sh so the logic is unit-
+# tested with bats. Composite actions themselves are not unit-testable.
+name: Read mod info
+description: >-
+  Reads mod_info.json from the caller checkout and emits the mod id, version,
+  runner label, dist directory, zip name, and jar source path as outputs.
+
+outputs:
+  mod-id:
+    description: "Mod id from mod_info.json (.id), verbatim."
+    value: ${{ steps.read.outputs.mod-id }}
+  version:
+    description: "Mod version from mod_info.json (.version)."
+    value: ${{ steps.read.outputs.version }}
+  runner-label:
+    description: "Self-hosted runner label: <mod-id>-runner."
+    value: ${{ steps.read.outputs.runner-label }}
+  dist-dir:
+    description: "Distribution directory: dist/<mod-id>/."
+    value: ${{ steps.read.outputs.dist-dir }}
+  zip-name:
+    description: "Release zip filename: <mod-id>-<version>.zip."
+    value: ${{ steps.read.outputs.zip-name }}
+  jar-source:
+    description: "First jar path from mod_info.json (.jars[0])."
+    value: ${{ steps.read.outputs.jar-source }}
+
+runs:
+  using: composite
+  steps:
+    - id: read
+      shell: bash
+      # GITHUB_ACTION_PATH points at this action's directory regardless of
+      # the caller's working directory, so the script path is stable.
+      run: "$GITHUB_ACTION_PATH/scripts/read_mod_info.sh"
