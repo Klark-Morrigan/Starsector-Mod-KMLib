@@ -62,7 +62,7 @@ Two places pin KMLib and they must agree:
 2. **Workflow pin** in `.github/workflows/*.yml`:
 
     ```yaml
-    uses: <owner>/KMLib/.github/workflows/mod-release.yml@v1.0.0
+    uses: <owner>/KMLib/.github/workflows/mod-release.yml@1.0.0
     ```
 
     GitHub Actions resolves this to the exact tag at the moment the workflow
@@ -82,13 +82,14 @@ While a repository is on `0.x.y`, MINOR is the breaking-change line:
 conventional reading of pre-1.0 SemVer and avoids spending MAJOR before APIs
 have stabilized.
 
-KMU starts at `0.1.0`. KMLib's first stable tag is `v1.0.0`, cut once it has
+KMU starts at `0.1.0`. KMLib's first stable tag is `1.0.0`, cut once it has
 at least one external consumer pinning it (KMU, per the
 [KMLib reusable workflows plan](implementation/001-reusable-ci-release-workflows/plan.md)).
 
 ## Tag format
 
-- Git tags: prefixed with `v` (e.g., `v1.0.0`). Standard GitHub convention.
+- Git tags: bare SemVer, no `v` prefix (e.g., `1.0.0`). Matches
+  `mod_info.json` `.version` exactly so the same string is used end-to-end.
 - `mod_info.json` `version` field: bare (`1.0.0`). Starsector does not accept
   the `v` prefix.
 

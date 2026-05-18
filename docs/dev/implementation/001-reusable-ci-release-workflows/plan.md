@@ -12,7 +12,7 @@ See [problem.md](problem.md) for context, goal, and the
 - [Step 5 - Add KMLib's own CI workflow that runs the bats tests](#step-5---add-kmlibs-own-ci-workflow-that-runs-the-bats-tests)
 - [Step 6 - Add reusable `mod-ci.yml` workflow](#step-6---add-reusable-mod-ciyml-workflow)
 - [Step 7 - Add reusable `mod-release.yml` workflow](#step-7---add-reusable-mod-releaseyml-workflow)
-- [Step 8 - Tag KMLib v1.0.0](#step-8---tag-kmlib-v100)
+- [Step 8 - Tag KMLib 1.0.0](#step-8---tag-kmlib-100)
 - [Step 9 - Migrate KMU to consume KMLib reusable workflows](#step-9---migrate-kmu-to-consume-kmlib-reusable-workflows)
 
 ## Conventions
@@ -369,7 +369,7 @@ sequenceDiagram
 
 ---
 
-## Step 8 - Tag KMLib v1.0.0
+## Step 8 - Tag KMLib 1.0.0
 
 **Reason:** Consumer mods pin by git tag (per
 [problem.md#goal](problem.md#goal)). Until KMLib has a tag, KMU cannot pin a
@@ -381,19 +381,21 @@ pinning strategy.
 - bump `mod_info.json` version in KMLib if needed for parity with the tag;
 - update KMLib `CHANGELOG.md` with an entry describing the new reusable
   workflows and composite actions;
-- create annotated git tag `v1.0.0` on KMLib's main branch;
+- create annotated git tag `1.0.0` on KMLib's main branch (no `v` prefix:
+  tags match `mod_info.json` `.version` exactly - see
+  [versioning.md](../../versioning.md#tag-format));
 - push the tag.
 
 **Tests:**
 
 - verify the tag exists on the remote;
-- verify `mods/KMLib/.github/workflows/mod-release.yml@v1.0.0` resolves when
+- verify `mods/KMLib/.github/workflows/mod-release.yml@1.0.0` resolves when
   referenced from a scratch workflow.
 
 ```mermaid
 flowchart LR
-    KMLibMain[KMLib main] --> v100((v1.0.0 tag))
-    v100 --> consumable[Consumable by callers via<br/>uses: KMLib/.github/workflows/<wf>@v1.0.0]
+    KMLibMain[KMLib main] --> v100((1.0.0 tag))
+    v100 --> consumable[Consumable by callers via<br/>uses: KMLib/.github/workflows/<wf>@1.0.0]
 ```
 
 ---
@@ -409,10 +411,10 @@ without delay.
 
 - rewrite `mods/KMU/.github/workflows/ci.yml`:
   - trigger: `pull_request`, `workflow_call`;
-  - single job that `uses: <owner>/KMLib/.github/workflows/mod-ci.yml@v1.0.0`.
+  - single job that `uses: <owner>/KMLib/.github/workflows/mod-ci.yml@1.0.0`.
 - rewrite `mods/KMU/.github/workflows/release.yml`:
   - trigger: `push: master`;
-  - single job that `uses: <owner>/KMLib/.github/workflows/mod-release.yml@v1.0.0`.
+  - single job that `uses: <owner>/KMLib/.github/workflows/mod-release.yml@1.0.0`.
 - delete `mods/KMU/.github/scripts/` and `mods/KMU/.github/tests/`
   (already moved to KMLib in Steps 2-3).
 - update `mods/KMU/mod_info.json` to add a `version` field to the `kmlib`
@@ -451,10 +453,10 @@ sequenceDiagram
     participant KMU
     participant KMLib
     Dev->>KMU: open PR
-    KMU->>KMLib: uses mod-ci.yml@v1.0.0
+    KMU->>KMLib: uses mod-ci.yml@1.0.0
     KMLib-->>KMU: build + test passed
     Dev->>KMU: merge to master (version bumped)
-    KMU->>KMLib: uses mod-release.yml@v1.0.0
+    KMU->>KMLib: uses mod-release.yml@1.0.0
     KMLib->>KMLib: version-check + ci + prepare + tag + release
     KMLib-->>KMU: GitHub release created
 ```
