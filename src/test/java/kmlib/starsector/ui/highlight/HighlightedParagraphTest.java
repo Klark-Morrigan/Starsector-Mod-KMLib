@@ -2,6 +2,7 @@ package kmlib.starsector.ui.highlight;
 
 import com.fs.starfarer.api.campaign.TextPanelAPI;
 import com.fs.starfarer.api.ui.LabelAPI;
+import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import kmlib.starsector.testing.StarsectorSettingsFake;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -116,6 +117,41 @@ class HighlightedParagraphTest {
         ArgumentCaptor<Color[]> colors = ArgumentCaptor.forClass(Color[].class);
         verify(panel).setHighlightColorsInLastPara(colors.capture());
         assertThat(colors.getValue()).containsExactly(Color.RED, Color.YELLOW, Color.YELLOW);
+    }
+
+    @Test
+    void addToTooltipWithoutPadDefaultsToZero() {
+        TooltipMakerAPI tooltip = mock(TooltipMakerAPI.class);
+        when(tooltip.addPara(anyString(), any(Color.class), eq(0f))).thenReturn(label);
+        HighlightedParagraph paragraph = new HighlightedParagraph("text", Color.WHITE);
+
+        paragraph.addTo(tooltip);
+
+        verify(tooltip).addPara("text", Color.WHITE, 0f);
+    }
+
+    @Test
+    void addToTooltipDelegatesAddParaThenAppliesHighlightsToTheReturnedLabel() {
+        TooltipMakerAPI tooltip = mock(TooltipMakerAPI.class);
+        when(tooltip.addPara(anyString(), any(Color.class), eq(8f))).thenReturn(label);
+        HighlightedParagraph paragraph = new HighlightedParagraph(
+                "text",
+                Color.WHITE,
+                new Highlight("a", Color.RED),
+                new Highlight("b", Color.YELLOW));
+
+        LabelAPI returned = paragraph.addTo(tooltip, 8f);
+
+        assertThat(returned).isSameAs(label);
+        verify(tooltip).addPara("text", Color.WHITE, 8f);
+        // Highlights flow through the returned label, not through a
+        // panel-side setter the way TextPanelAPI handles them.
+        ArgumentCaptor<String[]> texts = ArgumentCaptor.forClass(String[].class);
+        verify(label).setHighlight(texts.capture());
+        assertThat(texts.getValue()).containsExactly("a", "b");
+        ArgumentCaptor<Color[]> colors = ArgumentCaptor.forClass(Color[].class);
+        verify(label).setHighlightColors(colors.capture());
+        assertThat(colors.getValue()).containsExactly(Color.RED, Color.YELLOW);
     }
 
     @Test

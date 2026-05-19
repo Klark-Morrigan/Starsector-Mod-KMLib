@@ -2,6 +2,7 @@ package kmlib.starsector.ui.highlight;
 
 import com.fs.starfarer.api.campaign.TextPanelAPI;
 import com.fs.starfarer.api.ui.LabelAPI;
+import com.fs.starfarer.api.ui.TooltipMakerAPI;
 
 import kmlib.starsector.ui.color.StarsectorUiColor;
 import kmlib.starsector.ui.color.StarsectorUiColorProvider;
@@ -17,6 +18,9 @@ import java.util.Objects;
  * <ul>
  *   <li>{@link #addTo(TextPanelAPI)} creates a new paragraph on a
  *       {@code TextPanelAPI} and tints each highlight in one go.</li>
+ *   <li>{@link #addTo(TooltipMakerAPI, float)} does the same for a
+ *       tooltip element, where the highlight machinery lives on the
+ *       returned label rather than on the panel.</li>
  *   <li>{@link #applyTo(LabelAPI)} sets the highlight tokens and
  *       colours on an already-rendered {@code LabelAPI}.</li>
  * </ul>
@@ -109,6 +113,30 @@ public final class HighlightedParagraph {
         // colour is the most sensible pick.
         LabelAPI label = panel.addPara(text, baseColor, colors[0], texts);
         panel.setHighlightColorsInLastPara(colors);
+        return label;
+    }
+
+    /**
+     * Overload that adds the paragraph with no top padding - the
+     * common case for tooltip rows that the caller is positioning
+     * itself.
+     */
+    public LabelAPI addTo(TooltipMakerAPI tooltip) {
+        return addTo(tooltip, 0f);
+    }
+
+    /**
+     * Adds the paragraph to {@code tooltip} with the given top
+     * padding, then routes highlights through the returned label.
+     * Unlike {@link TextPanelAPI}, {@code TooltipMakerAPI} does not
+     * expose a panel-side highlight-colour setter - the engine wants
+     * highlights set on the {@link LabelAPI} that {@code addPara}
+     * returns. {@link #applyTo(LabelAPI)} handles that side here.
+     */
+    public LabelAPI addTo(TooltipMakerAPI tooltip, float pad) {
+        Objects.requireNonNull(tooltip, "tooltip");
+        LabelAPI label = tooltip.addPara(text, baseColor, pad);
+        applyTo(label);
         return label;
     }
 
