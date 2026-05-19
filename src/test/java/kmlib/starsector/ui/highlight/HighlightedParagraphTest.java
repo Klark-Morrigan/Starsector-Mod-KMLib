@@ -11,6 +11,7 @@ import org.mockito.ArgumentCaptor;
 import java.awt.Color;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -26,8 +27,9 @@ class HighlightedParagraphTest {
 
     @BeforeEach
     void setUp() {
-        // addTo's no-arg overload calls Misc.getTextColor(), which
-        // needs SettingsAPI installed before Misc.<clinit> runs.
+        // The default constructor resolves TEXT_WHITE via
+        // StarsectorUiColorProvider, which needs SettingsAPI installed
+        // before Misc.<clinit> runs.
         StarsectorSettingsFake.installSettings();
         panel = mock(TextPanelAPI.class);
         label = mock(LabelAPI.class);
@@ -42,10 +44,27 @@ class HighlightedParagraphTest {
     }
 
     @Test
-    void getBaseColorIsNullByDefault() {
+    void defaultConstructorPicksTextWhiteAsBaseColor() {
         HighlightedParagraph paragraph = new HighlightedParagraph("text");
 
-        assertThat(paragraph.getBaseColor()).isNull();
+        // Routes through StarsectorUiColorProvider -> Misc.getTextColor(),
+        // which the fake-installed proxy returns as Color.WHITE for
+        // any color slot.
+        assertThat(paragraph.getBaseColor()).isEqualTo(Color.WHITE);
+    }
+
+    @Test
+    void explicitBaseColorOverridesTheDefault() {
+        HighlightedParagraph paragraph = new HighlightedParagraph("text", Color.GRAY);
+
+        assertThat(paragraph.getBaseColor()).isEqualTo(Color.GRAY);
+    }
+
+    @Test
+    void rejectsNullBaseColor() {
+        assertThatThrownBy(() -> new HighlightedParagraph("text", (Color) null))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("baseColor");
     }
 
     @Test
@@ -61,9 +80,9 @@ class HighlightedParagraphTest {
 
     @Test
     void addToWithoutHighlightsUsesTheSimpleAddParaOverload() {
-        HighlightedParagraph paragraph = new HighlightedParagraph("Plain text");
+        HighlightedParagraph paragraph = new HighlightedParagraph("Plain text", Color.WHITE);
 
-        paragraph.addTo(panel, Color.WHITE);
+        paragraph.addTo(panel);
 
         verify(panel).addPara("Plain text", Color.WHITE);
         // The highlight-bearing overload must not fire when there is
@@ -83,7 +102,7 @@ class HighlightedParagraphTest {
                 new Highlight("Landing Pad", Color.YELLOW),
                 new Highlight("5,000 cr", Color.YELLOW));
 
-        paragraph.addTo(panel, Color.GRAY);
+        paragraph.addTo(panel);
 
         ArgumentCaptor<String[]> highlights = ArgumentCaptor.forClass(String[].class);
         verify(panel).addPara(
@@ -97,25 +116,6 @@ class HighlightedParagraphTest {
         ArgumentCaptor<Color[]> colors = ArgumentCaptor.forClass(Color[].class);
         verify(panel).setHighlightColorsInLastPara(colors.capture());
         assertThat(colors.getValue()).containsExactly(Color.RED, Color.YELLOW, Color.YELLOW);
-    }
-
-    @Test
-    void addToUsesTheParagraphBaseColorWhenSet() {
-        HighlightedParagraph paragraph = new HighlightedParagraph("text", Color.WHITE);
-
-        paragraph.addTo(panel, Color.GRAY);
-
-        // Paragraph's own base colour wins over the supplied default.
-        verify(panel).addPara("text", Color.WHITE);
-    }
-
-    @Test
-    void addToFallsBackToTheSuppliedDefaultBaseColor() {
-        HighlightedParagraph paragraph = new HighlightedParagraph("text"); // baseColor null
-
-        paragraph.addTo(panel, Color.GRAY);
-
-        verify(panel).addPara("text", Color.GRAY);
     }
 
     @Test
