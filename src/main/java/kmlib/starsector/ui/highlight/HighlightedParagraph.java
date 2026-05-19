@@ -10,23 +10,21 @@ import java.awt.Color;
 import java.util.Objects;
 
 /**
- * Paragraph-shaped data: a string of text, an optional base colour,
- * and the per-substring {@link Highlight}s that should tint pieces of
- * it. Two render methods make the same data object work against the
- * two Starsector surfaces that consume highlights:
+ * Paragraph-shaped data: a string of text, a base colour, and the
+ * per-substring {@link Highlight}s that should tint pieces of it. Two
+ * render methods make the same data object work against the two
+ * Starsector surfaces that consume highlights:
  * <ul>
- *   <li>{@link #addTo(TextPanelAPI)} / {@link #addTo(TextPanelAPI, Color)}
- *       creates a new paragraph on a {@code TextPanelAPI} and tints
- *       each highlight in one go.</li>
+ *   <li>{@link #addTo(TextPanelAPI)} creates a new paragraph on a
+ *       {@code TextPanelAPI} and tints each highlight in one go.</li>
  *   <li>{@link #applyTo(LabelAPI)} sets the highlight tokens and
  *       colours on an already-rendered {@code LabelAPI}.</li>
  * </ul>
  *
- * <p>{@link #getBaseColor()} returns {@code null} when the paragraph
- * wants the renderer's default base colour rather than overriding it.
- * The {@code addTo} overloads honour that intent by falling back to
- * the supplied default (or to {@link StarsectorUiColor#TEXT_WHITE}
- * when no default is provided).
+ * <p>{@link #getBaseColor()} is non-null. The convenience constructor
+ * that omits it defaults to {@link StarsectorUiColor#TEXT_WHITE}, so
+ * call sites only set a base colour when they want something different
+ * (e.g. a grey section header).
  */
 public final class HighlightedParagraph {
     private final String text;
@@ -35,23 +33,27 @@ public final class HighlightedParagraph {
 
     public HighlightedParagraph(String text, Color baseColor, Highlight... highlights) {
         this.text = Objects.requireNonNull(text, "text");
-        this.baseColor = baseColor;
+        this.baseColor = Objects.requireNonNull(baseColor, "baseColor");
         this.highlights = highlights == null ? new Highlight[0] : highlights.clone();
         for (int i = 0; i < this.highlights.length; i++) {
             Objects.requireNonNull(this.highlights[i], "highlights[" + i + "]");
         }
     }
 
-    /** Overload for paragraphs that want the renderer's default base colour. */
+    /**
+     * Overload that defaults the base colour to
+     * {@link StarsectorUiColor#TEXT_WHITE} - the right pick for the
+     * vast majority of paragraphs, where only individual highlights
+     * deviate from the default text colour.
+     */
     public HighlightedParagraph(String text, Highlight... highlights) {
-        this(text, null, highlights);
+        this(text, StarsectorUiColorProvider.get(StarsectorUiColor.TEXT_WHITE), highlights);
     }
 
     public String getText() {
         return text;
     }
 
-    /** Returns {@code null} when the paragraph wants the renderer's default. */
     public Color getBaseColor() {
         return baseColor;
     }
@@ -83,30 +85,14 @@ public final class HighlightedParagraph {
     }
 
     /**
-     * Adds the paragraph to {@code panel} using
-     * {@link StarsectorUiColor#TEXT_WHITE} as the fallback base colour.
-     * Convenience overload for the common case; pass an explicit colour
-     * through the two-arg overload when the dialog uses a non-default
-     * base.
+     * Adds the paragraph to {@code panel}, tinting each highlight from
+     * the paired {@link Highlight#getColor()}.
      */
     public LabelAPI addTo(TextPanelAPI panel) {
-        return addTo(panel, StarsectorUiColorProvider.get(StarsectorUiColor.TEXT_WHITE));
-    }
-
-    /**
-     * Adds the paragraph to {@code panel}, tinting each highlight from
-     * the paired {@link Highlight#getColor()} rather than from a single
-     * default. The paragraph's own {@link #getBaseColor()} wins over
-     * {@code defaultBaseColor} when present.
-     */
-    public LabelAPI addTo(TextPanelAPI panel, Color defaultBaseColor) {
         Objects.requireNonNull(panel, "panel");
-        Objects.requireNonNull(defaultBaseColor, "defaultBaseColor");
-
-        Color effectiveBase = baseColor != null ? baseColor : defaultBaseColor;
 
         if (highlights.length == 0) {
-            return panel.addPara(text, effectiveBase);
+            return panel.addPara(text, baseColor);
         }
 
         String[] texts = new String[highlights.length];
@@ -121,7 +107,7 @@ public final class HighlightedParagraph {
         // a slot. We always set every slot below, so the value only
         // matters as a defensive default - the first highlight's own
         // colour is the most sensible pick.
-        LabelAPI label = panel.addPara(text, effectiveBase, colors[0], texts);
+        LabelAPI label = panel.addPara(text, baseColor, colors[0], texts);
         panel.setHighlightColorsInLastPara(colors);
         return label;
     }
