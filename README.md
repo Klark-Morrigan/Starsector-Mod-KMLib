@@ -123,11 +123,9 @@ is the palette enum: vanilla shades route through `Misc::...` suppliers
 they track the game's UI palette automatically, and custom shades hold a
 literal `java.awt.Color` (`WHITE`, `DIM_GRAY`, `ORANGE`, `DARK_RED`,
 `MUTED_RED`, `BRIGHT_RED`, `DARK_GREEN`, `BRIGHT_GREEN`, `LIGHT_BLUE`).
-[StarsectorUiColorProvider.get](src/main/java/kmlib/starsector/ui/color/StarsectorUiColorProvider.java)
-resolves an entry to its `Color`, throwing on null input and rejecting
-entries that somehow carry neither source. The split exists so tests can
-stub `Misc` statically without booting Starsector while custom shades
-stay pure-data and need no runtime at all.
+Call `StarsectorUiColor#resolve()` to obtain the live `Color`; the
+resolver null-checks the supplier output and tags the failure with the
+enum name (Misc accessors can return null during early engine boot).
 
 ## Highlighted Text
 
