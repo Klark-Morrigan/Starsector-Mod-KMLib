@@ -3,7 +3,7 @@ package kmlib.starsector.ui.color;
 import com.fs.starfarer.api.util.Misc;
 
 import java.awt.Color;
-import java.util.Optional;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 /**
@@ -13,16 +13,15 @@ import java.util.function.Supplier;
  * the live palette - including any player-faction recolours, since
  * {@code VANILLA_PLAYER_BASE} / {@code VANILLA_PLAYER_DARK} resolve from
  * the current player faction (blue by default, but Nex and modded
- * player factions can change it). Custom entries hold a literal
- * {@link Color} so pure-data consumers can resolve them without booting
- * Starsector.
+ * player factions can change it). Custom entries wrap a literal
+ * {@link Color} behind the same supplier shape, which keeps the
+ * resolution path uniform.
  *
- * <p>The accessor methods {@link #starsectorColor()},
- * {@link #customColor()}, and {@link #isCustom()} are package-private on
- * purpose: only {@link StarsectorUiColorProvider} and the colocated test
- * need to inspect which source backs an entry, and exposing that surface
- * publicly would invite callers to special-case the resolver instead of
- * going through it.
+ * <p>Call {@link #resolve()} to obtain the live {@link Color}. The
+ * resolver null-checks the supplier output and tags the failure with the
+ * enum name, because {@code Misc} accessors can return {@code null}
+ * during early engine boot and letting that propagate into UI code
+ * produces a much less actionable error.
  */
 public enum StarsectorUiColor {
     VANILLA_GRAY(Misc::getGrayColor),
@@ -60,34 +59,21 @@ public enum StarsectorUiColor {
      */
     DARK_BLUE(new Color(31, 94, 112, 175));
 
-    private final Supplier<Color> starsectorColor;
-    private final Color customColor;
+    private final Supplier<Color> source;
 
-    StarsectorUiColor(Supplier<Color> starsectorColor) {
-        this(starsectorColor, null);
+    StarsectorUiColor(Supplier<Color> source) {
+        this.source = source;
     }
 
-    StarsectorUiColor(Color customColor) {
-        this(null, customColor);
+    StarsectorUiColor(Color literal) {
+        // Wrapping the literal in a supplier keeps resolve() uniform: no
+        // branch on vanilla-vs-custom at call time, just one code path
+        // that always null-checks the result.
+        this(() -> literal);
     }
 
-    StarsectorUiColor(Supplier<Color> starsectorColor, Color customColor) {
-        if (starsectorColor == null && customColor == null) {
-            throw new IllegalArgumentException("A color must define a Starsector source or a custom value.");
-        }
-        this.starsectorColor = starsectorColor;
-        this.customColor = customColor;
-    }
-
-    Optional<Supplier<Color>> starsectorColor() {
-        return Optional.ofNullable(starsectorColor);
-    }
-
-    Optional<Color> customColor() {
-        return Optional.ofNullable(customColor);
-    }
-
-    boolean isCustom() {
-        return customColor != null;
+    public Color resolve() {
+        Color resolved = source.get();
+        return Objects.requireNonNull(resolved, () -> "Missing color value for " + name());
     }
 }
