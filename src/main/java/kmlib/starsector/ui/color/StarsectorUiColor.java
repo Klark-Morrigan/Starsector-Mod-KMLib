@@ -7,10 +7,15 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
- * Palette of UI colours shared across the KM mod series. Vanilla
- * shades route through {@link Misc} suppliers so they track the engine's
- * palette automatically; custom shades hold a literal {@link Color} so
- * pure-data consumers can resolve them without booting Starsector.
+ * Unified palette extending the set of UI colours available to the KM
+ * mod series. Vanilla entries (prefixed {@code VANILLA_}) re-expose the
+ * engine's own shades via {@link Misc} suppliers so they keep tracking
+ * the live palette - including any player-faction recolours, since
+ * {@code VANILLA_PLAYER_BASE} / {@code VANILLA_PLAYER_DARK} resolve from
+ * the current player faction (blue by default, but Nex and modded
+ * player factions can change it). Custom entries hold a literal
+ * {@link Color} so pure-data consumers can resolve them without booting
+ * Starsector.
  *
  * <p>The accessor methods {@link #starsectorColor()},
  * {@link #customColor()}, and {@link #isCustom()} are package-private on
@@ -20,13 +25,13 @@ import java.util.function.Supplier;
  * going through it.
  */
 public enum StarsectorUiColor {
-    GRAY(Misc::getGrayColor),
-    TEXT_WHITE(Misc::getTextColor),
-    BLUE(Misc::getBasePlayerColor),
-    DARK_BLUE(Misc::getDarkPlayerColor),
-    GOLD(Misc::getHighlightColor),
-    RED(Misc::getNegativeHighlightColor),
-    GREEN(Misc::getPositiveHighlightColor),
+    VANILLA_GRAY(Misc::getGrayColor),
+    VANILLA_TEXT(Misc::getTextColor),
+    VANILLA_PLAYER_BASE(Misc::getBasePlayerColor),
+    VANILLA_PLAYER_DARK(Misc::getDarkPlayerColor),
+    VANILLA_HIGHLIGHT_GOLD(Misc::getHighlightColor),
+    VANILLA_HIGHLIGHT_RED(Misc::getNegativeHighlightColor),
+    VANILLA_HIGHLIGHT_GREEN(Misc::getPositiveHighlightColor),
     WHITE(Color.WHITE),
     DIM_GRAY(new Color(130, 130, 130)),
     ORANGE(new Color(255, 100, 0, 255)),
