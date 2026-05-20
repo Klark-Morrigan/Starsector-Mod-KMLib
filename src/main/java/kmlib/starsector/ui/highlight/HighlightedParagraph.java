@@ -51,7 +51,7 @@ public final class HighlightedParagraph {
      * deviate from the default text colour.
      */
     public HighlightedParagraph(String text, Highlight... highlights) {
-        this(text, StarsectorUiColorProvider.get(StarsectorUiColor.TEXT_WHITE), highlights);
+        this(text, StarsectorUiColorProvider.get(StarsectorUiColor.VANILLA_TEXT), highlights);
     }
 
     public String getText() {

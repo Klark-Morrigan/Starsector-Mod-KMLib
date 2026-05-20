@@ -24,7 +24,7 @@ class StarsectorUiColorProviderTest {
         try (MockedStatic<Misc> misc = Mockito.mockStatic(Misc.class)) {
             misc.when(Misc::getHighlightColor).thenReturn(expected);
 
-            assertThat(StarsectorUiColorProvider.get(StarsectorUiColor.GOLD))
+            assertThat(StarsectorUiColorProvider.get(StarsectorUiColor.VANILLA_HIGHLIGHT_GOLD))
                     .isEqualTo(expected);
         } finally {
             StarsectorSettingsFake.clearSettings();
@@ -46,7 +46,7 @@ class StarsectorUiColorProviderTest {
     @Test
     void distinguishesCustomAndStarsectorColors() {
         assertThat(StarsectorUiColor.ORANGE.isCustom()).isTrue();
-        assertThat(StarsectorUiColor.GRAY.isCustom()).isFalse();
+        assertThat(StarsectorUiColor.VANILLA_GRAY.isCustom()).isFalse();
     }
 
     @Test
@@ -64,8 +64,8 @@ class StarsectorUiColorProviderTest {
         // Mirror of the above for vanilla entries - ensures the resolver
         // never silently falls back to a literal when the Misc supplier
         // is the intended source of truth.
-        assertThat(StarsectorUiColor.GRAY.customColor()).isEmpty();
-        assertThat(StarsectorUiColor.GRAY.starsectorColor()).isPresent();
+        assertThat(StarsectorUiColor.VANILLA_GRAY.customColor()).isEmpty();
+        assertThat(StarsectorUiColor.VANILLA_GRAY.starsectorColor()).isPresent();
     }
 
     @Test
@@ -78,7 +78,7 @@ class StarsectorUiColorProviderTest {
             misc.when(Misc::getHighlightColor).thenReturn(null);
 
             assertThatNullPointerException()
-                    .isThrownBy(() -> StarsectorUiColorProvider.get(StarsectorUiColor.GOLD))
+                    .isThrownBy(() -> StarsectorUiColorProvider.get(StarsectorUiColor.VANILLA_HIGHLIGHT_GOLD))
                     .withMessageContaining("GOLD");
         } finally {
             StarsectorSettingsFake.clearSettings();
