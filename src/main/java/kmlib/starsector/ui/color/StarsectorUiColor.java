@@ -35,7 +35,25 @@ public enum StarsectorUiColor {
     BRIGHT_RED(new Color(255, 90, 80)),
     DARK_GREEN(new Color(35, 80, 45)),
     BRIGHT_GREEN(new Color(90, 220, 95)),
-    LIGHT_BLUE(new Color(100, 180, 255));
+    /**
+     * Literal copy of the vanilla {@code player} faction's
+     * {@code baseUIColor} from
+     * {@code starsector-core/data/world/factions/player.faction}. Use this
+     * when a callsite needs the iconic Starsector light blue regardless of
+     * which faction the current player has chosen (Nex/modded player
+     * factions change {@link #VANILLA_PLAYER_BASE}).
+     */
+    LIGHT_BLUE(new Color(170, 222, 255)),
+    /**
+     * Literal copy of the vanilla {@code player} faction's
+     * {@code darkUIColor} from
+     * {@code starsector-core/data/world/factions/player.faction}. Pairs
+     * with {@link #LIGHT_BLUE} as the frozen baseline player palette - use
+     * it when the dark companion shade must stay constant regardless of
+     * the active player faction (which is what
+     * {@link #VANILLA_PLAYER_DARK} tracks).
+     */
+    DARK_BLUE(new Color(31, 94, 112, 175));
 
     private final Supplier<Color> starsectorColor;
     private final Color customColor;
