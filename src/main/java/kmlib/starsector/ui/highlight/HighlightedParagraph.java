@@ -5,7 +5,6 @@ import com.fs.starfarer.api.ui.LabelAPI;
 import com.fs.starfarer.api.ui.TooltipMakerAPI;
 
 import kmlib.starsector.ui.color.StarsectorUiColor;
-import kmlib.starsector.ui.color.StarsectorUiColorProvider;
 
 import java.awt.Color;
 import java.util.Objects;
@@ -51,7 +50,7 @@ public final class HighlightedParagraph {
      * deviate from the default text colour.
      */
     public HighlightedParagraph(String text, Highlight... highlights) {
-        this(text, StarsectorUiColorProvider.get(StarsectorUiColor.VANILLA_TEXT), highlights);
+        this(text, StarsectorUiColor.VANILLA_TEXT.resolve(), highlights);
     }
 
     public String getText() {

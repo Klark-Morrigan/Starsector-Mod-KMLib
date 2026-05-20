@@ -28,9 +28,9 @@ class HighlightedParagraphTest {
 
     @BeforeEach
     void setUp() {
-        // The default constructor resolves TEXT_WHITE via
-        // StarsectorUiColorProvider, which needs SettingsAPI installed
-        // before Misc.<clinit> runs.
+        // The default constructor calls VANILLA_TEXT.resolve(), which
+        // routes through Misc. SettingsAPI must be installed before
+        // Misc.<clinit> runs.
         StarsectorSettingsFake.installSettings();
         panel = mock(TextPanelAPI.class);
         label = mock(LabelAPI.class);
@@ -48,7 +48,7 @@ class HighlightedParagraphTest {
     void defaultConstructorPicksTextWhiteAsBaseColor() {
         HighlightedParagraph paragraph = new HighlightedParagraph("text");
 
-        // Routes through StarsectorUiColorProvider -> Misc.getTextColor(),
+        // Routes through VANILLA_TEXT.resolve() -> Misc.getTextColor(),
         // which the fake-installed proxy returns as Color.WHITE for
         // any color slot.
         assertThat(paragraph.getBaseColor()).isEqualTo(Color.WHITE);
