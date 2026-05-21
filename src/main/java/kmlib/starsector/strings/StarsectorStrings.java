@@ -6,6 +6,8 @@ import java.util.IllegalFormatException;
 import java.util.Locale;
 import java.util.Objects;
 
+import kmlib.text.KmlibStrings;
+
 /**
  * Defensive wrapper around Starsector's
  * {@link com.fs.starfarer.api.SettingsAPI#getString(String, String)}
@@ -76,7 +78,7 @@ public final class StarsectorStrings {
 
         try {
             String value = source.get(category, key);
-            if (!hasText(value)) {
+            if (!KmlibStrings.hasText(value)) {
                 return REDACTED;
             }
             return value;
@@ -105,18 +107,4 @@ public final class StarsectorStrings {
         String get(String category, String key);
     }
 
-    /** Local copy of "text is non-null and contains non-whitespace" so
-     *  KMLib does not have to depend on a consumer's util module just
-     *  to share one predicate. */
-    private static boolean hasText(String value) {
-        if (value == null) {
-            return false;
-        }
-        for (int i = 0; i < value.length(); i++) {
-            if (!Character.isWhitespace(value.charAt(i))) {
-                return true;
-            }
-        }
-        return false;
-    }
 }
