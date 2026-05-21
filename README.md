@@ -11,6 +11,7 @@ on at compile and runtime.
 - [Build & Test](#build--test)
 - [Reusable CI / release actions](#reusable-ci--release-actions)
 - [Consuming KMLib](#consuming-kmlib)
+- [Player Faction Resolution](#player-faction-resolution)
 - [UI Colour Palette](#ui-colour-palette)
 - [Highlighted Text](#highlighted-text)
 
@@ -20,6 +21,14 @@ on at compile and runtime.
 mod_info.json
 build.gradle / settings.gradle / gradlew[.bat]
 src/main/java/kmlib/
+  text/                     - Starsector-agnostic string predicates
+                              (hasText)
+  starsector/factions/      - player-faction lifecycle helpers
+                              (established-check + display-name
+                              normaliser; handles vanilla + Nex defaults)
+  starsector/strings/       - defensive wrapper around settings.json
+                              localisation lookups (loud REDACTED on
+                              missing / malformed entries)
   starsector/ui/color/      - palette enum + Misc-backed resolver
   starsector/ui/highlight/  - highlight + paragraph + message types
                               (renders to text panel, tooltip, label,
@@ -114,6 +123,36 @@ compileOnly files("${configuredStarsectorRoot}/mods/KMLib/jars/KMLib.jar")
 
 Tests in consuming mods that touch KMLib types also add the same jar as
 `testCompileOnly` / `testRuntimeOnly`.
+
+## Player Faction Resolution
+
+[StarsectorPlayerFactionResolver](src/main/java/kmlib/starsector/factions/StarsectorPlayerFactionResolver.java)
+centralises faction-display-name normalisation across consuming mods.
+The player faction's `getDisplayName()` is always non-empty but its
+value varies by environment: vanilla pre-first-colony reports
+`"Independent"`, Nexerelin's stock `player.faction` reports the literal
+`"player"`, and the user can edit either to a custom name later.
+Substituting the raw value into prose (`"Production from a local
+player settlement..."`, `"player leader in orbit"`) reads poorly when
+the player has not finalised an identity yet. Two static entry points
+share one placeholder set (`Independent` / `player` / `Player`):
+
+- `isPlayerFactionEstablished()` returns `true` when the display name
+  is NOT in the placeholder set OR `Misc.getPlayerMarkets(false)` is
+  non-empty (`false` so Nex commission / governorship markets do not
+  count - those put the player under another flag, not their own).
+  The OR is deliberate: requiring both signals would mis-classify both
+  Nex's custom-faction-at-game-start flow and vanilla's
+  keeps-Independent-through-rename flow.
+- `resolveDisplayName(faction, fallback)` returns the live display
+  name when populated and not in the placeholder set, else the
+  caller's `fallback`. Generic - operates on any faction, not just the
+  player - so host-faction-in-contested-prose, remote-management-fee
+  tooltip, and any other faction-substituting surface share one policy.
+
+A package-private overload of the no-arg `isPlayerFactionEstablished`
+takes a `PlayerFactionSource` test seam so unit tests stub the live
+`Global` / `Misc` reads without `mockStatic`.
 
 ## UI Colour Palette
 
