@@ -430,7 +430,7 @@ without delay.
   point at KMLib for workflow internals; keep mod-local runner setup
   (`kmu-runner` label, `STARSECTOR_HOME`) as KMU's responsibility.
 - amend KMU's
-  [Step 8 of its plan](../../../../KMU/docs/dev/implementation/001-add-planetary-condition/plan.md#L389)
+  [Step 8 of its plan](../../../../KMU/docs/dev/implementation/010-add-planetary-condition/plan.md#L389)
   with a short note that the workflow files were extracted to KMLib and that
   KMU now consumes them via `workflow_call`. Do not rewrite the historical
   step; append a "Migrated to KMLib" subsection.
