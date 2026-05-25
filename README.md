@@ -14,6 +14,7 @@ on at compile and runtime.
 - [Player Faction Resolution](#player-faction-resolution)
 - [UI Colour Palette](#ui-colour-palette)
 - [Highlighted Text](#highlighted-text)
+- [Intel Base Classes](#intel-base-classes)
 
 ## Layout
 
@@ -33,6 +34,10 @@ src/main/java/kmlib/
   starsector/ui/highlight/  - highlight + paragraph + message types
                               (renders to text panel, tooltip, label,
                               and MessageIntel)
+  starsector/intel/         - intel-plugin base classes
+                              (BaseTaggedIntelPlugin for tab-tag
+                              mix-in; BaseExpiringIntelPlugin layers
+                              auto-removal on top)
 src/test/java/kmlib/  - JUnit 5 + Mockito unit tests
 jars/                  - build output (gitignored); KMLib.jar
 .github/
@@ -186,3 +191,25 @@ deliberately stops at the value type so the campaign-API call stays
 visible at the call site. Icon, sound, and the rest of the
 `MessageIntel` surface are not exposed yet; they'll be added the
 first time a consumer needs them.
+
+## Intel Base Classes
+
+[BaseTaggedIntelPlugin](src/main/java/kmlib/starsector/intel/BaseTaggedIntelPlugin.java)
+is the bottom of the KMLib intel hierarchy. It extends vanilla's
+`BaseIntelPlugin` and accepts a varargs list of mod-defined tab tags
+at construction; its `getIntelTags` override calls `super` and mixes
+those tags into the result so subclasses become a pure declaration
+(`class MyIntel : BaseTaggedIntelPlugin(MyTags.SOMETHING)`) with no
+`getIntelTags` boilerplate. Zero varargs is a valid call and yields
+a pure pass-through, which is what lets the expiring chain below
+support untagged consumers.
+
+[BaseExpiringIntelPlugin](src/main/java/kmlib/starsector/intel/BaseExpiringIntelPlugin.java)
+extends `BaseTaggedIntelPlugin` so an expiring intel can declare its
+tab tags through the same constructor channel. The no-arg constructor
+delegates to the empty-tag form for callers that pin to a vanilla
+tab. Captures the creation timestamp and auto-removes from the
+`IntelManager` once `getExpiryDays()` elapses; the default window is
+one Starsector month. Static `findActive(Class)` helper returns the
+first non-expired item of a given subclass so synchronous callers
+share one definition of "still within the current window".
