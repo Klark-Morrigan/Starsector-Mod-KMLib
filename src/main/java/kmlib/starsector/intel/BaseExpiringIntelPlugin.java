@@ -6,7 +6,6 @@ import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.comm.IntelInfoPlugin;
 import com.fs.starfarer.api.campaign.comm.IntelManagerAPI;
-import com.fs.starfarer.api.impl.campaign.intel.BaseIntelPlugin;
 
 import kmlib.starsector.time.StarsectorClock;
 
@@ -15,6 +14,11 @@ import kmlib.starsector.time.StarsectorClock;
  * the {@code IntelManager} after a fixed window from creation.
  * Captures the creation timestamp at construction and runs the
  * elapsed-days check on every {@link #advanceImpl} tick.
+ *
+ * <p>Extends {@link BaseTaggedIntelPlugin} so an expiring intel can
+ * declare its intel-tab tags via the constructor without a separate
+ * {@code getIntelTags} override; the no-arg constructor preserves the
+ * untagged-expiring case for callers that pin to a vanilla tab.</p>
  *
  * <p>Subclasses override {@link #getExpiryDays()} to change the
  * window. The default is one Starsector month
@@ -26,11 +30,22 @@ import kmlib.starsector.time.StarsectorClock;
  * override {@link #advanceImpl} and call {@code super.advanceImpl}
  * to inherit the removal logic.</p>
  */
-public abstract class BaseExpiringIntelPlugin extends BaseIntelPlugin {
+public abstract class BaseExpiringIntelPlugin extends BaseTaggedIntelPlugin {
 
     private final long createdTimestamp;
 
     protected BaseExpiringIntelPlugin() {
+        this(new String[0]);
+    }
+
+    /**
+     * Builds an expiring intel that also contributes
+     * {@code extraIntelTags} to its tab placement. Forwards to
+     * {@link BaseTaggedIntelPlugin} for the tag merge and captures
+     * the creation timestamp locally for the expiry check.
+     */
+    protected BaseExpiringIntelPlugin(String... extraIntelTags) {
+        super(extraIntelTags);
         this.createdTimestamp = Global.getSector().getClock().getTimestamp();
     }
 
