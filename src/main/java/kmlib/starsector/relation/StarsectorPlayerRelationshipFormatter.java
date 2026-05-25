@@ -34,14 +34,17 @@ import java.util.Locale;
  * {@link FactionAPI} or {@link RelationshipAPI} propagates to the
  * caller rather than degrading silently. Lives in KMLib so every mod
  * that surfaces a faction's player-relation renders it the same way
- * and pulls the same colour from the same fallback chain. Stateless:
- * instantiate once and reuse.</p>
+ * and pulls the same colour from the same fallback chain. Stateless
+ * - the single entry point is a static method, no instance needed.</p>
  */
 public final class StarsectorPlayerRelationshipFormatter {
     private static final int MAX_RELATIONSHIP_REPUTATION = 100;
     private static final String PLAYER_RELATIONSHIP_DESCRIPTION_FORMAT = "%s (%d / %d)";
 
-    public RelationshipSummary formatPlayerRelationship(FactionAPI faction) {
+    private StarsectorPlayerRelationshipFormatter() {
+    }
+
+    public static RelationshipSummary formatPlayerRelationship(FactionAPI faction) {
         if (faction == null) {
             return RelationshipSummary.createEmptySummary();
         }
@@ -69,7 +72,7 @@ public final class StarsectorPlayerRelationshipFormatter {
         return new RelationshipSummary(formatRelationshipDescription(level, repInt), color);
     }
 
-    private String formatRelationshipDescription(RepLevel level, int repInt) {
+    private static String formatRelationshipDescription(RepLevel level, int repInt) {
         String levelName = level.getDisplayName();
         if (levelName == null || levelName.trim().isEmpty()) {
             // Enum-name fallback when the display name is missing (very

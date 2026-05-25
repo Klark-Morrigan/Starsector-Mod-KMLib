@@ -9,18 +9,17 @@ import org.junit.jupiter.api.Test;
 
 import java.awt.Color;
 
+import static kmlib.starsector.relation.StarsectorPlayerRelationshipFormatter.formatPlayerRelationship;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class StarsectorPlayerRelationshipFormatterTest {
     private static final Color RED = new Color(200, 50, 50);
-    private final StarsectorPlayerRelationshipFormatter formatter =
-            new StarsectorPlayerRelationshipFormatter();
 
     @Test
     void returnsEmptySummaryForNullFaction() {
-        RelationshipSummary result = formatter.formatPlayerRelationship(null);
+        RelationshipSummary result = formatPlayerRelationship(null);
 
         assertThat(result.getDescription()).isNull();
         assertThat(result.getColor()).isNull();
@@ -36,7 +35,7 @@ class StarsectorPlayerRelationshipFormatterTest {
         FactionAPI faction = mock(FactionAPI.class);
         when(faction.getRelToPlayer()).thenReturn(relationship);
 
-        RelationshipSummary result = formatter.formatPlayerRelationship(faction);
+        RelationshipSummary result = formatPlayerRelationship(faction);
 
         assertThat(result.getDescription()).isEqualTo("Vengeful (-100 / 100)");
         assertThat(result.getColor()).isEqualTo(RED);
@@ -52,7 +51,7 @@ class StarsectorPlayerRelationshipFormatterTest {
         when(faction.getRelationship(Factions.PLAYER)).thenReturn(0.0f);
         when(faction.getRelColor(Factions.PLAYER)).thenReturn(RED);
 
-        RelationshipSummary result = formatter.formatPlayerRelationship(faction);
+        RelationshipSummary result = formatPlayerRelationship(faction);
 
         // Level name varies by Starsector version; verify only the numeric format.
         assertThat(result.getDescription()).isNotNull().contains("/ 100");
