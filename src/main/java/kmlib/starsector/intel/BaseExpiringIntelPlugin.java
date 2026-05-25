@@ -1,6 +1,11 @@
 package kmlib.starsector.intel;
 
+import java.util.List;
+
 import com.fs.starfarer.api.Global;
+import com.fs.starfarer.api.campaign.SectorAPI;
+import com.fs.starfarer.api.campaign.comm.IntelInfoPlugin;
+import com.fs.starfarer.api.campaign.comm.IntelManagerAPI;
 import com.fs.starfarer.api.impl.campaign.intel.BaseIntelPlugin;
 
 import kmlib.starsector.time.StarsectorClock;
@@ -50,13 +55,70 @@ public abstract class BaseExpiringIntelPlugin extends BaseIntelPlugin {
         return createdTimestamp;
     }
 
+    /**
+     * {@code true} once the elapsed in-game days since construction
+     * has reached {@link #getExpiryDays()}. The base class's
+     * {@link #advanceImpl} also removes the intel from the
+     * {@code IntelManager} once this flips, but synchronous lookup
+     * helpers like {@link #findActive(Class)} need a direct predicate
+     * that asks "is this item still within its window?" because the
+     * {@code IntelManager} list may still hold a just-expired item
+     * for a few frames before the next {@code advance} prunes it.
+     *
+     * <p>Returns {@code false} when the sector is unavailable (early
+     * load / teardown) so callers can treat a missing clock as "not
+     * yet expired" rather than as a hard error.</p>
+     */
+    public final boolean isExpired() {
+        SectorAPI sector = Global.getSector();
+        if (sector == null) {
+            return false;
+        }
+        return sector.getClock().getElapsedDaysSince(createdTimestamp) >= getExpiryDays();
+    }
+
+    /**
+     * Returns the first non-expired intel of type {@code intelClass}
+     * registered with the sector's {@code IntelManager}, or
+     * {@code null} when none exists.
+     *
+     * <p>Most expiring-intel mechanics keep a single live item per
+     * window and re-register it on the first event after expiry, so
+     * "find the current window's item" is the dominant lookup
+     * shape. Routing it through this helper avoids each caller
+     * re-implementing the empty-list / expired-head dance and
+     * guarantees they all use the same definition of "still
+     * within window" as {@link #isExpired()} above.</p>
+     *
+     * <p>Returns {@code null} when the sector or its
+     * {@code IntelManager} is unavailable so callers can use the
+     * same null branch they already need for the empty-list case.</p>
+     */
+    public static <T extends BaseExpiringIntelPlugin> T findActive(Class<T> intelClass) {
+        SectorAPI sector = Global.getSector();
+        if (sector == null) {
+            return null;
+        }
+        IntelManagerAPI intelManager = sector.getIntelManager();
+        if (intelManager == null) {
+            return null;
+        }
+        List<IntelInfoPlugin> items = intelManager.getIntel(intelClass);
+        for (IntelInfoPlugin item : items) {
+            T typed = intelClass.cast(item);
+            if (!typed.isExpired()) {
+                return typed;
+            }
+        }
+        return null;
+    }
+
     @Override
     protected void advanceImpl(float amount) {
         if (Global.getSector() == null) {
             return;
         }
-        float elapsed = Global.getSector().getClock().getElapsedDaysSince(createdTimestamp);
-        if (elapsed >= getExpiryDays()) {
+        if (isExpired()) {
             Global.getSector().getIntelManager().removeIntel(this);
         }
     }
