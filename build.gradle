@@ -25,6 +25,12 @@ def configuredStarsectorRoot = findProperty('starsectorRoot') ?:
         new File(projectDir, '../..').canonicalPath
 
 def apiJarFile = file("${configuredStarsectorRoot}/starsector-core/starfarer.api.jar")
+// lwjgl_util.jar carries Vector2f / Vector3f, which appear in Misc's
+// getDistance overloads. javac needs the class file on the classpath
+// to resolve overload candidates even when our calls only target the
+// SectorEntityToken-typed overload, so the jar is compileOnly (it
+// ships with Starsector at runtime, like the API jar).
+def lwjglUtilJarFile = file("${configuredStarsectorRoot}/starsector-core/lwjgl_util.jar")
 def starsectorCoreJars = fileTree(
         dir: "${configuredStarsectorRoot}/starsector-core",
         include: ['*.jar'])
@@ -39,6 +45,7 @@ dependencies {
     // mods that depend on KMLib do too, so the jar stays out of the
     // produced KMLib artifact.
     compileOnly files(apiJarFile)
+    compileOnly files(lwjglUtilJarFile)
 
     testImplementation platform('org.junit:junit-bom:5.13.1')
     testImplementation 'org.junit.jupiter:junit-jupiter'
@@ -49,6 +56,7 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
     testCompileOnly files(apiJarFile)
+    testCompileOnly files(lwjglUtilJarFile)
     testRuntimeOnly files(apiJarFile)
     testRuntimeOnly starsectorCoreJars
 }
