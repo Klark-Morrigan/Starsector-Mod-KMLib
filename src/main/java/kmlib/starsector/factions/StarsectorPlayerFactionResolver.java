@@ -4,6 +4,8 @@ import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.util.Misc;
 
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -48,6 +50,12 @@ import kmlib.text.KmlibStrings;
  *
  * <p>The placeholder set is shared by both methods so a future change
  * to the recognised default names only needs to land once.
+ * Downstream mods can extend it via
+ * {@link #setUnestablishedPlayerFactionNames(Set)} when a new launcher
+ * environment introduces another placeholder name - the resolver
+ * stores a defensive copy so the live set cannot be mutated after the
+ * assignment, and a {@code null} or empty argument resets to the
+ * built-in defaults rather than silently disabling the check.
  *
  * <p>The public no-arg {@link #isPlayerFactionEstablished} reads live
  * {@code Global} / {@code Misc} state via {@link LiveSource}; a
@@ -58,15 +66,54 @@ import kmlib.text.KmlibStrings;
  */
 public final class StarsectorPlayerFactionResolver {
 
-    /** Display-name values that signal the player has not customised
-     *  their faction yet (either the pre-first-colony vanilla
+    /** Default display-name values that signal the player has not
+     *  customised their faction yet (either the pre-first-colony vanilla
      *  placeholder or the literal id casings used by Nexerelin's stock
      *  {@code player.faction} file). Any of these as a live
      *  {@code displayName} reads worse in prose than a context fallback. */
-    private static final Set<String> UNESTABLISHED_PLACEHOLDERS =
+    private static final Set<String> DEFAULT_UNESTABLISHED_PLACEHOLDERS =
             Set.of("Independent", "player", "Player");
 
+    /** Live placeholder set the established-check and the display-name
+     *  fallback both read from. Mutable so a downstream mod (or a
+     *  LunaLib settings bridge) can extend it once at init when a new
+     *  launcher environment introduces another placeholder name, without
+     *  needing a KMLib release. Defensive copy on every write so external
+     *  collections cannot mutate the live set behind the resolver's
+     *  back. */
+    private static volatile Set<String> unestablishedPlayerFactionNames =
+            DEFAULT_UNESTABLISHED_PLACEHOLDERS;
+
     private StarsectorPlayerFactionResolver() {
+    }
+
+    /**
+     * Returns the current placeholder set as an unmodifiable view.
+     * Callers that want to extend it should read this, build a new set
+     * combining the live names with their additions, and pass the
+     * result to {@link #setUnestablishedPlayerFactionNames(Set)} - the
+     * resolver does not merge for them so the assignment is explicit.
+     */
+    public static Set<String> getUnestablishedPlayerFactionNames() {
+        return Collections.unmodifiableSet(unestablishedPlayerFactionNames);
+    }
+
+    /**
+     * Replaces the placeholder set. A {@code null} or empty argument
+     * resets the resolver to the built-in defaults rather than
+     * silently disabling the unestablished check (an empty set would
+     * make every displayName register as established, which defeats
+     * the fallback prose the resolver exists for).
+     */
+    public static void setUnestablishedPlayerFactionNames(Set<String> names) {
+        if (names == null || names.isEmpty()) {
+            unestablishedPlayerFactionNames = DEFAULT_UNESTABLISHED_PLACEHOLDERS;
+            return;
+        }
+        // Defensive copy so later mutations on the caller's collection
+        // do not bleed into the resolver's live set.
+        unestablishedPlayerFactionNames =
+                Collections.unmodifiableSet(new LinkedHashSet<>(names));
     }
 
     /**
@@ -91,7 +138,7 @@ public final class StarsectorPlayerFactionResolver {
             return fallback;
         }
         String raw = faction.getDisplayName();
-        if (!KmlibStrings.hasText(raw) || UNESTABLISHED_PLACEHOLDERS.contains(raw)) {
+        if (!KmlibStrings.hasText(raw) || unestablishedPlayerFactionNames.contains(raw)) {
             return fallback;
         }
         return raw;
@@ -111,7 +158,7 @@ public final class StarsectorPlayerFactionResolver {
             return false;
         }
         String name = playerFaction.getDisplayName();
-        if (KmlibStrings.hasText(name) && !UNESTABLISHED_PLACEHOLDERS.contains(name)) {
+        if (KmlibStrings.hasText(name) && !unestablishedPlayerFactionNames.contains(name)) {
             return true;
         }
         return source.ownsAnyMarket();

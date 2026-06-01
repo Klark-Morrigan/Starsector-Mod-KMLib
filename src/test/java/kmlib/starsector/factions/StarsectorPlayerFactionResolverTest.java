@@ -2,8 +2,12 @@ package kmlib.starsector.factions;
 
 import com.fs.starfarer.api.campaign.FactionAPI;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+
+import java.util.HashSet;
+import java.util.Set;
 
 import kmlib.starsector.factions.StarsectorPlayerFactionResolver.PlayerFactionSource;
 
@@ -25,6 +29,14 @@ import static org.assertj.core.api.Assertions.assertThat;
  * package-private overload, so no static mocking is required.
  */
 class StarsectorPlayerFactionResolverTest {
+
+    @AfterEach
+    void resetPlaceholderSet() {
+        // The placeholder set is process-static; reset to defaults after
+        // each test so a `setUnestablishedPlayerFactionNames` call in one
+        // case cannot leak into another.
+        StarsectorPlayerFactionResolver.setUnestablishedPlayerFactionNames(null);
+    }
 
     @Test
     void establishedIsFalseOnDefaultNameAndNoMarkets() {
@@ -123,6 +135,89 @@ class StarsectorPlayerFactionResolverTest {
                 faction, "Independent");
 
         assertThat(resolved).isEqualTo("Independent");
+    }
+
+    @Test
+    void unestablishedSetExtensionTakesEffectOnEstablishedCheck() {
+        // A modder pointing a different launcher environment at a new
+        // placeholder name extends the live set; the established-check
+        // must read the updated set rather than the built-in defaults
+        // so the extension actually takes effect.
+        StarsectorPlayerFactionResolver.setUnestablishedPlayerFactionNames(
+                Set.of("Unaffiliated"));
+
+        assertThat(StarsectorPlayerFactionResolver.isPlayerFactionEstablished(
+                stubSource("Unaffiliated", false))).isFalse();
+        // The previous defaults are no longer recognised - replace,
+        // not merge, is the documented contract.
+        assertThat(StarsectorPlayerFactionResolver.isPlayerFactionEstablished(
+                stubSource("Independent", false))).isTrue();
+    }
+
+    @Test
+    void unestablishedSetExtensionTakesEffectOnDisplayNameFallback() {
+        // The display-name fallback shares the set with the established
+        // check, so an extension must steer the fallback too.
+        StarsectorPlayerFactionResolver.setUnestablishedPlayerFactionNames(
+                Set.of("Unaffiliated"));
+        FactionAPI faction = Mockito.mock(FactionAPI.class);
+        Mockito.when(faction.getDisplayName()).thenReturn("Unaffiliated");
+
+        String resolved = StarsectorPlayerFactionResolver.resolveDisplayName(
+                faction, "faction");
+
+        assertThat(resolved).isEqualTo("faction");
+    }
+
+    @Test
+    void nullPlaceholderSetResetsToDefaults() {
+        // Null is the documented reset signal so callers do not need to
+        // hold onto a snapshot of the defaults to restore them.
+        StarsectorPlayerFactionResolver.setUnestablishedPlayerFactionNames(
+                Set.of("Unaffiliated"));
+        StarsectorPlayerFactionResolver.setUnestablishedPlayerFactionNames(null);
+
+        assertThat(StarsectorPlayerFactionResolver.getUnestablishedPlayerFactionNames())
+                .containsExactlyInAnyOrder("Independent", "player", "Player");
+    }
+
+    @Test
+    void emptyPlaceholderSetResetsToDefaults() {
+        // An empty set would make every displayName register as
+        // established, which defeats the fallback prose the resolver
+        // exists for; treat it as a reset.
+        StarsectorPlayerFactionResolver.setUnestablishedPlayerFactionNames(Set.of());
+
+        assertThat(StarsectorPlayerFactionResolver.getUnestablishedPlayerFactionNames())
+                .containsExactlyInAnyOrder("Independent", "player", "Player");
+    }
+
+    @Test
+    void getterReturnsUnmodifiableView() {
+        // Defensive read: callers cannot mutate the live set behind
+        // the resolver's back, so an extension has to go through the
+        // setter (which copies).
+        Set<String> live =
+                StarsectorPlayerFactionResolver.getUnestablishedPlayerFactionNames();
+
+        try {
+            live.add("Unaffiliated");
+            assertThat(false).as("expected UnsupportedOperationException").isTrue();
+        } catch (UnsupportedOperationException expected) {
+            // ok
+        }
+    }
+
+    @Test
+    void setterCopiesInputSet() {
+        // A caller mutating their original collection after the setter
+        // returns must not bleed into the resolver's live set.
+        HashSet<String> caller = new HashSet<>(Set.of("Unaffiliated"));
+        StarsectorPlayerFactionResolver.setUnestablishedPlayerFactionNames(caller);
+        caller.add("StillStrangers");
+
+        assertThat(StarsectorPlayerFactionResolver.getUnestablishedPlayerFactionNames())
+                .containsExactly("Unaffiliated");
     }
 
     private static PlayerFactionSource stubSource(String displayName, boolean ownsMarket) {
