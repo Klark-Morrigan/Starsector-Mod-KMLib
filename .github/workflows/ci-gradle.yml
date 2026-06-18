@@ -1,0 +1,19 @@
+# KMLib's Gradle CI gate. Delegates to Common-Java's reusable engine.
+# Runs on the self-hosted kmlib-runner because the build resolves
+# starfarer.api.jar from a Starsector install (STARSECTOR_HOME, set on
+# the runner) - a hosted runner has no Starsector binaries. This is the
+# self-hosted gate the old ci.yml deferred to in its header comment.
+name: ci-gradle
+
+on:
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  gradle:
+    uses: Klark-Morrigan/Common-Java/.github/workflows/_ci-gradle.yml@master
+    with:
+      runs-on: '["self-hosted", "kmlib-runner"]'
+      gradle-tasks: coverage
+      setup-java: false
