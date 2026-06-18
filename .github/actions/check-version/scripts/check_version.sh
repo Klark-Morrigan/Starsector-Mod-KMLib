@@ -15,10 +15,15 @@ set -euo pipefail
 VERSION=$(jq -r .version mod_info.json)
 LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "none")
 
-echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-
-if [ "$VERSION" = "$LATEST_TAG" ]; then
-  echo "version_updated=false" >> "$GITHUB_OUTPUT"
+if [[ "${VERSION}" == "${LATEST_TAG}" ]]; then
+  version_updated="false"
 else
-  echo "version_updated=true" >> "$GITHUB_OUTPUT"
+  version_updated="true"
 fi
+
+# GITHUB_OUTPUT is exported by the Actions runtime, not assigned here.
+# shellcheck disable=SC2154
+{
+  echo "version=${VERSION}"
+  echo "version_updated=${version_updated}"
+} >> "${GITHUB_OUTPUT}"

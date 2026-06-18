@@ -10,14 +10,14 @@ set -euo pipefail
 
 VERSION="${1:?version argument required}"
 
-awk "/^## \[$VERSION\]/{found=1; next} \
+awk "/^## \[${VERSION}\]/{found=1; next} \
      found && /^## \[/{exit} \
      found{print}" \
   CHANGELOG.md > release-notes.md
 
 # Fail loudly if the section was missing rather than silently publishing an
 # empty release body.
-if [ ! -s release-notes.md ]; then
-  echo "ERROR: no changelog section found for version $VERSION" >&2
+if [[ ! -s release-notes.md ]]; then
+  echo "ERROR: no changelog section found for version ${VERSION}" >&2
   exit 1
 fi

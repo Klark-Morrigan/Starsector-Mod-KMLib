@@ -22,22 +22,22 @@ RUNNER_SUFFIX="-runner"
 DIST_ROOT="dist"
 ZIP_EXTENSION=".zip"
 
-if [ ! -f "$MOD_INFO_FILE" ]; then
-  echo "read_mod_info: $MOD_INFO_FILE not found in working directory" >&2
+if [[ ! -f "${MOD_INFO_FILE}" ]]; then
+  echo "read_mod_info: ${MOD_INFO_FILE} not found in working directory" >&2
   exit 1
 fi
 
-MOD_ID=$(jq -r '.id' "$MOD_INFO_FILE")
-VERSION=$(jq -r '.version' "$MOD_INFO_FILE")
-JAR_SOURCE=$(jq -r '.jars[0]' "$MOD_INFO_FILE")
+MOD_ID=$(jq -r '.id' "${MOD_INFO_FILE}")
+VERSION=$(jq -r '.version' "${MOD_INFO_FILE}")
+JAR_SOURCE=$(jq -r '.jars[0]' "${MOD_INFO_FILE}")
 
 # Fail loudly on missing required fields so callers do not silently emit
 # malformed downstream values like "dist/null/".
-for pair in "id:$MOD_ID" "version:$VERSION" "jars[0]:$JAR_SOURCE"; do
+for pair in "id:${MOD_ID}" "version:${VERSION}" "jars[0]:${JAR_SOURCE}"; do
   field="${pair%%:*}"
   value="${pair#*:}"
-  if [ -z "$value" ] || [ "$value" = "null" ]; then
-    echo "read_mod_info: $MOD_INFO_FILE is missing required field '$field'" >&2
+  if [[ -z "${value}" ]] || [[ "${value}" == "null" ]]; then
+    echo "read_mod_info: ${MOD_INFO_FILE} is missing required field '${field}'" >&2
     exit 1
   fi
 done
@@ -46,11 +46,13 @@ RUNNER_LABEL="${MOD_ID}${RUNNER_SUFFIX}"
 DIST_DIR="${DIST_ROOT}/${MOD_ID}/"
 ZIP_NAME="${MOD_ID}-${VERSION}${ZIP_EXTENSION}"
 
+# GITHUB_OUTPUT is exported by the Actions runtime, not assigned here.
+# shellcheck disable=SC2154
 {
-  echo "mod-id=$MOD_ID"
-  echo "version=$VERSION"
-  echo "runner-label=$RUNNER_LABEL"
-  echo "dist-dir=$DIST_DIR"
-  echo "zip-name=$ZIP_NAME"
-  echo "jar-source=$JAR_SOURCE"
-} >> "$GITHUB_OUTPUT"
+  echo "mod-id=${MOD_ID}"
+  echo "version=${VERSION}"
+  echo "runner-label=${RUNNER_LABEL}"
+  echo "dist-dir=${DIST_DIR}"
+  echo "zip-name=${ZIP_NAME}"
+  echo "jar-source=${JAR_SOURCE}"
+} >> "${GITHUB_OUTPUT}"
