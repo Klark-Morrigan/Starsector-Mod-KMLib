@@ -48,6 +48,8 @@ scripts/
   run-lint-yaml-and-bash.sh / .bat    - lint half only (no bats)
   run-tests-bash.sh / .bat            - bats tests only
   fix-permissions.sh / .bat - re-stage +x on tracked *.sh files
+.gitattributes          - line-ending pins (*.sh + gradlew -> LF,
+                          *.bat + gradlew.bat -> CRLF)
 .github/
   workflows/ci-yaml.yml        - YAML / Actions lint via Common-Automation
   workflows/ci-bash.yml        - Bash lint + bats via Common-Automation
