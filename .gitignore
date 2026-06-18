@@ -9,7 +9,6 @@ build/
 dist/
 jars/*.jar
 out/
-*.bat
 *.class
 
 # graphify knowledge graph artifacts (local; rebuilt by graphify)
