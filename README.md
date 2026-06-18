@@ -9,6 +9,7 @@ on at compile and runtime.
 
 - [Layout](#layout)
 - [Build & Test](#build--test)
+- [Local linting](#local-linting)
 - [Reusable CI / release actions](#reusable-ci--release-actions)
 - [Consuming KMLib](#consuming-kmlib)
 - [Player Faction Resolution](#player-faction-resolution)
@@ -40,7 +41,16 @@ src/main/java/kmlib/
                               auto-removal on top)
 src/test/java/kmlib/  - JUnit 5 + Mockito unit tests
 jars/                  - build output (gitignored); KMLib.jar
+scripts/
+  run-ci-yaml-and-bash.sh / .bat      - MAIN entry: lint suite + bats
+                          tests in one go (Git Bash + Docker; see
+                          Local linting)
+  run-lint-yaml-and-bash.sh / .bat    - lint half only (no bats)
+  run-tests-bash.sh / .bat            - bats tests only
+  fix-permissions.sh / .bat - re-stage +x on tracked *.sh files
 .github/
+  workflows/ci-yaml.yml        - YAML / Actions lint via Common-Automation
+  workflows/ci-bash.yml        - Bash lint + bats via Common-Automation
   actions/read-mod-info/      - derives mod-id, version, runner
     label, dist dir, zip name, and jar source from a caller's
     mod_info.json
@@ -105,6 +115,46 @@ The Starsector install root is discovered in this order:
 `-PstarsectorRoot=<path>` -> `STARSECTOR_HOME` env -> `../..` from this
 folder (the canonical layout when the mod lives at
 `<starsector>/mods/KMLib`).
+
+## Local linting
+
+Two delegating CI workflows lint the repo's non-Gradle surface on every pull
+request: [ci-yaml.yml](.github/workflows/ci-yaml.yml) calls Common-Automation's
+reusable `ci-yaml.yml` (actionlint, action-validator, yamllint, ansible-lint)
+and [ci-bash.yml](.github/workflows/ci-bash.yml) calls its reusable `ci-bash.yml`
+(shellcheck, check-sh-executable, bats). Each step auto-skips when its surface is
+absent, so a mod with no shell scripts still passes the Bash workflow. The Gradle
+build and JUnit tests are NOT part of these workflows - they run through Gradle
+(see [Build & Test](#build--test)); these gates cover only YAML / Actions / Bash.
+
+Three sibling shims reproduce that CI surface locally through Git Bash +
+Docker, each delegating to Common-Automation's orchestrator:
+
+- [scripts/run-ci-yaml-and-bash.sh](scripts/run-ci-yaml-and-bash.sh) (with the
+  [run-ci-yaml-and-bash.bat](scripts/run-ci-yaml-and-bash.bat) launcher for
+  `cmd` / PowerShell) is the MAIN entry - it runs BOTH the lint suite AND the
+  bats tests in one go, the full local equivalent of ci-yaml.yml + ci-bash.yml.
+  This is what most contributors run.
+- [scripts/run-lint-yaml-and-bash.sh](scripts/run-lint-yaml-and-bash.sh) (with
+  its [.bat](scripts/run-lint-yaml-and-bash.bat) launcher) runs the lint half
+  only (shellcheck, actionlint, action-validator, yamllint, ansible-lint); no
+  bats.
+- [scripts/run-tests-bash.sh](scripts/run-tests-bash.sh) (with its
+  [.bat](scripts/run-tests-bash.bat) launcher) runs the bats tests only.
+
+All three are thin shims over Common-Automation's engine, so they require a
+Common-Automation checkout as a SIBLING directory (`..\Common-Automation`). The
+Gradle build and JUnit tests stay separate - they live in Gradle (see
+[Build & Test](#build--test)); these shims cover only the YAML / Actions / Bash
+surface.
+
+[scripts/fix-permissions.sh](scripts/fix-permissions.sh) (and its
+[.bat](scripts/fix-permissions.bat)) re-stages the executable bit on tracked
+`*.sh` files, which Windows checkouts drop; run it after adding a shell script so
+the `check-sh-executable` gate stays green.
+[.gitattributes](.gitattributes) pins line endings surgically - `*.sh` and
+`gradlew` to LF, `*.bat` and `gradlew.bat` to CRLF - and leaves binary / data
+assets to git's own detection.
 
 ## Consuming KMLib
 
