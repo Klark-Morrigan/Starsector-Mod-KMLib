@@ -47,6 +47,10 @@ scripts/
                           Local linting)
   run-lint-yaml-and-bash.sh / .bat    - lint half only (no bats)
   run-tests-bash.sh / .bat            - bats tests only
+  run-tests-gradle.bat                - double-click launcher for
+                          `gradlew test`
+  run-coverage-gradle.bat             - double-click launcher for
+                          `gradlew coverage`
   fix-permissions.sh / .bat - re-stage +x on tracked *.sh files
 .gitattributes          - line-ending pins (*.sh + gradlew -> LF,
                           *.bat + gradlew.bat -> CRLF)
@@ -117,6 +121,12 @@ The Starsector install root is discovered in this order:
 `-PstarsectorRoot=<path>` -> `STARSECTOR_HOME` env -> `../..` from this
 folder (the canonical layout when the mod lives at
 `<starsector>/mods/KMLib`).
+
+For double-click runs from Explorer,
+[scripts/run-tests-gradle.bat](scripts/run-tests-gradle.bat) and
+[scripts/run-coverage-gradle.bat](scripts/run-coverage-gradle.bat) wrap the
+`test` and `coverage` tasks above against the deployed install and pause on
+exit.
 
 ## Local linting
 
