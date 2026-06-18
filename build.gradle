@@ -1,100 +1,12 @@
-plugins {
-    id 'java'
-    id 'jacoco'
-}
-
-import groovy.json.JsonSlurper
-
-// Mod metadata is the single source of truth for the artifact version,
-// so the jar name and Starsector's mod listing cannot drift.
-def modInfoFile = file('mod_info.json')
-def modInfo = new JsonSlurper().parse(modInfoFile)
-
-if (!modInfo.version) {
-    throw new GradleException("Missing version in ${modInfoFile}")
-}
+// KMLib's own build. The shared Starsector mod conventions live in
+// gradle/starsector-mod.gradle (hosted here, since KMLib owns the Starsector
+// build knowledge) and are applied below; this file keeps only what is
+// specific to KMLib.
+apply from: "${rootDir}/gradle/starsector-mod.gradle"
 
 group = 'kmlib'
-version = modInfo.version
-
-// Resolve the Starsector install root. Order: explicit override,
-// environment variable, then the conventional "two levels above the
-// mod folder" (mods live at <starsector>/mods/<modId>).
-def configuredStarsectorRoot = findProperty('starsectorRoot') ?:
-        System.getenv('STARSECTOR_HOME') ?:
-        new File(projectDir, '../..').canonicalPath
-
-def apiJarFile = file("${configuredStarsectorRoot}/starsector-core/starfarer.api.jar")
-// lwjgl_util.jar carries Vector2f / Vector3f, which appear in Misc's
-// getDistance overloads. javac needs the class file on the classpath
-// to resolve overload candidates even when our calls only target the
-// SectorEntityToken-typed overload, so the jar is compileOnly (it
-// ships with Starsector at runtime, like the API jar).
-def lwjglUtilJarFile = file("${configuredStarsectorRoot}/starsector-core/lwjgl_util.jar")
-def starsectorCoreJars = fileTree(
-        dir: "${configuredStarsectorRoot}/starsector-core",
-        include: ['*.jar'])
-
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    // Starsector ships the API in starsector-core. compileOnly because
-    // the game classloader already provides it at runtime - and the
-    // mods that depend on KMLib do too, so the jar stays out of the
-    // produced KMLib artifact.
-    compileOnly files(apiJarFile)
-    compileOnly files(lwjglUtilJarFile)
-
-    testImplementation platform('org.junit:junit-bom:5.13.1')
-    testImplementation 'org.junit.jupiter:junit-jupiter'
-    testImplementation 'org.assertj:assertj-core:3.27.7'
-    // Mockito-inline (default in 5+) lets the colour provider test
-    // intercept Misc's static accessors without booting Starsector.
-    testImplementation 'org.mockito:mockito-core:5.18.0'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-
-    testCompileOnly files(apiJarFile)
-    testCompileOnly files(lwjglUtilJarFile)
-    testRuntimeOnly files(apiJarFile)
-    testRuntimeOnly starsectorCoreJars
-}
-
-tasks.withType(JavaCompile).configureEach {
-    options.encoding = 'UTF-8'
-    options.release = 17
-
-    doFirst {
-        if (!apiJarFile.exists()) {
-            throw new GradleException(
-                    "Could not find starfarer.api.jar at ${apiJarFile}. " +
-                    "Set STARSECTOR_HOME or pass -PstarsectorRoot=<path>.")
-        }
-    }
-}
-
-test {
-    useJUnitPlatform()
-    testLogging {
-        events 'passed', 'skipped', 'failed'
-    }
-    finalizedBy jacocoTestReport
-}
-
-jacoco {
-    toolVersion = '0.8.13'
-}
 
 jacocoTestReport {
-    dependsOn test
-
-    reports {
-        html.required = true
-        xml.required = true
-        csv.required = true
-    }
-
     // The 'testing' package ships test fixtures (e.g. StarsectorSettingsFake)
     // in main so downstream mods can reuse them; they're production-located
     // but test-only, so excluding them keeps the coverage signal honest.
@@ -103,18 +15,4 @@ jacocoTestReport {
             fileTree(dir: it, exclude: ['kmlib/starsector/testing/**'])
         })
     )
-}
-
-tasks.register('coverage') {
-    group = 'verification'
-    description = 'Runs tests and generates JaCoCo coverage reports.'
-    dependsOn test, jacocoTestReport
-}
-
-// Starsector picks up jars listed in mod_info.json's "jars" array from
-// this folder, so the build output goes straight where consumers (KMO,
-// KMU, ...) expect to find KMLib.jar.
-jar {
-    archiveFileName = "${project.name}.jar"
-    destinationDirectory = file("$projectDir/jars")
 }
