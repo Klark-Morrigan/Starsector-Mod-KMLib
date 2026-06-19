@@ -3,7 +3,7 @@
 # starfarer.api.jar from a Starsector install (STARSECTOR_HOME, set on
 # the runner) - a hosted runner has no Starsector binaries. This is the
 # self-hosted gate the old ci.yml deferred to in its header comment.
-name: ci-gradle
+name: Common-Java
 
 on:
   pull_request:
