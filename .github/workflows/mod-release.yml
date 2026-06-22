@@ -1,0 +1,251 @@
+# Reusable release pipeline for every Starsector mod in the KM family.
+#
+# A consumer mod ships a one-line release.yml that triggers on push to its
+# default branch and delegates here:
+#
+#   jobs:
+#     release:
+#       uses: Klark-Morrigan/KMLib/.github/workflows/mod-release.yml@<tag>
+#       permissions:
+#         contents: write
+#       secrets: inherit
+#
+# All mod-specific values (id, version, runner label, zip name, jar path)
+# are derived inside this workflow from the consumer's mod_info.json via the
+# read-mod-info composite action - callers pass nothing. See:
+#   docs/dev/implementation/001-reusable-ci-release-workflows/problem.md
+#
+# The pipeline only does real work when mod_info.json's version differs from
+# the latest git tag, so an ordinary push (no version bump) costs one cheap
+# config job and stops.
+#
+# Job chain (each downstream job is gated on version-updated == true):
+#   config -> {ci-bash, ci-gradle} -> prepare-artifact -> create-tag -> create-release
+name: mod-release
+
+on:
+  workflow_call:
+    # No inputs: every variable is derived from the consumer's mod_info.json.
+    # secrets: inherit is documented for callers but not required here - the
+    # nested gates fall back to github.token when a secret is absent.
+    secrets:
+      sibling_checkout_token:
+        description: >
+          Optional token forwarded to the Gradle gate for cloning private
+          sibling repos. Absent for mods whose build needs no neighbours.
+        required: false
+
+# The release publishes a tag and a GitHub release, so it needs write access
+# to repository contents. A reusable workflow's permissions are capped by the
+# caller, so the consumer's release.yml must also grant contents: write.
+permissions:
+  contents: write
+
+jobs:
+  # Single cheap gate: derive every mod-specific value, decide whether a
+  # release is due, and enforce the versioning policy before anything is
+  # built. Runs on a hosted runner because reading mod_info.json and the
+  # changelog needs only jq + git, never the Starsector binaries.
+  config:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.check.outputs.version }}
+      version-updated: ${{ steps.check.outputs.version-updated }}
+      mod-id: ${{ steps.read.outputs.mod-id }}
+      zip-name: ${{ steps.read.outputs.zip-name }}
+      jar-source: ${{ steps.read.outputs.jar-source }}
+      # JSON label set for self-hosted jobs: a mod builds on its own runner
+      # (<mod-id>-runner) which carries STARSECTOR_HOME and the install.
+      runner-json: ${{ steps.runner.outputs.json }}
+    steps:
+      # Default checkout pulls the CONSUMER repo (the one that triggered the
+      # release), so mod_info.json and CHANGELOG.md below are the consumer's.
+      - name: Check out consumer repo
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        with:
+          fetch-tags: true
+
+      # KMLib's composite actions live in this workflow's home repo, not in
+      # the consumer checkout, so a local ./ ref would not resolve. Pull them
+      # into .kmlib/ and reference them from there. Pinned to master, matching
+      # the convention Common-Automation's ci-bash.yml uses for the same
+      # situation. Known tradeoff: the action LOGIC tracks KMLib master while
+      # the workflow CONTRACT is pinned by the caller's @tag. Acceptable -
+      # the actions are stable bash + jq; tighten to the workflow ref later
+      # if reproducibility of the scripts themselves ever matters.
+      - name: Check out KMLib actions
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        with:
+          repository: Klark-Morrigan/KMLib
+          ref: master
+          path: .kmlib
+          sparse-checkout: .github/actions
+          sparse-checkout-cone-mode: false
+
+      - name: Derive mod values from mod_info.json
+        id: read
+        uses: ./.kmlib/.github/actions/read-mod-info
+
+      - name: Compose self-hosted runner label set
+        id: runner
+        # read-mod-info emits the single label <mod-id>-runner; self-hosted
+        # jobs want the conventional [self-hosted, <label>] set as JSON so
+        # downstream fromJSON() decodes it into a runs-on array.
+        run: |
+          echo 'json=["self-hosted","${{ steps.read.outputs.runner-label }}"]' \
+            >> "$GITHUB_OUTPUT"
+
+      - name: Compare version to latest tag
+        id: check
+        uses: ./.kmlib/.github/actions/check-version
+
+      # Enforce the versioning policy only when a release is actually due:
+      # changelog section present, mod_info version matches, kmlib pin (if
+      # any) well-formed. A violation fails config and blocks every
+      # downstream job, so a drifted release can never publish.
+      - name: Validate versioning policy
+        if: steps.check.outputs.version-updated == 'true'
+        uses: ./.kmlib/.github/actions/validate-versioning
+        with:
+          version: ${{ steps.check.outputs.version }}
+
+  # Re-run the same PR gates before publishing. The merge that triggered this
+  # push already passed them, but re-gating the exact commit being released
+  # guards against a dirty master and keeps the release honest.
+  ci-bash:
+    needs: config
+    if: needs.config.outputs.version-updated == 'true'
+    uses: Klark-Morrigan/Common-Automation/.github/workflows/ci-bash.yml@master
+
+  ci-gradle:
+    needs: config
+    if: needs.config.outputs.version-updated == 'true'
+    uses: Klark-Morrigan/Common-Java/.github/workflows/_ci-gradle.yml@master
+    with:
+      # Build on the mod's own runner: it carries STARSECTOR_HOME and the
+      # install that starfarer.api.jar resolves against, which a hosted
+      # runner lacks. setup-java is off because that runner provides the JDK.
+      runs-on: ${{ needs.config.outputs.runner-json }}
+      gradle-tasks: coverage
+      setup-java: false
+    secrets: inherit
+
+  # Assemble the runtime payload and zip it. Runs on the mod's runner so the
+  # jar rebuild has the Starsector install on hand.
+  prepare-artifact:
+    needs: [config, ci-bash, ci-gradle]
+    if: needs.config.outputs.version-updated == 'true'
+    runs-on: ${{ fromJSON(needs.config.outputs.runner-json) }}
+    steps:
+      - name: Check out consumer repo
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+
+      - name: Set up Java 17
+        uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287 # v5.3.0
+        with:
+          java-version: '17'
+          distribution: temurin
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x gradlew
+
+      # Tests already passed in ci-gradle; rebuild only the jar for packaging.
+      - name: Build jar
+        run: ./gradlew jar --no-daemon --console=plain
+
+      # Copy only the runtime payload into dist/<mod-id>/ - no source, tests,
+      # docs/dev, build caches, or Gradle wrapper. Asset dirs are copied when
+      # present, so a jar-only utility (KMLib) and an asset-bearing content
+      # mod share one generic step.
+      - name: Assemble dist payload
+        env:
+          MOD_ID: ${{ needs.config.outputs.mod-id }}
+          JAR_SOURCE: ${{ needs.config.outputs.jar-source }}
+        run: |
+          set -euo pipefail
+          DIST="dist/${MOD_ID}"
+          mkdir -p "${DIST}/jars"
+          cp mod_info.json "${DIST}/"
+          for f in README.md CHANGELOG.md LICENSE; do
+            [ -f "${f}" ] && cp "${f}" "${DIST}/"
+          done
+          for d in data graphics sounds; do
+            [ -d "${d}" ] && cp -r "${d}" "${DIST}/"
+          done
+          cp "${JAR_SOURCE}" "${DIST}/jars/"
+
+      - name: Create release zip
+        env:
+          MOD_ID: ${{ needs.config.outputs.mod-id }}
+          ZIP_NAME: ${{ needs.config.outputs.zip-name }}
+        run: |
+          set -euo pipefail
+          cd dist
+          zip -r "../${ZIP_NAME}" "${MOD_ID}/"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: ${{ needs.config.outputs.zip-name }}
+          path: ${{ needs.config.outputs.zip-name }}
+          if-no-files-found: error
+
+  # Tag the released commit. Separate from create-release so the tag exists
+  # before the GitHub release references it.
+  create-tag:
+    needs: [config, prepare-artifact]
+    if: needs.config.outputs.version-updated == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out consumer repo
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+
+      - name: Push version tag
+        env:
+          VERSION: ${{ needs.config.outputs.version }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "${VERSION}"
+          git push origin "${VERSION}"
+
+  create-release:
+    needs: [config, prepare-artifact, create-tag]
+    if: needs.config.outputs.version-updated == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out consumer repo
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+
+      # The changelog-to-release tail (extract the version's section, fail on a
+      # missing section, attach assets) is stack-agnostic, so it lives in
+      # Common-Automation rather than being re-implemented per mod. Sparse-
+      # checkout both the actions and the lib/ that create-github-release
+      # sources (changelog.sh).
+      - name: Check out Common-Automation actions
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        with:
+          repository: Klark-Morrigan/Common-Automation
+          ref: master
+          path: .common-automation
+          sparse-checkout: |
+            .github/actions
+            .github/lib
+          sparse-checkout-cone-mode: false
+
+      - name: Download release artifact
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        with:
+          name: ${{ needs.config.outputs.zip-name }}
+
+      # Cut the release with the body taken from the matching CHANGELOG.md
+      # section and the built mod zip attached as the downloadable asset (the
+      # mod's actual distribution channel). The action fails on a missing
+      # section, so the body is never silently empty - also enforced earlier by
+      # validate-versioning, but this is the step that consumes it.
+      - name: Create GitHub release from changelog
+        uses: ./.common-automation/.github/actions/create-github-release
+        with:
+          version: ${{ needs.config.outputs.version }}
+          files: ${{ needs.config.outputs.zip-name }}
