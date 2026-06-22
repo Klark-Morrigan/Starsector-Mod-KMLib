@@ -62,8 +62,6 @@ scripts/
     mod_info.json
   actions/check-version/      - compares mod_info.json's version to
     the latest git tag; gates the release pipeline
-  actions/extract-changelog/  - writes a CHANGELOG.md section into
-    release-notes.md for the GitHub release body
   actions/validate-versioning/ - enforces the versioning policy at
     release time (changelog section, mod_info.json version match,
     kmlib dep SemVer pin)
@@ -93,17 +91,17 @@ that the hosted runner does not have.
   `mod_info.json`'s `.version` to the latest git tag in the caller
   checkout and emits `version` plus `version-updated`, which gates the
   release pipeline.
-- [extract-changelog](.github/actions/extract-changelog/action.yml)
-  takes a `version` input, extracts the matching `## [<version>]`
-  section from the caller's `CHANGELOG.md`, writes it to
-  `release-notes.md`, and emits that path as `notes-file`. Fails if the
-  section is missing rather than publishing an empty release body.
 - [validate-versioning](.github/actions/validate-versioning/action.yml)
   takes a `version` input and fails the release if the caller's
   `CHANGELOG.md` has no `## [<version>]` section, `mod_info.json`
   `.version` does not equal the input, or a declared `kmlib` dependency
   lacks a well-formed `MAJOR.MINOR.PATCH` `version`. Policy itself
   lives in [docs/dev/versioning.md](docs/dev/versioning.md).
+
+Cutting the GitHub release itself - extracting the `## [<version>]`
+section for the body and attaching the built mod zip - is delegated to
+Common-Automation's stack-agnostic `create-github-release` action.
+Only the three `mod_info.json`-coupled actions above live in KMLib.
 
 ## Build & Test
 
