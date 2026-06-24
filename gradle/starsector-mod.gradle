@@ -38,6 +38,11 @@ def apiJarFile = file("${configuredStarsectorRoot}/starsector-core/starfarer.api
 // provides it at runtime, like the API jar). Harmless for mods that do not
 // touch LWJGL types.
 def lwjglUtilJarFile = file("${configuredStarsectorRoot}/starsector-core/lwjgl_util.jar")
+// lwjgl.jar carries org.lwjgl.opengl.GL11, the raw OpenGL surface mods use to
+// draw on the campaign/combat views. compileOnly like the rest: the game
+// classloader always provides LWJGL at runtime. Shared here (not per-mod)
+// since more than one KM mod renders raw GL.
+def lwjglJarFile = file("${configuredStarsectorRoot}/starsector-core/lwjgl.jar")
 // log4j backs Global.getLogger(...), the logging channel every Starsector mod
 // uses. compileOnly for the same reason as the API jar: the game classloader
 // provides it at runtime. Shared here (not per-mod) since all KM mods log.
@@ -59,10 +64,12 @@ dependencies {
     // depend on KMLib - so the jar stays out of the produced artifact.
     compileOnly files(apiJarFile)
     compileOnly files(lwjglUtilJarFile)
+    compileOnly files(lwjglJarFile)
     compileOnly files(log4jJarFile)
 
     testCompileOnly files(apiJarFile)
     testCompileOnly files(lwjglUtilJarFile)
+    testCompileOnly files(lwjglJarFile)
     testCompileOnly files(log4jJarFile)
     testRuntimeOnly files(apiJarFile)
     testRuntimeOnly starsectorCoreJars
