@@ -28,12 +28,36 @@ import org.apache.log4j.Logger;
  * so a consumer without LunaLib simply must not call in here.
  */
 public final class KmLogging {
+    /**
+     * Library-wide fallback verbosity, used when a caller does not specify one
+     * and the LunaLib value is unavailable. WARN keeps warnings and errors
+     * while dropping routine INFO and diagnostic DEBUG lines as normal-play
+     * noise. Defined once here so no mod has to restate its default.
+     */
+    public static final Level DEFAULT_LEVEL = Level.WARN;
+
     private KmLogging() {
+    }
+
+    /**
+     * Registers a live binding using the library default level
+     * ({@link #DEFAULT_LEVEL}) as the fallback. Preferred entry point: a mod
+     * states only its own id, package, and field, never a default level.
+     *
+     * @param modId      the mod's LunaLib settings id; also the filter that
+     *                   restricts the binding to this mod's own changes
+     * @param loggerRoot the mod's top package (e.g. {@code "kmu"})
+     * @param fieldId    the LunaSettings field holding the level name
+     */
+    public static void bindToLunaSetting(String modId, String loggerRoot, String fieldId) {
+        bindToLunaSetting(modId, loggerRoot, fieldId, DEFAULT_LEVEL);
     }
 
     /**
      * Registers a live binding from a LunaLib level-name field to the
      * {@code loggerRoot} logger subtree, and applies the current value once.
+     * Takes an explicit fallback for the rare mod that wants a default other
+     * than {@link #DEFAULT_LEVEL}.
      *
      * @param modId      the mod's LunaLib settings id; also the filter that
      *                   restricts the binding to this mod's own changes

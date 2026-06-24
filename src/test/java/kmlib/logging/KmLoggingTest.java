@@ -73,6 +73,13 @@ final class KmLoggingTest {
     }
 
     @Test
+    void library_default_level_is_warn() {
+        // Pins the shared fallback used by the no-default bindToLunaSetting
+        // overload, so mods do not restate a default of their own.
+        assertThat(KmLogging.DEFAULT_LEVEL).isEqualTo(Level.WARN);
+    }
+
+    @Test
     void binding_ignores_changes_to_other_mods_settings() {
         // A change notification carrying a different mod id must not retune
         // this binding's logger subtree, so its explicit level stays unset.
