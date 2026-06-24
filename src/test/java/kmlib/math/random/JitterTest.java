@@ -1,4 +1,4 @@
-package kmlib.math;
+package kmlib.math.random;
 
 import org.junit.jupiter.api.Test;
 

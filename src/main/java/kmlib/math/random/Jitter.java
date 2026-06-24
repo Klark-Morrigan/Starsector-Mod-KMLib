@@ -1,4 +1,4 @@
-package kmlib.math;
+package kmlib.math.random;
 
 /**
  * Uniform random multiplier centred on {@code 1.0}, used by KM*
