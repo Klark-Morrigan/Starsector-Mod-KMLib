@@ -1,0 +1,2 @@
+command,class,tags,syntax,help
+kmlib_list_map_spoilers,kmlib.console.ListMapSpoilersCommand,"kmlib,debug,campaign",kmlib_list_map_spoilers,"Lists faction-owned (non-neutral) systems as a tree of system, entities, and factions; flags cut-off systems and hidden/undiscovered markets."

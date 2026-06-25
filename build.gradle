@@ -14,10 +14,22 @@ group = 'kmlib'
 // loaded and verified under test.
 def lunaLibJarFile = file("${project.ext.starsectorRoot}/mods/lunalib/jars/LunaLib.jar")
 
+// Soft dependency: compileOnly, and KMLib declares no Console Commands mod
+// dependency. Command classes load only when Console Commands reads KMLib's
+// commands.csv, so a game without it never touches these classes and KMLib
+// stays usable on its own. Resolved by glob since the install folder is
+// version-stamped.
+def consoleCommandsJars = fileTree(
+        dir: "${project.ext.starsectorRoot}/mods", include: ['**/jars/lw_Console.jar'])
+
 dependencies {
     compileOnly files(lunaLibJarFile)
     testCompileOnly files(lunaLibJarFile)
     testRuntimeOnly files(lunaLibJarFile)
+
+    compileOnly consoleCommandsJars
+    testCompileOnly consoleCommandsJars
+    testRuntimeOnly consoleCommandsJars
 }
 
 jacocoTestReport {
