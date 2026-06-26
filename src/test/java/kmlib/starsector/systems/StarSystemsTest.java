@@ -1,8 +1,11 @@
 package kmlib.starsector.systems;
 
+import com.fs.starfarer.api.campaign.CampaignFleetAPI;
+import com.fs.starfarer.api.campaign.PlanetAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.lwjgl.util.vector.Vector2f;
 
@@ -20,32 +23,36 @@ import static org.mockito.Mockito.when;
  *  - a system with no location is skipped.
  */
 final class StarSystemsTest {
-    @Test
-    void collects_each_system_position_as_xy() {
-        var sector = sectorWithSystemsAt(new float[] {10, 20}, new float[] {-5, 7});
 
-        var positions = StarSystems.getHyperspacePositions(sector);
+    @Nested
+    class GetHyperspacePositions {
+        @Test
+        void collects_each_system_position_as_xy() {
+            var sector = sectorWithSystemsAt(new float[] {10, 20}, new float[] {-5, 7});
 
-        assertThat(positions).hasSize(2);
-        assertThat(positions.get(0)).containsExactly(10.0, 20.0);
-        assertThat(positions.get(1)).containsExactly(-5.0, 7.0);
-    }
+            var positions = StarSystems.getHyperspacePositions(sector);
 
-    @Test
-    void null_sector_yields_no_positions() {
-        assertThat(StarSystems.getHyperspacePositions(null)).isEmpty();
-    }
+            assertThat(positions).hasSize(2);
+            assertThat(positions.get(0)).containsExactly(10.0, 20.0);
+            assertThat(positions.get(1)).containsExactly(-5.0, 7.0);
+        }
 
-    @Test
-    void systems_without_a_location_are_skipped() {
-        var located = mock(StarSystemAPI.class);
-        when(located.getLocation()).thenReturn(new Vector2f(1, 2));
-        var unlocated = mock(StarSystemAPI.class);
-        when(unlocated.getLocation()).thenReturn(null);
-        var sector = mock(SectorAPI.class);
-        when(sector.getStarSystems()).thenReturn(List.of(located, unlocated));
+        @Test
+        void null_sector_yields_no_positions() {
+            assertThat(StarSystems.getHyperspacePositions(null)).isEmpty();
+        }
 
-        assertThat(StarSystems.getHyperspacePositions(sector)).hasSize(1);
+        @Test
+        void systems_without_a_location_are_skipped() {
+            var located = mock(StarSystemAPI.class);
+            when(located.getLocation()).thenReturn(new Vector2f(1, 2));
+            var unlocated = mock(StarSystemAPI.class);
+            when(unlocated.getLocation()).thenReturn(null);
+            var sector = mock(SectorAPI.class);
+            when(sector.getStarSystems()).thenReturn(List.of(located, unlocated));
+
+            assertThat(StarSystems.getHyperspacePositions(sector)).hasSize(1);
+        }
     }
 
     private static SectorAPI sectorWithSystemsAt(float[]... points) {
