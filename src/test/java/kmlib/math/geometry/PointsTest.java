@@ -17,6 +17,12 @@ class PointsTest {
     }
 
     @Test
+    void computeDistanceArrayOverloadMatchesCoordinateForm() {
+        assertThat(Points.computeDistance(new double[] {1, 1}, new double[] {4, 5}))
+                .isEqualTo(5.0);
+    }
+
+    @Test
     void computeDistanceVectorOverloadMatchesCoordinateForm() {
         assertThat(Points.computeDistance(new Vector2f(1, 1), new Vector2f(4, 5)))
                 .isEqualTo(5.0);
