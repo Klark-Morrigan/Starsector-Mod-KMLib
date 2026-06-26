@@ -1,11 +1,6 @@
 package kmlib.starsector.intel;
 
-import java.util.List;
-
 import com.fs.starfarer.api.Global;
-import com.fs.starfarer.api.campaign.SectorAPI;
-import com.fs.starfarer.api.campaign.comm.IntelInfoPlugin;
-import com.fs.starfarer.api.campaign.comm.IntelManagerAPI;
 
 import kmlib.starsector.time.StarsectorClock;
 

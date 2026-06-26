@@ -2,14 +2,14 @@ package kmlib.starsector.factions;
 
 import com.fs.starfarer.api.campaign.FactionAPI;
 
+import kmlib.starsector.factions.StarsectorPlayerFactionResolver.PlayerFactionSource;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.util.HashSet;
 import java.util.Set;
-
-import kmlib.starsector.factions.StarsectorPlayerFactionResolver.PlayerFactionSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

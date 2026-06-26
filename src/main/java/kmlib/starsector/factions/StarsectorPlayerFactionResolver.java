@@ -4,12 +4,12 @@ import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.util.Misc;
 
+import kmlib.text.KmlibStrings;
+
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
-
-import kmlib.text.KmlibStrings;
 
 /**
  * Faction-display-name plumbing centralised in one place so every

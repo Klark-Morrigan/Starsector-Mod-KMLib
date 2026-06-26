@@ -1,7 +1,5 @@
 package kmlib.starsector.intel;
 
-import java.util.Set;
-
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.CampaignClockAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;

@@ -2,11 +2,11 @@ package kmlib.starsector.strings;
 
 import com.fs.starfarer.api.Global;
 
+import kmlib.text.KmlibStrings;
+
 import java.util.IllegalFormatException;
 import java.util.Locale;
 import java.util.Objects;
-
-import kmlib.text.KmlibStrings;
 
 /**
  * Defensive wrapper around Starsector's

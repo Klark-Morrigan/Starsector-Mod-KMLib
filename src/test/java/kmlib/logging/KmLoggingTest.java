@@ -1,6 +1,7 @@
 package kmlib.logging;
 
 import kmlib.logging.KmLogging.LunaLogBinding;
+
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.junit.jupiter.api.Test;

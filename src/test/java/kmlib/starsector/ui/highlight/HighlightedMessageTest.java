@@ -1,13 +1,14 @@
 package kmlib.starsector.ui.highlight;
 
 import com.fs.starfarer.api.impl.campaign.intel.MessageIntel;
+
 import kmlib.starsector.testing.StarsectorSettingsFake;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.awt.Color;
-import java.lang.reflect.Field;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;

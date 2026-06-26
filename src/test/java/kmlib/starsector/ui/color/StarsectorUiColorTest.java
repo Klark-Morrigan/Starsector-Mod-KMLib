@@ -1,9 +1,10 @@
 package kmlib.starsector.ui.color;
 
 import com.fs.starfarer.api.util.Misc;
+
 import kmlib.starsector.testing.StarsectorSettingsFake;
+
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
 import java.awt.Color;

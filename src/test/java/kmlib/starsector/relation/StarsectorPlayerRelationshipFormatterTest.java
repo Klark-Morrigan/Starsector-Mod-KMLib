@@ -4,7 +4,7 @@ import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.RepLevel;
 import com.fs.starfarer.api.characters.RelationshipAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Factions;
-import kmlib.starsector.relation.StarsectorPlayerRelationshipFormatter.RelationshipSummary;
+
 import org.junit.jupiter.api.Test;
 
 import java.awt.Color;

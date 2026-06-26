@@ -2,6 +2,7 @@ package kmlib.starsector.ui.tooltip;
 
 import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import com.fs.starfarer.api.ui.UIComponentAPI;
+
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
