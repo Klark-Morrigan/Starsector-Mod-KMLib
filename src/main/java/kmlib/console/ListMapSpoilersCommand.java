@@ -1,12 +1,12 @@
 package kmlib.console;
 
 import com.fs.starfarer.api.Global;
-import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
-import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
+
+import kmlib.console.validation.CommandValidation;
 
 import org.lazywizard.console.BaseCommand;
 import org.lazywizard.console.Console;
@@ -33,9 +33,11 @@ public final class ListMapSpoilersCommand implements BaseCommand {
 
     @Override
     public CommandResult runCommand(String args, CommandContext context) {
-        if (!context.isInCampaign()) {
-            Console.showMessage("kmlib_list_map_spoilers can only run in a campaign.");
-            return CommandResult.WRONG_CONTEXT;
+        var command = new CommandValidation(context, args)
+                .inCampaign()
+                .validateAndPrintFeedback();
+        if (!command.isValid()) {
+            return command.getResult();
         }
         Console.showMessage(buildReport(Global.getSector()));
         return CommandResult.SUCCESS;
