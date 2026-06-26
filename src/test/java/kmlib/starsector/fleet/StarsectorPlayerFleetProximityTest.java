@@ -4,7 +4,6 @@ import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.CampaignFleetAPI;
 import com.fs.starfarer.api.campaign.PlanetAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
-import com.fs.starfarer.api.util.Misc;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,8 +11,6 @@ import org.junit.jupiter.api.Test;
 import org.lwjgl.util.vector.Vector2f;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
-
-import kmlib.starsector.testing.StarsectorSettingsFake;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -29,8 +26,8 @@ import static org.mockito.Mockito.mockStatic;
  *
  * <p>Tests stub {@code Global.getSector()} via a static mock and feed
  * real {@link Vector2f} locations so the underlying
- * {@code Misc.getDistance} math runs unmocked - the distance arithmetic
- * is not what's under test, only the predicate around it.
+ * {@code Points.computeDistance} math runs unmocked - the distance
+ * arithmetic is not what's under test, only the predicate around it.
  */
 class StarsectorPlayerFleetProximityTest {
 
@@ -39,18 +36,6 @@ class StarsectorPlayerFleetProximityTest {
 
     @BeforeEach
     void setUp() {
-        // Install the fake SettingsAPI before the first Misc.getDistance
-        // call: Misc's static initialiser reads colours / floats off
-        // Global.getSettings() and an NPE there poisons class init for
-        // the whole test JVM, cascading into every other test that
-        // touches Misc.
-        StarsectorSettingsFake.installSettings();
-        // Force Misc.<clinit> while Global.getSettings() still resolves
-        // to the fake we just installed. After mockStatic(Global.class)
-        // takes over, Global.getSettings() returns null, so eager
-        // class-loading here is what keeps the static initialiser
-        // happy on first call from the test body.
-        Misc.random.getClass();
         sector = mock(SectorAPI.class);
         globalStatic = mockStatic(Global.class);
         globalStatic.when(Global::getSector).thenReturn(sector);
@@ -59,7 +44,6 @@ class StarsectorPlayerFleetProximityTest {
     @AfterEach
     void tearDown() {
         globalStatic.close();
-        StarsectorSettingsFake.clearSettings();
     }
 
     @Test

@@ -1,9 +1,10 @@
 package kmlib.starsector.fleet;
 
 import com.fs.starfarer.api.Global;
-import com.fs.starfarer.api.campaign.CampaignFleetAPI;
 import com.fs.starfarer.api.campaign.PlanetAPI;
-import com.fs.starfarer.api.util.Misc;
+
+import kmlib.math.geometry.Points;
+
 
 /**
  * Player-fleet-to-planet proximity helper. Centralises the
@@ -52,7 +53,10 @@ public final class StarsectorPlayerFleetProximity {
         if (playerFleet == null) {
             return false;
         }
-        float distance = Misc.getDistance(playerFleet, planet);
+        var fleetLocation = playerFleet.getLocation();
+        var planetLocation = planet.getLocation();
+        var distance = Points.computeDistance(fleetLocation.x, fleetLocation.y,
+                planetLocation.x, planetLocation.y);
         return distance <= planet.getRadius() + orbitOffset;
     }
 }
