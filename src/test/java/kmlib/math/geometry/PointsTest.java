@@ -27,4 +27,23 @@ class PointsTest {
         assertThat(Points.computeDistance(new Vector2f(1, 1), new Vector2f(4, 5)))
                 .isEqualTo(5.0);
     }
+
+    @Test
+    void computeAngleDegreesVectorOverloadMatchesCoordinateForm() {
+        assertThat(Points.computeAngleDegrees(new Vector2f(0, 0), new Vector2f(1, 1)))
+                .isEqualTo(45.0);
+    }
+
+    @Test
+    void computeAngleDegreesIsCounterClockwiseFromPositiveX() {
+        assertThat(Points.computeAngleDegrees(0, 0, 1, 1)).isEqualTo(45.0);
+        assertThat(Points.computeAngleDegrees(0, 0, 0, 1)).isEqualTo(90.0);
+        assertThat(Points.computeAngleDegrees(0, 0, -1, 0)).isEqualTo(180.0);
+    }
+
+    @Test
+    void computeAngleDegreesIsRelativeToTheFirstPoint() {
+        assertThat(Points.computeAngleDegrees(2, 2, 5, 6)).isCloseTo(53.13,
+                org.assertj.core.api.Assertions.within(0.01));
+    }
 }

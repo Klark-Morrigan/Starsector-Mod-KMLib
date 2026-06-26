@@ -43,4 +43,21 @@ public final class Points {
         return computeDistance(a.x, a.y, b.x, b.y);
     }
 
+    /**
+     * The bearing in degrees from {@code (x1, y1)} to {@code (x2, y2)},
+     * measured counter-clockwise from the positive x-axis, in the range
+     * {@code (-180, 180]}. Coincident points yield 0.
+     */
+    public static double computeAngleDegrees(double x1, double y1, double x2, double y2) {
+        return Math.toDegrees(Math.atan2(y2 - y1, x2 - x1));
+    }
+
+    /**
+     * The bearing in degrees from {@code a} to {@code b}, measured
+     * counter-clockwise from the positive x-axis, in the range
+     * {@code (-180, 180]}. Coincident points yield 0.
+     */
+    public static double computeAngleDegrees(Vector2f a, Vector2f b) {
+        return computeAngleDegrees(a.x, a.y, b.x, b.y);
+    }
 }

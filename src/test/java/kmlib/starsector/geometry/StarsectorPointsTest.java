@@ -34,6 +34,23 @@ class StarsectorPointsTest {
         assertThat(StarsectorPoints.computeDistanceBetween(a, b)).isZero();
     }
 
+    @Test
+    void computeAngleDegreesBetweenIsCounterClockwiseFromPositiveX() {
+        var from = entityAt(0f, 0f);
+        var to = entityAt(1f, 1f);
+
+        assertThat(StarsectorPoints.computeAngleDegreesBetween(from, to)).isEqualTo(45.0);
+    }
+
+    @Test
+    void computeAngleDegreesBetweenIsRelativeToTheFromEntity() {
+        var from = entityAt(2f, 2f);
+        var to = entityAt(5f, 6f);
+
+        assertThat(StarsectorPoints.computeAngleDegreesBetween(from, to))
+                .isCloseTo(53.13, within(0.01));
+    }
+
     private SectorEntityToken entityAt(float x, float y) {
         var entity = mock(SectorEntityToken.class);
         Mockito.when(entity.getLocation()).thenReturn(new Vector2f(x, y));

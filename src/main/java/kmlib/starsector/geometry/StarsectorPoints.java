@@ -6,6 +6,9 @@ import kmlib.math.geometry.Points;
 
 
 /**
+ * Distance and bearing between Starsector campaign entities - the
+ * game-typed sibling of {@link Points}.
+ *
  * <p>{@code Misc.getDistance} accepts these same types, but its
  * declaring class has a static initialiser that needs a booted game, so
  * it drags the full runtime into any caller. {@link SectorEntityToken}
@@ -28,5 +31,14 @@ public final class StarsectorPoints {
      */
     public static double computeDistanceBetween(SectorEntityToken a, SectorEntityToken b) {
         return Points.computeDistance(a.getLocation(), b.getLocation());
+    }
+
+    /**
+     * The bearing in degrees from {@code from} to {@code to}, measured
+     * counter-clockwise from the positive x-axis, in the range
+     * {@code (-180, 180]}. Coincident locations yield 0.
+     */
+    public static double computeAngleDegreesBetween(SectorEntityToken from, SectorEntityToken to) {
+        return Points.computeAngleDegrees(from.getLocation(), to.getLocation());
     }
 }
