@@ -65,4 +65,28 @@ public final class StarSystems {
         }
         return sector.getPlayerFleet().getStarSystem();
     }
+
+    /**
+     * The first entity in {@code system} carrying {@code entityTag} whose id
+     * equals {@code id} - the targeted "find this one tagged entity" lookup
+     * console commands and scripts need (e.g. a specific gate or comm relay),
+     * so callers do not re-walk {@code getEntitiesWithTag} themselves.
+     *
+     * @param system the star system to search; null yields null
+     * @param entityTag the entity tag to filter on (e.g. {@code Tags.GATE})
+     * @param id the entity id to match exactly; null or blank yields null
+     * @return the first matching entity, or null when none in {@code system}
+     *         carries {@code entityTag} with that id
+     */
+    public static SectorEntityToken find(StarSystemAPI system, String entityTag, String id) {
+        if (system == null || !KmlibStrings.hasText(id)) {
+            return null;
+        }
+        for (var entity : system.getEntitiesWithTag(entityTag)) {
+            if (id.equals(entity.getId())) {
+                return entity;
+            }
+        }
+        return null;
+    }
 }

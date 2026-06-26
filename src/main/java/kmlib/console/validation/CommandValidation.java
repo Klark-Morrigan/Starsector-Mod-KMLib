@@ -21,6 +21,7 @@ import java.util.function.Supplier;
  * CommandValidationResult command = new CommandValidation(context, args)
  *         .inCampaign()
  *         .inSystem()
+ *         .hasArguments()
  *         .validateAndPrintFeedback();
  * if (!command.isValid()) {
  *     return command.getResult();
@@ -60,6 +61,14 @@ public final class CommandValidation {
                 ? null
                 : new Failure("This command must be run inside a star system.",
                         CommandResult.WRONG_CONTEXT));
+        return this;
+    }
+
+    public CommandValidation hasArguments() {
+        checks.add(() -> KmlibStrings.hasText(args)
+                ? null
+                : new Failure("This command requires an argument. Execute help <command_name>.",
+                        CommandResult.BAD_SYNTAX));
         return this;
     }
 

@@ -3,6 +3,7 @@ package kmlib.starsector.systems;
 import com.fs.starfarer.api.campaign.CampaignFleetAPI;
 import com.fs.starfarer.api.campaign.PlanetAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
+import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 
 import org.junit.jupiter.api.Nested;
@@ -90,6 +91,53 @@ final class StarSystemsTest {
 
             assertThat(StarSystems.getPlayerStarSystem(sectorMock)).isNull();
         }
+    }
+
+    @Nested
+    class Find {
+        @Test
+        void returns_the_tagged_entity_whose_id_matches() {
+            var gate = buildEntity("alpha-gate");
+            var other = buildEntity("beta-gate");
+            var systemMock = mock(StarSystemAPI.class);
+            when(systemMock.getEntitiesWithTag("gate")).thenReturn(List.of(other, gate));
+
+            assertThat(StarSystems.find(systemMock, "gate", "alpha-gate")).isSameAs(gate);
+        }
+
+        @Test
+        void returns_null_when_no_tagged_entity_has_the_id() {
+            var other = buildEntity("beta-gate");
+            var systemMock = mock(StarSystemAPI.class);
+            when(systemMock.getEntitiesWithTag("gate")).thenReturn(List.of(other));
+
+            assertThat(StarSystems.find(systemMock, "gate", "alpha-gate")).isNull();
+        }
+
+        @Test
+        void returns_null_for_a_null_system() {
+            assertThat(StarSystems.find(null, "gate", "alpha-gate")).isNull();
+        }
+
+        @Test
+        void returns_null_for_a_blank_id() {
+            var systemMock = mock(StarSystemAPI.class);
+
+            assertThat(StarSystems.find(systemMock, "gate", " ")).isNull();
+        }
+
+        @Test
+        void returns_null_for_a_null_id() {
+            var systemMock = mock(StarSystemAPI.class);
+
+            assertThat(StarSystems.find(systemMock, "gate", null)).isNull();
+        }
+    }
+
+    private static SectorEntityToken buildEntity(String id) {
+        var entityMock = mock(SectorEntityToken.class);
+        when(entityMock.getId()).thenReturn(id);
+        return entityMock;
     }
 
     private static SectorAPI buildSectorWithSystemsAt(float[]... points) {
