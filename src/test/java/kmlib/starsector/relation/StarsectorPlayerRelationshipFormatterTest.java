@@ -27,15 +27,15 @@ class StarsectorPlayerRelationshipFormatterTest {
 
     @Test
     void formatsDescriptionAndColorViaRelationshipApiPath() {
-        var relationship = mock(RelationshipAPI.class);
-        when(relationship.getLevel()).thenReturn(RepLevel.VENGEFUL);
-        when(relationship.getRepInt()).thenReturn(-100);
-        when(relationship.getRelColor()).thenReturn(RED);
+        var relationshipMock = mock(RelationshipAPI.class);
+        when(relationshipMock.getLevel()).thenReturn(RepLevel.VENGEFUL);
+        when(relationshipMock.getRepInt()).thenReturn(-100);
+        when(relationshipMock.getRelColor()).thenReturn(RED);
 
-        var faction = mock(FactionAPI.class);
-        when(faction.getRelToPlayer()).thenReturn(relationship);
+        var factionMock = mock(FactionAPI.class);
+        when(factionMock.getRelToPlayer()).thenReturn(relationshipMock);
 
-        var result = formatPlayerRelationship(faction);
+        var result = formatPlayerRelationship(factionMock);
 
         assertThat(result.getDescription()).isEqualTo("Vengeful (-100 / 100)");
         assertThat(result.getColor()).isEqualTo(RED);
@@ -43,15 +43,15 @@ class StarsectorPlayerRelationshipFormatterTest {
 
     @Test
     void fallsBackToFactionRelationshipWhenRelToPlayerIsNull() {
-        var faction = mock(FactionAPI.class);
+        var factionMock = mock(FactionAPI.class);
         // getRelToPlayer defaults to null, triggering the fallback path.
         // Stub the faction-level colour so the resolver does NOT reach the
         // Misc.getRelColor fallback - Misc reads from the static palette
         // (Global.getSettings()) which is not initialised in unit tests.
-        when(faction.getRelationship(Factions.PLAYER)).thenReturn(0.0f);
-        when(faction.getRelColor(Factions.PLAYER)).thenReturn(RED);
+        when(factionMock.getRelationship(Factions.PLAYER)).thenReturn(0.0f);
+        when(factionMock.getRelColor(Factions.PLAYER)).thenReturn(RED);
 
-        var result = formatPlayerRelationship(faction);
+        var result = formatPlayerRelationship(factionMock);
 
         // Level name varies by Starsector version; verify only the numeric format.
         assertThat(result.getDescription()).isNotNull().contains("/ 100");

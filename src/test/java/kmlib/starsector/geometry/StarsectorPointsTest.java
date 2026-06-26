@@ -52,8 +52,8 @@ class StarsectorPointsTest {
     }
 
     private SectorEntityToken entityAt(float x, float y) {
-        var entity = mock(SectorEntityToken.class);
-        Mockito.when(entity.getLocation()).thenReturn(new Vector2f(x, y));
-        return entity;
+        var entityMock = mock(SectorEntityToken.class);
+        Mockito.when(entityMock.getLocation()).thenReturn(new Vector2f(x, y));
+        return entityMock;
     }
 }

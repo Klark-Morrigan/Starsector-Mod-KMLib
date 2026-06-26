@@ -25,8 +25,8 @@ import static org.mockito.Mockito.when;
 
 class HighlightedParagraphTest {
 
-    private TextPanelAPI panel;
-    private LabelAPI label;
+    private TextPanelAPI panelMock;
+    private LabelAPI labelMock;
 
     @BeforeEach
     void setUp() {
@@ -34,11 +34,11 @@ class HighlightedParagraphTest {
         // routes through Misc. SettingsAPI must be installed before
         // Misc.<clinit> runs.
         StarsectorSettingsFake.installSettings();
-        panel = mock(TextPanelAPI.class);
-        label = mock(LabelAPI.class);
-        when(panel.addPara(anyString(), any(Color.class))).thenReturn(label);
-        when(panel.addPara(anyString(), any(Color.class), any(Color.class), any(String[].class)))
-                .thenReturn(label);
+        panelMock = mock(TextPanelAPI.class);
+        labelMock = mock(LabelAPI.class);
+        when(panelMock.addPara(anyString(), any(Color.class))).thenReturn(labelMock);
+        when(panelMock.addPara(anyString(), any(Color.class), any(Color.class), any(String[].class)))
+                .thenReturn(labelMock);
     }
 
     @AfterEach
@@ -85,15 +85,15 @@ class HighlightedParagraphTest {
     void addToWithoutHighlightsUsesTheSimpleAddParaOverload() {
         var paragraph = new HighlightedParagraph("Plain text", Color.WHITE);
 
-        paragraph.addTo(panel);
+        paragraph.addTo(panelMock);
 
-        verify(panel).addPara("Plain text", Color.WHITE);
+        verify(panelMock).addPara("Plain text", Color.WHITE);
         // The highlight-bearing overload must not fire when there is
         // nothing to highlight - otherwise the engine would receive
         // an empty highlight array unnecessarily.
-        verify(panel, never()).addPara(
+        verify(panelMock, never()).addPara(
                 anyString(), any(Color.class), any(Color.class), any(String[].class));
-        verify(panel, never()).setHighlightColorsInLastPara(any(Color[].class));
+        verify(panelMock, never()).setHighlightColorsInLastPara(any(Color[].class));
     }
 
     @Test
@@ -105,10 +105,10 @@ class HighlightedParagraphTest {
                 new Highlight("Landing Pad", Color.YELLOW),
                 new Highlight("5,000 cr", Color.YELLOW));
 
-        paragraph.addTo(panel);
+        paragraph.addTo(panelMock);
 
         var highlights = ArgumentCaptor.forClass(String[].class);
-        verify(panel).addPara(
+        verify(panelMock).addPara(
                 eq("host: %s pad: Landing Pad cost: %s"),
                 eq(Color.WHITE),
                 eq(Color.RED), // first highlight's colour - safe fallback
@@ -117,42 +117,42 @@ class HighlightedParagraphTest {
                 "the Hegemony's", "Landing Pad", "5,000 cr");
 
         var colors = ArgumentCaptor.forClass(Color[].class);
-        verify(panel).setHighlightColorsInLastPara(colors.capture());
+        verify(panelMock).setHighlightColorsInLastPara(colors.capture());
         assertThat(colors.getValue()).containsExactly(Color.RED, Color.YELLOW, Color.YELLOW);
     }
 
     @Test
     void addToTooltipWithoutPadDefaultsToZero() {
-        var tooltip = mock(TooltipMakerAPI.class);
-        when(tooltip.addPara(anyString(), any(Color.class), eq(0f))).thenReturn(label);
+        var tooltipMock = mock(TooltipMakerAPI.class);
+        when(tooltipMock.addPara(anyString(), any(Color.class), eq(0f))).thenReturn(labelMock);
         var paragraph = new HighlightedParagraph("text", Color.WHITE);
 
-        paragraph.addTo(tooltip);
+        paragraph.addTo(tooltipMock);
 
-        verify(tooltip).addPara("text", Color.WHITE, 0f);
+        verify(tooltipMock).addPara("text", Color.WHITE, 0f);
     }
 
     @Test
     void addToTooltipDelegatesAddParaThenAppliesHighlightsToTheReturnedLabel() {
-        var tooltip = mock(TooltipMakerAPI.class);
-        when(tooltip.addPara(anyString(), any(Color.class), eq(8f))).thenReturn(label);
+        var tooltipMock = mock(TooltipMakerAPI.class);
+        when(tooltipMock.addPara(anyString(), any(Color.class), eq(8f))).thenReturn(labelMock);
         var paragraph = new HighlightedParagraph(
                 "text",
                 Color.WHITE,
                 new Highlight("a", Color.RED),
                 new Highlight("b", Color.YELLOW));
 
-        var returned = paragraph.addTo(tooltip, 8f);
+        var returned = paragraph.addTo(tooltipMock, 8f);
 
-        assertThat(returned).isSameAs(label);
-        verify(tooltip).addPara("text", Color.WHITE, 8f);
+        assertThat(returned).isSameAs(labelMock);
+        verify(tooltipMock).addPara("text", Color.WHITE, 8f);
         // Highlights flow through the returned label, not through a
         // panel-side setter the way TextPanelAPI handles them.
         var texts = ArgumentCaptor.forClass(String[].class);
-        verify(label).setHighlight(texts.capture());
+        verify(labelMock).setHighlight(texts.capture());
         assertThat(texts.getValue()).containsExactly("a", "b");
         var colors = ArgumentCaptor.forClass(Color[].class);
-        verify(label).setHighlightColors(colors.capture());
+        verify(labelMock).setHighlightColors(colors.capture());
         assertThat(colors.getValue()).containsExactly(Color.RED, Color.YELLOW);
     }
 
@@ -163,14 +163,14 @@ class HighlightedParagraphTest {
                 new Highlight("a", Color.RED),
                 new Highlight("b", Color.WHITE));
 
-        paragraph.applyTo(label);
+        paragraph.applyTo(labelMock);
 
         var texts = ArgumentCaptor.forClass(String[].class);
-        verify(label).setHighlight(texts.capture());
+        verify(labelMock).setHighlight(texts.capture());
         assertThat(texts.getValue()).containsExactly("a", "b");
 
         var colors = ArgumentCaptor.forClass(Color[].class);
-        verify(label).setHighlightColors(colors.capture());
+        verify(labelMock).setHighlightColors(colors.capture());
         assertThat(colors.getValue()).containsExactly(Color.RED, Color.WHITE);
     }
 
@@ -178,9 +178,9 @@ class HighlightedParagraphTest {
     void applyToIsANoopForAParagraphWithNoHighlights() {
         var paragraph = new HighlightedParagraph("text");
 
-        paragraph.applyTo(label);
+        paragraph.applyTo(labelMock);
 
-        verify(label, never()).setHighlight(any(String[].class));
-        verify(label, never()).setHighlightColors(any(Color[].class));
+        verify(labelMock, never()).setHighlight(any(String[].class));
+        verify(labelMock, never()).setHighlightColors(any(Color[].class));
     }
 }

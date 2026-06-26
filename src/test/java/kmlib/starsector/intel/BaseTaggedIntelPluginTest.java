@@ -29,25 +29,25 @@ import static org.mockito.Mockito.when;
  */
 class BaseTaggedIntelPluginTest {
 
-    private MockedStatic<Global> globalStatic;
+    private MockedStatic<Global> globalMock;
 
     @BeforeEach
     void setUp() {
         // BaseIntelPlugin.getIntelTags reads Global.getSector().getClock()
         // for the "New" derivation. Stub a zero-timestamp clock so the
         // tag-merge path under test can call through super without NPEing.
-        var clock = mock(CampaignClockAPI.class);
-        when(clock.getTimestamp()).thenReturn(0L);
-        var sector = mock(SectorAPI.class);
-        when(sector.getClock()).thenReturn(clock);
+        var clockMock = mock(CampaignClockAPI.class);
+        when(clockMock.getTimestamp()).thenReturn(0L);
+        var sectorMock = mock(SectorAPI.class);
+        when(sectorMock.getClock()).thenReturn(clockMock);
 
-        globalStatic = mockStatic(Global.class);
-        globalStatic.when(Global::getSector).thenReturn(sector);
+        globalMock = mockStatic(Global.class);
+        globalMock.when(Global::getSector).thenReturn(sectorMock);
     }
 
     @AfterEach
     void tearDown() {
-        globalStatic.close();
+        globalMock.close();
     }
 
     @Test

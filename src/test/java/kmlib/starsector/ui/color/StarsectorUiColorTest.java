@@ -22,8 +22,8 @@ class StarsectorUiColorTest {
         // the class - otherwise instrumentation triggers class init and
         // explodes on an NPE deep inside Misc's static fields.
         StarsectorSettingsFake.installSettings();
-        try (var misc = Mockito.mockStatic(Misc.class)) {
-            misc.when(Misc::getHighlightColor).thenReturn(expected);
+        try (var miscMock = Mockito.mockStatic(Misc.class)) {
+            miscMock.when(Misc::getHighlightColor).thenReturn(expected);
 
             assertThat(StarsectorUiColor.VANILLA_HIGHLIGHT_GOLD.resolve())
                     .isEqualTo(expected);
@@ -44,8 +44,8 @@ class StarsectorUiColorTest {
         // accessors; surfacing that as an NPE with the enum name beats
         // letting a null Color propagate into UI code.
         StarsectorSettingsFake.installSettings();
-        try (var misc = Mockito.mockStatic(Misc.class)) {
-            misc.when(Misc::getHighlightColor).thenReturn(null);
+        try (var miscMock = Mockito.mockStatic(Misc.class)) {
+            miscMock.when(Misc::getHighlightColor).thenReturn(null);
 
             assertThatNullPointerException()
                     .isThrownBy(StarsectorUiColor.VANILLA_HIGHLIGHT_GOLD::resolve)

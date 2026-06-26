@@ -31,19 +31,19 @@ import static org.mockito.Mockito.mockStatic;
  */
 class StarsectorPlayerFleetProximityTest {
 
-    private MockedStatic<Global> globalStatic;
-    private SectorAPI sector;
+    private MockedStatic<Global> globalMock;
+    private SectorAPI sectorMock;
 
     @BeforeEach
     void setUp() {
-        sector = mock(SectorAPI.class);
-        globalStatic = mockStatic(Global.class);
-        globalStatic.when(Global::getSector).thenReturn(sector);
+        sectorMock = mock(SectorAPI.class);
+        globalMock = mockStatic(Global.class);
+        globalMock.when(Global::getSector).thenReturn(sectorMock);
     }
 
     @AfterEach
     void tearDown() {
-        globalStatic.close();
+        globalMock.close();
     }
 
     @Test
@@ -119,7 +119,7 @@ class StarsectorPlayerFleetProximityTest {
         // Pre-game-load / teardown safety: a null sector means there
         // is no player fleet to consult, so the predicate falls into
         // the same "not in orbit" branch as a null fleet.
-        globalStatic.when(Global::getSector).thenReturn(null);
+        globalMock.when(Global::getSector).thenReturn(null);
         var planet = planetAt(0f, 0f, 100f);
 
         assertThat(StarsectorPlayerFleetProximity.isPlayerFleetInOrbitOf(planet, 200f))
@@ -127,15 +127,15 @@ class StarsectorPlayerFleetProximityTest {
     }
 
     private PlanetAPI planetAt(float x, float y, float radius) {
-        var planet = mock(PlanetAPI.class);
-        Mockito.when(planet.getLocation()).thenReturn(new Vector2f(x, y));
-        Mockito.when(planet.getRadius()).thenReturn(radius);
-        return planet;
+        var planetMock = mock(PlanetAPI.class);
+        Mockito.when(planetMock.getLocation()).thenReturn(new Vector2f(x, y));
+        Mockito.when(planetMock.getRadius()).thenReturn(radius);
+        return planetMock;
     }
 
     private void stubPlayerFleetAt(float x, float y) {
-        var fleet = mock(CampaignFleetAPI.class);
-        Mockito.when(fleet.getLocation()).thenReturn(new Vector2f(x, y));
-        Mockito.when(sector.getPlayerFleet()).thenReturn(fleet);
+        var fleetMock = mock(CampaignFleetAPI.class);
+        Mockito.when(fleetMock.getLocation()).thenReturn(new Vector2f(x, y));
+        Mockito.when(sectorMock.getPlayerFleet()).thenReturn(fleetMock);
     }
 }

@@ -28,7 +28,7 @@ final class StarSystemsTest {
     class GetHyperspacePositions {
         @Test
         void collects_each_system_position_as_xy() {
-            var sector = sectorWithSystemsAt(new float[] {10, 20}, new float[] {-5, 7});
+            var sector = buildSectorWithSystemsAt(new float[] {10, 20}, new float[] {-5, 7});
 
             var positions = StarSystems.getHyperspacePositions(sector);
 
@@ -44,14 +44,14 @@ final class StarSystemsTest {
 
         @Test
         void systems_without_a_location_are_skipped() {
-            var located = mock(StarSystemAPI.class);
-            when(located.getLocation()).thenReturn(new Vector2f(1, 2));
-            var unlocated = mock(StarSystemAPI.class);
-            when(unlocated.getLocation()).thenReturn(null);
-            var sector = mock(SectorAPI.class);
-            when(sector.getStarSystems()).thenReturn(List.of(located, unlocated));
+            var locatedMock = mock(StarSystemAPI.class);
+            when(locatedMock.getLocation()).thenReturn(new Vector2f(1, 2));
+            var unlocatedMock = mock(StarSystemAPI.class);
+            when(unlocatedMock.getLocation()).thenReturn(null);
+            var sectorMock = mock(SectorAPI.class);
+            when(sectorMock.getStarSystems()).thenReturn(List.of(locatedMock, unlocatedMock));
 
-            assertThat(StarSystems.getHyperspacePositions(sector)).hasSize(1);
+            assertThat(StarSystems.getHyperspacePositions(sectorMock)).hasSize(1);
         }
     }
 
@@ -59,48 +59,48 @@ final class StarSystemsTest {
     class GetPlayerStarSystem {
         @Test
         void returns_the_fleets_system() {
-            var system = mock(StarSystemAPI.class);
-            var fleet = mock(CampaignFleetAPI.class);
-            when(fleet.getStarSystem()).thenReturn(system);
-            var sector = mock(SectorAPI.class);
-            when(sector.getPlayerFleet()).thenReturn(fleet);
+            var systemMock = mock(StarSystemAPI.class);
+            var fleetMock = mock(CampaignFleetAPI.class);
+            when(fleetMock.getStarSystem()).thenReturn(systemMock);
+            var sectorMock = mock(SectorAPI.class);
+            when(sectorMock.getPlayerFleet()).thenReturn(fleetMock);
 
-            assertThat(StarSystems.getPlayerStarSystem(sector)).isSameAs(system);
+            assertThat(StarSystems.getPlayerStarSystem(sectorMock)).isSameAs(systemMock);
         }
 
         @Test
-        void is_null_for_a_null_sector() {
+        void returns_null_for_a_null_sector() {
             assertThat(StarSystems.getPlayerStarSystem(null)).isNull();
         }
 
         @Test
-        void is_null_without_a_player_fleet() {
-            var sector = mock(SectorAPI.class);
-            when(sector.getPlayerFleet()).thenReturn(null);
+        void returns_null_without_a_player_fleet() {
+            var sectorMock = mock(SectorAPI.class);
+            when(sectorMock.getPlayerFleet()).thenReturn(null);
 
-            assertThat(StarSystems.getPlayerStarSystem(sector)).isNull();
+            assertThat(StarSystems.getPlayerStarSystem(sectorMock)).isNull();
         }
 
         @Test
-        void is_null_when_the_fleet_is_in_hyperspace() {
-            var fleet = mock(CampaignFleetAPI.class);
-            when(fleet.getStarSystem()).thenReturn(null);
-            var sector = mock(SectorAPI.class);
-            when(sector.getPlayerFleet()).thenReturn(fleet);
+        void returns_null_when_the_fleet_is_in_hyperspace() {
+            var fleetMock = mock(CampaignFleetAPI.class);
+            when(fleetMock.getStarSystem()).thenReturn(null);
+            var sectorMock = mock(SectorAPI.class);
+            when(sectorMock.getPlayerFleet()).thenReturn(fleetMock);
 
-            assertThat(StarSystems.getPlayerStarSystem(sector)).isNull();
+            assertThat(StarSystems.getPlayerStarSystem(sectorMock)).isNull();
         }
     }
 
-    private static SectorAPI sectorWithSystemsAt(float[]... points) {
+    private static SectorAPI buildSectorWithSystemsAt(float[]... points) {
         var systems = new ArrayList<StarSystemAPI>();
         for (float[] point : points) {
-            var system = mock(StarSystemAPI.class);
-            when(system.getLocation()).thenReturn(new Vector2f(point[0], point[1]));
-            systems.add(system);
+            var systemMock = mock(StarSystemAPI.class);
+            when(systemMock.getLocation()).thenReturn(new Vector2f(point[0], point[1]));
+            systems.add(systemMock);
         }
-        var sector = mock(SectorAPI.class);
-        when(sector.getStarSystems()).thenReturn(systems);
-        return sector;
+        var sectorMock = mock(SectorAPI.class);
+        when(sectorMock.getStarSystems()).thenReturn(systems);
+        return sectorMock;
     }
 }

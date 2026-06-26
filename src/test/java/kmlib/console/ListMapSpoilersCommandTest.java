@@ -89,39 +89,39 @@ final class ListMapSpoilersCommandTest {
     private enum Visibility { SHOWN, HIDDEN, UNDISCOVERED }
 
     private static SectorAPI sectorWith(SystemWithMarkets... systems) {
-        var economy = mock(EconomyAPI.class);
+        var economyMock = mock(EconomyAPI.class);
         var starSystems = new ArrayList<StarSystemAPI>();
         for (var entry : systems) {
             starSystems.add(entry.system);
-            when(economy.getMarkets(entry.system)).thenReturn(entry.markets);
+            when(economyMock.getMarkets(entry.system)).thenReturn(entry.markets);
         }
-        var sector = mock(SectorAPI.class);
-        when(sector.getStarSystems()).thenReturn(starSystems);
-        when(sector.getEconomy()).thenReturn(economy);
-        return sector;
+        var sectorMock = mock(SectorAPI.class);
+        when(sectorMock.getStarSystems()).thenReturn(starSystems);
+        when(sectorMock.getEconomy()).thenReturn(economyMock);
+        return sectorMock;
     }
 
     private static SystemWithMarkets system(String name, boolean isCutOff, MarketAPI... markets) {
-        var system = mock(StarSystemAPI.class);
-        when(system.getName()).thenReturn(name);
-        when(system.hasTag(Tags.SYSTEM_CUT_OFF_FROM_HYPER)).thenReturn(isCutOff);
-        return new SystemWithMarkets(system, List.of(markets));
+        var systemMock = mock(StarSystemAPI.class);
+        when(systemMock.getName()).thenReturn(name);
+        when(systemMock.hasTag(Tags.SYSTEM_CUT_OFF_FROM_HYPER)).thenReturn(isCutOff);
+        return new SystemWithMarkets(systemMock, List.of(markets));
     }
 
     private static MarketAPI ownedMarket(String name, String factionId, Visibility visibility) {
-        var faction = mock(FactionAPI.class);
-        when(faction.getId()).thenReturn(factionId);
-        when(faction.getDisplayName()).thenReturn(factionId);
+        var factionMock = mock(FactionAPI.class);
+        when(factionMock.getId()).thenReturn(factionId);
+        when(factionMock.getDisplayName()).thenReturn(factionId);
 
-        var entity = mock(SectorEntityToken.class);
-        when(entity.isDiscoverable()).thenReturn(visibility == Visibility.UNDISCOVERED);
+        var entityMock = mock(SectorEntityToken.class);
+        when(entityMock.isDiscoverable()).thenReturn(visibility == Visibility.UNDISCOVERED);
 
-        var market = mock(MarketAPI.class);
-        when(market.getName()).thenReturn(name);
-        when(market.getFaction()).thenReturn(faction);
-        when(market.isHidden()).thenReturn(visibility == Visibility.HIDDEN);
-        when(market.getPrimaryEntity()).thenReturn(entity);
-        return market;
+        var marketMock = mock(MarketAPI.class);
+        when(marketMock.getName()).thenReturn(name);
+        when(marketMock.getFaction()).thenReturn(factionMock);
+        when(marketMock.isHidden()).thenReturn(visibility == Visibility.HIDDEN);
+        when(marketMock.getPrimaryEntity()).thenReturn(entityMock);
+        return marketMock;
     }
 
     // Pairs a stubbed system with the market list its economy returns, so the

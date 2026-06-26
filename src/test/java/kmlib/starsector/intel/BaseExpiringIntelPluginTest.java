@@ -26,27 +26,27 @@ class BaseExpiringIntelPluginTest {
 
     private static final long CREATED_AT = 1_000_000L;
 
-    private MockedStatic<Global> globalStatic;
-    private SectorAPI sector;
-    private CampaignClockAPI clock;
-    private IntelManagerAPI intelManager;
+    private MockedStatic<Global> globalMock;
+    private SectorAPI sectorMock;
+    private CampaignClockAPI clockMock;
+    private IntelManagerAPI intelManagerMock;
 
     @BeforeEach
     void setUp() {
-        sector = mock(SectorAPI.class);
-        clock = mock(CampaignClockAPI.class);
-        intelManager = mock(IntelManagerAPI.class);
-        when(sector.getClock()).thenReturn(clock);
-        when(sector.getIntelManager()).thenReturn(intelManager);
-        when(clock.getTimestamp()).thenReturn(CREATED_AT);
+        sectorMock = mock(SectorAPI.class);
+        clockMock = mock(CampaignClockAPI.class);
+        intelManagerMock = mock(IntelManagerAPI.class);
+        when(sectorMock.getClock()).thenReturn(clockMock);
+        when(sectorMock.getIntelManager()).thenReturn(intelManagerMock);
+        when(clockMock.getTimestamp()).thenReturn(CREATED_AT);
 
-        globalStatic = mockStatic(Global.class);
-        globalStatic.when(Global::getSector).thenReturn(sector);
+        globalMock = mockStatic(Global.class);
+        globalMock.when(Global::getSector).thenReturn(sectorMock);
     }
 
     @AfterEach
     void tearDown() {
-        globalStatic.close();
+        globalMock.close();
     }
 
     @Test
@@ -59,44 +59,44 @@ class BaseExpiringIntelPluginTest {
     @Test
     void advanceDoesNothingBeforeExpiry() {
         var intel = new FixedDurationIntel();
-        when(clock.getElapsedDaysSince(CREATED_AT))
+        when(clockMock.getElapsedDaysSince(CREATED_AT))
                 .thenReturn((float) StarsectorClock.DAYS_PER_MONTH - 1f);
 
         intel.advanceImpl(1f);
 
-        verify(intelManager, never()).removeIntel(intel);
+        verify(intelManagerMock, never()).removeIntel(intel);
     }
 
     @Test
     void advanceRemovesIntelOnceExpiryReached() {
         var intel = new FixedDurationIntel();
-        when(clock.getElapsedDaysSince(CREATED_AT))
+        when(clockMock.getElapsedDaysSince(CREATED_AT))
                 .thenReturn((float) StarsectorClock.DAYS_PER_MONTH);
 
         intel.advanceImpl(1f);
 
-        verify(intelManager).removeIntel(intel);
+        verify(intelManagerMock).removeIntel(intel);
     }
 
     @Test
     void subclassExpiryOverrideIsHonoured() {
         var intel = new CustomDurationIntel(7f);
-        when(clock.getElapsedDaysSince(CREATED_AT)).thenReturn(7f);
+        when(clockMock.getElapsedDaysSince(CREATED_AT)).thenReturn(7f);
 
         intel.advanceImpl(1f);
 
-        verify(intelManager).removeIntel(intel);
+        verify(intelManagerMock).removeIntel(intel);
     }
 
     @Test
     void isExpiredFlipsAtTheSameThresholdAsAdvance() {
         var intel = new FixedDurationIntel();
-        when(clock.getElapsedDaysSince(CREATED_AT))
+        when(clockMock.getElapsedDaysSince(CREATED_AT))
                 .thenReturn((float) StarsectorClock.DAYS_PER_MONTH - 0.1f);
 
         assertThat(intel.isExpired()).isFalse();
 
-        when(clock.getElapsedDaysSince(CREATED_AT))
+        when(clockMock.getElapsedDaysSince(CREATED_AT))
                 .thenReturn((float) StarsectorClock.DAYS_PER_MONTH);
 
         assertThat(intel.isExpired()).isTrue();
@@ -108,14 +108,14 @@ class BaseExpiringIntelPluginTest {
         // Same null-safety contract advanceImpl honours: an early-
         // teardown sector cannot be treated as "expired" or the
         // caller would incorrectly drop the active item.
-        globalStatic.when(Global::getSector).thenReturn(null);
+        globalMock.when(Global::getSector).thenReturn(null);
 
         assertThat(intel.isExpired()).isFalse();
     }
 
     @Test
     void findActiveReturnsNullWhenIntelManagerListIsEmpty() {
-        when(intelManager.getIntel(FixedDurationIntel.class))
+        when(intelManagerMock.getIntel(FixedDurationIntel.class))
                 .thenReturn(Collections.emptyList());
 
         assertThat(BaseExpiringIntelPlugin.findActive(FixedDurationIntel.class)).isNull();
@@ -129,16 +129,16 @@ class BaseExpiringIntelPluginTest {
         // synchronous callers aligned with the visible window.
         var expired = new FixedDurationIntel();
         var active = new FixedDurationIntel();
-        when(clock.getElapsedDaysSince(CREATED_AT))
+        when(clockMock.getElapsedDaysSince(CREATED_AT))
                 .thenReturn((float) StarsectorClock.DAYS_PER_MONTH);
-        when(intelManager.getIntel(FixedDurationIntel.class))
+        when(intelManagerMock.getIntel(FixedDurationIntel.class))
                 .thenReturn(Arrays.asList(expired, active));
         // Flip the second item's window back to live by overriding
         // the elapsed lookup after construction - both items share
         // CREATED_AT, so toggling the clock state toggles isExpired
         // for the whole list. The test exercises the per-item walk
         // by then narrowing to "active only".
-        when(clock.getElapsedDaysSince(CREATED_AT))
+        when(clockMock.getElapsedDaysSince(CREATED_AT))
                 .thenReturn((float) StarsectorClock.DAYS_PER_MONTH - 0.1f);
 
         // Both items now report not-expired; findActive returns the
@@ -154,8 +154,8 @@ class BaseExpiringIntelPluginTest {
         // the realistic scenario findActive is built for.
         var expired = new CustomDurationIntel(1f);
         var active = new CustomDurationIntel(100f);
-        when(clock.getElapsedDaysSince(CREATED_AT)).thenReturn(50f);
-        when(intelManager.getIntel(CustomDurationIntel.class))
+        when(clockMock.getElapsedDaysSince(CREATED_AT)).thenReturn(50f);
+        when(intelManagerMock.getIntel(CustomDurationIntel.class))
                 .thenReturn(Arrays.asList(expired, active));
 
         assertThat(BaseExpiringIntelPlugin.findActive(CustomDurationIntel.class))
@@ -166,8 +166,8 @@ class BaseExpiringIntelPluginTest {
     void findActiveReturnsNullWhenEveryItemIsExpired() {
         var a = new CustomDurationIntel(1f);
         var b = new CustomDurationIntel(2f);
-        when(clock.getElapsedDaysSince(CREATED_AT)).thenReturn(50f);
-        when(intelManager.getIntel(CustomDurationIntel.class))
+        when(clockMock.getElapsedDaysSince(CREATED_AT)).thenReturn(50f);
+        when(intelManagerMock.getIntel(CustomDurationIntel.class))
                 .thenReturn(Arrays.asList(a, b));
 
         assertThat(BaseExpiringIntelPlugin.findActive(CustomDurationIntel.class)).isNull();
@@ -175,7 +175,7 @@ class BaseExpiringIntelPluginTest {
 
     @Test
     void findActiveReturnsNullWhenSectorIsUnavailable() {
-        globalStatic.when(Global::getSector).thenReturn(null);
+        globalMock.when(Global::getSector).thenReturn(null);
 
         assertThat(BaseExpiringIntelPlugin.findActive(FixedDurationIntel.class)).isNull();
     }
@@ -184,12 +184,12 @@ class BaseExpiringIntelPluginTest {
     void advanceIsNoOpWhenSectorDisappears() {
         var intel = new FixedDurationIntel();
         // Simulate teardown: sector lookups return null mid-game.
-        globalStatic.when(Global::getSector).thenReturn(null);
+        globalMock.when(Global::getSector).thenReturn(null);
 
         // Should not throw; should not interact with the (now-unreachable) intel manager.
         intel.advanceImpl(1f);
 
-        verify(intelManager, never()).removeIntel(intel);
+        verify(intelManagerMock, never()).removeIntel(intel);
     }
 
     private static final class FixedDurationIntel extends BaseExpiringIntelPlugin {

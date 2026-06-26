@@ -98,22 +98,22 @@ class StarsectorPlayerFactionResolverTest {
 
     @Test
     void resolveDisplayNameReturnsLiveNameForCustomisedFaction() {
-        var faction = Mockito.mock(FactionAPI.class);
-        Mockito.when(faction.getDisplayName()).thenReturn("Hegemony");
+        var factionMock = Mockito.mock(FactionAPI.class);
+        Mockito.when(factionMock.getDisplayName()).thenReturn("Hegemony");
 
         var resolved = StarsectorPlayerFactionResolver.resolveDisplayName(
-                faction, "Independent");
+                factionMock, "Independent");
 
         assertThat(resolved).isEqualTo("Hegemony");
     }
 
     @Test
     void resolveDisplayNameFallsBackOnPlaceholderName() {
-        var faction = Mockito.mock(FactionAPI.class);
-        Mockito.when(faction.getDisplayName()).thenReturn("player");
+        var factionMock = Mockito.mock(FactionAPI.class);
+        Mockito.when(factionMock.getDisplayName()).thenReturn("player");
 
         var resolved = StarsectorPlayerFactionResolver.resolveDisplayName(
-                faction, "Independent");
+                factionMock, "Independent");
 
         assertThat(resolved).isEqualTo("Independent");
     }
@@ -128,11 +128,11 @@ class StarsectorPlayerFactionResolverTest {
 
     @Test
     void resolveDisplayNameFallsBackOnBlankDisplayName() {
-        var faction = Mockito.mock(FactionAPI.class);
-        Mockito.when(faction.getDisplayName()).thenReturn("   ");
+        var factionMock = Mockito.mock(FactionAPI.class);
+        Mockito.when(factionMock.getDisplayName()).thenReturn("   ");
 
         var resolved = StarsectorPlayerFactionResolver.resolveDisplayName(
-                faction, "Independent");
+                factionMock, "Independent");
 
         assertThat(resolved).isEqualTo("Independent");
     }
@@ -160,11 +160,11 @@ class StarsectorPlayerFactionResolverTest {
         // check, so an extension must steer the fallback too.
         StarsectorPlayerFactionResolver.setUnestablishedPlayerFactionNames(
                 Set.of("Unaffiliated"));
-        var faction = Mockito.mock(FactionAPI.class);
-        Mockito.when(faction.getDisplayName()).thenReturn("Unaffiliated");
+        var factionMock = Mockito.mock(FactionAPI.class);
+        Mockito.when(factionMock.getDisplayName()).thenReturn("Unaffiliated");
 
         var resolved = StarsectorPlayerFactionResolver.resolveDisplayName(
-                faction, "faction");
+                factionMock, "faction");
 
         assertThat(resolved).isEqualTo("faction");
     }
@@ -221,12 +221,12 @@ class StarsectorPlayerFactionResolverTest {
     }
 
     private static PlayerFactionSource stubSource(String displayName, boolean ownsMarket) {
-        var faction = Mockito.mock(FactionAPI.class);
-        Mockito.when(faction.getDisplayName()).thenReturn(displayName);
+        var factionMock = Mockito.mock(FactionAPI.class);
+        Mockito.when(factionMock.getDisplayName()).thenReturn(displayName);
         return new PlayerFactionSource() {
             @Override
             public FactionAPI playerFaction() {
-                return faction;
+                return factionMock;
             }
 
             @Override

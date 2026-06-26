@@ -33,43 +33,43 @@ final class SectorScriptsTest {
 
     @Test
     void skips_factory_when_a_matching_script_is_already_present() {
-        var sector = mock(SectorAPI.class);
+        var sectorMock = mock(SectorAPI.class);
         var scripts = new ArrayList<EveryFrameScript>();
         scripts.add(new DemoScriptImpl());
-        when(sector.getScripts()).thenReturn(scripts);
+        when(sectorMock.getScripts()).thenReturn(scripts);
 
         boolean[] factoryFired = { false };
-        SectorScripts.addIfAbsent(sector, DemoScript.class, () -> {
+        SectorScripts.addIfAbsent(sectorMock, DemoScript.class, () -> {
             factoryFired[0] = true;
             return new DemoScriptImpl();
         });
 
         assertThat(factoryFired[0]).isFalse();
-        verify(sector, never()).addScript(org.mockito.ArgumentMatchers.any());
+        verify(sectorMock, never()).addScript(org.mockito.ArgumentMatchers.any());
     }
 
     @Test
     void installs_when_no_matching_script_is_present() {
-        var sector = mock(SectorAPI.class);
-        when(sector.getScripts()).thenReturn(new ArrayList<>());
+        var sectorMock = mock(SectorAPI.class);
+        when(sectorMock.getScripts()).thenReturn(new ArrayList<>());
 
         var created = new DemoScriptImpl();
-        SectorScripts.addIfAbsent(sector, DemoScript.class, () -> created);
+        SectorScripts.addIfAbsent(sectorMock, DemoScript.class, () -> created);
 
-        verify(sector).addScript(created);
+        verify(sectorMock).addScript(created);
     }
 
     @Test
     void installs_when_scripts_list_is_null() {
         // Defensive: very-early-load may surface a sector whose
         // scripts list has not been initialised yet.
-        var sector = mock(SectorAPI.class);
-        when(sector.getScripts()).thenReturn(null);
+        var sectorMock = mock(SectorAPI.class);
+        when(sectorMock.getScripts()).thenReturn(null);
 
         var created = new DemoScriptImpl();
-        SectorScripts.addIfAbsent(sector, DemoScript.class, () -> created);
+        SectorScripts.addIfAbsent(sectorMock, DemoScript.class, () -> created);
 
-        verify(sector).addScript(created);
+        verify(sectorMock).addScript(created);
     }
 
     @Test
@@ -95,13 +95,13 @@ final class SectorScriptsTest {
         }
         class Child extends Parent {}
 
-        var sector = mock(SectorAPI.class);
+        var sectorMock = mock(SectorAPI.class);
         var scripts = new ArrayList<EveryFrameScript>();
         scripts.add(new Child());
-        when(sector.getScripts()).thenReturn(scripts);
+        when(sectorMock.getScripts()).thenReturn(scripts);
 
-        SectorScripts.addIfAbsent(sector, Parent.class, Parent::new);
+        SectorScripts.addIfAbsent(sectorMock, Parent.class, Parent::new);
 
-        verify(sector, never()).addScript(org.mockito.ArgumentMatchers.any());
+        verify(sectorMock, never()).addScript(org.mockito.ArgumentMatchers.any());
     }
 }
