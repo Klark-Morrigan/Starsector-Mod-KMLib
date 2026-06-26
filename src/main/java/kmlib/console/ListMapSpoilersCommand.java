@@ -56,8 +56,8 @@ public final class ListMapSpoilersCommand implements BaseCommand {
         for (var system : sector.getStarSystems()) {
             var ownedMarkets = collectOwnedMarkets(sector, system);
 
-            boolean isSystemCutOff = system.hasTag(Tags.SYSTEM_CUT_OFF_FROM_HYPER);
-            boolean isSystemOrdinary = !isSystemCutOff && !anyHiddenMarkets(ownedMarkets);
+            var isSystemCutOff = system.hasTag(Tags.SYSTEM_CUT_OFF_FROM_HYPER);
+            var isSystemOrdinary = !isSystemCutOff && !hasHiddenMarkets(ownedMarkets);
 
             // Only spoiler-worthy systems: cut off, or holding a market the
             // player would not normally see. Ordinary visible systems are skipped.
@@ -81,8 +81,8 @@ public final class ListMapSpoilersCommand implements BaseCommand {
         return report.toString();
     }
 
-    private static boolean anyHiddenMarkets(List<MarketAPI> markets) {
-        for (MarketAPI market : markets) {
+    private static boolean hasHiddenMarkets(List<MarketAPI> markets) {
+        for (var market : markets) {
             if (!getVisibilitySuffix(market).isEmpty()) {
                 return true;
             }
