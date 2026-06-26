@@ -1,9 +1,12 @@
 package kmlib.starsector.systems;
 
+import com.fs.starfarer.api.campaign.PlanetAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
+import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 
 import org.lwjgl.util.vector.Vector2f;
+import kmlib.text.KmlibStrings;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,5 +49,20 @@ public final class StarSystems {
             }
         }
         return positions;
+    }
+
+    /**
+     * The star system the player's fleet is currently in, for callers (e.g.
+     * in-system-only console commands) that must act on the current system.
+     *
+     * @param sector the sector to read; null yields null
+     * @return the player's current star system, or null when the fleet is in
+     *         hyperspace or unavailable
+     */
+    public static StarSystemAPI getPlayerStarSystem(SectorAPI sector) {
+        if (sector == null || sector.getPlayerFleet() == null) {
+            return null;
+        }
+        return sector.getPlayerFleet().getStarSystem();
     }
 }

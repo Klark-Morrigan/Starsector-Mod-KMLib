@@ -20,11 +20,21 @@ import java.util.function.Supplier;
  * <pre>
  * CommandValidationResult command = new CommandValidation(context, args)
  *         .inCampaign()
+ *         .inSystem()
  *         .validateAndPrintFeedback();
  * if (!command.isValid()) {
  *     return command.getResult();
  * }
  * </pre>
+ *
+ * <p>Built from only what a command actually has at runtime - its context and
+ * arguments; Console Commands does not hand a command its own name, so messages
+ * are phrased generically. A command opts into the guards that apply to it.
+ * {@link #validateAndPrintFeedback()} runs the chain in order,
+ * stops at the first failure, prints it to the console, and
+ * returns the result to return (each check carries its own - {@code
+ * WRONG_CONTEXT} for context, {@code BAD_SYNTAX} for a missing argument);
+ * passing all checks yields a valid result.
  */
 public final class CommandValidation {
     private final CommandContext context;
@@ -41,6 +51,14 @@ public final class CommandValidation {
         checks.add(() -> context.isInCampaign()
                 ? null
                 : new Failure("This command can only run in a campaign.",
+                        CommandResult.WRONG_CONTEXT));
+        return this;
+    }
+
+    public CommandValidation inSystem() {
+        checks.add(() -> StarSystems.getPlayerStarSystem(Global.getSector()) != null
+                ? null
+                : new Failure("This command must be run inside a star system.",
                         CommandResult.WRONG_CONTEXT));
         return this;
     }

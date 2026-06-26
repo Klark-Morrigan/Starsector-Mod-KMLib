@@ -55,6 +55,43 @@ final class StarSystemsTest {
         }
     }
 
+    @Nested
+    class GetPlayerStarSystem {
+        @Test
+        void returns_the_fleets_system() {
+            var system = mock(StarSystemAPI.class);
+            var fleet = mock(CampaignFleetAPI.class);
+            when(fleet.getStarSystem()).thenReturn(system);
+            var sector = mock(SectorAPI.class);
+            when(sector.getPlayerFleet()).thenReturn(fleet);
+
+            assertThat(StarSystems.getPlayerStarSystem(sector)).isSameAs(system);
+        }
+
+        @Test
+        void is_null_for_a_null_sector() {
+            assertThat(StarSystems.getPlayerStarSystem(null)).isNull();
+        }
+
+        @Test
+        void is_null_without_a_player_fleet() {
+            var sector = mock(SectorAPI.class);
+            when(sector.getPlayerFleet()).thenReturn(null);
+
+            assertThat(StarSystems.getPlayerStarSystem(sector)).isNull();
+        }
+
+        @Test
+        void is_null_when_the_fleet_is_in_hyperspace() {
+            var fleet = mock(CampaignFleetAPI.class);
+            when(fleet.getStarSystem()).thenReturn(null);
+            var sector = mock(SectorAPI.class);
+            when(sector.getPlayerFleet()).thenReturn(fleet);
+
+            assertThat(StarSystems.getPlayerStarSystem(sector)).isNull();
+        }
+    }
+
     private static SectorAPI sectorWithSystemsAt(float[]... points) {
         var systems = new ArrayList<StarSystemAPI>();
         for (float[] point : points) {
