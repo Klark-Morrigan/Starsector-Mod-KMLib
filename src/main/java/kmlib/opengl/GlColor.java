@@ -32,7 +32,7 @@ public final class GlColor {
      * @param alphaMult extra alpha scale; 1 keeps the colour's own alpha
      */
     public static void set(Color color, float alphaMult) {
-        float[] rgba = Colors.getGlComponents(color, alphaMult);
+        var rgba = Colors.getGlComponents(color, alphaMult);
         GL11.glColor4f(rgba[0], rgba[1], rgba[2], rgba[3]);
     }
 }

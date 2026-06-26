@@ -14,14 +14,14 @@ import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 class StarsectorUiColorTest {
     @Test
     void resolveReturnsStarsectorColorForVanillaEntry() {
-        Color expected = new Color(1, 2, 3);
+        var expected = new Color(1, 2, 3);
 
         // Misc.<clinit> reads from Global.getSettings(), so a no-op
         // SettingsAPI proxy must be in place before Mockito instruments
         // the class - otherwise instrumentation triggers class init and
         // explodes on an NPE deep inside Misc's static fields.
         StarsectorSettingsFake.installSettings();
-        try (MockedStatic<Misc> misc = Mockito.mockStatic(Misc.class)) {
+        try (var misc = Mockito.mockStatic(Misc.class)) {
             misc.when(Misc::getHighlightColor).thenReturn(expected);
 
             assertThat(StarsectorUiColor.VANILLA_HIGHLIGHT_GOLD.resolve())
@@ -43,7 +43,7 @@ class StarsectorUiColorTest {
         // accessors; surfacing that as an NPE with the enum name beats
         // letting a null Color propagate into UI code.
         StarsectorSettingsFake.installSettings();
-        try (MockedStatic<Misc> misc = Mockito.mockStatic(Misc.class)) {
+        try (var misc = Mockito.mockStatic(Misc.class)) {
             misc.when(Misc::getHighlightColor).thenReturn(null);
 
             assertThatNullPointerException()

@@ -41,9 +41,9 @@ public final class Jitter {
      *         {@code [1 - |jitterSize|, 1 + |jitterSize|]}.
      */
     public static float roll(float jitterSize) {
-        float size = Math.abs(jitterSize);
-        float min = 1f - size;
-        float max = 1f + size;
+        var size = Math.abs(jitterSize);
+        var min = 1f - size;
+        var max = 1f + size;
         return min + (max - min) * (float) Math.random();
     }
 }

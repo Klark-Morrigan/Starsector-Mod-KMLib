@@ -69,7 +69,7 @@ public final class KmLogging {
      */
     public static void bindToLunaSetting(String modId, String loggerRoot,
             String fieldId, Level fallback) {
-        LunaLogBinding binding = new LunaLogBinding(modId, loggerRoot, fieldId, fallback);
+        var binding = new LunaLogBinding(modId, loggerRoot, fieldId, fallback);
         LunaSettings.addSettingsListener(binding);
         binding.applyConfiguredLevel();
     }

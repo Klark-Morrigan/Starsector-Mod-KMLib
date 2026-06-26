@@ -85,7 +85,7 @@ public abstract class BaseExpiringIntelPlugin extends BaseTaggedIntelPlugin {
      * yet expired" rather than as a hard error.</p>
      */
     public final boolean isExpired() {
-        SectorAPI sector = Global.getSector();
+        var sector = Global.getSector();
         if (sector == null) {
             return false;
         }
@@ -110,17 +110,17 @@ public abstract class BaseExpiringIntelPlugin extends BaseTaggedIntelPlugin {
      * same null branch they already need for the empty-list case.</p>
      */
     public static <T extends BaseExpiringIntelPlugin> T findActive(Class<T> intelClass) {
-        SectorAPI sector = Global.getSector();
+        var sector = Global.getSector();
         if (sector == null) {
             return null;
         }
-        IntelManagerAPI intelManager = sector.getIntelManager();
+        var intelManager = sector.getIntelManager();
         if (intelManager == null) {
             return null;
         }
-        List<IntelInfoPlugin> items = intelManager.getIntel(intelClass);
-        for (IntelInfoPlugin item : items) {
-            T typed = intelClass.cast(item);
+        var items = intelManager.getIntel(intelClass);
+        for (var item : items) {
+            var typed = intelClass.cast(item);
             if (!typed.isExpired()) {
                 return typed;
             }

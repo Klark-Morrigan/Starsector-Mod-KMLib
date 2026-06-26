@@ -33,9 +33,9 @@ final class PolygonsTest {
     void offset_moves_edges_toward_the_interior() {
         // The first edge (0,0)->(10,0) is the bottom edge; offsetting inward by
         // 2 lifts it from y = 0 to y = 2, spanning the same x extent.
-        List<double[]> segments = Polygons.offsetEdgesInward(square(), 2.0);
+        var segments = Polygons.offsetEdgesInward(square(), 2.0);
 
-        double[] bottom = segments.get(0);
+        var bottom = segments.get(0);
         assertThat(bottom[1]).isCloseTo(2.0, within());
         assertThat(bottom[3]).isCloseTo(2.0, within());
         assertThat(bottom[0]).isCloseTo(0.0, within());
@@ -46,7 +46,7 @@ final class PolygonsTest {
     void offset_does_not_collapse_a_thin_polygon() {
         // A whole-polygon inset by 2 would empty this height-1 quad; per-edge
         // offset still yields a segment per edge - nothing vanishes.
-        List<double[]> thin = Arrays.asList(
+        var thin = Arrays.asList(
                 new double[] {0, 0},
                 new double[] {10, 0},
                 new double[] {10, 1},

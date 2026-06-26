@@ -40,7 +40,7 @@ class StarsectorPlayerFactionResolverTest {
 
     @Test
     void establishedIsFalseOnDefaultNameAndNoMarkets() {
-        boolean established = StarsectorPlayerFactionResolver.isPlayerFactionEstablished(
+        var established = StarsectorPlayerFactionResolver.isPlayerFactionEstablished(
                 stubSource("Independent", false));
 
         assertThat(established).isFalse();
@@ -50,7 +50,7 @@ class StarsectorPlayerFactionResolverTest {
     void establishedIsTrueWhenDisplayNameHasBeenCustomised() {
         // Nex's custom-faction-at-game-start case: name customised
         // before any colony exists. Either signal alone passes.
-        boolean established = StarsectorPlayerFactionResolver.isPlayerFactionEstablished(
+        var established = StarsectorPlayerFactionResolver.isPlayerFactionEstablished(
                 stubSource("Concord", false));
 
         assertThat(established).isTrue();
@@ -60,7 +60,7 @@ class StarsectorPlayerFactionResolverTest {
     void establishedIsTrueWhenPlayerOwnsAMarket() {
         // Vanilla rename-prompt-dismissed case: name stays default,
         // player still owns a colony.
-        boolean established = StarsectorPlayerFactionResolver.isPlayerFactionEstablished(
+        var established = StarsectorPlayerFactionResolver.isPlayerFactionEstablished(
                 stubSource("Independent", true));
 
         assertThat(established).isTrue();
@@ -80,7 +80,7 @@ class StarsectorPlayerFactionResolverTest {
     void establishedIsFalseWhenPlayerFactionIsNull() {
         // Defensive: a null player faction (no-sector / pre-game-load)
         // resolves as unestablished rather than throwing.
-        boolean established = StarsectorPlayerFactionResolver.isPlayerFactionEstablished(
+        var established = StarsectorPlayerFactionResolver.isPlayerFactionEstablished(
                 new PlayerFactionSource() {
                     @Override
                     public FactionAPI playerFaction() {
@@ -98,10 +98,10 @@ class StarsectorPlayerFactionResolverTest {
 
     @Test
     void resolveDisplayNameReturnsLiveNameForCustomisedFaction() {
-        FactionAPI faction = Mockito.mock(FactionAPI.class);
+        var faction = Mockito.mock(FactionAPI.class);
         Mockito.when(faction.getDisplayName()).thenReturn("Hegemony");
 
-        String resolved = StarsectorPlayerFactionResolver.resolveDisplayName(
+        var resolved = StarsectorPlayerFactionResolver.resolveDisplayName(
                 faction, "Independent");
 
         assertThat(resolved).isEqualTo("Hegemony");
@@ -109,10 +109,10 @@ class StarsectorPlayerFactionResolverTest {
 
     @Test
     void resolveDisplayNameFallsBackOnPlaceholderName() {
-        FactionAPI faction = Mockito.mock(FactionAPI.class);
+        var faction = Mockito.mock(FactionAPI.class);
         Mockito.when(faction.getDisplayName()).thenReturn("player");
 
-        String resolved = StarsectorPlayerFactionResolver.resolveDisplayName(
+        var resolved = StarsectorPlayerFactionResolver.resolveDisplayName(
                 faction, "Independent");
 
         assertThat(resolved).isEqualTo("Independent");
@@ -120,7 +120,7 @@ class StarsectorPlayerFactionResolverTest {
 
     @Test
     void resolveDisplayNameFallsBackOnNullFaction() {
-        String resolved = StarsectorPlayerFactionResolver.resolveDisplayName(
+        var resolved = StarsectorPlayerFactionResolver.resolveDisplayName(
                 null, "faction leader");
 
         assertThat(resolved).isEqualTo("faction leader");
@@ -128,10 +128,10 @@ class StarsectorPlayerFactionResolverTest {
 
     @Test
     void resolveDisplayNameFallsBackOnBlankDisplayName() {
-        FactionAPI faction = Mockito.mock(FactionAPI.class);
+        var faction = Mockito.mock(FactionAPI.class);
         Mockito.when(faction.getDisplayName()).thenReturn("   ");
 
-        String resolved = StarsectorPlayerFactionResolver.resolveDisplayName(
+        var resolved = StarsectorPlayerFactionResolver.resolveDisplayName(
                 faction, "Independent");
 
         assertThat(resolved).isEqualTo("Independent");
@@ -160,10 +160,10 @@ class StarsectorPlayerFactionResolverTest {
         // check, so an extension must steer the fallback too.
         StarsectorPlayerFactionResolver.setUnestablishedPlayerFactionNames(
                 Set.of("Unaffiliated"));
-        FactionAPI faction = Mockito.mock(FactionAPI.class);
+        var faction = Mockito.mock(FactionAPI.class);
         Mockito.when(faction.getDisplayName()).thenReturn("Unaffiliated");
 
-        String resolved = StarsectorPlayerFactionResolver.resolveDisplayName(
+        var resolved = StarsectorPlayerFactionResolver.resolveDisplayName(
                 faction, "faction");
 
         assertThat(resolved).isEqualTo("faction");
@@ -197,7 +197,7 @@ class StarsectorPlayerFactionResolverTest {
         // Defensive read: callers cannot mutate the live set behind
         // the resolver's back, so an extension has to go through the
         // setter (which copies).
-        Set<String> live =
+        var live =
                 StarsectorPlayerFactionResolver.getUnestablishedPlayerFactionNames();
 
         try {
@@ -212,7 +212,7 @@ class StarsectorPlayerFactionResolverTest {
     void setterCopiesInputSet() {
         // A caller mutating their original collection after the setter
         // returns must not bleed into the resolver's live set.
-        HashSet<String> caller = new HashSet<>(Set.of("Unaffiliated"));
+        var caller = new HashSet<String>(Set.of("Unaffiliated"));
         StarsectorPlayerFactionResolver.setUnestablishedPlayerFactionNames(caller);
         caller.add("StillStrangers");
 
@@ -221,7 +221,7 @@ class StarsectorPlayerFactionResolverTest {
     }
 
     private static PlayerFactionSource stubSource(String displayName, boolean ownsMarket) {
-        FactionAPI faction = Mockito.mock(FactionAPI.class);
+        var faction = Mockito.mock(FactionAPI.class);
         Mockito.when(faction.getDisplayName()).thenReturn(displayName);
         return new PlayerFactionSource() {
             @Override

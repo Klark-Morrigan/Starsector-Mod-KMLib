@@ -41,7 +41,7 @@ public final class HighlightedMessage {
             throw new IllegalArgumentException(
                     "HighlightedMessage requires at least one paragraph");
         }
-        for (int i = 0; i < lines.length; i++) {
+        for (var i = 0; i < lines.length; i++) {
             Objects.requireNonNull(lines[i], "lines[" + i + "]");
         }
         // List.of is immutable and creates a defensive copy, so callers
@@ -61,7 +61,7 @@ public final class HighlightedMessage {
      * for vanilla intel notifications.
      */
     public MessageIntel toMessageIntel() {
-        MessageIntel intel = new MessageIntel();
+        var intel = new MessageIntel();
         for (HighlightedParagraph line : lines) {
             // getHighlightTexts / getHighlightColors return zero-length
             // arrays when the paragraph carries no highlights, which

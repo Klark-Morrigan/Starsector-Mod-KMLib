@@ -50,11 +50,11 @@ public final class ListMapSpoilersCommand implements BaseCommand {
      * @return the formatted report, or a notice line when nothing qualifies
      */
     static String buildReport(SectorAPI sector) {
-        StringBuilder report = new StringBuilder(
+        var report = new StringBuilder(
                 "Map spoilers - cut-off systems and hidden/undiscovered markets:");
-        int systemCount = 0;
-        for (StarSystemAPI system : sector.getStarSystems()) {
-            List<MarketAPI> ownedMarkets = collectOwnedMarkets(sector, system);
+        var systemCount = 0;
+        for (var system : sector.getStarSystems()) {
+            var ownedMarkets = collectOwnedMarkets(sector, system);
 
             boolean isSystemCutOff = system.hasTag(Tags.SYSTEM_CUT_OFF_FROM_HYPER);
             boolean isSystemOrdinary = !isSystemCutOff && !anyHiddenMarkets(ownedMarkets);
@@ -69,7 +69,7 @@ public final class ListMapSpoilersCommand implements BaseCommand {
             if (isSystemCutOff) {
                 report.append("  [cut off]");
             }
-            for (MarketAPI market : ownedMarkets) {
+            for (var market : ownedMarkets) {
                 report.append("\n    ").append(market.getName())
                         .append("  (").append(market.getFaction().getDisplayName()).append(')')
                         .append(getVisibilitySuffix(market));
@@ -91,9 +91,9 @@ public final class ListMapSpoilersCommand implements BaseCommand {
     }
 
     private static List<MarketAPI> collectOwnedMarkets(SectorAPI sector, StarSystemAPI system) {
-        List<MarketAPI> ownedMarkets = new ArrayList<>();
-        for (MarketAPI market : sector.getEconomy().getMarkets(system)) {
-            FactionAPI faction = market.getFaction();
+        var ownedMarkets = new ArrayList<MarketAPI>();
+        for (var market : sector.getEconomy().getMarkets(system)) {
+            var faction = market.getFaction();
             if (market.isPlanetConditionMarketOnly() || faction == null
                     || NEUTRAL_FACTION_ID.equals(faction.getId())) {
                 continue;
@@ -109,7 +109,7 @@ public final class ListMapSpoilersCommand implements BaseCommand {
         if (market.isHidden()) {
             return "  [hidden]";
         }
-        SectorEntityToken entity = market.getPrimaryEntity();
+        var entity = market.getPrimaryEntity();
         if (entity != null && entity.isDiscoverable()) {
             return "  [undiscovered]";
         }

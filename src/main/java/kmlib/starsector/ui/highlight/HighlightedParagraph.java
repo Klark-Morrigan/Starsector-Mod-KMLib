@@ -38,7 +38,7 @@ public final class HighlightedParagraph {
         this.text = Objects.requireNonNull(text, "text");
         this.baseColor = Objects.requireNonNull(baseColor, "baseColor");
         this.highlights = highlights == null ? new Highlight[0] : highlights.clone();
-        for (int i = 0; i < this.highlights.length; i++) {
+        for (var i = 0; i < this.highlights.length; i++) {
             Objects.requireNonNull(this.highlights[i], "highlights[" + i + "]");
         }
     }
@@ -71,7 +71,7 @@ public final class HighlightedParagraph {
      *  the text side of each pair (tests, snapshot logging). */
     public String[] getHighlightTexts() {
         String[] texts = new String[highlights.length];
-        for (int i = 0; i < highlights.length; i++) {
+        for (var i = 0; i < highlights.length; i++) {
             texts[i] = highlights[i].getText();
         }
         return texts;
@@ -81,7 +81,7 @@ public final class HighlightedParagraph {
      *  flat colour array, paired by index with {@link #getHighlightTexts()}. */
     public Color[] getHighlightColors() {
         Color[] colors = new Color[highlights.length];
-        for (int i = 0; i < highlights.length; i++) {
+        for (var i = 0; i < highlights.length; i++) {
             colors[i] = highlights[i].getColor();
         }
         return colors;
@@ -100,7 +100,7 @@ public final class HighlightedParagraph {
 
         String[] texts = new String[highlights.length];
         Color[] colors = new Color[highlights.length];
-        for (int i = 0; i < highlights.length; i++) {
+        for (var i = 0; i < highlights.length; i++) {
             texts[i] = highlights[i].getText();
             colors[i] = highlights[i].getColor();
         }
@@ -110,7 +110,7 @@ public final class HighlightedParagraph {
         // a slot. We always set every slot below, so the value only
         // matters as a defensive default - the first highlight's own
         // colour is the most sensible pick.
-        LabelAPI label = panel.addPara(text, baseColor, colors[0], texts);
+        var label = panel.addPara(text, baseColor, colors[0], texts);
         panel.setHighlightColorsInLastPara(colors);
         return label;
     }
@@ -134,7 +134,7 @@ public final class HighlightedParagraph {
      */
     public LabelAPI addTo(TooltipMakerAPI tooltip, float pad) {
         Objects.requireNonNull(tooltip, "tooltip");
-        LabelAPI label = tooltip.addPara(text, baseColor, pad);
+        var label = tooltip.addPara(text, baseColor, pad);
         applyTo(label);
         return label;
     }
@@ -154,7 +154,7 @@ public final class HighlightedParagraph {
 
         String[] texts = new String[highlights.length];
         Color[] colors = new Color[highlights.length];
-        for (int i = 0; i < highlights.length; i++) {
+        for (var i = 0; i < highlights.length; i++) {
             texts[i] = highlights[i].getText();
             colors[i] = highlights[i].getColor();
         }

@@ -38,9 +38,9 @@ class BaseTaggedIntelPluginTest {
         // BaseIntelPlugin.getIntelTags reads Global.getSector().getClock()
         // for the "New" derivation. Stub a zero-timestamp clock so the
         // tag-merge path under test can call through super without NPEing.
-        CampaignClockAPI clock = mock(CampaignClockAPI.class);
+        var clock = mock(CampaignClockAPI.class);
         when(clock.getTimestamp()).thenReturn(0L);
-        SectorAPI sector = mock(SectorAPI.class);
+        var sector = mock(SectorAPI.class);
         when(sector.getClock()).thenReturn(clock);
 
         globalStatic = mockStatic(Global.class);
@@ -54,23 +54,23 @@ class BaseTaggedIntelPluginTest {
 
     @Test
     void zeroTagsLeavesVanillaTagSetUntouched() {
-        UntaggedIntel intel = new UntaggedIntel();
+        var intel = new UntaggedIntel();
 
-        Set<String> tags = intel.getIntelTags(null);
+        var tags = intel.getIntelTags(null);
 
         assertThat(tags).doesNotContain(TAG_A, TAG_B);
     }
 
     @Test
     void singleConstructorTagAppearsInResult() {
-        SingleTagIntel intel = new SingleTagIntel();
+        var intel = new SingleTagIntel();
 
         assertThat(intel.getIntelTags(null)).contains(TAG_A);
     }
 
     @Test
     void multipleConstructorTagsAllAppearInResult() {
-        MultiTagIntel intel = new MultiTagIntel();
+        var intel = new MultiTagIntel();
 
         assertThat(intel.getIntelTags(null)).contains(TAG_A, TAG_B);
     }
@@ -81,7 +81,7 @@ class BaseTaggedIntelPluginTest {
         // vanilla's "Important" tag would silently disappear. Set the
         // flag and assert the tag still surfaces alongside the
         // constructor-supplied tag.
-        SingleTagIntel intel = new SingleTagIntel();
+        var intel = new SingleTagIntel();
         intel.setImportant(true);
 
         assertThat(intel.getIntelTags(null)).contains("Important", TAG_A);

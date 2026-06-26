@@ -25,7 +25,7 @@ final class VoronoiCellBuilderTest {
 
     @Test
     void one_cell_is_built_per_site() {
-        List<double[]> sites = Arrays.asList(
+        var sites = Arrays.asList(
                 new double[] {-1, 0},
                 new double[] {1, 0},
                 new double[] {0, 1});
@@ -36,7 +36,7 @@ final class VoronoiCellBuilderTest {
     @Test
     void a_lone_site_fills_a_bounded_disc() {
         double[] site = {500, 500};
-        List<List<double[]>> cells = VoronoiCellBuilder.buildCells(
+        var cells = VoronoiCellBuilder.buildCells(
                 List.of(site), MAX_CELL_RADIUS);
 
         assertThat(cells).hasSize(1);
@@ -47,16 +47,16 @@ final class VoronoiCellBuilderTest {
 
     @Test
     void every_cell_stays_within_the_bound_radius() {
-        List<double[]> sites = Arrays.asList(
+        var sites = Arrays.asList(
                 new double[] {-300, -300},
                 new double[] {300, -300},
                 new double[] {0, 400},
                 new double[] {0, 0});
 
-        List<List<double[]>> cells = VoronoiCellBuilder.buildCells(sites, MAX_CELL_RADIUS);
+        var cells = VoronoiCellBuilder.buildCells(sites, MAX_CELL_RADIUS);
 
-        for (int i = 0; i < sites.size(); i++) {
-            double[] site = sites.get(i);
+        for (var i = 0; i < sites.size(); i++) {
+            var site = sites.get(i);
             assertThat(cells.get(i))
                     .as("cell %d stays within the bound radius of its site", i)
                     .allMatch(vertex -> distance(vertex, site) <= MAX_CELL_RADIUS + 1e-6);
@@ -65,11 +65,11 @@ final class VoronoiCellBuilderTest {
 
     @Test
     void two_sites_split_along_their_bisector() {
-        List<double[]> sites = Arrays.asList(
+        var sites = Arrays.asList(
                 new double[] {-1000, 0},
                 new double[] {1000, 0});
 
-        List<List<double[]>> cells = VoronoiCellBuilder.buildCells(sites, MAX_CELL_RADIUS);
+        var cells = VoronoiCellBuilder.buildCells(sites, MAX_CELL_RADIUS);
 
         assertThat(cells.get(0)).allMatch(vertex -> vertex[0] <= 1e-9);
         assertThat(cells.get(1)).allMatch(vertex -> vertex[0] >= -1e-9);
@@ -77,15 +77,15 @@ final class VoronoiCellBuilderTest {
 
     @Test
     void each_site_lies_inside_its_own_cell() {
-        List<double[]> sites = Arrays.asList(
+        var sites = Arrays.asList(
                 new double[] {-300, -300},
                 new double[] {300, -300},
                 new double[] {0, 400},
                 new double[] {0, 0});
 
-        List<List<double[]>> cells = VoronoiCellBuilder.buildCells(sites, MAX_CELL_RADIUS);
+        var cells = VoronoiCellBuilder.buildCells(sites, MAX_CELL_RADIUS);
 
-        for (int i = 0; i < sites.size(); i++) {
+        for (var i = 0; i < sites.size(); i++) {
             assertThat(isPointInsidePolygon(sites.get(i), cells.get(i)))
                     .as("site %d lies inside its own cell", i)
                     .isTrue();
@@ -93,21 +93,21 @@ final class VoronoiCellBuilderTest {
     }
 
     private static double distance(double[] a, double[] b) {
-        double dx = a[0] - b[0];
-        double dy = a[1] - b[1];
+        var dx = a[0] - b[0];
+        var dy = a[1] - b[1];
         return Math.sqrt(dx * dx + dy * dy);
     }
 
     // Convex-polygon containment via the sign test: a point is inside a
     // convex polygon when it lies on the same side of every directed edge.
     private static boolean isPointInsidePolygon(double[] point, List<double[]> polygon) {
-        boolean hasPositive = false;
-        boolean hasNegative = false;
-        int count = polygon.size();
-        for (int i = 0; i < count; i++) {
-            double[] from = polygon.get(i);
-            double[] to = polygon.get((i + 1) % count);
-            double cross = (to[0] - from[0]) * (point[1] - from[1])
+        var hasPositive = false;
+        var hasNegative = false;
+        var count = polygon.size();
+        for (var i = 0; i < count; i++) {
+            var from = polygon.get(i);
+            var to = polygon.get((i + 1) % count);
+            var cross = (to[0] - from[0]) * (point[1] - from[1])
                     - (to[1] - from[1]) * (point[0] - from[0]);
             if (cross > 1e-9) {
                 hasPositive = true;

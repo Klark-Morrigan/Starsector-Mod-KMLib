@@ -28,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 final class KmLoggingTest {
     @Test
     void named_level_is_inherited_by_descendant_loggers() {
-        Logger descendant = Logger.getLogger("kmlibtest_named.child.grandchild");
+        var descendant = Logger.getLogger("kmlibtest_named.child.grandchild");
 
         KmLogging.applyLevel("kmlibtest_named", "DEBUG", Level.INFO);
 
@@ -37,7 +37,7 @@ final class KmLoggingTest {
 
     @Test
     void surrounding_whitespace_on_the_name_is_tolerated() {
-        Logger descendant = Logger.getLogger("kmlibtest_pad.child");
+        var descendant = Logger.getLogger("kmlibtest_pad.child");
 
         KmLogging.applyLevel("kmlibtest_pad", "  WARN  ", Level.INFO);
 
@@ -46,7 +46,7 @@ final class KmLoggingTest {
 
     @Test
     void null_name_falls_back_to_the_default() {
-        Logger descendant = Logger.getLogger("kmlibtest_null.child");
+        var descendant = Logger.getLogger("kmlibtest_null.child");
 
         KmLogging.applyLevel("kmlibtest_null", null, Level.ERROR);
 
@@ -55,7 +55,7 @@ final class KmLoggingTest {
 
     @Test
     void unrecognised_name_falls_back_to_the_default() {
-        Logger descendant = Logger.getLogger("kmlibtest_bad.child");
+        var descendant = Logger.getLogger("kmlibtest_bad.child");
 
         KmLogging.applyLevel("kmlibtest_bad", "nonsense", Level.ERROR);
 
@@ -64,8 +64,8 @@ final class KmLoggingTest {
 
     @Test
     void loggers_outside_the_subtree_are_not_affected() {
-        Logger sibling = Logger.getLogger("kmlibtest_sibling_outside");
-        Level siblingBefore = sibling.getEffectiveLevel();
+        var sibling = Logger.getLogger("kmlibtest_sibling_outside");
+        var siblingBefore = sibling.getEffectiveLevel();
 
         KmLogging.applyLevel("kmlibtest_subtree", "OFF", Level.INFO);
 
@@ -83,8 +83,8 @@ final class KmLoggingTest {
     void binding_ignores_changes_to_other_mods_settings() {
         // A change notification carrying a different mod id must not retune
         // this binding's logger subtree, so its explicit level stays unset.
-        Logger root = Logger.getLogger("kmlibtest_filter_root");
-        LunaLogBinding binding =
+        var root = Logger.getLogger("kmlibtest_filter_root");
+        var binding =
                 new LunaLogBinding("kmlibtest_filter", "kmlibtest_filter_root", "f", Level.DEBUG);
 
         binding.settingsChanged("some_other_mod");

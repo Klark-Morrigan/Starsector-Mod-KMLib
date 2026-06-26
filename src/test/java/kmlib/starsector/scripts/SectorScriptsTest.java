@@ -33,8 +33,8 @@ final class SectorScriptsTest {
 
     @Test
     void skips_factory_when_a_matching_script_is_already_present() {
-        SectorAPI sector = mock(SectorAPI.class);
-        List<EveryFrameScript> scripts = new ArrayList<>();
+        var sector = mock(SectorAPI.class);
+        var scripts = new ArrayList<EveryFrameScript>();
         scripts.add(new DemoScriptImpl());
         when(sector.getScripts()).thenReturn(scripts);
 
@@ -50,10 +50,10 @@ final class SectorScriptsTest {
 
     @Test
     void installs_when_no_matching_script_is_present() {
-        SectorAPI sector = mock(SectorAPI.class);
+        var sector = mock(SectorAPI.class);
         when(sector.getScripts()).thenReturn(new ArrayList<>());
 
-        DemoScriptImpl created = new DemoScriptImpl();
+        var created = new DemoScriptImpl();
         SectorScripts.addIfAbsent(sector, DemoScript.class, () -> created);
 
         verify(sector).addScript(created);
@@ -63,10 +63,10 @@ final class SectorScriptsTest {
     void installs_when_scripts_list_is_null() {
         // Defensive: very-early-load may surface a sector whose
         // scripts list has not been initialised yet.
-        SectorAPI sector = mock(SectorAPI.class);
+        var sector = mock(SectorAPI.class);
         when(sector.getScripts()).thenReturn(null);
 
-        DemoScriptImpl created = new DemoScriptImpl();
+        var created = new DemoScriptImpl();
         SectorScripts.addIfAbsent(sector, DemoScript.class, () -> created);
 
         verify(sector).addScript(created);
@@ -95,8 +95,8 @@ final class SectorScriptsTest {
         }
         class Child extends Parent {}
 
-        SectorAPI sector = mock(SectorAPI.class);
-        List<EveryFrameScript> scripts = new ArrayList<>();
+        var sector = mock(SectorAPI.class);
+        var scripts = new ArrayList<EveryFrameScript>();
         scripts.add(new Child());
         when(sector.getScripts()).thenReturn(scripts);
 

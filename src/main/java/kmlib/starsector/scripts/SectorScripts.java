@@ -55,9 +55,9 @@ public final class SectorScripts {
         if (sector == null) {
             return;
         }
-        List<EveryFrameScript> scripts = sector.getScripts();
+        var scripts = sector.getScripts();
         if (scripts != null) {
-            for (EveryFrameScript existing : scripts) {
+            for (var existing : scripts) {
                 if (scriptClass.isInstance(existing)) {
                     return;
                 }

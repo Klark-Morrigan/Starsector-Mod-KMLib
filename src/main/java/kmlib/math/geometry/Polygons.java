@@ -35,25 +35,25 @@ public final class Polygons {
      *         two vertices
      */
     public static List<double[]> offsetEdgesInward(List<double[]> polygon, double distance) {
-        List<double[]> segments = new ArrayList<>();
-        int count = polygon.size();
+        var segments = new ArrayList<double[]>();
+        var count = polygon.size();
         if (count < 2) {
             return segments;
         }
 
-        for (int i = 0; i < count; i++) {
-            double[] a = polygon.get(i);
-            double[] b = polygon.get((i + 1) % count);
-            double edgeX = b[0] - a[0];
-            double edgeY = b[1] - a[1];
-            double length = Math.sqrt(edgeX * edgeX + edgeY * edgeY);
+        for (var i = 0; i < count; i++) {
+            var a = polygon.get(i);
+            var b = polygon.get((i + 1) % count);
+            var edgeX = b[0] - a[0];
+            var edgeY = b[1] - a[1];
+            var length = Math.sqrt(edgeX * edgeX + edgeY * edgeY);
             if (length < MIN_EDGE_LENGTH) {
                 continue;
             }
             // CCW interior is left of the directed edge, so the inward normal
             // of edge (a -> b) is (-edgeY, edgeX) normalized.
-            double normalX = -edgeY / length;
-            double normalY = edgeX / length;
+            var normalX = -edgeY / length;
+            var normalY = edgeX / length;
             segments.add(new double[] {
                     a[0] + normalX * distance, a[1] + normalY * distance,
                     b[0] + normalX * distance, b[1] + normalY * distance,

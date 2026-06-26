@@ -137,7 +137,7 @@ public final class StarsectorPlayerFactionResolver {
         if (faction == null) {
             return fallback;
         }
-        String raw = faction.getDisplayName();
+        var raw = faction.getDisplayName();
         if (!KmlibStrings.hasText(raw) || unestablishedPlayerFactionNames.contains(raw)) {
             return fallback;
         }
@@ -153,11 +153,11 @@ public final class StarsectorPlayerFactionResolver {
      */
     static boolean isPlayerFactionEstablished(PlayerFactionSource source) {
         Objects.requireNonNull(source, "source");
-        FactionAPI playerFaction = source.playerFaction();
+        var playerFaction = source.playerFaction();
         if (playerFaction == null) {
             return false;
         }
-        String name = playerFaction.getDisplayName();
+        var name = playerFaction.getDisplayName();
         if (KmlibStrings.hasText(name) && !unestablishedPlayerFactionNames.contains(name)) {
             return true;
         }

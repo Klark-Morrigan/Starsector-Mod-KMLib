@@ -46,7 +46,7 @@ class HighlightedParagraphTest {
 
     @Test
     void defaultConstructorPicksTextWhiteAsBaseColor() {
-        HighlightedParagraph paragraph = new HighlightedParagraph("text");
+        var paragraph = new HighlightedParagraph("text");
 
         // Routes through VANILLA_TEXT.resolve() -> Misc.getTextColor(),
         // which the fake-installed proxy returns as Color.WHITE for
@@ -56,7 +56,7 @@ class HighlightedParagraphTest {
 
     @Test
     void explicitBaseColorOverridesTheDefault() {
-        HighlightedParagraph paragraph = new HighlightedParagraph("text", Color.GRAY);
+        var paragraph = new HighlightedParagraph("text", Color.GRAY);
 
         assertThat(paragraph.getBaseColor()).isEqualTo(Color.GRAY);
     }
@@ -70,10 +70,10 @@ class HighlightedParagraphTest {
 
     @Test
     void getHighlightsReturnsADefensiveCopy() {
-        Highlight original = new Highlight("token", Color.RED);
-        HighlightedParagraph paragraph = new HighlightedParagraph("text", original);
+        var original = new Highlight("token", Color.RED);
+        var paragraph = new HighlightedParagraph("text", original);
 
-        Highlight[] copy = paragraph.getHighlights();
+        var copy = paragraph.getHighlights();
         copy[0] = new Highlight("other", Color.WHITE);
 
         assertThat(paragraph.getHighlights()[0]).isSameAs(original);
@@ -81,7 +81,7 @@ class HighlightedParagraphTest {
 
     @Test
     void addToWithoutHighlightsUsesTheSimpleAddParaOverload() {
-        HighlightedParagraph paragraph = new HighlightedParagraph("Plain text", Color.WHITE);
+        var paragraph = new HighlightedParagraph("Plain text", Color.WHITE);
 
         paragraph.addTo(panel);
 
@@ -96,7 +96,7 @@ class HighlightedParagraphTest {
 
     @Test
     void addToWithHighlightsFansThePairsIntoParallelArrays() {
-        HighlightedParagraph paragraph = new HighlightedParagraph(
+        var paragraph = new HighlightedParagraph(
                 "host: %s pad: Landing Pad cost: %s",
                 Color.WHITE,
                 new Highlight("the Hegemony's", Color.RED),
@@ -105,7 +105,7 @@ class HighlightedParagraphTest {
 
         paragraph.addTo(panel);
 
-        ArgumentCaptor<String[]> highlights = ArgumentCaptor.forClass(String[].class);
+        var highlights = ArgumentCaptor.forClass(String[].class);
         verify(panel).addPara(
                 eq("host: %s pad: Landing Pad cost: %s"),
                 eq(Color.WHITE),
@@ -114,16 +114,16 @@ class HighlightedParagraphTest {
         assertThat(highlights.getValue()).containsExactly(
                 "the Hegemony's", "Landing Pad", "5,000 cr");
 
-        ArgumentCaptor<Color[]> colors = ArgumentCaptor.forClass(Color[].class);
+        var colors = ArgumentCaptor.forClass(Color[].class);
         verify(panel).setHighlightColorsInLastPara(colors.capture());
         assertThat(colors.getValue()).containsExactly(Color.RED, Color.YELLOW, Color.YELLOW);
     }
 
     @Test
     void addToTooltipWithoutPadDefaultsToZero() {
-        TooltipMakerAPI tooltip = mock(TooltipMakerAPI.class);
+        var tooltip = mock(TooltipMakerAPI.class);
         when(tooltip.addPara(anyString(), any(Color.class), eq(0f))).thenReturn(label);
-        HighlightedParagraph paragraph = new HighlightedParagraph("text", Color.WHITE);
+        var paragraph = new HighlightedParagraph("text", Color.WHITE);
 
         paragraph.addTo(tooltip);
 
@@ -132,49 +132,49 @@ class HighlightedParagraphTest {
 
     @Test
     void addToTooltipDelegatesAddParaThenAppliesHighlightsToTheReturnedLabel() {
-        TooltipMakerAPI tooltip = mock(TooltipMakerAPI.class);
+        var tooltip = mock(TooltipMakerAPI.class);
         when(tooltip.addPara(anyString(), any(Color.class), eq(8f))).thenReturn(label);
-        HighlightedParagraph paragraph = new HighlightedParagraph(
+        var paragraph = new HighlightedParagraph(
                 "text",
                 Color.WHITE,
                 new Highlight("a", Color.RED),
                 new Highlight("b", Color.YELLOW));
 
-        LabelAPI returned = paragraph.addTo(tooltip, 8f);
+        var returned = paragraph.addTo(tooltip, 8f);
 
         assertThat(returned).isSameAs(label);
         verify(tooltip).addPara("text", Color.WHITE, 8f);
         // Highlights flow through the returned label, not through a
         // panel-side setter the way TextPanelAPI handles them.
-        ArgumentCaptor<String[]> texts = ArgumentCaptor.forClass(String[].class);
+        var texts = ArgumentCaptor.forClass(String[].class);
         verify(label).setHighlight(texts.capture());
         assertThat(texts.getValue()).containsExactly("a", "b");
-        ArgumentCaptor<Color[]> colors = ArgumentCaptor.forClass(Color[].class);
+        var colors = ArgumentCaptor.forClass(Color[].class);
         verify(label).setHighlightColors(colors.capture());
         assertThat(colors.getValue()).containsExactly(Color.RED, Color.YELLOW);
     }
 
     @Test
     void applyToFansHighlightsIntoTheParallelLabelSetters() {
-        HighlightedParagraph paragraph = new HighlightedParagraph(
+        var paragraph = new HighlightedParagraph(
                 "text",
                 new Highlight("a", Color.RED),
                 new Highlight("b", Color.WHITE));
 
         paragraph.applyTo(label);
 
-        ArgumentCaptor<String[]> texts = ArgumentCaptor.forClass(String[].class);
+        var texts = ArgumentCaptor.forClass(String[].class);
         verify(label).setHighlight(texts.capture());
         assertThat(texts.getValue()).containsExactly("a", "b");
 
-        ArgumentCaptor<Color[]> colors = ArgumentCaptor.forClass(Color[].class);
+        var colors = ArgumentCaptor.forClass(Color[].class);
         verify(label).setHighlightColors(colors.capture());
         assertThat(colors.getValue()).containsExactly(Color.RED, Color.WHITE);
     }
 
     @Test
     void applyToIsANoopForAParagraphWithNoHighlights() {
-        HighlightedParagraph paragraph = new HighlightedParagraph("text");
+        var paragraph = new HighlightedParagraph("text");
 
         paragraph.applyTo(label);
 

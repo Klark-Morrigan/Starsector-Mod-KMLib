@@ -29,7 +29,7 @@ public final class KmlibStrings {
         if (value == null) {
             return false;
         }
-        for (int i = 0; i < value.length(); i++) {
+        for (var i = 0; i < value.length(); i++) {
             if (!Character.isWhitespace(value.charAt(i))) {
                 return true;
             }

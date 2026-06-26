@@ -46,12 +46,12 @@ public final class VoronoiCellBuilder {
      */
     public static List<List<double[]>> buildCells(List<double[]> sites,
             double maxCellRadius) {
-        List<List<double[]>> cells = new ArrayList<>();
+        var cells = new ArrayList<List<double[]>>();
         if (sites.isEmpty()) {
             return cells;
         }
 
-        for (double[] site : sites) {
+        for (var site : sites) {
             cells.add(buildCell(site, sites, maxCellRadius));
         }
         return cells;
@@ -61,8 +61,8 @@ public final class VoronoiCellBuilder {
     // every other site. Stops early if clipping ever empties the polygon.
     private static List<double[]> buildCell(double[] site, List<double[]> sites,
             double maxCellRadius) {
-        List<double[]> cell = regularPolygon(site, maxCellRadius);
-        for (double[] other : sites) {
+        var cell = regularPolygon(site, maxCellRadius);
+        for (var other : sites) {
             if (other == site) {
                 continue;
             }
@@ -118,9 +118,9 @@ public final class VoronoiCellBuilder {
     // control bound) and rounds any frontier edge that the bisectors do not
     // cut. Counter-clockwise winding.
     private static List<double[]> regularPolygon(double[] center, double radius) {
-        List<double[]> polygon = new ArrayList<>(CELL_BOUND_SEGMENTS);
-        for (int i = 0; i < CELL_BOUND_SEGMENTS; i++) {
-            double angle = 2.0 * Math.PI * i / CELL_BOUND_SEGMENTS;
+        var polygon = new ArrayList<double[]>(CELL_BOUND_SEGMENTS);
+        for (var i = 0; i < CELL_BOUND_SEGMENTS; i++) {
+            var angle = 2.0 * Math.PI * i / CELL_BOUND_SEGMENTS;
             polygon.add(new double[] {
                     center[0] + radius * Math.cos(angle),
                     center[1] + radius * Math.sin(angle),

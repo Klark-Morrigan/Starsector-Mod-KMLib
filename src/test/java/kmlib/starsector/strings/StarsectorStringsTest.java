@@ -11,7 +11,7 @@ class StarsectorStringsTest {
 
     @Test
     void returnsConfiguredStringFromSource() {
-        String value = StarsectorStrings.get(
+        var value = StarsectorStrings.get(
                 CATEGORY,
                 KEY,
                 (category, key) -> "Configured");
@@ -24,7 +24,7 @@ class StarsectorStringsTest {
         // Locks in that the source sees both arguments unchanged - the
         // facade is supposed to be a pass-through, not a category
         // rewriter.
-        String[] seen = new String[2];
+        var seen = new String[2];
 
         StarsectorStrings.get(
                 CATEGORY,
@@ -40,7 +40,7 @@ class StarsectorStringsTest {
 
     @Test
     void redactsWhenSourceReturnsNull() {
-        String value = StarsectorStrings.get(
+        var value = StarsectorStrings.get(
                 CATEGORY,
                 KEY,
                 (category, key) -> null);
@@ -50,7 +50,7 @@ class StarsectorStringsTest {
 
     @Test
     void redactsWhenSourceReturnsBlankValue() {
-        String value = StarsectorStrings.get(
+        var value = StarsectorStrings.get(
                 CATEGORY,
                 KEY,
                 (category, key) -> "  ");
@@ -60,7 +60,7 @@ class StarsectorStringsTest {
 
     @Test
     void redactsWhenSourceThrows() {
-        String value = StarsectorStrings.get(
+        var value = StarsectorStrings.get(
                 CATEGORY,
                 KEY,
                 (category, key) -> {
@@ -72,7 +72,7 @@ class StarsectorStringsTest {
 
     @Test
     void formatsConfiguredStringUsingRootLocale() {
-        String value = StarsectorStrings.format(
+        var value = StarsectorStrings.format(
                 CATEGORY,
                 KEY,
                 (category, key) -> "%d configured %d",
@@ -84,7 +84,7 @@ class StarsectorStringsTest {
 
     @Test
     void redactsWhenConfiguredFormatIsInvalid() {
-        String value = StarsectorStrings.format(
+        var value = StarsectorStrings.format(
                 CATEGORY,
                 KEY,
                 (category, key) -> "%q",

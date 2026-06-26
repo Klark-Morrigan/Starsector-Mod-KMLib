@@ -49,14 +49,14 @@ class BaseExpiringIntelPluginTest {
 
     @Test
     void defaultExpiryEqualsStarsectorDaysPerMonth() {
-        FixedDurationIntel intel = new FixedDurationIntel();
+        var intel = new FixedDurationIntel();
 
         assertThat(intel.getExpiryDays()).isEqualTo((float) StarsectorClock.DAYS_PER_MONTH);
     }
 
     @Test
     void advanceDoesNothingBeforeExpiry() {
-        FixedDurationIntel intel = new FixedDurationIntel();
+        var intel = new FixedDurationIntel();
         when(clock.getElapsedDaysSince(CREATED_AT))
                 .thenReturn((float) StarsectorClock.DAYS_PER_MONTH - 1f);
 
@@ -67,7 +67,7 @@ class BaseExpiringIntelPluginTest {
 
     @Test
     void advanceRemovesIntelOnceExpiryReached() {
-        FixedDurationIntel intel = new FixedDurationIntel();
+        var intel = new FixedDurationIntel();
         when(clock.getElapsedDaysSince(CREATED_AT))
                 .thenReturn((float) StarsectorClock.DAYS_PER_MONTH);
 
@@ -78,7 +78,7 @@ class BaseExpiringIntelPluginTest {
 
     @Test
     void subclassExpiryOverrideIsHonoured() {
-        CustomDurationIntel intel = new CustomDurationIntel(7f);
+        var intel = new CustomDurationIntel(7f);
         when(clock.getElapsedDaysSince(CREATED_AT)).thenReturn(7f);
 
         intel.advanceImpl(1f);
@@ -88,7 +88,7 @@ class BaseExpiringIntelPluginTest {
 
     @Test
     void isExpiredFlipsAtTheSameThresholdAsAdvance() {
-        FixedDurationIntel intel = new FixedDurationIntel();
+        var intel = new FixedDurationIntel();
         when(clock.getElapsedDaysSince(CREATED_AT))
                 .thenReturn((float) StarsectorClock.DAYS_PER_MONTH - 0.1f);
 
@@ -102,7 +102,7 @@ class BaseExpiringIntelPluginTest {
 
     @Test
     void isExpiredReturnsFalseWhenSectorDisappears() {
-        FixedDurationIntel intel = new FixedDurationIntel();
+        var intel = new FixedDurationIntel();
         // Same null-safety contract advanceImpl honours: an early-
         // teardown sector cannot be treated as "expired" or the
         // caller would incorrectly drop the active item.
@@ -125,8 +125,8 @@ class BaseExpiringIntelPluginTest {
         // window. findActive must skip the expired head rather than
         // returning it - the whole point of the helper is to keep
         // synchronous callers aligned with the visible window.
-        FixedDurationIntel expired = new FixedDurationIntel();
-        FixedDurationIntel active = new FixedDurationIntel();
+        var expired = new FixedDurationIntel();
+        var active = new FixedDurationIntel();
         when(clock.getElapsedDaysSince(CREATED_AT))
                 .thenReturn((float) StarsectorClock.DAYS_PER_MONTH);
         when(intelManager.getIntel(FixedDurationIntel.class))
@@ -150,8 +150,8 @@ class BaseExpiringIntelPluginTest {
         // CustomDurationIntel lets each item carry its own expiry,
         // so the head can be expired while the tail is still live -
         // the realistic scenario findActive is built for.
-        CustomDurationIntel expired = new CustomDurationIntel(1f);
-        CustomDurationIntel active = new CustomDurationIntel(100f);
+        var expired = new CustomDurationIntel(1f);
+        var active = new CustomDurationIntel(100f);
         when(clock.getElapsedDaysSince(CREATED_AT)).thenReturn(50f);
         when(intelManager.getIntel(CustomDurationIntel.class))
                 .thenReturn(Arrays.asList(expired, active));
@@ -162,8 +162,8 @@ class BaseExpiringIntelPluginTest {
 
     @Test
     void findActiveReturnsNullWhenEveryItemIsExpired() {
-        CustomDurationIntel a = new CustomDurationIntel(1f);
-        CustomDurationIntel b = new CustomDurationIntel(2f);
+        var a = new CustomDurationIntel(1f);
+        var b = new CustomDurationIntel(2f);
         when(clock.getElapsedDaysSince(CREATED_AT)).thenReturn(50f);
         when(intelManager.getIntel(CustomDurationIntel.class))
                 .thenReturn(Arrays.asList(a, b));
@@ -180,7 +180,7 @@ class BaseExpiringIntelPluginTest {
 
     @Test
     void advanceIsNoOpWhenSectorDisappears() {
-        FixedDurationIntel intel = new FixedDurationIntel();
+        var intel = new FixedDurationIntel();
         // Simulate teardown: sector lookups return null mid-game.
         globalStatic.when(Global::getSector).thenReturn(null);
 

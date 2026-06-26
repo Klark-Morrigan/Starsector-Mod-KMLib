@@ -11,7 +11,7 @@ class HighlightTest {
 
     @Test
     void exposesTextAndColor() {
-        Highlight highlight = new Highlight("the Hegemony's", Color.RED);
+        var highlight = new Highlight("the Hegemony's", Color.RED);
 
         assertThat(highlight.getText()).isEqualTo("the Hegemony's");
         assertThat(highlight.getColor()).isEqualTo(Color.RED);
@@ -19,7 +19,7 @@ class HighlightTest {
 
     @Test
     void staticFactoryBuildsTheSameInstance() {
-        Highlight built = Highlight.of("token", Color.WHITE);
+        var built = Highlight.of("token", Color.WHITE);
 
         assertThat(built.getText()).isEqualTo("token");
         assertThat(built.getColor()).isEqualTo(Color.WHITE);

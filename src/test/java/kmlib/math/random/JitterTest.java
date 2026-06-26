@@ -19,10 +19,10 @@ final class JitterTest {
 
     @Test
     void positive_size_lands_in_symmetric_band() {
-        float size = 0.15f;
+        var size = 0.15f;
 
-        for (int i = 0; i < SAMPLE_COUNT; i++) {
-            float rolled = Jitter.roll(size);
+        for (var i = 0; i < SAMPLE_COUNT; i++) {
+            var rolled = Jitter.roll(size);
             assertThat(rolled).isBetween(1f - size, 1f + size);
         }
     }
@@ -31,12 +31,12 @@ final class JitterTest {
     void negative_size_is_treated_as_its_absolute_value() {
         // -0.25 must produce the same band as +0.25, not flip
         // the interval or return NaN.
-        float size = -0.25f;
-        float expectedMin = 0.75f;
-        float expectedMax = 1.25f;
+        var size = -0.25f;
+        var expectedMin = 0.75f;
+        var expectedMax = 1.25f;
 
-        for (int i = 0; i < SAMPLE_COUNT; i++) {
-            float rolled = Jitter.roll(size);
+        for (var i = 0; i < SAMPLE_COUNT; i++) {
+            var rolled = Jitter.roll(size);
             assertThat(rolled).isBetween(expectedMin, expectedMax);
         }
     }
@@ -45,7 +45,7 @@ final class JitterTest {
     void zero_size_collapses_to_one() {
         // size = 0 means min == max == 1, regardless of the
         // underlying PRNG output.
-        for (int i = 0; i < 100; i++) {
+        for (var i = 0; i < 100; i++) {
             assertThat(Jitter.roll(0f)).isEqualTo(1f);
         }
     }
@@ -54,10 +54,10 @@ final class JitterTest {
     void rolls_cover_both_sides_of_one() {
         // Sanity that the band is actually random, not stuck on
         // one bound. Across 10k samples both halves must appear.
-        boolean sawBelow = false;
-        boolean sawAbove = false;
-        for (int i = 0; i < SAMPLE_COUNT; i++) {
-            float rolled = Jitter.roll(0.15f);
+        var sawBelow = false;
+        var sawAbove = false;
+        for (var i = 0; i < SAMPLE_COUNT; i++) {
+            var rolled = Jitter.roll(0.15f);
             if (rolled < 1f) sawBelow = true;
             if (rolled > 1f) sawAbove = true;
             if (sawBelow && sawAbove) break;

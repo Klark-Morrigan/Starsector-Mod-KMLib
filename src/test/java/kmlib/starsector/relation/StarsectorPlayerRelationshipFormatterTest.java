@@ -19,7 +19,7 @@ class StarsectorPlayerRelationshipFormatterTest {
 
     @Test
     void returnsEmptySummaryForNullFaction() {
-        RelationshipSummary result = formatPlayerRelationship(null);
+        var result = formatPlayerRelationship(null);
 
         assertThat(result.getDescription()).isNull();
         assertThat(result.getColor()).isNull();
@@ -27,15 +27,15 @@ class StarsectorPlayerRelationshipFormatterTest {
 
     @Test
     void formatsDescriptionAndColorViaRelationshipApiPath() {
-        RelationshipAPI relationship = mock(RelationshipAPI.class);
+        var relationship = mock(RelationshipAPI.class);
         when(relationship.getLevel()).thenReturn(RepLevel.VENGEFUL);
         when(relationship.getRepInt()).thenReturn(-100);
         when(relationship.getRelColor()).thenReturn(RED);
 
-        FactionAPI faction = mock(FactionAPI.class);
+        var faction = mock(FactionAPI.class);
         when(faction.getRelToPlayer()).thenReturn(relationship);
 
-        RelationshipSummary result = formatPlayerRelationship(faction);
+        var result = formatPlayerRelationship(faction);
 
         assertThat(result.getDescription()).isEqualTo("Vengeful (-100 / 100)");
         assertThat(result.getColor()).isEqualTo(RED);
@@ -43,7 +43,7 @@ class StarsectorPlayerRelationshipFormatterTest {
 
     @Test
     void fallsBackToFactionRelationshipWhenRelToPlayerIsNull() {
-        FactionAPI faction = mock(FactionAPI.class);
+        var faction = mock(FactionAPI.class);
         // getRelToPlayer defaults to null, triggering the fallback path.
         // Stub the faction-level colour so the resolver does NOT reach the
         // Misc.getRelColor fallback - Misc reads from the static palette
@@ -51,7 +51,7 @@ class StarsectorPlayerRelationshipFormatterTest {
         when(faction.getRelationship(Factions.PLAYER)).thenReturn(0.0f);
         when(faction.getRelColor(Factions.PLAYER)).thenReturn(RED);
 
-        RelationshipSummary result = formatPlayerRelationship(faction);
+        var result = formatPlayerRelationship(faction);
 
         // Level name varies by Starsector version; verify only the numeric format.
         assertThat(result.getDescription()).isNotNull().contains("/ 100");

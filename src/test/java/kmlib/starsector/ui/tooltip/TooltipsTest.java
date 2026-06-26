@@ -31,8 +31,8 @@ class TooltipsTest {
 
     @Test
     void registersTheCreatorOnTheParentWithTheGivenTargetAndLocation() {
-        TooltipMakerAPI parent = mock(TooltipMakerAPI.class);
-        UIComponentAPI target = mock(UIComponentAPI.class);
+        var parent = mock(TooltipMakerAPI.class);
+        var target = mock(UIComponentAPI.class);
 
         Tooltips.attach(
                 parent,
@@ -49,8 +49,8 @@ class TooltipsTest {
 
     @Test
     void registeredCreatorReportsNonExpandableAndTheConfiguredWidth() {
-        TooltipMakerAPI parent = mock(TooltipMakerAPI.class);
-        UIComponentAPI target = mock(UIComponentAPI.class);
+        var parent = mock(TooltipMakerAPI.class);
+        var target = mock(UIComponentAPI.class);
 
         Tooltips.attach(
                 parent,
@@ -59,7 +59,7 @@ class TooltipsTest {
                 WIDTH,
                 tt -> { /* unused for this assertion */ });
 
-        TooltipMakerAPI.TooltipCreator creator = captureCreator(
+        var creator = captureCreator(
                 parent, target, TooltipMakerAPI.TooltipLocation.BELOW);
         // Both engine-facing predicates pinned: the expandable flag stays
         // false (all current call sites are single-shot bodies) and the
@@ -71,10 +71,10 @@ class TooltipsTest {
 
     @Test
     void createTooltipInvokesTheBodyOnceWithTheEngineSuppliedTooltip() {
-        TooltipMakerAPI parent = mock(TooltipMakerAPI.class);
-        UIComponentAPI target = mock(UIComponentAPI.class);
-        TooltipMakerAPI engineTooltip = mock(TooltipMakerAPI.class);
-        AtomicInteger invocations = new AtomicInteger();
+        var parent = mock(TooltipMakerAPI.class);
+        var target = mock(UIComponentAPI.class);
+        var engineTooltip = mock(TooltipMakerAPI.class);
+        var invocations = new AtomicInteger();
 
         Tooltips.attach(
                 parent,
@@ -89,7 +89,7 @@ class TooltipsTest {
                     assertThat(tt).isSameAs(engineTooltip);
                 });
 
-        TooltipMakerAPI.TooltipCreator creator = captureCreator(
+        var creator = captureCreator(
                 parent, target, TooltipMakerAPI.TooltipLocation.RIGHT);
         creator.createTooltip(engineTooltip, false, null);
         creator.createTooltip(engineTooltip, true, null);
@@ -102,8 +102,8 @@ class TooltipsTest {
 
     @Test
     void rejectsNullsFastAtTheCallSite() {
-        TooltipMakerAPI parent = mock(TooltipMakerAPI.class);
-        UIComponentAPI target = mock(UIComponentAPI.class);
+        var parent = mock(TooltipMakerAPI.class);
+        var target = mock(UIComponentAPI.class);
         Consumer<TooltipMakerAPI> body = tt -> { /* unused */ };
 
         // Null-check coverage: failing inside the engine's UI loop later
@@ -127,7 +127,7 @@ class TooltipsTest {
             TooltipMakerAPI parent,
             UIComponentAPI target,
             TooltipMakerAPI.TooltipLocation location) {
-        ArgumentCaptor<TooltipMakerAPI.TooltipCreator> captor =
+        var captor =
                 ArgumentCaptor.forClass(TooltipMakerAPI.TooltipCreator.class);
         verify(parent).addTooltipTo(
                 captor.capture(),

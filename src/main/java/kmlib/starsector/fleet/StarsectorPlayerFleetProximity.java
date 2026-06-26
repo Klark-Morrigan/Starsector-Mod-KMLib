@@ -46,7 +46,7 @@ public final class StarsectorPlayerFleetProximity {
         if (planet == null) {
             return false;
         }
-        CampaignFleetAPI playerFleet = Global.getSector() == null
+        var playerFleet = Global.getSector() == null
                 ? null
                 : Global.getSector().getPlayerFleet();
         if (playerFleet == null) {

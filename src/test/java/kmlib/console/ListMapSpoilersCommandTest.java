@@ -26,10 +26,10 @@ import static org.mockito.Mockito.when;
 final class ListMapSpoilersCommandTest {
     @Test
     void omitsOrdinaryFullyVisibleSystems() {
-        SectorAPI sector = sectorWith(system("Corvus", false,
+        var sector = sectorWith(system("Corvus", false,
                 ownedMarket("Jangala", "Hegemony", Visibility.SHOWN)));
 
-        String report = ListMapSpoilersCommand.buildReport(sector);
+        var report = ListMapSpoilersCommand.buildReport(sector);
 
         assertThat(report).doesNotContain("Corvus");
         assertThat(report).contains("(none)");
@@ -37,10 +37,10 @@ final class ListMapSpoilersCommandTest {
 
     @Test
     void listsCutOffSystemAndFlagsIt() {
-        SectorAPI sector = sectorWith(system("Black Site", true,
+        var sector = sectorWith(system("Black Site", true,
                 ownedMarket("Station", "Tri-Tachyon", Visibility.SHOWN)));
 
-        String report = ListMapSpoilersCommand.buildReport(sector);
+        var report = ListMapSpoilersCommand.buildReport(sector);
 
         assertThat(report).contains("Black Site  [cut off]");
         assertThat(report).contains("Station  (Tri-Tachyon)");
@@ -48,10 +48,10 @@ final class ListMapSpoilersCommandTest {
 
     @Test
     void listsSystemWithHiddenMarketAndFlagsTheMarket() {
-        SectorAPI sector = sectorWith(system("Hideout", false,
+        var sector = sectorWith(system("Hideout", false,
                 ownedMarket("Pirate Base", "Pirates", Visibility.HIDDEN)));
 
-        String report = ListMapSpoilersCommand.buildReport(sector);
+        var report = ListMapSpoilersCommand.buildReport(sector);
 
         assertThat(report).contains("Hideout");
         assertThat(report).contains("Pirate Base  (Pirates)  [hidden]");
@@ -59,10 +59,10 @@ final class ListMapSpoilersCommandTest {
 
     @Test
     void listsSystemWithUndiscoveredMarketAndFlagsTheMarket() {
-        SectorAPI sector = sectorWith(system("Libra System", false,
+        var sector = sectorWith(system("Libra System", false,
                 ownedMarket("Battlestar Libra", "Knights", Visibility.UNDISCOVERED)));
 
-        String report = ListMapSpoilersCommand.buildReport(sector);
+        var report = ListMapSpoilersCommand.buildReport(sector);
 
         assertThat(report).contains("Battlestar Libra  (Knights)  [undiscovered]");
     }
@@ -72,13 +72,13 @@ final class ListMapSpoilersCommandTest {
         // The system lists (a real owned market plus being cut off), but the
         // neutral and condition-only markets are not counted as owned, so they
         // do not appear.
-        MarketAPI real = ownedMarket("Colony", "Hegemony", Visibility.SHOWN);
-        MarketAPI neutral = ownedMarket("Rock", "neutral", Visibility.SHOWN);
-        MarketAPI conditionOnly = ownedMarket("Gas Giant", "Hegemony", Visibility.SHOWN);
+        var real = ownedMarket("Colony", "Hegemony", Visibility.SHOWN);
+        var neutral = ownedMarket("Rock", "neutral", Visibility.SHOWN);
+        var conditionOnly = ownedMarket("Gas Giant", "Hegemony", Visibility.SHOWN);
         when(conditionOnly.isPlanetConditionMarketOnly()).thenReturn(true);
-        SectorAPI sector = sectorWith(system("Bare", true, real, neutral, conditionOnly));
+        var sector = sectorWith(system("Bare", true, real, neutral, conditionOnly));
 
-        String report = ListMapSpoilersCommand.buildReport(sector);
+        var report = ListMapSpoilersCommand.buildReport(sector);
 
         assertThat(report).contains("Bare  [cut off]");
         assertThat(report).contains("Colony  (Hegemony)");
@@ -89,34 +89,34 @@ final class ListMapSpoilersCommandTest {
     private enum Visibility { SHOWN, HIDDEN, UNDISCOVERED }
 
     private static SectorAPI sectorWith(SystemWithMarkets... systems) {
-        EconomyAPI economy = mock(EconomyAPI.class);
-        List<StarSystemAPI> starSystems = new ArrayList<>();
-        for (SystemWithMarkets entry : systems) {
+        var economy = mock(EconomyAPI.class);
+        var starSystems = new ArrayList<StarSystemAPI>();
+        for (var entry : systems) {
             starSystems.add(entry.system);
             when(economy.getMarkets(entry.system)).thenReturn(entry.markets);
         }
-        SectorAPI sector = mock(SectorAPI.class);
+        var sector = mock(SectorAPI.class);
         when(sector.getStarSystems()).thenReturn(starSystems);
         when(sector.getEconomy()).thenReturn(economy);
         return sector;
     }
 
     private static SystemWithMarkets system(String name, boolean isCutOff, MarketAPI... markets) {
-        StarSystemAPI system = mock(StarSystemAPI.class);
+        var system = mock(StarSystemAPI.class);
         when(system.getName()).thenReturn(name);
         when(system.hasTag(Tags.SYSTEM_CUT_OFF_FROM_HYPER)).thenReturn(isCutOff);
         return new SystemWithMarkets(system, List.of(markets));
     }
 
     private static MarketAPI ownedMarket(String name, String factionId, Visibility visibility) {
-        FactionAPI faction = mock(FactionAPI.class);
+        var faction = mock(FactionAPI.class);
         when(faction.getId()).thenReturn(factionId);
         when(faction.getDisplayName()).thenReturn(factionId);
 
-        SectorEntityToken entity = mock(SectorEntityToken.class);
+        var entity = mock(SectorEntityToken.class);
         when(entity.isDiscoverable()).thenReturn(visibility == Visibility.UNDISCOVERED);
 
-        MarketAPI market = mock(MarketAPI.class);
+        var market = mock(MarketAPI.class);
         when(market.getName()).thenReturn(name);
         when(market.getFaction()).thenReturn(faction);
         when(market.isHidden()).thenReturn(visibility == Visibility.HIDDEN);

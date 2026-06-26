@@ -66,7 +66,7 @@ class StarsectorPlayerFleetProximityTest {
     void returnsTrueWhenFleetSitsInsideTheOrbitBand() {
         // Fleet at (0,0), planet at (250,0), radius 100, offset 200 -> band 300.
         // 250 <= 300 -> in orbit.
-        PlanetAPI planet = planetAt(250f, 0f, 100f);
+        var planet = planetAt(250f, 0f, 100f);
         stubPlayerFleetAt(0f, 0f);
 
         assertThat(StarsectorPlayerFleetProximity.isPlayerFleetInOrbitOf(planet, 200f))
@@ -77,7 +77,7 @@ class StarsectorPlayerFleetProximityTest {
     void returnsFalseWhenFleetSitsOutsideTheOrbitBand() {
         // Fleet at (0,0), planet at (500,0), radius 100, offset 200 -> band 300.
         // 500 > 300 -> not in orbit.
-        PlanetAPI planet = planetAt(500f, 0f, 100f);
+        var planet = planetAt(500f, 0f, 100f);
         stubPlayerFleetAt(0f, 0f);
 
         assertThat(StarsectorPlayerFleetProximity.isPlayerFleetInOrbitOf(planet, 200f))
@@ -89,7 +89,7 @@ class StarsectorPlayerFleetProximityTest {
         // Distance exactly equal to the band -> `<=` keeps the fleet
         // in orbit so a hairline-precise approach does not flip the
         // classification mid-frame.
-        PlanetAPI planet = planetAt(300f, 0f, 100f);
+        var planet = planetAt(300f, 0f, 100f);
         stubPlayerFleetAt(0f, 0f);
 
         assertThat(StarsectorPlayerFleetProximity.isPlayerFleetInOrbitOf(planet, 200f))
@@ -101,7 +101,7 @@ class StarsectorPlayerFleetProximityTest {
         // A larger host planet pushes the in-orbit band outward.
         // Radius 800 + offset 200 = 1000; fleet at distance 900 is in
         // orbit even though it would be remote of a small moon.
-        PlanetAPI planet = planetAt(900f, 0f, 800f);
+        var planet = planetAt(900f, 0f, 800f);
         stubPlayerFleetAt(0f, 0f);
 
         assertThat(StarsectorPlayerFleetProximity.isPlayerFleetInOrbitOf(planet, 200f))
@@ -113,7 +113,7 @@ class StarsectorPlayerFleetProximityTest {
         // No player-fleet stub; the SectorAPI mock returns null by
         // default. Callers that want "in orbit" as the defensive
         // default branch on the boolean themselves.
-        PlanetAPI planet = planetAt(0f, 0f, 100f);
+        var planet = planetAt(0f, 0f, 100f);
 
         assertThat(StarsectorPlayerFleetProximity.isPlayerFleetInOrbitOf(planet, 200f))
                 .isFalse();
@@ -136,21 +136,21 @@ class StarsectorPlayerFleetProximityTest {
         // is no player fleet to consult, so the predicate falls into
         // the same "not in orbit" branch as a null fleet.
         globalStatic.when(Global::getSector).thenReturn(null);
-        PlanetAPI planet = planetAt(0f, 0f, 100f);
+        var planet = planetAt(0f, 0f, 100f);
 
         assertThat(StarsectorPlayerFleetProximity.isPlayerFleetInOrbitOf(planet, 200f))
                 .isFalse();
     }
 
     private PlanetAPI planetAt(float x, float y, float radius) {
-        PlanetAPI planet = mock(PlanetAPI.class);
+        var planet = mock(PlanetAPI.class);
         Mockito.when(planet.getLocation()).thenReturn(new Vector2f(x, y));
         Mockito.when(planet.getRadius()).thenReturn(radius);
         return planet;
     }
 
     private void stubPlayerFleetAt(float x, float y) {
-        CampaignFleetAPI fleet = mock(CampaignFleetAPI.class);
+        var fleet = mock(CampaignFleetAPI.class);
         Mockito.when(fleet.getLocation()).thenReturn(new Vector2f(x, y));
         Mockito.when(sector.getPlayerFleet()).thenReturn(fleet);
     }

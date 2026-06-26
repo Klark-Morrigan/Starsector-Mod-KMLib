@@ -22,9 +22,9 @@ import static org.mockito.Mockito.when;
 final class StarSystemsTest {
     @Test
     void collects_each_system_position_as_xy() {
-        SectorAPI sector = sectorWithSystemsAt(new float[] {10, 20}, new float[] {-5, 7});
+        var sector = sectorWithSystemsAt(new float[] {10, 20}, new float[] {-5, 7});
 
-        List<double[]> positions = StarSystems.getHyperspacePositions(sector);
+        var positions = StarSystems.getHyperspacePositions(sector);
 
         assertThat(positions).hasSize(2);
         assertThat(positions.get(0)).containsExactly(10.0, 20.0);
@@ -38,24 +38,24 @@ final class StarSystemsTest {
 
     @Test
     void systems_without_a_location_are_skipped() {
-        StarSystemAPI located = mock(StarSystemAPI.class);
+        var located = mock(StarSystemAPI.class);
         when(located.getLocation()).thenReturn(new Vector2f(1, 2));
-        StarSystemAPI unlocated = mock(StarSystemAPI.class);
+        var unlocated = mock(StarSystemAPI.class);
         when(unlocated.getLocation()).thenReturn(null);
-        SectorAPI sector = mock(SectorAPI.class);
+        var sector = mock(SectorAPI.class);
         when(sector.getStarSystems()).thenReturn(List.of(located, unlocated));
 
         assertThat(StarSystems.getHyperspacePositions(sector)).hasSize(1);
     }
 
     private static SectorAPI sectorWithSystemsAt(float[]... points) {
-        List<StarSystemAPI> systems = new ArrayList<>();
+        var systems = new ArrayList<StarSystemAPI>();
         for (float[] point : points) {
-            StarSystemAPI system = mock(StarSystemAPI.class);
+            var system = mock(StarSystemAPI.class);
             when(system.getLocation()).thenReturn(new Vector2f(point[0], point[1]));
             systems.add(system);
         }
-        SectorAPI sector = mock(SectorAPI.class);
+        var sector = mock(SectorAPI.class);
         when(sector.getStarSystems()).thenReturn(systems);
         return sector;
     }

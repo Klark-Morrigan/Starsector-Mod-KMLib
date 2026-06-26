@@ -77,7 +77,7 @@ public final class StarsectorStrings {
         Objects.requireNonNull(source, "source");
 
         try {
-            String value = source.get(category, key);
+            var value = source.get(category, key);
             if (!KmlibStrings.hasText(value)) {
                 return REDACTED;
             }
@@ -88,7 +88,7 @@ public final class StarsectorStrings {
     }
 
     static String format(String category, String key, StringSource source, Object... args) {
-        String template = get(category, key, source);
+        var template = get(category, key, source);
         try {
             return String.format(Locale.ROOT, template, args);
         } catch (IllegalFormatException exception) {

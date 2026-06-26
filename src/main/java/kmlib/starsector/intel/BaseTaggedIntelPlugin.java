@@ -48,7 +48,7 @@ public abstract class BaseTaggedIntelPlugin extends BaseIntelPlugin {
      */
     @Override
     public Set<String> getIntelTags(SectorMapAPI map) {
-        Set<String> tags = super.getIntelTags(map);
+        var tags = super.getIntelTags(map);
         tags.addAll(extraIntelTags);
         return tags;
     }

@@ -35,12 +35,12 @@ public final class StarSystems {
      *         the sector's star-system order.
      */
     public static List<double[]> getHyperspacePositions(SectorAPI sector) {
-        List<double[]> positions = new ArrayList<>();
+        var positions = new ArrayList<double[]>();
         if (sector == null) {
             return positions;
         }
-        for (StarSystemAPI system : sector.getStarSystems()) {
-            Vector2f location = system.getLocation();
+        for (var system : sector.getStarSystems()) {
+            var location = system.getLocation();
             if (location != null) {
                 positions.add(new double[] {location.x, location.y});
             }

@@ -49,9 +49,9 @@ public final class StarsectorPlayerRelationshipFormatter {
             return RelationshipSummary.createEmptySummary();
         }
 
-        RelationshipAPI relationship = faction.getRelToPlayer();
+        var relationship = faction.getRelToPlayer();
         if (relationship != null) {
-            RepLevel level = relationship.getLevel();
+            var level = relationship.getLevel();
             if (level != null) {
                 return new RelationshipSummary(
                         formatRelationshipDescription(level, relationship.getRepInt()),
@@ -59,13 +59,13 @@ public final class StarsectorPlayerRelationshipFormatter {
             }
         }
 
-        float rel = faction.getRelationship(Factions.PLAYER);
-        RepLevel level = RepLevel.getLevelFor(rel);
+        var rel = faction.getRelationship(Factions.PLAYER);
+        var level = RepLevel.getLevelFor(rel);
         if (level == null) {
             return RelationshipSummary.createEmptySummary();
         }
-        int repInt = RepLevel.getRepInt(rel);
-        Color color = faction.getRelColor(Factions.PLAYER);
+        var repInt = RepLevel.getRepInt(rel);
+        var color = faction.getRelColor(Factions.PLAYER);
         if (color == null) {
             color = Misc.getRelColor(rel);
         }
@@ -73,7 +73,7 @@ public final class StarsectorPlayerRelationshipFormatter {
     }
 
     private static String formatRelationshipDescription(RepLevel level, int repInt) {
-        String levelName = level.getDisplayName();
+        var levelName = level.getDisplayName();
         if (levelName == null || levelName.trim().isEmpty()) {
             // Enum-name fallback when the display name is missing (very
             // old saves, modded RepLevels with empty display strings).
