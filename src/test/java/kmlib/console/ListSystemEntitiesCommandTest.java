@@ -24,7 +24,7 @@ import static org.mockito.Mockito.when;
  */
 final class ListSystemEntitiesCommandTest {
     @Nested
-    final class BuildReport {
+    class BuildReport {
         @Test
         void buildsOrbitTreeWithTrailingUnorbitedAndFleets() {
             var star = entity("star", "Star", 0f, 0f, null, 0f, false);

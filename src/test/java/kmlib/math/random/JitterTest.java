@@ -1,5 +1,6 @@
 package kmlib.math.random;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -17,52 +18,55 @@ final class JitterTest {
 
     private static final int SAMPLE_COUNT = 10_000;
 
-    @Test
-    void positive_size_lands_in_symmetric_band() {
-        var size = 0.15f;
+    @Nested
+    class Roll {
+        @Test
+        void positive_size_lands_in_symmetric_band() {
+            var size = 0.15f;
 
-        for (var i = 0; i < SAMPLE_COUNT; i++) {
-            var rolled = Jitter.roll(size);
-            assertThat(rolled).isBetween(1f - size, 1f + size);
+            for (var i = 0; i < SAMPLE_COUNT; i++) {
+                var rolled = Jitter.roll(size);
+                assertThat(rolled).isBetween(1f - size, 1f + size);
+            }
         }
-    }
 
-    @Test
-    void negative_size_is_treated_as_its_absolute_value() {
-        // -0.25 must produce the same band as +0.25, not flip
-        // the interval or return NaN.
-        var size = -0.25f;
-        var expectedMin = 0.75f;
-        var expectedMax = 1.25f;
+        @Test
+        void negative_size_is_treated_as_its_absolute_value() {
+            // -0.25 must produce the same band as +0.25, not flip
+            // the interval or return NaN.
+            var size = -0.25f;
+            var expectedMin = 0.75f;
+            var expectedMax = 1.25f;
 
-        for (var i = 0; i < SAMPLE_COUNT; i++) {
-            var rolled = Jitter.roll(size);
-            assertThat(rolled).isBetween(expectedMin, expectedMax);
+            for (var i = 0; i < SAMPLE_COUNT; i++) {
+                var rolled = Jitter.roll(size);
+                assertThat(rolled).isBetween(expectedMin, expectedMax);
+            }
         }
-    }
 
-    @Test
-    void zero_size_collapses_to_one() {
-        // size = 0 means min == max == 1, regardless of the
-        // underlying PRNG output.
-        for (var i = 0; i < 100; i++) {
-            assertThat(Jitter.roll(0f)).isEqualTo(1f);
+        @Test
+        void zero_size_collapses_to_one() {
+            // size = 0 means min == max == 1, regardless of the
+            // underlying PRNG output.
+            for (var i = 0; i < 100; i++) {
+                assertThat(Jitter.roll(0f)).isEqualTo(1f);
+            }
         }
-    }
 
-    @Test
-    void rolls_cover_both_sides_of_one() {
-        // Sanity that the band is actually random, not stuck on
-        // one bound. Across 10k samples both halves must appear.
-        var sawBelow = false;
-        var sawAbove = false;
-        for (var i = 0; i < SAMPLE_COUNT; i++) {
-            var rolled = Jitter.roll(0.15f);
-            if (rolled < 1f) sawBelow = true;
-            if (rolled > 1f) sawAbove = true;
-            if (sawBelow && sawAbove) break;
+        @Test
+        void rolls_cover_both_sides_of_one() {
+            // Sanity that the band is actually random, not stuck on
+            // one bound. Across 10k samples both halves must appear.
+            var sawBelow = false;
+            var sawAbove = false;
+            for (var i = 0; i < SAMPLE_COUNT; i++) {
+                var rolled = Jitter.roll(0.15f);
+                if (rolled < 1f) sawBelow = true;
+                if (rolled > 1f) sawAbove = true;
+                if (sawBelow && sawAbove) break;
+            }
+            assertThat(sawBelow).isTrue();
+            assertThat(sawAbove).isTrue();
         }
-        assertThat(sawBelow).isTrue();
-        assertThat(sawAbove).isTrue();
     }
 }

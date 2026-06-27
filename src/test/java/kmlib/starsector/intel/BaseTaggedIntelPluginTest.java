@@ -6,6 +6,7 @@ import com.fs.starfarer.api.campaign.SectorAPI;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
@@ -50,39 +51,42 @@ class BaseTaggedIntelPluginTest {
         globalMock.close();
     }
 
-    @Test
-    void zeroTagsLeavesVanillaTagSetUntouched() {
-        var intel = new UntaggedIntel();
+    @Nested
+    class GetIntelTags {
+        @Test
+        void zeroTagsLeavesVanillaTagSetUntouched() {
+            var intel = new UntaggedIntel();
 
-        var tags = intel.getIntelTags(null);
+            var tags = intel.getIntelTags(null);
 
-        assertThat(tags).doesNotContain(TAG_A, TAG_B);
-    }
+            assertThat(tags).doesNotContain(TAG_A, TAG_B);
+        }
 
-    @Test
-    void singleConstructorTagAppearsInResult() {
-        var intel = new SingleTagIntel();
+        @Test
+        void singleConstructorTagAppearsInResult() {
+            var intel = new SingleTagIntel();
 
-        assertThat(intel.getIntelTags(null)).contains(TAG_A);
-    }
+            assertThat(intel.getIntelTags(null)).contains(TAG_A);
+        }
 
-    @Test
-    void multipleConstructorTagsAllAppearInResult() {
-        var intel = new MultiTagIntel();
+        @Test
+        void multipleConstructorTagsAllAppearInResult() {
+            var intel = new MultiTagIntel();
 
-        assertThat(intel.getIntelTags(null)).contains(TAG_A, TAG_B);
-    }
+            assertThat(intel.getIntelTags(null)).contains(TAG_A, TAG_B);
+        }
 
-    @Test
-    void importantFlagStillPropagatesProvingSuperIsCalled() {
-        // Regression guard: if the override stopped calling super,
-        // vanilla's "Important" tag would silently disappear. Set the
-        // flag and assert the tag still surfaces alongside the
-        // constructor-supplied tag.
-        var intel = new SingleTagIntel();
-        intel.setImportant(true);
+        @Test
+        void importantFlagStillPropagatesProvingSuperIsCalled() {
+            // Regression guard: if the override stopped calling super,
+            // vanilla's "Important" tag would silently disappear. Set the
+            // flag and assert the tag still surfaces alongside the
+            // constructor-supplied tag.
+            var intel = new SingleTagIntel();
+            intel.setImportant(true);
 
-        assertThat(intel.getIntelTags(null)).contains("Important", TAG_A);
+            assertThat(intel.getIntelTags(null)).contains("Important", TAG_A);
+        }
     }
 
     private static final String TAG_A = "test_tag_a";

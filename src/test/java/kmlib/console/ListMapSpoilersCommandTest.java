@@ -8,6 +8,7 @@ import com.fs.starfarer.api.campaign.econ.EconomyAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -24,66 +25,70 @@ import static org.mockito.Mockito.when;
  * reason.
  */
 final class ListMapSpoilersCommandTest {
-    @Test
-    void omitsOrdinaryFullyVisibleSystems() {
-        var sector = sectorWith(system("Corvus", false,
-                ownedMarket("Jangala", "Hegemony", Visibility.SHOWN)));
 
-        var report = ListMapSpoilersCommand.buildReport(sector);
+    @Nested
+    class BuildReport {
+        @Test
+        void omitsOrdinaryFullyVisibleSystems() {
+            var sector = sectorWith(system("Corvus", false,
+                    ownedMarket("Jangala", "Hegemony", Visibility.SHOWN)));
 
-        assertThat(report).doesNotContain("Corvus");
-        assertThat(report).contains("(none)");
-    }
+            var report = ListMapSpoilersCommand.buildReport(sector);
 
-    @Test
-    void listsCutOffSystemAndFlagsIt() {
-        var sector = sectorWith(system("Black Site", true,
-                ownedMarket("Station", "Tri-Tachyon", Visibility.SHOWN)));
+            assertThat(report).doesNotContain("Corvus");
+            assertThat(report).contains("(none)");
+        }
 
-        var report = ListMapSpoilersCommand.buildReport(sector);
+        @Test
+        void listsCutOffSystemAndFlagsIt() {
+            var sector = sectorWith(system("Black Site", true,
+                    ownedMarket("Station", "Tri-Tachyon", Visibility.SHOWN)));
 
-        assertThat(report).contains("Black Site  [cut off]");
-        assertThat(report).contains("Station  (Tri-Tachyon)");
-    }
+            var report = ListMapSpoilersCommand.buildReport(sector);
 
-    @Test
-    void listsSystemWithHiddenMarketAndFlagsTheMarket() {
-        var sector = sectorWith(system("Hideout", false,
-                ownedMarket("Pirate Base", "Pirates", Visibility.HIDDEN)));
+            assertThat(report).contains("Black Site  [cut off]");
+            assertThat(report).contains("Station  (Tri-Tachyon)");
+        }
 
-        var report = ListMapSpoilersCommand.buildReport(sector);
+        @Test
+        void listsSystemWithHiddenMarketAndFlagsTheMarket() {
+            var sector = sectorWith(system("Hideout", false,
+                    ownedMarket("Pirate Base", "Pirates", Visibility.HIDDEN)));
 
-        assertThat(report).contains("Hideout");
-        assertThat(report).contains("Pirate Base  (Pirates)  [hidden]");
-    }
+            var report = ListMapSpoilersCommand.buildReport(sector);
 
-    @Test
-    void listsSystemWithUndiscoveredMarketAndFlagsTheMarket() {
-        var sector = sectorWith(system("Libra System", false,
-                ownedMarket("Battlestar Libra", "Knights", Visibility.UNDISCOVERED)));
+            assertThat(report).contains("Hideout");
+            assertThat(report).contains("Pirate Base  (Pirates)  [hidden]");
+        }
 
-        var report = ListMapSpoilersCommand.buildReport(sector);
+        @Test
+        void listsSystemWithUndiscoveredMarketAndFlagsTheMarket() {
+            var sector = sectorWith(system("Libra System", false,
+                    ownedMarket("Battlestar Libra", "Knights", Visibility.UNDISCOVERED)));
 
-        assertThat(report).contains("Battlestar Libra  (Knights)  [undiscovered]");
-    }
+            var report = ListMapSpoilersCommand.buildReport(sector);
 
-    @Test
-    void excludesNeutralAndConditionOnlyMarketsFromTheOwnedList() {
-        // The system lists (a real owned market plus being cut off), but the
-        // neutral and condition-only markets are not counted as owned, so they
-        // do not appear.
-        var real = ownedMarket("Colony", "Hegemony", Visibility.SHOWN);
-        var neutral = ownedMarket("Rock", "neutral", Visibility.SHOWN);
-        var conditionOnly = ownedMarket("Gas Giant", "Hegemony", Visibility.SHOWN);
-        when(conditionOnly.isPlanetConditionMarketOnly()).thenReturn(true);
-        var sector = sectorWith(system("Bare", true, real, neutral, conditionOnly));
+            assertThat(report).contains("Battlestar Libra  (Knights)  [undiscovered]");
+        }
 
-        var report = ListMapSpoilersCommand.buildReport(sector);
+        @Test
+        void excludesNeutralAndConditionOnlyMarketsFromTheOwnedList() {
+            // The system lists (a real owned market plus being cut off), but the
+            // neutral and condition-only markets are not counted as owned, so they
+            // do not appear.
+            var real = ownedMarket("Colony", "Hegemony", Visibility.SHOWN);
+            var neutral = ownedMarket("Rock", "neutral", Visibility.SHOWN);
+            var conditionOnly = ownedMarket("Gas Giant", "Hegemony", Visibility.SHOWN);
+            when(conditionOnly.isPlanetConditionMarketOnly()).thenReturn(true);
+            var sector = sectorWith(system("Bare", true, real, neutral, conditionOnly));
 
-        assertThat(report).contains("Bare  [cut off]");
-        assertThat(report).contains("Colony  (Hegemony)");
-        assertThat(report).doesNotContain("Rock");
-        assertThat(report).doesNotContain("Gas Giant");
+            var report = ListMapSpoilersCommand.buildReport(sector);
+
+            assertThat(report).contains("Bare  [cut off]");
+            assertThat(report).contains("Colony  (Hegemony)");
+            assertThat(report).doesNotContain("Rock");
+            assertThat(report).doesNotContain("Gas Giant");
+        }
     }
 
     private enum Visibility { SHOWN, HIDDEN, UNDISCOVERED }

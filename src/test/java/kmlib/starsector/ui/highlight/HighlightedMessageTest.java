@@ -6,6 +6,7 @@ import kmlib.starsector.testing.StarsectorSettingsFake;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.awt.Color;
@@ -29,60 +30,69 @@ class HighlightedMessageTest {
         StarsectorSettingsFake.clearSettings();
     }
 
-    @Test
-    void rejectsEmptyParagraphList() {
-        assertThatThrownBy(() -> new HighlightedMessage())
-                .isInstanceOf(IllegalArgumentException.class);
+    @Nested
+    class Constructor {
+        @Test
+        void rejectsEmptyParagraphList() {
+            assertThatThrownBy(() -> new HighlightedMessage())
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        void rejectsNullParagraph() {
+            assertThatThrownBy(() -> new HighlightedMessage(
+                    new HighlightedParagraph("ok"),
+                    null))
+                    .isInstanceOf(NullPointerException.class);
+        }
     }
 
-    @Test
-    void rejectsNullParagraph() {
-        assertThatThrownBy(() -> new HighlightedMessage(
-                new HighlightedParagraph("ok"),
-                null))
-                .isInstanceOf(NullPointerException.class);
+    @Nested
+    class GetLines {
+        @Test
+        void getLinesReturnsTheConstructorParagraphsInOrder() {
+            var first = new HighlightedParagraph("first");
+            var second = new HighlightedParagraph("second");
+
+            var message = new HighlightedMessage(first, second);
+
+            assertThat(message.getLines()).containsExactly(first, second);
+        }
     }
 
-    @Test
-    void getLinesReturnsTheConstructorParagraphsInOrder() {
-        var first = new HighlightedParagraph("first");
-        var second = new HighlightedParagraph("second");
+    @Nested
+    class ToMessageIntel {
+        @Test
+        void toMessageIntelEmitsOneLinePerParagraph() throws Exception {
+            var message = new HighlightedMessage(
+                    new HighlightedParagraph("first line"),
+                    new HighlightedParagraph("second line"));
 
-        var message = new HighlightedMessage(first, second);
+            var intel = message.toMessageIntel();
 
-        assertThat(message.getLines()).containsExactly(first, second);
-    }
+            var texts = readLineTexts(intel);
+            assertThat(texts).containsExactly("first line", "second line");
+        }
 
-    @Test
-    void toMessageIntelEmitsOneLinePerParagraph() throws Exception {
-        var message = new HighlightedMessage(
-                new HighlightedParagraph("first line"),
-                new HighlightedParagraph("second line"));
+        @Test
+        void toMessageIntelPropagatesHighlightsAndColorsPerParagraph() throws Exception {
+            var paragraph = new HighlightedParagraph(
+                    "construction complete on Test Prime.",
+                    Color.GRAY,
+                    Highlight.of("complete", Color.GREEN),
+                    Highlight.of("Test Prime", Color.YELLOW));
 
-        var intel = message.toMessageIntel();
+            var intel = new HighlightedMessage(paragraph).toMessageIntel();
 
-        var texts = readLineTexts(intel);
-        assertThat(texts).containsExactly("first line", "second line");
-    }
-
-    @Test
-    void toMessageIntelPropagatesHighlightsAndColorsPerParagraph() throws Exception {
-        var paragraph = new HighlightedParagraph(
-                "construction complete on Test Prime.",
-                Color.GRAY,
-                Highlight.of("complete", Color.GREEN),
-                Highlight.of("Test Prime", Color.YELLOW));
-
-        var intel = new HighlightedMessage(paragraph).toMessageIntel();
-
-        var line = readLines(intel).get(0);
-        assertThat(readLineField(line, "text"))
-                .isEqualTo("construction complete on Test Prime.");
-        assertThat(readLineField(line, "color")).isEqualTo(Color.GRAY);
-        assertThat((String[]) readLineField(line, "highlights"))
-                .containsExactly("complete", "Test Prime");
-        assertThat((Color[]) readLineField(line, "colors"))
-                .containsExactly(Color.GREEN, Color.YELLOW);
+            var line = readLines(intel).get(0);
+            assertThat(readLineField(line, "text"))
+                    .isEqualTo("construction complete on Test Prime.");
+            assertThat(readLineField(line, "color")).isEqualTo(Color.GRAY);
+            assertThat((String[]) readLineField(line, "highlights"))
+                    .containsExactly("complete", "Test Prime");
+            assertThat((Color[]) readLineField(line, "colors"))
+                    .containsExactly(Color.GREEN, Color.YELLOW);
+        }
     }
 
     // MessageIntel keeps line data on a protected `lines` field of

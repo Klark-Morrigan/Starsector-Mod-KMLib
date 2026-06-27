@@ -1,5 +1,6 @@
 package kmlib.math.geometry;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -16,79 +17,83 @@ import static org.assertj.core.api.Assertions.assertThat;
  *  - each site lies inside its own cell.
  */
 final class VoronoiCellBuilderTest {
+
     private static final double MAX_CELL_RADIUS = 5000.0;
 
-    @Test
-    void empty_sites_yield_no_cells() {
-        assertThat(VoronoiCellBuilder.buildCells(List.of(), MAX_CELL_RADIUS)).isEmpty();
-    }
-
-    @Test
-    void one_cell_is_built_per_site() {
-        var sites = Arrays.asList(
-                new double[] {-1, 0},
-                new double[] {1, 0},
-                new double[] {0, 1});
-
-        assertThat(VoronoiCellBuilder.buildCells(sites, MAX_CELL_RADIUS)).hasSize(3);
-    }
-
-    @Test
-    void a_lone_site_fills_a_bounded_disc() {
-        double[] site = {500, 500};
-        var cells = VoronoiCellBuilder.buildCells(
-                List.of(site), MAX_CELL_RADIUS);
-
-        assertThat(cells).hasSize(1);
-        assertThat(cells.get(0).size()).isGreaterThan(4);
-        assertThat(cells.get(0)).allMatch(vertex ->
-                distance(vertex, site) <= MAX_CELL_RADIUS + 1e-6);
-    }
-
-    @Test
-    void every_cell_stays_within_the_bound_radius() {
-        var sites = Arrays.asList(
-                new double[] {-300, -300},
-                new double[] {300, -300},
-                new double[] {0, 400},
-                new double[] {0, 0});
-
-        var cells = VoronoiCellBuilder.buildCells(sites, MAX_CELL_RADIUS);
-
-        for (var i = 0; i < sites.size(); i++) {
-            var site = sites.get(i);
-            assertThat(cells.get(i))
-                    .as("cell %d stays within the bound radius of its site", i)
-                    .allMatch(vertex -> distance(vertex, site) <= MAX_CELL_RADIUS + 1e-6);
+    @Nested
+    class BuildCells {
+        @Test
+        void empty_sites_yield_no_cells() {
+            assertThat(VoronoiCellBuilder.buildCells(List.of(), MAX_CELL_RADIUS)).isEmpty();
         }
-    }
 
-    @Test
-    void two_sites_split_along_their_bisector() {
-        var sites = Arrays.asList(
-                new double[] {-1000, 0},
-                new double[] {1000, 0});
+        @Test
+        void one_cell_is_built_per_site() {
+            var sites = Arrays.asList(
+                    new double[] {-1, 0},
+                    new double[] {1, 0},
+                    new double[] {0, 1});
 
-        var cells = VoronoiCellBuilder.buildCells(sites, MAX_CELL_RADIUS);
+            assertThat(VoronoiCellBuilder.buildCells(sites, MAX_CELL_RADIUS)).hasSize(3);
+        }
 
-        assertThat(cells.get(0)).allMatch(vertex -> vertex[0] <= 1e-9);
-        assertThat(cells.get(1)).allMatch(vertex -> vertex[0] >= -1e-9);
-    }
+        @Test
+        void a_lone_site_fills_a_bounded_disc() {
+            double[] site = {500, 500};
+            var cells = VoronoiCellBuilder.buildCells(
+                    List.of(site), MAX_CELL_RADIUS);
 
-    @Test
-    void each_site_lies_inside_its_own_cell() {
-        var sites = Arrays.asList(
-                new double[] {-300, -300},
-                new double[] {300, -300},
-                new double[] {0, 400},
-                new double[] {0, 0});
+            assertThat(cells).hasSize(1);
+            assertThat(cells.get(0).size()).isGreaterThan(4);
+            assertThat(cells.get(0)).allMatch(vertex ->
+                    distance(vertex, site) <= MAX_CELL_RADIUS + 1e-6);
+        }
 
-        var cells = VoronoiCellBuilder.buildCells(sites, MAX_CELL_RADIUS);
+        @Test
+        void every_cell_stays_within_the_bound_radius() {
+            var sites = Arrays.asList(
+                    new double[] {-300, -300},
+                    new double[] {300, -300},
+                    new double[] {0, 400},
+                    new double[] {0, 0});
 
-        for (var i = 0; i < sites.size(); i++) {
-            assertThat(isPointInsidePolygon(sites.get(i), cells.get(i)))
-                    .as("site %d lies inside its own cell", i)
-                    .isTrue();
+            var cells = VoronoiCellBuilder.buildCells(sites, MAX_CELL_RADIUS);
+
+            for (var i = 0; i < sites.size(); i++) {
+                var site = sites.get(i);
+                assertThat(cells.get(i))
+                        .as("cell %d stays within the bound radius of its site", i)
+                        .allMatch(vertex -> distance(vertex, site) <= MAX_CELL_RADIUS + 1e-6);
+            }
+        }
+
+        @Test
+        void two_sites_split_along_their_bisector() {
+            var sites = Arrays.asList(
+                    new double[] {-1000, 0},
+                    new double[] {1000, 0});
+
+            var cells = VoronoiCellBuilder.buildCells(sites, MAX_CELL_RADIUS);
+
+            assertThat(cells.get(0)).allMatch(vertex -> vertex[0] <= 1e-9);
+            assertThat(cells.get(1)).allMatch(vertex -> vertex[0] >= -1e-9);
+        }
+
+        @Test
+        void each_site_lies_inside_its_own_cell() {
+            var sites = Arrays.asList(
+                    new double[] {-300, -300},
+                    new double[] {300, -300},
+                    new double[] {0, 400},
+                    new double[] {0, 0});
+
+            var cells = VoronoiCellBuilder.buildCells(sites, MAX_CELL_RADIUS);
+
+            for (var i = 0; i < sites.size(); i++) {
+                assertThat(isPointInsidePolygon(sites.get(i), cells.get(i)))
+                        .as("site %d lies inside its own cell", i)
+                        .isTrue();
+            }
         }
     }
 
