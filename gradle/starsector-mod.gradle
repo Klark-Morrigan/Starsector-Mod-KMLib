@@ -101,3 +101,4 @@ def kmlibGradleTasksDir = "${rootDir}/../Starsector-Mod-KMLib/gradle/tasks"
 
 // Lint tasks.
 apply from: "${kmlibGradleTasksDir}/lint/formatting/enforce-single-blank-lines.gradle"
+apply from: "${kmlibGradleTasksDir}/lint/naming/tests/enforce-suffix-on-fakes.gradle"

@@ -96,6 +96,11 @@ def testGradle = tasks.register('testGradle', Test) {
     // path, so declare it as a task input: editing a gate must re-run these
     // tests rather than leave them UP-TO-DATE against a stale version. The path
     // is also handed to the test so it does not assume a working directory.
+    def fakeGateScript = file(
+            'gradle/tasks/lint/naming/tests/enforce-suffix-on-fakes.gradle')
+    inputs.file(fakeGateScript).withPropertyName('fakeGateScript')
+    systemProperty 'gate.script.path', fakeGateScript.absolutePath
+
     def singleBlankGateScript = file(
             'gradle/tasks/lint/formatting/enforce-single-blank-lines.gradle')
     inputs.file(singleBlankGateScript).withPropertyName('singleBlankGateScript')
