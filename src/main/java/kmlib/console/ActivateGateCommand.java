@@ -28,7 +28,7 @@ public final class ActivateGateCommand implements BaseCommand {
     // second constructor accepts an explicit binding for callers that supply
     // their own.
     public ActivateGateCommand() {
-        this(new ConsoleCommandOutput());
+        this(ConsoleCommandOutput.INSTANCE);
     }
 
     ActivateGateCommand(CommandOutput output) {
@@ -37,7 +37,7 @@ public final class ActivateGateCommand implements BaseCommand {
 
     @Override
     public CommandResult runCommand(String args, CommandContext context) {
-        var command = new CommandValidation(context, args)
+        var command = new CommandValidation(context, args, output)
                 .inCampaign()
                 .inSystem()
                 .hasArguments()

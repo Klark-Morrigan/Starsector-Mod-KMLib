@@ -2,12 +2,13 @@ package kmlib.console.validation;
 
 import com.fs.starfarer.api.Global;
 
+import kmlib.console.output.CommandOutput;
+import kmlib.console.output.ConsoleCommandOutput;
 import kmlib.starsector.systems.StarSystems;
 import kmlib.text.KmlibStrings;
 
 import org.lazywizard.console.BaseCommand.CommandContext;
 import org.lazywizard.console.BaseCommand.CommandResult;
-import org.lazywizard.console.Console;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,21 +32,28 @@ import java.util.function.Supplier;
  * <p>Built from only what a command actually has at runtime - its context and
  * arguments; Console Commands does not hand a command its own name, so messages
  * are phrased generically. A command opts into the guards that apply to it.
- * {@link #validateAndPrintFeedback()} runs the chain in order,
- * stops at the first failure, prints it to the console, and
- * returns the result to return (each check carries its own - {@code
- * WRONG_CONTEXT} for context, {@code BAD_SYNTAX} for a missing argument);
- * passing all checks yields a valid result.
+ * {@link #validateAndPrintFeedback()} runs the chain in order, stops at the
+ * first failure, reports it through the {@link CommandOutput} seam, and returns
+ * the result to return (each check carries its own - {@code WRONG_CONTEXT} for
+ * context, {@code BAD_SYNTAX} for a missing argument); passing all checks yields
+ * a valid result.
  */
 public final class CommandValidation {
     private final CommandContext context;
     private final String args;
+    private final CommandOutput output;
     // Each check returns null when it passes, or the failure to report otherwise.
     private final List<Supplier<Failure>> checks = new ArrayList<>();
 
+    // Callers that have not adopted the output seam get the live console binding.
     public CommandValidation(CommandContext context, String args) {
+        this(context, args, ConsoleCommandOutput.INSTANCE);
+    }
+
+    public CommandValidation(CommandContext context, String args, CommandOutput output) {
         this.context = context;
         this.args = args;
+        this.output = output;
     }
 
     public CommandValidation inCampaign() {
@@ -76,7 +84,7 @@ public final class CommandValidation {
         for (Supplier<Failure> check : checks) {
             var failure = check.get();
             if (failure != null) {
-                Console.showMessage(failure.message);
+                output.showMessage(failure.message);
                 return CommandValidationResult.invalid(failure.result);
             }
         }
