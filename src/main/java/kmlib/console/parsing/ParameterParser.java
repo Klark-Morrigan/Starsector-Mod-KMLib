@@ -16,13 +16,16 @@ import java.util.Map;
  * works on is passed in - so the declaration ({@link ParameterSpec}) and the
  * algorithm stay separate responsibilities.
  *
- * <p>Each token is either {@code name=value} or a bare positional. A named token
- * fills its parameter directly and drops it out of the positional order, so the
- * bare tokens fill the still-open positional slots in declared order; a name-only
- * parameter never takes a slot. Per-parameter typing is delegated to each
- * parameter's {@link ValueParser}. An unknown name, a value its parser rejects,
- * a missing required parameter, or more positionals than open slots are each
- * reported (yielding {@code BAD_SYNTAX}).
+ * <p>Each token is {@code name=value}, a bare flag keyword, or a bare positional.
+ * A named token fills its parameter directly and drops it out of the positional
+ * order; a bare token matching a declared flag name toggles that flag; any other
+ * bare token fills the still-open positional slots in declared order. A name-only
+ * parameter and a flag never take a slot. Because flags are matched first, a
+ * positional value cannot itself be a declared flag's keyword. Per-parameter
+ * typing is delegated to each parameter's {@link ValueParser}. An unknown name, a
+ * flag given a value, a value its parser rejects, a missing required parameter,
+ * or more positionals than open slots are each reported (yielding
+ * {@code BAD_SYNTAX}).
  */
 final class ParameterParser {
     private ParameterParser() {
@@ -35,12 +38,26 @@ final class ParameterParser {
         for (var token : tokens) {
             var separator = token.indexOf('=');
             if (separator < 0) {
-                positionals.add(token);
+                // A bare token is a flag if it names one; otherwise it is a
+                // positional value filled in later, against the open slots.
+                var flag = findFlag(parameters, token);
+                if (flag != null) {
+                    supplied.put(flag, Boolean.TRUE);
+                } else {
+                    positionals.add(token);
+                }
                 continue;
             }
             var name = token.substring(0, separator);
-            var parameter = findByName(parameters, name);
+            var parameter = findValueByName(parameters, name);
             if (parameter == null) {
+                // Naming a flag with a value is a distinct mistake from naming
+                // something unknown, so it gets its own correction.
+                if (findFlag(parameters, name) != null) {
+                    output.showMessage("'" + name + "' is a flag; give it on its own,"
+                            + " without '='.");
+                    return ParsedParameters.invalid(CommandResult.BAD_SYNTAX);
+                }
                 output.showMessage("Unknown parameter '" + name + "'. Use "
                         + describeAcceptedParameters(parameters) + '.');
                 return ParsedParameters.invalid(CommandResult.BAD_SYNTAX);
@@ -93,25 +110,40 @@ final class ParameterParser {
         }
     }
 
-    // The parameter named by key, case-insensitively, or null when none matches.
-    private static Parameter<?> findByName(List<Parameter<?>> parameters, String key) {
+    // The value-carrying parameter named by key, case-insensitively, or null when
+    // none matches; flags are excluded since they take no name=value form.
+    private static Parameter<?> findValueByName(List<Parameter<?>> parameters, String key) {
         for (var parameter : parameters) {
-            if (parameter.getName().equalsIgnoreCase(key)) {
+            if (!parameter.isFlag() && parameter.getName().equalsIgnoreCase(key)) {
                 return parameter;
             }
         }
         return null;
     }
 
-    // The accepted parameters as name=<hint> pairs, for telling the player which
-    // names exist when they used one that does not.
+    // The flag named by key, case-insensitively, or null when none matches.
+    private static Parameter<?> findFlag(List<Parameter<?>> parameters, String key) {
+        for (var parameter : parameters) {
+            if (parameter.isFlag() && parameter.getName().equalsIgnoreCase(key)) {
+                return parameter;
+            }
+        }
+        return null;
+    }
+
+    // The accepted parameters - value parameters as name=<hint> pairs, flags as
+    // bare keywords - for telling the player which names exist when they used one
+    // that does not.
     private static String describeAcceptedParameters(List<Parameter<?>> parameters) {
         var description = new StringBuilder();
         for (var parameter : parameters) {
             if (description.length() > 0) {
                 description.append(", ");
             }
-            description.append(parameter.getName()).append('=').append(parameter.getValueHint());
+            description.append(parameter.getName());
+            if (!parameter.isFlag()) {
+                description.append('=').append(parameter.getValueHint());
+            }
         }
         return description.toString();
     }

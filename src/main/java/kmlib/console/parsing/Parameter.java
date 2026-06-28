@@ -3,17 +3,23 @@ package kmlib.console.parsing;
 /**
  * One parameter in a command's spec: its name, the compact value hint shown in
  * usage and unknown-parameter messages (e.g. {@code <id>}), how its raw token
- * becomes a typed value, and whether it may be given positionally, is required,
- * or carries a default. Declared as a field of a {@link ParameterSpec} through
- * its {@code acceptsX} factories; that same instance is the key a command uses to
- * read its value back from {@link ParsedParameters}, so retrieval stays type safe
- * with no casts at the call site.
+ * becomes a typed value, and whether it may be given positionally, is a bare
+ * keyword flag, is required, or carries a default. Declared as a field of a
+ * {@link ParameterSpec} through its {@code acceptsX} factories; that same
+ * instance is the key a command uses to read its value back from
+ * {@link ParsedParameters}, so retrieval stays type safe with no casts at the
+ * call site.
+ *
+ * <p>A flag is the degenerate case that carries no value: it has no value parser
+ * or hint, is supplied as a bare keyword rather than {@code name=value}, and
+ * reads {@link Boolean#TRUE true} when present and false (its default) when not.
  */
 public final class Parameter<T> {
     private final String name;
     private final String valueHint;
     private final boolean positional;
     private final ValueParser<T> valueParser;
+    private boolean flag;
     private boolean required;
     private T defaultValue;
 
@@ -39,6 +45,16 @@ public final class Parameter<T> {
         return new Parameter<>(name, valueHint, false, valueParser);
     }
 
+    // A bare keyword flag: it carries no value, so it has no parser or hint and
+    // never claims a positional slot; present reads true, absent reads its false
+    // default. Created through ParameterSpec#acceptsFlag.
+    static Parameter<Boolean> flag(String name) {
+        Parameter<Boolean> parameter = new Parameter<>(name, null, false, null);
+        parameter.flag = true;
+        parameter.defaultValue = Boolean.FALSE;
+        return parameter;
+    }
+
     // Marks the parameter as required: parsing fails if it is never supplied.
     public Parameter<T> markRequired() {
         this.required = true;
@@ -62,6 +78,10 @@ public final class Parameter<T> {
 
     boolean isPositional() {
         return positional;
+    }
+
+    boolean isFlag() {
+        return flag;
     }
 
     boolean isRequired() {

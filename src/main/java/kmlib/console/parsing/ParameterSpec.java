@@ -10,9 +10,10 @@ import java.util.List;
  * A console command's parameter specification: the ordered parameters it accepts
  * and the usage line shown when too many are given, declared as one cohesive
  * unit. A command subclasses this and declares each parameter as a field through
- * {@link #acceptsPositional} / {@link #acceptsNamed}, so the spec reads top to
- * bottom as "what this command accepts" and those fields double as the type-safe
- * keys for reading values back from {@link ParsedParameters}:
+ * {@link #acceptsPositional} / {@link #acceptsNamed} / {@link #acceptsFlag}, so
+ * the spec reads top to bottom as "what this command accepts" and those fields
+ * double as the type-safe keys for reading values back from
+ * {@link ParsedParameters}:
  *
  * <pre>
  * private static final class SpawnSpec extends ParameterSpec {
@@ -50,6 +51,26 @@ public abstract class ParameterSpec {
         return record(Parameter.named(name, valueHint, valueParser));
     }
 
+    // Records a bare keyword flag - supplied as a lone token, never name=value or
+    // a positional slot - and returns its key. The flag reads true when present
+    // and false when omitted.
+    protected final Parameter<Boolean> acceptsFlag(String name) {
+        return record(Parameter.flag(name));
+    }
+
+    /**
+     * Parses a command's raw argument string against this spec, printing any
+     * problem through {@code output} and returning the typed values, or an
+     * invalid result the command returns straight back. The whole-string entry
+     * point for a command whose verb is not a separate token: it splits on
+     * whitespace, with a null or blank string yielding no tokens. A command that
+     * peels a leading verb first tokenizes itself and calls
+     * {@link #parse(String[], CommandOutput)}.
+     */
+    public ParsedParameters parse(String args, CommandOutput output) {
+        return parse(tokenize(args), output);
+    }
+
     /**
      * Parses {@code tokens} - the command's parameter tokens, with any leading
      * verb already removed - against this spec, printing any problem through
@@ -77,5 +98,13 @@ public abstract class ParameterSpec {
     private <T> Parameter<T> record(Parameter<T> parameter) {
         parameters.add(parameter);
         return parameter;
+    }
+
+    // Splits a raw argument string into tokens on whitespace; a null or blank
+    // string yields no tokens (rather than one empty token, which String.split
+    // would return), so an argument-less command parses as nothing supplied.
+    private static String[] tokenize(String args) {
+        var trimmed = args == null ? "" : args.trim();
+        return trimmed.isEmpty() ? new String[0] : trimmed.split("\\s+");
     }
 }
