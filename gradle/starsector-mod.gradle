@@ -93,16 +93,3 @@ jar {
     destinationDirectory = file("$projectDir/jars")
 }
 
-// Root of KMLib's Gradle task scripts. Resolved by the same sibling-checkout
-// path used for java-conventions above; KMLib's folder is named
-// Starsector-Mod-KMLib, so the path is correct whether the consumer is KMLib
-// itself or a neighbour (KMU, KMO, ...).
-def kmlibGradleTasksDir = "${rootDir}/../Starsector-Mod-KMLib/gradle/tasks"
-
-// Lint tasks.
-apply from: "${kmlibGradleTasksDir}/lint/formatting/enforce-single-blank-lines.gradle"
-apply from: "${kmlibGradleTasksDir}/lint/literals/enforce-no-magic-literals-java.gradle"
-apply from: "${kmlibGradleTasksDir}/lint/literals/enforce-no-magic-literals-kotlin.gradle"
-apply from: "${kmlibGradleTasksDir}/lint/naming/tests/enforce-suffix-on-fakes.gradle"
-apply from: "${kmlibGradleTasksDir}/lint/naming/tests/enforce-suffix-on-mocks.gradle"
-apply from: "${kmlibGradleTasksDir}/lint/structure/tests/enforce-tests-nested.gradle"

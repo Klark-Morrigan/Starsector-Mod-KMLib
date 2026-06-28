@@ -1,5 +1,0 @@
-public final class Sample {
-    public int scale(int value) {
-        return value * 7;
-    }
-}

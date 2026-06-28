@@ -1,3 +1,0 @@
-object Sample {
-    fun scale(value: Int): Int = value * 7
-}
