@@ -19,6 +19,12 @@ import java.awt.Color;
  * {@code GL11} is exercised in-engine, not in tests.
  */
 public final class GlColor {
+    // Channel positions in the [r, g, b, a] array Colors#getGlComponents returns,
+    // named so the glColor4f call reads by channel rather than bare index.
+    private static final int RED = 0;
+    private static final int GREEN = 1;
+    private static final int BLUE = 2;
+    private static final int ALPHA = 3;
 
     private GlColor() {
     }
@@ -33,6 +39,6 @@ public final class GlColor {
      */
     public static void set(Color color, float alphaMult) {
         var rgba = Colors.getGlComponents(color, alphaMult);
-        GL11.glColor4f(rgba[0], rgba[1], rgba[2], rgba[3]);
+        GL11.glColor4f(rgba[RED], rgba[GREEN], rgba[BLUE], rgba[ALPHA]);
     }
 }
