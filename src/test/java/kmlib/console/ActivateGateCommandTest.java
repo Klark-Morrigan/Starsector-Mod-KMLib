@@ -35,8 +35,9 @@ import static org.mockito.Mockito.when;
  * {@code StarSystems}, {@code Gates} - are stubbed via static mocks. With the
  * console output decoupled behind {@code CommandOutput}, the failing-validation
  * branch is pinned here too: a wrong-context run returns the validation result
- * and touches no gate. Cases live under a {@link Nested} group named for the
- * method under test.
+ * and touches no gate, and the spec's required-id and surplus-argument checks
+ * report bad syntax without resolving anything. Cases live under a {@link Nested}
+ * group named for the method under test.
  */
 final class ActivateGateCommandTest {
 
@@ -104,6 +105,27 @@ final class ActivateGateCommandTest {
             gatesMock.verify(() -> Gates.activateGate(gateMock));
             assertThat(outputFake.getMessages())
                     .anyMatch(message -> message.contains("Activated gate 'gate1'"));
+        }
+
+        @Test
+        void reports_a_missing_id_as_bad_syntax_and_resolves_nothing() {
+            var result = command.runCommand("", CommandContext.CAMPAIGN_MAP);
+
+            assertThat(result).isEqualTo(CommandResult.BAD_SYNTAX);
+            assertThat(outputFake.getMessages())
+                    .anyMatch(message -> message.contains("Missing required parameter 'id'"));
+            // With no id there is nothing to resolve or activate.
+            gatesMock.verifyNoInteractions();
+        }
+
+        @Test
+        void reports_a_surplus_argument_as_bad_syntax() {
+            var result = command.runCommand("gate1 extra", CommandContext.CAMPAIGN_MAP);
+
+            assertThat(result).isEqualTo(CommandResult.BAD_SYNTAX);
+            assertThat(outputFake.getMessages())
+                    .anyMatch(message -> message.contains("Too many arguments"));
+            gatesMock.verifyNoInteractions();
         }
 
         @Test

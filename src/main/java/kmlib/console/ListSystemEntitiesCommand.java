@@ -6,12 +6,15 @@ import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
 
+import kmlib.console.output.CommandOutput;
+import kmlib.console.output.ConsoleCommandOutput;
+import kmlib.console.parsing.Parameter;
+import kmlib.console.parsing.ParameterSpec;
 import kmlib.console.validation.CommandValidation;
 import kmlib.starsector.geometry.StarsectorPoints;
 import kmlib.starsector.systems.StarSystems;
 
 import org.lazywizard.console.BaseCommand;
-import org.lazywizard.console.Console;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -35,20 +38,40 @@ import java.util.Set;
  * gates only.
  */
 public final class ListSystemEntitiesCommand implements BaseCommand {
-    private static final String GATES_ONLY_ARG = "gates";
+    private static final ListSystemEntitiesSpec SPEC = new ListSystemEntitiesSpec();
+    // One full revolution; an orbital period (in days) divides into this to give
+    // the entity's angular speed in degrees per day.
+    private static final double DEGREES_PER_CIRCLE = 360.0;
+
+    private final CommandOutput output;
+
+    // Console Commands instantiates a command through its no-arg constructor
+    // (Class.newInstance), so that path wires the live console binding; the
+    // second constructor accepts an explicit binding for callers that supply
+    // their own.
+    public ListSystemEntitiesCommand() {
+        this(ConsoleCommandOutput.INSTANCE);
+    }
+
+    ListSystemEntitiesCommand(CommandOutput output) {
+        this.output = output;
+    }
 
     @Override
     public CommandResult runCommand(String args, CommandContext context) {
-        var command = new CommandValidation(context, args)
+        var command = new CommandValidation(context, args, output)
                 .inCampaign()
                 .inSystem()
                 .validateAndPrintFeedback();
         if (!command.isValid()) {
             return command.getResult();
         }
+        var parsed = SPEC.parse(args, output);
+        if (!parsed.isValid()) {
+            return parsed.getResult();
+        }
         var system = StarSystems.getPlayerStarSystem(Global.getSector());
-        var isGatesOnly = args != null && args.trim().equalsIgnoreCase(GATES_ONLY_ARG);
-        Console.showMessage(buildReport(system, isGatesOnly));
+        output.showMessage(buildReport(system, parsed.get(SPEC.gatesOnly)));
         return CommandResult.SUCCESS;
     }
 
@@ -193,6 +216,19 @@ public final class ListSystemEntitiesCommand implements BaseCommand {
         if (orbit == null || orbit.getOrbitalPeriod() <= 0f) {
             return 0.0;
         }
-        return 360.0 / orbit.getOrbitalPeriod();
+        return DEGREES_PER_CIRCLE / orbit.getOrbitalPeriod();
+    }
+
+    /**
+     * What {@code kmlib_list_system_entities} accepts: a lone {@code gates} flag
+     * that narrows the listing to gates and their orbit chains. A flag rather than
+     * a value, so it is given as the bare keyword and absent means the full tree.
+     */
+    private static final class ListSystemEntitiesSpec extends ParameterSpec {
+        private final Parameter<Boolean> gatesOnly = acceptsFlag("gates");
+
+        private ListSystemEntitiesSpec() {
+            super("Usage: kmlib_list_system_entities [gates].");
+        }
     }
 }

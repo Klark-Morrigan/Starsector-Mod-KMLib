@@ -1,5 +1,6 @@
 package kmlib.console;
 
+import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
@@ -8,21 +9,32 @@ import com.fs.starfarer.api.campaign.econ.EconomyAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
 
+import kmlib.testfixtures.console.output.CommandOutputFake;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.lazywizard.console.BaseCommand.CommandContext;
+import org.lazywizard.console.BaseCommand.CommandResult;
+import org.mockito.MockedStatic;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 /**
- * Pins {@link ListMapSpoilersCommand#buildReport}: it lists only spoiler-worthy
- * systems (cut off, or holding a hidden/undiscovered owned market), skips
- * ordinary visible systems and neutral/condition-only markets, and flags each
- * reason.
+ * Pins {@link ListMapSpoilersCommand}: {@code buildReport} lists only
+ * spoiler-worthy systems (cut off, or holding a hidden/undiscovered owned
+ * market), skips ordinary visible systems and neutral/condition-only markets,
+ * and flags each reason; and {@code runCommand} prints the report for a bare
+ * invocation, rejects a surplus argument as bad syntax, and returns the
+ * validation result outside a campaign. The report is read back through a
+ * recording {@code CommandOutput}, so no live console is needed.
  */
 final class ListMapSpoilersCommandTest {
 
@@ -88,6 +100,56 @@ final class ListMapSpoilersCommandTest {
             assertThat(report).contains("Colony  (Hegemony)");
             assertThat(report).doesNotContain("Rock");
             assertThat(report).doesNotContain("Gas Giant");
+        }
+    }
+
+    @Nested
+    class RunCommand {
+        private MockedStatic<Global> globalMock;
+        private CommandOutputFake outputFake;
+        private ListMapSpoilersCommand command;
+
+        @BeforeEach
+        void setUp() {
+            var sectorMock = mock(SectorAPI.class);
+            when(sectorMock.getStarSystems()).thenReturn(new ArrayList<>());
+            globalMock = mockStatic(Global.class);
+            globalMock.when(Global::getSector).thenReturn(sectorMock);
+
+            outputFake = new CommandOutputFake();
+            command = new ListMapSpoilersCommand(outputFake);
+        }
+
+        @AfterEach
+        void tearDown() {
+            globalMock.close();
+        }
+
+        @Test
+        void prints_the_report_for_a_bare_invocation() {
+            var result = command.runCommand("", CommandContext.CAMPAIGN_MAP);
+
+            assertThat(result).isEqualTo(CommandResult.SUCCESS);
+            assertThat(outputFake.getMessages())
+                    .anyMatch(message -> message.contains("Map spoilers"));
+        }
+
+        @Test
+        void reports_a_surplus_argument_as_bad_syntax() {
+            var result = command.runCommand("bogus", CommandContext.CAMPAIGN_MAP);
+
+            assertThat(result).isEqualTo(CommandResult.BAD_SYNTAX);
+            assertThat(outputFake.getMessages())
+                    .anyMatch(message -> message.contains("Too many arguments"));
+        }
+
+        @Test
+        void returns_the_validation_result_outside_a_campaign() {
+            var result = command.runCommand("", CommandContext.COMBAT_MISSION);
+
+            assertThat(result).isEqualTo(CommandResult.WRONG_CONTEXT);
+            assertThat(outputFake.getMessages())
+                    .anyMatch(message -> message.contains("can only run in a campaign"));
         }
     }
 

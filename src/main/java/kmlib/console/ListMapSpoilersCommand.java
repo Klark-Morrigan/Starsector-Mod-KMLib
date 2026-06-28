@@ -6,10 +6,12 @@ import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
 
+import kmlib.console.output.CommandOutput;
+import kmlib.console.output.ConsoleCommandOutput;
+import kmlib.console.parsing.ParameterSpec;
 import kmlib.console.validation.CommandValidation;
 
 import org.lazywizard.console.BaseCommand;
-import org.lazywizard.console.Console;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,16 +32,37 @@ import java.util.List;
  */
 public final class ListMapSpoilersCommand implements BaseCommand {
     private static final String NEUTRAL_FACTION_ID = "neutral";
+    private static final ListMapSpoilersSpec SPEC = new ListMapSpoilersSpec();
+
+    private final CommandOutput output;
+
+    // Console Commands instantiates a command through its no-arg constructor
+    // (Class.newInstance), so that path wires the live console binding; the
+    // second constructor accepts an explicit binding for callers that supply
+    // their own.
+    public ListMapSpoilersCommand() {
+        this(ConsoleCommandOutput.INSTANCE);
+    }
+
+    ListMapSpoilersCommand(CommandOutput output) {
+        this.output = output;
+    }
 
     @Override
     public CommandResult runCommand(String args, CommandContext context) {
-        var command = new CommandValidation(context, args)
+        var command = new CommandValidation(context, args, output)
                 .inCampaign()
                 .validateAndPrintFeedback();
         if (!command.isValid()) {
             return command.getResult();
         }
-        Console.showMessage(buildReport(Global.getSector()));
+        // The command takes no parameters; parsing an empty spec turns any stray
+        // argument into a bad-syntax report rather than silently ignoring it.
+        var parsed = SPEC.parse(args, output);
+        if (!parsed.isValid()) {
+            return parsed.getResult();
+        }
+        output.showMessage(buildReport(Global.getSector()));
         return CommandResult.SUCCESS;
     }
 
@@ -116,5 +139,16 @@ public final class ListMapSpoilersCommand implements BaseCommand {
             return "  [undiscovered]";
         }
         return "";
+    }
+
+    /**
+     * What {@code kmlib_list_map_spoilers} accepts: nothing. Declared so the
+     * parser rejects any stray argument as bad syntax rather than the command
+     * ignoring it.
+     */
+    private static final class ListMapSpoilersSpec extends ParameterSpec {
+        private ListMapSpoilersSpec() {
+            super("Usage: kmlib_list_map_spoilers.");
+        }
     }
 }
