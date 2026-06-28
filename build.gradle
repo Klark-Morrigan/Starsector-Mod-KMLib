@@ -62,6 +62,8 @@ sourceSets {
         // keep them from colliding there.
         def gateTestDirs = [
                 'src/test-gradle/tasks/lint/formatting/tests/enforce-single-blank-lines',
+                'src/test-gradle/tasks/lint/literals/tests/enforce-no-magic-literals-java',
+                'src/test-gradle/tasks/lint/literals/tests/enforce-no-magic-literals-kotlin',
                 'src/test-gradle/tasks/lint/naming/tests/enforce-suffix-on-fakes',
                 'src/test-gradle/tasks/lint/naming/tests/enforce-suffix-on-mocks',
                 'src/test-gradle/tasks/lint/structure/tests/enforce-tests-nested',
@@ -115,6 +117,22 @@ def testGradle = tasks.register('testGradle', Test) {
             'gradle/tasks/lint/formatting/enforce-single-blank-lines.gradle')
     inputs.file(singleBlankGateScript).withPropertyName('singleBlankGateScript')
     systemProperty 'single.blank.gate.script.path', singleBlankGateScript.absolutePath
+
+    // The literal gates also read a shared rule config by path (detekt.yml /
+    // checkstyle-magic-literals.xml), so those are inputs too: editing a rule
+    // must re-run the tests, not leave them UP-TO-DATE against stale rules.
+    def javaLiteralsGateScript = file(
+            'gradle/tasks/lint/literals/enforce-no-magic-literals-java.gradle')
+    inputs.file(javaLiteralsGateScript).withPropertyName('javaLiteralsGateScript')
+    inputs.file(file('gradle/checkstyle-magic-literals.xml'))
+            .withPropertyName('checkstyleMagicLiteralsConfig')
+    systemProperty 'java.literals.gate.script.path', javaLiteralsGateScript.absolutePath
+
+    def kotlinLiteralsGateScript = file(
+            'gradle/tasks/lint/literals/enforce-no-magic-literals-kotlin.gradle')
+    inputs.file(kotlinLiteralsGateScript).withPropertyName('kotlinLiteralsGateScript')
+    inputs.file(file('gradle/detekt.yml')).withPropertyName('detektConfig')
+    systemProperty 'kotlin.literals.gate.script.path', kotlinLiteralsGateScript.absolutePath
 }
 
 // Run with the rest of verification: 'check' covers a local 'build', and

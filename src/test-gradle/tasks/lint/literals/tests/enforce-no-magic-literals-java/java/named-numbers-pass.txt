@@ -1,0 +1,7 @@
+public final class Sample {
+    private static final int SCALE_FACTOR = 7;
+
+    public int scale(int value) {
+        return value * SCALE_FACTOR;
+    }
+}

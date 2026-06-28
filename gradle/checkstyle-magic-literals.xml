@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC
+    "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+    "https://checkstyle.org/dtds/configuration_1_3.dtd">
+
+<!--
+  KM-only "named constants good, loose literals bad" rule for Java sources
+  (magic numbers). Deliberately SEPARATE from Common-Java's checkstyle.xml: that
+  config is the whole Java family's import hygiene and runs on every consumer,
+  including the ported mods we do not own. This rule would turn those ports'
+  builds red, so it lives here and is applied only to KM mods by the
+  enforce-no-magic-literals-java gate (KMLib gradle/tasks/lint/literals), which
+  guards on the KM group.
+
+  The Kotlin half of the same rule lives in detekt.yml; the two are kept in
+  step so a number is treated the same in either language.
+
+  Severity is error: a violation fails the build's check task.
+-->
+<module name="Checker">
+    <property name="severity" value="error"/>
+    <property name="charset" value="UTF-8"/>
+
+    <module name="TreeWalker">
+        <!-- A numeric literal used inline in logic. -1/0/1/2 are structural
+             (indices, increments, halving) and waived. A literal that defines
+             a field is the named home for the value, so field declarations are
+             exempt - the same stance ignorePropertyDeclaration takes for
+             Kotlin. hashCode boilerplate and annotation arguments are waived
+             for the same reasons as the Kotlin config. -->
+        <module name="MagicNumber">
+            <property name="ignoreNumbers" value="-1, 0, 1, 2"/>
+            <property name="ignoreHashCodeMethod" value="true"/>
+            <property name="ignoreAnnotation" value="true"/>
+            <property name="ignoreFieldDeclaration" value="true"/>
+        </module>
+    </module>
+</module>
