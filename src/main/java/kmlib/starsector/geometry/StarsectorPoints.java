@@ -4,7 +4,6 @@ import com.fs.starfarer.api.campaign.SectorEntityToken;
 
 import kmlib.math.geometry.Points;
 
-
 /**
  * Distance and bearing between Starsector campaign entities - the
  * game-typed sibling of {@link Points}.
