@@ -38,32 +38,32 @@ final class ParameterParser {
         for (var token : tokens) {
             var separator = token.indexOf('=');
             if (separator < 0) {
-                // A bare token is a flag if it names one; otherwise it is a
-                // positional value filled in later, against the open slots.
-                var flag = findFlag(parameters, token);
-                if (flag != null) {
-                    supplied.put(flag, Boolean.TRUE);
+                // A bare token toggles a flag if it names one; any other bare
+                // token is a positional value, filled later against the open slots.
+                var parameter = findByName(parameters, token);
+                if (parameter != null && parameter.isFlag()) {
+                    supplied.put(parameter, Boolean.TRUE);
                 } else {
                     positionals.add(token);
                 }
                 continue;
             }
             var name = token.substring(0, separator);
-            var parameter = findValueByName(parameters, name);
+            var parameter = findByName(parameters, name);
             if (parameter == null) {
-                // Naming a flag with a value is a distinct mistake from naming
-                // something unknown, so it gets its own correction.
-                if (findFlag(parameters, name) != null) {
-                    output.showMessage("'" + name + "' is a flag; give it on its own,"
-                            + " without '='.");
-                    return ParsedParameters.invalid(CommandResult.BAD_SYNTAX);
-                }
                 output.showMessage("Unknown parameter '" + name + "'. Use "
                         + describeAcceptedParameters(parameters) + '.');
-                return ParsedParameters.invalid(CommandResult.BAD_SYNTAX);
+                return ParsedParameters.createInvalid(CommandResult.BAD_SYNTAX);
+            }
+            if (parameter.isFlag()) {
+                // Naming a flag with a value is a distinct mistake from naming
+                // something unknown, so it gets its own correction.
+                output.showMessage("'" + name + "' is a flag; give it on its own,"
+                        + " without '='.");
+                return ParsedParameters.createInvalid(CommandResult.BAD_SYNTAX);
             }
             if (!storeValue(parameter, token.substring(separator + 1), supplied, output)) {
-                return ParsedParameters.invalid(CommandResult.BAD_SYNTAX);
+                return ParsedParameters.createInvalid(CommandResult.BAD_SYNTAX);
             }
         }
 
@@ -78,21 +78,21 @@ final class ParameterParser {
         if (positionals.size() > openSlots.size()) {
             var usage = spec.getUsage();
             output.showMessage("Too many arguments." + (usage == null ? "" : " " + usage));
-            return ParsedParameters.invalid(CommandResult.BAD_SYNTAX);
+            return ParsedParameters.createInvalid(CommandResult.BAD_SYNTAX);
         }
         for (var index = 0; index < positionals.size(); index++) {
             if (!storeValue(openSlots.get(index), positionals.get(index), supplied, output)) {
-                return ParsedParameters.invalid(CommandResult.BAD_SYNTAX);
+                return ParsedParameters.createInvalid(CommandResult.BAD_SYNTAX);
             }
         }
 
         for (var parameter : parameters) {
             if (parameter.isRequired() && !supplied.containsKey(parameter)) {
                 output.showMessage("Missing required parameter '" + parameter.getName() + "'.");
-                return ParsedParameters.invalid(CommandResult.BAD_SYNTAX);
+                return ParsedParameters.createInvalid(CommandResult.BAD_SYNTAX);
             }
         }
-        return ParsedParameters.valid(supplied);
+        return ParsedParameters.createValid(supplied);
     }
 
     // Parses raw for parameter and records it, or prints why it was rejected and
@@ -110,21 +110,11 @@ final class ParameterParser {
         }
     }
 
-    // The value-carrying parameter named by key, case-insensitively, or null when
-    // none matches; flags are excluded since they take no name=value form.
-    private static Parameter<?> findValueByName(List<Parameter<?>> parameters, String key) {
+    // The parameter named by key, case-insensitively, or null when none matches;
+    // the caller classifies the match (flag vs value) by its kind.
+    private static Parameter<?> findByName(List<Parameter<?>> parameters, String key) {
         for (var parameter : parameters) {
-            if (!parameter.isFlag() && parameter.getName().equalsIgnoreCase(key)) {
-                return parameter;
-            }
-        }
-        return null;
-    }
-
-    // The flag named by key, case-insensitively, or null when none matches.
-    private static Parameter<?> findFlag(List<Parameter<?>> parameters, String key) {
-        for (var parameter : parameters) {
-            if (parameter.isFlag() && parameter.getName().equalsIgnoreCase(key)) {
+            if (parameter.getName().equalsIgnoreCase(key)) {
                 return parameter;
             }
         }

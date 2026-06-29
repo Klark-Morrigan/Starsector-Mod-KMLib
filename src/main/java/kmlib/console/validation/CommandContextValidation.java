@@ -5,7 +5,6 @@ import com.fs.starfarer.api.Global;
 import kmlib.console.output.CommandOutput;
 import kmlib.console.output.ConsoleCommandOutput;
 import kmlib.starsector.systems.StarSystems;
-import kmlib.text.KmlibStrings;
 
 import org.lazywizard.console.BaseCommand.CommandContext;
 import org.lazywizard.console.BaseCommand.CommandResult;
@@ -15,48 +14,50 @@ import java.util.List;
 import java.util.function.Supplier;
 
 /**
- * Fluent precondition checks for KMLib's console commands. A command chains only
- * the guards it needs and validates once:
+ * Fluent run-context checks for KMLib's console commands: whether the command may
+ * run given the current game state (in a campaign, inside a star system). A
+ * command chains only the guards it needs and validates once:
  *
  * <pre>
- * CommandValidationResult command = new CommandValidation(context, args)
- *         .inCampaign()
- *         .inSystem()
- *         .hasArguments()
+ * CommandValidationResult command = new CommandContextValidation(context, output)
+ *         .requireCampaign()
+ *         .requireStarSystem()
  *         .validateAndPrintFeedback();
  * if (!command.isValid()) {
  *     return command.getResult();
  * }
  * </pre>
  *
- * <p>Built from only what a command actually has at runtime - its context and
- * arguments; Console Commands does not hand a command its own name, so messages
- * are phrased generically. A command opts into the guards that apply to it.
- * {@link #validateAndPrintFeedback()} runs the chain in order, stops at the
- * first failure, reports it through the {@link CommandOutput} seam, and returns
- * the result to return (each check carries its own - {@code WRONG_CONTEXT} for
- * context, {@code BAD_SYNTAX} for a missing argument); passing all checks yields
- * a valid result.
+ * <p>This owns only the context guards; argument shape is the parser's job
+ * ({@link kmlib.console.parsing.ParameterSpec}). The common command runs both in
+ * sequence, for which {@link kmlib.console.CommandInput} composes the two into a
+ * single step; a command direct-uses this only when its flow branches between the
+ * context check and the parse (e.g. it inspects a leading token first).
+ *
+ * <p>Built from only the context a command has at runtime; Console Commands does
+ * not hand a command its own name, so messages are phrased generically.
+ * {@link #validateAndPrintFeedback()} runs the chain in order, stops at the first
+ * failure, reports it through the {@link CommandOutput} seam, and returns the
+ * result to return ({@code WRONG_CONTEXT} for a context guard); passing all
+ * checks yields a valid result.
  */
-public final class CommandValidation {
+public final class CommandContextValidation {
     private final CommandContext context;
-    private final String args;
     private final CommandOutput output;
     // Each check returns null when it passes, or the failure to report otherwise.
     private final List<Supplier<Failure>> checks = new ArrayList<>();
 
     // Callers that have not adopted the output seam get the live console binding.
-    public CommandValidation(CommandContext context, String args) {
-        this(context, args, ConsoleCommandOutput.INSTANCE);
+    public CommandContextValidation(CommandContext context) {
+        this(context, ConsoleCommandOutput.INSTANCE);
     }
 
-    public CommandValidation(CommandContext context, String args, CommandOutput output) {
+    public CommandContextValidation(CommandContext context, CommandOutput output) {
         this.context = context;
-        this.args = args;
         this.output = output;
     }
 
-    public CommandValidation inCampaign() {
+    public CommandContextValidation requireCampaign() {
         checks.add(() -> context.isInCampaign()
                 ? null
                 : new Failure("This command can only run in a campaign.",
@@ -64,19 +65,11 @@ public final class CommandValidation {
         return this;
     }
 
-    public CommandValidation inSystem() {
+    public CommandContextValidation requireStarSystem() {
         checks.add(() -> StarSystems.getPlayerStarSystem(Global.getSector()) != null
                 ? null
                 : new Failure("This command must be run inside a star system.",
                         CommandResult.WRONG_CONTEXT));
-        return this;
-    }
-
-    public CommandValidation hasArguments() {
-        checks.add(() -> KmlibStrings.hasText(args)
-                ? null
-                : new Failure("This command requires an argument. Execute help <command_name>.",
-                        CommandResult.BAD_SYNTAX));
         return this;
     }
 
@@ -85,10 +78,10 @@ public final class CommandValidation {
             var failure = check.get();
             if (failure != null) {
                 output.showMessage(failure.message);
-                return CommandValidationResult.invalid(failure.result);
+                return CommandValidationResult.createInvalid(failure.result);
             }
         }
-        return CommandValidationResult.valid();
+        return CommandValidationResult.createValid();
     }
 
     // A failed check: the message to print and the result the command returns.

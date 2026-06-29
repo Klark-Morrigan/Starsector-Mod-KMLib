@@ -37,6 +37,16 @@ public abstract class ParameterSpec {
         this.usage = usage;
     }
 
+    /**
+     * A spec that accepts no parameters, carrying the given usage line - for a
+     * command that takes no arguments but still wants a stray one reported as bad
+     * syntax rather than silently ignored. Spares such a command an empty
+     * subclass that would only call {@code super(usage)}.
+     */
+    public static ParameterSpec takingNoArguments(String usage) {
+        return new NoArgumentsSpec(usage);
+    }
+
     // Records a parameter that may be supplied positionally (in declaration
     // order) or by name, and returns its key.
     protected final <T> Parameter<T> acceptsPositional(String name, String valueHint,
@@ -106,5 +116,13 @@ public abstract class ParameterSpec {
     private static String[] tokenize(String args) {
         var trimmed = args == null ? "" : args.trim();
         return trimmed.isEmpty() ? new String[0] : trimmed.split("\\s+");
+    }
+
+    // The concrete empty spec behind takingNoArguments: it declares no
+    // parameters, so the parser treats any supplied token as surplus.
+    private static final class NoArgumentsSpec extends ParameterSpec {
+        private NoArgumentsSpec(String usage) {
+            super(usage);
+        }
     }
 }

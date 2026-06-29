@@ -7,14 +7,10 @@ import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
 
 import kmlib.console.output.CommandOutput;
-import kmlib.console.output.ConsoleCommandOutput;
 import kmlib.console.parsing.Parameter;
 import kmlib.console.parsing.ParameterSpec;
-import kmlib.console.validation.CommandValidation;
 import kmlib.starsector.geometry.StarsectorPoints;
 import kmlib.starsector.systems.StarSystems;
-
-import org.lazywizard.console.BaseCommand;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -37,36 +33,25 @@ import java.util.Set;
  * of bodies they orbit so each gate's place is clear, and the trailing lists to
  * gates only.
  */
-public final class ListSystemEntitiesCommand implements BaseCommand {
+public final class ListSystemEntitiesCommand extends BaseConsoleCommand {
     private static final ListSystemEntitiesSpec SPEC = new ListSystemEntitiesSpec();
     // One full revolution; an orbital period (in days) divides into this to give
     // the entity's angular speed in degrees per day.
     private static final double DEGREES_PER_CIRCLE = 360.0;
 
-    private final CommandOutput output;
-
-    // Console Commands instantiates a command through its no-arg constructor
-    // (Class.newInstance), so that path wires the live console binding; the
-    // second constructor accepts an explicit binding for callers that supply
-    // their own.
     public ListSystemEntitiesCommand() {
-        this(ConsoleCommandOutput.INSTANCE);
     }
 
     ListSystemEntitiesCommand(CommandOutput output) {
-        this.output = output;
+        super(output);
     }
 
     @Override
     public CommandResult runCommand(String args, CommandContext context) {
-        var command = new CommandValidation(context, args, output)
-                .inCampaign()
-                .inSystem()
-                .validateAndPrintFeedback();
-        if (!command.isValid()) {
-            return command.getResult();
-        }
-        var parsed = SPEC.parse(args, output);
+        var parsed = readInput(context, args)
+                .requireCampaign()
+                .requireStarSystem()
+                .parseArguments(SPEC);
         if (!parsed.isValid()) {
             return parsed.getResult();
         }

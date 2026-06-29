@@ -4,14 +4,10 @@ import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
 
 import kmlib.console.output.CommandOutput;
-import kmlib.console.output.ConsoleCommandOutput;
 import kmlib.console.parsing.Parameter;
 import kmlib.console.parsing.ParameterSpec;
-import kmlib.console.validation.CommandValidation;
 import kmlib.starsector.entities.Gates;
 import kmlib.starsector.systems.StarSystems;
-
-import org.lazywizard.console.BaseCommand;
 
 import static kmlib.console.parsing.ParameterValues.text;
 
@@ -21,38 +17,27 @@ import static kmlib.console.parsing.ParameterValues.text;
  *
  * <p>Resolves the gate by id within the current system and hands it to
  * {@link Gates#activateGate}, which owns the gate-state mechanics. Player
- * feedback goes through a {@link CommandOutput} seam so the command's outcome
- * branches stay independent of the live console sink.
+ * feedback goes through the inherited {@link CommandOutput} seam so the command's
+ * outcome branches stay independent of the live console sink.
  */
-public final class ActivateGateCommand implements BaseCommand {
+public final class ActivateGateCommand extends BaseConsoleCommand {
     private static final ActivateGateSpec SPEC = new ActivateGateSpec();
 
-    private final CommandOutput output;
-
-    // Console Commands instantiates a command through its no-arg constructor
-    // (Class.newInstance), so that path wires the live console binding; the
-    // second constructor accepts an explicit binding for callers that supply
-    // their own.
     public ActivateGateCommand() {
-        this(ConsoleCommandOutput.INSTANCE);
     }
 
     ActivateGateCommand(CommandOutput output) {
-        this.output = output;
+        super(output);
     }
 
     @Override
     public CommandResult runCommand(String args, CommandContext context) {
-        var command = new CommandValidation(context, args, output)
-                .inCampaign()
-                .inSystem()
-                .validateAndPrintFeedback();
-        if (!command.isValid()) {
-            return command.getResult();
-        }
-        // The spec carries the required-id check (it reports the miss as bad
-        // syntax) that an inline hasArguments guard used to.
-        var parsed = SPEC.parse(args, output);
+        // Context guards run first; the id is then required, so a missing or
+        // surplus argument is reported as bad syntax before any gate lookup.
+        var parsed = readInput(context, args)
+                .requireCampaign()
+                .requireStarSystem()
+                .parseArguments(SPEC);
         if (!parsed.isValid()) {
             return parsed.getResult();
         }

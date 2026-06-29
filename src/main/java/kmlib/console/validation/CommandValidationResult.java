@@ -3,9 +3,9 @@ package kmlib.console.validation;
 import org.lazywizard.console.BaseCommand.CommandResult;
 
 /**
- * The outcome of a {@link CommandValidation}: whether the command may proceed,
- * and - when it may not - the {@link CommandResult} the command should return.
- * Lets a command guard with one check and one return:
+ * The outcome of a {@link CommandContextValidation}: whether the command may
+ * proceed, and - when it may not - the {@link CommandResult} the command should
+ * return. Lets a command guard with one check and one return:
  * {@code if (!result.isValid()) return result.getResult();}.
  */
 public final class CommandValidationResult {
@@ -17,11 +17,11 @@ public final class CommandValidationResult {
         this.commandResult = commandResult;
     }
 
-    static CommandValidationResult valid() {
+    static CommandValidationResult createValid() {
         return new CommandValidationResult(true, null);
     }
 
-    static CommandValidationResult invalid(CommandResult commandResult) {
+    static CommandValidationResult createInvalid(CommandResult commandResult) {
         return new CommandValidationResult(false, commandResult);
     }
 

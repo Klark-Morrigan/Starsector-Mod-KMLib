@@ -314,4 +314,29 @@ final class ParameterParserTest {
             super("Usage: sample [name] [verbose].");
         }
     }
+
+    @Nested
+    class TakingNoArguments {
+        private final ParameterSpec spec =
+                ParameterSpec.takingNoArguments("Usage: sample.");
+
+        @Test
+        void accepts_an_empty_argument_list() {
+            var parsed = spec.parse(new String[0], outputFake);
+
+            assertThat(parsed.isValid()).isTrue();
+            assertThat(outputFake.getMessages()).isEmpty();
+        }
+
+        @Test
+        void rejects_any_argument_with_the_usage_line() {
+            var parsed = spec.parse(new String[] {"stray"}, outputFake);
+
+            assertThat(parsed.isValid()).isFalse();
+            assertThat(parsed.getResult()).isEqualTo(CommandResult.BAD_SYNTAX);
+            assertThat(outputFake.getMessages())
+                    .anyMatch(message -> message.contains("Too many arguments")
+                            && message.contains("Usage: sample."));
+        }
+    }
 }

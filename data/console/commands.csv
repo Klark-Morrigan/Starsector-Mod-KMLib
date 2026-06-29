@@ -1,4 +1,4 @@
 command,class,tags,syntax,help
-kmlib_activate_gate,kmlib.console.ActivateGateCommand,"kmlib,debug,campaign",kmlib_activate_gate [id],"Activates the gate with the given id in the current system."
+kmlib_activate_gate,kmlib.console.ActivateGateCommand,"kmlib,debug,campaign",kmlib_activate_gate <id>,"Activates the gate with the given id in the current system."
 kmlib_list_map_spoilers,kmlib.console.ListMapSpoilersCommand,"kmlib,debug,campaign",kmlib_list_map_spoilers,"Lists faction-owned (non-neutral) systems as a tree of system, entities, and factions; flags cut-off systems and hidden/undiscovered markets."
 kmlib_list_system_entities,kmlib.console.ListSystemEntitiesCommand,"kmlib,debug,campaign",kmlib_list_system_entities [gates],"Lists the current system's entities as an orbit tree (distance and speed per entity); unorbited entities then fleets follow with coordinates. 'gates' narrows to gates."

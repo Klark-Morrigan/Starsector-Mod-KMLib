@@ -28,11 +28,22 @@ public final class ParsedParameters {
         this.suppliedValues = suppliedValues;
     }
 
-    static ParsedParameters valid(Map<Parameter<?>, Object> suppliedValues) {
+    // Package-private on purpose, unlike the public createInvalid: a valid result
+    // carries the parser's internal supplied-values map, so only the parser may
+    // mint one - a success can come only from an actual parse, never be fabricated
+    // by a caller.
+    static ParsedParameters createValid(Map<Parameter<?>, Object> suppliedValues) {
         return new ParsedParameters(true, null, suppliedValues);
     }
 
-    static ParsedParameters invalid(CommandResult result) {
+    /**
+     * Creates an invalid result carrying the {@link CommandResult} a command
+     * returns. The {@link ParameterParser} uses it for a bad token, but it is
+     * public so a step that runs before parsing - a run-context guard composed
+     * ahead of the parse - can fail the whole entry as one {@code ParsedParameters}
+     * (e.g. with {@code WRONG_CONTEXT}) rather than a separate result type.
+     */
+    public static ParsedParameters createInvalid(CommandResult result) {
         return new ParsedParameters(false, result, Map.of());
     }
 
