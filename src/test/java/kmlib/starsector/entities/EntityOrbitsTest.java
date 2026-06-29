@@ -16,11 +16,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Pins {@link EntityOrbits}. {@link EntityOrbits#deriveSpeedDegPerDay}: the base
- * divisor of 20 yields {@code 360 * 20 / radius} deg/day, the jitter widens the
- * divisor by the sampled fraction of the spread, a negative spread is treated as
- * none, and a non-positive radius pins the body in place; radius 3600 is used so
- * the base rate is a round 2.0 deg/day and the randomness source is mocked for an
+ * Pins {@link EntityOrbits}. {@link EntityOrbits#deriveBaseSpeedDegPerDay}: the
+ * base divisor of 20 yields {@code 360 * 20 / radius} deg/day and a non-positive
+ * radius pins the body in place; radius 3600 gives a round 2.0 deg/day base.
+ * {@link EntityOrbits#applyJitter}: the rate is scaled by
+ * {@code 1 + sample * spread}, a negative spread is treated as none, and a
+ * non-positive speed stays non-positive; the randomness source is mocked for an
  * exact sample. {@link EntityOrbits#applyCircularOrbit}: a positive speed becomes
  * a circular orbit with period 360/speed, and a non-positive speed pins the
  * entity in place instead. Each method has its own {@link Nested} group.
@@ -28,42 +29,68 @@ import static org.mockito.Mockito.when;
 final class EntityOrbitsTest {
 
     private static final float ROUND_RATE_RADIUS = 3600f;
+    // The base rate at ROUND_RATE_RADIUS: 360 * 20 / 3600.
+    private static final float ROUND_BASE_SPEED = 2.0f;
     private static final float TOLERANCE = 0.0001f;
 
     @Nested
-    class DeriveSpeedDegPerDay {
+    class DeriveBaseSpeedDegPerDay {
         @Test
-        void usesTheBaseDivisorWhenTheJitterSpreadIsZero() {
-            var randomMock = mock(Random.class);
-            when(randomMock.nextFloat()).thenReturn(1f);
+        void usesTheBaseDivisor() {
+            var speed = EntityOrbits.deriveBaseSpeedDegPerDay(ROUND_RATE_RADIUS);
 
-            var speed = EntityOrbits.deriveSpeedDegPerDay(ROUND_RATE_RADIUS, 0f, randomMock);
-
-            // Zero spread: the sample is irrelevant, divisor stays 20, 360*20/3600.
-            assertThat(speed).isCloseTo(2.0f, within(TOLERANCE));
+            // Divisor 20: 360 * 20 / 3600 = 2.0.
+            assertThat(speed).isCloseTo(ROUND_BASE_SPEED, within(TOLERANCE));
         }
 
         @Test
-        void widensTheDivisorByTheFullSpreadAtTheMaximumSample() {
+        void scalesInverselyWithRadius() {
+            var speed = EntityOrbits.deriveBaseSpeedDegPerDay(ROUND_RATE_RADIUS * 2f);
+
+            // Twice the radius is half the angular speed: 360 * 20 / 7200 = 1.0.
+            assertThat(speed).isCloseTo(1.0f, within(TOLERANCE));
+        }
+
+        @Test
+        void pinsInPlaceWhenRadiusIsNonPositive() {
+            assertThat(EntityOrbits.deriveBaseSpeedDegPerDay(0f)).isEqualTo(0f);
+        }
+    }
+
+    @Nested
+    class ApplyJitter {
+        @Test
+        void leavesTheSpeedUnchangedWhenTheSpreadIsZero() {
             var randomMock = mock(Random.class);
             when(randomMock.nextFloat()).thenReturn(1f);
 
-            var speed = EntityOrbits.deriveSpeedDegPerDay(ROUND_RATE_RADIUS,
+            var speed = EntityOrbits.applyJitter(ROUND_BASE_SPEED, 0f, randomMock);
+
+            // Zero spread: the sample is irrelevant, the speed is untouched.
+            assertThat(speed).isCloseTo(ROUND_BASE_SPEED, within(TOLERANCE));
+        }
+
+        @Test
+        void widensByTheFullSpreadAtTheMaximumSample() {
+            var randomMock = mock(Random.class);
+            when(randomMock.nextFloat()).thenReturn(1f);
+
+            var speed = EntityOrbits.applyJitter(ROUND_BASE_SPEED,
                     EntityOrbits.VANILLA_JITTER_FRACTION, randomMock);
 
-            // Divisor 20*(1 + 1*0.25) = 25, so 360*25/3600 = 2.5.
+            // 2.0 * (1 + 1 * 0.25) = 2.5.
             assertThat(speed).isCloseTo(2.5f, within(TOLERANCE));
         }
 
         @Test
-        void widensTheDivisorByHalfTheSpreadAtTheMidpointSample() {
+        void widensByHalfTheSpreadAtTheMidpointSample() {
             var randomMock = mock(Random.class);
             when(randomMock.nextFloat()).thenReturn(0.5f);
 
-            var speed = EntityOrbits.deriveSpeedDegPerDay(ROUND_RATE_RADIUS,
+            var speed = EntityOrbits.applyJitter(ROUND_BASE_SPEED,
                     EntityOrbits.VANILLA_JITTER_FRACTION, randomMock);
 
-            // Divisor 20*(1 + 0.5*0.25) = 22.5, so 360*22.5/3600 = 2.25.
+            // 2.0 * (1 + 0.5 * 0.25) = 2.25.
             assertThat(speed).isCloseTo(2.25f, within(TOLERANCE));
         }
 
@@ -72,33 +99,22 @@ final class EntityOrbitsTest {
             var randomMock = mock(Random.class);
             when(randomMock.nextFloat()).thenReturn(1f);
 
-            var speed = EntityOrbits.deriveSpeedDegPerDay(ROUND_RATE_RADIUS, -1f, randomMock);
+            var speed = EntityOrbits.applyJitter(ROUND_BASE_SPEED, -1f, randomMock);
 
-            // Clamped to zero spread, so back to the base 2.0 regardless of sample.
-            assertThat(speed).isCloseTo(2.0f, within(TOLERANCE));
+            // Clamped to zero spread, so the speed is unchanged regardless of sample.
+            assertThat(speed).isCloseTo(ROUND_BASE_SPEED, within(TOLERANCE));
         }
 
         @Test
-        void scalesInverselyWithRadius() {
+        void leavesANonPositiveSpeedNonPositive() {
             var randomMock = mock(Random.class);
-            when(randomMock.nextFloat()).thenReturn(0f);
+            when(randomMock.nextFloat()).thenReturn(1f);
 
-            var speed = EntityOrbits.deriveSpeedDegPerDay(ROUND_RATE_RADIUS * 2f, 0f, randomMock);
-
-            // Twice the radius is half the angular speed: 360*20/7200 = 1.0.
-            assertThat(speed).isCloseTo(1.0f, within(TOLERANCE));
-        }
-
-        @Test
-        void pinsInPlaceWhenRadiusIsNonPositive() {
-            var randomMock = mock(Random.class);
-
-            var speed = EntityOrbits.deriveSpeedDegPerDay(0f, EntityOrbits.VANILLA_JITTER_FRACTION,
+            // A pinned (zero) speed must stay pinned even with a spread applied.
+            var speed = EntityOrbits.applyJitter(0f, EntityOrbits.VANILLA_JITTER_FRACTION,
                     randomMock);
 
             assertThat(speed).isEqualTo(0f);
-            // A degenerate radius short-circuits before sampling the jitter.
-            verify(randomMock, never()).nextFloat();
         }
     }
 

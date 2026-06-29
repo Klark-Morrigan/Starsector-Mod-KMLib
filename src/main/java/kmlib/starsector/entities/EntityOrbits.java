@@ -10,13 +10,14 @@ import java.util.Random;
  * orbit. {@link EntitySpawner} owns creating the entity; this owns the orbit it
  * is put on.
  *
- * <p>Two concerns live here. {@link #deriveSpeedDegPerDay} answers "how fast
- * should a body at this radius drift" the vanilla way (constant tangential
- * speed, jittered), and {@link #applyCircularOrbit} puts an entity onto a
- * circular orbit at a given degrees-per-day rate (or pins it when the rate is
- * non-positive). Speed is in degrees per day throughout, the intuitive knob;
- * the orbital period {@code setCircularOrbit} wants is derived from it
- * (period = 360 / speed).
+ * <p>Two concerns live here. Speed: {@link #deriveBaseSpeedDegPerDay} answers
+ * "how fast should a body at this radius drift" the vanilla way (constant
+ * tangential speed), and {@link #applyJitter} widens any speed - that
+ * radius-derived default or an explicit one - by vanilla's random spread. Orbit:
+ * {@link #applyCircularOrbit} puts an entity onto a circular orbit at a given
+ * degrees-per-day rate (or pins it when the rate is non-positive). Speed is in
+ * degrees per day throughout, the intuitive knob; the orbital period
+ * {@code setCircularOrbit} wants is derived from it (period = 360 / speed).
  */
 public final class EntityOrbits {
     private static final float DEGREES_PER_CIRCLE = 360f;
@@ -34,36 +35,49 @@ public final class EntityOrbits {
     }
 
     /**
-     * Returns the orbital speed, in degrees per day, for a body orbiting at
+     * Returns the base orbital speed, in degrees per day, for a body orbiting at
      * {@code orbitRadius}, matching vanilla's constant-tangential-speed
-     * convention with an optional random jitter on the rate.
+     * convention before any random spread.
      *
      * <p>Vanilla procgen sets a body's orbital period as {@code radius / divisor}
-     * with the divisor jittered over a small band ({@code 20 + random*5} for
-     * planets and moons), which holds the tangential speed roughly constant
-     * across the system - a body twice as far out takes twice as long to circle.
-     * A flat degrees-per-day rate does the opposite, so close-in bodies look
-     * sluggish and distant ones too fast. The jitter widens the divisor by a
-     * random fraction in {@code [0, jitterFraction]}; a fraction of {@code 0}
-     * gives the exact base rate. A non-positive radius is degenerate (the body
-     * sits on its focus), so it pins the body in place by returning {@code 0}.
+     * (a base divisor of {@value #BASE_ORBIT_DIVISOR} for planets and moons),
+     * which holds the tangential speed roughly constant across the system - a body
+     * twice as far out takes twice as long to circle. A flat degrees-per-day rate
+     * does the opposite, so close-in bodies look sluggish and distant ones too
+     * fast. Pair with {@link #applyJitter} to add vanilla's random widening. A
+     * non-positive radius is degenerate (the body sits on its focus), so it pins
+     * the body in place by returning {@code 0}.
      *
-     * @param orbitRadius    the orbit radius from the focus, in game units
-     * @param jitterFraction the upper bound of the random rate jitter; negatives
-     *                       are treated as no jitter
-     * @param random         the randomness source for the jitter sample
-     * @return the orbital speed in degrees per day, or {@code 0} when the radius
-     *         is non-positive
+     * @param orbitRadius the orbit radius from the focus, in game units
+     * @return the base orbital speed in degrees per day, or {@code 0} when the
+     *         radius is non-positive
      */
-    public static float deriveSpeedDegPerDay(float orbitRadius, float jitterFraction,
-            Random random) {
+    public static float deriveBaseSpeedDegPerDay(float orbitRadius) {
         if (orbitRadius <= 0f) {
             return 0f;
         }
-        var jitter = Math.max(0f, jitterFraction);
-        var divisor = BASE_ORBIT_DIVISOR * (1f + random.nextFloat() * jitter);
         // period = radius / divisor (days); speed = 360 / period.
-        return DEGREES_PER_CIRCLE * divisor / orbitRadius;
+        return DEGREES_PER_CIRCLE * BASE_ORBIT_DIVISOR / orbitRadius;
+    }
+
+    /**
+     * Widens a speed by vanilla's random orbital spread: the rate is scaled by a
+     * random factor in {@code [1, 1 + jitterFraction]} (vanilla jitters the
+     * divisor up by up to a quarter, the {@link #VANILLA_JITTER_FRACTION}
+     * default). A fraction of {@code 0} - or a negative one - leaves the speed
+     * unchanged. This applies to any base rate, the radius-derived default or an
+     * explicit speed, since the jitter is just a spread on the final rate; a
+     * non-positive speed stays non-positive, so a pinned body stays pinned.
+     *
+     * @param speedDegPerDay the base orbital speed to widen
+     * @param jitterFraction the upper bound of the random widening; negatives are
+     *                       treated as no jitter
+     * @param random         the randomness source for the jitter sample
+     * @return the widened orbital speed in degrees per day
+     */
+    public static float applyJitter(float speedDegPerDay, float jitterFraction, Random random) {
+        var jitter = Math.max(0f, jitterFraction);
+        return speedDegPerDay * (1f + random.nextFloat() * jitter);
     }
 
     /**
