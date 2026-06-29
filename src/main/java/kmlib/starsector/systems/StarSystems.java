@@ -5,7 +5,6 @@ import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 
-import org.lwjgl.util.vector.Vector2f;
 import kmlib.text.KmlibStrings;
 
 import java.util.ArrayList;
@@ -64,6 +63,30 @@ public final class StarSystems {
             return null;
         }
         return sector.getPlayerFleet().getStarSystem();
+    }
+
+    /**
+     * Every star in {@code system}, in the system's planet order - the set a
+     * caller must disambiguate between when "the center" alone is ambiguous.
+     * A single-star system has one unambiguous center to orbit; binary and
+     * trinary systems orbit a shared, invisible center rather than any one
+     * star, so a caller wanting a concrete focus has to pick a star itself.
+     *
+     * @param system the star system to read; null yields an empty list
+     * @return each {@link PlanetAPI} in {@code system} for which
+     *         {@link PlanetAPI#isStar()} holds, empty when none
+     */
+    public static List<PlanetAPI> getStars(StarSystemAPI system) {
+        var stars = new ArrayList<PlanetAPI>();
+        if (system == null) {
+            return stars;
+        }
+        for (var planet : system.getPlanets()) {
+            if (planet.isStar()) {
+                stars.add(planet);
+            }
+        }
+        return stars;
     }
 
     /**

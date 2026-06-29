@@ -1,5 +1,7 @@
 package kmlib.text;
 
+import java.util.Locale;
+
 /**
  * Generic number-to-string formatters shared across the KMLib jar.
  * Sibling to {@link KmlibStrings} (which is predicates on strings);
@@ -9,6 +11,29 @@ package kmlib.text;
 public final class KmlibNumbers {
 
     private KmlibNumbers() {
+    }
+
+    /**
+     * Formats {@code value} in compact scientific notation, e.g.
+     * {@code 1523.4 -> "1.5e3"}, {@code 0.05 -> "5.0e-2"}. The
+     * mantissa carries one decimal; the exponent drops the
+     * {@code "%e"} default's explicit {@code '+'} and zero padding
+     * ({@code "1.5e+03"} becomes {@code "1.5e3"}) so the result reads
+     * like a catalogued magnitude rather than a raw printf token.
+     *
+     * <p>{@link Locale#ROOT} is forced so the decimal separator is a
+     * dot regardless of the JVM's default locale - the notation is a
+     * fixed technical format, not locale-sensitive prose.
+     */
+    public static String formatScientific(double value) {
+        // "%.1e" yields a mantissa and a signed, zero-padded exponent
+        // (e.g. "1.5e+03"); re-parsing the exponent strips the sign and
+        // padding so it prints as the bare integer "3".
+        String formatted = String.format(Locale.ROOT, "%.1e", value);
+        var exponentMarker = formatted.indexOf('e');
+        var mantissa = formatted.substring(0, exponentMarker);
+        var exponent = Integer.parseInt(formatted.substring(exponentMarker + 1));
+        return mantissa + "e" + exponent;
     }
 
     /**

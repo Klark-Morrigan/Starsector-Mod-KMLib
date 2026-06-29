@@ -18,10 +18,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * Pins the contract of {@link StarSystems#getHyperspacePositions}:
- *  - one {x, y} point per system, in order,
- *  - a null sector yields nothing,
- *  - a system with no location is skipped.
+ * Pins the contracts of {@link StarSystems#getHyperspacePositions},
+ * {@link StarSystems#getPlayerStarSystem}, {@link StarSystems#getStars}, and
+ * {@link StarSystems#find}. Each method's cases live in a {@link Nested} group
+ * so the suite reports as a per-method tree; the shared mock builders stay on
+ * the outer class.
  */
 final class StarSystemsTest {
 
@@ -94,6 +95,25 @@ final class StarSystemsTest {
     }
 
     @Nested
+    class GetStars {
+        @Test
+        void keeps_only_the_stars_in_system_order() {
+            var starA = buildPlanet(true);
+            var gasGiant = buildPlanet(false);
+            var starB = buildPlanet(true);
+            var systemMock = mock(StarSystemAPI.class);
+            when(systemMock.getPlanets()).thenReturn(List.of(starA, gasGiant, starB));
+
+            assertThat(StarSystems.getStars(systemMock)).containsExactly(starA, starB);
+        }
+
+        @Test
+        void returns_empty_for_a_null_system() {
+            assertThat(StarSystems.getStars(null)).isEmpty();
+        }
+    }
+
+    @Nested
     class Find {
         @Test
         void returns_the_tagged_entity_whose_id_matches() {
@@ -138,6 +158,12 @@ final class StarSystemsTest {
         var entityMock = mock(SectorEntityToken.class);
         when(entityMock.getId()).thenReturn(id);
         return entityMock;
+    }
+
+    private static PlanetAPI buildPlanet(boolean isStar) {
+        var planetMock = mock(PlanetAPI.class);
+        when(planetMock.isStar()).thenReturn(isStar);
+        return planetMock;
     }
 
     private static SectorAPI buildSectorWithSystemsAt(float[]... points) {
