@@ -40,6 +40,20 @@ public final class LunaSettingsReader {
     }
 
     /**
+     * Reads a double LunaLib setting, falling back when it is unavailable.
+     *
+     * @param modId    the mod's LunaLib settings id
+     * @param fieldId  the double field's id
+     * @param fallback value returned when the setting is null (unset, or read
+     *                 before LunaLib has loaded the mod's settings)
+     * @return the stored double, or {@code fallback} when it is unavailable
+     */
+    public static double getDouble(String modId, String fieldId, double fallback) {
+        var value = LunaSettings.getDouble(modId, fieldId);
+        return value != null ? value : fallback;
+    }
+
+    /**
      * Runs {@code onChange} whenever the player applies a change to
      * {@code modId}'s settings, so callers react to settings live instead of
      * polling. LunaLib notifies for every mod's change; this filters to the
