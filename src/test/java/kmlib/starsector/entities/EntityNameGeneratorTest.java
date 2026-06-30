@@ -1,5 +1,6 @@
 package kmlib.starsector.entities;
 
+import com.fs.starfarer.api.campaign.LocationAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 
 import kmlib.starsector.strings.StarsectorStrings;
@@ -19,8 +20,10 @@ import static org.mockito.Mockito.when;
 /**
  * Pins {@link EntityNameGenerator#generateJumpPointName}: the focus label leads,
  * then the localised jump-point word, then the orbit radius in scientific
- * notation - and a focus with no display name falls back to its id so a nameless
- * barycenter still yields a readable label.
+ * notation - and a focus with no display name of its own falls back to its
+ * containing location's name (vanilla's "unknown location" placeholder counts as
+ * no name) and finally its id, so a nameless abyssal center still yields a
+ * readable label.
  *
  * <p>The localised word is pulled through {@code StarsectorStrings}, which reads
  * strings.json via {@code Global}; it is stubbed to a fixed word so the test
@@ -56,9 +59,39 @@ final class EntityNameGeneratorTest {
         }
 
         @Test
-        void fallsBackToTheFocusIdWhenItHasNoName() {
+        void fallsBackToTheLocationNameWhenTheFocusHasNoNameOfItsOwn() {
+            var locationMock = mock(LocationAPI.class);
+            when(locationMock.getName()).thenReturn("The Abyssal Depths");
             var focusMock = mock(SectorEntityToken.class);
             when(focusMock.getName()).thenReturn(null);
+            when(focusMock.getContainingLocation()).thenReturn(locationMock);
+
+            var name = EntityNameGenerator.generateJumpPointName(focusMock, 18f);
+
+            assertThat(name).isEqualTo("The Abyssal Depths Jump-point 1.8e1");
+        }
+
+        @Test
+        void treatsVanillasUnknownLocationPlaceholderAsNoNameOnTheFocus() {
+            var locationMock = mock(LocationAPI.class);
+            when(locationMock.getName()).thenReturn("The Abyssal Depths");
+            var focusMock = mock(SectorEntityToken.class);
+            // Vanilla's BaseLocation returns this literal for an unnamed center.
+            when(focusMock.getName()).thenReturn("unknown location");
+            when(focusMock.getContainingLocation()).thenReturn(locationMock);
+
+            var name = EntityNameGenerator.generateJumpPointName(focusMock, 18f);
+
+            assertThat(name).isEqualTo("The Abyssal Depths Jump-point 1.8e1");
+        }
+
+        @Test
+        void fallsBackToTheFocusIdWhenNeitherFocusNorLocationIsNamed() {
+            var locationMock = mock(LocationAPI.class);
+            when(locationMock.getName()).thenReturn("unknown location");
+            var focusMock = mock(SectorEntityToken.class);
+            when(focusMock.getName()).thenReturn(null);
+            when(focusMock.getContainingLocation()).thenReturn(locationMock);
             when(focusMock.getId()).thenReturn("barycenter");
 
             var name = EntityNameGenerator.generateJumpPointName(focusMock, 1500f);

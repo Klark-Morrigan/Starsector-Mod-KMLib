@@ -15,6 +15,12 @@ import kmlib.text.KmlibStrings;
  */
 public final class EntityNameGenerator {
 
+    // The sentinel vanilla's BaseLocation returns from getName()/getFullName()
+    // when an entity has no name of its own (e.g. an abyssal system's invisible
+    // center). It is a display placeholder, not a real name, so we treat it as
+    // absent and fall through to a better label rather than printing it.
+    private static final String VANILLA_UNNAMED_PLACEHOLDER = "unknown location";
+
     private EntityNameGenerator() {
     }
 
@@ -31,8 +37,13 @@ public final class EntityNameGenerator {
      * strings.json (via {@link KmlibStringKeys}) so it stays localisable rather
      * than hard-coded.
      *
+     * <p>When the focus has no name of its own - an abyssal system's center is an
+     * unnamed token - the label falls back to the containing location's name
+     * ({@code "The Abyssal Depths Jump-point 1.8e1"}) and finally the focus id.
+     *
      * @param focus       the body the jump point orbits; its name leads the
-     *                    label, falling back to its id when it has no name
+     *                    label, falling back to its location name then its id
+     *                    when it has no name of its own
      * @param orbitRadius the orbit radius, rendered in scientific notation
      * @return the campaign-map display name
      */
@@ -43,9 +54,26 @@ public final class EntityNameGenerator {
                 + KmlibNumbers.formatScientific(orbitRadius);
     }
 
-    // A human-readable focus tag: its name when it has one (stars do), else its
-    // id (an invisible barycenter center has no display name).
+    // A human-readable focus tag, preferring the most specific name available:
+    // the focus's own name when it has a real one (stars do), else the name of
+    // the location that contains it (so an abyssal system's unnamed center still
+    // yields the system label, e.g. "The Abyssal Depths"), and finally the focus
+    // id as a last resort. Vanilla's "unknown location" placeholder is treated as
+    // no name at each step so it never leaks into the label.
     private static String getLabel(SectorEntityToken focus) {
-        return KmlibStrings.hasText(focus.getName()) ? focus.getName() : focus.getId();
+        if (isUsableName(focus.getName())) {
+            return focus.getName();
+        }
+        var location = focus.getContainingLocation();
+        if (location != null && isUsableName(location.getName())) {
+            return location.getName();
+        }
+        return focus.getId();
+    }
+
+    // A name is usable when it is real text and not vanilla's placeholder for an
+    // entity that has none.
+    private static boolean isUsableName(String name) {
+        return KmlibStrings.hasText(name) && !VANILLA_UNNAMED_PLACEHOLDER.equals(name);
     }
 }
