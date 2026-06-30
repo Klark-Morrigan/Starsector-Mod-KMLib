@@ -97,6 +97,31 @@ final class VoronoiCellBuilderTest {
         }
     }
 
+    @Nested
+    class BuildCell {
+        @Test
+        void build_cell_matches_the_same_site_from_build_cells() {
+            var sites = Arrays.asList(
+                    new double[] {-300, -300},
+                    new double[] {300, -300},
+                    new double[] {0, 400},
+                    new double[] {0, 0});
+            var cells = VoronoiCellBuilder.buildCells(sites, MAX_CELL_RADIUS);
+
+            // Recomputing one site's cell on its own yields the same polygon as the
+            // full partition - the property the incremental update relies on.
+            for (var i = 0; i < sites.size(); i++) {
+                var single = VoronoiCellBuilder.buildCell(
+                        sites.get(i), sites, MAX_CELL_RADIUS);
+                assertThat(single).hasSameSizeAs(cells.get(i));
+                for (var v = 0; v < single.size(); v++) {
+                    assertThat(single.get(v)).containsExactly(cells.get(i).get(v),
+                            org.assertj.core.data.Offset.offset(1e-9));
+                }
+            }
+        }
+    }
+
     private static double distance(double[] a, double[] b) {
         var dx = a[0] - b[0];
         var dy = a[1] - b[1];

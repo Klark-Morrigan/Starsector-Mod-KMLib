@@ -57,9 +57,23 @@ public final class VoronoiCellBuilder {
         return cells;
     }
 
-    // One cell: the site's max-radius polygon clipped by the bisector against
-    // every other site. Stops early if clipping ever empties the polygon.
-    private static List<double[]> buildCell(double[] site, List<double[]> sites,
+    /**
+     * Builds the single cell for {@code site}: its max-radius polygon clipped by
+     * the perpendicular bisector against every other site. Lets a caller
+     * recompute one site's cell without rebuilding the whole partition - the
+     * basis for an incremental update, where only the cells near a changed site
+     * are redone.
+     *
+     * <p>{@code site} must be one of the elements of {@code sites} (compared by
+     * reference, so it is skipped as its own neighbour).
+     *
+     * @param site          the site to build the cell for; an element of
+     *                      {@code sites}
+     * @param sites         all sites in the partition
+     * @param maxCellRadius the farthest the cell may extend from its site
+     * @return the site's convex cell as {x, y} vertices in winding order
+     */
+    public static List<double[]> buildCell(double[] site, List<double[]> sites,
             double maxCellRadius) {
         var cell = regularPolygon(site, maxCellRadius);
         for (var other : sites) {
@@ -74,43 +88,16 @@ public final class VoronoiCellBuilder {
         return cell;
     }
 
-    // Sutherland-Hodgman clip of a convex polygon against the half-plane of
-    // points at least as close to {@code keep} as to {@code drop} - the keep
-    // side of the perpendicular bisector of the two sites.
+    // Clips a convex polygon to the half-plane of points at least as close to
+    // {@code keep} as to {@code drop} - the keep side of the perpendicular
+    // bisector of the two sites. The normal points toward the kept site, so a
+    // non-negative half-plane test is the side to retain; the bisector passes
+    // through the midpoint of the two sites.
     private static List<double[]> clipToBisector(List<double[]> polygon,
             double[] keep, double[] drop) {
-        // Half-plane test: dot(p - midpoint, keep - drop) >= 0. The normal
-        // points toward the kept site, so a non-negative value is the side
-        // to retain.
-        double normalX = keep[0] - drop[0];
-        double normalY = keep[1] - drop[1];
-        double midX = (keep[0] + drop[0]) * 0.5;
-        double midY = (keep[1] + drop[1]) * 0.5;
-
-        List<double[]> result = new ArrayList<>();
-        int count = polygon.size();
-        for (int i = 0; i < count; i++) {
-            double[] current = polygon.get(i);
-            double[] next = polygon.get((i + 1) % count);
-            double currentDist = (current[0] - midX) * normalX
-                    + (current[1] - midY) * normalY;
-            double nextDist = (next[0] - midX) * normalX
-                    + (next[1] - midY) * normalY;
-
-            if (currentDist >= 0) {
-                result.add(current);
-            }
-            // Edge straddles the bisector: insert the crossing point so the
-            // clipped polygon stays closed.
-            if ((currentDist >= 0) != (nextDist >= 0)) {
-                double crossFraction = currentDist / (currentDist - nextDist);
-                result.add(new double[] {
-                        current[0] + crossFraction * (next[0] - current[0]),
-                        current[1] + crossFraction * (next[1] - current[1]),
-                });
-            }
-        }
-        return result;
+        return Polygons.clipToHalfPlane(polygon,
+                (keep[0] + drop[0]) * 0.5, (keep[1] + drop[1]) * 0.5,
+                keep[0] - drop[0], keep[1] - drop[1]);
     }
 
     // Regular polygon of {@code radius} about {@code center}, the seed each
