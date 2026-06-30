@@ -13,8 +13,183 @@ public final class Polygons {
     // Edges shorter than this have no well-defined direction (and so no
     // normal); they are skipped rather than dividing by ~zero length.
     private static final double MIN_EDGE_LENGTH = 1e-6;
+    // A polygon needs at least three vertices to enclose any area; fewer
+    // collapses to a point or segment and insets to nothing.
+    private static final int MIN_POLYGON_VERTICES = 3;
 
     private Polygons() {
+    }
+
+    /**
+     * Insets a counter-clockwise convex polygon by {@code distance}, returning
+     * the smaller closed polygon whose every edge sits {@code distance} inside
+     * the matching original edge.
+     *
+     * <p>Computed by clipping the polygon against each edge's inward-shifted
+     * line (a half-plane intersection), not by mitring adjacent offset edges.
+     * That makes it robust on the shapes a Voronoi partition throws up: a sharp
+     * or near-parallel corner gets cleanly bevelled instead of shooting out a
+     * long miter spike, and over-insetting a thin cell shrinks it to nothing
+     * rather than inverting it. Drawing the result as a line loop (and filling
+     * it) renders one tidy province outline, with neighbours left a
+     * {@code 2 * distance} channel apart.
+     *
+     * @param polygon  CCW convex polygon vertices as {x, y} pairs
+     * @param distance inward inset applied to every edge
+     * @return the inset polygon's vertices as {x, y} pairs in the same winding;
+     *         empty when the polygon has fewer than three distinct vertices, or
+     *         when {@code distance} is large enough to consume the whole cell
+     */
+    public static List<double[]> insetConvexPolygon(List<double[]> polygon, double distance) {
+        var vertices = removeConsecutiveDuplicates(polygon);
+        var count = vertices.size();
+        if (count < MIN_POLYGON_VERTICES) {
+            return new ArrayList<>();
+        }
+
+        // Clip the polygon by each edge's inward-offset line in turn. The
+        // surviving region is the set of points at least {@code distance} inside
+        // every edge - the inset cell.
+        var inset = vertices;
+        for (var i = 0; i < count && !inset.isEmpty(); i++) {
+            var start = vertices.get(i);
+            var end = vertices.get((i + 1) % count);
+            var edgeX = end[0] - start[0];
+            var edgeY = end[1] - start[1];
+            var length = Math.sqrt(edgeX * edgeX + edgeY * edgeY);
+            if (length < MIN_EDGE_LENGTH) {
+                continue;
+            }
+            // CCW interior is left of the directed edge, so the inward normal of
+            // edge (start -> end) is (-edgeY, edgeX) normalized; shift a point on
+            // the edge inward by distance to get a point on the clip line.
+            var normalX = -edgeY / length;
+            var normalY = edgeX / length;
+            var clipX = start[0] + normalX * distance;
+            var clipY = start[1] + normalY * distance;
+            inset = clipToHalfPlane(inset, clipX, clipY, normalX, normalY);
+        }
+        return inset;
+    }
+
+    /**
+     * Rounds a closed polygon's corners with a fixed radius, leaving the
+     * straight edges between corners intact, and chamfers corners sharper than
+     * {@code bevelBelowAngleRadians} with a flat cut instead.
+     *
+     * <p>At each vertex it steps back {@code radius} along both adjacent edges
+     * and replaces the sharp corner with a short quadratic-bezier arc (the
+     * vertex is the control point), sampled into {@code segmentsPerCorner}
+     * segments. Because the cut is a fixed distance, not a fraction of the edge,
+     * long edges stay long and only the corners soften - so a big cell does not
+     * round off into a blob. The radius is clamped to half of each adjacent edge
+     * so neighbouring corners never overlap, which also keeps the result convex
+     * for a convex input.
+     *
+     * <p>A bezier arc still pinches to a near-point at an acute corner: with the
+     * vertex as control point the curve barely pulls in from the apex, so a
+     * sharp spike stays a spike. Any corner whose interior angle falls below
+     * {@code bevelBelowAngleRadians} is therefore cut straight across (a chamfer
+     * between the two step-back points), removing the spike outright while the
+     * obtuse corners keep the smoother arc. A non-positive threshold disables
+     * the chamfer and rounds every corner. Vertex cost is at most {@code corners
+     * * (segmentsPerCorner + 1)}.
+     *
+     * @param polygon                closed polygon vertices as {x, y} pairs
+     * @param radius                 corner radius in the polygon's units
+     * @param segmentsPerCorner      arc segments per rounded corner; higher is
+     *                               smoother
+     * @param bevelBelowAngleRadians corners with an interior angle below this
+     *                               are chamfered flat rather than rounded;
+     *                               non-positive rounds every corner
+     * @return the rounded polygon; a copy of the input (deduplicated) when it
+     *         has fewer than three vertices, or when radius/segments are
+     *         non-positive (nothing to round)
+     */
+    public static List<double[]> roundCorners(List<double[]> polygon, double radius,
+            int segmentsPerCorner, double bevelBelowAngleRadians) {
+        var vertices = removeConsecutiveDuplicates(polygon);
+        var count = vertices.size();
+        if (count < MIN_POLYGON_VERTICES || radius <= 0 || segmentsPerCorner < 1) {
+            return vertices;
+        }
+
+        var rounded = new ArrayList<double[]>(count * (segmentsPerCorner + 1));
+        for (var i = 0; i < count; i++) {
+            var previous = vertices.get((i - 1 + count) % count);
+            var corner = vertices.get(i);
+            var next = vertices.get((i + 1) % count);
+            // Clamp the cut to half of the shorter adjacent edge so two corners
+            // sharing an edge cannot eat into each other.
+            var cut = Math.min(radius,
+                    0.5 * Math.min(Points.computeDistance(corner, previous),
+                            Points.computeDistance(corner, next)));
+            var arcStart = computePointToward(corner, previous, cut);
+            var arcEnd = computePointToward(corner, next, cut);
+            // Below the threshold a rounded arc would still read as a spike, so
+            // cut straight across the corner: the two step-back points alone.
+            if (bevelBelowAngleRadians > 0
+                    && computeInteriorAngle(previous, corner, next) < bevelBelowAngleRadians) {
+                rounded.add(arcStart);
+                rounded.add(arcEnd);
+                continue;
+            }
+            for (var step = 0; step <= segmentsPerCorner; step++) {
+                var t = (double) step / segmentsPerCorner;
+                rounded.add(computeQuadraticBezier(arcStart, corner, arcEnd, t));
+            }
+        }
+        return rounded;
+    }
+
+    // A point {@code distance} from {@code from} toward {@code to}; returns from
+    // itself when the two coincide (no direction).
+    private static double[] computePointToward(double[] from, double[] to, double distance) {
+        var deltaX = to[0] - from[0];
+        var deltaY = to[1] - from[1];
+        var length = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        if (length < MIN_EDGE_LENGTH) {
+            return new double[] {from[0], from[1]};
+        }
+        return new double[] {
+                from[0] + deltaX / length * distance,
+                from[1] + deltaY / length * distance,
+        };
+    }
+
+    // Interior angle at {@code corner} in radians [0, PI], measured between the
+    // edges to its two neighbours: PI is a straight pass-through and small
+    // values are sharp spikes. Returns PI for a degenerate (zero-length) edge,
+    // so such a corner is treated as straight and never chamfered.
+    private static double computeInteriorAngle(double[] previous, double[] corner,
+            double[] next) {
+        var toPreviousX = previous[0] - corner[0];
+        var toPreviousY = previous[1] - corner[1];
+        var toNextX = next[0] - corner[0];
+        var toNextY = next[1] - corner[1];
+        var previousLength = Math.sqrt(toPreviousX * toPreviousX + toPreviousY * toPreviousY);
+        var nextLength = Math.sqrt(toNextX * toNextX + toNextY * toNextY);
+        if (previousLength < MIN_EDGE_LENGTH || nextLength < MIN_EDGE_LENGTH) {
+            return Math.PI;
+        }
+        var cosine = (toPreviousX * toNextX + toPreviousY * toNextY)
+                / (previousLength * nextLength);
+        // Clamp against rounding drift just outside [-1, 1] before acos.
+        return Math.acos(Math.max(-1.0, Math.min(1.0, cosine)));
+    }
+
+    // Quadratic bezier point at parameter t in [0, 1] from start to end, bending
+    // toward control.
+    private static double[] computeQuadraticBezier(double[] start, double[] control,
+            double[] end, double t) {
+        var oneMinusT = 1.0 - t;
+        var a = oneMinusT * oneMinusT;
+        var b = 2.0 * oneMinusT * t;
+        var c = t * t;
+        return new double[] {
+                a * start[0] + b * control[0] + c * end[0],
+                a * start[1] + b * control[1] + c * end[1],
+        };
     }
 
     /**
@@ -60,5 +235,72 @@ public final class Polygons {
             });
         }
         return segments;
+    }
+
+    /**
+     * Clips a convex polygon to one half-plane: the points on the {@code normal}
+     * side of the line through {@code (lineX, lineY)}. Sutherland-Hodgman against
+     * a single edge, so it both keeps inside vertices and inserts the crossing
+     * points where edges straddle the line, leaving the result closed.
+     *
+     * <p>The shared primitive behind both Voronoi cell building (clip by a
+     * bisector) and {@link #insetConvexPolygon} (clip by an offset edge); the
+     * {@code normal} need not be unit length, since only the sign of the
+     * half-plane test matters.
+     *
+     * @param polygon the convex polygon to clip, as {x, y} pairs
+     * @param lineX   x of a point on the clip line
+     * @param lineY   y of a point on the clip line
+     * @param normalX x of the normal pointing to the kept side
+     * @param normalY y of the normal pointing to the kept side
+     * @return the clipped polygon; empty when nothing lies on the kept side
+     */
+    static List<double[]> clipToHalfPlane(List<double[]> polygon,
+            double lineX, double lineY, double normalX, double normalY) {
+        var result = new ArrayList<double[]>();
+        var count = polygon.size();
+        for (var i = 0; i < count; i++) {
+            var current = polygon.get(i);
+            var next = polygon.get((i + 1) % count);
+            var currentDistance = (current[0] - lineX) * normalX
+                    + (current[1] - lineY) * normalY;
+            var nextDistance = (next[0] - lineX) * normalX
+                    + (next[1] - lineY) * normalY;
+
+            if (currentDistance >= 0) {
+                result.add(current);
+            }
+            // Edge straddles the line: insert the crossing so the result stays
+            // closed.
+            if ((currentDistance >= 0) != (nextDistance >= 0)) {
+                var crossFraction = currentDistance / (currentDistance - nextDistance);
+                result.add(new double[] {
+                        current[0] + crossFraction * (next[0] - current[0]),
+                        current[1] + crossFraction * (next[1] - current[1]),
+                });
+            }
+        }
+        return result;
+    }
+
+    // Drops vertices that coincide with their predecessor (within the minimum
+    // edge length), including the wrap from last back to first, so the inset
+    // math never sees a zero-length edge with an undefined direction.
+    private static List<double[]> removeConsecutiveDuplicates(List<double[]> polygon) {
+        var cleaned = new ArrayList<double[]>();
+        for (var vertex : polygon) {
+            if (cleaned.isEmpty() || !isSamePoint(cleaned.get(cleaned.size() - 1), vertex)) {
+                cleaned.add(vertex);
+            }
+        }
+        var size = cleaned.size();
+        if (size > 1 && isSamePoint(cleaned.get(0), cleaned.get(size - 1))) {
+            cleaned.remove(size - 1);
+        }
+        return cleaned;
+    }
+
+    private static boolean isSamePoint(double[] a, double[] b) {
+        return Points.computeDistance(a, b) < MIN_EDGE_LENGTH;
     }
 }
