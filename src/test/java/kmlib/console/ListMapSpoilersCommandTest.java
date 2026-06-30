@@ -29,12 +29,15 @@ import static org.mockito.Mockito.when;
 
 /**
  * Pins {@link ListMapSpoilersCommand}: {@code buildReport} lists only
- * spoiler-worthy systems (cut off, or holding a hidden/undiscovered owned
- * market), skips ordinary visible systems and neutral/condition-only markets,
- * and flags each reason; and {@code runCommand} prints the report for a bare
- * invocation, rejects a surplus argument as bad syntax, and returns the
- * validation result outside a campaign. The report is read back through a
- * recording {@code CommandOutput}, so no live console is needed.
+ * spoiler-worthy systems (cut off, or holding an undiscovered owned market),
+ * surfaces a cut-off system even with no owned market, skips ordinary visible
+ * systems (including a known econ-hidden market like the Galatia Academy and a
+ * discovered pirate base) and neutral/condition-only markets, and flags each
+ * reason;
+ * and {@code runCommand} prints the report for a bare invocation, rejects a
+ * surplus argument as bad syntax, and returns the validation result outside a
+ * campaign. The report is read back through a recording {@code CommandOutput},
+ * so no live console is needed.
  */
 final class ListMapSpoilersCommandTest {
 
@@ -63,14 +66,29 @@ final class ListMapSpoilersCommandTest {
         }
 
         @Test
-        void listsSystemWithHiddenMarketAndFlagsTheMarket() {
+        void listsUndiscoveredHiddenBaseAsUndiscovered() {
+            // A concealed pirate base sets its entity discoverable, so before the
+            // player finds it the entity-discoverability signal surfaces it.
             var sector = sectorWith(system("Hideout", false,
-                    ownedMarket("Pirate Base", "Pirates", Visibility.HIDDEN)));
+                    ownedMarket("Pirate Base", "Pirates", Visibility.UNDISCOVERED)));
 
             var report = ListMapSpoilersCommand.buildReport(sector);
 
-            assertThat(report).contains("Hideout");
-            assertThat(report).contains("Pirate Base  (Pirates)  [hidden]");
+            assertThat(report).contains("Pirate Base  (Pirates)  [undiscovered]");
+        }
+
+        @Test
+        void omitsDiscoveredHiddenBase() {
+            // The $core_hiddenBase flag never clears, so a found pirate base must
+            // not linger in the list: once its entity is no longer discoverable
+            // it drops out, exactly like any other discovered colony.
+            var sector = sectorWith(system("Hideout", false,
+                    ownedMarket("Pirate Base", "Pirates", Visibility.SHOWN)));
+
+            var report = ListMapSpoilersCommand.buildReport(sector);
+
+            assertThat(report).doesNotContain("Pirate Base");
+            assertThat(report).contains("(none)");
         }
 
         @Test
@@ -81,6 +99,49 @@ final class ListMapSpoilersCommandTest {
             var report = ListMapSpoilersCommand.buildReport(sector);
 
             assertThat(report).contains("Battlestar Libra  (Knights)  [undiscovered]");
+        }
+
+        @Test
+        void omitsKnownEconHiddenMarketSuchAsGalatiaAcademy() {
+            // The Galatia Academy market carries isHidden()==true yet is fully
+            // known and dockable: discovery, not the econ flag, decides what is
+            // spoiler-worthy, so a known econ-hidden market must not be flagged
+            // and its ordinary system is omitted.
+            var academy = ownedMarket("Galatia Academy", "Independent", Visibility.SHOWN);
+            when(academy.isHidden()).thenReturn(true);
+            var sector = sectorWith(system("Galatia", false, academy));
+
+            var report = ListMapSpoilersCommand.buildReport(sector);
+
+            assertThat(report).doesNotContain("Galatia Academy");
+            assertThat(report).contains("(none)");
+        }
+
+        @Test
+        void omitsConcealedColonyOnceDiscovered() {
+            // A formerly concealed colony (e.g. a Holdout Forgeship station)
+            // clears its discoverable flag on discovery, so it must drop out of
+            // the spoiler list rather than linger - the entity is no longer
+            // discoverable and is not a hidden base.
+            var sector = sectorWith(system("Mia's Star", false,
+                    ownedMarket("Forgeship", "holdout", Visibility.SHOWN)));
+
+            var report = ListMapSpoilersCommand.buildReport(sector);
+
+            assertThat(report).doesNotContain("Forgeship");
+            assertThat(report).contains("(none)");
+        }
+
+        @Test
+        void listsCutOffSystemEvenWithNoOwnedMarkets() {
+            // A void or story system holds no owned market, so requiring one
+            // would hide it; being cut off from hyperspace is enough to surface
+            // it on its own.
+            var sector = sectorWith(system("Limbo", true));
+
+            var report = ListMapSpoilersCommand.buildReport(sector);
+
+            assertThat(report).contains("Limbo  [cut off]");
         }
 
         @Test
@@ -153,7 +214,7 @@ final class ListMapSpoilersCommandTest {
         }
     }
 
-    private enum Visibility { SHOWN, HIDDEN, UNDISCOVERED }
+    private enum Visibility { SHOWN, UNDISCOVERED }
 
     private static SectorAPI sectorWith(SystemWithMarkets... systems) {
         var economyMock = mock(EconomyAPI.class);
@@ -183,10 +244,11 @@ final class ListMapSpoilersCommandTest {
         var entityMock = mock(SectorEntityToken.class);
         when(entityMock.isDiscoverable()).thenReturn(visibility == Visibility.UNDISCOVERED);
 
+        // A market is a hidden base only when a test stubs Misc.isHiddenBase for
+        // it; left unstubbed, the static mock returns false here.
         var marketMock = mock(MarketAPI.class);
         when(marketMock.getName()).thenReturn(name);
         when(marketMock.getFaction()).thenReturn(factionMock);
-        when(marketMock.isHidden()).thenReturn(visibility == Visibility.HIDDEN);
         when(marketMock.getPrimaryEntity()).thenReturn(entityMock);
         return marketMock;
     }
