@@ -33,7 +33,7 @@ import java.util.Set;
  * of bodies they orbit so each gate's place is clear, and the trailing lists to
  * gates only.
  */
-public final class ListSystemEntitiesCommand extends BaseConsoleCommand {
+public final class ListSystemEntitiesCommand extends KmlibBaseConsoleCommand {
     private static final ListSystemEntitiesSpec SPEC = new ListSystemEntitiesSpec();
     // One full revolution; an orbital period (in days) divides into this to give
     // the entity's angular speed in degrees per day.

@@ -26,7 +26,7 @@ import java.util.List;
  * never loads it, so KMLib runs fine without that mod - no hard dependency is
  * declared.
  */
-public final class ListMapSpoilersCommand extends BaseConsoleCommand {
+public final class ListMapSpoilersCommand extends KmlibBaseConsoleCommand {
     private static final String NEUTRAL_FACTION_ID = "neutral";
     // No parameters; declaring the spec still makes the parser reject a stray
     // argument as bad syntax rather than silently ignoring it.

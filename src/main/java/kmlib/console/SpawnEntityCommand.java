@@ -60,7 +60,7 @@ import static kmlib.console.parsing.ParameterValues.text;
  * reachable. The orbit geometry and focus resolution are shared across kinds; a
  * new kind is added by adding a {@link SpawnableKind} constant.
  */
-public final class SpawnEntityCommand extends BaseConsoleCommand {
+public final class SpawnEntityCommand extends KmlibBaseConsoleCommand {
     private static final SpawnSpec SPEC = new SpawnSpec();
 
     public SpawnEntityCommand() {

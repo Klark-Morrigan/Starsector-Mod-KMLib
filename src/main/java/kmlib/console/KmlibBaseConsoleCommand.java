@@ -21,14 +21,14 @@ import org.lazywizard.console.BaseCommand;
  * {@link kmlib.console.parsing.ParameterSpec} collaborators directly, using the
  * inherited {@link #output}.
  */
-public abstract class BaseConsoleCommand implements BaseCommand {
+public abstract class KmlibBaseConsoleCommand implements BaseCommand {
     protected final CommandOutput output;
 
-    protected BaseConsoleCommand() {
+    protected KmlibBaseConsoleCommand() {
         this(ConsoleCommandOutput.INSTANCE);
     }
 
-    protected BaseConsoleCommand(CommandOutput output) {
+    protected KmlibBaseConsoleCommand(CommandOutput output) {
         this.output = output;
     }
 

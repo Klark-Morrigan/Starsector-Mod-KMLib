@@ -20,7 +20,7 @@ import static kmlib.console.parsing.ParameterValues.text;
  * feedback goes through the inherited {@link CommandOutput} seam so the command's
  * outcome branches stay independent of the live console sink.
  */
-public final class ActivateGateCommand extends BaseConsoleCommand {
+public final class ActivateGateCommand extends KmlibBaseConsoleCommand {
     private static final ActivateGateSpec SPEC = new ActivateGateSpec();
 
     public ActivateGateCommand() {
