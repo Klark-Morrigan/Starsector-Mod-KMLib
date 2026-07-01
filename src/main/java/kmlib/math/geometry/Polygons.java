@@ -262,11 +262,7 @@ public final class Polygons {
             // Edge straddles the line: insert the crossing so the result stays
             // closed.
             if ((currentDistance >= 0) != (nextDistance >= 0)) {
-                var crossFraction = currentDistance / (currentDistance - nextDistance);
-                result.add(new double[] {
-                        current[0] + crossFraction * (next[0] - current[0]),
-                        current[1] + crossFraction * (next[1] - current[1]),
-                });
+                result.add(Points.computeCrossingPoint(current, next, currentDistance, nextDistance));
             }
         }
         return result;
