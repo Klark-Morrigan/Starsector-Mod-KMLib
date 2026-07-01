@@ -9,10 +9,10 @@ import java.util.Locale;
  * <p>Pure text transform, no profiling state of its own: it takes the list of
  * {@link SectionTiming} and returns a string, so it can be unit tested directly
  * and reused by any output sink (a console command, a log line). Durations are
- * shown in milliseconds, the useful scale for frame-time work.
+ * shown in milliseconds (via {@link Timings#nanosToMillis}), the useful scale
+ * for frame-time work.
  */
 public final class TimingReport {
-    private static final double NANOS_PER_MILLI = 1_000_000.0;
     // The section-column header, also the minimum width that column is sized to.
     private static final String SECTION_HEADER = "SECTION";
 
@@ -45,13 +45,11 @@ public final class TimingReport {
             report.append(String.format(Locale.ROOT,
                     "%-" + sectionWidth + "s  %8d  %10.3f  %10.3f  %10.3f  %11.3f",
                     timing.getSection(), timing.getCount(),
-                    toMillis(timing.getAverageNanos()), toMillis(timing.getMinNanos()),
-                    toMillis(timing.getMaxNanos()), toMillis(timing.getTotalNanos())));
+                    Timings.nanosToMillis(timing.getAverageNanos()),
+                    Timings.nanosToMillis(timing.getMinNanos()),
+                    Timings.nanosToMillis(timing.getMaxNanos()),
+                    Timings.nanosToMillis(timing.getTotalNanos())));
         }
         return report.toString();
-    }
-
-    private static double toMillis(long nanos) {
-        return nanos / NANOS_PER_MILLI;
     }
 }
