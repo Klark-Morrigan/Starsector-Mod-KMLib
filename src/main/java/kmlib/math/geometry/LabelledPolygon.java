@@ -1,0 +1,139 @@
+package kmlib.math.geometry;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * A convex polygon whose every edge carries an integer label, closed under
+ * half-plane clipping.
+ *
+ * <p>Each vertex stores the label of the edge leaving it toward the next vertex
+ * in the ring, so an edge's identity survives the Sutherland-Hodgman clips that
+ * reshape the polygon. Clipping against a half-plane keeps the label on every
+ * surviving original edge and stamps the freshly cut edge with the clip's own
+ * label - so a caller can learn, per output edge, which clip produced it.
+ * {@link VoronoiCellBuilder} uses that to tag each cell edge with the
+ * neighbouring site whose bisector cut it.
+ *
+ * <p>Immutable - {@link #clipToHalfPlane} returns a new polygon rather than
+ * mutating this one.
+ */
+public final class LabelledPolygon {
+    private final List<LabelledVertex> vertices;
+
+    private LabelledPolygon(List<LabelledVertex> vertices) {
+        this.vertices = vertices;
+    }
+
+    /**
+     * Builds a regular {@code segments}-gon of {@code radius} about
+     * {@code center} with every edge labelled {@code seedLabel} - the seed a
+     * clipped shape is carved out of. Counter-clockwise winding.
+     *
+     * @param center    polygon centre as {x, y}
+     * @param radius    distance from the centre to each vertex
+     * @param segments  number of sides
+     * @param seedLabel the label every edge starts with, until a clip cuts it
+     * @return the seed polygon
+     */
+    public static LabelledPolygon createRegularPolygon(double[] center, double radius,
+            int segments, int seedLabel) {
+        var vertices = new ArrayList<LabelledVertex>(segments);
+        for (var i = 0; i < segments; i++) {
+            var angle = 2.0 * Math.PI * i / segments;
+            vertices.add(new LabelledVertex(new double[] {
+                    center[0] + radius * Math.cos(angle),
+                    center[1] + radius * Math.sin(angle),
+            }, seedLabel));
+        }
+        return new LabelledPolygon(vertices);
+    }
+
+    /**
+     * Clips this polygon to one half-plane: the points on the {@code normal} side
+     * of the line through {@code (lineX, lineY)}, stamping the newly cut edge with
+     * {@code clipLabel}.
+     *
+     * <p>Sutherland-Hodgman against a single edge, sharing its geometry with the
+     * unlabelled {@link Polygons#clipToHalfPlane} through
+     * {@link Points#computeSignedOffsetFromLine} and
+     * {@link Points#computeCrossingPoint}; this only threads the labels through on
+     * top. A surviving inside vertex keeps its
+     * outgoing-edge label; a crossing made while leaving the kept side starts the
+     * new clip-line edge and so takes {@code clipLabel}, while a crossing made
+     * while re-entering resumes the original edge and keeps that edge's label.
+     * {@code normal} need not be unit length, since only the sign of the
+     * half-plane test matters.
+     *
+     * @param lineX     x of a point on the clip line
+     * @param lineY     y of a point on the clip line
+     * @param normalX   x of the normal pointing to the kept side
+     * @param normalY   y of the normal pointing to the kept side
+     * @param clipLabel the label stamped on the edge cut along the clip line
+     * @return the clipped polygon; empty when nothing lies on the kept side
+     */
+    public LabelledPolygon clipToHalfPlane(double lineX, double lineY, double normalX,
+            double normalY, int clipLabel) {
+        var result = new ArrayList<LabelledVertex>();
+        var count = vertices.size();
+        // Sutherland-Hodgman edge walk; crossing math shared with
+        // Polygons.clipToHalfPlane via Points.
+        for (var i = 0; i < count; i++) {
+            var current = vertices.get(i);
+            var next = vertices.get((i + 1) % count);
+            var currentOffset = Points.computeSignedOffsetFromLine(
+                    current.point(), lineX, lineY, normalX, normalY);
+            var nextOffset = Points.computeSignedOffsetFromLine(
+                    next.point(), lineX, lineY, normalX, normalY);
+
+            if (currentOffset >= 0) {
+                result.add(current);
+            }
+            if ((currentOffset >= 0) != (nextOffset >= 0)) {
+                var crossing = Points.computeCrossingPoint(
+                        current.point(), next.point(), currentOffset, nextOffset);
+                var crossingLabel = currentOffset >= 0 ? clipLabel : current.outgoingEdgeLabel();
+                result.add(new LabelledVertex(crossing, crossingLabel));
+            }
+        }
+        return new LabelledPolygon(result);
+    }
+
+    /**
+     * @return true when clipping has consumed the whole polygon (no vertices left)
+     */
+    public boolean isEmpty() {
+        return vertices.isEmpty();
+    }
+
+    /**
+     * @return the polygon's vertices as {x, y} pairs in winding order; a fresh
+     *         list, though the point arrays themselves are shared
+     */
+    public List<double[]> getVertices() {
+        var points = new ArrayList<double[]>(vertices.size());
+        for (var vertex : vertices) {
+            points.add(vertex.point());
+        }
+        return points;
+    }
+
+    /**
+     * @return each edge's label, parallel to {@link #getVertices()}: entry
+     *         {@code i} is the label of the edge from vertex {@code i} to vertex
+     *         {@code (i + 1)} modulo the vertex count
+     */
+    public int[] getEdgeLabels() {
+        var labels = new int[vertices.size()];
+        for (var i = 0; i < vertices.size(); i++) {
+            labels[i] = vertices.get(i).outgoingEdgeLabel();
+        }
+        return labels;
+    }
+
+    // A polygon vertex paired with the label of the edge leaving it toward the
+    // next vertex in the ring - how a clip threads each surviving edge's label
+    // through the half-plane intersections.
+    private record LabelledVertex(double[] point, int outgoingEdgeLabel) {
+    }
+}

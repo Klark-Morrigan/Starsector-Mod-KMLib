@@ -13,19 +13,41 @@ import java.util.List;
  * The intersection of those half-planes (within the radius bound) is the
  * site's convex cell.
  *
- * <p>Geometry only: no rendering and no Starsector types, so the partition
- * can be reasoned about and verified on its own, independently of how it is
- * drawn. Cost is O(n^2) clips per site, O(n^3) overall, which is
+ * <p>Cost is O(n^2) clips per site, O(n^3) overall, which is
  * sub-millisecond at Starsector's system counts (low hundreds) and is run
  * once and cached by the caller.
  */
 public final class VoronoiCellBuilder {
+    /**
+     * Edge label for a cell edge that came from the max-radius bound rather than
+     * a neighbour's bisector - a frontier into empty space, with no system on the
+     * far side. Distinguishable from any real site index, which are non-negative.
+     */
+    public static final int BOUND_EDGE = -1;
+
     // Sides of the regular polygon that approximates each cell's max-radius
     // bound. High enough that the rounded frontier reads as a smooth curve
     // rather than a visible polygon.
     private static final int CELL_BOUND_SEGMENTS = 48;
 
     private VoronoiCellBuilder() {
+    }
+
+    /**
+     * A site's convex cell together with, per edge, the neighbouring site that
+     * produced it - the raw material for a cell-adjacency graph.
+     *
+     * <p>{@code vertices} are the cell corners in winding order, identical to
+     * {@link #buildCell}'s output. {@code edgeNeighbourSiteIndices} runs parallel
+     * to the edges: entry {@code i} is the index (into the {@code sites} list the
+     * cell was built from) of the site whose perpendicular bisector cut edge
+     * {@code i} - the segment from vertex {@code i} to vertex {@code (i + 1)}
+     * modulo the vertex count - or {@link #BOUND_EDGE} when that edge came from
+     * the max-radius bound rather than a neighbour. Two sites are adjacent
+     * exactly when each lists the other here, so this is the adjacency graph
+     * region merging is built on.
+     */
+    public record LabelledCell(List<double[]> vertices, int[] edgeNeighbourSiteIndices) {
     }
 
     /**
@@ -75,44 +97,70 @@ public final class VoronoiCellBuilder {
      */
     public static List<double[]> buildCell(double[] site, List<double[]> sites,
             double maxCellRadius) {
-        var cell = regularPolygon(site, maxCellRadius);
-        for (var other : sites) {
-            if (other == site) {
+        return buildLabelledCell(indexOf(sites, site), sites, maxCellRadius).vertices();
+    }
+
+    /**
+     * Builds {@code site}'s cell and tags each of its edges with the neighbouring
+     * site that produced it - {@link #buildCell} plus the adjacency information
+     * the unlabelled form discards.
+     *
+     * <p>The clip step already knows the answer: every edge of the finished cell
+     * lies either on the perpendicular bisector against one specific other site
+     * (that site is the neighbour across the edge) or on the max-radius seed (a
+     * frontier into empty space). This carries that identity out, so a caller can
+     * build the cell-adjacency graph without re-deriving which cells touch.
+     *
+     * @param siteIndex     index of the site to build the cell for, into
+     *                      {@code sites}
+     * @param sites         all sites in the partition
+     * @param maxCellRadius the farthest the cell may extend from its site
+     * @return the site's cell with a neighbour-site index per edge; an empty cell
+     *         (no vertices, no edges) when the site is fully clipped away
+     */
+    public static LabelledCell buildLabelledCell(int siteIndex, List<double[]> sites,
+            double maxCellRadius) {
+        var site = sites.get(siteIndex);
+        // Seed the cell with a bounded polygon whose every edge is a frontier
+        // (BOUND_EDGE), then let each neighbour's bisector clip it, stamping the
+        // cut edge with that neighbour's index. What survives labels each edge
+        // with the site across it, or BOUND_EDGE where the seed was never cut.
+        var cell = LabelledPolygon.createRegularPolygon(
+                site, maxCellRadius, CELL_BOUND_SEGMENTS, BOUND_EDGE);
+        for (var other = 0; other < sites.size(); other++) {
+            if (other == siteIndex) {
                 continue;
             }
-            cell = clipToBisector(cell, site, other);
+            cell = clipToBisector(cell, site, sites.get(other), other);
             if (cell.isEmpty()) {
                 break;
             }
         }
-        return cell;
+        return new LabelledCell(cell.getVertices(), cell.getEdgeLabels());
     }
 
-    // Clips a convex polygon to the half-plane of points at least as close to
-    // {@code keep} as to {@code drop} - the keep side of the perpendicular
-    // bisector of the two sites. The normal points toward the kept site, so a
-    // non-negative half-plane test is the side to retain; the bisector passes
-    // through the midpoint of the two sites.
-    private static List<double[]> clipToBisector(List<double[]> polygon,
-            double[] keep, double[] drop) {
-        return Polygons.clipToHalfPlane(polygon,
+    // Clips a cell to the half-plane of points at least as close to {@code keep}
+    // as to {@code drop} - the keep side of the perpendicular bisector of the two
+    // sites - tagging the newly cut edge with {@code dropIndex}, the site on the
+    // far side of it. The normal points toward the kept site, so a non-negative
+    // half-plane test is the side to retain; the bisector passes through the
+    // midpoint of the two sites.
+    private static LabelledPolygon clipToBisector(LabelledPolygon cell, double[] keep,
+            double[] drop, int dropIndex) {
+        return cell.clipToHalfPlane(
                 (keep[0] + drop[0]) * 0.5, (keep[1] + drop[1]) * 0.5,
-                keep[0] - drop[0], keep[1] - drop[1]);
+                keep[0] - drop[0], keep[1] - drop[1], dropIndex);
     }
 
-    // Regular polygon of {@code radius} about {@code center}, the seed each
-    // cell is carved out of. It both caps the cell's reach (the zone-of-
-    // control bound) and rounds any frontier edge that the bisectors do not
-    // cut. Counter-clockwise winding.
-    private static List<double[]> regularPolygon(double[] center, double radius) {
-        var polygon = new ArrayList<double[]>(CELL_BOUND_SEGMENTS);
-        for (var i = 0; i < CELL_BOUND_SEGMENTS; i++) {
-            var angle = 2.0 * Math.PI * i / CELL_BOUND_SEGMENTS;
-            polygon.add(new double[] {
-                    center[0] + radius * Math.cos(angle),
-                    center[1] + radius * Math.sin(angle),
-            });
+    // Locates {@code site} in {@code sites} by reference, the identity the
+    // unlabelled buildCell skips its own site by; an element of the list, so the
+    // search always hits.
+    private static int indexOf(List<double[]> sites, double[] site) {
+        for (var i = 0; i < sites.size(); i++) {
+            if (sites.get(i) == site) {
+                return i;
+            }
         }
-        return polygon;
+        throw new IllegalArgumentException("site must be an element of sites");
     }
 }
