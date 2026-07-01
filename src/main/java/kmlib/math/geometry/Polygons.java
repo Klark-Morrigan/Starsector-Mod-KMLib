@@ -232,10 +232,12 @@ public final class Polygons {
      * a single edge, so it both keeps inside vertices and inserts the crossing
      * points where edges straddle the line, leaving the result closed.
      *
-     * <p>The shared primitive behind both Voronoi cell building (clip by a
-     * bisector) and {@link #insetConvexPolygon} (clip by an offset edge); the
-     * {@code normal} need not be unit length, since only the sign of the
-     * half-plane test matters.
+     * <p>The clip {@link #insetConvexPolygon} is built on (clip by an offset
+     * edge); {@link LabelledPolygon#clipToHalfPlane} is the label-carrying
+     * counterpart, and the two share their geometry through
+     * {@link Points#computeSignedOffsetFromLine} and
+     * {@link Points#computeCrossingPoint}. The {@code normal} need not be unit
+     * length, since only the sign of the half-plane test matters.
      *
      * @param polygon the convex polygon to clip, as {x, y} pairs
      * @param lineX   x of a point on the clip line
@@ -248,21 +250,23 @@ public final class Polygons {
             double lineX, double lineY, double normalX, double normalY) {
         var result = new ArrayList<double[]>();
         var count = polygon.size();
+        // Sutherland-Hodgman edge walk; crossing math shared with
+        // LabelledPolygon.clipToHalfPlane via Points.
         for (var i = 0; i < count; i++) {
             var current = polygon.get(i);
             var next = polygon.get((i + 1) % count);
-            var currentDistance = (current[0] - lineX) * normalX
-                    + (current[1] - lineY) * normalY;
-            var nextDistance = (next[0] - lineX) * normalX
-                    + (next[1] - lineY) * normalY;
+            var currentOffset = Points.computeSignedOffsetFromLine(
+                    current[0], current[1], lineX, lineY, normalX, normalY);
+            var nextOffset = Points.computeSignedOffsetFromLine(
+                    next[0], next[1], lineX, lineY, normalX, normalY);
 
-            if (currentDistance >= 0) {
+            if (currentOffset >= 0) {
                 result.add(current);
             }
             // Edge straddles the line: insert the crossing so the result stays
             // closed.
-            if ((currentDistance >= 0) != (nextDistance >= 0)) {
-                result.add(Points.computeCrossingPoint(current, next, currentDistance, nextDistance));
+            if ((currentOffset >= 0) != (nextOffset >= 0)) {
+                result.add(Points.computeCrossingPoint(current, next, currentOffset, nextOffset));
             }
         }
         return result;
