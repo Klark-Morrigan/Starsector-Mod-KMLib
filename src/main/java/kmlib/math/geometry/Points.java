@@ -50,7 +50,7 @@ public final class Points {
         return Math.toDegrees(Math.atan2(y2 - y1, x2 - x1));
     }
 
-    // The signed offset of (px, py) from the line through (lineX, lineY) with
+    // The signed offset of {@code point} from the line through (lineX, lineY) with
     // direction normal (normalX, normalY): (point - lineOrigin) projected onto the
     // normal. Positive on the side the normal points to, zero on the line, negative
     // on the far side. It equals the signed perpendicular distance only when the
@@ -58,9 +58,9 @@ public final class Points {
     // therefore rely on the sign (which side) and on ratios of two offsets (where
     // the shared scale cancels), never on the raw magnitude - the half-plane test
     // both polygon clips key their keep/discard decision and crossing point on.
-    static double computeSignedOffsetFromLine(double px, double py,
+    static double computeSignedOffsetFromLine(double[] point,
             double lineX, double lineY, double normalX, double normalY) {
-        return (px - lineX) * normalX + (py - lineY) * normalY;
+        return (point[0] - lineX) * normalX + (point[1] - lineY) * normalY;
     }
 
     // The point on segment a..b where a value that is signedA at a and signedB at

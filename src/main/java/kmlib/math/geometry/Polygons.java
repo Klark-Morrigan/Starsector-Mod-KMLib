@@ -5,9 +5,6 @@ import java.util.List;
 
 /**
  * Polygon operations for 2D geometry.
- *
- * <p>Pure 2D math: no rendering and no Starsector types, so it can be
- * reasoned about and verified on its own.
  */
 public final class Polygons {
     // Edges shorter than this have no well-defined direction (and so no
@@ -255,10 +252,10 @@ public final class Polygons {
         for (var i = 0; i < count; i++) {
             var current = polygon.get(i);
             var next = polygon.get((i + 1) % count);
-            var currentOffset = Points.computeSignedOffsetFromLine(
-                    current[0], current[1], lineX, lineY, normalX, normalY);
-            var nextOffset = Points.computeSignedOffsetFromLine(
-                    next[0], next[1], lineX, lineY, normalX, normalY);
+            var currentOffset =
+                    Points.computeSignedOffsetFromLine(current, lineX, lineY, normalX, normalY);
+            var nextOffset =
+                    Points.computeSignedOffsetFromLine(next, lineX, lineY, normalX, normalY);
 
             if (currentOffset >= 0) {
                 result.add(current);
