@@ -6,12 +6,14 @@ import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Pins {@link LabelledPolygon}: a seed labels every edge alike; a half-plane clip
- * keeps only the kept side, stamps the freshly cut edge with the clip label while
- * every surviving edge keeps its own, leaves the source polygon untouched, and
- * empties out when the whole polygon is clipped away.
+ * Pins {@link LabelledPolygon}: a seed labels every edge alike; an arbitrary ring
+ * can be seeded from explicit vertices and parallel per-edge labels (rejecting a
+ * mismatched pair); a half-plane clip keeps only the kept side, stamps the freshly
+ * cut edge with the clip label while every surviving edge keeps its own, leaves the
+ * source polygon untouched, and empties out when the whole polygon is clipped away.
  */
 final class LabelledPolygonTest {
 
@@ -41,6 +43,29 @@ final class LabelledPolygonTest {
                 var dy = vertex[1] - centre[1];
                 assertThat(Math.sqrt(dx * dx + dy * dy)).isCloseTo(200, within(1e-9));
             });
+        }
+    }
+
+    @Nested
+    class FromLabelledEdges {
+
+        @Test
+        void fromLabelledEdgesKeepsTheVerticesAndPerEdgeLabels() {
+            var vertices = java.util.List.of(
+                    new double[] {0, 0}, new double[] {10, 0}, new double[] {10, 10});
+
+            var polygon = LabelledPolygon.fromLabelledEdges(vertices, new int[] {1, 2, 3});
+
+            assertThat(polygon.getVertices()).hasSize(3);
+            assertThat(polygon.getEdgeLabels()).containsExactly(1, 2, 3);
+        }
+
+        @Test
+        void fromLabelledEdgesRejectsMismatchedArrayLengths() {
+            var vertices = java.util.List.of(new double[] {0, 0}, new double[] {10, 0});
+
+            assertThatThrownBy(() -> LabelledPolygon.fromLabelledEdges(vertices, new int[] {1}))
+                    .isInstanceOf(IllegalArgumentException.class);
         }
     }
 

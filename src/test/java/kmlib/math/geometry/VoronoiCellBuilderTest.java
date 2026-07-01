@@ -276,8 +276,8 @@ final class VoronoiCellBuilderTest {
         }
 
         // The pre-labelling build path, kept as the benchmark control: a bare
-        // double[] max-radius polygon clipped by each bisector through the
-        // package-private Polygons.clipToHalfPlane, carrying no per-edge labels.
+        // double[] max-radius polygon clipped by each bisector, carrying no
+        // per-edge labels.
         private List<double[]> buildBareCell(int siteIndex, List<double[]> sites) {
             var site = sites.get(siteIndex);
             var cell = bareRegularPolygon(site);
@@ -286,7 +286,7 @@ final class VoronoiCellBuilderTest {
                     continue;
                 }
                 var neighbour = sites.get(other);
-                cell = Polygons.clipToHalfPlane(cell,
+                cell = bareClipToHalfPlane(cell,
                         (site[0] + neighbour[0]) * 0.5, (site[1] + neighbour[1]) * 0.5,
                         site[0] - neighbour[0], site[1] - neighbour[1]);
                 if (cell.isEmpty()) {
@@ -294,6 +294,35 @@ final class VoronoiCellBuilderTest {
                 }
             }
             return cell;
+        }
+
+        // The bare double[] Sutherland-Hodgman clip this benchmark measures the
+        // labelled build against. Production keeps a single clip walk
+        // (LabelledPolygon.clipToHalfPlane); this label-free twin lives here on
+        // purpose, so the "labelling does not perturb the geometry" gate compares
+        // the labelled walk against an independent baseline rather than against
+        // itself. Shares only the point math via Points, so any vertex mismatch is
+        // labelling, not a different crossing formula.
+        private static List<double[]> bareClipToHalfPlane(List<double[]> polygon,
+                double lineX, double lineY, double normalX, double normalY) {
+            var result = new ArrayList<double[]>();
+            var count = polygon.size();
+            for (var i = 0; i < count; i++) {
+                var current = polygon.get(i);
+                var next = polygon.get((i + 1) % count);
+                var currentOffset =
+                        Points.computeSignedOffsetFromLine(current, lineX, lineY, normalX, normalY);
+                var nextOffset =
+                        Points.computeSignedOffsetFromLine(next, lineX, lineY, normalX, normalY);
+                if (currentOffset >= 0) {
+                    result.add(current);
+                }
+                if ((currentOffset >= 0) != (nextOffset >= 0)) {
+                    result.add(
+                            Points.computeCrossingPoint(current, next, currentOffset, nextOffset));
+                }
+            }
+            return result;
         }
 
         private List<double[]> bareRegularPolygon(double[] center) {

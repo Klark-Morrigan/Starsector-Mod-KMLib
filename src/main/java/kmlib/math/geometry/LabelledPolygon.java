@@ -50,6 +50,37 @@ public final class LabelledPolygon {
     }
 
     /**
+     * Builds a polygon from explicit vertices, each carrying the label of the
+     * edge leaving it toward the next vertex in the ring - the inverse of
+     * {@link #getVertices()} paired with {@link #getEdgeLabels()}.
+     *
+     * <p>Where {@link #createRegularPolygon} can only seed a uniform regular
+     * polygon, this seeds a clip from an arbitrary convex ring (a Voronoi cell,
+     * say) with a per-edge label chosen up front, so a later clip can preserve
+     * which edges were which. Winding is taken as given; the caller supplies a
+     * counter-clockwise ring when the clip normals are to point inward.
+     *
+     * @param vertices   the ring's vertices as {x, y} pairs, in winding order
+     * @param edgeLabels the label of each edge, parallel to {@code vertices}:
+     *                   entry {@code i} labels the edge from vertex {@code i} to
+     *                   vertex {@code (i + 1)} modulo the count
+     * @return the labelled polygon
+     * @throws IllegalArgumentException when the two arrays are not parallel
+     */
+    public static LabelledPolygon fromLabelledEdges(List<double[]> vertices, int[] edgeLabels) {
+        if (vertices.size() != edgeLabels.length) {
+            throw new IllegalArgumentException(
+                    "vertices and edgeLabels must be parallel: " + vertices.size()
+                            + " vs " + edgeLabels.length);
+        }
+        var labelled = new ArrayList<LabelledVertex>(vertices.size());
+        for (var i = 0; i < vertices.size(); i++) {
+            labelled.add(new LabelledVertex(vertices.get(i), edgeLabels[i]));
+        }
+        return new LabelledPolygon(labelled);
+    }
+
+    /**
      * Clips this polygon to one half-plane: the points on the {@code normal} side
      * of the line through {@code (lineX, lineY)}, stamping the newly cut edge with
      * {@code clipLabel}.

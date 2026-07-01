@@ -17,6 +17,120 @@ public final class Polygons {
     private Polygons() {
     }
 
+    // One edge's inward-offset clip line: a point on the line and the unit normal
+    // pointing to the kept (interior) side - exactly the four values a half-plane
+    // clip takes. A named, immutable tuple so a clip call reads by role rather than
+    // by array index.
+    private record OffsetLine(double pointX, double pointY, double normalX, double normalY) {
+    }
+
+    /**
+     * The result of {@link #insetSelectedEdges}: the inset polygon and, per edge,
+     * whether that edge lies on an inward-offset line (a pulled-in border) rather
+     * than on an original, un-inset edge.
+     *
+     * @param vertices    the inset polygon's vertices as {x, y} pairs, in winding
+     *                    order
+     * @param edgeIsInset parallel to {@code vertices}: entry {@code i} is true when
+     *                    the edge from vertex {@code i} to vertex {@code (i + 1)}
+     *                    modulo the count lies on an inset line
+     */
+    public record SelectiveInset(List<double[]> vertices, boolean[] edgeIsInset) {
+    }
+
+    /**
+     * Insets a counter-clockwise convex polygon along only the edges flagged in
+     * {@code insetEdge}, leaving the rest on their original lines, and reports
+     * which edges of the result lie on an inset line.
+     *
+     * <p>Where {@link #insetConvexPolygon} pulls every edge inward by
+     * {@code distance}, this pulls in only the selected ones. Two polygons that
+     * share an un-inset edge therefore still meet exactly along it - so their
+     * fills fuse with no seam - while their selected edges pull back to leave the
+     * usual {@code 2 * distance} channel against everything else. A kept edge that
+     * runs into a pulled-in edge is truncated at the offset line, so its end stays
+     * within the inset region instead of poking out to the original corner.
+     *
+     * <p>Built on the same half-plane clipping as {@link #insetConvexPolygon},
+     * carried through {@link LabelledPolygon} so each output edge's origin (inset
+     * line versus kept edge) survives the clips. A selected edge's original
+     * position lies fully outside its own inward-offset line, so clipping replaces
+     * it with the pulled-in edge; an un-selected edge is never used as a clip, so
+     * it stays on its line, cut only where another edge's clip crosses it.
+     *
+     * @param polygon   CCW convex polygon vertices as {x, y} pairs
+     * @param insetEdge parallel to {@code polygon}: entry {@code i} is true to
+     *                  inset the edge from vertex {@code i} to vertex
+     *                  {@code (i + 1)}, false to leave it on its original line
+     * @param distance  inward inset applied to each selected edge
+     * @return the inset polygon with a per-edge inset-line flag. Either empty (both
+     *         lists) or a real polygon with area - never a degenerate sliver: it
+     *         empties when the input has fewer than three vertices, the inset
+     *         consumes it, or the clip collapses it to fewer than three distinct
+     *         vertices (a point or line), so a caller can treat any non-empty
+     *         result as directly drawable
+     * @throws IllegalArgumentException when {@code insetEdge} is not parallel to
+     *         the polygon's edges
+     */
+    public static SelectiveInset insetSelectedEdges(List<double[]> polygon, boolean[] insetEdge,
+            double distance) {
+        var count = polygon.size();
+        if (insetEdge.length != count) {
+            throw new IllegalArgumentException("insetEdge must be parallel to the polygon edges: "
+                    + insetEdge.length + " vs " + count);
+        }
+        if (count < MIN_POLYGON_VERTICES) {
+            return new SelectiveInset(new ArrayList<>(), new boolean[0]);
+        }
+
+        // Labels that let the clips tell an edge pulled onto an inward-offset line
+        // from one left on the original outline. Only their distinctness matters,
+        // so any two unequal ints serve, and they stay local to the one method that
+        // borrows the labelled-clip machinery.
+        final var insetEdgeLabel = 1;
+        final var keptEdgeLabel = 0;
+
+        // Seed a labelled copy so the clips can tell a pulled-in edge from a kept
+        // one, then clip only by the selected edges' inward-offset lines. Offset
+        // lines are taken from the original geometry, so a later clip does not
+        // shift an earlier one.
+        var labels = new int[count];
+        for (var i = 0; i < count; i++) {
+            labels[i] = insetEdge[i] ? insetEdgeLabel : keptEdgeLabel;
+        }
+        var working = LabelledPolygon.fromLabelledEdges(polygon, labels);
+        for (var i = 0; i < count && !working.isEmpty(); i++) {
+            if (!insetEdge[i]) {
+                continue;
+            }
+            var line = computeInwardOffsetLine(polygon.get(i), polygon.get((i + 1) % count),
+                    distance);
+            if (line == null) {
+                continue;
+            }
+            working = working.clipToHalfPlane(line.pointX(), line.pointY(),
+                    line.normalX(), line.normalY(), insetEdgeLabel);
+        }
+
+        // Normalise a clipped-away or collapsed result to empty, so a non-empty
+        // return is always a real polygon with area a caller can fill and stroke
+        // without re-checking. A clip can pull every border through the cell,
+        // collapsing it to a point or line - fewer than three distinct vertices
+        // even when the raw vertex count is not (coincident corners). Deduplicating
+        // before the count test catches that; the vertices themselves are returned
+        // as clipped so they stay parallel to the edge flags.
+        var vertices = working.getVertices();
+        if (removeConsecutiveDuplicates(vertices).size() < MIN_POLYGON_VERTICES) {
+            return new SelectiveInset(new ArrayList<>(), new boolean[0]);
+        }
+        var edgeLabels = working.getEdgeLabels();
+        var edgeIsInset = new boolean[edgeLabels.length];
+        for (var i = 0; i < edgeLabels.length; i++) {
+            edgeIsInset[i] = edgeLabels[i] == insetEdgeLabel;
+        }
+        return new SelectiveInset(vertices, edgeIsInset);
+    }
+
     /**
      * Insets a counter-clockwise convex polygon by {@code distance}, returning
      * the smaller closed polygon whose every edge sits {@code distance} inside
@@ -220,6 +334,23 @@ public final class Polygons {
             });
         }
         return segments;
+    }
+
+    // The inward-offset clip line of directed edge {@code a -> b}, pulled
+    // {@code distance} into a CCW polygon's interior - the point and normal a
+    // half-plane clip takes to keep only the points at least {@code distance}
+    // inside that edge. Null when the edge is too short to have a direction, so a
+    // caller skips it. The single source of the inset's "edge -> clip line" step,
+    // shared by the whole-polygon {@link #insetConvexPolygon} and the per-edge
+    // {@link #insetSelectedEdges}, which differ only in which edges they feed it
+    // and whether they track the cut edge's label.
+    private static OffsetLine computeInwardOffsetLine(double[] a, double[] b, double distance) {
+        var normal = computeInwardUnitNormal(a, b);
+        if (normal == null) {
+            return null;
+        }
+        return new OffsetLine(
+                a[0] + normal[0] * distance, a[1] + normal[1] * distance, normal[0], normal[1]);
     }
 
     // The inward unit normal of directed edge {@code a -> b} for a CCW polygon:
