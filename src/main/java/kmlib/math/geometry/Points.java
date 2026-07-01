@@ -32,12 +32,14 @@ public final class Points {
         return computeDistance(a.x, a.y, b.x, b.y);
     }
 
-    // The Euclidean length (magnitude) of the 2D vector (x, y): sqrt(x^2 + y^2).
-    // The primitive behind computeDistance (the length of the difference vector)
-    // and the vector normalisations in Polygons, so the sum-of-squares root lives
-    // in one place and callers that already hold the components never recompute
-    // them.
-    static double computeVectorLength(double x, double y) {
+    /**
+     * The Euclidean length (magnitude) of the 2D vector {@code (x, y)}:
+     * {@code sqrt(x^2 + y^2)}. The single home for the sum-of-squares root behind
+     * {@link #computeDistance} (the length of the difference vector) and the vector
+     * normalisations elsewhere, so callers that already hold the components never
+     * recompute the magnitude.
+     */
+    public static double computeVectorLength(double x, double y) {
         return Math.sqrt(x * x + y * y);
     }
 
