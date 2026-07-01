@@ -54,6 +54,21 @@ public final class LunaSettingsReader {
     }
 
     /**
+     * Reads a string LunaLib setting, falling back when it is unavailable. Serves
+     * the Radio field type, whose stored value is the selected option's label.
+     *
+     * @param modId    the mod's LunaLib settings id
+     * @param fieldId  the string (or Radio) field's id
+     * @param fallback value returned when the setting is null (unset, or read
+     *                 before LunaLib has loaded the mod's settings)
+     * @return the stored string, or {@code fallback} when it is unavailable
+     */
+    public static String getString(String modId, String fieldId, String fallback) {
+        var value = LunaSettings.getString(modId, fieldId);
+        return value != null ? value : fallback;
+    }
+
+    /**
      * Runs {@code onChange} whenever the player applies a change to
      * {@code modId}'s settings, so callers react to settings live instead of
      * polling. LunaLib notifies for every mod's change; this filters to the
