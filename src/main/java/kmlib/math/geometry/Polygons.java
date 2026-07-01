@@ -54,20 +54,15 @@ public final class Polygons {
         for (var i = 0; i < count && !inset.isEmpty(); i++) {
             var start = vertices.get(i);
             var end = vertices.get((i + 1) % count);
-            var edgeX = end[0] - start[0];
-            var edgeY = end[1] - start[1];
-            var length = Math.sqrt(edgeX * edgeX + edgeY * edgeY);
-            if (length < MIN_EDGE_LENGTH) {
+            var normal = computeInwardUnitNormal(start, end);
+            if (normal == null) {
                 continue;
             }
-            // CCW interior is left of the directed edge, so the inward normal of
-            // edge (start -> end) is (-edgeY, edgeX) normalized; shift a point on
-            // the edge inward by distance to get a point on the clip line.
-            var normalX = -edgeY / length;
-            var normalY = edgeX / length;
-            var clipX = start[0] + normalX * distance;
-            var clipY = start[1] + normalY * distance;
-            inset = clipToHalfPlane(inset, clipX, clipY, normalX, normalY);
+            // Shift a point on the edge inward by distance along that normal to
+            // get a point on the clip line.
+            var clipX = start[0] + normal[0] * distance;
+            var clipY = start[1] + normal[1] * distance;
+            inset = clipToHalfPlane(inset, clipX, clipY, normal[0], normal[1]);
         }
         return inset;
     }
@@ -219,19 +214,13 @@ public final class Polygons {
         for (var i = 0; i < count; i++) {
             var a = polygon.get(i);
             var b = polygon.get((i + 1) % count);
-            var edgeX = b[0] - a[0];
-            var edgeY = b[1] - a[1];
-            var length = Math.sqrt(edgeX * edgeX + edgeY * edgeY);
-            if (length < MIN_EDGE_LENGTH) {
+            var normal = computeInwardUnitNormal(a, b);
+            if (normal == null) {
                 continue;
             }
-            // CCW interior is left of the directed edge, so the inward normal
-            // of edge (a -> b) is (-edgeY, edgeX) normalized.
-            var normalX = -edgeY / length;
-            var normalY = edgeX / length;
             segments.add(new double[] {
-                    a[0] + normalX * distance, a[1] + normalY * distance,
-                    b[0] + normalX * distance, b[1] + normalY * distance,
+                    a[0] + normal[0] * distance, a[1] + normal[1] * distance,
+                    b[0] + normal[0] * distance, b[1] + normal[1] * distance,
             });
         }
         return segments;
@@ -281,6 +270,22 @@ public final class Polygons {
             }
         }
         return result;
+    }
+
+    // The inward unit normal of directed edge {@code a -> b} for a CCW polygon:
+    // {@code (-edgeY, edgeX)} normalized, pointing to the polygon interior (the
+    // left of the directed edge). Null when the edge is shorter than
+    // {@link #MIN_EDGE_LENGTH} and so has no defined direction, so the caller
+    // skips it rather than dividing by ~zero. Shared by the inset and edge-offset
+    // passes, which both step inward along this normal.
+    private static double[] computeInwardUnitNormal(double[] a, double[] b) {
+        var edgeX = b[0] - a[0];
+        var edgeY = b[1] - a[1];
+        var length = Math.sqrt(edgeX * edgeX + edgeY * edgeY);
+        if (length < MIN_EDGE_LENGTH) {
+            return null;
+        }
+        return new double[] {-edgeY / length, edgeX / length};
     }
 
     // Drops vertices that coincide with their predecessor (within the minimum
