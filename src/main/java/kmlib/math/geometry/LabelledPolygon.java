@@ -54,11 +54,12 @@ public final class LabelledPolygon {
      * of the line through {@code (lineX, lineY)}, stamping the newly cut edge with
      * {@code clipLabel}.
      *
-     * <p>Sutherland-Hodgman against a single edge, sharing its geometry with the
-     * unlabelled {@link Polygons#clipToHalfPlane} through
-     * {@link Points#computeSignedOffsetFromLine} and
-     * {@link Points#computeCrossingPoint}; this only threads the labels through on
-     * top. A surviving inside vertex keeps its
+     * <p>Sutherland-Hodgman against a single edge - the one half-plane clip walk,
+     * with its point geometry in {@link Points#computeSignedOffsetFromLine} and
+     * {@link Points#computeCrossingPoint} and the label bookkeeping threaded
+     * through on top. A whole-polygon inset that needs no per-edge labels drives
+     * this with a single throwaway label ({@link Polygons#insetConvexPolygon}). A
+     * surviving inside vertex keeps its
      * outgoing-edge label; a crossing made while leaving the kept side starts the
      * new clip-line edge and so takes {@code clipLabel}, while a crossing made
      * while re-entering resumes the original edge and keeps that edge's label.
@@ -76,8 +77,8 @@ public final class LabelledPolygon {
             double normalY, int clipLabel) {
         var result = new ArrayList<LabelledVertex>();
         var count = vertices.size();
-        // Sutherland-Hodgman edge walk; crossing math shared with
-        // Polygons.clipToHalfPlane via Points.
+        // Sutherland-Hodgman edge walk; crossing math in Points, shared with the
+        // bare control clip in VoronoiCellBuilderTest.
         for (var i = 0; i < count; i++) {
             var current = vertices.get(i);
             var next = vertices.get((i + 1) % count);

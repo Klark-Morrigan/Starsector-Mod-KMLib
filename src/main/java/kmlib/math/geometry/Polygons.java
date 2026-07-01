@@ -46,22 +46,21 @@ public final class Polygons {
 
         // Clip the polygon by each edge's inward-offset line in turn. The
         // surviving region is the set of points at least {@code distance} inside
-        // every edge - the inset cell.
-        var inset = vertices;
-        for (var i = 0; i < count && !inset.isEmpty(); i++) {
-            var start = vertices.get(i);
-            var end = vertices.get((i + 1) % count);
-            var normal = computeInwardUnitNormal(start, end);
-            if (normal == null) {
+        // every edge - the inset cell. Routed through LabelledPolygon so the one
+        // Sutherland-Hodgman walk lives there; a whole-polygon inset draws no
+        // per-edge distinction, so every edge takes the same throwaway label and
+        // the labels are dropped on the way out.
+        var working = LabelledPolygon.fromLabelledEdges(vertices, new int[count]);
+        for (var i = 0; i < count && !working.isEmpty(); i++) {
+            var line = computeInwardOffsetLine(vertices.get(i), vertices.get((i + 1) % count),
+                    distance);
+            if (line == null) {
                 continue;
             }
-            // Shift a point on the edge inward by distance along that normal to
-            // get a point on the clip line.
-            var clipX = start[0] + normal[0] * distance;
-            var clipY = start[1] + normal[1] * distance;
-            inset = clipToHalfPlane(inset, clipX, clipY, normal[0], normal[1]);
+            working = working.clipToHalfPlane(
+                    line.pointX(), line.pointY(), line.normalX(), line.normalY(), 0);
         }
-        return inset;
+        return working.getVertices();
     }
 
     /**
@@ -221,52 +220,6 @@ public final class Polygons {
             });
         }
         return segments;
-    }
-
-    /**
-     * Clips a convex polygon to one half-plane: the points on the {@code normal}
-     * side of the line through {@code (lineX, lineY)}. Sutherland-Hodgman against
-     * a single edge, so it both keeps inside vertices and inserts the crossing
-     * points where edges straddle the line, leaving the result closed.
-     *
-     * <p>The clip {@link #insetConvexPolygon} is built on (clip by an offset
-     * edge); {@link LabelledPolygon#clipToHalfPlane} is the label-carrying
-     * counterpart, and the two share their geometry through
-     * {@link Points#computeSignedOffsetFromLine} and
-     * {@link Points#computeCrossingPoint}. The {@code normal} need not be unit
-     * length, since only the sign of the half-plane test matters.
-     *
-     * @param polygon the convex polygon to clip, as {x, y} pairs
-     * @param lineX   x of a point on the clip line
-     * @param lineY   y of a point on the clip line
-     * @param normalX x of the normal pointing to the kept side
-     * @param normalY y of the normal pointing to the kept side
-     * @return the clipped polygon; empty when nothing lies on the kept side
-     */
-    static List<double[]> clipToHalfPlane(List<double[]> polygon,
-            double lineX, double lineY, double normalX, double normalY) {
-        var result = new ArrayList<double[]>();
-        var count = polygon.size();
-        // Sutherland-Hodgman edge walk; crossing math shared with
-        // LabelledPolygon.clipToHalfPlane via Points.
-        for (var i = 0; i < count; i++) {
-            var current = polygon.get(i);
-            var next = polygon.get((i + 1) % count);
-            var currentOffset =
-                    Points.computeSignedOffsetFromLine(current, lineX, lineY, normalX, normalY);
-            var nextOffset =
-                    Points.computeSignedOffsetFromLine(next, lineX, lineY, normalX, normalY);
-
-            if (currentOffset >= 0) {
-                result.add(current);
-            }
-            // Edge straddles the line: insert the crossing so the result stays
-            // closed.
-            if ((currentOffset >= 0) != (nextOffset >= 0)) {
-                result.add(Points.computeCrossingPoint(current, next, currentOffset, nextOffset));
-            }
-        }
-        return result;
     }
 
     // The inward unit normal of directed edge {@code a -> b} for a CCW polygon:

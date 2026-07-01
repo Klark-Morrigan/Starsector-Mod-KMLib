@@ -59,7 +59,7 @@ public final class Points {
     // normal is unit length; otherwise the magnitude scales with |normal|. Callers
     // therefore rely on the sign (which side) and on ratios of two offsets (where
     // the shared scale cancels), never on the raw magnitude - the half-plane test
-    // both polygon clips key their keep/discard decision and crossing point on.
+    // the polygon clip keys its keep/discard decision and crossing point on.
     static double computeSignedOffsetFromLine(double[] point,
             double lineX, double lineY, double normalX, double normalY) {
         return (point[0] - lineX) * normalX + (point[1] - lineY) * normalY;
@@ -67,10 +67,11 @@ public final class Points {
 
     // The point on segment a..b where a value that is signedA at a and signedB at
     // b crosses zero, at parameter signedA / (signedA - signedB) along the
-    // segment. The single home for the half-plane clip crossing computation,
-    // shared by Polygons.clipToHalfPlane and LabelledPolygon.clipToHalfPlane. The
-    // two signs must straddle zero (opposite signs) - each clip establishes that
-    // before asking, so the denominator is never zero.
+    // segment. The single home for the half-plane clip crossing computation, used
+    // by LabelledPolygon.clipToHalfPlane (the sole clip walk) and the bare control
+    // clip in VoronoiCellBuilderTest. The two signs must straddle zero (opposite
+    // signs) - each clip establishes that before asking, so the denominator is
+    // never zero.
     static double[] computeCrossingPoint(double[] a, double[] b, double signedA, double signedB) {
         var fraction = signedA / (signedA - signedB);
         return new double[] {
