@@ -4,16 +4,6 @@ import org.lwjgl.util.vector.Vector2f;
 
 /**
  * Operations on 2D points.
- *
- * <p>Pure 2D math: no rendering and no Starsector types, so it can be reasoned
- * about and verified on its own - and called from code that must stay free of
- * the game runtime (e.g. {@code com.fs.starfarer.api.util.Misc}, whose static
- * initialiser needs a booted game, is not an option in such contexts).
- *
- * <p>The {@link Vector2f} overloads are exempt from that rule: LWJGL's vector
- * is a plain struct with no game-requiring static initialiser, so it does not
- * pull in the runtime the contract above guards against. They exist only to
- * spare callers the {@code .x}/{@code .y} unpacking at every site.
  */
 public final class Points {
 
@@ -21,12 +11,11 @@ public final class Points {
     }
 
     /**
-     * The Euclidean distance between {@code (x1, y1)} and {@code (x2, y2)}.
+     * The Euclidean distance between {@code (x1, y1)} and {@code (x2, y2)} - the
+     * length of the vector between them.
      */
     public static double computeDistance(double x1, double y1, double x2, double y2) {
-        var deltaX = x1 - x2;
-        var deltaY = y1 - y2;
-        return Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        return computeVectorLength(x1 - x2, y1 - y2);
     }
 
     /**
@@ -41,6 +30,15 @@ public final class Points {
      */
     public static double computeDistance(Vector2f a, Vector2f b) {
         return computeDistance(a.x, a.y, b.x, b.y);
+    }
+
+    // The Euclidean length (magnitude) of the 2D vector (x, y): sqrt(x^2 + y^2).
+    // The primitive behind computeDistance (the length of the difference vector)
+    // and the vector normalisations in Polygons, so the sum-of-squares root lives
+    // in one place and callers that already hold the components never recompute
+    // them.
+    static double computeVectorLength(double x, double y) {
+        return Math.sqrt(x * x + y * y);
     }
 
     /**

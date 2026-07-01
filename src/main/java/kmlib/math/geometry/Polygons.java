@@ -142,7 +142,7 @@ public final class Polygons {
     private static double[] computePointToward(double[] from, double[] to, double distance) {
         var deltaX = to[0] - from[0];
         var deltaY = to[1] - from[1];
-        var length = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        var length = Points.computeVectorLength(deltaX, deltaY);
         if (length < MIN_EDGE_LENGTH) {
             return new double[] {from[0], from[1]};
         }
@@ -162,8 +162,8 @@ public final class Polygons {
         var toPreviousY = previous[1] - corner[1];
         var toNextX = next[0] - corner[0];
         var toNextY = next[1] - corner[1];
-        var previousLength = Math.sqrt(toPreviousX * toPreviousX + toPreviousY * toPreviousY);
-        var nextLength = Math.sqrt(toNextX * toNextX + toNextY * toNextY);
+        var previousLength = Points.computeVectorLength(toPreviousX, toPreviousY);
+        var nextLength = Points.computeVectorLength(toNextX, toNextY);
         if (previousLength < MIN_EDGE_LENGTH || nextLength < MIN_EDGE_LENGTH) {
             return Math.PI;
         }
@@ -277,7 +277,7 @@ public final class Polygons {
     private static double[] computeInwardUnitNormal(double[] a, double[] b) {
         var edgeX = b[0] - a[0];
         var edgeY = b[1] - a[1];
-        var length = Math.sqrt(edgeX * edgeX + edgeY * edgeY);
+        var length = Points.computeVectorLength(edgeX, edgeY);
         if (length < MIN_EDGE_LENGTH) {
             return null;
         }

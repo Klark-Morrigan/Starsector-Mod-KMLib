@@ -34,6 +34,26 @@ class PointsTest {
     }
 
     @Nested
+    class ComputeVectorLength {
+        @Test
+        void computeVectorLengthIsTheEuclideanMagnitude() {
+            assertThat(Points.computeVectorLength(3, 4)).isEqualTo(5.0);
+        }
+
+        @Test
+        void computeVectorLengthIsZeroForTheZeroVector() {
+            assertThat(Points.computeVectorLength(0, 0)).isZero();
+        }
+
+        @Test
+        void computeVectorLengthIgnoresComponentSign() {
+            // Magnitude squares each component, so a negative component gives the
+            // same length as its positive mirror.
+            assertThat(Points.computeVectorLength(-3, -4)).isEqualTo(5.0);
+        }
+    }
+
+    @Nested
     class ComputeAngleDegrees {
         @Test
         void computeAngleDegreesVectorOverloadMatchesCoordinateForm() {
