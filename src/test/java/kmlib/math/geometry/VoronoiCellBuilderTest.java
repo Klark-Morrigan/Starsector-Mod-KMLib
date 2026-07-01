@@ -214,6 +214,159 @@ final class VoronoiCellBuilderTest {
         }
     }
 
+    /**
+     * A timing/allocation harness comparing the labelled build against the bare
+     * double[] build it replaced. Its real assertion is correctness - the labelled
+     * cell must equal the bare control vertex for vertex, so labelling provably
+     * does not perturb the geometry - and it prints per-build cost as diagnostics.
+     * The bare control is kept here rather than in production because the
+     * production path no longer has an unlabelled implementation to measure.
+     */
+    @Nested
+    class BuildLabelledCellPerformance {
+        // A partition big enough that cells actually clip against neighbours, so
+        // the harness exercises the clip loop rather than lone bounded discs.
+        private static final int SITE_COUNT = 150;
+        private static final double SITE_SPREAD = 20_000.0;
+        private static final int BOUND_SEGMENTS = 48;
+        private static final long RANDOM_SEED = 918_273_645L;
+        private static final int WARMUP_BUILDS = 10;
+        private static final int TIMED_BUILDS = 30;
+
+        @Test
+        void buildLabelledCellMatchesBareDoubleArrayBuildAndReportsCost() {
+            var sites = randomSites();
+
+            // Correctness gate: labelling must not move a single vertex, so the
+            // labelled cell must equal the bare double[] control exactly. Only then
+            // does the timing below compare like with like.
+            for (var i = 0; i < sites.size(); i++) {
+                var labelled =
+                        VoronoiCellBuilder.buildLabelledCell(i, sites, MAX_CELL_RADIUS).vertices();
+                var bare = buildBareCell(i, sites);
+                assertThat(labelled).hasSameSizeAs(bare);
+                for (var v = 0; v < bare.size(); v++) {
+                    assertThat(labelled.get(v))
+                            .containsExactly(bare.get(v), org.assertj.core.data.Offset.offset(1e-9));
+                }
+            }
+
+            var labelledCost = measure(() -> {
+                for (var i = 0; i < sites.size(); i++) {
+                    VoronoiCellBuilder.buildLabelledCell(i, sites, MAX_CELL_RADIUS);
+                }
+            });
+            var bareCost = measure(() -> {
+                for (var i = 0; i < sites.size(); i++) {
+                    buildBareCell(i, sites);
+                }
+            });
+
+            reportCost(labelledCost, bareCost);
+        }
+
+        private List<double[]> randomSites() {
+            var random = new java.util.Random(RANDOM_SEED);
+            var sites = new ArrayList<double[]>(SITE_COUNT);
+            for (var i = 0; i < SITE_COUNT; i++) {
+                sites.add(new double[] {
+                        random.nextDouble() * SITE_SPREAD, random.nextDouble() * SITE_SPREAD});
+            }
+            return sites;
+        }
+
+        // The pre-labelling build path, kept as the benchmark control: a bare
+        // double[] max-radius polygon clipped by each bisector through the
+        // package-private Polygons.clipToHalfPlane, carrying no per-edge labels.
+        private List<double[]> buildBareCell(int siteIndex, List<double[]> sites) {
+            var site = sites.get(siteIndex);
+            var cell = bareRegularPolygon(site);
+            for (var other = 0; other < sites.size(); other++) {
+                if (other == siteIndex) {
+                    continue;
+                }
+                var neighbour = sites.get(other);
+                cell = Polygons.clipToHalfPlane(cell,
+                        (site[0] + neighbour[0]) * 0.5, (site[1] + neighbour[1]) * 0.5,
+                        site[0] - neighbour[0], site[1] - neighbour[1]);
+                if (cell.isEmpty()) {
+                    break;
+                }
+            }
+            return cell;
+        }
+
+        private List<double[]> bareRegularPolygon(double[] center) {
+            var polygon = new ArrayList<double[]>(BOUND_SEGMENTS);
+            for (var i = 0; i < BOUND_SEGMENTS; i++) {
+                var angle = 2.0 * Math.PI * i / BOUND_SEGMENTS;
+                polygon.add(new double[] {
+                        center[0] + MAX_CELL_RADIUS * Math.cos(angle),
+                        center[1] + MAX_CELL_RADIUS * Math.sin(angle)});
+            }
+            return polygon;
+        }
+
+        // Warms up, then times TIMED_BUILDS full-partition builds, capturing per-
+        // build nanoseconds and, where the HotSpot bean exposes it, bytes
+        // allocated. Returns {nsPerBuild, bytesPerBuild}; bytes is -1 when the JVM
+        // does not expose the counter.
+        private long[] measure(Runnable buildPartition) {
+            for (var i = 0; i < WARMUP_BUILDS; i++) {
+                buildPartition.run();
+            }
+            var bean = allocationBean();
+            var allocBefore = bean == null ? 0 : bean.getCurrentThreadAllocatedBytes();
+            var start = System.nanoTime();
+            for (var i = 0; i < TIMED_BUILDS; i++) {
+                buildPartition.run();
+            }
+            var nanosPerBuild = (System.nanoTime() - start) / TIMED_BUILDS;
+            var bytesPerBuild = bean == null
+                    ? -1
+                    : (bean.getCurrentThreadAllocatedBytes() - allocBefore) / TIMED_BUILDS;
+            return new long[] {nanosPerBuild, bytesPerBuild};
+        }
+
+        private void reportCost(long[] labelled, long[] bare) {
+            System.out.printf("%nVoronoiCellBuilder partition (%d sites):%n", SITE_COUNT);
+            System.out.printf("  labelled: %,d ns/build (%,d ns/cell)  %s%n",
+                    labelled[0], labelled[0] / SITE_COUNT, allocText(labelled[1]));
+            System.out.printf("  bare:     %,d ns/build (%,d ns/cell)  %s%n",
+                    bare[0], bare[0] / SITE_COUNT, allocText(bare[1]));
+            System.out.printf("  labelled/bare: %.2fx time%s%n",
+                    ratio(labelled[0], bare[0]), allocRatioText(labelled[1], bare[1]));
+        }
+
+        private String allocText(long bytesPerBuild) {
+            return bytesPerBuild < 0
+                    ? "(alloc n/a)"
+                    : String.format("%,d bytes/build", bytesPerBuild);
+        }
+
+        private String allocRatioText(long labelledBytes, long bareBytes) {
+            return labelledBytes < 0 || bareBytes <= 0
+                    ? ""
+                    : String.format(", %.2fx alloc", ratio(labelledBytes, bareBytes));
+        }
+
+        private double ratio(long numerator, long denominator) {
+            return denominator == 0 ? Double.NaN : (double) numerator / denominator;
+        }
+
+        // HotSpot's per-thread allocation counter, or null when the running JVM
+        // does not expose it (the harness then reports time only).
+        private com.sun.management.ThreadMXBean allocationBean() {
+            var bean = java.lang.management.ManagementFactory.getThreadMXBean();
+            if (bean instanceof com.sun.management.ThreadMXBean hotspotBean
+                    && hotspotBean.isThreadAllocatedMemorySupported()) {
+                hotspotBean.setThreadAllocatedMemoryEnabled(true);
+                return hotspotBean;
+            }
+            return null;
+        }
+    }
+
     @Nested
     class BuildCell {
         @Test
