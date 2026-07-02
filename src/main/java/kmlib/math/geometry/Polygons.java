@@ -575,11 +575,13 @@ public final class Polygons {
     private static double[] computeInwardUnitNormal(double[] a, double[] b) {
         var edgeX = b[0] - a[0];
         var edgeY = b[1] - a[1];
-        var length = Points.computeVectorLength(edgeX, edgeY);
-        if (length < Limits.MIN_EDGE_LENGTH) {
+        var unitEdge = Points.computeUnitVector(edgeX, edgeY, Limits.MIN_EDGE_LENGTH);
+        if (unitEdge == null) {
             return null;
         }
-        return new double[] {-edgeY / length, edgeX / length};
+        // Rotate the unit edge 90 degrees left (x, y) -> (-y, x) to face the CCW
+        // polygon's interior, which lies to the left of the directed edge.
+        return new double[] {-unitEdge[1], unitEdge[0]};
     }
 
     // Drops vertices that coincide with their predecessor (within the minimum

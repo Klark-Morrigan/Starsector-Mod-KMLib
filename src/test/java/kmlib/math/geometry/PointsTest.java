@@ -124,6 +124,72 @@ class PointsTest {
     }
 
     @Nested
+    class ComputeUnitVector {
+        @Test
+        void computeUnitVectorReturnsTheDirectionScaledToUnitLength() {
+            var unit = Points.computeUnitVector(3, 4, 1e-9);
+
+            assertThat(unit).isNotNull();
+            assertThat(Math.hypot(unit[0], unit[1])).isCloseTo(1.0, within(1e-12));
+            assertThat(unit[0]).isCloseTo(0.6, within(1e-12));
+            assertThat(unit[1]).isCloseTo(0.8, within(1e-12));
+        }
+
+        @Test
+        void computeUnitVectorKeepsTheComponentSigns() {
+            var unit = Points.computeUnitVector(-3, -4, 1e-9);
+
+            assertThat(unit[0]).isCloseTo(-0.6, within(1e-12));
+            assertThat(unit[1]).isCloseTo(-0.8, within(1e-12));
+        }
+
+        @Test
+        void computeUnitVectorReturnsTheAxisForAnAxisAlignedInput() {
+            assertThat(Points.computeUnitVector(5, 0, 1e-9)).containsExactly(1.0, 0.0);
+            assertThat(Points.computeUnitVector(0, 5, 1e-9)).containsExactly(0.0, 1.0);
+            assertThat(Points.computeUnitVector(-5, 0, 1e-9)).containsExactly(-1.0, 0.0);
+        }
+
+        @Test
+        void computeUnitVectorIsNullForTheZeroVector() {
+            assertThat(Points.computeUnitVector(0, 0, 1e-9)).isNull();
+        }
+
+        @Test
+        void computeUnitVectorIsNullBelowTheGivenFloor() {
+            // Length 1 sits under a floor of 2, so the direction counts as undefined.
+            assertThat(Points.computeUnitVector(1, 0, 2.0)).isNull();
+        }
+
+        @Test
+        void computeUnitVectorAcceptsALengthExactlyAtTheFloor() {
+            // The floor is a strict lower bound: a vector whose length equals it keeps
+            // its direction and normalises rather than returning null.
+            assertThat(Points.computeUnitVector(2, 0, 2.0)).containsExactly(1.0, 0.0);
+        }
+
+        @Test
+        void computeUnitVectorScalesTheFloorToTheCallersOwnMagnitude() {
+            // The same tiny vector is a valid direction under a tiny floor and a
+            // degenerate one under a coarse floor - the caller chooses the scale.
+            assertThat(Points.computeUnitVector(1e-4, 0, 1e-9)).containsExactly(1.0, 0.0);
+            assertThat(Points.computeUnitVector(1e-4, 0, 1e-3)).isNull();
+        }
+
+        @Test
+        void computeUnitVectorStaysUnitLengthWhenSquaringWouldOverflow() {
+            // The shared magnitude step is overflow-safe, so even a huge input yields a
+            // genuine unit vector rather than NaN from an infinity divided by infinity.
+            var unit = Points.computeUnitVector(1e200, 1e200, 1e-9);
+
+            assertThat(unit).isNotNull();
+            assertThat(Math.hypot(unit[0], unit[1])).isCloseTo(1.0, within(1e-12));
+            assertThat(unit[0]).isCloseTo(Math.sqrt(0.5), within(1e-12));
+            assertThat(unit[1]).isCloseTo(Math.sqrt(0.5), within(1e-12));
+        }
+    }
+
+    @Nested
     class ComputeAngleDegrees {
         @Test
         void computeAngleDegreesVectorOverloadMatchesCoordinateForm() {

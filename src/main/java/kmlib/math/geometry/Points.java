@@ -49,6 +49,30 @@ public final class Points {
     }
 
     /**
+     * The unit vector along {@code (x, y)} - each component divided by the vector's
+     * length - or {@code null} when that length is below {@code minLength} and the
+     * direction is therefore ill-defined. The caller sets the degeneracy floor for
+     * its own coordinate scale and decides what a {@code null} means: skip the input,
+     * or substitute a fallback direction. Centralises the "measure, guard the
+     * near-zero magnitude, then divide" step shared by the callers that need a
+     * direction out of a raw {x, y}.
+     *
+     * @param x         the vector's x component
+     * @param y         the vector's y component
+     * @param minLength the length below which the vector counts as having no
+     *                  direction; sized to the caller's coordinate scale
+     * @return the unit components as {@code {x, y}}, or {@code null} when the vector
+     *         is shorter than {@code minLength}
+     */
+    static double[] computeUnitVector(double x, double y, double minLength) {
+        var length = computeVectorLength(x, y);
+        if (length < minLength) {
+            return null;
+        }
+        return new double[] {x / length, y / length};
+    }
+
+    /**
      * The bearing in degrees from {@code (x1, y1)} to {@code (x2, y2)},
      * measured counter-clockwise from the positive x-axis, in the range
      * {@code (-180, 180]}. Coincident points yield 0.
