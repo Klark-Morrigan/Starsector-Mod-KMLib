@@ -228,7 +228,11 @@ final class VoronoiCellBuilderTest {
         // the harness exercises the clip loop rather than lone bounded discs.
         private static final int SITE_COUNT = 150;
         private static final double SITE_SPREAD = 20_000.0;
-        private static final int BOUND_SEGMENTS = 48;
+        // Mirrors VoronoiCellBuilder.CELL_BOUND_SEGMENTS so the bare control seed
+        // matches the production seed vertex for vertex; must move in lockstep with
+        // it or the "labelling does not perturb geometry" gate compares mismatched
+        // seeds.
+        private static final int BOUND_SEGMENTS = 96;
         private static final long RANDOM_SEED = 918_273_645L;
         private static final int WARMUP_BUILDS = 10;
         private static final int TIMED_BUILDS = 30;

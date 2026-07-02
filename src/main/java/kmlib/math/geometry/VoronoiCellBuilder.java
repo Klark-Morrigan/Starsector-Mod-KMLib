@@ -26,9 +26,12 @@ public final class VoronoiCellBuilder {
     public static final int BOUND_EDGE = -1;
 
     // Sides of the regular polygon that approximates each cell's max-radius
-    // bound. High enough that the rounded frontier reads as a smooth curve
-    // rather than a visible polygon.
-    private static final int CELL_BOUND_SEGMENTS = 48;
+    // bound. High enough that the rounded frontier reads as a smooth curve rather
+    // than a visible polygon, and that two neighbouring cells' bound chords meet
+    // their shared bisector within a hair of the same point - so a consumer chaining
+    // adjacent cells' frontier edges into one outline finds them effectively
+    // coincident rather than separated by a visible chord-vs-arc gap.
+    private static final int CELL_BOUND_SEGMENTS = 96;
 
     private VoronoiCellBuilder() {
     }
