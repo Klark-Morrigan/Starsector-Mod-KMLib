@@ -242,6 +242,70 @@ public final class Polygons {
     }
 
     /**
+     * Removes needle spikes and cusps from a closed ring: a vertex whose interior
+     * angle is sharper than {@code maxCornerAngleRadians} and whose perpendicular
+     * offset from the straight chord between its two neighbours is under
+     * {@code maxSpikeHeight} is dropped, and its neighbours are spliced together.
+     * Such a vertex is a thin protrusion (an outward needle) or nick (an inward
+     * cusp), not real shape - the sliver a Voronoi bloc's inset throws up at a
+     * pinched neck or a same-owner disc waist, which downstream rounding cannot sand
+     * off because the spike's own edges are too short to step back along.
+     *
+     * <p>Both conditions must hold, which is what protects real geometry. A sharp
+     * corner that juts far - a genuine peninsula tip - clears the height bar and
+     * stays (rounding chamfers it instead); a gently curved run - a smooth arc
+     * facet, whose corners are nearly straight - clears the angle bar and stays. Only
+     * a corner that is both sharp and shallow, a sliver, is removed. Because the
+     * interior angle is unsigned, an outward spike and an inward notch of equal
+     * sharpness are treated alike, so the pass sands off both. Removal iterates to a
+     * fixed point: splicing one vertex reshapes its neighbours' corners and can
+     * expose a spike that hid behind it. It never drops below three vertices, so a
+     * ring that is all sliver survives as a triangle for the caller's area check to
+     * discard.
+     *
+     * @param polygon               closed polygon vertices as {x, y} pairs
+     * @param maxSpikeHeight        a candidate corner is removed only if it sits
+     *                              nearer than this to its neighbour chord; larger
+     *                              sands off deeper protrusions. Non-positive
+     *                              disables the pass
+     * @param maxCornerAngleRadians only corners with an interior angle below this are
+     *                              candidates; larger treats gentler corners as
+     *                              spikes. Non-positive disables the pass
+     * @return the cleaned ring; a copy of the input (deduplicated) when it has fewer
+     *         than three vertices or either threshold is non-positive
+     */
+    public static List<double[]> removeSpikes(List<double[]> polygon, double maxSpikeHeight,
+            double maxCornerAngleRadians) {
+        var vertices = removeConsecutiveDuplicates(polygon);
+        if (vertices.size() < Limits.MIN_VERTICES_TO_ENCLOSE_AREA
+                || maxSpikeHeight <= 0 || maxCornerAngleRadians <= 0) {
+            return vertices;
+        }
+
+        // Splicing out one spike reshapes the corners on either side, which can turn
+        // a neighbour into a new spike, so re-scan until a full pass removes none.
+        // Each removal drops a vertex and the loop stops at three, so it terminates.
+        var removedAny = true;
+        while (removedAny && vertices.size() > Limits.MIN_VERTICES_TO_ENCLOSE_AREA) {
+            removedAny = false;
+            var count = vertices.size();
+            for (var i = 0; i < count; i++) {
+                var previous = vertices.get((i - 1 + count) % count);
+                var corner = vertices.get(i);
+                var next = vertices.get((i + 1) % count);
+                if (computeInteriorAngle(previous, corner, next) < maxCornerAngleRadians
+                        && Lines.computePerpendicularDistance(corner, previous, next)
+                                < maxSpikeHeight) {
+                    vertices.remove(i);
+                    removedAny = true;
+                    break;
+                }
+            }
+        }
+        return vertices;
+    }
+
+    /**
      * The signed area a closed ring encloses, by the shoelace sum: positive when the
      * ring winds counter-clockwise, negative when clockwise, and its magnitude the
      * enclosed area. So its sign reports winding and comparing two rings' signs
