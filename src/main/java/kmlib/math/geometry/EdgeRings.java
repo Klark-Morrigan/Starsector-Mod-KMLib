@@ -1,0 +1,177 @@
+package kmlib.math.geometry;
+
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Chains a bag of directed edge segments into ordered closed rings.
+ *
+ * <p>The input is the boundary of some region as loose, unordered {@link Segment}s,
+ * each directed so the region lies consistently to one side.
+ * The segments meet end-to-start at shared corners but are handed over in no
+ * particular order and computed independently, so a corner's two segments can
+ * report it at coordinates that differ by a rounding whisker. This welds
+ * coincident endpoints within a tolerance, then walks each segment to the next
+ * whose start meets its end, emitting the closed loops that walk out.
+ *
+ * <p>The region merging this backs (fusing same-owner Voronoi cells into a bloc,
+ * then tracing the bloc's national border) drops the shared interior edges, so the
+ * surviving boundary segments form clean loops: each welded corner has exactly one
+ * segment arriving and one leaving. Disjoint pieces of the region and holes inside
+ * it come back as their own rings. Pathological input (a corner with more than one
+ * way out, or a strand that never closes) is walked defensively rather than trusted
+ * - an unclosed strand is dropped rather than emitted as a stray open ring.
+ */
+public final class EdgeRings {
+    // Packs two signed 32-bit grid-cell indices into one 64-bit key: the x index in
+    // the high half, the y index masked into the low half.
+    private static final int CELL_KEY_X_SHIFT = 32;
+    private static final long CELL_KEY_LOW_MASK = 0xffffffffL;
+
+    private EdgeRings() {
+    }
+
+    /**
+     * Chains directed segments into ordered closed rings.
+     *
+     * <p>Each segment is directed from its start to its end. Two endpoints closer
+     * than {@code weldTolerance} are treated as the
+     * same corner, absorbing the rounding drift between two independent
+     * computations of a shared vertex. Every segment is consumed once; the walk
+     * follows each segment's end to a segment whose start welds to it, closing a
+     * ring when it returns to where it began.
+     *
+     * @param segments      the boundary segments, in any order
+     * @param weldTolerance the largest gap between two endpoints still treated as
+     *                      the same corner; must exceed the coordinates' rounding
+     *                      drift yet stay well below the smallest real edge
+     * @return the closed rings, each a list of {@code {x, y}} corners in the input
+     *         segments' winding; rings of fewer than three corners and strands that
+     *         never close are omitted
+     */
+    public static List<List<double[]>> chainIntoRings(List<Segment> segments,
+            double weldTolerance) {
+        var rings = new ArrayList<List<double[]>>();
+        if (segments.isEmpty()) {
+            return rings;
+        }
+
+        // Weld first so the walk can compare corners as exact integer ids rather
+        // than by tolerance at every hop: a segment's end welds to the same id as
+        // the next segment's start, so chaining is a plain map lookup.
+        var welder = new VertexWelder(weldTolerance);
+        var startId = new int[segments.size()];
+        var endId = new int[segments.size()];
+        // Segments leaving each corner, so the walk finds the continuation in O(1).
+        var outgoingByCorner = new HashMap<Integer, ArrayDeque<Integer>>();
+        for (var i = 0; i < segments.size(); i++) {
+            var segment = segments.get(i);
+            startId[i] = welder.weld(segment.startX(), segment.startY());
+            endId[i] = welder.weld(segment.endX(), segment.endY());
+            outgoingByCorner.computeIfAbsent(startId[i], corner -> new ArrayDeque<>()).add(i);
+        }
+
+        var consumed = new boolean[segments.size()];
+        for (var seed = 0; seed < segments.size(); seed++) {
+            if (consumed[seed]) {
+                continue;
+            }
+            var ring = walkRing(seed, segments, startId, endId, outgoingByCorner, consumed);
+            if (ring != null && ring.size() >= Limits.MIN_VERTICES_TO_ENCLOSE_AREA) {
+                rings.add(ring);
+            }
+        }
+        return rings;
+    }
+
+    // Walks from a seed segment, hopping end-to-start, until the chain returns to
+    // the seed's start corner. Returns the corners walked in order, or null when
+    // the strand dead-ends before closing (its segments are still marked consumed
+    // so a later seed does not re-walk the same dead end).
+    private static List<double[]> walkRing(int seed, List<Segment> segments, int[] startId,
+            int[] endId, Map<Integer, ArrayDeque<Integer>> outgoingByCorner, boolean[] consumed) {
+        var ringStartCorner = startId[seed];
+        var ring = new ArrayList<double[]>();
+        var current = seed;
+        while (current != -1 && !consumed[current]) {
+            consumed[current] = true;
+            var segment = segments.get(current);
+            ring.add(new double[] {segment.startX(), segment.startY()});
+            if (endId[current] == ringStartCorner) {
+                return ring;
+            }
+            current = takeOutgoing(outgoingByCorner.get(endId[current]), consumed);
+        }
+        // Fell off the end without returning to the start: an open strand, dropped.
+        return null;
+    }
+
+    // Removes and returns an unused segment leaving a corner, discarding any that a
+    // prior walk already consumed; -1 when none remain (a dead end).
+    private static int takeOutgoing(ArrayDeque<Integer> outgoing, boolean[] consumed) {
+        if (outgoing == null) {
+            return -1;
+        }
+        while (!outgoing.isEmpty()) {
+            var candidate = outgoing.poll();
+            if (!consumed[candidate]) {
+                return candidate;
+            }
+        }
+        return -1;
+    }
+
+    // Assigns each distinct corner a small integer id, treating two points within a
+    // tolerance as the same corner. Points are bucketed by a grid cell of the
+    // tolerance's size so a lookup scans only the query point's cell and its eight
+    // neighbours (a straddling point still finds its match), never the whole set.
+    private static final class VertexWelder {
+        private final double tolerance;
+        private final double toleranceSquared;
+        private final List<double[]> canonicalPoints = new ArrayList<>();
+        private final Map<Long, List<Integer>> pointsByCell = new HashMap<>();
+
+        private VertexWelder(double tolerance) {
+            this.tolerance = tolerance;
+            this.toleranceSquared = tolerance * tolerance;
+        }
+
+        // The id of the canonical corner within tolerance of (x, y), registering a
+        // new one when none exists yet.
+        private int weld(double x, double y) {
+            var cellX = (long) Math.floor(x / tolerance);
+            var cellY = (long) Math.floor(y / tolerance);
+            for (var dx = -1; dx <= 1; dx++) {
+                for (var dy = -1; dy <= 1; dy++) {
+                    var bucket = pointsByCell.get(packCell(cellX + dx, cellY + dy));
+                    if (bucket == null) {
+                        continue;
+                    }
+                    for (var id : bucket) {
+                        var point = canonicalPoints.get(id);
+                        var offsetX = point[0] - x;
+                        var offsetY = point[1] - y;
+                        if (offsetX * offsetX + offsetY * offsetY <= toleranceSquared) {
+                            return id;
+                        }
+                    }
+                }
+            }
+            var newId = canonicalPoints.size();
+            canonicalPoints.add(new double[] {x, y});
+            pointsByCell.computeIfAbsent(packCell(cellX, cellY), cell -> new ArrayList<>())
+                    .add(newId);
+            return newId;
+        }
+
+        // Packs a grid cell's signed 32-bit coordinates into one long key. Cell
+        // indices stay well within 32 bits for any real map coordinate at a
+        // sub-unit tolerance, so the two halves never collide.
+        private static long packCell(long cellX, long cellY) {
+            return (cellX & CELL_KEY_LOW_MASK) << CELL_KEY_X_SHIFT | cellY & CELL_KEY_LOW_MASK;
+        }
+    }
+}
