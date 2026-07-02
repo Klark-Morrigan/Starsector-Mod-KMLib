@@ -171,6 +171,43 @@ public final class Polygons {
         return working.getVertices();
     }
 
+    // Appends the inset of one corner: the miter point for a convex corner within
+    // the spike limit, otherwise the bevel (the two shifted edge ends). A reflex
+    // corner always bevels, since its miter would spike into the interior; a
+    // degenerate (zero-length) edge falls back to the one good offset, or the corner
+    // itself when neither edge has a direction.
+    private static void appendInsetCorner(List<double[]> inset, double[] previous,
+            double[] corner, double[] next, double distance, double miterSpikeLimit) {
+        var inboundNormal = computeInwardUnitNormal(previous, corner);
+        var outboundNormal = computeInwardUnitNormal(corner, next);
+        if (inboundNormal == null || outboundNormal == null) {
+            var normal = inboundNormal == null ? outboundNormal : inboundNormal;
+            inset.add(normal == null
+                    ? new double[] {corner[0], corner[1]}
+                    : new double[] {corner[0] + normal[0] * distance, corner[1] + normal[1] * distance});
+            return;
+        }
+
+        var inboundPoint = new double[] {
+                corner[0] + inboundNormal[0] * distance, corner[1] + inboundNormal[1] * distance};
+        var outboundPoint = new double[] {
+                corner[0] + outboundNormal[0] * distance, corner[1] + outboundNormal[1] * distance};
+        // Left turn (positive cross) is convex for a CCW ring; a right turn is the
+        // reflex corner whose miter would spike, so it bevels.
+        var turn = (corner[0] - previous[0]) * (next[1] - corner[1])
+                - (corner[1] - previous[1]) * (next[0] - corner[0]);
+        if (turn > 0) {
+            var miter = computeMiterVertex(corner, inboundNormal, outboundNormal,
+                    inboundPoint, outboundPoint);
+            if (Points.computeDistance(miter, corner) <= miterSpikeLimit * distance) {
+                inset.add(miter);
+                return;
+            }
+        }
+        inset.add(inboundPoint);
+        inset.add(outboundPoint);
+    }
+
     // Where the inbound and outbound shifted edges cross - the miter point for a
     // convex corner. The lines run through the two shifted points along each edge's
     // direction (the inward normal rotated back to the edge); falls back to the
