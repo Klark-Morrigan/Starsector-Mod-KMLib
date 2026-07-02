@@ -177,22 +177,21 @@ public final class Polygons {
      * {@code bevelBelowAngleRadians} with a flat cut instead.
      *
      * <p>At each vertex it steps back {@code radius} along both adjacent edges
-     * and replaces the sharp corner with a short quadratic-bezier arc (the
-     * vertex is the control point), sampled into {@code segmentsPerCorner}
+     * and replaces the sharp corner with a true circular arc tangent to both
+     * edges at those step-back points, sampled into {@code segmentsPerCorner}
      * segments. Because the cut is a fixed distance, not a fraction of the edge,
      * long edges stay long and only the corners soften - so a big cell does not
      * round off into a blob. The radius is clamped to half of each adjacent edge
      * so neighbouring corners never overlap, which also keeps the result convex
-     * for a convex input.
+     * for a convex input. A circular arc (rather than a bezier with the vertex as
+     * control point) rounds sharp corners uniformly instead of pinching back to a
+     * near-point, so a spur is genuinely sanded off rather than left a spike.
      *
-     * <p>A bezier arc still pinches to a near-point at an acute corner: with the
-     * vertex as control point the curve barely pulls in from the apex, so a
-     * sharp spike stays a spike. Any corner whose interior angle falls below
-     * {@code bevelBelowAngleRadians} is therefore cut straight across (a chamfer
-     * between the two step-back points), removing the spike outright while the
-     * obtuse corners keep the smoother arc. A non-positive threshold disables
-     * the chamfer and rounds every corner. Vertex cost is at most {@code corners
-     * * (segmentsPerCorner + 1)}.
+     * <p>A corner still sharper than {@code bevelBelowAngleRadians} is cut straight
+     * across (a chamfer between the two step-back points) rather than arced, since
+     * an arc that tight reads as a nick; a non-positive threshold disables the
+     * chamfer and arcs every corner. Vertex cost is at most {@code corners *
+     * (segmentsPerCorner + 1)}.
      *
      * @param polygon                closed polygon vertices as {x, y} pairs
      * @param radius                 corner radius in the polygon's units
@@ -233,10 +232,8 @@ public final class Polygons {
                 rounded.add(arcEnd);
                 continue;
             }
-            for (var step = 0; step <= segmentsPerCorner; step++) {
-                var t = (double) step / segmentsPerCorner;
-                rounded.add(computeQuadraticBezier(arcStart, corner, arcEnd, t));
-            }
+            appendCircularArc(rounded, previous, corner, next, arcStart, arcEnd,
+                    segmentsPerCorner);
         }
         return rounded;
     }
@@ -410,20 +407,6 @@ public final class Polygons {
                 / (previousLength * nextLength);
         // Clamp against rounding drift just outside [-1, 1] before acos.
         return Math.acos(Math.max(-1.0, Math.min(1.0, cosine)));
-    }
-
-    // Quadratic bezier point at parameter t in [0, 1] from start to end, bending
-    // toward control.
-    private static double[] computeQuadraticBezier(double[] start, double[] control,
-            double[] end, double t) {
-        var oneMinusT = 1.0 - t;
-        var a = oneMinusT * oneMinusT;
-        var b = 2.0 * oneMinusT * t;
-        var c = t * t;
-        return new double[] {
-                a * start[0] + b * control[0] + c * end[0],
-                a * start[1] + b * control[1] + c * end[1],
-        };
     }
 
     /**
