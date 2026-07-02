@@ -6,6 +6,44 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class LinesTest {
+
+    @Nested
+    class IntersectLines {
+        @Test
+        void intersectLinesFindsWhereTwoCrossingLinesMeet() {
+            // The x-axis (through the origin, direction +x) and the vertical line
+            // x = 2 (through (2, -5), direction +y) cross at (2, 0).
+            assertThat(Lines.intersectLines(new double[] {0, 0}, 1, 0,
+                    new double[] {2, -5}, 0, 1))
+                    .containsExactly(2.0, 0.0);
+        }
+
+        @Test
+        void intersectLinesReturnsTheCrossingBeyondBothGivenPoints() {
+            // The intersection is on the infinite lines, not a segment: it can land
+            // past the points that define each line. These two meet at (4, 4), off
+            // to one side of both (0, 0) and (4, 0).
+            assertThat(Lines.intersectLines(new double[] {0, 0}, 1, 1,
+                    new double[] {4, 0}, 0, 1))
+                    .containsExactly(4.0, 4.0);
+        }
+
+        @Test
+        void intersectLinesIsNullForParallelLines() {
+            // Same direction, different points - the lines never cross.
+            assertThat(Lines.intersectLines(new double[] {0, 0}, 1, 0,
+                    new double[] {0, 5}, 2, 0))
+                    .isNull();
+        }
+
+        @Test
+        void intersectLinesIsNullForCollinearLines() {
+            // Coincident lines have no single crossing, and the parallel guard
+            // reports null rather than dividing by a zero cross product.
+            assertThat(Lines.intersectLines(new double[] {0, 0}, 1, 0,
+                    new double[] {3, 0}, 1, 0))
+                    .isNull();
+        }
     }
 
     @Nested

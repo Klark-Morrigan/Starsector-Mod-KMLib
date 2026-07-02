@@ -16,6 +16,21 @@ final class Lines {
     private Lines() {
     }
 
+    // Intersection of the line through {@code pointA} with direction
+    // {@code (dirAX, dirAY)} and the line through {@code pointB} with direction
+    // {@code (dirBX, dirBY)}; null when the two directions are parallel and the lines
+    // never cross. The shared "where do these two lines meet" step behind the miter
+    // join and the arc centre.
+    static double[] intersectLines(double[] pointA, double dirAX, double dirAY,
+            double[] pointB, double dirBX, double dirBY) {
+        var cross = dirAX * dirBY - dirAY * dirBX;
+        if (Math.abs(cross) < Limits.MIN_EDGE_LENGTH) {
+            return null;
+        }
+        var fraction = ((pointB[0] - pointA[0]) * dirBY - (pointB[1] - pointA[1]) * dirBX) / cross;
+        return new double[] {pointA[0] + fraction * dirAX, pointA[1] + fraction * dirAY};
+    }
+
     // The signed offset of {@code point} from the line through (lineX, lineY) with
     // direction normal (normalX, normalY): (point - lineOrigin) projected onto the
     // normal. Positive on the side the normal points to, zero on the line, negative
