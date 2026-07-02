@@ -241,6 +241,26 @@ public final class Polygons {
         return rounded;
     }
 
+    /**
+     * The signed area a closed ring encloses, by the shoelace sum: positive when the
+     * ring winds counter-clockwise, negative when clockwise, and its magnitude the
+     * enclosed area. So its sign reports winding and comparing two rings' signs
+     * detects a fold.
+     *
+     * @param ring closed polygon vertices as {x, y} pairs
+     * @return the signed area; zero for fewer than three vertices
+     */
+    public static double computeSignedArea(List<double[]> ring) {
+        var twiceArea = 0.0;
+        var count = ring.size();
+        for (var i = 0; i < count; i++) {
+            var current = ring.get(i);
+            var next = ring.get((i + 1) % count);
+            twiceArea += current[0] * next[1] - next[0] * current[1];
+        }
+        return twiceArea / 2.0;
+    }
+
     // Appends the circular arc that rounds one corner: the arc tangent to both edges
     // at {@code arcStart} and {@code arcEnd}, sampled into {@code segments} steps.
     // Its centre is where the two edge-perpendiculars through those points meet; the
