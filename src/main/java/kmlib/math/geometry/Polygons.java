@@ -241,6 +241,41 @@ public final class Polygons {
         return rounded;
     }
 
+    // Appends the circular arc that rounds one corner: the arc tangent to both edges
+    // at {@code arcStart} and {@code arcEnd}, sampled into {@code segments} steps.
+    // Its centre is where the two edge-perpendiculars through those points meet; the
+    // arc sweeps the short way between them, so it bulges toward the corner. Falls
+    // back to the two step-back points alone when the edges are collinear (no corner
+    // to round, so no centre).
+    private static void appendCircularArc(List<double[]> out, double[] previous,
+            double[] corner, double[] next, double[] arcStart, double[] arcEnd, int segments) {
+        var center = computeArcCenter(previous, corner, next, arcStart, arcEnd);
+        if (center == null) {
+            out.add(arcStart);
+            out.add(arcEnd);
+            return;
+        }
+        var radius = Points.computeDistance(center, arcStart);
+        var startAngle = Math.atan2(arcStart[1] - center[1], arcStart[0] - center[0]);
+        var endAngle = Math.atan2(arcEnd[1] - center[1], arcEnd[0] - center[0]);
+        // Sweep the short way (normalise to (-PI, PI]); that arc is the one on the
+        // corner's side, so the rounded corner bulges toward the original vertex.
+        var sweep = endAngle - startAngle;
+        while (sweep <= -Math.PI) {
+            sweep += 2.0 * Math.PI;
+        }
+        while (sweep > Math.PI) {
+            sweep -= 2.0 * Math.PI;
+        }
+        for (var step = 0; step <= segments; step++) {
+            var angle = startAngle + sweep * step / segments;
+            out.add(new double[] {
+                    center[0] + radius * Math.cos(angle),
+                    center[1] + radius * Math.sin(angle),
+            });
+        }
+    }
+
     // The centre of the arc rounding {@code corner}: the point equidistant from both
     // edges at the step-back points, found as the intersection of the perpendicular
     // to the inbound edge through {@code arcStart} and that to the outbound edge
