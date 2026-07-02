@@ -305,11 +305,10 @@ public final class Polygons {
      *
      * @param polygon  CCW convex polygon vertices as {x, y} pairs
      * @param distance inward offset applied to each edge
-     * @return one segment per edge as {x1, y1, x2, y2}; empty for fewer than
-     *         two vertices
+     * @return one {@link Segment} per edge; empty for fewer than two vertices
      */
-    public static List<double[]> offsetEdgesInward(List<double[]> polygon, double distance) {
-        var segments = new ArrayList<double[]>();
+    public static List<Segment> offsetEdgesInward(List<double[]> polygon, double distance) {
+        var segments = new ArrayList<Segment>();
         var count = polygon.size();
         if (count < 2) {
             return segments;
@@ -322,10 +321,9 @@ public final class Polygons {
             if (normal == null) {
                 continue;
             }
-            segments.add(new double[] {
+            segments.add(new Segment(
                     a[0] + normal[0] * distance, a[1] + normal[1] * distance,
-                    b[0] + normal[0] * distance, b[1] + normal[1] * distance,
-            });
+                    b[0] + normal[0] * distance, b[1] + normal[1] * distance));
         }
         return segments;
     }

@@ -63,10 +63,10 @@ final class PolygonsTest {
             var segments = Polygons.offsetEdgesInward(square(), 2.0);
 
             var bottom = segments.get(0);
-            assertThat(bottom[1]).isCloseTo(2.0, within());
-            assertThat(bottom[3]).isCloseTo(2.0, within());
-            assertThat(bottom[0]).isCloseTo(0.0, within());
-            assertThat(bottom[2]).isCloseTo(10.0, within());
+            assertThat(bottom.startY()).isCloseTo(2.0, within());
+            assertThat(bottom.endY()).isCloseTo(2.0, within());
+            assertThat(bottom.startX()).isCloseTo(0.0, within());
+            assertThat(bottom.endX()).isCloseTo(10.0, within());
         }
 
         @Test
