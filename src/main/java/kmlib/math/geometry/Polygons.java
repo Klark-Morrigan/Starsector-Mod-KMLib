@@ -171,6 +171,57 @@ public final class Polygons {
         return working.getVertices();
     }
 
+    /**
+     * Insets a simple closed polygon inward by {@code distance}, mitring convex
+     * corners and bevelling concave ones, and unlike {@link #insetConvexPolygon}
+     * keeps the concavities.
+     *
+     * <p>Each edge is shifted {@code distance} toward the interior (the left of the
+     * directed edge, as for a counter-clockwise ring). Where two shifted edges meet
+     * at a convex corner they simply cross, and that miter point is the inset corner
+     * - so the whole ring moves inward as one, keeping concavities that {@link
+     * #insetConvexPolygon}'s half-plane clip would shear off. A concave (reflex)
+     * corner is different: its two shifted edges diverge, and joining them by
+     * extending to their crossing would shoot a long spike into the interior, which
+     * reads as a stray loop. Such a corner is bevelled instead - the two shifted edge
+     * ends are joined directly - which is the erosion's true corner. A convex corner
+     * so sharp that its miter would spike past {@code miterSpikeLimit * distance} is
+     * bevelled on the same grounds.
+     *
+     * <p>The winding drives the direction: a counter-clockwise ring shrinks, and a
+     * clockwise ring (a hole traced with the solid on its outside) grows away from
+     * the hole - both moving into the solid, so a hole keeps the same channel a
+     * border does. No global self-intersection cleanup is done, so a ring narrower
+     * than {@code 2 * distance} folds inside out (its winding flips); a caller
+     * insetting past a shape's own scale should discard a result whose winding
+     * flipped.
+     *
+     * @param polygon         simple closed polygon vertices as {x, y} pairs
+     * @param distance        inward inset applied to every edge
+     * @param miterSpikeLimit a convex miter whose point sits farther than this
+     *                        multiple of {@code distance} from its corner is a spike
+     *                        from a near-parallel corner and is bevelled instead;
+     *                        larger keeps crisper points, smaller bevels sooner
+     * @return the inset polygon's vertices in the same winding (a bevelled corner
+     *         contributes two, a mitred corner one); empty when fewer than three
+     *         distinct vertices remain
+     */
+    public static List<double[]> insetPolygonByMiter(List<double[]> polygon, double distance,
+            double miterSpikeLimit) {
+        var vertices = removeConsecutiveDuplicates(polygon);
+        var count = vertices.size();
+        if (count < Limits.MIN_VERTICES_TO_ENCLOSE_AREA) {
+            return new ArrayList<>();
+        }
+
+        var inset = new ArrayList<double[]>(count);
+        for (var i = 0; i < count; i++) {
+            appendInsetCorner(inset, vertices.get((i - 1 + count) % count), vertices.get(i),
+                    vertices.get((i + 1) % count), distance, miterSpikeLimit);
+        }
+        return inset;
+    }
+
     // Appends the inset of one corner: the miter point for a convex corner within
     // the spike limit, otherwise the bevel (the two shifted edge ends). A reflex
     // corner always bevels, since its miter would spike into the interior; a
