@@ -86,7 +86,7 @@ public final class LabelledPolygon {
      * {@code clipLabel}.
      *
      * <p>Sutherland-Hodgman against a single edge - the one half-plane clip walk,
-     * with its point geometry in {@link Points#computeSignedOffsetFromLine} and
+     * with its point geometry in {@link Lines#computeSignedOffsetFromLine} and
      * {@link Points#computeCrossingPoint} and the label bookkeeping threaded
      * through on top. A whole-polygon inset that needs no per-edge labels drives
      * this with a single throwaway label ({@link Polygons#insetConvexPolygon}). A
@@ -113,9 +113,9 @@ public final class LabelledPolygon {
         for (var i = 0; i < count; i++) {
             var current = vertices.get(i);
             var next = vertices.get((i + 1) % count);
-            var currentOffset = Points.computeSignedOffsetFromLine(
+            var currentOffset = Lines.computeSignedOffsetFromLine(
                     current.point(), lineX, lineY, normalX, normalY);
-            var nextOffset = Points.computeSignedOffsetFromLine(
+            var nextOffset = Lines.computeSignedOffsetFromLine(
                     next.point(), lineX, lineY, normalX, normalY);
 
             if (currentOffset >= 0) {

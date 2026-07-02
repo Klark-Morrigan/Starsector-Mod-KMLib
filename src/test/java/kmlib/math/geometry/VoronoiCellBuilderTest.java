@@ -315,9 +315,9 @@ final class VoronoiCellBuilderTest {
                 var current = polygon.get(i);
                 var next = polygon.get((i + 1) % count);
                 var currentOffset =
-                        Points.computeSignedOffsetFromLine(current, lineX, lineY, normalX, normalY);
+                        Lines.computeSignedOffsetFromLine(current, lineX, lineY, normalX, normalY);
                 var nextOffset =
-                        Points.computeSignedOffsetFromLine(next, lineX, lineY, normalX, normalY);
+                        Lines.computeSignedOffsetFromLine(next, lineX, lineY, normalX, normalY);
                 if (currentOffset >= 0) {
                     result.add(current);
                 }
