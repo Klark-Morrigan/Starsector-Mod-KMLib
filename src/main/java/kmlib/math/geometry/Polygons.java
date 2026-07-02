@@ -7,12 +7,6 @@ import java.util.List;
  * Polygon operations for 2D geometry.
  */
 public final class Polygons {
-    // Edges shorter than this have no well-defined direction (and so no
-    // normal); they are skipped rather than dividing by ~zero length.
-    private static final double MIN_EDGE_LENGTH = 1e-6;
-    // A polygon needs at least three vertices to enclose any area; fewer
-    // collapses to a point or segment and insets to nothing.
-    private static final int MIN_POLYGON_VERTICES = 3;
 
     private Polygons() {
     }
@@ -79,7 +73,7 @@ public final class Polygons {
             throw new IllegalArgumentException("insetEdge must be parallel to the polygon edges: "
                     + insetEdge.length + " vs " + count);
         }
-        if (count < MIN_POLYGON_VERTICES) {
+        if (count < Limits.MIN_VERTICES_TO_ENCLOSE_AREA) {
             return new SelectiveInset(new ArrayList<>(), new boolean[0]);
         }
 
@@ -120,7 +114,7 @@ public final class Polygons {
         // before the count test catches that; the vertices themselves are returned
         // as clipped so they stay parallel to the edge flags.
         var vertices = working.getVertices();
-        if (removeConsecutiveDuplicates(vertices).size() < MIN_POLYGON_VERTICES) {
+        if (removeConsecutiveDuplicates(vertices).size() < Limits.MIN_VERTICES_TO_ENCLOSE_AREA) {
             return new SelectiveInset(new ArrayList<>(), new boolean[0]);
         }
         var edgeLabels = working.getEdgeLabels();
@@ -154,7 +148,7 @@ public final class Polygons {
     public static List<double[]> insetConvexPolygon(List<double[]> polygon, double distance) {
         var vertices = removeConsecutiveDuplicates(polygon);
         var count = vertices.size();
-        if (count < MIN_POLYGON_VERTICES) {
+        if (count < Limits.MIN_VERTICES_TO_ENCLOSE_AREA) {
             return new ArrayList<>();
         }
 
@@ -215,7 +209,7 @@ public final class Polygons {
             int segmentsPerCorner, double bevelBelowAngleRadians) {
         var vertices = removeConsecutiveDuplicates(polygon);
         var count = vertices.size();
-        if (count < MIN_POLYGON_VERTICES || radius <= 0 || segmentsPerCorner < 1) {
+        if (count < Limits.MIN_VERTICES_TO_ENCLOSE_AREA || radius <= 0 || segmentsPerCorner < 1) {
             return vertices;
         }
 
@@ -253,7 +247,7 @@ public final class Polygons {
         var deltaX = to[0] - from[0];
         var deltaY = to[1] - from[1];
         var length = Points.computeVectorLength(deltaX, deltaY);
-        if (length < MIN_EDGE_LENGTH) {
+        if (length < Limits.MIN_EDGE_LENGTH) {
             return new double[] {from[0], from[1]};
         }
         return new double[] {
@@ -274,7 +268,7 @@ public final class Polygons {
         var toNextY = next[1] - corner[1];
         var previousLength = Points.computeVectorLength(toPreviousX, toPreviousY);
         var nextLength = Points.computeVectorLength(toNextX, toNextY);
-        if (previousLength < MIN_EDGE_LENGTH || nextLength < MIN_EDGE_LENGTH) {
+        if (previousLength < Limits.MIN_EDGE_LENGTH || nextLength < Limits.MIN_EDGE_LENGTH) {
             return Math.PI;
         }
         var cosine = (toPreviousX * toNextX + toPreviousY * toNextY)
@@ -356,14 +350,14 @@ public final class Polygons {
     // The inward unit normal of directed edge {@code a -> b} for a CCW polygon:
     // {@code (-edgeY, edgeX)} normalized, pointing to the polygon interior (the
     // left of the directed edge). Null when the edge is shorter than
-    // {@link #MIN_EDGE_LENGTH} and so has no defined direction, so the caller
+    // {@link Limits#MIN_EDGE_LENGTH} and so has no defined direction, so the caller
     // skips it rather than dividing by ~zero. Shared by the inset and edge-offset
     // passes, which both step inward along this normal.
     private static double[] computeInwardUnitNormal(double[] a, double[] b) {
         var edgeX = b[0] - a[0];
         var edgeY = b[1] - a[1];
         var length = Points.computeVectorLength(edgeX, edgeY);
-        if (length < MIN_EDGE_LENGTH) {
+        if (length < Limits.MIN_EDGE_LENGTH) {
             return null;
         }
         return new double[] {-edgeY / length, edgeX / length};
@@ -387,6 +381,6 @@ public final class Polygons {
     }
 
     private static boolean isSamePoint(double[] a, double[] b) {
-        return Points.computeDistance(a, b) < MIN_EDGE_LENGTH;
+        return Points.computeDistance(a, b) < Limits.MIN_EDGE_LENGTH;
     }
 }
