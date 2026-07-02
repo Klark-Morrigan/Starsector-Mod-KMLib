@@ -241,6 +241,22 @@ public final class Polygons {
         return rounded;
     }
 
+    // The centre of the arc rounding {@code corner}: the point equidistant from both
+    // edges at the step-back points, found as the intersection of the perpendicular
+    // to the inbound edge through {@code arcStart} and that to the outbound edge
+    // through {@code arcEnd}. Null when those perpendiculars are parallel (the edges
+    // are collinear, so there is no corner to round).
+    private static double[] computeArcCenter(double[] previous, double[] corner, double[] next,
+            double[] arcStart, double[] arcEnd) {
+        // The centre lies on the perpendicular to each edge (the radius direction,
+        // (-dy, dx)) through that edge's step-back point; where those two
+        // perpendiculars cross is the centre. Parallel means collinear edges - no
+        // corner - so there is no centre.
+        return Lines.intersectLines(
+                arcStart, -(corner[1] - previous[1]), corner[0] - previous[0],
+                arcEnd, -(next[1] - corner[1]), next[0] - corner[0]);
+    }
+
     // A point {@code distance} from {@code from} toward {@code to}; returns from
     // itself when the two coincide (no direction).
     private static double[] computePointToward(double[] from, double[] to, double distance) {
