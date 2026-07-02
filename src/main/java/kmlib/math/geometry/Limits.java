@@ -18,6 +18,13 @@ public final class Limits {
     // callers skip them rather than dividing by a near-zero length.
     public static final double MIN_EDGE_LENGTH = 1e-6;
 
+    // Below this the chosen eigenvector is treated as the zero vector: the point
+    // cloud has no direction of greater spread (a single point, coincident points,
+    // or a perfectly isotropic spread), so a principal-axis fit falls back to the
+    // x-axis. Far tighter than MIN_EDGE_LENGTH: it gates a covariance-derived
+    // vector, not a raw edge, so it must not trip on merely small (but real) spread.
+    public static final double MIN_AXIS_VECTOR_LENGTH = 1e-9;
+
     private Limits() {
     }
 }
