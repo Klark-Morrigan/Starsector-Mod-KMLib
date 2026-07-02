@@ -52,21 +52,6 @@ public final class Points {
         return Math.toDegrees(Math.atan2(y2 - y1, x2 - x1));
     }
 
-    // The point on segment a..b where a value that is signedA at a and signedB at
-    // b crosses zero, at parameter signedA / (signedA - signedB) along the
-    // segment. The single home for the half-plane clip crossing computation, used
-    // by LabelledPolygon.clipToHalfPlane (the sole clip walk) and the bare control
-    // clip in VoronoiCellBuilderTest. The two signs must straddle zero (opposite
-    // signs) - each clip establishes that before asking, so the denominator is
-    // never zero.
-    static double[] computeCrossingPoint(double[] a, double[] b, double signedA, double signedB) {
-        var fraction = signedA / (signedA - signedB);
-        return new double[] {
-                a[0] + fraction * (b[0] - a[0]),
-                a[1] + fraction * (b[1] - a[1]),
-        };
-    }
-
     /**
      * The bearing in degrees from {@code a} to {@code b}, measured
      * counter-clockwise from the positive x-axis, in the range
