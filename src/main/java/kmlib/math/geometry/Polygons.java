@@ -171,6 +171,21 @@ public final class Polygons {
         return working.getVertices();
     }
 
+    // Where the inbound and outbound shifted edges cross - the miter point for a
+    // convex corner. The lines run through the two shifted points along each edge's
+    // direction (the inward normal rotated back to the edge); falls back to the
+    // outbound shifted point when the edges are collinear and never cross.
+    private static double[] computeMiterVertex(double[] corner, double[] inboundNormal,
+            double[] outboundNormal, double[] inboundPoint, double[] outboundPoint) {
+        // Each edge's direction is its inward normal turned 90 degrees, so a line
+        // through the shifted point along it is the shifted edge; where the two
+        // shifted edges cross is the miter. Collinear edges never cross - fall back
+        // to the outbound shifted point.
+        var crossing = Lines.intersectLines(inboundPoint, inboundNormal[1], -inboundNormal[0],
+                outboundPoint, outboundNormal[1], -outboundNormal[0]);
+        return crossing == null ? outboundPoint : crossing;
+    }
+
     /**
      * Rounds a closed polygon's corners with a fixed radius, leaving the
      * straight edges between corners intact, and chamfers corners sharper than
