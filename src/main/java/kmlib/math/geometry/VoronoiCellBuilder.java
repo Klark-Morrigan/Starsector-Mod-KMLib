@@ -25,13 +25,20 @@ public final class VoronoiCellBuilder {
      */
     public static final int BOUND_EDGE = -1;
 
-    // Sides of the regular polygon that approximates each cell's max-radius
-    // bound. High enough that the rounded frontier reads as a smooth curve rather
-    // than a visible polygon, and that two neighbouring cells' bound chords meet
-    // their shared bisector within a hair of the same point - so a consumer chaining
-    // adjacent cells' frontier edges into one outline finds them effectively
-    // coincident rather than separated by a visible chord-vs-arc gap.
-    private static final int CELL_BOUND_SEGMENTS = 96;
+    /**
+     * Default sides of the regular polygon that approximates each cell's max-radius
+     * bound, used by the builders that take no explicit count. High enough that the
+     * rounded frontier reads as a smooth curve rather than a visible polygon, and
+     * that two neighbouring cells' bound chords meet their shared bisector within a
+     * hair of the same point - so a consumer chaining adjacent cells' frontier edges
+     * into one outline finds them effectively coincident rather than separated by a
+     * visible chord-vs-arc gap.
+     *
+     * <p>Every segment is a vertex on each frontier cell, so a caller that needs to
+     * trade a slightly faceted frontier for fewer vertices (a rendering cost) passes
+     * its own lower count to the builders that accept one.
+     */
+    public static final int DEFAULT_CELL_BOUND_SEGMENTS = 96;
 
     private VoronoiCellBuilder() {
     }
@@ -71,13 +78,34 @@ public final class VoronoiCellBuilder {
      */
     public static List<List<double[]>> buildCells(List<double[]> sites,
             double maxCellRadius) {
+        return buildCells(sites, maxCellRadius, DEFAULT_CELL_BOUND_SEGMENTS);
+    }
+
+    /**
+     * As {@link #buildCells(List, double)}, but with the frontier resolution under
+     * caller control: {@code boundSegments} sets the sides of the seed polygon each
+     * cell's max-radius bound is approximated by, and so the vertex count of every
+     * frontier cell. Lower is coarser but cheaper to render; see
+     * {@link #DEFAULT_CELL_BOUND_SEGMENTS}.
+     *
+     * @param sites         site positions as {x, y} pairs; order is preserved,
+     *                      so the returned cell at index i belongs to site i
+     * @param maxCellRadius the farthest a cell may extend from its site
+     * @param boundSegments sides of the regular polygon approximating each cell's
+     *                      max-radius bound; higher is smoother, lower has fewer
+     *                      vertices
+     * @return one convex polygon per site, each a list of {x, y} vertices in
+     *         winding order; an empty list when {@code sites} is empty
+     */
+    public static List<List<double[]>> buildCells(List<double[]> sites,
+            double maxCellRadius, int boundSegments) {
         var cells = new ArrayList<List<double[]>>();
         if (sites.isEmpty()) {
             return cells;
         }
 
         for (var site : sites) {
-            cells.add(buildCell(site, sites, maxCellRadius));
+            cells.add(buildCell(site, sites, maxCellRadius, boundSegments));
         }
         return cells;
     }
@@ -100,7 +128,26 @@ public final class VoronoiCellBuilder {
      */
     public static List<double[]> buildCell(double[] site, List<double[]> sites,
             double maxCellRadius) {
-        return buildLabelledCell(indexOf(sites, site), sites, maxCellRadius).vertices();
+        return buildCell(site, sites, maxCellRadius, DEFAULT_CELL_BOUND_SEGMENTS);
+    }
+
+    /**
+     * As {@link #buildCell(double[], List, double)}, but with the frontier
+     * resolution under caller control - see {@link #buildCells(List, double, int)}.
+     *
+     * @param site          the site to build the cell for; an element of
+     *                      {@code sites}
+     * @param sites         all sites in the partition
+     * @param maxCellRadius the farthest the cell may extend from its site
+     * @param boundSegments sides of the regular polygon approximating the cell's
+     *                      max-radius bound; higher is smoother, lower has fewer
+     *                      vertices
+     * @return the site's convex cell as {x, y} vertices in winding order
+     */
+    public static List<double[]> buildCell(double[] site, List<double[]> sites,
+            double maxCellRadius, int boundSegments) {
+        return buildLabelledCell(indexOf(sites, site), sites, maxCellRadius, boundSegments)
+                .vertices();
     }
 
     /**
@@ -123,13 +170,34 @@ public final class VoronoiCellBuilder {
      */
     public static LabelledCell buildLabelledCell(int siteIndex, List<double[]> sites,
             double maxCellRadius) {
+        return buildLabelledCell(siteIndex, sites, maxCellRadius, DEFAULT_CELL_BOUND_SEGMENTS);
+    }
+
+    /**
+     * As {@link #buildLabelledCell(int, List, double)}, but with the frontier
+     * resolution under caller control - see {@link #buildCells(List, double, int)}.
+     * This is the seam a consumer tunes the frontier vertex count through, since a
+     * lone or edge cell keeps every seed vertex the neighbours do not clip away.
+     *
+     * @param siteIndex     index of the site to build the cell for, into
+     *                      {@code sites}
+     * @param sites         all sites in the partition
+     * @param maxCellRadius the farthest the cell may extend from its site
+     * @param boundSegments sides of the regular polygon approximating the cell's
+     *                      max-radius bound; higher is smoother, lower has fewer
+     *                      vertices
+     * @return the site's cell with a neighbour-site index per edge; an empty cell
+     *         (no vertices, no edges) when the site is fully clipped away
+     */
+    public static LabelledCell buildLabelledCell(int siteIndex, List<double[]> sites,
+            double maxCellRadius, int boundSegments) {
         var site = sites.get(siteIndex);
         // Seed the cell with a bounded polygon whose every edge is a frontier
         // (BOUND_EDGE), then let each neighbour's bisector clip it, stamping the
         // cut edge with that neighbour's index. What survives labels each edge
         // with the site across it, or BOUND_EDGE where the seed was never cut.
         var cell = LabelledPolygon.createRegularPolygon(
-                site, maxCellRadius, CELL_BOUND_SEGMENTS, BOUND_EDGE);
+                site, maxCellRadius, boundSegments, BOUND_EDGE);
         for (var other = 0; other < sites.size(); other++) {
             if (other == siteIndex) {
                 continue;

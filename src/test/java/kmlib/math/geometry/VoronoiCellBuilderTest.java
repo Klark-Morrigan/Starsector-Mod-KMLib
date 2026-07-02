@@ -137,6 +137,20 @@ final class VoronoiCellBuilderTest {
         }
 
         @Test
+        void the_bound_segment_count_sets_a_lone_cell_vertex_count() {
+            var site = List.of(new double[] {500, 500});
+
+            // A lone site is clipped by nothing, so its cell is the whole seed
+            // polygon: its vertex count is exactly the requested bound-segment
+            // count. This is the lever a caller trades frontier smoothness for
+            // fewer vertices with; the no-count builder uses the default.
+            assertThat(VoronoiCellBuilder.buildLabelledCell(0, site, MAX_CELL_RADIUS, 24).vertices())
+                    .hasSize(24);
+            assertThat(VoronoiCellBuilder.buildLabelledCell(0, site, MAX_CELL_RADIUS).vertices())
+                    .hasSize(VoronoiCellBuilder.DEFAULT_CELL_BOUND_SEGMENTS);
+        }
+
+        @Test
         void a_lone_site_has_only_bound_edges() {
             var cell = VoronoiCellBuilder.buildLabelledCell(
                     0, List.of(new double[] {500, 500}), MAX_CELL_RADIUS);
@@ -228,11 +242,10 @@ final class VoronoiCellBuilderTest {
         // the harness exercises the clip loop rather than lone bounded discs.
         private static final int SITE_COUNT = 150;
         private static final double SITE_SPREAD = 20_000.0;
-        // Mirrors VoronoiCellBuilder.CELL_BOUND_SEGMENTS so the bare control seed
-        // matches the production seed vertex for vertex; must move in lockstep with
-        // it or the "labelling does not perturb geometry" gate compares mismatched
-        // seeds.
-        private static final int BOUND_SEGMENTS = 96;
+        // The bare control seed must match the production default seed vertex for
+        // vertex, or the "labelling does not perturb geometry" gate compares
+        // mismatched seeds - so it reads the same constant the default builders use.
+        private static final int BOUND_SEGMENTS = VoronoiCellBuilder.DEFAULT_CELL_BOUND_SEGMENTS;
         private static final long RANDOM_SEED = 918_273_645L;
         private static final int WARMUP_BUILDS = 10;
         private static final int TIMED_BUILDS = 30;
