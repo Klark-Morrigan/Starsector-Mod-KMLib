@@ -5,6 +5,8 @@ import org.junit.jupiter.api.Test;
 import org.lwjgl.util.vector.Vector2f;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
+import static org.assertj.core.api.Assertions.withinPercentage;
 
 class PointsTest {
 
@@ -41,15 +43,83 @@ class PointsTest {
         }
 
         @Test
+        void computeVectorLengthMatchesFurtherPythagoreanTriples() {
+            // Independent integer right triangles pin the magnitude at more than one
+            // point, so a passing test is not a single-triple coincidence.
+            assertThat(Points.computeVectorLength(5, 12)).isEqualTo(13.0);
+            assertThat(Points.computeVectorLength(8, 15)).isEqualTo(17.0);
+            assertThat(Points.computeVectorLength(7, 24)).isEqualTo(25.0);
+        }
+
+        @Test
         void computeVectorLengthIsZeroForTheZeroVector() {
             assertThat(Points.computeVectorLength(0, 0)).isZero();
         }
 
         @Test
+        void computeVectorLengthEqualsTheLoneComponentWhenAxisAligned() {
+            // With one component zero the magnitude collapses to the other's absolute
+            // value - the vector lies flat along an axis.
+            assertThat(Points.computeVectorLength(5, 0)).isEqualTo(5.0);
+            assertThat(Points.computeVectorLength(0, 5)).isEqualTo(5.0);
+            assertThat(Points.computeVectorLength(-5, 0)).isEqualTo(5.0);
+            assertThat(Points.computeVectorLength(0, -5)).isEqualTo(5.0);
+        }
+
+        @Test
         void computeVectorLengthIgnoresComponentSign() {
-            // Magnitude squares each component, so a negative component gives the
-            // same length as its positive mirror.
+            // Magnitude squares each component, so every sign pairing of the same
+            // two components shares one length.
             assertThat(Points.computeVectorLength(-3, -4)).isEqualTo(5.0);
+            assertThat(Points.computeVectorLength(-3, 4)).isEqualTo(5.0);
+            assertThat(Points.computeVectorLength(3, -4)).isEqualTo(5.0);
+        }
+
+        @Test
+        void computeVectorLengthIsSymmetricInItsComponents() {
+            // Swapping x and y cannot change a sum of squares, so the length is the
+            // same either way round.
+            assertThat(Points.computeVectorLength(3, 4))
+                    .isEqualTo(Points.computeVectorLength(4, 3));
+        }
+
+        @Test
+        void computeVectorLengthHandlesEqualComponents() {
+            // A 45-degree vector: both legs equal, so the magnitude is that leg times
+            // root two.
+            assertThat(Points.computeVectorLength(1, 1)).isCloseTo(Math.sqrt(2), within(1e-12));
+        }
+
+        @Test
+        void computeVectorLengthHandlesFractionalComponents() {
+            assertThat(Points.computeVectorLength(0.3, 0.4)).isCloseTo(0.5, within(1e-12));
+        }
+
+        @Test
+        void computeVectorLengthScalesLinearlyWithItsComponents() {
+            // Scaling both components by k scales the magnitude by |k| - the positive
+            // homogeneity any norm must hold.
+            var base = Points.computeVectorLength(3, 4);
+            assertThat(Points.computeVectorLength(30, 40)).isCloseTo(base * 10, within(1e-9));
+        }
+
+        @Test
+        void computeVectorLengthStaysFiniteWhenSquaringWouldOverflow() {
+            // Each squared component (1e200^2 = 1e400) overflows a double to infinity,
+            // so a naive sqrt(x*x + y*y) reports infinity here; the true magnitude is
+            // 1e200 * sqrt(2), well within range. An overflow-safe evaluation keeps
+            // the answer finite and correct.
+            assertThat(Points.computeVectorLength(1e200, 1e200))
+                    .isCloseTo(1e200 * Math.sqrt(2), withinPercentage(1e-6));
+        }
+
+        @Test
+        void computeVectorLengthStaysAccurateWhenSquaringWouldUnderflow() {
+            // The mirror case: 1e-200^2 = 1e-400 underflows to zero, so a naive sqrt
+            // reports zero for a non-zero vector. An overflow-safe evaluation keeps
+            // the small magnitude 1e-200 * sqrt(2).
+            assertThat(Points.computeVectorLength(1e-200, 1e-200))
+                    .isCloseTo(1e-200 * Math.sqrt(2), withinPercentage(1e-6));
         }
     }
 
@@ -71,7 +141,7 @@ class PointsTest {
         @Test
         void computeAngleDegreesIsRelativeToTheFirstPoint() {
             assertThat(Points.computeAngleDegrees(2, 2, 5, 6)).isCloseTo(53.13,
-                    org.assertj.core.api.Assertions.within(0.01));
+                    within(0.01));
         }
     }
 }

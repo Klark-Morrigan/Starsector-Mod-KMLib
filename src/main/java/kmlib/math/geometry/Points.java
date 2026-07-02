@@ -34,13 +34,18 @@ public final class Points {
 
     /**
      * The Euclidean length (magnitude) of the 2D vector {@code (x, y)}:
-     * {@code sqrt(x^2 + y^2)}. The single home for the sum-of-squares root behind
+     * {@code sqrt(x^2 + y^2)}. The single home for the magnitude behind
      * {@link #computeDistance} (the length of the difference vector) and the vector
      * normalisations elsewhere, so callers that already hold the components never
-     * recompute the magnitude.
+     * recompute it.
+     *
+     * <p>Evaluated through {@link Math#hypot} rather than a literal
+     * {@code sqrt(x*x + y*y)} so an extreme component cannot square past the double
+     * range and drag the result to infinity (or underflow it to zero) when the true
+     * magnitude is finite - {@code hypot} scales the inputs first to stay in range.
      */
     public static double computeVectorLength(double x, double y) {
-        return Math.sqrt(x * x + y * y);
+        return Math.hypot(x, y);
     }
 
     /**
