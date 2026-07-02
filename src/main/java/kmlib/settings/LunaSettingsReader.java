@@ -54,6 +54,21 @@ public final class LunaSettingsReader {
     }
 
     /**
+     * Reads an integer LunaLib setting, falling back when it is unavailable. Serves
+     * the Int field type (an integer slider).
+     *
+     * @param modId    the mod's LunaLib settings id
+     * @param fieldId  the int field's id
+     * @param fallback value returned when the setting is null (unset, or read
+     *                 before LunaLib has loaded the mod's settings)
+     * @return the stored int, or {@code fallback} when it is unavailable
+     */
+    public static int getInt(String modId, String fieldId, int fallback) {
+        var value = LunaSettings.getInt(modId, fieldId);
+        return value != null ? value : fallback;
+    }
+
+    /**
      * Reads a string LunaLib setting, falling back when it is unavailable. Serves
      * the Radio field type, whose stored value is the selected option's label.
      *
