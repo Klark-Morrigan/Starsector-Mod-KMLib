@@ -31,6 +31,22 @@ final class Lines {
         return new double[] {pointA[0] + fraction * dirAX, pointA[1] + fraction * dirAY};
     }
 
+    // Perpendicular distance from {@code point} to the infinite line through
+    // {@code lineA} and {@code lineB} - the height a corner rises above the chord
+    // joining its neighbours. Twice the triangle's signed area (the cross product)
+    // over the base length is that height. Falls back to the distance to
+    // {@code lineA} when the two line points coincide and give no direction.
+    static double computePerpendicularDistance(double[] point, double[] lineA, double[] lineB) {
+        var baseX = lineB[0] - lineA[0];
+        var baseY = lineB[1] - lineA[1];
+        var baseLength = Points.computeVectorLength(baseX, baseY);
+        if (baseLength < Limits.MIN_EDGE_LENGTH) {
+            return Points.computeDistance(point, lineA);
+        }
+        var twiceArea = (point[0] - lineA[0]) * baseY - (point[1] - lineA[1]) * baseX;
+        return Math.abs(twiceArea) / baseLength;
+    }
+
     // The signed offset of {@code point} from the line through (lineX, lineY) with
     // direction normal (normalX, normalY): (point - lineOrigin) projected onto the
     // normal. Positive on the side the normal points to, zero on the line, negative

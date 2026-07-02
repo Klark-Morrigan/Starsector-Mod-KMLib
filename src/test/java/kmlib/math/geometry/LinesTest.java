@@ -47,6 +47,43 @@ class LinesTest {
     }
 
     @Nested
+    class ComputePerpendicularDistance {
+        @Test
+        void computePerpendicularDistanceMeasuresHeightAboveTheLine() {
+            // The point (3, 4) sits four units above the x-axis (the line through
+            // (0, 0) and (10, 0)).
+            assertThat(Lines.computePerpendicularDistance(
+                    new double[] {3, 4}, new double[] {0, 0}, new double[] {10, 0}))
+                    .isEqualTo(4.0);
+        }
+
+        @Test
+        void computePerpendicularDistanceIsUnsignedForAPointBelowTheLine() {
+            // Distance is a magnitude, so a point on the far side of the line reads
+            // the same height as one the same distance above it.
+            assertThat(Lines.computePerpendicularDistance(
+                    new double[] {3, -4}, new double[] {0, 0}, new double[] {10, 0}))
+                    .isEqualTo(4.0);
+        }
+
+        @Test
+        void computePerpendicularDistanceIsZeroForAPointOnTheLine() {
+            assertThat(Lines.computePerpendicularDistance(
+                    new double[] {7, 0}, new double[] {0, 0}, new double[] {10, 0}))
+                    .isZero();
+        }
+
+        @Test
+        void computePerpendicularDistanceFallsBackToTheEndpointWhenTheLineHasNoDirection() {
+            // Coincident line points give no direction, so the distance is measured
+            // straight to that point instead: (3, 4) is five from (0, 0).
+            assertThat(Lines.computePerpendicularDistance(
+                    new double[] {3, 4}, new double[] {0, 0}, new double[] {0, 0}))
+                    .isEqualTo(5.0);
+        }
+    }
+
+    @Nested
     class ComputeSignedOffsetFromLine {
         @Test
         void computeSignedOffsetFromLineIsPositiveOnTheNormalSide() {
