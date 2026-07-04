@@ -21,6 +21,30 @@ public final class Spans {
     private Spans() {
     }
 
+    // The longest stretch of one span not covered by any blocked interval: a cursor
+    // sweeps the span, jumping over each blocker it meets, and every gap between
+    // the cursor and the next blocker (or the span's end) is a candidate.
+    private static double[] findLongestGapWithinSpan(double[] span, List<double[]> blocked) {
+        double[] longest = null;
+        var cursor = span[0];
+        for (var interval : blocked) {
+            if (cursor > span[1]) {
+                break;
+            }
+            // A blocker wholly before the cursor (or the span) constrains nothing.
+            if (interval[1] <= cursor) {
+                continue;
+            }
+            longest = pickLonger(longest,
+                    new double[] {cursor, Math.min(interval[0], span[1])});
+            cursor = Math.max(cursor, interval[1]);
+        }
+        if (cursor < span[1]) {
+            longest = pickLonger(longest, new double[] {cursor, span[1]});
+        }
+        return longest;
+    }
+
     // The longer of two candidate intervals; a null or empty (non-positive length)
     // candidate never wins, and two nulls stay null.
     private static double[] pickLonger(double[] current, double[] candidate) {
