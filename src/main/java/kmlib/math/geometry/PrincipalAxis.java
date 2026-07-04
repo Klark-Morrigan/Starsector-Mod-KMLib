@@ -67,7 +67,7 @@ public record PrincipalAxis(double centroidX, double centroidY, double axisX, do
         covXY /= count;
 
         var axis = computeMajorEigenvector(varX, varY, covXY);
-        var length = computeProjectedExtent(points, centroidX, centroidY, axis[0], axis[1]);
+        var length = computeProjectedExtent(points, axis[0], axis[1]);
         return new PrincipalAxis(centroidX, centroidY, axis[0], axis[1], length);
     }
 
@@ -98,17 +98,12 @@ public record PrincipalAxis(double centroidX, double centroidY, double axisX, do
         return axis != null ? axis : new double[] {1.0, 0.0};
     }
 
-    // The span of the points projected onto the unit axis through the centroid:
-    // the foremost projection minus the rearmost. Zero for a single point.
-    private static double computeProjectedExtent(List<double[]> points, double centroidX,
-            double centroidY, double axisX, double axisY) {
-        var min = Double.POSITIVE_INFINITY;
-        var max = Double.NEGATIVE_INFINITY;
-        for (var point : points) {
-            var projection = (point[0] - centroidX) * axisX + (point[1] - centroidY) * axisY;
-            min = Math.min(min, projection);
-            max = Math.max(max, projection);
-        }
-        return max - min;
+    // The span of the points projected onto the unit axis: the foremost projection
+    // minus the rearmost. The centroid offset cancels in the difference, so the extent
+    // reads straight off the points' own projections. Zero for a single point.
+    private static double computeProjectedExtent(List<double[]> points, double axisX,
+            double axisY) {
+        var extent = Points.projectExtentOnto(points, axisX, axisY);
+        return extent[1] - extent[0];
     }
 }
