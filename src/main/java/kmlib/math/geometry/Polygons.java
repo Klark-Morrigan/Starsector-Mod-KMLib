@@ -425,6 +425,38 @@ public final class Polygons {
         return twiceArea / 2.0;
     }
 
+    // The parameters (distances from the through-point along the unit direction) at
+    // which the infinite line crosses any ring edge. An edge is crossed when its two
+    // endpoints sit on opposite sides of the line - the same signed-offset straddle
+    // test the half-plane clip keys on, with an endpoint exactly on the line counted
+    // to the negative side so a shared corner is not crossed twice.
+    private static List<Double> collectLineCrossingParameters(List<List<double[]>> rings,
+            double throughX, double throughY, double dirX, double dirY) {
+        var crossings = new ArrayList<Double>();
+        // The line's unit normal: offsets measured along it tell an edge endpoint's
+        // side of the line.
+        var normalX = -dirY;
+        var normalY = dirX;
+        for (var ring : rings) {
+            var count = ring.size();
+            for (var i = 0; i < count; i++) {
+                var edgeStart = ring.get(i);
+                var edgeEnd = ring.get((i + 1) % count);
+                var offsetStart = Lines.computeSignedOffsetFromLine(edgeStart,
+                        throughX, throughY, normalX, normalY);
+                var offsetEnd = Lines.computeSignedOffsetFromLine(edgeEnd,
+                        throughX, throughY, normalX, normalY);
+                if ((offsetStart > 0) == (offsetEnd > 0)) {
+                    continue;
+                }
+                var crossing = Segment.computeCrossingPoint(edgeStart, edgeEnd,
+                        offsetStart, offsetEnd);
+                crossings.add((crossing[0] - throughX) * dirX + (crossing[1] - throughY) * dirY);
+            }
+        }
+        return crossings;
+    }
+
     // Whether the point lies inside the region the rings bound, by the even-odd rule
     // over every ring together: a horizontal ray from the point toggles inside/outside
     // at each edge it crosses, so a point inside the outer ring but also inside a hole
