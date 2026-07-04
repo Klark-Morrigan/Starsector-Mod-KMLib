@@ -12,8 +12,10 @@ import org.lwjgl.opengl.GL11;
  * fixed-function GL that some Starsector renderer bridges (e.g.
  * {@code com.genir.renderer.bridge.GL11}) do not implement and fatal on, so a
  * dash is emitted as its own short {@code GL_LINES} segment instead - immediate-
- * mode vertices are always available. Like {@link GlColor} this touches the GL
- * context, so it is exercised in-engine rather than in unit tests.
+ * mode vertices are always available. {@link #strokeLoop} is the plain closed-outline
+ * counterpart, any vertex count, for a debug overlay tracing a polygon's edge. Like
+ * {@link GlColor} this touches the GL context, so it is exercised in-engine rather
+ * than in unit tests.
  */
 public final class GlLines {
     private GlLines() {
@@ -74,5 +76,20 @@ public final class GlLines {
             GL11.glVertex2f((x1 + unitX * onEnd) * worldToScreen,
                     (y1 + unitY * onEnd) * worldToScreen);
         }
+    }
+
+    /**
+     * Strokes the closed outline of {@code vertices}, a flat {@code [x1, y1, x2, y2,
+     * ...]} run in winding order - any vertex count, unlike {@link GlQuads#fillQuad}
+     * which fills exactly four.
+     *
+     * @param vertices the polygon's corners, already scaled to draw coordinates
+     */
+    public static void strokeLoop(float[] vertices) {
+        GL11.glBegin(GL11.GL_LINE_LOOP);
+        for (var i = 0; i < vertices.length; i += GlVertexRuns.FLOATS_PER_VERTEX) {
+            GL11.glVertex2f(vertices[i], vertices[i + 1]);
+        }
+        GL11.glEnd();
     }
 }
