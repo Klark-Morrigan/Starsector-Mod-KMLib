@@ -14,9 +14,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * Pins the contract of {@link Markets#hasAttachedStation}. The cases live in a
- * {@link Nested} group so the suite reports as a per-method tree; the shared mock
- * builders stay on the outer class.
+ * Pins the contracts of {@link Markets#hasAttachedStation} and
+ * {@link Markets#getStabilityFraction}. The cases live in a {@link Nested} group
+ * per method so the suite reports as a per-method tree; the shared mock builders
+ * stay on the outer class.
  */
 final class MarketsTest {
 
@@ -62,6 +63,45 @@ final class MarketsTest {
 
             assertThat(Markets.hasAttachedStation(marketMock)).isFalse();
         }
+    }
+
+    @Nested
+    class GetStabilityFraction {
+        @Test
+        void full_stability_is_one() {
+            assertThat(Markets.getStabilityFraction(marketAtStability(10.0f))).isEqualTo(1.0);
+        }
+
+        @Test
+        void half_stability_is_one_half() {
+            assertThat(Markets.getStabilityFraction(marketAtStability(5.0f))).isEqualTo(0.5);
+        }
+
+        @Test
+        void zero_stability_is_zero() {
+            assertThat(Markets.getStabilityFraction(marketAtStability(0.0f))).isEqualTo(0.0);
+        }
+
+        @Test
+        void above_band_clamps_to_one() {
+            assertThat(Markets.getStabilityFraction(marketAtStability(12.0f))).isEqualTo(1.0);
+        }
+
+        @Test
+        void below_band_clamps_to_zero() {
+            assertThat(Markets.getStabilityFraction(marketAtStability(-3.0f))).isEqualTo(0.0);
+        }
+
+        @Test
+        void null_market_is_zero() {
+            assertThat(Markets.getStabilityFraction(null)).isEqualTo(0.0);
+        }
+    }
+
+    private static MarketAPI marketAtStability(float stability) {
+        var marketMock = mock(MarketAPI.class);
+        when(marketMock.getStabilityValue()).thenReturn(stability);
+        return marketMock;
     }
 
     private static MarketAPI buildMarketConnectedTo(SectorEntityToken... entities) {
