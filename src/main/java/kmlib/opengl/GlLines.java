@@ -16,9 +16,6 @@ import org.lwjgl.opengl.GL11;
  * context, so it is exercised in-engine rather than in unit tests.
  */
 public final class GlLines {
-    // An input segment is 4 floats: two (x, y) endpoints. Used as the array stride.
-    private static final int FLOATS_PER_SEGMENT = 4;
-
     private GlLines() {
     }
 
@@ -48,7 +45,7 @@ public final class GlLines {
         var onWorldLength = dashOnScreen / worldToScreen;
         var periodWorldLength = (dashOnScreen + dashGapScreen) / worldToScreen;
         GL11.glBegin(GL11.GL_LINES);
-        for (var i = 0; i < segments.length; i += FLOATS_PER_SEGMENT) {
+        for (var i = 0; i < segments.length; i += GlVertexRuns.FLOATS_PER_SEGMENT) {
             emitDashes(segments, i, onWorldLength, periodWorldLength, worldToScreen);
         }
         GL11.glEnd();
