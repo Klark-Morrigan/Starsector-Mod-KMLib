@@ -11,13 +11,15 @@ import java.util.List;
  * the direction of greatest variance (the first principal component), so a label laid
  * along it runs down the cloud's long dimension. {@code length} is the extent of the
  * points projected onto that axis - the span from the rearmost to the foremost point -
- * so it estimates how long a label the cloud can carry.
+ * so it estimates how long a label the cloud can carry. {@code minorLength} is the
+ * matching extent along the perpendicular (second principal) direction - how wide the
+ * cloud is across its axis - so the two together say how strung-out its shape is.
  *
  * <p>The axis is a direction, not an arrow: its sign is arbitrary (a cloud has no
  * inherent front or back), so a consumer that needs upright text may flip it freely.
  */
 public record PrincipalAxis(double centroidX, double centroidY, double axisX, double axisY,
-        double length) {
+        double length, double minorLength) {
 
     /**
      * Fits a {@link PrincipalAxis} to a cloud of {@code {x, y}} points: the mean
@@ -68,7 +70,12 @@ public record PrincipalAxis(double centroidX, double centroidY, double axisX, do
 
         var axis = computeMajorEigenvector(varX, varY, covXY);
         var length = computeProjectedExtent(points, axis[0], axis[1]);
-        return new PrincipalAxis(centroidX, centroidY, axis[0], axis[1], length);
+        // The minor extent is the same projection along the perpendicular direction
+        // (-axisY, axisX), so length and minorLength read the cloud's two dimensions
+        // in the same units and a caller can compare them for its shape.
+        var minorLength = computeProjectedExtent(points, -axis[1], axis[0]);
+        return new PrincipalAxis(centroidX, centroidY, axis[0], axis[1], length, minorLength);
+    }
 
     /**
      * How strung-out the cloud is along its axis, {@code 0} (round - it spreads about

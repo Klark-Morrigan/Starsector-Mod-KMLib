@@ -55,6 +55,16 @@ class PrincipalAxisTest {
         }
 
         @Test
+        void fitToMeasuresTheMinorExtentPerpendicularToTheAxis() {
+            // The same cloud spans 20 along x and only 1 along y (the middle point sits
+            // at y=1, the ends at y=0), so the minor extent reads that across-axis width.
+            var axis = PrincipalAxis.fitTo(List.of(
+                    new double[] {-10, 0}, new double[] {0, 1}, new double[] {10, 0}));
+
+            assertThat(axis.minorLength()).isCloseTo(1.0, within(1e-6));
+        }
+
+        @Test
         void fitToYieldsAUnitVector() {
             var axis = PrincipalAxis.fitTo(List.of(
                     new double[] {1, 2}, new double[] {5, 9}, new double[] {3, 4}));
