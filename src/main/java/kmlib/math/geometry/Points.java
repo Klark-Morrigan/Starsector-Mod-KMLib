@@ -62,6 +62,27 @@ public final class Points {
     }
 
     /**
+     * The squared Euclidean distance between {@code (x1, y1)} and {@code (x2, y2)}.
+     * The companion to {@link #computeDistance} for the common case of comparing a
+     * distance against a threshold: squaring the threshold instead lets the test skip
+     * the square root, so a proximity or move check reads
+     * {@code computeDistanceSquared(a, b) <= radius * radius} with no {@code sqrt} on
+     * the hot path.
+     */
+    public static double computeDistanceSquared(double x1, double y1, double x2, double y2) {
+        var deltaX = x1 - x2;
+        var deltaY = y1 - y2;
+        return deltaX * deltaX + deltaY * deltaY;
+    }
+
+    /**
+     * The squared Euclidean distance between two {@code {x, y}} points.
+     */
+    public static double computeDistanceSquared(double[] a, double[] b) {
+        return computeDistanceSquared(a[0], a[1], b[0], b[1]);
+    }
+
+    /**
      * The Euclidean distance between two points {@code a} and {@code b}.
      */
     public static double computeDistance(Vector2f a, Vector2f b) {

@@ -39,6 +39,26 @@ class PointsTest {
     }
 
     @Nested
+    class ComputeDistanceSquared {
+        @Test
+        void computeDistanceSquaredIsTheSquareOfTheEuclideanDistance() {
+            // 3-4-5 triangle: the squared distance is 25, the distance squared.
+            assertThat(Points.computeDistanceSquared(0, 0, 3, 4)).isEqualTo(25.0);
+        }
+
+        @Test
+        void computeDistanceSquaredIsZeroForCoincidentPoints() {
+            assertThat(Points.computeDistanceSquared(2, 7, 2, 7)).isZero();
+        }
+
+        @Test
+        void computeDistanceSquaredArrayOverloadMatchesCoordinateForm() {
+            assertThat(Points.computeDistanceSquared(new double[] {1, 1}, new double[] {4, 5}))
+                    .isEqualTo(25.0);
+        }
+    }
+
+    @Nested
     class ComputeVectorLength {
         @Test
         void computeVectorLengthIsTheEuclideanMagnitude() {
