@@ -120,4 +120,37 @@ final class SpansTest {
                     List.of(new double[] {-10, 10}), 0, 0, 0, 0, List.of(), 3)).isNull();
         }
     }
+
+    @Nested
+    class FindLongestSpan {
+        @Test
+        void longest_span_returns_the_widest_of_several() {
+            // Lengths 6, 2, 4: the first span wins.
+            var longest = Spans.findLongestSpan(List.of(
+                    new double[] {-10, -4}, new double[] {0, 2}, new double[] {5, 9}));
+
+            assertThat(longest[0]).isCloseTo(-10.0, within());
+            assertThat(longest[1]).isCloseTo(-4.0, within());
+        }
+
+        @Test
+        void longest_span_returns_the_only_span_when_the_list_is_a_singleton() {
+            var longest = Spans.findLongestSpan(List.of(new double[] {3, 7}));
+
+            assertThat(longest[0]).isCloseTo(3.0, within());
+            assertThat(longest[1]).isCloseTo(7.0, within());
+        }
+
+        @Test
+        void longest_span_is_null_for_an_empty_list() {
+            assertThat(Spans.findLongestSpan(List.of())).isNull();
+        }
+
+        @Test
+        void longest_span_is_null_when_every_span_is_degenerate() {
+            // Zero-length spans have no room, so none wins.
+            assertThat(Spans.findLongestSpan(List.of(
+                    new double[] {2, 2}, new double[] {5, 5}))).isNull();
+        }
+    }
 }

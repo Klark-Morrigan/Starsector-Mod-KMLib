@@ -67,6 +67,28 @@ public final class Spans {
         return longest;
     }
 
+    /**
+     * The longest of {@code spans}, as its {@code {tStart, tEnd}} pair - or
+     * {@code null} when {@code spans} is empty or every span is degenerate
+     * (non-positive length).
+     *
+     * <p>The obstacle-free counterpart to {@link #findLongestClearSubsegment}:
+     * where that trims each span by the obstacles' keep-out intervals, this takes
+     * the roomiest span outright - the fallback a caller shows when the
+     * clearance-aware fit leaves nothing usable.
+     *
+     * @param spans candidate intervals as {@code {tStart, tEnd}} pairs, each
+     *              internally ascending
+     * @return the longest span, or {@code null} when none has positive length
+     */
+    public static double[] findLongestSpan(List<double[]> spans) {
+        double[] longest = null;
+        for (var span : spans) {
+            longest = pickLonger(longest, span);
+        }
+        return longest;
+    }
+
     // The keep-out intervals the obstacles carve from the line: for each obstacle
     // near enough to matter, the chord its clearance circle cuts from the line,
     // centred on the obstacle's projection. In parameter space each is one closed
