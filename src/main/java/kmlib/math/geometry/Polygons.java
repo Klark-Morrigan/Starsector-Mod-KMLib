@@ -425,6 +425,30 @@ public final class Polygons {
         return twiceArea / 2.0;
     }
 
+    // Whether the point lies inside the region the rings bound, by the even-odd rule
+    // over every ring together: a horizontal ray from the point toggles inside/outside
+    // at each edge it crosses, so a point inside the outer ring but also inside a hole
+    // ring toggles twice and lands outside - holes need no special casing.
+    private static boolean isPointInsideRings(List<List<double[]>> rings, double x, double y) {
+        var isInside = false;
+        for (var ring : rings) {
+            var count = ring.size();
+            for (var i = 0; i < count; i++) {
+                var edgeStart = ring.get(i);
+                var edgeEnd = ring.get((i + 1) % count);
+                // The edge straddles the ray's height (endpoint exactly at the height
+                // counts below, so a shared corner toggles once), and its crossing
+                // with the ray's horizontal line lies to the point's right.
+                if ((edgeStart[1] > y) != (edgeEnd[1] > y)
+                        && x < edgeStart[0] + (y - edgeStart[1]) * (edgeEnd[0] - edgeStart[0])
+                                / (edgeEnd[1] - edgeStart[1])) {
+                    isInside = !isInside;
+                }
+            }
+        }
+        return isInside;
+    }
+
     // Appends the circular arc that rounds one corner: the arc tangent to both edges
     // at {@code arcStart} and {@code arcEnd}, sampled into {@code segments} steps.
     // Its centre is where the two edge-perpendiculars through those points meet; the
