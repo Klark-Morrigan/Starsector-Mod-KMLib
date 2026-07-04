@@ -14,10 +14,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * Pins the contracts of {@link Markets#hasAttachedStation} and
- * {@link Markets#getStabilityFraction}. The cases live in a {@link Nested} group
- * per method so the suite reports as a per-method tree; the shared mock builders
- * stay on the outer class.
+ * Pins the contracts of {@link Markets#hasAttachedStation},
+ * {@link Markets#getStabilityFraction} and {@link Markets#isKnownToPlayer}. The
+ * cases live in a {@link Nested} group per method so the suite reports as a
+ * per-method tree; the shared mock builders stay on the outer class.
  */
 final class MarketsTest {
 
@@ -96,6 +96,63 @@ final class MarketsTest {
         void null_market_is_zero() {
             assertThat(Markets.getStabilityFraction(null)).isEqualTo(0.0);
         }
+    }
+
+    @Nested
+    class IsKnownToPlayer {
+        @Test
+        void returns_true_when_the_entity_is_discovered() {
+            var market = buildMarket(discoveredEntity(), true);
+
+            assertThat(Markets.isKnownToPlayer(market)).isTrue();
+        }
+
+        @Test
+        void returns_true_when_the_market_is_un_hidden_but_the_entity_is_still_discoverable() {
+            var market = buildMarket(discoverableEntity(), false);
+
+            assertThat(Markets.isKnownToPlayer(market)).isTrue();
+        }
+
+        @Test
+        void returns_true_when_the_primary_entity_is_null() {
+            var market = buildMarket(null, true);
+
+            assertThat(Markets.isKnownToPlayer(market)).isTrue();
+        }
+
+        @Test
+        void returns_false_when_the_market_is_hidden_on_a_discoverable_entity() {
+            var market = buildMarket(discoverableEntity(), true);
+
+            assertThat(Markets.isKnownToPlayer(market)).isFalse();
+        }
+
+        @Test
+        void returns_false_for_a_null_market() {
+            assertThat(Markets.isKnownToPlayer(null)).isFalse();
+        }
+    }
+
+    private static MarketAPI buildMarket(SectorEntityToken primaryEntity, boolean isHidden) {
+        var marketMock = mock(MarketAPI.class);
+        when(marketMock.getPrimaryEntity()).thenReturn(primaryEntity);
+        when(marketMock.isHidden()).thenReturn(isHidden);
+        return marketMock;
+    }
+
+    // An entity the player has already found: no longer flagged discoverable.
+    private static SectorEntityToken discoveredEntity() {
+        var entityMock = mock(SectorEntityToken.class);
+        when(entityMock.isDiscoverable()).thenReturn(false);
+        return entityMock;
+    }
+
+    // An entity still awaiting physical discovery: flagged discoverable.
+    private static SectorEntityToken discoverableEntity() {
+        var entityMock = mock(SectorEntityToken.class);
+        when(entityMock.isDiscoverable()).thenReturn(true);
+        return entityMock;
     }
 
     private static MarketAPI marketAtStability(float stability) {

@@ -77,4 +77,33 @@ public final class Markets {
         var fraction = market.getStabilityValue() / MAX_STABILITY_VALUE;
         return Math.min(Math.max(fraction, 0.0f), 1.0f);
     }
+
+    /**
+     * Whether the player knows this market exists.
+     *
+     * <p>Known has two arms: the market's entity has been discovered (no longer
+     * flagged discoverable) OR the market has been un-hidden, surfaced into the
+     * open by a story reveal. Neither arm reads the owner or the intel directory,
+     * so a faction hidden from the directory is not barred, and a concealed base on
+     * an always-visible entity (Galatia-Academy style) still reads known via the
+     * discovery arm.
+     *
+     * <p>The un-hidden arm catches a colony surfaced ahead of its entity being
+     * physically found - un-hidden on first entry yet still {@code setDiscoverable(true)}
+     * until a fleet closes to sensor range. It is public knowledge in that window,
+     * listed on the star's map tooltip, so it reads known at once. A still-concealed
+     * station (a hidden market on a discoverable entity) fails both arms and stays
+     * unknown until found.
+     *
+     * @param market the market to test; null yields false
+     * @return true when the player knows the market exists
+     */
+    public static boolean isKnownToPlayer(MarketAPI market) {
+        if (market == null) {
+            return false;
+        }
+        var entity = market.getPrimaryEntity();
+        var isEntityDiscovered = entity == null || !entity.isDiscoverable();
+        return isEntityDiscovered || !market.isHidden();
+    }
 }
