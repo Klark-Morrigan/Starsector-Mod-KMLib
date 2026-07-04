@@ -89,6 +89,47 @@ public final class Spans {
         return longest;
     }
 
+    /**
+     * The overlap of two span lists, as ascending disjoint {@code {tStart, tEnd}}
+     * pairs - the parameter intervals covered by both {@code a} and {@code b}.
+     *
+     * <p>The band counterpart to the single-line interior test: a band of nonzero
+     * thickness is interior only where every one of its parallel rails is, so
+     * {@link Polygons#findBandInteriorSpans} intersects the rails' spans through
+     * this. Because shifting a rail's through-point perpendicular to the direction
+     * leaves the along-direction origin unchanged, every rail's parameters share one
+     * frame, so the intersection is a plain interval overlap. Walked with two
+     * cursors over the sorted inputs, advancing past whichever interval ends first.
+     *
+     * @param a one span list, ascending and disjoint (as
+     *          {@link Polygons#findLineInteriorSpans} returns)
+     * @param b the other span list, ascending and disjoint
+     * @return the intervals covered by both, ascending and disjoint; empty when they
+     *         nowhere overlap
+     */
+    public static List<double[]> intersectSpans(List<double[]> a, List<double[]> b) {
+        var overlaps = new ArrayList<double[]>();
+        var i = 0;
+        var j = 0;
+        while (i < a.size() && j < b.size()) {
+            var lo = Math.max(a.get(i)[0], b.get(j)[0]);
+            var hi = Math.min(a.get(i)[1], b.get(j)[1]);
+            // A zero- or negative-length overlap (the intervals only touch, or miss)
+            // is no span; the shared length must clear the same floor a real edge does.
+            if (hi - lo > Limits.MIN_EDGE_LENGTH) {
+                overlaps.add(new double[] {lo, hi});
+            }
+            // Advance past whichever interval ends first - the other may still overlap
+            // the next one along.
+            if (a.get(i)[1] < b.get(j)[1]) {
+                i++;
+            } else {
+                j++;
+            }
+        }
+        return overlaps;
+    }
+
     // The keep-out intervals the obstacles carve from the line: for each obstacle
     // near enough to matter, the chord its clearance circle cuts from the line,
     // centred on the obstacle's projection. In parameter space each is one closed

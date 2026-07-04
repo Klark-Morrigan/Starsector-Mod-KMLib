@@ -15,6 +15,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * multiple obstacles each carve their own interval, the longest survivor is picked
  * across all input spans, and empty, fully blocked, or degenerate-direction input
  * yields null.
+ *
+ * <p>And of {@link Spans#intersectSpans}: overlapping spans yield their shared
+ * interval, a span meeting several yields one overlap per meeting, spans that only
+ * touch or miss yield nothing, and an empty list on either side yields nothing.
  */
 final class SpansTest {
 
@@ -151,6 +155,56 @@ final class SpansTest {
             // Zero-length spans have no room, so none wins.
             assertThat(Spans.findLongestSpan(List.of(
                     new double[] {2, 2}, new double[] {5, 5}))).isNull();
+        }
+    }
+
+    @Nested
+    class IntersectSpans {
+        @Test
+        void intersect_spans_yields_the_shared_interval_of_two_overlapping_spans() {
+            // [0, 6] and [4, 10] overlap on [4, 6].
+            var overlap = Spans.intersectSpans(
+                    List.of(new double[] {0, 6}), List.of(new double[] {4, 10}));
+
+            assertThat(overlap).hasSize(1);
+            assertThat(overlap.get(0)[0]).isCloseTo(4.0, within());
+            assertThat(overlap.get(0)[1]).isCloseTo(6.0, within());
+        }
+
+        @Test
+        void intersect_spans_reports_one_overlap_per_span_a_wide_span_meets() {
+            // A single [0, 20] span meets two on the other side, [2, 6] and [10, 14],
+            // so two overlaps come back - the shape of a band rail split by a notch
+            // meeting a whole centreline span.
+            var overlaps = Spans.intersectSpans(
+                    List.of(new double[] {0, 20}),
+                    List.of(new double[] {2, 6}, new double[] {10, 14}));
+
+            assertThat(overlaps).hasSize(2);
+            assertThat(overlaps.get(0)[0]).isCloseTo(2.0, within());
+            assertThat(overlaps.get(0)[1]).isCloseTo(6.0, within());
+            assertThat(overlaps.get(1)[0]).isCloseTo(10.0, within());
+            assertThat(overlaps.get(1)[1]).isCloseTo(14.0, within());
+        }
+
+        @Test
+        void intersect_spans_yields_nothing_when_spans_only_touch() {
+            // [0, 5] and [5, 10] share only the endpoint t=5: a zero-length touch is
+            // no usable interval.
+            assertThat(Spans.intersectSpans(
+                    List.of(new double[] {0, 5}), List.of(new double[] {5, 10}))).isEmpty();
+        }
+
+        @Test
+        void intersect_spans_yields_nothing_when_spans_miss() {
+            assertThat(Spans.intersectSpans(
+                    List.of(new double[] {0, 4}), List.of(new double[] {6, 10}))).isEmpty();
+        }
+
+        @Test
+        void intersect_spans_yields_nothing_when_either_side_is_empty() {
+            assertThat(Spans.intersectSpans(List.of(), List.of(new double[] {0, 5}))).isEmpty();
+            assertThat(Spans.intersectSpans(List.of(new double[] {0, 5}), List.of())).isEmpty();
         }
     }
 }
