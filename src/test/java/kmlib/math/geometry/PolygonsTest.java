@@ -54,6 +54,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * concave ring the line exits and re-enters yields separate spans (no chord bridges
  * the notch), a hole splits a span around it, and a miss, a corner graze, or a
  * degenerate direction yields nothing.
+ *
+ * <p>And of {@link Polygons#findBandInteriorSpans}: a band clear of every border
+ * keeps its whole span, a band splits around a parallel border its centreline
+ * clears (its edge crosses the intrusion), a band wider than the region empties, a
+ * zero-thickness band reduces to the line test, and a degenerate direction yields
+ * nothing.
  */
 final class PolygonsTest {
 
@@ -628,6 +634,80 @@ final class PolygonsTest {
         void interior_spans_are_empty_for_a_degenerate_direction() {
             // A zero direction defines no line to cross, so there is nothing to span.
             var spans = Polygons.findLineInteriorSpans(List.of(bigSquare(10)), 5, 5, 0, 0);
+
+            assertThat(spans).isEmpty();
+        }
+    }
+
+    @Nested
+    class FindBandInteriorSpans {
+        @Test
+        void band_inside_a_convex_ring_keeps_its_whole_span() {
+            // A horizontal band through the side-20 square, its rails from y=7 to
+            // y=13, stays clear of the vertical walls, so the band span equals the
+            // line span: x=0..20, parameters from the through-point at x=10.
+            var spans = Polygons.findBandInteriorSpans(
+                    List.of(bigSquare(20)), 10, 10, 1, 0, 3);
+
+            assertThat(spans).hasSize(1);
+            assertThat(spans.get(0)[0]).isCloseTo(-10.0, within());
+            assertThat(spans.get(0)[1]).isCloseTo(10.0, within());
+        }
+
+        @Test
+        void band_splits_around_a_parallel_border_the_centreline_clears() {
+            // A 20-wide, 10-tall room with a rectangular notch bitten down from the
+            // top to y=6 over x=8..12. A horizontal centreline at y=5 clears the notch
+            // whole, but a band of half-thickness 2.5 lifts its upper rails to y=6.25
+            // and y=7.5 - inside the bite over x=8..12 - so the band span splits into
+            // the two clear stretches [-10, -2] and [2, 10] the centreline alone missed.
+            var notchedRoom = Arrays.asList(
+                    new double[] {0, 0}, new double[] {20, 0}, new double[] {20, 10},
+                    new double[] {12, 10}, new double[] {12, 6}, new double[] {8, 6},
+                    new double[] {8, 10}, new double[] {0, 10});
+
+            var spans = Polygons.findBandInteriorSpans(
+                    List.of(notchedRoom), 10, 5, 1, 0, 2.5);
+
+            assertThat(spans).hasSize(2);
+            assertThat(spans.get(0)[0]).isCloseTo(-10.0, within());
+            assertThat(spans.get(0)[1]).isCloseTo(-2.0, within());
+            assertThat(spans.get(1)[0]).isCloseTo(2.0, within());
+            assertThat(spans.get(1)[1]).isCloseTo(10.0, within());
+        }
+
+        @Test
+        void band_is_empty_when_wider_than_the_region() {
+            // Half-thickness 6 in a side-10 square lifts the outer rails to y=-1 and
+            // y=11, both outside; a rail with no interior empties the whole band.
+            var spans = Polygons.findBandInteriorSpans(
+                    List.of(bigSquare(10)), 5, 5, 1, 0, 6);
+
+            assertThat(spans).isEmpty();
+        }
+
+        @Test
+        void band_with_zero_half_thickness_matches_the_line_test() {
+            // Every rail collapses onto the centreline, so the band test reduces
+            // exactly to the line test on the same concave U shape.
+            var uShape = Arrays.asList(
+                    new double[] {0, 0}, new double[] {10, 0}, new double[] {10, 10},
+                    new double[] {6, 10}, new double[] {6, 4}, new double[] {4, 4},
+                    new double[] {4, 10}, new double[] {0, 10});
+
+            var bandSpans = Polygons.findBandInteriorSpans(List.of(uShape), 5, 7, 1, 0, 0);
+            var lineSpans = Polygons.findLineInteriorSpans(List.of(uShape), 5, 7, 1, 0);
+
+            assertThat(bandSpans).hasSize(lineSpans.size());
+            for (var i = 0; i < lineSpans.size(); i++) {
+                assertThat(bandSpans.get(i)[0]).isCloseTo(lineSpans.get(i)[0], within());
+                assertThat(bandSpans.get(i)[1]).isCloseTo(lineSpans.get(i)[1], within());
+            }
+        }
+
+        @Test
+        void band_is_empty_for_a_degenerate_direction() {
+            var spans = Polygons.findBandInteriorSpans(List.of(bigSquare(10)), 5, 5, 0, 0, 2);
 
             assertThat(spans).isEmpty();
         }

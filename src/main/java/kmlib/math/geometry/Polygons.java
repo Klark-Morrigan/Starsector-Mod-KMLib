@@ -8,6 +8,12 @@ import java.util.List;
  */
 public final class Polygons {
 
+    // How many parallel rails sample a band's width in findBandInteriorSpans: the
+    // centreline, both edges, and two between. Odd, so the centreline is always a
+    // rail; enough to catch a border running alongside the band without the cost of
+    // a fine sweep.
+    private static final int BAND_RAIL_COUNT = 5;
+
     private Polygons() {
     }
 
@@ -488,6 +494,65 @@ public final class Polygons {
             }
         }
         return spans;
+    }
+
+    /**
+     * The interior spans of a band of width {@code 2 * halfThickness} swept along a
+     * line, as {@code {tStart, tEnd}} parameter intervals - the pieces of the line
+     * where the whole band, not just its centreline, stays inside the region.
+     *
+     * <p>Extends {@link #findLineInteriorSpans} from a zero-width line to a strip: a
+     * label has girth, so where a border runs alongside the centreline the band's
+     * edge can cross it though the centreline clears. The band is sampled as a small
+     * fan of parallel rails - the centreline, both edges at {@code +/-halfThickness}
+     * along the perpendicular, and a couple between - and only the parameters
+     * interior on every rail survive, via {@link Spans#intersectSpans}. Shifting a
+     * rail perpendicular to the direction leaves the along-direction origin
+     * unchanged, so all rails share one parameter frame and the result is in the
+     * centreline's frame - a drop-in for the line test wherever band girth matters.
+     *
+     * <p>An approximation, not an exact Minkowski erosion: a concave corner poking
+     * into the band strictly between two rails, without reaching either, is missed.
+     * More rails narrow that gap; the sampling is chosen fine enough for label
+     * placement, where the clearance is already a tuned world-space estimate. A
+     * non-positive {@code halfThickness} collapses every rail onto the centreline,
+     * so the band test reduces exactly to the line test.
+     *
+     * @param rings         the region's boundary rings as {x, y} vertex lists: one
+     *                      outer ring and zero or more hole rings, any winding
+     * @param throughX      x of a point the centreline passes through
+     * @param throughY      y of a point the centreline passes through
+     * @param dirX          x of the line's direction
+     * @param dirY          y of the line's direction
+     * @param halfThickness half the band's width; the rails sit this far to each
+     *                      side of the centreline
+     * @return the intervals where the whole band is interior, as {@code {tStart,
+     *         tEnd}} pairs, ascending and disjoint; empty when no band-wide piece is
+     *         interior or the direction is too short to define a line
+     */
+    public static List<double[]> findBandInteriorSpans(List<List<double[]>> rings,
+            double throughX, double throughY, double dirX, double dirY, double halfThickness) {
+        var direction = Points.computeUnitVector(dirX, dirY, Limits.MIN_EDGE_LENGTH);
+        if (direction == null) {
+            return new ArrayList<>();
+        }
+        // The perpendicular the rails step along; the along-direction origin is
+        // invariant under this shift, so every rail's parameters share one frame.
+        var normalX = -direction[1];
+        var normalY = direction[0];
+        List<double[]> bandSpans = null;
+        for (var rail = 0; rail < BAND_RAIL_COUNT; rail++) {
+            // Rails evenly spaced across the full band width, both edges included.
+            var offset = halfThickness * (2.0 * rail / (BAND_RAIL_COUNT - 1) - 1.0);
+            var railSpans = findLineInteriorSpans(rings, throughX + offset * normalX,
+                    throughY + offset * normalY, direction[0], direction[1]);
+            bandSpans = bandSpans == null ? railSpans : Spans.intersectSpans(bandSpans, railSpans);
+            // A rail wholly outside leaves nothing for the rest to keep; stop early.
+            if (bandSpans.isEmpty()) {
+                return bandSpans;
+            }
+        }
+        return bandSpans;
     }
 
     // The parameters (distances from the through-point along the unit direction) at
