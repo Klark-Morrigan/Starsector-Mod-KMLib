@@ -21,6 +21,32 @@ public final class Spans {
     private Spans() {
     }
 
+    // The keep-out intervals the obstacles carve from the line: for each obstacle
+    // near enough to matter, the chord its clearance circle cuts from the line,
+    // centred on the obstacle's projection. In parameter space each is one closed
+    // interval, ready to subtract from the candidate spans.
+    private static List<double[]> computeBlockedIntervals(double throughX, double throughY,
+            double dirX, double dirY, Collection<double[]> obstacles, double clearance) {
+        var blocked = new ArrayList<double[]>();
+        if (clearance <= 0) {
+            return blocked;
+        }
+        for (var obstacle : obstacles) {
+            var offsetX = obstacle[0] - throughX;
+            var offsetY = obstacle[1] - throughY;
+            var along = offsetX * dirX + offsetY * dirY;
+            // Perpendicular distance to the line: the offset projected onto the
+            // line's unit normal (-dirY, dirX).
+            var perpendicular = Math.abs(offsetX * -dirY + offsetY * dirX);
+            if (perpendicular >= clearance) {
+                continue;
+            }
+            var halfWidth = Math.sqrt(clearance * clearance - perpendicular * perpendicular);
+            blocked.add(new double[] {along - halfWidth, along + halfWidth});
+        }
+        return blocked;
+    }
+
     // The longest stretch of one span not covered by any blocked interval: a cursor
     // sweeps the span, jumping over each blocker it meets, and every gap between
     // the cursor and the next blocker (or the span's end) is a candidate.
