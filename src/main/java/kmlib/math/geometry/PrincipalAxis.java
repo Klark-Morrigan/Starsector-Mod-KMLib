@@ -69,6 +69,22 @@ public record PrincipalAxis(double centroidX, double centroidY, double axisX, do
         var axis = computeMajorEigenvector(varX, varY, covXY);
         var length = computeProjectedExtent(points, axis[0], axis[1]);
         return new PrincipalAxis(centroidX, centroidY, axis[0], axis[1], length);
+
+    /**
+     * How strung-out the cloud is along its axis, {@code 0} (round - it spreads about
+     * equally every way, so no direction is meaningful) to nearly {@code 1} (a thin
+     * line). Read as {@code 1 - minorLength / length}: how far the across-axis width
+     * falls short of the along-axis length. A cloud with no along-axis spread at all
+     * (a single point, coincident points) has no shape to speak of and reads {@code 0},
+     * so a consumer can treat a low value as "this axis direction is not trustworthy".
+     *
+     * @return the elongation in {@code [0, 1)}
+     */
+    public double computeElongation() {
+        if (length < Limits.MIN_EDGE_LENGTH) {
+            return 0.0;
+        }
+        return 1.0 - Math.min(minorLength, length) / length;
     }
 
     // The unit eigenvector of the symmetric covariance matrix [[varX, covXY],

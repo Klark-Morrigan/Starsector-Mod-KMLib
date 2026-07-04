@@ -94,4 +94,48 @@ class PrincipalAxisTest {
                     .isInstanceOf(IllegalArgumentException.class);
         }
     }
+
+    @Nested
+    class ComputeElongation {
+        @Test
+        void computeElongationReadsNearOneForAThinLine() {
+            // A cloud strung far along x with almost no y spread: minor is tiny beside
+            // major, so the elongation approaches 1 - the axis is highly trustworthy.
+            var axis = PrincipalAxis.fitTo(List.of(
+                    new double[] {-100, 0}, new double[] {0, 1}, new double[] {100, 0}));
+
+            assertThat(axis.computeElongation()).isCloseTo(1.0, within(0.02));
+        }
+
+        @Test
+        void computeElongationReadsZeroForAnIsotropicCloud() {
+            // A symmetric square spreads equally every way, so minor equals major and the
+            // elongation is 0 - the fallback axis direction carries no real meaning.
+            var axis = PrincipalAxis.fitTo(List.of(
+                    new double[] {-1, -1}, new double[] {1, -1},
+                    new double[] {1, 1}, new double[] {-1, 1}));
+
+            assertThat(axis.computeElongation()).isZero();
+        }
+
+        @Test
+        void computeElongationReadsAMiddlingValueForAModeratelyStrungCloud() {
+            // Major extent 20 (x from -10 to 10), minor extent 10 (y from -5 to 5): a 2:1
+            // cloud reads 1 - 10/20 = 0.5, half-trustworthy.
+            var axis = PrincipalAxis.fitTo(List.of(
+                    new double[] {-10, 0}, new double[] {10, 0},
+                    new double[] {0, -5}, new double[] {0, 5}));
+
+            assertThat(axis.computeElongation()).isCloseTo(0.5, within(1e-6));
+        }
+
+        @Test
+        void computeElongationReadsZeroForASinglePoint() {
+            // A point has no spread in any direction, so there is no shape and no
+            // trustworthy axis; the elongation is 0 rather than a divide-by-zero.
+            var axis = PrincipalAxis.fitTo(List.of(new double[] {7, 3}));
+
+            assertThat(axis.computeElongation()).isZero();
+        }
+    }
 }
