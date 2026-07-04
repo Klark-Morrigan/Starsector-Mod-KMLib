@@ -38,7 +38,7 @@ public final class VoronoiCellBuilder {
      * trade a slightly faceted frontier for fewer vertices (a rendering cost) passes
      * its own lower count to the builders that accept one.
      */
-    public static final int DEFAULT_CELL_BOUND_SEGMENTS = 96;
+    public static final int DEFAULT_CELL_BOUND_SEGMENTS = 48;
 
     private VoronoiCellBuilder() {
     }
