@@ -21,6 +21,52 @@ public final class Spans {
     private Spans() {
     }
 
+    /**
+     * The longest sub-interval of {@code spans} that keeps every obstacle at least
+     * {@code clearance} away, as a {@code {tStart, tEnd}} pair - or {@code null}
+     * when nothing clear survives.
+     *
+     * <p>Each obstacle within {@code clearance} of the line blocks the interval the
+     * line spends inside its keep-out circle: centred on the obstacle's projection
+     * onto the line, with half-width {@code sqrt(clearance^2 - perp^2)} where
+     * {@code perp} is the obstacle's perpendicular distance - the chord the circle
+     * cuts from the line. An obstacle farther than {@code clearance} from the line
+     * misses it entirely and blocks nothing. The blocked intervals are subtracted
+     * from every span and the single longest surviving piece wins, so the result is
+     * the roomiest stretch of line that stays clear of every obstacle.
+     *
+     * @param spans     the candidate intervals as {@code {tStart, tEnd}} pairs
+     *                  (parameters along the direction), each internally ascending
+     * @param throughX  x of the point the line passes through (parameter zero)
+     * @param throughY  y of the point the line passes through (parameter zero)
+     * @param dirX      x of the line's direction
+     * @param dirY      y of the line's direction
+     * @param obstacles the {x, y} points to keep clear of
+     * @param clearance the keep-out radius around each obstacle; non-positive
+     *                  blocks nothing, so the longest input span wins whole
+     * @return the longest clear {@code {tStart, tEnd}} interval, or {@code null}
+     *         when the spans are empty, fully blocked, or the direction is too
+     *         short to define a line
+     */
+    public static double[] findLongestClearSubsegment(List<double[]> spans,
+            double throughX, double throughY, double dirX, double dirY,
+            Collection<double[]> obstacles, double clearance) {
+        var direction = Points.computeUnitVector(dirX, dirY, Limits.MIN_EDGE_LENGTH);
+        if (direction == null) {
+            return null;
+        }
+        var blocked = computeBlockedIntervals(throughX, throughY, direction[0], direction[1],
+                obstacles, clearance);
+        // Sorted by start, the blockers can be walked once per span with a single
+        // advancing cursor instead of re-scanning the whole set per gap.
+        blocked.sort(Comparator.comparingDouble(interval -> interval[0]));
+        double[] longest = null;
+        for (var span : spans) {
+            longest = pickLonger(longest, findLongestGapWithinSpan(span, blocked));
+        }
+        return longest;
+    }
+
     // The keep-out intervals the obstacles carve from the line: for each obstacle
     // near enough to matter, the chord its clearance circle cuts from the line,
     // centred on the obstacle's projection. In parameter space each is one closed
