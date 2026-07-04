@@ -425,6 +425,71 @@ public final class Polygons {
         return twiceArea / 2.0;
     }
 
+    /**
+     * The interior spans of an infinite line crossed through a region bounded by
+     * closed rings - an outer ring plus any hole rings - as {@code {tStart, tEnd}}
+     * parameter intervals along the line's direction.
+     *
+     * <p>The line runs through {@code (throughX, throughY)} along
+     * {@code (dirX, dirY)}; parameters are distances from the through-point (the
+     * direction is normalised internally, so {@code t} is in world units either
+     * way). The line is crossed against every ring edge, the crossings sorted by
+     * parameter, and an interval between two consecutive crossings kept only when
+     * its midpoint lies inside the region - inside the outer ring and outside every
+     * hole, by the even-odd rule over all rings together. That midpoint test is
+     * what makes the result concave- and hole-safe: two points inside the region do
+     * not make the chord between them interior, so a line that leaves and re-enters
+     * a pinched region comes back as separate spans, never one chord bridging the
+     * gap, and a span that would cross a hole splits around it.
+     *
+     * @param rings    the region's boundary rings as {x, y} vertex lists: one outer
+     *                 ring and zero or more hole rings, in any winding (the
+     *                 even-odd rule is winding-blind)
+     * @param throughX x of a point the line passes through
+     * @param throughY y of a point the line passes through
+     * @param dirX     x of the line's direction
+     * @param dirY     y of the line's direction
+     * @return the interior intervals as {@code {tStart, tEnd}} pairs, ascending and
+     *         disjoint; empty when the line misses the region, only grazes it, or
+     *         the direction is too short to define a line
+     */
+    public static List<double[]> findLineInteriorSpans(List<List<double[]>> rings,
+            double throughX, double throughY, double dirX, double dirY) {
+        var spans = new ArrayList<double[]>();
+        var direction = Points.computeUnitVector(dirX, dirY, Limits.MIN_EDGE_LENGTH);
+        if (direction == null) {
+            return spans;
+        }
+        var crossings = collectLineCrossingParameters(rings, throughX, throughY,
+                direction[0], direction[1]);
+        crossings.sort(null);
+        // Between two consecutive crossings the line stays on one side of every
+        // edge, so the whole interval shares its midpoint's inside/outside verdict.
+        for (var i = 0; i + 1 < crossings.size(); i++) {
+            var tStart = crossings.get(i);
+            var tEnd = crossings.get(i + 1);
+            // A grazing contact (a corner or tangent) reports two coincident
+            // crossings; the zero-length interval between them is no span.
+            if (tEnd - tStart < Limits.MIN_EDGE_LENGTH) {
+                continue;
+            }
+            var midT = (tStart + tEnd) / 2.0;
+            if (!isPointInsideRings(rings, throughX + midT * direction[0],
+                    throughY + midT * direction[1])) {
+                continue;
+            }
+            // A vertex sitting exactly on the line can split one true span into two
+            // abutting intervals; fuse them back so a span is reported whole.
+            var last = spans.isEmpty() ? null : spans.get(spans.size() - 1);
+            if (last != null && tStart - last[1] < Limits.MIN_EDGE_LENGTH) {
+                last[1] = tEnd;
+            } else {
+                spans.add(new double[] {tStart, tEnd});
+            }
+        }
+        return spans;
+    }
+
     // The parameters (distances from the through-point along the unit direction) at
     // which the infinite line crosses any ring edge. An edge is crossed when its two
     // endpoints sit on opposite sides of the line - the same signed-offset straddle

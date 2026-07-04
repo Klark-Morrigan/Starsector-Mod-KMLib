@@ -49,6 +49,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * positive area equal to the region it encloses, reversing the winding negates it,
  * and a ring that encloses nothing (fewer than three vertices, or collinear
  * vertices) is zero - the sign and magnitude a consumer's fold-guard relies on.
+ *
+ * <p>And of {@link Polygons#findLineInteriorSpans}: a convex ring yields one span, a
+ * concave ring the line exits and re-enters yields separate spans (no chord bridges
+ * the notch), a hole splits a span around it, and a miss, a corner graze, or a
+ * degenerate direction yields nothing.
  */
 final class PolygonsTest {
 
@@ -546,6 +551,85 @@ final class PolygonsTest {
                     new double[] {0, 0}, new double[] {5, 0}, new double[] {10, 0});
 
             assertThat(signedArea(collinear)).isCloseTo(0.0, within());
+        }
+    }
+
+    @Nested
+    class FindLineInteriorSpans {
+        @Test
+        void interior_spans_yield_one_span_across_a_convex_ring() {
+            // A horizontal line through the centre of the side-10 square enters at
+            // x=0 and leaves at x=10: one span, parameters measured from the
+            // through-point at x=5.
+            var spans = Polygons.findLineInteriorSpans(List.of(bigSquare(10)), 5, 5, 1, 0);
+
+            assertThat(spans).hasSize(1);
+            assertThat(spans.get(0)[0]).isCloseTo(-5.0, within());
+            assertThat(spans.get(0)[1]).isCloseTo(5.0, within());
+        }
+
+        @Test
+        void interior_spans_split_where_the_line_exits_and_reenters_a_concave_ring() {
+            // A U shape (side-10 square with a notch cut down from the top between
+            // x=4 and x=6): a horizontal line at y=7 crosses both arms but the
+            // stretch between them lies in the notch, outside the region - so two
+            // spans come back, never one chord bridging the gap.
+            var uShape = Arrays.asList(
+                    new double[] {0, 0}, new double[] {10, 0}, new double[] {10, 10},
+                    new double[] {6, 10}, new double[] {6, 4}, new double[] {4, 4},
+                    new double[] {4, 10}, new double[] {0, 10});
+
+            var spans = Polygons.findLineInteriorSpans(List.of(uShape), 5, 7, 1, 0);
+
+            assertThat(spans).hasSize(2);
+            assertThat(spans.get(0)[0]).isCloseTo(-5.0, within());
+            assertThat(spans.get(0)[1]).isCloseTo(-1.0, within());
+            assertThat(spans.get(1)[0]).isCloseTo(1.0, within());
+            assertThat(spans.get(1)[1]).isCloseTo(5.0, within());
+        }
+
+        @Test
+        void interior_spans_split_around_a_hole_ring() {
+            // A side-20 square with a hole from x=8..12: the line through the middle
+            // is interior only outside the hole, so the hole splits the single span
+            // in two.
+            var hole = Arrays.asList(
+                    new double[] {8, 8}, new double[] {12, 8},
+                    new double[] {12, 12}, new double[] {8, 12});
+
+            var spans = Polygons.findLineInteriorSpans(
+                    List.of(bigSquare(20), hole), 10, 10, 1, 0);
+
+            assertThat(spans).hasSize(2);
+            assertThat(spans.get(0)[0]).isCloseTo(-10.0, within());
+            assertThat(spans.get(0)[1]).isCloseTo(-2.0, within());
+            assertThat(spans.get(1)[0]).isCloseTo(2.0, within());
+            assertThat(spans.get(1)[1]).isCloseTo(10.0, within());
+        }
+
+        @Test
+        void interior_spans_are_empty_when_the_line_misses_the_ring() {
+            var spans = Polygons.findLineInteriorSpans(List.of(bigSquare(10)), 5, 50, 1, 0);
+
+            assertThat(spans).isEmpty();
+        }
+
+        @Test
+        void interior_spans_are_empty_when_the_line_only_grazes_a_corner() {
+            // A diagonal through the square's corner touches at a single point: the
+            // two crossings coincide, so the zero-length interval between them is no
+            // span.
+            var spans = Polygons.findLineInteriorSpans(List.of(bigSquare(10)), 0, 0, 1, -1);
+
+            assertThat(spans).isEmpty();
+        }
+
+        @Test
+        void interior_spans_are_empty_for_a_degenerate_direction() {
+            // A zero direction defines no line to cross, so there is nothing to span.
+            var spans = Polygons.findLineInteriorSpans(List.of(bigSquare(10)), 5, 5, 0, 0);
+
+            assertThat(spans).isEmpty();
         }
     }
 }
