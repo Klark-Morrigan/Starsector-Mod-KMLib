@@ -100,7 +100,7 @@ public final class Points {
      * @return the unit components as {@code {x, y}}, or {@code null} when the vector
      *         is shorter than {@code minLength}
      */
-    static double[] computeUnitVector(double x, double y, double minLength) {
+    public static double[] computeUnitVector(double x, double y, double minLength) {
         var length = computeVectorLength(x, y);
         if (length < minLength) {
             return null;
