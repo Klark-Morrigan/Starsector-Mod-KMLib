@@ -2,12 +2,48 @@ package kmlib.math.geometry;
 
 import org.lwjgl.util.vector.Vector2f;
 
+import java.util.List;
+
 /**
  * Operations on 2D points.
  */
 public final class Points {
 
     private Points() {
+    }
+
+    /**
+     * The extent of a point cloud projected onto an axis, as {@code {min, max}} - the
+     * lowest and highest of each point's signed projection {@code point . axis}. The
+     * width of the cloud along that direction is {@code max - min}: measuring a spread
+     * along an axis, or spacing parallel lines across a shape, both read from it.
+     *
+     * <p>The axis need not be unit length - scaling it scales every projection equally,
+     * so the extent scales with it while the point that attains each bound is unchanged;
+     * a caller that needs a true distance passes a unit axis. Projecting relative to a
+     * reference point or to the origin gives the same {@code max - min}, since a shared
+     * offset shifts both bounds together.
+     *
+     * @param points the {@code {x, y}} points to project; must be non-empty
+     * @param axisX  x of the direction to project onto
+     * @param axisY  y of the direction to project onto
+     * @return the {@code {min, max}} projections
+     * @throws IllegalArgumentException if {@code points} is empty (an extent is
+     *         undefined with nothing to project)
+     */
+    public static double[] projectExtentOnto(List<double[]> points, double axisX,
+            double axisY) {
+        if (points.isEmpty()) {
+            throw new IllegalArgumentException("Cannot project an extent of no points");
+        }
+        var min = Double.POSITIVE_INFINITY;
+        var max = Double.NEGATIVE_INFINITY;
+        for (var point : points) {
+            var projection = point[0] * axisX + point[1] * axisY;
+            min = Math.min(min, projection);
+            max = Math.max(max, projection);
+        }
+        return new double[] {min, max};
     }
 
     /**

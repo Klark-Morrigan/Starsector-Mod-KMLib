@@ -4,7 +4,10 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.lwjgl.util.vector.Vector2f;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
 import static org.assertj.core.api.Assertions.withinPercentage;
 
@@ -186,6 +189,55 @@ class PointsTest {
             assertThat(Math.hypot(unit[0], unit[1])).isCloseTo(1.0, within(1e-12));
             assertThat(unit[0]).isCloseTo(Math.sqrt(0.5), within(1e-12));
             assertThat(unit[1]).isCloseTo(Math.sqrt(0.5), within(1e-12));
+        }
+    }
+
+    @Nested
+    class ProjectExtentOnto {
+        @Test
+        void projectExtentOntoReturnsTheMinAndMaxProjection() {
+            // Projected onto the x-axis the cloud spans x 1..7; the y values do not
+            // reach the x-axis projection, so the extent is {1, 7}.
+            var extent = Points.projectExtentOnto(
+                    List.of(new double[] {1, 5}, new double[] {7, 2}, new double[] {4, 9}),
+                    1, 0);
+
+            assertThat(extent).containsExactly(1.0, 7.0);
+        }
+
+        @Test
+        void projectExtentOntoProjectsOntoAnArbitraryAxis() {
+            // Onto the y-axis the same cloud spans y 2..9.
+            var extent = Points.projectExtentOnto(
+                    List.of(new double[] {1, 5}, new double[] {7, 2}, new double[] {4, 9}),
+                    0, 1);
+
+            assertThat(extent).containsExactly(2.0, 9.0);
+        }
+
+        @Test
+        void projectExtentOntoCollapsesToAPointForASingleInput() {
+            // One point projects to a single value, so min and max coincide - a
+            // zero-width extent.
+            var extent = Points.projectExtentOnto(List.of(new double[] {3, 4}), 0.6, 0.8);
+
+            assertThat(extent[0]).isCloseTo(5.0, within(1e-12));
+            assertThat(extent[1]).isCloseTo(5.0, within(1e-12));
+        }
+
+        @Test
+        void projectExtentOntoScalesWithANonUnitAxis() {
+            // Doubling the axis doubles every projection, so the extent doubles while
+            // the same points still attain its bounds.
+            var points = List.of(new double[] {1, 0}, new double[] {5, 0});
+
+            assertThat(Points.projectExtentOnto(points, 2, 0)).containsExactly(2.0, 10.0);
+        }
+
+        @Test
+        void projectExtentOntoThrowsForNoPoints() {
+            assertThatThrownBy(() -> Points.projectExtentOnto(List.of(), 1, 0))
+                    .isInstanceOf(IllegalArgumentException.class);
         }
     }
 
