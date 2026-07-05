@@ -22,6 +22,14 @@ def lunaLibJarFile = file("${project.ext.starsectorRoot}/mods/lunalib/jars/LunaL
 def consoleCommandsJars = fileTree(
         dir: "${project.ext.starsectorRoot}/mods", include: ['**/jars/lw_Console.jar'])
 
+// LazyLib backs LazyFontCache's bitmap-font loading (its LazyFont has no vanilla
+// equivalent). compileOnly and no LazyLib mod dependency, the same soft-dep
+// stance as LunaLib and Console above: LazyFontCache classloads only when a
+// caller invokes it, so a mod that never draws cached text and never ships
+// LazyLib never touches it, while the game classloader provides the jar at
+// runtime for those that do. testRuntimeOnly so the class can load under test.
+def lazyLibJarFile = file("${project.ext.starsectorRoot}/mods/lw_lazylib/jars/LazyLib.jar")
+
 dependencies {
     compileOnly files(lunaLibJarFile)
     testCompileOnly files(lunaLibJarFile)
@@ -30,6 +38,10 @@ dependencies {
     compileOnly consoleCommandsJars
     testCompileOnly consoleCommandsJars
     testRuntimeOnly consoleCommandsJars
+
+    compileOnly files(lazyLibJarFile)
+    testCompileOnly files(lazyLibJarFile)
+    testRuntimeOnly files(lazyLibJarFile)
 }
 
 jacocoTestReport {
