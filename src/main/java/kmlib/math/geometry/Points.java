@@ -47,6 +47,40 @@ public final class Points {
     }
 
     /**
+     * The combined extent of several point groups projected onto an axis, as
+     * {@code {min, max}} - the lowest and highest projection across every point of every
+     * group. Generalises {@link #projectExtentOnto} to a shape made of several clouds (a
+     * polygon's outer ring plus its holes, a multi-part region): the union spans them
+     * all, so {@code max - min} is the whole shape's width along the axis.
+     *
+     * <p>The axis-length and reference-point remarks on {@link #projectExtentOnto} carry
+     * over unchanged, since each group projects the same way.
+     *
+     * @param pointGroups the groups of {@code {x, y}} points to project; must be
+     *                    non-empty, and each group must itself be non-empty
+     * @param axisX       x of the direction to project onto
+     * @param axisY       y of the direction to project onto
+     * @return the {@code {min, max}} projections across all groups
+     * @throws IllegalArgumentException if {@code pointGroups} is empty, or any group is
+     *         empty (an extent is undefined with nothing to project)
+     */
+    public static double[] projectCombinedExtentOnto(List<List<double[]>> pointGroups,
+            double axisX, double axisY) {
+        if (pointGroups.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Cannot project a combined extent of no point groups");
+        }
+        var min = Double.POSITIVE_INFINITY;
+        var max = Double.NEGATIVE_INFINITY;
+        for (var group : pointGroups) {
+            var extent = projectExtentOnto(group, axisX, axisY);
+            min = Math.min(min, extent[0]);
+            max = Math.max(max, extent[1]);
+        }
+        return new double[] {min, max};
+    }
+
+    /**
      * The Euclidean distance between {@code (x1, y1)} and {@code (x2, y2)} - the
      * length of the vector between them.
      */

@@ -262,6 +262,48 @@ class PointsTest {
     }
 
     @Nested
+    class ProjectCombinedExtentOnto {
+        @Test
+        void projectCombinedExtentOntoUnionsTheGroupsExtents() {
+            // Two groups projected onto the x-axis: the first spans x 1..4, the second
+            // x 6..9, so the combined extent is {1, 9}.
+            var extent = Points.projectCombinedExtentOnto(
+                    List.of(
+                            List.of(new double[] {1, 5}, new double[] {4, 2}),
+                            List.of(new double[] {6, 0}, new double[] {9, 3})),
+                    1, 0);
+
+            assertThat(extent[0]).isCloseTo(1.0, within(1e-12));
+            assertThat(extent[1]).isCloseTo(9.0, within(1e-12));
+        }
+
+        @Test
+        void projectCombinedExtentOntoMatchesTheSingleGroupProjection() {
+            // One group reduces to the single-cloud projection, so the combined extent
+            // equals projectExtentOnto on that group.
+            var group = List.of(new double[] {1, 5}, new double[] {7, 2}, new double[] {4, 9});
+
+            assertThat(Points.projectCombinedExtentOnto(List.of(group), 0, 1))
+                    .containsExactly(Points.projectExtentOnto(group, 0, 1));
+        }
+
+        @Test
+        void projectCombinedExtentOntoThrowsForNoGroups() {
+            assertThatThrownBy(() -> Points.projectCombinedExtentOnto(List.of(), 1, 0))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        void projectCombinedExtentOntoThrowsWhenAGroupIsEmpty() {
+            // An empty group has no extent to contribute, so the projection rejects it
+            // rather than folding in a nonsensical infinite bound.
+            assertThatThrownBy(() -> Points.projectCombinedExtentOnto(
+                    List.of(List.of(new double[] {1, 2}), List.of()), 1, 0))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+    }
+
+    @Nested
     class ComputeAngleDegrees {
         @Test
         void computeAngleDegreesVectorOverloadMatchesCoordinateForm() {
