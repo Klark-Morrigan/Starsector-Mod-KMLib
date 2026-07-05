@@ -13,7 +13,11 @@ import java.awt.Color;
  */
 public final class Colors {
 
-    private static final float MAX_CHANNEL = 255f;
+    // The inclusive maximum of an 8-bit colour channel, one source for both forms: the
+    // float normalizes channels to 0..1 for GL, the int clamps a scaled alpha back into
+    // Color's constructor range.
+    private static final int MAX_CHANNEL_VALUE = 255;
+    private static final float MAX_CHANNEL = MAX_CHANNEL_VALUE;
 
     private Colors() {
     }
@@ -39,5 +43,25 @@ public final class Colors {
                 color.getBlue() / MAX_CHANNEL,
                 color.getAlpha() / MAX_CHANNEL * alphaMult,
         };
+    }
+
+    /**
+     * A copy of {@code color} with its own alpha scaled by {@code alphaMult} - the AWT
+     * {@link Color} counterpart of {@link #getGlComponents}, for a consumer that needs a
+     * faded {@link Color} object (e.g. a LazyLib DrawableString's base colour) rather
+     * than GL float components. The red, green, and blue channels are unchanged; the
+     * scaled alpha is rounded to the nearest channel value and clamped into range, so an
+     * {@code alphaMult} above 1 saturates instead of throwing from {@link Color}'s
+     * constructor.
+     *
+     * @param color     the source colour; its own alpha is honoured
+     * @param alphaMult extra alpha scale (e.g. a map/viewport fade); 1 keeps the
+     *                  colour's own alpha
+     * @return a colour with the same RGB and the scaled, clamped alpha
+     */
+    public static Color scaleAlpha(Color color, float alphaMult) {
+        var scaledAlpha = Math.round(color.getAlpha() * alphaMult);
+        var clampedAlpha = Math.max(0, Math.min(MAX_CHANNEL_VALUE, scaledAlpha));
+        return new Color(color.getRed(), color.getGreen(), color.getBlue(), clampedAlpha);
     }
 }
