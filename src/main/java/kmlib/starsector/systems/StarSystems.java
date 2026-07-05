@@ -5,6 +5,7 @@ import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 
+import kmlib.starsector.markets.Markets;
 import kmlib.text.KmlibStrings;
 
 import java.util.ArrayList;
@@ -87,6 +88,50 @@ public final class StarSystems {
             }
         }
         return stars;
+    }
+
+    /**
+     * Whether the player knows of at least one owned colony in {@code system},
+     * under the normal known-to-player filter - the faction-presence read a map or
+     * territory rule uses to admit a system as inhabited.
+     *
+     * @param sector the sector whose economy is read; null (or a null economy)
+     *               yields false
+     * @param system the system to test; null yields false
+     * @return true when a known faction colony exists in the system
+     */
+    public static boolean hasKnownOwnedMarket(SectorAPI sector, StarSystemAPI system) {
+        return hasKnownOwnedMarket(sector, system, false);
+    }
+
+    /**
+     * Whether at least one owned colony exists in {@code system}. Composes the
+     * ownership filter {@link Markets#isOwnedColony} with the visibility filter
+     * {@link Markets#isKnownToPlayer}, so "counts as a known colony" means one thing
+     * across every caller. Short-circuits on the first qualifying market.
+     *
+     * @param sector                           the sector whose economy is read; null
+     *                                         (or a null economy) yields false
+     * @param system                           the system to test; null yields false
+     * @param shouldIncludeUndiscoveredMarkets whether an undiscovered colony still
+     *                                         counts (the "show all factions" dev
+     *                                         reveal); false applies the normal
+     *                                         known-to-player filter, true drops it so
+     *                                         an unfound colony counts too
+     * @return true when a qualifying faction colony exists in the system
+     */
+    public static boolean hasKnownOwnedMarket(SectorAPI sector, StarSystemAPI system,
+            boolean shouldIncludeUndiscoveredMarkets) {
+        if (sector == null || system == null || sector.getEconomy() == null) {
+            return false;
+        }
+        for (var market : sector.getEconomy().getMarkets(system)) {
+            if (Markets.isOwnedColony(market)
+                    && (shouldIncludeUndiscoveredMarkets || Markets.isKnownToPlayer(market))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

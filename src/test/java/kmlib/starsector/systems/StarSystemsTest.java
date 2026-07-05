@@ -1,10 +1,13 @@
 package kmlib.starsector.systems;
 
 import com.fs.starfarer.api.campaign.CampaignFleetAPI;
+import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.PlanetAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
+import com.fs.starfarer.api.campaign.econ.EconomyAPI;
+import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -19,10 +22,10 @@ import static org.mockito.Mockito.when;
 
 /**
  * Pins the contracts of {@link StarSystems#getHyperspacePositions},
- * {@link StarSystems#getPlayerStarSystem}, {@link StarSystems#getStars}, and
- * {@link StarSystems#find}. Each method's cases live in a {@link Nested} group
- * so the suite reports as a per-method tree; the shared mock builders stay on
- * the outer class.
+ * {@link StarSystems#getPlayerStarSystem}, {@link StarSystems#getStars},
+ * {@link StarSystems#hasKnownOwnedMarket}, and {@link StarSystems#find}. Each
+ * method's cases live in a {@link Nested} group so the suite reports as a
+ * per-method tree; the shared mock builders stay on the outer class.
  */
 final class StarSystemsTest {
 
@@ -114,6 +117,70 @@ final class StarSystemsTest {
     }
 
     @Nested
+    class HasKnownOwnedMarket {
+        @Test
+        void returns_true_for_a_visible_owned_market() {
+            var sector = sectorWithMarkets(visibleColony());
+
+            assertThat(StarSystems.hasKnownOwnedMarket(sector, onlySystem(sector))).isTrue();
+        }
+
+        @Test
+        void returns_true_when_one_of_several_markets_qualifies() {
+            var sector = sectorWithMarkets(conditionOnlyMarket(), visibleColony());
+
+            assertThat(StarSystems.hasKnownOwnedMarket(sector, onlySystem(sector))).isTrue();
+        }
+
+        @Test
+        void returns_false_for_a_condition_only_market() {
+            var sector = sectorWithMarkets(conditionOnlyMarket());
+
+            assertThat(StarSystems.hasKnownOwnedMarket(sector, onlySystem(sector))).isFalse();
+        }
+
+        @Test
+        void returns_false_for_an_undiscovered_concealed_station() {
+            var sector = sectorWithMarkets(concealedStation());
+
+            assertThat(StarSystems.hasKnownOwnedMarket(sector, onlySystem(sector))).isFalse();
+        }
+
+        @Test
+        void returns_true_for_a_concealed_station_when_including_undiscovered_markets() {
+            var sector = sectorWithMarkets(concealedStation());
+
+            assertThat(StarSystems.hasKnownOwnedMarket(sector, onlySystem(sector), true)).isTrue();
+        }
+
+        @Test
+        void returns_false_for_a_system_with_no_markets() {
+            var sector = sectorWithMarkets();
+
+            assertThat(StarSystems.hasKnownOwnedMarket(sector, onlySystem(sector))).isFalse();
+        }
+
+        @Test
+        void returns_false_for_a_null_sector() {
+            assertThat(StarSystems.hasKnownOwnedMarket(null, mock(StarSystemAPI.class))).isFalse();
+        }
+
+        @Test
+        void returns_false_for_a_null_system() {
+            assertThat(StarSystems.hasKnownOwnedMarket(mock(SectorAPI.class), null)).isFalse();
+        }
+
+        @Test
+        void returns_false_when_the_sector_has_no_economy() {
+            var sectorMock = mock(SectorAPI.class);
+            when(sectorMock.getEconomy()).thenReturn(null);
+
+            assertThat(StarSystems.hasKnownOwnedMarket(sectorMock, mock(StarSystemAPI.class)))
+                    .isFalse();
+        }
+    }
+
+    @Nested
     class Find {
         @Test
         void returns_the_tagged_entity_whose_id_matches() {
@@ -152,6 +219,52 @@ final class StarSystemsTest {
 
             assertThat(StarSystems.find(systemMock, "gate", null)).isNull();
         }
+    }
+
+    private static StarSystemAPI onlySystem(SectorAPI sector) {
+        return sector.getStarSystems().get(0);
+    }
+
+    // Wires a sector with one system whose economy holds the given markets, so a
+    // hasKnownOwnedMarket read resolves through getEconomy().getMarkets(system).
+    private static SectorAPI sectorWithMarkets(MarketAPI... markets) {
+        var systemMock = mock(StarSystemAPI.class);
+        var economyMock = mock(EconomyAPI.class);
+        when(economyMock.getMarkets(systemMock)).thenReturn(List.of(markets));
+        var sectorMock = mock(SectorAPI.class);
+        when(sectorMock.getStarSystems()).thenReturn(List.of(systemMock));
+        when(sectorMock.getEconomy()).thenReturn(economyMock);
+        return sectorMock;
+    }
+
+    // A visible owned colony: a faction owns it, it is not condition-only, and its
+    // discovered entity passes the known-to-player gate.
+    private static MarketAPI visibleColony() {
+        return buildColony(false, false, false);
+    }
+
+    // A bare planet's condition-only placeholder: owned but not a colony, so it is
+    // filtered out by the ownership arm.
+    private static MarketAPI conditionOnlyMarket() {
+        return buildColony(true, false, false);
+    }
+
+    // A concealed station: a hidden market on a still-discoverable entity, failing
+    // the known-to-player gate until the player finds it.
+    private static MarketAPI concealedStation() {
+        return buildColony(false, true, true);
+    }
+
+    private static MarketAPI buildColony(boolean isConditionOnly, boolean isHidden,
+            boolean isEntityDiscoverable) {
+        var entityMock = mock(SectorEntityToken.class);
+        when(entityMock.isDiscoverable()).thenReturn(isEntityDiscoverable);
+        var marketMock = mock(MarketAPI.class);
+        when(marketMock.getFaction()).thenReturn(mock(FactionAPI.class));
+        when(marketMock.isPlanetConditionMarketOnly()).thenReturn(isConditionOnly);
+        when(marketMock.isHidden()).thenReturn(isHidden);
+        when(marketMock.getPrimaryEntity()).thenReturn(entityMock);
+        return marketMock;
     }
 
     private static SectorEntityToken buildEntity(String id) {
