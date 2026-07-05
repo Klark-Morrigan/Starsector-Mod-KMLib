@@ -1,5 +1,6 @@
 package kmlib.starsector.markets;
 
+import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
@@ -14,12 +15,42 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * Pins the contracts of {@link Markets#hasAttachedStation},
- * {@link Markets#getStabilityFraction} and {@link Markets#isKnownToPlayer}. The
- * cases live in a {@link Nested} group per method so the suite reports as a
- * per-method tree; the shared mock builders stay on the outer class.
+ * Pins the contracts of {@link Markets#isOwnedColony},
+ * {@link Markets#hasAttachedStation}, {@link Markets#getStabilityFraction} and
+ * {@link Markets#isKnownToPlayer}. The cases live in a {@link Nested} group per
+ * method so the suite reports as a per-method tree; the shared mock builders stay
+ * on the outer class.
  */
 final class MarketsTest {
+
+    @Nested
+    class IsOwnedColony {
+        @Test
+        void returns_true_for_a_faction_owned_non_condition_market() {
+            var market = buildOwnedColony(faction("hegemony"), false);
+
+            assertThat(Markets.isOwnedColony(market)).isTrue();
+        }
+
+        @Test
+        void returns_false_for_a_condition_only_market() {
+            var market = buildOwnedColony(faction("hegemony"), true);
+
+            assertThat(Markets.isOwnedColony(market)).isFalse();
+        }
+
+        @Test
+        void returns_false_when_no_faction_owns_the_market() {
+            var market = buildOwnedColony(null, false);
+
+            assertThat(Markets.isOwnedColony(market)).isFalse();
+        }
+
+        @Test
+        void returns_false_for_a_null_market() {
+            assertThat(Markets.isOwnedColony(null)).isFalse();
+        }
+    }
 
     @Nested
     class HasAttachedStation {
@@ -132,6 +163,19 @@ final class MarketsTest {
         void returns_false_for_a_null_market() {
             assertThat(Markets.isKnownToPlayer(null)).isFalse();
         }
+    }
+
+    private static MarketAPI buildOwnedColony(FactionAPI faction, boolean isConditionOnly) {
+        var marketMock = mock(MarketAPI.class);
+        when(marketMock.getFaction()).thenReturn(faction);
+        when(marketMock.isPlanetConditionMarketOnly()).thenReturn(isConditionOnly);
+        return marketMock;
+    }
+
+    private static FactionAPI faction(String id) {
+        var factionMock = mock(FactionAPI.class);
+        when(factionMock.getId()).thenReturn(id);
+        return factionMock;
     }
 
     private static MarketAPI buildMarket(SectorEntityToken primaryEntity, boolean isHidden) {

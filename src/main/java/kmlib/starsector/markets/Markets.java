@@ -33,6 +33,26 @@ public final class Markets {
     }
 
     /**
+     * Whether a market is a colony a faction owns, rather than a bare planet's
+     * placeholder.
+     *
+     * <p>The "counts as a colony" filter map and territory logic share: a faction
+     * must own it, and it must not be the condition-only market every uninhabited
+     * planet carries to hold its hazard and atmosphere conditions. This is
+     * ownership alone - it says nothing about whether the player has found the
+     * colony yet; compose it with {@link #isKnownToPlayer} when visibility matters.
+     *
+     * @param market the market to test; null (or one with no owning faction) yields
+     *               false
+     * @return true when a faction owns the market and it is not condition-only
+     */
+    public static boolean isOwnedColony(MarketAPI market) {
+        return market != null
+                && market.getFaction() != null
+                && !market.isPlanetConditionMarketOnly();
+    }
+
+    /**
      * Whether a market owns an attached defensive station.
      *
      * <p>Reads the market's connected entities - the ownership link the game
