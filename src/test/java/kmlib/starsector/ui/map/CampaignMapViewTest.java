@@ -23,8 +23,8 @@ import static org.mockito.Mockito.when;
 
 /**
  * Pins the sector-map gate across each way it can fail closed - no sector, no campaign UI, a
- * non-map tab, an open dialog, the Starscape filter on, a star-system sub-view, or UI-data
- * that is not the game's concrete campaign-UI-data class - and the one way it opens: the
+ * non-map tab, the Starscape filter on, a star-system sub-view, or UI-data that is not the
+ * game's concrete campaign-UI-data class - and the one way it opens: the
  * sector sub-view of the map tab with Starscape off. The concrete UI-data object is the real
  * class, constructed directly: its field initializers are pure data, the live filter object
  * it owns is mutable, and the location has a real setter. Mocking or subclassing it is not
@@ -48,9 +48,8 @@ class CampaignMapViewTest {
         // so that static field init and that warn path do not dereference null under the mock.
         globalMock.when(() -> Global.getLogger(any(Class.class))).thenReturn(mock(Logger.class));
         when(sectorMock.getCampaignUI()).thenReturn(campaignUiMock);
-        // The map tab is open with no dialog by default; each test relaxes one condition.
+        // The map tab is the active core tab by default; each test relaxes one condition.
         when(campaignUiMock.getCurrentCoreTab()).thenReturn(CoreUITabId.MAP);
-        when(campaignUiMock.isShowingDialog()).thenReturn(false);
     }
 
     @AfterEach
@@ -77,13 +76,6 @@ class CampaignMapViewTest {
         @Test
         void isFalseWhenTheActiveTabIsNotTheMap() {
             when(campaignUiMock.getCurrentCoreTab()).thenReturn(CoreUITabId.FLEET);
-
-            assertThat(CampaignMapView.isSectorMapWithStarscapeOff()).isFalse();
-        }
-
-        @Test
-        void isFalseWhenADialogIsShowing() {
-            when(campaignUiMock.isShowingDialog()).thenReturn(true);
 
             assertThat(CampaignMapView.isSectorMapWithStarscapeOff()).isFalse();
         }
@@ -138,13 +130,13 @@ class CampaignMapViewTest {
         }
 
         @Test
-        void composesAllFourSignals() {
+        void composesTheThreeSignals() {
             var locationMock = mock(LocationAPI.class);
             when(locationMock.isHyperspace()).thenReturn(true);
             stubUiData(true, locationMock);
 
             assertThat(CampaignMapView.describeViewState())
-                    .isEqualTo("tab=MAP dialog=false starscape=true mapLocation=hyperspace");
+                    .isEqualTo("tab=MAP starscape=true mapLocation=hyperspace");
         }
 
         @Test
@@ -154,7 +146,7 @@ class CampaignMapViewTest {
             when(sectorMock.getUIData()).thenReturn(mock(PersistentUIDataAPI.class));
 
             assertThat(CampaignMapView.describeViewState())
-                    .isEqualTo("tab=MAP dialog=false starscape=unreadable mapLocation=null");
+                    .isEqualTo("tab=MAP starscape=unreadable mapLocation=null");
         }
 
         @Test
@@ -165,7 +157,7 @@ class CampaignMapViewTest {
             stubUiData(false, locationMock);
 
             assertThat(CampaignMapView.describeViewState())
-                    .isEqualTo("tab=MAP dialog=false starscape=false mapLocation=system_corvus");
+                    .isEqualTo("tab=MAP starscape=false mapLocation=system_corvus");
         }
     }
 

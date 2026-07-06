@@ -14,8 +14,8 @@ import org.apache.log4j.Logger;
  * Starscape filter off? Custom terrain painting only shows there, so that is the one moment
  * a companion overlay belongs on screen.
  *
- * <p>Two signals are published API ({@code getCurrentCoreTab}, {@code isShowingDialog}); the
- * sub-view and Starscape-filter state live on the game's concrete campaign-UI-data class,
+ * <p>The active tab is published API ({@code getCurrentCoreTab}); the sub-view and
+ * Starscape-filter state live on the game's concrete campaign-UI-data class,
  * {@link CampaignUIPersistentData}, which the API jar does not publish. The port casts to it
  * directly - the game's script classloader denies {@code java.lang.reflect} to mod code, so
  * a reflective read is impossible, while loading core classes is permitted and the class is
@@ -35,8 +35,8 @@ public final class CampaignMapView {
     }
 
     /**
-     * @return whether the sector map is the active core tab, no dialog is open, the Sector
-     *         (not System) sub-view is showing, and the Starscape filter is off
+     * @return whether the sector map is the active core tab, the Sector (not System) sub-view
+     *         is showing, and the Starscape filter is off
      */
     public static boolean isSectorMapWithStarscapeOff() {
         var sector = Global.getSector();
@@ -44,8 +44,11 @@ public final class CampaignMapView {
             return false;
         }
         CampaignUIAPI campaignUi = sector.getCampaignUI();
-        if (campaignUi == null || campaignUi.getCurrentCoreTab() != CoreUITabId.MAP
-                || campaignUi.isShowingDialog()) {
+        // getCurrentCoreTab() == MAP is the whole "the map is the active view" signal. Do not
+        // also gate on isShowingDialog(): the map is routinely viewed in a dialog-active
+        // context (opened from an interaction), where that flag is true the entire time, so
+        // gating on it would hide the overlay on the very screen it belongs to.
+        if (campaignUi == null || campaignUi.getCurrentCoreTab() != CoreUITabId.MAP) {
             return false;
         }
         var uiData = readConcreteUiData();
@@ -64,9 +67,9 @@ public final class CampaignMapView {
 
     /**
      * Renders the raw signals behind {@link #isSectorMapWithStarscapeOff()} as one compact
-     * line, e.g. {@code "tab=MAP dialog=false starscape=true mapLocation=hyperspace"}. The
-     * gate fails closed by design, so when an overlay is unexpectedly hidden this is the
-     * surface a consumer logs to see which signal is blocking it.
+     * line, e.g. {@code "tab=MAP starscape=true mapLocation=hyperspace"}. The gate fails
+     * closed by design, so when an overlay is unexpectedly hidden this is the surface a
+     * consumer logs to see which signal is blocking it.
      *
      * @return the current view-state signals, or a short reason when they cannot be read
      */
@@ -83,7 +86,6 @@ public final class CampaignMapView {
         var filterData = uiData == null ? null : uiData.getMapFilterData();
         var mapLocation = uiData == null ? null : uiData.getCampaignMapLocation();
         return "tab=" + campaignUi.getCurrentCoreTab()
-                + " dialog=" + campaignUi.isShowingDialog()
                 + " starscape=" + (filterData == null ? "unreadable" : filterData.starscape)
                 + " mapLocation=" + describeLocation(mapLocation);
     }
