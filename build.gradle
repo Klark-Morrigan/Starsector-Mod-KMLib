@@ -30,6 +30,13 @@ def consoleCommandsJars = fileTree(
 // runtime for those that do. testRuntimeOnly so the class can load under test.
 def lazyLibJarFile = file("${project.ext.starsectorRoot}/mods/lw_lazylib/jars/LazyLib.jar")
 
+// org.json backs LunaSettingsWriter's write path: LunaLib's backing store is a
+// LazyLib CommonDataJSONObject, which extends org.json.JSONObject, so javac must
+// resolve JSONObject#put and JSONException to compile the write. The classes ship
+// in starsector-core/json.jar, provided by the game classloader at runtime, so
+// compileOnly like the rest (testRuntime already sees it via starsectorCoreJars).
+def jsonJarFile = file("${project.ext.starsectorRoot}/starsector-core/json.jar")
+
 // The game's core (obfuscated) jar backs CampaignMapView's cast to the concrete
 // campaign-UI-data class, which the API jar does not publish. Reflection is not an
 // option in its place: the game's script classloader denies java.lang.reflect to
@@ -55,6 +62,9 @@ dependencies {
     compileOnly files(lazyLibJarFile)
     testCompileOnly files(lazyLibJarFile)
     testRuntimeOnly files(lazyLibJarFile)
+
+    compileOnly files(jsonJarFile)
+    testCompileOnly files(jsonJarFile)
 
     compileOnly files(starfarerObfJarFile)
     testCompileOnly files(starfarerObfJarFile)
