@@ -3,7 +3,11 @@ package kmlib.starsector.markets;
 import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
+import com.fs.starfarer.api.combat.StatBonus;
+import com.fs.starfarer.api.fleet.MutableMarketStatsAPI;
+import com.fs.starfarer.api.impl.campaign.ids.Stats;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
+import com.fs.starfarer.api.util.DynamicStatsAPI;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -163,6 +167,96 @@ final class MarketsTest {
         void returns_false_for_a_null_market() {
             assertThat(Markets.isKnownToPlayer(null)).isFalse();
         }
+    }
+
+    @Nested
+    class ReadPatrolCounts {
+        @Test
+        void reads_the_three_tier_counts_from_the_dynamic_stats() {
+            var market = marketWithPatrolMods(4.0f, 3.0f, 1.0f);
+
+            assertThat(Markets.readPatrolCounts(market)).isEqualTo(new PatrolCounts(4, 3, 1));
+        }
+
+        @Test
+        void truncates_a_fractional_tier_count_to_int() {
+            // Vanilla getMaxPatrols casts the effective mod to int, so a fractional
+            // count floors rather than rounds.
+            var market = marketWithPatrolMods(2.9f, 1.4f, 0.6f);
+
+            assertThat(Markets.readPatrolCounts(market)).isEqualTo(new PatrolCounts(2, 1, 0));
+        }
+
+        @Test
+        void floors_a_negative_tier_count_to_zero() {
+            var market = marketWithPatrolMods(-1.0f, 2.0f, 0.0f);
+
+            assertThat(Markets.readPatrolCounts(market)).isEqualTo(new PatrolCounts(0, 2, 0));
+        }
+
+        @Test
+        void treats_a_missing_tier_mod_as_zero() {
+            // A market with no military industry has no patrol mods; getMod returns
+            // null for every tier.
+            var market = marketWithDynamic(mock(DynamicStatsAPI.class));
+
+            assertThat(Markets.readPatrolCounts(market)).isEqualTo(PatrolCounts.NONE);
+        }
+
+        @Test
+        void returns_none_for_a_market_with_no_dynamic_stats() {
+            var statsMock = mock(MutableMarketStatsAPI.class);
+            when(statsMock.getDynamic()).thenReturn(null);
+            var marketMock = mock(MarketAPI.class);
+            when(marketMock.getStats()).thenReturn(statsMock);
+
+            assertThat(Markets.readPatrolCounts(marketMock)).isEqualTo(PatrolCounts.NONE);
+        }
+
+        @Test
+        void returns_none_for_a_market_with_no_stats() {
+            var marketMock = mock(MarketAPI.class);
+            when(marketMock.getStats()).thenReturn(null);
+
+            assertThat(Markets.readPatrolCounts(marketMock)).isEqualTo(PatrolCounts.NONE);
+        }
+
+        @Test
+        void returns_none_for_a_null_market() {
+            assertThat(Markets.readPatrolCounts(null)).isEqualTo(PatrolCounts.NONE);
+        }
+    }
+
+    // A market whose dynamic stats carry the three patrol-tier mods at the given
+    // effective values (light, medium, heavy).
+    private static MarketAPI marketWithPatrolMods(float light, float medium, float heavy) {
+        // Build each tier's mock before the getMod stubbing: patrolMod() stubs a mock
+        // of its own, and Mockito rejects a nested when(...) inside a thenReturn(...).
+        var lightMod = patrolMod(light);
+        var mediumMod = patrolMod(medium);
+        var heavyMod = patrolMod(heavy);
+        var dynamicMock = mock(DynamicStatsAPI.class);
+        when(dynamicMock.getMod(Stats.PATROL_NUM_LIGHT_MOD)).thenReturn(lightMod);
+        when(dynamicMock.getMod(Stats.PATROL_NUM_MEDIUM_MOD)).thenReturn(mediumMod);
+        when(dynamicMock.getMod(Stats.PATROL_NUM_HEAVY_MOD)).thenReturn(heavyMod);
+        return marketWithDynamic(dynamicMock);
+    }
+
+    // Wires a market whose stats expose the given dynamic stats, the seam the patrol
+    // read walks.
+    private static MarketAPI marketWithDynamic(DynamicStatsAPI dynamic) {
+        var statsMock = mock(MutableMarketStatsAPI.class);
+        when(statsMock.getDynamic()).thenReturn(dynamic);
+        var marketMock = mock(MarketAPI.class);
+        when(marketMock.getStats()).thenReturn(statsMock);
+        return marketMock;
+    }
+
+    // A patrol-count mod whose effective value at base 0 is the given count.
+    private static StatBonus patrolMod(float effective) {
+        var modMock = mock(StatBonus.class);
+        when(modMock.computeEffective(0.0f)).thenReturn(effective);
+        return modMock;
     }
 
     private static MarketAPI buildOwnedColony(FactionAPI faction, boolean isConditionOnly) {

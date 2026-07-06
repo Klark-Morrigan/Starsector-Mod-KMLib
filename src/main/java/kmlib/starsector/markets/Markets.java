@@ -1,7 +1,9 @@
 package kmlib.starsector.markets;
 
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
+import com.fs.starfarer.api.impl.campaign.ids.Stats;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
+import com.fs.starfarer.api.util.DynamicStatsAPI;
 
 /**
  * Queries over a single market's state.
@@ -125,5 +127,44 @@ public final class Markets {
         var entity = market.getPrimaryEntity();
         var isEntityDiscovered = entity == null || !entity.isDiscoverable();
         return isEntityDiscovered || !market.isHidden();
+    }
+
+    /**
+     * A market's configured patrol strength, read from the economy as the three
+     * vanilla size-tier counts.
+     *
+     * <p>The reusable half of any "how much military does this colony field" read:
+     * the light, medium, and heavy patrol counts vanilla's military industries
+     * write onto the market's dynamic stats. This reads that static configuration -
+     * what the colony is set up to field - rather than the fleets currently in
+     * flight, so it is stable across a pass. The read mirrors vanilla's own
+     * {@code MilitaryBase.getMaxPatrols}: each tier's effective mod truncated to an
+     * integer count, so this reads the same numbers the game would spawn against.
+     *
+     * @param market the market to read; null (or one with no stats) yields
+     *               {@link PatrolCounts#NONE}
+     * @return the market's small, medium, and large patrol counts
+     */
+    public static PatrolCounts readPatrolCounts(MarketAPI market) {
+        if (market == null || market.getStats() == null
+                || market.getStats().getDynamic() == null) {
+            return PatrolCounts.NONE;
+        }
+        var dynamic = market.getStats().getDynamic();
+        return new PatrolCounts(
+                readPatrolTierCount(dynamic, Stats.PATROL_NUM_LIGHT_MOD),
+                readPatrolTierCount(dynamic, Stats.PATROL_NUM_MEDIUM_MOD),
+                readPatrolTierCount(dynamic, Stats.PATROL_NUM_HEAVY_MOD));
+    }
+
+    // One patrol tier's count off the dynamic stats, mirroring vanilla's truncation
+    // of the effective mod to an int. A missing mod (no military industry) or a
+    // negative reading floors to zero, so a count is never negative.
+    private static int readPatrolTierCount(DynamicStatsAPI dynamic, String modKey) {
+        var mod = dynamic.getMod(modKey);
+        if (mod == null) {
+            return 0;
+        }
+        return Math.max(0, (int) mod.computeEffective(0.0f));
     }
 }
