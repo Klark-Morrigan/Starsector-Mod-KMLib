@@ -30,6 +30,19 @@ def consoleCommandsJars = fileTree(
 // runtime for those that do. testRuntimeOnly so the class can load under test.
 def lazyLibJarFile = file("${project.ext.starsectorRoot}/mods/lw_lazylib/jars/LazyLib.jar")
 
+// The game's core (obfuscated) jar backs CampaignMapView's cast to the concrete
+// campaign-UI-data class, which the API jar does not publish. Reflection is not an
+// option in its place: the game's script classloader denies java.lang.reflect to
+// mod code outright, while loading core classes is permitted. The classes KMLib
+// touches are marked DoNotObfuscate, so their names are stable across game builds.
+// compileOnly: the game classloader provides the jar at runtime. This coupling
+// stays in KMLib (not consumer mods) so exactly one place compiles against the
+// core jar. Test runtime already sees it via the shared starsectorCoreJars set.
+// fs.common_obf.jar rides along because the core classes implement its
+// DoNotObfuscate marker, which javac must resolve to compile a cast to them.
+def starfarerObfJarFile = file("${project.ext.starsectorRoot}/starsector-core/starfarer_obf.jar")
+def fsCommonObfJarFile = file("${project.ext.starsectorRoot}/starsector-core/fs.common_obf.jar")
+
 dependencies {
     compileOnly files(lunaLibJarFile)
     testCompileOnly files(lunaLibJarFile)
@@ -42,6 +55,12 @@ dependencies {
     compileOnly files(lazyLibJarFile)
     testCompileOnly files(lazyLibJarFile)
     testRuntimeOnly files(lazyLibJarFile)
+
+    compileOnly files(starfarerObfJarFile)
+    testCompileOnly files(starfarerObfJarFile)
+
+    compileOnly files(fsCommonObfJarFile)
+    testCompileOnly files(fsCommonObfJarFile)
 }
 
 jacocoTestReport {
