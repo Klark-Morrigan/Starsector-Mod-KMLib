@@ -30,6 +30,17 @@ def consoleCommandsJars = fileTree(
 // runtime for those that do. testRuntimeOnly so the class can load under test.
 def lazyLibJarFile = file("${project.ext.starsectorRoot}/mods/lw_lazylib/jars/LazyLib.jar")
 
+// Random Assortment of Things backs RandomAssortmentOfThingsMatcher (and, through
+// it, StarSystems' reachability read): compiling against RAT's Abyssal Fracture
+// type lets a caller treat a fracture as a means of arrival. Soft dependency, the
+// same stance as LunaLib/LazyLib/Console above - KMLib declares no RAT mod
+// dependency, the matcher gates every use behind a mod-enabled check so a RAT-free
+// install never resolves the type, and the game classloader supplies the jar at
+// runtime for installs that ship it. Globbed since the install folder is
+// version-stamped; testRuntimeOnly so the matcher's tests can load under test.
+def ratJars = fileTree(
+        dir: "${project.ext.starsectorRoot}/mods", include: ['**/jars/RandomAssortmentofThings.jar'])
+
 // org.json backs LunaSettingsWriter's write path: LunaLib's backing store is a
 // LazyLib CommonDataJSONObject, which extends org.json.JSONObject, so javac must
 // resolve JSONObject#put and JSONException to compile the write. The classes ship
@@ -58,6 +69,10 @@ dependencies {
     compileOnly consoleCommandsJars
     testCompileOnly consoleCommandsJars
     testRuntimeOnly consoleCommandsJars
+
+    compileOnly ratJars
+    testCompileOnly ratJars
+    testRuntimeOnly ratJars
 
     compileOnly files(lazyLibJarFile)
     testCompileOnly files(lazyLibJarFile)
