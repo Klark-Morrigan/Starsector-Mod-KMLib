@@ -14,8 +14,6 @@ import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.impl.campaign.GateEntityPlugin;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
 
-import assortment_of_things.abyss.entities.hyper.AbyssalFracture;
-
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.lwjgl.util.vector.Vector2f;
@@ -23,6 +21,8 @@ import org.mockito.MockedStatic;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import assortment_of_things.abyss.entities.hyper.AbyssalFracture;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
