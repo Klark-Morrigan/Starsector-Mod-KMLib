@@ -60,8 +60,11 @@ public final class StarSystems {
      * {@link #getHyperspacePositions}, for callers that must match a position back to
      * the system it belongs to (tracking motion, diffing a layout).
      *
-     * @param sector       the sector to read; null yields an empty map
-     * @param shouldInclude which systems to keep; a system it rejects is left out
+     * @param sector        the sector to read; null yields an empty map
+     * @param shouldInclude which systems to keep; a system it rejects is left out.
+     *                      Null applies no filter - every located system is kept,
+     *                      making this the id-keyed twin of
+     *                      {@link #getHyperspacePositions}
      * @return each selected system's {x, y} position keyed by id, in the sector's
      *         star-system order; a system with no location is skipped, having no
      *         position to record
@@ -74,7 +77,12 @@ public final class StarSystems {
         }
         for (var system : sector.getStarSystems()) {
             var location = system.getLocation();
-            if (location == null || !shouldInclude.test(system)) {
+            if (location == null) {
+                continue;
+            }
+            // A null predicate means no scoping was asked for, so every located
+            // system is kept rather than the walk failing on the missing filter.
+            if (shouldInclude != null && !shouldInclude.test(system)) {
                 continue;
             }
             positions.put(system.getId(), new double[] {location.x, location.y});

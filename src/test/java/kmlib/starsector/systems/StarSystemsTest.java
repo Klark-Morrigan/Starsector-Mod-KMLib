@@ -102,6 +102,18 @@ final class StarSystemsTest {
         }
 
         @Test
+        void a_null_predicate_keeps_every_located_system() {
+            var a = systemAt("a", 1, 1);
+            var b = systemAt("b", 2, 2);
+            var sectorMock = mock(SectorAPI.class);
+            when(sectorMock.getStarSystems()).thenReturn(List.of(a, b));
+
+            var positions = StarSystems.collectPositionsById(sectorMock, null);
+
+            assertThat(positions).containsOnlyKeys("a", "b");
+        }
+
+        @Test
         void null_sector_yields_no_positions() {
             assertThat(StarSystems.collectPositionsById(null, system -> true)).isEmpty();
         }

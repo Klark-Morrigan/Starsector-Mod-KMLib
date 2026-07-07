@@ -39,7 +39,8 @@ public final class SystemMotionTracker {
      *
      * @param sector        the sector to walk; null observes nothing and reports no
      *                      change
-     * @param shouldInclude which systems are in scope for this poll
+     * @param shouldInclude which systems are in scope for this poll; null scopes in
+     *                      every system, tracking the whole sector's motion
      * @return true when a selected system started or stopped moving since the last
      *         poll; false while the moving set holds steady, including a system that
      *         merely keeps moving - it is already excluded, so nothing changes
