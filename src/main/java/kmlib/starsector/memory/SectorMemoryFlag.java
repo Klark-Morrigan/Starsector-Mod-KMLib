@@ -1,7 +1,5 @@
 package kmlib.starsector.memory;
 
-import com.fs.starfarer.api.Global;
-
 /**
  * A single boolean stored in sector memory, which serialises into the save, so a player's
  * choice survives reload. Wraps the raw {@code getMemoryWithoutUpdate} read/write behind a
@@ -32,11 +30,7 @@ public final class SectorMemoryFlag {
      *         read before the sector exists)
      */
     public boolean isSet() {
-        var sector = Global.getSector();
-        if (sector == null) {
-            return defaultValue;
-        }
-        var memory = sector.getMemoryWithoutUpdate();
+        var memory = SectorMemoryAccess.readSectorMemory();
         if (memory == null || !memory.contains(key)) {
             return defaultValue;
         }
@@ -50,11 +44,11 @@ public final class SectorMemoryFlag {
      * @param isSet the value to store
      */
     public void set(boolean isSet) {
-        var sector = Global.getSector();
-        if (sector == null) {
+        var memory = SectorMemoryAccess.readSectorMemory();
+        if (memory == null) {
             return;
         }
-        sector.getMemoryWithoutUpdate().set(key, isSet);
+        memory.set(key, isSet);
     }
 
     /** Flips the stored value between true and false. */
