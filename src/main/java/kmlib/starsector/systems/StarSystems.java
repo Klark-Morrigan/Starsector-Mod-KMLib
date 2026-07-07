@@ -9,7 +9,10 @@ import kmlib.starsector.markets.Markets;
 import kmlib.text.KmlibStrings;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Predicate;
 
 /**
  * Queries over a sector's star systems.
@@ -47,6 +50,34 @@ public final class StarSystems {
             if (location != null) {
                 positions.add(new double[] {location.x, location.y});
             }
+        }
+        return positions;
+    }
+
+    /**
+     * Collects the live hyperspace position of every star system the predicate
+     * selects, keyed by system id - the id-addressed counterpart of
+     * {@link #getHyperspacePositions}, for callers that must match a position back to
+     * the system it belongs to (tracking motion, diffing a layout).
+     *
+     * @param sector       the sector to read; null yields an empty map
+     * @param shouldInclude which systems to keep; a system it rejects is left out
+     * @return each selected system's {x, y} position keyed by id, in the sector's
+     *         star-system order; a system with no location is skipped, having no
+     *         position to record
+     */
+    public static Map<String, double[]> collectPositionsById(SectorAPI sector,
+            Predicate<StarSystemAPI> shouldInclude) {
+        var positions = new LinkedHashMap<String, double[]>();
+        if (sector == null) {
+            return positions;
+        }
+        for (var system : sector.getStarSystems()) {
+            var location = system.getLocation();
+            if (location == null || !shouldInclude.test(system)) {
+                continue;
+            }
+            positions.put(system.getId(), new double[] {location.x, location.y});
         }
         return positions;
     }

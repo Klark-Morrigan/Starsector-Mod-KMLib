@@ -61,6 +61,53 @@ final class StarSystemsTest {
     }
 
     @Nested
+    class CollectPositionsById {
+        @Test
+        void keys_each_selected_system_by_id_with_its_position() {
+            var a = systemAt("a", 10, 20);
+            var b = systemAt("b", -5, 7);
+            var sectorMock = mock(SectorAPI.class);
+            when(sectorMock.getStarSystems()).thenReturn(List.of(a, b));
+
+            var positions = StarSystems.collectPositionsById(sectorMock, system -> true);
+
+            assertThat(positions.get("a")).containsExactly(10.0, 20.0);
+            assertThat(positions.get("b")).containsExactly(-5.0, 7.0);
+        }
+
+        @Test
+        void excludes_systems_the_predicate_rejects() {
+            var kept = systemAt("kept", 1, 1);
+            var rejected = systemAt("rejected", 2, 2);
+            var sectorMock = mock(SectorAPI.class);
+            when(sectorMock.getStarSystems()).thenReturn(List.of(kept, rejected));
+
+            var positions = StarSystems.collectPositionsById(sectorMock,
+                    system -> system.getId().equals("kept"));
+
+            assertThat(positions).containsOnlyKeys("kept");
+        }
+
+        @Test
+        void skips_a_selected_system_without_a_location() {
+            var located = systemAt("located", 1, 1);
+            var unlocatedMock = mock(StarSystemAPI.class);
+            when(unlocatedMock.getLocation()).thenReturn(null);
+            var sectorMock = mock(SectorAPI.class);
+            when(sectorMock.getStarSystems()).thenReturn(List.of(located, unlocatedMock));
+
+            var positions = StarSystems.collectPositionsById(sectorMock, system -> true);
+
+            assertThat(positions).containsOnlyKeys("located");
+        }
+
+        @Test
+        void null_sector_yields_no_positions() {
+            assertThat(StarSystems.collectPositionsById(null, system -> true)).isEmpty();
+        }
+    }
+
+    @Nested
     class GetPlayerStarSystem {
         @Test
         void returns_the_fleets_system() {
@@ -277,6 +324,13 @@ final class StarSystemsTest {
         var planetMock = mock(PlanetAPI.class);
         when(planetMock.isStar()).thenReturn(isStar);
         return planetMock;
+    }
+
+    private static StarSystemAPI systemAt(String id, float x, float y) {
+        var systemMock = mock(StarSystemAPI.class);
+        when(systemMock.getId()).thenReturn(id);
+        when(systemMock.getLocation()).thenReturn(new Vector2f(x, y));
+        return systemMock;
     }
 
     private static SectorAPI buildSectorWithSystemsAt(float[]... points) {
