@@ -8,9 +8,9 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Pins {@link RadioRow}'s geometry: the row divides into equal-width segments left to right, and
- * a point resolves to the segment it falls in (the left one on a shared edge, none when outside
- * the row).
+ * Pins {@link RadioRow}'s geometry: the row divides into equal-width segments left to right, a
+ * point resolves to the segment it falls in (the left one on a shared edge, none when outside the
+ * row), and a press on the already-selected segment resolves to no actionable element.
  */
 class RadioRowTest {
 
@@ -48,6 +48,28 @@ class RadioRowTest {
         @Test
         void reportsNoSegmentForAPointOutsideTheRow() {
             assertThat(RadioRow.findSegmentIndexAt(row, 2, 150f, 10f))
+                    .isEqualTo(RadioRow.NO_SEGMENT);
+        }
+    }
+
+    @Nested
+    class FindHitElement {
+        private final Rectangle row = new Rectangle(0f, 0f, 100f, 20f);
+
+        @Test
+        void findsTheHitSegmentWhenItIsNotTheSelectedOne() {
+            assertThat(RadioRow.findHitElement(row, 2, 0, 75f, 10f)).isEqualTo(1);
+        }
+
+        @Test
+        void reportsNoElementWhenTheHitIsTheAlreadySelectedSegment() {
+            assertThat(RadioRow.findHitElement(row, 2, 1, 75f, 10f))
+                    .isEqualTo(RadioRow.NO_SEGMENT);
+        }
+
+        @Test
+        void reportsNoElementForAPointOutsideTheRow() {
+            assertThat(RadioRow.findHitElement(row, 2, 0, 150f, 10f))
                     .isEqualTo(RadioRow.NO_SEGMENT);
         }
     }

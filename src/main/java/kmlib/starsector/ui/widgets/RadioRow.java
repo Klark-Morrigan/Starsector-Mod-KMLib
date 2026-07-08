@@ -16,8 +16,8 @@ import java.util.List;
  * rules. The consumer owns which segment is selected and draws each segment's label; this owns
  * only where the segments sit and which one a point falls in.
  *
- * <p>{@link #splitIntoSegments} and {@link #findSegmentIndexAt} are pure geometry and
- * unit-tested; {@link #render} is the raw GL passthrough, exercised in-engine.
+ * <p>{@link #splitIntoSegments}, {@link #findSegmentIndexAt}, and {@link #findHitElement} are
+ * pure geometry and unit-tested; {@link #render} is the raw GL passthrough, exercised in-engine.
  */
 public final class RadioRow {
     /** {@link #findSegmentIndexAt} returns this when the point falls outside the row. */
@@ -69,6 +69,32 @@ public final class RadioRow {
             float pointY) {
         return Rectangles.findIndexContaining(splitIntoSegments(bounds, segmentCount), pointX,
                 pointY);
+    }
+
+    /**
+     * The actionable segment a press resolves to: the segment containing {@code (pointX, pointY)},
+     * or {@link #NO_SEGMENT} when the point falls outside the row OR lands on the segment already
+     * selected. Re-picking the lit option changes nothing - standard radio behaviour - so a press
+     * on it reports no segment, letting the caller consume the click yet fire no action. This is
+     * the selection rule folded into hit detection: the caller hands in the selection it already
+     * owns, and the widget alone decides which hits are worth acting on, so no consumer re-derives
+     * the "already on" check.
+     *
+     * @param bounds        the row's footprint
+     * @param segmentCount  how many equal cells the row is split into
+     * @param selectedIndex the currently lit segment, whose own cell is inert; a value outside the
+     *                      row (e.g. none selected) leaves every segment actionable
+     * @param pointX        the point's x, in UI coordinates
+     * @param pointY        the point's y, in UI coordinates
+     * @return the actionable segment's index, or {@link #NO_SEGMENT}
+     */
+    public static int findHitElement(Rectangle bounds, int segmentCount, int selectedIndex,
+            float pointX, float pointY) {
+        var hitIndex = findSegmentIndexAt(bounds, segmentCount, pointX, pointY);
+        if (hitIndex == selectedIndex) {
+            return NO_SEGMENT;
+        }
+        return hitIndex;
     }
 
     /**
