@@ -1,9 +1,8 @@
 package kmlib.starsector.ui.widgets;
 
-import com.fs.starfarer.api.util.Misc;
-
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.render.UiBoxes;
+import kmlib.starsector.ui.render.UiFill;
 
 import java.awt.Color;
 
@@ -14,7 +13,7 @@ import java.awt.Color;
  * that row and the label is drawn to its right by the consumer, which owns the text.
  *
  * <p>{@link #computeTickBox} is pure geometry and unit-tested; {@link #render} is the raw GL
- * passthrough (over {@link Misc#renderQuadAlpha} and {@link UiBoxes}), exercised in-engine.
+ * passthrough (over {@link UiFill#renderQuad} and {@link UiBoxes}), exercised in-engine.
  */
 public final class Checkbox {
     // The filled tick is inset inside the box outline by this fraction of the box height, so the
@@ -53,7 +52,7 @@ public final class Checkbox {
                 boxColor, opacity);
         if (isChecked) {
             var inset = box.height() * TICK_INSET_FRACTION;
-            Misc.renderQuadAlpha(box.x() + inset, box.y() + inset, box.width() - 2f * inset,
+            UiFill.renderQuad(box.x() + inset, box.y() + inset, box.width() - 2f * inset,
                     box.height() - 2f * inset, tickColor, opacity);
         }
     }

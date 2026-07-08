@@ -1,10 +1,9 @@
 package kmlib.starsector.ui.widgets;
 
-import com.fs.starfarer.api.util.Misc;
-
 import kmlib.math.geometry.Rectangle;
 import kmlib.math.geometry.Rectangles;
 import kmlib.starsector.ui.render.UiBoxes;
+import kmlib.starsector.ui.render.UiFill;
 
 import java.awt.Color;
 import java.util.ArrayList;
@@ -89,11 +88,11 @@ public final class RadioRow {
         for (var index = 0; index < segments.size(); index++) {
             var segment = segments.get(index);
             if (index == selectedIndex) {
-                Misc.renderQuadAlpha(segment.x(), segment.y(), segment.width(), segment.height(),
+                UiFill.renderQuad(segment.x(), segment.y(), segment.width(), segment.height(),
                         selectedColor, opacity * SELECTED_FILL_ALPHA_MULT);
             }
             if (index > 0) {
-                Misc.renderQuadAlpha(segment.x(), segment.y(), DIVIDER_THICKNESS,
+                UiFill.renderQuad(segment.x(), segment.y(), DIVIDER_THICKNESS,
                         segment.height(), frameColor, opacity * DIVIDER_ALPHA_MULT);
             }
         }

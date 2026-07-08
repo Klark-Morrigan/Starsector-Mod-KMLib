@@ -1,9 +1,8 @@
 package kmlib.starsector.ui.widgets;
 
-import com.fs.starfarer.api.util.Misc;
-
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.render.UiBoxes;
+import kmlib.starsector.ui.render.UiFill;
 
 import java.awt.Color;
 
@@ -14,8 +13,9 @@ import java.awt.Color;
  * the panel's contents inset into so they never overlap the stroke.
  *
  * <p>{@link #computeContentBounds} is pure geometry and unit-tested; {@link #render} is the raw
- * GL passthrough (over {@link Misc#renderQuadAlpha} and {@link UiBoxes}), exercised in-engine
- * like the other draw helpers.
+ * GL passthrough (over {@link UiFill#renderQuad} and {@link UiBoxes}), exercised in-engine like
+ * the other draw helpers. The fill composites over the map by its opacity, so a low opacity
+ * backdrop reveals what is behind it rather than staying an opaque block.
  */
 public final class BorderedBox {
     private BorderedBox() {
@@ -50,7 +50,7 @@ public final class BorderedBox {
      */
     public static void render(Rectangle outer, float borderWidth, Color fill, Color border,
             float opacity) {
-        Misc.renderQuadAlpha(outer.x(), outer.y(), outer.width(), outer.height(), fill, opacity);
+        UiFill.renderQuad(outer.x(), outer.y(), outer.width(), outer.height(), fill, opacity);
         if (borderWidth > 0f) {
             UiBoxes.renderBorder(outer.x(), outer.y(), outer.width(), outer.height(), borderWidth,
                     border, opacity);

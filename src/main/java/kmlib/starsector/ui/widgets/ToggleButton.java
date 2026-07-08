@@ -1,9 +1,8 @@
 package kmlib.starsector.ui.widgets;
 
-import com.fs.starfarer.api.util.Misc;
-
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.render.UiBoxes;
+import kmlib.starsector.ui.render.UiFill;
 
 import java.awt.Color;
 
@@ -13,7 +12,7 @@ import java.awt.Color;
  * {@link Rectangle#containsPoint}, and draws the On/Off caption; this owns only the fill and
  * frame, so the button's geometry is just the {@code bounds} it is handed.
  *
- * <p>All draws touch the GL surface (over {@link Misc#renderQuadAlpha} and {@link UiBoxes}), so
+ * <p>All draws touch the GL surface (over {@link UiFill#renderQuad} and {@link UiBoxes}), so
  * like the other raw-draw helpers this is exercised in-engine rather than in unit tests - there
  * is no geometry to compute here beyond the bounds the consumer supplies.
  */
@@ -39,7 +38,7 @@ public final class ToggleButton {
     public static void render(Rectangle bounds, boolean isOn, Color frameColor, Color onColor,
             float opacity) {
         if (isOn) {
-            Misc.renderQuadAlpha(bounds.x(), bounds.y(), bounds.width(), bounds.height(), onColor,
+            UiFill.renderQuad(bounds.x(), bounds.y(), bounds.width(), bounds.height(), onColor,
                     opacity * ON_FILL_ALPHA_MULT);
         }
         UiBoxes.renderBorder(bounds.x(), bounds.y(), bounds.width(), bounds.height(),

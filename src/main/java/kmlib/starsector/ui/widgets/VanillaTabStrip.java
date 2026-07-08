@@ -1,13 +1,12 @@
 package kmlib.starsector.ui.widgets;
 
-import com.fs.starfarer.api.util.Misc;
-
 import kmlib.color.Colors;
 import kmlib.math.geometry.Rectangle;
 import kmlib.math.geometry.Rectangles;
 import kmlib.starsector.ui.color.StarsectorUiColor;
 import kmlib.starsector.ui.font.LazyFontCache;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
+import kmlib.starsector.ui.render.UiFill;
 import kmlib.text.KmlibStrings;
 
 import org.lazywizard.lazylib.ui.LazyFont;
@@ -144,23 +143,23 @@ public final class VanillaTabStrip {
     // and left divider grounding the row, and a bright underline capping the active tab.
     private static void renderChrome(Rectangle bounds, int index,
             boolean isSelected, boolean isHovered, VanillaTabColors colors, float opacity) {
-        Misc.renderQuadAlpha(bounds.x(), bounds.y(), bounds.width(), bounds.height(),
+        UiFill.renderQuad(bounds.x(), bounds.y(), bounds.width(), bounds.height(),
                 colors.backdrop(), opacity);
         if (isSelected) {
-            Misc.renderQuadAlpha(bounds.x(), bounds.y(), bounds.width(), bounds.height(),
+            UiFill.renderQuad(bounds.x(), bounds.y(), bounds.width(), bounds.height(),
                     colors.accent(), opacity * SELECTED_FILL_ALPHA_MULT);
         } else if (isHovered) {
-            Misc.renderQuadAlpha(bounds.x(), bounds.y(), bounds.width(), bounds.height(),
+            UiFill.renderQuad(bounds.x(), bounds.y(), bounds.width(), bounds.height(),
                     colors.accent(), opacity * HOVER_FILL_ALPHA_MULT);
         }
-        Misc.renderQuadAlpha(bounds.x(), bounds.y(), bounds.width(), BASELINE_THICKNESS,
+        UiFill.renderQuad(bounds.x(), bounds.y(), bounds.width(), BASELINE_THICKNESS,
                 colors.accent(), opacity * DIVIDER_ALPHA_MULT);
         if (index > 0) {
-            Misc.renderQuadAlpha(bounds.x(), bounds.y(), BASELINE_THICKNESS, bounds.height(),
+            UiFill.renderQuad(bounds.x(), bounds.y(), BASELINE_THICKNESS, bounds.height(),
                     colors.accent(), opacity * DIVIDER_ALPHA_MULT);
         }
         if (isSelected) {
-            Misc.renderQuadAlpha(bounds.x(), bounds.y(), bounds.width(), UNDERLINE_THICKNESS,
+            UiFill.renderQuad(bounds.x(), bounds.y(), bounds.width(), UNDERLINE_THICKNESS,
                     colors.accent(), opacity);
         }
     }

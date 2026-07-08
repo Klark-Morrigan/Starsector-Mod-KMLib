@@ -1,7 +1,5 @@
 package kmlib.starsector.ui.render;
 
-import com.fs.starfarer.api.util.Misc;
-
 import java.awt.Color;
 
 /**
@@ -10,9 +8,9 @@ import java.awt.Color;
  * each panel invites the edges to drift out of step. This is the shared outline every KM UI
  * box strokes.
  *
- * <p>Builds on {@link Misc#renderQuadAlpha}, so colour and blend state are the engine's; this
- * only places the quads. Like the rest of the raw-draw helpers it touches the GL surface and
- * is exercised in-engine rather than in unit tests.
+ * <p>Builds on {@link UiFill#renderQuad}, so the edges composite over what is behind them and
+ * fade to nothing at zero alpha. This only places the quads. Like the rest of the raw-draw
+ * helpers it touches the GL surface and is exercised in-engine rather than in unit tests.
  */
 public final class UiBoxes {
     private UiBoxes() {
@@ -33,9 +31,9 @@ public final class UiBoxes {
      */
     public static void renderBorder(float x, float y, float width, float height, float thickness,
             Color color, float alpha) {
-        Misc.renderQuadAlpha(x, y, width, thickness, color, alpha);
-        Misc.renderQuadAlpha(x, y + height - thickness, width, thickness, color, alpha);
-        Misc.renderQuadAlpha(x, y, thickness, height, color, alpha);
-        Misc.renderQuadAlpha(x + width - thickness, y, thickness, height, color, alpha);
+        UiFill.renderQuad(x, y, width, thickness, color, alpha);
+        UiFill.renderQuad(x, y + height - thickness, width, thickness, color, alpha);
+        UiFill.renderQuad(x, y, thickness, height, color, alpha);
+        UiFill.renderQuad(x + width - thickness, y, thickness, height, color, alpha);
     }
 }
