@@ -67,4 +67,31 @@ class RowStackTest {
             assertThat(rows).isEmpty();
         }
     }
+
+    @Nested
+    class LayoutRowsWithPerRowHeights {
+
+        // A short row then a tall one: the second stands 40 tall where the first is 20, so the tall
+        // row's top drops by the first height plus the gap (200 - 20 - 4 = 176) and its bottom by a
+        // further 40 (to 136). A uniform stack could not size the two rows differently.
+        private static final List<Float> ROW_HEIGHTS = List.of(20f, 40f);
+        private static final List<Float> WIDTHS = List.of(100f, 60f);
+
+        @Test
+        void givesEachRowItsOwnHeight() {
+            var rows = RowStack.layoutRows(ORIGIN_X, TOP_Y, ROW_GAP, ROW_HEIGHTS, WIDTHS);
+
+            assertThat(rows).extracting(Rectangle::height).containsExactly(20f, 40f);
+        }
+
+        @Test
+        void dropsEachLaterRowByThePreviousRowsHeightPlusOneGap() {
+            var rows = RowStack.layoutRows(ORIGIN_X, TOP_Y, ROW_GAP, ROW_HEIGHTS, WIDTHS);
+
+            var first = rows.get(0);
+            var second = rows.get(1);
+            assertThat(first.y() + first.height()).isEqualTo(TOP_Y);
+            assertThat(second.y() + second.height()).isEqualTo(first.y() - ROW_GAP);
+        }
+    }
 }

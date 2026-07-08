@@ -30,10 +30,34 @@ public final class RowStack {
      */
     public static List<Rectangle> layoutRows(float originX, float topY, float rowHeight,
             float rowGap, List<Float> rowWidths) {
+        var rowHeights = new ArrayList<Float>(rowWidths.size());
+        for (var index = 0; index < rowWidths.size(); index++) {
+            rowHeights.add(rowHeight);
+        }
+        return layoutRows(originX, topY, rowGap, rowHeights, rowWidths);
+    }
+
+    /**
+     * Stacks one row per entry down from {@code topY}, each taking its own height from
+     * {@code rowHeights} and its own width from {@code rowWidths}, left-aligned at {@code originX}
+     * and separated by {@code rowGap}. The per-row height lets one control stand taller than the
+     * rest - a stacked (vertical) radio occupies one row per option - without forcing the whole
+     * column to a single height.
+     *
+     * @param originX    the shared left edge of every row, in UI coordinates
+     * @param topY       the top edge of the first row, in UI coordinates
+     * @param rowGap     the gap between one row's bottom and the next row's top
+     * @param rowHeights each row's height, in stack order top to bottom
+     * @param rowWidths  each row's width, in the same order (same size as {@code rowHeights})
+     * @return one rectangle per row, in the same order
+     */
+    public static List<Rectangle> layoutRows(float originX, float topY, float rowGap,
+            List<Float> rowHeights, List<Float> rowWidths) {
         var rows = new ArrayList<Rectangle>(rowWidths.size());
         var rowTop = topY;
-        for (var width : rowWidths) {
-            rows.add(new Rectangle(originX, rowTop - rowHeight, width, rowHeight));
+        for (var index = 0; index < rowWidths.size(); index++) {
+            var rowHeight = rowHeights.get(index);
+            rows.add(new Rectangle(originX, rowTop - rowHeight, rowWidths.get(index), rowHeight));
             rowTop -= rowHeight + rowGap;
         }
         return List.copyOf(rows);
