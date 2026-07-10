@@ -42,13 +42,16 @@ public final class SectorMemoryFlag {
      * no save to write into yet.
      *
      * @param isSet the value to store
+     * @return whether the write landed - false only before the sector exists, so a caller can
+     *         gate a follow-on side effect (a repaint request) on a real write
      */
-    public void set(boolean isSet) {
+    public boolean set(boolean isSet) {
         var memory = SectorMemoryAccess.readSectorMemory();
         if (memory == null) {
-            return;
+            return false;
         }
         memory.set(key, isSet);
+        return true;
     }
 
     /** Flips the stored value between true and false. */

@@ -75,17 +75,17 @@ class SectorMemoryFlagTest {
     @Nested
     class Set {
         @Test
-        void writesTheValueToSectorMemory() {
-            flag.set(false);
+        void writesTheValueToSectorMemoryAndReportsItLanded() {
+            assertThat(flag.set(false)).isTrue();
 
             verify(memoryMock).set(KEY, false);
         }
 
         @Test
-        void doesNothingWhenTheSectorIsMissing() {
+        void doesNothingAndReportsNoWriteWhenTheSectorIsMissing() {
             globalMock.when(Global::getSector).thenReturn(null);
 
-            flag.set(false);
+            assertThat(flag.set(false)).isFalse();
 
             verifyNoInteractions(memoryMock);
         }
