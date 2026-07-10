@@ -41,4 +41,26 @@ public final class StarsectorFactionColors {
         }
         return neutral.getBaseUIColor();
     }
+
+    /**
+     * Resolves a named faction's own two authored UI palette shades - its bright color as
+     * primary and its dark color as secondary, the same pair a political-map owner of that
+     * faction paints in - so a caller that wants to paint in "faction X's colors" without
+     * owning any system gets the exact shades a real owner would.
+     *
+     * @param sector    the sector to read; null falls back to a gray pair
+     * @param factionId the faction to read
+     * @return the faction's (primary, secondary) shade pair, or a gray pair when the
+     *         sector or the faction is absent
+     */
+    public static FactionPalette resolvePalette(SectorAPI sector, String factionId) {
+        if (sector == null) {
+            return new FactionPalette(NEUTRAL_FALLBACK_COLOR, NEUTRAL_FALLBACK_COLOR);
+        }
+        var faction = sector.getFaction(factionId);
+        if (faction == null) {
+            return new FactionPalette(NEUTRAL_FALLBACK_COLOR, NEUTRAL_FALLBACK_COLOR);
+        }
+        return new FactionPalette(faction.getBrightUIColor(), faction.getDarkUIColor());
+    }
 }
