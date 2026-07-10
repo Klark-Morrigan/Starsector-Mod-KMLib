@@ -1,21 +1,12 @@
 package kmlib.starsector.ui.widgets;
 
 import kmlib.math.geometry.Rectangle;
-import kmlib.starsector.ui.render.UiBoxes;
-import kmlib.starsector.ui.render.UiFill;
-
-import java.awt.Color;
 
 /**
- * A filled rectangle framed by an outer border of a chosen width, everything faded by a single
- * opacity so the whole box lightens as one. Backs a panel's outermost frame: the fill is its
- * backdrop and the border its edge, with {@link #computeContentBounds} giving the inner area
- * the panel's contents inset into so they never overlap the stroke.
- *
- * <p>{@link #computeContentBounds} is pure geometry and unit-tested; {@link #render} is the raw
- * GL passthrough (over {@link UiFill#renderQuad} and {@link UiBoxes}), exercised in-engine like
- * the other draw helpers. The fill composites over the map by its opacity, so a low opacity
- * backdrop reveals what is behind it rather than staying an opaque block.
+ * The geometry of a bordered box: the inner area its contents inset into once a border is stroked
+ * on every edge, so they never overlap the frame. Substrate-independent - it computes rectangles
+ * and renders nothing - so either a GL or a UI-API renderer can size a panel's contents against it.
+ * The raw-GL paint lives in {@link kmlib.starsector.ui.render.gl.BorderedBoxRenderer}.
  */
 public final class BorderedBox {
     private BorderedBox() {
@@ -35,25 +26,5 @@ public final class BorderedBox {
         var width = Math.max(0f, outer.width() - 2f * borderWidth);
         var height = Math.max(0f, outer.height() - 2f * borderWidth);
         return new Rectangle(outer.x() + borderWidth, outer.y() + borderWidth, width, height);
-    }
-
-    /**
-     * Fills {@code outer} with {@code fill} and, when {@code borderWidth} is positive, strokes
-     * its outer edge with {@code border}. Both draws scale their alpha by {@code opacity}, so
-     * the box fades as one; a zero border draws only the fill.
-     *
-     * @param outer       the box's full footprint, in UI coordinates
-     * @param borderWidth the border thickness; 0 draws no border
-     * @param fill        the backdrop colour
-     * @param border      the edge colour
-     * @param opacity     overall alpha, 0..1, applied to fill and border alike
-     */
-    public static void render(Rectangle outer, float borderWidth, Color fill, Color border,
-            float opacity) {
-        UiFill.renderQuad(outer.x(), outer.y(), outer.width(), outer.height(), fill, opacity);
-        if (borderWidth > 0f) {
-            UiBoxes.renderBorder(outer.x(), outer.y(), outer.width(), outer.height(), borderWidth,
-                    border, opacity);
-        }
     }
 }

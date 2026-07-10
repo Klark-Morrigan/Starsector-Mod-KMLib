@@ -3,29 +3,21 @@ package kmlib.starsector.ui.widgets;
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 
-import java.awt.Color;
 import java.util.List;
 
 /**
- * The full vanilla map-panel assembly as one reusable widget: an outer {@link BorderedBox} frame
- * wrapping a {@link VanillaTabStrip} header over a body region the active tab fills. It layers over
- * {@link VanillaTabStrip} exactly as that layers over {@link TabStrip} - the strip owns the header
- * geometry and chrome, this composes the frame around it, sizes the whole footprint, and frames a
- * body rectangle beneath. A mod that wants an on-map tabbed panel in the sector-map style assembles
- * it here rather than re-deriving the frame-plus-header composition.
+ * The geometry of the full vanilla map-panel assembly: an outer {@link BorderedBox} frame wrapping a
+ * {@link VanillaTabStrip} header over a body region the active tab fills. Substrate-independent - it
+ * lays the panel out and hit-tests it, rendering nothing - so a GL or a UI-API renderer can paint the
+ * panel against it. It composes the frame around the strip, sizes the whole footprint, and frames a
+ * body rectangle beneath; the raw-GL paint lives in
+ * {@link kmlib.starsector.ui.render.gl.TabPanelRenderer}.
  *
  * <p>The panel frames the body but never fills it: the consumer measures how large its body must be
- * (as a {@link TabPanelBodySize}), the panel places a body rectangle of that size, and the consumer
- * draws its own controls into {@link TabPanelPlacement#body()}. So the panel stays agnostic to what
- * a body holds - it draws the same frame and header whether the body carries a faction toggle, a
- * view selector, or nothing.
- *
- * <p>Geometry ({@link #layout}) is pure and unit-tested through the font-agnostic
- * {@link kmlib.starsector.ui.font.LineWidthMeasurer}; {@link #render} is the raw-GL passthrough
- * (over {@link BorderedBox} and {@link VanillaTabStrip}), exercised in-engine like the other draw
- * helpers. It draws only its own chrome - the frame and the header - and, like those helpers, does
- * not push or restore GL state; the consumer wraps its whole paint (this frame, this header, and
- * its own body) in one attribute save so the body draw shares the same protected block.
+ * (as a {@link TabPanelBodySize}), {@link #layout} places a body rectangle of that size, and the
+ * consumer draws its own controls into {@link TabPanelPlacement#body()}. So the panel stays agnostic
+ * to what a body holds - it frames the same header whether the body carries a toggle, a selector, or
+ * nothing. Geometry is pure and unit-tested through the font-agnostic {@link LineWidthMeasurer}.
  */
 public final class TabPanel {
     private TabPanel() {
@@ -107,32 +99,6 @@ public final class TabPanel {
      */
     public static int findTabIndexAt(TabPanelPlacement placement, float pointX, float pointY) {
         return VanillaTabStrip.findTabIndexAt(placement.tabs(), pointX, pointY);
-    }
-
-    /**
-     * Paints the panel's chrome - the outer frame and the tab header - scaling every draw by one
-     * {@code opacity} so the frame, its border, the tab washes, dividers, underline, and labels
-     * fade as a unit. The body is not drawn here; the consumer paints it into
-     * {@link TabPanelPlacement#body()}. No GL state is pushed or restored, so the consumer wraps
-     * this and its own body draw in one attribute save.
-     *
-     * @param placement     the laid-out panel
-     * @param borderWidth   the frame's border thickness; 0 draws no border
-     * @param fill          the panel's backdrop colour
-     * @param border        the frame's edge colour
-     * @param selectedIndex the active tab's index, or a value outside the row to light none
-     * @param hoveredIndex  the hovered tab's index (see {@link #findTabIndexAt}), or outside the row
-     * @param colors        the tab palette (see {@link VanillaTabColors#mapTabs})
-     * @param fontBasename  the {@code graphics/fonts} basename the tab labels draw in
-     * @param fontSize      the tab label font size
-     * @param opacity       overall alpha, 0..1, applied to every quad and text colour
-     */
-    public static void render(TabPanelPlacement placement, float borderWidth, Color fill,
-            Color border, int selectedIndex, int hoveredIndex, VanillaTabColors colors,
-            String fontBasename, double fontSize, float opacity) {
-        BorderedBox.render(placement.box(), borderWidth, fill, border, opacity);
-        VanillaTabStrip.render(placement.tabs(), selectedIndex, hoveredIndex, colors, fontBasename,
-                fontSize, opacity);
     }
 
     // The tab row spans from the content's left edge to the right edge of the last tab; an empty row

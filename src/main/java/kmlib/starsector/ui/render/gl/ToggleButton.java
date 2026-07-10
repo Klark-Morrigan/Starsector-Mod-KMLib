@@ -1,8 +1,6 @@
-package kmlib.starsector.ui.widgets;
+package kmlib.starsector.ui.render.gl;
 
 import kmlib.math.geometry.Rectangle;
-import kmlib.starsector.ui.render.UiBoxes;
-import kmlib.starsector.ui.render.UiFill;
 
 import java.awt.Color;
 

@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.render;
+package kmlib.starsector.ui.render.gl;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

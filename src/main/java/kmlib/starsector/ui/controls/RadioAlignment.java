@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.widgets;
+package kmlib.starsector.ui.controls;
 
 /**
  * Which way a {@link RadioRow}'s segments flow. Horizontal lays them left to right - the default a

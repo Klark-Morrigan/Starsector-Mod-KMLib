@@ -2,39 +2,26 @@ package kmlib.starsector.ui.widgets;
 
 import kmlib.math.geometry.Rectangle;
 import kmlib.math.geometry.Rectangles;
-import kmlib.starsector.ui.render.UiBoxes;
-import kmlib.starsector.ui.render.UiFill;
+import kmlib.starsector.ui.controls.RadioAlignment;
 
-import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A row of N equal-size, mutually exclusive segments - the raw-GL stand-in for a radio group,
- * built from single-selection over adjacent cells since neither vanilla nor a raw-GL library
- * ships one. The selected segment is lit; the rest read as one framed strip divided by hairline
- * rules. The consumer owns which segment is selected and draws each segment's label; this owns
- * only where the segments sit and which one a point falls in.
+ * The geometry of a row of N equal, mutually exclusive segments - the model behind a radio group,
+ * built from single-selection over adjacent cells. Substrate-independent: it splits a footprint into
+ * segments and resolves which one a point falls in, rendering nothing, so a GL or a UI-API renderer
+ * can paint against it. The raw-GL paint lives in
+ * {@link kmlib.starsector.ui.render.gl.RadioRowRenderer}.
  *
- * <p>Segments flow either way ({@link RadioAlignment}): a horizontal group splits its footprint
- * into equal columns left to right, a vertical group into equal rows top to bottom, so a compact
- * option pair reads as a strip while a longer option list reads as a column. The flow is a
- * splitting-and-drawing concern only - {@link #splitIntoSegments} and {@link #render} take it,
- * while the two hit-tests run over the already-split segments and so need no alignment.
- *
- * <p>{@link #splitIntoSegments}, {@link #findSegmentIndexAt}, and {@link #findHitElement} are
- * pure geometry and unit-tested; {@link #render} is the raw GL passthrough, exercised in-engine.
+ * <p>Segments flow either way ({@link RadioAlignment}): a horizontal group splits into equal columns
+ * left to right, a vertical group into equal rows top to bottom, so a compact option pair reads as a
+ * strip while a longer option list reads as a column. The flow is a splitting concern only - {@link
+ * #splitIntoSegments} takes it, while the two hit-tests run over the already-split segments.
  */
 public final class RadioRow {
     /** {@link #findSegmentIndexAt} returns this when the point falls outside every segment. */
     public static final int NO_SEGMENT = Rectangles.NONE;
-
-    // The lit segment is a wash over the frame, not a second opaque block, so it reads as a
-    // highlight; the dividers are fainter still so they separate without competing.
-    private static final float SELECTED_FILL_ALPHA_MULT = 0.30f;
-    private static final float DIVIDER_ALPHA_MULT = 0.40f;
-    private static final float DIVIDER_THICKNESS = 1f;
-    private static final float OUTLINE_THICKNESS = 1f;
 
     private RadioRow() {
     }
@@ -112,50 +99,5 @@ public final class RadioRow {
             return NO_SEGMENT;
         }
         return hitIndex;
-    }
-
-    /**
-     * Washes the selected segment, rules the dividers between segments, and frames the whole row.
-     * Every draw fades by {@code opacity}. A {@code selectedIndex} outside the row lights none. The
-     * dividers run across the flow: vertical rules between horizontal columns, horizontal rules
-     * between vertical rows.
-     *
-     * @param bounds        the row's footprint, in UI coordinates
-     * @param segmentCount  how many equal cells the row is split into
-     * @param selectedIndex the lit segment's index, or a value outside the row to light none
-     * @param alignment     the direction the segments flow in
-     * @param frameColor    the outline and divider colour
-     * @param selectedColor the lit-segment wash colour
-     * @param opacity       overall alpha, 0..1
-     */
-    public static void render(Rectangle bounds, int segmentCount, int selectedIndex,
-            RadioAlignment alignment, Color frameColor, Color selectedColor, float opacity) {
-        var segments = splitIntoSegments(bounds, segmentCount, alignment);
-        for (var index = 0; index < segments.size(); index++) {
-            var segment = segments.get(index);
-            if (index == selectedIndex) {
-                UiFill.renderQuad(segment.x(), segment.y(), segment.width(), segment.height(),
-                        selectedColor, opacity * SELECTED_FILL_ALPHA_MULT);
-            }
-            if (index > 0) {
-                renderDivider(segment, alignment, frameColor, opacity);
-            }
-        }
-        UiBoxes.renderBorder(bounds.x(), bounds.y(), bounds.width(), bounds.height(),
-                OUTLINE_THICKNESS, frameColor, opacity);
-    }
-
-    // Rules the divider on the edge each non-first segment shares with the one before it: the left
-    // edge for a horizontal column, the top edge for a vertical row (its shared edge with the row
-    // above). Kept a hairline thickness so it separates the cells without competing with the frame.
-    private static void renderDivider(Rectangle segment, RadioAlignment alignment, Color frameColor,
-            float opacity) {
-        if (alignment == RadioAlignment.VERTICAL) {
-            UiFill.renderQuad(segment.x(), segment.y() + segment.height() - DIVIDER_THICKNESS,
-                    segment.width(), DIVIDER_THICKNESS, frameColor, opacity * DIVIDER_ALPHA_MULT);
-        } else {
-            UiFill.renderQuad(segment.x(), segment.y(), DIVIDER_THICKNESS, segment.height(),
-                    frameColor, opacity * DIVIDER_ALPHA_MULT);
-        }
     }
 }

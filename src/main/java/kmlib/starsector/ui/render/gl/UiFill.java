@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.render;
+package kmlib.starsector.ui.render.gl;
 
 import com.fs.starfarer.api.util.Misc;
 

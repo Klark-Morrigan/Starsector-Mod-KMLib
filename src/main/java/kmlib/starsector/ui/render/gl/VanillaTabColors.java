@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.widgets;
+package kmlib.starsector.ui.render.gl;
 
 import kmlib.starsector.ui.color.StarsectorUiColor;
 
