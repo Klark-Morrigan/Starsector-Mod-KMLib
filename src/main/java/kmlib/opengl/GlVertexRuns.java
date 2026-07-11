@@ -49,6 +49,22 @@ public final class GlVertexRuns {
     }
 
     /**
+     * Packs a list of loose floats into a run of exactly those floats in order - the
+     * unbox step a producer that accumulates coordinates one at a time (the tessellator's
+     * triangle collector, the hatch clipper) ends with before handing the run to GL.
+     *
+     * @param floats the run's floats in order
+     * @return the packed run, {@code floats.size()} floats long
+     */
+    public static float[] packFloats(List<Float> floats) {
+        var run = new float[floats.size()];
+        for (var i = 0; i < run.length; i++) {
+            run[i] = floats.get(i);
+        }
+        return run;
+    }
+
+    /**
      * Packs a closed ring into {@code GL_LINES} segment pairs - one segment per
      * edge, including the wrap from the last vertex back to the first - so the ring
      * strokes as a closed loop under a single {@code GL_LINES} pass.

@@ -31,6 +31,21 @@ final class GlVertexRunsTest {
     }
 
     @Nested
+    class PackFloats {
+        @Test
+        void pack_floats_writes_each_float_into_the_run_in_order() {
+            var run = GlVertexRuns.packFloats(List.of(1f, 2f, 3f, 4f, 5f));
+
+            assertThat(run).containsExactly(1f, 2f, 3f, 4f, 5f);
+        }
+
+        @Test
+        void pack_floats_yields_an_empty_run_for_no_floats() {
+            assertThat(GlVertexRuns.packFloats(List.of())).isEmpty();
+        }
+    }
+
+    @Nested
     class FlattenClosedLoopAsSegments {
         @Test
         void flatten_closed_loop_emits_one_segment_per_edge_including_the_wrap() {

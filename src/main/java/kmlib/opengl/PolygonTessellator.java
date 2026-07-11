@@ -179,11 +179,7 @@ public final class PolygonTessellator {
         }
 
         private float[] toTriangleArray() {
-            var flat = new float[triangles.size()];
-            for (var i = 0; i < triangles.size(); i++) {
-                flat[i] = triangles.get(i);
-            }
-            return flat;
+            return GlVertexRuns.packFloats(triangles);
         }
 
         // A GL_TRIANGLES run is consumed three vertices at a time.
