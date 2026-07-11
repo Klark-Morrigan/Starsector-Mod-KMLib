@@ -11,7 +11,13 @@ public enum ControlKind {
     /** A tick box with a trailing label; the whole row is the hit target. */
     CHECKBOX,
 
-    /** A row of mutually exclusive option segments, each segment its own hit target. */
+    /**
+     * A group of mutually exclusive option segments, each segment its own hit target. Flows
+     * horizontally (an option pair) or vertically (a stacked list) per the spec's {@link
+     * RadioAlignment}. A vertical group may carry a leading icon per option (the spec's {@code
+     * iconPaths}) - the shape an icon picker takes - which left-anchors its labels past the icon;
+     * without icons a vertical group centres its labels like a horizontal one.
+     */
     RADIO,
 
     /** A single button that lights when on; the button is the hit target. */

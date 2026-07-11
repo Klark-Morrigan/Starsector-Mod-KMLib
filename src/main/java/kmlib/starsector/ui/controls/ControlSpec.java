@@ -1,5 +1,7 @@
 package kmlib.starsector.ui.controls;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -28,9 +30,19 @@ import java.util.List;
  * segment turn the whole control off ({@link #NO_SELECTION}) rather than being inert as a standard
  * always-selected radio's re-pick is.
  *
+ * <p>{@code iconPaths} refines a vertical {@link ControlKind#RADIO} into an icon list and is empty
+ * for a radio drawn without icons and for every other kind (just as {@code alignment} is inert for a
+ * checkbox). It carries one icon texture path per option, in the same order as {@code labels}, with a
+ * null entry for an option that draws no icon - so a vertical radio draws an icon beside each named
+ * option without the layout or renderer learning what the icon is. A non-empty list is what tells the
+ * layout to size rows for icons and the renderer to left-anchor the labels past them.
+ *
  * @param kind          which widget the control is
  * @param labels        the control's own label(s): one for a checkbox or toggle, one per option for
  *                      a radio (in segment order)
+ * @param iconPaths     one leading-icon path per option for a vertical {@link ControlKind#RADIO}
+ *                      drawn as an icon list (a null entry is an icon-less option); empty for a plain
+ *                      radio and every other kind
  * @param trailingLabel a label drawn after the control (a radio's caption), or blank for none;
  *                      reserved in the body width so it clears the border though it is not clicked
  * @param selectedIndex the index of the control's lit cell - the active radio segment, or 0 for a
@@ -42,13 +54,24 @@ import java.util.List;
  * @param canDeselect   whether a click on a radio's lit segment turns the control off; ignored by
  *                      the other kinds
  */
-public record ControlSpec(ControlKind kind, List<String> labels, String trailingLabel,
-        int selectedIndex, ControlAction action, RadioAlignment alignment, boolean canDeselect) {
+public record ControlSpec(ControlKind kind, List<String> labels, List<String> iconPaths,
+        String trailingLabel, int selectedIndex, ControlAction action, RadioAlignment alignment,
+        boolean canDeselect) {
     /** {@code selectedIndex} value meaning the control is off - no cell is lit. */
     public static final int NO_SELECTION = -1;
 
     // The single cell of a checkbox or toggle: its whole row is one hit target, lit at index 0.
     private static final int SINGLE_CELL = 0;
+
+    /**
+     * Builds a control with no leading icons - every kind except the icon list, whose {@code
+     * iconPaths} is therefore empty. The icon list uses {@link #createIconRadioList}, the one entry
+     * that supplies a non-empty icon-path list.
+     */
+    public ControlSpec(ControlKind kind, List<String> labels, String trailingLabel,
+            int selectedIndex, ControlAction action, RadioAlignment alignment, boolean canDeselect) {
+        this(kind, labels, List.of(), trailingLabel, selectedIndex, action, alignment, canDeselect);
+    }
 
     /**
      * Builds a horizontal, always-selected control with the given action - the shape a checkbox,
@@ -94,5 +117,47 @@ public record ControlSpec(ControlKind kind, List<String> labels, String trailing
      */
     public static ControlSpec createLabel(String text) {
         return new ControlSpec(ControlKind.LABEL, List.of(text), "", NO_SELECTION);
+    }
+
+    /**
+     * Whether the option at {@code index} draws a leading icon: it does when this control's parallel
+     * icon-path list holds a non-null entry there. A shorter icon-path list (or an empty one - a plain
+     * radio, or any non-icon kind) leaves the option icon-less, so an out-of-range index reports no
+     * icon. One rule for "does option i carry an icon", read by both the layout that sizes the row and
+     * the renderer that draws it, so the two cannot disagree on which options show an icon.
+     *
+     * @param index the option index
+     * @return true when the option at that index has a non-null icon path
+     */
+    public boolean hasIconAt(int index) {
+        return index < iconPaths.size() && iconPaths.get(index) != null;
+    }
+
+    /**
+     * Builds a vertical, deselectable {@link ControlKind#RADIO} drawn as an icon list: one stacked
+     * option per label, each drawing the icon at the matching {@code iconPaths} entry (null for an
+     * icon-less option). It is a vertical radio like the view selector, distinguished only by carrying
+     * icons - the non-empty {@code iconPaths} is what makes the layout size rows for icons and the
+     * renderer left-anchor the labels. It is always vertical (an icon list only reads as a column) and
+     * always deselectable (a click on the lit option turns the whole list off, the shape a
+     * deselectable picker takes - re-picking clears it). The lists run in parallel, so the icon at
+     * index {@code i} is drawn on the option labelled {@code labels.get(i)}; a shorter {@code
+     * iconPaths} leaves the trailing options icon-less. The icon-path list is copied null-tolerantly
+     * (a null entry is a real "no icon" value), so a caller may hand in a mutable list without the
+     * spec aliasing it.
+     *
+     * @param labels        the option labels, top to bottom; must contain no null (an unlabelled
+     *                      option passes an empty string)
+     * @param iconPaths     the per-option icon paths, aligned to {@code labels}; a null entry draws
+     *                      no icon on that option
+     * @param selectedIndex the lit option's index, or {@link #NO_SELECTION} when nothing is picked
+     * @param action        what a click on an option does, keyed by the option index
+     * @return the icon-radio-list spec in its current lit state
+     */
+    public static ControlSpec createIconRadioList(List<String> labels, List<String> iconPaths,
+            int selectedIndex, ControlAction action) {
+        return new ControlSpec(ControlKind.RADIO, List.copyOf(labels),
+                Collections.unmodifiableList(new ArrayList<>(iconPaths)), "", selectedIndex, action,
+                RadioAlignment.VERTICAL, true);
     }
 }

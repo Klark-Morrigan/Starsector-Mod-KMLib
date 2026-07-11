@@ -7,11 +7,13 @@ import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.RadioAlignment;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.layout.ControlStripLayout.StripMeasurement;
+import kmlib.starsector.ui.widgets.IconLabelRow;
 import kmlib.testfixtures.starsector.ui.font.LineWidthMeasurerFake;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -89,6 +91,33 @@ final class ControlStripLayoutTest {
             assertThat(measurement.rowHeights().get(0))
                     .isCloseTo(2 * ControlStripLayout.CONTROL_ROW_HEIGHT, within(TOLERANCE));
         }
+
+        @Test
+        void measureStripStandsAnIconListOneRowTallPerOption() {
+            // The icon list stacks like a vertical radio, so it stands one control-row tall per
+            // option regardless of icons.
+            var picker = ControlSpec.createIconRadioList(List.of("Hegemony", "Tri-Tachyon"),
+                    List.of("crest_heg", "crest_tt"), ControlSpec.NO_SELECTION, ControlAction.NONE);
+            var measurement = ControlStripLayout.measureStrip(List.of(picker), measurerFake);
+            assertThat(measurement.rowHeights().get(0))
+                    .isCloseTo(2 * ControlStripLayout.CONTROL_ROW_HEIGHT, within(TOLERANCE));
+        }
+
+        @Test
+        void measureStripSizesAnIconListToItsWidestOptionRow() {
+            // "AB" carries a crest, "CDE" does not; the row is the widest of the two, each sized
+            // through the shared IconLabelRow geometry so the width tracks whether the option draws an
+            // icon. The measurement reads that geometry rather than re-deriving the icon and gap sizes.
+            var picker = ControlSpec.createIconRadioList(List.of("AB", "CDE"),
+                    Arrays.asList("crest_ab", null), ControlSpec.NO_SELECTION, ControlAction.NONE);
+            var measurement = ControlStripLayout.measureStrip(List.of(picker), measurerFake);
+            var withIcon = IconLabelRow.measureRowWidth(ControlStripLayout.CONTROL_ROW_HEIGHT,
+                    2 * WIDTH_PER_CHAR, true);
+            var withoutIcon = IconLabelRow.measureRowWidth(ControlStripLayout.CONTROL_ROW_HEIGHT,
+                    3 * WIDTH_PER_CHAR, false);
+            assertThat(measurement.rowWidths().get(0))
+                    .isCloseTo(Math.max(withIcon, withoutIcon), within(TOLERANCE));
+        }
     }
 
     @Nested
@@ -124,6 +153,25 @@ final class ControlStripLayoutTest {
             assertThat(fullSegment.width()).isCloseTo(shortSegment.width(), within(TOLERANCE));
             assertThat(fullSegment.x())
                     .isCloseTo(shortSegment.x() + shortSegment.width(), within(TOLERANCE));
+        }
+
+        @Test
+        void layoutControlsSplitsAnIconListIntoStackedVerticalSegments() {
+            var specs = List.of(ControlSpec.createIconRadioList(List.of("Hegemony", "Tri-Tachyon"),
+                    List.of("crest_heg", "crest_tt"), ControlSpec.NO_SELECTION, ControlAction.NONE));
+            var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
+            var picker = ControlStripLayout.layoutControls(frameBody(measurement), specs,
+                    measurement.rowHeights(), measurement.rowWidths()).get(0);
+
+            assertThat(picker.segments()).hasSize(2);
+            var topSegment = picker.segments().get(0);
+            var bottomSegment = picker.segments().get(1);
+            // The list stacks top to bottom (element 0 is topmost, UI y grows up), the segments are
+            // equal height, and the lower one hangs directly beneath the upper.
+            assertThat(topSegment.y()).isGreaterThan(bottomSegment.y());
+            assertThat(bottomSegment.height()).isCloseTo(topSegment.height(), within(TOLERANCE));
+            assertThat(topSegment.y())
+                    .isCloseTo(bottomSegment.y() + bottomSegment.height(), within(TOLERANCE));
         }
 
         @Test

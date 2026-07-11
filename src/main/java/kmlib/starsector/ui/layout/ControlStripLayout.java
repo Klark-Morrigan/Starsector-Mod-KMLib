@@ -6,6 +6,7 @@ import kmlib.starsector.ui.controls.ControlKind;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.RadioAlignment;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
+import kmlib.starsector.ui.widgets.IconLabelRow;
 import kmlib.starsector.ui.widgets.RadioRow;
 import kmlib.text.KmlibStrings;
 
@@ -110,6 +111,9 @@ public final class ControlStripLayout {
         for (var index = 0; index < specs.size(); index++) {
             var spec = specs.get(index);
             var row = rows.get(index);
+            // A radio (including the icon-list variant, which is a vertical radio that also draws an
+            // icon) splits into per-option hit segments under its alignment; every other kind is a
+            // single-hit row with no segments.
             var segments = spec.kind() == ControlKind.RADIO
                     ? RadioRow.splitIntoSegments(row, spec.labels().size(), spec.alignment())
                     : List.<Rectangle>of();
@@ -126,21 +130,49 @@ public final class ControlStripLayout {
         return switch (spec.kind()) {
             case CHECKBOX -> CONTROL_ROW_HEIGHT + CHECKBOX_LABEL_GAP
                     + measureWidth(measurer, spec.labels().get(0));
-            case RADIO -> spec.alignment() == RadioAlignment.VERTICAL
-                    ? measureRadioSegmentWidth(spec, measurer)
-                    : spec.labels().size() * measureRadioSegmentWidth(spec, measurer);
+            case RADIO -> measureRadioRowWidth(spec, measurer);
             case TOGGLE -> measureWidth(measurer, spec.labels().get(0)) + TOGGLE_TEXT_PADDING;
             case LABEL -> measureWidth(measurer, spec.labels().get(0));
         };
     }
 
+    // The width a radio row needs. A horizontal group lays its equal segments side by side. A
+    // vertical group is one segment column wide: a plain vertical radio sizes that column to its
+    // widest label plus padding, while an icon-list radio (non-empty icon paths) sizes it to its
+    // widest icon-and-label row, so the icon and name clear the frame.
+    private static float measureRadioRowWidth(ControlSpec spec, LineWidthMeasurer measurer) {
+        if (spec.alignment() != RadioAlignment.VERTICAL) {
+            return spec.labels().size() * measureRadioSegmentWidth(spec, measurer);
+        }
+        if (spec.iconPaths().isEmpty()) {
+            return measureRadioSegmentWidth(spec, measurer);
+        }
+        return measureIconListRowWidth(spec, measurer);
+    }
+
     // The height of a control's row: one control-row tall for every control except a vertical radio,
-    // which stacks its options and so stands one control-row tall per segment.
+    // which stacks its options and so stands one control-row tall per option (the icon-list variant
+    // included, since it is a vertical radio).
     private static float measureRowHeight(ControlSpec spec) {
         if (spec.kind() == ControlKind.RADIO && spec.alignment() == RadioAlignment.VERTICAL) {
             return spec.labels().size() * CONTROL_ROW_HEIGHT;
         }
         return CONTROL_ROW_HEIGHT;
+    }
+
+    // The width an icon-list radio needs: its widest option row, each sized to hold its icon (present
+    // when the option carries a non-null path) and its label without clipping. The option rows are
+    // one control-row tall, the height the icon square derives from, so every stacked row shows an
+    // equal icon and the column is as wide as the longest name.
+    private static float measureIconListRowWidth(ControlSpec spec, LineWidthMeasurer measurer) {
+        var widest = 0f;
+        for (var index = 0; index < spec.labels().size(); index++) {
+            var labelWidth = measureWidth(measurer, spec.labels().get(index));
+            var rowWidth = IconLabelRow.measureRowWidth(CONTROL_ROW_HEIGHT, labelWidth,
+                    spec.hasIconAt(index));
+            widest = Math.max(widest, rowWidth);
+        }
+        return widest;
     }
 
     // Segments are equal width, so all fit when each is sized to the widest option label plus
