@@ -10,10 +10,10 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Pins the two factory shapes hosts build controls through: a checkbox lit at cell 0 when on and off
- * otherwise carrying its click action, and a caption label that is drawn but never clicked. These fix
- * the "a checkbox is cell 0 lit or nothing" and "a label has no cell and no action" conventions in
- * one place so no host re-derives them.
+ * Pins the factory shapes hosts build controls through: a checkbox lit at cell 0 when on and off
+ * otherwise carrying its click action, a caption label and a divider rule that are drawn but never
+ * clicked, and the icon radio list. These fix the "a checkbox is cell 0 lit or nothing", "a label /
+ * divider has no cell and no action" conventions in one place so no host re-derives them.
  */
 final class ControlSpecTest {
 
@@ -62,6 +62,28 @@ final class ControlSpecTest {
             // Every non-icon kind reports an empty icon-path list, so the layout and renderer read it
             // uniformly without a kind check.
             assertThat(ControlSpec.createLabel("Names").iconPaths()).isEmpty();
+        }
+    }
+
+    @Nested
+    class CreateDivider {
+
+        @Test
+        void createDividerIsARuleWithNoLabelCellOrAction() {
+            // A divider is drawn but never clicked and carries no text, so it holds no label, no lit
+            // cell, and the inert action.
+            var divider = ControlSpec.createDivider();
+            assertThat(divider.kind()).isEqualTo(ControlKind.DIVIDER);
+            assertThat(divider.labels()).isEmpty();
+            assertThat(divider.selectedIndex()).isEqualTo(ControlSpec.NO_SELECTION);
+            assertThat(divider.action()).isSameAs(ControlAction.NONE);
+        }
+
+        @Test
+        void createDividerCarriesNoIconPaths() {
+            // Like every non-icon kind, the divider reports an empty icon-path list so the layout and
+            // renderer read it uniformly without a kind check.
+            assertThat(ControlSpec.createDivider().iconPaths()).isEmpty();
         }
     }
 

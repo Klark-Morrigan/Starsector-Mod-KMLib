@@ -80,6 +80,10 @@ public final class ControlStripLayout {
             stackedHeight += rowHeight;
             contentWidth = Math.max(contentWidth, rowWidth + measureTrailingWidth(spec, measurer));
         }
+        // A divider spans the strip's inner width, so once the widest content row is known its row
+        // width is set to that span - it then lays out as a rule crossing the whole body rather than
+        // a zero-width row. Done after the loop so it never drives the content width it stretches to.
+        spanDividersToContentWidth(specs, rowWidths, contentWidth);
         var bodyWidth = contentWidth + 2f * BODY_PADDING;
         var bodyHeight = 2f * BODY_PADDING + stackedHeight + (specs.size() - 1) * ROW_GAP;
         return new StripMeasurement(bodyWidth, bodyHeight, List.copyOf(rowWidths),
@@ -122,6 +126,18 @@ public final class ControlStripLayout {
         return List.copyOf(controls);
     }
 
+    // Widens every divider row to the strip's inner content width, so a rule stretches across the
+    // whole body while every other row stays snapped to its own text. Run after the content width is
+    // known, since a divider measures zero and must not drive the width it then spans.
+    private static void spanDividersToContentWidth(List<ControlSpec> specs, List<Float> rowWidths,
+            float contentWidth) {
+        for (var index = 0; index < specs.size(); index++) {
+            if (specs.get(index).kind() == ControlKind.DIVIDER) {
+                rowWidths.set(index, contentWidth);
+            }
+        }
+    }
+
     // The width of a control's row, snapped to its label(s): a checkbox is its tick box plus a gap
     // plus its label; a horizontal radio is its equal segments side by side, a vertical radio is one
     // segment column wide; a toggle is its label plus padding; a label is just its measured text,
@@ -133,6 +149,9 @@ public final class ControlStripLayout {
             case RADIO -> measureRadioRowWidth(spec, measurer);
             case TOGGLE -> measureWidth(measurer, spec.labels().get(0)) + TOGGLE_TEXT_PADDING;
             case LABEL -> measureWidth(measurer, spec.labels().get(0));
+            // A divider has no intrinsic width - it stretches to the strip's inner width, resolved
+            // once the widest row is known - so it contributes nothing to that width itself.
+            case DIVIDER -> 0f;
         };
     }
 

@@ -24,5 +24,12 @@ public enum ControlKind {
     TOGGLE,
 
     /** A text-only caption row, drawn but never clicked - it carries no hit target. */
-    LABEL
+    LABEL,
+
+    /**
+     * A horizontal rule spanning the strip's inner width, drawn but never clicked - it carries no
+     * hit target and no label. It parts one run of controls from the next, so a host can head a
+     * section with a rule instead of a caption.
+     */
+    DIVIDER
 }

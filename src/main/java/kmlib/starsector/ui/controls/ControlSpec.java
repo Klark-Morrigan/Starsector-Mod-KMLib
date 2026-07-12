@@ -120,6 +120,17 @@ public record ControlSpec(ControlKind kind, List<String> labels, List<String> ic
     }
 
     /**
+     * Builds a divider row: a {@link ControlKind#DIVIDER} carrying no label, no lit cell, and no
+     * action, since a rule is drawn but never clicked. The layout spans it to the strip's inner
+     * width and the renderer draws the rule; composing it here keeps the "a divider has no label,
+     * {@link #NO_SELECTION}, {@link ControlAction#NONE}" shape in one place for any host that parts
+     * its sections with a rule.
+     */
+    public static ControlSpec createDivider() {
+        return new ControlSpec(ControlKind.DIVIDER, List.of(), "", NO_SELECTION);
+    }
+
+    /**
      * Whether the option at {@code index} draws a leading icon: it does when this control's parallel
      * icon-path list holds a non-null entry there. A shorter icon-path list (or an empty one - a plain
      * radio, or any non-icon kind) leaves the option icon-less, so an out-of-range index reports no

@@ -104,6 +104,29 @@ final class ControlStripLayoutTest {
         }
 
         @Test
+        void measureStripSpansADividerToTheContentWidth() {
+            // A divider has no text, so it stretches to the strip's inner width: its row width comes
+            // out equal to the widest content row (the checkbox here), not zero.
+            var specs = List.of(ControlSpec.createDivider(),
+                    ControlSpec.createCheckbox("Muted", false, ControlAction.NONE));
+            var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
+            assertThat(measurement.rowWidths().get(0))
+                    .isCloseTo(measurement.rowWidths().get(1), within(TOLERANCE));
+        }
+
+        @Test
+        void measureStripDoesNotLetADividerDriveTheBodyWidth() {
+            // The divider stretches to the content width but must not set it, so a strip of only a
+            // checkbox measures the same body width whether or not a divider heads it.
+            var checkbox = ControlSpec.createCheckbox("Muted", false, ControlAction.NONE);
+            var withoutDivider = ControlStripLayout.measureStrip(List.of(checkbox), measurerFake);
+            var withDivider = ControlStripLayout.measureStrip(
+                    List.of(ControlSpec.createDivider(), checkbox), measurerFake);
+            assertThat(withDivider.bodyWidth())
+                    .isCloseTo(withoutDivider.bodyWidth(), within(TOLERANCE));
+        }
+
+        @Test
         void measureStripSizesAnIconListToItsWidestOptionRow() {
             // "AB" carries a crest, "CDE" does not; the row is the widest of the two, each sized
             // through the shared IconLabelRow geometry so the width tracks whether the option draws an
@@ -190,6 +213,31 @@ final class ControlStripLayoutTest {
             var controls = ControlStripLayout.layoutControls(frameBody(measurement), specs,
                     measurement.rowHeights(), measurement.rowWidths());
             assertThat(controls.get(0).segments()).isEmpty();
+        }
+
+        @Test
+        void layoutControlsLeavesADividerWithoutSegments() {
+            // A divider is a single non-hit row, not a segmented control, so it lays out with no
+            // segments like a caption does.
+            var specs = List.of(ControlSpec.createDivider(),
+                    ControlSpec.createCheckbox("Muted", false, ControlAction.NONE));
+            var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
+            var controls = ControlStripLayout.layoutControls(frameBody(measurement), specs,
+                    measurement.rowHeights(), measurement.rowWidths());
+            assertThat(controls.get(0).segments()).isEmpty();
+        }
+
+        @Test
+        void layoutControlsSpansADividerRowAcrossTheBodyContentWidth() {
+            // The laid divider row is as wide as the widest content row (the checkbox), so the rule
+            // crosses the whole body rather than snapping to zero width.
+            var specs = List.of(ControlSpec.createDivider(),
+                    ControlSpec.createCheckbox("Muted", false, ControlAction.NONE));
+            var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
+            var controls = ControlStripLayout.layoutControls(frameBody(measurement), specs,
+                    measurement.rowHeights(), measurement.rowWidths());
+            assertThat(controls.get(0).bounds().width())
+                    .isCloseTo(controls.get(1).bounds().width(), within(TOLERANCE));
         }
 
         @Test
