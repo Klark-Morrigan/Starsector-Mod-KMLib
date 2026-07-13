@@ -186,9 +186,14 @@ public final class ControlStripLayout {
     // that the longest name still clears its right-aligned value.
     private static float measureIconListRowWidth(ControlSpec spec, LineWidthMeasurer measurer) {
         var widest = 0f;
+        // The trailing column is measured at the control's trailing size, not the body size, so a
+        // compact column (a sort selector's smaller direction letters) reserves only the room its
+        // reduced text needs - the same size the renderer then draws it at.
+        var trailingFontSize = BODY_FONT_SIZE * spec.trailingScale();
         for (var index = 0; index < spec.labels().size(); index++) {
             var labelWidth = measureWidth(measurer, spec.labels().get(index));
-            var trailingWidth = measureWidth(measurer, spec.trailingLabelAt(index));
+            var trailingWidth = (float) measurer.measureLineWidth(spec.trailingLabelAt(index),
+                    trailingFontSize);
             var rowWidth = IconLabelRow.measureRowWidth(CONTROL_ROW_HEIGHT, labelWidth,
                     spec.hasIconAt(index), trailingWidth);
             widest = Math.max(widest, rowWidth);

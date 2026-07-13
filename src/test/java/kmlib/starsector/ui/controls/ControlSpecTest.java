@@ -30,7 +30,8 @@ final class ControlSpecTest {
             // would drop them unseen - it must fail at construction instead.
             assertThatThrownBy(() -> new ControlSpec(ControlKind.CHECKBOX, List.of("Muted"),
                     List.of("crest"), List.of(), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
-                    RadioAlignment.HORIZONTAL, false))
+                    RadioAlignment.HORIZONTAL, ReselectBehaviour.INERT,
+                    ControlSpec.BODY_TRAILING_SCALE))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
@@ -40,17 +41,29 @@ final class ControlSpecTest {
             // the layout would never reserve room and the values would be lost.
             assertThatThrownBy(() -> new ControlSpec(ControlKind.RADIO, List.of("Short", "Full"),
                     List.of(), List.of("7", "3"), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
-                    RadioAlignment.HORIZONTAL, false))
+                    RadioAlignment.HORIZONTAL, ReselectBehaviour.INERT,
+                    ControlSpec.BODY_TRAILING_SCALE))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
         @Test
-        void constructorRejectsDeselectOnANonRadioKind() {
-            // Deselection clears a radio's lit segment; a checkbox has no segment to clear, so a
-            // deselectable checkbox is a shape the input path could not act on.
+        void constructorRejectsANonInertReselectOnANonRadioKind() {
+            // A reselect behaviour refines a radio's lit segment; a checkbox has no segment to re-pick,
+            // so a deselectable (or re-firing) checkbox is a shape the input path could not act on.
             assertThatThrownBy(() -> new ControlSpec(ControlKind.CHECKBOX, List.of("Muted"),
                     List.of(), List.of(), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
-                    RadioAlignment.HORIZONTAL, true))
+                    RadioAlignment.HORIZONTAL, ReselectBehaviour.DESELECT,
+                    ControlSpec.BODY_TRAILING_SCALE))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        void constructorRejectsANonPositiveTrailingScale() {
+            // The trailing scale is a size multiplier for the trailing column; a zero or negative
+            // value cannot size any text, so it fails at construction rather than measuring to nothing.
+            assertThatThrownBy(() -> new ControlSpec(ControlKind.RADIO, List.of("A"), List.of(),
+                    List.of(), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
+                    RadioAlignment.VERTICAL, ReselectBehaviour.INERT, 0d))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
@@ -141,7 +154,7 @@ final class ControlSpecTest {
             // The plain vertical radio is the label-only stacked selector: a vertical radio with no
             // leading icons and no per-option values, distinguishing it from the icon list.
             var selector = ControlSpec.createVerticalRadio(List.of("Factions", "Alliances"),
-                    ControlSpec.NO_SELECTION, ControlAction.NONE, true);
+                    ControlSpec.NO_SELECTION, ControlAction.NONE, ReselectBehaviour.DESELECT);
             assertThat(selector.kind()).isEqualTo(ControlKind.RADIO);
             assertThat(selector.alignment()).isEqualTo(RadioAlignment.VERTICAL);
             assertThat(selector.labels()).containsExactly("Factions", "Alliances");
@@ -150,19 +163,19 @@ final class ControlSpecTest {
         }
 
         @Test
-        void createVerticalRadioCarriesTheCanDeselectChoice() {
-            // A selector that can clear to nothing (a view selector) passes true; one that always keeps
-            // a segment lit (a sort selector) passes false, and the flag rides through unchanged.
-            assertThat(ControlSpec.createVerticalRadio(List.of("A"), 0, ControlAction.NONE, true)
-                    .canDeselect()).isTrue();
-            assertThat(ControlSpec.createVerticalRadio(List.of("A"), 0, ControlAction.NONE, false)
-                    .canDeselect()).isFalse();
+        void createVerticalRadioCarriesTheReselectChoice() {
+            // A selector that can clear to nothing (a view selector) passes DESELECT; one that always
+            // keeps a segment lit passes INERT, and the choice rides through unchanged.
+            assertThat(ControlSpec.createVerticalRadio(List.of("A"), 0, ControlAction.NONE,
+                    ReselectBehaviour.DESELECT).reselect()).isEqualTo(ReselectBehaviour.DESELECT);
+            assertThat(ControlSpec.createVerticalRadio(List.of("A"), 0, ControlAction.NONE,
+                    ReselectBehaviour.INERT).reselect()).isEqualTo(ReselectBehaviour.INERT);
         }
 
         @Test
         void createVerticalRadioLightsTheSelectedOption() {
             var selector = ControlSpec.createVerticalRadio(List.of("Factions", "Alliances"), 1,
-                    ControlAction.NONE, false);
+                    ControlAction.NONE, ReselectBehaviour.INERT);
             assertThat(selector.selectedIndex()).isEqualTo(1);
         }
 
@@ -170,7 +183,8 @@ final class ControlSpecTest {
         void createVerticalRadioCarriesTheClickActionByOptionIndex() {
             var firedCell = new int[]{-99};
             var selector = ControlSpec.createVerticalRadio(List.of("Factions", "Alliances"),
-                    ControlSpec.NO_SELECTION, cell -> firedCell[0] = cell, true);
+                    ControlSpec.NO_SELECTION, cell -> firedCell[0] = cell,
+                    ReselectBehaviour.DESELECT);
             selector.action().activateCell(1);
             assertThat(firedCell[0]).isEqualTo(1);
         }
@@ -180,7 +194,8 @@ final class ControlSpecTest {
             // The caller may hand in a mutable list it goes on to reuse; the spec must copy it, so a
             // later mutation of the caller's list cannot rewrite the drawn labels.
             var callerLabels = new ArrayList<String>(List.of("Factions", "Alliances"));
-            var selector = ControlSpec.createVerticalRadio(callerLabels, 0, ControlAction.NONE, true);
+            var selector = ControlSpec.createVerticalRadio(callerLabels, 0, ControlAction.NONE,
+                    ReselectBehaviour.DESELECT);
             callerLabels.set(0, "Mutated");
             assertThat(selector.labels()).containsExactly("Factions", "Alliances");
         }
@@ -197,7 +212,8 @@ final class ControlSpecTest {
                     List.of("crest_heg", "crest_tt"), ControlSpec.NO_SELECTION, ControlAction.NONE);
             assertThat(picker.kind()).isEqualTo(ControlKind.RADIO);
             assertThat(picker.alignment()).isEqualTo(RadioAlignment.VERTICAL);
-            assertThat(picker.canDeselect()).isTrue();
+            assertThat(picker.reselect()).isEqualTo(ReselectBehaviour.DESELECT);
+            assertThat(picker.trailingScale()).isEqualTo(ControlSpec.BODY_TRAILING_SCALE);
             assertThat(picker.labels()).containsExactly("Hegemony", "Tri-Tachyon");
             assertThat(picker.iconPaths()).containsExactly("crest_heg", "crest_tt");
         }
@@ -266,6 +282,36 @@ final class ControlSpecTest {
                     List.of("crest_heg", "crest_tt"), callerValues, 0, ControlAction.NONE);
             callerValues.set(0, "99");
             assertThat(picker.trailingLabels()).containsExactly("7", "3");
+        }
+    }
+
+    @Nested
+    class CreateVerticalRadioTable {
+
+        @Test
+        void createVerticalRadioTableCarriesTheChosenReselectAndTrailingScale() {
+            // The general table lets a selector pick its re-pick behaviour and a reduced trailing size
+            // (a sort selector re-fires to flip and draws compact direction letters), both riding
+            // through unchanged rather than being forced to the icon list's deselect-at-body-size.
+            var selector = ControlSpec.createVerticalRadioTable(List.of("Domination", "Presence"),
+                    Arrays.asList(null, null), List.of("DWN", "DWN"), 0, ControlAction.NONE,
+                    ReselectBehaviour.REFIRE, 0.8d);
+            assertThat(selector.kind()).isEqualTo(ControlKind.RADIO);
+            assertThat(selector.alignment()).isEqualTo(RadioAlignment.VERTICAL);
+            assertThat(selector.reselect()).isEqualTo(ReselectBehaviour.REFIRE);
+            assertThat(selector.trailingScale()).isEqualTo(0.8d);
+        }
+
+        @Test
+        void createVerticalRadioTableDrawsNoIconWhenEveryIconEntryIsNull() {
+            // An all-null (but present) icon column is a table with no crests - the shape the sort
+            // selector takes - so no option reports an icon while the trailing column still rides.
+            var selector = ControlSpec.createVerticalRadioTable(List.of("Domination", "Presence"),
+                    Arrays.asList(null, null), List.of("DWN", "UP"), 0, ControlAction.NONE,
+                    ReselectBehaviour.REFIRE, 0.8d);
+            assertThat(selector.hasIconAt(0)).isFalse();
+            assertThat(selector.hasIconAt(1)).isFalse();
+            assertThat(selector.trailingLabels()).containsExactly("DWN", "UP");
         }
     }
 

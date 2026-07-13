@@ -24,11 +24,19 @@ import java.util.List;
  * layout and renderer ignore it (they only measure and draw), so a spec built purely to be laid out
  * carries {@link ControlAction#NONE}.
  *
- * <p>{@code alignment} and {@code canDeselect} refine a radio and are inert for the other kinds. The
+ * <p>{@code alignment} and {@code reselect} refine a radio and are inert for the other kinds. The
  * alignment flows a radio's segments horizontally (the default a compact option pair reads best in)
- * or vertically (a stacked view selector). {@code canDeselect} lets a click on the already-lit
- * segment turn the whole control off ({@link #NO_SELECTION}) rather than being inert as a standard
- * always-selected radio's re-pick is.
+ * or vertically (a stacked view selector). {@code reselect} says what a click on the already-lit
+ * segment does - stay inert, turn the control off, or fire the action again on that option - via
+ * {@link ReselectBehaviour}, so a picker that clears and a selector that flips a sub-state can share
+ * one radio widget.
+ *
+ * <p>{@code trailingScale} is the size the per-option trailing values are measured and drawn at,
+ * relative to the strip's body font size: 1.0 for a value that reads at the body size (the picker's
+ * ranking numbers), less for a compact trailing column (a sort selector's direction letters, kept
+ * smaller than the option names). Held here so the layout reserves and the renderer draws the
+ * trailing column at the same size, keeping what is measured and what is painted in step. It refines
+ * a radio with a trailing column and is 1.0 (inert) for every control without one.
  *
  * <p>{@code iconPaths} refines a vertical {@link ControlKind#RADIO} into an icon list and is empty
  * for a radio drawn without icons and for every other kind (just as {@code alignment} is inert for a
@@ -61,14 +69,19 @@ import java.util.List;
  * @param action        what a click on the control does, keyed by which cell was hit; the host
  *                      supplies it, the input listener invokes it, the layout and renderer ignore it
  * @param alignment     the direction a radio's segments flow; ignored by the other kinds
- * @param canDeselect   whether a click on a radio's lit segment turns the control off; ignored by
- *                      the other kinds
+ * @param reselect      what a click on a radio's lit segment does (inert, deselect, or re-fire);
+ *                      ignored by the other kinds
+ * @param trailingScale the size the per-option trailing values draw at, relative to the body font
+ *                      size; 1.0 for a control with no trailing column or one drawn at body size
  */
 public record ControlSpec(ControlKind kind, List<String> labels, List<String> iconPaths,
         List<String> trailingLabels, String trailingLabel, int selectedIndex, ControlAction action,
-        RadioAlignment alignment, boolean canDeselect) {
+        RadioAlignment alignment, ReselectBehaviour reselect, double trailingScale) {
     /** {@code selectedIndex} value meaning the control is off - no cell is lit. */
     public static final int NO_SELECTION = -1;
+
+    /** The trailing-value size a control uses when its trailing column reads at the body font size. */
+    public static final double BODY_TRAILING_SCALE = 1d;
 
     // The single cell of a checkbox or toggle: its whole row is one hit target, lit at index 0.
     private static final int SINGLE_CELL = 0;
@@ -91,31 +104,39 @@ public record ControlSpec(ControlKind kind, List<String> labels, List<String> ic
                     "iconPaths and trailingLabels are drawn only on a vertical radio, not on a "
                             + kind + " with " + alignment + " alignment");
         }
-        if (canDeselect && kind != ControlKind.RADIO) {
+        if (reselect != ReselectBehaviour.INERT && kind != ControlKind.RADIO) {
             throw new IllegalArgumentException(
-                    "canDeselect refines a radio's lit segment; it has no meaning on a " + kind);
+                    "a non-inert reselect behaviour refines a radio's lit segment; it has no "
+                            + "meaning on a " + kind);
+        }
+        if (trailingScale <= 0d) {
+            throw new IllegalArgumentException(
+                    "trailingScale is a size multiplier and must be positive, was " + trailingScale);
         }
     }
 
     /**
-     * Builds a control with no leading icons - every kind except the icon list, whose {@code
-     * iconPaths} is therefore empty. The icon list uses {@link #createIconRadioList}, the one entry
-     * that supplies a non-empty icon-path list.
+     * Builds a control with no leading icons and no per-option trailing column - every kind except
+     * the icon list, whose {@code iconPaths} is therefore empty and whose trailing column is drawn at
+     * the body size. The icon list uses {@link #createIconRadioList}, the one entry that supplies a
+     * non-empty icon-path list.
      */
     public ControlSpec(ControlKind kind, List<String> labels, String trailingLabel,
-            int selectedIndex, ControlAction action, RadioAlignment alignment, boolean canDeselect) {
+            int selectedIndex, ControlAction action, RadioAlignment alignment,
+            ReselectBehaviour reselect) {
         this(kind, labels, List.of(), List.of(), trailingLabel, selectedIndex, action, alignment,
-                canDeselect);
+                reselect, BODY_TRAILING_SCALE);
     }
 
     /**
      * Builds a horizontal, always-selected control with the given action - the shape a checkbox,
-     * toggle, or a standard option radio (Short/Full) takes. A stacked or deselectable radio uses
-     * the full constructor to set its {@link RadioAlignment} and {@code canDeselect}.
+     * toggle, or a standard option radio (Short/Full) takes. A stacked, deselectable, or re-firing
+     * radio uses the full constructor to set its {@link RadioAlignment} and {@link ReselectBehaviour}.
      */
     public ControlSpec(ControlKind kind, List<String> labels, String trailingLabel,
             int selectedIndex, ControlAction action) {
-        this(kind, labels, trailingLabel, selectedIndex, action, RadioAlignment.HORIZONTAL, false);
+        this(kind, labels, trailingLabel, selectedIndex, action, RadioAlignment.HORIZONTAL,
+                ReselectBehaviour.INERT);
     }
 
     /**
@@ -199,22 +220,22 @@ public record ControlSpec(ControlKind kind, List<String> labels, List<String> ic
     /**
      * Builds a plain vertical {@link ControlKind#RADIO}: one stacked option per label, the lit one at
      * {@code selectedIndex}, with no leading icons and no per-option values. It is the label-only
-     * sibling of {@link #createIconRadioList} - the shape a stacked selector takes (a view selector, a
-     * sort selector) - so a host need not spell out the empty icon/value lists and the vertical
-     * alignment at each call site. {@code canDeselect} refines whether a click on the lit option turns
-     * the whole control off: true for a selector that can clear to nothing, false for one that always
-     * keeps a segment lit.
+     * sibling of {@link #createVerticalRadioTable} - the shape a stacked selector takes (a view
+     * selector) - so a host need not spell out the empty icon/value lists and the vertical alignment at
+     * each call site. {@code reselect} refines what a click on the lit option does: {@link
+     * ReselectBehaviour#DESELECT} for a selector that clears to nothing, {@link ReselectBehaviour#INERT}
+     * for one that always keeps a segment lit.
      *
      * @param labels        the option labels, top to bottom, in segment order
      * @param selectedIndex the lit option's index, or {@link #NO_SELECTION} when nothing is picked
      * @param action        what a click on an option does, keyed by the option index
-     * @param canDeselect   whether a click on the lit option turns the control off
+     * @param reselect      what a click on the lit option does
      * @return the vertical radio spec in its current lit state
      */
     public static ControlSpec createVerticalRadio(List<String> labels, int selectedIndex,
-            ControlAction action, boolean canDeselect) {
+            ControlAction action, ReselectBehaviour reselect) {
         return new ControlSpec(ControlKind.RADIO, List.copyOf(labels), "", selectedIndex, action,
-                RadioAlignment.VERTICAL, canDeselect);
+                RadioAlignment.VERTICAL, reselect);
     }
 
     /**
@@ -223,8 +244,9 @@ public record ControlSpec(ControlKind kind, List<String> labels, List<String> ic
      * icon-less option). It is a vertical radio like the view selector, distinguished only by carrying
      * icons - the non-empty {@code iconPaths} is what makes the layout size rows for icons and the
      * renderer left-anchor the labels. It is always vertical (an icon list only reads as a column) and
-     * always deselectable (a click on the lit option turns the whole list off, the shape a
-     * deselectable picker takes - re-picking clears it). The lists run in parallel, so the icon at
+     * deselectable (a click on the lit option turns the whole list off, the shape a deselectable
+     * picker takes - re-picking clears it); a selector needing another re-pick behaviour uses {@link
+     * #createVerticalRadioTable}. The lists run in parallel, so the icon at
      * index {@code i} is drawn on the option labelled {@code labels.get(i)}; a shorter {@code
      * iconPaths} leaves the trailing options icon-less. The icon-path list is copied null-tolerantly
      * (a null entry is a real "no icon" value), so a caller may hand in a mutable list without the
@@ -263,9 +285,40 @@ public record ControlSpec(ControlKind kind, List<String> labels, List<String> ic
      */
     public static ControlSpec createIconRadioList(List<String> labels, List<String> iconPaths,
             List<String> trailingLabels, int selectedIndex, ControlAction action) {
+        return createVerticalRadioTable(labels, iconPaths, trailingLabels, selectedIndex, action,
+                ReselectBehaviour.DESELECT, BODY_TRAILING_SCALE);
+    }
+
+    /**
+     * Builds the general vertical {@link ControlKind#RADIO} table both a picker and a sort selector
+     * take: one stacked option per label, an optional leading icon and an optional trailing value per
+     * row, with a caller-chosen reselect behaviour and trailing size. It generalises {@link
+     * #createIconRadioList} - which is this with a deselectable re-pick and a body-size trailing
+     * column - so a selector that instead re-fires on the lit row and draws a compact trailing column
+     * (a sort selector's direction letters) shares the same three-column geometry. A row opts out of
+     * an icon with a null {@code iconPaths} entry, so an all-null (but present) icon column reads as a
+     * table with no crests, the same shape an alliance-only picker takes. Both optional lists are
+     * copied null-tolerantly so a caller may hand in mutable lists without the spec aliasing them.
+     *
+     * @param labels         the option labels, top to bottom; must contain no null (an unlabelled
+     *                       option passes an empty string)
+     * @param iconPaths      the per-option icon paths, aligned to {@code labels}; a null entry draws
+     *                       no icon on that option
+     * @param trailingLabels the per-option right-aligned values, aligned to {@code labels}; a null or
+     *                       absent entry draws no value on that option
+     * @param selectedIndex  the lit option's index, or {@link #NO_SELECTION} when nothing is picked
+     * @param action         what a click on an option does, keyed by the option index
+     * @param reselect       what a click on the lit option does (deselect, re-fire, or inert)
+     * @param trailingScale  the trailing values' size relative to the body font size ({@link
+     *                       #BODY_TRAILING_SCALE} for a body-size column, less for a compact one)
+     * @return the vertical radio table spec in its current lit state
+     */
+    public static ControlSpec createVerticalRadioTable(List<String> labels, List<String> iconPaths,
+            List<String> trailingLabels, int selectedIndex, ControlAction action,
+            ReselectBehaviour reselect, double trailingScale) {
         return new ControlSpec(ControlKind.RADIO, List.copyOf(labels),
                 Collections.unmodifiableList(new ArrayList<>(iconPaths)),
                 Collections.unmodifiableList(new ArrayList<>(trailingLabels)), "", selectedIndex,
-                action, RadioAlignment.VERTICAL, true);
+                action, RadioAlignment.VERTICAL, reselect, trailingScale);
     }
 }

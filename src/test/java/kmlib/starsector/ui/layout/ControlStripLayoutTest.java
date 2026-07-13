@@ -5,6 +5,7 @@ import kmlib.starsector.ui.controls.ControlAction;
 import kmlib.starsector.ui.controls.ControlKind;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.RadioAlignment;
+import kmlib.starsector.ui.controls.ReselectBehaviour;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.layout.ControlStripLayout.StripMeasurement;
 import kmlib.starsector.ui.widgets.IconLabelRow;
@@ -86,7 +87,8 @@ final class ControlStripLayoutTest {
         @Test
         void measureStripStandsAVerticalRadioOneRowTallPerOption() {
             var radio = new ControlSpec(ControlKind.RADIO, List.of("Factions", "Alliances"), "",
-                    ControlSpec.NO_SELECTION, ControlAction.NONE, RadioAlignment.VERTICAL, true);
+                    ControlSpec.NO_SELECTION, ControlAction.NONE, RadioAlignment.VERTICAL,
+                    ReselectBehaviour.DESELECT);
             var measurement = ControlStripLayout.measureStrip(List.of(radio), measurerFake);
             assertThat(measurement.rowHeights().get(0))
                     .isCloseTo(2 * ControlStripLayout.CONTROL_ROW_HEIGHT, within(TOLERANCE));
