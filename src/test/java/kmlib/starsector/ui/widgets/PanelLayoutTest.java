@@ -63,13 +63,13 @@ final class PanelLayoutTest {
     private static final float CONTENT_X = PADDING_LEFT + BORDER_WIDTH;
     private static final float BOX_TOP_Y = SCREEN_HEIGHT - PADDING_TOP;
     private static final float CONTENT_TOP_Y = BOX_TOP_Y - BORDER_WIDTH;
-    private static final float TAB_ROW_BOTTOM_Y = CONTENT_TOP_Y - PanelLayout.TAB_HEIGHT;
+    private static final float TAB_ROW_BOTTOM_Y = CONTENT_TOP_Y - ControlStripLayout.TAB_HEIGHT;
 
     // "No Layer  [N]" is 13 characters, "Political Map  [P]" is 18, each snapped to its width plus
     // the tab text padding; both clear the minimum width.
-    private static final float FIRST_TAB_WIDTH = 13 * WIDTH_PER_CHAR + PanelLayout.TAB_TEXT_PADDING;
+    private static final float FIRST_TAB_WIDTH = 13 * WIDTH_PER_CHAR + ControlStripLayout.TAB_TEXT_PADDING;
     private static final float SECOND_TAB_WIDTH =
-            18 * WIDTH_PER_CHAR + PanelLayout.TAB_TEXT_PADDING;
+            18 * WIDTH_PER_CHAR + ControlStripLayout.TAB_TEXT_PADDING;
     private static final float TAB_ROW_WIDTH = FIRST_TAB_WIDTH + SECOND_TAB_WIDTH;
 
     @Nested
@@ -105,7 +105,7 @@ final class PanelLayoutTest {
                 assertThat(bounds.y() + bounds.height())
                         .as("each tab's top edge is the inset content top")
                         .isCloseTo(CONTENT_TOP_Y, within(TOLERANCE));
-                assertThat(bounds.height()).isCloseTo(PanelLayout.TAB_HEIGHT, within(TOLERANCE));
+                assertThat(bounds.height()).isCloseTo(ControlStripLayout.TAB_HEIGHT, within(TOLERANCE));
             }
         }
 
@@ -122,7 +122,7 @@ final class PanelLayoutTest {
             assertThat(placement.bodyControls()).isEmpty();
             // The box is only the bordered tab row when there is no body beneath it.
             assertThat(placement.box().height())
-                    .isCloseTo(PanelLayout.TAB_HEIGHT + 2f * BORDER_WIDTH, within(TOLERANCE));
+                    .isCloseTo(ControlStripLayout.TAB_HEIGHT + 2f * BORDER_WIDTH, within(TOLERANCE));
         }
 
         @Test

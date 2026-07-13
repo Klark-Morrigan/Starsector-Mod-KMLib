@@ -92,11 +92,14 @@ import java.util.List;
  *                      #SINGLE_COLUMN} for a one-column list and every other kind
  * @param scrolls       whether this control is the capped strip's scrolling flex region; {@code
  *                      false} for every control that pins at its natural height
+ * @param shortcuts     one optional shortcut-key hint per option for a {@link ControlKind#TABS} control,
+ *                      in the same order as {@code labels} (a null or absent entry is a tab with no
+ *                      hint); empty for every other kind, which draws no shortcuts
  */
 public record ControlSpec(ControlKind kind, List<String> labels, List<String> iconPaths,
         List<String> trailingLabels, String trailingLabel, int selectedIndex, ControlAction action,
         RadioAlignment alignment, ReselectBehaviour reselect, double trailingScale, int columnCount,
-        boolean scrolls) {
+        boolean scrolls, List<String> shortcuts) {
     /** {@code selectedIndex} value meaning the control is off - no cell is lit. */
     public static final int NO_SELECTION = -1;
 
@@ -153,6 +156,10 @@ public record ControlSpec(ControlKind kind, List<String> labels, List<String> ic
                     "only a stacked list scrolls, so the scroll flag refines a vertical radio, not a "
                             + kind + " with " + alignment + " alignment");
         }
+        if (!shortcuts.isEmpty() && kind != ControlKind.TABS) {
+            throw new IllegalArgumentException(
+                    "shortcut hints are drawn only on a tabs control, not on a " + kind);
+        }
     }
 
     /**
@@ -165,7 +172,7 @@ public record ControlSpec(ControlKind kind, List<String> labels, List<String> ic
             int selectedIndex, ControlAction action, RadioAlignment alignment,
             ReselectBehaviour reselect) {
         this(kind, labels, List.of(), List.of(), trailingLabel, selectedIndex, action, alignment,
-                reselect, BODY_TRAILING_SCALE, SINGLE_COLUMN, false);
+                reselect, BODY_TRAILING_SCALE, SINGLE_COLUMN, false, List.of());
     }
 
     /**
@@ -411,7 +418,7 @@ public record ControlSpec(ControlKind kind, List<String> labels, List<String> ic
         return new ControlSpec(ControlKind.RADIO, List.copyOf(labels),
                 Collections.unmodifiableList(new ArrayList<>(iconPaths)),
                 Collections.unmodifiableList(new ArrayList<>(trailingLabels)), "", selectedIndex,
-                action, RadioAlignment.VERTICAL, reselect, trailingScale, columnCount, false);
+                action, RadioAlignment.VERTICAL, reselect, trailingScale, columnCount, false, List.of());
     }
 
     /**
@@ -424,6 +431,46 @@ public record ControlSpec(ControlKind kind, List<String> labels, List<String> ic
      */
     public ControlSpec buildScrollableCopy() {
         return new ControlSpec(kind, labels, iconPaths, trailingLabels, trailingLabel, selectedIndex,
-                action, alignment, reselect, trailingScale, columnCount, true);
+                action, alignment, reselect, trailingScale, columnCount, true, shortcuts);
+    }
+
+    /**
+     * Builds a tabs control: a {@link ControlKind#TABS} row of one tab per label, the lit one at {@code
+     * selectedIndex}, each carrying the optional shortcut hint at the matching {@code shortcuts} entry
+     * (null for a tab with no hint). A click fires {@code action} with the tab's index; what selecting a
+     * tab does stays with the host. The shortcut list is copied null-tolerantly so a caller may hand in a
+     * mutable list without the spec aliasing it, and it runs parallel to {@code labels}, so a shorter (or
+     * empty) list leaves the trailing tabs hint-less.
+     *
+     * @param labels        the tab labels, left to right; must contain no null (an unlabelled tab passes
+     *                      an empty string)
+     * @param shortcuts     the per-tab shortcut hints, aligned to {@code labels}; a null entry is a tab
+     *                      with no hint
+     * @param selectedIndex the lit tab's index, or {@link #NO_SELECTION} when none is lit
+     * @param action        what a click on a tab does, keyed by the tab index
+     * @return the tabs spec in its current lit state
+     */
+    public static ControlSpec createTabs(List<String> labels, List<String> shortcuts,
+            int selectedIndex, ControlAction action) {
+        return new ControlSpec(ControlKind.TABS, List.copyOf(labels), List.of(), List.of(), "",
+                selectedIndex, action, RadioAlignment.HORIZONTAL, ReselectBehaviour.INERT,
+                BODY_TRAILING_SCALE, SINGLE_COLUMN, false,
+                Collections.unmodifiableList(new ArrayList<>(shortcuts)));
+    }
+
+    /**
+     * The shortcut hint drawn at tab {@code index}, or an empty string when the tab has none - a shorter
+     * (or empty) shortcut list, or a null entry. Returning "" rather than null lets the layout and
+     * renderer treat "no hint" as a zero-width text without a null check at each call site, matching how
+     * {@link #trailingLabelAt} folds a missing value into a single rule.
+     *
+     * @param index the tab index
+     * @return the tab's shortcut hint, or "" when it has none
+     */
+    public String shortcutAt(int index) {
+        if (index >= shortcuts.size() || shortcuts.get(index) == null) {
+            return "";
+        }
+        return shortcuts.get(index);
     }
 }

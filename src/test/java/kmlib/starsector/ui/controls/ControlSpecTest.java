@@ -31,7 +31,7 @@ final class ControlSpecTest {
             assertThatThrownBy(() -> new ControlSpec(ControlKind.CHECKBOX, List.of("Muted"),
                     List.of("crest"), List.of(), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
                     RadioAlignment.HORIZONTAL, ReselectBehaviour.INERT,
-                    ControlSpec.BODY_TRAILING_SCALE, ControlSpec.SINGLE_COLUMN, false))
+                    ControlSpec.BODY_TRAILING_SCALE, ControlSpec.SINGLE_COLUMN, false, List.of()))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
@@ -42,7 +42,7 @@ final class ControlSpecTest {
             assertThatThrownBy(() -> new ControlSpec(ControlKind.RADIO, List.of("Short", "Full"),
                     List.of(), List.of("7", "3"), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
                     RadioAlignment.HORIZONTAL, ReselectBehaviour.INERT,
-                    ControlSpec.BODY_TRAILING_SCALE, ControlSpec.SINGLE_COLUMN, false))
+                    ControlSpec.BODY_TRAILING_SCALE, ControlSpec.SINGLE_COLUMN, false, List.of()))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
@@ -53,7 +53,7 @@ final class ControlSpecTest {
             assertThatThrownBy(() -> new ControlSpec(ControlKind.CHECKBOX, List.of("Muted"),
                     List.of(), List.of(), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
                     RadioAlignment.HORIZONTAL, ReselectBehaviour.DESELECT,
-                    ControlSpec.BODY_TRAILING_SCALE, ControlSpec.SINGLE_COLUMN, false))
+                    ControlSpec.BODY_TRAILING_SCALE, ControlSpec.SINGLE_COLUMN, false, List.of()))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
@@ -64,7 +64,7 @@ final class ControlSpecTest {
             assertThatThrownBy(() -> new ControlSpec(ControlKind.RADIO, List.of("A"), List.of(),
                     List.of(), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
                     RadioAlignment.VERTICAL, ReselectBehaviour.INERT, 0d, ControlSpec.SINGLE_COLUMN,
-                    false)).isInstanceOf(IllegalArgumentException.class);
+                    false, List.of())).isInstanceOf(IllegalArgumentException.class);
         }
 
         @Test
@@ -74,7 +74,7 @@ final class ControlSpecTest {
             assertThatThrownBy(() -> new ControlSpec(ControlKind.RADIO, List.of("A"), List.of(),
                     List.of(), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
                     RadioAlignment.VERTICAL, ReselectBehaviour.DESELECT,
-                    ControlSpec.BODY_TRAILING_SCALE, 0, false))
+                    ControlSpec.BODY_TRAILING_SCALE, 0, false, List.of()))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
@@ -85,7 +85,7 @@ final class ControlSpecTest {
             assertThatThrownBy(() -> new ControlSpec(ControlKind.RADIO, List.of("Short", "Full"),
                     List.of(), List.of(), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
                     RadioAlignment.HORIZONTAL, ReselectBehaviour.INERT,
-                    ControlSpec.BODY_TRAILING_SCALE, 2, false))
+                    ControlSpec.BODY_TRAILING_SCALE, 2, false, List.of()))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
@@ -96,7 +96,18 @@ final class ControlSpecTest {
             assertThatThrownBy(() -> new ControlSpec(ControlKind.RADIO, List.of("Short", "Full"),
                     List.of(), List.of(), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
                     RadioAlignment.HORIZONTAL, ReselectBehaviour.INERT,
-                    ControlSpec.BODY_TRAILING_SCALE, ControlSpec.SINGLE_COLUMN, true))
+                    ControlSpec.BODY_TRAILING_SCALE, ControlSpec.SINGLE_COLUMN, true, List.of()))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        void constructorRejectsShortcutHintsOnANonTabsKind() {
+            // Shortcut hints are drawn only on a tabs control, so a checkbox carrying them would drop
+            // them unseen - it must fail at construction instead.
+            assertThatThrownBy(() -> new ControlSpec(ControlKind.CHECKBOX, List.of("Muted"),
+                    List.of(), List.of(), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
+                    RadioAlignment.HORIZONTAL, ReselectBehaviour.INERT,
+                    ControlSpec.BODY_TRAILING_SCALE, ControlSpec.SINGLE_COLUMN, false, List.of("N")))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
@@ -468,6 +479,76 @@ final class ControlSpecTest {
             // Every non-icon control carries an empty icon-path list, so no option reports an icon.
             assertThat(ControlSpec.createCheckbox("Muted", true, ControlAction.NONE).hasIconAt(0))
                     .isFalse();
+        }
+    }
+
+    @Nested
+    class CreateTabs {
+
+        @Test
+        void createTabsIsATabsControlCarryingLabelsAndShortcuts() {
+            var tabs = ControlSpec.createTabs(List.of("No Layer", "Political Map"),
+                    List.of("N", "P"), 1, ControlAction.NONE);
+            assertThat(tabs.kind()).isEqualTo(ControlKind.TABS);
+            assertThat(tabs.labels()).containsExactly("No Layer", "Political Map");
+            assertThat(tabs.shortcuts()).containsExactly("N", "P");
+            assertThat(tabs.selectedIndex()).isEqualTo(1);
+        }
+
+        @Test
+        void createTabsKeepsNullShortcutEntriesForHintlessTabs() {
+            // A tab with no bound shortcut rides as a null entry, so the list stays aligned to the
+            // labels index for index; the copy must preserve the null rather than reject it.
+            var tabs = ControlSpec.createTabs(List.of("No Layer", "Political Map"),
+                    Arrays.asList("N", null), 0, ControlAction.NONE);
+            assertThat(tabs.shortcuts()).containsExactly("N", null);
+        }
+
+        @Test
+        void createTabsCarriesTheClickActionByTabIndex() {
+            var firedTab = new int[]{-99};
+            var tabs = ControlSpec.createTabs(List.of("No Layer", "Political Map"),
+                    List.of("N", "P"), 0, tab -> firedTab[0] = tab);
+            tabs.action().activateCell(1);
+            assertThat(firedTab[0]).isEqualTo(1);
+        }
+
+        @Test
+        void createTabsDoesNotAliasTheCallersShortcutList() {
+            // The caller may hand in a mutable list it goes on to reuse; the spec must copy it, so a
+            // later mutation of the caller's list cannot rewrite the drawn hints.
+            var callerShortcuts = new ArrayList<String>(List.of("N", "P"));
+            var tabs = ControlSpec.createTabs(List.of("No Layer", "Political Map"), callerShortcuts, 0,
+                    ControlAction.NONE);
+            callerShortcuts.set(0, "X");
+            assertThat(tabs.shortcuts()).containsExactly("N", "P");
+        }
+    }
+
+    @Nested
+    class ShortcutAt {
+
+        @Test
+        void shortcutAtIsTheTabsHintWhenItHasOne() {
+            var tabs = ControlSpec.createTabs(List.of("No Layer", "Political Map"),
+                    List.of("N", "P"), 0, ControlAction.NONE);
+            assertThat(tabs.shortcutAt(1)).isEqualTo("P");
+        }
+
+        @Test
+        void shortcutAtIsEmptyForANullEntry() {
+            // A null entry is a real "no hint", so it reads as an empty string rather than throwing.
+            var tabs = ControlSpec.createTabs(List.of("No Layer", "Political Map"),
+                    Arrays.asList("N", null), 0, ControlAction.NONE);
+            assertThat(tabs.shortcutAt(1)).isEmpty();
+        }
+
+        @Test
+        void shortcutAtIsEmptyForAnIndexPastTheShortcutList() {
+            // A shorter (or empty) shortcut list leaves the trailing tabs hint-less rather than throwing.
+            var tabs = ControlSpec.createTabs(List.of("No Layer", "Political Map"), List.of("N"), 0,
+                    ControlAction.NONE);
+            assertThat(tabs.shortcutAt(1)).isEmpty();
         }
     }
 }

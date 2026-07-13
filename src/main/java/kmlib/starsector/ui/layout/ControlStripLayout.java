@@ -8,6 +8,8 @@ import kmlib.starsector.ui.controls.RadioAlignment;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.widgets.IconLabelRow;
 import kmlib.starsector.ui.widgets.RadioRow;
+import kmlib.starsector.ui.widgets.VanillaTabContent;
+import kmlib.starsector.ui.widgets.VanillaTabStrip;
 import kmlib.text.KmlibStrings;
 
 import java.util.ArrayList;
@@ -47,6 +49,16 @@ public final class ControlStripLayout {
     // The body face size, measured here and drawn by the renderer at the one value, so a snapped row
     // width matches the text painted into it.
     public static final double BODY_FONT_SIZE = 13d;
+
+    // Tabs-control geometry: a TABS row stands one tab-height tall (taller than a body row, since the
+    // tab face is larger), each tab snapped to its label-plus-shortcut width with slack so text does not
+    // touch the edges and a floor so a short tab still gives a clickable box, and measured/drawn at the
+    // tab face size. Public so the panel frame and the renderer read the same values the layout snapped
+    // the tabs to.
+    public static final float TAB_HEIGHT = 24f;
+    public static final float TAB_TEXT_PADDING = 16f;
+    public static final float MIN_TAB_WIDTH = 48f;
+    public static final double TAB_FONT_SIZE = 15d;
 
     private ControlStripLayout() {
     }
@@ -116,53 +128,61 @@ public final class ControlStripLayout {
      * @param specs      the controls to place, top to bottom (must match the measured specs)
      * @param rowHeights the measured row heights, from {@link StripMeasurement#rowHeights()}
      * @param rowWidths  the measured row widths, from {@link StripMeasurement#rowWidths()}
+     * @param measurer   measures each label's rendered width, for snapping a tabs row's per-tab segments
      * @return the laid-out controls, top to bottom; empty when {@code specs} is empty
      */
     public static List<Control> layoutControls(Rectangle body, List<ControlSpec> specs,
-            List<Float> rowHeights, List<Float> rowWidths) {
+            List<Float> rowHeights, List<Float> rowWidths, LineWidthMeasurer measurer) {
         if (specs.isEmpty()) {
             return List.of();
         }
         var bodyTopY = body.y() + body.height();
         var rows = RowStack.layoutRows(body.x() + BODY_PADDING, bodyTopY - BODY_PADDING,
                 ROW_GAP, rowHeights, rowWidths);
-        return toControls(specs, rows);
+        return toControls(specs, rows, measurer);
     }
 
     /**
-     * Pairs each spec with the row it was snapped into, in order, splitting a radio into its segments
-     * and leaving every other kind a single-hit row. The SSOT for turning a run of (spec, row) pairs
-     * into laid-out controls, so this layout's plain stack and the capped strip layout's pinned header
-     * and footer runs build their controls the same way rather than each re-zipping.
+     * Pairs each spec with the row it was snapped into, in order, splitting a radio (or a tabs row) into
+     * its segments and leaving every other kind a single-hit row. The SSOT for turning a run of (spec,
+     * row) pairs into laid-out controls, so this layout's plain stack and the capped strip layout's
+     * pinned header and footer runs build their controls the same way rather than each re-zipping.
      *
-     * @param specs the controls, in stack order
-     * @param rows  their snapped rows, the same size and order as {@code specs}
+     * @param specs    the controls, in stack order
+     * @param rows     their snapped rows, the same size and order as {@code specs}
+     * @param measurer measures each label's rendered width, for snapping a tabs row's per-tab segments
      * @return the laid-out controls, in the same order
      */
-    static List<Control> toControls(List<ControlSpec> specs, List<Rectangle> rows) {
+    static List<Control> toControls(List<ControlSpec> specs, List<Rectangle> rows,
+            LineWidthMeasurer measurer) {
         var controls = new ArrayList<Control>(specs.size());
         for (var index = 0; index < specs.size(); index++) {
-            controls.add(toControl(specs.get(index), rows.get(index)));
+            controls.add(toControl(specs.get(index), rows.get(index), measurer));
         }
         return List.copyOf(controls);
     }
 
     /**
-     * Pairs one spec with the row it was snapped into, splitting a radio into its per-option hit
-     * segments and leaving every other kind a single-hit row. Package-private so the capped strip
-     * layout, which places the flex list itself, builds its list control through the same segment rule
-     * this layout uses rather than re-deriving it.
+     * Pairs one spec with the row it was snapped into, splitting a radio or a tabs row into its per-hit
+     * segments and leaving every other kind a single-hit row. Package-private so the capped strip layout,
+     * which places the flex list itself, builds its list control through the same segment rule this
+     * layout uses rather than re-deriving it. The measurer is only read for a tabs row, whose per-tab
+     * segments snap to text; every other kind splits geometrically and ignores it.
      *
-     * @param spec the control to pair with its row
-     * @param row  the row the strip snapped it into
-     * @return the laid-out control, its segments split for a radio and empty for any other kind
+     * @param spec     the control to pair with its row
+     * @param row      the row the strip snapped it into
+     * @param measurer measures each tab label's rendered width, for a tabs row's per-tab segments
+     * @return the laid-out control, its segments split for a radio or tabs row and empty for other kinds
      */
-    static Control toControl(ControlSpec spec, Rectangle row) {
-        // A radio (including the icon-list variant, which is a vertical radio that also draws an icon)
-        // splits into per-option hit segments; every other kind is a single-hit row with no segments.
-        var segments = spec.kind() == ControlKind.RADIO
-                ? splitRadioIntoSegments(spec, row)
-                : List.<Rectangle>of();
+    static Control toControl(ControlSpec spec, Rectangle row, LineWidthMeasurer measurer) {
+        // A radio (including the icon-list variant) and a tabs row split into per-hit segments; a tabs
+        // row snaps its tabs to text, so it alone reads the measurer. Every other kind is a single-hit
+        // row with no segments.
+        var segments = switch (spec.kind()) {
+            case RADIO -> splitRadioIntoSegments(spec, row);
+            case TABS -> splitTabsIntoSegments(spec, row, measurer);
+            default -> List.<Rectangle>of();
+        };
         return new Control(spec, row, segments);
     }
 
@@ -175,6 +195,31 @@ public final class ControlStripLayout {
             return RadioRow.splitIntoGrid(row, spec.labels().size(), spec.columnCount());
         }
         return RadioRow.splitIntoSegments(row, spec.labels().size(), spec.alignment());
+    }
+
+    // The per-tab hit segments of a tabs row, each snapped to its label-plus-shortcut width via the
+    // shared VanillaTabStrip geometry, so the tabs are hit exactly where they are drawn. The tabs hang
+    // from the row's top edge at the tab height, so the segments align to the row the strip snapped.
+    private static List<Rectangle> splitTabsIntoSegments(ControlSpec spec, Rectangle row,
+            LineWidthMeasurer measurer) {
+        var tabs = VanillaTabStrip.layoutTabs(row.x(), row.y() + row.height(), TAB_HEIGHT,
+                TAB_TEXT_PADDING, MIN_TAB_WIDTH, TAB_FONT_SIZE, buildTabContents(spec), measurer);
+        var segments = new ArrayList<Rectangle>(tabs.size());
+        for (var tab : tabs) {
+            segments.add(tab.bounds());
+        }
+        return List.copyOf(segments);
+    }
+
+    // Turns a tabs control's parallel label and shortcut lists into the tab contents the shared strip
+    // geometry measures and lays out; an empty shortcut reads as no hint (VanillaTabStrip drops a blank
+    // shortcut from the composed display).
+    private static List<VanillaTabContent> buildTabContents(ControlSpec spec) {
+        var contents = new ArrayList<VanillaTabContent>(spec.labels().size());
+        for (var index = 0; index < spec.labels().size(); index++) {
+            contents.add(new VanillaTabContent(spec.labels().get(index), spec.shortcutAt(index)));
+        }
+        return contents;
     }
 
     // Widens every divider row to the strip's inner content width, so a rule stretches across the
@@ -200,10 +245,24 @@ public final class ControlStripLayout {
             case RADIO -> measureRadioRowWidth(spec, measurer);
             case TOGGLE -> measureWidth(measurer, spec.labels().get(0)) + TOGGLE_TEXT_PADDING;
             case LABEL -> measureWidth(measurer, spec.labels().get(0));
+            case TABS -> measureTabsRowWidth(spec, measurer);
             // A divider has no intrinsic width - it stretches to the strip's inner width, resolved
             // once the widest row is known - so it contributes nothing to that width itself.
             case DIVIDER -> 0f;
         };
+    }
+
+    // The width a tabs row needs: its tabs laid side by side, each snapped to its label-plus-shortcut
+    // width (floored to the minimum tab width) through the shared VanillaTabStrip geometry, so the
+    // measured strip is exactly as wide as the drawn tabs.
+    private static float measureTabsRowWidth(ControlSpec spec, LineWidthMeasurer measurer) {
+        var total = 0f;
+        for (var content : buildTabContents(spec)) {
+            var display = VanillaTabStrip.composeDisplay(content);
+            total += Math.max(MIN_TAB_WIDTH,
+                    (float) measurer.measureLineWidth(display, TAB_FONT_SIZE) + TAB_TEXT_PADDING);
+        }
+        return total;
     }
 
     // The width a radio row needs. A horizontal group lays its equal segments side by side. A
@@ -229,6 +288,11 @@ public final class ControlStripLayout {
         if (spec.kind() == ControlKind.RADIO && spec.alignment() == RadioAlignment.VERTICAL) {
             var rowCount = RadioRow.computeRowsPerColumn(spec.labels().size(), spec.columnCount());
             return rowCount * CONTROL_ROW_HEIGHT;
+        }
+        // A tabs row stands one tab-height tall (taller than a body row), since it is drawn in the
+        // larger tab face rather than the body face.
+        if (spec.kind() == ControlKind.TABS) {
+            return TAB_HEIGHT;
         }
         return CONTROL_ROW_HEIGHT;
     }

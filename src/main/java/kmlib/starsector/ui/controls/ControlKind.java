@@ -31,5 +31,14 @@ public enum ControlKind {
      * hit target and no label. It parts one run of controls from the next, so a host can head a
      * section with a rule instead of a caption.
      */
-    DIVIDER
+    DIVIDER,
+
+    /**
+     * A row of vanilla-styled tabs, each snapped to its label-plus-shortcut width, exactly one lit -
+     * the panel's navigation, a control like any other rather than special panel chrome. Each tab is
+     * its own hit target and carries an optional shortcut hint (the spec's parallel {@code shortcuts});
+     * a click fires the select action with the tab's index. It reads as a horizontal single-select
+     * strip, but snapped to text and painted in the tab face rather than as equal radio segments.
+     */
+    TABS
 }

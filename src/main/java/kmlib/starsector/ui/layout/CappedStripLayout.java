@@ -3,6 +3,7 @@ package kmlib.starsector.ui.layout;
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlSpec;
+import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.layout.ControlStripLayout.StripMeasurement;
 
 import java.util.ArrayList;
@@ -99,16 +100,18 @@ public final class CappedStripLayout {
      * @param rowWidths       the measured row widths, from {@link StripMeasurement#rowWidths()}
      * @param flexIndex       the scrolling control's index, from {@link #findScrollingIndex}
      * @param rawScrollOffset the requested scroll offset in pixels; clamped to the available overflow
+     * @param measurer        measures each label's rendered width, for snapping a tabs row's segments
      * @return the laid-out controls, the flex viewport, the clamped offset, and the overflow
      */
     public static CappedStripPlacement layoutCappedControls(Rectangle body, List<ControlSpec> specs,
-            List<Float> rowHeights, List<Float> rowWidths, int flexIndex, float rawScrollOffset) {
+            List<Float> rowHeights, List<Float> rowWidths, int flexIndex, float rawScrollOffset,
+            LineWidthMeasurer measurer) {
         if (specs.isEmpty()) {
             return new CappedStripPlacement(List.of(), NO_VIEWPORT, 0f, 0f);
         }
         if (flexIndex == NO_FLEX_REGION) {
             // Nothing scrolls, so the strip pins whole - byte-for-byte the plain stacked layout.
-            var pinned = ControlStripLayout.layoutControls(body, specs, rowHeights, rowWidths);
+            var pinned = ControlStripLayout.layoutControls(body, specs, rowHeights, rowWidths, measurer);
             return new CappedStripPlacement(pinned, NO_VIEWPORT, 0f, 0f);
         }
         var originX = body.x() + ControlStripLayout.BODY_PADDING;
@@ -153,10 +156,11 @@ public final class CappedStripLayout {
         // Assemble in strip order: the pinned header, the scrolled flex list, then the pinned footer -
         // each run turned into controls through the shared zip so segments split identically everywhere.
         var controls = new ArrayList<Control>(specs.size());
-        controls.addAll(ControlStripLayout.toControls(specs.subList(0, flexIndex), headerRows));
-        controls.add(ControlStripLayout.toControl(specs.get(flexIndex), flexBounds));
+        controls.addAll(ControlStripLayout.toControls(specs.subList(0, flexIndex), headerRows,
+                measurer));
+        controls.add(ControlStripLayout.toControl(specs.get(flexIndex), flexBounds, measurer));
         controls.addAll(ControlStripLayout.toControls(specs.subList(flexIndex + 1, specs.size()),
-                footerRows));
+                footerRows, measurer));
         return new CappedStripPlacement(List.copyOf(controls), flexViewport, scrollOffset, overflow);
     }
 

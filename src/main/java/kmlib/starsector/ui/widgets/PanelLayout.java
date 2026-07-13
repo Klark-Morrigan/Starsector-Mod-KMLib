@@ -23,18 +23,6 @@ import java.util.List;
  * bottom margin; that anchoring is the caller's to supply through the paddings.
  */
 public final class PanelLayout {
-    // The tab row's height and the tab-label face size, measured here and drawn by a renderer at the one
-    // value each, so a snapped tab width matches the text painted into it. TAB_FONT_SIZE is public so a
-    // renderer draws at the same size this measured. The body's own geometry lives on ControlStripLayout,
-    // since the body is the reusable control strip, not this composition's.
-    static final float TAB_HEIGHT = 24f;
-    public static final double TAB_FONT_SIZE = 15d;
-
-    // Slack added to each measured tab label so text does not touch the tab edges, and a floor so a very
-    // short label still gives a clickable box.
-    static final float TAB_TEXT_PADDING = 16f;
-    static final float MIN_TAB_WIDTH = 48f;
-
     private PanelLayout() {
     }
 
@@ -69,16 +57,18 @@ public final class PanelLayout {
         // edges do not take, less the margin to keep clear. The capped layout shrinks only the scrolling
         // control (nothing when the body already fits or has no scrolling control), so the box stays put.
         var flexIndex = CappedStripLayout.findScrollingIndex(bodyControls);
-        var maxBodyHeight = screenHeight - paddingTop - 2f * borderWidth - TAB_HEIGHT - paddingBottom;
+        var maxBodyHeight = screenHeight - paddingTop - 2f * borderWidth
+                - ControlStripLayout.TAB_HEIGHT - paddingBottom;
         var bodyHeight = CappedStripLayout.capBodyHeight(strip, flexIndex, maxBodyHeight);
         var bodySize = strip.rowHeights().isEmpty()
                 ? TabPanelBodySize.NONE
                 : new TabPanelBodySize(strip.bodyWidth(), bodyHeight);
         var placement = TabPanel.layout(screenHeight, paddingTop, paddingLeft, borderWidth,
-                TAB_HEIGHT, TAB_TEXT_PADDING, MIN_TAB_WIDTH, TAB_FONT_SIZE, tabContents, bodySize,
-                measurer);
+                ControlStripLayout.TAB_HEIGHT, ControlStripLayout.TAB_TEXT_PADDING,
+                ControlStripLayout.MIN_TAB_WIDTH, ControlStripLayout.TAB_FONT_SIZE, tabContents,
+                bodySize, measurer);
         var capped = CappedStripLayout.layoutCappedControls(placement.body(), bodyControls,
-                strip.rowHeights(), strip.rowWidths(), flexIndex, rawScrollOffset);
+                strip.rowHeights(), strip.rowWidths(), flexIndex, rawScrollOffset, measurer);
         return new PanelPlacement(placement, capped.controls(), capped.flexViewport(),
                 capped.scrollOffset(), capped.scrollOverflow());
     }
