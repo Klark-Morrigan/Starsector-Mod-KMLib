@@ -54,4 +54,22 @@ public final class UiCursor {
         }
         return rawPixel * uiSize / pixelSize;
     }
+
+    /**
+     * Rescales a UI-unit coordinate back into screen pixels along one axis - the inverse of {@link
+     * #convertPixelToUi}. A pass drawing in UI coordinates needs this to hand a rectangle to a
+     * pixel-space GL call (a scissor clip), which operates in raw framebuffer pixels rather than the UI
+     * projection the layout works in.
+     *
+     * @param uiCoordinate the coordinate in UI units
+     * @param uiSize       the axis length in UI units
+     * @param pixelSize    the axis length in screen pixels
+     * @return the coordinate in screen pixels, or {@code -1} when {@code uiSize} is non-positive
+     */
+    public static float convertUiToPixel(float uiCoordinate, float uiSize, float pixelSize) {
+        if (uiSize <= 0f) {
+            return -1f;
+        }
+        return uiCoordinate * pixelSize / uiSize;
+    }
 }

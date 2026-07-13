@@ -35,4 +35,29 @@ class UiCursorTest {
             assertThat(UiCursor.convertPixelToUi(500f, 1920f, -10f)).isEqualTo(-1f);
         }
     }
+
+    @Nested
+    class ConvertUiToPixel {
+        @Test
+        void rescalesAUiCoordinateByThePixelToUiRatio() {
+            // 250 UI units of a 1920 UI axis, mapped onto a 3840 px axis -> twice the ratio, the exact
+            // inverse of the pixel-to-UI case.
+            assertThat(UiCursor.convertUiToPixel(250f, 1920f, 3840f)).isEqualTo(500f);
+        }
+
+        @Test
+        void isTheIdentityWhenUiUnitsMatchPixels() {
+            assertThat(UiCursor.convertUiToPixel(640f, 1920f, 1920f)).isEqualTo(640f);
+        }
+
+        @Test
+        void returnsNegativeWhenUiSpanIsZero() {
+            assertThat(UiCursor.convertUiToPixel(250f, 0f, 3840f)).isEqualTo(-1f);
+        }
+
+        @Test
+        void returnsNegativeWhenUiSpanIsNegative() {
+            assertThat(UiCursor.convertUiToPixel(250f, -10f, 3840f)).isEqualTo(-1f);
+        }
+    }
 }
