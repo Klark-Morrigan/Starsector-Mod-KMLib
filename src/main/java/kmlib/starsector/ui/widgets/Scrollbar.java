@@ -3,20 +3,24 @@ package kmlib.starsector.ui.widgets;
 import kmlib.math.geometry.Rectangle;
 
 /**
- * The geometry of a vertical scrollbar's thumb: given the track the host laid out and how far a list's
- * content overruns its viewport, it sizes and positions the thumb, and maps a pointer back to a scroll
- * offset for a click or drag on the track. Substrate-independent - it computes rectangles and offsets,
- * rendering nothing - so a GL or a UI-API renderer paints against it and an input listener hit-tests it.
- * The raw-GL paint lives in {@link kmlib.starsector.ui.render.gl.ScrollbarRenderer}.
+ * The geometry of a vertical scrollbar over a {@link ScrollRegion}: the track in the region's container
+ * gutter, the thumb sized and positioned within it for how far the content is scrolled, the grab column a
+ * drag reads, and the scroll offset a pointer on the track maps to. Substrate-independent - it computes
+ * rectangles and offsets, rendering nothing - so a GL or a UI-API renderer paints against it and an input
+ * listener hit-tests it. The raw-GL paint lives in {@link kmlib.starsector.ui.render.gl.ScrollbarRenderer}.
  *
- * <p>The track is the host's to place (a thin bar in a body's right inset, spanning the scroll region),
- * so this owns only the thumb-within-track math, keeping it reusable across whatever frames the track.
- * The thumb's height reflects how much of the content fits - a short thumb for a long list - and its
- * position reflects the scroll offset, with the thumb at the track top when scrolled to the first row
- * and at the bottom when scrolled to the last. UI coordinates throughout (origin bottom-left, y grows
- * up), so a taller offset (scrolled further down the content) sits the thumb lower.
+ * <p>The scrollbar is scoped to the scrollable region, not to any host: everything it needs rides on the
+ * {@link ScrollRegion} (the container for the track's gutter, the viewport for its extent, the
+ * offset/overflow for the thumb). The thumb's height reflects how much of the content fits - a short thumb
+ * for a long list - and its position reflects the scroll offset, with the thumb at the track top when
+ * scrolled to the first row and at the bottom when scrolled to the last. UI coordinates throughout (origin
+ * bottom-left, y grows up), so a taller offset (scrolled further down the content) sits the thumb lower.
  */
 public final class Scrollbar {
+    /** The track's width, and the gap holding it off the container's right edge so it clears a border. */
+    public static final float DEFAULT_TRACK_WIDTH = 3f;
+    public static final float DEFAULT_RIGHT_MARGIN = 3f;
+
     // A floor on the thumb height so a very long list still leaves a grabbable thumb rather than a
     // sliver; a track shorter than this collapses the thumb to the whole track.
     static final float MIN_THUMB_HEIGHT = 12f;
@@ -25,66 +29,73 @@ public final class Scrollbar {
     }
 
     /**
-     * The track rectangle for a scrollbar in the right-hand gutter of {@code container}, spanning the
-     * scroll {@code viewport}: a {@code trackWidth}-wide bar set {@code rightMargin} in from the
-     * container's right edge, aligned to and as tall as the viewport. The host places the track this way
-     * rather than the thumb math deriving it, because the gutter is the container's - the list column the
-     * viewport covers may be narrower than the container, so the track pins to the container's edge, not
-     * the viewport's. Pairs with {@link #computeThumb}, which sizes the thumb within the returned track.
+     * The scrollbar track: a thin bar in the right-hand gutter of the region's container, spanning the
+     * region's viewport. It pins to the container's right edge (not the viewport's), because the list
+     * column the viewport covers may be narrower than the container, so the track sits in the container's
+     * gutter clear of the content. Pairs with {@link #computeThumb}, which sizes the thumb within it.
      *
-     * @param container   the framed container whose right gutter holds the track (a control body)
-     * @param viewport    the scroll viewport the track spans vertically
-     * @param trackWidth  the track's width
-     * @param rightMargin the gap from the container's right edge to the track, so it clears the border
+     * @param region the scrollable region
      * @return the track rectangle, in UI coordinates
      */
-    public static Rectangle computeRightGutterTrack(Rectangle container, Rectangle viewport,
-            float trackWidth, float rightMargin) {
-        var trackX = container.x() + container.width() - trackWidth - rightMargin;
-        return new Rectangle(trackX, viewport.y(), trackWidth, viewport.height());
+    public static Rectangle computeTrack(ScrollRegion region) {
+        var container = region.container();
+        var viewport = region.viewport();
+        var trackX = container.x() + container.width() - DEFAULT_TRACK_WIDTH - DEFAULT_RIGHT_MARGIN;
+        return new Rectangle(trackX, viewport.y(), DEFAULT_TRACK_WIDTH, viewport.height());
     }
 
     /**
      * The thumb rectangle within {@code track}: as tall as the track scaled by the fraction of the
-     * content that fits (floored to a grabbable minimum), and positioned by the scroll offset - flush
-     * with the track top when {@code scrollOffset} is 0 and flush with the bottom when it is the full
-     * overflow. A content that fits its viewport (no overflow) fills the track, since there is nothing
-     * to scroll.
+     * content that fits (floored to a grabbable minimum), and positioned by the region's scroll offset -
+     * flush with the track top at offset 0 and flush with the bottom at the full overflow. A content that
+     * fits its viewport (no overflow) fills the track, since there is nothing to scroll.
      *
-     * @param track          the track's footprint, in UI coordinates
-     * @param contentHeight  the full height of the scrolled content
-     * @param viewportHeight the visible height the content scrolls within
-     * @param scrollOffset   how far the content is scrolled, 0..overflow
+     * @param region the scrollable region
+     * @param track  the track from {@link #computeTrack}
      * @return the thumb rectangle within the track
      */
-    public static Rectangle computeThumb(Rectangle track, float contentHeight, float viewportHeight,
-            float scrollOffset) {
-        var thumbHeight = resolveThumbHeight(track, contentHeight, viewportHeight);
+    public static Rectangle computeThumb(ScrollRegion region, Rectangle track) {
+        var thumbHeight = resolveThumbHeight(track, region.contentHeight(), region.viewport().height());
         var travel = track.height() - thumbHeight;
-        var overflow = resolveOverflow(contentHeight, viewportHeight);
+        var overflow = region.overflow();
         // The thumb hangs from the track top at offset 0 and drops through the travel as the content
         // scrolls, so its fraction of the travel matches the offset's fraction of the overflow.
-        var fraction = overflow <= 0f ? 0f : clampFraction(scrollOffset / overflow);
+        var fraction = overflow <= 0f ? 0f : clampFraction(region.offset() / overflow);
         var thumbY = track.y() + travel * (1f - fraction);
         return new Rectangle(track.x(), thumbY, track.width(), thumbHeight);
     }
 
     /**
-     * The scroll offset a pointer at {@code pointerY} maps to, treating the pointer as the thumb's
-     * centre: the track top yields 0 and the track bottom the full overflow, clamped between. Used by a
-     * click or drag on the track to move the list to where the pointer sits. A content that fits (no
-     * overflow) always resolves to 0, since there is nowhere to scroll.
+     * The gutter column a drag grabs the scrollbar by: the strip right of the content, from the viewport's
+     * right edge to the container's, at the viewport's height. It is wider than the thin track so a drag
+     * need not hit the track exactly, and it sits right of the content so a press here grabs the scrollbar
+     * rather than acting on the content (which lies to its left).
      *
-     * @param track          the track's footprint, in UI coordinates
-     * @param contentHeight  the full height of the scrolled content
-     * @param viewportHeight the visible height the content scrolls within
-     * @param pointerY       the pointer's y, in UI coordinates
+     * @param region the scrollable region
+     * @return the grab column, in UI coordinates
+     */
+    public static Rectangle computeGrabColumn(ScrollRegion region) {
+        var viewport = region.viewport();
+        var container = region.container();
+        var listRight = viewport.x() + viewport.width();
+        var containerRight = container.x() + container.width();
+        return new Rectangle(listRight, viewport.y(), containerRight - listRight, viewport.height());
+    }
+
+    /**
+     * The scroll offset a pointer at {@code pointerY} maps to, treating the pointer as the thumb's centre:
+     * the track top yields 0 and the track bottom the full overflow, clamped between. Used by a click or
+     * drag on the track to move the content to where the pointer sits. A content that fits (no overflow)
+     * always resolves to 0, since there is nowhere to scroll.
+     *
+     * @param region   the scrollable region
+     * @param track    the track from {@link #computeTrack}
+     * @param pointerY the pointer's y, in UI coordinates
      * @return the scroll offset, 0..overflow
      */
-    public static float resolveOffsetForPointer(Rectangle track, float contentHeight,
-            float viewportHeight, float pointerY) {
-        var overflow = resolveOverflow(contentHeight, viewportHeight);
-        var thumbHeight = resolveThumbHeight(track, contentHeight, viewportHeight);
+    public static float resolveOffsetForPointer(ScrollRegion region, Rectangle track, float pointerY) {
+        var overflow = region.overflow();
+        var thumbHeight = resolveThumbHeight(track, region.contentHeight(), region.viewport().height());
         var travel = track.height() - thumbHeight;
         if (overflow <= 0f || travel <= 0f) {
             return 0f;
@@ -106,11 +117,6 @@ public final class Scrollbar {
         }
         var proportional = track.height() * viewportHeight / contentHeight;
         return Math.min(track.height(), Math.max(MIN_THUMB_HEIGHT, proportional));
-    }
-
-    // How far the content overruns its viewport, or 0 when it fits.
-    private static float resolveOverflow(float contentHeight, float viewportHeight) {
-        return Math.max(0f, contentHeight - viewportHeight);
     }
 
     // Confines a 0..1 fraction to that range, so a thumb position or a pointer mapping never runs past

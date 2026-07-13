@@ -58,4 +58,15 @@ public record PanelPlacement(TabPanelPlacement panel, List<Control> bodyControls
     public boolean isScrollbarNeeded() {
         return scrollOverflow > 0f;
     }
+
+    /**
+     * Projects this panel's scrolling control into a {@link ScrollRegion} - the body as the container,
+     * the flex viewport, and the scroll offset/overflow - so a {@link Scrollbar} sizes and hit-tests
+     * itself from the placement without the panel owning any scrollbar geometry itself.
+     *
+     * @return the scroll region for this panel's scrolling control
+     */
+    public ScrollRegion toScrollRegion() {
+        return new ScrollRegion(body(), flexViewport(), scrollOffset(), scrollOverflow());
+    }
 }
