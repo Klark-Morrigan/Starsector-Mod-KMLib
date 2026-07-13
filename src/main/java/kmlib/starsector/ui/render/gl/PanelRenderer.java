@@ -3,7 +3,7 @@ package kmlib.starsector.ui.render.gl;
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.input.UiCursor;
 import kmlib.starsector.ui.widgets.PanelPlacement;
-import kmlib.starsector.ui.widgets.Scrollbar;
+import kmlib.starsector.ui.widgets.PanelScrollbars;
 import kmlib.starsector.ui.widgets.TabPanel;
 
 import org.lwjgl.opengl.GL11;
@@ -79,9 +79,8 @@ public final class PanelRenderer {
     // same geometry the input listener hit-tests for a drag - so what is drawn and what a drag grabs
     // cannot drift.
     private static void drawScrollbar(PanelPlacement placement, PanelStyle style, float opacity) {
-        var region = placement.toScrollRegion();
-        var track = Scrollbar.computeTrack(region);
-        var thumb = Scrollbar.computeThumb(region, track);
+        var track = PanelScrollbars.computeTrack(placement);
+        var thumb = PanelScrollbars.computeThumb(placement);
         ScrollbarRenderer.render(track, thumb, style.accent(), opacity);
     }
 }
