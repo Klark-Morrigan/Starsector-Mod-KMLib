@@ -25,6 +25,26 @@ public final class Scrollbar {
     }
 
     /**
+     * The track rectangle for a scrollbar in the right-hand gutter of {@code container}, spanning the
+     * scroll {@code viewport}: a {@code trackWidth}-wide bar set {@code rightMargin} in from the
+     * container's right edge, aligned to and as tall as the viewport. The host places the track this way
+     * rather than the thumb math deriving it, because the gutter is the container's - the list column the
+     * viewport covers may be narrower than the container, so the track pins to the container's edge, not
+     * the viewport's. Pairs with {@link #computeThumb}, which sizes the thumb within the returned track.
+     *
+     * @param container   the framed container whose right gutter holds the track (a control body)
+     * @param viewport    the scroll viewport the track spans vertically
+     * @param trackWidth  the track's width
+     * @param rightMargin the gap from the container's right edge to the track, so it clears the border
+     * @return the track rectangle, in UI coordinates
+     */
+    public static Rectangle computeRightGutterTrack(Rectangle container, Rectangle viewport,
+            float trackWidth, float rightMargin) {
+        var trackX = container.x() + container.width() - trackWidth - rightMargin;
+        return new Rectangle(trackX, viewport.y(), trackWidth, viewport.height());
+    }
+
+    /**
      * The thumb rectangle within {@code track}: as tall as the track scaled by the fraction of the
      * content that fits (floored to a grabbable minimum), and positioned by the scroll offset - flush
      * with the track top when {@code scrollOffset} is 0 and flush with the bottom when it is the full

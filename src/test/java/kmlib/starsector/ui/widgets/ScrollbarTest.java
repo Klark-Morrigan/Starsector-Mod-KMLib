@@ -24,6 +24,30 @@ final class ScrollbarTest {
     private static final float OVERFLOW = CONTENT_HEIGHT - VIEWPORT_HEIGHT;
 
     @Nested
+    class ComputeRightGutterTrack {
+        // A 200-wide container (right edge at 300) over a viewport that covers a narrower list column,
+        // so the track pins to the container's edge rather than the viewport's.
+        private static final Rectangle CONTAINER = new Rectangle(100f, 0f, 200f, 500f);
+        private static final Rectangle VIEWPORT = new Rectangle(110f, 50f, 120f, 300f);
+
+        @Test
+        void computeRightGutterTrackSetsTheTrackInFromTheContainerRightEdge() {
+            var track = Scrollbar.computeRightGutterTrack(CONTAINER, VIEWPORT, 3f, 2f);
+            // The track's right edge sits the margin in from the container's right edge (300), and it is
+            // the requested width - so it lands in the container's gutter, not against the list column.
+            assertThat(track.x() + track.width()).isCloseTo(298f, within(TOLERANCE));
+            assertThat(track.width()).isCloseTo(3f, within(TOLERANCE));
+        }
+
+        @Test
+        void computeRightGutterTrackSpansTheViewportVertically() {
+            var track = Scrollbar.computeRightGutterTrack(CONTAINER, VIEWPORT, 3f, 2f);
+            assertThat(track.y()).isCloseTo(VIEWPORT.y(), within(TOLERANCE));
+            assertThat(track.height()).isCloseTo(VIEWPORT.height(), within(TOLERANCE));
+        }
+    }
+
+    @Nested
     class ComputeThumb {
 
         @Test
