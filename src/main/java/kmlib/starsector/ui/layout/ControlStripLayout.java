@@ -71,13 +71,10 @@ public final class ControlStripLayout {
         var rowWidths = new ArrayList<Float>(specs.size());
         var rowHeights = new ArrayList<Float>(specs.size());
         var contentWidth = 0f;
-        var stackedHeight = 0f;
         for (var spec : specs) {
             var rowWidth = measureRowWidth(spec, measurer);
             rowWidths.add(rowWidth);
-            var rowHeight = measureRowHeight(spec);
-            rowHeights.add(rowHeight);
-            stackedHeight += rowHeight;
+            rowHeights.add(measureRowHeight(spec));
             contentWidth = Math.max(contentWidth, rowWidth + measureTrailingWidth(spec, measurer));
         }
         // A divider spans the strip's inner width, so once the widest content row is known its row
@@ -85,9 +82,27 @@ public final class ControlStripLayout {
         // a zero-width row. Done after the loop so it never drives the content width it stretches to.
         spanDividersToContentWidth(specs, rowWidths, contentWidth);
         var bodyWidth = contentWidth + 2f * BODY_PADDING;
-        var bodyHeight = 2f * BODY_PADDING + stackedHeight + (specs.size() - 1) * ROW_GAP;
+        var bodyHeight = 2f * BODY_PADDING + measureStackedHeight(rowHeights);
         return new StripMeasurement(bodyWidth, bodyHeight, List.copyOf(rowWidths),
                 List.copyOf(rowHeights));
+    }
+
+    /**
+     * The height a run of rows occupies when stacked with a gap between each: the summed heights plus one
+     * gap per seam. The SSOT for "how tall does this run of rows stand", read by {@link #measureStrip}
+     * for the whole strip's body and by the capped strip layout for its pinned footer block, so the two
+     * size a stacked run the same way. An empty run is zero, and a single row is its own height with no
+     * gap.
+     *
+     * @param rowHeights each row's height, in stack order
+     * @return the stacked height including the inter-row gaps, or 0 for an empty run
+     */
+    static float measureStackedHeight(List<Float> rowHeights) {
+        var total = 0f;
+        for (var rowHeight : rowHeights) {
+            total += rowHeight;
+        }
+        return total + Math.max(0, rowHeights.size() - 1) * ROW_GAP;
     }
 
     /**
@@ -111,19 +126,44 @@ public final class ControlStripLayout {
         var bodyTopY = body.y() + body.height();
         var rows = RowStack.layoutRows(body.x() + BODY_PADDING, bodyTopY - BODY_PADDING,
                 ROW_GAP, rowHeights, rowWidths);
+        return toControls(specs, rows);
+    }
+
+    /**
+     * Pairs each spec with the row it was snapped into, in order, splitting a radio into its segments
+     * and leaving every other kind a single-hit row. The SSOT for turning a run of (spec, row) pairs
+     * into laid-out controls, so this layout's plain stack and the capped strip layout's pinned header
+     * and footer runs build their controls the same way rather than each re-zipping.
+     *
+     * @param specs the controls, in stack order
+     * @param rows  their snapped rows, the same size and order as {@code specs}
+     * @return the laid-out controls, in the same order
+     */
+    static List<Control> toControls(List<ControlSpec> specs, List<Rectangle> rows) {
         var controls = new ArrayList<Control>(specs.size());
         for (var index = 0; index < specs.size(); index++) {
-            var spec = specs.get(index);
-            var row = rows.get(index);
-            // A radio (including the icon-list variant, which is a vertical radio that also draws an
-            // icon) splits into per-option hit segments; every other kind is a single-hit row with no
-            // segments.
-            var segments = spec.kind() == ControlKind.RADIO
-                    ? splitRadioIntoSegments(spec, row)
-                    : List.<Rectangle>of();
-            controls.add(new Control(spec, row, segments));
+            controls.add(toControl(specs.get(index), rows.get(index)));
         }
         return List.copyOf(controls);
+    }
+
+    /**
+     * Pairs one spec with the row it was snapped into, splitting a radio into its per-option hit
+     * segments and leaving every other kind a single-hit row. Package-private so the capped strip
+     * layout, which places the flex list itself, builds its list control through the same segment rule
+     * this layout uses rather than re-deriving it.
+     *
+     * @param spec the control to pair with its row
+     * @param row  the row the strip snapped it into
+     * @return the laid-out control, its segments split for a radio and empty for any other kind
+     */
+    static Control toControl(ControlSpec spec, Rectangle row) {
+        // A radio (including the icon-list variant, which is a vertical radio that also draws an icon)
+        // splits into per-option hit segments; every other kind is a single-hit row with no segments.
+        var segments = spec.kind() == ControlKind.RADIO
+                ? splitRadioIntoSegments(spec, row)
+                : List.<Rectangle>of();
+        return new Control(spec, row, segments);
     }
 
     // The per-option hit segments of a radio row, split under its flow. A vertical radio lays its

@@ -31,7 +31,7 @@ final class ControlSpecTest {
             assertThatThrownBy(() -> new ControlSpec(ControlKind.CHECKBOX, List.of("Muted"),
                     List.of("crest"), List.of(), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
                     RadioAlignment.HORIZONTAL, ReselectBehaviour.INERT,
-                    ControlSpec.BODY_TRAILING_SCALE, ControlSpec.SINGLE_COLUMN))
+                    ControlSpec.BODY_TRAILING_SCALE, ControlSpec.SINGLE_COLUMN, false))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
@@ -42,7 +42,7 @@ final class ControlSpecTest {
             assertThatThrownBy(() -> new ControlSpec(ControlKind.RADIO, List.of("Short", "Full"),
                     List.of(), List.of("7", "3"), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
                     RadioAlignment.HORIZONTAL, ReselectBehaviour.INERT,
-                    ControlSpec.BODY_TRAILING_SCALE, ControlSpec.SINGLE_COLUMN))
+                    ControlSpec.BODY_TRAILING_SCALE, ControlSpec.SINGLE_COLUMN, false))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
@@ -53,7 +53,7 @@ final class ControlSpecTest {
             assertThatThrownBy(() -> new ControlSpec(ControlKind.CHECKBOX, List.of("Muted"),
                     List.of(), List.of(), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
                     RadioAlignment.HORIZONTAL, ReselectBehaviour.DESELECT,
-                    ControlSpec.BODY_TRAILING_SCALE, ControlSpec.SINGLE_COLUMN))
+                    ControlSpec.BODY_TRAILING_SCALE, ControlSpec.SINGLE_COLUMN, false))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
@@ -63,8 +63,8 @@ final class ControlSpecTest {
             // value cannot size any text, so it fails at construction rather than measuring to nothing.
             assertThatThrownBy(() -> new ControlSpec(ControlKind.RADIO, List.of("A"), List.of(),
                     List.of(), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
-                    RadioAlignment.VERTICAL, ReselectBehaviour.INERT, 0d, ControlSpec.SINGLE_COLUMN))
-                    .isInstanceOf(IllegalArgumentException.class);
+                    RadioAlignment.VERTICAL, ReselectBehaviour.INERT, 0d, ControlSpec.SINGLE_COLUMN,
+                    false)).isInstanceOf(IllegalArgumentException.class);
         }
 
         @Test
@@ -74,7 +74,7 @@ final class ControlSpecTest {
             assertThatThrownBy(() -> new ControlSpec(ControlKind.RADIO, List.of("A"), List.of(),
                     List.of(), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
                     RadioAlignment.VERTICAL, ReselectBehaviour.DESELECT,
-                    ControlSpec.BODY_TRAILING_SCALE, 0))
+                    ControlSpec.BODY_TRAILING_SCALE, 0, false))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
@@ -85,7 +85,18 @@ final class ControlSpecTest {
             assertThatThrownBy(() -> new ControlSpec(ControlKind.RADIO, List.of("Short", "Full"),
                     List.of(), List.of(), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
                     RadioAlignment.HORIZONTAL, ReselectBehaviour.INERT,
-                    ControlSpec.BODY_TRAILING_SCALE, 2))
+                    ControlSpec.BODY_TRAILING_SCALE, 2, false))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        void constructorRejectsTheScrollFlagOnAHorizontalRadio() {
+            // Only a stacked list scrolls; a horizontal radio has a single side-by-side row and no
+            // rows to scroll, so marking it scrollable is a shape the capped layout could not clip.
+            assertThatThrownBy(() -> new ControlSpec(ControlKind.RADIO, List.of("Short", "Full"),
+                    List.of(), List.of(), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
+                    RadioAlignment.HORIZONTAL, ReselectBehaviour.INERT,
+                    ControlSpec.BODY_TRAILING_SCALE, ControlSpec.SINGLE_COLUMN, true))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
@@ -322,6 +333,49 @@ final class ControlSpecTest {
             var picker = ControlSpec.createIconRadioList(List.of("Hegemony", "Tri-Tachyon"),
                     List.of("crest_heg", "crest_tt"), List.of("7", "3"), 0, ControlAction.NONE, 2);
             assertThat(picker.columnCount()).isEqualTo(2);
+        }
+    }
+
+    @Nested
+    class BuildScrollableCopy {
+
+        @Test
+        void buildScrollableCopyMarksTheListAsTheScrollingRegion() {
+            // A picker opts its list into scrolling after building it through the ordinary factory, so
+            // the copy carries the flag while everything else the layout reads stays as it was.
+            var picker = ControlSpec.createIconRadioList(List.of("Hegemony", "Tri-Tachyon"),
+                    List.of("crest_heg", "crest_tt"), List.of("7", "3"), 1, ControlAction.NONE, 2);
+            var scrolling = picker.buildScrollableCopy();
+            assertThat(scrolling.scrolls()).isTrue();
+            assertThat(scrolling.labels()).isEqualTo(picker.labels());
+            assertThat(scrolling.iconPaths()).isEqualTo(picker.iconPaths());
+            assertThat(scrolling.trailingLabels()).isEqualTo(picker.trailingLabels());
+            assertThat(scrolling.selectedIndex()).isEqualTo(picker.selectedIndex());
+            assertThat(scrolling.columnCount()).isEqualTo(picker.columnCount());
+        }
+
+        @Test
+        void buildScrollableCopyLeavesTheOriginalUnmarked() {
+            // The copy is a fresh spec, so the source the host still holds is untouched - only the one
+            // it opts in scrolls.
+            var picker = ControlSpec.createIconRadioList(List.of("Hegemony"), List.of("crest_heg"),
+                    0, ControlAction.NONE);
+            picker.buildScrollableCopy();
+            assertThat(picker.scrolls()).isFalse();
+        }
+    }
+
+    @Nested
+    class Scrolls {
+
+        @Test
+        void scrollsIsFalseForAnOrdinaryControl() {
+            // Every control that pins at its natural height carries the flag unset, so a strip with none
+            // marked is never capped.
+            assertThat(ControlSpec.createCheckbox("Muted", true, ControlAction.NONE).scrolls())
+                    .isFalse();
+            assertThat(ControlSpec.createIconRadioList(List.of("Hegemony"), List.of("crest_heg"), 0,
+                    ControlAction.NONE).scrolls()).isFalse();
         }
     }
 

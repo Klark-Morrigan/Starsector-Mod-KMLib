@@ -58,6 +58,15 @@ import java.util.List;
  * every other kind - only a vertical radio may carry a wider count, since only a stacked list has rows
  * to spread across columns.
  *
+ * <p>{@code scrolls} marks this control as the one flex region of a capped control strip: when a host
+ * caps the strip's height (a bottom-padding limit), the controls before this one pin to the top and
+ * the controls after it pin to the bottom, while this one takes the room left between and scrolls its
+ * own rows when they overrun it. It is the single source both the capped layout, the renderer (which
+ * clips it to its viewport), and the input listener (which scrolls it and clamps its clicks) read, so
+ * the three agree on which control scrolls without a positional guess. A stacked list is the only
+ * shape that scrolls, so it refines a vertical {@link ControlKind#RADIO} only and is {@code false} for
+ * every other control; a strip carrying none is never capped and keeps its natural height.
+ *
  * @param kind          which widget the control is
  * @param labels        the control's own label(s): one for a checkbox or toggle, one per option for
  *                      a radio (in segment order)
@@ -81,10 +90,13 @@ import java.util.List;
  *                      size; 1.0 for a control with no trailing column or one drawn at body size
  * @param columnCount   how many columns a vertical radio spreads its options across; {@link
  *                      #SINGLE_COLUMN} for a one-column list and every other kind
+ * @param scrolls       whether this control is the capped strip's scrolling flex region; {@code
+ *                      false} for every control that pins at its natural height
  */
 public record ControlSpec(ControlKind kind, List<String> labels, List<String> iconPaths,
         List<String> trailingLabels, String trailingLabel, int selectedIndex, ControlAction action,
-        RadioAlignment alignment, ReselectBehaviour reselect, double trailingScale, int columnCount) {
+        RadioAlignment alignment, ReselectBehaviour reselect, double trailingScale, int columnCount,
+        boolean scrolls) {
     /** {@code selectedIndex} value meaning the control is off - no cell is lit. */
     public static final int NO_SELECTION = -1;
 
@@ -136,6 +148,11 @@ public record ControlSpec(ControlKind kind, List<String> labels, List<String> ic
                     "a multi-column list spreads a vertical radio's options, not a " + kind + " with "
                             + alignment + " alignment");
         }
+        if (scrolls && (kind != ControlKind.RADIO || alignment != RadioAlignment.VERTICAL)) {
+            throw new IllegalArgumentException(
+                    "only a stacked list scrolls, so the scroll flag refines a vertical radio, not a "
+                            + kind + " with " + alignment + " alignment");
+        }
     }
 
     /**
@@ -148,7 +165,7 @@ public record ControlSpec(ControlKind kind, List<String> labels, List<String> ic
             int selectedIndex, ControlAction action, RadioAlignment alignment,
             ReselectBehaviour reselect) {
         this(kind, labels, List.of(), List.of(), trailingLabel, selectedIndex, action, alignment,
-                reselect, BODY_TRAILING_SCALE, SINGLE_COLUMN);
+                reselect, BODY_TRAILING_SCALE, SINGLE_COLUMN, false);
     }
 
     /**
@@ -394,6 +411,19 @@ public record ControlSpec(ControlKind kind, List<String> labels, List<String> ic
         return new ControlSpec(ControlKind.RADIO, List.copyOf(labels),
                 Collections.unmodifiableList(new ArrayList<>(iconPaths)),
                 Collections.unmodifiableList(new ArrayList<>(trailingLabels)), "", selectedIndex,
-                action, RadioAlignment.VERTICAL, reselect, trailingScale, columnCount);
+                action, RadioAlignment.VERTICAL, reselect, trailingScale, columnCount, false);
+    }
+
+    /**
+     * Returns a copy of this control marked as the capped strip's scrolling flex region, so a host
+     * builds its list through the ordinary {@code create*} factory and then opts that one control into
+     * scrolling without a scroll-specific factory per list shape. Only a stacked list scrolls, so the
+     * canonical constructor's guard rejects the copy unless this control is a vertical radio.
+     *
+     * @return an otherwise-identical spec with {@link #scrolls()} set
+     */
+    public ControlSpec buildScrollableCopy() {
+        return new ControlSpec(kind, labels, iconPaths, trailingLabels, trailingLabel, selectedIndex,
+                action, alignment, reselect, trailingScale, columnCount, true);
     }
 }
