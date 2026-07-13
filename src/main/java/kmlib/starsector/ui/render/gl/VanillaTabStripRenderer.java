@@ -119,7 +119,7 @@ public final class VanillaTabStripRenderer {
         var gap = shortcut != null ? SHORTCUT_GAP : 0f;
         var shortcutWidth = shortcut != null ? shortcut.getWidth() : 0f;
         var startX = bounds.x() + (bounds.width() - (labelWidth + gap + shortcutWidth)) / 2f;
-        var centerY = bounds.y() + bounds.height() / 2f;
+        var centerY = bounds.computeCenterY();
         label.setAnchor(LazyFont.TextAnchor.CENTER_LEFT);
         label.draw(startX, centerY);
         if (shortcut != null) {

@@ -55,7 +55,8 @@ public final class Scrollbar {
      * @return the thumb rectangle within the track
      */
     public static Rectangle computeThumb(ScrollRegion region, Rectangle track) {
-        var thumbHeight = resolveThumbHeight(track, region.contentHeight(), region.viewport().height());
+        var thumbHeight = resolveThumbHeight(track, region.computeContentHeight(),
+                region.viewport().height());
         var travel = track.height() - thumbHeight;
         var overflow = region.overflow();
         // The thumb hangs from the track top at offset 0 and drops through the travel as the content
@@ -95,7 +96,8 @@ public final class Scrollbar {
      */
     public static float resolveOffsetForPointer(ScrollRegion region, Rectangle track, float pointerY) {
         var overflow = region.overflow();
-        var thumbHeight = resolveThumbHeight(track, region.contentHeight(), region.viewport().height());
+        var thumbHeight = resolveThumbHeight(track, region.computeContentHeight(),
+                region.viewport().height());
         var travel = track.height() - thumbHeight;
         if (overflow <= 0f || travel <= 0f) {
             return 0f;

@@ -32,7 +32,7 @@ public final class DividerRenderer {
      * @param opacity   overall alpha, 0..1
      */
     public static void render(Rectangle bounds, Color ruleColor, float opacity) {
-        var ruleY = bounds.y() + bounds.height() / 2f - RULE_THICKNESS / 2f;
+        var ruleY = bounds.computeCenterY() - RULE_THICKNESS / 2f;
         UiFill.renderQuad(bounds.x(), ruleY, bounds.width(), RULE_THICKNESS, ruleColor,
                 opacity * RULE_ALPHA_MULT);
     }

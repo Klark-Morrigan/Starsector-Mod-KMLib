@@ -15,4 +15,18 @@ public record Rectangle(float x, float y, float width, float height) {
         return pointX >= x && pointX <= x + width
                 && pointY >= y && pointY <= y + height;
     }
+
+    /**
+     * @return the x of the rectangle's horizontal centre, for placing a centred element
+     */
+    public float computeCenterX() {
+        return x + width / 2f;
+    }
+
+    /**
+     * @return the y of the rectangle's vertical centre, for placing a vertically centred element
+     */
+    public float computeCenterY() {
+        return y + height / 2f;
+    }
 }
