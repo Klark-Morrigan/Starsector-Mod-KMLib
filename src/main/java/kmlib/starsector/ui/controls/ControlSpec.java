@@ -197,6 +197,27 @@ public record ControlSpec(ControlKind kind, List<String> labels, List<String> ic
     }
 
     /**
+     * Builds a plain vertical {@link ControlKind#RADIO}: one stacked option per label, the lit one at
+     * {@code selectedIndex}, with no leading icons and no per-option values. It is the label-only
+     * sibling of {@link #createIconRadioList} - the shape a stacked selector takes (a view selector, a
+     * sort selector) - so a host need not spell out the empty icon/value lists and the vertical
+     * alignment at each call site. {@code canDeselect} refines whether a click on the lit option turns
+     * the whole control off: true for a selector that can clear to nothing, false for one that always
+     * keeps a segment lit.
+     *
+     * @param labels        the option labels, top to bottom, in segment order
+     * @param selectedIndex the lit option's index, or {@link #NO_SELECTION} when nothing is picked
+     * @param action        what a click on an option does, keyed by the option index
+     * @param canDeselect   whether a click on the lit option turns the control off
+     * @return the vertical radio spec in its current lit state
+     */
+    public static ControlSpec createVerticalRadio(List<String> labels, int selectedIndex,
+            ControlAction action, boolean canDeselect) {
+        return new ControlSpec(ControlKind.RADIO, List.copyOf(labels), "", selectedIndex, action,
+                RadioAlignment.VERTICAL, canDeselect);
+    }
+
+    /**
      * Builds a vertical, deselectable {@link ControlKind#RADIO} drawn as an icon list: one stacked
      * option per label, each drawing the icon at the matching {@code iconPaths} entry (null for an
      * icon-less option). It is a vertical radio like the view selector, distinguished only by carrying

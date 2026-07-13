@@ -134,6 +134,59 @@ final class ControlSpecTest {
     }
 
     @Nested
+    class CreateVerticalRadio {
+
+        @Test
+        void createVerticalRadioIsAVerticalRadioWithNoIconsOrValues() {
+            // The plain vertical radio is the label-only stacked selector: a vertical radio with no
+            // leading icons and no per-option values, distinguishing it from the icon list.
+            var selector = ControlSpec.createVerticalRadio(List.of("Factions", "Alliances"),
+                    ControlSpec.NO_SELECTION, ControlAction.NONE, true);
+            assertThat(selector.kind()).isEqualTo(ControlKind.RADIO);
+            assertThat(selector.alignment()).isEqualTo(RadioAlignment.VERTICAL);
+            assertThat(selector.labels()).containsExactly("Factions", "Alliances");
+            assertThat(selector.iconPaths()).isEmpty();
+            assertThat(selector.trailingLabels()).isEmpty();
+        }
+
+        @Test
+        void createVerticalRadioCarriesTheCanDeselectChoice() {
+            // A selector that can clear to nothing (a view selector) passes true; one that always keeps
+            // a segment lit (a sort selector) passes false, and the flag rides through unchanged.
+            assertThat(ControlSpec.createVerticalRadio(List.of("A"), 0, ControlAction.NONE, true)
+                    .canDeselect()).isTrue();
+            assertThat(ControlSpec.createVerticalRadio(List.of("A"), 0, ControlAction.NONE, false)
+                    .canDeselect()).isFalse();
+        }
+
+        @Test
+        void createVerticalRadioLightsTheSelectedOption() {
+            var selector = ControlSpec.createVerticalRadio(List.of("Factions", "Alliances"), 1,
+                    ControlAction.NONE, false);
+            assertThat(selector.selectedIndex()).isEqualTo(1);
+        }
+
+        @Test
+        void createVerticalRadioCarriesTheClickActionByOptionIndex() {
+            var firedCell = new int[]{-99};
+            var selector = ControlSpec.createVerticalRadio(List.of("Factions", "Alliances"),
+                    ControlSpec.NO_SELECTION, cell -> firedCell[0] = cell, true);
+            selector.action().activateCell(1);
+            assertThat(firedCell[0]).isEqualTo(1);
+        }
+
+        @Test
+        void createVerticalRadioDoesNotAliasTheCallersLabelList() {
+            // The caller may hand in a mutable list it goes on to reuse; the spec must copy it, so a
+            // later mutation of the caller's list cannot rewrite the drawn labels.
+            var callerLabels = new ArrayList<String>(List.of("Factions", "Alliances"));
+            var selector = ControlSpec.createVerticalRadio(callerLabels, 0, ControlAction.NONE, true);
+            callerLabels.set(0, "Mutated");
+            assertThat(selector.labels()).containsExactly("Factions", "Alliances");
+        }
+    }
+
+    @Nested
     class CreateIconRadioList {
 
         @Test
