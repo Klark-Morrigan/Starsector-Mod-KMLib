@@ -10,8 +10,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Pins {@link IconLabelRow}'s geometry: the icon is a square inset off the row's top and bottom and
  * flush with its left padding, the label anchors past the icon (or at the left inset for an icon-less
- * option), and the measured row width reserves the icon and its gap only when the option has one, so
- * the drawn icon, the drawn label, and the sized column all read the same layout.
+ * option), a trailing value right-aligns to the row's right inset, and the measured row width reserves
+ * the icon and the value only when the option has each - so the drawn icon, the drawn label, the drawn
+ * value, and the sized column all read the same layout.
  */
 class IconLabelRowTest {
     // A 24-tall row: the icon inset is 2 off each edge, so the icon square is 20 and the label sits
@@ -43,6 +44,16 @@ class IconLabelRowTest {
     }
 
     @Nested
+    class ComputeTrailingAnchorX {
+        @Test
+        void anchorsAtTheRightEdgeLessTheTrailingInset() {
+            // Row right edge 10 + 100 = 110, less trailing padding 4 -> 106; the value right-aligns
+            // here so a stack of equal-width rows lines its values up.
+            assertThat(IconLabelRow.computeTrailingAnchorX(row)).isEqualTo(106f);
+        }
+    }
+
+    @Nested
     class MeasureRowWidth {
         @Test
         void reservesTheIconAndItsGapAheadOfTheLabelWhenTheOptionHasAnIcon() {
@@ -54,6 +65,21 @@ class IconLabelRowTest {
         void reservesOnlyTheLabelAndPaddingWhenTheOptionHasNoIcon() {
             // Left padding 4 + label 50 + trailing padding 4 = 58, no icon extent.
             assertThat(IconLabelRow.measureRowWidth(24f, 50f, false)).isEqualTo(58f);
+        }
+
+        @Test
+        void reservesTheTrailingValueAndItsGapWhenTheOptionHasAValue() {
+            // Left padding 4 + (icon 20 + gap 6) + label 50 + (value gap 6 + value 15) + trailing
+            // padding 4 = 105, the icon-and-value case the picker's ranked rows take.
+            assertThat(IconLabelRow.measureRowWidth(24f, 50f, true, 15f)).isEqualTo(105f);
+        }
+
+        @Test
+        void reservesNoTrailingRoomWhenTheValueWidthIsZero() {
+            // A zero-width value is "no value", so the four-arg width matches the three-arg one and a
+            // value-less row is sized exactly as before.
+            assertThat(IconLabelRow.measureRowWidth(24f, 50f, true, 0f))
+                    .isEqualTo(IconLabelRow.measureRowWidth(24f, 50f, true));
         }
     }
 }

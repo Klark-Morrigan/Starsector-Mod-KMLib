@@ -180,15 +180,17 @@ public final class ControlStripLayout {
     }
 
     // The width an icon-list radio needs: its widest option row, each sized to hold its icon (present
-    // when the option carries a non-null path) and its label without clipping. The option rows are
-    // one control-row tall, the height the icon square derives from, so every stacked row shows an
-    // equal icon and the column is as wide as the longest name.
+    // when the option carries a non-null path), its label, and its trailing value (present when the
+    // option carries one) without clipping. The option rows are one control-row tall, the height the
+    // icon square derives from, so every stacked row shows an equal icon and the column is wide enough
+    // that the longest name still clears its right-aligned value.
     private static float measureIconListRowWidth(ControlSpec spec, LineWidthMeasurer measurer) {
         var widest = 0f;
         for (var index = 0; index < spec.labels().size(); index++) {
             var labelWidth = measureWidth(measurer, spec.labels().get(index));
+            var trailingWidth = measureWidth(measurer, spec.trailingLabelAt(index));
             var rowWidth = IconLabelRow.measureRowWidth(CONTROL_ROW_HEIGHT, labelWidth,
-                    spec.hasIconAt(index));
+                    spec.hasIconAt(index), trailingWidth);
             widest = Math.max(widest, rowWidth);
         }
         return widest;

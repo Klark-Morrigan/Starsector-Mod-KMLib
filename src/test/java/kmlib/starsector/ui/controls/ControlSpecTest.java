@@ -8,14 +8,60 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Pins the factory shapes hosts build controls through: a checkbox lit at cell 0 when on and off
  * otherwise carrying its click action, a caption label and a divider rule that are drawn but never
  * clicked, and the icon radio list. These fix the "a checkbox is cell 0 lit or nothing", "a label /
- * divider has no cell and no action" conventions in one place so no host re-derives them.
+ * divider has no cell and no action" conventions in one place so no host re-derives them. Also pins
+ * the canonical constructor's guards, which reject the shapes the layout and renderer cannot draw so a
+ * hand-built spec fails at construction rather than dropping state at paint time.
  */
 final class ControlSpecTest {
+
+    @Nested
+    class Constructor {
+
+        @Test
+        void constructorRejectsIconPathsOnANonRadioKind() {
+            // The icon column is drawn only for a vertical radio, so a checkbox carrying icon paths
+            // would drop them unseen - it must fail at construction instead.
+            assertThatThrownBy(() -> new ControlSpec(ControlKind.CHECKBOX, List.of("Muted"),
+                    List.of("crest"), List.of(), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
+                    RadioAlignment.HORIZONTAL, false))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        void constructorRejectsTrailingValuesOnAHorizontalRadio() {
+            // Per-option values are a vertical-table concept; a horizontal radio never draws them, so
+            // the layout would never reserve room and the values would be lost.
+            assertThatThrownBy(() -> new ControlSpec(ControlKind.RADIO, List.of("Short", "Full"),
+                    List.of(), List.of("7", "3"), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
+                    RadioAlignment.HORIZONTAL, false))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        void constructorRejectsDeselectOnANonRadioKind() {
+            // Deselection clears a radio's lit segment; a checkbox has no segment to clear, so a
+            // deselectable checkbox is a shape the input path could not act on.
+            assertThatThrownBy(() -> new ControlSpec(ControlKind.CHECKBOX, List.of("Muted"),
+                    List.of(), List.of(), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
+                    RadioAlignment.HORIZONTAL, true))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        void constructorAcceptsAVerticalIconRadioListCarryingBothColumns() {
+            // The valid shape the icon list takes: a vertical, deselectable radio carrying both the
+            // icon and value columns, which the factory builds and the guard must let through.
+            assertThatCode(() -> ControlSpec.createIconRadioList(List.of("Hegemony"), List.of("crest"),
+                    List.of("7"), 0, ControlAction.NONE)).doesNotThrowAnyException();
+        }
+    }
 
     @Nested
     class CreateCheckbox {
@@ -138,6 +184,63 @@ final class ControlSpecTest {
                     cell -> firedCell[0] = cell);
             picker.action().activateCell(1);
             assertThat(firedCell[0]).isEqualTo(1);
+        }
+
+        @Test
+        void createIconRadioListCarriesNoTrailingValuesInTheIconOnlyOverload() {
+            // The four-arg overload is the icon-only list, so it carries no per-option values and the
+            // rows draw name-only (the trailing-value overload is what adds the value column).
+            var picker = ControlSpec.createIconRadioList(List.of("Hegemony", "Tri-Tachyon"),
+                    List.of("crest_heg", "crest_tt"), ControlSpec.NO_SELECTION, ControlAction.NONE);
+            assertThat(picker.trailingLabels()).isEmpty();
+        }
+
+        @Test
+        void createIconRadioListCarriesPerOptionTrailingValues() {
+            // The value overload turns the list into a table: each option's value rides parallel to
+            // its label, so the row draws its crest, name, and ranked value.
+            var picker = ControlSpec.createIconRadioList(List.of("Hegemony", "Tri-Tachyon"),
+                    List.of("crest_heg", "crest_tt"), List.of("7", "3"), 0, ControlAction.NONE);
+            assertThat(picker.trailingLabels()).containsExactly("7", "3");
+        }
+
+        @Test
+        void createIconRadioListDoesNotAliasTheCallersTrailingValueList() {
+            // Like the icon paths, the values are copied, so a later mutation of the caller's list
+            // cannot rewrite the drawn values.
+            var callerValues = new ArrayList<String>(List.of("7", "3"));
+            var picker = ControlSpec.createIconRadioList(List.of("Hegemony", "Tri-Tachyon"),
+                    List.of("crest_heg", "crest_tt"), callerValues, 0, ControlAction.NONE);
+            callerValues.set(0, "99");
+            assertThat(picker.trailingLabels()).containsExactly("7", "3");
+        }
+    }
+
+    @Nested
+    class TrailingLabelAt {
+
+        @Test
+        void trailingLabelAtIsTheOptionsValueWhenItHasOne() {
+            var picker = ControlSpec.createIconRadioList(List.of("Hegemony", "Tri-Tachyon"),
+                    List.of("crest_heg", "crest_tt"), List.of("7", "3"), 0, ControlAction.NONE);
+            assertThat(picker.trailingLabelAt(1)).isEqualTo("3");
+        }
+
+        @Test
+        void trailingLabelAtIsEmptyForANullValueEntry() {
+            // A null entry is a real "no value", so it reads as an empty string rather than throwing.
+            var picker = ControlSpec.createIconRadioList(List.of("Hegemony", "Free Traders"),
+                    Arrays.asList("crest_heg", null), Arrays.asList("7", null), 0, ControlAction.NONE);
+            assertThat(picker.trailingLabelAt(1)).isEmpty();
+        }
+
+        @Test
+        void trailingLabelAtIsEmptyForAnIndexPastTheValueList() {
+            // A shorter (or empty) value list leaves the trailing options value-less rather than
+            // throwing, matching how a short icon-path list leaves options icon-less.
+            var picker = ControlSpec.createIconRadioList(List.of("Hegemony", "Tri-Tachyon"),
+                    List.of("crest_heg", "crest_tt"), ControlSpec.NO_SELECTION, ControlAction.NONE);
+            assertThat(picker.trailingLabelAt(0)).isEmpty();
         }
     }
 

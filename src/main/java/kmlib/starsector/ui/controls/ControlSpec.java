@@ -37,12 +37,22 @@ import java.util.List;
  * option without the layout or renderer learning what the icon is. A non-empty list is what tells the
  * layout to size rows for icons and the renderer to left-anchor the labels past them.
  *
+ * <p>{@code trailingLabels} likewise refines a vertical {@link ControlKind#RADIO} into a table: one
+ * right-aligned value per option, in the same order as {@code labels}, drawn flush against each row's
+ * right edge (the picker's ranking number, or a sort selector's direction glyph). It is empty for a
+ * radio with no per-option values and for every other kind, distinct from {@code trailingLabel} which
+ * is a single caption drawn once after the whole control. A blank or absent entry leaves that row's
+ * label spanning to the right inset.
+ *
  * @param kind          which widget the control is
  * @param labels        the control's own label(s): one for a checkbox or toggle, one per option for
  *                      a radio (in segment order)
  * @param iconPaths     one leading-icon path per option for a vertical {@link ControlKind#RADIO}
  *                      drawn as an icon list (a null entry is an icon-less option); empty for a plain
  *                      radio and every other kind
+ * @param trailingLabels one right-aligned per-option value for a vertical {@link ControlKind#RADIO}
+ *                      drawn as a table (a blank or absent entry is a value-less option); empty for a
+ *                      radio with no per-option values and every other kind
  * @param trailingLabel a label drawn after the control (a radio's caption), or blank for none;
  *                      reserved in the body width so it clears the border though it is not clicked
  * @param selectedIndex the index of the control's lit cell - the active radio segment, or 0 for a
@@ -55,13 +65,37 @@ import java.util.List;
  *                      the other kinds
  */
 public record ControlSpec(ControlKind kind, List<String> labels, List<String> iconPaths,
-        String trailingLabel, int selectedIndex, ControlAction action, RadioAlignment alignment,
-        boolean canDeselect) {
+        List<String> trailingLabels, String trailingLabel, int selectedIndex, ControlAction action,
+        RadioAlignment alignment, boolean canDeselect) {
     /** {@code selectedIndex} value meaning the control is off - no cell is lit. */
     public static final int NO_SELECTION = -1;
 
     // The single cell of a checkbox or toggle: its whole row is one hit target, lit at index 0.
     private static final int SINGLE_CELL = 0;
+
+    /**
+     * Rejects the control shapes the layout and renderer cannot draw, so a mis-built spec fails at
+     * construction rather than silently dropping state at paint time. The {@code create*} factories
+     * only ever emit valid shapes; guarding the canonical constructor holds a caller that builds a
+     * spec by hand to those same rules, so the illegal combinations are unrepresentable in practice.
+     *
+     * <p>The icon list and the per-option value column are read only for a vertical radio, so carrying
+     * either on any other shape would go unseen. Deselection clears a radio's lit segment, so it has
+     * no meaning on a kind that has no segments to clear.
+     */
+    public ControlSpec {
+        var hasOptionColumns = !iconPaths.isEmpty() || !trailingLabels.isEmpty();
+        if (hasOptionColumns
+                && (kind != ControlKind.RADIO || alignment != RadioAlignment.VERTICAL)) {
+            throw new IllegalArgumentException(
+                    "iconPaths and trailingLabels are drawn only on a vertical radio, not on a "
+                            + kind + " with " + alignment + " alignment");
+        }
+        if (canDeselect && kind != ControlKind.RADIO) {
+            throw new IllegalArgumentException(
+                    "canDeselect refines a radio's lit segment; it has no meaning on a " + kind);
+        }
+    }
 
     /**
      * Builds a control with no leading icons - every kind except the icon list, whose {@code
@@ -70,7 +104,8 @@ public record ControlSpec(ControlKind kind, List<String> labels, List<String> ic
      */
     public ControlSpec(ControlKind kind, List<String> labels, String trailingLabel,
             int selectedIndex, ControlAction action, RadioAlignment alignment, boolean canDeselect) {
-        this(kind, labels, List.of(), trailingLabel, selectedIndex, action, alignment, canDeselect);
+        this(kind, labels, List.of(), List.of(), trailingLabel, selectedIndex, action, alignment,
+                canDeselect);
     }
 
     /**
@@ -145,6 +180,23 @@ public record ControlSpec(ControlKind kind, List<String> labels, List<String> ic
     }
 
     /**
+     * The right-aligned value drawn at option {@code index}'s trailing edge, or an empty string when
+     * this control has no value there - a shorter (or empty) trailing-label list, or a null entry.
+     * Returning "" rather than null lets the layout and renderer treat "no value" as a zero-width text
+     * without a null check at each call site, matching how {@link #hasIconAt} folds a missing icon into
+     * a single rule read by both the layout and the renderer.
+     *
+     * @param index the option index
+     * @return the option's trailing value, or "" when it has none
+     */
+    public String trailingLabelAt(int index) {
+        if (index >= trailingLabels.size() || trailingLabels.get(index) == null) {
+            return "";
+        }
+        return trailingLabels.get(index);
+    }
+
+    /**
      * Builds a vertical, deselectable {@link ControlKind#RADIO} drawn as an icon list: one stacked
      * option per label, each drawing the icon at the matching {@code iconPaths} entry (null for an
      * icon-less option). It is a vertical radio like the view selector, distinguished only by carrying
@@ -167,8 +219,32 @@ public record ControlSpec(ControlKind kind, List<String> labels, List<String> ic
      */
     public static ControlSpec createIconRadioList(List<String> labels, List<String> iconPaths,
             int selectedIndex, ControlAction action) {
+        return createIconRadioList(labels, iconPaths, List.of(), selectedIndex, action);
+    }
+
+    /**
+     * Builds the icon-radio list of {@link #createIconRadioList} with a right-aligned value on each
+     * option row, so the list reads as a three-column table (crest, name, value). The {@code
+     * trailingLabels} run parallel to {@code labels}, so the value at index {@code i} draws on the
+     * option labelled {@code labels.get(i)}; a shorter or empty list leaves the trailing options
+     * value-less, and a null entry is a real "no value". Both optional lists are copied null-tolerantly
+     * so a caller may hand in mutable lists without the spec aliasing them.
+     *
+     * @param labels         the option labels, top to bottom; must contain no null (an unlabelled
+     *                       option passes an empty string)
+     * @param iconPaths      the per-option icon paths, aligned to {@code labels}; a null entry draws
+     *                       no icon on that option
+     * @param trailingLabels the per-option right-aligned values, aligned to {@code labels}; a null or
+     *                       absent entry draws no value on that option
+     * @param selectedIndex  the lit option's index, or {@link #NO_SELECTION} when nothing is picked
+     * @param action         what a click on an option does, keyed by the option index
+     * @return the icon-radio-list spec in its current lit state
+     */
+    public static ControlSpec createIconRadioList(List<String> labels, List<String> iconPaths,
+            List<String> trailingLabels, int selectedIndex, ControlAction action) {
         return new ControlSpec(ControlKind.RADIO, List.copyOf(labels),
-                Collections.unmodifiableList(new ArrayList<>(iconPaths)), "", selectedIndex, action,
-                RadioAlignment.VERTICAL, true);
+                Collections.unmodifiableList(new ArrayList<>(iconPaths)),
+                Collections.unmodifiableList(new ArrayList<>(trailingLabels)), "", selectedIndex,
+                action, RadioAlignment.VERTICAL, true);
     }
 }

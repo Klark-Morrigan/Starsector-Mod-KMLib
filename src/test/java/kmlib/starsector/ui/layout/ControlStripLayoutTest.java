@@ -141,6 +141,19 @@ final class ControlStripLayoutTest {
             assertThat(measurement.rowWidths().get(0))
                     .isCloseTo(Math.max(withIcon, withoutIcon), within(TOLERANCE));
         }
+
+        @Test
+        void measureStripReservesEachOptionsTrailingValueInTheIconListWidth() {
+            // A ranked table row must hold its crest, name, and value; the measurement reads the same
+            // IconLabelRow geometry the renderer places the value with, so the column is wide enough
+            // that "AB" clears its two-char value "12".
+            var picker = ControlSpec.createIconRadioList(List.of("AB"), List.of("crest_ab"),
+                    List.of("12"), ControlSpec.NO_SELECTION, ControlAction.NONE);
+            var measurement = ControlStripLayout.measureStrip(List.of(picker), measurerFake);
+            var withValue = IconLabelRow.measureRowWidth(ControlStripLayout.CONTROL_ROW_HEIGHT,
+                    2 * WIDTH_PER_CHAR, true, 2 * WIDTH_PER_CHAR);
+            assertThat(measurement.rowWidths().get(0)).isCloseTo(withValue, within(TOLERANCE));
+        }
     }
 
     @Nested
