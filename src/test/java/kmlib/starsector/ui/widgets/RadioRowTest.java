@@ -46,6 +46,64 @@ class RadioRowTest {
     }
 
     @Nested
+    class SplitIntoGrid {
+
+        @Test
+        void placesOptionsColumnMajorAcrossTwoColumns() {
+            // Five options across two columns: the first column holds three rows (0,1,2) and the
+            // second the remaining two (3,4), each column a divide-rounding-up three rows tall. A
+            // 60-wide, 90-tall list gives 30-wide columns and 30-tall rows.
+            var grid = RadioRow.splitIntoGrid(new Rectangle(0f, 0f, 60f, 90f), 5, 2);
+            assertThat(grid).containsExactly(
+                    new Rectangle(0f, 60f, 30f, 30f),
+                    new Rectangle(0f, 30f, 30f, 30f),
+                    new Rectangle(0f, 0f, 30f, 30f),
+                    new Rectangle(30f, 60f, 30f, 30f),
+                    new Rectangle(30f, 30f, 30f, 30f));
+        }
+
+        @Test
+        void reducesToThePlainVerticalStackForOneColumn() {
+            // One column is the ordinary top-to-bottom split, so it matches splitIntoSegments vertical
+            // rectangle for rectangle - the grid is the general case the single stack is a case of.
+            var bounds = new Rectangle(0f, 0f, 40f, 100f);
+            assertThat(RadioRow.splitIntoGrid(bounds, 4, 1))
+                    .isEqualTo(RadioRow.splitIntoSegments(bounds, 4, RadioAlignment.VERTICAL));
+        }
+
+        @Test
+        void yieldsNoSegmentsForANonPositiveOptionOrColumnCount() {
+            var bounds = new Rectangle(0f, 0f, 40f, 100f);
+            assertThat(RadioRow.splitIntoGrid(bounds, 0, 2)).isEmpty();
+            assertThat(RadioRow.splitIntoGrid(bounds, 4, 0)).isEmpty();
+        }
+    }
+
+    @Nested
+    class ComputeRowsPerColumn {
+
+        @Test
+        void roundsUpSoAPartlyFilledLastColumnStillGetsARow() {
+            // Five options across two columns need three cells per column (the first column holds three,
+            // the second two), so the divide rounds up rather than truncating the last option off the
+            // grid.
+            assertThat(RadioRow.computeRowsPerColumn(5, 2)).isEqualTo(3);
+        }
+
+        @Test
+        void isTheOptionCountForASingleColumn() {
+            // One column stacks every option, so the tallest column is the whole option count.
+            assertThat(RadioRow.computeRowsPerColumn(4, 1)).isEqualTo(4);
+        }
+
+        @Test
+        void isZeroForANonPositiveOptionOrColumnCount() {
+            assertThat(RadioRow.computeRowsPerColumn(0, 2)).isZero();
+            assertThat(RadioRow.computeRowsPerColumn(4, 0)).isZero();
+        }
+    }
+
+    @Nested
     class FindSegmentIndexAt {
         private final List<Rectangle> segments =
                 RadioRow.splitIntoSegments(new Rectangle(0f, 0f, 100f, 20f), 2,

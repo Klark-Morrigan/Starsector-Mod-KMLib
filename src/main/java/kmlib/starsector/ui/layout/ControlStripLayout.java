@@ -116,14 +116,25 @@ public final class ControlStripLayout {
             var spec = specs.get(index);
             var row = rows.get(index);
             // A radio (including the icon-list variant, which is a vertical radio that also draws an
-            // icon) splits into per-option hit segments under its alignment; every other kind is a
-            // single-hit row with no segments.
+            // icon) splits into per-option hit segments; every other kind is a single-hit row with no
+            // segments.
             var segments = spec.kind() == ControlKind.RADIO
-                    ? RadioRow.splitIntoSegments(row, spec.labels().size(), spec.alignment())
+                    ? splitRadioIntoSegments(spec, row)
                     : List.<Rectangle>of();
             controls.add(new Control(spec, row, segments));
         }
         return List.copyOf(controls);
+    }
+
+    // The per-option hit segments of a radio row, split under its flow. A vertical radio lays its
+    // options into its column count (one column is a plain top-to-bottom stack, more spreads them
+    // column-major); a horizontal radio splits into equal side-by-side segments. The same split the
+    // renderer draws against, so the drawn rows are the clickable ones.
+    private static List<Rectangle> splitRadioIntoSegments(ControlSpec spec, Rectangle row) {
+        if (spec.alignment() == RadioAlignment.VERTICAL) {
+            return RadioRow.splitIntoGrid(row, spec.labels().size(), spec.columnCount());
+        }
+        return RadioRow.splitIntoSegments(row, spec.labels().size(), spec.alignment());
     }
 
     // Widens every divider row to the strip's inner content width, so a rule stretches across the
@@ -156,25 +167,28 @@ public final class ControlStripLayout {
     }
 
     // The width a radio row needs. A horizontal group lays its equal segments side by side. A
-    // vertical group is one segment column wide: a plain vertical radio sizes that column to its
-    // widest label plus padding, while an icon-list radio (non-empty icon paths) sizes it to its
-    // widest icon-and-label row, so the icon and name clear the frame.
+    // vertical group is its column count wide: each column sizes to the same width - a plain vertical
+    // radio to its widest label plus padding, an icon-list radio (non-empty icon paths) to its widest
+    // icon-and-label row - and the columns sit side by side, so a two-column list needs twice one
+    // column's width. One column is the plain single-column stack.
     private static float measureRadioRowWidth(ControlSpec spec, LineWidthMeasurer measurer) {
         if (spec.alignment() != RadioAlignment.VERTICAL) {
             return spec.labels().size() * measureRadioSegmentWidth(spec, measurer);
         }
-        if (spec.iconPaths().isEmpty()) {
-            return measureRadioSegmentWidth(spec, measurer);
-        }
-        return measureIconListRowWidth(spec, measurer);
+        var columnWidth = spec.iconPaths().isEmpty()
+                ? measureRadioSegmentWidth(spec, measurer)
+                : measureIconListRowWidth(spec, measurer);
+        return spec.columnCount() * columnWidth;
     }
 
     // The height of a control's row: one control-row tall for every control except a vertical radio,
-    // which stacks its options and so stands one control-row tall per option (the icon-list variant
-    // included, since it is a vertical radio).
+    // which stacks its options and so stands one control-row tall per row. A single-column list has
+    // one row per option; a multi-column list wraps its options across columns, so it needs only as
+    // many rows as its tallest column - the grid's row count - rather than one per option.
     private static float measureRowHeight(ControlSpec spec) {
         if (spec.kind() == ControlKind.RADIO && spec.alignment() == RadioAlignment.VERTICAL) {
-            return spec.labels().size() * CONTROL_ROW_HEIGHT;
+            var rowCount = RadioRow.computeRowsPerColumn(spec.labels().size(), spec.columnCount());
+            return rowCount * CONTROL_ROW_HEIGHT;
         }
         return CONTROL_ROW_HEIGHT;
     }

@@ -18,12 +18,52 @@ import java.util.List;
  * left to right, a vertical group into equal rows top to bottom, so a compact option pair reads as a
  * strip while a longer option list reads as a column. The flow is a splitting concern only - {@link
  * #splitIntoSegments} takes it, while the two hit-tests run over the already-split segments.
+ *
+ * <p>A vertical list can also lay its options across more than one column via {@link #splitIntoGrid}:
+ * the options fill each column top to bottom before the next (column-major), so the first column holds
+ * the earliest options exactly as a single-column list would, and a longer list wraps into further
+ * columns rather than running off the bottom. One column reduces to the plain vertical split, so the
+ * grid is the general case a single-column list is a special case of.
  */
 public final class RadioRow {
     /** {@link #findSegmentIndexAt} returns this when the point falls outside every segment. */
     public static final int NO_SEGMENT = Rectangles.NONE;
 
     private RadioRow() {
+    }
+
+    /**
+     * Lays {@code optionCount} options across {@code columnCount} equal columns of a vertical list,
+     * filling each column top to bottom before the next (column-major), and returns one rectangle per
+     * option in option order. The row count is {@code ceil(optionCount / columnCount)} - the tallest a
+     * column needs - so every column is that many rows tall and the last column may end short of the
+     * bottom (its missing options simply have no rectangle). Option {@code i} sits in column {@code i /
+     * rowCount} at row {@code i % rowCount}, so the first column holds options 0..rowCount-1 exactly as
+     * a single-column split would place them. A count of one column is the plain vertical split; a
+     * non-positive option or column count yields no segments.
+     *
+     * @param bounds      the list's whole footprint
+     * @param optionCount how many options to place
+     * @param columnCount how many equal columns to spread them across
+     * @return the option rectangles, in option order (empty when either count is non-positive)
+     */
+    public static List<Rectangle> splitIntoGrid(Rectangle bounds, int optionCount, int columnCount) {
+        if (optionCount <= 0 || columnCount <= 0) {
+            return List.of();
+        }
+        var rowCount = computeRowsPerColumn(optionCount, columnCount);
+        var columnWidth = bounds.width() / columnCount;
+        var rowHeight = bounds.height() / rowCount;
+        var segments = new ArrayList<Rectangle>(optionCount);
+        for (var index = 0; index < optionCount; index++) {
+            var column = index / rowCount;
+            var rowInColumn = index % rowCount;
+            // UI y grows up, so row 0 hangs from the top edge and each later row drops one row height.
+            segments.add(new Rectangle(bounds.x() + column * columnWidth,
+                    bounds.y() + bounds.height() - (rowInColumn + 1) * rowHeight,
+                    columnWidth, rowHeight));
+        }
+        return List.copyOf(segments);
     }
 
     /**
@@ -59,6 +99,26 @@ public final class RadioRow {
             }
         }
         return List.copyOf(segments);
+    }
+
+    /**
+     * How many cells tall each column of a column-major grid of {@code optionCount} options across
+     * {@code columnCount} columns stands - the tallest a column needs, so the options fill the columns
+     * without one running past the grid. Column-major fill keeps each column's cells contiguous, so this
+     * is a plain divide-rounding-up (the last column may end short). It is the grid's height in cells:
+     * the SSOT the layout sizes the grid's height with, the renderer rules its horizontal dividers by,
+     * and {@link #splitIntoGrid} places its cells from, so the three cannot disagree. A non-positive
+     * option or column count yields no cells.
+     *
+     * @param optionCount how many options the grid holds
+     * @param columnCount how many columns they wrap across
+     * @return the cells in the tallest column, or 0 when either count is non-positive
+     */
+    public static int computeRowsPerColumn(int optionCount, int columnCount) {
+        if (optionCount <= 0 || columnCount <= 0) {
+            return 0;
+        }
+        return (optionCount + columnCount - 1) / columnCount;
     }
 
     /**

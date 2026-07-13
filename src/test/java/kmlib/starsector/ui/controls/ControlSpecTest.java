@@ -31,7 +31,7 @@ final class ControlSpecTest {
             assertThatThrownBy(() -> new ControlSpec(ControlKind.CHECKBOX, List.of("Muted"),
                     List.of("crest"), List.of(), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
                     RadioAlignment.HORIZONTAL, ReselectBehaviour.INERT,
-                    ControlSpec.BODY_TRAILING_SCALE))
+                    ControlSpec.BODY_TRAILING_SCALE, ControlSpec.SINGLE_COLUMN))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
@@ -42,7 +42,7 @@ final class ControlSpecTest {
             assertThatThrownBy(() -> new ControlSpec(ControlKind.RADIO, List.of("Short", "Full"),
                     List.of(), List.of("7", "3"), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
                     RadioAlignment.HORIZONTAL, ReselectBehaviour.INERT,
-                    ControlSpec.BODY_TRAILING_SCALE))
+                    ControlSpec.BODY_TRAILING_SCALE, ControlSpec.SINGLE_COLUMN))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
@@ -53,7 +53,7 @@ final class ControlSpecTest {
             assertThatThrownBy(() -> new ControlSpec(ControlKind.CHECKBOX, List.of("Muted"),
                     List.of(), List.of(), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
                     RadioAlignment.HORIZONTAL, ReselectBehaviour.DESELECT,
-                    ControlSpec.BODY_TRAILING_SCALE))
+                    ControlSpec.BODY_TRAILING_SCALE, ControlSpec.SINGLE_COLUMN))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
@@ -63,7 +63,29 @@ final class ControlSpecTest {
             // value cannot size any text, so it fails at construction rather than measuring to nothing.
             assertThatThrownBy(() -> new ControlSpec(ControlKind.RADIO, List.of("A"), List.of(),
                     List.of(), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
-                    RadioAlignment.VERTICAL, ReselectBehaviour.INERT, 0d))
+                    RadioAlignment.VERTICAL, ReselectBehaviour.INERT, 0d, ControlSpec.SINGLE_COLUMN))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        void constructorRejectsAColumnCountBelowOne() {
+            // A column count is how many columns the options wrap across; a count below one cannot lay
+            // out any column, so it fails at construction rather than dividing by a zero column count.
+            assertThatThrownBy(() -> new ControlSpec(ControlKind.RADIO, List.of("A"), List.of(),
+                    List.of(), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
+                    RadioAlignment.VERTICAL, ReselectBehaviour.DESELECT,
+                    ControlSpec.BODY_TRAILING_SCALE, 0))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        void constructorRejectsAMultiColumnCountOnAHorizontalRadio() {
+            // Wrapping options across columns is a vertical-list concept; a horizontal radio is a
+            // single side-by-side row, so a column count past one is a shape the layout could not draw.
+            assertThatThrownBy(() -> new ControlSpec(ControlKind.RADIO, List.of("Short", "Full"),
+                    List.of(), List.of(), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
+                    RadioAlignment.HORIZONTAL, ReselectBehaviour.INERT,
+                    ControlSpec.BODY_TRAILING_SCALE, 2))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
@@ -282,6 +304,24 @@ final class ControlSpecTest {
                     List.of("crest_heg", "crest_tt"), callerValues, 0, ControlAction.NONE);
             callerValues.set(0, "99");
             assertThat(picker.trailingLabels()).containsExactly("7", "3");
+        }
+
+        @Test
+        void createIconRadioListDefaultsToASingleColumn() {
+            // The overloads that take no column count are the ordinary one-column list, so the picker
+            // reads as a single stack unless a caller asks for more.
+            var picker = ControlSpec.createIconRadioList(List.of("Hegemony", "Tri-Tachyon"),
+                    List.of("crest_heg", "crest_tt"), List.of("7", "3"), 0, ControlAction.NONE);
+            assertThat(picker.columnCount()).isEqualTo(ControlSpec.SINGLE_COLUMN);
+        }
+
+        @Test
+        void createIconRadioListCarriesTheChosenColumnCount() {
+            // The column-count overload spreads the list across that many columns; the count rides on
+            // the spec so the layout and renderer both wrap the rows the same way.
+            var picker = ControlSpec.createIconRadioList(List.of("Hegemony", "Tri-Tachyon"),
+                    List.of("crest_heg", "crest_tt"), List.of("7", "3"), 0, ControlAction.NONE, 2);
+            assertThat(picker.columnCount()).isEqualTo(2);
         }
     }
 

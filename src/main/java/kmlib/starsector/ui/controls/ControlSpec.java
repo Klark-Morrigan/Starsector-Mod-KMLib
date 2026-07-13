@@ -52,6 +52,12 @@ import java.util.List;
  * is a single caption drawn once after the whole control. A blank or absent entry leaves that row's
  * label spanning to the right inset.
  *
+ * <p>{@code columnCount} refines a vertical {@link ControlKind#RADIO} into a multi-column list: its
+ * options fill each column top to bottom before the next, so a long list reads across two columns
+ * rather than one tall stack. It is {@link #SINGLE_COLUMN} for the ordinary one-column list and for
+ * every other kind - only a vertical radio may carry a wider count, since only a stacked list has rows
+ * to spread across columns.
+ *
  * @param kind          which widget the control is
  * @param labels        the control's own label(s): one for a checkbox or toggle, one per option for
  *                      a radio (in segment order)
@@ -73,15 +79,20 @@ import java.util.List;
  *                      ignored by the other kinds
  * @param trailingScale the size the per-option trailing values draw at, relative to the body font
  *                      size; 1.0 for a control with no trailing column or one drawn at body size
+ * @param columnCount   how many columns a vertical radio spreads its options across; {@link
+ *                      #SINGLE_COLUMN} for a one-column list and every other kind
  */
 public record ControlSpec(ControlKind kind, List<String> labels, List<String> iconPaths,
         List<String> trailingLabels, String trailingLabel, int selectedIndex, ControlAction action,
-        RadioAlignment alignment, ReselectBehaviour reselect, double trailingScale) {
+        RadioAlignment alignment, ReselectBehaviour reselect, double trailingScale, int columnCount) {
     /** {@code selectedIndex} value meaning the control is off - no cell is lit. */
     public static final int NO_SELECTION = -1;
 
     /** The trailing-value size a control uses when its trailing column reads at the body font size. */
     public static final double BODY_TRAILING_SCALE = 1d;
+
+    /** The column count of an ordinary single-column list and of every non-list control. */
+    public static final int SINGLE_COLUMN = 1;
 
     // The single cell of a checkbox or toggle: its whole row is one hit target, lit at index 0.
     private static final int SINGLE_CELL = 0;
@@ -94,7 +105,8 @@ public record ControlSpec(ControlKind kind, List<String> labels, List<String> ic
      *
      * <p>The icon list and the per-option value column are read only for a vertical radio, so carrying
      * either on any other shape would go unseen. Deselection clears a radio's lit segment, so it has
-     * no meaning on a kind that has no segments to clear.
+     * no meaning on a kind that has no segments to clear. A column count past one spreads a stacked
+     * list's options, so it too refines only a vertical radio.
      */
     public ControlSpec {
         var hasOptionColumns = !iconPaths.isEmpty() || !trailingLabels.isEmpty();
@@ -113,6 +125,17 @@ public record ControlSpec(ControlKind kind, List<String> labels, List<String> ic
             throw new IllegalArgumentException(
                     "trailingScale is a size multiplier and must be positive, was " + trailingScale);
         }
+        if (columnCount < SINGLE_COLUMN) {
+            throw new IllegalArgumentException(
+                    "columnCount is a column count and must be at least " + SINGLE_COLUMN + ", was "
+                            + columnCount);
+        }
+        if (columnCount != SINGLE_COLUMN
+                && (kind != ControlKind.RADIO || alignment != RadioAlignment.VERTICAL)) {
+            throw new IllegalArgumentException(
+                    "a multi-column list spreads a vertical radio's options, not a " + kind + " with "
+                            + alignment + " alignment");
+        }
     }
 
     /**
@@ -125,7 +148,7 @@ public record ControlSpec(ControlKind kind, List<String> labels, List<String> ic
             int selectedIndex, ControlAction action, RadioAlignment alignment,
             ReselectBehaviour reselect) {
         this(kind, labels, List.of(), List.of(), trailingLabel, selectedIndex, action, alignment,
-                reselect, BODY_TRAILING_SCALE);
+                reselect, BODY_TRAILING_SCALE, SINGLE_COLUMN);
     }
 
     /**
@@ -285,8 +308,32 @@ public record ControlSpec(ControlKind kind, List<String> labels, List<String> ic
      */
     public static ControlSpec createIconRadioList(List<String> labels, List<String> iconPaths,
             List<String> trailingLabels, int selectedIndex, ControlAction action) {
+        return createIconRadioList(labels, iconPaths, trailingLabels, selectedIndex, action,
+                SINGLE_COLUMN);
+    }
+
+    /**
+     * Builds the icon-radio list of {@link #createIconRadioList(List, List, List, int, ControlAction)}
+     * spread across {@code columnCount} columns: its options fill each column top to bottom before the
+     * next, so a long list reads across two columns rather than one tall stack. Every option keeps its
+     * three-column row geometry (crest, name, value); the count only decides how the rows wrap. A count
+     * of {@link #SINGLE_COLUMN} is the ordinary one-column list.
+     *
+     * @param labels         the option labels, top to bottom; must contain no null (an unlabelled
+     *                       option passes an empty string)
+     * @param iconPaths      the per-option icon paths, aligned to {@code labels}; a null entry draws
+     *                       no icon on that option
+     * @param trailingLabels the per-option right-aligned values, aligned to {@code labels}; a null or
+     *                       absent entry draws no value on that option
+     * @param selectedIndex  the lit option's index, or {@link #NO_SELECTION} when nothing is picked
+     * @param action         what a click on an option does, keyed by the option index
+     * @param columnCount    how many columns to spread the options across
+     * @return the icon-radio-list spec in its current lit state
+     */
+    public static ControlSpec createIconRadioList(List<String> labels, List<String> iconPaths,
+            List<String> trailingLabels, int selectedIndex, ControlAction action, int columnCount) {
         return createVerticalRadioTable(labels, iconPaths, trailingLabels, selectedIndex, action,
-                ReselectBehaviour.DESELECT, BODY_TRAILING_SCALE);
+                ReselectBehaviour.DESELECT, BODY_TRAILING_SCALE, columnCount);
     }
 
     /**
@@ -311,14 +358,42 @@ public record ControlSpec(ControlKind kind, List<String> labels, List<String> ic
      * @param reselect       what a click on the lit option does (deselect, re-fire, or inert)
      * @param trailingScale  the trailing values' size relative to the body font size ({@link
      *                       #BODY_TRAILING_SCALE} for a body-size column, less for a compact one)
-     * @return the vertical radio table spec in its current lit state
+     * @return the vertical radio table spec in its current lit state, laid out in a single column
      */
     public static ControlSpec createVerticalRadioTable(List<String> labels, List<String> iconPaths,
             List<String> trailingLabels, int selectedIndex, ControlAction action,
             ReselectBehaviour reselect, double trailingScale) {
+        return createVerticalRadioTable(labels, iconPaths, trailingLabels, selectedIndex, action,
+                reselect, trailingScale, SINGLE_COLUMN);
+    }
+
+    /**
+     * Builds the vertical radio table of {@link #createVerticalRadioTable(List, List, List, int,
+     * ControlAction, ReselectBehaviour, double)} spread across {@code columnCount} columns: its options
+     * fill each column top to bottom before the next. A count of {@link #SINGLE_COLUMN} is the ordinary
+     * one-column table; a wider count only decides how the rows wrap, leaving each row's geometry
+     * unchanged.
+     *
+     * @param labels         the option labels, top to bottom; must contain no null (an unlabelled
+     *                       option passes an empty string)
+     * @param iconPaths      the per-option icon paths, aligned to {@code labels}; a null entry draws
+     *                       no icon on that option
+     * @param trailingLabels the per-option right-aligned values, aligned to {@code labels}; a null or
+     *                       absent entry draws no value on that option
+     * @param selectedIndex  the lit option's index, or {@link #NO_SELECTION} when nothing is picked
+     * @param action         what a click on an option does, keyed by the option index
+     * @param reselect       what a click on the lit option does (deselect, re-fire, or inert)
+     * @param trailingScale  the trailing values' size relative to the body font size ({@link
+     *                       #BODY_TRAILING_SCALE} for a body-size column, less for a compact one)
+     * @param columnCount    how many columns to spread the options across
+     * @return the vertical radio table spec in its current lit state
+     */
+    public static ControlSpec createVerticalRadioTable(List<String> labels, List<String> iconPaths,
+            List<String> trailingLabels, int selectedIndex, ControlAction action,
+            ReselectBehaviour reselect, double trailingScale, int columnCount) {
         return new ControlSpec(ControlKind.RADIO, List.copyOf(labels),
                 Collections.unmodifiableList(new ArrayList<>(iconPaths)),
                 Collections.unmodifiableList(new ArrayList<>(trailingLabels)), "", selectedIndex,
-                action, RadioAlignment.VERTICAL, reselect, trailingScale);
+                action, RadioAlignment.VERTICAL, reselect, trailingScale, columnCount);
     }
 }

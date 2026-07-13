@@ -24,7 +24,9 @@ import java.util.List;
  * size of the icon-path list, so one entry - crest or null - stands for each row.
  *
  * <p>The list is always vertical (a stacked column of options); an icon list only makes sense as a
- * column, so the alignment is fixed rather than a parameter. GL passthrough exercised in-engine like
+ * column, so the alignment is fixed rather than a parameter. Its options can wrap across more than one
+ * column ({@code columnCount}), filling each column top to bottom before the next, so a long list
+ * reads as a grid; one column is the ordinary single stack. GL passthrough exercised in-engine like
  * the other render helpers; the caller wraps it in the GL-state save the panel already holds.
  */
 public final class IconRadioListRenderer {
@@ -34,22 +36,24 @@ public final class IconRadioListRenderer {
     /**
      * Draws the vertical radio list's chrome and each option's icon, all faded by {@code opacity}. A
      * {@code selectedIndex} outside the list lights no option. Options with a null or unloadable icon
-     * path draw their chrome and (via the consumer) their label without an icon.
+     * path draw their chrome and (via the consumer) their label without an icon. The options wrap
+     * across {@code columnCount} columns, so each icon draws in its option's grid cell.
      *
      * @param bounds        the list's footprint, in UI coordinates
-     * @param iconPaths     one icon texture path per option, in top-to-bottom order; a null entry is
-     *                      an option with no icon. The list size is the option count
+     * @param iconPaths     one icon texture path per option, in option order; a null entry is an
+     *                      option with no icon. The list size is the option count
      * @param selectedIndex the lit option's index, or a value outside the list to light none
+     * @param columnCount   how many columns the options wrap across (one is a single stack)
      * @param frameColor    the outline and divider colour
      * @param selectedColor the lit-option wash colour
      * @param opacity       overall alpha, 0..1
      */
     public static void render(Rectangle bounds, List<String> iconPaths, int selectedIndex,
-            Color frameColor, Color selectedColor, float opacity) {
+            int columnCount, Color frameColor, Color selectedColor, float opacity) {
         var optionCount = iconPaths.size();
         RadioRowRenderer.render(bounds, optionCount, selectedIndex, RadioAlignment.VERTICAL,
-                frameColor, selectedColor, opacity);
-        var segments = RadioRow.splitIntoSegments(bounds, optionCount, RadioAlignment.VERTICAL);
+                columnCount, frameColor, selectedColor, opacity);
+        var segments = RadioRow.splitIntoGrid(bounds, optionCount, columnCount);
         for (var index = 0; index < segments.size(); index++) {
             var iconPath = iconPaths.get(index);
             if (iconPath == null) {

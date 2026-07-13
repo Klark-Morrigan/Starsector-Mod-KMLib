@@ -145,6 +145,36 @@ final class ControlStripLayoutTest {
         }
 
         @Test
+        void measureStripStandsATwoColumnListOnlyAsTallAsItsLongestColumn() {
+            // Three options across two columns wrap into two rows (the first column holds two, the
+            // second one), so the list is two rows tall, not three - it wraps rather than stacking one
+            // row per option.
+            var picker = ControlSpec.createIconRadioList(List.of("A", "B", "C"),
+                    Arrays.asList(null, null, null), List.of(), ControlSpec.NO_SELECTION,
+                    ControlAction.NONE, 2);
+            var measurement = ControlStripLayout.measureStrip(List.of(picker), measurerFake);
+            assertThat(measurement.rowHeights().get(0))
+                    .isCloseTo(2 * ControlStripLayout.CONTROL_ROW_HEIGHT, within(TOLERANCE));
+        }
+
+        @Test
+        void measureStripSizesATwoColumnListToTwiceOneColumnsWidth() {
+            // Two columns sit side by side, each sized to the widest option row, so the list is twice
+            // a single column's width - the same width the one-column list of the same options measures.
+            var labels = List.of("A", "B", "C");
+            var icons = Arrays.asList((String) null, null, null);
+            var oneColumn = ControlSpec.createIconRadioList(labels, icons, List.of(),
+                    ControlSpec.NO_SELECTION, ControlAction.NONE);
+            var twoColumn = ControlSpec.createIconRadioList(labels, icons, List.of(),
+                    ControlSpec.NO_SELECTION, ControlAction.NONE, 2);
+            var oneWidth = ControlStripLayout.measureStrip(List.of(oneColumn), measurerFake)
+                    .rowWidths().get(0);
+            var twoWidth = ControlStripLayout.measureStrip(List.of(twoColumn), measurerFake)
+                    .rowWidths().get(0);
+            assertThat(twoWidth).isCloseTo(2 * oneWidth, within(TOLERANCE));
+        }
+
+        @Test
         void measureStripReservesEachOptionsTrailingValueInTheIconListWidth() {
             // A ranked table row must hold its crest, name, and value; the measurement reads the same
             // IconLabelRow geometry the renderer places the value with, so the column is wide enough
@@ -210,6 +240,29 @@ final class ControlStripLayoutTest {
             assertThat(bottomSegment.height()).isCloseTo(topSegment.height(), within(TOLERANCE));
             assertThat(topSegment.y())
                     .isCloseTo(bottomSegment.y() + bottomSegment.height(), within(TOLERANCE));
+        }
+
+        @Test
+        void layoutControlsSplitsATwoColumnListColumnMajorIntoAGrid() {
+            // Three options across two columns: options 0 and 1 fill the left column top to bottom, and
+            // option 2 heads the right column - the same column-major wrap the renderer draws against.
+            var specs = List.of(ControlSpec.createIconRadioList(List.of("A", "B", "C"),
+                    Arrays.asList(null, null, null), List.of(), ControlSpec.NO_SELECTION,
+                    ControlAction.NONE, 2));
+            var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
+            var picker = ControlStripLayout.layoutControls(frameBody(measurement), specs,
+                    measurement.rowHeights(), measurement.rowWidths()).get(0);
+
+            assertThat(picker.segments()).hasSize(3);
+            var topLeft = picker.segments().get(0);
+            var bottomLeft = picker.segments().get(1);
+            var topRight = picker.segments().get(2);
+            // Options 0 and 1 share the left column and stack (0 above 1); option 2 sits in the right
+            // column, level with option 0 and one column-width to its right.
+            assertThat(topLeft.x()).isCloseTo(bottomLeft.x(), within(TOLERANCE));
+            assertThat(topLeft.y()).isGreaterThan(bottomLeft.y());
+            assertThat(topRight.y()).isCloseTo(topLeft.y(), within(TOLERANCE));
+            assertThat(topRight.x()).isCloseTo(topLeft.x() + topLeft.width(), within(TOLERANCE));
         }
 
         @Test
