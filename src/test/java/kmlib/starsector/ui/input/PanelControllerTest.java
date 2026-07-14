@@ -83,6 +83,37 @@ final class PanelControllerTest {
             assertThat(acted).as("a row clipped from the viewport is not clickable").isFalse();
             assertThat(fired[0]).as("the clipped-out option's action must not fire").isFalse();
         }
+
+        @Test
+        void activateControlIfHitFiresATabHitReportedAsThatTabIndex() {
+            var firedCell = new int[]{-1};
+            // The lit tab is the left one, so a press on the right (non-lit) tab fires it by its index.
+            var tabs = buildTwoTabRowAtRow(0, cell -> firedCell[0] = cell);
+            var acted = PanelController.activateControlIfHit(tabs, FULL_VIEWPORT,
+                    ROW.x() + 3f * ROW.width() / 4f, ROW.y() + ROW.height() / 2f);
+            assertThat(acted).isTrue();
+            assertThat(firedCell[0]).as("a tab reports its own index").isEqualTo(1);
+        }
+
+        @Test
+        void activateControlIfHitTreatsAPressOnTheLitTabAsInert() {
+            var fired = new boolean[1];
+            // A tabs row is always inert on its lit tab (INERT reselect), so a press on the left, lit tab
+            // reaches no action - matching a vanilla tab strip, where clicking the active tab does nothing.
+            var tabs = buildTwoTabRowAtRow(0, cell -> fired[0] = true);
+            var acted = PanelController.activateControlIfHit(tabs, FULL_VIEWPORT,
+                    ROW.x() + ROW.width() / 4f, ROW.y() + ROW.height() / 2f);
+            assertThat(acted).as("re-clicking the active tab is inert").isFalse();
+            assertThat(fired[0]).as("the lit tab's action must not fire").isFalse();
+        }
+
+        @Test
+        void activateControlIfHitReportsNoHitForAPressOutsideEveryTab() {
+            var tabs = buildTwoTabRowAtRow(0, ControlAction.NONE);
+            var acted = PanelController.activateControlIfHit(tabs, FULL_VIEWPORT, ROW.x() - 10f,
+                    ROW.y() + ROW.height() / 2f);
+            assertThat(acted).isFalse();
+        }
     }
 
     // A single-row control occupying ROW, so each test states only the kind, label, and action that
@@ -98,5 +129,17 @@ final class PanelControllerTest {
         var spec = ControlSpec.createIconRadioList(List.of("Opt"), Arrays.asList((String) null),
                 ControlSpec.NO_SELECTION, action).buildScrollableCopy();
         return new Control(spec, ROW, List.of(ROW));
+    }
+
+    // A two-tab row occupying ROW, split into two equal per-tab boxes (left tab, right tab), the lit tab
+    // at selectedIndex, so a press in a tab's box hits that tab unless its own inert-on-lit reselect
+    // swallows it. Shortcuts are irrelevant to the hit-test, so the tabs carry none.
+    private static Control buildTwoTabRowAtRow(int selectedIndex, ControlAction action) {
+        var leftTab = new Rectangle(ROW.x(), ROW.y(), ROW.width() / 2f, ROW.height());
+        var rightTab = new Rectangle(ROW.x() + ROW.width() / 2f, ROW.y(), ROW.width() / 2f,
+                ROW.height());
+        var spec = ControlSpec.createTabs(List.of("Political Map", "Alliances"), List.of(),
+                selectedIndex, action);
+        return new Control(spec, ROW, List.of(leftTab, rightTab));
     }
 }

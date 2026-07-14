@@ -172,9 +172,10 @@ public final class PanelController {
 
     /**
      * Fires the control's action if the press lands on an actionable cell, and reports whether it did. A
-     * radio hits by segment over the segments the layout laid; a radio whose reselect swallows a re-pick
-     * treats a press on the lit segment as inert, while a re-firing radio reads the raw hit so a press on
-     * the lit segment reaches its action. A single-cell checkbox or toggle hits anywhere on its row,
+     * radio or a tabs row hits by segment over the segments the layout laid; a radio whose reselect
+     * swallows a re-pick - and a tabs row, always inert on its lit tab - treats a press on the lit segment
+     * as inert, while a re-firing radio reads the raw hit so a press on the lit segment reaches its action.
+     * A single-cell checkbox or toggle hits anywhere on its row,
      * reported as cell 0. A caption label or a divider is not a hit target and is skipped, so the press
      * falls through to a control below rather than being swallowed on an inert action. The action's meaning
      * stays with whoever supplied the spec - this only maps the click to a cell. Package-private so it is
@@ -202,9 +203,11 @@ public final class PanelController {
                 || control.spec().kind() == ControlKind.DIVIDER) {
             return false;
         }
-        // A radio hits by segment over the segments the layout laid. The reselect behaviour then selects
-        // raw-hit (a re-pick fires) vs already-lit handling (a re-pick is swallowed).
-        if (control.spec().kind() == ControlKind.RADIO) {
+        // A radio or a tabs row hits by segment over the segments the layout laid - a radio's equal cells
+        // or a tabs row's per-tab boxes. The reselect behaviour then selects raw-hit (a re-pick fires) vs
+        // already-lit handling (a re-pick is swallowed); a tabs row is always inert on its lit tab, so
+        // re-clicking the active tab reaches no action, matching a vanilla tab strip.
+        if (isSegmentedControl(control.spec().kind())) {
             var segmentIndex = control.spec().reselect().firesOnReselect()
                     ? RadioRow.findSegmentIndexAt(control.segments(), pointX, pointY)
                     : RadioRow.findHitElement(control.segments(), control.spec().selectedIndex(),
@@ -220,5 +223,12 @@ public final class PanelController {
         }
         control.spec().action().activateCell(0);
         return true;
+    }
+
+    // A radio and a tabs row both resolve a click to one of their laid-out segments and honour their
+    // reselect behaviour, so the two hit-test through one path; every other kind is a single-cell row hit
+    // anywhere on its bounds.
+    private static boolean isSegmentedControl(ControlKind kind) {
+        return kind == ControlKind.RADIO || kind == ControlKind.TABS;
     }
 }
