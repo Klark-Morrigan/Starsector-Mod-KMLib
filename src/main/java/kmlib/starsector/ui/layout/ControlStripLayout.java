@@ -143,6 +143,27 @@ public final class ControlStripLayout {
     }
 
     /**
+     * Lays a tabs control flush as a panel header: the tabs snapped to their labels from
+     * {@code (originX, topY)} down one {@link #TAB_HEIGHT} band, split into per-tab segments. Unlike a
+     * body control it takes no {@link #BODY_PADDING} inset - a header sits flush at the interior top - so
+     * a tab panel frames it directly under the border. Reuses the same tab measurement and segment split
+     * a body {@link kmlib.starsector.ui.controls.ControlKind#TABS} control uses, so a header tab is hit
+     * exactly where a body tab would be and the header is not bespoke tab-strip framing.
+     *
+     * @param tabsSpec the tabs control, its labels and per-tab shortcuts in row order
+     * @param originX  the header's left edge (the content inset), in UI coordinates
+     * @param topY     the header's top edge (the content top), in UI coordinates
+     * @param measurer measures each tab label's rendered width for snapping
+     * @return the laid-out tabs control, its bounds the header band and its segments split per tab
+     */
+    public static Control layoutTabsHeader(ControlSpec tabsSpec, float originX, float topY,
+            LineWidthMeasurer measurer) {
+        var rowWidth = measureTabsRowWidth(tabsSpec, measurer);
+        var bounds = new Rectangle(originX, topY - TAB_HEIGHT, rowWidth, TAB_HEIGHT);
+        return toControl(tabsSpec, bounds, measurer);
+    }
+
+    /**
      * Pairs each spec with the row it was snapped into, in order, splitting a radio (or a tabs row) into
      * its segments and leaving every other kind a single-hit row. The SSOT for turning a run of (spec,
      * row) pairs into laid-out controls, so this layout's plain stack and the capped strip layout's
