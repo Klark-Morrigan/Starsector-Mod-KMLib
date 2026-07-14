@@ -1,21 +1,22 @@
 package kmlib.starsector.ui.widgets;
 
-import kmlib.math.geometry.Rectangle;
-
-import java.util.List;
+import kmlib.starsector.ui.controls.Control;
 
 /**
- * The laid-out rectangles of one {@link TabPanel}: the outer {@code box} spanning the whole
- * footprint (border and all), one {@link VanillaTab} per tab in row order, and the {@code body}
- * rectangle the active tab fills. All are in UI coordinates, so the same placement the panel draws
- * is the one a consumer hit-tests and lays its body controls into, with no conversion.
+ * One laid-out tab panel: a headerless {@link PanelPlacement} for the {@code body} with a {@code
+ * tabsHeader} control overlaid on the top band of the body's box. All geometry is in UI coordinates, so
+ * the same placement a renderer draws is the one a consumer hit-tests, with no conversion. The {@code
+ * tabsHeader} is an ordinary laid-out {@link kmlib.starsector.ui.controls.ControlKind#TABS} control (its
+ * segments split per tab), so it measures, draws, and hit-tests through the generic control path like any
+ * body control - the panel owns only where the header sits.
  *
- * <p>{@code body} is a zero-size rectangle when the active tab opens no body (see
- * {@link TabPanelBodySize#NONE}), so a bodyless tab reserves no framed region beneath the tab row.
+ * <p>The body's {@link PanelPlacement#box()} spans the WHOLE footprint (border + header band + body), so
+ * it is the single bordered frame both the header and the body draw within: a tab panel is a panel with a
+ * header overlaid, not a header wrapping a second bordered panel, so there is one border, not two. A host
+ * that needs the footprint reads it off {@code body().box()}.
  *
- * @param box  the panel's full footprint, border included
- * @param tabs the laid-out tabs, in row order left to right
- * @param body the framed body rectangle beneath the tabs, zero-size when the tab has no body
+ * @param tabsHeader the laid-out tabs control across the header band, its segments split per tab
+ * @param body       the headerless panel placement beneath the header (its box is the whole footprint)
  */
-public record TabPanelPlacement(Rectangle box, List<VanillaTab> tabs, Rectangle body) {
+public record TabPanelPlacement(Control tabsHeader, PanelPlacement body) {
 }
