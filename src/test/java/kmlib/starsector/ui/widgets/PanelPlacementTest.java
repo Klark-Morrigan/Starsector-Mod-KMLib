@@ -10,21 +10,21 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Pins {@link PanelPlacement#scrollRegion}: the placement hands its scrolling control to a scrollbar as a
- * {@link ScrollRegion} - the body as the container, the flex viewport, and the scroll offset/overflow -
+ * Pins {@link PanelPlacement#toScrollRegion}: the placement hands its scrolling control to a scrollbar as
+ * a {@link ScrollRegion} - the body as the container, the flex viewport, and the scroll offset/overflow -
  * so the panel carries no scrollbar geometry of its own.
  */
 final class PanelPlacementTest {
 
     @Nested
-    class ScrollRegion {
+    class ToScrollRegion {
 
         @Test
-        void scrollRegionMapsTheBodyViewportOffsetAndOverflow() {
+        void toScrollRegionMapsTheBodyViewportOffsetAndOverflow() {
+            var box = new Rectangle(8f, 18f, 204f, 304f);
             var body = new Rectangle(10f, 20f, 200f, 300f);
             var viewport = new Rectangle(18f, 30f, 120f, 100f);
-            var panel = new TabPanelPlacement(body, List.of(), body);
-            var placement = new PanelPlacement(panel, List.of(), viewport, 15f, 60f);
+            var placement = new PanelPlacement(box, body, List.of(), viewport, 15f, 60f);
 
             var region = placement.toScrollRegion();
 

@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.widgets;
+package kmlib.starsector.ui.layout;
 
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.ControlAction;
@@ -7,7 +7,7 @@ import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.RadioAlignment;
 import kmlib.starsector.ui.controls.ReselectBehaviour;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
-import kmlib.starsector.ui.layout.ControlStripLayout;
+import kmlib.starsector.ui.widgets.PanelPlacement;
 import kmlib.testfixtures.starsector.ui.font.LineWidthMeasurerFake;
 
 import org.junit.jupiter.api.Nested;
@@ -20,10 +20,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 
 /**
- * Pins {@link PanelLayout#computePlacement}: the box hangs from the screen's top-left by its padding,
- * each tab snaps to its measured label, the border insets the content, and the body stacks whatever
- * controls the active tab supplies - so the rectangles a renderer draws are the ones a click hit-test
- * reads.
+ * Pins {@link PanelLayout#computePlacement}: the headerless box hangs from the screen's top-left by its
+ * padding, the border insets the content, and the body stacks whatever controls the host supplies - so
+ * the rectangles a renderer draws are the ones a click hit-test reads. The box is just the bordered body:
+ * no tab row (a tab panel adds that through {@link TabPanelLayout}).
  */
 final class PanelLayoutTest {
     private static final float SCREEN_HEIGHT = 1080f;
@@ -31,7 +31,7 @@ final class PanelLayoutTest {
     private static final int PADDING_LEFT = 12;
     // A small bottom margin; the bodies in these cases carry no scrolling control, so the cap never
     // engages and this value only feeds the (never-reached) cap arithmetic. The capped and scrolling
-    // behaviour is exercised in the CappedBody nested class below with a scrolling body.
+    // behaviour is exercised in the CappedBody tests below with a scrolling body.
     private static final int PADDING_BOTTOM = 12;
     private static final int BORDER_WIDTH = 2;
     private static final float TOLERANCE = 0.01f;
@@ -42,13 +42,7 @@ final class PanelLayoutTest {
 
     private final LineWidthMeasurer measurerFake = new LineWidthMeasurerFake(WIDTH_PER_CHAR);
 
-    // Two tabs, stated here so the geometry does not depend on a caller's registry. The strip composes
-    // "label  [shortcut]" before measuring.
-    private static final List<VanillaTabContent> TABS = List.of(
-            new VanillaTabContent("No Layer", "N"),
-            new VanillaTabContent("Political Map", "P"));
-
-    // A representative body of generic control specs the way any tab would supply: a checkbox, a
+    // A representative body of generic control specs the way any host would supply: a checkbox, a
     // two-option radio with a trailing caption, and a toggle. The layout snaps and stacks by geometry
     // alone, so each control's lit state is left unset here.
     private static final List<ControlSpec> BODY = List.of(
@@ -59,25 +53,18 @@ final class PanelLayoutTest {
             new ControlSpec(ControlKind.TOGGLE, List.of("Factions"), "",
                     ControlSpec.NO_SELECTION));
 
-    // Content is inset from the box by the border on every edge.
+    // Content is inset from the box by the border on every edge; with no header the body hangs straight
+    // from the inset content top.
     private static final float CONTENT_X = PADDING_LEFT + BORDER_WIDTH;
     private static final float BOX_TOP_Y = SCREEN_HEIGHT - PADDING_TOP;
     private static final float CONTENT_TOP_Y = BOX_TOP_Y - BORDER_WIDTH;
-    private static final float TAB_ROW_BOTTOM_Y = CONTENT_TOP_Y - ControlStripLayout.TAB_HEIGHT;
-
-    // "No Layer  [N]" is 13 characters, "Political Map  [P]" is 18, each snapped to its width plus
-    // the tab text padding; both clear the minimum width.
-    private static final float FIRST_TAB_WIDTH = 13 * WIDTH_PER_CHAR + ControlStripLayout.TAB_TEXT_PADDING;
-    private static final float SECOND_TAB_WIDTH =
-            18 * WIDTH_PER_CHAR + ControlStripLayout.TAB_TEXT_PADDING;
-    private static final float TAB_ROW_WIDTH = FIRST_TAB_WIDTH + SECOND_TAB_WIDTH;
 
     @Nested
     class ComputePlacement {
 
         @Test
         void computePlacementHangsTheBoxFromTheTopLeftByItsPadding() {
-            var box = place(List.of()).box();
+            var box = place(BODY).box();
             assertThat(box.x()).isCloseTo(PADDING_LEFT, within(TOLERANCE));
             assertThat(box.y() + box.height())
                     .as("box top edge sits paddingTop below the screen top")
@@ -85,48 +72,16 @@ final class PanelLayoutTest {
         }
 
         @Test
-        void computePlacementSnapsEachTabToItsMeasuredLabelWidthLeftToRight() {
-            var tabs = place(List.of()).tabs();
-            assertThat(tabs).hasSize(TABS.size());
-
-            var first = tabs.get(0).bounds();
-            assertThat(first.x()).isCloseTo(CONTENT_X, within(TOLERANCE));
-            assertThat(first.width()).isCloseTo(FIRST_TAB_WIDTH, within(TOLERANCE));
-
-            var second = tabs.get(1).bounds();
-            assertThat(second.x()).isCloseTo(CONTENT_X + FIRST_TAB_WIDTH, within(TOLERANCE));
-            assertThat(second.width()).isCloseTo(SECOND_TAB_WIDTH, within(TOLERANCE));
-        }
-
-        @Test
-        void computePlacementSharesTheContentTopEdgeAcrossEveryTab() {
-            for (var tab : place(List.of()).tabs()) {
-                var bounds = tab.bounds();
-                assertThat(bounds.y() + bounds.height())
-                        .as("each tab's top edge is the inset content top")
-                        .isCloseTo(CONTENT_TOP_Y, within(TOLERANCE));
-                assertThat(bounds.height()).isCloseTo(ControlStripLayout.TAB_HEIGHT, within(TOLERANCE));
-            }
-        }
-
-        @Test
-        void computePlacementCarriesEachTabsDisplayContentInOrder() {
-            var tabs = place(List.of()).tabs();
-            assertThat(tabs.get(0).content()).isEqualTo(TABS.get(0));
-            assertThat(tabs.get(1).content()).isEqualTo(TABS.get(1));
-        }
-
-        @Test
-        void computePlacementLeavesNoBodyWhenNoControlsAreGiven() {
+        void computePlacementLeavesAMinimalBorderedBoxWhenNoControlsAreGiven() {
             var placement = place(List.of());
             assertThat(placement.bodyControls()).isEmpty();
-            // The box is only the bordered tab row when there is no body beneath it.
-            assertThat(placement.box().height())
-                    .isCloseTo(ControlStripLayout.TAB_HEIGHT + 2f * BORDER_WIDTH, within(TOLERANCE));
+            // With no body and no header, the box collapses to just the border on every edge.
+            assertThat(placement.box().width()).isCloseTo(2f * BORDER_WIDTH, within(TOLERANCE));
+            assertThat(placement.box().height()).isCloseTo(2f * BORDER_WIDTH, within(TOLERANCE));
         }
 
         @Test
-        void computePlacementStacksTheBodyControlsAsAColumnBeneathTheTabRow() {
+        void computePlacementStacksTheBodyControlsAsAColumnBeneathTheContentTop() {
             var controls = place(BODY).bodyControls();
             assertThat(controls).extracting(control -> control.spec().kind()).containsExactly(
                     ControlKind.CHECKBOX,
@@ -141,8 +96,8 @@ final class PanelLayoutTest {
             assertThat(checkbox.x()).isCloseTo(rowsLeft, within(TOLERANCE));
             assertThat(checkbox.width()).isCloseTo(expectedCheckboxWidth, within(TOLERANCE));
             assertThat(checkbox.y() + checkbox.height())
-                    .as("the first control row hangs one body inset below the tab row")
-                    .isCloseTo(TAB_ROW_BOTTOM_Y - ControlStripLayout.BODY_PADDING, within(TOLERANCE));
+                    .as("the first control row hangs one body inset below the content top")
+                    .isCloseTo(CONTENT_TOP_Y - ControlStripLayout.BODY_PADDING, within(TOLERANCE));
         }
 
         @Test
@@ -181,16 +136,17 @@ final class PanelLayoutTest {
         }
 
         @Test
-        void computePlacementSizesTheBoxToTheWiderOfTheTabRowAndTheBody() {
-            // The tab row is wider than the control body here, so the box tracks the tab row.
-            var box = place(BODY).box();
-            assertThat(box.width()).isCloseTo(TAB_ROW_WIDTH + 2f * BORDER_WIDTH, within(TOLERANCE));
+        void computePlacementWrapsTheBodyWithTheBorderOnEveryEdge() {
+            var placement = place(BODY);
+            var box = placement.box();
+            var body = placement.body();
+            // No header: the box is exactly the body plus the border on every edge.
+            assertThat(box.width()).isCloseTo(body.width() + 2f * BORDER_WIDTH, within(TOLERANCE));
+            assertThat(box.height()).isCloseTo(body.height() + 2f * BORDER_WIDTH, within(TOLERANCE));
         }
 
         @Test
-        void computePlacementGrowsTheBodyDownwardWhenATabAppendsAControl() {
-            // A tab contributing an extra control appends one row beneath the shared body, the way a
-            // selected view's own controls trail the shared ones.
+        void computePlacementGrowsTheBodyDownwardWhenAControlIsAppended() {
             var basePlacement = place(BODY);
             var appended = new ArrayList<>(BODY);
             appended.add(new ControlSpec(ControlKind.CHECKBOX, List.of("Muted"), "",
@@ -214,33 +170,9 @@ final class PanelLayoutTest {
                     .isCloseTo(baseFirstRow.y() + baseFirstRow.height(), within(TOLERANCE));
         }
 
-        private void assertRectWithin(Rectangle inner, Rectangle outer) {
-            assertThat(inner.x()).isGreaterThanOrEqualTo(outer.x() - TOLERANCE);
-            assertThat(inner.x() + inner.width())
-                    .isLessThanOrEqualTo(outer.x() + outer.width() + TOLERANCE);
-            assertThat(inner.y()).isGreaterThanOrEqualTo(outer.y() - TOLERANCE);
-            assertThat(inner.y() + inner.height())
-                    .isLessThanOrEqualTo(outer.y() + outer.height() + TOLERANCE);
-        }
-
-        private PanelPlacement place(List<ControlSpec> bodyControls) {
-            return PanelLayout.computePlacement(SCREEN_HEIGHT, PADDING_TOP, PADDING_LEFT,
-                    PADDING_BOTTOM, BORDER_WIDTH, TABS, bodyControls, measurerFake, 0f);
-        }
-    }
-
-    @Nested
-    class VerticalRadio {
-        // A two-option vertical selector radio, laid out on its own so the stacked geometry is checked
-        // without the other controls' rows in the way. "Alliances" (9 chars) is the wider option.
-        private static final List<ControlSpec> VERTICAL_BODY = List.of(
-                new ControlSpec(ControlKind.RADIO, List.of("Factions", "Alliances"),
-                        "", ControlSpec.NO_SELECTION, ControlAction.NONE,
-                        RadioAlignment.VERTICAL, ReselectBehaviour.DESELECT));
-
         @Test
         void computePlacementStandsAVerticalRadioOneRowTallPerOption() {
-            var radio = place().bodyControls().get(0);
+            var radio = place(verticalRadioBody()).bodyControls().get(0);
             // One option-row of height per segment, so a two-option radio is twice a control row. The
             // exact row width is the control strip's concern, pinned in ControlStripLayoutTest.
             assertThat(radio.bounds().height())
@@ -248,8 +180,8 @@ final class PanelLayoutTest {
         }
 
         @Test
-        void computePlacementStacksTheSegmentsTopToBottomInOneColumn() {
-            var radio = place().bodyControls().get(0);
+        void computePlacementStacksAVerticalRadiosSegmentsTopToBottomInOneColumn() {
+            var radio = place(verticalRadioBody()).bodyControls().get(0);
             assertThat(radio.segments()).hasSize(2);
             var top = radio.segments().get(0);
             var bottom = radio.segments().get(1);
@@ -266,75 +198,16 @@ final class PanelLayoutTest {
         }
 
         @Test
-        void computePlacementKeepsEverySegmentWithinTheBody() {
-            var placement = place();
-            var body = placement.body();
-            for (var segment : placement.bodyControls().get(0).segments()) {
-                assertThat(segment.x()).isGreaterThanOrEqualTo(body.x() - TOLERANCE);
-                assertThat(segment.x() + segment.width())
-                        .isLessThanOrEqualTo(body.x() + body.width() + TOLERANCE);
-                assertThat(segment.y()).isGreaterThanOrEqualTo(body.y() - TOLERANCE);
-                assertThat(segment.y() + segment.height())
-                        .isLessThanOrEqualTo(body.y() + body.height() + TOLERANCE);
-            }
-        }
-
-        private PanelPlacement place() {
-            return PanelLayout.computePlacement(SCREEN_HEIGHT, PADDING_TOP, PADDING_LEFT,
-                    PADDING_BOTTOM, BORDER_WIDTH, TABS, VERTICAL_BODY, measurerFake, 0f);
-        }
-    }
-
-    @Nested
-    class LabelRow {
-        // A caption row on its own, so the label's plain-text geometry is checked without other
-        // controls' rows in the way. A caption heads a group of checkboxes.
-        private static final String CAPTION = "Non-allied factions are";
-        private static final List<ControlSpec> LABEL_BODY =
-                List.of(ControlSpec.createLabel(CAPTION));
-
-        @Test
         void computePlacementSnapsALabelRowToItsMeasuredText() {
-            var label = place().bodyControls().get(0);
+            var caption = "Non-allied factions are";
+            var label = place(List.of(ControlSpec.createLabel(caption))).bodyControls().get(0);
             // A caption has no widget chrome, so its row is exactly its text width and one row tall.
             assertThat(label.bounds().width())
-                    .isCloseTo(CAPTION.length() * WIDTH_PER_CHAR, within(TOLERANCE));
+                    .isCloseTo(caption.length() * WIDTH_PER_CHAR, within(TOLERANCE));
             assertThat(label.bounds().height())
                     .isCloseTo(ControlStripLayout.CONTROL_ROW_HEIGHT, within(TOLERANCE));
-        }
-
-        @Test
-        void computePlacementLeavesALabelRowWithoutSegments() {
-            assertThat(place().bodyControls().get(0).segments())
+            assertThat(label.segments())
                     .as("a caption is never clicked, so it splits into no hit segments").isEmpty();
-        }
-
-        private PanelPlacement place() {
-            return PanelLayout.computePlacement(SCREEN_HEIGHT, PADDING_TOP, PADDING_LEFT,
-                    PADDING_BOTTOM, BORDER_WIDTH, TABS, LABEL_BODY, measurerFake, 0f);
-        }
-    }
-
-    @Nested
-    class CappedBody {
-        // A body that carries a scrolling list (a header checkbox, the marked list, a footer checkbox),
-        // and a bottom margin tight enough that the natural body would overrun it - so the cap engages
-        // and the list gives up height. Eight options make the list far taller than the room left.
-        private static final int TIGHT_PADDING_BOTTOM = 900;
-
-        private List<ControlSpec> scrollingBody() {
-            var labels = new ArrayList<String>();
-            var icons = new ArrayList<String>();
-            for (var index = 0; index < 8; index++) {
-                labels.add("Opt" + index);
-                icons.add(null);
-            }
-            var list = ControlSpec.createIconRadioList(labels, icons, ControlSpec.NO_SELECTION,
-                    ControlAction.NONE).buildScrollableCopy();
-            return List.of(new ControlSpec(ControlKind.CHECKBOX, List.of("Header"), "",
-                            ControlSpec.NO_SELECTION), list,
-                    new ControlSpec(ControlKind.CHECKBOX, List.of("Footer"), "",
-                            ControlSpec.NO_SELECTION));
         }
 
         @Test
@@ -342,8 +215,7 @@ final class PanelLayoutTest {
             var placement = placeCapped(0f);
             // The box bottom clears the bottom margin (its top is fixed by the top padding), and the
             // list overruns the room left, so a scroll viewport and overflow are reported.
-            assertThat(placement.box().y())
-                    .isGreaterThanOrEqualTo(TIGHT_PADDING_BOTTOM - TOLERANCE);
+            assertThat(placement.box().y()).isGreaterThanOrEqualTo(TIGHT_PADDING_BOTTOM - TOLERANCE);
             assertThat(placement.scrollOverflow()).isGreaterThan(0f);
             assertThat(placement.isScrollbarNeeded()).isTrue();
             assertThat(placement.flexViewport().height()).isGreaterThan(0f);
@@ -364,8 +236,8 @@ final class PanelLayoutTest {
 
         @Test
         void computePlacementBakesTheScrollOffsetIntoTheListBounds() {
-            var atTop = listBounds(placeCapped(0f));
-            var scrolled = listBounds(placeCapped(20f));
+            var atTop = placeCapped(0f).bodyControls().get(1).bounds();
+            var scrolled = placeCapped(20f).bodyControls().get(1).bounds();
             // A larger scroll offset slides the list's content upward (UI y grows up) by that offset,
             // so the offset the placement reports is the shift baked into the list control's bounds.
             assertThat(scrolled.y() - atTop.y())
@@ -373,14 +245,53 @@ final class PanelLayoutTest {
             assertThat(placeCapped(20f).scrollOffset()).isCloseTo(20f, within(TOLERANCE));
         }
 
-        private Rectangle listBounds(PanelPlacement placement) {
-            return placement.bodyControls().get(1).bounds();
+        private void assertRectWithin(Rectangle inner, Rectangle outer) {
+            assertThat(inner.x()).isGreaterThanOrEqualTo(outer.x() - TOLERANCE);
+            assertThat(inner.x() + inner.width())
+                    .isLessThanOrEqualTo(outer.x() + outer.width() + TOLERANCE);
+            assertThat(inner.y()).isGreaterThanOrEqualTo(outer.y() - TOLERANCE);
+            assertThat(inner.y() + inner.height())
+                    .isLessThanOrEqualTo(outer.y() + outer.height() + TOLERANCE);
+        }
+
+        private PanelPlacement place(List<ControlSpec> bodyControls) {
+            return PanelLayout.computePlacement(SCREEN_HEIGHT,
+                    new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT), BORDER_WIDTH,
+                    bodyControls, measurerFake, 0f);
         }
 
         private PanelPlacement placeCapped(float rawScrollOffset) {
-            return PanelLayout.computePlacement(SCREEN_HEIGHT, PADDING_TOP, PADDING_LEFT,
-                    TIGHT_PADDING_BOTTOM, BORDER_WIDTH, TABS, scrollingBody(), measurerFake,
-                    rawScrollOffset);
+            return PanelLayout.computePlacement(SCREEN_HEIGHT,
+                    new Padding(PADDING_TOP, 0, TIGHT_PADDING_BOTTOM, PADDING_LEFT), BORDER_WIDTH,
+                    scrollingBody(), measurerFake, rawScrollOffset);
         }
+    }
+
+    // A two-option vertical selector radio, on its own so the stacked geometry is checked without the
+    // other controls' rows in the way. "Alliances" (9 chars) is the wider option.
+    private static List<ControlSpec> verticalRadioBody() {
+        return List.of(new ControlSpec(ControlKind.RADIO, List.of("Factions", "Alliances"), "",
+                ControlSpec.NO_SELECTION, ControlAction.NONE, RadioAlignment.VERTICAL,
+                ReselectBehaviour.DESELECT));
+    }
+
+    // A bottom margin tight enough that the natural body overruns it, so the cap engages and the list
+    // gives up height. Eight options make the list far taller than the room left.
+    private static final int TIGHT_PADDING_BOTTOM = 900;
+
+    // A body carrying a scrolling list (a header checkbox, the marked list, a footer checkbox).
+    private static List<ControlSpec> scrollingBody() {
+        var labels = new ArrayList<String>();
+        var icons = new ArrayList<String>();
+        for (var index = 0; index < 8; index++) {
+            labels.add("Opt" + index);
+            icons.add(null);
+        }
+        var list = ControlSpec.createIconRadioList(labels, icons, ControlSpec.NO_SELECTION,
+                ControlAction.NONE).buildScrollableCopy();
+        return List.of(
+                new ControlSpec(ControlKind.CHECKBOX, List.of("Header"), "", ControlSpec.NO_SELECTION),
+                list,
+                new ControlSpec(ControlKind.CHECKBOX, List.of("Footer"), "", ControlSpec.NO_SELECTION));
     }
 }

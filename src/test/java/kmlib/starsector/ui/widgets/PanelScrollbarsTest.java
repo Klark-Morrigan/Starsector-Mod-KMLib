@@ -26,8 +26,8 @@ final class PanelScrollbarsTest {
     private static final float OVERFLOW = 100f;
 
     private static PanelPlacement placement(float scrollOffset) {
-        var panel = new TabPanelPlacement(BODY, List.of(), BODY);
-        return new PanelPlacement(panel, List.of(), VIEWPORT, scrollOffset, OVERFLOW);
+        // The box is unused by PanelScrollbars (it projects the body's gutter), so the body doubles as it.
+        return new PanelPlacement(BODY, BODY, List.of(), VIEWPORT, scrollOffset, OVERFLOW);
     }
 
     @Nested

@@ -114,6 +114,18 @@ final class PanelControllerTest {
                     ROW.y() + ROW.height() / 2f);
             assertThat(acted).isFalse();
         }
+
+        @Test
+        void activateControlIfHitFiresAHeaderTabThroughTheUnclippedCore() {
+            var firedCell = new int[]{-1};
+            // The viewport-less core is the path a tab panel's header takes - the header never scrolls, so
+            // it is never clipped. A press on the right (non-lit) tab fires it by its index, no viewport.
+            var tabs = buildTwoTabRowAtRow(0, cell -> firedCell[0] = cell);
+            var acted = PanelController.activateControlIfHit(tabs, ROW.x() + 3f * ROW.width() / 4f,
+                    ROW.y() + ROW.height() / 2f);
+            assertThat(acted).isTrue();
+            assertThat(firedCell[0]).as("a tab reports its own index").isEqualTo(1);
+        }
     }
 
     // A single-row control occupying ROW, so each test states only the kind, label, and action that
