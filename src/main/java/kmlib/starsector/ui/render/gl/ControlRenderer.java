@@ -56,7 +56,7 @@ public final class ControlRenderer {
      *                tabs row
      * @param opacity overall alpha, 0..1
      */
-    public static void render(Control control, PanelStyle style, float opacity) {
+    public static void render(Control control, WidgetStyle style, float opacity) {
         var accent = style.accent();
         var brightAccent = style.brightAccent();
         var bodyFont = style.bodyFont();
@@ -75,7 +75,7 @@ public final class ControlRenderer {
     // layout; pairing each with its content (rebuilt from the spec through the same helper the layout
     // measured with) yields the tabs the strip renderer paints, so the drawn tab matches the hit box.
     // Hover reads the cursor here so the tab under the pointer lights without an input event.
-    private static void drawTabs(Control control, PanelStyle style, float opacity) {
+    private static void drawTabs(Control control, WidgetStyle style, float opacity) {
         var spec = control.spec();
         var contents = ControlStripLayout.buildTabContents(spec);
         var tabs = VanillaTabStrip.zipTabs(contents, control.segments());
