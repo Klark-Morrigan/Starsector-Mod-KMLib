@@ -5,6 +5,7 @@ import com.fs.starfarer.api.util.Misc;
 import kmlib.color.Colors;
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlSpec;
+import kmlib.starsector.ui.controls.RadioAlignment;
 import kmlib.starsector.ui.font.LazyFontCache;
 import kmlib.starsector.ui.input.UiCursor;
 import kmlib.starsector.ui.layout.ControlStripLayout;
@@ -100,8 +101,9 @@ public final class ControlRenderer {
 
     // A radio group: the segments framed and the active one washed, then its labels. An icon-list radio
     // (non-empty icon paths) draws the crests and left-anchors its names past them; a plain radio centres
-    // each name in its segment and appends its trailing caption. The segments flow the way the spec's
-    // alignment sets, so the wash and dividers follow the same flow the layout split the row into.
+    // each name in its segment and appends its trailing caption. A vertical group re-derives its grid from
+    // the footprint; a horizontal group draws its chrome over the laid segments, the same rects the labels
+    // below centre in, so the wash and dividers cannot part from the labels whether even or snapped.
     private static void drawRadio(Control control, Color accent, String bodyFont, float opacity) {
         if (!control.spec().iconPaths().isEmpty()) {
             drawIconRadio(control, accent, bodyFont, opacity);
@@ -110,9 +112,16 @@ public final class ControlRenderer {
         var spec = control.spec();
         var bounds = control.bounds();
         var labels = spec.labels();
-        RadioRowRenderer.render(bounds, labels.size(), spec.selectedIndex(), spec.alignment(),
-                spec.columnCount(), accent, accent, opacity);
         var segments = control.segments();
+        // Frame and wash both stroke the accent, the plain radio's single chrome tone.
+        var colors = new RadioColors(accent, accent);
+        if (spec.alignment() == RadioAlignment.VERTICAL) {
+            RadioRowRenderer.renderVerticalGrid(bounds, labels.size(), spec.selectedIndex(),
+                    spec.columnCount(), colors, opacity);
+        } else {
+            RadioRowRenderer.renderHorizontalRow(bounds, segments, spec.selectedIndex(), colors,
+                    opacity);
+        }
         for (var index = 0; index < segments.size() && index < labels.size(); index++) {
             var segment = segments.get(index);
             drawBodyLabel(bodyFont, labels.get(index), segment.computeCenterX(), segment.computeCenterY(),
@@ -133,7 +142,7 @@ public final class ControlRenderer {
         var spec = control.spec();
         var bounds = control.bounds();
         IconRadioListRenderer.render(bounds, spec.iconPaths(), spec.selectedIndex(),
-                spec.columnCount(), accent, accent, opacity);
+                spec.columnCount(), new RadioColors(accent, accent), opacity);
         var segments = control.segments();
         var labels = spec.labels();
         for (var index = 0; index < segments.size() && index < labels.size(); index++) {

@@ -2,11 +2,9 @@ package kmlib.starsector.ui.render.gl;
 
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.graphics.StarsectorSprites;
-import kmlib.starsector.ui.controls.RadioAlignment;
 import kmlib.starsector.ui.widgets.IconLabelRow;
 import kmlib.starsector.ui.widgets.RadioRow;
 
-import java.awt.Color;
 import java.util.List;
 
 /**
@@ -44,15 +42,14 @@ public final class IconRadioListRenderer {
      *                      option with no icon. The list size is the option count
      * @param selectedIndex the lit option's index, or a value outside the list to light none
      * @param columnCount   how many columns the options wrap across (one is a single stack)
-     * @param frameColor    the outline and divider colour
-     * @param selectedColor the lit-option wash colour
+     * @param colors        the frame stroke and selected-wash palette
      * @param opacity       overall alpha, 0..1
      */
     public static void render(Rectangle bounds, List<String> iconPaths, int selectedIndex,
-            int columnCount, Color frameColor, Color selectedColor, float opacity) {
+            int columnCount, RadioColors colors, float opacity) {
         var optionCount = iconPaths.size();
-        RadioRowRenderer.render(bounds, optionCount, selectedIndex, RadioAlignment.VERTICAL,
-                columnCount, frameColor, selectedColor, opacity);
+        RadioRowRenderer.renderVerticalGrid(bounds, optionCount, selectedIndex, columnCount,
+                colors, opacity);
         var segments = RadioRow.splitIntoGrid(bounds, optionCount, columnCount);
         for (var index = 0; index < segments.size(); index++) {
             var iconPath = iconPaths.get(index);
