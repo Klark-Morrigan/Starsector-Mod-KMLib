@@ -13,7 +13,7 @@ import org.lwjgl.opengl.GL11;
  * {@link TabPanelRenderer}), then each body control (via {@link ControlRenderer}), then the scrollbar when
  * the body is capped. It composes the chrome, the per-control paint, and the scrollbar into one panel
  * draw, so a host renders its whole panel with one call and stays out of the per-widget GL. The look
- * rides on a {@link PanelStyle}; the per-frame border width, selected tab, and opacity are parameters.
+ * rides on a {@link WidgetStyle}; the per-frame border width, selected tab, and opacity are parameters.
  *
  * <p>Brackets the draw in one {@code glPushAttrib}/{@code glPopAttrib} - the map chrome and tooltips draw
  * after a UI-overlay pass, so any enable / colour / blend state the panel touches must be restored - and
@@ -37,7 +37,7 @@ public final class PanelRenderer {
      * @param selectedIndex the lit tab's index, in tab order
      * @param opacity       overall alpha, 0..1, fading the whole panel
      */
-    public static void render(PanelPlacement placement, PanelStyle style, float borderWidth,
+    public static void render(PanelPlacement placement, WidgetStyle style, float borderWidth,
             int selectedIndex, float opacity) {
         // Belt-and-suspenders around the raw GL: the map chrome and tooltips draw after a UI-overlay
         // pass, so any state the panel touches must be restored. The whole draw shares this one save.
@@ -47,8 +47,8 @@ public final class PanelRenderer {
         var hoveredIndex = TabPanel.findTabIndexAt(placement.panel(), UiCursor.getUiX(),
                 UiCursor.getUiY());
         TabPanelRenderer.render(placement.panel(), borderWidth, style.panelFill(), style.accent(),
-                selectedIndex, hoveredIndex, style.tabColors(), style.tabFont(), style.tabFontSize(),
-                opacity);
+                selectedIndex, hoveredIndex, style.tabStyle().colors(), style.tabStyle().font(),
+                style.tabStyle().fontSize(), opacity);
         drawBodyControls(placement, style, opacity);
         GL11.glPopAttrib();
     }
@@ -56,7 +56,7 @@ public final class PanelRenderer {
     // Draws each body control in the lit state its spec carries, then - when the body is capped - the
     // scrollbar for its scrolling control. The one control marked as the scroll region draws clipped to
     // its viewport; every other control draws unclipped in its pinned place.
-    private static void drawBodyControls(PanelPlacement placement, PanelStyle style, float opacity) {
+    private static void drawBodyControls(PanelPlacement placement, WidgetStyle style, float opacity) {
         for (var control : placement.bodyControls()) {
             if (control.spec().scrolls()) {
                 UiScissor.push(placement.flexViewport());
@@ -71,14 +71,14 @@ public final class PanelRenderer {
         }
     }
 
-    private static void drawControl(Control control, PanelStyle style, float opacity) {
+    private static void drawControl(Control control, WidgetStyle style, float opacity) {
         ControlRenderer.render(control, style, opacity);
     }
 
     // The scrollbar for the capped body: track and thumb come from the placement's scroll region - the
     // same geometry the input listener hit-tests for a drag - so what is drawn and what a drag grabs
     // cannot drift.
-    private static void drawScrollbar(PanelPlacement placement, PanelStyle style, float opacity) {
+    private static void drawScrollbar(PanelPlacement placement, WidgetStyle style, float opacity) {
         var track = PanelScrollbars.computeTrack(placement);
         var thumb = PanelScrollbars.computeThumb(placement);
         ScrollbarRenderer.render(track, thumb, style.accent(), opacity);

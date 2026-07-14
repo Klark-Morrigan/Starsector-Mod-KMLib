@@ -80,8 +80,9 @@ public final class ControlRenderer {
         var contents = ControlStripLayout.buildTabContents(spec);
         var tabs = VanillaTabStrip.zipTabs(contents, control.segments());
         var hoveredIndex = VanillaTabStrip.findTabIndexAt(tabs, UiCursor.getUiX(), UiCursor.getUiY());
-        VanillaTabStripRenderer.render(tabs, spec.selectedIndex(), hoveredIndex, style.tabColors(),
-                style.tabFont(), style.tabFontSize(), opacity);
+        var tabStyle = style.tabStyle();
+        VanillaTabStripRenderer.render(tabs, spec.selectedIndex(), hoveredIndex, tabStyle.colors(),
+                tabStyle.font(), tabStyle.fontSize(), opacity);
     }
 
     // A tick box lit when the spec's cell is selected, then its label to the right at the same gap the
