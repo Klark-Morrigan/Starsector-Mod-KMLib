@@ -158,16 +158,13 @@ public final class PanelController {
     }
 
     /**
-     * Fires the control's action if the press lands on an actionable cell, and reports whether it did. A
-     * radio or a tabs row hits by segment over the segments the layout laid; a radio whose reselect
-     * swallows a re-pick - and a tabs row, always inert on its lit tab - treats a press on the lit segment
-     * as inert, while a re-firing radio reads the raw hit so a press on the lit segment reaches its action.
-     * A single-cell checkbox or toggle hits anywhere on its row,
-     * reported as cell 0. A caption label or a divider is not a hit target and is skipped, so the press
-     * falls through to a control below rather than being swallowed on an inert action. The action's meaning
-     * stays with whoever supplied the spec - this only maps the click to a cell. Package-private so it is
-     * pinned on its own and so a {@link TabPanelController} can hit-test its header tabs control through the
-     * same segment path the body controls use.
+     * Hit-tests a control in a scrollable strip: a control marked {@link
+     * kmlib.starsector.ui.controls.ControlSpec#scrolls()} counts only inside {@code flexViewport}, then
+     * fires as {@link #activateControlIfHit(Control, float, float)}. The scrolling list clips because a row
+     * scrolled up under a pinned header (or down under a footer) is drawn away, so its segment - still laid
+     * out at its scrolled position - must not stay clickable through the control that hides it. Every
+     * non-scrolling control ignores the viewport, so the clip bites only the one flex list. Read by the
+     * body strip, whose one scrolling list needs it.
      *
      * @param control      the laid-out control to hit-test
      * @param flexViewport the scrolling control's viewport; a scrolling control only counts inside it
@@ -177,13 +174,32 @@ public final class PanelController {
      */
     static boolean activateControlIfHit(Control control, Rectangle flexViewport, float pointX,
             float pointY) {
-        // The scrolling list only counts inside its viewport: a row scrolled up under the pinned header (or
-        // down under the footer) is clipped from view, so its segment - still laid out at its scrolled
-        // position - must not be clickable through the header or footer that hides it. Only the one
-        // scrolling control is clipped; every other control ignores the viewport.
         if (control.spec().scrolls() && !flexViewport.containsPoint(pointX, pointY)) {
             return false;
         }
+        return activateControlIfHit(control, pointX, pointY);
+    }
+
+    /**
+     * Fires the control's action if the press lands on an actionable cell, and reports whether it did, for
+     * a control not subject to scroll-clipping (a panel header, or any control that never scrolls). A radio
+     * or a tabs row hits by segment over the segments the layout laid; a radio whose reselect swallows a
+     * re-pick - and a tabs row, always inert on its lit tab - treats a press on the lit segment as inert,
+     * while a re-firing radio reads the raw hit so a press on the lit segment reaches its action. A
+     * single-cell checkbox or toggle hits anywhere on its row, reported as cell 0. A caption label or a
+     * divider is not a hit target and is skipped, so the press falls through to a control below rather than
+     * being swallowed on an inert action. The action's meaning stays with whoever supplied the spec - this
+     * only maps the click to a cell. A control in a scrollable strip uses {@link
+     * #activateControlIfHit(Control, Rectangle, float, float)}, which clips a scrolling control first;
+     * package-private so a {@link TabPanelController} hit-tests its header tabs control through this same
+     * segment path.
+     *
+     * @param control the laid-out control to hit-test
+     * @param pointX  the press x, in UI coordinates
+     * @param pointY  the press y, in UI coordinates
+     * @return whether the press landed on an actionable cell and fired its action
+     */
+    static boolean activateControlIfHit(Control control, float pointX, float pointY) {
         // A caption row and a divider are drawn but not clickable, so a press over either hits nothing and
         // falls through to let the loop try the controls below - never consuming a click as if it acted.
         // The divider matters here because it spans the whole body width.
