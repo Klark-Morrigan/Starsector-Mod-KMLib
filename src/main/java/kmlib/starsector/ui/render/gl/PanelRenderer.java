@@ -72,7 +72,7 @@ public final class PanelRenderer {
     }
 
     private static void drawControl(Control control, PanelStyle style, float opacity) {
-        ControlRenderer.render(control, style.accent(), style.brightAccent(), style.bodyFont(), opacity);
+        ControlRenderer.render(control, style, opacity);
     }
 
     // The scrollbar for the capped body: track and thumb come from the placement's scroll region - the

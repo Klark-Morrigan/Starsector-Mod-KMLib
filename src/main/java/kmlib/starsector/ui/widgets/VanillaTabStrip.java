@@ -1,5 +1,6 @@
 package kmlib.starsector.ui.widgets;
 
+import kmlib.math.geometry.Rectangle;
 import kmlib.math.geometry.Rectangles;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.text.KmlibStrings;
@@ -46,9 +47,29 @@ public final class VanillaTabStrip {
         }
         var laidOut = TabStrip.layoutTabs(originX, rowTopY, tabHeight, textPadding, minTabWidth,
                 fontSize, displays, measurer);
-        var tabs = new ArrayList<VanillaTab>(contents.size());
-        for (var index = 0; index < contents.size(); index++) {
-            tabs.add(new VanillaTab(contents.get(index), laidOut.get(index).bounds()));
+        var bounds = new ArrayList<Rectangle>(laidOut.size());
+        for (var tab : laidOut) {
+            bounds.add(tab.bounds());
+        }
+        return zipTabs(contents, bounds);
+    }
+
+    /**
+     * Pairs each tab content with its laid-out box, in order, into {@link VanillaTab}s. The single source
+     * for that pairing, so the strip's own layout and a consumer holding the boxes separately (a control
+     * strip stores a tabs row's per-tab segments as bare rectangles and re-pairs them at paint time) build
+     * the same tabs. Zips to the shorter of the two lists, so a caller whose contents and boxes fall out of
+     * step pairs only the tabs it can back with both rather than reading past either end.
+     *
+     * @param contents the tabs' contents, in row order
+     * @param bounds   each tab's box, in the same order as {@code contents}
+     * @return one {@link VanillaTab} per paired (content, box), in order
+     */
+    public static List<VanillaTab> zipTabs(List<VanillaTabContent> contents, List<Rectangle> bounds) {
+        var count = Math.min(contents.size(), bounds.size());
+        var tabs = new ArrayList<VanillaTab>(count);
+        for (var index = 0; index < count; index++) {
+            tabs.add(new VanillaTab(contents.get(index), bounds.get(index)));
         }
         return List.copyOf(tabs);
     }

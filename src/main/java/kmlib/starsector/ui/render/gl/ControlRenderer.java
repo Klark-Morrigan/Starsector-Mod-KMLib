@@ -6,9 +6,11 @@ import kmlib.color.Colors;
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.font.LazyFontCache;
+import kmlib.starsector.ui.input.UiCursor;
 import kmlib.starsector.ui.layout.ControlStripLayout;
 import kmlib.starsector.ui.widgets.Checkbox;
 import kmlib.starsector.ui.widgets.IconLabelRow;
+import kmlib.starsector.ui.widgets.VanillaTabStrip;
 import kmlib.text.KmlibStrings;
 
 import org.lazywizard.lazylib.ui.LazyFont;
@@ -26,11 +28,11 @@ import java.util.Map;
  * built the spec, so this draws a faction toggle or a sort selector the same way without learning either.
  *
  * <p>It composes the per-kind KMLib renderers ({@link CheckboxRenderer}, {@link RadioRowRenderer}, {@link
- * IconRadioListRenderer}, {@link ToggleButton}, {@link DividerRenderer}) and the shared label paint, so a
- * host renders a whole strip of controls by calling this per control. The GL passthrough is exercised
- * in-engine like the other draw helpers; the caller wraps it in the GL-state save its panel already
- * holds. A small cache mints one GL text buffer per (font, size, text) so a steady body does not leak a
- * buffer per frame.
+ * IconRadioListRenderer}, {@link ToggleButton}, {@link DividerRenderer}, {@link VanillaTabStripRenderer})
+ * and the shared label paint, so a host renders a whole strip of controls by calling this per control. The
+ * GL passthrough is exercised in-engine like the other draw helpers; the caller wraps it in the GL-state
+ * save its panel already holds. A small cache mints one GL text buffer per (font, size, text) so a steady
+ * body does not leak a buffer per frame.
  */
 public final class ControlRenderer {
     // Cached across the run: body labels are a handful of static strings, so one GL text buffer per
@@ -42,27 +44,44 @@ public final class ControlRenderer {
     }
 
     /**
-     * Draws {@code control} in the lit state its spec carries, with its label(s) in {@code bodyFont},
-     * everything faded by {@code opacity}. A tick box / toggle lights its accent when its cell is
-     * selected; a radio frames its segments in {@code accent} and washes the active one; a checkbox uses
-     * {@code brightAccent} for its tick. Must run with a current GL context, like any immediate-mode GL
+     * Draws {@code control} in the lit state its spec carries, styled from {@code style} and faded by
+     * {@code opacity}. A tick box / toggle lights its accent when its cell is selected; a radio frames its
+     * segments in the accent and washes the active one; a checkbox uses the bright accent for its tick; a
+     * tabs row draws the vanilla-styled strip in the style's tab colours and font, lighting the selected
+     * tab and the one under the cursor. Must run with a current GL context, like any immediate-mode GL
      * call.
      *
-     * @param control     the laid-out control to draw
-     * @param accent      the frame / wash colour every widget strokes with
-     * @param brightAccent the brighter colour a checkbox ticks with
-     * @param bodyFont    the {@code graphics/fonts} basename the labels draw in
-     * @param opacity     overall alpha, 0..1
+     * @param control the laid-out control to draw
+     * @param style   the look bundle - accents and body font for every kind, tab colours and font for a
+     *                tabs row
+     * @param opacity overall alpha, 0..1
      */
-    public static void render(Control control, Color accent, Color brightAccent, String bodyFont,
-            float opacity) {
+    public static void render(Control control, PanelStyle style, float opacity) {
+        var accent = style.accent();
+        var brightAccent = style.brightAccent();
+        var bodyFont = style.bodyFont();
         switch (control.spec().kind()) {
             case CHECKBOX -> drawCheckbox(control, accent, brightAccent, bodyFont, opacity);
             case RADIO -> drawRadio(control, accent, bodyFont, opacity);
             case TOGGLE -> drawToggle(control, accent, bodyFont, opacity);
             case LABEL -> drawLabelRow(control, bodyFont, opacity);
             case DIVIDER -> drawDivider(control, accent, opacity);
+            case TABS -> drawTabs(control, style, opacity);
         }
+    }
+
+    // A tabs row: the vanilla Sector/System strip, each tab drawn in its snapped segment with the
+    // selected tab lit and the tab under the cursor washed. The segments were split to text by the
+    // layout; pairing each with its content (rebuilt from the spec through the same helper the layout
+    // measured with) yields the tabs the strip renderer paints, so the drawn tab matches the hit box.
+    // Hover reads the cursor here so the tab under the pointer lights without an input event.
+    private static void drawTabs(Control control, PanelStyle style, float opacity) {
+        var spec = control.spec();
+        var contents = ControlStripLayout.buildTabContents(spec);
+        var tabs = VanillaTabStrip.zipTabs(contents, control.segments());
+        var hoveredIndex = VanillaTabStrip.findTabIndexAt(tabs, UiCursor.getUiX(), UiCursor.getUiY());
+        VanillaTabStripRenderer.render(tabs, spec.selectedIndex(), hoveredIndex, style.tabColors(),
+                style.tabFont(), style.tabFontSize(), opacity);
     }
 
     // A tick box lit when the spec's cell is selected, then its label to the right at the same gap the

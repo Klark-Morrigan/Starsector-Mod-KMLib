@@ -211,10 +211,16 @@ public final class ControlStripLayout {
         return List.copyOf(segments);
     }
 
-    // Turns a tabs control's parallel label and shortcut lists into the tab contents the shared strip
-    // geometry measures and lays out; an empty shortcut reads as no hint (VanillaTabStrip drops a blank
-    // shortcut from the composed display).
-    private static List<VanillaTabContent> buildTabContents(ControlSpec spec) {
+    /**
+     * Turns a tabs control's parallel label and shortcut lists into the tab contents the shared strip
+     * geometry measures and lays out; an empty shortcut reads as no hint (VanillaTabStrip drops a blank
+     * shortcut from the composed display). Public so the renderer pairs each laid-out tab segment with
+     * the same content this measured and split it under, keeping one source for the pairing.
+     *
+     * @param spec the tabs control, its labels and per-tab shortcuts in row order
+     * @return one {@link VanillaTabContent} per tab, in row order
+     */
+    public static List<VanillaTabContent> buildTabContents(ControlSpec spec) {
         var contents = new ArrayList<VanillaTabContent>(spec.labels().size());
         for (var index = 0; index < spec.labels().size(); index++) {
             contents.add(new VanillaTabContent(spec.labels().get(index), spec.shortcutAt(index)));
