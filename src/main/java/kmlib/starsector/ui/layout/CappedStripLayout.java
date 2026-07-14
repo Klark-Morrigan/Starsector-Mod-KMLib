@@ -164,6 +164,33 @@ public final class CappedStripLayout {
         return new CappedStripPlacement(List.copyOf(controls), flexViewport, scrollOffset, overflow);
     }
 
+    /**
+     * Measures, caps, and places a scrollable control strip into a body region hung from {@code bodyTopY}
+     * down to at most {@code maxBodyHeight}: the shared body composition a plain panel and a tab panel
+     * both frame (the plain panel wraps it in a border, the tab panel hangs it beneath a header), so the
+     * two size and lay their body the same way and only their outer framing differs. The body is as wide
+     * as the measured strip and as tall as the capped height, left-aligned at {@code originX}, and the
+     * strip's one scrolling control gives up the overshoot past {@code maxBodyHeight}.
+     *
+     * @param originX         the body's left edge (the content inset), in UI coordinates
+     * @param bodyTopY        the body's top edge, in UI coordinates (below a header, or the content top)
+     * @param maxBodyHeight   the most the body may stand before its scrolling control caps
+     * @param bodyControls    the body controls, top to bottom (empty for no body)
+     * @param measurer        measures each label's rendered width for text snapping
+     * @param rawScrollOffset the requested scroll offset for the scrolling control; clamped to its overflow
+     * @return the framed body rectangle and the capped, placed controls inside it
+     */
+    public static BodyStrip layoutBodyStrip(float originX, float bodyTopY, float maxBodyHeight,
+            List<ControlSpec> bodyControls, LineWidthMeasurer measurer, float rawScrollOffset) {
+        var strip = ControlStripLayout.measureStrip(bodyControls, measurer);
+        var flexIndex = findScrollingIndex(bodyControls);
+        var bodyHeight = capBodyHeight(strip, flexIndex, maxBodyHeight);
+        var bounds = new Rectangle(originX, bodyTopY - bodyHeight, strip.bodyWidth(), bodyHeight);
+        var placement = layoutCappedControls(bounds, bodyControls, strip.rowHeights(),
+                strip.rowWidths(), flexIndex, rawScrollOffset, measurer);
+        return new BodyStrip(bounds, placement);
+    }
+
     // Confines a requested offset to the scrollable range: 0 when the list fits (overflow 0) or the
     // request runs past the top, up to the overflow when it runs past the bottom.
     private static float clamp(float requested, float overflow) {
@@ -195,5 +222,16 @@ public final class CappedStripLayout {
         public boolean isScrollbarNeeded() {
             return scrollOverflow > 0f;
         }
+    }
+
+    /**
+     * A laid-out body strip: the framed body {@code bounds} and the capped, scrolled controls {@code
+     * placement} inside it, returned together by {@link #layoutBodyStrip} so a panel frames its chrome
+     * around one value.
+     *
+     * @param bounds    the framed body rectangle, in UI coordinates
+     * @param placement the capped controls, flex viewport, and scroll geometry inside the body
+     */
+    public record BodyStrip(Rectangle bounds, CappedStripPlacement placement) {
     }
 }
