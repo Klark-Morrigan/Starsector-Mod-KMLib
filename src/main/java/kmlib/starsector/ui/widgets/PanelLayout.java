@@ -5,6 +5,7 @@ import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.layout.CappedStripLayout;
 import kmlib.starsector.ui.layout.ControlStripLayout;
+import kmlib.starsector.ui.layout.Padding;
 
 import java.util.List;
 
@@ -34,10 +35,8 @@ public final class PanelLayout {
      * that framed body. An empty {@code bodyControls} leaves a minimal bordered box with no body.
      *
      * @param screenHeight    the UI-coordinate screen height, giving the top edge to hang from
-     * @param paddingTop      pixels from the screen top to the box's top edge
-     * @param paddingLeft     pixels from the screen left to the box's left edge
-     * @param paddingBottom   pixels kept clear at the screen bottom; the body caps to this margin and its
-     *                        scrolling control gives up the difference
+     * @param padding         the panel's edge margins: the top-left anchor and the bottom keep-clear
+     *                        margin the body caps to (the right inset is unused - a panel grows rightward)
      * @param borderWidth     the outer border thickness framing the footprint; 0 leaves no inset
      * @param bodyControls    the body controls, top to bottom (empty for no body)
      * @param measurer        measures each label's rendered width for text snapping
@@ -45,9 +44,9 @@ public final class PanelLayout {
      *                        clamped to its overflow by the capped layout
      * @return the box, body, laid-out body controls, and the scroll geometry, in UI coordinates
      */
-    public static PanelPlacement computePlacement(float screenHeight, int paddingTop,
-            int paddingLeft, int paddingBottom, int borderWidth, List<ControlSpec> bodyControls,
-            LineWidthMeasurer measurer, float rawScrollOffset) {
+    public static PanelPlacement computePlacement(float screenHeight, Padding padding,
+            int borderWidth, List<ControlSpec> bodyControls, LineWidthMeasurer measurer,
+            float rawScrollOffset) {
         // Measure the control strip first so the box can size around it; the measured row dimensions are
         // reused to place each control once the body is framed. An empty strip carries no rows, which
         // sizes the body to zero so a bodyless panel reserves nothing beneath the border.
@@ -56,20 +55,20 @@ public final class PanelLayout {
         // leave, less the margin to keep clear. The capped layout shrinks only the scrolling control
         // (nothing when the body already fits or has no scrolling control), so the box stays put.
         var flexIndex = CappedStripLayout.findScrollingIndex(bodyControls);
-        var maxBodyHeight = screenHeight - paddingTop - 2f * borderWidth - paddingBottom;
+        var maxBodyHeight = screenHeight - padding.top() - 2f * borderWidth - padding.bottom();
         var bodyHeight = CappedStripLayout.capBodyHeight(strip, flexIndex, maxBodyHeight);
 
         // The box hangs from the screen's top-left by its paddings; the content is inset by the border on
         // every edge, so the body clears the stroke. The body hangs from the inset content top down its
         // capped height, and the box wraps it with the border on every edge.
-        var boxTopY = screenHeight - paddingTop;
-        var contentX = paddingLeft + (float) borderWidth;
+        var boxTopY = screenHeight - padding.top();
+        var contentX = padding.left() + (float) borderWidth;
         var contentTopY = boxTopY - borderWidth;
         var bodyWidth = strip.bodyWidth();
         var body = new Rectangle(contentX, contentTopY - bodyHeight, bodyWidth, bodyHeight);
         var boxWidth = bodyWidth + 2f * borderWidth;
         var boxHeight = bodyHeight + 2f * borderWidth;
-        var box = new Rectangle(paddingLeft, boxTopY - boxHeight, boxWidth, boxHeight);
+        var box = new Rectangle(padding.left(), boxTopY - boxHeight, boxWidth, boxHeight);
 
         var capped = CappedStripLayout.layoutCappedControls(body, bodyControls, strip.rowHeights(),
                 strip.rowWidths(), flexIndex, rawScrollOffset, measurer);
