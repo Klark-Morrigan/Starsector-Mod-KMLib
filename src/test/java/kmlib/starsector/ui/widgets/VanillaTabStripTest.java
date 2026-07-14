@@ -44,6 +44,34 @@ class VanillaTabStripTest {
     }
 
     @Nested
+    class MeasureRowWidth {
+
+        @Test
+        void countsTheBracketedShortcutInTheWidth() {
+            var withShortcut = List.of(new VanillaTabContent("Political Map", "P"));
+            var withoutShortcut = List.of(new VanillaTabContent("Political Map", null));
+            assertThat(VanillaTabStrip.measureRowWidth(withShortcut, 8f, 40f, 14d, measurerFake))
+                    .isGreaterThan(
+                            VanillaTabStrip.measureRowWidth(withoutShortcut, 8f, 40f, 14d, measurerFake));
+        }
+
+        @Test
+        void matchesTheWidthTheLaidOutTabsSpan() {
+            // The measured row must equal the summed widths layoutTabs places the same contents at, so the
+            // panel sizing its box off the measure lands exactly where the tabs are drawn.
+            var contents = List.of(new VanillaTabContent("Political Map", "P"),
+                    new VanillaTabContent("Alliances", null));
+            var tabs = VanillaTabStrip.layoutTabs(0f, 100f, 24f, 8f, 40f, 14d, contents, measurerFake);
+            var laidOutTotal = 0f;
+            for (var tab : tabs) {
+                laidOutTotal += tab.bounds().width();
+            }
+            assertThat(VanillaTabStrip.measureRowWidth(contents, 8f, 40f, 14d, measurerFake))
+                    .isEqualTo(laidOutTotal);
+        }
+    }
+
+    @Nested
     class ZipTabs {
 
         @Test

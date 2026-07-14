@@ -48,12 +48,41 @@ public final class TabStrip {
         var rowBottomY = rowTopY - tabHeight;
         var cursorX = originX;
         for (var label : labels) {
-            var measured = (float) measurer.measureLineWidth(label, labelFontSize);
-            var width = Math.max(minTabWidth, measured + textPadding);
+            var width = computeTabWidth(label, textPadding, minTabWidth, labelFontSize, measurer);
             tabs.add(new LabeledTab(label, new Rectangle(cursorX, rowBottomY, width, tabHeight)));
             cursorX += width;
         }
         return List.copyOf(tabs);
+    }
+
+    /**
+     * The width the whole row spans: each label snapped to its own tab width and summed, so a host sizing
+     * its chrome around the row reserves exactly the width {@link #layoutTabs} then lays the tabs to. Shares
+     * the per-tab snap with the layout, so the measured row and the laid-out tabs cannot drift.
+     *
+     * @param labels        the tab labels, in row order (the same labels handed to {@link #layoutTabs})
+     * @param textPadding   slack added to each measured label, matching {@link #layoutTabs}
+     * @param minTabWidth   the narrowest a tab may be, matching {@link #layoutTabs}
+     * @param labelFontSize the size the labels are measured at, matching {@link #layoutTabs}
+     * @param measurer      measures each label's rendered width
+     * @return the summed snapped width of the row, or 0 for no labels
+     */
+    public static float measureRowWidth(List<String> labels, float textPadding, float minTabWidth,
+            double labelFontSize, LineWidthMeasurer measurer) {
+        var total = 0f;
+        for (var label : labels) {
+            total += computeTabWidth(label, textPadding, minTabWidth, labelFontSize, measurer);
+        }
+        return total;
+    }
+
+    // The snapped width of one tab: its measured label plus the padding, floored at the minimum so a short
+    // label still gives a clickable box. The single source both the layout (to place) and the row-width
+    // measurement (to sum) read, so the two never re-derive the snap and cannot disagree on a tab's width.
+    private static float computeTabWidth(String label, float textPadding, float minTabWidth,
+            double labelFontSize, LineWidthMeasurer measurer) {
+        var measured = (float) measurer.measureLineWidth(label, labelFontSize);
+        return Math.max(minTabWidth, measured + textPadding);
     }
 
     /**

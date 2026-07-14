@@ -57,6 +57,36 @@ class TabStripTest {
     }
 
     @Nested
+    class MeasureRowWidth {
+        // "AB" measures 20 (+8 padding = 28, floored to 40); "LONGER" measures 60 (+8 = 68); the row
+        // spans their sum, 108.
+        private final List<String> labels = List.of("AB", "LONGER");
+
+        @Test
+        void sumsEachTabsSnappedWidth() {
+            assertThat(TabStrip.measureRowWidth(labels, 8f, 40f, 14d, measurerFake)).isEqualTo(108f);
+        }
+
+        @Test
+        void matchesTheWidthTheLaidOutTabsSpan() {
+            // The measured row must equal the summed widths layoutTabs places the same labels at, so the
+            // measure and the layout cannot drift on the per-tab snap.
+            var tabs = TabStrip.layoutTabs(100f, 200f, 24f, 8f, 40f, 14d, labels, measurerFake);
+            var laidOutTotal = 0f;
+            for (var tab : tabs) {
+                laidOutTotal += tab.bounds().width();
+            }
+            assertThat(TabStrip.measureRowWidth(labels, 8f, 40f, 14d, measurerFake))
+                    .isEqualTo(laidOutTotal);
+        }
+
+        @Test
+        void measuresNoWidthForNoLabels() {
+            assertThat(TabStrip.measureRowWidth(List.of(), 8f, 40f, 14d, measurerFake)).isZero();
+        }
+    }
+
+    @Nested
     class FindTabIndexAt {
         private final List<LabeledTab> tabs = TabStrip.layoutTabs(100f, 200f, 24f, 8f, 40f, 14d,
                 List.of("AB", "LONGER"), measurerFake);

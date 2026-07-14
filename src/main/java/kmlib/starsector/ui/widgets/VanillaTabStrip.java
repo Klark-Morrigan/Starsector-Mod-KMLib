@@ -75,6 +75,28 @@ public final class VanillaTabStrip {
     }
 
     /**
+     * The width the whole tab row spans, each tab snapped to its label-plus-shortcut width, by composing
+     * each content's display string and delegating to the base {@link TabStrip#measureRowWidth}. Mirrors
+     * {@link #layoutTabs}, which composes the same displays and lays the tabs out, so a host measures the
+     * row through the same snap the layout later applies and the two cannot drift.
+     *
+     * @param contents    the tabs' labels and optional shortcuts, in row order
+     * @param textPadding slack added to each measured display, matching {@link #layoutTabs}
+     * @param minTabWidth the narrowest a tab may be, matching {@link #layoutTabs}
+     * @param fontSize    the size the displays are measured at, matching {@link #layoutTabs}
+     * @param measurer    measures each display string's rendered width
+     * @return the summed snapped width of the row, or 0 for no contents
+     */
+    public static float measureRowWidth(List<VanillaTabContent> contents, float textPadding,
+            float minTabWidth, double fontSize, LineWidthMeasurer measurer) {
+        var displays = new ArrayList<String>(contents.size());
+        for (var content : contents) {
+            displays.add(composeDisplay(content));
+        }
+        return TabStrip.measureRowWidth(displays, textPadding, minTabWidth, fontSize, measurer);
+    }
+
+    /**
      * The index of the tab containing {@code (pointX, pointY)}, or {@link TabStrip#NO_TAB} when
      * the point falls outside every tab.
      *

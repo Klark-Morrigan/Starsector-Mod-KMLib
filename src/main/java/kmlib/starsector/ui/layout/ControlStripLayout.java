@@ -259,16 +259,11 @@ public final class ControlStripLayout {
     }
 
     // The width a tabs row needs: its tabs laid side by side, each snapped to its label-plus-shortcut
-    // width (floored to the minimum tab width) through the shared VanillaTabStrip geometry, so the
+    // width through the shared VanillaTabStrip geometry - the same snap layoutTabs later applies - so the
     // measured strip is exactly as wide as the drawn tabs.
     private static float measureTabsRowWidth(ControlSpec spec, LineWidthMeasurer measurer) {
-        var total = 0f;
-        for (var content : buildTabContents(spec)) {
-            var display = VanillaTabStrip.composeDisplay(content);
-            total += Math.max(MIN_TAB_WIDTH,
-                    (float) measurer.measureLineWidth(display, TAB_FONT_SIZE) + TAB_TEXT_PADDING);
-        }
-        return total;
+        return VanillaTabStrip.measureRowWidth(buildTabContents(spec), TAB_TEXT_PADDING, MIN_TAB_WIDTH,
+                TAB_FONT_SIZE, measurer);
     }
 
     // The width a radio row needs. A horizontal group lays its equal segments side by side. A
