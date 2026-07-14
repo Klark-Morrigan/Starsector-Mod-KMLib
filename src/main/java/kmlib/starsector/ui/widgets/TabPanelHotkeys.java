@@ -3,7 +3,7 @@ package kmlib.starsector.ui.widgets;
 import java.util.List;
 
 /**
- * The pure key-to-tab mapping a {@link TabPanel} consumer opts into to drive its tabs from the
+ * The pure key-to-tab mapping a tab panel's consumer opts into to drive its tabs from the
  * keyboard: given the keycode pressed and each tab's bound keycode, it reports which tab the press
  * selects. It owns only the mapping - the consumer owns where the per-tab keycodes come from and
  * what selecting a tab means - so the binder stays free of any settings or registry coupling and a
