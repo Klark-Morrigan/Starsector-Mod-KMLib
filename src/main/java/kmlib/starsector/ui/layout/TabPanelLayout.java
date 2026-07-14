@@ -1,21 +1,20 @@
 package kmlib.starsector.ui.layout;
 
-import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
-import kmlib.starsector.ui.widgets.PanelPlacement;
 import kmlib.starsector.ui.widgets.TabPanelPlacement;
 
 import java.util.List;
 
 /**
  * Composes a tab panel: a tabs-control header over the shared body composition, wrapped in one bordered
- * box. It is a SIBLING of {@link PanelLayout}, not a reuse of it - both frame {@link
- * CappedStripLayout#layoutBodyStrip} (the measured, capped, scrolled control strip) and each does its own
- * outer framing; this one adds {@link ControlStripLayout#layoutTabsHeader} for the flush header. A plain
- * panel frames {@code border + body}; a tab panel reserves a {@link ControlStripLayout#TAB_HEIGHT} header
- * band and frames {@code border + header + body}, sized to the wider of the header and the body, so the
- * body placement it returns carries the WHOLE footprint as its box - the single frame a renderer draws.
+ * box. It REUSES {@link PanelLayout}'s framing - the same {@link PanelLayout#computeContentOrigin} anchor
+ * and {@link PanelLayout#framePlacement} that frame a plain panel - passing header-inclusive content
+ * dimensions (the wider of header and body, and the header band plus the body) so the one border wraps
+ * the header too. Because {@code framePlacement} takes content dimensions, not a bordered box, reusing it
+ * frames one border, not two. It also reuses {@link CappedStripLayout#layoutBodyStrip} for the body and
+ * adds {@link ControlStripLayout#layoutTabsHeader} for the flush header, so the only thing unique here is
+ * where the header sits.
  *
  * <p>The header is laid flush at the interior top (no body inset) through {@link
  * ControlStripLayout#layoutTabsHeader}, so a header tab measures, draws, and hit-tests through the same
@@ -50,37 +49,31 @@ public final class TabPanelLayout {
     public static TabPanelPlacement computePlacement(float screenHeight, Padding padding,
             int borderWidth, ControlSpec tabsSpec, List<ControlSpec> bodyControls,
             LineWidthMeasurer measurer, float rawScrollOffset) {
-        var boxTopY = screenHeight - padding.top();
-        // Content is inset by the border on every edge; the header sits flush under the top border and the
-        // body hangs beneath the header band.
-        var contentX = padding.left() + (float) borderWidth;
-        var contentTopY = boxTopY - borderWidth;
+        // The box hangs from the screen's top-left, same anchor a plain panel uses; the header sits flush
+        // under the top border and the body hangs beneath the header band.
+        var origin = PanelLayout.computeContentOrigin(screenHeight, padding, borderWidth);
 
         // Header: the tabs control laid flush at the content top, reusing the strip's tab measurement and
         // segment split so it is not bespoke tab-strip framing.
-        var tabsHeader = ControlStripLayout.layoutTabsHeader(tabsSpec, contentX, contentTopY, measurer);
-        var bodyTopY = contentTopY - ControlStripLayout.TAB_HEIGHT;
+        var tabsHeader = ControlStripLayout.layoutTabsHeader(tabsSpec, origin.contentX(),
+                origin.contentTopY(), measurer);
+        var bodyTopY = origin.contentTopY() - ControlStripLayout.TAB_HEIGHT;
 
         // Body: the same shared composition a plain panel frames, hung beneath the header band and capped
         // so the box (header included) clears the bottom margin - the header height counted against the
         // vertical budget the same way a plain panel counts only its own border.
         var maxBodyHeight = screenHeight - padding.top() - 2f * borderWidth
                 - ControlStripLayout.TAB_HEIGHT - padding.bottom();
-        var bodyStrip = CappedStripLayout.layoutBodyStrip(contentX, bodyTopY, maxBodyHeight,
+        var bodyStrip = CappedStripLayout.layoutBodyStrip(origin.contentX(), bodyTopY, maxBodyHeight,
                 bodyControls, measurer, rawScrollOffset);
         var body = bodyStrip.bounds();
 
-        // The one bordered frame spans header + body: as wide as the wider of the two, as tall as the
-        // header band plus the body plus the border on every edge. The body placement carries this
-        // whole-footprint box, so the single frame a renderer draws around it wraps the header too.
-        var contentWidth = Math.max(tabsHeader.bounds().width(), body.width());
-        var boxWidth = contentWidth + 2f * borderWidth;
-        var boxHeight = ControlStripLayout.TAB_HEIGHT + body.height() + 2f * borderWidth;
-        var box = new Rectangle(padding.left(), boxTopY - boxHeight, boxWidth, boxHeight);
-
-        var capped = bodyStrip.placement();
-        var bodyPlacement = new PanelPlacement(box, body, capped.controls(), capped.flexViewport(),
-                capped.scrollOffset(), capped.scrollOverflow());
+        // Reuse the plain panel's framing, but with header-inclusive content: the box spans the wider of
+        // the header and the body, and the header band plus the body tall, so its whole-footprint box wraps
+        // the header too. The body placement carries that box; the tab panel pairs it with the header.
+        var bodyPlacement = PanelLayout.framePlacement(padding.left(), origin.boxTopY(), borderWidth,
+                Math.max(tabsHeader.bounds().width(), body.width()),
+                ControlStripLayout.TAB_HEIGHT + body.height(), bodyStrip);
         return new TabPanelPlacement(tabsHeader, bodyPlacement);
     }
 }
