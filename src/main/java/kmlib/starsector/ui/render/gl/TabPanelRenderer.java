@@ -2,42 +2,42 @@ package kmlib.starsector.ui.render.gl;
 
 import kmlib.starsector.ui.widgets.TabPanelPlacement;
 
-import java.awt.Color;
+import org.lwjgl.opengl.GL11;
 
 /**
- * Raw-GL paint for a {@link TabPanelPlacement}: the panel's chrome - the outer frame and the tab
- * header - scaled by one opacity so the frame, border, tab washes, dividers, underline, and labels
- * fade as a unit. The layout geometry lives on the substrate-independent
- * {@link kmlib.starsector.ui.widgets.TabPanel}; this composes the {@link BorderedBoxRenderer} frame
- * and the {@link VanillaTabStripRenderer} header, exercised in-engine.
+ * Raw-GL paint for a whole {@link TabPanelPlacement}: it delegates the body - the one bordered frame, the
+ * body controls, and the scrollbar - to {@link PanelRenderer} verbatim, then overlays the tabs header
+ * control (via {@link ControlRenderer}) on the frame's top band. A tab panel is a panel plus a header, so
+ * its paint is the panel's paint plus one control drawn on top; the single frame is the body placement's
+ * whole-footprint box, so there is one border, drawn once by the delegate.
  *
- * <p>The body is not drawn here; the consumer paints it into {@link TabPanelPlacement#body()}. No GL
- * state is pushed or restored, so the consumer wraps this and its own body draw in one attribute save.
+ * <p>The header control draws its own immediate-mode GL, so it is bracketed in a {@code glPushAttrib}/
+ * {@code glPopAttrib} state save like {@link PanelRenderer} brackets its own draw. Drawn after the body so
+ * the header sits over the frame fill of the top band. GL passthrough exercised in-engine like the other
+ * draw helpers.
  */
 public final class TabPanelRenderer {
     private TabPanelRenderer() {
     }
 
     /**
-     * Paints the panel's chrome - the outer frame and the tab header - scaling every draw by one
-     * {@code opacity}. The body is the consumer's to draw.
+     * Draws the tab panel: the bordered frame, body controls, and scrollbar via {@link PanelRenderer},
+     * then the tabs header on top, all faded by {@code opacity}. Must run with a current GL context.
      *
-     * @param placement     the laid-out panel
-     * @param borderWidth   the frame's border thickness; 0 draws no border
-     * @param fill          the panel's backdrop colour
-     * @param border        the frame's edge colour
-     * @param selectedIndex the active tab's index, or a value outside the row to light none
-     * @param hoveredIndex  the hovered tab's index, or a value outside the row
-     * @param colors        the tab palette (see {@link VanillaTabColors#mapTabs})
-     * @param fontBasename  the {@code graphics/fonts} basename the tab labels draw in
-     * @param fontSize      the tab label font size
-     * @param opacity       overall alpha, 0..1, applied to every quad and text colour
+     * @param placement   the laid-out tab panel to draw
+     * @param style       how the panel looks (fill, accents, body font, and the tab style for the header)
+     * @param borderWidth the outer border thickness; 0 draws no border
+     * @param opacity     overall alpha, 0..1, fading the whole panel
      */
-    public static void render(TabPanelPlacement placement, float borderWidth, Color fill,
-            Color border, int selectedIndex, int hoveredIndex, VanillaTabColors colors,
-            String fontBasename, double fontSize, float opacity) {
-        BorderedBoxRenderer.render(placement.box(), borderWidth, fill, border, opacity);
-        VanillaTabStripRenderer.render(placement.tabs(), selectedIndex, hoveredIndex, colors,
-                fontBasename, fontSize, opacity);
+    public static void render(TabPanelPlacement placement, WidgetStyle style, float borderWidth,
+            float opacity) {
+        // The body carries the whole-footprint box, so this draws the one frame, the body controls, and
+        // the scrollbar - self-bracketed in its own GL-state save.
+        PanelRenderer.render(placement.body(), style, borderWidth, opacity);
+        // The header control's raw GL needs the same state save; bracket it here. Drawn after the body so
+        // it sits over the frame fill of the top band.
+        GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_CURRENT_BIT | GL11.GL_COLOR_BUFFER_BIT);
+        ControlRenderer.render(placement.tabsHeader(), style, opacity);
+        GL11.glPopAttrib();
     }
 }
