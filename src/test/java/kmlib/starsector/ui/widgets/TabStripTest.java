@@ -1,6 +1,7 @@
 package kmlib.starsector.ui.widgets;
 
 import kmlib.math.geometry.Rectangle;
+import kmlib.starsector.ui.controls.SegmentSizing;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.testfixtures.starsector.ui.font.LineWidthMeasurerFake;
 
@@ -19,11 +20,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 class TabStripTest {
     // Each character measures 10 wide, so a label's width is a plain multiple of its length.
     private final LineWidthMeasurer measurerFake = new LineWidthMeasurerFake(10d);
+    // The tab-sizing rule: 8 padding, 40 minimum, size-14 font, each tab snapped to its own width.
+    private static final SegmentSpec SNAPPED = new SegmentSpec(8f, 40f, 14d, SegmentSizing.SNAPPED);
 
     @Nested
     class LayoutTabs {
         // "AB" measures 20 (+8 padding = 28, floored to 40); "LONGER" measures 60 (+8 = 68).
-        private final List<LabeledTab> tabs = TabStrip.layoutTabs(100f, 200f, 24f, 8f, 40f, 14d,
+        private final List<LabeledTab> tabs = TabStrip.layoutTabs(100f, 200f, 24f, SNAPPED,
                 List.of("AB", "LONGER"), measurerFake);
 
         @Test
@@ -64,31 +67,31 @@ class TabStripTest {
 
         @Test
         void sumsEachTabsSnappedWidth() {
-            assertThat(TabStrip.measureRowWidth(labels, 8f, 40f, 14d, measurerFake)).isEqualTo(108f);
+            assertThat(TabStrip.measureRowWidth(labels, SNAPPED, measurerFake)).isEqualTo(108f);
         }
 
         @Test
         void matchesTheWidthTheLaidOutTabsSpan() {
             // The measured row must equal the summed widths layoutTabs places the same labels at, so the
             // measure and the layout cannot drift on the per-tab snap.
-            var tabs = TabStrip.layoutTabs(100f, 200f, 24f, 8f, 40f, 14d, labels, measurerFake);
+            var tabs = TabStrip.layoutTabs(100f, 200f, 24f, SNAPPED, labels, measurerFake);
             var laidOutTotal = 0f;
             for (var tab : tabs) {
                 laidOutTotal += tab.bounds().width();
             }
-            assertThat(TabStrip.measureRowWidth(labels, 8f, 40f, 14d, measurerFake))
+            assertThat(TabStrip.measureRowWidth(labels, SNAPPED, measurerFake))
                     .isEqualTo(laidOutTotal);
         }
 
         @Test
         void measuresNoWidthForNoLabels() {
-            assertThat(TabStrip.measureRowWidth(List.of(), 8f, 40f, 14d, measurerFake)).isZero();
+            assertThat(TabStrip.measureRowWidth(List.of(), SNAPPED, measurerFake)).isZero();
         }
     }
 
     @Nested
     class FindTabIndexAt {
-        private final List<LabeledTab> tabs = TabStrip.layoutTabs(100f, 200f, 24f, 8f, 40f, 14d,
+        private final List<LabeledTab> tabs = TabStrip.layoutTabs(100f, 200f, 24f, SNAPPED,
                 List.of("AB", "LONGER"), measurerFake);
 
         @Test

@@ -28,25 +28,21 @@ public final class VanillaTabStrip {
      * Lays the tab row out, each tab snapped to its label-plus-shortcut width, by delegating to
      * the base {@link TabStrip} over each tab's composed display string.
      *
-     * @param originX       the row's left edge, in UI coordinates
-     * @param rowTopY       the row's top edge, in UI coordinates
-     * @param tabHeight     the height every tab shares
-     * @param textPadding   slack added to each measured label so text does not touch the edges
-     * @param minTabWidth   the narrowest a tab may be
-     * @param fontSize      the size the labels are measured (and later drawn) at
-     * @param contents      the tabs' labels and optional shortcuts, in row order
-     * @param measurer      measures each display string's rendered width
+     * @param originX   the row's left edge, in UI coordinates
+     * @param rowTopY   the row's top edge, in UI coordinates
+     * @param tabHeight the height every tab shares
+     * @param spec      the tab-sizing rule (padding, minimum, font size, SNAPPED)
+     * @param contents  the tabs' labels and optional shortcuts, in row order
+     * @param measurer  measures each display string's rendered width
      * @return one {@link VanillaTab} per content, in the same order
      */
     public static List<VanillaTab> layoutTabs(float originX, float rowTopY, float tabHeight,
-            float textPadding, float minTabWidth, double fontSize, List<VanillaTabContent> contents,
-            LineWidthMeasurer measurer) {
+            SegmentSpec spec, List<VanillaTabContent> contents, LineWidthMeasurer measurer) {
         var displays = new ArrayList<String>(contents.size());
         for (var content : contents) {
             displays.add(composeDisplay(content));
         }
-        var laidOut = TabStrip.layoutTabs(originX, rowTopY, tabHeight, textPadding, minTabWidth,
-                fontSize, displays, measurer);
+        var laidOut = TabStrip.layoutTabs(originX, rowTopY, tabHeight, spec, displays, measurer);
         var bounds = new ArrayList<Rectangle>(laidOut.size());
         for (var tab : laidOut) {
             bounds.add(tab.bounds());
@@ -80,20 +76,18 @@ public final class VanillaTabStrip {
      * {@link #layoutTabs}, which composes the same displays and lays the tabs out, so a host measures the
      * row through the same snap the layout later applies and the two cannot drift.
      *
-     * @param contents    the tabs' labels and optional shortcuts, in row order
-     * @param textPadding slack added to each measured display, matching {@link #layoutTabs}
-     * @param minTabWidth the narrowest a tab may be, matching {@link #layoutTabs}
-     * @param fontSize    the size the displays are measured at, matching {@link #layoutTabs}
-     * @param measurer    measures each display string's rendered width
+     * @param contents the tabs' labels and optional shortcuts, in row order
+     * @param spec     the tab-sizing rule, matching {@link #layoutTabs}
+     * @param measurer measures each display string's rendered width
      * @return the summed snapped width of the row, or 0 for no contents
      */
-    public static float measureRowWidth(List<VanillaTabContent> contents, float textPadding,
-            float minTabWidth, double fontSize, LineWidthMeasurer measurer) {
+    public static float measureRowWidth(List<VanillaTabContent> contents, SegmentSpec spec,
+            LineWidthMeasurer measurer) {
         var displays = new ArrayList<String>(contents.size());
         for (var content : contents) {
             displays.add(composeDisplay(content));
         }
-        return TabStrip.measureRowWidth(displays, textPadding, minTabWidth, fontSize, measurer);
+        return TabStrip.measureRowWidth(displays, spec, measurer);
     }
 
     /**

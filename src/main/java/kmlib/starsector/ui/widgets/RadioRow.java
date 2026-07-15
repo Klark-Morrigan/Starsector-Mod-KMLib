@@ -5,6 +5,7 @@ import kmlib.math.geometry.Rectangles;
 import kmlib.starsector.ui.controls.RadioAlignment;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -69,7 +70,9 @@ public final class RadioRow {
     /**
      * Divides {@code bounds} into {@code segmentCount} equal cells in the flow {@code alignment}
      * gives: horizontal splits by width left to right, vertical by height top to bottom (the first
-     * cell hangs from the top edge). A count of zero or less yields no segments.
+     * cell hangs from the top edge). A count of zero or less yields no segments. The horizontal case
+     * is the even-width special case of {@link HorizontalSegments}, so it lays its equal cells through
+     * that shared placement rather than re-deriving the run; the vertical case is this widget's own.
      *
      * @param bounds       the row's footprint
      * @param segmentCount how many equal cells to split it into
@@ -81,22 +84,19 @@ public final class RadioRow {
         if (segmentCount <= 0) {
             return List.of();
         }
+        if (alignment != RadioAlignment.VERTICAL) {
+            var equalWidth = bounds.width() / segmentCount;
+            return HorizontalSegments.placeSegments(bounds.x(), bounds.y(), bounds.height(),
+                    Collections.nCopies(segmentCount, equalWidth));
+        }
+        // Cells stack top to bottom; the first hangs from the top edge and each later cell drops one
+        // cell height, so element 0 is the topmost row (UI y grows up).
         var segments = new ArrayList<Rectangle>(segmentCount);
-        if (alignment == RadioAlignment.VERTICAL) {
-            // Cells stack top to bottom; the first hangs from the top edge and each later cell
-            // drops one cell height, so element 0 is the topmost row (UI y grows up).
-            var segmentHeight = bounds.height() / segmentCount;
-            for (var index = 0; index < segmentCount; index++) {
-                segments.add(new Rectangle(bounds.x(),
-                        bounds.y() + bounds.height() - (index + 1) * segmentHeight,
-                        bounds.width(), segmentHeight));
-            }
-        } else {
-            var segmentWidth = bounds.width() / segmentCount;
-            for (var index = 0; index < segmentCount; index++) {
-                segments.add(new Rectangle(bounds.x() + index * segmentWidth, bounds.y(),
-                        segmentWidth, bounds.height()));
-            }
+        var segmentHeight = bounds.height() / segmentCount;
+        for (var index = 0; index < segmentCount; index++) {
+            segments.add(new Rectangle(bounds.x(),
+                    bounds.y() + bounds.height() - (index + 1) * segmentHeight,
+                    bounds.width(), segmentHeight));
         }
         return List.copyOf(segments);
     }
