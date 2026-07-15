@@ -212,7 +212,9 @@ public final class Polygons {
      *         contributes two, a mitred corner one); empty when fewer than three
      *         distinct vertices remain
      */
-    public static List<double[]> insetPolygonByMiter(List<double[]> polygon, double distance,
+    public static List<double[]> insetPolygonByMiter(
+            List<double[]> polygon,
+            double distance,
             double miterSpikeLimit) {
         var vertices = removeConsecutiveDuplicates(polygon);
         var count = vertices.size();
@@ -233,8 +235,13 @@ public final class Polygons {
     // corner always bevels, since its miter would spike into the interior; a
     // degenerate (zero-length) edge falls back to the one good offset, or the corner
     // itself when neither edge has a direction.
-    private static void appendInsetCorner(List<double[]> inset, double[] previous,
-            double[] corner, double[] next, double distance, double miterSpikeLimit) {
+    private static void appendInsetCorner(
+            List<double[]> inset,
+            double[] previous,
+            double[] corner,
+            double[] next,
+            double distance,
+            double miterSpikeLimit) {
         var inboundNormal = computeInwardUnitNormal(previous, corner);
         var outboundNormal = computeInwardUnitNormal(corner, next);
         if (inboundNormal == null || outboundNormal == null) {
@@ -269,8 +276,12 @@ public final class Polygons {
     // convex corner. The lines run through the two shifted points along each edge's
     // direction (the inward normal rotated back to the edge); falls back to the
     // outbound shifted point when the edges are collinear and never cross.
-    private static double[] computeMiterVertex(double[] corner, double[] inboundNormal,
-            double[] outboundNormal, double[] inboundPoint, double[] outboundPoint) {
+    private static double[] computeMiterVertex(
+            double[] corner,
+            double[] inboundNormal,
+            double[] outboundNormal,
+            double[] inboundPoint,
+            double[] outboundPoint) {
         // Each edge's direction is its inward normal turned 90 degrees, so a line
         // through the shifted point along it is the shifted edge; where the two
         // shifted edges cross is the miter. Collinear edges never cross - fall back
@@ -313,8 +324,11 @@ public final class Polygons {
      *         has fewer than three vertices, or when radius/segments are
      *         non-positive (nothing to round)
      */
-    public static List<double[]> roundCorners(List<double[]> polygon, double radius,
-            int segmentsPerCorner, double bevelBelowAngleRadians) {
+    public static List<double[]> roundCorners(
+            List<double[]> polygon,
+            double radius,
+            int segmentsPerCorner,
+            double bevelBelowAngleRadians) {
         var vertices = removeConsecutiveDuplicates(polygon);
         var count = vertices.size();
         if (count < Limits.MIN_VERTICES_TO_ENCLOSE_AREA || radius <= 0 || segmentsPerCorner < 1) {
@@ -341,7 +355,13 @@ public final class Polygons {
                 rounded.add(arcEnd);
                 continue;
             }
-            appendCircularArc(rounded, previous, corner, next, arcStart, arcEnd,
+            appendCircularArc(
+                    rounded,
+                    previous,
+                    corner,
+                    next,
+                    arcStart,
+                    arcEnd,
                     segmentsPerCorner);
         }
         return rounded;
@@ -380,7 +400,9 @@ public final class Polygons {
      * @return the cleaned ring; a copy of the input (deduplicated) when it has fewer
      *         than three vertices or either threshold is non-positive
      */
-    public static List<double[]> removeSpikes(List<double[]> polygon, double maxSpikeHeight,
+    public static List<double[]> removeSpikes(
+            List<double[]> polygon,
+            double maxSpikeHeight,
             double maxCornerAngleRadians) {
         var vertices = removeConsecutiveDuplicates(polygon);
         if (vertices.size() < Limits.MIN_VERTICES_TO_ENCLOSE_AREA
@@ -436,10 +458,9 @@ public final class Polygons {
      * closed rings - an outer ring plus any hole rings - as {@code {tStart, tEnd}}
      * parameter intervals along the line's direction.
      *
-     * <p>The line runs through {@code (throughX, throughY)} along
-     * {@code (dirX, dirY)}; parameters are distances from the through-point (the
-     * direction is normalised internally, so {@code t} is in world units either
-     * way). The line is crossed against every ring edge, the crossings sorted by
+     * <p>The line runs through its origin along its direction; parameters are distances
+     * from the origin (the direction is normalised internally, so {@code t} is in world
+     * units either way). The line is crossed against every ring edge, the crossings sorted by
      * parameter, and an interval between two consecutive crossings kept only when
      * its midpoint lies inside the region - inside the outer ring and outside every
      * hole, by the even-odd rule over all rings together. That midpoint test is
@@ -448,26 +469,32 @@ public final class Polygons {
      * a pinched region comes back as separate spans, never one chord bridging the
      * gap, and a span that would cross a hole splits around it.
      *
-     * @param rings    the region's boundary rings as {x, y} vertex lists: one outer
-     *                 ring and zero or more hole rings, in any winding (the
-     *                 even-odd rule is winding-blind)
-     * @param throughX x of a point the line passes through
-     * @param throughY y of a point the line passes through
-     * @param dirX     x of the line's direction
-     * @param dirY     y of the line's direction
+     * @param rings the region's boundary rings as {x, y} vertex lists: one outer ring
+     *              and zero or more hole rings, in any winding (the even-odd rule is
+     *              winding-blind)
+     * @param line  the line to cross against the region - its origin is parameter zero,
+     *              its direction the line's heading
      * @return the interior intervals as {@code {tStart, tEnd}} pairs, ascending and
      *         disjoint; empty when the line misses the region, only grazes it, or
      *         the direction is too short to define a line
      */
-    public static List<double[]> findLineInteriorSpans(List<List<double[]>> rings,
-            double throughX, double throughY, double dirX, double dirY) {
+    public static List<double[]> findLineInteriorSpans(
+            List<List<double[]>> rings,
+            DirectedLine line) {
         var spans = new ArrayList<double[]>();
-        var direction = Points.computeUnitVector(dirX, dirY, Limits.MIN_EDGE_LENGTH);
+        var direction = Points.computeUnitVector(
+                line.directionX(),
+                line.directionY(),
+                Limits.MIN_EDGE_LENGTH);
         if (direction == null) {
             return spans;
         }
-        var crossings = collectLineCrossingParameters(rings, throughX, throughY,
-                direction[0], direction[1]);
+        var unitLine = new DirectedLine(
+                line.originX(),
+                line.originY(),
+                direction[0],
+                direction[1]);
+        var crossings = collectLineCrossingParameters(rings, unitLine);
         crossings.sort(null);
         // Between two consecutive crossings the line stays on one side of every
         // edge, so the whole interval shares its midpoint's inside/outside verdict.
@@ -480,8 +507,10 @@ public final class Polygons {
                 continue;
             }
             var midT = (tStart + tEnd) / 2.0;
-            if (!isPointInsideRings(rings, throughX + midT * direction[0],
-                    throughY + midT * direction[1])) {
+            if (!isPointInsideRings(
+                    rings,
+                    unitLine.originX() + midT * unitLine.directionX(),
+                    unitLine.originY() + midT * unitLine.directionY())) {
                 continue;
             }
             // A vertex sitting exactly on the line can split one true span into two
@@ -520,19 +549,22 @@ public final class Polygons {
      *
      * @param rings         the region's boundary rings as {x, y} vertex lists: one
      *                      outer ring and zero or more hole rings, any winding
-     * @param throughX      x of a point the centreline passes through
-     * @param throughY      y of a point the centreline passes through
-     * @param dirX          x of the line's direction
-     * @param dirY          y of the line's direction
+     * @param line          the band's centreline - its origin is parameter zero and its
+     *                      direction the band runs along
      * @param halfThickness half the band's width; the rails sit this far to each
      *                      side of the centreline
      * @return the intervals where the whole band is interior, as {@code {tStart,
      *         tEnd}} pairs, ascending and disjoint; empty when no band-wide piece is
      *         interior or the direction is too short to define a line
      */
-    public static List<double[]> findBandInteriorSpans(List<List<double[]>> rings,
-            double throughX, double throughY, double dirX, double dirY, double halfThickness) {
-        var direction = Points.computeUnitVector(dirX, dirY, Limits.MIN_EDGE_LENGTH);
+    public static List<double[]> findBandInteriorSpans(
+            List<List<double[]>> rings,
+            DirectedLine line,
+            double halfThickness) {
+        var direction = Points.computeUnitVector(
+                line.directionX(),
+                line.directionY(),
+                Limits.MIN_EDGE_LENGTH);
         if (direction == null) {
             return new ArrayList<>();
         }
@@ -544,9 +576,16 @@ public final class Polygons {
         for (var rail = 0; rail < BAND_RAIL_COUNT; rail++) {
             // Rails evenly spaced across the full band width, both edges included.
             var offset = halfThickness * (2.0 * rail / (BAND_RAIL_COUNT - 1) - 1.0);
-            var railSpans = findLineInteriorSpans(rings, throughX + offset * normalX,
-                    throughY + offset * normalY, direction[0], direction[1]);
-            bandSpans = bandSpans == null ? railSpans : Spans.intersectSpans(bandSpans, railSpans);
+            var railSpans = findLineInteriorSpans(
+                    rings,
+                    new DirectedLine(
+                            line.originX() + offset * normalX,
+                            line.originY() + offset * normalY,
+                            direction[0],
+                            direction[1]));
+            bandSpans = bandSpans == null
+                    ? railSpans
+                    : Spans.intersectSpans(bandSpans, railSpans);
             // A rail wholly outside leaves nothing for the rest to keep; stop early.
             if (bandSpans.isEmpty()) {
                 return bandSpans;
@@ -555,33 +594,46 @@ public final class Polygons {
         return bandSpans;
     }
 
-    // The parameters (distances from the through-point along the unit direction) at
-    // which the infinite line crosses any ring edge. An edge is crossed when its two
-    // endpoints sit on opposite sides of the line - the same signed-offset straddle
-    // test the half-plane clip keys on, with an endpoint exactly on the line counted
-    // to the negative side so a shared corner is not crossed twice.
-    private static List<Double> collectLineCrossingParameters(List<List<double[]>> rings,
-            double throughX, double throughY, double dirX, double dirY) {
+    // The parameters (distances from the origin along the unit direction) at which the
+    // infinite line crosses any ring edge. An edge is crossed when its two endpoints sit
+    // on opposite sides of the line - the same signed-offset straddle test the half-plane
+    // clip keys on, with an endpoint exactly on the line counted to the negative side so a
+    // shared corner is not crossed twice.
+    private static List<Double> collectLineCrossingParameters(
+            List<List<double[]>> rings,
+            DirectedLine line) {
         var crossings = new ArrayList<Double>();
         // The line's unit normal: offsets measured along it tell an edge endpoint's
         // side of the line.
-        var normalX = -dirY;
-        var normalY = dirX;
+        var normalX = -line.directionY();
+        var normalY = line.directionX();
         for (var ring : rings) {
             var count = ring.size();
             for (var i = 0; i < count; i++) {
                 var edgeStart = ring.get(i);
                 var edgeEnd = ring.get((i + 1) % count);
-                var offsetStart = Lines.computeSignedOffsetFromLine(edgeStart,
-                        throughX, throughY, normalX, normalY);
-                var offsetEnd = Lines.computeSignedOffsetFromLine(edgeEnd,
-                        throughX, throughY, normalX, normalY);
+                var offsetStart = Lines.computeSignedOffsetFromLine(
+                        edgeStart,
+                        line.originX(),
+                        line.originY(),
+                        normalX,
+                        normalY);
+                var offsetEnd = Lines.computeSignedOffsetFromLine(
+                        edgeEnd,
+                        line.originX(),
+                        line.originY(),
+                        normalX,
+                        normalY);
                 if ((offsetStart > 0) == (offsetEnd > 0)) {
                     continue;
                 }
-                var crossing = Segment.computeCrossingPoint(edgeStart, edgeEnd,
-                        offsetStart, offsetEnd);
-                crossings.add((crossing[0] - throughX) * dirX + (crossing[1] - throughY) * dirY);
+                var crossing = Segment.computeCrossingPoint(
+                        edgeStart,
+                        edgeEnd,
+                        offsetStart,
+                        offsetEnd);
+                crossings.add((crossing[0] - line.originX()) * line.directionX()
+                        + (crossing[1] - line.originY()) * line.directionY());
             }
         }
         return crossings;
@@ -617,8 +669,14 @@ public final class Polygons {
     // arc sweeps the short way between them, so it bulges toward the corner. Falls
     // back to the two step-back points alone when the edges are collinear (no corner
     // to round, so no centre).
-    private static void appendCircularArc(List<double[]> out, double[] previous,
-            double[] corner, double[] next, double[] arcStart, double[] arcEnd, int segments) {
+    private static void appendCircularArc(
+            List<double[]> out,
+            double[] previous,
+            double[] corner,
+            double[] next,
+            double[] arcStart,
+            double[] arcEnd,
+            int segments) {
         var center = computeArcCenter(previous, corner, next, arcStart, arcEnd);
         if (center == null) {
             out.add(arcStart);
@@ -651,15 +709,23 @@ public final class Polygons {
     // to the inbound edge through {@code arcStart} and that to the outbound edge
     // through {@code arcEnd}. Null when those perpendiculars are parallel (the edges
     // are collinear, so there is no corner to round).
-    private static double[] computeArcCenter(double[] previous, double[] corner, double[] next,
-            double[] arcStart, double[] arcEnd) {
+    private static double[] computeArcCenter(
+            double[] previous,
+            double[] corner,
+            double[] next,
+            double[] arcStart,
+            double[] arcEnd) {
         // The centre lies on the perpendicular to each edge (the radius direction,
         // (-dy, dx)) through that edge's step-back point; where those two
         // perpendiculars cross is the centre. Parallel means collinear edges - no
         // corner - so there is no centre.
         return Lines.intersectLines(
-                arcStart, -(corner[1] - previous[1]), corner[0] - previous[0],
-                arcEnd, -(next[1] - corner[1]), next[0] - corner[0]);
+                arcStart,
+                -(corner[1] - previous[1]),
+                corner[0] - previous[0],
+                arcEnd,
+                -(next[1] - corner[1]),
+                next[0] - corner[0]);
     }
 
     // A point {@code distance} from {@code from} toward {@code to}; returns from
@@ -681,7 +747,9 @@ public final class Polygons {
     // edges to its two neighbours: PI is a straight pass-through and small
     // values are sharp spikes. Returns PI for a degenerate (zero-length) edge,
     // so such a corner is treated as straight and never chamfered.
-    private static double computeInteriorAngle(double[] previous, double[] corner,
+    private static double computeInteriorAngle(
+            double[] previous,
+            double[] corner,
             double[] next) {
         var toPreviousX = previous[0] - corner[0];
         var toPreviousY = previous[1] - corner[1];

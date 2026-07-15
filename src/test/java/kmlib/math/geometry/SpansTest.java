@@ -33,7 +33,7 @@ final class SpansTest {
             // The obstacle at t=2 with clearance 3 blocks [-1, 5]: the left remainder
             // [-10, -1] (length 9) beats the right [5, 10] (length 5).
             var clear = Spans.findLongestClearSubsegment(
-                    List.of(new double[] {-10, 10}), 0, 0, 1, 0,
+                    List.of(new double[] {-10, 10}), new DirectedLine(0, 0, 1, 0),
                     List.of(new double[] {2, 0}), 3);
 
             assertThat(clear[0]).isCloseTo(-10.0, within());
@@ -45,7 +45,7 @@ final class SpansTest {
             // Perpendicular distance 5 with clearance 3: the keep-out circle never
             // touches the line, so the whole span survives.
             var clear = Spans.findLongestClearSubsegment(
-                    List.of(new double[] {-10, 10}), 0, 0, 1, 0,
+                    List.of(new double[] {-10, 10}), new DirectedLine(0, 0, 1, 0),
                     List.of(new double[] {0, 5}), 3);
 
             assertThat(clear[0]).isCloseTo(-10.0, within());
@@ -58,7 +58,7 @@ final class SpansTest {
             // sqrt(25 - 9) = 4 about the projection at t=0, blocking [-4, 4]: the
             // left remainder [-10, -4] beats the right [4, 8].
             var clear = Spans.findLongestClearSubsegment(
-                    List.of(new double[] {-10, 8}), 0, 0, 1, 0,
+                    List.of(new double[] {-10, 8}), new DirectedLine(0, 0, 1, 0),
                     List.of(new double[] {0, 3}), 5);
 
             assertThat(clear[0]).isCloseTo(-10.0, within());
@@ -70,7 +70,7 @@ final class SpansTest {
             // Obstacles at t=-5 and t=5 with clearance 2 block [-7, -3] and [3, 7]:
             // the middle gap [-3, 3] (length 6) beats both end remainders (length 3).
             var clear = Spans.findLongestClearSubsegment(
-                    List.of(new double[] {-10, 10}), 0, 0, 1, 0,
+                    List.of(new double[] {-10, 10}), new DirectedLine(0, 0, 1, 0),
                     List.of(new double[] {-5, 0}, new double[] {5, 0}), 2);
 
             assertThat(clear[0]).isCloseTo(-3.0, within());
@@ -82,8 +82,8 @@ final class SpansTest {
             // With nothing blocked the contest is between the spans themselves: the
             // length-6 span beats the length-2 one.
             var clear = Spans.findLongestClearSubsegment(
-                    List.of(new double[] {-10, -4}, new double[] {0, 2}), 0, 0, 1, 0,
-                    List.of(), 3);
+                    List.of(new double[] {-10, -4}, new double[] {0, 2}),
+                    new DirectedLine(0, 0, 1, 0), List.of(), 3);
 
             assertThat(clear[0]).isCloseTo(-10.0, within());
             assertThat(clear[1]).isCloseTo(-4.0, within());
@@ -94,7 +94,7 @@ final class SpansTest {
             // Zero clearance means no keep-out at all, so even an obstacle dead on
             // the line leaves the span whole.
             var clear = Spans.findLongestClearSubsegment(
-                    List.of(new double[] {-10, 10}), 0, 0, 1, 0,
+                    List.of(new double[] {-10, 10}), new DirectedLine(0, 0, 1, 0),
                     List.of(new double[] {0, 0}), 0);
 
             assertThat(clear[0]).isCloseTo(-10.0, within());
@@ -104,7 +104,7 @@ final class SpansTest {
         @Test
         void clear_subsegment_is_null_for_empty_spans() {
             assertThat(Spans.findLongestClearSubsegment(
-                    List.of(), 0, 0, 1, 0, List.of(), 3)).isNull();
+                    List.of(), new DirectedLine(0, 0, 1, 0), List.of(), 3)).isNull();
         }
 
         @Test
@@ -112,7 +112,7 @@ final class SpansTest {
             // Clearance 5 around an obstacle at the origin swallows the entire
             // [-1, 1] span; nothing clear remains.
             assertThat(Spans.findLongestClearSubsegment(
-                    List.of(new double[] {-1, 1}), 0, 0, 1, 0,
+                    List.of(new double[] {-1, 1}), new DirectedLine(0, 0, 1, 0),
                     List.of(new double[] {0, 0}), 5)).isNull();
         }
 
@@ -121,7 +121,8 @@ final class SpansTest {
             // A zero direction defines no line to project onto, so there is no
             // interval to pick.
             assertThat(Spans.findLongestClearSubsegment(
-                    List.of(new double[] {-10, 10}), 0, 0, 0, 0, List.of(), 3)).isNull();
+                    List.of(new double[] {-10, 10}), new DirectedLine(0, 0, 0, 0),
+                    List.of(), 3)).isNull();
         }
     }
 

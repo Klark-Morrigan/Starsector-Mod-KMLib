@@ -21,8 +21,13 @@ final class Lines {
     // {@code (dirBX, dirBY)}; null when the two directions are parallel and the lines
     // never cross. The shared "where do these two lines meet" step behind the miter
     // join and the arc centre.
-    static double[] intersectLines(double[] pointA, double dirAX, double dirAY,
-            double[] pointB, double dirBX, double dirBY) {
+    static double[] intersectLines(
+            double[] pointA,
+            double dirAX,
+            double dirAY,
+            double[] pointB,
+            double dirBX,
+            double dirBY) {
         var cross = dirAX * dirBY - dirAY * dirBX;
         if (Math.abs(cross) < Limits.MIN_EDGE_LENGTH) {
             return null;
@@ -55,8 +60,12 @@ final class Lines {
     // therefore rely on the sign (which side) and on ratios of two offsets (where
     // the shared scale cancels), never on the raw magnitude - the half-plane test
     // the polygon clip keys its keep/discard decision and crossing point on.
-    static double computeSignedOffsetFromLine(double[] point,
-            double lineX, double lineY, double normalX, double normalY) {
+    static double computeSignedOffsetFromLine(
+            double[] point,
+            double lineX,
+            double lineY,
+            double normalX,
+            double normalY) {
         return (point[0] - lineX) * normalX + (point[1] - lineY) * normalY;
     }
 }

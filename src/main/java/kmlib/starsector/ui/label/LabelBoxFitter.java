@@ -78,18 +78,14 @@ public final class LabelBoxFitter {
     // which reads the pre-margin clear span of a minimum-height band; the fit proper
     // reaches it through the line-count sizing below.
     public BandSpan fitBand(RegionChord chord, double halfThickness) {
-        var interiorSpans = Polygons.findBandInteriorSpans(chord.rings(),
-                chord.throughX(), chord.throughY(), chord.direction()[0],
-                chord.direction()[1], halfThickness);
+        var interiorSpans = Polygons.findBandInteriorSpans(chord.rings(), chord.line(),
+                halfThickness);
         if (interiorSpans.isEmpty()) {
             return new BandSpan(null, null);
         }
         var clear = Spans.findLongestClearSubsegment(
                 interiorSpans,
-                chord.throughX(),
-                chord.throughY(),
-                chord.direction()[0],
-                chord.direction()[1],
+                chord.line(),
                 chord.keepOuts(),
                 keepOutClearance);
         if (clear == null) {

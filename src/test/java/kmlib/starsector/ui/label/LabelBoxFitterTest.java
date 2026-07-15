@@ -1,5 +1,6 @@
 package kmlib.starsector.ui.label;
 
+import kmlib.math.geometry.DirectedLine;
 import kmlib.math.geometry.RegionChord;
 
 import org.junit.jupiter.api.Nested;
@@ -126,8 +127,8 @@ final class LabelBoxFitterTest {
     // no keep-outs - the simplest placement the sizing tests need.
     private static RegionChord horizontalChord(List<double[]> ring, double throughX,
             double throughY) {
-        return new RegionChord(List.of(ring), List.of(), throughX, throughY,
-                new double[] {1.0, 0.0});
+        return new RegionChord(List.of(ring), List.of(),
+                new DirectedLine(throughX, throughY, 1.0, 0.0));
     }
 
     // A counter-clockwise rectangle ring anchored at (minX, minY).

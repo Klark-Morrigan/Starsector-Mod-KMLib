@@ -36,11 +36,9 @@ public final class Spans {
      * the roomiest stretch of line that stays clear of every obstacle.
      *
      * @param spans     the candidate intervals as {@code {tStart, tEnd}} pairs
-     *                  (parameters along the direction), each internally ascending
-     * @param throughX  x of the point the line passes through (parameter zero)
-     * @param throughY  y of the point the line passes through (parameter zero)
-     * @param dirX      x of the line's direction
-     * @param dirY      y of the line's direction
+     *                  (parameters along the line's direction), each internally ascending
+     * @param line      the line the spans are measured along - its origin is parameter zero
+     *                  and its direction sets the parameter scale
      * @param obstacles the {x, y} points to keep clear of
      * @param clearance the keep-out radius around each obstacle; non-positive
      *                  blocks nothing, so the longest input span wins whole
@@ -48,15 +46,22 @@ public final class Spans {
      *         when the spans are empty, fully blocked, or the direction is too
      *         short to define a line
      */
-    public static double[] findLongestClearSubsegment(List<double[]> spans,
-            double throughX, double throughY, double dirX, double dirY,
-            Collection<double[]> obstacles, double clearance) {
-        var direction = Points.computeUnitVector(dirX, dirY, Limits.MIN_EDGE_LENGTH);
+    public static double[] findLongestClearSubsegment(
+            List<double[]> spans,
+            DirectedLine line,
+            Collection<double[]> obstacles,
+            double clearance) {
+        var direction = Points.computeUnitVector(line.directionX(), line.directionY(),
+                Limits.MIN_EDGE_LENGTH);
         if (direction == null) {
             return null;
         }
-        var blocked = computeBlockedIntervals(throughX, throughY, direction[0], direction[1],
-                obstacles, clearance);
+        var unitLine = new DirectedLine(
+                line.originX(),
+                line.originY(),
+                direction[0],
+                direction[1]);
+        var blocked = computeBlockedIntervals(unitLine, obstacles, clearance);
         // Sorted by start, the blockers can be walked once per span with a single
         // advancing cursor instead of re-scanning the whole set per gap.
         blocked.sort(Comparator.comparingDouble(interval -> interval[0]));
@@ -130,23 +135,26 @@ public final class Spans {
         return overlaps;
     }
 
-    // The keep-out intervals the obstacles carve from the line: for each obstacle
-    // near enough to matter, the chord its clearance circle cuts from the line,
-    // centred on the obstacle's projection. In parameter space each is one closed
-    // interval, ready to subtract from the candidate spans.
-    private static List<double[]> computeBlockedIntervals(double throughX, double throughY,
-            double dirX, double dirY, Collection<double[]> obstacles, double clearance) {
+    // The keep-out intervals the obstacles carve from the line (its direction assumed
+    // unit, so a parameter is a world distance): for each obstacle near enough to matter,
+    // the chord its clearance circle cuts from the line, centred on the obstacle's
+    // projection. In parameter space each is one closed interval, ready to subtract from
+    // the candidate spans.
+    private static List<double[]> computeBlockedIntervals(
+            DirectedLine line,
+            Collection<double[]> obstacles,
+            double clearance) {
         var blocked = new ArrayList<double[]>();
         if (clearance <= 0) {
             return blocked;
         }
         for (var obstacle : obstacles) {
-            var offsetX = obstacle[0] - throughX;
-            var offsetY = obstacle[1] - throughY;
-            var along = offsetX * dirX + offsetY * dirY;
-            // Perpendicular distance to the line: the offset projected onto the
-            // line's unit normal (-dirY, dirX).
-            var perpendicular = Math.abs(offsetX * -dirY + offsetY * dirX);
+            var offsetX = obstacle[0] - line.originX();
+            var offsetY = obstacle[1] - line.originY();
+            var along = offsetX * line.directionX() + offsetY * line.directionY();
+            // Perpendicular distance to the line: the offset projected onto the line's
+            // unit normal (perpendicular to its direction).
+            var perpendicular = Math.abs(offsetX * -line.directionY() + offsetY * line.directionX());
             if (perpendicular >= clearance) {
                 continue;
             }

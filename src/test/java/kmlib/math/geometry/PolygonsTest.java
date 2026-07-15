@@ -567,7 +567,8 @@ final class PolygonsTest {
             // A horizontal line through the centre of the side-10 square enters at
             // x=0 and leaves at x=10: one span, parameters measured from the
             // through-point at x=5.
-            var spans = Polygons.findLineInteriorSpans(List.of(bigSquare(10)), 5, 5, 1, 0);
+            var spans = Polygons.findLineInteriorSpans(List.of(bigSquare(10)),
+                    new DirectedLine(5, 5, 1, 0));
 
             assertThat(spans).hasSize(1);
             assertThat(spans.get(0)[0]).isCloseTo(-5.0, within());
@@ -585,7 +586,8 @@ final class PolygonsTest {
                     new double[] {6, 10}, new double[] {6, 4}, new double[] {4, 4},
                     new double[] {4, 10}, new double[] {0, 10});
 
-            var spans = Polygons.findLineInteriorSpans(List.of(uShape), 5, 7, 1, 0);
+            var spans = Polygons.findLineInteriorSpans(List.of(uShape),
+                    new DirectedLine(5, 7, 1, 0));
 
             assertThat(spans).hasSize(2);
             assertThat(spans.get(0)[0]).isCloseTo(-5.0, within());
@@ -604,7 +606,7 @@ final class PolygonsTest {
                     new double[] {12, 12}, new double[] {8, 12});
 
             var spans = Polygons.findLineInteriorSpans(
-                    List.of(bigSquare(20), hole), 10, 10, 1, 0);
+                    List.of(bigSquare(20), hole), new DirectedLine(10, 10, 1, 0));
 
             assertThat(spans).hasSize(2);
             assertThat(spans.get(0)[0]).isCloseTo(-10.0, within());
@@ -615,7 +617,8 @@ final class PolygonsTest {
 
         @Test
         void interior_spans_are_empty_when_the_line_misses_the_ring() {
-            var spans = Polygons.findLineInteriorSpans(List.of(bigSquare(10)), 5, 50, 1, 0);
+            var spans = Polygons.findLineInteriorSpans(List.of(bigSquare(10)),
+                    new DirectedLine(5, 50, 1, 0));
 
             assertThat(spans).isEmpty();
         }
@@ -625,7 +628,8 @@ final class PolygonsTest {
             // A diagonal through the square's corner touches at a single point: the
             // two crossings coincide, so the zero-length interval between them is no
             // span.
-            var spans = Polygons.findLineInteriorSpans(List.of(bigSquare(10)), 0, 0, 1, -1);
+            var spans = Polygons.findLineInteriorSpans(List.of(bigSquare(10)),
+                    new DirectedLine(0, 0, 1, -1));
 
             assertThat(spans).isEmpty();
         }
@@ -633,7 +637,8 @@ final class PolygonsTest {
         @Test
         void interior_spans_are_empty_for_a_degenerate_direction() {
             // A zero direction defines no line to cross, so there is nothing to span.
-            var spans = Polygons.findLineInteriorSpans(List.of(bigSquare(10)), 5, 5, 0, 0);
+            var spans = Polygons.findLineInteriorSpans(List.of(bigSquare(10)),
+                    new DirectedLine(5, 5, 0, 0));
 
             assertThat(spans).isEmpty();
         }
@@ -647,7 +652,7 @@ final class PolygonsTest {
             // y=13, stays clear of the vertical walls, so the band span equals the
             // line span: x=0..20, parameters from the through-point at x=10.
             var spans = Polygons.findBandInteriorSpans(
-                    List.of(bigSquare(20)), 10, 10, 1, 0, 3);
+                    List.of(bigSquare(20)), new DirectedLine(10, 10, 1, 0), 3);
 
             assertThat(spans).hasSize(1);
             assertThat(spans.get(0)[0]).isCloseTo(-10.0, within());
@@ -667,7 +672,7 @@ final class PolygonsTest {
                     new double[] {8, 10}, new double[] {0, 10});
 
             var spans = Polygons.findBandInteriorSpans(
-                    List.of(notchedRoom), 10, 5, 1, 0, 2.5);
+                    List.of(notchedRoom), new DirectedLine(10, 5, 1, 0), 2.5);
 
             assertThat(spans).hasSize(2);
             assertThat(spans.get(0)[0]).isCloseTo(-10.0, within());
@@ -681,7 +686,7 @@ final class PolygonsTest {
             // Half-thickness 6 in a side-10 square lifts the outer rails to y=-1 and
             // y=11, both outside; a rail with no interior empties the whole band.
             var spans = Polygons.findBandInteriorSpans(
-                    List.of(bigSquare(10)), 5, 5, 1, 0, 6);
+                    List.of(bigSquare(10)), new DirectedLine(5, 5, 1, 0), 6);
 
             assertThat(spans).isEmpty();
         }
@@ -695,8 +700,10 @@ final class PolygonsTest {
                     new double[] {6, 10}, new double[] {6, 4}, new double[] {4, 4},
                     new double[] {4, 10}, new double[] {0, 10});
 
-            var bandSpans = Polygons.findBandInteriorSpans(List.of(uShape), 5, 7, 1, 0, 0);
-            var lineSpans = Polygons.findLineInteriorSpans(List.of(uShape), 5, 7, 1, 0);
+            var bandSpans = Polygons.findBandInteriorSpans(List.of(uShape),
+                    new DirectedLine(5, 7, 1, 0), 0);
+            var lineSpans = Polygons.findLineInteriorSpans(List.of(uShape),
+                    new DirectedLine(5, 7, 1, 0));
 
             assertThat(bandSpans).hasSize(lineSpans.size());
             for (var i = 0; i < lineSpans.size(); i++) {
@@ -707,7 +714,8 @@ final class PolygonsTest {
 
         @Test
         void band_is_empty_for_a_degenerate_direction() {
-            var spans = Polygons.findBandInteriorSpans(List.of(bigSquare(10)), 5, 5, 0, 0, 2);
+            var spans = Polygons.findBandInteriorSpans(List.of(bigSquare(10)),
+                    new DirectedLine(5, 5, 0, 0), 2);
 
             assertThat(spans).isEmpty();
         }
