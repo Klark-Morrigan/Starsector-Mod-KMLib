@@ -11,7 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Pins {@link PanelPlacement#toScrollRegion}: the placement hands its scrolling control to a scrollbar as
- * a {@link ScrollRegion} - the body as the container, the flex viewport, and the scroll offset/overflow -
+ * a {@link kmlib.starsector.ui.widgets.scroll.ScrollRegion} - the body as the container, the flex viewport,
+ * and the scroll offset/overflow -
  * so the panel carries no scrollbar geometry of its own.
  */
 final class PanelPlacementTest {

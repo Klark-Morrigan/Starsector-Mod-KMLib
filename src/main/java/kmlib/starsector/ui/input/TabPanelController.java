@@ -2,7 +2,7 @@ package kmlib.starsector.ui.input;
 
 import com.fs.starfarer.api.input.InputEventAPI;
 
-import kmlib.starsector.ui.widgets.ScrollState;
+import kmlib.starsector.ui.widgets.scroll.ScrollState;
 import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
 
 /**

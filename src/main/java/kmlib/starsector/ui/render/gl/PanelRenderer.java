@@ -2,7 +2,7 @@ package kmlib.starsector.ui.render.gl;
 
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.widgets.PanelPlacement;
-import kmlib.starsector.ui.widgets.PanelScrollbars;
+import kmlib.starsector.ui.widgets.scroll.PanelScrollbars;
 
 import org.lwjgl.opengl.GL11;
 

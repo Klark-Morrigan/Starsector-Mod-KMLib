@@ -6,9 +6,9 @@ import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlKind;
 import kmlib.starsector.ui.widgets.PanelPlacement;
-import kmlib.starsector.ui.widgets.PanelScrollbars;
 import kmlib.starsector.ui.widgets.RadioRow;
-import kmlib.starsector.ui.widgets.ScrollState;
+import kmlib.starsector.ui.widgets.scroll.PanelScrollbars;
+import kmlib.starsector.ui.widgets.scroll.ScrollState;
 
 /**
  * Drives one headerless panel's pointer input, owning the runtime state a panel's input needs across

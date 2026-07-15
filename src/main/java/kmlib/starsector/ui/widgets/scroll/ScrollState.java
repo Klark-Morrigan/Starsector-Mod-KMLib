@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.widgets;
+package kmlib.starsector.ui.widgets.scroll;
 
 /**
  * The scroll position of a scrollable region: how far, in pixels, its content is scrolled from the top.

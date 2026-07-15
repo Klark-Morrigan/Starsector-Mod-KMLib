@@ -1,6 +1,7 @@
-package kmlib.starsector.ui.widgets;
+package kmlib.starsector.ui.widgets.scroll;
 
 import kmlib.math.geometry.Rectangle;
+import kmlib.starsector.ui.widgets.PanelPlacement;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

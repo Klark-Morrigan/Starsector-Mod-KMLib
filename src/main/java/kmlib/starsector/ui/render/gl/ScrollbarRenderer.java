@@ -7,7 +7,7 @@ import java.awt.Color;
 /**
  * Raw-GL paint for a vertical scrollbar: a dim track channel with a brighter thumb over it, both faded
  * by one opacity, in the panel's accent colour. It draws the two rectangles the host lays out - the
- * track it placed in a body's right inset and the thumb {@link kmlib.starsector.ui.widgets.Scrollbar}
+ * track it placed in a body's right inset and the thumb {@link kmlib.starsector.ui.widgets.scroll.Scrollbar}
  * sized within it - so the geometry stays with the widget and this only fills. The GL passthrough (over
  * {@link UiFill}), exercised in-engine like the other draw helpers.
  *
@@ -29,7 +29,7 @@ public final class ScrollbarRenderer {
      *
      * @param track   the track's footprint, in UI coordinates
      * @param thumb   the thumb's footprint within the track, from {@link
-     *                kmlib.starsector.ui.widgets.Scrollbar#computeThumb}
+     *                kmlib.starsector.ui.widgets.scroll.Scrollbar#computeThumb}
      * @param accent  the scrollbar colour, the panel's accent
      * @param opacity overall alpha, 0..1
      */

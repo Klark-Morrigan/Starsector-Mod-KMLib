@@ -2,6 +2,7 @@ package kmlib.starsector.ui.widgets;
 
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.Control;
+import kmlib.starsector.ui.widgets.scroll.ScrollRegion;
 
 import java.util.List;
 
@@ -44,7 +45,8 @@ public record PanelPlacement(Rectangle box, Rectangle body, List<Control> bodyCo
 
     /**
      * Projects this panel's scrolling control into a {@link ScrollRegion} - the body as the container,
-     * the flex viewport, and the scroll offset/overflow - so a {@link Scrollbar} sizes and hit-tests
+     * the flex viewport, and the scroll offset/overflow - so a {@link
+     * kmlib.starsector.ui.widgets.scroll.Scrollbar} sizes and hit-tests
      * itself from the placement without the panel owning any scrollbar geometry itself.
      *
      * @return the scroll region for this panel's scrolling control

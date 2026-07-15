@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.widgets;
+package kmlib.starsector.ui.widgets.scroll;
 
 import kmlib.math.geometry.Rectangle;
 

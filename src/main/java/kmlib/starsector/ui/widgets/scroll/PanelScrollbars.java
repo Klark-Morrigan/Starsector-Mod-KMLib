@@ -1,6 +1,7 @@
-package kmlib.starsector.ui.widgets;
+package kmlib.starsector.ui.widgets.scroll;
 
 import kmlib.math.geometry.Rectangle;
+import kmlib.starsector.ui.widgets.PanelPlacement;
 
 /**
  * The scrollbar geometry for a {@link PanelPlacement}: a thin convenience over the region-scoped {@link
