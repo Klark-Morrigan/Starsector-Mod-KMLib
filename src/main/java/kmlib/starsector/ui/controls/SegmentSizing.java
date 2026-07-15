@@ -1,22 +1,20 @@
 package kmlib.starsector.ui.controls;
 
 /**
- * How a horizontal segmented control (a horizontal {@link RadioAlignment#HORIZONTAL} radio or a
- * {@link ControlKind#TABS} row) sizes its segments across the row. It is the width rule both share,
- * lifted off {@code kind} so a radio and a tabs row can each be uniform or snapped and one measurement
- * path serves both. {@code kind} still names the renderer (a radio's framed cells versus a tab strip's
- * black band); this decides only how wide each segment is.
+ * How a horizontal segmented control (a {@link ControlSpec.HorizontalRadio} or a {@link
+ * ControlSpec.Tabs} row) sizes its segments across the row. It is the width rule both share, so one
+ * measurement path serves both. The variant still names the renderer (a radio's framed cells versus a
+ * tab strip's black band); this decides only how wide each segment is.
  *
- * <p>It refines a horizontal segmented control only. A vertical radio's wrapped columns are uniform by
- * construction (each column the widest option plus padding), so the sizing is inert for them, and a
- * non-segmented kind (checkbox, toggle, label, divider) has no segments to size - {@link #UNIFORM} is
- * the sole value those carry.
+ * <p>Only a horizontal segmented control carries a segment-sizing choice. A {@link
+ * ControlSpec.VerticalTable}'s wrapped columns are uniform by construction (each column the widest option
+ * plus padding), and a tabs row always snaps, so {@link #UNIFORM} versus {@link #SNAPPED} is a real
+ * choice on a horizontal radio alone.
  */
 public enum SegmentSizing {
     /**
      * Every segment shares one width - the widest label plus the padding - so the segments read as
-     * even cells (an option pair such as Short/Full). The default for every control, and the only
-     * value a vertical radio or a non-segmented kind carries.
+     * even cells (an option pair such as Short/Full). The default a horizontal radio takes.
      */
     UNIFORM,
 

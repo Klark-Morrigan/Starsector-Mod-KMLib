@@ -38,8 +38,8 @@ final class CappedStripLayoutTest {
     // map's picker takes under the alliances view (a recede control pins below the list). Row heights
     // come out [20, 80, 20]: one control row for each checkbox, four for the list.
     private List<ControlSpec> headerFlexFooterStrip() {
-        return List.of(ControlSpec.createCheckbox("H", false, ControlAction.NONE),
-                scrollingList(FLEX_OPTION_COUNT), ControlSpec.createCheckbox("F", false,
+        return List.of(ControlSpec.Checkbox.lit("H", false, ControlAction.NONE),
+                scrollingList(FLEX_OPTION_COUNT), ControlSpec.Checkbox.lit("F", false,
                         ControlAction.NONE));
     }
 
@@ -50,8 +50,8 @@ final class CappedStripLayoutTest {
             labels.add("Opt" + index);
             icons.add(null);
         }
-        return ControlSpec.createIconRadioList(labels, icons, ControlSpec.NO_SELECTION,
-                ControlAction.NONE).buildScrollableCopy();
+        return ControlSpec.VerticalTable.iconList(labels, icons, ControlSpec.NO_SELECTION,
+                ControlAction.NONE).asScrolling();
     }
 
     @Nested
@@ -65,8 +65,8 @@ final class CappedStripLayoutTest {
 
         @Test
         void findScrollingIndexReturnsNoFlexRegionWhenNoneScroll() {
-            var specs = List.of(ControlSpec.createCheckbox("A", false, ControlAction.NONE),
-                    ControlSpec.createCheckbox("B", false, ControlAction.NONE));
+            var specs = List.<ControlSpec>of(ControlSpec.Checkbox.lit("A", false, ControlAction.NONE),
+                    ControlSpec.Checkbox.lit("B", false, ControlAction.NONE));
             assertThat(CappedStripLayout.findScrollingIndex(specs))
                     .isEqualTo(CappedStripLayout.NO_FLEX_REGION);
         }
@@ -85,8 +85,8 @@ final class CappedStripLayoutTest {
 
         @Test
         void capBodyHeightKeepsTheNaturalHeightWhenNoControlScrolls() {
-            var specs = List.of(ControlSpec.createCheckbox("A", false, ControlAction.NONE),
-                    ControlSpec.createCheckbox("B", false, ControlAction.NONE));
+            var specs = List.<ControlSpec>of(ControlSpec.Checkbox.lit("A", false, ControlAction.NONE),
+                    ControlSpec.Checkbox.lit("B", false, ControlAction.NONE));
             var strip = measure(specs);
             // With no flex region there is nothing to shrink, so a tight cap cannot reduce the body -
             // the strip keeps its natural height (and would overflow the box, as it does today).
@@ -121,8 +121,8 @@ final class CappedStripLayoutTest {
 
         @Test
         void layoutCappedControlsMatchesThePlainStackWhenNothingScrolls() {
-            var specs = List.of(ControlSpec.createCheckbox("A", false, ControlAction.NONE),
-                    ControlSpec.createCheckbox("B", false, ControlAction.NONE));
+            var specs = List.<ControlSpec>of(ControlSpec.Checkbox.lit("A", false, ControlAction.NONE),
+                    ControlSpec.Checkbox.lit("B", false, ControlAction.NONE));
             var strip = measure(specs);
             var body = frameBody(strip.bodyHeight(), strip.bodyWidth());
             var capped = CappedStripLayout.layoutCappedControls(body, specs, strip.rowHeights(),

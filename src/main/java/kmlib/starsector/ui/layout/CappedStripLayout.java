@@ -11,7 +11,7 @@ import java.util.List;
 
 /**
  * Caps a {@link ControlStripLayout} strip to a maximum body height by letting ONE control - the strip's
- * scrolling flex region, the control whose {@link ControlSpec#scrolls()} is set - give up its height and
+ * scrolling flex region, the control whose {@link ControlSpec.VerticalTable#scrolls()} is set - give up its height and
  * scroll its own rows. The controls before the flex region pin from the body top exactly as an uncapped
  * strip places them; the controls after it pin to the body bottom; the flex region takes the room left
  * between and, when its natural rows overrun that room, scrolls within it. So a long list stays reachable
@@ -48,7 +48,7 @@ public final class CappedStripLayout {
      */
     public static int findScrollingIndex(List<ControlSpec> specs) {
         for (var index = 0; index < specs.size(); index++) {
-            if (specs.get(index).scrolls()) {
+            if (specs.get(index) instanceof ControlSpec.VerticalTable table && table.scrolls()) {
                 return index;
             }
         }

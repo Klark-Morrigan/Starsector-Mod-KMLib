@@ -3,7 +3,6 @@ package kmlib.starsector.ui.input;
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlAction;
-import kmlib.starsector.ui.controls.ControlKind;
 import kmlib.starsector.ui.controls.ControlSpec;
 
 import org.junit.jupiter.api.Nested;
@@ -30,21 +29,18 @@ final class PanelControllerTest {
 
         @Test
         void activateControlIfHitPassesOverACaptionLabelWithoutActing() {
-            var fired = new boolean[1];
-            // A caption row with a recording action, so a hit that fired it would be caught; a production
-            // caption carries no action, but pinning the skip proves the label is passed over before any
-            // action is reached.
-            var label = buildControl(ControlKind.LABEL, "Caption", cell -> fired[0] = true);
+            // A caption row is drawn but never clickable - a Label is not Interactive - so a press over
+            // it hits nothing and falls through rather than being swallowed as if it acted.
+            var label = new Control(new ControlSpec.Label("Caption"), ROW, List.of());
             var acted = PanelController.activateControlIfHit(label, FULL_VIEWPORT,
                     ROW.x() + ROW.width() / 2f, ROW.y() + ROW.height() / 2f);
             assertThat(acted).as("a caption is not a hit target").isFalse();
-            assertThat(fired[0]).as("the caption's action must not fire").isFalse();
         }
 
         @Test
         void activateControlIfHitFiresACheckboxHitAnywhereOnItsRow() {
             var firedCell = new int[]{-1};
-            var checkbox = buildControl(ControlKind.CHECKBOX, "Muted", cell -> firedCell[0] = cell);
+            var checkbox = buildCheckboxControl("Muted", cell -> firedCell[0] = cell);
             var acted = PanelController.activateControlIfHit(checkbox, FULL_VIEWPORT,
                     ROW.x() + ROW.width() / 2f, ROW.y() + ROW.height() / 2f);
             assertThat(acted).isTrue();
@@ -53,7 +49,7 @@ final class PanelControllerTest {
 
         @Test
         void activateControlIfHitReportsNoHitForAPressOutsideACheckboxRow() {
-            var checkbox = buildControl(ControlKind.CHECKBOX, "Muted", ControlAction.NONE);
+            var checkbox = buildCheckboxControl("Muted", ControlAction.NONE);
             var acted = PanelController.activateControlIfHit(checkbox, FULL_VIEWPORT,
                     ROW.x() - 10f, ROW.y() + ROW.height() / 2f);
             assertThat(acted).isFalse();
@@ -128,18 +124,17 @@ final class PanelControllerTest {
         }
     }
 
-    // A single-row control occupying ROW, so each test states only the kind, label, and action that
+    // A single-row checkbox occupying ROW, so each test states only the label and action that
     // distinguish its case rather than repeating the spec-and-bounds construction.
-    private static Control buildControl(ControlKind kind, String label, ControlAction action) {
-        return new Control(new ControlSpec(kind, List.of(label), "",
-                ControlSpec.NO_SELECTION, action), ROW, List.of());
+    private static Control buildCheckboxControl(String label, ControlAction action) {
+        return new Control(ControlSpec.Checkbox.lit(label, false, action), ROW, List.of());
     }
 
-    // A one-option scrolling list laid out at ROW: a vertical icon-radio marked as the scroll region, its
+    // A one-option scrolling list laid out at ROW: a vertical icon table marked as the scroll region, its
     // single segment the whole row, so a press at ROW hits option 0 unless the viewport clips it.
     private static Control buildScrollingListAtRow(ControlAction action) {
-        var spec = ControlSpec.createIconRadioList(List.of("Opt"), Arrays.asList((String) null),
-                ControlSpec.NO_SELECTION, action).buildScrollableCopy();
+        var spec = ControlSpec.VerticalTable.iconList(List.of("Opt"), Arrays.asList((String) null),
+                ControlSpec.NO_SELECTION, action).asScrolling();
         return new Control(spec, ROW, List.of(ROW));
     }
 
@@ -150,7 +145,7 @@ final class PanelControllerTest {
         var leftTab = new Rectangle(ROW.x(), ROW.y(), ROW.width() / 2f, ROW.height());
         var rightTab = new Rectangle(ROW.x() + ROW.width() / 2f, ROW.y(), ROW.width() / 2f,
                 ROW.height());
-        var spec = ControlSpec.createTabs(List.of("Political Map", "Alliances"), List.of(),
+        var spec = new ControlSpec.Tabs(List.of("Political Map", "Alliances"), List.of(),
                 selectedIndex, action);
         return new Control(spec, ROW, List.of(leftTab, rightTab));
     }

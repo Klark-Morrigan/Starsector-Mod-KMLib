@@ -5,7 +5,7 @@ import kmlib.math.geometry.Rectangle;
 import java.awt.Color;
 
 /**
- * Raw-GL paint for a {@link kmlib.starsector.ui.controls.ControlKind#DIVIDER}: a single horizontal
+ * Raw-GL paint for a {@link kmlib.starsector.ui.controls.ControlSpec.Divider}: a single horizontal
  * hairline centred in the row, spanning its whole width, faded by one opacity. It parts one run of
  * body controls from the next, so a host heads a section with a rule instead of a caption. The GL
  * passthrough (over {@link UiFill}), exercised in-engine like the other draw helpers.

@@ -1,7 +1,6 @@
 package kmlib.starsector.ui.layout;
 
 import kmlib.starsector.ui.controls.ControlAction;
-import kmlib.starsector.ui.controls.ControlKind;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
@@ -49,12 +48,12 @@ final class TabPanelLayoutTest {
 
     private final LineWidthMeasurer measurerFake = new LineWidthMeasurerFake(WIDTH_PER_CHAR);
 
-    private static final ControlSpec TABS = ControlSpec.createTabs(
+    private static final ControlSpec.Tabs TABS = new ControlSpec.Tabs(
             List.of("No Layer", "Political Map"), List.of(), 0, ControlAction.NONE);
 
     // A one-checkbox body, so the body has a definite non-zero height beneath the header.
     private static final List<ControlSpec> BODY = List.of(
-            new ControlSpec(ControlKind.CHECKBOX, List.of("X"), "", ControlSpec.NO_SELECTION));
+            ControlSpec.Checkbox.lit("X", false, ControlAction.NONE));
 
     @Nested
     class ComputePlacement {
@@ -62,7 +61,7 @@ final class TabPanelLayoutTest {
         @Test
         void computePlacementSnapsTheHeaderTabsFlushAtTheContentTop() {
             var header = place(List.of()).tabsHeader();
-            assertThat(header.spec().kind()).isEqualTo(ControlKind.TABS);
+            assertThat(header.spec()).isInstanceOf(ControlSpec.Tabs.class);
             assertThat(header.segments()).hasSize(2);
 
             var first = header.segments().get(0);
@@ -131,7 +130,7 @@ final class TabPanelLayoutTest {
         @Test
         void computePlacementCarriesTheTabsControlAsTheHeader() {
             var header = place(BODY).tabsHeader();
-            assertThat(header.spec().kind()).isEqualTo(ControlKind.TABS);
+            assertThat(header.spec()).isInstanceOf(ControlSpec.Tabs.class);
             assertThat(header.spec().labels()).containsExactly("No Layer", "Political Map");
         }
 

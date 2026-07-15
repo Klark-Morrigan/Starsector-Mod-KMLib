@@ -18,7 +18,7 @@ import java.util.List;
  *
  * <p>The header is laid flush at the interior top (no body inset) through {@link
  * ControlStripLayout#layoutTabsHeader}, so a header tab measures, draws, and hit-tests through the same
- * generic control path a body {@link kmlib.starsector.ui.controls.ControlKind#TABS} control uses. UI
+ * generic control path a body {@link ControlSpec.Tabs} control uses. UI
  * coordinates throughout (origin bottom-left, y grows up); text snapping runs through the injected
  * {@link LineWidthMeasurer}, so the layout is a pure computation. The panel hangs from the screen's
  * top-left by its paddings and caps its height to a bottom margin; that anchoring is the caller's to
@@ -47,7 +47,7 @@ public final class TabPanelLayout {
      * @return the laid-out tabs header and the body placement carrying the whole-footprint box
      */
     public static TabPanelPlacement computePlacement(float screenHeight, Padding padding,
-            int borderWidth, ControlSpec tabsSpec, List<ControlSpec> bodyControls,
+            int borderWidth, ControlSpec.Tabs tabsSpec, List<ControlSpec> bodyControls,
             LineWidthMeasurer measurer, float rawScrollOffset) {
         // The box hangs from the screen's top-left, same anchor a plain panel uses; the header sits flush
         // under the top border and the body hangs beneath the header band.

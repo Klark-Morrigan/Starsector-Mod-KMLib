@@ -2,9 +2,7 @@ package kmlib.starsector.ui.layout;
 
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.ControlAction;
-import kmlib.starsector.ui.controls.ControlKind;
 import kmlib.starsector.ui.controls.ControlSpec;
-import kmlib.starsector.ui.controls.RadioAlignment;
 import kmlib.starsector.ui.controls.ReselectBehaviour;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.widgets.PanelPlacement;
@@ -46,12 +44,10 @@ final class PanelLayoutTest {
     // two-option radio with a trailing caption, and a toggle. The layout snaps and stacks by geometry
     // alone, so each control's lit state is left unset here.
     private static final List<ControlSpec> BODY = List.of(
-            new ControlSpec(ControlKind.CHECKBOX, List.of("Uninhabited systems"), "",
-                    ControlSpec.NO_SELECTION),
-            new ControlSpec(ControlKind.RADIO, List.of("Short", "Full"), "Names",
-                    ControlSpec.NO_SELECTION),
-            new ControlSpec(ControlKind.TOGGLE, List.of("Factions"), "",
-                    ControlSpec.NO_SELECTION));
+            ControlSpec.Checkbox.lit("Uninhabited systems", false, ControlAction.NONE),
+            ControlSpec.HorizontalRadio.uniform(List.of("Short", "Full"), "Names",
+                    ControlSpec.NO_SELECTION, ControlAction.NONE),
+            ControlSpec.Toggle.lit("Factions", false, ControlAction.NONE));
 
     // Content is inset from the box by the border on every edge; with no header the body hangs straight
     // from the inset content top.
@@ -83,10 +79,8 @@ final class PanelLayoutTest {
         @Test
         void computePlacementStacksTheBodyControlsAsAColumnBeneathTheContentTop() {
             var controls = place(BODY).bodyControls();
-            assertThat(controls).extracting(control -> control.spec().kind()).containsExactly(
-                    ControlKind.CHECKBOX,
-                    ControlKind.RADIO,
-                    ControlKind.TOGGLE);
+            assertThat(controls).extracting(control -> control.spec().getClass().getSimpleName())
+                    .containsExactly("Checkbox", "HorizontalRadio", "Toggle");
 
             var rowsLeft = CONTENT_X + ControlStripLayout.BODY_PADDING;
             var checkbox = controls.get(0).bounds();
@@ -149,8 +143,7 @@ final class PanelLayoutTest {
         void computePlacementGrowsTheBodyDownwardWhenAControlIsAppended() {
             var basePlacement = place(BODY);
             var appended = new ArrayList<>(BODY);
-            appended.add(new ControlSpec(ControlKind.CHECKBOX, List.of("Muted"), "",
-                    ControlSpec.NO_SELECTION));
+            appended.add(ControlSpec.Checkbox.lit("Muted", false, ControlAction.NONE));
             var grownPlacement = place(List.copyOf(appended));
 
             // The extra row makes the body taller by exactly one control row plus its leading gap.
@@ -200,7 +193,7 @@ final class PanelLayoutTest {
         @Test
         void computePlacementSnapsALabelRowToItsMeasuredText() {
             var caption = "Non-allied factions are";
-            var label = place(List.of(ControlSpec.createLabel(caption))).bodyControls().get(0);
+            var label = place(List.<ControlSpec>of(new ControlSpec.Label(caption))).bodyControls().get(0);
             // A caption has no widget chrome, so its row is exactly its text width and one row tall.
             assertThat(label.bounds().width())
                     .isCloseTo(caption.length() * WIDTH_PER_CHAR, within(TOLERANCE));
@@ -270,9 +263,8 @@ final class PanelLayoutTest {
     // A two-option vertical selector radio, on its own so the stacked geometry is checked without the
     // other controls' rows in the way. "Alliances" (9 chars) is the wider option.
     private static List<ControlSpec> verticalRadioBody() {
-        return List.of(new ControlSpec(ControlKind.RADIO, List.of("Factions", "Alliances"), "",
-                ControlSpec.NO_SELECTION, ControlAction.NONE, RadioAlignment.VERTICAL,
-                ReselectBehaviour.DESELECT));
+        return List.of(ControlSpec.VerticalTable.plain(List.of("Factions", "Alliances"),
+                ControlSpec.NO_SELECTION, ControlAction.NONE, ReselectBehaviour.DESELECT));
     }
 
     // A bottom margin tight enough that the natural body overruns it, so the cap engages and the list
@@ -287,11 +279,11 @@ final class PanelLayoutTest {
             labels.add("Opt" + index);
             icons.add(null);
         }
-        var list = ControlSpec.createIconRadioList(labels, icons, ControlSpec.NO_SELECTION,
-                ControlAction.NONE).buildScrollableCopy();
+        var list = ControlSpec.VerticalTable.iconList(labels, icons, ControlSpec.NO_SELECTION,
+                ControlAction.NONE).asScrolling();
         return List.of(
-                new ControlSpec(ControlKind.CHECKBOX, List.of("Header"), "", ControlSpec.NO_SELECTION),
+                ControlSpec.Checkbox.lit("Header", false, ControlAction.NONE),
                 list,
-                new ControlSpec(ControlKind.CHECKBOX, List.of("Footer"), "", ControlSpec.NO_SELECTION));
+                ControlSpec.Checkbox.lit("Footer", false, ControlAction.NONE));
     }
 }

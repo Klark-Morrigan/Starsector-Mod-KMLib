@@ -4,7 +4,8 @@ import com.fs.starfarer.api.input.InputEventAPI;
 
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.Control;
-import kmlib.starsector.ui.controls.ControlKind;
+import kmlib.starsector.ui.controls.ControlSpec;
+import kmlib.starsector.ui.controls.ReselectBehaviour;
 import kmlib.starsector.ui.widgets.PanelPlacement;
 import kmlib.starsector.ui.widgets.RadioRow;
 import kmlib.starsector.ui.widgets.scroll.PanelScrollbars;
@@ -159,8 +160,8 @@ public final class PanelController {
 
     /**
      * Hit-tests a control in a scrollable strip: a control marked {@link
-     * kmlib.starsector.ui.controls.ControlSpec#scrolls()} counts only inside {@code flexViewport}, then
-     * fires as {@link #activateControlIfHit(Control, float, float)}. The scrolling list clips because a row
+     * ControlSpec.VerticalTable#scrolls()} counts only inside {@code flexViewport}, then fires as {@link
+     * #activateControlIfHit(Control, float, float)}. The scrolling list clips because a row
      * scrolled up under a pinned header (or down under a footer) is drawn away, so its segment - still laid
      * out at its scrolled position - must not stay clickable through the control that hides it. Every
      * non-scrolling control ignores the viewport, so the clip bites only the one flex list. Read by the
@@ -174,7 +175,8 @@ public final class PanelController {
      */
     static boolean activateControlIfHit(Control control, Rectangle flexViewport, float pointX,
             float pointY) {
-        if (control.spec().scrolls() && !flexViewport.containsPoint(pointX, pointY)) {
+        if (control.spec() instanceof ControlSpec.VerticalTable table && table.scrolls()
+                && !flexViewport.containsPoint(pointX, pointY)) {
             return false;
         }
         return activateControlIfHit(control, pointX, pointY);
@@ -200,39 +202,44 @@ public final class PanelController {
      * @return whether the press landed on an actionable cell and fired its action
      */
     static boolean activateControlIfHit(Control control, float pointX, float pointY) {
-        // A caption row and a divider are drawn but not clickable, so a press over either hits nothing and
-        // falls through to let the loop try the controls below - never consuming a click as if it acted.
-        // The divider matters here because it spans the whole body width.
-        if (control.spec().kind() == ControlKind.LABEL
-                || control.spec().kind() == ControlKind.DIVIDER) {
+        // A caption row and a divider are drawn but not clickable - they are not Interactive - so a press
+        // over either hits nothing and falls through to let the loop try the controls below, never
+        // consuming a click as if it acted. The divider matters here because it spans the whole body width.
+        if (!(control.spec() instanceof ControlSpec.Interactive interactive)) {
             return false;
         }
         // A radio or a tabs row hits by segment over the segments the layout laid - a radio's equal cells
         // or a tabs row's per-tab boxes. The reselect behaviour then selects raw-hit (a re-pick fires) vs
-        // already-lit handling (a re-pick is swallowed); a tabs row is always inert on its lit tab, so
-        // re-clicking the active tab reaches no action, matching a vanilla tab strip.
-        if (isSegmentedControl(control.spec().kind())) {
-            var segmentIndex = control.spec().reselect().firesOnReselect()
+        // already-lit handling (a re-pick is swallowed); only a vertical table carries a non-inert
+        // reselect, while a horizontal radio and a tabs row are always inert on their lit segment, so
+        // re-clicking the active option reaches no action, matching a vanilla tab strip.
+        if (isSegmented(interactive)) {
+            var reselect = interactive instanceof ControlSpec.VerticalTable table
+                    ? table.reselect()
+                    : ReselectBehaviour.INERT;
+            var segmentIndex = reselect.firesOnReselect()
                     ? RadioRow.findSegmentIndexAt(control.segments(), pointX, pointY)
-                    : RadioRow.findHitElement(control.segments(), control.spec().selectedIndex(),
+                    : RadioRow.findHitElement(control.segments(), interactive.selectedIndex(),
                             pointX, pointY);
             if (segmentIndex == RadioRow.NO_SEGMENT) {
                 return false;
             }
-            control.spec().action().activateCell(segmentIndex);
+            interactive.action().activateCell(segmentIndex);
             return true;
         }
         if (!control.bounds().containsPoint(pointX, pointY)) {
             return false;
         }
-        control.spec().action().activateCell(0);
+        interactive.action().activateCell(0);
         return true;
     }
 
-    // A radio and a tabs row both resolve a click to one of their laid-out segments and honour their
-    // reselect behaviour, so the two hit-test through one path; every other kind is a single-cell row hit
-    // anywhere on its bounds.
-    private static boolean isSegmentedControl(ControlKind kind) {
-        return kind == ControlKind.RADIO || kind == ControlKind.TABS;
+    // A horizontal radio, a vertical table, and a tabs row all resolve a click to one of their laid-out
+    // segments, so the three hit-test through one path; a single-cell checkbox or toggle is hit anywhere
+    // on its bounds instead.
+    private static boolean isSegmented(ControlSpec.Interactive control) {
+        return control instanceof ControlSpec.HorizontalRadio
+                || control instanceof ControlSpec.VerticalTable
+                || control instanceof ControlSpec.Tabs;
     }
 }

@@ -5,7 +5,6 @@ import com.fs.starfarer.api.util.Misc;
 import kmlib.color.Colors;
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlSpec;
-import kmlib.starsector.ui.controls.RadioAlignment;
 import kmlib.starsector.ui.font.LazyFontCache;
 import kmlib.starsector.ui.input.UiCursor;
 import kmlib.starsector.ui.layout.ControlStripLayout;
@@ -22,11 +21,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Raw-GL paint for one laid-out {@link Control}: it draws the widget the control's {@link
- * kmlib.starsector.ui.controls.ControlKind} names - the tick box, the radio segments, the toggle, the
- * divider rule, the caption - in the lit state the control's spec carries, and draws the control's
- * label(s) over it in a body font. The kind names the widget; what the control means stays with whoever
- * built the spec, so this draws a faction toggle or a sort selector the same way without learning either.
+ * Raw-GL paint for one laid-out {@link Control}: it draws the widget the control's {@link ControlSpec}
+ * variant names - the tick box, the radio segments, the toggle, the divider rule, the caption - in the
+ * lit state the spec carries, and draws the control's label(s) over it in a body font. The variant names
+ * the widget; what the control means stays with whoever built the spec, so this draws a faction toggle or
+ * a sort selector the same way without learning either.
  *
  * <p>It composes the per-kind KMLib renderers ({@link CheckboxRenderer}, {@link RadioRowRenderer}, {@link
  * IconRadioListRenderer}, {@link ToggleButton}, {@link DividerRenderer}, {@link VanillaTabStripRenderer})
@@ -61,13 +60,20 @@ public final class ControlRenderer {
         var accent = style.accent();
         var brightAccent = style.brightAccent();
         var bodyFont = style.bodyFont();
-        switch (control.spec().kind()) {
-            case CHECKBOX -> drawCheckbox(control, accent, brightAccent, bodyFont, opacity);
-            case RADIO -> drawRadio(control, accent, bodyFont, opacity);
-            case TOGGLE -> drawToggle(control, accent, bodyFont, opacity);
-            case LABEL -> drawLabelRow(control, bodyFont, opacity);
-            case DIVIDER -> drawDivider(control, accent, opacity);
-            case TABS -> drawTabs(control, style, opacity);
+        var spec = control.spec();
+        if (spec instanceof ControlSpec.Checkbox) {
+            drawCheckbox(control, accent, brightAccent, bodyFont, opacity);
+        } else if (spec instanceof ControlSpec.Toggle) {
+            drawToggle(control, accent, bodyFont, opacity);
+        } else if (spec instanceof ControlSpec.HorizontalRadio
+                || spec instanceof ControlSpec.VerticalTable) {
+            drawRadio(control, accent, bodyFont, opacity);
+        } else if (spec instanceof ControlSpec.Label) {
+            drawLabelRow(control, bodyFont, opacity);
+        } else if (spec instanceof ControlSpec.Divider) {
+            drawDivider(control, accent, opacity);
+        } else if (spec instanceof ControlSpec.Tabs) {
+            drawTabs(control, style, opacity);
         }
     }
 
@@ -77,7 +83,7 @@ public final class ControlRenderer {
     // measured with) yields the tabs the strip renderer paints, so the drawn tab matches the hit box.
     // Hover reads the cursor here so the tab under the pointer lights without an input event.
     private static void drawTabs(Control control, WidgetStyle style, float opacity) {
-        var spec = control.spec();
+        var spec = (ControlSpec.Tabs) control.spec();
         var contents = ControlStripLayout.buildTabContents(spec);
         var tabs = VanillaTabStrip.zipTabs(contents, control.segments());
         var hoveredIndex = VanillaTabStrip.findTabIndexAt(tabs, UiCursor.getUiX(), UiCursor.getUiY());
@@ -90,46 +96,47 @@ public final class ControlRenderer {
     // layout reserved, so the label sits exactly in the space snapped for it.
     private static void drawCheckbox(Control control, Color accent, Color brightAccent, String bodyFont,
             float opacity) {
-        var spec = control.spec();
+        var spec = (ControlSpec.Checkbox) control.spec();
         var bounds = control.bounds();
-        CheckboxRenderer.render(bounds, isLit(spec), accent, brightAccent, opacity);
+        CheckboxRenderer.render(bounds, spec.isLit(), accent, brightAccent, opacity);
         var box = Checkbox.computeTickBox(bounds);
         var labelX = box.x() + box.width() + ControlStripLayout.CHECKBOX_LABEL_GAP;
-        drawBodyLabel(bodyFont, spec.labels().get(0), labelX, bounds.computeCenterY(),
+        drawBodyLabel(bodyFont, spec.label(), labelX, bounds.computeCenterY(),
                 LazyFont.TextAnchor.CENTER_LEFT, opacity);
     }
 
-    // A radio group: the segments framed and the active one washed, then its labels. An icon-list radio
+    // A radio group: the segments framed and the active one washed, then its labels. An icon table
     // (non-empty icon paths) draws the crests and left-anchors its names past them; a plain radio centres
-    // each name in its segment and appends its trailing caption. A vertical group re-derives its grid from
-    // the footprint; a horizontal group draws its chrome over the laid segments, the same rects the labels
+    // each name in its segment and appends its trailing caption. A vertical table re-derives its grid from
+    // the footprint; a horizontal radio draws its chrome over the laid segments, the same rects the labels
     // below centre in, so the wash and dividers cannot part from the labels whether even or snapped.
     private static void drawRadio(Control control, Color accent, String bodyFont, float opacity) {
-        if (!control.spec().iconPaths().isEmpty()) {
-            drawIconRadio(control, accent, bodyFont, opacity);
+        var spec = control.spec();
+        if (spec instanceof ControlSpec.VerticalTable table && !table.iconPaths().isEmpty()) {
+            drawIconRadio(control, table, accent, bodyFont, opacity);
             return;
         }
-        var spec = control.spec();
         var bounds = control.bounds();
         var labels = spec.labels();
         var segments = control.segments();
+        var selectedIndex = ((ControlSpec.Interactive) spec).selectedIndex();
         // Frame and wash both stroke the accent, the plain radio's single chrome tone.
         var colors = new RadioColors(accent, accent);
-        if (spec.alignment() == RadioAlignment.VERTICAL) {
-            RadioRowRenderer.renderVerticalGrid(bounds, labels.size(), spec.selectedIndex(),
-                    spec.columnCount(), colors, opacity);
+        if (spec instanceof ControlSpec.VerticalTable table) {
+            RadioRowRenderer.renderVerticalGrid(bounds, labels.size(), selectedIndex,
+                    table.columnCount(), colors, opacity);
         } else {
-            RadioRowRenderer.renderHorizontalRow(bounds, segments, spec.selectedIndex(), colors,
-                    opacity);
+            RadioRowRenderer.renderHorizontalRow(bounds, segments, selectedIndex, colors, opacity);
         }
         for (var index = 0; index < segments.size() && index < labels.size(); index++) {
             var segment = segments.get(index);
             drawBodyLabel(bodyFont, labels.get(index), segment.computeCenterX(), segment.computeCenterY(),
                     LazyFont.TextAnchor.CENTER, opacity);
         }
-        if (KmlibStrings.hasText(spec.trailingLabel())) {
+        if (spec instanceof ControlSpec.HorizontalRadio radio
+                && KmlibStrings.hasText(radio.trailingLabel())) {
             var trailingX = bounds.x() + bounds.width() + ControlStripLayout.TRAILING_LABEL_GAP;
-            drawBodyLabel(bodyFont, spec.trailingLabel(), trailingX, bounds.computeCenterY(),
+            drawBodyLabel(bodyFont, radio.trailingLabel(), trailingX, bounds.computeCenterY(),
                     LazyFont.TextAnchor.CENTER_LEFT, opacity);
         }
     }
@@ -138,8 +145,8 @@ public final class ControlRenderer {
     // flush at the right edge. The list chrome and the icons are the widget's; the name and value draw
     // here at the same anchors the widget reserves, so an icon-less option reads as a plain name and a
     // value-less option shows only its name.
-    private static void drawIconRadio(Control control, Color accent, String bodyFont, float opacity) {
-        var spec = control.spec();
+    private static void drawIconRadio(Control control, ControlSpec.VerticalTable spec, Color accent,
+            String bodyFont, float opacity) {
         var bounds = control.bounds();
         IconRadioListRenderer.render(bounds, spec.iconPaths(), spec.selectedIndex(),
                 spec.columnCount(), new RadioColors(accent, accent), opacity);
@@ -168,10 +175,10 @@ public final class ControlRenderer {
     // A single button washed when the spec's cell is lit, its label centred in it - the lit state is the
     // on/off signal, so the label carries no On/Off word.
     private static void drawToggle(Control control, Color accent, String bodyFont, float opacity) {
-        var spec = control.spec();
+        var spec = (ControlSpec.Toggle) control.spec();
         var bounds = control.bounds();
-        ToggleButton.render(bounds, isLit(spec), accent, accent, opacity);
-        drawBodyLabel(bodyFont, spec.labels().get(0), bounds.computeCenterX(), bounds.computeCenterY(),
+        ToggleButton.render(bounds, spec.isLit(), accent, accent, opacity);
+        drawBodyLabel(bodyFont, spec.label(), bounds.computeCenterX(), bounds.computeCenterY(),
                 LazyFont.TextAnchor.CENTER, opacity);
     }
 
@@ -184,15 +191,10 @@ public final class ControlRenderer {
     // A caption row: only its text, left-aligned at the row's left edge and vertically centred, with no
     // widget chrome - it heads the controls below it and is never clicked.
     private static void drawLabelRow(Control control, String bodyFont, float opacity) {
+        var spec = (ControlSpec.Label) control.spec();
         var bounds = control.bounds();
-        drawBodyLabel(bodyFont, control.spec().labels().get(0), bounds.x(), bounds.computeCenterY(),
+        drawBodyLabel(bodyFont, spec.text(), bounds.x(), bounds.computeCenterY(),
                 LazyFont.TextAnchor.CENTER_LEFT, opacity);
-    }
-
-    // A single-cell control (checkbox, toggle) is lit when its one cell (index 0) is the selected one;
-    // NO_SELECTION means off.
-    private static boolean isLit(ControlSpec spec) {
-        return spec.selectedIndex() != ControlSpec.NO_SELECTION;
     }
 
     // Draws one body label at the body font size (the common case), delegating to the explicit-size draw.

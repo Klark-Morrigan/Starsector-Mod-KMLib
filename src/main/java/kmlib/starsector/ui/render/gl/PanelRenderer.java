@@ -1,6 +1,7 @@
 package kmlib.starsector.ui.render.gl;
 
 import kmlib.starsector.ui.controls.Control;
+import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.widgets.PanelPlacement;
 import kmlib.starsector.ui.widgets.scroll.PanelScrollbars;
 
@@ -17,9 +18,9 @@ import org.lwjgl.opengl.GL11;
  * <p>Brackets the draw in one {@code glPushAttrib}/{@code glPopAttrib} - the map chrome and tooltips draw
  * after a UI-overlay pass, so any enable / colour / blend state the panel touches must be restored - and
  * the whole draw shares that one save. The scrolling control (the one marked {@link
- * kmlib.starsector.ui.controls.ControlSpec#scrolls()}) draws clipped to its viewport, so its rows that
- * scroll past the top slide out under a pinned control rather than overpainting it. GL passthrough
- * exercised in-engine like the other draw helpers.
+ * kmlib.starsector.ui.controls.ControlSpec.VerticalTable#scrolls()}) draws clipped to its viewport, so
+ * its rows that scroll past the top slide out under a pinned control rather than overpainting it. GL
+ * passthrough exercised in-engine like the other draw helpers.
  */
 public final class PanelRenderer {
     private PanelRenderer() {
@@ -50,7 +51,7 @@ public final class PanelRenderer {
     // its viewport; every other control draws unclipped in its pinned place.
     private static void drawBodyControls(PanelPlacement placement, WidgetStyle style, float opacity) {
         for (var control : placement.bodyControls()) {
-            if (control.spec().scrolls()) {
+            if (control.spec() instanceof ControlSpec.VerticalTable table && table.scrolls()) {
                 UiScissor.push(placement.flexViewport());
                 drawControl(control, style, opacity);
                 UiScissor.pop();

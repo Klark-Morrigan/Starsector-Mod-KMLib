@@ -8,249 +8,173 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Pins the factory shapes hosts build controls through: a checkbox lit at cell 0 when on and off
- * otherwise carrying its click action, a caption label and a divider rule that are drawn but never
- * clicked, and the icon radio list. These fix the "a checkbox is cell 0 lit or nothing", "a label /
- * divider has no cell and no action" conventions in one place so no host re-derives them. Also pins
- * the canonical constructor's guards, which reject the shapes the layout and renderer cannot draw so a
- * hand-built spec fails at construction rather than dropping state at paint time.
+ * Pins the sealed variants hosts build controls through: a checkbox and a toggle lit at cell 0 when on
+ * and off otherwise carrying their click action, a caption label and a divider rule that are drawn but
+ * never clicked (and so are not {@link ControlSpec.Interactive}), the horizontal radios, the vertical
+ * radio table, and the tabs row. These fix the "a single cell is lit or nothing", "a label / divider has
+ * no cell and no action" conventions in one place so no host re-derives them. The variants make the
+ * illegal shapes unrepresentable - a checkbox has no icon column to mis-set - so only the two numeric
+ * guards a vertical table's own construction can still trip are pinned here.
  */
 final class ControlSpecTest {
 
     @Nested
-    class Constructor {
+    class Interactive {
 
         @Test
-        void constructorRejectsIconPathsOnANonRadioKind() {
-            // The icon column is drawn only for a vertical radio, so a checkbox carrying icon paths
-            // would drop them unseen - it must fail at construction instead.
-            assertThatThrownBy(() -> new ControlSpec(ControlKind.CHECKBOX, List.of("Muted"),
-                    List.of("crest"), List.of(), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
-                    RadioAlignment.HORIZONTAL, ReselectBehaviour.INERT,
-                    ControlSpec.BODY_TRAILING_SCALE, ControlSpec.SINGLE_COLUMN, false, List.of(), SegmentSizing.UNIFORM))
-                    .isInstanceOf(IllegalArgumentException.class);
+        void checkboxAndRadiosAndTabsAreInteractive() {
+            // The clickable, stateful controls implement Interactive, so the input listener acts on them.
+            assertThat(ControlSpec.Checkbox.lit("Muted", true, ControlAction.NONE))
+                    .isInstanceOf(ControlSpec.Interactive.class);
+            assertThat(ControlSpec.Toggle.lit("Muted", true, ControlAction.NONE))
+                    .isInstanceOf(ControlSpec.Interactive.class);
+            assertThat(ControlSpec.HorizontalRadio.uniform(List.of("A"), "", 0, ControlAction.NONE))
+                    .isInstanceOf(ControlSpec.Interactive.class);
+            assertThat(ControlSpec.VerticalTable.plain(List.of("A"), 0, ControlAction.NONE,
+                    ReselectBehaviour.INERT)).isInstanceOf(ControlSpec.Interactive.class);
+            assertThat(new ControlSpec.Tabs(List.of("A"), List.of(), 0, ControlAction.NONE))
+                    .isInstanceOf(ControlSpec.Interactive.class);
         }
 
         @Test
-        void constructorRejectsTrailingValuesOnAHorizontalRadio() {
-            // Per-option values are a vertical-table concept; a horizontal radio never draws them, so
-            // the layout would never reserve room and the values would be lost.
-            assertThatThrownBy(() -> new ControlSpec(ControlKind.RADIO, List.of("Short", "Full"),
-                    List.of(), List.of("7", "3"), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
-                    RadioAlignment.HORIZONTAL, ReselectBehaviour.INERT,
-                    ControlSpec.BODY_TRAILING_SCALE, ControlSpec.SINGLE_COLUMN, false, List.of(), SegmentSizing.UNIFORM))
-                    .isInstanceOf(IllegalArgumentException.class);
+        void labelAndDividerAreNotInteractive() {
+            // A caption and a rule are drawn but never clicked, so they are chrome, not Interactive - the
+            // one property the input listener reads to skip them.
+            assertThat(new ControlSpec.Label("Names")).isNotInstanceOf(ControlSpec.Interactive.class);
+            assertThat(new ControlSpec.Divider()).isNotInstanceOf(ControlSpec.Interactive.class);
         }
+    }
 
-        @Test
-        void constructorRejectsANonInertReselectOnANonRadioKind() {
-            // A reselect behaviour refines a radio's lit segment; a checkbox has no segment to re-pick,
-            // so a deselectable (or re-firing) checkbox is a shape the input path could not act on.
-            assertThatThrownBy(() -> new ControlSpec(ControlKind.CHECKBOX, List.of("Muted"),
-                    List.of(), List.of(), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
-                    RadioAlignment.HORIZONTAL, ReselectBehaviour.DESELECT,
-                    ControlSpec.BODY_TRAILING_SCALE, ControlSpec.SINGLE_COLUMN, false, List.of(), SegmentSizing.UNIFORM))
-                    .isInstanceOf(IllegalArgumentException.class);
-        }
+    @Nested
+    class VerticalTableConstructor {
 
         @Test
         void constructorRejectsANonPositiveTrailingScale() {
-            // The trailing scale is a size multiplier for the trailing column; a zero or negative
-            // value cannot size any text, so it fails at construction rather than measuring to nothing.
-            assertThatThrownBy(() -> new ControlSpec(ControlKind.RADIO, List.of("A"), List.of(),
-                    List.of(), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
-                    RadioAlignment.VERTICAL, ReselectBehaviour.INERT, 0d, ControlSpec.SINGLE_COLUMN,
-                    false, List.of(), SegmentSizing.UNIFORM)).isInstanceOf(IllegalArgumentException.class);
+            // The trailing scale is a size multiplier for the trailing column; a zero or negative value
+            // cannot size any text, so it fails at construction rather than measuring to nothing.
+            assertThatThrownBy(() -> new ControlSpec.VerticalTable(List.of("A"), List.of(), List.of(),
+                    ControlSpec.NO_SELECTION, ControlAction.NONE, ReselectBehaviour.INERT, 0d,
+                    ControlSpec.SINGLE_COLUMN, false)).isInstanceOf(IllegalArgumentException.class);
         }
 
         @Test
         void constructorRejectsAColumnCountBelowOne() {
             // A column count is how many columns the options wrap across; a count below one cannot lay
             // out any column, so it fails at construction rather than dividing by a zero column count.
-            assertThatThrownBy(() -> new ControlSpec(ControlKind.RADIO, List.of("A"), List.of(),
-                    List.of(), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
-                    RadioAlignment.VERTICAL, ReselectBehaviour.DESELECT,
-                    ControlSpec.BODY_TRAILING_SCALE, 0, false, List.of(), SegmentSizing.UNIFORM))
-                    .isInstanceOf(IllegalArgumentException.class);
-        }
-
-        @Test
-        void constructorRejectsAMultiColumnCountOnAHorizontalRadio() {
-            // Wrapping options across columns is a vertical-list concept; a horizontal radio is a
-            // single side-by-side row, so a column count past one is a shape the layout could not draw.
-            assertThatThrownBy(() -> new ControlSpec(ControlKind.RADIO, List.of("Short", "Full"),
-                    List.of(), List.of(), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
-                    RadioAlignment.HORIZONTAL, ReselectBehaviour.INERT,
-                    ControlSpec.BODY_TRAILING_SCALE, 2, false, List.of(), SegmentSizing.UNIFORM))
-                    .isInstanceOf(IllegalArgumentException.class);
-        }
-
-        @Test
-        void constructorRejectsTheScrollFlagOnAHorizontalRadio() {
-            // Only a stacked list scrolls; a horizontal radio has a single side-by-side row and no
-            // rows to scroll, so marking it scrollable is a shape the capped layout could not clip.
-            assertThatThrownBy(() -> new ControlSpec(ControlKind.RADIO, List.of("Short", "Full"),
-                    List.of(), List.of(), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
-                    RadioAlignment.HORIZONTAL, ReselectBehaviour.INERT,
-                    ControlSpec.BODY_TRAILING_SCALE, ControlSpec.SINGLE_COLUMN, true, List.of(), SegmentSizing.UNIFORM))
-                    .isInstanceOf(IllegalArgumentException.class);
-        }
-
-        @Test
-        void constructorRejectsShortcutHintsOnANonTabsKind() {
-            // Shortcut hints are drawn only on a tabs control, so a checkbox carrying them would drop
-            // them unseen - it must fail at construction instead.
-            assertThatThrownBy(() -> new ControlSpec(ControlKind.CHECKBOX, List.of("Muted"),
-                    List.of(), List.of(), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
-                    RadioAlignment.HORIZONTAL, ReselectBehaviour.INERT,
-                    ControlSpec.BODY_TRAILING_SCALE, ControlSpec.SINGLE_COLUMN, false, List.of("N"), SegmentSizing.UNIFORM))
-                    .isInstanceOf(IllegalArgumentException.class);
-        }
-
-        @Test
-        void constructorAcceptsAVerticalIconRadioListCarryingBothColumns() {
-            // The valid shape the icon list takes: a vertical, deselectable radio carrying both the
-            // icon and value columns, which the factory builds and the guard must let through.
-            assertThatCode(() -> ControlSpec.createIconRadioList(List.of("Hegemony"), List.of("crest"),
-                    List.of("7"), 0, ControlAction.NONE)).doesNotThrowAnyException();
-        }
-
-        @Test
-        void constructorRejectsSnappedSizingOnAVerticalRadio() {
-            // A vertical radio's columns are uniform by construction, so snapped sizing has no meaning
-            // there - it must fail at construction rather than carry a field the layout would not read.
-            assertThatThrownBy(() -> new ControlSpec(ControlKind.RADIO, List.of("A", "B"), List.of(),
-                    List.of(), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
-                    RadioAlignment.VERTICAL, ReselectBehaviour.INERT, ControlSpec.BODY_TRAILING_SCALE,
-                    ControlSpec.SINGLE_COLUMN, false, List.of(), SegmentSizing.SNAPPED))
-                    .isInstanceOf(IllegalArgumentException.class);
-        }
-
-        @Test
-        void constructorRejectsSnappedSizingOnANonSegmentedKind() {
-            // A checkbox has no segments to size, so snapped sizing is a shape the layout could not
-            // lay out - it must fail at construction instead.
-            assertThatThrownBy(() -> new ControlSpec(ControlKind.CHECKBOX, List.of("Muted"), List.of(),
-                    List.of(), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
-                    RadioAlignment.HORIZONTAL, ReselectBehaviour.INERT, ControlSpec.BODY_TRAILING_SCALE,
-                    ControlSpec.SINGLE_COLUMN, false, List.of(), SegmentSizing.SNAPPED))
+            assertThatThrownBy(() -> new ControlSpec.VerticalTable(List.of("A"), List.of(), List.of(),
+                    ControlSpec.NO_SELECTION, ControlAction.NONE, ReselectBehaviour.DESELECT,
+                    ControlSpec.BODY_TRAILING_SCALE, 0, false))
                     .isInstanceOf(IllegalArgumentException.class);
         }
     }
 
     @Nested
-    class CreateCheckbox {
+    class CheckboxLit {
 
         @Test
-        void createCheckboxLightsCellZeroWhenOn() {
-            var checkbox = ControlSpec.createCheckbox("Muted", true, ControlAction.NONE);
-            assertThat(checkbox.kind()).isEqualTo(ControlKind.CHECKBOX);
+        void litLightsCellZeroWhenOn() {
+            var checkbox = ControlSpec.Checkbox.lit("Muted", true, ControlAction.NONE);
             assertThat(checkbox.labels()).containsExactly("Muted");
             assertThat(checkbox.selectedIndex()).isZero();
+            assertThat(checkbox.isLit()).isTrue();
         }
 
         @Test
-        void createCheckboxLeavesNoCellLitWhenOff() {
-            var checkbox = ControlSpec.createCheckbox("Muted", false, ControlAction.NONE);
+        void litLeavesNoCellLitWhenOff() {
+            var checkbox = ControlSpec.Checkbox.lit("Muted", false, ControlAction.NONE);
             assertThat(checkbox.selectedIndex()).isEqualTo(ControlSpec.NO_SELECTION);
+            assertThat(checkbox.isLit()).isFalse();
         }
 
         @Test
-        void createCheckboxCarriesTheClickActionOnCellZero() {
+        void litCarriesTheClickActionOnCellZero() {
             // The row's single cell (0) is the hit target, so a click fires the action for cell 0 -
             // pinned by capturing which cell the action was invoked with.
             var firedCell = new int[]{-99};
-            var checkbox = ControlSpec.createCheckbox("Muted", false, cell -> firedCell[0] = cell);
+            var checkbox = ControlSpec.Checkbox.lit("Muted", false, cell -> firedCell[0] = cell);
             checkbox.action().activateCell(0);
             assertThat(firedCell[0]).isZero();
         }
     }
 
     @Nested
-    class CreateLabel {
+    class ToggleLit {
 
         @Test
-        void createLabelIsATextOnlyRowWithNoCellOrAction() {
-            var label = ControlSpec.createLabel("Non-allied factions are");
-            assertThat(label.kind()).isEqualTo(ControlKind.LABEL);
+        void litLightsCellZeroWhenOn() {
+            var toggle = ControlSpec.Toggle.lit("Factions", true, ControlAction.NONE);
+            assertThat(toggle.labels()).containsExactly("Factions");
+            assertThat(toggle.selectedIndex()).isZero();
+            assertThat(toggle.isLit()).isTrue();
+        }
+
+        @Test
+        void litLeavesNoCellLitWhenOff() {
+            var toggle = ControlSpec.Toggle.lit("Factions", false, ControlAction.NONE);
+            assertThat(toggle.selectedIndex()).isEqualTo(ControlSpec.NO_SELECTION);
+        }
+    }
+
+    @Nested
+    class Label {
+
+        @Test
+        void labelIsATextOnlyRowCarryingItsTextAsItsLabel() {
+            var label = new ControlSpec.Label("Non-allied factions are");
+            assertThat(label.text()).isEqualTo("Non-allied factions are");
             assertThat(label.labels()).containsExactly("Non-allied factions are");
-            assertThat(label.selectedIndex()).isEqualTo(ControlSpec.NO_SELECTION);
-            assertThat(label.action()).isSameAs(ControlAction.NONE);
-        }
-
-        @Test
-        void createLabelCarriesNoIconPaths() {
-            // Every non-icon kind reports an empty icon-path list, so the layout and renderer read it
-            // uniformly without a kind check.
-            assertThat(ControlSpec.createLabel("Names").iconPaths()).isEmpty();
         }
     }
 
     @Nested
-    class CreateDivider {
+    class Divider {
 
         @Test
-        void createDividerIsARuleWithNoLabelCellOrAction() {
-            // A divider is drawn but never clicked and carries no text, so it holds no label, no lit
-            // cell, and the inert action.
-            var divider = ControlSpec.createDivider();
-            assertThat(divider.kind()).isEqualTo(ControlKind.DIVIDER);
-            assertThat(divider.labels()).isEmpty();
-            assertThat(divider.selectedIndex()).isEqualTo(ControlSpec.NO_SELECTION);
-            assertThat(divider.action()).isSameAs(ControlAction.NONE);
-        }
-
-        @Test
-        void createDividerCarriesNoIconPaths() {
-            // Like every non-icon kind, the divider reports an empty icon-path list so the layout and
-            // renderer read it uniformly without a kind check.
-            assertThat(ControlSpec.createDivider().iconPaths()).isEmpty();
+        void dividerIsARuleWithNoLabel() {
+            // A divider is drawn but never clicked and carries no text, so it holds no label.
+            assertThat(new ControlSpec.Divider().labels()).isEmpty();
         }
     }
 
     @Nested
-    class CreateVerticalRadio {
+    class VerticalTablePlain {
 
         @Test
-        void createVerticalRadioIsAVerticalRadioWithNoIconsOrValues() {
-            // The plain vertical radio is the label-only stacked selector: a vertical radio with no
-            // leading icons and no per-option values, distinguishing it from the icon list.
-            var selector = ControlSpec.createVerticalRadio(List.of("Factions", "Alliances"),
+        void plainIsAVerticalTableWithNoIconsOrValues() {
+            // The plain vertical table is the label-only stacked selector: no leading icons and no
+            // per-option values, distinguishing it from the icon list.
+            var selector = ControlSpec.VerticalTable.plain(List.of("Factions", "Alliances"),
                     ControlSpec.NO_SELECTION, ControlAction.NONE, ReselectBehaviour.DESELECT);
-            assertThat(selector.kind()).isEqualTo(ControlKind.RADIO);
-            assertThat(selector.alignment()).isEqualTo(RadioAlignment.VERTICAL);
             assertThat(selector.labels()).containsExactly("Factions", "Alliances");
             assertThat(selector.iconPaths()).isEmpty();
             assertThat(selector.trailingLabels()).isEmpty();
-            // A vertical radio's columns are uniform by construction, so it carries the default sizing.
-            assertThat(selector.segmentSizing()).isEqualTo(SegmentSizing.UNIFORM);
+            assertThat(selector.columnCount()).isEqualTo(ControlSpec.SINGLE_COLUMN);
         }
 
         @Test
-        void createVerticalRadioCarriesTheReselectChoice() {
+        void plainCarriesTheReselectChoice() {
             // A selector that can clear to nothing (a view selector) passes DESELECT; one that always
             // keeps a segment lit passes INERT, and the choice rides through unchanged.
-            assertThat(ControlSpec.createVerticalRadio(List.of("A"), 0, ControlAction.NONE,
+            assertThat(ControlSpec.VerticalTable.plain(List.of("A"), 0, ControlAction.NONE,
                     ReselectBehaviour.DESELECT).reselect()).isEqualTo(ReselectBehaviour.DESELECT);
-            assertThat(ControlSpec.createVerticalRadio(List.of("A"), 0, ControlAction.NONE,
+            assertThat(ControlSpec.VerticalTable.plain(List.of("A"), 0, ControlAction.NONE,
                     ReselectBehaviour.INERT).reselect()).isEqualTo(ReselectBehaviour.INERT);
         }
 
         @Test
-        void createVerticalRadioLightsTheSelectedOption() {
-            var selector = ControlSpec.createVerticalRadio(List.of("Factions", "Alliances"), 1,
+        void plainLightsTheSelectedOption() {
+            var selector = ControlSpec.VerticalTable.plain(List.of("Factions", "Alliances"), 1,
                     ControlAction.NONE, ReselectBehaviour.INERT);
             assertThat(selector.selectedIndex()).isEqualTo(1);
         }
 
         @Test
-        void createVerticalRadioCarriesTheClickActionByOptionIndex() {
+        void plainCarriesTheClickActionByOptionIndex() {
             var firedCell = new int[]{-99};
-            var selector = ControlSpec.createVerticalRadio(List.of("Factions", "Alliances"),
+            var selector = ControlSpec.VerticalTable.plain(List.of("Factions", "Alliances"),
                     ControlSpec.NO_SELECTION, cell -> firedCell[0] = cell,
                     ReselectBehaviour.DESELECT);
             selector.action().activateCell(1);
@@ -258,11 +182,11 @@ final class ControlSpecTest {
         }
 
         @Test
-        void createVerticalRadioDoesNotAliasTheCallersLabelList() {
-            // The caller may hand in a mutable list it goes on to reuse; the spec must copy it, so a
+        void plainDoesNotAliasTheCallersLabelList() {
+            // The caller may hand in a mutable list it goes on to reuse; the table must copy it, so a
             // later mutation of the caller's list cannot rewrite the drawn labels.
             var callerLabels = new ArrayList<String>(List.of("Factions", "Alliances"));
-            var selector = ControlSpec.createVerticalRadio(callerLabels, 0, ControlAction.NONE,
+            var selector = ControlSpec.VerticalTable.plain(callerLabels, 0, ControlAction.NONE,
                     ReselectBehaviour.DESELECT);
             callerLabels.set(0, "Mutated");
             assertThat(selector.labels()).containsExactly("Factions", "Alliances");
@@ -270,16 +194,14 @@ final class ControlSpecTest {
     }
 
     @Nested
-    class CreateIconRadioList {
+    class VerticalTableIconList {
 
         @Test
-        void createIconRadioListIsAVerticalDeselectableRadioCarryingIcons() {
-            // The icon list is a vertical, deselectable radio; the non-empty icon paths are what mark
-            // it as the icon-drawing variant rather than a plain vertical radio.
-            var picker = ControlSpec.createIconRadioList(List.of("Hegemony", "Tri-Tachyon"),
+        void iconListIsAVerticalDeselectableTableCarryingIcons() {
+            // The icon list is a vertical, deselectable table; the non-empty icon paths are what mark it
+            // as the icon-drawing variant rather than a plain vertical table.
+            var picker = ControlSpec.VerticalTable.iconList(List.of("Hegemony", "Tri-Tachyon"),
                     List.of("crest_heg", "crest_tt"), ControlSpec.NO_SELECTION, ControlAction.NONE);
-            assertThat(picker.kind()).isEqualTo(ControlKind.RADIO);
-            assertThat(picker.alignment()).isEqualTo(RadioAlignment.VERTICAL);
             assertThat(picker.reselect()).isEqualTo(ReselectBehaviour.DESELECT);
             assertThat(picker.trailingScale()).isEqualTo(ControlSpec.BODY_TRAILING_SCALE);
             assertThat(picker.labels()).containsExactly("Hegemony", "Tri-Tachyon");
@@ -287,36 +209,36 @@ final class ControlSpecTest {
         }
 
         @Test
-        void createIconRadioListKeepsNullIconEntriesForIconlessOptions() {
+        void iconListKeepsNullIconEntriesForIconlessOptions() {
             // A crestless option (every alliance) rides as a null entry, so the list stays aligned to
             // the labels index for index; the copy must preserve the null rather than reject it.
-            var picker = ControlSpec.createIconRadioList(List.of("Hegemony", "Free Traders"),
+            var picker = ControlSpec.VerticalTable.iconList(List.of("Hegemony", "Free Traders"),
                     Arrays.asList("crest_heg", null), 0, ControlAction.NONE);
             assertThat(picker.iconPaths()).containsExactly("crest_heg", null);
         }
 
         @Test
-        void createIconRadioListLightsTheSelectedOption() {
-            var picker = ControlSpec.createIconRadioList(List.of("Hegemony", "Tri-Tachyon"),
+        void iconListLightsTheSelectedOption() {
+            var picker = ControlSpec.VerticalTable.iconList(List.of("Hegemony", "Tri-Tachyon"),
                     List.of("crest_heg", "crest_tt"), 1, ControlAction.NONE);
             assertThat(picker.selectedIndex()).isEqualTo(1);
         }
 
         @Test
-        void createIconRadioListDoesNotAliasTheCallersIconPathList() {
-            // The caller may hand in a mutable list it goes on to reuse; the spec must copy it, so a
+        void iconListDoesNotAliasTheCallersIconPathList() {
+            // The caller may hand in a mutable list it goes on to reuse; the table must copy it, so a
             // later mutation of the caller's list cannot rewrite the drawn icons.
             var callerIconPaths = new ArrayList<String>(List.of("crest_heg", "crest_tt"));
-            var picker = ControlSpec.createIconRadioList(List.of("Hegemony", "Tri-Tachyon"),
+            var picker = ControlSpec.VerticalTable.iconList(List.of("Hegemony", "Tri-Tachyon"),
                     callerIconPaths, 0, ControlAction.NONE);
             callerIconPaths.set(0, "crest_mutated");
             assertThat(picker.iconPaths()).containsExactly("crest_heg", "crest_tt");
         }
 
         @Test
-        void createIconRadioListCarriesTheClickActionByOptionIndex() {
+        void iconListCarriesTheClickActionByOptionIndex() {
             var firedCell = new int[]{-99};
-            var picker = ControlSpec.createIconRadioList(List.of("Hegemony", "Tri-Tachyon"),
+            var picker = ControlSpec.VerticalTable.iconList(List.of("Hegemony", "Tri-Tachyon"),
                     List.of("crest_heg", "crest_tt"), ControlSpec.NO_SELECTION,
                     cell -> firedCell[0] = cell);
             picker.action().activateCell(1);
@@ -324,118 +246,66 @@ final class ControlSpecTest {
         }
 
         @Test
-        void createIconRadioListCarriesNoTrailingValuesInTheIconOnlyOverload() {
+        void iconListCarriesNoTrailingValuesInTheIconOnlyOverload() {
             // The four-arg overload is the icon-only list, so it carries no per-option values and the
             // rows draw name-only (the trailing-value overload is what adds the value column).
-            var picker = ControlSpec.createIconRadioList(List.of("Hegemony", "Tri-Tachyon"),
+            var picker = ControlSpec.VerticalTable.iconList(List.of("Hegemony", "Tri-Tachyon"),
                     List.of("crest_heg", "crest_tt"), ControlSpec.NO_SELECTION, ControlAction.NONE);
             assertThat(picker.trailingLabels()).isEmpty();
         }
 
         @Test
-        void createIconRadioListCarriesPerOptionTrailingValues() {
-            // The value overload turns the list into a table: each option's value rides parallel to
-            // its label, so the row draws its crest, name, and ranked value.
-            var picker = ControlSpec.createIconRadioList(List.of("Hegemony", "Tri-Tachyon"),
-                    List.of("crest_heg", "crest_tt"), List.of("7", "3"), 0, ControlAction.NONE);
+        void iconListCarriesPerOptionTrailingValues() {
+            // The value overload turns the list into a table: each option's value rides parallel to its
+            // label, so the row draws its crest, name, and ranked value.
+            var picker = ControlSpec.VerticalTable.iconList(List.of("Hegemony", "Tri-Tachyon"),
+                    List.of("crest_heg", "crest_tt"), List.of("7", "3"), 0, ControlAction.NONE,
+                    ControlSpec.SINGLE_COLUMN);
             assertThat(picker.trailingLabels()).containsExactly("7", "3");
         }
 
         @Test
-        void createIconRadioListDoesNotAliasTheCallersTrailingValueList() {
-            // Like the icon paths, the values are copied, so a later mutation of the caller's list
-            // cannot rewrite the drawn values.
+        void iconListDoesNotAliasTheCallersTrailingValueList() {
+            // Like the icon paths, the values are copied, so a later mutation of the caller's list cannot
+            // rewrite the drawn values.
             var callerValues = new ArrayList<String>(List.of("7", "3"));
-            var picker = ControlSpec.createIconRadioList(List.of("Hegemony", "Tri-Tachyon"),
-                    List.of("crest_heg", "crest_tt"), callerValues, 0, ControlAction.NONE);
+            var picker = ControlSpec.VerticalTable.iconList(List.of("Hegemony", "Tri-Tachyon"),
+                    List.of("crest_heg", "crest_tt"), callerValues, 0, ControlAction.NONE,
+                    ControlSpec.SINGLE_COLUMN);
             callerValues.set(0, "99");
             assertThat(picker.trailingLabels()).containsExactly("7", "3");
         }
 
         @Test
-        void createIconRadioListDefaultsToASingleColumn() {
-            // The overloads that take no column count are the ordinary one-column list, so the picker
-            // reads as a single stack unless a caller asks for more.
-            var picker = ControlSpec.createIconRadioList(List.of("Hegemony", "Tri-Tachyon"),
-                    List.of("crest_heg", "crest_tt"), List.of("7", "3"), 0, ControlAction.NONE);
-            assertThat(picker.columnCount()).isEqualTo(ControlSpec.SINGLE_COLUMN);
-        }
-
-        @Test
-        void createIconRadioListCarriesTheChosenColumnCount() {
-            // The column-count overload spreads the list across that many columns; the count rides on
-            // the spec so the layout and renderer both wrap the rows the same way.
-            var picker = ControlSpec.createIconRadioList(List.of("Hegemony", "Tri-Tachyon"),
+        void iconListCarriesTheChosenColumnCount() {
+            // The column-count overload spreads the list across that many columns; the count rides on the
+            // spec so the layout and renderer both wrap the rows the same way.
+            var picker = ControlSpec.VerticalTable.iconList(List.of("Hegemony", "Tri-Tachyon"),
                     List.of("crest_heg", "crest_tt"), List.of("7", "3"), 0, ControlAction.NONE, 2);
             assertThat(picker.columnCount()).isEqualTo(2);
         }
     }
 
     @Nested
-    class BuildScrollableCopy {
+    class VerticalTableTable {
 
         @Test
-        void buildScrollableCopyMarksTheListAsTheScrollingRegion() {
-            // A picker opts its list into scrolling after building it through the ordinary factory, so
-            // the copy carries the flag while everything else the layout reads stays as it was.
-            var picker = ControlSpec.createIconRadioList(List.of("Hegemony", "Tri-Tachyon"),
-                    List.of("crest_heg", "crest_tt"), List.of("7", "3"), 1, ControlAction.NONE, 2);
-            var scrolling = picker.buildScrollableCopy();
-            assertThat(scrolling.scrolls()).isTrue();
-            assertThat(scrolling.labels()).isEqualTo(picker.labels());
-            assertThat(scrolling.iconPaths()).isEqualTo(picker.iconPaths());
-            assertThat(scrolling.trailingLabels()).isEqualTo(picker.trailingLabels());
-            assertThat(scrolling.selectedIndex()).isEqualTo(picker.selectedIndex());
-            assertThat(scrolling.columnCount()).isEqualTo(picker.columnCount());
-        }
-
-        @Test
-        void buildScrollableCopyLeavesTheOriginalUnmarked() {
-            // The copy is a fresh spec, so the source the host still holds is untouched - only the one
-            // it opts in scrolls.
-            var picker = ControlSpec.createIconRadioList(List.of("Hegemony"), List.of("crest_heg"),
-                    0, ControlAction.NONE);
-            picker.buildScrollableCopy();
-            assertThat(picker.scrolls()).isFalse();
-        }
-    }
-
-    @Nested
-    class Scrolls {
-
-        @Test
-        void scrollsIsFalseForAnOrdinaryControl() {
-            // Every control that pins at its natural height carries the flag unset, so a strip with none
-            // marked is never capped.
-            assertThat(ControlSpec.createCheckbox("Muted", true, ControlAction.NONE).scrolls())
-                    .isFalse();
-            assertThat(ControlSpec.createIconRadioList(List.of("Hegemony"), List.of("crest_heg"), 0,
-                    ControlAction.NONE).scrolls()).isFalse();
-        }
-    }
-
-    @Nested
-    class CreateVerticalRadioTable {
-
-        @Test
-        void createVerticalRadioTableCarriesTheChosenReselectAndTrailingScale() {
-            // The general table lets a selector pick its re-pick behaviour and a reduced trailing size
-            // (a sort selector re-fires to flip and draws compact direction letters), both riding
-            // through unchanged rather than being forced to the icon list's deselect-at-body-size.
-            var selector = ControlSpec.createVerticalRadioTable(List.of("Domination", "Presence"),
+        void tableCarriesTheChosenReselectAndTrailingScale() {
+            // The general table lets a selector pick its re-pick behaviour and a reduced trailing size (a
+            // sort selector re-fires to flip and draws compact direction letters), both riding through
+            // unchanged rather than being forced to the icon list's deselect-at-body-size.
+            var selector = ControlSpec.VerticalTable.table(List.of("Domination", "Presence"),
                     Arrays.asList(null, null), List.of("DWN", "DWN"), 0, ControlAction.NONE,
                     ReselectBehaviour.REFIRE, 0.8d);
-            assertThat(selector.kind()).isEqualTo(ControlKind.RADIO);
-            assertThat(selector.alignment()).isEqualTo(RadioAlignment.VERTICAL);
             assertThat(selector.reselect()).isEqualTo(ReselectBehaviour.REFIRE);
             assertThat(selector.trailingScale()).isEqualTo(0.8d);
         }
 
         @Test
-        void createVerticalRadioTableDrawsNoIconWhenEveryIconEntryIsNull() {
+        void tableDrawsNoIconWhenEveryIconEntryIsNull() {
             // An all-null (but present) icon column is a table with no crests - the shape the sort
             // selector takes - so no option reports an icon while the trailing column still rides.
-            var selector = ControlSpec.createVerticalRadioTable(List.of("Domination", "Presence"),
+            var selector = ControlSpec.VerticalTable.table(List.of("Domination", "Presence"),
                     Arrays.asList(null, null), List.of("DWN", "UP"), 0, ControlAction.NONE,
                     ReselectBehaviour.REFIRE, 0.8d);
             assertThat(selector.hasIconAt(0)).isFalse();
@@ -445,20 +315,51 @@ final class ControlSpecTest {
     }
 
     @Nested
+    class AsScrolling {
+
+        @Test
+        void asScrollingMarksTheTableAsTheScrollingRegion() {
+            // A picker opts its list into scrolling after building it through the ordinary factory, so
+            // the copy carries the flag while everything else the layout reads stays as it was.
+            var picker = ControlSpec.VerticalTable.iconList(List.of("Hegemony", "Tri-Tachyon"),
+                    List.of("crest_heg", "crest_tt"), List.of("7", "3"), 1, ControlAction.NONE, 2);
+            var scrolling = picker.asScrolling();
+            assertThat(scrolling.scrolls()).isTrue();
+            assertThat(scrolling.labels()).isEqualTo(picker.labels());
+            assertThat(scrolling.iconPaths()).isEqualTo(picker.iconPaths());
+            assertThat(scrolling.trailingLabels()).isEqualTo(picker.trailingLabels());
+            assertThat(scrolling.selectedIndex()).isEqualTo(picker.selectedIndex());
+            assertThat(scrolling.columnCount()).isEqualTo(picker.columnCount());
+        }
+
+        @Test
+        void asScrollingLeavesTheOriginalUnmarked() {
+            // The copy is a fresh spec, so the source the host still holds is untouched - only the one it
+            // opts in scrolls.
+            var picker = ControlSpec.VerticalTable.iconList(List.of("Hegemony"), List.of("crest_heg"),
+                    0, ControlAction.NONE);
+            picker.asScrolling();
+            assertThat(picker.scrolls()).isFalse();
+        }
+    }
+
+    @Nested
     class TrailingLabelAt {
 
         @Test
         void trailingLabelAtIsTheOptionsValueWhenItHasOne() {
-            var picker = ControlSpec.createIconRadioList(List.of("Hegemony", "Tri-Tachyon"),
-                    List.of("crest_heg", "crest_tt"), List.of("7", "3"), 0, ControlAction.NONE);
+            var picker = ControlSpec.VerticalTable.iconList(List.of("Hegemony", "Tri-Tachyon"),
+                    List.of("crest_heg", "crest_tt"), List.of("7", "3"), 0, ControlAction.NONE,
+                    ControlSpec.SINGLE_COLUMN);
             assertThat(picker.trailingLabelAt(1)).isEqualTo("3");
         }
 
         @Test
         void trailingLabelAtIsEmptyForANullValueEntry() {
             // A null entry is a real "no value", so it reads as an empty string rather than throwing.
-            var picker = ControlSpec.createIconRadioList(List.of("Hegemony", "Free Traders"),
-                    Arrays.asList("crest_heg", null), Arrays.asList("7", null), 0, ControlAction.NONE);
+            var picker = ControlSpec.VerticalTable.iconList(List.of("Hegemony", "Free Traders"),
+                    Arrays.asList("crest_heg", null), Arrays.asList("7", null), 0, ControlAction.NONE,
+                    ControlSpec.SINGLE_COLUMN);
             assertThat(picker.trailingLabelAt(1)).isEmpty();
         }
 
@@ -466,7 +367,7 @@ final class ControlSpecTest {
         void trailingLabelAtIsEmptyForAnIndexPastTheValueList() {
             // A shorter (or empty) value list leaves the trailing options value-less rather than
             // throwing, matching how a short icon-path list leaves options icon-less.
-            var picker = ControlSpec.createIconRadioList(List.of("Hegemony", "Tri-Tachyon"),
+            var picker = ControlSpec.VerticalTable.iconList(List.of("Hegemony", "Tri-Tachyon"),
                     List.of("crest_heg", "crest_tt"), ControlSpec.NO_SELECTION, ControlAction.NONE);
             assertThat(picker.trailingLabelAt(0)).isEmpty();
         }
@@ -477,7 +378,7 @@ final class ControlSpecTest {
 
         @Test
         void hasIconAtIsTrueForAnOptionWithANonNullIconPath() {
-            var picker = ControlSpec.createIconRadioList(List.of("Hegemony", "Free Traders"),
+            var picker = ControlSpec.VerticalTable.iconList(List.of("Hegemony", "Free Traders"),
                     Arrays.asList("crest_heg", null), ControlSpec.NO_SELECTION, ControlAction.NONE);
             assertThat(picker.hasIconAt(0)).isTrue();
         }
@@ -485,7 +386,7 @@ final class ControlSpecTest {
         @Test
         void hasIconAtIsFalseForAnOptionWithANullIconPath() {
             // A crestless option (an alliance) rides as a null entry, so it draws no icon.
-            var picker = ControlSpec.createIconRadioList(List.of("Hegemony", "Free Traders"),
+            var picker = ControlSpec.VerticalTable.iconList(List.of("Hegemony", "Free Traders"),
                     Arrays.asList("crest_heg", null), ControlSpec.NO_SELECTION, ControlAction.NONE);
             assertThat(picker.hasIconAt(1)).isFalse();
         }
@@ -493,58 +394,48 @@ final class ControlSpecTest {
         @Test
         void hasIconAtIsFalseForAnIndexPastTheIconPathList() {
             // A shorter icon-path list leaves the trailing options icon-less rather than throwing.
-            var picker = ControlSpec.createIconRadioList(List.of("Hegemony", "Free Traders"),
+            var picker = ControlSpec.VerticalTable.iconList(List.of("Hegemony", "Free Traders"),
                     List.of("crest_heg"), ControlSpec.NO_SELECTION, ControlAction.NONE);
             assertThat(picker.hasIconAt(1)).isFalse();
-        }
-
-        @Test
-        void hasIconAtIsFalseForAControlWithNoIconPaths() {
-            // Every non-icon control carries an empty icon-path list, so no option reports an icon.
-            assertThat(ControlSpec.createCheckbox("Muted", true, ControlAction.NONE).hasIconAt(0))
-                    .isFalse();
         }
     }
 
     @Nested
-    class CreateTabs {
+    class Tabs {
 
         @Test
-        void createTabsIsATabsControlCarryingLabelsAndShortcuts() {
-            var tabs = ControlSpec.createTabs(List.of("No Layer", "Political Map"),
+        void tabsCarriesLabelsAndShortcuts() {
+            var tabs = new ControlSpec.Tabs(List.of("No Layer", "Political Map"),
                     List.of("N", "P"), 1, ControlAction.NONE);
-            assertThat(tabs.kind()).isEqualTo(ControlKind.TABS);
             assertThat(tabs.labels()).containsExactly("No Layer", "Political Map");
             assertThat(tabs.shortcuts()).containsExactly("N", "P");
             assertThat(tabs.selectedIndex()).isEqualTo(1);
-            // A tab strip snaps each tab to its own label-plus-shortcut width, not even cells.
-            assertThat(tabs.segmentSizing()).isEqualTo(SegmentSizing.SNAPPED);
         }
 
         @Test
-        void createTabsKeepsNullShortcutEntriesForHintlessTabs() {
-            // A tab with no bound shortcut rides as a null entry, so the list stays aligned to the
-            // labels index for index; the copy must preserve the null rather than reject it.
-            var tabs = ControlSpec.createTabs(List.of("No Layer", "Political Map"),
+        void tabsKeepsNullShortcutEntriesForHintlessTabs() {
+            // A tab with no bound shortcut rides as a null entry, so the list stays aligned to the labels
+            // index for index; the copy must preserve the null rather than reject it.
+            var tabs = new ControlSpec.Tabs(List.of("No Layer", "Political Map"),
                     Arrays.asList("N", null), 0, ControlAction.NONE);
             assertThat(tabs.shortcuts()).containsExactly("N", null);
         }
 
         @Test
-        void createTabsCarriesTheClickActionByTabIndex() {
+        void tabsCarriesTheClickActionByTabIndex() {
             var firedTab = new int[]{-99};
-            var tabs = ControlSpec.createTabs(List.of("No Layer", "Political Map"),
+            var tabs = new ControlSpec.Tabs(List.of("No Layer", "Political Map"),
                     List.of("N", "P"), 0, tab -> firedTab[0] = tab);
             tabs.action().activateCell(1);
             assertThat(firedTab[0]).isEqualTo(1);
         }
 
         @Test
-        void createTabsDoesNotAliasTheCallersShortcutList() {
-            // The caller may hand in a mutable list it goes on to reuse; the spec must copy it, so a
-            // later mutation of the caller's list cannot rewrite the drawn hints.
+        void tabsDoesNotAliasTheCallersShortcutList() {
+            // The caller may hand in a mutable list it goes on to reuse; the spec must copy it, so a later
+            // mutation of the caller's list cannot rewrite the drawn hints.
             var callerShortcuts = new ArrayList<String>(List.of("N", "P"));
-            var tabs = ControlSpec.createTabs(List.of("No Layer", "Political Map"), callerShortcuts, 0,
+            var tabs = new ControlSpec.Tabs(List.of("No Layer", "Political Map"), callerShortcuts, 0,
                     ControlAction.NONE);
             callerShortcuts.set(0, "X");
             assertThat(tabs.shortcuts()).containsExactly("N", "P");
@@ -556,7 +447,7 @@ final class ControlSpecTest {
 
         @Test
         void shortcutAtIsTheTabsHintWhenItHasOne() {
-            var tabs = ControlSpec.createTabs(List.of("No Layer", "Political Map"),
+            var tabs = new ControlSpec.Tabs(List.of("No Layer", "Political Map"),
                     List.of("N", "P"), 0, ControlAction.NONE);
             assertThat(tabs.shortcutAt(1)).isEqualTo("P");
         }
@@ -564,7 +455,7 @@ final class ControlSpecTest {
         @Test
         void shortcutAtIsEmptyForANullEntry() {
             // A null entry is a real "no hint", so it reads as an empty string rather than throwing.
-            var tabs = ControlSpec.createTabs(List.of("No Layer", "Political Map"),
+            var tabs = new ControlSpec.Tabs(List.of("No Layer", "Political Map"),
                     Arrays.asList("N", null), 0, ControlAction.NONE);
             assertThat(tabs.shortcutAt(1)).isEmpty();
         }
@@ -572,33 +463,55 @@ final class ControlSpecTest {
         @Test
         void shortcutAtIsEmptyForAnIndexPastTheShortcutList() {
             // A shorter (or empty) shortcut list leaves the trailing tabs hint-less rather than throwing.
-            var tabs = ControlSpec.createTabs(List.of("No Layer", "Political Map"), List.of("N"), 0,
+            var tabs = new ControlSpec.Tabs(List.of("No Layer", "Political Map"), List.of("N"), 0,
                     ControlAction.NONE);
             assertThat(tabs.shortcutAt(1)).isEmpty();
         }
     }
 
     @Nested
-    class CreateSnappedHorizontalRadio {
+    class HorizontalRadioUniform {
 
         @Test
-        void createSnappedHorizontalRadioIsAHorizontalRadioSizedSnapped() {
+        void uniformIsAHorizontalRadioSizedUniform() {
+            // The standard side-by-side option pair, its cells all the widest label's width (even cells).
+            var radio = ControlSpec.HorizontalRadio.uniform(List.of("Short", "Full"), "Names", 0,
+                    ControlAction.NONE);
+            assertThat(radio.segmentSizing()).isEqualTo(SegmentSizing.UNIFORM);
+            assertThat(radio.trailingLabel()).isEqualTo("Names");
+            assertThat(radio.labels()).containsExactly("Short", "Full");
+            assertThat(radio.selectedIndex()).isZero();
+        }
+
+        @Test
+        void uniformCarriesTheClickActionByOptionIndex() {
+            var firedCell = new int[]{-99};
+            var radio = ControlSpec.HorizontalRadio.uniform(List.of("Short", "Full"), "", 0,
+                    cell -> firedCell[0] = cell);
+            radio.action().activateCell(1);
+            assertThat(firedCell[0]).isEqualTo(1);
+        }
+    }
+
+    @Nested
+    class HorizontalRadioSnapped {
+
+        @Test
+        void snappedIsAHorizontalRadioSizedSnapped() {
             // The snapped horizontal radio: a standard side-by-side option row whose cells each snap to
             // their own label width rather than sharing the widest option's, so a ragged row does not
             // waste space as even cells.
-            var radio = ControlSpec.createSnappedHorizontalRadio(List.of("Short", "Full"), "Names", 0,
+            var radio = ControlSpec.HorizontalRadio.snapped(List.of("Short", "Full"), "Names", 0,
                     ControlAction.NONE);
-            assertThat(radio.kind()).isEqualTo(ControlKind.RADIO);
-            assertThat(radio.alignment()).isEqualTo(RadioAlignment.HORIZONTAL);
             assertThat(radio.segmentSizing()).isEqualTo(SegmentSizing.SNAPPED);
             assertThat(radio.labels()).containsExactly("Short", "Full");
             assertThat(radio.selectedIndex()).isZero();
         }
 
         @Test
-        void createSnappedHorizontalRadioCarriesTheClickActionByOptionIndex() {
+        void snappedCarriesTheClickActionByOptionIndex() {
             var firedCell = new int[]{-99};
-            var radio = ControlSpec.createSnappedHorizontalRadio(List.of("Short", "Full"), "", 0,
+            var radio = ControlSpec.HorizontalRadio.snapped(List.of("Short", "Full"), "", 0,
                     cell -> firedCell[0] = cell);
             radio.action().activateCell(1);
             assertThat(firedCell[0]).isEqualTo(1);
