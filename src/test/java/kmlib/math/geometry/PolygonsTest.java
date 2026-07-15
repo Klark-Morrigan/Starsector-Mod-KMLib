@@ -31,7 +31,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * <p>And of {@link Polygons#insetPolygonByMiter}: a convex square insets to the
  * same concentric square the half-plane inset gives, a concave L keeps its reflex
  * corner (which a half-plane clip would shear off) and moves every corner into the
- * solid, and fewer than three distinct vertices yields nothing.
+ * solid, and fewer than three distinct vertices yields nothing. Its per-edge signed
+ * variant reduces to the scalar inset for a uniform array, bulges a single
+ * negative-distance edge outward, bevels a sharp convex corner where two outward
+ * edges would spike, drops a collapsed ring, and rejects a non-parallel array.
  *
  * <p>And of {@link Polygons#roundCorners}: a corner becomes an arc of
  * {@code segmentsPerCorner + 1} points while straight edges are preserved, the
@@ -346,6 +349,72 @@ final class PolygonsTest {
             assertThat(Polygons.insetPolygonByMiter(
                     Arrays.asList(new double[] {0, 0}, new double[] {10, 0}), 1.0, MITER_SPIKE_LIMIT))
                     .isEmpty();
+        }
+
+        @Test
+        void per_edge_uniform_distances_reproduce_the_scalar_inset() {
+            // Every edge shifted the same distance is the scalar inset: the side-10
+            // square insets by 2 to the concentric (2,2)..(8,8) square.
+            var uniform = new double[] {2.0, 2.0, 2.0, 2.0};
+
+            var inset = Polygons.insetPolygonByMiter(square(), uniform, MITER_SPIKE_LIMIT);
+
+            assertThat(inset).hasSize(4);
+            assertThat(inset.get(0)).containsExactly(new double[] {2, 2}, within());
+            assertThat(inset.get(1)).containsExactly(new double[] {8, 2}, within());
+            assertThat(inset.get(2)).containsExactly(new double[] {8, 8}, within());
+            assertThat(inset.get(3)).containsExactly(new double[] {2, 8}, within());
+        }
+
+        @Test
+        void per_edge_negative_distance_bulges_that_edge_outward() {
+            // Only the bottom edge (edge 0) is pushed outward by 2 while the other
+            // three inset inward by 2: the bottom corners drop below the original
+            // y=0 line to y=-2, the outward bulge, and the top stays inset.
+            var distances = new double[] {-2.0, 2.0, 2.0, 2.0};
+
+            var inset = Polygons.insetPolygonByMiter(square(), distances, MITER_SPIKE_LIMIT);
+
+            assertThat(inset).hasSize(4);
+            assertThat(inset.get(0)).containsExactly(new double[] {2, -2}, within());
+            assertThat(inset.get(1)).containsExactly(new double[] {8, -2}, within());
+            assertThat(inset.get(2)).containsExactly(new double[] {8, 8}, within());
+            assertThat(inset.get(3)).containsExactly(new double[] {2, 8}, within());
+        }
+
+        @Test
+        void per_edge_two_outward_edges_bevel_instead_of_spiking_at_a_sharp_corner() {
+            // A sharp convex tip at the origin, its two edges (0 and 2) both pushed
+            // outward by 5. Their offset lines would cross ~100 units out along -x -
+            // a self-intersecting spike; the spike guard bevels the corner instead,
+            // so no output vertex lands out at that spike.
+            var sharpTriangle = Arrays.asList(
+                    new double[] {0, 0}, new double[] {200, -10}, new double[] {200, 10});
+            var distances = new double[] {-5.0, 2.0, -5.0};
+
+            var inset = Polygons.insetPolygonByMiter(sharpTriangle, distances, MITER_SPIKE_LIMIT);
+
+            assertThat(inset).isNotEmpty();
+            assertThat(inset).noneMatch(vertex -> vertex[0] < -20);
+        }
+
+        @Test
+        void per_edge_returns_empty_for_fewer_than_three_distinct_vertices() {
+            // A duplicate vertex collapses the "triangle" to two distinct points; the
+            // distance-preserving dedup keeps the array parallel and still drops it.
+            var collapsed = Arrays.asList(
+                    new double[] {0, 0}, new double[] {0, 0}, new double[] {10, 0});
+
+            assertThat(Polygons.insetPolygonByMiter(
+                    collapsed, new double[] {1.0, 1.0, 1.0}, MITER_SPIKE_LIMIT))
+                    .isEmpty();
+        }
+
+        @Test
+        void per_edge_rejects_distances_not_parallel_to_the_edges() {
+            assertThatThrownBy(() -> Polygons.insetPolygonByMiter(
+                    square(), new double[] {1.0, 1.0}, MITER_SPIKE_LIMIT))
+                    .isInstanceOf(IllegalArgumentException.class);
         }
     }
 

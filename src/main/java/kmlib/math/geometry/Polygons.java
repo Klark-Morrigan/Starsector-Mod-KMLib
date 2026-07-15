@@ -215,28 +215,105 @@ public final class Polygons {
 
         var inset = new ArrayList<double[]>(count);
         for (var i = 0; i < count; i++) {
+            // The whole-polygon inset shifts every edge the same distance, so both
+            // of a corner's edges take the one scalar.
             appendInsetCorner(inset, vertices.get((i - 1 + count) % count), vertices.get(i),
-                    vertices.get((i + 1) % count), distance, miterSpikeLimit);
+                    vertices.get((i + 1) % count), distance, distance, miterSpikeLimit);
         }
         return inset;
     }
 
-    // Appends the inset of one corner: the miter point for a convex corner within
-    // the spike limit, otherwise the bevel (the two shifted edge ends). A reflex
-    // corner always bevels, since its miter would spike into the interior; a
-    // degenerate (zero-length) edge falls back to the one good offset, or the corner
-    // itself when neither edge has a direction.
+    /**
+     * Insets a simple closed polygon by a per-edge signed distance, mitring convex
+     * corners and bevelling concave ones - the per-edge, sign-aware counterpart of
+     * {@link #insetPolygonByMiter(List, double, double)}.
+     *
+     * <p>Each edge is shifted by its own entry in {@code edgeDistances} along the
+     * inward normal of a counter-clockwise ring: a positive distance moves the edge
+     * inward (as the scalar inset does), a negative distance moves it <em>outward</em>,
+     * past the original outline. That outward push is the reason the miter path,
+     * rather than the half-plane clip of {@link #insetConvexPolygon}, is used for
+     * frontier borders: only shifting-then-mitring can carry an edge outside the
+     * polygon, which a clip - it only ever removes area - cannot express.
+     *
+     * <p>Corner handling is the scalar method's: two shifted edges cross at a convex
+     * corner's miter, a reflex corner bevels (its miter would spike inward), and a
+     * convex miter that spikes past {@code miterSpikeLimit} times the larger of the
+     * corner's two edge distances bevels too. Taking the larger magnitude as the
+     * spike scale makes this reduce exactly to the scalar inset when every entry is
+     * equal, and, because it uses the magnitude, catches an <em>outward</em> bulge
+     * that spikes at a shared convex corner - two adjacent frontier edges both pushed
+     * out - just as it catches an inward one, so such a corner bevels instead of
+     * shooting a self-intersecting point far outside the ring.
+     *
+     * <p>Winding, hole growth, and the missing global self-intersection cleanup are
+     * as for the scalar method: a caller insetting past a shape's own scale should
+     * discard a result whose winding flipped.
+     *
+     * @param edgeDistances   parallel to {@code polygon}: entry {@code i} is the
+     *                        signed distance for the edge from vertex {@code i} to
+     *                        vertex {@code (i + 1)} - positive inward, negative
+     *                        outward
+     * @param polygon         simple closed polygon vertices as {x, y} pairs
+     * @param miterSpikeLimit a convex miter farther than this multiple of the corner's
+     *                        larger edge-distance magnitude is a spike and is bevelled
+     * @return the inset polygon's vertices in the same winding (a bevelled corner
+     *         contributes two, a mitred corner one); empty when fewer than three
+     *         distinct vertices remain
+     * @throws IllegalArgumentException when {@code edgeDistances} is not parallel to
+     *         the polygon's edges
+     */
+    public static List<double[]> insetPolygonByMiter(
+            List<double[]> polygon,
+            double[] edgeDistances,
+            double miterSpikeLimit) {
+        if (edgeDistances.length != polygon.size()) {
+            throw new IllegalArgumentException(
+                    "edgeDistances must be parallel to the polygon edges: "
+                            + edgeDistances.length + " vs " + polygon.size());
+        }
+
+        // Dedup while carrying each surviving edge's distance with it, so dropping a
+        // zero-length edge does not slide the per-edge distances out of step with
+        // the vertices they offset (a mismatch the scalar path never risks).
+        var cleaned = removeConsecutiveDuplicates(polygon, edgeDistances);
+        var vertices = cleaned.vertices();
+        var distances = cleaned.edgeDistances();
+        var count = vertices.size();
+        if (count < Limits.MIN_VERTICES_TO_ENCLOSE_AREA) {
+            return new ArrayList<>();
+        }
+
+        var inset = new ArrayList<double[]>(count);
+        for (var i = 0; i < count; i++) {
+            // The inbound edge (previous -> corner) is edge (i - 1); the outbound
+            // edge (corner -> next) is edge i. Each carries its own signed distance.
+            appendInsetCorner(inset, vertices.get((i - 1 + count) % count), vertices.get(i),
+                    vertices.get((i + 1) % count), distances[(i - 1 + count) % count],
+                    distances[i], miterSpikeLimit);
+        }
+        return inset;
+    }
+
+    // Appends the inset of one corner from its two edges' signed distances (equal
+    // for the scalar inset): the miter point for a convex corner within the spike
+    // limit, otherwise the bevel (the two shifted edge ends). A reflex corner always
+    // bevels, since its miter would spike into the interior; a degenerate
+    // (zero-length) edge falls back to the one good offset, or the corner itself when
+    // neither edge has a direction.
     private static void appendInsetCorner(
             List<double[]> inset,
             double[] previous,
             double[] corner,
             double[] next,
-            double distance,
+            double inboundDistance,
+            double outboundDistance,
             double miterSpikeLimit) {
         var inboundNormal = computeInwardUnitNormal(previous, corner);
         var outboundNormal = computeInwardUnitNormal(corner, next);
         if (inboundNormal == null || outboundNormal == null) {
             var normal = inboundNormal == null ? outboundNormal : inboundNormal;
+            var distance = inboundNormal == null ? outboundDistance : inboundDistance;
             inset.add(normal == null
                     ? new double[] {corner[0], corner[1]}
                     : new double[] {corner[0] + normal[0] * distance, corner[1] + normal[1] * distance});
@@ -244,9 +321,11 @@ public final class Polygons {
         }
 
         var inboundPoint = new double[] {
-                corner[0] + inboundNormal[0] * distance, corner[1] + inboundNormal[1] * distance};
+                corner[0] + inboundNormal[0] * inboundDistance,
+                corner[1] + inboundNormal[1] * inboundDistance};
         var outboundPoint = new double[] {
-                corner[0] + outboundNormal[0] * distance, corner[1] + outboundNormal[1] * distance};
+                corner[0] + outboundNormal[0] * outboundDistance,
+                corner[1] + outboundNormal[1] * outboundDistance};
         // Left turn (positive cross) is convex for a CCW ring; a right turn is the
         // reflex corner whose miter would spike, so it bevels.
         var turn = (corner[0] - previous[0]) * (next[1] - corner[1])
@@ -254,7 +333,12 @@ public final class Polygons {
         if (turn > 0) {
             var miter = computeMiterVertex(corner, inboundNormal, outboundNormal,
                     inboundPoint, outboundPoint);
-            if (Points.computeDistance(miter, corner) <= miterSpikeLimit * distance) {
+            // The spike scale is the larger of the two edges' offset magnitudes: it
+            // reduces to the scalar case when they match, and, being a magnitude,
+            // flags an outward (negative-distance) bulge that spikes past the corner
+            // the same way it flags an inward one.
+            var spikeScale = Math.max(Math.abs(inboundDistance), Math.abs(outboundDistance));
+            if (Points.computeDistance(miter, corner) <= miterSpikeLimit * spikeScale) {
                 inset.add(miter);
                 return;
             }
@@ -817,6 +901,43 @@ public final class Polygons {
         // Rotate the unit edge 90 degrees left (x, y) -> (-y, x) to face the CCW
         // polygon's interior, which lies to the left of the directed edge.
         return new double[] {-unitEdge[1], unitEdge[0]};
+    }
+
+    // A ring paired with its per-edge distances after a distance-preserving dedup,
+    // so the two stay parallel for the per-edge miter inset.
+    private record CleanedRing(List<double[]> vertices, double[] edgeDistances) {
+    }
+
+    // Drops vertices that coincide with their predecessor while keeping the per-edge
+    // distances parallel: when a duplicate collapses the zero-length edge into it,
+    // the kept vertex adopts the duplicate's outgoing edge distance (the edge that
+    // now runs on from it), and its own collapsed edge's distance is discarded. Same
+    // wrap handling as the scalar dedup, dropping the trailing distance with the
+    // trailing vertex.
+    private static CleanedRing removeConsecutiveDuplicates(
+            List<double[]> polygon, double[] edgeDistances) {
+        var cleanedVertices = new ArrayList<double[]>();
+        var cleanedDistances = new ArrayList<Double>();
+        for (var i = 0; i < polygon.size(); i++) {
+            var vertex = polygon.get(i);
+            if (cleanedVertices.isEmpty()
+                    || !isSamePoint(cleanedVertices.get(cleanedVertices.size() - 1), vertex)) {
+                cleanedVertices.add(vertex);
+                cleanedDistances.add(edgeDistances[i]);
+            } else {
+                cleanedDistances.set(cleanedDistances.size() - 1, edgeDistances[i]);
+            }
+        }
+        var size = cleanedVertices.size();
+        if (size > 1 && isSamePoint(cleanedVertices.get(0), cleanedVertices.get(size - 1))) {
+            cleanedVertices.remove(size - 1);
+            cleanedDistances.remove(size - 1);
+        }
+        var distances = new double[cleanedDistances.size()];
+        for (var i = 0; i < distances.length; i++) {
+            distances[i] = cleanedDistances.get(i);
+        }
+        return new CleanedRing(cleanedVertices, distances);
     }
 
     // Drops vertices that coincide with their predecessor (within the minimum
