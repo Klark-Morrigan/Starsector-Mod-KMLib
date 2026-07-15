@@ -3,7 +3,7 @@ package kmlib.math.geometry;
 /**
  * An infinite 2D line in parametric form - the point it passes through and the direction
  * it runs, extending both ways without end. Reifies the point-and-direction pair the
- * geometry line passes ({@link Spans}, {@link Polygons}) otherwise take as four loose
+ * geometry line passes ({@link Spans}, {@link PolygonRegions}) otherwise take as four loose
  * coordinates, so a line travels as one value.
  *
  * <p>A point on the line is {@code origin + t * direction}; a parameter {@code t} is a

@@ -89,7 +89,7 @@ public final class LabelledPolygon {
      * with its point geometry in {@link Lines#computeSignedOffsetFromLine} and
      * {@link Segment#computeCrossingPoint} and the label bookkeeping threaded
      * through on top. A whole-polygon inset that needs no per-edge labels drives
-     * this with a single throwaway label ({@link Polygons#insetConvexPolygon}). A
+     * this with a single throwaway label ({@link PolygonOffsets#insetConvexPolygon}). A
      * surviving inside vertex keeps its
      * outgoing-edge label; a crossing made while leaving the kept side starts the
      * new clip-line edge and so takes {@code clipLabel}, while a crossing made

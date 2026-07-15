@@ -1,6 +1,6 @@
 package kmlib.opengl;
 
-import kmlib.math.geometry.Polygons;
+import kmlib.math.geometry.PolygonRegions;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -114,7 +114,7 @@ final class PolygonTessellatorTest {
     // boundary covers the region the fill would. Uses the production shoelace so the
     // test does not restate it.
     private static double loopArea(List<double[]> loop) {
-        return Math.abs(Polygons.computeSignedArea(loop));
+        return Math.abs(PolygonRegions.computeSignedArea(loop));
     }
 
     // Sums the unsigned area of every triangle in a flat [x, y, x, y, ...] soup, six

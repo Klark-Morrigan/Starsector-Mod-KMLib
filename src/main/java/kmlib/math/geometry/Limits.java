@@ -3,7 +3,8 @@ package kmlib.math.geometry;
 /**
  * Shared degenerate-shape thresholds for 2D geometry: the minimums below which a
  * shape stops enclosing real area and an operation must bail out or skip. The
- * single home for the thresholds that {@link Polygons}, {@link EdgeRings}, the
+ * single home for the thresholds that the polygon passes ({@link PolygonOffsets},
+ * {@link PolygonSmoothing}, {@link PolygonRegions}), {@link EdgeRings}, the
  * {@code kmlib.opengl} tessellator, and their neighbours would otherwise each
  * restate. Two routines asking "is this shape degenerate?" against the same fact
  * must agree, so the fact lives once here rather than as a per-class literal.

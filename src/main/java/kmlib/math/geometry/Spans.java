@@ -9,7 +9,7 @@ import java.util.List;
  * Operations on parameter intervals along a directed line - spans given as
  * {@code {tStart, tEnd}} pairs of distances from a through-point.
  *
- * <p>The interval-arithmetic complement to {@link Polygons#findLineInteriorSpans},
+ * <p>The interval-arithmetic complement to {@link PolygonRegions#findLineInteriorSpans},
  * which produces such spans: once a line's in-region pieces are known, the next
  * question is which piece stays usable after point obstacles carve their keep-out
  * intervals from it. Working in parameters rather than endpoints keeps the
@@ -100,14 +100,14 @@ public final class Spans {
      *
      * <p>The band counterpart to the single-line interior test: a band of nonzero
      * thickness is interior only where every one of its parallel rails is, so
-     * {@link Polygons#findBandInteriorSpans} intersects the rails' spans through
+     * {@link PolygonRegions#findBandInteriorSpans} intersects the rails' spans through
      * this. Because shifting a rail's through-point perpendicular to the direction
      * leaves the along-direction origin unchanged, every rail's parameters share one
      * frame, so the intersection is a plain interval overlap. Walked with two
      * cursors over the sorted inputs, advancing past whichever interval ends first.
      *
      * @param a one span list, ascending and disjoint (as
-     *          {@link Polygons#findLineInteriorSpans} returns)
+     *          {@link PolygonRegions#findLineInteriorSpans} returns)
      * @param b the other span list, ascending and disjoint
      * @return the intervals covered by both, ascending and disjoint; empty when they
      *         nowhere overlap

@@ -1,6 +1,6 @@
 package kmlib.starsector.ui.label;
 
-import kmlib.math.geometry.Polygons;
+import kmlib.math.geometry.PolygonRegions;
 import kmlib.math.geometry.RegionChord;
 import kmlib.math.geometry.Segment;
 import kmlib.math.geometry.Spans;
@@ -78,7 +78,7 @@ public final class LabelBoxFitter {
     // which reads the pre-margin clear span of a minimum-height band; the fit proper
     // reaches it through the line-count sizing below.
     public BandSpan fitBand(RegionChord chord, double halfThickness) {
-        var interiorSpans = Polygons.findBandInteriorSpans(chord.rings(), chord.line(),
+        var interiorSpans = PolygonRegions.findBandInteriorSpans(chord.rings(), chord.line(),
                 halfThickness);
         if (interiorSpans.isEmpty()) {
             return new BandSpan(null, null);

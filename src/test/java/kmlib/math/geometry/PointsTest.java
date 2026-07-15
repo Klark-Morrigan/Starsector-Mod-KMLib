@@ -324,4 +324,49 @@ class PointsTest {
                     within(0.01));
         }
     }
+
+    @Nested
+    class ComputeAngleBetween {
+        @Test
+        void computeAngleBetweenIsZeroForTheSameDirection() {
+            assertThat(Points.computeAngleBetween(3, 0, 5, 0, 1e-6)).isCloseTo(0.0, within(1e-9));
+        }
+
+        @Test
+        void computeAngleBetweenIsPiForOppositeDirections() {
+            assertThat(Points.computeAngleBetween(1, 0, -4, 0, 1e-6))
+                    .isCloseTo(Math.PI, within(1e-9));
+        }
+
+        @Test
+        void computeAngleBetweenIsARightAngleForPerpendicularVectors() {
+            assertThat(Points.computeAngleBetween(1, 0, 0, 1, 1e-6))
+                    .isCloseTo(Math.PI / 2, within(1e-9));
+        }
+
+        @Test
+        void computeAngleBetweenIsUnsignedSoALeftAndRightTurnReadAlike() {
+            // The angle is blind to which side the turn is on: (1,0) opens the same
+            // amount to (0,1) as to (0,-1).
+            var left = Points.computeAngleBetween(1, 0, 0, 1, 1e-6);
+            var right = Points.computeAngleBetween(1, 0, 0, -1, 1e-6);
+
+            assertThat(left).isCloseTo(right, within(1e-9));
+        }
+
+        @Test
+        void computeAngleBetweenIgnoresVectorLength() {
+            // Only direction matters, so scaling either vector leaves the angle put.
+            assertThat(Points.computeAngleBetween(100, 0, 0, 0.01, 1e-6))
+                    .isCloseTo(Math.PI / 2, within(1e-9));
+        }
+
+        @Test
+        void computeAngleBetweenIsNaNWhenEitherVectorIsDegenerate() {
+            // A vector shorter than minLength has no direction, so there is no angle
+            // to report - NaN, leaving the caller to decide what that should mean.
+            assertThat(Points.computeAngleBetween(0, 0, 1, 0, 1e-6)).isNaN();
+            assertThat(Points.computeAngleBetween(1, 0, 0, 0, 1e-6)).isNaN();
+        }
+    }
 }

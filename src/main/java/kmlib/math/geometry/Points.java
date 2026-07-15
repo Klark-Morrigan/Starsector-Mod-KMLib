@@ -31,7 +31,9 @@ public final class Points {
      * @throws IllegalArgumentException if {@code points} is empty (an extent is
      *         undefined with nothing to project)
      */
-    public static double[] projectExtentOnto(List<double[]> points, double axisX,
+    public static double[] projectExtentOnto(
+            List<double[]> points,
+            double axisX,
             double axisY) {
         if (points.isEmpty()) {
             throw new IllegalArgumentException("Cannot project an extent of no points");
@@ -64,8 +66,10 @@ public final class Points {
      * @throws IllegalArgumentException if {@code pointGroups} is empty, or any group is
      *         empty (an extent is undefined with nothing to project)
      */
-    public static double[] projectCombinedExtentOnto(List<List<double[]>> pointGroups,
-            double axisX, double axisY) {
+    public static double[] projectCombinedExtentOnto(
+            List<List<double[]>> pointGroups,
+            double axisX,
+            double axisY) {
         if (pointGroups.isEmpty()) {
             throw new IllegalArgumentException(
                     "Cannot project a combined extent of no point groups");
@@ -179,5 +183,43 @@ public final class Points {
      */
     public static double computeAngleDegrees(Vector2f a, Vector2f b) {
         return computeAngleDegrees(a.x, a.y, b.x, b.y);
+    }
+
+    /**
+     * The unsigned angle in radians between vectors {@code (ax, ay)} and
+     * {@code (bx, by)}, in the range {@code [0, PI]}: 0 when they point the same
+     * way, PI when opposite. The opening between two directions, blind to which
+     * side the turn is on - a left turn and a right turn of equal sharpness read
+     * alike.
+     *
+     * <p>Companion to {@link #computeAngleDegrees}, which is the bearing of one
+     * directed segment; this is the angle between two. Returns {@link Double#NaN}
+     * when either vector is shorter than {@code minLength} and so has no
+     * direction, leaving the caller to decide what a degenerate input means
+     * rather than baking a convention in here.
+     *
+     * @param ax        x of the first vector
+     * @param ay        y of the first vector
+     * @param bx        x of the second vector
+     * @param by        y of the second vector
+     * @param minLength shortest a vector may be and still have a direction; below
+     *                  it the angle is {@link Double#NaN}
+     * @return the angle in radians in {@code [0, PI]}, or {@code NaN} when either
+     *         vector is degenerate
+     */
+    public static double computeAngleBetween(
+            double ax,
+            double ay,
+            double bx,
+            double by,
+            double minLength) {
+        var aLength = computeVectorLength(ax, ay);
+        var bLength = computeVectorLength(bx, by);
+        if (aLength < minLength || bLength < minLength) {
+            return Double.NaN;
+        }
+        var cosine = (ax * bx + ay * by) / (aLength * bLength);
+        // Clamp against rounding drift just outside [-1, 1] before acos.
+        return Math.acos(Math.max(-1.0, Math.min(1.0, cosine)));
     }
 }
