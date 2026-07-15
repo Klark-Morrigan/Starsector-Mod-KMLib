@@ -46,12 +46,15 @@ public final class LabelBoxFitter {
     private final double endInsetDistance;
     private final LabelLengthEstimator textLength;
 
-    public LabelBoxFitter(double minFontHeight, double maxFontHeight, int maxLines, double lineSpacing,
-            double keepOutClearance, double endInsetDistance, LabelLengthEstimator textLength) {
-        this.minFontHeight = minFontHeight;
-        this.maxFontHeight = maxFontHeight;
-        this.maxLines = maxLines;
-        this.lineSpacing = lineSpacing;
+    public LabelBoxFitter(
+            NameFitSpecification fit,
+            double keepOutClearance,
+            double endInsetDistance,
+            LabelLengthEstimator textLength) {
+        this.minFontHeight = fit.minFontHeight();
+        this.maxFontHeight = fit.maxFontHeight();
+        this.maxLines = fit.maxLines();
+        this.lineSpacing = fit.lineSpacing();
         this.keepOutClearance = keepOutClearance;
         this.endInsetDistance = endInsetDistance;
         this.textLength = textLength;
@@ -81,9 +84,14 @@ public final class LabelBoxFitter {
         if (interiorSpans.isEmpty()) {
             return new BandSpan(null, null);
         }
-        var clear = Spans.findLongestClearSubsegment(interiorSpans, chord.throughX(),
-                chord.throughY(), chord.direction()[0], chord.direction()[1],
-                chord.keepOuts(), keepOutClearance);
+        var clear = Spans.findLongestClearSubsegment(
+                interiorSpans,
+                chord.throughX(),
+                chord.throughY(),
+                chord.direction()[0],
+                chord.direction()[1],
+                chord.keepOuts(),
+                keepOutClearance);
         if (clear == null) {
             return new BandSpan(null, null);
         }
@@ -91,7 +99,8 @@ public final class LabelBoxFitter {
         var end = clear[1] - endInsetDistance;
         // An interval shorter than twice the end inset leaves no room for text between
         // the margins; only the pre-margin clear span survives, for the red diagnostic.
-        return start < end ? new BandSpan(clear, new double[] {start, end})
+        return start < end
+                ? new BandSpan(clear, new double[] {start, end})
                 : new BandSpan(clear, null);
     }
 
@@ -115,7 +124,10 @@ public final class LabelBoxFitter {
     // the chord for the text: the band those lines occupy must have a clear
     // (border-, keep-out-, and margin-trimmed) length at least the length the estimator
     // says the text needs at that line height.
-    private boolean bandHoldsText(RegionChord chord, double fontHeight, int lineCount,
+    private boolean bandHoldsText(
+            RegionChord chord,
+            double fontHeight,
+            int lineCount,
             double linesFactor) {
         var band = fitBand(chord, fontHeight * linesFactor / 2.0);
         if (band.insetSpan() == null) {

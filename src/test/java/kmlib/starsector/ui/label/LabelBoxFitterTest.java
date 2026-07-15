@@ -117,8 +117,9 @@ final class LabelBoxFitterTest {
     // aspect stand-in, whose required length the tests can compute by hand.
     private static LabelBoxFitter fitter(double aspect, double minFontHeight,
             double maxFontHeight, int maxLines, double lineSpacing) {
-        return new LabelBoxFitter(minFontHeight, maxFontHeight, maxLines, lineSpacing, 0.0,
-                0.0, new AspectLabelLengthEstimator(aspect));
+        return new LabelBoxFitter(
+                new NameFitSpecification(minFontHeight, maxFontHeight, maxLines, lineSpacing),
+                0.0, 0.0, new AspectLabelLengthEstimator(aspect));
     }
 
     // A horizontal candidate line through the given point against one boundary ring and
