@@ -122,6 +122,34 @@ final class PanelControllerTest {
             assertThat(acted).isTrue();
             assertThat(firedCell[0]).as("a tab reports its own index").isEqualTo(1);
         }
+
+        @Test
+        void activateControlIfHitFiresADeselectableHorizontalRadioOnARepickOfItsLitSegment() {
+            var firedCell = new int[]{-1};
+            // A DESELECT horizontal radio wants the re-pick to reach the action so the host turns the
+            // control off, so a press on the left, lit segment fires it by its index (not swallowed).
+            var radio = buildTwoSegmentHorizontalRadioAtRow(
+                    ControlSpec.HorizontalRadio.deselectable(List.of("Factions", "Alliances"), 0,
+                            cell -> firedCell[0] = cell));
+            var acted = PanelController.activateControlIfHit(radio, FULL_VIEWPORT,
+                    ROW.x() + ROW.width() / 4f, ROW.y() + ROW.height() / 2f);
+            assertThat(acted).isTrue();
+            assertThat(firedCell[0]).as("the lit segment reports its own index").isZero();
+        }
+
+        @Test
+        void activateControlIfHitTreatsAPressOnAnInertHorizontalRadiosLitSegmentAsInert() {
+            var fired = new boolean[1];
+            // A plain option pair is always one lit (INERT reselect), so a press on the lit segment
+            // reaches no action - the standard radio behaviour a deselectable row opts out of.
+            var radio = buildTwoSegmentHorizontalRadioAtRow(
+                    ControlSpec.HorizontalRadio.uniform(List.of("Short", "Full"), "", 0,
+                            cell -> fired[0] = true));
+            var acted = PanelController.activateControlIfHit(radio, FULL_VIEWPORT,
+                    ROW.x() + ROW.width() / 4f, ROW.y() + ROW.height() / 2f);
+            assertThat(acted).as("re-clicking the lit option pair segment is inert").isFalse();
+            assertThat(fired[0]).as("the lit segment's action must not fire").isFalse();
+        }
     }
 
     // A single-row checkbox occupying ROW, so each test states only the label and action that
@@ -136,6 +164,16 @@ final class PanelControllerTest {
         var spec = ControlSpec.VerticalTable.iconList(List.of("Opt"), Arrays.asList((String) null),
                 ControlSpec.NO_SELECTION, action).asScrolling();
         return new Control(spec, ROW, List.of(ROW));
+    }
+
+    // A two-segment horizontal radio occupying ROW, split into two equal segment boxes (left, right), so a
+    // press in a segment's box hits that segment - and a press on the lit segment fires or is swallowed by
+    // the radio's own reselect. The caller supplies the spec so a test picks the deselectable or inert row.
+    private static Control buildTwoSegmentHorizontalRadioAtRow(ControlSpec.HorizontalRadio spec) {
+        var leftSegment = new Rectangle(ROW.x(), ROW.y(), ROW.width() / 2f, ROW.height());
+        var rightSegment = new Rectangle(ROW.x() + ROW.width() / 2f, ROW.y(), ROW.width() / 2f,
+                ROW.height());
+        return new Control(spec, ROW, List.of(leftSegment, rightSegment));
     }
 
     // A two-tab row occupying ROW, split into two equal per-tab boxes (left tab, right tab), the lit tab

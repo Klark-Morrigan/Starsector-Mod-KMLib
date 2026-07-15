@@ -516,5 +516,39 @@ final class ControlSpecTest {
             radio.action().activateCell(1);
             assertThat(firedCell[0]).isEqualTo(1);
         }
+
+        @Test
+        void snappedIsInertOnARepick() {
+            // A plain option row is always one lit, so re-picking the lit segment does nothing.
+            var radio = ControlSpec.HorizontalRadio.snapped(List.of("Short", "Full"), "", 0,
+                    ControlAction.NONE);
+            assertThat(radio.reselect()).isEqualTo(ReselectBehaviour.INERT);
+        }
+    }
+
+    @Nested
+    class HorizontalRadioDeselectable {
+
+        @Test
+        void deselectableIsAUniformRadioThatClearsOnARepick() {
+            // A horizontal on/off selector: even cells, no trailing caption, and DESELECT so re-picking
+            // the lit segment fires the action to turn the control off.
+            var radio = ControlSpec.HorizontalRadio.deselectable(List.of("Factions", "Alliances"),
+                    ControlSpec.NO_SELECTION, ControlAction.NONE);
+            assertThat(radio.segmentSizing()).isEqualTo(SegmentSizing.UNIFORM);
+            assertThat(radio.reselect()).isEqualTo(ReselectBehaviour.DESELECT);
+            assertThat(radio.trailingLabel()).isEmpty();
+            assertThat(radio.labels()).containsExactly("Factions", "Alliances");
+            assertThat(radio.selectedIndex()).isEqualTo(ControlSpec.NO_SELECTION);
+        }
+
+        @Test
+        void deselectableCarriesTheClickActionByOptionIndex() {
+            var firedCell = new int[]{-99};
+            var radio = ControlSpec.HorizontalRadio.deselectable(List.of("Factions", "Alliances"), 0,
+                    cell -> firedCell[0] = cell);
+            radio.action().activateCell(1);
+            assertThat(firedCell[0]).isEqualTo(1);
+        }
     }
 }

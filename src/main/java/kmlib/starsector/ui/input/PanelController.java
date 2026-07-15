@@ -210,13 +210,11 @@ public final class PanelController {
         }
         // A radio or a tabs row hits by segment over the segments the layout laid - a radio's equal cells
         // or a tabs row's per-tab boxes. The reselect behaviour then selects raw-hit (a re-pick fires) vs
-        // already-lit handling (a re-pick is swallowed); only a vertical table carries a non-inert
-        // reselect, while a horizontal radio and a tabs row are always inert on their lit segment, so
-        // re-clicking the active option reaches no action, matching a vanilla tab strip.
+        // already-lit handling (a re-pick is swallowed); a table or a deselectable horizontal radio can
+        // carry a non-inert reselect, while a plain option pair and a tabs row are always inert on their
+        // lit segment, so re-clicking the active option reaches no action, matching a vanilla tab strip.
         if (isSegmented(interactive)) {
-            var reselect = interactive instanceof ControlSpec.VerticalTable table
-                    ? table.reselect()
-                    : ReselectBehaviour.INERT;
+            var reselect = reselectBehaviourOf(interactive);
             var segmentIndex = reselect.firesOnReselect()
                     ? RadioRow.findSegmentIndexAt(control.segments(), pointX, pointY)
                     : RadioRow.findHitElement(control.segments(), interactive.selectedIndex(),
@@ -232,6 +230,19 @@ public final class PanelController {
         }
         interactive.action().activateCell(0);
         return true;
+    }
+
+    // The reselect the control carries, or INERT for a variant that has none. A vertical table and a
+    // horizontal radio each name what a re-pick of their lit segment does; a tabs row is always inert on
+    // its lit tab, so it is read as INERT here rather than carrying its own field.
+    private static ReselectBehaviour reselectBehaviourOf(ControlSpec.Interactive control) {
+        if (control instanceof ControlSpec.VerticalTable table) {
+            return table.reselect();
+        }
+        if (control instanceof ControlSpec.HorizontalRadio radio) {
+            return radio.reselect();
+        }
+        return ReselectBehaviour.INERT;
     }
 
     // A horizontal radio, a vertical table, and a tabs row all resolve a click to one of their laid-out

@@ -164,21 +164,26 @@ public sealed interface ControlSpec {
     }
 
     /**
-     * A row of mutually exclusive option segments laid side by side, exactly one lit. Its {@link
-     * SegmentSizing} picks how the segments size: {@link SegmentSizing#UNIFORM} gives every segment the
-     * widest label's width (even cells, the default an option pair reads as), {@link
-     * SegmentSizing#SNAPPED} gives each its own label's width (a ragged row that would waste space as
-     * even cells). A horizontal radio is always selected, so a click on the lit segment is inert -
-     * unlike a {@link VerticalTable}, it carries no {@link ReselectBehaviour}.
+     * A row of mutually exclusive option segments laid side by side. Its {@link SegmentSizing} picks how
+     * the segments size: {@link SegmentSizing#UNIFORM} gives every segment the widest label's width (even
+     * cells, the default an option pair reads as), {@link SegmentSizing#SNAPPED} gives each its own
+     * label's width (a ragged row that would waste space as even cells). Its {@link ReselectBehaviour}
+     * sets what a re-pick of the lit segment does: an option pair is {@link ReselectBehaviour#INERT}
+     * (always one lit, the standard row), while a {@link ReselectBehaviour#DESELECT} row clears to
+     * nothing on a re-pick - so a horizontal radio can read as the on/off selector a {@link
+     * VerticalTable} did, only laid across one row.
      *
      * @param labels        the option labels, left to right, in segment order
      * @param selectedIndex the lit option's index, or {@link #NO_SELECTION} when nothing is picked
      * @param action        what a click on an option does, keyed by the option index
      * @param trailingLabel a caption drawn after the row, or blank for none
      * @param segmentSizing how the segments size (uniform cells, or each snapped to its own label)
+     * @param reselect      what a re-pick of the lit segment does (inert for an option pair, deselect for
+     *                      a clearable selector)
      */
     record HorizontalRadio(List<String> labels, int selectedIndex, ControlAction action,
-            String trailingLabel, SegmentSizing segmentSizing) implements Interactive {
+            String trailingLabel, SegmentSizing segmentSizing, ReselectBehaviour reselect)
+            implements Interactive {
         /**
          * Builds an even-cell horizontal radio - the standard option pair, sized {@link
          * SegmentSizing#UNIFORM}.
@@ -199,7 +204,8 @@ public sealed interface ControlSpec {
                     selectedIndex,
                     action,
                     trailingLabel,
-                    SegmentSizing.UNIFORM);
+                    SegmentSizing.UNIFORM,
+                    ReselectBehaviour.INERT);
         }
 
         /**
@@ -222,7 +228,32 @@ public sealed interface ControlSpec {
                     selectedIndex,
                     action,
                     trailingLabel,
-                    SegmentSizing.SNAPPED);
+                    SegmentSizing.SNAPPED,
+                    ReselectBehaviour.INERT);
+        }
+
+        /**
+         * Builds an even-cell horizontal radio that clears to nothing when its lit segment is re-picked
+         * ({@link ReselectBehaviour#DESELECT}) - the shape a horizontal on/off selector takes, where a
+         * re-click of the active option turns it off. It carries no trailing caption and sizes {@link
+         * SegmentSizing#UNIFORM}, so a short option row reads as even cells.
+         *
+         * @param labels        the option labels, left to right, in segment order
+         * @param selectedIndex the lit option's index, or {@link #NO_SELECTION} when nothing is picked
+         * @param action        what a click on an option does, keyed by the option index
+         * @return the deselectable horizontal radio spec
+         */
+        public static HorizontalRadio deselectable(
+                List<String> labels,
+                int selectedIndex,
+                ControlAction action) {
+            return new HorizontalRadio(
+                    List.copyOf(labels),
+                    selectedIndex,
+                    action,
+                    "",
+                    SegmentSizing.UNIFORM,
+                    ReselectBehaviour.DESELECT);
         }
     }
 
