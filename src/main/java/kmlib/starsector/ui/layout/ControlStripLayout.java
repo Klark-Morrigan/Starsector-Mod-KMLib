@@ -10,8 +10,8 @@ import kmlib.starsector.ui.widgets.HorizontalSegments;
 import kmlib.starsector.ui.widgets.IconLabelRow;
 import kmlib.starsector.ui.widgets.RadioRow;
 import kmlib.starsector.ui.widgets.SegmentSpec;
-import kmlib.starsector.ui.widgets.VanillaTabContent;
-import kmlib.starsector.ui.widgets.VanillaTabStrip;
+import kmlib.starsector.ui.widgets.tabs.VanillaTabContent;
+import kmlib.starsector.ui.widgets.tabs.VanillaTabStrip;
 import kmlib.text.KmlibStrings;
 
 import java.util.ArrayList;

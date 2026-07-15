@@ -1,6 +1,6 @@
 package kmlib.starsector.ui.render.gl;
 
-import kmlib.starsector.ui.widgets.TabPanelPlacement;
+import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
 
 import org.lwjgl.opengl.GL11;
 

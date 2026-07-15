@@ -3,7 +3,7 @@ package kmlib.starsector.ui.input;
 import com.fs.starfarer.api.input.InputEventAPI;
 
 import kmlib.starsector.ui.widgets.ScrollState;
-import kmlib.starsector.ui.widgets.TabPanelPlacement;
+import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
 
 /**
  * Drives one tab panel's pointer input: it routes a left press on a header tab to that tab's own action,

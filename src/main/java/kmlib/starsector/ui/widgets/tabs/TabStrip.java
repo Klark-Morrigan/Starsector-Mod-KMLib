@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.widgets;
+package kmlib.starsector.ui.widgets.tabs;
 
 import kmlib.math.geometry.Rectangles;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
@@ -9,7 +9,8 @@ import java.util.List;
 /**
  * Lays out and hit-tests a horizontal row of text-snapped tabs. Each tab is only as wide as its own
  * label needs plus a padding, floored at a minimum, so a short label does not carry a wide empty box
- * and a long one is never clipped - the SNAPPED case of the shared {@link HorizontalSegments} width
+ * and a long one is never clipped - the SNAPPED case of the shared {@link
+ * kmlib.starsector.ui.widgets.HorizontalSegments} width
  * rule, which this delegates its sizing and placement to. This is the reusable half of a tab bar -
  * where each tab sits and which one a point falls in; how the tab is painted (colours, selected/hover
  * states, its label text) stays with the consumer, which owns that visual state.

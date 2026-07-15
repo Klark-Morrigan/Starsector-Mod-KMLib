@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.widgets;
+package kmlib.starsector.ui.widgets.tabs;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

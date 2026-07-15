@@ -4,9 +4,9 @@ import kmlib.color.Colors;
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.color.StarsectorUiColor;
 import kmlib.starsector.ui.font.LazyFontCache;
-import kmlib.starsector.ui.widgets.VanillaTab;
-import kmlib.starsector.ui.widgets.VanillaTabContent;
-import kmlib.starsector.ui.widgets.VanillaTabStrip;
+import kmlib.starsector.ui.widgets.tabs.VanillaTab;
+import kmlib.starsector.ui.widgets.tabs.VanillaTabContent;
+import kmlib.starsector.ui.widgets.tabs.VanillaTabStrip;
 import kmlib.text.KmlibStrings;
 
 import org.lazywizard.lazylib.ui.LazyFont;

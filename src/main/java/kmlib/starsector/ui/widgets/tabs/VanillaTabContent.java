@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.widgets;
+package kmlib.starsector.ui.widgets.tabs;
 
 /**
  * The text a {@link VanillaTabStrip} tab shows: its label and an optional shortcut key name that

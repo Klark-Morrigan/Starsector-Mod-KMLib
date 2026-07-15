@@ -7,7 +7,8 @@ import kmlib.starsector.ui.controls.SegmentSizing;
  * travel together. The measure pass and the placement pass both need all four, and a host builds one
  * per control type - a horizontal radio's body-size uniform cells, a tab strip's face-size snapped
  * tabs - then threads that one policy through the whole sizing chain ({@link
- * kmlib.starsector.ui.layout.ControlStripLayout} to {@link VanillaTabStrip} / {@link TabStrip} to
+ * kmlib.starsector.ui.layout.ControlStripLayout} to {@link kmlib.starsector.ui.widgets.tabs.VanillaTabStrip}
+ * / {@link kmlib.starsector.ui.widgets.tabs.TabStrip} to
  * {@link HorizontalSegments}) rather than re-bundling four loose scalars at each hop. It is the sizing
  * counterpart to the host's {@link kmlib.starsector.ui.controls.ControlSpec}: that describes what a
  * control is, this describes how wide its segments come out.

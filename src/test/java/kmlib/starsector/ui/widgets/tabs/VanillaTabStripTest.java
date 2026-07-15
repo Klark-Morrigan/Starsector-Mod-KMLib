@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.widgets;
+package kmlib.starsector.ui.widgets.tabs;
 
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.SegmentSizing;

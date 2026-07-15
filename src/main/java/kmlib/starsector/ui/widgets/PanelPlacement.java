@@ -13,7 +13,8 @@ import java.util.List;
  * a host reaches the frame through {@link #box()} and the controls through {@link #bodyControls()}. An
  * empty {@code bodyControls} and a zero-size {@code body} reserve no dead click zone.
  *
- * <p>A {@link TabPanelPlacement} builds on this: it overlays a tabs header on the top band of the same
+ * <p>A {@link kmlib.starsector.ui.widgets.tabs.TabPanelPlacement} builds on this: it overlays a tabs
+ * header on the top band of the same
  * box, so its nested {@code box} spans the whole footprint (header band included) while its {@code body}
  * is the strip region beneath the header. The record stays neutral to that - it only carries rectangles.
  *

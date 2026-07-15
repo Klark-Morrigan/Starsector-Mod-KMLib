@@ -1,6 +1,7 @@
-package kmlib.starsector.ui.widgets;
+package kmlib.starsector.ui.widgets.tabs;
 
 import kmlib.starsector.ui.controls.Control;
+import kmlib.starsector.ui.widgets.PanelPlacement;
 
 /**
  * One laid-out tab panel: a headerless {@link PanelPlacement} for the {@code body} with a {@code

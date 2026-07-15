@@ -2,7 +2,7 @@ package kmlib.starsector.ui.layout;
 
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
-import kmlib.starsector.ui.widgets.TabPanelPlacement;
+import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
 
 import java.util.List;
 

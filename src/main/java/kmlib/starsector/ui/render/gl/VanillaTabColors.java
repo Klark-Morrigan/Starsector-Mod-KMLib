@@ -5,7 +5,8 @@ import kmlib.starsector.ui.color.StarsectorUiColor;
 import java.awt.Color;
 
 /**
- * The palette a {@link VanillaTabStrip} paints with, one colour per role. Kept as a record so a
+ * The palette a {@link kmlib.starsector.ui.widgets.tabs.VanillaTabStrip} paints with, one colour per
+ * role. Kept as a record so a
  * consumer can override any shade, with {@link #mapTabs()} supplying the live vanilla map-tab
  * defaults through the {@link StarsectorUiColor} palette, so the strip recolours with the
  * current player faction and never receives a null shade from an early-boot accessor.
