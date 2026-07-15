@@ -245,6 +245,21 @@ final class CappedStripLayoutTest {
             var list = flexBounds(capped);
             assertThat(list.y()).isCloseTo(capped.flexViewport().y(), within(TOLERANCE));
         }
+
+        @Test
+        void layoutCappedControlsSpansAPinnedHeaderDividerAcrossTheFullBody() {
+            // A rule heads the block above the scrolling list - the political map's picker shape. The
+            // pinned header divider spans the whole framed body (edge to edge inside the border inset),
+            // not the padded content column, so the capped path spans dividers as the plain stack does.
+            var specs = List.<ControlSpec>of(new ControlSpec.Divider(), scrollingList(FLEX_OPTION_COUNT));
+            var strip = measure(specs);
+            var body = frameBody(strip.bodyHeight(), strip.bodyWidth());
+            var capped = CappedStripLayout.layoutCappedControls(body, specs, strip.rowHeights(),
+                    strip.rowWidths(), 1, 0f, measurerFake);
+            var divider = capped.controls().get(0).bounds();
+            assertThat(divider.x()).isCloseTo(body.x(), within(TOLERANCE));
+            assertThat(divider.width()).isCloseTo(body.width(), within(TOLERANCE));
+        }
     }
 
     // The flex list's laid-out bounds - the second control, between the header and the footer.

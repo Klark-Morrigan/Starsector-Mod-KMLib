@@ -93,10 +93,9 @@ public final class ControlStripLayout {
             rowHeights.add(measureRowHeight(spec));
             contentWidth = Math.max(contentWidth, rowWidth + measureTrailingWidth(spec, measurer));
         }
-        // A divider spans the strip's inner width, so once the widest content row is known its row
-        // width is set to that span - it then lays out as a rule crossing the whole body rather than
-        // a zero-width row. Done after the loop so it never drives the content width it stretches to.
-        spanDividersToContentWidth(specs, rowWidths, contentWidth);
+        // A divider carries no intrinsic width here (it measures zero) - it is stretched to the full
+        // framed body at placement time, once the host has framed a body rectangle, so it never drives
+        // the content width it later spans.
         var bodyWidth = contentWidth + 2f * BODY_PADDING;
         var bodyHeight = 2f * BODY_PADDING + measureStackedHeight(rowHeights);
         return new StripMeasurement(bodyWidth, bodyHeight, List.copyOf(rowWidths),
@@ -143,7 +142,7 @@ public final class ControlStripLayout {
         var bodyTopY = body.y() + body.height();
         var rows = RowStack.layoutRows(body.x() + BODY_PADDING, bodyTopY - BODY_PADDING,
                 ROW_GAP, rowHeights, rowWidths);
-        return toControls(specs, rows, measurer);
+        return toControls(specs, spanDividerRowsToBody(specs, rows, body), measurer);
     }
 
     /**
@@ -257,23 +256,36 @@ public final class ControlStripLayout {
         return contents;
     }
 
-    // Widens every divider row to the strip's inner content width, so a rule stretches across the
-    // whole body while every other row stays snapped to its own text. Run after the content width is
-    // known, since a divider measures zero and must not drive the width it then spans.
-    private static void spanDividersToContentWidth(List<ControlSpec> specs, List<Float> rowWidths,
-            float contentWidth) {
-        for (var index = 0; index < specs.size(); index++) {
-            if (specs.get(index) instanceof ControlSpec.Divider) {
-                rowWidths.set(index, contentWidth);
-            }
+    /**
+     * Stretches every divider row to span the full framed body - edge to edge inside the border inset,
+     * across the row padding the other controls sit within - so a section rule reaches the frame rather
+     * than stopping at the content column. Every non-divider row keeps the padded placement {@link
+     * RowStack} gave it. The body is known only once the host frames it, so the span is applied at
+     * placement rather than measurement, where a divider has no intrinsic width. Shared with the capped
+     * strip layout, whose pinned header and footer runs span their dividers through this one rule.
+     *
+     * @param specs the controls, in the same order and size as {@code rows}
+     * @param rows  the padded rows the stacker produced, one per spec
+     * @param body  the framed body rectangle whose full width a divider spans
+     * @return the rows with each divider widened to the body, every other row unchanged
+     */
+    static List<Rectangle> spanDividerRowsToBody(List<ControlSpec> specs, List<Rectangle> rows,
+            Rectangle body) {
+        var spanned = new ArrayList<Rectangle>(rows.size());
+        for (var index = 0; index < rows.size(); index++) {
+            var row = rows.get(index);
+            spanned.add(specs.get(index) instanceof ControlSpec.Divider
+                    ? new Rectangle(body.x(), row.y(), body.width(), row.height())
+                    : row);
         }
+        return List.copyOf(spanned);
     }
 
     // The width of a control's row, snapped to its label(s): a checkbox is its tick box plus a gap
     // plus its label; a horizontal radio is its equal segments side by side, a vertical table is one
     // segment column wide; a toggle is its label plus padding; a label is just its measured text,
-    // since it has no widget chrome around it. A divider has no intrinsic width - it stretches to the
-    // strip's inner width once the widest row is known - so it contributes nothing to that width itself.
+    // since it has no widget chrome around it. A divider has no intrinsic width - it measures zero and
+    // is stretched to the full framed body at placement - so it contributes nothing to the width here.
     private static float measureRowWidth(ControlSpec spec, LineWidthMeasurer measurer) {
         if (spec instanceof ControlSpec.Checkbox checkbox) {
             return CONTROL_ROW_HEIGHT + CHECKBOX_LABEL_GAP + measureWidth(measurer, checkbox.label());

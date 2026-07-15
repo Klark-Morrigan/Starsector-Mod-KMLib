@@ -115,19 +115,18 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void measureStripSpansADividerToTheContentWidth() {
-            // A divider has no text, so it stretches to the strip's inner width: its row width comes
-            // out equal to the widest content row (the checkbox here), not zero.
+        void measureStripLeavesADividerWithoutIntrinsicWidth() {
+            // A divider has no text and no chrome, so it measures zero here - it is stretched to the
+            // full framed body only at placement, once a host has framed the body rectangle.
             var specs = List.<ControlSpec>of(new ControlSpec.Divider(),
                     ControlSpec.Checkbox.lit("Muted", false, ControlAction.NONE));
             var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
-            assertThat(measurement.rowWidths().get(0))
-                    .isCloseTo(measurement.rowWidths().get(1), within(TOLERANCE));
+            assertThat(measurement.rowWidths().get(0)).isCloseTo(0f, within(TOLERANCE));
         }
 
         @Test
         void measureStripDoesNotLetADividerDriveTheBodyWidth() {
-            // The divider stretches to the content width but must not set it, so a strip of only a
+            // The divider measures zero and is spanned only at placement, so a strip of only a
             // checkbox measures the same body width whether or not a divider heads it.
             var checkbox = ControlSpec.Checkbox.lit("Muted", false, ControlAction.NONE);
             var withoutDivider = ControlStripLayout.measureStrip(List.<ControlSpec>of(checkbox), measurerFake);
@@ -352,16 +351,18 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void layoutControlsSpansADividerRowAcrossTheBodyContentWidth() {
-            // The laid divider row is as wide as the widest content row (the checkbox), so the rule
-            // crosses the whole body rather than snapping to zero width.
+        void layoutControlsSpansADividerRowAcrossTheFullBodyWidth() {
+            // The laid divider row spans the whole framed body - edge to edge inside the border inset,
+            // across the padding the other controls sit within - so the rule reaches the frame rather
+            // than stopping at the padded content column.
             var specs = List.<ControlSpec>of(new ControlSpec.Divider(),
                     ControlSpec.Checkbox.lit("Muted", false, ControlAction.NONE));
             var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
-            var controls = ControlStripLayout.layoutControls(frameBody(measurement), specs,
-                    measurement.rowHeights(), measurement.rowWidths(), measurerFake);
-            assertThat(controls.get(0).bounds().width())
-                    .isCloseTo(controls.get(1).bounds().width(), within(TOLERANCE));
+            var body = frameBody(measurement);
+            var divider = ControlStripLayout.layoutControls(body, specs,
+                    measurement.rowHeights(), measurement.rowWidths(), measurerFake).get(0);
+            assertThat(divider.bounds().x()).isCloseTo(body.x(), within(TOLERANCE));
+            assertThat(divider.bounds().width()).isCloseTo(body.width(), within(TOLERANCE));
         }
 
         @Test

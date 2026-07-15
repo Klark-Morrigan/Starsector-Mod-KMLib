@@ -121,9 +121,13 @@ public final class CappedStripLayout {
 
         // Header: the controls above the flex row, stacked from the top inset. A capped strip only
         // shrinks the flex region, so the header lands exactly where an uncapped strip would place it.
+        var headerSpecs = specs.subList(0, flexIndex);
         var headerHeights = rowHeights.subList(0, flexIndex);
         var headerWidths = rowWidths.subList(0, flexIndex);
-        var headerRows = RowStack.layoutRows(originX, topInsetY, gap, headerHeights, headerWidths);
+        // Span the header's dividers to the full body before pinning, so a section rule above the flex
+        // list reaches the frame the same as an uncapped strip's does.
+        var headerRows = ControlStripLayout.spanDividerRowsToBody(headerSpecs,
+                RowStack.layoutRows(originX, topInsetY, gap, headerHeights, headerWidths), body);
         // The flex viewport's top edge is where the flex row starts: one gap below the last header row,
         // read straight off the laid-out header rather than re-summing their heights. With no header the
         // flex row heads the strip at the top inset.
@@ -133,11 +137,15 @@ public final class CappedStripLayout {
 
         // Footer: the controls below the flex row, pinned to the bottom inset as a block, so they never
         // scroll and always sit flush at the body bottom regardless of the list's length.
+        var footerSpecs = specs.subList(flexIndex + 1, specs.size());
         var footerHeights = rowHeights.subList(flexIndex + 1, rowHeights.size());
         var footerWidths = rowWidths.subList(flexIndex + 1, rowWidths.size());
         var footerCount = footerHeights.size();
         var footerTopY = bottomInsetY + ControlStripLayout.measureStackedHeight(footerHeights);
-        var footerRows = RowStack.layoutRows(originX, footerTopY, gap, footerHeights, footerWidths);
+        // Span the footer's dividers to the full body too, so a rule beneath the flex list spans edge to
+        // edge like the header's.
+        var footerRows = ControlStripLayout.spanDividerRowsToBody(footerSpecs,
+                RowStack.layoutRows(originX, footerTopY, gap, footerHeights, footerWidths), body);
         // The viewport's bottom edge sits one gap above the footer block, or at the bottom inset when
         // there is no footer.
         var flexViewportBottomY = footerCount == 0 ? bottomInsetY : footerTopY + gap;
@@ -156,11 +164,9 @@ public final class CappedStripLayout {
         // Assemble in strip order: the pinned header, the scrolled flex list, then the pinned footer -
         // each run turned into controls through the shared zip so segments split identically everywhere.
         var controls = new ArrayList<Control>(specs.size());
-        controls.addAll(ControlStripLayout.toControls(specs.subList(0, flexIndex), headerRows,
-                measurer));
+        controls.addAll(ControlStripLayout.toControls(headerSpecs, headerRows, measurer));
         controls.add(ControlStripLayout.toControl(specs.get(flexIndex), flexBounds, measurer));
-        controls.addAll(ControlStripLayout.toControls(specs.subList(flexIndex + 1, specs.size()),
-                footerRows, measurer));
+        controls.addAll(ControlStripLayout.toControls(footerSpecs, footerRows, measurer));
         return new CappedStripPlacement(List.copyOf(controls), flexViewport, scrollOffset, overflow);
     }
 
