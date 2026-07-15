@@ -3,6 +3,7 @@ package kmlib.starsector.ui.widgets;
 import kmlib.math.geometry.Rectangle;
 import kmlib.math.geometry.Rectangles;
 import kmlib.starsector.ui.controls.RadioAlignment;
+import kmlib.starsector.ui.widgets.segments.HorizontalSegments;
 
 import java.util.ArrayList;
 import java.util.Collections;

@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.widgets;
+package kmlib.starsector.ui.widgets.segments;
 
 import kmlib.starsector.ui.controls.SegmentSizing;
 

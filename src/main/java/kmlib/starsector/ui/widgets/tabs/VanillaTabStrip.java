@@ -3,6 +3,7 @@ package kmlib.starsector.ui.widgets.tabs;
 import kmlib.math.geometry.Rectangle;
 import kmlib.math.geometry.Rectangles;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
+import kmlib.starsector.ui.widgets.segments.SegmentSpec;
 import kmlib.text.KmlibStrings;
 
 import java.util.ArrayList;

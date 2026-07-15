@@ -1,7 +1,7 @@
 package kmlib.starsector.ui.render.gl;
 
 import kmlib.math.geometry.Rectangle;
-import kmlib.starsector.ui.widgets.HorizontalSegments;
+import kmlib.starsector.ui.widgets.segments.HorizontalSegments;
 
 import java.awt.Color;
 import java.util.List;
