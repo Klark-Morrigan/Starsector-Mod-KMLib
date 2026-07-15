@@ -26,7 +26,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * pulled-in edge crosses it), flagging every output edge by origin; insetting
  * every edge matches the whole-polygon inset; an over-inset empties; a collapse to
  * coincident points empties rather than returning a zero-area sliver; and a mask
- * that is not parallel to the edges is rejected.
+ * that is not parallel to the edges is rejected. Its per-edge variant reproduces
+ * the boolean form for a uniform array, pulls each edge by its own distance, reads
+ * a zero entry as "leave on the line", and rejects a non-parallel array.
  *
  * <p>And of {@link PolygonOffsets#insetPolygonByMiter}: a convex square insets to
  * the same concentric square the half-plane inset gives, a concave L keeps its
@@ -231,6 +233,71 @@ final class PolygonOffsetsTest {
             assertThatThrownBy(() ->
                     PolygonOffsets.insetSelectedEdges(square(), new boolean[] {true}, 2.0))
                     .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        void per_edge_uniform_distances_reproduce_the_boolean_scalar_result() {
+            // A per-edge array with every entry equal to one distance is the boolean
+            // form flagging every edge with that scalar: same inset square, same
+            // all-inset flags.
+            var perEdge = PolygonOffsets.insetSelectedEdges(square(),
+                    new double[] {2.0, 2.0, 2.0, 2.0});
+            var booleanScalar = PolygonOffsets.insetSelectedEdges(square(),
+                    new boolean[] {true, true, true, true}, 2.0);
+
+            assertVerticesClose(perEdge.vertices(), booleanScalar.vertices());
+            assertThat(perEdge.edgeIsInset()).containsExactly(booleanScalar.edgeIsInset());
+            assertThat(perEdge.edgeIsInset()).containsOnly(true);
+        }
+
+        @Test
+        void per_edge_mixed_distances_pull_each_edge_independently() {
+            // Square side 10; the right edge (index 1) stays on its line at distance 0
+            // while the other three pull in by their own amounts: bottom by 2 (y ->
+            // 2), top by 3 (y -> 7), left by 1 (x -> 1). The result is the rectangle
+            // (1,2)..(10,7), each border at its own inset - not one shared channel.
+            var result = PolygonOffsets.insetSelectedEdges(square(),
+                    new double[] {2.0, 0.0, 3.0, 1.0});
+
+            assertThat(result.vertices()).hasSize(4);
+            assertThat(result.vertices()).allMatch(v -> v[0] >= 1 - 1e-6 && v[0] <= 10 + 1e-6
+                    && v[1] >= 2 - 1e-6 && v[1] <= 7 + 1e-6);
+            // The kept right edge is the only non-inset edge and sits at x = 10.
+            var kept = keptEdgesOf(result);
+            assertThat(kept).hasSize(1);
+            assertThat(kept.get(0)[0][0]).isCloseTo(10.0, within());
+            assertThat(kept.get(0)[1][0]).isCloseTo(10.0, within());
+        }
+
+        @Test
+        void per_edge_zero_distance_leaves_that_edge_on_its_line() {
+            // A zero entry is exactly the boolean form's false: the edge is kept on
+            // its line and flagged not-inset. {2,0,2,2} matches {true,false,true,true}
+            // at distance 2 vertex-for-vertex and flag-for-flag.
+            var perEdge = PolygonOffsets.insetSelectedEdges(square(),
+                    new double[] {2.0, 0.0, 2.0, 2.0});
+            var booleanScalar = PolygonOffsets.insetSelectedEdges(square(),
+                    new boolean[] {true, false, true, true}, 2.0);
+
+            assertVerticesClose(perEdge.vertices(), booleanScalar.vertices());
+            assertThat(perEdge.edgeIsInset()).containsExactly(booleanScalar.edgeIsInset());
+            assertThat(perEdge.edgeIsInset()).contains(false);
+        }
+
+        @Test
+        void per_edge_rejects_distances_not_parallel_to_the_edges() {
+            assertThatThrownBy(() ->
+                    PolygonOffsets.insetSelectedEdges(square(), new double[] {2.0}))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        // Asserts two vertex rings match in size and position, so a per-edge result
+        // can be pinned against the boolean form it must reproduce.
+        private static void assertVerticesClose(List<double[]> actual, List<double[]> expected) {
+            assertThat(actual).hasSameSizeAs(expected);
+            for (var i = 0; i < expected.size(); i++) {
+                assertThat(actual.get(i)).containsExactly(expected.get(i), within());
+            }
         }
 
         // The edges a selective inset left un-inset (kept seams), each as its two
