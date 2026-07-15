@@ -6,6 +6,9 @@ import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 import java.util.List;
 
+import static kmlib.math.geometry.GeometryTestSupport.signedArea;
+import static kmlib.math.geometry.GeometryTestSupport.square;
+import static kmlib.math.geometry.GeometryTestSupport.within;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -45,26 +48,6 @@ final class PolygonOffsetsTest {
     // ordinary right-angle corners keep their crisp miter, so only a deliberately
     // sharp reflex corner bevels.
     private static final double MITER_SPIKE_LIMIT = 4.0;
-
-    // CCW square with side 10, used as the offset reference shape.
-    private static List<double[]> square() {
-        return Arrays.asList(
-                new double[] {0, 0},
-                new double[] {10, 0},
-                new double[] {10, 10},
-                new double[] {0, 10});
-    }
-
-    private static org.assertj.core.data.Offset<Double> within() {
-        return org.assertj.core.data.Offset.offset(1e-6);
-    }
-
-    // The signed area of a closed ring; positive is counter-clockwise. Used to check
-    // an inset kept its winding rather than folding. Delegates to the production
-    // shoelace so the test does not restate it.
-    private static double signedArea(List<double[]> ring) {
-        return PolygonRegions.computeSignedArea(ring);
-    }
 
     @Nested
     class OffsetEdgesInward {

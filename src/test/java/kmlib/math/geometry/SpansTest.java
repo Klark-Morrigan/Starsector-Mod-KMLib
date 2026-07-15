@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static kmlib.math.geometry.GeometryTestSupport.within;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -21,10 +22,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * touch or miss yield nothing, and an empty list on either side yields nothing.
  */
 final class SpansTest {
-
-    private static org.assertj.core.data.Offset<Double> within() {
-        return org.assertj.core.data.Offset.offset(1e-6);
-    }
 
     @Nested
     class FindLongestClearSubsegment {

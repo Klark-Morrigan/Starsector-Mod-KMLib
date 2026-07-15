@@ -4,8 +4,9 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
-import java.util.List;
 
+import static kmlib.math.geometry.GeometryTestSupport.bigSquare;
+import static kmlib.math.geometry.GeometryTestSupport.square;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -22,24 +23,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * drops below three vertices.
  */
 final class PolygonSmoothingTest {
-
-    // CCW square with side 10.
-    private static List<double[]> square() {
-        return Arrays.asList(
-                new double[] {0, 0},
-                new double[] {10, 0},
-                new double[] {10, 10},
-                new double[] {0, 10});
-    }
-
-    // CCW square of the given side, anchored at the origin.
-    private static List<double[]> bigSquare(double side) {
-        return Arrays.asList(
-                new double[] {0, 0},
-                new double[] {side, 0},
-                new double[] {side, side},
-                new double[] {0, side});
-    }
 
     @Nested
     class RoundCorners {

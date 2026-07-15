@@ -6,6 +6,9 @@ import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 import java.util.List;
 
+import static kmlib.math.geometry.GeometryTestSupport.bigSquare;
+import static kmlib.math.geometry.GeometryTestSupport.signedArea;
+import static kmlib.math.geometry.GeometryTestSupport.within;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -27,25 +30,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * nothing.
  */
 final class PolygonRegionsTest {
-
-    private static org.assertj.core.data.Offset<Double> within() {
-        return org.assertj.core.data.Offset.offset(1e-6);
-    }
-
-    // CCW square of the given side, anchored at the origin.
-    private static List<double[]> bigSquare(double side) {
-        return Arrays.asList(
-                new double[] {0, 0},
-                new double[] {side, 0},
-                new double[] {side, side},
-                new double[] {0, side});
-    }
-
-    // The signed area of a closed ring; positive is counter-clockwise. Delegates to
-    // the production shoelace so the test does not restate it.
-    private static double signedArea(List<double[]> ring) {
-        return PolygonRegions.computeSignedArea(ring);
-    }
 
     @Nested
     class ComputeSignedArea {
