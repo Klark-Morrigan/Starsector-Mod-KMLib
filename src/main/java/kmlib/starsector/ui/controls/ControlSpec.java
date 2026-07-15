@@ -67,6 +67,14 @@ import java.util.List;
  * shape that scrolls, so it refines a vertical {@link ControlKind#RADIO} only and is {@code false} for
  * every other control; a strip carrying none is never capped and keeps its natural height.
  *
+ * <p>{@code segmentSizing} refines a horizontal segmented control - a horizontal {@link
+ * ControlKind#RADIO} or a {@link ControlKind#TABS} row - and is inert for every other shape. It picks
+ * how the row's segments size: {@link SegmentSizing#UNIFORM} gives every segment the widest label plus
+ * padding (even cells, the default an option pair reads as), {@link SegmentSizing#SNAPPED} gives each
+ * its own label plus padding (the tab strip). A vertical radio's columns are uniform by construction
+ * and a non-segmented kind has no segments to size, so both carry {@link SegmentSizing#UNIFORM}; the
+ * guard rejects {@link SegmentSizing#SNAPPED} anywhere but a horizontal segmented control.
+ *
  * @param kind          which widget the control is
  * @param labels        the control's own label(s): one for a checkbox or toggle, one per option for
  *                      a radio (in segment order)
@@ -95,11 +103,13 @@ import java.util.List;
  * @param shortcuts     one optional shortcut-key hint per option for a {@link ControlKind#TABS} control,
  *                      in the same order as {@code labels} (a null or absent entry is a tab with no
  *                      hint); empty for every other kind, which draws no shortcuts
+ * @param segmentSizing how a horizontal segmented control sizes its segments (uniform cells, or each
+ *                      snapped to its own label); {@link SegmentSizing#UNIFORM} for every other shape
  */
 public record ControlSpec(ControlKind kind, List<String> labels, List<String> iconPaths,
         List<String> trailingLabels, String trailingLabel, int selectedIndex, ControlAction action,
         RadioAlignment alignment, ReselectBehaviour reselect, double trailingScale, int columnCount,
-        boolean scrolls, List<String> shortcuts) {
+        boolean scrolls, List<String> shortcuts, SegmentSizing segmentSizing) {
     /** {@code selectedIndex} value meaning the control is off - no cell is lit. */
     public static final int NO_SELECTION = -1;
 
@@ -160,19 +170,48 @@ public record ControlSpec(ControlKind kind, List<String> labels, List<String> ic
             throw new IllegalArgumentException(
                     "shortcut hints are drawn only on a tabs control, not on a " + kind);
         }
+        if (segmentSizing == SegmentSizing.SNAPPED && !isHorizontalSegmented(kind, alignment)) {
+            throw new IllegalArgumentException(
+                    "SNAPPED sizing refines a horizontal segmented control (a horizontal radio or a "
+                            + "tabs row), not a " + kind + " with " + alignment + " alignment");
+        }
+    }
+
+    // Whether a control is a horizontal segmented row - a horizontal radio or a tabs row - the only
+    // shapes whose segments lay side by side and so can be sized uniform or snapped. A vertical radio
+    // stacks (its columns are uniform by construction) and every non-segmented kind has no segments, so
+    // neither is horizontally segmented. The single rule the SNAPPED guard reads.
+    private static boolean isHorizontalSegmented(ControlKind kind, RadioAlignment alignment) {
+        return kind == ControlKind.TABS
+                || (kind == ControlKind.RADIO && alignment == RadioAlignment.HORIZONTAL);
     }
 
     /**
      * Builds a control with no leading icons and no per-option trailing column - every kind except
      * the icon list, whose {@code iconPaths} is therefore empty and whose trailing column is drawn at
      * the body size. The icon list uses {@link #createIconRadioList}, the one entry that supplies a
-     * non-empty icon-path list.
+     * non-empty icon-path list. Sizes its segments {@link SegmentSizing#UNIFORM} - the even-cell default
+     * an option pair reads as; a snapped horizontal segmented control uses the sizing-aware sibling.
      */
     public ControlSpec(ControlKind kind, List<String> labels, String trailingLabel,
             int selectedIndex, ControlAction action, RadioAlignment alignment,
             ReselectBehaviour reselect) {
+        this(kind, labels, trailingLabel, selectedIndex, action, alignment, reselect,
+                SegmentSizing.UNIFORM);
+    }
+
+    /**
+     * The sizing-aware sibling of the six-argument constructor: builds a control with no leading icons
+     * and no per-option trailing column, sizing its segments the given {@link SegmentSizing}. The plain
+     * sibling defaults it to {@link SegmentSizing#UNIFORM}; only a snapped horizontal segmented control
+     * (via {@link #createSnappedHorizontalRadio}) passes {@link SegmentSizing#SNAPPED}, which the guard
+     * accepts only on a horizontal radio or a tabs row.
+     */
+    public ControlSpec(ControlKind kind, List<String> labels, String trailingLabel,
+            int selectedIndex, ControlAction action, RadioAlignment alignment,
+            ReselectBehaviour reselect, SegmentSizing segmentSizing) {
         this(kind, labels, List.of(), List.of(), trailingLabel, selectedIndex, action, alignment,
-                reselect, BODY_TRAILING_SCALE, SINGLE_COLUMN, false, List.of());
+                reselect, BODY_TRAILING_SCALE, SINGLE_COLUMN, false, List.of(), segmentSizing);
     }
 
     /**
@@ -418,7 +457,8 @@ public record ControlSpec(ControlKind kind, List<String> labels, List<String> ic
         return new ControlSpec(ControlKind.RADIO, List.copyOf(labels),
                 Collections.unmodifiableList(new ArrayList<>(iconPaths)),
                 Collections.unmodifiableList(new ArrayList<>(trailingLabels)), "", selectedIndex,
-                action, RadioAlignment.VERTICAL, reselect, trailingScale, columnCount, false, List.of());
+                action, RadioAlignment.VERTICAL, reselect, trailingScale, columnCount, false, List.of(),
+                SegmentSizing.UNIFORM);
     }
 
     /**
@@ -431,7 +471,7 @@ public record ControlSpec(ControlKind kind, List<String> labels, List<String> ic
      */
     public ControlSpec buildScrollableCopy() {
         return new ControlSpec(kind, labels, iconPaths, trailingLabels, trailingLabel, selectedIndex,
-                action, alignment, reselect, trailingScale, columnCount, true, shortcuts);
+                action, alignment, reselect, trailingScale, columnCount, true, shortcuts, segmentSizing);
     }
 
     /**
@@ -455,7 +495,27 @@ public record ControlSpec(ControlKind kind, List<String> labels, List<String> ic
         return new ControlSpec(ControlKind.TABS, List.copyOf(labels), List.of(), List.of(), "",
                 selectedIndex, action, RadioAlignment.HORIZONTAL, ReselectBehaviour.INERT,
                 BODY_TRAILING_SCALE, SINGLE_COLUMN, false,
-                Collections.unmodifiableList(new ArrayList<>(shortcuts)));
+                Collections.unmodifiableList(new ArrayList<>(shortcuts)), SegmentSizing.SNAPPED);
+    }
+
+    /**
+     * Builds a horizontal {@link ControlKind#RADIO} whose segments each snap to their own label width
+     * ({@link SegmentSizing#SNAPPED}) rather than sharing the widest option's width. It is the snapped
+     * sibling of the plain horizontal radio (the six-argument constructor, which sizes {@link
+     * SegmentSizing#UNIFORM}), for a ragged option row that would waste space as even cells. Always
+     * horizontal and {@link ReselectBehaviour#INERT} - the standard always-selected option row; a
+     * stacked or deselectable radio is a vertical shape, which is uniform by construction.
+     *
+     * @param labels        the option labels, left to right, in segment order
+     * @param trailingLabel a caption drawn after the row, or blank for none
+     * @param selectedIndex the lit option's index, or {@link #NO_SELECTION} when nothing is picked
+     * @param action        what a click on an option does, keyed by the option index
+     * @return the snapped horizontal radio spec in its current lit state
+     */
+    public static ControlSpec createSnappedHorizontalRadio(List<String> labels, String trailingLabel,
+            int selectedIndex, ControlAction action) {
+        return new ControlSpec(ControlKind.RADIO, List.copyOf(labels), trailingLabel, selectedIndex,
+                action, RadioAlignment.HORIZONTAL, ReselectBehaviour.INERT, SegmentSizing.SNAPPED);
     }
 
     /**

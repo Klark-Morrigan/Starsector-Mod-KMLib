@@ -5,7 +5,6 @@ import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlKind;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.RadioAlignment;
-import kmlib.starsector.ui.controls.SegmentSizing;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.widgets.HorizontalSegments;
 import kmlib.starsector.ui.widgets.IconLabelRow;
@@ -46,6 +45,9 @@ public final class ControlStripLayout {
     // the renderer places each label at the same offset this reserved for it.
     public static final float CHECKBOX_LABEL_GAP = 6f;
     static final float RADIO_SEGMENT_PADDING = 12f;
+    // A radio cell has no minimum width - it sizes purely to its widest label plus the padding - unlike
+    // a tab, which floors at MIN_TAB_WIDTH so a short tab still gives a clickable box.
+    static final float RADIO_SEGMENT_MIN_WIDTH = 0f;
     public static final float TRAILING_LABEL_GAP = 6f;
     static final float TOGGLE_TEXT_PADDING = 16f;
 
@@ -62,16 +64,6 @@ public final class ControlStripLayout {
     public static final float TAB_TEXT_PADDING = 16f;
     public static final float MIN_TAB_WIDTH = 48f;
     public static final double TAB_FONT_SIZE = 15d;
-
-    // The two segment-sizing rules the strip lays its horizontal segments through: a radio's cells are
-    // UNIFORM (each the widest option plus the segment padding, no floor), a tabs row is SNAPPED (each
-    // tab its own label plus the tab padding, floored at the minimum). Held once so the measure pass,
-    // the split pass, and the vertical radio's column width all read one policy rather than re-passing
-    // the loose padding/min/font scalars at each call.
-    private static final SegmentSpec RADIO_SEGMENT_SPEC =
-            new SegmentSpec(RADIO_SEGMENT_PADDING, 0f, BODY_FONT_SIZE, SegmentSizing.UNIFORM);
-    private static final SegmentSpec TABS_SEGMENT_SPEC =
-            new SegmentSpec(TAB_TEXT_PADDING, MIN_TAB_WIDTH, TAB_FONT_SIZE, SegmentSizing.SNAPPED);
 
     private ControlStripLayout() {
     }
@@ -230,7 +222,7 @@ public final class ControlStripLayout {
         if (spec.alignment() == RadioAlignment.VERTICAL) {
             return RadioRow.splitIntoGrid(row, spec.labels().size(), spec.columnCount());
         }
-        var widths = HorizontalSegments.computeSegmentWidths(spec.labels(), RADIO_SEGMENT_SPEC,
+        var widths = HorizontalSegments.computeSegmentWidths(spec.labels(), radioSegmentSpec(spec),
                 measurer);
         return HorizontalSegments.placeSegments(row.x(), row.y(), row.height(), widths);
     }
@@ -241,7 +233,7 @@ public final class ControlStripLayout {
     private static List<Rectangle> splitTabsIntoSegments(ControlSpec spec, Rectangle row,
             LineWidthMeasurer measurer) {
         var tabs = VanillaTabStrip.layoutTabs(row.x(), row.y() + row.height(), TAB_HEIGHT,
-                TABS_SEGMENT_SPEC, buildTabContents(spec), measurer);
+                tabsSegmentSpec(spec), buildTabContents(spec), measurer);
         var segments = new ArrayList<Rectangle>(tabs.size());
         for (var tab : tabs) {
             segments.add(tab.bounds());
@@ -300,7 +292,7 @@ public final class ControlStripLayout {
     // width through the shared VanillaTabStrip geometry - the same snap layoutTabs later applies - so the
     // measured strip is exactly as wide as the drawn tabs.
     private static float measureTabsRowWidth(ControlSpec spec, LineWidthMeasurer measurer) {
-        return VanillaTabStrip.measureRowWidth(buildTabContents(spec), TABS_SEGMENT_SPEC, measurer);
+        return VanillaTabStrip.measureRowWidth(buildTabContents(spec), tabsSegmentSpec(spec), measurer);
     }
 
     // The width a radio row needs. A horizontal group lays its equal segments side by side, summed
@@ -311,7 +303,7 @@ public final class ControlStripLayout {
     // twice one column's width. One column is the plain single-column stack.
     private static float measureRadioRowWidth(ControlSpec spec, LineWidthMeasurer measurer) {
         if (spec.alignment() != RadioAlignment.VERTICAL) {
-            return HorizontalSegments.measureRowWidth(spec.labels(), RADIO_SEGMENT_SPEC, measurer);
+            return HorizontalSegments.measureRowWidth(spec.labels(), radioSegmentSpec(spec), measurer);
         }
         var columnWidth = spec.iconPaths().isEmpty()
                 ? measureRadioColumnWidth(spec, measurer)
@@ -359,12 +351,29 @@ public final class ControlStripLayout {
     }
 
     // The width of one vertical-radio column: the uniform segment width its widest option needs, read
-    // from the shared UNIFORM radio rule so a stacked column sizes exactly as a horizontal cell would.
-    // An option-less list has no widths, so it falls back to the bare segment padding.
+    // through the radio's own segment rule so a stacked column sizes exactly as a horizontal cell would.
+    // A vertical radio always carries UNIFORM sizing (the spec guard forbids SNAPPED off a horizontal
+    // segmented control), so this column is uniform whatever the field holds. An option-less list has no
+    // widths, so it falls back to the bare segment padding.
     private static float measureRadioColumnWidth(ControlSpec spec, LineWidthMeasurer measurer) {
-        var widths = HorizontalSegments.computeSegmentWidths(spec.labels(), RADIO_SEGMENT_SPEC,
+        var widths = HorizontalSegments.computeSegmentWidths(spec.labels(), radioSegmentSpec(spec),
                 measurer);
-        return widths.isEmpty() ? RADIO_SEGMENT_SPEC.padding() : widths.get(0);
+        return widths.isEmpty() ? RADIO_SEGMENT_PADDING : widths.get(0);
+    }
+
+    // The segment-sizing rule for a radio row: the radio padding, no floor, and the body font under the
+    // control's own SegmentSizing - UNIFORM cells by default, SNAPPED per-label when a snapped horizontal
+    // radio opts in. Read (not a held constant) so the horizontal split, the horizontal row-width, and
+    // the vertical column width all honour the one field the spec carries.
+    private static SegmentSpec radioSegmentSpec(ControlSpec spec) {
+        return new SegmentSpec(RADIO_SEGMENT_PADDING, RADIO_SEGMENT_MIN_WIDTH, BODY_FONT_SIZE,
+                spec.segmentSizing());
+    }
+
+    // The segment-sizing rule for a tabs row: the tab padding, minimum, and tab font under the control's
+    // SegmentSizing (SNAPPED, as createTabs sets, so each tab snaps to its own label-plus-shortcut width).
+    private static SegmentSpec tabsSegmentSpec(ControlSpec spec) {
+        return new SegmentSpec(TAB_TEXT_PADDING, MIN_TAB_WIDTH, TAB_FONT_SIZE, spec.segmentSizing());
     }
 
     // Extra footprint a trailing label adds past the control's own row, or none when it is blank.

@@ -31,7 +31,7 @@ final class ControlSpecTest {
             assertThatThrownBy(() -> new ControlSpec(ControlKind.CHECKBOX, List.of("Muted"),
                     List.of("crest"), List.of(), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
                     RadioAlignment.HORIZONTAL, ReselectBehaviour.INERT,
-                    ControlSpec.BODY_TRAILING_SCALE, ControlSpec.SINGLE_COLUMN, false, List.of()))
+                    ControlSpec.BODY_TRAILING_SCALE, ControlSpec.SINGLE_COLUMN, false, List.of(), SegmentSizing.UNIFORM))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
@@ -42,7 +42,7 @@ final class ControlSpecTest {
             assertThatThrownBy(() -> new ControlSpec(ControlKind.RADIO, List.of("Short", "Full"),
                     List.of(), List.of("7", "3"), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
                     RadioAlignment.HORIZONTAL, ReselectBehaviour.INERT,
-                    ControlSpec.BODY_TRAILING_SCALE, ControlSpec.SINGLE_COLUMN, false, List.of()))
+                    ControlSpec.BODY_TRAILING_SCALE, ControlSpec.SINGLE_COLUMN, false, List.of(), SegmentSizing.UNIFORM))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
@@ -53,7 +53,7 @@ final class ControlSpecTest {
             assertThatThrownBy(() -> new ControlSpec(ControlKind.CHECKBOX, List.of("Muted"),
                     List.of(), List.of(), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
                     RadioAlignment.HORIZONTAL, ReselectBehaviour.DESELECT,
-                    ControlSpec.BODY_TRAILING_SCALE, ControlSpec.SINGLE_COLUMN, false, List.of()))
+                    ControlSpec.BODY_TRAILING_SCALE, ControlSpec.SINGLE_COLUMN, false, List.of(), SegmentSizing.UNIFORM))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
@@ -64,7 +64,7 @@ final class ControlSpecTest {
             assertThatThrownBy(() -> new ControlSpec(ControlKind.RADIO, List.of("A"), List.of(),
                     List.of(), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
                     RadioAlignment.VERTICAL, ReselectBehaviour.INERT, 0d, ControlSpec.SINGLE_COLUMN,
-                    false, List.of())).isInstanceOf(IllegalArgumentException.class);
+                    false, List.of(), SegmentSizing.UNIFORM)).isInstanceOf(IllegalArgumentException.class);
         }
 
         @Test
@@ -74,7 +74,7 @@ final class ControlSpecTest {
             assertThatThrownBy(() -> new ControlSpec(ControlKind.RADIO, List.of("A"), List.of(),
                     List.of(), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
                     RadioAlignment.VERTICAL, ReselectBehaviour.DESELECT,
-                    ControlSpec.BODY_TRAILING_SCALE, 0, false, List.of()))
+                    ControlSpec.BODY_TRAILING_SCALE, 0, false, List.of(), SegmentSizing.UNIFORM))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
@@ -85,7 +85,7 @@ final class ControlSpecTest {
             assertThatThrownBy(() -> new ControlSpec(ControlKind.RADIO, List.of("Short", "Full"),
                     List.of(), List.of(), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
                     RadioAlignment.HORIZONTAL, ReselectBehaviour.INERT,
-                    ControlSpec.BODY_TRAILING_SCALE, 2, false, List.of()))
+                    ControlSpec.BODY_TRAILING_SCALE, 2, false, List.of(), SegmentSizing.UNIFORM))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
@@ -96,7 +96,7 @@ final class ControlSpecTest {
             assertThatThrownBy(() -> new ControlSpec(ControlKind.RADIO, List.of("Short", "Full"),
                     List.of(), List.of(), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
                     RadioAlignment.HORIZONTAL, ReselectBehaviour.INERT,
-                    ControlSpec.BODY_TRAILING_SCALE, ControlSpec.SINGLE_COLUMN, true, List.of()))
+                    ControlSpec.BODY_TRAILING_SCALE, ControlSpec.SINGLE_COLUMN, true, List.of(), SegmentSizing.UNIFORM))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
@@ -107,7 +107,7 @@ final class ControlSpecTest {
             assertThatThrownBy(() -> new ControlSpec(ControlKind.CHECKBOX, List.of("Muted"),
                     List.of(), List.of(), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
                     RadioAlignment.HORIZONTAL, ReselectBehaviour.INERT,
-                    ControlSpec.BODY_TRAILING_SCALE, ControlSpec.SINGLE_COLUMN, false, List.of("N")))
+                    ControlSpec.BODY_TRAILING_SCALE, ControlSpec.SINGLE_COLUMN, false, List.of("N"), SegmentSizing.UNIFORM))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
@@ -117,6 +117,28 @@ final class ControlSpecTest {
             // icon and value columns, which the factory builds and the guard must let through.
             assertThatCode(() -> ControlSpec.createIconRadioList(List.of("Hegemony"), List.of("crest"),
                     List.of("7"), 0, ControlAction.NONE)).doesNotThrowAnyException();
+        }
+
+        @Test
+        void constructorRejectsSnappedSizingOnAVerticalRadio() {
+            // A vertical radio's columns are uniform by construction, so snapped sizing has no meaning
+            // there - it must fail at construction rather than carry a field the layout would not read.
+            assertThatThrownBy(() -> new ControlSpec(ControlKind.RADIO, List.of("A", "B"), List.of(),
+                    List.of(), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
+                    RadioAlignment.VERTICAL, ReselectBehaviour.INERT, ControlSpec.BODY_TRAILING_SCALE,
+                    ControlSpec.SINGLE_COLUMN, false, List.of(), SegmentSizing.SNAPPED))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        void constructorRejectsSnappedSizingOnANonSegmentedKind() {
+            // A checkbox has no segments to size, so snapped sizing is a shape the layout could not
+            // lay out - it must fail at construction instead.
+            assertThatThrownBy(() -> new ControlSpec(ControlKind.CHECKBOX, List.of("Muted"), List.of(),
+                    List.of(), "", ControlSpec.NO_SELECTION, ControlAction.NONE,
+                    RadioAlignment.HORIZONTAL, ReselectBehaviour.INERT, ControlSpec.BODY_TRAILING_SCALE,
+                    ControlSpec.SINGLE_COLUMN, false, List.of(), SegmentSizing.SNAPPED))
+                    .isInstanceOf(IllegalArgumentException.class);
         }
     }
 
@@ -204,6 +226,8 @@ final class ControlSpecTest {
             assertThat(selector.labels()).containsExactly("Factions", "Alliances");
             assertThat(selector.iconPaths()).isEmpty();
             assertThat(selector.trailingLabels()).isEmpty();
+            // A vertical radio's columns are uniform by construction, so it carries the default sizing.
+            assertThat(selector.segmentSizing()).isEqualTo(SegmentSizing.UNIFORM);
         }
 
         @Test
@@ -493,6 +517,8 @@ final class ControlSpecTest {
             assertThat(tabs.labels()).containsExactly("No Layer", "Political Map");
             assertThat(tabs.shortcuts()).containsExactly("N", "P");
             assertThat(tabs.selectedIndex()).isEqualTo(1);
+            // A tab strip snaps each tab to its own label-plus-shortcut width, not even cells.
+            assertThat(tabs.segmentSizing()).isEqualTo(SegmentSizing.SNAPPED);
         }
 
         @Test
@@ -549,6 +575,33 @@ final class ControlSpecTest {
             var tabs = ControlSpec.createTabs(List.of("No Layer", "Political Map"), List.of("N"), 0,
                     ControlAction.NONE);
             assertThat(tabs.shortcutAt(1)).isEmpty();
+        }
+    }
+
+    @Nested
+    class CreateSnappedHorizontalRadio {
+
+        @Test
+        void createSnappedHorizontalRadioIsAHorizontalRadioSizedSnapped() {
+            // The snapped horizontal radio: a standard side-by-side option row whose cells each snap to
+            // their own label width rather than sharing the widest option's, so a ragged row does not
+            // waste space as even cells.
+            var radio = ControlSpec.createSnappedHorizontalRadio(List.of("Short", "Full"), "Names", 0,
+                    ControlAction.NONE);
+            assertThat(radio.kind()).isEqualTo(ControlKind.RADIO);
+            assertThat(radio.alignment()).isEqualTo(RadioAlignment.HORIZONTAL);
+            assertThat(radio.segmentSizing()).isEqualTo(SegmentSizing.SNAPPED);
+            assertThat(radio.labels()).containsExactly("Short", "Full");
+            assertThat(radio.selectedIndex()).isZero();
+        }
+
+        @Test
+        void createSnappedHorizontalRadioCarriesTheClickActionByOptionIndex() {
+            var firedCell = new int[]{-99};
+            var radio = ControlSpec.createSnappedHorizontalRadio(List.of("Short", "Full"), "", 0,
+                    cell -> firedCell[0] = cell);
+            radio.action().activateCell(1);
+            assertThat(firedCell[0]).isEqualTo(1);
         }
     }
 }

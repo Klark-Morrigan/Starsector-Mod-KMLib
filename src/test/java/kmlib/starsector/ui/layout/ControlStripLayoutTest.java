@@ -85,6 +85,18 @@ final class ControlStripLayoutTest {
         }
 
         @Test
+        void measureStripSnapsAHorizontalRadioToPerLabelWidths() {
+            // A snapped horizontal radio sizes each cell to its own label plus the padding, so "Short"
+            // (5) and "Full" (4) span 9 characters plus two paddings - narrower than the uniform row's
+            // two widest-label cells.
+            var radio = ControlSpec.createSnappedHorizontalRadio(List.of("Short", "Full"), "",
+                    ControlSpec.NO_SELECTION, ControlAction.NONE);
+            var measurement = ControlStripLayout.measureStrip(List.of(radio), measurerFake);
+            var expected = 9 * WIDTH_PER_CHAR + 2 * ControlStripLayout.RADIO_SEGMENT_PADDING;
+            assertThat(measurement.rowWidths().get(0)).isCloseTo(expected, within(TOLERANCE));
+        }
+
+        @Test
         void measureStripStandsAVerticalRadioOneRowTallPerOption() {
             var radio = new ControlSpec(ControlKind.RADIO, List.of("Factions", "Alliances"), "",
                     ControlSpec.NO_SELECTION, ControlAction.NONE, RadioAlignment.VERTICAL,
@@ -242,6 +254,30 @@ final class ControlStripLayoutTest {
             var shortSegment = radio.segments().get(0);
             var fullSegment = radio.segments().get(1);
             assertThat(fullSegment.width()).isCloseTo(shortSegment.width(), within(TOLERANCE));
+            assertThat(fullSegment.x())
+                    .isCloseTo(shortSegment.x() + shortSegment.width(), within(TOLERANCE));
+        }
+
+        @Test
+        void layoutControlsSplitsASnappedRadioIntoPerLabelSegments() {
+            // A snapped horizontal radio splits into cells sized to each label, so "Short" (5) is wider
+            // than "Full" (4) rather than sharing one width - the ragged row the render chrome then rules
+            // its seams on.
+            var specs = List.of(ControlSpec.createSnappedHorizontalRadio(List.of("Short", "Full"), "",
+                    ControlSpec.NO_SELECTION, ControlAction.NONE));
+            var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
+            var radio = ControlStripLayout.layoutControls(frameBody(measurement), specs,
+                    measurement.rowHeights(), measurement.rowWidths(), measurerFake).get(0);
+
+            assertThat(radio.segments()).hasSize(2);
+            var shortSegment = radio.segments().get(0);
+            var fullSegment = radio.segments().get(1);
+            assertThat(shortSegment.width())
+                    .isCloseTo(5 * WIDTH_PER_CHAR + ControlStripLayout.RADIO_SEGMENT_PADDING,
+                            within(TOLERANCE));
+            assertThat(fullSegment.width())
+                    .isCloseTo(4 * WIDTH_PER_CHAR + ControlStripLayout.RADIO_SEGMENT_PADDING,
+                            within(TOLERANCE));
             assertThat(fullSegment.x())
                     .isCloseTo(shortSegment.x() + shortSegment.width(), within(TOLERANCE));
         }
