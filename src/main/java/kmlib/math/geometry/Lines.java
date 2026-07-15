@@ -52,20 +52,15 @@ final class Lines {
         return Math.abs(twiceArea) / baseLength;
     }
 
-    // The signed offset of {@code point} from the line through (lineX, lineY) with
-    // direction normal (normalX, normalY): (point - lineOrigin) projected onto the
-    // normal. Positive on the side the normal points to, zero on the line, negative
-    // on the far side. It equals the signed perpendicular distance only when the
-    // normal is unit length; otherwise the magnitude scales with |normal|. Callers
-    // therefore rely on the sign (which side) and on ratios of two offsets (where
-    // the shared scale cancels), never on the raw magnitude - the half-plane test
-    // the polygon clip keys its keep/discard decision and crossing point on.
-    static double computeSignedOffsetFromLine(
-            double[] point,
-            double lineX,
-            double lineY,
-            double normalX,
-            double normalY) {
-        return (point[0] - lineX) * normalX + (point[1] - lineY) * normalY;
+    // The signed offset of {@code point} from {@code boundary}'s line: (point - boundary
+    // origin) projected onto the boundary normal. Positive on the side the normal points
+    // to, zero on the line, negative on the far side. It equals the signed perpendicular
+    // distance only when the normal is unit length; otherwise the magnitude scales with
+    // |normal|. Callers therefore rely on the sign (which side) and on ratios of two
+    // offsets (where the shared scale cancels), never on the raw magnitude - the
+    // half-plane test the polygon clip keys its keep/discard decision and crossing point on.
+    static double computeSignedOffsetFromLine(double[] point, HalfPlane boundary) {
+        return (point[0] - boundary.pointX()) * boundary.normalX()
+                + (point[1] - boundary.pointY()) * boundary.normalY();
     }
 }

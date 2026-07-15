@@ -17,13 +17,6 @@ public final class Polygons {
     private Polygons() {
     }
 
-    // One edge's inward-offset clip line: a point on the line and the unit normal
-    // pointing to the kept (interior) side - exactly the four values a half-plane
-    // clip takes. A named, immutable tuple so a clip call reads by role rather than
-    // by array index.
-    private record OffsetLine(double pointX, double pointY, double normalX, double normalY) {
-    }
-
     /**
      * The result of {@link #insetSelectedEdges}: the inset polygon and, per edge,
      * whether that edge lies on an inward-offset line (a pulled-in border) rather
@@ -108,8 +101,7 @@ public final class Polygons {
             if (line == null) {
                 continue;
             }
-            working = working.clipToHalfPlane(line.pointX(), line.pointY(),
-                    line.normalX(), line.normalY(), insetEdgeLabel);
+            working = working.clipToHalfPlane(line, insetEdgeLabel);
         }
 
         // Normalise a clipped-away or collapsed result to empty, so a non-empty
@@ -171,8 +163,7 @@ public final class Polygons {
             if (line == null) {
                 continue;
             }
-            working = working.clipToHalfPlane(
-                    line.pointX(), line.pointY(), line.normalX(), line.normalY(), 0);
+            working = working.clipToHalfPlane(line, 0);
         }
         return working.getVertices();
     }
@@ -603,27 +594,17 @@ public final class Polygons {
             List<List<double[]>> rings,
             DirectedLine line) {
         var crossings = new ArrayList<Double>();
-        // The line's unit normal: offsets measured along it tell an edge endpoint's
-        // side of the line.
-        var normalX = -line.directionY();
-        var normalY = line.directionX();
+        // The half-plane whose boundary is the line: offsets measured against its normal
+        // tell an edge endpoint's side of the line.
+        var boundary = new HalfPlane(line.originX(), line.originY(),
+                -line.directionY(), line.directionX());
         for (var ring : rings) {
             var count = ring.size();
             for (var i = 0; i < count; i++) {
                 var edgeStart = ring.get(i);
                 var edgeEnd = ring.get((i + 1) % count);
-                var offsetStart = Lines.computeSignedOffsetFromLine(
-                        edgeStart,
-                        line.originX(),
-                        line.originY(),
-                        normalX,
-                        normalY);
-                var offsetEnd = Lines.computeSignedOffsetFromLine(
-                        edgeEnd,
-                        line.originX(),
-                        line.originY(),
-                        normalX,
-                        normalY);
+                var offsetStart = Lines.computeSignedOffsetFromLine(edgeStart, boundary);
+                var offsetEnd = Lines.computeSignedOffsetFromLine(edgeEnd, boundary);
                 if ((offsetStart > 0) == (offsetEnd > 0)) {
                     continue;
                 }
@@ -811,12 +792,12 @@ public final class Polygons {
     // shared by the whole-polygon {@link #insetConvexPolygon} and the per-edge
     // {@link #insetSelectedEdges}, which differ only in which edges they feed it
     // and whether they track the cut edge's label.
-    private static OffsetLine computeInwardOffsetLine(double[] a, double[] b, double distance) {
+    private static HalfPlane computeInwardOffsetLine(double[] a, double[] b, double distance) {
         var normal = computeInwardUnitNormal(a, b);
         if (normal == null) {
             return null;
         }
-        return new OffsetLine(
+        return new HalfPlane(
                 a[0] + normal[0] * distance, a[1] + normal[1] * distance, normal[0], normal[1]);
     }
 

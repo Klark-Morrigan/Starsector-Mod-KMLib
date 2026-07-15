@@ -303,9 +303,9 @@ final class VoronoiCellBuilderTest {
                     continue;
                 }
                 var neighbour = sites.get(other);
-                cell = bareClipToHalfPlane(cell,
+                cell = bareClipToHalfPlane(cell, new HalfPlane(
                         (site[0] + neighbour[0]) * 0.5, (site[1] + neighbour[1]) * 0.5,
-                        site[0] - neighbour[0], site[1] - neighbour[1]);
+                        site[0] - neighbour[0], site[1] - neighbour[1]));
                 if (cell.isEmpty()) {
                     break;
                 }
@@ -321,16 +321,14 @@ final class VoronoiCellBuilderTest {
         // itself. Shares only the point math via Points, so any vertex mismatch is
         // labelling, not a different crossing formula.
         private static List<double[]> bareClipToHalfPlane(List<double[]> polygon,
-                double lineX, double lineY, double normalX, double normalY) {
+                HalfPlane boundary) {
             var result = new ArrayList<double[]>();
             var count = polygon.size();
             for (var i = 0; i < count; i++) {
                 var current = polygon.get(i);
                 var next = polygon.get((i + 1) % count);
-                var currentOffset =
-                        Lines.computeSignedOffsetFromLine(current, lineX, lineY, normalX, normalY);
-                var nextOffset =
-                        Lines.computeSignedOffsetFromLine(next, lineX, lineY, normalX, normalY);
+                var currentOffset = Lines.computeSignedOffsetFromLine(current, boundary);
+                var nextOffset = Lines.computeSignedOffsetFromLine(next, boundary);
                 if (currentOffset >= 0) {
                     result.add(current);
                 }

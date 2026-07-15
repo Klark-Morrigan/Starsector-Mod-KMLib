@@ -219,8 +219,9 @@ public final class VoronoiCellBuilder {
     private static LabelledPolygon clipToBisector(LabelledPolygon cell, double[] keep,
             double[] drop, int dropIndex) {
         return cell.clipToHalfPlane(
-                (keep[0] + drop[0]) * 0.5, (keep[1] + drop[1]) * 0.5,
-                keep[0] - drop[0], keep[1] - drop[1], dropIndex);
+                new HalfPlane((keep[0] + drop[0]) * 0.5, (keep[1] + drop[1]) * 0.5,
+                        keep[0] - drop[0], keep[1] - drop[1]),
+                dropIndex);
     }
 
     // Locates {@code site} in {@code sites} by reference, the identity the

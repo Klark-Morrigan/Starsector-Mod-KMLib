@@ -94,18 +94,14 @@ public final class LabelledPolygon {
      * outgoing-edge label; a crossing made while leaving the kept side starts the
      * new clip-line edge and so takes {@code clipLabel}, while a crossing made
      * while re-entering resumes the original edge and keeps that edge's label.
-     * {@code normal} need not be unit length, since only the sign of the
+     * The boundary's normal need not be unit length, since only the sign of the
      * half-plane test matters.
      *
-     * @param lineX     x of a point on the clip line
-     * @param lineY     y of a point on the clip line
-     * @param normalX   x of the normal pointing to the kept side
-     * @param normalY   y of the normal pointing to the kept side
+     * @param boundary  the clip line and the normal pointing to its kept side
      * @param clipLabel the label stamped on the edge cut along the clip line
      * @return the clipped polygon; empty when nothing lies on the kept side
      */
-    public LabelledPolygon clipToHalfPlane(double lineX, double lineY, double normalX,
-            double normalY, int clipLabel) {
+    public LabelledPolygon clipToHalfPlane(HalfPlane boundary, int clipLabel) {
         var result = new ArrayList<LabelledVertex>();
         var count = vertices.size();
         // Sutherland-Hodgman edge walk; the half-plane side test lives in Lines and
@@ -114,10 +110,8 @@ public final class LabelledPolygon {
         for (var i = 0; i < count; i++) {
             var current = vertices.get(i);
             var next = vertices.get((i + 1) % count);
-            var currentOffset = Lines.computeSignedOffsetFromLine(
-                    current.point(), lineX, lineY, normalX, normalY);
-            var nextOffset = Lines.computeSignedOffsetFromLine(
-                    next.point(), lineX, lineY, normalX, normalY);
+            var currentOffset = Lines.computeSignedOffsetFromLine(current.point(), boundary);
+            var nextOffset = Lines.computeSignedOffsetFromLine(next.point(), boundary);
 
             if (currentOffset >= 0) {
                 result.add(current);

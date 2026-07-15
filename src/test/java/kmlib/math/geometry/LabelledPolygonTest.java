@@ -78,7 +78,7 @@ final class LabelledPolygonTest {
 
             // Keep x >= 50 (normal points +x, line through (50, 0)); the clip line
             // misses every vertex, so no degenerate zero-length edges arise.
-            var clipped = diamond.clipToHalfPlane(50, 0, 1, 0, CLIP_LABEL);
+            var clipped = diamond.clipToHalfPlane(new HalfPlane(50, 0, 1, 0), CLIP_LABEL);
 
             assertThat(clipped.getVertices()).isNotEmpty();
             assertThat(clipped.getVertices()).allSatisfy(vertex ->
@@ -89,7 +89,7 @@ final class LabelledPolygonTest {
         void clipStampsTheCutEdgeAndKeepsTheRest() {
             var diamond = LabelledPolygon.createRegularPolygon(new double[] {0, 0}, 100, 4, SEED_LABEL);
 
-            var clipped = diamond.clipToHalfPlane(50, 0, 1, 0, CLIP_LABEL);
+            var clipped = diamond.clipToHalfPlane(new HalfPlane(50, 0, 1, 0), CLIP_LABEL);
 
             // Exactly one edge - the one lying on the clip line - takes the clip
             // label; every surviving original edge keeps its seed label.
@@ -102,7 +102,7 @@ final class LabelledPolygonTest {
         void clipLeavesTheSourcePolygonUntouched() {
             var diamond = LabelledPolygon.createRegularPolygon(new double[] {0, 0}, 100, 4, SEED_LABEL);
 
-            diamond.clipToHalfPlane(50, 0, 1, 0, CLIP_LABEL);
+            diamond.clipToHalfPlane(new HalfPlane(50, 0, 1, 0), CLIP_LABEL);
 
             // Immutable: clipping returns a new polygon, so the original still has
             // all four seed-labelled edges.
@@ -115,7 +115,7 @@ final class LabelledPolygonTest {
             var diamond = LabelledPolygon.createRegularPolygon(new double[] {0, 0}, 100, 4, SEED_LABEL);
 
             // The whole polygon lies left of x = 1000, so the kept side is empty.
-            var clipped = diamond.clipToHalfPlane(1000, 0, 1, 0, CLIP_LABEL);
+            var clipped = diamond.clipToHalfPlane(new HalfPlane(1000, 0, 1, 0), CLIP_LABEL);
 
             assertThat(clipped.isEmpty()).isTrue();
             assertThat(clipped.getVertices()).isEmpty();
