@@ -12,6 +12,7 @@ import kmlib.text.KmlibStrings;
 import org.lazywizard.lazylib.ui.LazyFont;
 import org.lazywizard.lazylib.ui.LazyFont.DrawableString;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,7 +21,10 @@ import java.util.Map;
  * Raw-GL paint for a {@link VanillaTabStrip}: the sector-map Sector/System tab look - a black strip
  * with the active tab lit by a player-colour wash and underline, the hovered tab washed fainter,
  * hairline dividers, and each label drawn with its bracketed shortcut in accent gold. The tab
- * geometry lives on the substrate-independent widget; this draws it. Unlike the plain renderers it
+ * geometry lives on the substrate-independent widget; this draws it. The wash on the selected tab and
+ * the seams between tabs are the chrome every horizontal segmented control shares, so they come from
+ * {@link HorizontalSegmentsRenderer} (as a radio row's do); the black backdrop, the hover wash, the
+ * baseline, the underline, and the two-colour label are this strip's own. Unlike the plain renderers it
  * draws the label text itself (through {@link LazyFontCache}), since the two-colour
  * label-plus-gold-shortcut is the whole point of the style.
  *
@@ -29,11 +33,9 @@ import java.util.Map;
  * multi-colour run) precisely so it fades with the rest instead of staying opaque.
  */
 public final class VanillaTabStripRenderer {
-    // How much of the strip opacity each accent touch carries, so a lit tab reads as a highlight
-    // over the black rather than a second opaque block.
-    private static final float SELECTED_FILL_ALPHA_MULT = 0.30f;
+    // How much of the strip opacity the hover wash carries, so a hovered tab lights fainter than the
+    // selected one (whose wash strength is the shared HorizontalSegmentsRenderer.SELECTED_WASH_ALPHA_MULT).
     private static final float HOVER_FILL_ALPHA_MULT = 0.15f;
-    private static final float DIVIDER_ALPHA_MULT = 0.40f;
 
     private static final float BASELINE_THICKNESS = 1f;
     private static final float UNDERLINE_THICKNESS = 2f;
@@ -68,31 +70,41 @@ public final class VanillaTabStripRenderer {
             var tab = tabs.get(index);
             var isSelected = index == selectedIndex;
             var isHovered = index == hoveredIndex;
-            renderChrome(tab.bounds(), index, isSelected, isHovered, colors, opacity);
+            renderChrome(tab.bounds(), isSelected, isHovered, colors, opacity);
             renderTabText(tab.bounds(), tab.content(), isSelected, isHovered, colors, fontBasename,
                     fontSize, opacity);
         }
+        // The seams between tabs, ruled once over the laid boxes through the shared segmented-row
+        // primitive so this strip and a radio row divide their segments the same way. Drawn after the
+        // per-tab chrome (a divider must sit over the backdrops it parts) and clear of the centred
+        // labels, so the single pass reads identically to a per-tab rule.
+        HorizontalSegmentsRenderer.renderSeamDividers(collectBounds(tabs), colors.accent(), opacity);
+    }
+
+    // The laid tab boxes, in row order, for the shared seam-divider pass.
+    private static List<Rectangle> collectBounds(List<VanillaTab> tabs) {
+        var bounds = new ArrayList<Rectangle>(tabs.size());
+        for (var tab : tabs) {
+            bounds.add(tab.bounds());
+        }
+        return bounds;
     }
 
     // Black backdrop, an accent wash on the selected (or fainter, hovered) tab, a faint baseline
-    // and left divider grounding the row, and a bright underline capping the active tab.
-    private static void renderChrome(Rectangle bounds, int index,
-            boolean isSelected, boolean isHovered, VanillaTabColors colors, float opacity) {
+    // grounding the row, and a bright underline capping the active tab. The inter-tab seams are drawn
+    // once by the caller through the shared primitive, not here.
+    private static void renderChrome(Rectangle bounds, boolean isSelected, boolean isHovered,
+            VanillaTabColors colors, float opacity) {
         UiFill.renderQuad(bounds.x(), bounds.y(), bounds.width(), bounds.height(),
                 colors.backdrop(), opacity);
         if (isSelected) {
-            UiFill.renderQuad(bounds.x(), bounds.y(), bounds.width(), bounds.height(),
-                    colors.accent(), opacity * SELECTED_FILL_ALPHA_MULT);
+            HorizontalSegmentsRenderer.renderSelectedWash(bounds, colors.accent(), opacity);
         } else if (isHovered) {
             UiFill.renderQuad(bounds.x(), bounds.y(), bounds.width(), bounds.height(),
                     colors.accent(), opacity * HOVER_FILL_ALPHA_MULT);
         }
         UiFill.renderQuad(bounds.x(), bounds.y(), bounds.width(), BASELINE_THICKNESS,
-                colors.accent(), opacity * DIVIDER_ALPHA_MULT);
-        if (index > 0) {
-            UiFill.renderQuad(bounds.x(), bounds.y(), BASELINE_THICKNESS, bounds.height(),
-                    colors.accent(), opacity * DIVIDER_ALPHA_MULT);
-        }
+                colors.accent(), opacity * HorizontalSegmentsRenderer.DIVIDER_ALPHA_MULT);
         if (isSelected) {
             UiFill.renderQuad(bounds.x(), bounds.y(), bounds.width(), UNDERLINE_THICKNESS,
                     colors.accent(), opacity);

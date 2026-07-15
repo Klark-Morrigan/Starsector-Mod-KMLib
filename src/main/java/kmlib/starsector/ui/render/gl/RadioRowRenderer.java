@@ -1,18 +1,18 @@
 package kmlib.starsector.ui.render.gl;
 
 import kmlib.math.geometry.Rectangle;
-import kmlib.starsector.ui.widgets.HorizontalSegments;
 import kmlib.starsector.ui.widgets.RadioRow;
 
 import java.util.List;
 
 /**
  * Raw-GL paint for a radio group: washes the selected segment, rules the dividers between segments,
- * and frames the whole row, all faded by one opacity. The segment geometry lives on the
- * substrate-independent widgets ({@link RadioRow} for the vertical grid, {@link HorizontalSegments}
- * for a horizontal row); this is the GL passthrough (over {@link UiFill} and {@link UiBoxes}),
- * exercised in-engine. The lit segment is a wash over the frame rather than a second opaque block, so
- * it reads as a highlight; the dividers are fainter still so they separate without competing.
+ * and frames the whole row, all faded by one opacity. The shared segmented-row chrome (the wash and the
+ * seam dividers) is drawn through {@link HorizontalSegmentsRenderer} so a radio row and a tab strip
+ * cannot drift on it; only the outer frame is the radio's own. The segment geometry lives on the
+ * substrate-independent {@link RadioRow} widget; this is the GL passthrough, exercised in-engine. The
+ * lit segment is a wash over the frame rather than a second opaque block, so it reads as a highlight;
+ * the dividers are fainter still so they separate without competing.
  *
  * <p>The two flows have separate entry points because they read their segments differently. A vertical
  * group draws as a grid of {@code columnCount} columns (one column is the ordinary stacked list) it
@@ -22,9 +22,6 @@ import java.util.List;
  * geometry the labels do whether the segments are even or snapped, never a re-derived equal split.
  */
 public final class RadioRowRenderer {
-    private static final float SELECTED_FILL_ALPHA_MULT = 0.30f;
-    private static final float DIVIDER_ALPHA_MULT = 0.40f;
-    private static final float DIVIDER_THICKNESS = 1f;
     private static final float OUTLINE_THICKNESS = 1f;
 
     private RadioRowRenderer() {
@@ -47,14 +44,10 @@ public final class RadioRowRenderer {
     public static void renderHorizontalRow(Rectangle bounds, List<Rectangle> segments,
             int selectedIndex, RadioColors colors, float opacity) {
         if (selectedIndex >= 0 && selectedIndex < segments.size()) {
-            var selected = segments.get(selectedIndex);
-            UiFill.renderQuad(selected.x(), selected.y(), selected.width(), selected.height(),
-                    colors.selectedWash(), opacity * SELECTED_FILL_ALPHA_MULT);
+            HorizontalSegmentsRenderer.renderSelectedWash(segments.get(selectedIndex),
+                    colors.selectedWash(), opacity);
         }
-        for (var divider : HorizontalSegments.computeDividers(segments, DIVIDER_THICKNESS)) {
-            UiFill.renderQuad(divider.x(), divider.y(), divider.width(), divider.height(),
-                    colors.frame(), opacity * DIVIDER_ALPHA_MULT);
-        }
+        HorizontalSegmentsRenderer.renderSeamDividers(segments, colors.frame(), opacity);
         UiBoxes.renderBorder(bounds.x(), bounds.y(), bounds.width(), bounds.height(),
                 OUTLINE_THICKNESS, colors.frame(), opacity);
     }
@@ -77,24 +70,28 @@ public final class RadioRowRenderer {
             int columnCount, RadioColors colors, float opacity) {
         var segments = RadioRow.splitIntoGrid(bounds, optionCount, columnCount);
         if (selectedIndex >= 0 && selectedIndex < segments.size()) {
-            var selected = segments.get(selectedIndex);
-            UiFill.renderQuad(selected.x(), selected.y(), selected.width(), selected.height(),
-                    colors.selectedWash(), opacity * SELECTED_FILL_ALPHA_MULT);
+            HorizontalSegmentsRenderer.renderSelectedWash(segments.get(selectedIndex),
+                    colors.selectedWash(), opacity);
         }
         // The tallest column, matching the grid split, so the row rules land on the same boundaries
-        // the cells abut on.
+        // the cells abut on. The grid's column and row rules are the vertical list's own (a flat seam
+        // list cannot reconstruct them), but draw at the shared divider strength and thickness so they
+        // read the same as a horizontal row's seams.
+        var dividerColor = colors.frame();
+        var dividerAlpha = opacity * HorizontalSegmentsRenderer.DIVIDER_ALPHA_MULT;
+        var thickness = HorizontalSegmentsRenderer.DIVIDER_THICKNESS;
         var rowCount = RadioRow.computeRowsPerColumn(optionCount, columnCount);
         var columnWidth = bounds.width() / columnCount;
         var rowHeight = bounds.height() / rowCount;
         for (var column = 1; column < columnCount; column++) {
             var columnX = bounds.x() + column * columnWidth;
-            UiFill.renderQuad(columnX, bounds.y(), DIVIDER_THICKNESS, bounds.height(), colors.frame(),
-                    opacity * DIVIDER_ALPHA_MULT);
+            UiFill.renderQuad(columnX, bounds.y(), thickness, bounds.height(), dividerColor,
+                    dividerAlpha);
         }
         for (var row = 1; row < rowCount; row++) {
             var boundaryY = bounds.y() + bounds.height() - row * rowHeight;
-            UiFill.renderQuad(bounds.x(), boundaryY - DIVIDER_THICKNESS, bounds.width(),
-                    DIVIDER_THICKNESS, colors.frame(), opacity * DIVIDER_ALPHA_MULT);
+            UiFill.renderQuad(bounds.x(), boundaryY - thickness, bounds.width(), thickness,
+                    dividerColor, dividerAlpha);
         }
         UiBoxes.renderBorder(bounds.x(), bounds.y(), bounds.width(), bounds.height(),
                 OUTLINE_THICKNESS, colors.frame(), opacity);
