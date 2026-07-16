@@ -14,7 +14,9 @@ import static org.assertj.core.api.Assertions.within;
  *    own alpha is honoured, and alphaMult scales the final alpha and nothing else;
  *  - {@link Colors#scaleAlpha} - RGB is kept, the colour's own alpha folds into the
  *    multiplier as a rounded channel, and an over-1 multiplier saturates rather than
- *    throwing.
+ *    throwing;
+ *  - {@link Colors#darken} - each RGB channel scales toward black by the factor, the
+ *    alpha is kept, and an over-1 factor saturates at white rather than throwing.
  */
 final class ColorsTest {
 
@@ -84,6 +86,49 @@ final class ColorsTest {
             var faded = Colors.scaleAlpha(new Color(0, 0, 0, 255), 0f);
 
             assertThat(faded.getAlpha()).isEqualTo(0);
+        }
+    }
+
+    @Nested
+    class Darken {
+        @Test
+        void scales_each_rgb_channel_by_the_factor_and_keeps_the_alpha() {
+            var darker = Colors.darken(new Color(200, 100, 40, 255), 0.5f);
+
+            assertThat(darker.getRed()).isEqualTo(100);
+            assertThat(darker.getGreen()).isEqualTo(50);
+            // 40 * 0.5 = 20.
+            assertThat(darker.getBlue()).isEqualTo(20);
+            assertThat(darker.getAlpha()).isEqualTo(255);
+        }
+
+        @Test
+        void leaves_the_colour_unchanged_at_a_factor_of_one() {
+            var same = Colors.darken(new Color(10, 20, 30, 128), 1f);
+
+            assertThat(same.getRed()).isEqualTo(10);
+            assertThat(same.getGreen()).isEqualTo(20);
+            assertThat(same.getBlue()).isEqualTo(30);
+            assertThat(same.getAlpha()).isEqualTo(128);
+        }
+
+        @Test
+        void returns_black_at_a_factor_of_zero() {
+            var black = Colors.darken(new Color(200, 150, 100, 200), 0f);
+
+            assertThat(black.getRed()).isEqualTo(0);
+            assertThat(black.getGreen()).isEqualTo(0);
+            assertThat(black.getBlue()).isEqualTo(0);
+            // The alpha is untouched by darkening.
+            assertThat(black.getAlpha()).isEqualTo(200);
+        }
+
+        @Test
+        void saturates_at_the_max_channel_when_the_factor_exceeds_one() {
+            // 200 * 2 = 400 would overflow Color's 0-255 range, so it clamps to 255.
+            var brighter = Colors.darken(new Color(200, 0, 0, 255), 2f);
+
+            assertThat(brighter.getRed()).isEqualTo(255);
         }
     }
 }

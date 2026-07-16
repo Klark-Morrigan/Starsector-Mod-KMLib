@@ -64,4 +64,33 @@ public final class Colors {
         var clampedAlpha = Math.max(0, Math.min(MAX_CHANNEL_VALUE, scaledAlpha));
         return new Color(color.getRed(), color.getGreen(), color.getBlue(), clampedAlpha);
     }
+
+    /**
+     * A copy of {@code color} with its red, green, and blue channels scaled toward black by
+     * {@code factor}, its own alpha kept - so a caller can sink a fill to a darker, more
+     * recessive shade of the same hue without touching its transparency. A factor of 1 leaves
+     * the colour unchanged, 0 returns black, and values between darken proportionally. Each
+     * scaled channel is rounded to the nearest channel value and clamped into range, so a
+     * factor above 1 (a brighten) saturates at white instead of throwing from {@link Color}'s
+     * constructor.
+     *
+     * @param color  the source colour; its own alpha is preserved
+     * @param factor the fraction of each RGB channel to keep; 1 leaves the colour unchanged,
+     *               0 returns black
+     * @return a colour with each RGB channel scaled by {@code factor} and the original alpha
+     */
+    public static Color darken(Color color, float factor) {
+        return new Color(
+                scaleChannel(color.getRed(), factor),
+                scaleChannel(color.getGreen(), factor),
+                scaleChannel(color.getBlue(), factor),
+                color.getAlpha());
+    }
+
+    // Scales one 0-255 channel by the factor, rounding to the nearest channel value and clamping
+    // into range so an over-1 factor saturates rather than overflowing Color's constructor.
+    private static int scaleChannel(int channel, float factor) {
+        var scaled = Math.round(channel * factor);
+        return Math.max(0, Math.min(MAX_CHANNEL_VALUE, scaled));
+    }
 }
