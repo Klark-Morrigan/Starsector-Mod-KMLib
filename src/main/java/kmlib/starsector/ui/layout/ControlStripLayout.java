@@ -41,7 +41,7 @@ public final class ControlStripLayout {
     // The horizontal gap parting the two columns of a side-by-side group, wider than the inter-row gap
     // so the two runs read as distinct blocks rather than one continuous row. Public so a test places
     // the right column at the same offset the layout reserved for the gap.
-    public static final float COLUMN_GAP = 12f;
+    public static final float COLUMN_GAP = 8f;
 
     // Per-control slack: the gap between a checkbox's box and its label, the padding sizing each
     // radio segment past its option label, the gap before a control's trailing label, and the
