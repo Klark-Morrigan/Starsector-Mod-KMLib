@@ -4,6 +4,7 @@ import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlAction;
 import kmlib.starsector.ui.controls.ControlSpec;
+import kmlib.starsector.ui.controls.VerticalTableSpecs;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -161,7 +162,7 @@ final class PanelControllerTest {
     // A one-option scrolling list laid out at ROW: a vertical icon table marked as the scroll region, its
     // single segment the whole row, so a press at ROW hits option 0 unless the viewport clips it.
     private static Control buildScrollingListAtRow(ControlAction action) {
-        var spec = ControlSpec.VerticalTable.iconList(List.of("Opt"), Arrays.asList((String) null),
+        var spec = VerticalTableSpecs.buildIconList(List.of("Opt"), Arrays.asList((String) null),
                 ControlSpec.NO_SELECTION, action).asScrolling();
         return new Control(spec, ROW, List.of(ROW));
     }

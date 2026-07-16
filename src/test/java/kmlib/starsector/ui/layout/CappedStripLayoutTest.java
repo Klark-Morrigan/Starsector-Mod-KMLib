@@ -3,6 +3,7 @@ package kmlib.starsector.ui.layout;
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.ControlAction;
 import kmlib.starsector.ui.controls.ControlSpec;
+import kmlib.starsector.ui.controls.VerticalTableSpecs;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.layout.ControlStripLayout.StripMeasurement;
 import kmlib.testfixtures.starsector.ui.font.LineWidthMeasurerFake;
@@ -50,7 +51,7 @@ final class CappedStripLayoutTest {
             labels.add("Opt" + index);
             icons.add(null);
         }
-        return ControlSpec.VerticalTable.iconList(labels, icons, ControlSpec.NO_SELECTION,
+        return VerticalTableSpecs.buildIconList(labels, icons, ControlSpec.NO_SELECTION,
                 ControlAction.NONE).asScrolling();
     }
 

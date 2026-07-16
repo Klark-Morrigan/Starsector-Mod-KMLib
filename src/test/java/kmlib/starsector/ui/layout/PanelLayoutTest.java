@@ -4,6 +4,7 @@ import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.ControlAction;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.ReselectBehaviour;
+import kmlib.starsector.ui.controls.VerticalTableSpecs;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.widgets.PanelPlacement;
 import kmlib.testfixtures.starsector.ui.font.LineWidthMeasurerFake;
@@ -263,7 +264,7 @@ final class PanelLayoutTest {
     // A two-option vertical selector radio, on its own so the stacked geometry is checked without the
     // other controls' rows in the way. "Alliances" (9 chars) is the wider option.
     private static List<ControlSpec> verticalRadioBody() {
-        return List.of(ControlSpec.VerticalTable.plain(List.of("Factions", "Alliances"),
+        return List.of(VerticalTableSpecs.buildPlainTable(List.of("Factions", "Alliances"),
                 ControlSpec.NO_SELECTION, ControlAction.NONE, ReselectBehaviour.DESELECT));
     }
 
@@ -279,7 +280,7 @@ final class PanelLayoutTest {
             labels.add("Opt" + index);
             icons.add(null);
         }
-        var list = ControlSpec.VerticalTable.iconList(labels, icons, ControlSpec.NO_SELECTION,
+        var list = VerticalTableSpecs.buildIconList(labels, icons, ControlSpec.NO_SELECTION,
                 ControlAction.NONE).asScrolling();
         return List.of(
                 ControlSpec.Checkbox.lit("Header", false, ControlAction.NONE),

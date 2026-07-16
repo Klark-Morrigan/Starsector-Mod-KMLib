@@ -180,10 +180,10 @@ public final class ControlRenderer {
         }
         var trailing = spec.trailingLabelAt(index);
         if (KmlibStrings.hasText(trailing)) {
-            // Drawn at the spec's trailing size - the same size the layout reserved the column at.
+            // Drawn at the body size - the same size the layout reserved the column at.
             drawBodyLabel(bodyFont, trailing, IconLabelRow.computeTrailingAnchorX(segment),
                     segment.computeCenterY(), LazyFont.TextAnchor.CENTER_RIGHT, opacity,
-                    ControlStripLayout.BODY_FONT_SIZE * spec.trailingScale());
+                    ControlStripLayout.BODY_FONT_SIZE);
         }
     }
 

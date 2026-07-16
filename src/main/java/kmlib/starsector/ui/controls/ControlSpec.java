@@ -27,9 +27,6 @@ public sealed interface ControlSpec {
     /** {@code selectedIndex} value meaning the control is off - no cell is lit. */
     int NO_SELECTION = -1;
 
-    /** The trailing-value size a control uses when its trailing column reads at the body font size. */
-    double BODY_TRAILING_SCALE = 1d;
-
     /** The column count of an ordinary single-column list. */
     int SINGLE_COLUMN = 1;
 
@@ -260,8 +257,8 @@ public sealed interface ControlSpec {
     /**
      * A vertical stack of option rows, exactly one lit, each row optionally carrying a leading icon
      * and a right-aligned trailing value - so the list reads as a table (crest, name, value). It is
-     * the general stacked selector: a plain view selector (no icons, no values), an icon picker, and a
-     * sort selector (a direction triangle per row) are all this variant with different columns filled.
+     * the general stacked selector: a label-only list, an icon picker, and a direction list (a triangle
+     * per row) are all this variant with different columns filled.
      *
      * <p>The {@code iconPaths}, {@code trailingLabels}, and {@code trailingDirections} run parallel to
      * {@code labels}: the entry at index {@code i} draws on the option labelled {@code labels.get(i)}. A
@@ -285,8 +282,6 @@ public sealed interface ControlSpec {
      * @param selectedIndex      the lit option's index, or {@link #NO_SELECTION} when nothing is picked
      * @param action             what a click on an option does, keyed by the option index
      * @param reselect           what a click on the lit option does (deselect, re-fire, or inert)
-     * @param trailingScale      the trailing values' size relative to the body font ({@link
-     *                           #BODY_TRAILING_SCALE} for a body-size column, less for a compact one)
      * @param columnCount        how many columns to spread the options across ({@link #SINGLE_COLUMN}
      *                           for one column)
      * @param scrolls            whether this control is the capped strip's scrolling flex region
@@ -299,23 +294,18 @@ public sealed interface ControlSpec {
             int selectedIndex,
             ControlAction action,
             ReselectBehaviour reselect,
-            double trailingScale,
             int columnCount,
             boolean scrolls) implements Interactive {
         /**
          * Copies the option lists defensively - null-tolerantly, since a null entry is a real "no icon",
-         * "no value", or "no triangle" - and rejects the two numeric shapes the layout cannot lay out, so
-         * a mis-built table fails at construction rather than at paint time.
+         * "no value", or "no triangle" - and rejects a column count the layout cannot lay out, so a
+         * mis-built table fails at construction rather than at paint time.
          */
         public VerticalTable {
             labels = List.copyOf(labels);
             iconPaths = Collections.unmodifiableList(new ArrayList<>(iconPaths));
             trailingLabels = Collections.unmodifiableList(new ArrayList<>(trailingLabels));
             trailingDirections = Collections.unmodifiableList(new ArrayList<>(trailingDirections));
-            if (trailingScale <= 0d) {
-                throw new IllegalArgumentException(
-                        "trailingScale is a size multiplier and must be positive, was " + trailingScale);
-            }
             if (columnCount < SINGLE_COLUMN) {
                 throw new IllegalArgumentException("columnCount must be at least " + SINGLE_COLUMN
                         + ", was " + columnCount);
@@ -323,88 +313,12 @@ public sealed interface ControlSpec {
         }
 
         /**
-         * Builds a plain vertical radio: one stacked option per label, no icons and no values. {@code
-         * reselect} refines what a click on the lit option does - {@link ReselectBehaviour#DESELECT}
-         * for a selector that clears to nothing, {@link ReselectBehaviour#INERT} for one that always
-         * keeps a segment lit.
-         *
-         * @param labels        the option labels, top to bottom, in segment order
-         * @param selectedIndex the lit option's index, or {@link #NO_SELECTION}
-         * @param action        what a click on an option does, keyed by the option index
-         * @param reselect      what a click on the lit option does
-         * @return the plain vertical radio spec
-         */
-        public static VerticalTable plain(
-                List<String> labels,
-                int selectedIndex,
-                ControlAction action,
-                ReselectBehaviour reselect) {
-            return new VerticalTable(
-                    labels,
-                    List.of(),
-                    List.of(),
-                    List.of(),
-                    selectedIndex,
-                    action,
-                    reselect,
-                    BODY_TRAILING_SCALE,
-                    SINGLE_COLUMN,
-                    false);
-        }
-
-        /**
-         * Builds a deselectable icon list: a table with leading crests, no trailing column, drawn at
-         * the body size - the shape a picker takes, where re-picking the lit option clears the list.
-         *
-         * @param labels        the option labels, top to bottom
-         * @param iconPaths     the per-option icon paths, aligned to {@code labels} (a null draws none)
-         * @param selectedIndex the lit option's index, or {@link #NO_SELECTION}
-         * @param action        what a click on an option does, keyed by the option index
-         * @return the icon-list spec
-         */
-        public static VerticalTable iconList(
-                List<String> labels,
-                List<String> iconPaths,
-                int selectedIndex,
-                ControlAction action) {
-            return iconList(
-                    labels,
-                    iconPaths,
-                    List.of(),
-                    selectedIndex,
-                    action,
-                    SINGLE_COLUMN);
-        }
-
-        /**
-         * Builds the icon list of {@link #iconList(List, List, int, ControlAction)} with a right-aligned
-         * value per row (crest, name, value), laid out in a single column.
-         *
-         * @param labels         the option labels, top to bottom
-         * @param iconPaths      the per-option icon paths, aligned to {@code labels} (a null draws none)
-         * @param trailingLabels the per-option values, aligned to {@code labels} (a null draws none)
-         * @param selectedIndex  the lit option's index, or {@link #NO_SELECTION}
-         * @param action         what a click on an option does, keyed by the option index
-         * @return the icon-table spec, in a single column
-         */
-        public static VerticalTable iconList(
-                List<String> labels,
-                List<String> iconPaths,
-                List<String> trailingLabels,
-                int selectedIndex,
-                ControlAction action) {
-            return iconList(
-                    labels,
-                    iconPaths,
-                    trailingLabels,
-                    selectedIndex,
-                    action,
-                    SINGLE_COLUMN);
-        }
-
-        /**
-         * Builds the icon list of {@link #iconList(List, List, int, ControlAction)} with a right-aligned
-         * value per row (crest, name, value) spread across {@code columnCount} columns.
+         * Builds a deselectable icon list (crest, name, value) spread across {@code columnCount} columns:
+         * a vertical table where re-picking the lit option clears the list. The {@code iconPaths} and
+         * {@code trailingLabels} run parallel to {@code labels} - a null or absent entry leaves that
+         * option icon-less or value-less, and an all-null (but present) icon column reads as a table with
+         * no crests. A table whose trailing column is direction triangles rather than text uses {@link
+         * #directionTable} instead.
          *
          * @param labels         the option labels, top to bottom
          * @param iconPaths      the per-option icon paths, aligned to {@code labels} (a null draws none)
@@ -429,57 +343,17 @@ public sealed interface ControlSpec {
                     selectedIndex,
                     action,
                     ReselectBehaviour.DESELECT,
-                    BODY_TRAILING_SCALE,
                     columnCount,
                     false);
         }
 
         /**
-         * Builds the general single-column table: a caller-chosen {@link ReselectBehaviour} and trailing
-         * size, so a selector that re-fires on the lit row and draws a compact trailing text column
-         * (kept smaller than the option names) shares the three-column geometry the deselectable {@link
-         * #iconList} picker uses. An all-null (but present) icon column reads as a table with no crests.
-         * A table whose trailing column is direction triangles rather than text uses {@link
-         * #directionTable} instead.
-         *
-         * @param labels         the option labels, top to bottom
-         * @param iconPaths      the per-option icon paths, aligned to {@code labels} (a null draws none)
-         * @param trailingLabels the per-option values, aligned to {@code labels} (a null draws none)
-         * @param selectedIndex  the lit option's index, or {@link #NO_SELECTION}
-         * @param action         what a click on an option does, keyed by the option index
-         * @param reselect       what a click on the lit option does (deselect, re-fire, or inert)
-         * @param trailingScale  the trailing values' size relative to the body font ({@link
-         *                       #BODY_TRAILING_SCALE} for a body-size column, less for a compact one)
-         * @return the single-column table spec
-         */
-        public static VerticalTable table(
-                List<String> labels,
-                List<String> iconPaths,
-                List<String> trailingLabels,
-                int selectedIndex,
-                ControlAction action,
-                ReselectBehaviour reselect,
-                double trailingScale) {
-            return new VerticalTable(
-                    labels,
-                    iconPaths,
-                    trailingLabels,
-                    List.of(),
-                    selectedIndex,
-                    action,
-                    reselect,
-                    trailingScale,
-                    SINGLE_COLUMN,
-                    false);
-        }
-
-        /**
-         * Builds a direction table: the general single-column {@link #table} shape - an all-null icon
-         * column (the three-column geometry, no crests) - but with a direction triangle per row in place
-         * of a trailing text value, for a trailing column that marks a direction a font has no up/down
-         * glyph for. The {@code trailingDirections} run parallel to {@code labels}: the entry at index
-         * {@code i} draws its triangle on option {@code i}, a null entry drawing none. The trailing size
-         * is the body size, since a drawn triangle sizes to its slot rather than to a font.
+         * Builds a direction table: the {@link #iconList} shape - an all-null icon column (the
+         * three-column geometry, no crests) - but with a direction triangle per row in place of a
+         * trailing text value, for a trailing column that marks a direction a font has no up/down glyph
+         * for. The {@code trailingDirections} run parallel to {@code labels}: the entry at index {@code i}
+         * draws its triangle on option {@code i}, a null entry drawing none. {@code reselect} refines what
+         * a click on the lit option does, so a re-firing selector can flip the direction on a re-pick.
          *
          * @param labels             the option labels, top to bottom
          * @param trailingDirections the per-option direction triangles, aligned to {@code labels} (a null
@@ -503,7 +377,6 @@ public sealed interface ControlSpec {
                     selectedIndex,
                     action,
                     reselect,
-                    BODY_TRAILING_SCALE,
                     SINGLE_COLUMN,
                     false);
         }
@@ -569,7 +442,6 @@ public sealed interface ControlSpec {
                     selectedIndex,
                     action,
                     reselect,
-                    trailingScale,
                     columnCount,
                     true);
         }

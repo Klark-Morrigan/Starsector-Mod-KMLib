@@ -33,7 +33,7 @@ final class ControlSpecTest {
                     .isInstanceOf(ControlSpec.Interactive.class);
             assertThat(ControlSpec.HorizontalRadio.uniform(List.of("A"), "", 0, ControlAction.NONE))
                     .isInstanceOf(ControlSpec.Interactive.class);
-            assertThat(ControlSpec.VerticalTable.plain(List.of("A"), 0, ControlAction.NONE,
+            assertThat(VerticalTableSpecs.buildPlainTable(List.of("A"), 0, ControlAction.NONE,
                     ReselectBehaviour.INERT)).isInstanceOf(ControlSpec.Interactive.class);
             assertThat(new ControlSpec.Tabs(List.of("A"), List.of(), 0, ControlAction.NONE))
                     .isInstanceOf(ControlSpec.Interactive.class);
@@ -52,22 +52,24 @@ final class ControlSpecTest {
     class VerticalTableConstructor {
 
         @Test
-        void constructorRejectsANonPositiveTrailingScale() {
-            // The trailing scale is a size multiplier for the trailing column; a zero or negative value
-            // cannot size any text, so it fails at construction rather than measuring to nothing.
-            assertThatThrownBy(() -> new ControlSpec.VerticalTable(List.of("A"), List.of(), List.of(),
-                    List.of(), ControlSpec.NO_SELECTION, ControlAction.NONE, ReselectBehaviour.INERT, 0d,
-                    ControlSpec.SINGLE_COLUMN, false)).isInstanceOf(IllegalArgumentException.class);
-        }
-
-        @Test
         void constructorRejectsAColumnCountBelowOne() {
             // A column count is how many columns the options wrap across; a count below one cannot lay
             // out any column, so it fails at construction rather than dividing by a zero column count.
             assertThatThrownBy(() -> new ControlSpec.VerticalTable(List.of("A"), List.of(), List.of(),
                     List.of(), ControlSpec.NO_SELECTION, ControlAction.NONE, ReselectBehaviour.DESELECT,
-                    ControlSpec.BODY_TRAILING_SCALE, 0, false))
+                    0, false))
                     .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        void constructorDoesNotAliasTheCallersLabelList() {
+            // The caller may hand in a mutable list it goes on to reuse; the table must copy it, so a
+            // later mutation of the caller's list cannot rewrite the drawn labels.
+            var callerLabels = new ArrayList<String>(List.of("Factions", "Alliances"));
+            var table = new ControlSpec.VerticalTable(callerLabels, List.of(), List.of(), List.of(),
+                    0, ControlAction.NONE, ReselectBehaviour.DESELECT, ControlSpec.SINGLE_COLUMN, false);
+            callerLabels.set(0, "Mutated");
+            assertThat(table.labels()).containsExactly("Factions", "Alliances");
         }
     }
 
@@ -140,70 +142,15 @@ final class ControlSpecTest {
     }
 
     @Nested
-    class VerticalTablePlain {
-
-        @Test
-        void plainIsAVerticalTableWithNoIconsOrValues() {
-            // The plain vertical table is the label-only stacked selector: no leading icons and no
-            // per-option values, distinguishing it from the icon list.
-            var selector = ControlSpec.VerticalTable.plain(List.of("Factions", "Alliances"),
-                    ControlSpec.NO_SELECTION, ControlAction.NONE, ReselectBehaviour.DESELECT);
-            assertThat(selector.labels()).containsExactly("Factions", "Alliances");
-            assertThat(selector.iconPaths()).isEmpty();
-            assertThat(selector.trailingLabels()).isEmpty();
-            assertThat(selector.columnCount()).isEqualTo(ControlSpec.SINGLE_COLUMN);
-        }
-
-        @Test
-        void plainCarriesTheReselectChoice() {
-            // A selector that can clear to nothing (a view selector) passes DESELECT; one that always
-            // keeps a segment lit passes INERT, and the choice rides through unchanged.
-            assertThat(ControlSpec.VerticalTable.plain(List.of("A"), 0, ControlAction.NONE,
-                    ReselectBehaviour.DESELECT).reselect()).isEqualTo(ReselectBehaviour.DESELECT);
-            assertThat(ControlSpec.VerticalTable.plain(List.of("A"), 0, ControlAction.NONE,
-                    ReselectBehaviour.INERT).reselect()).isEqualTo(ReselectBehaviour.INERT);
-        }
-
-        @Test
-        void plainLightsTheSelectedOption() {
-            var selector = ControlSpec.VerticalTable.plain(List.of("Factions", "Alliances"), 1,
-                    ControlAction.NONE, ReselectBehaviour.INERT);
-            assertThat(selector.selectedIndex()).isEqualTo(1);
-        }
-
-        @Test
-        void plainCarriesTheClickActionByOptionIndex() {
-            var firedCell = new int[]{-99};
-            var selector = ControlSpec.VerticalTable.plain(List.of("Factions", "Alliances"),
-                    ControlSpec.NO_SELECTION, cell -> firedCell[0] = cell,
-                    ReselectBehaviour.DESELECT);
-            selector.action().activateCell(1);
-            assertThat(firedCell[0]).isEqualTo(1);
-        }
-
-        @Test
-        void plainDoesNotAliasTheCallersLabelList() {
-            // The caller may hand in a mutable list it goes on to reuse; the table must copy it, so a
-            // later mutation of the caller's list cannot rewrite the drawn labels.
-            var callerLabels = new ArrayList<String>(List.of("Factions", "Alliances"));
-            var selector = ControlSpec.VerticalTable.plain(callerLabels, 0, ControlAction.NONE,
-                    ReselectBehaviour.DESELECT);
-            callerLabels.set(0, "Mutated");
-            assertThat(selector.labels()).containsExactly("Factions", "Alliances");
-        }
-    }
-
-    @Nested
     class VerticalTableIconList {
 
         @Test
         void iconListIsAVerticalDeselectableTableCarryingIcons() {
             // The icon list is a vertical, deselectable table; the non-empty icon paths are what mark it
-            // as the icon-drawing variant rather than a plain vertical table.
-            var picker = ControlSpec.VerticalTable.iconList(List.of("Hegemony", "Tri-Tachyon"),
+            // as the icon-drawing variant rather than a label-only table.
+            var picker = VerticalTableSpecs.buildIconList(List.of("Hegemony", "Tri-Tachyon"),
                     List.of("crest_heg", "crest_tt"), ControlSpec.NO_SELECTION, ControlAction.NONE);
             assertThat(picker.reselect()).isEqualTo(ReselectBehaviour.DESELECT);
-            assertThat(picker.trailingScale()).isEqualTo(ControlSpec.BODY_TRAILING_SCALE);
             assertThat(picker.labels()).containsExactly("Hegemony", "Tri-Tachyon");
             assertThat(picker.iconPaths()).containsExactly("crest_heg", "crest_tt");
         }
@@ -212,14 +159,14 @@ final class ControlSpecTest {
         void iconListKeepsNullIconEntriesForIconlessOptions() {
             // A crestless option (every alliance) rides as a null entry, so the list stays aligned to
             // the labels index for index; the copy must preserve the null rather than reject it.
-            var picker = ControlSpec.VerticalTable.iconList(List.of("Hegemony", "Free Traders"),
+            var picker = VerticalTableSpecs.buildIconList(List.of("Hegemony", "Free Traders"),
                     Arrays.asList("crest_heg", null), 0, ControlAction.NONE);
             assertThat(picker.iconPaths()).containsExactly("crest_heg", null);
         }
 
         @Test
         void iconListLightsTheSelectedOption() {
-            var picker = ControlSpec.VerticalTable.iconList(List.of("Hegemony", "Tri-Tachyon"),
+            var picker = VerticalTableSpecs.buildIconList(List.of("Hegemony", "Tri-Tachyon"),
                     List.of("crest_heg", "crest_tt"), 1, ControlAction.NONE);
             assertThat(picker.selectedIndex()).isEqualTo(1);
         }
@@ -229,7 +176,7 @@ final class ControlSpecTest {
             // The caller may hand in a mutable list it goes on to reuse; the table must copy it, so a
             // later mutation of the caller's list cannot rewrite the drawn icons.
             var callerIconPaths = new ArrayList<String>(List.of("crest_heg", "crest_tt"));
-            var picker = ControlSpec.VerticalTable.iconList(List.of("Hegemony", "Tri-Tachyon"),
+            var picker = VerticalTableSpecs.buildIconList(List.of("Hegemony", "Tri-Tachyon"),
                     callerIconPaths, 0, ControlAction.NONE);
             callerIconPaths.set(0, "crest_mutated");
             assertThat(picker.iconPaths()).containsExactly("crest_heg", "crest_tt");
@@ -238,7 +185,7 @@ final class ControlSpecTest {
         @Test
         void iconListCarriesTheClickActionByOptionIndex() {
             var firedCell = new int[]{-99};
-            var picker = ControlSpec.VerticalTable.iconList(List.of("Hegemony", "Tri-Tachyon"),
+            var picker = VerticalTableSpecs.buildIconList(List.of("Hegemony", "Tri-Tachyon"),
                     List.of("crest_heg", "crest_tt"), ControlSpec.NO_SELECTION,
                     cell -> firedCell[0] = cell);
             picker.action().activateCell(1);
@@ -246,17 +193,17 @@ final class ControlSpecTest {
         }
 
         @Test
-        void iconListCarriesNoTrailingValuesInTheIconOnlyOverload() {
-            // The four-arg overload is the icon-only list, so it carries no per-option values and the
-            // rows draw name-only (the trailing-value overload is what adds the value column).
-            var picker = ControlSpec.VerticalTable.iconList(List.of("Hegemony", "Tri-Tachyon"),
+        void iconListCarriesNoTrailingValuesWhenTheValueColumnIsEmpty() {
+            // An icon list built with no value column carries no per-option values, so the rows draw
+            // name-only; a non-empty value column is what adds the trailing value.
+            var picker = VerticalTableSpecs.buildIconList(List.of("Hegemony", "Tri-Tachyon"),
                     List.of("crest_heg", "crest_tt"), ControlSpec.NO_SELECTION, ControlAction.NONE);
             assertThat(picker.trailingLabels()).isEmpty();
         }
 
         @Test
         void iconListCarriesPerOptionTrailingValues() {
-            // The value overload turns the list into a table: each option's value rides parallel to its
+            // A value column turns the list into a table: each option's value rides parallel to its
             // label, so the row draws its crest, name, and ranked value.
             var picker = ControlSpec.VerticalTable.iconList(List.of("Hegemony", "Tri-Tachyon"),
                     List.of("crest_heg", "crest_tt"), List.of("7", "3"), 0, ControlAction.NONE,
@@ -278,39 +225,11 @@ final class ControlSpecTest {
 
         @Test
         void iconListCarriesTheChosenColumnCount() {
-            // The column-count overload spreads the list across that many columns; the count rides on the
+            // The icon list spreads the options across that many columns; the count rides on the
             // spec so the layout and renderer both wrap the rows the same way.
             var picker = ControlSpec.VerticalTable.iconList(List.of("Hegemony", "Tri-Tachyon"),
                     List.of("crest_heg", "crest_tt"), List.of("7", "3"), 0, ControlAction.NONE, 2);
             assertThat(picker.columnCount()).isEqualTo(2);
-        }
-    }
-
-    @Nested
-    class VerticalTableTable {
-
-        @Test
-        void tableCarriesTheChosenReselectAndTrailingScale() {
-            // The general table lets a selector pick its re-pick behaviour and a reduced trailing size (a
-            // compact trailing text column), both riding through unchanged rather than being forced to the
-            // icon list's deselect-at-body-size.
-            var selector = ControlSpec.VerticalTable.table(List.of("Domination", "Presence"),
-                    Arrays.asList(null, null), List.of("12", "12"), 0, ControlAction.NONE,
-                    ReselectBehaviour.REFIRE, 0.8d);
-            assertThat(selector.reselect()).isEqualTo(ReselectBehaviour.REFIRE);
-            assertThat(selector.trailingScale()).isEqualTo(0.8d);
-        }
-
-        @Test
-        void tableDrawsNoIconWhenEveryIconEntryIsNull() {
-            // An all-null (but present) icon column is a table with no crests, so no option reports an
-            // icon while the trailing column still rides.
-            var selector = ControlSpec.VerticalTable.table(List.of("Domination", "Presence"),
-                    Arrays.asList(null, null), List.of("12", "34"), 0, ControlAction.NONE,
-                    ReselectBehaviour.REFIRE, 0.8d);
-            assertThat(selector.hasIconAt(0)).isFalse();
-            assertThat(selector.hasIconAt(1)).isFalse();
-            assertThat(selector.trailingLabels()).containsExactly("12", "34");
         }
     }
 
@@ -365,7 +284,7 @@ final class ControlSpecTest {
         void asScrollingLeavesTheOriginalUnmarked() {
             // The copy is a fresh spec, so the source the host still holds is untouched - only the one it
             // opts in scrolls.
-            var picker = ControlSpec.VerticalTable.iconList(List.of("Hegemony"), List.of("crest_heg"),
+            var picker = VerticalTableSpecs.buildIconList(List.of("Hegemony"), List.of("crest_heg"),
                     0, ControlAction.NONE);
             picker.asScrolling();
             assertThat(picker.scrolls()).isFalse();
@@ -396,7 +315,7 @@ final class ControlSpecTest {
         void trailingLabelAtIsEmptyForAnIndexPastTheValueList() {
             // A shorter (or empty) value list leaves the trailing options value-less rather than
             // throwing, matching how a short icon-path list leaves options icon-less.
-            var picker = ControlSpec.VerticalTable.iconList(List.of("Hegemony", "Tri-Tachyon"),
+            var picker = VerticalTableSpecs.buildIconList(List.of("Hegemony", "Tri-Tachyon"),
                     List.of("crest_heg", "crest_tt"), ControlSpec.NO_SELECTION, ControlAction.NONE);
             assertThat(picker.trailingLabelAt(0)).isEmpty();
         }
@@ -427,7 +346,7 @@ final class ControlSpecTest {
         void directionAtIsNullForAnIndexPastTheDirectionList() {
             // A shorter (or empty) direction list leaves the trailing options triangle-less rather than
             // throwing, matching how a short value list leaves options value-less.
-            var picker = ControlSpec.VerticalTable.iconList(List.of("Hegemony", "Tri-Tachyon"),
+            var picker = VerticalTableSpecs.buildIconList(List.of("Hegemony", "Tri-Tachyon"),
                     List.of("crest_heg", "crest_tt"), ControlSpec.NO_SELECTION, ControlAction.NONE);
             assertThat(picker.directionAt(0)).isNull();
         }
@@ -438,7 +357,7 @@ final class ControlSpecTest {
 
         @Test
         void hasIconAtIsTrueForAnOptionWithANonNullIconPath() {
-            var picker = ControlSpec.VerticalTable.iconList(List.of("Hegemony", "Free Traders"),
+            var picker = VerticalTableSpecs.buildIconList(List.of("Hegemony", "Free Traders"),
                     Arrays.asList("crest_heg", null), ControlSpec.NO_SELECTION, ControlAction.NONE);
             assertThat(picker.hasIconAt(0)).isTrue();
         }
@@ -446,7 +365,7 @@ final class ControlSpecTest {
         @Test
         void hasIconAtIsFalseForAnOptionWithANullIconPath() {
             // A crestless option (an alliance) rides as a null entry, so it draws no icon.
-            var picker = ControlSpec.VerticalTable.iconList(List.of("Hegemony", "Free Traders"),
+            var picker = VerticalTableSpecs.buildIconList(List.of("Hegemony", "Free Traders"),
                     Arrays.asList("crest_heg", null), ControlSpec.NO_SELECTION, ControlAction.NONE);
             assertThat(picker.hasIconAt(1)).isFalse();
         }
@@ -454,7 +373,7 @@ final class ControlSpecTest {
         @Test
         void hasIconAtIsFalseForAnIndexPastTheIconPathList() {
             // A shorter icon-path list leaves the trailing options icon-less rather than throwing.
-            var picker = ControlSpec.VerticalTable.iconList(List.of("Hegemony", "Free Traders"),
+            var picker = VerticalTableSpecs.buildIconList(List.of("Hegemony", "Free Traders"),
                     List.of("crest_heg"), ControlSpec.NO_SELECTION, ControlAction.NONE);
             assertThat(picker.hasIconAt(1)).isFalse();
         }

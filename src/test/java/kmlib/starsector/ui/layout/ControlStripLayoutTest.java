@@ -5,6 +5,7 @@ import kmlib.starsector.ui.controls.ControlAction;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.ReselectBehaviour;
 import kmlib.starsector.ui.controls.TriangleDirection;
+import kmlib.starsector.ui.controls.VerticalTableSpecs;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.layout.ControlStripLayout.StripMeasurement;
 import kmlib.starsector.ui.widgets.IconLabelRow;
@@ -97,7 +98,7 @@ final class ControlStripLayoutTest {
 
         @Test
         void measureStripStandsAVerticalRadioOneRowTallPerOption() {
-            var radio = ControlSpec.VerticalTable.plain(List.of("Factions", "Alliances"),
+            var radio = VerticalTableSpecs.buildPlainTable(List.of("Factions", "Alliances"),
                     ControlSpec.NO_SELECTION, ControlAction.NONE, ReselectBehaviour.DESELECT);
             var measurement = ControlStripLayout.measureStrip(List.<ControlSpec>of(radio), measurerFake);
             assertThat(measurement.rowHeights().get(0))
@@ -108,7 +109,7 @@ final class ControlStripLayoutTest {
         void measureStripStandsAnIconListOneRowTallPerOption() {
             // The icon list stacks like a vertical radio, so it stands one control-row tall per
             // option regardless of icons.
-            var picker = ControlSpec.VerticalTable.iconList(List.of("Hegemony", "Tri-Tachyon"),
+            var picker = VerticalTableSpecs.buildIconList(List.of("Hegemony", "Tri-Tachyon"),
                     List.of("crest_heg", "crest_tt"), ControlSpec.NO_SELECTION, ControlAction.NONE);
             var measurement = ControlStripLayout.measureStrip(List.<ControlSpec>of(picker), measurerFake);
             assertThat(measurement.rowHeights().get(0))
@@ -142,7 +143,7 @@ final class ControlStripLayoutTest {
             // "AB" carries a crest, "CDE" does not; the row is the widest of the two, each sized
             // through the shared IconLabelRow geometry so the width tracks whether the option draws an
             // icon. The measurement reads that geometry rather than re-deriving the icon and gap sizes.
-            var picker = ControlSpec.VerticalTable.iconList(List.of("AB", "CDE"),
+            var picker = VerticalTableSpecs.buildIconList(List.of("AB", "CDE"),
                     Arrays.asList("crest_ab", null), ControlSpec.NO_SELECTION, ControlAction.NONE);
             var measurement = ControlStripLayout.measureStrip(List.<ControlSpec>of(picker), measurerFake);
             var withIcon = IconLabelRow.measureRowWidth(ControlStripLayout.CONTROL_ROW_HEIGHT,
@@ -172,7 +173,7 @@ final class ControlStripLayoutTest {
             // a single column's width - the same width the one-column list of the same options measures.
             var labels = List.of("A", "B", "C");
             var icons = Arrays.asList((String) null, null, null);
-            var oneColumn = ControlSpec.VerticalTable.iconList(labels, icons, List.of(),
+            var oneColumn = VerticalTableSpecs.buildIconList(labels, icons, List.of(),
                     ControlSpec.NO_SELECTION, ControlAction.NONE);
             var twoColumn = ControlSpec.VerticalTable.iconList(labels, icons, List.of(),
                     ControlSpec.NO_SELECTION, ControlAction.NONE, 2);
@@ -188,7 +189,7 @@ final class ControlStripLayoutTest {
             // A ranked table row must hold its crest, name, and value; the measurement reads the same
             // IconLabelRow geometry the renderer places the value with, so the column is wide enough
             // that "AB" clears its two-char value "12".
-            var picker = ControlSpec.VerticalTable.iconList(List.of("AB"), List.of("crest_ab"),
+            var picker = VerticalTableSpecs.buildIconList(List.of("AB"), List.of("crest_ab"),
                     List.of("12"), ControlSpec.NO_SELECTION, ControlAction.NONE);
             var measurement = ControlStripLayout.measureStrip(List.<ControlSpec>of(picker), measurerFake);
             var withValue = IconLabelRow.measureRowWidth(ControlStripLayout.CONTROL_ROW_HEIGHT,
@@ -296,7 +297,7 @@ final class ControlStripLayoutTest {
 
         @Test
         void layoutControlsSplitsAnIconListIntoStackedVerticalSegments() {
-            var specs = List.<ControlSpec>of(ControlSpec.VerticalTable.iconList(List.of("Hegemony", "Tri-Tachyon"),
+            var specs = List.<ControlSpec>of(VerticalTableSpecs.buildIconList(List.of("Hegemony", "Tri-Tachyon"),
                     List.of("crest_heg", "crest_tt"), ControlSpec.NO_SELECTION, ControlAction.NONE));
             var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
             var picker = ControlStripLayout.layoutControls(frameBody(measurement), specs,
