@@ -13,6 +13,10 @@ import java.util.List;
  * The intersection of those half-planes (within the radius bound) is the
  * site's convex cell.
  *
+ * <p>The same clipping answers the local question too: {@link #splitPolygonAmongSites}
+ * divides one given region among the sites around it, with the region taking the seed's
+ * place as the bound.
+ *
  * <p>Cost is O(n^2) clips per site, O(n^3) overall, which is
  * sub-millisecond at Starsector's system counts (low hundreds) and is run
  * once and cached by the caller.
@@ -76,7 +80,8 @@ public final class VoronoiCellBuilder {
      * @return one convex polygon per site, each a list of {x, y} vertices in
      *         winding order; an empty list when {@code sites} is empty
      */
-    public static List<List<double[]>> buildCells(List<double[]> sites,
+    public static List<List<double[]>> buildCells(
+            List<double[]> sites,
             double maxCellRadius) {
         return buildCells(sites, maxCellRadius, DEFAULT_CELL_BOUND_SEGMENTS);
     }
@@ -97,8 +102,10 @@ public final class VoronoiCellBuilder {
      * @return one convex polygon per site, each a list of {x, y} vertices in
      *         winding order; an empty list when {@code sites} is empty
      */
-    public static List<List<double[]>> buildCells(List<double[]> sites,
-            double maxCellRadius, int boundSegments) {
+    public static List<List<double[]>> buildCells(
+            List<double[]> sites,
+            double maxCellRadius,
+            int boundSegments) {
         var cells = new ArrayList<List<double[]>>();
         if (sites.isEmpty()) {
             return cells;
@@ -126,7 +133,9 @@ public final class VoronoiCellBuilder {
      * @param maxCellRadius the farthest the cell may extend from its site
      * @return the site's convex cell as {x, y} vertices in winding order
      */
-    public static List<double[]> buildCell(double[] site, List<double[]> sites,
+    public static List<double[]> buildCell(
+            double[] site,
+            List<double[]> sites,
             double maxCellRadius) {
         return buildCell(site, sites, maxCellRadius, DEFAULT_CELL_BOUND_SEGMENTS);
     }
@@ -144,8 +153,11 @@ public final class VoronoiCellBuilder {
      *                      vertices
      * @return the site's convex cell as {x, y} vertices in winding order
      */
-    public static List<double[]> buildCell(double[] site, List<double[]> sites,
-            double maxCellRadius, int boundSegments) {
+    public static List<double[]> buildCell(
+            double[] site,
+            List<double[]> sites,
+            double maxCellRadius,
+            int boundSegments) {
         return buildLabelledCell(indexOf(sites, site), sites, maxCellRadius, boundSegments)
                 .vertices();
     }
@@ -168,7 +180,9 @@ public final class VoronoiCellBuilder {
      * @return the site's cell with a neighbour-site index per edge; an empty cell
      *         (no vertices, no edges) when the site is fully clipped away
      */
-    public static LabelledCell buildLabelledCell(int siteIndex, List<double[]> sites,
+    public static LabelledCell buildLabelledCell(
+            int siteIndex,
+            List<double[]> sites,
             double maxCellRadius) {
         return buildLabelledCell(siteIndex, sites, maxCellRadius, DEFAULT_CELL_BOUND_SEGMENTS);
     }
@@ -189,8 +203,11 @@ public final class VoronoiCellBuilder {
      * @return the site's cell with a neighbour-site index per edge; an empty cell
      *         (no vertices, no edges) when the site is fully clipped away
      */
-    public static LabelledCell buildLabelledCell(int siteIndex, List<double[]> sites,
-            double maxCellRadius, int boundSegments) {
+    public static LabelledCell buildLabelledCell(
+            int siteIndex,
+            List<double[]> sites,
+            double maxCellRadius,
+            int boundSegments) {
         var site = sites.get(siteIndex);
         // Seed the cell with a bounded polygon whose every edge is a frontier
         // (BOUND_EDGE), then let each neighbour's bisector clip it, stamping the
@@ -210,14 +227,88 @@ public final class VoronoiCellBuilder {
         return new LabelledCell(cell.getVertices(), cell.getEdgeLabels());
     }
 
+    /**
+     * Splits {@code polygon} among {@code sites}: the Voronoi partition of those
+     * sites restricted to the polygon, so each site takes the part of the polygon
+     * nearer to it than to any other site.
+     *
+     * <p>The same bisector clipping the whole-plane partition runs on, with the
+     * polygon standing in for the max-radius seed as the bound the cells are carved
+     * out of. Where {@link #buildCells} answers "which site owns each point of the
+     * plane", this answers "how does one bounded region divide among the sites
+     * around it" - a local question, asked of a region whose own site is not among
+     * the ones dividing it.
+     *
+     * <p>The pieces are disjoint and cover the polygon by construction: a point
+     * lands in exactly the piece of the site it is nearest, so the split can never
+     * hand overlapping area to two sites. Coincident sites are the one exception
+     * the nearest-site rule cannot decide, and each of them takes the full shared
+     * region.
+     *
+     * @param polygon the convex region to divide, as {x, y} vertices in winding
+     *                order
+     * @param sites   the sites dividing it as {x, y} pairs; order is preserved, so
+     *                the returned piece at index i belongs to site i
+     * @return one convex piece per site, each a list of {x, y} vertices in the
+     *         polygon's winding; empty for a site with no nearest region inside the
+     *         polygon, and empty for every site when {@code polygon} encloses no
+     *         area
+     */
+    public static List<List<double[]>> splitPolygonAmongSites(
+            List<double[]> polygon,
+            List<double[]> sites) {
+        var pieces = new ArrayList<List<double[]>>(sites.size());
+        var ring = Rings.removeConsecutiveDuplicates(polygon);
+        var enclosesArea = ring.size() >= Limits.MIN_VERTICES_TO_ENCLOSE_AREA;
+        for (var siteIndex = 0; siteIndex < sites.size(); siteIndex++) {
+            pieces.add(enclosesArea
+                    ? computeNearestRegion(ring, sites, siteIndex)
+                    : new ArrayList<>());
+        }
+        return pieces;
+    }
+
+    // The part of {@code ring} nearer to site {@code siteIndex} than to any other:
+    // the ring clipped by the perpendicular bisector against each of the others.
+    // Mirrors buildLabelledCell with the ring as the seed in place of the
+    // max-radius polygon - the bisector clip does label each cut edge with the site
+    // across it, but a split's caller wants the piece's outline alone, so the
+    // labels are dropped on the way out.
+    private static List<double[]> computeNearestRegion(
+            List<double[]> ring,
+            List<double[]> sites,
+            int siteIndex) {
+        var site = sites.get(siteIndex);
+        var region = LabelledPolygon.fromLabelledEdges(ring, new int[ring.size()]);
+        for (var other = 0; other < sites.size(); other++) {
+            if (other == siteIndex) {
+                continue;
+            }
+            region = clipToBisector(region, site, sites.get(other), other);
+            if (region.isEmpty()) {
+                break;
+            }
+        }
+        // A region clipped down to a sliver of one or two vertices bounds nothing;
+        // report it as no region rather than as a degenerate polygon a consumer
+        // would have to re-test before drawing.
+        var vertices = region.getVertices();
+        return vertices.size() < Limits.MIN_VERTICES_TO_ENCLOSE_AREA
+                ? new ArrayList<>()
+                : vertices;
+    }
+
     // Clips a cell to the half-plane of points at least as close to {@code keep}
     // as to {@code drop} - the keep side of the perpendicular bisector of the two
     // sites - tagging the newly cut edge with {@code dropIndex}, the site on the
     // far side of it. The normal points toward the kept site, so a non-negative
     // half-plane test is the side to retain; the bisector passes through the
     // midpoint of the two sites.
-    private static LabelledPolygon clipToBisector(LabelledPolygon cell, double[] keep,
-            double[] drop, int dropIndex) {
+    private static LabelledPolygon clipToBisector(
+            LabelledPolygon cell,
+            double[] keep,
+            double[] drop,
+            int dropIndex) {
         return cell.clipToHalfPlane(
                 new HalfPlane((keep[0] + drop[0]) * 0.5, (keep[1] + drop[1]) * 0.5,
                         keep[0] - drop[0], keep[1] - drop[1]),

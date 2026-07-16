@@ -23,6 +23,11 @@ final class VoronoiCellBuilderTest {
 
     private static final double MAX_CELL_RADIUS = 5000.0;
 
+    // The square the split tests divide, and the area it encloses - the total the
+    // pieces must add back up to.
+    private static final double SPLIT_SQUARE_SIDE = 10.0;
+    private static final double WHOLE_SQUARE_AREA = SPLIT_SQUARE_SIDE * SPLIT_SQUARE_SIDE;
+
     @Nested
     class BuildCells {
         @Test
@@ -433,6 +438,100 @@ final class VoronoiCellBuilderTest {
                             org.assertj.core.data.Offset.offset(1e-9));
                 }
             }
+        }
+    }
+
+    @Nested
+    class SplitPolygonAmongSites {
+        @Test
+        void no_sites_yield_no_pieces() {
+            assertThat(VoronoiCellBuilder.splitPolygonAmongSites(
+                    GeometryTestSupport.bigSquare(SPLIT_SQUARE_SIDE), List.of())).isEmpty();
+        }
+
+        @Test
+        void a_lone_site_takes_the_whole_polygon() {
+            var polygon = GeometryTestSupport.bigSquare(SPLIT_SQUARE_SIDE);
+
+            var pieces = VoronoiCellBuilder.splitPolygonAmongSites(
+                    polygon, List.of(new double[] {5, 5}));
+
+            // Nothing to clip against, so the split is the identity on the polygon.
+            assertThat(pieces).hasSize(1);
+            assertThat(GeometryTestSupport.signedArea(pieces.get(0)))
+                    .isCloseTo(WHOLE_SQUARE_AREA, GeometryTestSupport.within());
+        }
+
+        @Test
+        void two_sites_split_the_polygon_along_their_bisector() {
+            var sites = Arrays.asList(
+                    new double[] {2, 5},
+                    new double[] {8, 5});
+
+            var pieces = VoronoiCellBuilder.splitPolygonAmongSites(
+                    GeometryTestSupport.bigSquare(SPLIT_SQUARE_SIDE), sites);
+
+            // The bisector of the two sites is x = 5, so each takes its own half of
+            // the square and neither crosses the line.
+            assertThat(pieces.get(0)).allMatch(vertex -> vertex[0] <= 5 + 1e-9);
+            assertThat(pieces.get(1)).allMatch(vertex -> vertex[0] >= 5 - 1e-9);
+            assertThat(GeometryTestSupport.signedArea(pieces.get(0)))
+                    .isCloseTo(WHOLE_SQUARE_AREA / 2, GeometryTestSupport.within());
+            assertThat(GeometryTestSupport.signedArea(pieces.get(1)))
+                    .isCloseTo(WHOLE_SQUARE_AREA / 2, GeometryTestSupport.within());
+        }
+
+        @Test
+        void three_sites_take_disjoint_pieces_that_cover_the_polygon() {
+            var sites = Arrays.asList(
+                    new double[] {3, 3},
+                    new double[] {7, 3},
+                    new double[] {5, 8});
+
+            var pieces = VoronoiCellBuilder.splitPolygonAmongSites(
+                    GeometryTestSupport.bigSquare(SPLIT_SQUARE_SIDE), sites);
+
+            // Areas summing to the whole square pins both halves of the contract at
+            // once: no piece is dropped (they cover it) and no area is handed out
+            // twice (they would over-sum if they overlapped).
+            var total = 0.0;
+            for (var i = 0; i < sites.size(); i++) {
+                assertThat(isPointInsidePolygon(sites.get(i), pieces.get(i)))
+                        .as("site %d lies inside its own piece", i)
+                        .isTrue();
+                total += GeometryTestSupport.signedArea(pieces.get(i));
+            }
+            assertThat(total).isCloseTo(WHOLE_SQUARE_AREA, GeometryTestSupport.within());
+        }
+
+        @Test
+        void a_site_with_no_nearest_region_gets_an_empty_piece() {
+            var sites = Arrays.asList(
+                    new double[] {5, 5},
+                    new double[] {1000, 1000});
+
+            var pieces = VoronoiCellBuilder.splitPolygonAmongSites(
+                    GeometryTestSupport.bigSquare(SPLIT_SQUARE_SIDE), sites);
+
+            // The far site is beaten to every point of the square by the near one,
+            // so it is handed nothing rather than a degenerate shape.
+            assertThat(GeometryTestSupport.signedArea(pieces.get(0)))
+                    .isCloseTo(WHOLE_SQUARE_AREA, GeometryTestSupport.within());
+            assertThat(pieces.get(1)).isEmpty();
+        }
+
+        @Test
+        void a_polygon_that_encloses_no_area_splits_into_empty_pieces() {
+            var degenerate = Arrays.asList(
+                    new double[] {0, 0},
+                    new double[] {10, 0});
+            var sites = Arrays.asList(
+                    new double[] {2, 5},
+                    new double[] {8, 5});
+
+            assertThat(VoronoiCellBuilder.splitPolygonAmongSites(degenerate, sites))
+                    .hasSize(2)
+                    .allMatch(List::isEmpty);
         }
     }
 
