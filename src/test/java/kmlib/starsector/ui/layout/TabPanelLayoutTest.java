@@ -91,6 +91,19 @@ final class TabPanelLayoutTest {
         }
 
         @Test
+        void computePlacementLetsAWiderTabRowOverhangTheBoxRatherThanClampIt() {
+            var placement = place(BODY);
+            var box = placement.body().box();
+            var header = placement.tabsHeader();
+            // The tab row lays out to its own width, independent of the box; wider than the body, its right
+            // edge runs past the box's right border rather than being clamped to it - the overhang the tab
+            // panel leaves for the build to resolve, and which the header's own segments stay hit-testable
+            // over since input reads the tab geometry, not the box.
+            assertThat(header.bounds().x() + header.bounds().width())
+                    .isGreaterThan(box.x() + box.width());
+        }
+
+        @Test
         void computePlacementLeavesAZeroBodyBeneathTheHeaderWhenBodyIsEmpty() {
             var body = place(List.of()).body().body();
             assertThat(body.width()).isCloseTo(0f, within(TOLERANCE));
