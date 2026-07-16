@@ -42,14 +42,9 @@ public record PrincipalAxis(double centroidX, double centroidY, double axisX, do
             throw new IllegalArgumentException("Cannot fit a principal axis to no points");
         }
         var count = points.size();
-        var centroidX = 0.0;
-        var centroidY = 0.0;
-        for (var point : points) {
-            centroidX += point[0];
-            centroidY += point[1];
-        }
-        centroidX /= count;
-        centroidY /= count;
+        var mean = Points.computeMean(points);
+        var centroidX = mean[0];
+        var centroidY = mean[1];
 
         // Covariance of the points about their mean: varX/varY are the spread along
         // each axis and covXY how the two co-vary. The eigenvectors of this matrix

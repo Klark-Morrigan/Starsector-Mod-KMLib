@@ -13,6 +13,34 @@ public final class Points {
     }
 
     /**
+     * The mean position of a point cloud, as {@code {x, y}} - each coordinate averaged
+     * over every point.
+     *
+     * <p>The cloud's balance point, which is what a caller wants when it needs one point
+     * to stand for the whole set: the anchor a label or marker hangs on, or a probe into
+     * a shape that must land somewhere unambiguously within it rather than near an edge.
+     * An unweighted mean, so it answers where the vertices are, not where a polygon's area
+     * is - a ring with its vertices bunched along one side means toward that side.
+     *
+     * @param points the {@code {x, y}} points to average; must be non-empty
+     * @return the mean position as {@code {x, y}}
+     * @throws IllegalArgumentException if {@code points} is empty (a mean is undefined
+     *         with nothing to average)
+     */
+    public static double[] computeMean(List<double[]> points) {
+        if (points.isEmpty()) {
+            throw new IllegalArgumentException("Cannot average no points");
+        }
+        var sumX = 0.0;
+        var sumY = 0.0;
+        for (var point : points) {
+            sumX += point[0];
+            sumY += point[1];
+        }
+        return new double[] {sumX / points.size(), sumY / points.size()};
+    }
+
+    /**
      * The extent of a point cloud projected onto an axis, as {@code {min, max}} - the
      * lowest and highest of each point's signed projection {@code point . axis}. The
      * width of the cloud along that direction is {@code max - min}: measuring a spread

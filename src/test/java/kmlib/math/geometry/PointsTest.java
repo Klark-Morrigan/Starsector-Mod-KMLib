@@ -14,6 +14,40 @@ import static org.assertj.core.api.Assertions.withinPercentage;
 class PointsTest {
 
     @Nested
+    class ComputeMean {
+        @Test
+        void computeMeanAveragesEachCoordinateOverEveryPoint() {
+            var mean = Points.computeMean(List.of(
+                    new double[] {0, 0}, new double[] {4, 0}, new double[] {2, 6}));
+
+            assertThat(mean).containsExactly(2.0, 2.0);
+        }
+
+        @Test
+        void computeMeanOfOnePointIsThatPoint() {
+            assertThat(Points.computeMean(List.of(new double[] {3, -7})))
+                    .containsExactly(3.0, -7.0);
+        }
+
+        @Test
+        void computeMeanLeansTowardWhereThePointsAreBunched() {
+            // Unweighted, so three coincident vertices outvote the lone far one: the mean
+            // answers where the vertices are, not where a shape's area is.
+            var mean = Points.computeMean(List.of(
+                    new double[] {0, 0}, new double[] {0, 0}, new double[] {0, 0},
+                    new double[] {8, 0}));
+
+            assertThat(mean).containsExactly(2.0, 0.0);
+        }
+
+        @Test
+        void computeMeanThrowsForNoPoints() {
+            assertThatThrownBy(() -> Points.computeMean(List.of()))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+    }
+
+    @Nested
     class ComputeDistance {
         @Test
         void computeDistanceIsEuclidean() {
