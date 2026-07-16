@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Pins the contract of {@link EdgeRings#chainIntoRings}:
@@ -15,6 +16,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  *  - two disjoint squares come back as two separate rings,
  *  - a strand that never closes is dropped rather than emitted open,
  *  - empty input yields no rings.
+ *
+ * <p>And of {@link EdgeRings#chainIntoRingsWithEdgeValues}: a per-segment value rides
+ * onto the ring edge its segment became through the reordering, a value array not
+ * parallel to the segments is rejected, and an unclosed strand drops with its values.
  */
 final class EdgeRingsTest {
 
@@ -99,6 +104,56 @@ final class EdgeRingsTest {
         @Test
         void empty_input_yields_no_rings() {
             assertThat(EdgeRings.chainIntoRings(List.of(), WELD_TOLERANCE)).isEmpty();
+        }
+    }
+
+    @Nested
+    class ChainIntoRingsWithEdgeValues {
+        @Test
+        void values_follow_their_segments_through_the_reordering() {
+            // The square handed over out of order, each segment tagged with its own
+            // start x. The walk re-orders the segments into winding order, and each
+            // edge's carried value still equals its corner's x - so every value rode
+            // along with the segment it was attached to rather than staying by index.
+            var segments = Arrays.asList(
+                    segment(10, 10, 0, 10),
+                    segment(0, 0, 10, 0),
+                    segment(10, 0, 10, 10),
+                    segment(0, 10, 0, 0));
+            var values = new double[] {10.0, 0.0, 10.0, 0.0};
+
+            var rings = EdgeRings.chainIntoRingsWithEdgeValues(segments, values, WELD_TOLERANCE);
+
+            assertThat(rings).hasSize(1);
+            var ring = rings.get(0);
+            assertThat(ring.corners()).hasSize(4);
+            assertThat(ring.edgeValues()).hasSize(4);
+            for (var k = 0; k < ring.corners().size(); k++) {
+                assertThat(ring.edgeValues()[k]).isEqualTo(ring.corners().get(k)[0]);
+            }
+        }
+
+        @Test
+        void a_value_array_not_parallel_to_the_segments_is_rejected() {
+            var segments = Arrays.asList(
+                    segment(0, 0, 10, 0),
+                    segment(10, 0, 10, 10),
+                    segment(10, 10, 0, 0));
+
+            assertThatThrownBy(() -> EdgeRings.chainIntoRingsWithEdgeValues(
+                    segments, new double[] {1.0, 2.0}, WELD_TOLERANCE))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        void an_unclosed_strand_drops_with_its_values() {
+            var segments = Arrays.asList(
+                    segment(0, 0, 10, 0),
+                    segment(10, 0, 20, 0),
+                    segment(20, 0, 30, 0));
+
+            assertThat(EdgeRings.chainIntoRingsWithEdgeValues(
+                    segments, new double[] {1.0, 2.0, 3.0}, WELD_TOLERANCE)).isEmpty();
         }
     }
 }
