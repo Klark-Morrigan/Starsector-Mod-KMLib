@@ -261,34 +261,41 @@ public sealed interface ControlSpec {
      * A vertical stack of option rows, exactly one lit, each row optionally carrying a leading icon
      * and a right-aligned trailing value - so the list reads as a table (crest, name, value). It is
      * the general stacked selector: a plain view selector (no icons, no values), an icon picker, and a
-     * sort selector (compact trailing letters) are all this variant with different columns filled.
+     * sort selector (a direction triangle per row) are all this variant with different columns filled.
      *
-     * <p>The {@code iconPaths} and {@code trailingLabels} run parallel to {@code labels}: the entry at
-     * index {@code i} draws on the option labelled {@code labels.get(i)}. A shorter or empty list, or a
-     * null entry, leaves that option icon-less or value-less. {@code reselect} refines what a click on
-     * the lit option does; {@code columnCount} spreads the options across columns (filling each top to
+     * <p>The {@code iconPaths}, {@code trailingLabels}, and {@code trailingDirections} run parallel to
+     * {@code labels}: the entry at index {@code i} draws on the option labelled {@code labels.get(i)}. A
+     * shorter or empty list, or a null entry, leaves that option icon-less or value-less. The trailing
+     * slot holds a text value or a direction triangle, not both - a row with a triangle
+     * ({@code trailingDirections} entry) carries no trailing text. {@code reselect} refines what a click
+     * on the lit option does; {@code columnCount} spreads the options across columns (filling each top to
      * bottom before the next); {@code scrolls} marks this as the capped strip's one flex region - the
      * single source the capped layout, the clipping renderer, and the scrolling input listener all read
      * so the three agree which control scrolls.
      *
-     * @param labels         the option labels, top to bottom, in segment order
-     * @param iconPaths      one leading-icon path per option (a null entry is an icon-less option);
-     *                       empty for a list drawn without icons
-     * @param trailingLabels one right-aligned value per option (a null or absent entry is a value-less
-     *                       option); empty for a list with no trailing column
-     * @param selectedIndex  the lit option's index, or {@link #NO_SELECTION} when nothing is picked
-     * @param action         what a click on an option does, keyed by the option index
-     * @param reselect       what a click on the lit option does (deselect, re-fire, or inert)
-     * @param trailingScale  the trailing values' size relative to the body font ({@link
-     *                       #BODY_TRAILING_SCALE} for a body-size column, less for a compact one)
-     * @param columnCount    how many columns to spread the options across ({@link #SINGLE_COLUMN} for
-     *                       one column)
-     * @param scrolls        whether this control is the capped strip's scrolling flex region
+     * @param labels             the option labels, top to bottom, in segment order
+     * @param iconPaths          one leading-icon path per option (a null entry is an icon-less option);
+     *                           empty for a list drawn without icons
+     * @param trailingLabels     one right-aligned value per option (a null or absent entry is a
+     *                           value-less option); empty for a list with no trailing column
+     * @param trailingDirections one trailing direction triangle per option (a null or absent entry is a
+     *                           triangle-less option); empty for a list with no direction column, so a
+     *                           text-valued table leaves this empty and a direction table leaves {@code
+     *                           trailingLabels} empty
+     * @param selectedIndex      the lit option's index, or {@link #NO_SELECTION} when nothing is picked
+     * @param action             what a click on an option does, keyed by the option index
+     * @param reselect           what a click on the lit option does (deselect, re-fire, or inert)
+     * @param trailingScale      the trailing values' size relative to the body font ({@link
+     *                           #BODY_TRAILING_SCALE} for a body-size column, less for a compact one)
+     * @param columnCount        how many columns to spread the options across ({@link #SINGLE_COLUMN}
+     *                           for one column)
+     * @param scrolls            whether this control is the capped strip's scrolling flex region
      */
     record VerticalTable(
             List<String> labels,
             List<String> iconPaths,
             List<String> trailingLabels,
+            List<TriangleDirection> trailingDirections,
             int selectedIndex,
             ControlAction action,
             ReselectBehaviour reselect,
@@ -296,14 +303,15 @@ public sealed interface ControlSpec {
             int columnCount,
             boolean scrolls) implements Interactive {
         /**
-         * Copies the option lists defensively - null-tolerantly, since a null entry is a real "no icon"
-         * or "no value" - and rejects the two numeric shapes the layout cannot lay out, so a mis-built
-         * table fails at construction rather than at paint time.
+         * Copies the option lists defensively - null-tolerantly, since a null entry is a real "no icon",
+         * "no value", or "no triangle" - and rejects the two numeric shapes the layout cannot lay out, so
+         * a mis-built table fails at construction rather than at paint time.
          */
         public VerticalTable {
             labels = List.copyOf(labels);
             iconPaths = Collections.unmodifiableList(new ArrayList<>(iconPaths));
             trailingLabels = Collections.unmodifiableList(new ArrayList<>(trailingLabels));
+            trailingDirections = Collections.unmodifiableList(new ArrayList<>(trailingDirections));
             if (trailingScale <= 0d) {
                 throw new IllegalArgumentException(
                         "trailingScale is a size multiplier and must be positive, was " + trailingScale);
@@ -333,6 +341,7 @@ public sealed interface ControlSpec {
                 ReselectBehaviour reselect) {
             return new VerticalTable(
                     labels,
+                    List.of(),
                     List.of(),
                     List.of(),
                     selectedIndex,
@@ -416,6 +425,7 @@ public sealed interface ControlSpec {
                     labels,
                     iconPaths,
                     trailingLabels,
+                    List.of(),
                     selectedIndex,
                     action,
                     ReselectBehaviour.DESELECT,
@@ -426,10 +436,11 @@ public sealed interface ControlSpec {
 
         /**
          * Builds the general single-column table: a caller-chosen {@link ReselectBehaviour} and trailing
-         * size, so a selector that re-fires on the lit row and draws a compact trailing column (a sort
-         * selector's direction letters, kept smaller than the mode names) shares the three-column
-         * geometry the deselectable {@link #iconList} picker uses. An all-null (but present) icon column
-         * reads as a table with no crests.
+         * size, so a selector that re-fires on the lit row and draws a compact trailing text column
+         * (kept smaller than the option names) shares the three-column geometry the deselectable {@link
+         * #iconList} picker uses. An all-null (but present) icon column reads as a table with no crests.
+         * A table whose trailing column is direction triangles rather than text uses {@link
+         * #directionTable} instead.
          *
          * @param labels         the option labels, top to bottom
          * @param iconPaths      the per-option icon paths, aligned to {@code labels} (a null draws none)
@@ -453,10 +464,46 @@ public sealed interface ControlSpec {
                     labels,
                     iconPaths,
                     trailingLabels,
+                    List.of(),
                     selectedIndex,
                     action,
                     reselect,
                     trailingScale,
+                    SINGLE_COLUMN,
+                    false);
+        }
+
+        /**
+         * Builds a direction table: the general single-column {@link #table} shape - an all-null icon
+         * column (the three-column geometry, no crests) - but with a direction triangle per row in place
+         * of a trailing text value, for a trailing column that marks a direction a font has no up/down
+         * glyph for. The {@code trailingDirections} run parallel to {@code labels}: the entry at index
+         * {@code i} draws its triangle on option {@code i}, a null entry drawing none. The trailing size
+         * is the body size, since a drawn triangle sizes to its slot rather than to a font.
+         *
+         * @param labels             the option labels, top to bottom
+         * @param trailingDirections the per-option direction triangles, aligned to {@code labels} (a null
+         *                           draws none)
+         * @param selectedIndex      the lit option's index, or {@link #NO_SELECTION}
+         * @param action             what a click on an option does, keyed by the option index
+         * @param reselect           what a click on the lit option does (deselect, re-fire, or inert)
+         * @return the direction-table spec, in a single column
+         */
+        public static VerticalTable directionTable(
+                List<String> labels,
+                List<TriangleDirection> trailingDirections,
+                int selectedIndex,
+                ControlAction action,
+                ReselectBehaviour reselect) {
+            return new VerticalTable(
+                    labels,
+                    Collections.<String>nCopies(labels.size(), null),
+                    List.of(),
+                    trailingDirections,
+                    selectedIndex,
+                    action,
+                    reselect,
+                    BODY_TRAILING_SCALE,
                     SINGLE_COLUMN,
                     false);
         }
@@ -490,6 +537,22 @@ public sealed interface ControlSpec {
         }
 
         /**
+         * The direction triangle drawn in option {@code index}'s trailing slot, or null when this option
+         * has none - a shorter or empty list, or a null entry. A non-null direction draws a triangle in
+         * place of a text value, so the layout and renderer read this to tell a triangle row from a text
+         * row without a null check duplicated at each site.
+         *
+         * @param index the option index
+         * @return the option's trailing direction triangle, or null when it has none
+         */
+        public TriangleDirection directionAt(int index) {
+            if (index >= trailingDirections.size()) {
+                return null;
+            }
+            return trailingDirections.get(index);
+        }
+
+        /**
          * Returns a copy of this table marked as the capped strip's scrolling flex region, so a host
          * builds its list through the ordinary factory and then opts it into scrolling without a
          * scroll-specific factory. Only a stacked list scrolls, so this method exists on this variant
@@ -502,6 +565,7 @@ public sealed interface ControlSpec {
                     labels,
                     iconPaths,
                     trailingLabels,
+                    trailingDirections,
                     selectedIndex,
                     action,
                     reselect,

@@ -13,10 +13,11 @@ import kmlib.math.geometry.Rectangle;
  * value cannot drift.
  *
  * <p>The trailing value is an optional right-aligned text - the picker uses it to show each bloc's
- * ranking number, and the same slot carries a sort selector's direction glyph. It right-aligns to the
- * row's right inset, so a stack of rows reads as a value column even though each row measures its own
- * value width. A row with no trailing value lays its label the whole way to the right inset; the width
- * measurement only reserves the value and its gap when the row has one.
+ * ranking number - or, in the same slot, a small filled direction triangle a sort selector draws
+ * ({@link #computeDirectionTriangleBox}) since the body font renders no up/down glyph. Either
+ * right-aligns to the row's right inset, so a stack of rows reads as a value column even though each
+ * row measures its own value width. A row with no trailing value lays its label the whole way to the
+ * right inset; the width measurement only reserves the value and its gap when the row has one.
  *
  * <p>The image is described here only as "an icon" - a small square drawn flush-left in the row. A
  * faction crest is the case this exists for on the political map, but the widget is agnostic to what
@@ -50,6 +51,12 @@ public final class IconLabelRow {
     // trailing value when the row has one), so the widest name or value still clears the frame on the
     // trailing side. A trailing value right-aligns to this inset.
     private static final float TRAILING_PADDING = 4f;
+
+    // A trailing direction triangle sized off the row height (as the icon is), so a stack of rows
+    // shows even triangles. Kept narrower and shorter than a full row so it reads as a compact marker
+    // in the trailing slot rather than a block filling it.
+    private static final float TRIANGLE_WIDTH_FRACTION = 0.45f;
+    private static final float TRIANGLE_HEIGHT_FRACTION = 0.3f;
 
     private IconLabelRow() {
     }
@@ -94,6 +101,35 @@ public final class IconLabelRow {
      */
     public static float computeTrailingAnchorX(Rectangle row) {
         return row.x() + row.width() - TRAILING_PADDING;
+    }
+
+    /**
+     * The width the trailing direction triangle occupies for a given row height - the same value the
+     * layout reserves as the row's trailing width and the renderer sizes the triangle box to, so the
+     * reserved slot and the drawn triangle cannot disagree. Derived from the row height so a stack of
+     * rows shows even triangles.
+     *
+     * @param rowHeight the option row's height
+     * @return the triangle slot's width, in UI coordinates
+     */
+    public static float computeDirectionTriangleSlotWidth(float rowHeight) {
+        return rowHeight * TRIANGLE_WIDTH_FRACTION;
+    }
+
+    /**
+     * The box a trailing direction triangle fills: right-aligned to the same trailing inset a text
+     * value anchors to, vertically centred in the row, and sized off the row height. A stack of rows
+     * lines its triangles into the same right-hand column a value column would occupy.
+     *
+     * @param row the option row's footprint
+     * @return the triangle's box, at the row's trailing edge
+     */
+    public static Rectangle computeDirectionTriangleBox(Rectangle row) {
+        var width = computeDirectionTriangleSlotWidth(row.height());
+        var height = row.height() * TRIANGLE_HEIGHT_FRACTION;
+        var rightEdge = computeTrailingAnchorX(row);
+        var bottom = row.computeCenterY() - height / 2f;
+        return new Rectangle(rightEdge - width, bottom, width, height);
     }
 
     /**

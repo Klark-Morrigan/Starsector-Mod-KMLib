@@ -4,15 +4,16 @@ import com.fs.starfarer.api.util.Misc;
 
 import kmlib.opengl.GlColor;
 import kmlib.opengl.GlQuads;
+import kmlib.opengl.GlTriangles;
 
 import org.lwjgl.opengl.GL11;
 
 import java.awt.Color;
 
 /**
- * Fills a rectangle in screen/UI coordinates, compositing it over whatever is already drawn
- * behind it by a 0..1 opacity. The alpha-blend counterpart to {@link Misc#renderQuadAlpha},
- * and the single fill primitive every KM UI widget draws through.
+ * Fills a convex primitive (a rectangle or a triangle) in screen/UI coordinates, compositing it
+ * over whatever is already drawn behind it by a 0..1 opacity. The alpha-blend counterpart to
+ * {@link Misc#renderQuadAlpha}, and the single fill primitive every KM UI widget draws through.
  *
  * <p>Why not {@code Misc.renderQuadAlpha}: that helper blends with {@code GL_SRC_ALPHA} /
  * {@code GL_ZERO}, which discards the destination and writes {@code colour * alpha}. Over live
@@ -55,5 +56,23 @@ public final class UiFill {
                 x + width, y + height,
                 x + width, y,
         });
+    }
+
+    /**
+     * Fills the triangle whose corners are {@code vertices} - a flat {@code [x1, y1, x2, y2, x3, y3]}
+     * run in winding order - with {@code color}, composited over the existing pixels by {@code alpha}
+     * exactly as {@link #renderQuad} composites a rectangle. Must run with a current GL context, like
+     * any immediate-mode GL call.
+     *
+     * @param vertices the three corners, in UI coordinates, in winding order
+     * @param color    fill colour; its own alpha is honoured and further scaled by {@code alpha}
+     * @param alpha    overall opacity, 0..1, composited over what is behind
+     */
+    public static void renderTriangle(float[] vertices, Color color, float alpha) {
+        GL11.glDisable(GL11.GL_TEXTURE_2D);
+        GL11.glEnable(GL11.GL_BLEND);
+        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+        GlColor.set(color, alpha);
+        GlTriangles.fillTriangle(vertices);
     }
 }

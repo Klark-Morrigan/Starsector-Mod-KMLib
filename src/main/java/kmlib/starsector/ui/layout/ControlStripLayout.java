@@ -359,8 +359,11 @@ public final class ControlStripLayout {
         var trailingFontSize = BODY_FONT_SIZE * table.trailingScale();
         for (var index = 0; index < table.labels().size(); index++) {
             var labelWidth = measureWidth(measurer, table.labels().get(index));
-            var trailingWidth = (float) measurer.measureLineWidth(table.trailingLabelAt(index),
-                    trailingFontSize);
+            // A direction row reserves the fixed triangle slot instead of a measured text width, so the
+            // column is sized to the drawn triangle rather than to letters it no longer draws.
+            var trailingWidth = table.directionAt(index) != null
+                    ? IconLabelRow.computeDirectionTriangleSlotWidth(CONTROL_ROW_HEIGHT)
+                    : (float) measurer.measureLineWidth(table.trailingLabelAt(index), trailingFontSize);
             var rowWidth = IconLabelRow.measureRowWidth(CONTROL_ROW_HEIGHT, labelWidth,
                     table.hasIconAt(index), trailingWidth);
             widest = Math.max(widest, rowWidth);

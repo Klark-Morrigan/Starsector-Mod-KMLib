@@ -3,6 +3,7 @@ package kmlib.starsector.ui.render.gl;
 import com.fs.starfarer.api.util.Misc;
 
 import kmlib.color.Colors;
+import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.font.LazyFontCache;
@@ -159,16 +160,30 @@ public final class ControlRenderer {
             var labelX = IconLabelRow.computeLabelAnchorX(segment, spec.hasIconAt(index));
             drawBodyLabel(bodyFont, labels.get(index), labelX, segment.computeCenterY(),
                     LazyFont.TextAnchor.CENTER_LEFT, opacity);
-            // The value right-aligns to the row's trailing inset the layout sized past the name. Drawn
-            // only when the option carries one, so a value-less row is unchanged.
-            var trailing = spec.trailingLabelAt(index);
-            if (KmlibStrings.hasText(trailing)) {
-                // Drawn at the spec's trailing size - the body size for a body-size value, a reduced size
-                // for a compact direction letter - the same size the layout reserved the column at.
-                drawBodyLabel(bodyFont, trailing, IconLabelRow.computeTrailingAnchorX(segment),
-                        segment.computeCenterY(), LazyFont.TextAnchor.CENTER_RIGHT, opacity,
-                        ControlStripLayout.BODY_FONT_SIZE * spec.trailingScale());
-            }
+            drawTrailing(spec, index, segment, bodyFont, opacity);
+        }
+    }
+
+    // The row's trailing slot: a filled direction triangle when the option carries one (the sort
+    // selector's ascending/descending marker, a shape the body font has no glyph for), otherwise the
+    // right-aligned text value the picker's ranked rows show. Both right-align to the same inset the
+    // layout sized, so a triangle column and a value column occupy the same right-hand strip. A row
+    // with neither draws nothing here.
+    private static void drawTrailing(ControlSpec.VerticalTable spec, int index, Rectangle segment,
+            String bodyFont, float opacity) {
+        var direction = spec.directionAt(index);
+        if (direction != null) {
+            // In the row's body text tone so it reads as a quiet annotation like the value it replaces.
+            TriangleRenderer.render(IconLabelRow.computeDirectionTriangleBox(segment), direction,
+                    Misc.getTextColor(), opacity);
+            return;
+        }
+        var trailing = spec.trailingLabelAt(index);
+        if (KmlibStrings.hasText(trailing)) {
+            // Drawn at the spec's trailing size - the same size the layout reserved the column at.
+            drawBodyLabel(bodyFont, trailing, IconLabelRow.computeTrailingAnchorX(segment),
+                    segment.computeCenterY(), LazyFont.TextAnchor.CENTER_RIGHT, opacity,
+                    ControlStripLayout.BODY_FONT_SIZE * spec.trailingScale());
         }
     }
 

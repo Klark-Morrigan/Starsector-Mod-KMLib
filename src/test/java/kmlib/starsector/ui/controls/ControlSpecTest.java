@@ -56,7 +56,7 @@ final class ControlSpecTest {
             // The trailing scale is a size multiplier for the trailing column; a zero or negative value
             // cannot size any text, so it fails at construction rather than measuring to nothing.
             assertThatThrownBy(() -> new ControlSpec.VerticalTable(List.of("A"), List.of(), List.of(),
-                    ControlSpec.NO_SELECTION, ControlAction.NONE, ReselectBehaviour.INERT, 0d,
+                    List.of(), ControlSpec.NO_SELECTION, ControlAction.NONE, ReselectBehaviour.INERT, 0d,
                     ControlSpec.SINGLE_COLUMN, false)).isInstanceOf(IllegalArgumentException.class);
         }
 
@@ -65,7 +65,7 @@ final class ControlSpecTest {
             // A column count is how many columns the options wrap across; a count below one cannot lay
             // out any column, so it fails at construction rather than dividing by a zero column count.
             assertThatThrownBy(() -> new ControlSpec.VerticalTable(List.of("A"), List.of(), List.of(),
-                    ControlSpec.NO_SELECTION, ControlAction.NONE, ReselectBehaviour.DESELECT,
+                    List.of(), ControlSpec.NO_SELECTION, ControlAction.NONE, ReselectBehaviour.DESELECT,
                     ControlSpec.BODY_TRAILING_SCALE, 0, false))
                     .isInstanceOf(IllegalArgumentException.class);
         }
@@ -292,10 +292,10 @@ final class ControlSpecTest {
         @Test
         void tableCarriesTheChosenReselectAndTrailingScale() {
             // The general table lets a selector pick its re-pick behaviour and a reduced trailing size (a
-            // sort selector re-fires to flip and draws compact direction letters), both riding through
-            // unchanged rather than being forced to the icon list's deselect-at-body-size.
+            // compact trailing text column), both riding through unchanged rather than being forced to the
+            // icon list's deselect-at-body-size.
             var selector = ControlSpec.VerticalTable.table(List.of("Domination", "Presence"),
-                    Arrays.asList(null, null), List.of("DWN", "DWN"), 0, ControlAction.NONE,
+                    Arrays.asList(null, null), List.of("12", "12"), 0, ControlAction.NONE,
                     ReselectBehaviour.REFIRE, 0.8d);
             assertThat(selector.reselect()).isEqualTo(ReselectBehaviour.REFIRE);
             assertThat(selector.trailingScale()).isEqualTo(0.8d);
@@ -303,14 +303,42 @@ final class ControlSpecTest {
 
         @Test
         void tableDrawsNoIconWhenEveryIconEntryIsNull() {
-            // An all-null (but present) icon column is a table with no crests - the shape the sort
-            // selector takes - so no option reports an icon while the trailing column still rides.
+            // An all-null (but present) icon column is a table with no crests, so no option reports an
+            // icon while the trailing column still rides.
             var selector = ControlSpec.VerticalTable.table(List.of("Domination", "Presence"),
-                    Arrays.asList(null, null), List.of("DWN", "UP"), 0, ControlAction.NONE,
+                    Arrays.asList(null, null), List.of("12", "34"), 0, ControlAction.NONE,
                     ReselectBehaviour.REFIRE, 0.8d);
             assertThat(selector.hasIconAt(0)).isFalse();
             assertThat(selector.hasIconAt(1)).isFalse();
-            assertThat(selector.trailingLabels()).containsExactly("DWN", "UP");
+            assertThat(selector.trailingLabels()).containsExactly("12", "34");
+        }
+    }
+
+    @Nested
+    class VerticalTableDirectionTable {
+
+        @Test
+        void directionTableCarriesADirectionTrianglePerRowAndReFires() {
+            // The sort selector's shape: a direction triangle per row (up for ascending, down for
+            // descending) and a re-fire on the lit row so a re-pick can flip the direction.
+            var selector = ControlSpec.VerticalTable.directionTable(List.of("Domination", "Presence"),
+                    List.of(TriangleDirection.UP, TriangleDirection.DOWN), 0, ControlAction.NONE,
+                    ReselectBehaviour.REFIRE);
+            assertThat(selector.reselect()).isEqualTo(ReselectBehaviour.REFIRE);
+            assertThat(selector.directionAt(0)).isEqualTo(TriangleDirection.UP);
+            assertThat(selector.directionAt(1)).isEqualTo(TriangleDirection.DOWN);
+        }
+
+        @Test
+        void directionTableDrawsNoIconAndNoTrailingText() {
+            // The direction table reuses the three-column geometry with an all-null icon column and an
+            // empty text column, so the triangle is the only trailing content and no row shows a crest.
+            var selector = ControlSpec.VerticalTable.directionTable(List.of("Domination", "Presence"),
+                    List.of(TriangleDirection.UP, TriangleDirection.DOWN), 0, ControlAction.NONE,
+                    ReselectBehaviour.REFIRE);
+            assertThat(selector.hasIconAt(0)).isFalse();
+            assertThat(selector.hasIconAt(1)).isFalse();
+            assertThat(selector.trailingLabels()).isEmpty();
         }
     }
 
@@ -328,6 +356,7 @@ final class ControlSpecTest {
             assertThat(scrolling.labels()).isEqualTo(picker.labels());
             assertThat(scrolling.iconPaths()).isEqualTo(picker.iconPaths());
             assertThat(scrolling.trailingLabels()).isEqualTo(picker.trailingLabels());
+            assertThat(scrolling.trailingDirections()).isEqualTo(picker.trailingDirections());
             assertThat(scrolling.selectedIndex()).isEqualTo(picker.selectedIndex());
             assertThat(scrolling.columnCount()).isEqualTo(picker.columnCount());
         }
@@ -370,6 +399,37 @@ final class ControlSpecTest {
             var picker = ControlSpec.VerticalTable.iconList(List.of("Hegemony", "Tri-Tachyon"),
                     List.of("crest_heg", "crest_tt"), ControlSpec.NO_SELECTION, ControlAction.NONE);
             assertThat(picker.trailingLabelAt(0)).isEmpty();
+        }
+    }
+
+    @Nested
+    class DirectionAt {
+
+        @Test
+        void directionAtIsTheOptionsTriangleWhenItHasOne() {
+            var selector = ControlSpec.VerticalTable.directionTable(List.of("Domination", "Presence"),
+                    List.of(TriangleDirection.UP, TriangleDirection.DOWN), 0, ControlAction.NONE,
+                    ReselectBehaviour.REFIRE);
+            assertThat(selector.directionAt(1)).isEqualTo(TriangleDirection.DOWN);
+        }
+
+        @Test
+        void directionAtIsNullForANullDirectionEntry() {
+            // A null entry is a real "no triangle", so it reads as null rather than throwing - the same
+            // shape a null icon-path or value entry takes.
+            var selector = ControlSpec.VerticalTable.directionTable(List.of("Domination", "Presence"),
+                    Arrays.asList(TriangleDirection.UP, null), 0, ControlAction.NONE,
+                    ReselectBehaviour.REFIRE);
+            assertThat(selector.directionAt(1)).isNull();
+        }
+
+        @Test
+        void directionAtIsNullForAnIndexPastTheDirectionList() {
+            // A shorter (or empty) direction list leaves the trailing options triangle-less rather than
+            // throwing, matching how a short value list leaves options value-less.
+            var picker = ControlSpec.VerticalTable.iconList(List.of("Hegemony", "Tri-Tachyon"),
+                    List.of("crest_heg", "crest_tt"), ControlSpec.NO_SELECTION, ControlAction.NONE);
+            assertThat(picker.directionAt(0)).isNull();
         }
     }
 

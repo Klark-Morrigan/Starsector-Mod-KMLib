@@ -4,6 +4,7 @@ import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.ControlAction;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.ReselectBehaviour;
+import kmlib.starsector.ui.controls.TriangleDirection;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.layout.ControlStripLayout.StripMeasurement;
 import kmlib.starsector.ui.widgets.IconLabelRow;
@@ -193,6 +194,21 @@ final class ControlStripLayoutTest {
             var withValue = IconLabelRow.measureRowWidth(ControlStripLayout.CONTROL_ROW_HEIGHT,
                     2 * WIDTH_PER_CHAR, true, 2 * WIDTH_PER_CHAR);
             assertThat(measurement.rowWidths().get(0)).isCloseTo(withValue, within(TOLERANCE));
+        }
+
+        @Test
+        void measureStripReservesTheDirectionTriangleSlotInTheSortTableWidth() {
+            // A direction table's trailing column is a fixed triangle slot, not measured text, so the
+            // row reserves the triangle slot width the renderer sizes the triangle to rather than a
+            // letter width it no longer draws.
+            var selector = ControlSpec.VerticalTable.directionTable(List.of("AB"),
+                    List.of(TriangleDirection.DOWN), ControlSpec.NO_SELECTION, ControlAction.NONE,
+                    ReselectBehaviour.REFIRE);
+            var measurement = ControlStripLayout.measureStrip(List.<ControlSpec>of(selector), measurerFake);
+            var withTriangle = IconLabelRow.measureRowWidth(ControlStripLayout.CONTROL_ROW_HEIGHT,
+                    2 * WIDTH_PER_CHAR, false,
+                    IconLabelRow.computeDirectionTriangleSlotWidth(ControlStripLayout.CONTROL_ROW_HEIGHT));
+            assertThat(measurement.rowWidths().get(0)).isCloseTo(withTriangle, within(TOLERANCE));
         }
 
         @Test

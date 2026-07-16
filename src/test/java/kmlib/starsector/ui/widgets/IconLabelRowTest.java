@@ -54,6 +54,28 @@ class IconLabelRowTest {
     }
 
     @Nested
+    class ComputeDirectionTriangleBox {
+        @Test
+        void rightAlignsToTheTrailingInsetAndCentresVerticallyInTheRow() {
+            var box = IconLabelRow.computeDirectionTriangleBox(row);
+            // Its width is the slot width, its right edge the same trailing inset a value anchors to,
+            // and its centre the row's centre, so a triangle column lines up where a value column would.
+            assertThat(box.width())
+                    .isEqualTo(IconLabelRow.computeDirectionTriangleSlotWidth(row.height()));
+            assertThat(box.x() + box.width()).isEqualTo(IconLabelRow.computeTrailingAnchorX(row));
+            assertThat(box.computeCenterY()).isEqualTo(row.computeCenterY());
+        }
+
+        @Test
+        void sizesTheTriangleOffTheRowHeightSoAStackReadsEven() {
+            // A taller row yields a wider slot, so a stack of equal-height rows shows even triangles.
+            var tallerRow = new Rectangle(10f, 20f, 100f, 40f);
+            assertThat(IconLabelRow.computeDirectionTriangleSlotWidth(tallerRow.height()))
+                    .isGreaterThan(IconLabelRow.computeDirectionTriangleSlotWidth(row.height()));
+        }
+    }
+
+    @Nested
     class MeasureRowWidth {
         @Test
         void reservesTheIconAndItsGapAheadOfTheLabelWhenTheOptionHasAnIcon() {
