@@ -259,6 +259,19 @@ final class ControlSpecTest {
             assertThat(selector.hasIconAt(1)).isFalse();
             assertThat(selector.trailingLabels()).isEmpty();
         }
+
+        @Test
+        void directionTableDoesNotAliasTheCallersDirectionList() {
+            // The caller may hand in a mutable list it goes on to reuse; the table must copy it, so a
+            // later mutation of the caller's list cannot rewrite the drawn triangles - the same guard
+            // the icon-path and value lists get.
+            var callerDirections = new ArrayList<TriangleDirection>(
+                    List.of(TriangleDirection.UP, TriangleDirection.DOWN));
+            var selector = ControlSpec.VerticalTable.directionTable(List.of("Domination", "Presence"),
+                    callerDirections, 0, ControlAction.NONE, ReselectBehaviour.REFIRE);
+            callerDirections.set(0, TriangleDirection.DOWN);
+            assertThat(selector.directionAt(0)).isEqualTo(TriangleDirection.UP);
+        }
     }
 
     @Nested
