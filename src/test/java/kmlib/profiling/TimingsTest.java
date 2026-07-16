@@ -12,15 +12,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 class TimingsTest {
 
     @Nested
-    class NanosToMillis {
+    class ConvertNanosToMillis {
         @Test
-        void nanosToMillisDividesByAMillion() {
-            assertThat(Timings.nanosToMillis(2_500_000L)).isEqualTo(2.5);
+        void convertNanosToMillisDividesByAMillion() {
+            assertThat(Timings.convertNanosToMillis(2_500_000L)).isEqualTo(2.5);
         }
 
         @Test
-        void nanosToMillisIsZeroForZero() {
-            assertThat(Timings.nanosToMillis(0L)).isZero();
+        void convertNanosToMillisIsZeroForZero() {
+            assertThat(Timings.convertNanosToMillis(0L)).isZero();
         }
     }
 

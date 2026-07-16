@@ -9,7 +9,7 @@ import java.util.Locale;
  * <p>Pure text transform, no profiling state of its own: it takes the list of
  * {@link SectionTiming} and returns a string, so it can be unit tested directly
  * and reused by any output sink (a console command, a log line). Durations are
- * shown in milliseconds (via {@link Timings#nanosToMillis}), the useful scale
+ * shown in milliseconds (via {@link Timings#convertNanosToMillis}), the useful scale
  * for frame-time work.
  */
 public final class TimingReport {
@@ -45,10 +45,10 @@ public final class TimingReport {
             report.append(String.format(Locale.ROOT,
                     "%-" + sectionWidth + "s  %8d  %10.3f  %10.3f  %10.3f  %11.3f",
                     timing.getSection(), timing.getCount(),
-                    Timings.nanosToMillis(timing.getAverageNanos()),
-                    Timings.nanosToMillis(timing.getMinNanos()),
-                    Timings.nanosToMillis(timing.getMaxNanos()),
-                    Timings.nanosToMillis(timing.getTotalNanos())));
+                    Timings.convertNanosToMillis(timing.getAverageNanos()),
+                    Timings.convertNanosToMillis(timing.getMinNanos()),
+                    Timings.convertNanosToMillis(timing.getMaxNanos()),
+                    Timings.convertNanosToMillis(timing.getTotalNanos())));
         }
         return report.toString();
     }

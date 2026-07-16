@@ -22,7 +22,7 @@ public final class Timings {
      * Converts a nanosecond duration to milliseconds - the one place the
      * nanosecond-to-millisecond divisor lives.
      */
-    public static double nanosToMillis(long nanos) {
+    public static double convertNanosToMillis(long nanos) {
         return nanos / NANOS_PER_MILLISECOND;
     }
 
@@ -33,6 +33,6 @@ public final class Timings {
      * technical format, not locale-sensitive prose.
      */
     public static String formatMillis(long nanos) {
-        return String.format(Locale.ROOT, "%.2fms", nanosToMillis(nanos));
+        return String.format(Locale.ROOT, "%.2fms", convertNanosToMillis(nanos));
     }
 }
