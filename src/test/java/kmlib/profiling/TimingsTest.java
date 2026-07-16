@@ -6,8 +6,8 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Pins {@link Timings}: the nanosecond-to-millisecond conversion and the fixed
- * two-decimal "{@code 1.23ms}" format used by timing output.
+ * Pins {@link Timings}: the nanosecond-to-millisecond and nanosecond-to-second
+ * conversions, and the fixed two-decimal "{@code 1.23ms}" format used by timing output.
  */
 class TimingsTest {
 
@@ -21,6 +21,26 @@ class TimingsTest {
         @Test
         void convertNanosToMillisIsZeroForZero() {
             assertThat(Timings.convertNanosToMillis(0L)).isZero();
+        }
+    }
+
+    @Nested
+    class ConvertNanosToSeconds {
+        @Test
+        void convertNanosToSecondsDividesByABillion() {
+            assertThat(Timings.convertNanosToSeconds(2_500_000_000L)).isEqualTo(2.5);
+        }
+
+        @Test
+        void convertNanosToSecondsKeepsSubSecondPrecision() {
+            // A phase read off the clock lands mid-second far more often than on one, so the
+            // fraction is the case that matters rather than a whole-second divide.
+            assertThat(Timings.convertNanosToSeconds(1_500_000L)).isEqualTo(0.0015);
+        }
+
+        @Test
+        void convertNanosToSecondsIsZeroForZero() {
+            assertThat(Timings.convertNanosToSeconds(0L)).isZero();
         }
     }
 
