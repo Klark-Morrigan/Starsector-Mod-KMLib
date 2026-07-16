@@ -9,9 +9,10 @@ import java.util.List;
 /**
  * Composes a tab panel: a tabs-control header over the shared body composition, wrapped in one bordered
  * box. It REUSES {@link PanelLayout}'s framing - the same {@link PanelLayout#computeContentOrigin} anchor
- * and {@link PanelLayout#framePlacement} that frame a plain panel - passing header-inclusive content
- * dimensions (the wider of header and body, and the header band plus the body) so the one border wraps
- * the header too. Because {@code framePlacement} takes content dimensions, not a bordered box, reusing it
+ * and {@link PanelLayout#framePlacement} that frame a plain panel - passing the body's own width and a
+ * header-inclusive height (the header band plus the body), so the one border wraps the header band while
+ * the tab row never drives the box width: a tab row wider than the body overhangs the frame rather than
+ * stretching it. Because {@code framePlacement} takes content dimensions, not a bordered box, reusing it
  * frames one border, not two. It also reuses {@link CappedStripLayout#layoutBodyStrip} for the body and
  * adds {@link ControlStripLayout#layoutTabsHeader} for the flush header, so the only thing unique here is
  * where the header sits.
@@ -32,8 +33,9 @@ public final class TabPanelLayout {
      * Lays the tab panel out for the given screen height, padding, border, tabs, and body controls: a
      * {@link ControlStripLayout#TAB_HEIGHT} header band flush under the top border carrying the tabs
      * control, and the body strip framed beneath it (capped to the bottom margin). The returned body's
-     * {@link PanelPlacement#box()} spans the whole footprint so the one border wraps the header too. An
-     * empty {@code bodyControls} leaves the bordered tab row with no body beneath.
+     * {@link PanelPlacement#box()} sizes its width to the body alone and its height to the header band plus
+     * the body, so the one border wraps the header band while a tab row wider than the body overhangs it.
+     * An empty {@code bodyControls} leaves the bordered tab row with no body beneath.
      *
      * @param screenHeight    the UI-coordinate screen height, giving the top edge to hang from
      * @param padding         the panel's edge margins: the top-left anchor and the bottom keep-clear
@@ -68,12 +70,12 @@ public final class TabPanelLayout {
                 bodyControls, measurer, rawScrollOffset);
         var body = bodyStrip.bounds();
 
-        // Reuse the plain panel's framing, but with header-inclusive content: the box spans the wider of
-        // the header and the body, and the header band plus the body tall, so its whole-footprint box wraps
-        // the header too. The body placement carries that box; the tab panel pairs it with the header.
+        // Reuse the plain panel's framing, sizing the box to the body's own width so the tab row never
+        // widens it, and to the header band plus the body tall so the one border wraps the header band. A
+        // tab row wider than the body overhangs the frame. The body placement carries that box; the tab
+        // panel pairs it with the header.
         var bodyPlacement = PanelLayout.framePlacement(padding.left(), origin.boxTopY(), borderWidth,
-                Math.max(tabsHeader.bounds().width(), body.width()),
-                ControlStripLayout.TAB_HEIGHT + body.height(), bodyStrip);
+                body.width(), ControlStripLayout.TAB_HEIGHT + body.height(), bodyStrip);
         return new TabPanelPlacement(tabsHeader, bodyPlacement);
     }
 }

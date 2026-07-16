@@ -78,14 +78,15 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementSizesTheBoxToTheHeaderWhenTheBodyIsEmpty() {
-            var box = place(List.of()).body().box();
-            // Header row (116) is wider than the absent body, so the box tracks it plus the border on each
-            // edge (120 wide); it is one tab-height plus two borders tall (28) and pins to the top-left.
+        void computePlacementSizesTheBoxWidthToTheBodyNotTheWiderTabRow() {
+            var placement = place(BODY);
+            var box = placement.body().box();
+            var body = placement.body().body();
+            // The tab row (116) is wider than this narrow body, but the box tracks the body's own width
+            // plus the border on each edge - a wide tab row overhangs the frame rather than stretching it.
+            assertThat(body.width()).isLessThan(HEADER_WIDTH);
+            assertThat(box.width()).isCloseTo(body.width() + 2f * BORDER_WIDTH, within(TOLERANCE));
             assertThat(box.x()).isCloseTo(PADDING_LEFT, within(TOLERANCE));
-            assertThat(box.width()).isCloseTo(HEADER_WIDTH + 2f * BORDER_WIDTH, within(TOLERANCE));
-            assertThat(box.height())
-                    .isCloseTo(ControlStripLayout.TAB_HEIGHT + 2f * BORDER_WIDTH, within(TOLERANCE));
             assertThat(box.y() + box.height()).isCloseTo(BOX_TOP_Y, within(TOLERANCE));
         }
 
