@@ -3,7 +3,9 @@ package kmlib.math.geometry;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static kmlib.math.geometry.GeometryTestSupport.bigSquare;
@@ -17,6 +19,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * winding negates it, and a ring that encloses nothing (fewer than three vertices,
  * or collinear vertices) is zero - the sign and magnitude a consumer's fold-guard
  * relies on.
+ *
+ * <p>And of {@link PolygonRegions#isPointInsideRing}: a point within a convex ring is
+ * inside and one beyond it outside regardless of winding, a concave ring's notch reads
+ * as outside while its arms read as inside, and a ring too short to enclose area holds
+ * no point.
  *
  * <p>And of {@link PolygonRegions#findLineInteriorSpans}: a convex ring yields one
  * span, a concave ring the line exits and re-enters yields separate spans (no chord
@@ -70,6 +77,65 @@ final class PolygonRegionsTest {
                     new double[] {0, 0}, new double[] {5, 0}, new double[] {10, 0});
 
             assertThat(signedArea(collinear)).isCloseTo(0.0, within());
+        }
+    }
+
+    @Nested
+    class IsPointInsideRing {
+        // A U shape: the side-10 square with a notch cut down from the top between
+        // x=4 and x=6, so a point in the notch sits within the ring's bounds but
+        // outside the ring itself.
+        private List<double[]> notchedSquare() {
+            return Arrays.asList(
+                    new double[] {0, 0},
+                    new double[] {10, 0},
+                    new double[] {10, 10},
+                    new double[] {6, 10},
+                    new double[] {6, 4},
+                    new double[] {4, 4},
+                    new double[] {4, 10},
+                    new double[] {0, 10});
+        }
+
+        @Test
+        void a_point_within_a_convex_ring_is_inside() {
+            assertThat(PolygonRegions.isPointInsideRing(bigSquare(10), 5, 5)).isTrue();
+        }
+
+        @Test
+        void a_point_beyond_a_convex_ring_is_outside() {
+            assertThat(PolygonRegions.isPointInsideRing(bigSquare(10), 15, 5)).isFalse();
+        }
+
+        @Test
+        void the_verdict_is_blind_to_the_rings_winding() {
+            // Same square traced clockwise: the even-odd rule counts crossings, so
+            // reversing the winding cannot change what the ring encloses.
+            var clockwise = new ArrayList<>(bigSquare(10));
+            Collections.reverse(clockwise);
+
+            assertThat(PolygonRegions.isPointInsideRing(clockwise, 5, 5)).isTrue();
+        }
+
+        @Test
+        void a_point_in_a_concave_rings_notch_is_outside() {
+            // (5, 7) is inside the bounding box and between the U's two arms, but the
+            // ray crosses two edges on its way out - even, so outside.
+            assertThat(PolygonRegions.isPointInsideRing(notchedSquare(), 5, 7)).isFalse();
+        }
+
+        @Test
+        void a_point_in_a_concave_rings_arm_is_inside() {
+            // (2, 7) sits in the U's left arm: one crossing, so inside.
+            assertThat(PolygonRegions.isPointInsideRing(notchedSquare(), 2, 7)).isTrue();
+        }
+
+        @Test
+        void a_ring_too_short_to_enclose_area_holds_no_point() {
+            // Two vertices bound nothing, so the point they straddle is still outside.
+            var segment = Arrays.asList(new double[] {0, 0}, new double[] {10, 0});
+
+            assertThat(PolygonRegions.isPointInsideRing(segment, 5, 0)).isFalse();
         }
     }
 

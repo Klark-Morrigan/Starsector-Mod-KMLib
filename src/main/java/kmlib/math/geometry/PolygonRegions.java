@@ -9,7 +9,8 @@ import java.util.List;
  *
  * <p>Read-only counterpart to the offset and smoothing passes. {@link
  * #computeSignedArea} reports a ring's area and winding sign, the fold-guard a
- * caller keys on. {@link #findLineInteriorSpans} and {@link #findBandInteriorSpans}
+ * caller keys on. {@link #isPointInsideRing} answers whether a single point falls
+ * within a ring. {@link #findLineInteriorSpans} and {@link #findBandInteriorSpans}
  * answer where a label's baseline - a zero-width line, or a strip with girth - fits
  * within a province, so text lands inside the fill rather than straddling a border.
  */
@@ -42,6 +43,44 @@ public final class PolygonRegions {
             twiceArea += current[0] * next[1] - next[0] * current[1];
         }
         return twiceArea / 2.0;
+    }
+
+    /**
+     * Whether a point falls inside a closed ring, by the even-odd rule: a horizontal
+     * ray cast from the point toggles inside/outside at each edge it crosses, so an
+     * odd crossing count puts the point within. Winding-blind and concave-safe, since
+     * the rule counts crossings rather than assuming a convex hull.
+     *
+     * <p>A point exactly on the boundary is not a defined case: an edge endpoint at the
+     * ray's height counts as below it, which makes the verdict consistent (a point on an
+     * edge resolves the same way every call) but arbitrary in which side it lands on.
+     * A caller that must classify boundary points needs a distance test, not this.
+     *
+     * @param ring closed polygon vertices as {x, y} pairs, in any winding
+     * @param x    the point's x coordinate
+     * @param y    the point's y coordinate
+     * @return true when the point lies within the ring; false when outside, and always
+     *         for a ring too short to enclose area
+     */
+    public static boolean isPointInsideRing(List<double[]> ring, double x, double y) {
+        if (ring.size() < Limits.MIN_VERTICES_TO_ENCLOSE_AREA) {
+            return false;
+        }
+        var isInside = false;
+        var count = ring.size();
+        for (var i = 0; i < count; i++) {
+            var edgeStart = ring.get(i);
+            var edgeEnd = ring.get((i + 1) % count);
+            // The edge straddles the ray's height (an endpoint exactly at the height
+            // counts below, so a shared corner toggles once rather than twice), and its
+            // crossing with the ray's horizontal line lies to the point's right.
+            if ((edgeStart[1] > y) != (edgeEnd[1] > y)
+                    && x < edgeStart[0] + (y - edgeStart[1]) * (edgeEnd[0] - edgeStart[0])
+                            / (edgeEnd[1] - edgeStart[1])) {
+                isInside = !isInside;
+            }
+        }
+        return isInside;
     }
 
     /**
@@ -221,25 +260,13 @@ public final class PolygonRegions {
     }
 
     // Whether the point lies inside the region the rings bound, by the even-odd rule
-    // over every ring together: a horizontal ray from the point toggles inside/outside
-    // at each edge it crosses, so a point inside the outer ring but also inside a hole
-    // ring toggles twice and lands outside - holes need no special casing.
+    // over every ring together: each ring's own parity is combined, so a point inside
+    // the outer ring but also inside a hole ring toggles twice and lands outside -
+    // holes need no special casing.
     private static boolean isPointInsideRings(List<List<double[]>> rings, double x, double y) {
         var isInside = false;
         for (var ring : rings) {
-            var count = ring.size();
-            for (var i = 0; i < count; i++) {
-                var edgeStart = ring.get(i);
-                var edgeEnd = ring.get((i + 1) % count);
-                // The edge straddles the ray's height (endpoint exactly at the height
-                // counts below, so a shared corner toggles once), and its crossing
-                // with the ray's horizontal line lies to the point's right.
-                if ((edgeStart[1] > y) != (edgeEnd[1] > y)
-                        && x < edgeStart[0] + (y - edgeStart[1]) * (edgeEnd[0] - edgeStart[0])
-                                / (edgeEnd[1] - edgeStart[1])) {
-                    isInside = !isInside;
-                }
-            }
+            isInside ^= isPointInsideRing(ring, x, y);
         }
         return isInside;
     }
