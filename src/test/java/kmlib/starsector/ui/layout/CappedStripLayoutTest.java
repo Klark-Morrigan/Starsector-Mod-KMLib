@@ -273,6 +273,27 @@ final class CappedStripLayoutTest {
         }
 
         @Test
+        void layoutCappedControlsFillsTheFlexListToTheBodyContentWidth() {
+            // A header wider than the list makes the body wider than the list's own rows. The flex list,
+            // as the strip's main region, spreads to the body's content width rather than leaving a
+            // gutter of dead space between it and the scrollbar pinned at the body's right edge.
+            var wideHeader = ControlSpec.Checkbox.lit("HeaderWiderThanTheList", false,
+                    ControlAction.NONE);
+            var specs = List.<ControlSpec>of(wideHeader, scrollingList(FLEX_OPTION_COUNT));
+            var strip = measure(specs);
+            var body = frameBody(strip.bodyHeight(), strip.bodyWidth());
+            var capped = CappedStripLayout.layoutCappedControls(body, specs, strip.rowHeights(),
+                    strip.rowWidths(), 1, 0f, measurerFake);
+            var list = flexBounds(capped);
+            var contentWidth = body.width() - 2f * ControlStripLayout.BODY_PADDING;
+            // The list and its viewport both fill the content width, and the fill only ever grows the
+            // list - it is wider than its own measured row width, never shrunk below it.
+            assertThat(list.width()).isCloseTo(contentWidth, within(TOLERANCE));
+            assertThat(list.width()).isGreaterThan(strip.rowWidths().get(1));
+            assertThat(capped.flexViewport().width()).isCloseTo(contentWidth, within(TOLERANCE));
+        }
+
+        @Test
         void layoutCappedControlsSpansAPinnedHeaderDividerAcrossTheFullBody() {
             // A rule heads the block above the scrolling list - the political map's picker shape. The
             // pinned header divider spans the whole framed body (edge to edge inside the border inset),

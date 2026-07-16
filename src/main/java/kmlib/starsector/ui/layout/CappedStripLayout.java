@@ -17,6 +17,11 @@ import java.util.List;
  * between and, when its natural rows overrun that room, scrolls within it. So a long list stays reachable
  * inside a bounded box while the header and footer controls around it never move.
  *
+ * <p>As the strip's main region, the flex region also fills the body's content width rather than its own
+ * narrower row width - it flexes horizontally into the leftover width just as it flexes vertically into
+ * the leftover height. The body is as wide as the widest control, so a flex list narrower than the widest
+ * header row spreads to the frame instead of leaving a gutter of dead space between it and the scrollbar.
+ *
  * <p>Pure geometry in UI coordinates (origin bottom-left, y grows up), split into the same measure-then-
  * place shape as the strip it caps: {@link #capBodyHeight} shrinks the measured body height for the host
  * to frame its chrome around, then {@link #layoutCappedControls} places the controls inside the framed
@@ -69,7 +74,10 @@ public final class CappedStripLayout {
      * @param maxBodyHeight the most the framed body may stand
      * @return the body height to frame, capped only when the strip overflows and can scroll
      */
-    public static float capBodyHeight(StripMeasurement strip, int flexIndex, float maxBodyHeight) {
+    public static float capBodyHeight(
+            StripMeasurement strip,
+            int flexIndex,
+            float maxBodyHeight) {
         var naturalHeight = strip.bodyHeight();
         if (flexIndex == NO_FLEX_REGION || naturalHeight <= maxBodyHeight) {
             return naturalHeight;
@@ -103,8 +111,13 @@ public final class CappedStripLayout {
      * @param measurer        measures each label's rendered width, for snapping a tabs row's segments
      * @return the laid-out controls, the flex viewport, the clamped offset, and the overflow
      */
-    public static CappedStripPlacement layoutCappedControls(Rectangle body, List<ControlSpec> specs,
-            List<Float> rowHeights, List<Float> rowWidths, int flexIndex, float rawScrollOffset,
+    public static CappedStripPlacement layoutCappedControls(
+            Rectangle body,
+            List<ControlSpec> specs,
+            List<Float> rowHeights,
+            List<Float> rowWidths,
+            int flexIndex,
+            float rawScrollOffset,
             LineWidthMeasurer measurer) {
         if (specs.isEmpty()) {
             return new CappedStripPlacement(List.of(), NO_VIEWPORT, 0f, 0f);
@@ -152,7 +165,14 @@ public final class CappedStripLayout {
 
         var flexViewportHeight = Math.max(0f, flexViewportTopY - flexViewportBottomY);
         var flexNatural = rowHeights.get(flexIndex);
-        var flexWidth = rowWidths.get(flexIndex);
+        // The flex region fills the body's content width, not just its own row width: it is the strip's
+        // main region, so it flexes horizontally into the leftover width the same way it flexes
+        // vertically into the leftover height. The body is as wide as the widest control, so this only
+        // ever grows the list (a list already as wide as the body is unchanged), spreading its columns to
+        // the frame and right-aligning each row's trailing value against the panel edge by the scrollbar.
+        var flexWidth = Math.max(
+                rowWidths.get(flexIndex),
+                body.width() - 2f * ControlStripLayout.BODY_PADDING);
         var overflow = Math.max(0f, flexNatural - flexViewportHeight);
         var scrollOffset = clamp(rawScrollOffset, overflow);
         // The list draws at its full natural height, shifted up by the clamped scroll so the rows past
@@ -167,7 +187,11 @@ public final class CappedStripLayout {
         controls.addAll(ControlStripLayout.toControls(headerSpecs, headerRows, measurer));
         controls.add(ControlStripLayout.toControl(specs.get(flexIndex), flexBounds, measurer));
         controls.addAll(ControlStripLayout.toControls(footerSpecs, footerRows, measurer));
-        return new CappedStripPlacement(List.copyOf(controls), flexViewport, scrollOffset, overflow);
+        return new CappedStripPlacement(
+                List.copyOf(controls),
+                flexViewport,
+                scrollOffset,
+                overflow);
     }
 
     /**
@@ -186,8 +210,13 @@ public final class CappedStripLayout {
      * @param rawScrollOffset the requested scroll offset for the scrolling control; clamped to its overflow
      * @return the framed body rectangle and the capped, placed controls inside it
      */
-    public static BodyStrip layoutBodyStrip(float originX, float bodyTopY, float maxBodyHeight,
-            List<ControlSpec> bodyControls, LineWidthMeasurer measurer, float rawScrollOffset) {
+    public static BodyStrip layoutBodyStrip(
+            float originX,
+            float bodyTopY,
+            float maxBodyHeight,
+            List<ControlSpec> bodyControls,
+            LineWidthMeasurer measurer,
+            float rawScrollOffset) {
         var strip = ControlStripLayout.measureStrip(bodyControls, measurer);
         var flexIndex = findScrollingIndex(bodyControls);
         var bodyHeight = capBodyHeight(strip, flexIndex, maxBodyHeight);
@@ -219,8 +248,11 @@ public final class CappedStripLayout {
      * @param scrollOffset the applied scroll offset in pixels, clamped to {@code scrollOverflow}
      * @param scrollOverflow how far the flex list overruns its viewport, zero when it fits
      */
-    public record CappedStripPlacement(List<Control> controls, Rectangle flexViewport,
-            float scrollOffset, float scrollOverflow) {
+    public record CappedStripPlacement(
+            List<Control> controls,
+            Rectangle flexViewport,
+            float scrollOffset,
+            float scrollOverflow) {
         /**
          * @return whether the flex list overruns its viewport, so the host draws a scrollbar and scrolls
          *         on a wheel event
