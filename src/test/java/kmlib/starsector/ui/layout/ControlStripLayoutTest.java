@@ -213,6 +213,37 @@ final class ControlStripLayoutTest {
         }
 
         @Test
+        void measureStripSizesASideBySideRowToItsTwoColumnsPlusTheGap() {
+            // The group lays its two columns across one row, so it is as wide as the left column, the
+            // gap parting them, and the right column - not one column's width.
+            var pair = new ControlSpec.SideBySide(
+                    List.of(ControlSpec.Checkbox.lit("L", false, ControlAction.NONE)),
+                    List.of(ControlSpec.Checkbox.lit("RR", false, ControlAction.NONE)));
+            var measurement = ControlStripLayout.measureStrip(List.<ControlSpec>of(pair), measurerFake);
+            var leftWidth = ControlStripLayout.CONTROL_ROW_HEIGHT
+                    + ControlStripLayout.CHECKBOX_LABEL_GAP + 1 * WIDTH_PER_CHAR;
+            var rightWidth = ControlStripLayout.CONTROL_ROW_HEIGHT
+                    + ControlStripLayout.CHECKBOX_LABEL_GAP + 2 * WIDTH_PER_CHAR;
+            assertThat(measurement.rowWidths().get(0))
+                    .isCloseTo(leftWidth + ControlStripLayout.COLUMN_GAP + rightWidth,
+                            within(TOLERANCE));
+        }
+
+        @Test
+        void measureStripStandsASideBySideRowAsTallAsItsTallerColumn() {
+            // The left column holds two stacked controls and the right one, so the group stands as tall
+            // as the two-row left column - its taller side - and the right column top-aligns within it.
+            var pair = new ControlSpec.SideBySide(
+                    List.of(ControlSpec.Checkbox.lit("A", false, ControlAction.NONE),
+                            ControlSpec.Checkbox.lit("B", false, ControlAction.NONE)),
+                    List.of(ControlSpec.Checkbox.lit("C", false, ControlAction.NONE)));
+            var measurement = ControlStripLayout.measureStrip(List.<ControlSpec>of(pair), measurerFake);
+            assertThat(measurement.rowHeights().get(0))
+                    .isCloseTo(2 * ControlStripLayout.CONTROL_ROW_HEIGHT + ControlStripLayout.ROW_GAP,
+                            within(TOLERANCE));
+        }
+
+        @Test
         void measureStripStandsATabsRowOneTabHeightTall() {
             // A tabs row is drawn in the larger tab face, so it stands one tab-height tall rather than a
             // body-row tall.
@@ -387,6 +418,58 @@ final class ControlStripLayoutTest {
             var body = new Rectangle(BODY_ORIGIN_X, BODY_ORIGIN_Y, 0f, 0f);
             assertThat(ControlStripLayout.layoutControls(body, List.of(), List.of(), List.of(),
                     measurerFake)).isEmpty();
+        }
+
+        @Test
+        void layoutControlsFlattensASideBySideIntoItsColumnsControlsSideBySide() {
+            // The group is not laid out as one control: it expands into its two children, the left at
+            // the body inset and the right one left-column-width plus the column gap to its right, both
+            // hanging from the group's top.
+            var left = ControlSpec.Checkbox.lit("L", false, ControlAction.NONE);
+            var right = ControlSpec.Checkbox.lit("RR", false, ControlAction.NONE);
+            var specs = List.<ControlSpec>of(new ControlSpec.SideBySide(List.of(left), List.of(right)));
+            var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
+            var controls = ControlStripLayout.layoutControls(frameBody(measurement), specs,
+                    measurement.rowHeights(), measurement.rowWidths(), measurerFake);
+
+            assertThat(controls).hasSize(2);
+            var leftControl = controls.get(0);
+            var rightControl = controls.get(1);
+            var leftWidth = ControlStripLayout.CONTROL_ROW_HEIGHT
+                    + ControlStripLayout.CHECKBOX_LABEL_GAP + 1 * WIDTH_PER_CHAR;
+            assertThat(leftControl.spec()).isEqualTo(left);
+            assertThat(rightControl.spec()).isEqualTo(right);
+            assertThat(leftControl.bounds().x())
+                    .isCloseTo(BODY_ORIGIN_X + ControlStripLayout.BODY_PADDING, within(TOLERANCE));
+            assertThat(rightControl.bounds().x())
+                    .isCloseTo(leftControl.bounds().x() + leftWidth + ControlStripLayout.COLUMN_GAP,
+                            within(TOLERANCE));
+            assertThat(rightControl.bounds().y() + rightControl.bounds().height())
+                    .as("both columns hang from the group's top")
+                    .isCloseTo(leftControl.bounds().y() + leftControl.bounds().height(),
+                            within(TOLERANCE));
+        }
+
+        @Test
+        void layoutControlsStacksASideBySideColumnTopToBottom() {
+            // A column is a vertical run like the top-level strip: its two children stack (the first
+            // above the second), abutting with one row gap between them.
+            var top = ControlSpec.Checkbox.lit("A", false, ControlAction.NONE);
+            var bottom = ControlSpec.Checkbox.lit("B", false, ControlAction.NONE);
+            var specs = List.<ControlSpec>of(new ControlSpec.SideBySide(List.of(top, bottom),
+                    List.of(ControlSpec.Checkbox.lit("C", false, ControlAction.NONE))));
+            var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
+            var controls = ControlStripLayout.layoutControls(frameBody(measurement), specs,
+                    measurement.rowHeights(), measurement.rowWidths(), measurerFake);
+
+            // The left column's two children come first (top then bottom), then the right column's one.
+            assertThat(controls).hasSize(3);
+            var topControl = controls.get(0);
+            var bottomControl = controls.get(1);
+            assertThat(topControl.bounds().y()).isGreaterThan(bottomControl.bounds().y());
+            assertThat(topControl.bounds().y())
+                    .isCloseTo(bottomControl.bounds().y() + bottomControl.bounds().height()
+                            + ControlStripLayout.ROW_GAP, within(TOLERANCE));
         }
 
         @Test

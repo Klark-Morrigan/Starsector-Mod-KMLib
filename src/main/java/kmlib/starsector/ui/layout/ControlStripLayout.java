@@ -38,6 +38,11 @@ public final class ControlStripLayout {
     public static final float ROW_GAP = 4f;
     public static final float BODY_PADDING = 8f;
 
+    // The horizontal gap parting the two columns of a side-by-side group, wider than the inter-row gap
+    // so the two runs read as distinct blocks rather than one continuous row. Public so a test places
+    // the right column at the same offset the layout reserved for the gap.
+    public static final float COLUMN_GAP = 16f;
+
     // Per-control slack: the gap between a checkbox's box and its label, the padding sizing each
     // radio segment past its option label, the gap before a control's trailing label, and the
     // padding sizing a toggle button past its label. The checkbox and trailing gaps are public so
@@ -73,7 +78,9 @@ public final class ControlStripLayout {
      * plus the inset, and as tall as the stacked rows plus their gaps and the inset. Empty controls
      * measure to a zero footprint with no rows, so a host reserves nothing for a bodyless strip. A
      * vertical radio stands one option-row taller per segment, so row heights vary and the body sums
-     * them rather than assuming one height per control.
+     * them rather than assuming one height per control. A side-by-side group's one row is as wide as its
+     * two columns plus their gap and as tall as its taller column, and is later flattened into its
+     * children's controls at placement.
      *
      * @param specs    the controls to measure, top to bottom
      * @param measurer measures each label's rendered width for text snapping
@@ -181,9 +188,51 @@ public final class ControlStripLayout {
             LineWidthMeasurer measurer) {
         var controls = new ArrayList<Control>(specs.size());
         for (var index = 0; index < specs.size(); index++) {
-            controls.add(toControl(specs.get(index), rows.get(index), measurer));
+            var spec = specs.get(index);
+            // A side-by-side group is not one control but two columns of them: it expands into its
+            // children's laid-out controls here, so downstream sees only ordinary controls with absolute
+            // bounds. Every other kind is its own single control.
+            if (spec instanceof ControlSpec.SideBySide pair) {
+                controls.addAll(expandSideBySide(pair, rows.get(index), measurer));
+            } else {
+                controls.add(toControl(spec, rows.get(index), measurer));
+            }
         }
         return List.copyOf(controls);
+    }
+
+    // Lays a side-by-side group's two columns into the group's row and returns their controls: the left
+    // column stacked from the row's top-left, the right column stacked from one COLUMN_GAP past the left
+    // column's width, each a vertical run placed exactly as the top-level strip stacks its rows. The
+    // group has no chrome of its own, so it contributes only its children (with absolute bounds), which
+    // is why the caller flattens it into the strip rather than keeping it as one control.
+    private static List<Control> expandSideBySide(ControlSpec.SideBySide pair, Rectangle row,
+            LineWidthMeasurer measurer) {
+        var rowTopY = row.y() + row.height();
+        var leftControls = layoutColumn(pair.leftColumn(), row.x(), rowTopY, measurer);
+        var rightX = row.x() + measureColumnWidth(pair.leftColumn(), measurer) + COLUMN_GAP;
+        var rightControls = layoutColumn(pair.rightColumn(), rightX, rowTopY, measurer);
+        var controls = new ArrayList<Control>(leftControls.size() + rightControls.size());
+        controls.addAll(leftControls);
+        controls.addAll(rightControls);
+        return List.copyOf(controls);
+    }
+
+    // Stacks one column of a side-by-side group top to bottom from (columnX, columnTopY), snapping each
+    // control to its own measured width and height exactly as the top-level strip stacks its rows, then
+    // turning the snapped rows into controls through the shared zip so a column's radio splits into the
+    // same segments a top-level radio would. A column holds only ordinary controls, so the zip never
+    // recurses back into another group.
+    private static List<Control> layoutColumn(List<ControlSpec> specs, float columnX, float columnTopY,
+            LineWidthMeasurer measurer) {
+        var rowHeights = new ArrayList<Float>(specs.size());
+        var rowWidths = new ArrayList<Float>(specs.size());
+        for (var spec : specs) {
+            rowHeights.add(measureRowHeight(spec));
+            rowWidths.add(measureRowWidth(spec, measurer));
+        }
+        var rows = RowStack.layoutRows(columnX, columnTopY, ROW_GAP, rowHeights, rowWidths);
+        return toControls(specs, rows, measurer);
     }
 
     /**
@@ -306,7 +355,35 @@ public final class ControlStripLayout {
         if (spec instanceof ControlSpec.Tabs tabs) {
             return measureTabsRowWidth(tabs, measurer);
         }
+        if (spec instanceof ControlSpec.SideBySide pair) {
+            // The two columns side by side: the left column, the gap parting them, then the right.
+            return measureColumnWidth(pair.leftColumn(), measurer) + COLUMN_GAP
+                    + measureColumnWidth(pair.rightColumn(), measurer);
+        }
         return 0f;
+    }
+
+    // The width one column of a side-by-side group needs: its widest control row, each sized as the top-
+    // level strip sizes it (its snapped row plus any trailing caption), so a column reserves exactly the
+    // room the same controls take when stacked at the top level. An empty column needs no width.
+    private static float measureColumnWidth(List<ControlSpec> specs, LineWidthMeasurer measurer) {
+        var widest = 0f;
+        for (var spec : specs) {
+            widest = Math.max(widest,
+                    measureRowWidth(spec, measurer) + measureTrailingWidth(spec, measurer));
+        }
+        return widest;
+    }
+
+    // The height one column of a side-by-side group stands: its controls stacked with a gap between
+    // each, through the same stacked-height rule the whole strip uses, so the group is as tall as its
+    // taller column. An empty column stands zero tall.
+    private static float measureColumnHeight(List<ControlSpec> specs) {
+        var rowHeights = new ArrayList<Float>(specs.size());
+        for (var spec : specs) {
+            rowHeights.add(measureRowHeight(spec));
+        }
+        return measureStackedHeight(rowHeights);
     }
 
     // The width a tabs row needs: its tabs laid side by side, each snapped to its label-plus-shortcut
@@ -341,6 +418,12 @@ public final class ControlStripLayout {
         }
         if (spec instanceof ControlSpec.Tabs) {
             return TAB_HEIGHT;
+        }
+        if (spec instanceof ControlSpec.SideBySide pair) {
+            // The group stands as tall as its taller column, so the shorter column top-aligns and
+            // leaves the space below it empty rather than stretching the group.
+            return Math.max(measureColumnHeight(pair.leftColumn()),
+                    measureColumnHeight(pair.rightColumn()));
         }
         return CONTROL_ROW_HEIGHT;
     }

@@ -248,6 +248,31 @@ final class CappedStripLayoutTest {
         }
 
         @Test
+        void layoutCappedControlsFlattensAPinnedHeaderSideBySideIntoItsChildren() {
+            // A side-by-side group heads the block above the scrolling list - the political map's picker
+            // shape, where a selector sits beside a related block over the list. The pinned header expands
+            // the group into its two children (the left control, then the right), each side by side above
+            // the flex list, so the capped path flattens a group as the plain stack does.
+            var left = ControlSpec.Checkbox.lit("L", false, ControlAction.NONE);
+            var right = ControlSpec.Checkbox.lit("RR", false, ControlAction.NONE);
+            var specs = List.<ControlSpec>of(new ControlSpec.SideBySide(List.of(left), List.of(right)),
+                    scrollingList(FLEX_OPTION_COUNT));
+            var strip = measure(specs);
+            var body = frameBody(strip.bodyHeight(), strip.bodyWidth());
+            var capped = CappedStripLayout.layoutCappedControls(body, specs, strip.rowHeights(),
+                    strip.rowWidths(), 1, 0f, measurerFake);
+
+            // The group's two children pin ahead of the list, side by side (the right one to the right of
+            // the left), and the scrolling list follows.
+            assertThat(capped.controls()).hasSize(3);
+            assertThat(capped.controls().get(0).spec()).isEqualTo(left);
+            assertThat(capped.controls().get(1).spec()).isEqualTo(right);
+            assertThat(capped.controls().get(1).bounds().x())
+                    .isGreaterThan(capped.controls().get(0).bounds().x());
+            assertThat(capped.controls().get(2).spec()).isInstanceOf(ControlSpec.VerticalTable.class);
+        }
+
+        @Test
         void layoutCappedControlsSpansAPinnedHeaderDividerAcrossTheFullBody() {
             // A rule heads the block above the scrolling list - the political map's picker shape. The
             // pinned header divider spans the whole framed body (edge to edge inside the border inset),
