@@ -17,6 +17,7 @@ of it.
   - [It is an install patch, not a mod](#it-is-an-install-patch-not-a-mod)
   - [It rewrites GL class references in every jar](#it-rewrites-gl-class-references-in-every-jar)
   - [It tracks the modelview on the CPU](#it-tracks-the-modelview-on-the-cpu)
+  - [It defers every GL call to a render thread](#it-defers-every-gl-call-to-a-render-thread)
   - [What the GL11 bridge can and cannot read back](#what-the-gl11-bridge-can-and-cannot-read-back)
   - [Its reach goes past the GL bridge](#its-reach-goes-past-the-gl-bridge)
 - [The campaign UI's GL setup](#the-campaign-uis-gl-setup)
@@ -141,12 +142,18 @@ static (`.../bridge/context/ContextManager.java:16`), `Context.transformManager`
 is a public final field (`.../bridge/context/Context.java:32`), and
 `getCPUModelView()` is public (`.../bridge/context/TransformManager.java:44`).
 
-Three cautions on using it. It returns the live mutable matrix, not a copy, so
-callers must copy before holding it. And it returns identity when Fast Rendering
-has instead pushed the matrix to the GPU
-(`.../bridge/context/TransformManager.java:44-49`), so identity means "this read
-is not usable", not "no transform". That is safe to lean on because a real
-campaign-UI pass is never identity (see
+Four cautions on using it. The first is where, not what, and it dwarfs the rest:
+the matrix cannot be read correctly from the calling thread at all, because the
+bridge mutates it on a separate render thread a step behind. That is its own
+section below ([It defers every GL call to a render
+thread](#it-defers-every-gl-call-to-a-render-thread)); the remaining three assume
+the read already runs there.
+
+It returns the live mutable matrix, not a copy, so callers must copy before
+holding it. And it returns identity when Fast Rendering has instead pushed the
+matrix to the GPU (`.../bridge/context/TransformManager.java:44-49`), so identity
+means "this read is not usable", not "no transform". That is safe to lean on
+because a real campaign-UI pass is never identity (see
 [The modelview around a map render](#the-modelview-around-a-map-render)).
 
 The third is the quiet one: **its `Matrix4f` fields are row-major**, transposed
@@ -173,6 +180,53 @@ wrong point. For a translate-only map pass the pan lands in slots 3/7 instead of
 None of this is published API. It is mod internals, and a genir refactor can
 break any of it, so code reading it should fail safe rather than assume.
 
+### It defers every GL call to a render thread
+
+The reason a naive `getCPUModelView()` read is not just transposed but flatly
+wrong: it reads the matrix from the wrong thread, at the wrong time.
+
+The bridge is a deferred, double-buffered renderer. A `GL11.glTranslatef` on the
+game thread does not touch the modelview - it appends a command to a frame buffer
+(`.../bridge/GL11.java:391-393`), and `Executor.execute` only records it
+(`.../bridge/context/Executor.java:30-34`). The command that actually mutates
+`TransformManager` runs later, when the frame is replayed on a dedicated
+single-thread executor named `FR-Render`
+(`.../bridge/context/Executor.java:24`, `:149-159`). The same holds for
+`glPushMatrix`, `glPopMatrix`, `glLoadIdentity`, `glScalef` and the rest: all
+enqueue, none mutate inline.
+
+So `TransformManager` is render-thread state, mutated roughly a frame behind the
+game thread that enqueues the calls. A KM overlay's `renderOnMap` runs on the
+game thread; reading `getCPUModelView()` directly from there samples whatever
+unrelated transform the render thread happens to be replaying at that instant,
+and reads it field-by-field while that thread writes it - a torn read of a matrix
+that was never the map's. The identity guard cannot catch it, because the sample
+is a real non-identity transform belonging to some other draw. The failure is a
+confident wrong point every frame, not an absent one.
+
+This is the asymmetry that makes the viewport safe but the modelview not. The
+viewport read (`glGetInteger(int, IntBuffer)`) is answered synchronously from
+`context.attribTracker` on the calling thread
+(`.../bridge/GL11.java:1248-1259`), so it is caller-side state and reads true from
+anywhere. `TransformManager` is executor-side state, so it does not.
+
+The fix is to read in-band, as a command of its own. `Executor.get(GLGetter<T>)`
+is public (`.../bridge/context/Executor.java:70-76`), `GLGetter` is a public
+one-method interface, and `Context.exec` is a public final field
+(`.../bridge/context/Context.java:35`). Submitting the read through it runs the
+callback on the render thread at the caller's own position in the command stream -
+after the map widget's translate, before the next draw - so the matrix is exactly
+the map's, and stable, because the only thread that mutates it is the one now
+running the callback. The copy (transpose included) must happen inside the
+callback for that same reason: once `get` returns, the render thread advances and
+mutates the matrix again. `get` routes through `Executor.wait`, which swaps
+frames and blocks until the queue drains - one pipeline stall per read, the same
+path the bridge uses for its own `glGetInteger` readbacks.
+
+This costs KMLib three more mirrored members in its compile-only bridge stubs
+(`Context.exec`, `Executor.get`, `GLGetter`) beyond the modelview read itself -
+see `build.gradle` and `src/bridgestubs/java`.
+
 ### What the GL11 bridge can and cannot read back
 
 Drawing is broadly covered. Reading state back is not: the bridge's entire
@@ -188,7 +242,9 @@ There is **no buffer-taking `glGetFloat`** at all, so `GL_MODELVIEW_MATRIX` and
 
 Matrix reads are best avoided outright rather than worked around: the campaign
 UI's projection is derivable arithmetically (below), and the modelview is
-available from `TransformManager`.
+available from `TransformManager` - though only through the render thread, never
+by reading it back through GL (see [It defers every GL call to a render
+thread](#it-defers-every-gl-call-to-a-render-thread)).
 
 ### Its reach goes past the GL bridge
 
