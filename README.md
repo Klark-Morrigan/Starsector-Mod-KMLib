@@ -40,6 +40,10 @@ src/main/java/kmlib/
                               (BaseTaggedIntelPlugin for tab-tag
                               mix-in; BaseExpiringIntelPlugin layers
                               auto-removal on top)
+src/bridgestubs/java/ - compile-only mirrors of the Fast Rendering bridge
+                        members KMLib reads, so an install without fr.jar
+                        still compiles (see Build & Test); never shipped,
+                        never loaded
 src/test/java/kmlib/  - JUnit 5 + Mockito unit tests
 jars/                  - build output (gitignored); KMLib.jar
 scripts/
@@ -120,6 +124,31 @@ The Starsector install root is discovered in this order:
 `-PstarsectorRoot=<path>` -> `STARSECTOR_HOME` env -> `../..` from this
 folder (the canonical layout when the mod lives at
 `<starsector>/mods/KMLib`).
+
+One part of the compile classpath varies by machine. KMLib reads the modelview
+from Fast Rendering's bridge when that mod is in force, and the bridge ships in
+`starsector-core/fr.jar`, which only an install patched by it has. Requiring that
+jar would make KMLib buildable only on a patched machine, so the build binds it
+when the install has one and falls back to compile-only mirrors of the three
+members it reads ([src/bridgestubs/java](src/bridgestubs/java)) when it does not.
+Every build logs which of the two it used.
+
+The stubs are never in `KMLib.jar` and never loaded - they exist only so javac has
+a signature to resolve. Because a patched install compiles against genir's real
+bytes, stub drift shows up as an ordinary compile error there. Either leg can be
+built on demand, so neither is only ever exercised on the machine that happens to
+select it:
+
+```
+./gradlew build -PbridgeStubsOnly=true       # compile as an unpatched install would
+./gradlew build -PrequireFastRendering=true  # fail unless the real fr.jar is bound
+```
+
+CI runs both on every PR (see
+[.github/workflows/ci-gradle.yml](.github/workflows/ci-gradle.yml)), which is why
+`kmlib-runner`'s install must be Fast-Rendering-patched. `-PrequireFastRendering`
+is what keeps that leg honest: without it an unpatched runner would compile the
+stubs and report green for a check that never ran.
 
 For double-click runs from Explorer,
 [scripts/run-tests-gradle.bat](scripts/run-tests-gradle.bat) and

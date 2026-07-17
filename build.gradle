@@ -61,6 +61,76 @@ def jsonJarFile = file("${project.ext.starsectorRoot}/starsector-core/json.jar")
 def starfarerObfJarFile = file("${project.ext.starsectorRoot}/starsector-core/starfarer_obf.jar")
 def fsCommonObfJarFile = file("${project.ext.starsectorRoot}/starsector-core/fs.common_obf.jar")
 
+// Fast Rendering's bridge backs FastRenderingModelviewMatrixReader, which reads the modelview
+// from the renderer's own TransformManager because GL does not hold it under that mod.
+//
+// It is bound differently from the soft dependencies above, because unlike LunaLib or RAT it is
+// not a mod folder that a build machine can simply install: fr.jar exists only on an install that
+// has been patched in place, so requiring it would make KMLib compilable only on a patched
+// machine - including CI, which would then need a patched game to compile a class it never runs.
+//
+// So the source is the constant and the classpath is not: a patched install compiles the adapter
+// against genir's actual bytes, and a stock one falls back to compile-only mirrors of the three
+// members it reads (src/bridgestubs/java). Development happens on patched installs, so the strict
+// binding is the everyday one and stub drift surfaces as an ordinary compile error rather than as
+// a promise nobody checks; the stubs only keep an unpatched machine's build green.
+//
+// compileOnly either way, like the rest: the game classloader provides fr.jar at runtime on the
+// installs that have it, and the stubs must never reach the jar, where they would shadow the real
+// classes. Which binding was used is logged at build time, since a build that quietly varies by
+// machine is worth being able to see.
+//
+// Two properties make each leg buildable on demand rather than only on the machine that happens to
+// select it, which is what lets CI run both:
+//
+// -PbridgeStubsOnly=true forces the fallback, so the leg an unpatched machine takes can be built on
+// a patched one. Without it that leg is only ever exercised where nobody is watching, which is the
+// failure the stubs are meant to prevent rather than cause.
+//
+// -PrequireFastRendering=true refuses to fall back, failing instead. A build that means to check
+// the adapter against genir's real bytes has to be able to insist on them: silently compiling stubs
+// would report success for a check that never ran, which is worse than not running it, since the
+// green tells a reader the signatures were verified.
+def fastRenderingJarFile = file("${project.ext.starsectorRoot}/starsector-core/fr.jar")
+def isBridgeStubsForced = findProperty('bridgeStubsOnly') == 'true'
+def isFastRenderingRequired = findProperty('requireFastRendering') == 'true'
+def isFastRenderingInstalled = fastRenderingJarFile.exists() && !isBridgeStubsForced
+
+if (isFastRenderingRequired && isBridgeStubsForced) {
+    throw new GradleException('-PrequireFastRendering and -PbridgeStubsOnly select opposite '
+            + 'bindings; pass one or neither.')
+}
+if (isFastRenderingRequired && !isFastRenderingInstalled) {
+    throw new GradleException(
+            "-PrequireFastRendering=true, but no Fast Rendering bridge at ${fastRenderingJarFile}. "
+                    + 'This build machine needs a Fast-Rendering-patched Starsector install to '
+                    + "verify KMLib's bridge adapter against the real jar.")
+}
+
+sourceSets {
+    bridgeStubs
+}
+
+tasks.named('compileJava') {
+    doFirst {
+        if (isFastRenderingInstalled) {
+            logger.lifecycle("Fast Rendering bridge: compiling against ${fastRenderingJarFile}")
+        } else if (isBridgeStubsForced) {
+            logger.lifecycle('Fast Rendering bridge: compiling against src/bridgestubs/java '
+                    + '(forced by -PbridgeStubsOnly)')
+        } else {
+            logger.lifecycle('Fast Rendering bridge: no fr.jar on this install, compiling against '
+                    + 'src/bridgestubs/java (stub drift is unverified on this machine)')
+        }
+    }
+}
+
+// The stubs mirror a third party's signatures, so they are held to genir's shape rather than to
+// KM house style - the names are not ours to choose.
+tasks.named('checkstyleBridgeStubs') {
+    enabled = false
+}
+
 dependencies {
     compileOnly files(lunaLibJarFile)
     testCompileOnly files(lunaLibJarFile)
@@ -86,6 +156,17 @@ dependencies {
 
     compileOnly files(fsCommonObfJarFile)
     testCompileOnly files(fsCommonObfJarFile)
+
+    // The stubs name Matrix4f in the one signature they mirror, so they need the jar it lives in.
+    bridgeStubsCompileOnly files("${project.ext.starsectorRoot}/starsector-core/lwjgl_util.jar")
+
+    if (isFastRenderingInstalled) {
+        compileOnly files(fastRenderingJarFile)
+        testCompileOnly files(fastRenderingJarFile)
+    } else {
+        compileOnly sourceSets.bridgeStubs.output
+        testCompileOnly sourceSets.bridgeStubs.output
+    }
 }
 
 jacocoTestReport {

@@ -3,6 +3,28 @@
 # starfarer.api.jar from a Starsector install (STARSECTOR_HOME, set on
 # the runner) - a hosted runner has no Starsector binaries. This is the
 # self-hosted gate the old ci.yml deferred to in its header comment.
+#
+# Built twice, because one part of the compile classpath varies by machine.
+# KMLib reads the modelview from Fast Rendering's bridge, which ships in
+# starsector-core/fr.jar and so exists only on an install patched by that
+# mod; where it is absent the build falls back to compile-only mirrors of
+# the members it reads (src/bridgestubs/java). Each leg pins one of those
+# bindings, so neither is only ever built on a machine nobody is watching:
+#
+#   fast-rendering - type-checks the adapter against genir's real bytes, so
+#                    a refactor upstream that moves what KMLib reads fails
+#                    here rather than in a player's game.
+#   bridge-stubs   - proves the fallback an unpatched machine takes still
+#                    compiles, which is the leg that keeps KMLib buildable
+#                    without a patched install at all.
+#
+# The fast-rendering leg passes -PrequireFastRendering, which fails the
+# build when fr.jar is missing instead of quietly compiling the stubs. That
+# matters more than it looks: without it, an unpatched runner would build
+# both legs against stubs and report green for a check that never ran. So
+# this gate requires kmlib-runner's Starsector install to be patched by Fast
+# Rendering; if that ever stops being true, this leg fails with a message
+# saying so rather than degrading in silence.
 name: Common-Java
 
 on:
@@ -11,8 +33,20 @@ on:
 
 jobs:
   gradle:
+    name: gradle (${{ matrix.leg }})
+    strategy:
+      # Both legs always report. A failure in one is a fact about that
+      # binding and says nothing about the other, so cancelling its sibling
+      # would only hide half the answer.
+      fail-fast: false
+      matrix:
+        include:
+          - leg: fast-rendering
+            gradle-tasks: coverage -PrequireFastRendering=true
+          - leg: bridge-stubs
+            gradle-tasks: coverage -PbridgeStubsOnly=true
     uses: Klark-Morrigan/Common-Java/.github/workflows/_ci-gradle.yml@master
     with:
       runner: '["self-hosted", "kmlib-runner"]'
-      gradle-tasks: coverage
+      gradle-tasks: ${{ matrix.gradle-tasks }}
       setup-java: false
