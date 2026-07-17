@@ -4,6 +4,7 @@ import org.assertj.core.data.Offset;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static kmlib.math.geometry.GeometryTestSupport.bigSquare;
@@ -21,6 +22,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * hole, a disk biting an edge leaves the rest, a disk covering the polygon leaves
  * nothing, and a disk that misses leaves the polygon whole.
  *
+ * <p>And of {@link Disks#subtractDiskWithLabels}: the same pieces, each edge naming what
+ * lies across it - the subject's own labels carried through, the withheld disk across the
+ * rim, and a sibling piece across the fan cuts that split the remainder up.
+ *
  * <p>And of the pair: the two senses partition the polygon exactly - what one keeps is
  * what the other drops, with no area lost or double-counted between them.
  */
@@ -34,6 +39,18 @@ final class DisksTest {
     // inscribed 64-gon falls about 0.16% short of its circle, so a percent absorbs the
     // chord error without hiding a real miscount.
     private static final double AREA_TOLERANCE_FRACTION = 0.01;
+
+    // The slack the collinearity test allows, relative to the span of the run tested:
+    // the vertices are clip intersections, so a straight line reaches them with rounding
+    // error, and only a real corner may register as one.
+    private static final double COLLINEAR_TOLERANCE_FRACTION = 1e-9;
+
+    // The labels the labelled-subtract fixtures use for the two things a cut can have
+    // across it, and for the square's own four sides. Distinct values, so an assertion
+    // can name exactly which of the six a given edge came back as.
+    private static final int RIM_LABEL = 7;
+    private static final int FAN_CUT_LABEL = 8;
+    private static final int[] SQUARE_SIDE_LABELS = {10, 11, 12, 13};
 
     // The total area of a set of pieces - what the difference must add up to, since its
     // pieces are disjoint.
@@ -49,6 +66,69 @@ final class DisksTest {
     // than fixed, since the chord error the approximation carries grows with it.
     private static Offset<Double> withinDiskArea(double radius) {
         return Offset.offset(Math.PI * radius * radius * AREA_TOLERANCE_FRACTION);
+    }
+
+    // The square subject with each side labelled for itself, so a side the clip left
+    // alone can be told apart from one it cut and from the other three sides.
+    private static LabelledPolygon buildLabelledSquare(double side, int[] sideLabels) {
+        return LabelledPolygon.fromLabelledEdges(bigSquare(side), sideLabels);
+    }
+
+    // Every label appearing on any edge of any piece - what the pieces, between them,
+    // claim lies across their boundaries.
+    private static List<Integer> collectEdgeLabels(List<LabelledPolygon> pieces) {
+        var labels = new ArrayList<Integer>();
+        for (var piece : pieces) {
+            for (var label : piece.getEdgeLabels()) {
+                labels.add(label);
+            }
+        }
+        return labels;
+    }
+
+    // The total length of the edges labelled {@code label} across all the pieces - how
+    // much boundary the pieces hand to one thing.
+    private static double computeLabelledLength(List<LabelledPolygon> pieces, int label) {
+        var total = 0.0;
+        for (var piece : pieces) {
+            var vertices = piece.getVertices();
+            var labels = piece.getEdgeLabels();
+            for (var i = 0; i < vertices.size(); i++) {
+                if (labels[i] == label) {
+                    total += Points.computeDistance(
+                            vertices.get(i), vertices.get((i + 1) % vertices.size()));
+                }
+            }
+        }
+        return total;
+    }
+
+    // Whether the piece has two edges that run on in the same direction from a shared
+    // vertex - one straight line the ring breaks in two - carrying the two given labels.
+    private static boolean hasCollinearEdgesLabelledApart(
+            LabelledPolygon piece, int firstLabel, int secondLabel) {
+        var vertices = piece.getVertices();
+        var labels = piece.getEdgeLabels();
+        for (var i = 0; i < vertices.size(); i++) {
+            var next = (i + 1) % vertices.size();
+            var isPair = labels[i] == firstLabel && labels[next] == secondLabel
+                    || labels[i] == secondLabel && labels[next] == firstLabel;
+            if (isPair && isCollinear(vertices.get(i), vertices.get(next),
+                    vertices.get((next + 1) % vertices.size()))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Whether three points lie on one line, judged by the area of the triangle they span
+    // against the length of the run they span it over - a shape-scale test, so it does
+    // not tighten or loosen with the coordinates' magnitude.
+    private static boolean isCollinear(double[] first, double[] second, double[] third) {
+        var cross = (second[0] - first[0]) * (third[1] - first[1])
+                - (second[1] - first[1]) * (third[0] - first[0]);
+        var span = Points.computeDistance(first, second) + Points.computeDistance(second, third);
+        return Math.abs(cross) < span * span * COLLINEAR_TOLERANCE_FRACTION;
     }
 
     @Nested
@@ -205,6 +285,133 @@ final class DisksTest {
             assertThat(remainder).isNotEmpty();
             for (var piece : remainder) {
                 assertThat(signedArea(piece)).isPositive();
+            }
+        }
+    }
+
+    @Nested
+    class SubtractDiskWithLabels {
+        @Test
+        void an_edge_the_clip_left_alone_still_names_what_it_arrived_naming() {
+            // A disk biting one corner shortens two of the square's sides and leaves the
+            // other two untouched; all four must still name the side they always were,
+            // since nothing moved to the far side of any of them.
+            var pieces = Disks.subtractDiskWithLabels(
+                    buildLabelledSquare(100, SQUARE_SIDE_LABELS), new double[] {0, 0}, 20,
+                    SEGMENTS, RIM_LABEL, FAN_CUT_LABEL);
+
+            assertThat(collectEdgeLabels(pieces))
+                    .contains(SQUARE_SIDE_LABELS[0], SQUARE_SIDE_LABELS[1],
+                            SQUARE_SIDE_LABELS[2], SQUARE_SIDE_LABELS[3]);
+        }
+
+        @Test
+        void no_label_of_the_clips_own_leaks_out() {
+            // The clip tells its own cuts apart internally, so a subject that labels its
+            // sides with the very values it uses to do that must still come back saying
+            // what it said - the two label spaces cannot be the same one.
+            var collidingLabels = new int[] {-1, -2, -1, -2};
+
+            var pieces = Disks.subtractDiskWithLabels(
+                    buildLabelledSquare(100, collidingLabels), new double[] {0, 0}, 20,
+                    SEGMENTS, RIM_LABEL, FAN_CUT_LABEL);
+
+            assertThat(collectEdgeLabels(pieces))
+                    .contains(-1, -2)
+                    .containsOnly(-1, -2, RIM_LABEL, FAN_CUT_LABEL);
+        }
+
+        @Test
+        void a_rim_and_a_fan_cut_lying_on_one_line_are_labelled_apart() {
+            // A disk strictly inside the square is cut around by lines that run right
+            // across it, so one cut runs on past the chord it was made for: the withheld
+            // disk lies across the chord's span, a sibling piece across the rest of the
+            // same straight line. The piece must break at the chord's end and call the
+            // two parts what they are.
+            var pieces = Disks.subtractDiskWithLabels(
+                    buildLabelledSquare(100, SQUARE_SIDE_LABELS), new double[] {50, 50}, 20,
+                    SEGMENTS, RIM_LABEL, FAN_CUT_LABEL);
+
+            assertThat(pieces).anyMatch(piece ->
+                    hasCollinearEdgesLabelledApart(piece, RIM_LABEL, FAN_CUT_LABEL));
+        }
+
+        @Test
+        void the_rim_is_bordered_once_over_its_whole_length() {
+            // The rim label goes on exactly the withheld disk's boundary - no more, no
+            // less. Length is what says so: a fan cut mistaken for rim would lengthen the
+            // total past the disk's circumference, and a rim mistaken for a fan cut would
+            // leave part of the hole unbordered.
+            var pieces = Disks.subtractDiskWithLabels(
+                    buildLabelledSquare(100, SQUARE_SIDE_LABELS), new double[] {50, 50}, 20,
+                    SEGMENTS, RIM_LABEL, FAN_CUT_LABEL);
+
+            assertThat(computeLabelledLength(pieces, RIM_LABEL))
+                    .isCloseTo(2 * Math.PI * 20,
+                            Offset.offset(2 * Math.PI * 20 * AREA_TOLERANCE_FRACTION));
+        }
+
+        @Test
+        void the_rim_is_bordered_once_where_the_disk_bites_into_an_edge() {
+            // Half the disk's rim lies outside the square here, so only the quarter the
+            // square covers is anyone's border. The chord lines running on outside the
+            // subject must not be counted rim for the stretch where there is no subject
+            // to border it, which the strictly-inside case cannot catch.
+            var pieces = Disks.subtractDiskWithLabels(
+                    buildLabelledSquare(100, SQUARE_SIDE_LABELS), new double[] {0, 0}, 20,
+                    SEGMENTS, RIM_LABEL, FAN_CUT_LABEL);
+
+            assertThat(computeLabelledLength(pieces, RIM_LABEL))
+                    .isCloseTo(2 * Math.PI * 20 / 4,
+                            Offset.offset(2 * Math.PI * 20 * AREA_TOLERANCE_FRACTION));
+        }
+
+        @Test
+        void the_polygon_comes_back_whole_with_its_labels_when_the_disk_encloses_no_area() {
+            // A caller disabling its keep-out by zeroing the radius gets its subject back
+            // untouched - and the labels it handed in, not the ones the walk uses to talk
+            // to itself, since this path never reaches the cuts that translate them.
+            var pieces = Disks.subtractDiskWithLabels(
+                    buildLabelledSquare(100, SQUARE_SIDE_LABELS), new double[] {50, 50}, 0,
+                    SEGMENTS, RIM_LABEL, FAN_CUT_LABEL);
+
+            assertThat(pieces).hasSize(1);
+            assertThat(pieces.get(0).getEdgeLabels()).containsExactly(SQUARE_SIDE_LABELS);
+            assertThat(signedArea(pieces.get(0).getVertices())).isCloseTo(100.0 * 100, within());
+        }
+
+        @Test
+        void nothing_survives_when_the_disk_covers_the_polygon() {
+            // Every piece is clipped below area here, so the labels have nothing to ride
+            // on: an empty list, not a set of labelled slivers.
+            var pieces = Disks.subtractDiskWithLabels(
+                    buildLabelledSquare(10, SQUARE_SIDE_LABELS), new double[] {5, 5}, 100,
+                    SEGMENTS, RIM_LABEL, FAN_CUT_LABEL);
+
+            assertThat(pieces).isEmpty();
+        }
+
+        @Test
+        void the_labelled_pieces_are_the_plain_ones_with_labels_on_them() {
+            // The plain subtract is this one with its labels dropped, so the two cannot
+            // disagree about the shape of the remainder - which is the point of having
+            // one walk rather than two.
+            var center = new double[] {30, 40};
+
+            var plain = Disks.subtractDisk(bigSquare(100), center, 25, SEGMENTS);
+            var labelled = Disks.subtractDiskWithLabels(
+                    buildLabelledSquare(100, SQUARE_SIDE_LABELS), center, 25, SEGMENTS,
+                    RIM_LABEL, FAN_CUT_LABEL);
+
+            assertThat(labelled).hasSameSizeAs(plain);
+            for (var i = 0; i < plain.size(); i++) {
+                var labelledVertices = labelled.get(i).getVertices();
+                var plainVertices = plain.get(i);
+                assertThat(labelledVertices).hasSameSizeAs(plainVertices);
+                for (var vertex = 0; vertex < plainVertices.size(); vertex++) {
+                    assertThat(labelledVertices.get(vertex))
+                            .containsExactly(plainVertices.get(vertex), within());
+                }
             }
         }
     }

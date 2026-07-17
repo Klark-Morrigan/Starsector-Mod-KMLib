@@ -336,9 +336,9 @@ public final class PolygonOffsets {
         // Dedup while carrying each surviving edge's distance with it, so dropping a
         // zero-length edge does not slide the per-edge distances out of step with
         // the vertices they offset (a mismatch the scalar path never risks).
-        var cleaned = removeConsecutiveDuplicates(polygon, edgeDistances);
-        var vertices = cleaned.vertices();
-        var distances = cleaned.edgeDistances();
+        var survivors = Rings.findSurvivingVertices(polygon);
+        var vertices = Rings.collectPointsAt(polygon, survivors.pointIndices());
+        var distances = collectDistancesAt(edgeDistances, survivors.outgoingEdgeIndices());
         var count = vertices.size();
         if (count < Limits.MIN_VERTICES_TO_ENCLOSE_AREA) {
             return new ArrayList<>();
@@ -463,42 +463,15 @@ public final class PolygonOffsets {
         return crossing == null ? outboundPoint : crossing;
     }
 
-    // A ring paired with its per-edge distances after a distance-preserving dedup,
-    // so the two stay parallel for the per-edge miter inset.
-    private record CleanedRing(List<double[]> vertices, double[] edgeDistances) {
-    }
-
-    // Drops vertices that coincide with their predecessor while keeping the per-edge
-    // distances parallel: when a duplicate collapses the zero-length edge into it,
-    // the kept vertex adopts the duplicate's outgoing edge distance (the edge that
-    // now runs on from it), and its own collapsed edge's distance is discarded. Same
-    // wrap handling as the scalar dedup, dropping the trailing distance with the
-    // trailing vertex.
-    private static CleanedRing removeConsecutiveDuplicates(
-            List<double[]> polygon,
-            double[] edgeDistances) {
-        var cleanedVertices = new ArrayList<double[]>();
-        var cleanedDistances = new ArrayList<Double>();
-        for (var i = 0; i < polygon.size(); i++) {
-            var vertex = polygon.get(i);
-            if (cleanedVertices.isEmpty()
-                    || !Rings.isSamePoint(cleanedVertices.get(cleanedVertices.size() - 1), vertex)) {
-                cleanedVertices.add(vertex);
-                cleanedDistances.add(edgeDistances[i]);
-            } else {
-                cleanedDistances.set(cleanedDistances.size() - 1, edgeDistances[i]);
-            }
+    // The distances of the edges at {@code indices}, in that order - the per-edge half
+    // of a dedup, gathered through the surviving vertices' outgoing edges so a distance
+    // never parts company with the edge it offsets.
+    private static double[] collectDistancesAt(double[] edgeDistances, int[] indices) {
+        var distances = new double[indices.length];
+        for (var i = 0; i < indices.length; i++) {
+            distances[i] = edgeDistances[indices[i]];
         }
-        var size = cleanedVertices.size();
-        if (size > 1 && Rings.isSamePoint(cleanedVertices.get(0), cleanedVertices.get(size - 1))) {
-            cleanedVertices.remove(size - 1);
-            cleanedDistances.remove(size - 1);
-        }
-        var distances = new double[cleanedDistances.size()];
-        for (var i = 0; i < distances.length; i++) {
-            distances[i] = cleanedDistances.get(i);
-        }
-        return new CleanedRing(cleanedVertices, distances);
+        return distances;
     }
 
     // The inward-offset clip line of directed edge {@code a -> b}, pulled
