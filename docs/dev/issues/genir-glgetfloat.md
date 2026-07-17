@@ -71,49 +71,75 @@ This is the same asymmetry that makes the existing `GL_VIEWPORT` simulation safe
 from `attribTracker` on the caller thread (caller-side state), whereas `TransformManager` is
 executor-side state and cannot be.
 
+## Why a synchronous render-thread read is not open to mods either
+
+The correct-looking answer - run the read on the render thread and block for it, via
+`Executor.get`/`wait` - reads the right matrix but is closed to mods, because a per-frame stall is
+fatal. `Executor.wait` calls `StallDetector.detectStall`
+(`.../bridge/context/Executor.java`, the `wait` method), which counts stalled frames and throws
+`RuntimeException("Asynchronous pipeline stall")` once a caller stalls on 30 of any 60 frames
+(`.../bridge/context/stall/StallDetector.java`, `update`/`detectStall`). A cursor unproject on the
+open map runs every frame, so a synchronous read there stalls 60 of 60 and brings the game down
+within about a second. A mod cannot read the modelview synchronously every frame at all.
+
+This is a constraint on mods, not on the bridge itself: the bridge owns the detector, so an
+in-bridge implementation is free of it.
+
 ## Suggested fix
 
-Serve `GL_MODELVIEW_MATRIX` from the tracked state rather than from GL, but read it on the render
-thread so the value is this caller's transform and not a torn mid-flight one - the read has to be
-run as a command through the executor (`Executor.get`/`wait`), the way the bridge's own
-render-thread readbacks already work, not answered inline like the `GL_VIEWPORT` simulation:
+Serve `GL_MODELVIEW_MATRIX` from the tracked state rather than from GL, and - like the existing
+`GL_VIEWPORT` simulation - answer it inline on the caller thread with no stall. That needs the
+current CPU modelview mirrored in caller-side state (an `AttribTracker`-style shadow updated as
+`glTranslatef`/`glLoadMatrix`/`glPushMatrix`/`glPopMatrix` records commands), so the getter can
+return it without a render-thread round trip:
 
-- `GL_MODELVIEW_MATRIX` -> run a getter on the executor that returns
-  `transformManager.getCPUModelView()` when `cpuModelView` is set, otherwise the real GL read.
-  Answering it inline on the caller thread reintroduces the race above.
-- Copy (and transpose) inside that getter, before it returns - once control leaves the render
-  thread the matrix is mutated again.
+- `GL_MODELVIEW_MATRIX` -> the caller-side modelview shadow when `cpuModelView` is set, otherwise
+  the real GL read. Serving it from `transformManager` on the caller thread instead reintroduces
+  the render-thread race above; serving it through `Executor.get`/`wait` reintroduces the stall.
 - Store with `storeTranspose`, not `store`. The bridge's `Matrix4f` fields are row-major
   (`VertexInterceptor.glVertex3f` takes the translation from `m03/m13/m23`), transposed from what
   GL and `gluUnProject` expect - which is the same conversion `setGPUModelView` (L41) already does
   on the way out.
 - `GL_PROJECTION_MATRIX` has no CPU shadow, so a plain delegation is correct for it.
 
-Callers would then get the matrix the vertices are actually drawn with, under both renderers.
+Callers would then get the matrix the vertices are actually drawn with, under both renderers, with
+no stall and no threading hazard.
 
 ## Workaround (for anyone who finds this first)
 
-Read the CPU matrix, but do it on the render thread - not inline. `Context.exec.get(GLGetter)` is
-public and runs the getter in-band on the `FR-Render` thread at your pass's position in the command
-stream, so the matrix is your caller's transform and stable while you copy it:
+Read the CPU matrix one frame late, without stalling. `Context.exec.execute(GLCommand)` enqueues a
+command and returns immediately - no `wait`, no stall - and the command runs on the `FR-Render`
+thread at your pass's position in the stream, where the matrix is your caller's transform. Have it
+copy the matrix into a holder you own, and read the *previous* frame's copy:
 
 ```java
-Context ctx = ContextManager.getThreadContext();          // null on an unregistered thread
-float[] modelview = ctx.exec.get(c -> {
-    Matrix4f m = c.transformManager.getCPUModelView();
-    FloatBuffer buf = BufferUtils.createFloatBuffer(16);
-    m.storeTranspose(buf);                                 // fields are row-major; see above
-    buf.flip();
-    float[] out = new float[16];
-    buf.get(out);
-    return out;                                            // copy MUST finish inside the getter
-});
+// held on your reader, published across the render/game thread boundary
+private final AtomicReference<float[]> latest = new AtomicReference<>();
+
+float[] readModelview() {
+    Context ctx = ContextManager.getThreadContext();          // null on an unregistered thread
+    if (ctx == null) {
+        return null;
+    }
+    ctx.exec.execute((c, args, off) -> {                      // runs on FR-Render, no stall
+        Matrix4f m = c.transformManager.getCPUModelView();
+        FloatBuffer buf = BufferUtils.createFloatBuffer(16);
+        m.storeTranspose(buf);                                // fields are row-major; see above
+        buf.flip();
+        float[] out = new float[16];
+        buf.get(out);
+        latest.set(out);                                      // copy MUST finish inside the command
+    });
+    return latest.get();                                      // previous frame's copy; null at first
+}
 ```
 
-Three caveats: reading `getCPUModelView()` inline on the caller thread instead races the render
-thread and resolves a wrong point every frame (see above), so the `exec.get` hop is the point of
-the workaround, not an optimisation; the matrix it hands out is live and mutable, so the copy has
-to complete inside the getter; and it returns identity when the matrix has been pushed to the GPU
-instead, so identity has to be read as "this read is not usable" rather than "no transform".
-`get` blocks until the frame drains (one pipeline stall), which is why this belongs on a map pass,
-not a hot loop.
+Four caveats: reading `getCPUModelView()` inline on the caller thread instead races the render
+thread and resolves a wrong point every frame, and a synchronous `Executor.get`/`wait` read stalls
+the pipeline and gets the game killed by the stall detector - the deferred `execute` hop avoids
+both and is the point of the workaround; the copy has to complete inside the command, since the
+matrix it reads is live and mutated again once the command returns; the value is a frame or two
+stale (the render thread runs a frame behind, and a frame's copy is only guaranteed complete a
+frame later), invisible for a still map and trailing by a frame or two of pan velocity while
+panning; and it returns identity when the matrix has been pushed to the GPU instead, so identity
+has to be read as "this read is not usable" rather than "no transform".

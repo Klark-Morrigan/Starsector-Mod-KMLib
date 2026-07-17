@@ -210,21 +210,38 @@ viewport read (`glGetInteger(int, IntBuffer)`) is answered synchronously from
 (`.../bridge/GL11.java:1248-1259`), so it is caller-side state and reads true from
 anywhere. `TransformManager` is executor-side state, so it does not.
 
-The fix is to read in-band, as a command of its own. `Executor.get(GLGetter<T>)`
-is public (`.../bridge/context/Executor.java:70-76`), `GLGetter` is a public
-one-method interface, and `Context.exec` is a public final field
-(`.../bridge/context/Context.java:35`). Submitting the read through it runs the
-callback on the render thread at the caller's own position in the command stream -
-after the map widget's translate, before the next draw - so the matrix is exactly
-the map's, and stable, because the only thread that mutates it is the one now
-running the callback. The copy (transpose included) must happen inside the
-callback for that same reason: once `get` returns, the render thread advances and
-mutates the matrix again. `get` routes through `Executor.wait`, which swaps
-frames and blocks until the queue drains - one pipeline stall per read, the same
-path the bridge uses for its own `glGetInteger` readbacks.
+A synchronous readback reads the right matrix but is a trap of its own. The
+executor can run a read in-band and return it - `Executor.get(GLGetter)` submits a
+callback and blocks for the result (`.../bridge/context/Executor.java:70-76`),
+which runs it on the render thread at the caller's own stream position, exactly
+where the modelview is the map's. But `get` routes through `Executor.wait`, which
+swaps frames and blocks until the queue drains - a **pipeline stall** - and the
+bridge actively punishes stalling. `Executor.wait` calls `StallDetector.detectStall`
+(`.../bridge/context/Executor.java:83`), which counts stalled frames and **throws
+`RuntimeException("Asynchronous pipeline stall")` once a caller stalls on 30 of any
+60 frames** (`.../bridge/context/stall/StallDetector.java:26-40`). A per-frame
+synchronous read on the open map hits 60 of 60 and takes the game down within about
+a second. So a synchronous read is not an option for anything drawn every frame.
 
-This costs KMLib three more mirrored members in its compile-only bridge stubs
-(`Context.exec`, `Executor.get`, `GLGetter`) beyond the modelview read itself -
+The viewport read escapes this only because it never stalls: the bridge answers
+`GL_VIEWPORT` inline from `attribTracker` and returns before reaching `exec.wait`
+(`.../bridge/GL11.java:1248-1259`). The modelview has no such inline path.
+
+The fix is to read **one frame late, without stalling**. `Executor.execute(GLCommand)`
+enqueues a command and returns immediately - no `wait`, no stall
+(`.../bridge/context/Executor.java:30-34`). So each frame the reader enqueues a
+fire-and-forget command that, when the render thread replays it at the caller's
+stream position, copies `getCPUModelView()` (transpose included) into a holder the
+reader owns; and it returns the copy a *prior* frame's command left there. The
+holder is published across the two threads through an `AtomicReference`, which also
+makes the cross-thread read tear-free. The result is a frame or two stale - the
+render thread runs a frame behind and a frame's copy is only guaranteed complete a
+frame later, so a read sees the frame-before-last's value or last's. That is
+invisible for a still map, since the cursor moves but the transform does not, and
+trails by a frame or two of pan velocity while panning - and costs zero stalls.
+
+This costs KMLib three mirrored members in its compile-only bridge stubs
+(`Context.exec`, `Executor.execute`, `GLCommand`) beyond the modelview read itself -
 see `build.gradle` and `src/bridgestubs/java`.
 
 ### What the GL11 bridge can and cannot read back
