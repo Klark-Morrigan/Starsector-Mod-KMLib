@@ -11,6 +11,7 @@ import org.lwjgl.util.vector.Vector2f;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import java.util.Arrays;
 
 /**
  * Answers "which world point is the cursor over?" for an overlay painting on the sector (M) map.
@@ -19,9 +20,10 @@ import java.nio.IntBuffer;
  * drew has to undo that transform itself. This is the one place that inversion lives.
  *
  * <p>The transform is a value snapshot, not a live reader, because its inputs only exist for an
- * instant: the map widget sets up the GL matrices around its render pass and tears them down
- * after, so the modelview is readable only from inside {@code renderOnMap}. {@link #captureFromGl}
- * is called there to freeze it, and the resulting value stays usable for the rest of the frame.
+ * instant: the map widget sets up its matrices around its render pass and tears them down after,
+ * so the modelview describes the map only from inside {@code renderOnMap}.
+ * {@link #captureFromMapPass} is called there to freeze it, and the resulting value stays usable
+ * for the rest of the frame.
  *
  * <p>Two coordinate steps stack, and both must be undone. The map widget bakes pan and centring
  * into the GL matrices, which {@link GLU#gluUnProject} inverts. The uniform zoom is not in those
@@ -30,8 +32,7 @@ import java.nio.IntBuffer;
  * divided by {@code factor} to reach the world coordinates the overlay's geometry is expressed
  * in.
  *
- * <p>{@link #captureFromGl} touches the GL context and is exercised in-engine.
- * {@link #unprojectToWorld} is deliberately pure - it reads only this snapshot's own arrays, and
+ * <p>{@link #unprojectToWorld} is deliberately pure - it reads only this snapshot's own arrays, and
  * {@code gluUnProject} is plain matrix arithmetic rather than a driver call - so the coordinate
  * maths, the part that is actually easy to get wrong, is verifiable without a GL context.
  *
@@ -48,6 +49,14 @@ public record CampaignMapTransform(
 
     private static final int MATRIX_FLOAT_COUNT = 16;
     private static final int VIEWPORT_INT_COUNT = 4;
+
+    // The matrix that transforms nothing, held to recognise a modelview that describes no pass.
+    private static final float[] IDENTITY_MATRIX = {
+        1f, 0f, 0f, 0f,
+        0f, 1f, 0f, 0f,
+        0f, 0f, 1f, 0f,
+        0f, 0f, 0f, 1f,
+    };
 
     // The depth range the campaign UI's ortho is set up with. Named for honesty about what the
     // synthesized matrix models rather than because the value matters: an axis-aligned ortho has
@@ -95,26 +104,36 @@ public record CampaignMapTransform(
     }
 
     /**
-     * Freezes the live GL modelview and viewport into a snapshot, pairing them with the
-     * campaign UI's projection. Only meaningful when called from inside the map's render pass,
-     * where the map widget's modelview is the current one; called anywhere else it captures
-     * whatever unrelated transform happens to be bound.
+     * Freezes the map's modelview and the live viewport into a snapshot, pairing them with the
+     * campaign UI's projection.
      *
-     * @param factor the scale the same render pass applies per vertex
-     * @return the snapshot to unproject against for the rest of the frame
+     * <p>Must be called from inside the map's render pass: that is the window in which the
+     * modelview describes the map, so it is the precondition the caller honours rather than
+     * something this can check. Called anywhere else it captures whatever unrelated transform
+     * happens to be in force.
+     *
+     * @param factor                the scale the same render pass applies per vertex
+     * @param modelviewMatrixReader the source of the modelview in force
+     * @return the snapshot to unproject against for the rest of the frame, or {@code null} when
+     *         the modelview read back cannot be the map's, so a caller parks rather than resolving
+     *         a wrong point from a degraded read
      */
-    public static CampaignMapTransform captureFromGl(float factor) {
-        // glGet* only writes into direct buffers, so the reads land in these and are then copied
-        // into plain arrays: the snapshot must own its data rather than alias scratch buffers,
-        // and arrays keep unprojectToWorld free of any native-buffer setup.
-        var modelviewBuffer = BufferUtils.createFloatBuffer(MATRIX_FLOAT_COUNT);
+    public static CampaignMapTransform captureFromMapPass(
+            float factor, ModelviewMatrixReader modelviewMatrixReader) {
+        var modelviewMatrix = modelviewMatrixReader.readModelviewMatrix();
+        // Identity is the tell that a reading did not come from the map: a real map pass composes
+        // the UI's own translate with the map widget's, so identity means the source was not
+        // carrying the map's transform when asked (see docs/dev/rendering-environment.md). The
+        // rule is the same under either renderer, so it belongs here rather than in a binding.
+        if (modelviewMatrix == null || Arrays.equals(modelviewMatrix, IDENTITY_MATRIX)) {
+            return null;
+        }
+        // glGet* only writes into direct buffers, so the read lands in one and is then copied into
+        // a plain array: the snapshot must own its data rather than alias a scratch buffer, and an
+        // array keeps unprojectToWorld free of any native-buffer setup.
         var viewportBuffer = BufferUtils.createIntBuffer(VIEWPORT_INT_COUNT);
-        GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, modelviewBuffer);
         GL11.glGetInteger(GL11.GL_VIEWPORT, viewportBuffer);
-
-        var modelviewMatrix = new float[MATRIX_FLOAT_COUNT];
         var viewport = new int[VIEWPORT_INT_COUNT];
-        modelviewBuffer.get(modelviewMatrix);
         viewportBuffer.get(viewport);
         var settings = Global.getSettings();
         return new CampaignMapTransform(
