@@ -12,6 +12,7 @@ on at compile and runtime.
 - [Local linting](#local-linting)
 - [Reusable CI / release actions](#reusable-ci--release-actions)
 - [Consuming KMLib](#consuming-kmlib)
+- [Rendering environment](#rendering-environment)
 - [Player Faction Resolution](#player-faction-resolution)
 - [UI Colour Palette](#ui-colour-palette)
 - [Highlighted Text](#highlighted-text)
@@ -188,6 +189,20 @@ compileOnly files("${configuredStarsectorRoot}/mods/KMLib/jars/KMLib.jar")
 
 Tests in consuming mods that touch KMLib types also add the same jar as
 `testCompileOnly` / `testRuntimeOnly`.
+
+## Rendering environment
+
+KMLib's map and UI code draws straight against OpenGL, where two things are not
+visible from the source: how the campaign UI sets up its matrices, and how the
+widely-installed Fast Rendering mod (`com.genir.renderer`) rebinds GL calls in
+every mod jar to its own batching bridge. That bridge tracks the modelview on the
+CPU, so GL state reads do not mean what they appear to mean.
+
+[docs/dev/rendering-environment.md](docs/dev/rendering-environment.md) records
+those facts, each cited into the decompiled sources cache so it can be
+re-verified rather than trusted. Read it before touching GL state, adding a
+matrix read, or diagnosing an overlay that misbehaves only for some players.
+Consuming mods link there rather than restating it.
 
 ## Player Faction Resolution
 
