@@ -1,5 +1,7 @@
 package kmlib.starsector.ui.map;
 
+import com.fs.starfarer.api.Global;
+
 import kmlib.opengl.GlRuns;
 
 import org.lwjgl.BufferUtils;
@@ -18,8 +20,8 @@ import java.nio.IntBuffer;
  *
  * <p>The transform is a value snapshot, not a live reader, because its inputs only exist for an
  * instant: the map widget sets up the GL matrices around its render pass and tears them down
- * after, so they are readable only from inside {@code renderOnMap}. {@link #captureFromGl} is
- * called there to freeze them, and the resulting value stays usable for the rest of the frame.
+ * after, so the modelview is readable only from inside {@code renderOnMap}. {@link #captureFromGl}
+ * is called there to freeze it, and the resulting value stays usable for the rest of the frame.
  *
  * <p>Two coordinate steps stack, and both must be undone. The map widget bakes pan and centring
  * into the GL matrices, which {@link GLU#gluUnProject} inverts. The uniform zoom is not in those
@@ -34,7 +36,7 @@ import java.nio.IntBuffer;
  * maths, the part that is actually easy to get wrong, is verifiable without a GL context.
  *
  * @param modelviewMatrix  the map's {@code GL_MODELVIEW_MATRIX}, 16 floats, column-major
- * @param projectionMatrix the map's {@code GL_PROJECTION_MATRIX}, 16 floats, column-major
+ * @param projectionMatrix the campaign UI's ortho projection, 16 floats, column-major
  * @param viewport         the {@code GL_VIEWPORT} as {@code {x, y, width, height}} in pixels
  * @param factor           the per-vertex scale the map render pass applies to world coordinates
  */
@@ -46,10 +48,29 @@ public record CampaignMapTransform(
 
     private static final int MATRIX_FLOAT_COUNT = 16;
     private static final int VIEWPORT_INT_COUNT = 4;
+
+    // The depth range the campaign UI's ortho is set up with. Named for honesty about what the
+    // synthesized matrix models rather than because the value matters: an axis-aligned ortho has
+    // no shear, so a map overlay's unprojected x/y are independent of it.
+    private static final float UI_ORTHO_NEAR_PLANE = -6000f;
+    private static final float UI_ORTHO_FAR_PLANE = 6000f;
+
+    // The slots a column-major 4x4 keeps a scale and a translation in. Named because the layout
+    // is the whole subtlety of writing one by hand: the translation is the last column, which in
+    // column-major order lands at the end of the array rather than every fourth float.
+    private static final int SCALE_X_SLOT = 0;
+    private static final int SCALE_Y_SLOT = 5;
+    private static final int SCALE_Z_SLOT = 10;
+    private static final int TRANSLATE_X_SLOT = 12;
+    private static final int TRANSLATE_Y_SLOT = 13;
+    private static final int TRANSLATE_Z_SLOT = 14;
+    private static final int HOMOGENEOUS_W_SLOT = 15;
+
     // gluUnProject unprojects a 3D window point, so it needs a depth as well as a pixel. The map
     // is a flat layer viewed head-on, so every depth along the ray through the cursor gives the
     // same x/y; the near plane is chosen simply because it is a well-defined end of that ray.
     private static final float NEAR_PLANE_DEPTH = 0f;
+    
     // gluUnProject writes x, y and z, so it is handed a 3-float target even though a flat map
     // overlay only reads x and y back.
     private static final int WORLD_POINT_FLOAT_COUNT = 3;
@@ -74,9 +95,10 @@ public record CampaignMapTransform(
     }
 
     /**
-     * Freezes the live GL matrices and viewport into a snapshot. Only meaningful when called
-     * from inside the map's render pass, where the map widget's matrices are the current ones;
-     * called anywhere else it captures whatever unrelated transform happens to be bound.
+     * Freezes the live GL modelview and viewport into a snapshot, pairing them with the
+     * campaign UI's projection. Only meaningful when called from inside the map's render pass,
+     * where the map widget's modelview is the current one; called anywhere else it captures
+     * whatever unrelated transform happens to be bound.
      *
      * @param factor the scale the same render pass applies per vertex
      * @return the snapshot to unproject against for the rest of the frame
@@ -86,23 +108,50 @@ public record CampaignMapTransform(
         // into plain arrays: the snapshot must own its data rather than alias scratch buffers,
         // and arrays keep unprojectToWorld free of any native-buffer setup.
         var modelviewBuffer = BufferUtils.createFloatBuffer(MATRIX_FLOAT_COUNT);
-        var projectionBuffer = BufferUtils.createFloatBuffer(MATRIX_FLOAT_COUNT);
         var viewportBuffer = BufferUtils.createIntBuffer(VIEWPORT_INT_COUNT);
         GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, modelviewBuffer);
-        GL11.glGetFloat(GL11.GL_PROJECTION_MATRIX, projectionBuffer);
         GL11.glGetInteger(GL11.GL_VIEWPORT, viewportBuffer);
 
         var modelviewMatrix = new float[MATRIX_FLOAT_COUNT];
-        var projectionMatrix = new float[MATRIX_FLOAT_COUNT];
         var viewport = new int[VIEWPORT_INT_COUNT];
         modelviewBuffer.get(modelviewMatrix);
-        projectionBuffer.get(projectionMatrix);
         viewportBuffer.get(viewport);
+        var settings = Global.getSettings();
         return new CampaignMapTransform(
                 modelviewMatrix,
-                projectionMatrix,
+                buildUiOrthoProjectionMatrix(settings.getScreenWidth(), settings.getScreenHeight()),
                 viewport,
                 factor);
+    }
+
+    /**
+     * Reconstructs the campaign UI's projection arithmetically rather than reading it back from
+     * GL. The UI enters 2D mode with {@code glOrtho(0, screenWidth, 0, screenHeight, near, far)}
+     * before rendering the panel tree the map hangs off, so the matrix is fully known from the
+     * screen size alone and the read would only ask GL to repeat what the caller can already
+     * derive - see {@code docs/dev/rendering-environment.md} for the setup and its citations.
+     *
+     * @param screenWidth  the UI's virtual width, {@code SettingsAPI#getScreenWidth}. Note this is
+     *                     UI units, not the physical pixels the viewport is measured in; the two
+     *                     differ whenever the display applies a pixel scale, and reconciling them
+     *                     is the viewport's job inside {@code gluUnProject}
+     * @param screenHeight the UI's virtual height, {@code SettingsAPI#getScreenHeight}
+     * @return the ortho as 16 floats, column-major, the layout {@code gluUnProject} expects
+     */
+    static float[] buildUiOrthoProjectionMatrix(float screenWidth, float screenHeight) {
+        var depthSpan = UI_ORTHO_NEAR_PLANE - UI_ORTHO_FAR_PLANE;
+        var matrix = new float[MATRIX_FLOAT_COUNT];
+        matrix[SCALE_X_SLOT] = 2f / screenWidth;
+        matrix[SCALE_Y_SLOT] = 2f / screenHeight;
+        matrix[SCALE_Z_SLOT] = 2f / depthSpan;
+        // The x and y ortho spans run 0..size rather than being centred, so each axis shifts a
+        // full half-span to move its origin onto the viewport's bottom-left corner. The depth
+        // range is symmetric about zero and so needs no shift.
+        matrix[TRANSLATE_X_SLOT] = -1f;
+        matrix[TRANSLATE_Y_SLOT] = -1f;
+        matrix[TRANSLATE_Z_SLOT] = (UI_ORTHO_NEAR_PLANE + UI_ORTHO_FAR_PLANE) / depthSpan;
+        matrix[HOMOGENEOUS_W_SLOT] = 1f;
+        return matrix;
     }
 
     /**
