@@ -48,7 +48,39 @@ public final class PolygonTessellator {
      */
     public static float[] tessellateToTriangles(List<List<double[]>> contours) {
         var collector = new TriangleCollector();
-        runTessellation(contours, collector, false);
+        runTessellation(contours, collector, false, GLU.GLU_TESS_WINDING_POSITIVE);
+        return collector.toTriangleArray();
+    }
+
+    /**
+     * Triangulates the intersection of two regions - the area both cover, clipped to
+     * their overlap - into a flat {@code [x, y, x, y, ...]} triangle soup, so a fill
+     * can be clamped to lie inside a second boundary rather than spilling past it.
+     *
+     * <p>Each operand is first resolved to its own clean, positive-winding boundary
+     * (interior winding exactly +1, self-crossings dropped, holes cut back to 0), and
+     * the two boundaries are then tessellated together under the "absolute winding
+     * &gt;= 2" rule: a point both regions cover winds +2 and survives, a point only one
+     * covers winds +1 and is dropped, and a point inside either region's hole is cut
+     * below the threshold. Resolving each operand first is what makes the &gt;= 2 test
+     * read as "inside both" - a single self-overlapping contour could otherwise reach
+     * +2 on its own and survive where the other region does not reach.
+     *
+     * @param regionA one region's rings as {@code {x, y}} vertex lists; rings of fewer
+     *                than three vertices are ignored
+     * @param regionB the other region's rings, in the same convention
+     * @return the triangles covering the two regions' overlap as {@code [x1, y1, x2,
+     *         y2, x3, y3, ...]}; empty when the regions do not overlap
+     */
+    public static float[] tessellateIntersectionToTriangles(
+            List<List<double[]>> regionA, List<List<double[]>> regionB) {
+        var boundaryA = tessellateToBoundaryLoops(regionA);
+        var boundaryB = tessellateToBoundaryLoops(regionB);
+        var combined = new ArrayList<List<double[]>>(boundaryA.size() + boundaryB.size());
+        combined.addAll(boundaryA);
+        combined.addAll(boundaryB);
+        var collector = new TriangleCollector();
+        runTessellation(combined, collector, false, GLU.GLU_TESS_WINDING_ABS_GEQ_TWO);
         return collector.toTriangleArray();
     }
 
@@ -71,29 +103,30 @@ public final class PolygonTessellator {
      */
     public static List<List<double[]>> tessellateToBoundaryLoops(List<List<double[]>> contours) {
         var collector = new BoundaryCollector();
-        runTessellation(contours, collector, true);
+        runTessellation(contours, collector, true, GLU.GLU_TESS_WINDING_POSITIVE);
         return collector.loops();
     }
 
-    // Feeds every contour through a fresh GLU tessellator under the positive winding
-    // rule, routing its callbacks to {@code collector}. When {@code boundaryOnly},
-    // the tessellator emits the resolved region's boundary loops rather than its
-    // triangles.
+    // Feeds every contour through a fresh GLU tessellator under {@code windingRule},
+    // routing its callbacks to {@code collector}. When {@code boundaryOnly}, the
+    // tessellator emits the resolved region's boundary loops rather than its triangles.
     //
     // The positive rule keeps only the region wound counter-clockwise overall (the
     // outer envelope): a counter-clockwise outer contour fills, a clockwise hole
     // contour cuts back to winding zero (so enclaves stay empty), and a ring that
     // crosses itself has its reversed sub-loop dropped rather than split off as a
     // stray loop with a matching notch in the survivor. So a self-touching outline
-    // resolves to one clean envelope instead of an ear-plus-notch pair.
+    // resolves to one clean envelope instead of an ear-plus-notch pair. The
+    // absolute-winding >= 2 rule instead keeps only where two positive regions
+    // overlap - their intersection - since a point both cover winds twice.
     private static void runTessellation(List<List<double[]>> contours,
-            GLUtessellatorCallbackAdapter collector, boolean boundaryOnly) {
+            GLUtessellatorCallbackAdapter collector, boolean boundaryOnly, int windingRule) {
         var tessellator = GLU.gluNewTess();
         tessellator.gluTessCallback(GLU.GLU_TESS_BEGIN, collector);
         tessellator.gluTessCallback(GLU.GLU_TESS_VERTEX, collector);
         tessellator.gluTessCallback(GLU.GLU_TESS_END, collector);
         tessellator.gluTessCallback(GLU.GLU_TESS_COMBINE, collector);
-        tessellator.gluTessProperty(GLU.GLU_TESS_WINDING_RULE, GLU.GLU_TESS_WINDING_POSITIVE);
+        tessellator.gluTessProperty(GLU.GLU_TESS_WINDING_RULE, windingRule);
         if (boundaryOnly) {
             tessellator.gluTessProperty(GLU.GLU_TESS_BOUNDARY_ONLY, GL11.GL_TRUE);
         }
