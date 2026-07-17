@@ -141,13 +141,34 @@ static (`.../bridge/context/ContextManager.java:16`), `Context.transformManager`
 is a public final field (`.../bridge/context/Context.java:32`), and
 `getCPUModelView()` is public (`.../bridge/context/TransformManager.java:44`).
 
-Two cautions on using it. It returns the live mutable matrix, not a copy, so
+Three cautions on using it. It returns the live mutable matrix, not a copy, so
 callers must copy before holding it. And it returns identity when Fast Rendering
 has instead pushed the matrix to the GPU
 (`.../bridge/context/TransformManager.java:44-49`), so identity means "this read
 is not usable", not "no transform". That is safe to lean on because a real
 campaign-UI pass is never identity (see
 [The modelview around a map render](#the-modelview-around-a-map-render)).
+
+The third is the quiet one: **its `Matrix4f` fields are row-major**, transposed
+from the convention LWJGL's own `Matrix4f` uses. `VertexInterceptor.glVertex3f`
+takes the translation from `m03/m13/m23`
+(`.../bridge/context/VertexInterceptor.java:110-112`), and `MatrixStack` writes it
+there too (`.../bridge/context/MatrixStack.java:52-55`), so the first index is the
+row. LWJGL's own methods read the same fields as `m<col><row>` and put a
+translation in `m30/m31/m32`.
+
+So `getCPUModelView().store(buffer)` yields the matrix **transposed** relative to
+what GL and `gluUnProject` expect; `storeTranspose` is what gives the column-major
+layout. That is not a correction but the same conversion Fast Rendering itself
+does when it hands the matrix to GL
+(`TransformManager.setGPUModelView`, `.../bridge/context/TransformManager.java:39-40`),
+and it reads back with `loadTranspose` on the way in
+(`MatrixStack.glLoadMatrix`, `.../bridge/context/MatrixStack.java:150`).
+
+This is worth care because it fails silently: a transposed modelview is still
+sixteen plausible floats, so nothing throws and a map overlay just resolves the
+wrong point. For a translate-only map pass the pan lands in slots 3/7 instead of
+12/13.
 
 None of this is published API. It is mod internals, and a genir refactor can
 break any of it, so code reading it should fail safe rather than assume.
