@@ -72,6 +72,26 @@ final class EdgeRingsTest {
         }
 
         @Test
+        void a_segment_shorter_than_the_weld_tolerance_does_not_break_its_ring() {
+            // A segment whose two ends weld to one corner is no step at this resolution. It is
+            // retired as a corner rather than walked, so the loop around it still closes -
+            // where walking it would seed a one-segment ring that is dropped, taking the real
+            // loop with it. Clipped geometry emits these wherever a cut lands a whisker from an
+            // existing corner.
+            var speck = WELD_TOLERANCE / 10;
+            var segments = Arrays.asList(
+                    segment(0, 0, 10, 0),
+                    segment(10, 0, 10 + speck, speck),
+                    segment(10 + speck, speck, 10, 10),
+                    segment(10, 10, 0, 0));
+
+            var rings = EdgeRings.chainIntoRings(segments, WELD_TOLERANCE);
+
+            assertThat(rings).hasSize(1);
+            assertThat(rings.get(0)).hasSize(3);
+        }
+
+        @Test
         void disjoint_squares_come_back_as_two_rings() {
             var segments = Arrays.asList(
                     segment(0, 0, 10, 0),

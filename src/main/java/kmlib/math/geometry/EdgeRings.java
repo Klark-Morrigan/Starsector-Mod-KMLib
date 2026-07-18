@@ -23,7 +23,10 @@ import java.util.Map;
  * segment arriving and one leaving. Disjoint pieces of the region and holes inside
  * it come back as their own rings. Pathological input (a corner with more than one
  * way out, or a strand that never closes) is walked defensively rather than trusted
- * - an unclosed strand is dropped rather than emitted as a stray open ring.
+ * - an unclosed strand is dropped rather than emitted as a stray open ring. A segment
+ * shorter than the weld tolerance is likewise defended against: both its ends land on
+ * one corner, so it is retired as a corner rather than walked as a step, and the loop
+ * it sat in still closes around it.
  *
  * <p>A caller that computed a per-segment attribute before handing the segments over
  * (an offset distance, a class, a colour) recovers it aligned to the chained edges
@@ -151,7 +154,19 @@ public final class EdgeRings {
             outgoingByCorner.computeIfAbsent(startId[i], corner -> new ArrayDeque<>()).add(i);
         }
 
+        // A segment whose two ends weld to one corner says nothing at this resolution: it is
+        // shorter than the drift the weld exists to absorb, so it names a corner rather than a
+        // step between two. Retiring it up front is what keeps it from breaking the walk - left
+        // in, it is either seeded into a one-segment ring that is then dropped, or walked into
+        // mid-ring as a repeated corner, and either way the loop it belonged to is lost. Removing
+        // it disconnects nothing, since the segments on both sides already weld to that very
+        // corner and go on meeting there.
         var consumed = new boolean[segments.size()];
+        for (var i = 0; i < segments.size(); i++) {
+            if (startId[i] == endId[i]) {
+                consumed[i] = true;
+            }
+        }
         for (var seed = 0; seed < segments.size(); seed++) {
             if (consumed[seed]) {
                 continue;
