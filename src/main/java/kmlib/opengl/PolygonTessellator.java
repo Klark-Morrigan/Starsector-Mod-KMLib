@@ -74,14 +74,42 @@ public final class PolygonTessellator {
      */
     public static float[] tessellateIntersectionToTriangles(
             List<List<double[]>> regionA, List<List<double[]>> regionB) {
-        var boundaryA = tessellateToBoundaryLoops(regionA);
-        var boundaryB = tessellateToBoundaryLoops(regionB);
-        var combined = new ArrayList<List<double[]>>(boundaryA.size() + boundaryB.size());
-        combined.addAll(boundaryA);
-        combined.addAll(boundaryB);
         var collector = new TriangleCollector();
-        runTessellation(combined, collector, false, GLU.GLU_TESS_WINDING_ABS_GEQ_TWO);
+        runTessellation(
+                combineResolvedBoundaries(regionA, regionB),
+                collector,
+                false,
+                GLU.GLU_TESS_WINDING_ABS_GEQ_TWO);
         return collector.toTriangleArray();
+    }
+
+    /**
+     * Outlines the intersection of two regions - the boundary loops of the area both
+     * cover - so a stroke can be clamped to lie inside a second boundary rather than
+     * spilling past it, matching the fill {@link #tessellateIntersectionToTriangles}
+     * clips from the same two regions.
+     *
+     * <p>Both operands are resolved to their own clean positive-winding boundary first
+     * and then run together under the "absolute winding &gt;= 2" rule, exactly as the
+     * triangle form does; the tessellator emits the overlap's boundary loops instead of
+     * its triangles. The overlap can come back as more than one loop where the clipping
+     * boundary bites the region into disjoint pieces.
+     *
+     * @param regionA one region's rings as {@code {x, y}} vertex lists; rings of fewer
+     *                than three vertices are ignored
+     * @param regionB the other region's rings, in the same convention
+     * @return one closed loop per boundary contour of the two regions' overlap, each a
+     *         list of {@code {x, y}} vertices; empty when the regions do not overlap
+     */
+    public static List<List<double[]>> tessellateIntersectionToBoundaryLoops(
+            List<List<double[]>> regionA, List<List<double[]>> regionB) {
+        var collector = new BoundaryCollector();
+        runTessellation(
+                combineResolvedBoundaries(regionA, regionB),
+                collector,
+                true,
+                GLU.GLU_TESS_WINDING_ABS_GEQ_TWO);
+        return collector.loops();
     }
 
     /**
@@ -105,6 +133,21 @@ public final class PolygonTessellator {
         var collector = new BoundaryCollector();
         runTessellation(contours, collector, true, GLU.GLU_TESS_WINDING_POSITIVE);
         return collector.loops();
+    }
+
+    // Resolves both operands to their own clean positive-winding boundary and concatenates
+    // them - the shared front half of both intersection entry points. The combined loops are
+    // then run under the abs>=2 rule, where a point both regions cover winds twice and
+    // survives; resolving each operand first is what makes that test read as "inside both",
+    // since a single self-overlapping contour could otherwise reach +2 on its own.
+    private static List<List<double[]>> combineResolvedBoundaries(
+            List<List<double[]>> regionA, List<List<double[]>> regionB) {
+        var boundaryA = tessellateToBoundaryLoops(regionA);
+        var boundaryB = tessellateToBoundaryLoops(regionB);
+        var combined = new ArrayList<List<double[]>>(boundaryA.size() + boundaryB.size());
+        combined.addAll(boundaryA);
+        combined.addAll(boundaryB);
+        return combined;
     }
 
     // Feeds every contour through a fresh GLU tessellator under {@code windingRule},
