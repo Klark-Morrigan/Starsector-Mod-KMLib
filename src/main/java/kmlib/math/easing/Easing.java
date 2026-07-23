@@ -32,8 +32,6 @@ public final class Easing {
      */
     public static float easeInOut(float progress) {
         var clamped = Ranges.clampToUnit(progress);
-        // Smoothstep 3t^2 - 2t^3: the lowest-order polynomial with value 0 and 1 at the ends and zero
-        // slope at both, which is what makes the ease flatten into a stop rather than arrive at speed.
         return clamped * clamped * (SQUARE_TERM_COEFFICIENT - CUBIC_TERM_COEFFICIENT * clamped);
     }
 }
