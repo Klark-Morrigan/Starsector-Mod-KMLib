@@ -28,14 +28,6 @@ public final class ParsedParameters {
         this.suppliedValues = suppliedValues;
     }
 
-    // Package-private on purpose, unlike the public createInvalid: a valid result
-    // carries the parser's internal supplied-values map, so only the parser may
-    // mint one - a success can come only from an actual parse, never be fabricated
-    // by a caller.
-    static ParsedParameters createValid(Map<Parameter<?>, Object> suppliedValues) {
-        return new ParsedParameters(true, null, suppliedValues);
-    }
-
     /**
      * Creates an invalid result carrying the {@link CommandResult} a command
      * returns. The {@link ParameterParser} uses it for a bad token, but it is
@@ -77,5 +69,13 @@ public final class ParsedParameters {
     // real input.
     public boolean isSupplied(Parameter<?> parameter) {
         return suppliedValues.containsKey(parameter);
+    }
+
+    // Package-private on purpose, unlike the public createInvalid: a valid result
+    // carries the parser's internal supplied-values map, so only the parser may
+    // mint one - a success can come only from an actual parse, never be fabricated
+    // by a caller.
+    static ParsedParameters createValid(Map<Parameter<?>, Object> suppliedValues) {
+        return new ParsedParameters(true, null, suppliedValues);
     }
 }

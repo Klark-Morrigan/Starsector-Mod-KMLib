@@ -17,14 +17,6 @@ public final class CommandValidationResult {
         this.commandResult = commandResult;
     }
 
-    static CommandValidationResult createValid() {
-        return new CommandValidationResult(true, null);
-    }
-
-    static CommandValidationResult createInvalid(CommandResult commandResult) {
-        return new CommandValidationResult(false, commandResult);
-    }
-
     public boolean isValid() {
         return valid;
     }
@@ -35,5 +27,13 @@ public final class CommandValidationResult {
      */
     public CommandResult getResult() {
         return commandResult;
+    }
+
+    static CommandValidationResult createValid() {
+        return new CommandValidationResult(true, null);
+    }
+
+    static CommandValidationResult createInvalid(CommandResult commandResult) {
+        return new CommandValidationResult(false, commandResult);
     }
 }

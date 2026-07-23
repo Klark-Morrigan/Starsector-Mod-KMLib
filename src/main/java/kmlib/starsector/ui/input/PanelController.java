@@ -90,74 +90,6 @@ public final class PanelController {
         event.consume();
     }
 
-    // Starts a scrollbar drag when a left press lands on the grab column, reporting whether it did. The
-    // grab column is the gutter right of the list, wider than the thin track so it need not be hit exactly;
-    // a press on the thumb records its offset from the thumb centre so the thumb stays under the cursor,
-    // while a press on the bare track jumps the thumb to the pointer at once. Only fires while the list
-    // overflows - there is no scrollbar otherwise.
-    private boolean beginThumbDragIfPressed(InputEventAPI event, PanelPlacement placement) {
-        if (!placement.isScrollbarNeeded()) {
-            return false;
-        }
-        if (!PanelScrollbars.computeGrabColumn(placement).containsPoint(event.getX(), event.getY())) {
-            return false;
-        }
-        isDraggingThumb = true;
-        var thumb = PanelScrollbars.computeThumb(placement);
-        thumbGrabOffsetY = thumb.containsPoint(event.getX(), event.getY())
-                ? event.getY() - thumb.computeCenterY()
-                : 0f;
-        updateDragOffset(placement, event.getY());
-        return true;
-    }
-
-    // Follows an in-progress drag: the release ends it, and until then every move maps the pointer to a
-    // scroll position. Consumes the event so the surface behind neither pans nor acts while the thumb is
-    // held.
-    private void continueThumbDrag(InputEventAPI event, PanelPlacement placement) {
-        if (event.isLMBUpEvent()) {
-            isDraggingThumb = false;
-            event.consume();
-            return;
-        }
-        if (placement.isScrollbarNeeded()) {
-            updateDragOffset(placement, event.getY());
-        }
-        event.consume();
-    }
-
-    // Maps the dragged pointer to an absolute scroll offset along the track and stores it, holding the
-    // thumb the grab offset below the cursor so it tracks the drag rather than snapping its centre to the
-    // pointer.
-    private void updateDragOffset(PanelPlacement placement, float pointerY) {
-        scrollState.setOffset(
-                PanelScrollbars.resolveOffsetForPointer(placement, pointerY - thumbGrabOffsetY));
-    }
-
-    // Scrolls the flex list when the wheel turns over its scroll region and it has somewhere to scroll.
-    // Only the wheel's sign is read (like the vanilla scroll lists): a wheel up scrolls toward the list
-    // top, so it decreases the offset, and a wheel down increases it, each by one fixed step. Off the
-    // scroll region (over a pinned control, or a list that fits) the wheel does nothing, though the caller
-    // still consumes it so the surface behind does not act.
-    private void scrollListUnderPointer(InputEventAPI event, PanelPlacement placement) {
-        if (!placement.isScrollbarNeeded()
-                || !placement.flexViewport().containsPoint(event.getX(), event.getY())) {
-            return;
-        }
-        scrollState.scrollBy(-Math.signum((float) event.getEventValue()) * SCROLL_STEP_PX);
-    }
-
-    // Routes a left press inside the box to the body control under it: a control fires its action. A press
-    // on the border or blank body falls through to no control and only consumes (handled by the caller),
-    // so empty chrome swallows the click without acting.
-    private static void actOnLeftPress(PanelPlacement placement, float pointX, float pointY) {
-        for (var control : placement.bodyControls()) {
-            if (activateControlIfHit(control, placement.flexViewport(), pointX, pointY)) {
-                return;
-            }
-        }
-    }
-
     /**
      * Hit-tests a control in a scrollable strip: a control marked {@link
      * ControlSpec.VerticalTable#scrolls()} counts only inside {@code flexViewport}, then fires as {@link
@@ -230,6 +162,74 @@ public final class PanelController {
         }
         interactive.action().activateCell(0);
         return true;
+    }
+
+    // Starts a scrollbar drag when a left press lands on the grab column, reporting whether it did. The
+    // grab column is the gutter right of the list, wider than the thin track so it need not be hit exactly;
+    // a press on the thumb records its offset from the thumb centre so the thumb stays under the cursor,
+    // while a press on the bare track jumps the thumb to the pointer at once. Only fires while the list
+    // overflows - there is no scrollbar otherwise.
+    private boolean beginThumbDragIfPressed(InputEventAPI event, PanelPlacement placement) {
+        if (!placement.isScrollbarNeeded()) {
+            return false;
+        }
+        if (!PanelScrollbars.computeGrabColumn(placement).containsPoint(event.getX(), event.getY())) {
+            return false;
+        }
+        isDraggingThumb = true;
+        var thumb = PanelScrollbars.computeThumb(placement);
+        thumbGrabOffsetY = thumb.containsPoint(event.getX(), event.getY())
+                ? event.getY() - thumb.computeCenterY()
+                : 0f;
+        updateDragOffset(placement, event.getY());
+        return true;
+    }
+
+    // Follows an in-progress drag: the release ends it, and until then every move maps the pointer to a
+    // scroll position. Consumes the event so the surface behind neither pans nor acts while the thumb is
+    // held.
+    private void continueThumbDrag(InputEventAPI event, PanelPlacement placement) {
+        if (event.isLMBUpEvent()) {
+            isDraggingThumb = false;
+            event.consume();
+            return;
+        }
+        if (placement.isScrollbarNeeded()) {
+            updateDragOffset(placement, event.getY());
+        }
+        event.consume();
+    }
+
+    // Maps the dragged pointer to an absolute scroll offset along the track and stores it, holding the
+    // thumb the grab offset below the cursor so it tracks the drag rather than snapping its centre to the
+    // pointer.
+    private void updateDragOffset(PanelPlacement placement, float pointerY) {
+        scrollState.setOffset(
+                PanelScrollbars.resolveOffsetForPointer(placement, pointerY - thumbGrabOffsetY));
+    }
+
+    // Scrolls the flex list when the wheel turns over its scroll region and it has somewhere to scroll.
+    // Only the wheel's sign is read (like the vanilla scroll lists): a wheel up scrolls toward the list
+    // top, so it decreases the offset, and a wheel down increases it, each by one fixed step. Off the
+    // scroll region (over a pinned control, or a list that fits) the wheel does nothing, though the caller
+    // still consumes it so the surface behind does not act.
+    private void scrollListUnderPointer(InputEventAPI event, PanelPlacement placement) {
+        if (!placement.isScrollbarNeeded()
+                || !placement.flexViewport().containsPoint(event.getX(), event.getY())) {
+            return;
+        }
+        scrollState.scrollBy(-Math.signum((float) event.getEventValue()) * SCROLL_STEP_PX);
+    }
+
+    // Routes a left press inside the box to the body control under it: a control fires its action. A press
+    // on the border or blank body falls through to no control and only consumes (handled by the caller),
+    // so empty chrome swallows the click without acting.
+    private static void actOnLeftPress(PanelPlacement placement, float pointX, float pointY) {
+        for (var control : placement.bodyControls()) {
+            if (activateControlIfHit(control, placement.flexViewport(), pointX, pointY)) {
+                return;
+            }
+        }
     }
 
     // The reselect the control carries, or INERT for a variant that has none. A vertical table and a

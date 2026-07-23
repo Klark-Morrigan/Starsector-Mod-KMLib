@@ -110,24 +110,6 @@ public final class ControlStripLayout {
     }
 
     /**
-     * The height a run of rows occupies when stacked with a gap between each: the summed heights plus one
-     * gap per seam. The SSOT for "how tall does this run of rows stand", read by {@link #measureStrip}
-     * for the whole strip's body and by the capped strip layout for its pinned footer block, so the two
-     * size a stacked run the same way. An empty run is zero, and a single row is its own height with no
-     * gap.
-     *
-     * @param rowHeights each row's height, in stack order
-     * @return the stacked height including the inter-row gaps, or 0 for an empty run
-     */
-    static float measureStackedHeight(List<Float> rowHeights) {
-        var total = 0f;
-        for (var rowHeight : rowHeights) {
-            total += rowHeight;
-        }
-        return total + Math.max(0, rowHeights.size() - 1) * ROW_GAP;
-    }
-
-    /**
      * Stacks each control row inside the framed body (via the shared row-stacker, starting from the
      * body's top-left plus the inset), snapping each row to its measured width and height and
      * splitting a radio row into its option segments so the hit rects are the drawn ones. The body
@@ -174,6 +156,41 @@ public final class ControlStripLayout {
     }
 
     /**
+     * Turns a tabs control's parallel label and shortcut lists into the tab contents the shared strip
+     * geometry measures and lays out; an empty shortcut reads as no hint (VanillaTabStrip drops a blank
+     * shortcut from the composed display). Public so the renderer pairs each laid-out tab segment with
+     * the same content this measured and split it under, keeping one source for the pairing.
+     *
+     * @param tabs the tabs control, its labels and per-tab shortcuts in row order
+     * @return one {@link VanillaTabContent} per tab, in row order
+     */
+    public static List<VanillaTabContent> buildTabContents(ControlSpec.Tabs tabs) {
+        var contents = new ArrayList<VanillaTabContent>(tabs.labels().size());
+        for (var index = 0; index < tabs.labels().size(); index++) {
+            contents.add(new VanillaTabContent(tabs.labels().get(index), tabs.shortcutAt(index)));
+        }
+        return contents;
+    }
+
+    /**
+     * The height a run of rows occupies when stacked with a gap between each: the summed heights plus one
+     * gap per seam. The SSOT for "how tall does this run of rows stand", read by {@link #measureStrip}
+     * for the whole strip's body and by the capped strip layout for its pinned footer block, so the two
+     * size a stacked run the same way. An empty run is zero, and a single row is its own height with no
+     * gap.
+     *
+     * @param rowHeights each row's height, in stack order
+     * @return the stacked height including the inter-row gaps, or 0 for an empty run
+     */
+    static float measureStackedHeight(List<Float> rowHeights) {
+        var total = 0f;
+        for (var rowHeight : rowHeights) {
+            total += rowHeight;
+        }
+        return total + Math.max(0, rowHeights.size() - 1) * ROW_GAP;
+    }
+
+    /**
      * Pairs each spec with the row it was snapped into, in order, splitting a radio (or a tabs row) into
      * its segments and leaving every other kind a single-hit row. The SSOT for turning a run of (spec,
      * row) pairs into laid-out controls, so this layout's plain stack and the capped strip layout's
@@ -199,6 +216,60 @@ public final class ControlStripLayout {
             }
         }
         return List.copyOf(controls);
+    }
+
+    /**
+     * Pairs one spec with the row it was snapped into, splitting a radio or a tabs row into its per-hit
+     * segments and leaving every other kind a single-hit row. Package-private so the capped strip layout,
+     * which places the flex list itself, builds its list control through the same segment rule this
+     * layout uses rather than re-deriving it. The measurer is only read for a tabs row, whose per-tab
+     * segments snap to text; every other kind splits geometrically and ignores it.
+     *
+     * @param spec     the control to pair with its row
+     * @param row      the row the strip snapped it into
+     * @param measurer measures each tab label's rendered width, for a tabs row's per-tab segments
+     * @return the laid-out control, its segments split for a radio or tabs row and empty for other kinds
+     */
+    static Control toControl(ControlSpec spec, Rectangle row, LineWidthMeasurer measurer) {
+        // A radio (horizontal cells or the vertical stacked table) and a tabs row split into per-hit
+        // segments; a tabs row snaps its tabs to text, so it alone reads the measurer. Every other kind
+        // is a single-hit row with no segments.
+        List<Rectangle> segments;
+        if (spec instanceof ControlSpec.HorizontalRadio radio) {
+            segments = splitHorizontalRadioIntoSegments(radio, row, measurer);
+        } else if (spec instanceof ControlSpec.VerticalTable table) {
+            segments = RadioRow.splitIntoGrid(row, table.labels().size(), table.columnCount());
+        } else if (spec instanceof ControlSpec.Tabs tabs) {
+            segments = splitTabsIntoSegments(tabs, row, measurer);
+        } else {
+            segments = List.of();
+        }
+        return new Control(spec, row, segments);
+    }
+
+    /**
+     * Stretches every divider row to span the full framed body - edge to edge inside the border inset,
+     * across the row padding the other controls sit within - so a section rule reaches the frame rather
+     * than stopping at the content column. Every non-divider row keeps the padded placement {@link
+     * RowStack} gave it. The body is known only once the host frames it, so the span is applied at
+     * placement rather than measurement, where a divider has no intrinsic width. Shared with the capped
+     * strip layout, whose pinned header and footer runs span their dividers through this one rule.
+     *
+     * @param specs the controls, in the same order and size as {@code rows}
+     * @param rows  the padded rows the stacker produced, one per spec
+     * @param body  the framed body rectangle whose full width a divider spans
+     * @return the rows with each divider widened to the body, every other row unchanged
+     */
+    static List<Rectangle> spanDividerRowsToBody(List<ControlSpec> specs, List<Rectangle> rows,
+            Rectangle body) {
+        var spanned = new ArrayList<Rectangle>(rows.size());
+        for (var index = 0; index < rows.size(); index++) {
+            var row = rows.get(index);
+            spanned.add(specs.get(index) instanceof ControlSpec.Divider
+                    ? new Rectangle(body.x(), row.y(), body.width(), row.height())
+                    : row);
+        }
+        return List.copyOf(spanned);
     }
 
     // Lays a side-by-side group's two columns into the group's row and returns their controls: the left
@@ -235,35 +306,6 @@ public final class ControlStripLayout {
         return toControls(specs, rows, measurer);
     }
 
-    /**
-     * Pairs one spec with the row it was snapped into, splitting a radio or a tabs row into its per-hit
-     * segments and leaving every other kind a single-hit row. Package-private so the capped strip layout,
-     * which places the flex list itself, builds its list control through the same segment rule this
-     * layout uses rather than re-deriving it. The measurer is only read for a tabs row, whose per-tab
-     * segments snap to text; every other kind splits geometrically and ignores it.
-     *
-     * @param spec     the control to pair with its row
-     * @param row      the row the strip snapped it into
-     * @param measurer measures each tab label's rendered width, for a tabs row's per-tab segments
-     * @return the laid-out control, its segments split for a radio or tabs row and empty for other kinds
-     */
-    static Control toControl(ControlSpec spec, Rectangle row, LineWidthMeasurer measurer) {
-        // A radio (horizontal cells or the vertical stacked table) and a tabs row split into per-hit
-        // segments; a tabs row snaps its tabs to text, so it alone reads the measurer. Every other kind
-        // is a single-hit row with no segments.
-        List<Rectangle> segments;
-        if (spec instanceof ControlSpec.HorizontalRadio radio) {
-            segments = splitHorizontalRadioIntoSegments(radio, row, measurer);
-        } else if (spec instanceof ControlSpec.VerticalTable table) {
-            segments = RadioRow.splitIntoGrid(row, table.labels().size(), table.columnCount());
-        } else if (spec instanceof ControlSpec.Tabs tabs) {
-            segments = splitTabsIntoSegments(tabs, row, measurer);
-        } else {
-            segments = List.of();
-        }
-        return new Control(spec, row, segments);
-    }
-
     // The per-cell hit segments of a horizontal radio row, sized through the radio's own segment rule
     // and laid from the row's left edge. The same split the renderer draws against, so the drawn cells
     // are the clickable ones. A vertical table splits geometrically into its column grid instead.
@@ -286,48 +328,6 @@ public final class ControlStripLayout {
             segments.add(tab.bounds());
         }
         return List.copyOf(segments);
-    }
-
-    /**
-     * Turns a tabs control's parallel label and shortcut lists into the tab contents the shared strip
-     * geometry measures and lays out; an empty shortcut reads as no hint (VanillaTabStrip drops a blank
-     * shortcut from the composed display). Public so the renderer pairs each laid-out tab segment with
-     * the same content this measured and split it under, keeping one source for the pairing.
-     *
-     * @param tabs the tabs control, its labels and per-tab shortcuts in row order
-     * @return one {@link VanillaTabContent} per tab, in row order
-     */
-    public static List<VanillaTabContent> buildTabContents(ControlSpec.Tabs tabs) {
-        var contents = new ArrayList<VanillaTabContent>(tabs.labels().size());
-        for (var index = 0; index < tabs.labels().size(); index++) {
-            contents.add(new VanillaTabContent(tabs.labels().get(index), tabs.shortcutAt(index)));
-        }
-        return contents;
-    }
-
-    /**
-     * Stretches every divider row to span the full framed body - edge to edge inside the border inset,
-     * across the row padding the other controls sit within - so a section rule reaches the frame rather
-     * than stopping at the content column. Every non-divider row keeps the padded placement {@link
-     * RowStack} gave it. The body is known only once the host frames it, so the span is applied at
-     * placement rather than measurement, where a divider has no intrinsic width. Shared with the capped
-     * strip layout, whose pinned header and footer runs span their dividers through this one rule.
-     *
-     * @param specs the controls, in the same order and size as {@code rows}
-     * @param rows  the padded rows the stacker produced, one per spec
-     * @param body  the framed body rectangle whose full width a divider spans
-     * @return the rows with each divider widened to the body, every other row unchanged
-     */
-    static List<Rectangle> spanDividerRowsToBody(List<ControlSpec> specs, List<Rectangle> rows,
-            Rectangle body) {
-        var spanned = new ArrayList<Rectangle>(rows.size());
-        for (var index = 0; index < rows.size(); index++) {
-            var row = rows.get(index);
-            spanned.add(specs.get(index) instanceof ControlSpec.Divider
-                    ? new Rectangle(body.x(), row.y(), body.width(), row.height())
-                    : row);
-        }
-        return List.copyOf(spanned);
     }
 
     // The width of a control's row, snapped to its label(s): a checkbox is its tick box plus a gap

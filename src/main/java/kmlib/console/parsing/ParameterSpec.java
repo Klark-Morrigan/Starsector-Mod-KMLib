@@ -47,27 +47,6 @@ public abstract class ParameterSpec {
         return new NoArgumentsSpec(usage);
     }
 
-    // Records a parameter that may be supplied positionally (in declaration
-    // order) or by name, and returns its key.
-    protected final <T> Parameter<T> acceptsPositional(String name, String valueHint,
-            ValueParser<T> valueParser) {
-        return record(Parameter.positional(name, valueHint, valueParser));
-    }
-
-    // Records a name-only parameter - one that never claims a positional slot -
-    // and returns its key.
-    protected final <T> Parameter<T> acceptsNamed(String name, String valueHint,
-            ValueParser<T> valueParser) {
-        return record(Parameter.named(name, valueHint, valueParser));
-    }
-
-    // Records a bare keyword flag - supplied as a lone token, never name=value or
-    // a positional slot - and returns its key. The flag reads true when present
-    // and false when omitted.
-    protected final Parameter<Boolean> acceptsFlag(String name) {
-        return record(Parameter.flag(name));
-    }
-
     /**
      * Parses a command's raw argument string against this spec, printing any
      * problem through {@code output} and returning the typed values, or an
@@ -95,6 +74,27 @@ public abstract class ParameterSpec {
     // the output seam.
     public ParsedParameters parse(String[] tokens) {
         return parse(tokens, ConsoleCommandOutput.INSTANCE);
+    }
+
+    // Records a parameter that may be supplied positionally (in declaration
+    // order) or by name, and returns its key.
+    protected final <T> Parameter<T> acceptsPositional(String name, String valueHint,
+            ValueParser<T> valueParser) {
+        return record(Parameter.positional(name, valueHint, valueParser));
+    }
+
+    // Records a name-only parameter - one that never claims a positional slot -
+    // and returns its key.
+    protected final <T> Parameter<T> acceptsNamed(String name, String valueHint,
+            ValueParser<T> valueParser) {
+        return record(Parameter.named(name, valueHint, valueParser));
+    }
+
+    // Records a bare keyword flag - supplied as a lone token, never name=value or
+    // a positional slot - and returns its key. The flag reads true when present
+    // and false when omitted.
+    protected final Parameter<Boolean> acceptsFlag(String name) {
+        return record(Parameter.flag(name));
     }
 
     List<Parameter<?>> getParameters() {

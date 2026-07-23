@@ -96,16 +96,16 @@ public final class StarsectorPlayerRelationshipFormatter {
             this.color = color;
         }
 
-        private static RelationshipSummary createEmptySummary() {
-            return new RelationshipSummary(null, null);
-        }
-
         public String getDescription() {
             return description;
         }
 
         public Color getColor() {
             return color;
+        }
+
+        private static RelationshipSummary createEmptySummary() {
+            return new RelationshipSummary(null, null);
         }
     }
 }

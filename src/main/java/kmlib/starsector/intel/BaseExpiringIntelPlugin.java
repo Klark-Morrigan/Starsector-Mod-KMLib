@@ -45,27 +45,6 @@ public abstract class BaseExpiringIntelPlugin extends BaseTaggedIntelPlugin {
     }
 
     /**
-     * Lifetime of this intel from construction, in in-game days.
-     * Defaults to {@link StarsectorClock#DAYS_PER_MONTH} so the
-     * next month's notice has the prior one cleared away by the
-     * time it lands - the common case for month-end transient
-     * intel. Override for any other cadence.
-     */
-    protected float getExpiryDays() {
-        return StarsectorClock.DAYS_PER_MONTH;
-    }
-
-    /**
-     * Timestamp captured at construction. Exposed for subclasses
-     * that need to render "created N days ago" or similar; the
-     * expiry check uses it internally and does not require
-     * subclass involvement.
-     */
-    protected final long getCreatedTimestamp() {
-        return createdTimestamp;
-    }
-
-    /**
      * {@code true} once the elapsed in-game days since construction
      * has reached {@link #getExpiryDays()}. The base class's
      * {@link #advanceImpl} also removes the intel from the
@@ -121,6 +100,27 @@ public abstract class BaseExpiringIntelPlugin extends BaseTaggedIntelPlugin {
             }
         }
         return null;
+    }
+
+    /**
+     * Lifetime of this intel from construction, in in-game days.
+     * Defaults to {@link StarsectorClock#DAYS_PER_MONTH} so the
+     * next month's notice has the prior one cleared away by the
+     * time it lands - the common case for month-end transient
+     * intel. Override for any other cadence.
+     */
+    protected float getExpiryDays() {
+        return StarsectorClock.DAYS_PER_MONTH;
+    }
+
+    /**
+     * Timestamp captured at construction. Exposed for subclasses
+     * that need to render "created N days ago" or similar; the
+     * expiry check uses it internally and does not require
+     * subclass involvement.
+     */
+    protected final long getCreatedTimestamp() {
+        return createdTimestamp;
     }
 
     @Override

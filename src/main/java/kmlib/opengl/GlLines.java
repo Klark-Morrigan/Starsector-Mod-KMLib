@@ -53,6 +53,21 @@ public final class GlLines {
         GL11.glEnd();
     }
 
+    /**
+     * Strokes the closed outline of {@code vertices}, a flat {@code [x1, y1, x2, y2,
+     * ...]} run in winding order - any vertex count, unlike {@link GlQuads#fillQuad}
+     * which fills exactly four.
+     *
+     * @param vertices the polygon's corners, already scaled to draw coordinates
+     */
+    public static void strokeLoop(float[] vertices) {
+        GL11.glBegin(GL11.GL_LINE_LOOP);
+        for (var i = 0; i < vertices.length; i += GlVertexRuns.FLOATS_PER_VERTEX) {
+            GL11.glVertex2f(vertices[i], vertices[i + 1]);
+        }
+        GL11.glEnd();
+    }
+
     // Emits the on-dash sub-segments of the segment at {@code index}, stepping
     // along it in period-length strides and drawing the first onWorldLength of
     // each stride.
@@ -76,20 +91,5 @@ public final class GlLines {
             GL11.glVertex2f((x1 + unitX * onEnd) * worldToScreen,
                     (y1 + unitY * onEnd) * worldToScreen);
         }
-    }
-
-    /**
-     * Strokes the closed outline of {@code vertices}, a flat {@code [x1, y1, x2, y2,
-     * ...]} run in winding order - any vertex count, unlike {@link GlQuads#fillQuad}
-     * which fills exactly four.
-     *
-     * @param vertices the polygon's corners, already scaled to draw coordinates
-     */
-    public static void strokeLoop(float[] vertices) {
-        GL11.glBegin(GL11.GL_LINE_LOOP);
-        for (var i = 0; i < vertices.length; i += GlVertexRuns.FLOATS_PER_VERTEX) {
-            GL11.glVertex2f(vertices[i], vertices[i + 1]);
-        }
-        GL11.glEnd();
     }
 }

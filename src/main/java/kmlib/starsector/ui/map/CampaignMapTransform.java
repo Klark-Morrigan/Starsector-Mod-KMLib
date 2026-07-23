@@ -144,36 +144,6 @@ public record CampaignMapTransform(
     }
 
     /**
-     * Reconstructs the campaign UI's projection arithmetically rather than reading it back from
-     * GL. The UI enters 2D mode with {@code glOrtho(0, screenWidth, 0, screenHeight, near, far)}
-     * before rendering the panel tree the map hangs off, so the matrix is fully known from the
-     * screen size alone and the read would only ask GL to repeat what the caller can already
-     * derive - see {@code docs/dev/rendering-environment.md} for the setup and its citations.
-     *
-     * @param screenWidth  the UI's virtual width, {@code SettingsAPI#getScreenWidth}. Note this is
-     *                     UI units, not the physical pixels the viewport is measured in; the two
-     *                     differ whenever the display applies a pixel scale, and reconciling them
-     *                     is the viewport's job inside {@code gluUnProject}
-     * @param screenHeight the UI's virtual height, {@code SettingsAPI#getScreenHeight}
-     * @return the ortho as 16 floats, column-major, the layout {@code gluUnProject} expects
-     */
-    static float[] buildUiOrthoProjectionMatrix(float screenWidth, float screenHeight) {
-        var depthSpan = UI_ORTHO_NEAR_PLANE - UI_ORTHO_FAR_PLANE;
-        var matrix = new float[MATRIX_FLOAT_COUNT];
-        matrix[SCALE_X_SLOT] = 2f / screenWidth;
-        matrix[SCALE_Y_SLOT] = 2f / screenHeight;
-        matrix[SCALE_Z_SLOT] = 2f / depthSpan;
-        // The x and y ortho spans run 0..size rather than being centred, so each axis shifts a
-        // full half-span to move its origin onto the viewport's bottom-left corner. The depth
-        // range is symmetric about zero and so needs no shift.
-        matrix[TRANSLATE_X_SLOT] = -1f;
-        matrix[TRANSLATE_Y_SLOT] = -1f;
-        matrix[TRANSLATE_Z_SLOT] = (UI_ORTHO_NEAR_PLANE + UI_ORTHO_FAR_PLANE) / depthSpan;
-        matrix[HOMOGENEOUS_W_SLOT] = 1f;
-        return matrix;
-    }
-
-    /**
      * Maps a cursor pixel to the world point under it.
      *
      * @param pixelX the cursor x in window pixels from the left edge, as
@@ -209,5 +179,35 @@ public record CampaignMapTransform(
         return new Vector2f(
                 worldPoint.get(0) / factor,
                 worldPoint.get(1) / factor);
+    }
+
+    /**
+     * Reconstructs the campaign UI's projection arithmetically rather than reading it back from
+     * GL. The UI enters 2D mode with {@code glOrtho(0, screenWidth, 0, screenHeight, near, far)}
+     * before rendering the panel tree the map hangs off, so the matrix is fully known from the
+     * screen size alone and the read would only ask GL to repeat what the caller can already
+     * derive - see {@code docs/dev/rendering-environment.md} for the setup and its citations.
+     *
+     * @param screenWidth  the UI's virtual width, {@code SettingsAPI#getScreenWidth}. Note this is
+     *                     UI units, not the physical pixels the viewport is measured in; the two
+     *                     differ whenever the display applies a pixel scale, and reconciling them
+     *                     is the viewport's job inside {@code gluUnProject}
+     * @param screenHeight the UI's virtual height, {@code SettingsAPI#getScreenHeight}
+     * @return the ortho as 16 floats, column-major, the layout {@code gluUnProject} expects
+     */
+    static float[] buildUiOrthoProjectionMatrix(float screenWidth, float screenHeight) {
+        var depthSpan = UI_ORTHO_NEAR_PLANE - UI_ORTHO_FAR_PLANE;
+        var matrix = new float[MATRIX_FLOAT_COUNT];
+        matrix[SCALE_X_SLOT] = 2f / screenWidth;
+        matrix[SCALE_Y_SLOT] = 2f / screenHeight;
+        matrix[SCALE_Z_SLOT] = 2f / depthSpan;
+        // The x and y ortho spans run 0..size rather than being centred, so each axis shifts a
+        // full half-span to move its origin onto the viewport's bottom-left corner. The depth
+        // range is symmetric about zero and so needs no shift.
+        matrix[TRANSLATE_X_SLOT] = -1f;
+        matrix[TRANSLATE_Y_SLOT] = -1f;
+        matrix[TRANSLATE_Z_SLOT] = (UI_ORTHO_NEAR_PLANE + UI_ORTHO_FAR_PLANE) / depthSpan;
+        matrix[HOMOGENEOUS_W_SLOT] = 1f;
+        return matrix;
     }
 }

@@ -31,6 +31,19 @@ public final class Parameter<T> {
         this.valueParser = valueParser;
     }
 
+    // Marks the parameter as required: parsing fails if it is never supplied.
+    public Parameter<T> markRequired() {
+        this.required = true;
+        return this;
+    }
+
+    // Sets the value returned when the parameter is not supplied; intended as the
+    // alternative to markRequired.
+    public Parameter<T> defaultsTo(T value) {
+        this.defaultValue = value;
+        return this;
+    }
+
     // A parameter that may be supplied positionally (in declared order) or by
     // name. Created through ParameterSpec#acceptsPositional, which records it.
     static <T> Parameter<T> positional(String name, String valueHint,
@@ -53,19 +66,6 @@ public final class Parameter<T> {
         parameter.flag = true;
         parameter.defaultValue = Boolean.FALSE;
         return parameter;
-    }
-
-    // Marks the parameter as required: parsing fails if it is never supplied.
-    public Parameter<T> markRequired() {
-        this.required = true;
-        return this;
-    }
-
-    // Sets the value returned when the parameter is not supplied; intended as the
-    // alternative to markRequired.
-    public Parameter<T> defaultsTo(T value) {
-        this.defaultValue = value;
-        return this;
     }
 
     String getName() {
