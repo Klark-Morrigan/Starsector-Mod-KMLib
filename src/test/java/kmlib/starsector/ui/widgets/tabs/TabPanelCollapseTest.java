@@ -77,6 +77,22 @@ final class TabPanelCollapseTest {
         }
 
         @Test
+        void advanceByElapsedTimeAccumulatesManySmallStepsLikeOneBigStep() {
+            var manySteps = new TabPanelCollapse();
+            manySteps.toggleCollapse();
+            // Five per-frame slices of a tenth of the duration reach the same progress as one half-duration
+            // step, so the collapse runs at the same pace whatever the frame rate splits the time into.
+            for (var frame = 0; frame < 5; frame++) {
+                manySteps.advanceByElapsedTime(TabPanelCollapse.DURATION_SECONDS / 10f);
+            }
+            var oneStep = new TabPanelCollapse();
+            oneStep.toggleCollapse();
+            oneStep.advanceByElapsedTime(HALF_DURATION);
+            assertThat(manySteps.getCollapseFraction())
+                    .isCloseTo(oneStep.getCollapseFraction(), within(TOLERANCE));
+        }
+
+        @Test
         void advanceByElapsedTimeExpandsBackToZeroAfterReversing() {
             var collapse = new TabPanelCollapse();
             collapse.toggleCollapse();
@@ -164,6 +180,17 @@ final class TabPanelCollapseTest {
             var collapse = new TabPanelCollapse();
             collapse.toggleCollapse();
             // Heading for docked but not yet stepped, it already reads as animating so frames keep pumping.
+            assertThat(collapse.isAnimating()).isTrue();
+        }
+
+        @Test
+        void isAnimatingIsTrueImmediatelyAfterTheHandleStartsAnExpand() {
+            var collapse = new TabPanelCollapse();
+            collapse.toggleCollapse();
+            collapse.advanceByElapsedTime(FULL_DURATION);
+            collapse.toggleCollapse();
+            // Docked and now heading back for expanded, it reads as animating before the first step so the
+            // expand pumps frames the same way a collapse does.
             assertThat(collapse.isAnimating()).isTrue();
         }
 
