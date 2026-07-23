@@ -186,6 +186,40 @@ final class StarSystemsTest {
     }
 
     @Nested
+    class GetOrbitalDistanceTo {
+        @Test
+        void sums_a_planets_own_orbit_to_its_star() {
+            var starMock = mock(SectorEntityToken.class);
+            var planet = orbiting(300, starMock);
+
+            assertThat(StarSystems.getOrbitalDistanceTo(planet, starMock)).isEqualTo(300.0);
+        }
+
+        @Test
+        void sums_the_whole_orbit_chain_for_a_moon() {
+            var starMock = mock(SectorEntityToken.class);
+            var planet = orbiting(300, starMock);
+            var moon = orbiting(50, planet);
+
+            assertThat(StarSystems.getOrbitalDistanceTo(moon, starMock)).isEqualTo(350.0);
+        }
+
+        @Test
+        void does_not_add_the_references_own_orbit() {
+            var starMock = orbiting(9999, mock(SectorEntityToken.class));
+            var planet = orbiting(300, starMock);
+
+            assertThat(StarSystems.getOrbitalDistanceTo(planet, starMock)).isEqualTo(300.0);
+        }
+
+        @Test
+        void yields_infinity_for_a_null_body() {
+            assertThat(StarSystems.getOrbitalDistanceTo(null, mock(SectorEntityToken.class)))
+                    .isEqualTo(Double.POSITIVE_INFINITY);
+        }
+    }
+
+    @Nested
     class HasKnownOwnedMarket {
         @Test
         void returns_true_for_a_visible_owned_market() {
@@ -352,6 +386,41 @@ final class StarSystemsTest {
 
     private static StarSystemAPI onlySystem(SectorAPI sector) {
         return sector.getStarSystems().get(0);
+    }
+
+    // A star fixed at a location, so a central-star search can rank stars by nearness to the
+    // system centre.
+    private static PlanetAPI starWithLocation(float x, float y) {
+        var starMock = mock(PlanetAPI.class);
+        when(starMock.isStar()).thenReturn(true);
+        when(starMock.getLocation()).thenReturn(new Vector2f(x, y));
+        return starMock;
+    }
+
+    // A star fixed at a location and carrying an id, so a central-star search's distance-tie
+    // resolution by id can be pinned.
+    private static PlanetAPI starWithIdAt(String id, float x, float y) {
+        var starMock = starWithLocation(x, y);
+        when(starMock.getId()).thenReturn(id);
+        return starMock;
+    }
+
+    // A body on a circular orbit of the given radius around a focus, the unit an orbit-chain
+    // distance sums.
+    private static SectorEntityToken orbiting(float radius, SectorEntityToken focus) {
+        var bodyMock = mock(SectorEntityToken.class);
+        when(bodyMock.getCircularOrbitRadius()).thenReturn(radius);
+        when(bodyMock.getOrbitFocus()).thenReturn(focus);
+        return bodyMock;
+    }
+
+    // A system with a centre token and its stars, the two a central-star search reads.
+    private static StarSystemAPI systemWithCentreAndStars(SectorEntityToken centre,
+            PlanetAPI... stars) {
+        var systemMock = mock(StarSystemAPI.class);
+        when(systemMock.getCenter()).thenReturn(centre);
+        when(systemMock.getPlanets()).thenReturn(List.of(stars));
+        return systemMock;
     }
 
     // Wires a sector with one system whose economy holds the given markets, so a

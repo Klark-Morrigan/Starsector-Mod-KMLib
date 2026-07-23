@@ -30,6 +30,12 @@ import java.util.function.Predicate;
  */
 public final class StarSystems {
 
+    // A hang guard for a malformed cyclic orbit chain, not a domain limit: a real chain nests
+    // only a few links (station -> planet -> star), so the walk always halts on the reference or
+    // a null focus long before this. The value is generous headroom above any real nesting,
+    // chosen only to bound a pathological cycle rather than to model one.
+    private static final int MAX_ORBIT_CHAIN_DEPTH = 32;
+
     private StarSystems() {
         // utility class, no instances.
     }
@@ -173,6 +179,38 @@ public final class StarSystems {
             }
         }
         return false;
+    }
+
+    /**
+     * How far a body sits from a reference along its orbit, summing the circular-orbit radii up
+     * the body's orbit-focus chain until the chain reaches the reference - typically the
+     * system's {@link #getCentralStar central star}.
+     *
+     * <p>Reads the orbit rather than the body's live position, so the value does not drift as
+     * the body revolves: a planet is as far out as its orbit, a moon adds its planet's orbit, a
+     * station on a planet adds the planet's too. A body that never reaches the reference sums
+     * its whole chain - still a stable depth - and a malformed cyclic chain is capped rather
+     * than looped forever. The reference's own orbit is not added, so a body sitting on the
+     * reference reads zero.
+     *
+     * @param body      the body to measure; null yields {@link Double#POSITIVE_INFINITY}, since
+     *                  a body with no orbit to read sits at no measurable distance
+     * @param reference the body the chain is summed up to; null sums the whole chain to its root
+     * @return the summed orbit-chain distance, or positive infinity when {@code body} is null
+     */
+    public static double getOrbitalDistanceTo(SectorEntityToken body, SectorEntityToken reference) {
+        if (body == null) {
+            return Double.POSITIVE_INFINITY;
+        }
+        var distance = 0.0;
+        var orbiter = body;
+        for (var depth = 0;
+                orbiter != null && orbiter != reference && depth < MAX_ORBIT_CHAIN_DEPTH;
+                depth++) {
+            distance += orbiter.getCircularOrbitRadius();
+            orbiter = orbiter.getOrbitFocus();
+        }
+        return distance;
     }
 
     /**
