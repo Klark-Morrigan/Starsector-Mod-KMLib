@@ -2,11 +2,9 @@ package kmlib.starsector.ui.render.gl;
 
 import com.fs.starfarer.api.util.Misc;
 
-import kmlib.color.Colors;
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlSpec;
-import kmlib.starsector.ui.font.LazyFontCache;
 import kmlib.starsector.ui.input.UiCursor;
 import kmlib.starsector.ui.layout.ControlStripLayout;
 import kmlib.starsector.ui.widgets.Checkbox;
@@ -15,11 +13,8 @@ import kmlib.starsector.ui.widgets.tabs.VanillaTabStrip;
 import kmlib.text.KmlibStrings;
 
 import org.lazywizard.lazylib.ui.LazyFont;
-import org.lazywizard.lazylib.ui.LazyFont.DrawableString;
 
 import java.awt.Color;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Raw-GL paint for one laid-out {@link Control}: it draws the widget the control's {@link ControlSpec}
@@ -36,11 +31,6 @@ import java.util.Map;
  * body does not leak a buffer per frame.
  */
 public final class ControlRenderer {
-    // Cached across the run: body labels are a handful of static strings, so one GL text buffer per
-    // distinct (font, size, text) serves the whole run rather than leaking a buffer per frame. The base
-    // colour is re-set before each draw, so one buffer serves every frame at any opacity.
-    private static final Map<String, DrawableString> BODY_TEXT_CACHE = new HashMap<>();
-
     private ControlRenderer() {
     }
 
@@ -218,34 +208,10 @@ public final class ControlRenderer {
         drawBodyLabel(bodyFont, text, x, y, anchor, opacity, ControlStripLayout.BODY_FONT_SIZE);
     }
 
-    // Draws one body label in the vanilla text colour, faded by opacity, at the given anchor and size.
-    // Skipped silently when the font cannot load, in which case the control draws its chrome without text.
+    // Draws one body label in the vanilla text colour, faded by opacity, at the given anchor and size,
+    // through the shared label primitive so the control text and any other KM UI text share one cache.
     private static void drawBodyLabel(String bodyFont, String text, float x, float y,
             LazyFont.TextAnchor anchor, float opacity, double fontSize) {
-        var drawable = resolveBodyText(bodyFont, text, fontSize);
-        if (drawable == null) {
-            return;
-        }
-        drawable.setAnchor(anchor);
-        drawable.setBaseColor(Colors.scaleAlpha(Misc.getTextColor(), opacity));
-        drawable.draw(x, y);
-    }
-
-    // Mints a body drawable once per (font, size, text) and reuses it; the base colour is re-set before
-    // each draw, so one buffer serves every frame. Null when the font face cannot load, in which case the
-    // control draws without that text.
-    private static DrawableString resolveBodyText(String bodyFont, String text, double fontSize) {
-        var key = bodyFont + "|" + fontSize + "|" + text;
-        var cached = BODY_TEXT_CACHE.get(key);
-        if (cached != null) {
-            return cached;
-        }
-        var font = LazyFontCache.loadByBasename(bodyFont);
-        if (font == null) {
-            return null;
-        }
-        var drawable = font.createText(text, Misc.getTextColor(), (float) fontSize);
-        BODY_TEXT_CACHE.put(key, drawable);
-        return drawable;
+        LabelRenderer.render(bodyFont, text, x, y, anchor, Misc.getTextColor(), opacity, fontSize);
     }
 }
