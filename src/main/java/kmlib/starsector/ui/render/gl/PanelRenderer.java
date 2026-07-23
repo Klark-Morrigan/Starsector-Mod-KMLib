@@ -5,8 +5,6 @@ import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.widgets.PanelPlacement;
 import kmlib.starsector.ui.widgets.scroll.PanelScrollbars;
 
-import org.lwjgl.opengl.GL11;
-
 /**
  * Raw-GL paint for a whole headerless {@link PanelPlacement}: the bordered frame (via {@link
  * BorderedBoxRenderer}), then each body control (via {@link ControlRenderer}), then the scrollbar when
@@ -15,7 +13,7 @@ import org.lwjgl.opengl.GL11;
  * rides on a {@link WidgetStyle}; the per-frame border width and opacity are parameters. A {@link
  * TabPanelRenderer} reuses this for the body and overlays a tabs header on the top band.
  *
- * <p>Brackets the draw in one {@code glPushAttrib}/{@code glPopAttrib} - the map chrome and tooltips draw
+ * <p>Brackets the draw in one {@link GlStateGuard#bracket} state save - the map chrome and tooltips draw
  * after a UI-overlay pass, so any enable / colour / blend state the panel touches must be restored - and
  * the whole draw shares that one save. The scrolling control (the one marked {@link
  * kmlib.starsector.ui.controls.ControlSpec.VerticalTable#scrolls()}) draws clipped to its viewport, so
@@ -39,11 +37,11 @@ public final class PanelRenderer {
             float opacity) {
         // Belt-and-suspenders around the raw GL: the map chrome and tooltips draw after a UI-overlay
         // pass, so any state the panel touches must be restored. The whole draw shares this one save.
-        GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_CURRENT_BIT | GL11.GL_COLOR_BUFFER_BIT);
-        BorderedBoxRenderer.render(placement.box(), borderWidth, style.panelFill(), style.accent(),
-                opacity);
-        drawBodyControls(placement, style, opacity);
-        GL11.glPopAttrib();
+        GlStateGuard.bracket(() -> {
+            BorderedBoxRenderer.render(placement.box(), borderWidth, style.panelFill(),
+                    style.accent(), opacity);
+            drawBodyControls(placement, style, opacity);
+        });
     }
 
     // Draws each body control in the lit state its spec carries, then - when the body is capped - the

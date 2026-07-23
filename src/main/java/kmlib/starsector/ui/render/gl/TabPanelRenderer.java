@@ -2,8 +2,6 @@ package kmlib.starsector.ui.render.gl;
 
 import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
 
-import org.lwjgl.opengl.GL11;
-
 /**
  * Raw-GL paint for a whole {@link TabPanelPlacement}: it delegates the body - the one bordered frame, the
  * body controls, and the scrollbar - to {@link PanelRenderer} verbatim, then overlays the tabs header
@@ -11,10 +9,10 @@ import org.lwjgl.opengl.GL11;
  * its paint is the panel's paint plus one control drawn on top; the single frame is the body placement's
  * whole-footprint box, so there is one border, drawn once by the delegate.
  *
- * <p>The header control draws its own immediate-mode GL, so it is bracketed in a {@code glPushAttrib}/
- * {@code glPopAttrib} state save like {@link PanelRenderer} brackets its own draw. Drawn after the body so
- * the header sits over the frame fill of the top band. GL passthrough exercised in-engine like the other
- * draw helpers.
+ * <p>The header control draws its own immediate-mode GL, so it is bracketed in a {@link
+ * GlStateGuard#bracket} state save like {@link PanelRenderer} brackets its own draw. Drawn after the body
+ * so the header sits over the frame fill of the top band. GL passthrough exercised in-engine like the
+ * other draw helpers.
  */
 public final class TabPanelRenderer {
     private TabPanelRenderer() {
@@ -36,8 +34,6 @@ public final class TabPanelRenderer {
         PanelRenderer.render(placement.body(), style, borderWidth, opacity);
         // The header control's raw GL needs the same state save; bracket it here. Drawn after the body so
         // it sits over the frame fill of the top band.
-        GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_CURRENT_BIT | GL11.GL_COLOR_BUFFER_BIT);
-        ControlRenderer.render(placement.tabsHeader(), style, opacity);
-        GL11.glPopAttrib();
+        GlStateGuard.bracket(() -> ControlRenderer.render(placement.tabsHeader(), style, opacity));
     }
 }
