@@ -148,10 +148,102 @@ final class TabPanelLayoutTest {
             assertThat(header.spec().labels()).containsExactly("No Layer", "Political Map");
         }
 
+        @Test
+        void computePlacementLaysTheBodyAtItsInterpolatedWidthWhenPartlyCollapsed() {
+            var fullWidth = place(BODY, 0f).body().body().width();
+            var halfPlacement = place(BODY, 0.5f);
+            var halfWidth = halfPlacement.body().body().width();
+            // At half collapse the interior lays out at half its full width...
+            assertThat(halfWidth).isCloseTo(fullWidth * 0.5f, within(TOLERANCE));
+            // ...and the box tracks the interpolated interior plus the border on each edge.
+            assertThat(halfPlacement.body().box().width())
+                    .isCloseTo(halfWidth + 2f * BORDER_WIDTH, within(TOLERANCE));
+        }
+
+        @Test
+        void computePlacementCollapsesTheBoxToADockedRailAtFullCollapse() {
+            var placement = place(BODY, 1f);
+            var box = placement.body().box();
+            var body = placement.body().body();
+            // Fully docked, the interior vanishes and the box reduces to the border-only rail at the left
+            // anchor - the two borders meeting into the single vertical line the panel docks to.
+            assertThat(body.width()).isCloseTo(0f, within(TOLERANCE));
+            assertThat(box.width()).isCloseTo(2f * BORDER_WIDTH, within(TOLERANCE));
+            assertThat(box.x()).isCloseTo(PADDING_LEFT, within(TOLERANCE));
+            assertThat(box.y() + box.height()).isCloseTo(BOX_TOP_Y, within(TOLERANCE));
+            // The collapse is horizontal only, so the rail keeps the fully expanded box's height.
+            assertThat(box.height())
+                    .isCloseTo(place(BODY, 0f).body().box().height(), within(TOLERANCE));
+        }
+
+        @Test
+        void computePlacementSitsTheNotchOnTheRightBorderEdgeCentredOnTheFrame() {
+            var placement = place(BODY, 0f);
+            var box = placement.body().box();
+            var notch = placement.notch();
+            // The notch protrudes rightward from the box's right border edge, its own fixed size...
+            assertThat(notch.x()).isCloseTo(box.x() + box.width(), within(TOLERANCE));
+            assertThat(notch.width()).isCloseTo(TabPanelLayout.NOTCH_WIDTH, within(TOLERANCE));
+            assertThat(notch.height()).isCloseTo(TabPanelLayout.NOTCH_HEIGHT, within(TOLERANCE));
+            // ...vertically centred on the frame with the default zero offset.
+            assertThat(notch.computeCenterY()).isCloseTo(box.computeCenterY(), within(TOLERANCE));
+        }
+
+        @Test
+        void computePlacementTracksTheNotchToTheCollapsingRightEdge() {
+            var expanded = place(BODY, 0f);
+            var docked = place(BODY, 1f);
+            // The notch rides the box's right edge at every fraction, so as the body collapses leftward the
+            // handle moves in with it and stays reachable to expand the docked panel again.
+            assertThat(expanded.notch().x())
+                    .isCloseTo(expanded.body().box().x() + expanded.body().box().width(), within(TOLERANCE));
+            assertThat(docked.notch().x())
+                    .isCloseTo(docked.body().box().x() + docked.body().box().width(), within(TOLERANCE));
+            assertThat(docked.notch().x()).isLessThan(expanded.notch().x());
+        }
+
+        @Test
+        void computePlacementKeepsTheNotchOnTheEdgeAndCentredMidCollapse() {
+            var placement = place(BODY, 0.5f);
+            var box = placement.body().box();
+            var notch = placement.notch();
+            // Mid-collapse the handle stays reachable: it rides the box's right edge and stays centred on
+            // the frame, so it never orphans from the shrinking box while the animation is in flight.
+            assertThat(notch.x()).isCloseTo(box.x() + box.width(), within(TOLERANCE));
+            assertThat(notch.computeCenterY()).isCloseTo(box.computeCenterY(), within(TOLERANCE));
+        }
+
+        @Test
+        void computePlacementDocksToAZeroWidthRailWhenThereIsNoBorder() {
+            var placement = TabPanelLayout.computePlacement(SCREEN_HEIGHT,
+                    new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT), 0, TABS, BODY, measurerFake,
+                    0f, 1f);
+            var box = placement.body().box();
+            // With no border, the docked rail has no interior and no border to keep, so the box collapses
+            // to zero width - yet the placement stays well-formed and the notch still anchors to the edge.
+            assertThat(box.width()).isCloseTo(0f, within(TOLERANCE));
+            assertThat(box.x()).isCloseTo(PADDING_LEFT, within(TOLERANCE));
+            assertThat(placement.notch().x()).isCloseTo(box.x() + box.width(), within(TOLERANCE));
+        }
+
+        @Test
+        void computePlacementClampsCollapseFractionToTheUnitRange() {
+            // A fraction past the ends behaves as the nearest end - past 1 stays fully docked, below 0 stays
+            // fully expanded - so an overshooting animation value never inverts the geometry.
+            assertThat(place(BODY, 2f).body().box().width())
+                    .isCloseTo(place(BODY, 1f).body().box().width(), within(TOLERANCE));
+            assertThat(place(BODY, -1f).body().box().width())
+                    .isCloseTo(place(BODY, 0f).body().box().width(), within(TOLERANCE));
+        }
+
         private TabPanelPlacement place(List<ControlSpec> bodyControls) {
+            return place(bodyControls, 0f);
+        }
+
+        private TabPanelPlacement place(List<ControlSpec> bodyControls, float collapseFraction) {
             return TabPanelLayout.computePlacement(SCREEN_HEIGHT,
                     new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT), BORDER_WIDTH, TABS,
-                    bodyControls, measurerFake, 0f);
+                    bodyControls, measurerFake, 0f, collapseFraction);
         }
     }
 }

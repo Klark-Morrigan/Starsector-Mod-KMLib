@@ -1,6 +1,7 @@
 package kmlib.starsector.ui.widgets.scroll;
 
 import kmlib.math.geometry.Rectangle;
+import kmlib.math.ranges.Ranges;
 
 /**
  * The geometry of a vertical scrollbar over a {@link ScrollRegion}: the track in the region's container
@@ -61,7 +62,7 @@ public final class Scrollbar {
         var overflow = region.overflow();
         // The thumb hangs from the track top at offset 0 and drops through the travel as the content
         // scrolls, so its fraction of the travel matches the offset's fraction of the overflow.
-        var fraction = overflow <= 0f ? 0f : clampFraction(region.offset() / overflow);
+        var fraction = overflow <= 0f ? 0f : Ranges.clampToUnit(region.offset() / overflow);
         var thumbY = track.y() + travel * (1f - fraction);
         return new Rectangle(track.x(), thumbY, track.width(), thumbHeight);
     }
@@ -106,7 +107,7 @@ public final class Scrollbar {
         // so map the pointer across that centre range: at the top the content is scrolled to 0, at the
         // bottom to the full overflow.
         var centreTop = track.y() + track.height() - thumbHeight / 2f;
-        var fraction = clampFraction((centreTop - pointerY) / travel);
+        var fraction = Ranges.clampToUnit((centreTop - pointerY) / travel);
         return fraction * overflow;
     }
 
@@ -121,9 +122,4 @@ public final class Scrollbar {
         return Math.min(track.height(), Math.max(MIN_THUMB_HEIGHT, proportional));
     }
 
-    // Confines a 0..1 fraction to that range, so a thumb position or a pointer mapping never runs past
-    // the track ends.
-    private static float clampFraction(float fraction) {
-        return Math.max(0f, Math.min(1f, fraction));
-    }
 }

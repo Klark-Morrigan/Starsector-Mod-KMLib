@@ -1,5 +1,6 @@
 package kmlib.starsector.ui.widgets.tabs;
 
+import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.widgets.PanelPlacement;
 
@@ -17,8 +18,14 @@ import kmlib.starsector.ui.widgets.PanelPlacement;
  * width tracks the body alone, so a tab row wider than the body overhangs the frame rather than widening
  * it. A host that needs the footprint reads it off {@code body().box()}.
  *
+ * <p>The {@code notch} is the collapse handle: a rect protruding past the box's right border edge, centred
+ * on the frame. It rides that edge as the body collapses, so the render pass draws it and the input pass
+ * hit-tests it against the one rect, and the handle tracks the shrinking edge to stay reachable when the
+ * panel is docked.
+ *
  * @param tabsHeader the laid-out tabs control across the header band, its segments split per tab
  * @param body       the headerless panel placement beneath the header (its box frames the header band too)
+ * @param notch      the collapse-handle rect on the box's right border edge, centred on the frame
  */
-public record TabPanelPlacement(Control tabsHeader, PanelPlacement body) {
+public record TabPanelPlacement(Control tabsHeader, PanelPlacement body, Rectangle notch) {
 }
