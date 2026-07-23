@@ -33,8 +33,9 @@ import static org.mockito.Mockito.when;
  * Pins the contracts of {@link StarSystems#getHyperspacePositions},
  * {@link StarSystems#getPlayerStarSystem}, {@link StarSystems#getStars},
  * {@link StarSystems#hasKnownOwnedMarket}, {@link StarSystems#getCentremostStar},
- * {@link StarSystems#getOrbitalDistanceTo}, {@link StarSystems#isReachable}, and
- * {@link StarSystems#find}. Each method's cases live in a {@link Nested} group so
+ * {@link StarSystems#getOrbitalDistanceTo}, {@link StarSystems#isReachable},
+ * {@link StarSystems#find}, and {@link StarSystems#findById}. Each method's cases live in a
+ * {@link Nested} group so
  * the suite reports as a per-method tree; the shared mock builders stay on the
  * outer class.
  */
@@ -164,6 +165,40 @@ final class StarSystemsTest {
             when(sectorMock.getPlayerFleet()).thenReturn(fleetMock);
 
             assertThat(StarSystems.getPlayerStarSystem(sectorMock)).isNull();
+        }
+    }
+
+    @Nested
+    class FindById {
+        @Test
+        void returns_the_system_whose_id_matches() {
+            var wanted = systemAt("corvus", 1, 1);
+            var other = systemAt("yma", 2, 2);
+            var sectorMock = mock(SectorAPI.class);
+            when(sectorMock.getStarSystems()).thenReturn(List.of(other, wanted));
+
+            assertThat(StarSystems.findById(sectorMock, "corvus")).isSameAs(wanted);
+        }
+
+        @Test
+        void returns_null_when_no_system_has_that_id() {
+            var only = systemAt("corvus", 1, 1);
+            var sectorMock = mock(SectorAPI.class);
+            when(sectorMock.getStarSystems()).thenReturn(List.of(only));
+
+            assertThat(StarSystems.findById(sectorMock, "nowhere")).isNull();
+        }
+
+        @Test
+        void returns_null_for_a_null_sector() {
+            assertThat(StarSystems.findById(null, "corvus")).isNull();
+        }
+
+        @Test
+        void returns_null_for_a_blank_id() {
+            // A blank id short-circuits before the walk, so a stubbed system list is not even
+            // needed - a blank query matches nothing rather than the first system by accident.
+            assertThat(StarSystems.findById(mock(SectorAPI.class), " ")).isNull();
         }
     }
 

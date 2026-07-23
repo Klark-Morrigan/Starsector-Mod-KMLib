@@ -116,6 +116,30 @@ public final class StarSystems {
     }
 
     /**
+     * The star system whose {@code getId} equals {@code id} - the reliable id lookup vanilla's own
+     * {@code SectorAPI#getStarSystem} does not provide. That one matches the optional unique id
+     * before the base name, so a system keyed by its base name (which is what {@code getId}
+     * returns) is silently missed whenever it also carries a unique id. This matches {@code getId}
+     * directly, the id every system-keyed map is built on.
+     *
+     * @param sector the sector to search; null yields null
+     * @param id     the system id to match, as {@code StarSystemAPI#getId} reports it; null or
+     *               blank yields null
+     * @return the system with that id, or null when none matches
+     */
+    public static StarSystemAPI findById(SectorAPI sector, String id) {
+        if (sector == null || !KmlibStrings.hasText(id)) {
+            return null;
+        }
+        for (var system : sector.getStarSystems()) {
+            if (id.equals(system.getId())) {
+                return system;
+            }
+        }
+        return null;
+    }
+
+    /**
      * Every star in {@code system}, in the system's planet order - the set a
      * caller must disambiguate between when "the center" alone is ambiguous.
      * A single-star system has one unambiguous center to orbit; binary and
