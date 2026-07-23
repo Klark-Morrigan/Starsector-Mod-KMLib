@@ -7,6 +7,7 @@ import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.impl.campaign.GateEntityPlugin;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
 
+import kmlib.math.geometry.Points;
 import kmlib.starsector.markets.Markets;
 import kmlib.starsector.rat.RandomAssortmentOfThingsMatcher;
 import kmlib.text.KmlibStrings;
@@ -182,9 +183,41 @@ public final class StarSystems {
     }
 
     /**
+     * The star closest to the system centre - the reference a distance-from-centre read measures
+     * from. This is the star nearest the centre, not one presumed to sit at it: a single-star
+     * system yields its one star, which does sit at the centre, but a binary or trinary system
+     * orbits a shared invisible centre, so the closest star is the busy inner system's, the
+     * natural reference rather than a distant companion. Falls back to the centre token itself
+     * when the system has no star.
+     *
+     * @param system the star system to read; null yields null
+     * @return the star closest to the centre, the centre token when the system is starless, or
+     *         null when {@code system} is null
+     */
+    public static SectorEntityToken getCentremostStar(StarSystemAPI system) {
+        if (system == null) {
+            return null;
+        }
+        var centre = system.getCenter();
+        var centreLocation = centre == null ? null : centre.getLocation();
+        SectorEntityToken nearestStar = null;
+        var nearestDistance = Double.POSITIVE_INFINITY;
+        for (var star : getStars(system)) {
+            var distance = centreLocation == null
+                    ? 0.0
+                    : Points.computeDistance(centreLocation, star.getLocation());
+            if (isNearerCentre(distance, nearestDistance, star, nearestStar)) {
+                nearestDistance = distance;
+                nearestStar = star;
+            }
+        }
+        return nearestStar != null ? nearestStar : centre;
+    }
+
+    /**
      * How far a body sits from a reference along its orbit, summing the circular-orbit radii up
      * the body's orbit-focus chain until the chain reaches the reference - typically the
-     * system's {@link #getCentralStar central star}.
+     * system's {@link #getCentremostStar centremost star}.
      *
      * <p>Reads the orbit rather than the body's live position, so the value does not drift as
      * the body revolves: a planet is as far out as its orbit, a moon adds its planet's orbit, a
@@ -277,6 +310,22 @@ public final class StarSystems {
             }
         }
         return null;
+    }
+
+    // Whether a candidate star is a better centre reference than the current nearest: strictly
+    // closer to the centre, or exactly as close but with the lower id. The id tie-break makes an
+    // equal-mass binary's two equidistant stars resolve to one deterministic reference rather
+    // than depending on the planet-list order, so a distance tie never decides the reference
+    // arbitrarily.
+    private static boolean isNearerCentre(
+            double candidateDistance,
+            double nearestDistance,
+            SectorEntityToken candidate,
+            SectorEntityToken nearest) {
+        if (candidateDistance != nearestDistance) {
+            return candidateDistance < nearestDistance;
+        }
+        return nearest == null || candidate.getId().compareTo(nearest.getId()) < 0;
     }
 
     // Whether any gate in the system is lit. An inactive gate (unscanned, or the

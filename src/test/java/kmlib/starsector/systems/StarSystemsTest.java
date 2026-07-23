@@ -32,7 +32,8 @@ import static org.mockito.Mockito.when;
 /**
  * Pins the contracts of {@link StarSystems#getHyperspacePositions},
  * {@link StarSystems#getPlayerStarSystem}, {@link StarSystems#getStars},
- * {@link StarSystems#hasKnownOwnedMarket}, {@link StarSystems#isReachable}, and
+ * {@link StarSystems#hasKnownOwnedMarket}, {@link StarSystems#getCentremostStar},
+ * {@link StarSystems#getOrbitalDistanceTo}, {@link StarSystems#isReachable}, and
  * {@link StarSystems#find}. Each method's cases live in a {@link Nested} group so
  * the suite reports as a per-method tree; the shared mock builders stay on the
  * outer class.
@@ -182,6 +183,55 @@ final class StarSystemsTest {
         @Test
         void returns_empty_for_a_null_system() {
             assertThat(StarSystems.getStars(null)).isEmpty();
+        }
+    }
+
+    @Nested
+    class GetCentremostStar {
+        @Test
+        void returns_the_only_star_in_a_single_star_system() {
+            var star = starWithLocation(0, 0);
+            var system = systemWithCentreAndStars(star, star);
+
+            assertThat(StarSystems.getCentremostStar(system)).isSameAs(star);
+        }
+
+        @Test
+        void returns_the_star_nearest_the_centre_in_a_multi_star_system() {
+            var centreMock = mock(SectorEntityToken.class);
+            when(centreMock.getLocation()).thenReturn(new Vector2f(0, 0));
+            var nearStar = starWithLocation(0, 0);
+            var farStar = starWithLocation(5000, 0);
+            // Listed far-first so the pick is shown to come from distance, not list order.
+            var system = systemWithCentreAndStars(centreMock, farStar, nearStar);
+
+            assertThat(StarSystems.getCentremostStar(system)).isSameAs(nearStar);
+        }
+
+        @Test
+        void breaks_an_equal_distance_tie_by_lowest_star_id() {
+            var centreMock = mock(SectorEntityToken.class);
+            when(centreMock.getLocation()).thenReturn(new Vector2f(0, 0));
+            var starBeta = starWithIdAt("beta", 0, 100);
+            var starAlpha = starWithIdAt("alpha", 0, -100);
+            // Both stars sit the same distance from the centre; listed high-id first so the
+            // lower id is shown to be the deterministic pick rather than the planet-list order.
+            var system = systemWithCentreAndStars(centreMock, starBeta, starAlpha);
+
+            assertThat(StarSystems.getCentremostStar(system)).isSameAs(starAlpha);
+        }
+
+        @Test
+        void falls_back_to_the_centre_token_when_the_system_has_no_star() {
+            var centreMock = mock(SectorEntityToken.class);
+            var system = systemWithCentreAndStars(centreMock);
+
+            assertThat(StarSystems.getCentremostStar(system)).isSameAs(centreMock);
+        }
+
+        @Test
+        void returns_null_for_a_null_system() {
+            assertThat(StarSystems.getCentremostStar(null)).isNull();
         }
     }
 
