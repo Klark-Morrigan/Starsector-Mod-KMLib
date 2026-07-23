@@ -168,8 +168,7 @@ public final class StarSystems {
             return false;
         }
         for (var market : sector.getEconomy().getMarkets(system)) {
-            if (Markets.isOwnedColony(market)
-                    && (shouldIncludeUndiscoveredMarkets || Markets.isKnownToPlayer(market))) {
+            if (Markets.isCountedAsColony(market, shouldIncludeUndiscoveredMarkets)) {
                 return true;
             }
         }

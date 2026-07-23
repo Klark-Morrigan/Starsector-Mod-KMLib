@@ -130,6 +130,29 @@ public final class Markets {
     }
 
     /**
+     * Whether a market counts as a known owned colony - the "counts on the map" filter a
+     * presence or dominance read admits a market by.
+     *
+     * <p>Composes {@link #isOwnedColony} with {@link #isKnownToPlayer} so "counts as a known
+     * colony" means one thing across every caller rather than each re-deriving the pair and
+     * drifting. The dev reveal drops the visibility arm, admitting a colony the player has not
+     * yet found so an undiscovered faction still paints under it.
+     *
+     * @param market                           the market to test; null yields false
+     * @param shouldIncludeUndiscoveredMarkets whether an undiscovered colony still counts (the
+     *                                         "show all factions" dev reveal); false applies the
+     *                                         normal known-to-player filter
+     * @return true when a faction owns the market and it is either known or the reveal is on
+     */
+    public static boolean isCountedAsColony(
+            MarketAPI market, boolean shouldIncludeUndiscoveredMarkets) {
+        if (!isOwnedColony(market)) {
+            return false;
+        }
+        return shouldIncludeUndiscoveredMarkets || isKnownToPlayer(market);
+    }
+
+    /**
      * A market's configured patrol strength, read from the economy as the three
      * vanilla size-tier counts.
      *

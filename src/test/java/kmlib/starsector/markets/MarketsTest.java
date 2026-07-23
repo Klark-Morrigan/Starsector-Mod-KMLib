@@ -20,10 +20,10 @@ import static org.mockito.Mockito.when;
 
 /**
  * Pins the contracts of {@link Markets#isOwnedColony},
- * {@link Markets#hasAttachedStation}, {@link Markets#getStabilityFraction} and
- * {@link Markets#isKnownToPlayer}. The cases live in a {@link Nested} group per
- * method so the suite reports as a per-method tree; the shared mock builders stay
- * on the outer class.
+ * {@link Markets#hasAttachedStation}, {@link Markets#getStabilityFraction},
+ * {@link Markets#isKnownToPlayer} and {@link Markets#isCountedAsColony}. The cases
+ * live in a {@link Nested} group per method so the suite reports as a per-method
+ * tree; the shared mock builders stay on the outer class.
  */
 final class MarketsTest {
 
@@ -170,6 +170,42 @@ final class MarketsTest {
     }
 
     @Nested
+    class IsCountedAsColony {
+        @Test
+        void returns_true_for_a_known_owned_colony() {
+            var market = countedColonyMarket(false, false, false);
+
+            assertThat(Markets.isCountedAsColony(market, false)).isTrue();
+        }
+
+        @Test
+        void returns_false_for_a_condition_only_market() {
+            var market = countedColonyMarket(true, false, false);
+
+            assertThat(Markets.isCountedAsColony(market, false)).isFalse();
+        }
+
+        @Test
+        void returns_false_for_an_undiscovered_concealed_colony() {
+            var market = countedColonyMarket(false, true, true);
+
+            assertThat(Markets.isCountedAsColony(market, false)).isFalse();
+        }
+
+        @Test
+        void returns_true_for_an_undiscovered_concealed_colony_when_including_undiscovered() {
+            var market = countedColonyMarket(false, true, true);
+
+            assertThat(Markets.isCountedAsColony(market, true)).isTrue();
+        }
+
+        @Test
+        void returns_false_for_a_null_market() {
+            assertThat(Markets.isCountedAsColony(null, true)).isFalse();
+        }
+    }
+
+    @Nested
     class ReadPatrolCounts {
         @Test
         void reads_the_three_tier_counts_from_the_dynamic_stats() {
@@ -257,6 +293,23 @@ final class MarketsTest {
         var modMock = mock(StatBonus.class);
         when(modMock.computeEffective(0.0f)).thenReturn(effective);
         return modMock;
+    }
+
+    // An owned colony wired for both filter arms: ownership (a faction owns it, not
+    // condition-only) and visibility (its entity's discoverability and the hidden flag).
+    private static MarketAPI countedColonyMarket(boolean isConditionOnly, boolean isHidden,
+            boolean isEntityDiscoverable) {
+        // Build the entity and faction (each stubs its own mock) before opening the market's
+        // stubbing, so the two do not nest into an unfinished-stubbing error.
+        var entityMock = mock(SectorEntityToken.class);
+        when(entityMock.isDiscoverable()).thenReturn(isEntityDiscoverable);
+        var factionMock = faction("hegemony");
+        var marketMock = mock(MarketAPI.class);
+        when(marketMock.getFaction()).thenReturn(factionMock);
+        when(marketMock.isPlanetConditionMarketOnly()).thenReturn(isConditionOnly);
+        when(marketMock.isHidden()).thenReturn(isHidden);
+        when(marketMock.getPrimaryEntity()).thenReturn(entityMock);
+        return marketMock;
     }
 
     private static MarketAPI buildOwnedColony(FactionAPI faction, boolean isConditionOnly) {
