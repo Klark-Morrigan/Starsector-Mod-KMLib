@@ -33,13 +33,29 @@ public final class ToggleButton {
      * @param onColor    the lit-wash colour
      * @param opacity    overall alpha, 0..1
      */
-    public static void render(Rectangle bounds, boolean isOn, Color frameColor, Color onColor,
+    public static void render(
+            Rectangle bounds,
+            boolean isOn,
+            Color frameColor,
+            Color onColor,
             float opacity) {
+
         if (isOn) {
-            UiFill.renderQuad(bounds.x(), bounds.y(), bounds.width(), bounds.height(), onColor,
+            UiFill.renderQuad(
+                    bounds.x(),
+                    bounds.y(),
+                    bounds.width(),
+                    bounds.height(),
+                    onColor,
                     opacity * ON_FILL_ALPHA_MULT);
         }
-        UiBoxes.renderBorder(bounds.x(), bounds.y(), bounds.width(), bounds.height(),
-                OUTLINE_THICKNESS, frameColor, opacity);
+        UiBoxes.renderBorder(
+                bounds.x(),
+                bounds.y(),
+                bounds.width(),
+                bounds.height(),
+                new BoxBorder(OUTLINE_THICKNESS),
+                frameColor,
+                opacity);
     }
 }

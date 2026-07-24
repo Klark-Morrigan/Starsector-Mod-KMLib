@@ -64,12 +64,15 @@ public final class CursorTooltipRenderer {
     private static void drawRows(List<TooltipRow> rows, TooltipLayout layout, CursorTooltipStyle style) {
         BorderedBoxRenderer.render(
                 layout.box(),
-                style.borderWidth(),
+                new BoxBorder(style.borderWidth()),
                 style.fillColor(),
                 style.borderColor(),
                 style.opacity());
         for (var index = 0; index < rows.size(); index++) {
-            drawRow(rows.get(index), layout.rows().get(index), style);
+            drawRow(
+                    rows.get(index),
+                    layout.rows().get(index),
+                    style);
         }
     }
 

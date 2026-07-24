@@ -2,8 +2,6 @@ package kmlib.starsector.ui.render.gl;
 
 import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
 
-import java.util.Set;
-
 /**
  * Raw-GL paint for a whole {@link TabPanelPlacement}: it delegates the body - the one bordered frame, the
  * body controls, and the scrollbar - to {@link PanelRenderer} verbatim, then overlays the tabs header
@@ -32,47 +30,26 @@ public final class TabPanelRenderer {
     /**
      * Draws the tab panel: the bordered frame, body controls, and scrollbar via {@link PanelRenderer},
      * then the tabs header on top, then the collapse handle past the right edge, all faded by {@code
-     * opacity}. Must run with a current GL context.
-     *
-     * @param placement   the laid-out tab panel to draw
-     * @param style       how the panel looks (fill, accents, body font, and the tab style for the header)
-     * @param borderWidth the outer border thickness; 0 draws no border
-     * @param notchState  how far the body is collapsed (0 lays out full and unclipped, 1 docks to the rail,
-     *                    and it orients the notch's chevron) and whether the handle is hovered
-     * @param opacity     overall alpha, 0..1, fading the whole panel
-     */
-    public static void render(
-            TabPanelPlacement placement,
-            WidgetStyle style,
-            float borderWidth,
-            NotchState notchState,
-            float opacity) {
-        render(placement, style, borderWidth, notchState, BoxEdge.ALL, opacity);
-    }
-
-    /**
-     * Draws the tab panel as {@link #render(TabPanelPlacement, WidgetStyle, float, NotchState, float)}
-     * does, but strokes only the {@code borderEdges} of the frame, leaving the omitted sides open so a
-     * panel flush against another's edge can drop the border there. The header, the notch, and the
+     * opacity}. Must run with a current GL context. The {@code border} names which frame edges to stroke,
+     * so a panel flush against another's edge can drop the border there; the header, the notch, and the
      * collapse clip are unaffected.
      *
-     * @param placement   the laid-out tab panel to draw
-     * @param style       how the panel looks (fill, accents, body font, and the tab style for the header)
-     * @param borderWidth the outer border thickness; 0 draws no border
-     * @param notchState  how far the body is collapsed (0 lays out full and unclipped, 1 docks to the rail,
-     *                    and it orients the notch's chevron) and whether the handle is hovered
-     * @param borderEdges which of the frame's four edges to stroke; the rest are left open
-     * @param opacity     overall alpha, 0..1, fading the whole panel
+     * @param placement  the laid-out tab panel to draw
+     * @param style      how the panel looks (fill, accents, body font, and the tab style for the header)
+     * @param border     the outer border width and which edges to stroke; a zero width draws no border
+     * @param notchState how far the body is collapsed (0 lays out full and unclipped, 1 docks to the rail,
+     *                   and it orients the notch's chevron) and whether the handle is hovered
+     * @param opacity    overall alpha, 0..1, fading the whole panel
      */
     public static void render(
             TabPanelPlacement placement,
             WidgetStyle style,
-            float borderWidth,
+            BoxBorder border,
             NotchState notchState,
-            Set<BoxEdge> borderEdges,
             float opacity) {
+
         var box = placement.body().box();
-        
+
         // A null notch marks a bodyless, non-collapsible panel (nothing to fold): it draws no handle and
         // never clips, so a stale docked fraction left in the controller by another tab cannot scissor its
         // tab row down to the border box and hide it with no handle to bring it back.
@@ -87,13 +64,17 @@ public final class TabPanelRenderer {
         }
 
         // The body carries the whole-footprint box, so this draws the one frame, the body controls, and
-        // the scrollbar - self-bracketed in its own GL-state save. Only the requested edges of the frame
-        // are stroked, so a panel flush against another's edge drops the border there.
-        PanelRenderer.render(placement.body(), style, borderWidth, borderEdges, opacity);
+        // the scrollbar - self-bracketed in its own GL-state save. Only the border's edges are stroked, so
+        // a panel flush against another's edge drops the border there.
+        PanelRenderer.render(placement.body(), style, border, opacity);
 
         // The header control's raw GL needs the same state save; bracket it here. Drawn after the body so
         // it sits over the frame fill of the top band.
-        GlStateGuard.bracket(() -> ControlRenderer.render(placement.tabsHeader(), style, opacity));
+        GlStateGuard.bracket(() -> ControlRenderer.render(
+                placement.tabsHeader(),
+                style,
+                opacity));
+                
         if (isCollapsing) {
             UiScissor.pop();
         }
@@ -102,7 +83,12 @@ public final class TabPanelRenderer {
         // reachable to expand the panel even when the body has wiped away to the docked rail. A bodyless
         // panel has no handle, so there is nothing to draw here.
         if (notch != null) {
-            NotchRenderer.render(notch, style, borderWidth, notchState, opacity);
+            NotchRenderer.render(
+                    notch,
+                    style,
+                    border.width(),
+                    notchState,
+                    opacity);
         }
     }
 }

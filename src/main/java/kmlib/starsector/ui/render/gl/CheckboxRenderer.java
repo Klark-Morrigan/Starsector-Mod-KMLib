@@ -30,15 +30,30 @@ public final class CheckboxRenderer {
      * @param tickColor  the filled-tick colour
      * @param opacity    overall alpha, 0..1
      */
-    public static void render(Rectangle bounds, boolean isChecked, Color boxColor, Color tickColor,
+    public static void render(
+            Rectangle bounds,
+            boolean isChecked,
+            Color boxColor,
+            Color tickColor,
             float opacity) {
         var box = Checkbox.computeTickBox(bounds);
-        UiBoxes.renderBorder(box.x(), box.y(), box.width(), box.height(), BOX_OUTLINE_THICKNESS,
-                boxColor, opacity);
+        UiBoxes.renderBorder(
+                box.x(),
+                box.y(),
+                box.width(),
+                box.height(),
+                new BoxBorder(BOX_OUTLINE_THICKNESS),
+                boxColor,
+                opacity);
         if (isChecked) {
             var inset = box.height() * TICK_INSET_FRACTION;
-            UiFill.renderQuad(box.x() + inset, box.y() + inset, box.width() - 2f * inset,
-                    box.height() - 2f * inset, tickColor, opacity);
+            UiFill.renderQuad(
+                    box.x() + inset,
+                    box.y() + inset,
+                    box.width() - 2f * inset,
+                    box.height() - 2f * inset,
+                    tickColor,
+                    opacity);
         }
     }
 }

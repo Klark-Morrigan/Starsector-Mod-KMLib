@@ -41,15 +41,32 @@ public final class RadioRowRenderer {
      * @param colors        the frame stroke and selected-wash palette
      * @param opacity       overall alpha, 0..1
      */
-    public static void renderHorizontalRow(Rectangle bounds, List<Rectangle> segments,
-            int selectedIndex, RadioColors colors, float opacity) {
+    public static void renderHorizontalRow(
+            Rectangle bounds,
+            List<Rectangle> segments,
+            int selectedIndex,
+            RadioColors colors,
+            float opacity) {
+
         if (selectedIndex >= 0 && selectedIndex < segments.size()) {
-            HorizontalSegmentsRenderer.renderSelectedWash(segments.get(selectedIndex),
-                    colors.selectedWash(), opacity);
+            HorizontalSegmentsRenderer.renderSelectedWash(
+                    segments.get(selectedIndex),
+                    colors.selectedWash(),
+                    opacity);
         }
-        HorizontalSegmentsRenderer.renderSeamDividers(segments, colors.frame(), opacity);
-        UiBoxes.renderBorder(bounds.x(), bounds.y(), bounds.width(), bounds.height(),
-                OUTLINE_THICKNESS, colors.frame(), opacity);
+        HorizontalSegmentsRenderer.renderSeamDividers(
+                segments,
+                colors.frame(),
+                opacity);
+
+        UiBoxes.renderBorder(
+                bounds.x(),
+                bounds.y(),
+                bounds.width(),
+                bounds.height(),
+                new BoxBorder(OUTLINE_THICKNESS),
+                colors.frame(),
+                opacity);
     }
 
     /**
@@ -66,12 +83,20 @@ public final class RadioRowRenderer {
      * @param colors        the frame stroke and selected-wash palette
      * @param opacity       overall alpha, 0..1
      */
-    public static void renderVerticalGrid(Rectangle bounds, int optionCount, int selectedIndex,
-            int columnCount, RadioColors colors, float opacity) {
+    public static void renderVerticalGrid(
+            Rectangle bounds,
+            int optionCount,
+            int selectedIndex,
+            int columnCount,
+            RadioColors colors,
+            float opacity) {
+
         var segments = RadioRow.splitIntoGrid(bounds, optionCount, columnCount);
         if (selectedIndex >= 0 && selectedIndex < segments.size()) {
-            HorizontalSegmentsRenderer.renderSelectedWash(segments.get(selectedIndex),
-                    colors.selectedWash(), opacity);
+            HorizontalSegmentsRenderer.renderSelectedWash(
+                    segments.get(selectedIndex),
+                    colors.selectedWash(),
+                    opacity);
         }
         // The tallest column, matching the grid split, so the row rules land on the same boundaries
         // the cells abut on. The grid's column and row rules are the vertical list's own (a flat seam
@@ -85,15 +110,31 @@ public final class RadioRowRenderer {
         var rowHeight = bounds.height() / rowCount;
         for (var column = 1; column < columnCount; column++) {
             var columnX = bounds.x() + column * columnWidth;
-            UiFill.renderQuad(columnX, bounds.y(), thickness, bounds.height(), dividerColor,
+            UiFill.renderQuad(
+                    columnX,
+                    bounds.y(),
+                    thickness,
+                    bounds.height(),
+                    dividerColor,
                     dividerAlpha);
         }
         for (var row = 1; row < rowCount; row++) {
             var boundaryY = bounds.y() + bounds.height() - row * rowHeight;
-            UiFill.renderQuad(bounds.x(), boundaryY - thickness, bounds.width(), thickness,
-                    dividerColor, dividerAlpha);
+            UiFill.renderQuad(
+                    bounds.x(),
+                    boundaryY - thickness,
+                    bounds.width(),
+                    thickness,
+                    dividerColor,
+                    dividerAlpha);
         }
-        UiBoxes.renderBorder(bounds.x(), bounds.y(), bounds.width(), bounds.height(),
-                OUTLINE_THICKNESS, colors.frame(), opacity);
+        UiBoxes.renderBorder(
+                bounds.x(),
+                bounds.y(),
+                bounds.width(),
+                bounds.height(),
+                new BoxBorder(OUTLINE_THICKNESS),
+                colors.frame(),
+                opacity);
     }
 }
