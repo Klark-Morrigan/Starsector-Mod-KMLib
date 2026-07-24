@@ -5,6 +5,8 @@ import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.widgets.PanelPlacement;
 import kmlib.starsector.ui.widgets.scroll.PanelScrollbars;
 
+import java.util.Set;
+
 /**
  * Raw-GL paint for a whole headerless {@link PanelPlacement}: the bordered frame (via {@link
  * BorderedBoxRenderer}), then each body control (via {@link ControlRenderer}), then the scrollbar when
@@ -38,6 +40,26 @@ public final class PanelRenderer {
             WidgetStyle style,
             float borderWidth,
             float opacity) {
+        render(placement, style, borderWidth, BoxEdge.ALL, opacity);
+    }
+
+    /**
+     * Draws the panel as {@link #render(PanelPlacement, WidgetStyle, float, float)} does, but strokes
+     * only the {@code borderEdges} of the frame, leaving the omitted sides open so a panel flush against
+     * another's edge can drop the border there. The body controls and scrollbar are unaffected.
+     *
+     * @param placement   the laid-out panel to draw
+     * @param style       how the panel looks (fill, accents, fonts)
+     * @param borderWidth the outer border thickness; 0 draws no border
+     * @param borderEdges which of the frame's four edges to stroke; the rest are left open
+     * @param opacity     overall alpha, 0..1, fading the whole panel
+     */
+    public static void render(
+            PanelPlacement placement,
+            WidgetStyle style,
+            float borderWidth,
+            Set<BoxEdge> borderEdges,
+            float opacity) {
         // Belt-and-suspenders around the raw GL: the map chrome and tooltips draw after a UI-overlay
         // pass, so any state the panel touches must be restored. The whole draw shares this one save.
         GlStateGuard.bracket(() -> {
@@ -46,7 +68,8 @@ public final class PanelRenderer {
                     borderWidth,
                     style.panelFill(),
                     style.accent(),
-                    opacity);
+                    opacity,
+                    borderEdges);
             drawBodyControls(placement, style, opacity);
         });
     }

@@ -1,6 +1,7 @@
 package kmlib.starsector.ui.render.gl;
 
 import java.awt.Color;
+import java.util.Set;
 
 /**
  * Draws the frame of a rectangular UI panel in screen/UI coordinates. A one-liner in intent
@@ -17,7 +18,7 @@ public final class UiBoxes {
     }
 
     /**
-     * Strokes the outline of the rectangle at {@code (x, y)} with the given size, inset so the
+     * Strokes all four edges of the rectangle at {@code (x, y)} with the given size, inset so the
      * edges fall inside the rectangle's footprint (the top and right edges are offset by
      * {@code thickness}, matching the bottom and left).
      *
@@ -29,11 +30,75 @@ public final class UiBoxes {
      * @param color     edge colour
      * @param alpha     edge alpha, 0..1
      */
-    public static void renderBorder(float x, float y, float width, float height, float thickness,
-            Color color, float alpha) {
-        UiFill.renderQuad(x, y, width, thickness, color, alpha);
-        UiFill.renderQuad(x, y + height - thickness, width, thickness, color, alpha);
-        UiFill.renderQuad(x, y, thickness, height, color, alpha);
-        UiFill.renderQuad(x + width - thickness, y, thickness, height, color, alpha);
+    public static void renderBorder(
+            float x,
+            float y,
+            float width,
+            float height,
+            float thickness,
+            Color color,
+            float alpha) {
+        renderBorder(
+                x,
+                y,
+                width,
+                height,
+                thickness,
+                color,
+                alpha,
+                BoxEdge.ALL);
+    }
+
+    /**
+     * Strokes only the {@code edges} of the rectangle at {@code (x, y)} with the given size, each edge
+     * inset so it falls inside the footprint. An omitted edge leaves that side open, so a box drawn
+     * flush against another's edge can drop the border there rather than doubling it.
+     *
+     * @param x         left edge, in UI coordinates
+     * @param y         bottom edge, in UI coordinates (UI origin is bottom-left)
+     * @param width     rectangle width
+     * @param height    rectangle height
+     * @param thickness edge thickness
+     * @param color     edge colour
+     * @param alpha     edge alpha, 0..1
+     * @param edges     which of the four edges to stroke; the rest are left open
+     */
+    public static void renderBorder(
+            float x,
+            float y,
+            float width,
+            float height,
+            float thickness,
+            Color color,
+            float alpha,
+            Set<BoxEdge> edges) {
+
+        // Every edge is the same quad differing only in placement and size, so bind the shared
+        // colour and alpha once and let each edge supply its own rectangle.
+        QuadPlacer strokeEdge =
+                (edgeX, edgeY, edgeWidth, edgeHeight) ->
+                        UiFill.renderQuad(edgeX, edgeY, edgeWidth, edgeHeight, color, alpha);
+
+        if (edges.contains(BoxEdge.BOTTOM)) {
+            strokeEdge.placeQuad(x, y, width, thickness);
+        }
+        if (edges.contains(BoxEdge.TOP)) {
+            strokeEdge.placeQuad(x, y + height - thickness, width, thickness);
+        }
+        if (edges.contains(BoxEdge.LEFT)) {
+            strokeEdge.placeQuad(x, y, thickness, height);
+        }
+        if (edges.contains(BoxEdge.RIGHT)) {
+            strokeEdge.placeQuad(x + width - thickness, y, thickness, height);
+        }
+    }
+
+    /**
+     * Places one quad from its bottom-left corner and size. Lets {@link #renderBorder} bind the
+     * shared colour and alpha once and vary only each edge's rectangle.
+     */
+    @FunctionalInterface
+    private interface QuadPlacer {
+        void placeQuad(float x, float y, float width, float height);
     }
 }
