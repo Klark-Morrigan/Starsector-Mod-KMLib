@@ -1,8 +1,7 @@
 package kmlib.starsector.ui.render.gl;
 
-import com.fs.starfarer.api.util.Misc;
-
 import kmlib.math.geometry.Rectangle;
+import kmlib.starsector.ui.color.StarsectorUiColor;
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.input.UiCursor;
@@ -13,8 +12,6 @@ import kmlib.starsector.ui.widgets.tabs.VanillaTabStrip;
 import kmlib.text.KmlibStrings;
 
 import org.lazywizard.lazylib.ui.LazyFont;
-
-import java.awt.Color;
 
 /**
  * Raw-GL paint for one laid-out {@link Control}: it draws the widget the control's {@link ControlSpec}
@@ -48,23 +45,21 @@ public final class ControlRenderer {
      * @param opacity overall alpha, 0..1
      */
     public static void render(Control control, WidgetStyle style, float opacity) {
-        var accent = style.accent();
-        var brightAccent = style.brightAccent();
-        var bodyFont = style.bodyFont();
+        var paint = new ControlPaint(style, opacity);
         var spec = control.spec();
         if (spec instanceof ControlSpec.Checkbox) {
-            drawCheckbox(control, accent, brightAccent, bodyFont, opacity);
+            drawCheckbox(control, paint);
         } else if (spec instanceof ControlSpec.Toggle) {
-            drawToggle(control, accent, bodyFont, opacity);
+            drawToggle(control, paint);
         } else if (spec instanceof ControlSpec.HorizontalRadio
                 || spec instanceof ControlSpec.VerticalTable) {
-            drawRadio(control, accent, bodyFont, opacity);
+            drawRadio(control, paint);
         } else if (spec instanceof ControlSpec.Label) {
-            drawLabelRow(control, bodyFont, opacity);
+            drawLabelRow(control, paint);
         } else if (spec instanceof ControlSpec.Divider) {
-            drawDivider(control, accent, opacity);
+            drawDivider(control, paint);
         } else if (spec instanceof ControlSpec.Tabs) {
-            drawTabs(control, style, opacity);
+            drawTabs(control, paint);
         }
     }
 
@@ -73,12 +68,12 @@ public final class ControlRenderer {
     // layout; pairing each with its content (rebuilt from the spec through the same helper the layout
     // measured with) yields the tabs the strip renderer paints, so the drawn tab matches the hit box.
     // Hover reads the cursor here so the tab under the pointer lights without an input event.
-    private static void drawTabs(Control control, WidgetStyle style, float opacity) {
+    private static void drawTabs(Control control, ControlPaint paint) {
         var spec = (ControlSpec.Tabs) control.spec();
         var contents = ControlStripLayout.buildTabContents(spec);
         var tabs = VanillaTabStrip.zipTabs(contents, control.segments());
         var hoveredIndex = VanillaTabStrip.findTabIndexAt(tabs, UiCursor.getUiX(), UiCursor.getUiY());
-        var tabStyle = style.tabStyle();
+        var tabStyle = paint.style().tabStyle();
         
         VanillaTabStripRenderer.render(
                 tabs,
@@ -87,33 +82,34 @@ public final class ControlRenderer {
                 tabStyle.colors(),
                 tabStyle.font(),
                 tabStyle.fontSize(),
-                opacity);
+                paint.opacity());
     }
 
     // A tick box lit when the spec's cell is selected, then its label to the right at the same gap the
     // layout reserved, so the label sits exactly in the space snapped for it.
-    private static void drawCheckbox(
-            Control control,
-            Color accent,
-            Color brightAccent,
-            String bodyFont,
-            float opacity) {
+    private static void drawCheckbox(Control control, ControlPaint paint) {
+        var style = paint.style();
         var spec = (ControlSpec.Checkbox) control.spec();
         var bounds = control.bounds();
-        CheckboxRenderer.render(bounds, spec.isLit(), accent, brightAccent, opacity);
-        var box = Checkbox.computeTickBox(bounds);
 
+        CheckboxRenderer.render(
+                bounds,
+                spec.isLit(),
+                style.accent(),
+                style.brightAccent(),
+                paint.opacity());
+
+        var box = Checkbox.computeTickBox(bounds);
         var labelX = box.x()
                 + box.width()
                 + ControlStripLayout.CHECKBOX_LABEL_GAP;
 
         drawBodyLabel(
-                bodyFont,
+                paint,
                 spec.label(),
                 labelX,
                 bounds.computeCenterY(),
-                LazyFont.TextAnchor.CENTER_LEFT,
-                opacity);
+                LazyFont.TextAnchor.CENTER_LEFT);
     }
 
     // A radio group: the segments framed and the active one washed, then its labels. An icon table
@@ -121,16 +117,18 @@ public final class ControlRenderer {
     // each name in its segment and appends its trailing caption. A vertical table re-derives its grid from
     // the footprint; a horizontal radio draws its chrome over the laid segments, the same rects the labels
     // below centre in, so the wash and dividers cannot part from the labels whether even or snapped.
-    private static void drawRadio(Control control, Color accent, String bodyFont, float opacity) {
+    private static void drawRadio(Control control, ControlPaint paint) {
         var spec = control.spec();
         if (spec instanceof ControlSpec.VerticalTable table && !table.iconPaths().isEmpty()) {
-            drawIconRadio(control, table, accent, bodyFont, opacity);
+            drawIconRadio(control, table, paint);
             return;
         }
+        var accent = paint.style().accent();
         var bounds = control.bounds();
         var labels = spec.labels();
         var segments = control.segments();
         var selectedIndex = ((ControlSpec.Interactive) spec).selectedIndex();
+
         // Frame and wash both stroke the accent, the plain radio's single chrome tone.
         var colors = new RadioColors(accent, accent);
         if (spec instanceof ControlSpec.VerticalTable table) {
@@ -140,19 +138,23 @@ public final class ControlRenderer {
                     selectedIndex,
                     table.columnCount(),
                     colors,
-                    opacity);
+                    paint.opacity());
         } else {
-            RadioRowRenderer.renderHorizontalRow(bounds, segments, selectedIndex, colors, opacity);
+            RadioRowRenderer.renderHorizontalRow(
+                    bounds,
+                    segments,
+                    selectedIndex,
+                    colors,
+                    paint.opacity());
         }
         for (var index = 0; index < segments.size() && index < labels.size(); index++) {
             var segment = segments.get(index);
             drawBodyLabel(
-                    bodyFont,
+                    paint,
                     labels.get(index),
                     segment.computeCenterX(),
                     segment.computeCenterY(),
-                    LazyFont.TextAnchor.CENTER,
-                    opacity);
+                    LazyFont.TextAnchor.CENTER);
         }
         if (spec instanceof ControlSpec.HorizontalRadio radio
                 && KmlibStrings.hasText(radio.trailingLabel())) {
@@ -162,12 +164,11 @@ public final class ControlRenderer {
                     + ControlStripLayout.TRAILING_LABEL_GAP;
 
             drawBodyLabel(
-                    bodyFont,
+                    paint,
                     radio.trailingLabel(),
                     trailingX,
                     bounds.computeCenterY(),
-                    LazyFont.TextAnchor.CENTER_LEFT,
-                    opacity);
+                    LazyFont.TextAnchor.CENTER_LEFT);
         }
     }
 
@@ -178,9 +179,8 @@ public final class ControlRenderer {
     private static void drawIconRadio(
             Control control,
             ControlSpec.VerticalTable spec,
-            Color accent,
-            String bodyFont,
-            float opacity) {
+            ControlPaint paint) {
+        var accent = paint.style().accent();
         var bounds = control.bounds();
         IconRadioListRenderer.render(
                 bounds,
@@ -188,7 +188,7 @@ public final class ControlRenderer {
                 spec.selectedIndex(),
                 spec.columnCount(),
                 new RadioColors(accent, accent),
-                opacity);
+                paint.opacity());
         var segments = control.segments();
         var labels = spec.labels();
         for (var index = 0; index < segments.size() && index < labels.size(); index++) {
@@ -197,13 +197,16 @@ public final class ControlRenderer {
             // it does not - the same has-icon rule the layout sized the row with.
             var labelX = IconLabelRow.computeLabelAnchorX(segment, spec.hasIconAt(index));
             drawBodyLabel(
-                    bodyFont,
+                    paint,
                     labels.get(index),
                     labelX,
                     segment.computeCenterY(),
-                    LazyFont.TextAnchor.CENTER_LEFT,
-                    opacity);
-            drawTrailing(spec, index, segment, bodyFont, opacity);
+                    LazyFont.TextAnchor.CENTER_LEFT);
+            drawTrailing(
+                    spec,
+                    index,
+                    segment,
+                    paint);
         }
     }
 
@@ -216,96 +219,107 @@ public final class ControlRenderer {
             ControlSpec.VerticalTable spec,
             int index,
             Rectangle segment,
-            String bodyFont,
-            float opacity) {
+            ControlPaint paint) {
+
         var direction = spec.directionAt(index);
         if (direction != null) {
             // In the row's body text tone so it reads as a quiet annotation like the value it replaces.
             TriangleRenderer.render(
                     IconLabelRow.computeDirectionTriangleBox(segment),
                     direction,
-                    Misc.getTextColor(),
-                    opacity);
+                    StarsectorUiColor.VANILLA_TEXT.resolve(),
+                    paint.opacity());
             return;
         }
         var trailing = spec.trailingLabelAt(index);
         if (KmlibStrings.hasText(trailing)) {
             // Drawn at the body size - the same size the layout reserved the column at.
             drawBodyLabel(
-                    bodyFont,
+                    paint,
                     trailing,
                     IconLabelRow.computeTrailingAnchorX(segment),
                     segment.computeCenterY(),
                     LazyFont.TextAnchor.CENTER_RIGHT,
-                    opacity,
                     ControlStripLayout.BODY_FONT_SIZE);
         }
     }
 
     // A single button washed when the spec's cell is lit, its label centred in it - the lit state is the
     // on/off signal, so the label carries no On/Off word.
-    private static void drawToggle(Control control, Color accent, String bodyFont, float opacity) {
+    private static void drawToggle(Control control, ControlPaint paint) {
+        var accent = paint.style().accent();
         var spec = (ControlSpec.Toggle) control.spec();
         var bounds = control.bounds();
-        ToggleButton.render(bounds, spec.isLit(), accent, accent, opacity);
+
+        ToggleButton.render(
+                bounds,
+                spec.isLit(),
+                accent,
+                accent,
+                paint.opacity());
+
         drawBodyLabel(
-                bodyFont,
+                paint,
                 spec.label(),
                 bounds.computeCenterX(),
                 bounds.computeCenterY(),
-                LazyFont.TextAnchor.CENTER,
-                opacity);
+                LazyFont.TextAnchor.CENTER);
     }
 
     // A divider row: a single hairline centred across the row in the accent, parting one run of controls
     // from the next - it heads a section like a caption but carries no text and no hit target.
-    private static void drawDivider(Control control, Color accent, float opacity) {
-        DividerRenderer.render(control.bounds(), accent, opacity);
+    private static void drawDivider(Control control, ControlPaint paint) {
+        DividerRenderer.render(control.bounds(), paint.style().accent(), paint.opacity());
     }
 
     // A caption row: only its text, left-aligned at the row's left edge and vertically centred, with no
     // widget chrome - it heads the controls below it and is never clicked.
-    private static void drawLabelRow(Control control, String bodyFont, float opacity) {
+    private static void drawLabelRow(Control control, ControlPaint paint) {
         var spec = (ControlSpec.Label) control.spec();
         var bounds = control.bounds();
         drawBodyLabel(
-                bodyFont,
+                paint,
                 spec.text(),
                 bounds.x(),
                 bounds.computeCenterY(),
-                LazyFont.TextAnchor.CENTER_LEFT,
-                opacity);
+                LazyFont.TextAnchor.CENTER_LEFT);
     }
 
     // Draws one body label at the body font size (the common case), delegating to the explicit-size draw.
     private static void drawBodyLabel(
-            String bodyFont,
+            ControlPaint paint,
             String text,
             float x,
             float y,
-            LazyFont.TextAnchor anchor,
-            float opacity) {
+            LazyFont.TextAnchor anchor) {
         drawBodyLabel(
-                bodyFont,
+                paint,
                 text,
                 x,
                 y,
                 anchor,
-                opacity,
                 ControlStripLayout.BODY_FONT_SIZE);
     }
 
     // Draws one body label in the vanilla text colour, faded by opacity, at the given anchor and size,
     // through the shared label primitive so the control text and any other KM UI text share one cache.
     private static void drawBodyLabel(
-            String bodyFont,
+            ControlPaint paint,
             String text,
             float x,
             float y,
             LazyFont.TextAnchor anchor,
-            float opacity,
             double fontSize) {
-        var labelStyle = new LabelStyle(bodyFont, Misc.getTextColor(), opacity, fontSize);
+        var labelStyle = new LabelStyle(
+                paint.style().bodyFont(),
+                StarsectorUiColor.VANILLA_TEXT.resolve(),
+                paint.opacity(),
+                fontSize);
         LabelRenderer.render(labelStyle, text, x, y, anchor);
+    }
+
+    // The look bundle plus the frame's alpha, threaded together through every draw so a helper takes one
+    // paint rather than unpacking the accents, body font, and opacity into loose arguments each time.
+    private record ControlPaint(WidgetStyle style, float opacity) {
     }
 }
