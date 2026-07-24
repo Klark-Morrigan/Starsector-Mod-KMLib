@@ -19,11 +19,12 @@ import kmlib.math.ranges.Ranges;
  */
 public final class TabPanelCollapse {
     /**
-     * How long a full collapse or expand takes, in seconds. Fixed, so every collapse runs at the same pace
-     * regardless of frame rate: {@link #advanceByElapsedTime} steps progress by the elapsed fraction of
-     * this duration. Public so a consumer pacing frames and a test driving progress share the one figure.
+     * The pace a full collapse or expand runs at, in seconds, when a consumer offers no control over it.
+     * The holder no longer owns the duration - {@link #advanceByElapsedTime} takes it per frame - so this
+     * is only the recommended default: a consumer's control defaults here so an untouched setting keeps the
+     * original pace, and it anchors the tests that pin that pace.
      */
-    public static final float DURATION_SECONDS = 0.25f;
+    public static final float DEFAULT_DURATION_SECONDS = 0.25f;
 
     // Linear animation parameter in [0, 1]: 0 fully expanded, 1 fully docked. Stepped linearly by elapsed
     // time and eased only on read, so the eased fraction stays continuous when the direction reverses.
@@ -42,16 +43,19 @@ public final class TabPanelCollapse {
     }
 
     /**
-     * Steps the collapse toward its current direction's end by the elapsed fraction of {@link
-     * #DURATION_SECONDS}, clamped so it settles exactly at the end rather than overshooting. A frame spent
+     * Steps the collapse toward its current direction's end by the elapsed fraction of {@code
+     * durationSeconds}, clamped so it settles exactly at the end rather than overshooting. A frame spent
      * already settled at that end leaves the state unchanged, so a render loop can call this every frame
-     * unconditionally.
+     * unconditionally. The duration is a per-frame input rather than a holder constant so a consumer can
+     * expose it as a setting; a non-positive duration means "no animation" and snaps straight to the target
+     * end in this one step, which also guards the divide against a zero denominator.
      *
-     * @param elapsedSeconds real time since the last frame; a full {@link #DURATION_SECONDS} completes the
-     *                       animation in one step
+     * @param elapsedSeconds  real time since the last frame; a full {@code durationSeconds} completes the
+     *                        animation in one step
+     * @param durationSeconds how long a full collapse or expand should take; zero or less snaps instantly
      */
-    public void advanceByElapsedTime(float elapsedSeconds) {
-        var step = elapsedSeconds / DURATION_SECONDS;
+    public void advanceByElapsedTime(float elapsedSeconds, float durationSeconds) {
+        var step = durationSeconds > 0f ? elapsedSeconds / durationSeconds : 1f;
         var stepped = isCollapsing ? progress + step : progress - step;
         progress = Ranges.clampToUnit(stepped);
     }
