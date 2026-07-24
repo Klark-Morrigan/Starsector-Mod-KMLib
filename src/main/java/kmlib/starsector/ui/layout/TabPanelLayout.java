@@ -55,7 +55,8 @@ public final class TabPanelLayout {
      * control, and the body strip framed beneath it (capped to the bottom margin). The returned body's
      * {@link PanelPlacement#box()} sizes its width to the body alone and its height to the header band plus
      * the body, so the one border wraps the header band while a tab row wider than the body overhangs it.
-     * An empty {@code bodyControls} leaves the bordered tab row with no body beneath.
+     * An empty {@code bodyControls} leaves the bordered tab row with no body beneath, and, with nothing to
+     * collapse, no notch either - the placement's collapse handle is absent.
      *
      * @param screenHeight    the UI-coordinate screen height, giving the top edge to hang from
      * @param padding         the panel's edge margins: the top-left anchor and the bottom keep-clear
@@ -69,7 +70,8 @@ public final class TabPanelLayout {
      * @param collapseFraction how far the body is collapsed horizontally: 0 lays it out at full width, 1
      *                        docks it to the border-only rail; clamped to the unit range
      * @return the laid-out tabs header, the body placement carrying the whole-footprint box, and the
-     *         collapse-handle notch on the box's right border edge
+     *         collapse-handle notch on the box's right border edge - null when {@code bodyControls} is
+     *         empty, since a bodyless panel has nothing to collapse
      */
     public static TabPanelPlacement computePlacement(
             float screenHeight,
@@ -131,7 +133,11 @@ public final class TabPanelLayout {
                 framedBody,
                 ControlStripLayout.TAB_HEIGHT,
                 bodyStrip);
-        return new TabPanelPlacement(tabsHeader, bodyPlacement, computeNotchRect(bodyPlacement.box()));
+        // No body controls means nothing to collapse, so the panel is not collapsible and exposes no
+        // handle: the notch is left absent. An empty-body panel is just its bordered tab row, and a
+        // collapse handle protruding off it would fold a body that is not there.
+        var notch = bodyControls.isEmpty() ? null : computeNotchRect(bodyPlacement.box());
+        return new TabPanelPlacement(tabsHeader, bodyPlacement, notch);
     }
 
     // The collapse-handle notch: a rect protruding past the box's right border edge, vertically centred on

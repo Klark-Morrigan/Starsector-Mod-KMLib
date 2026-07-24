@@ -8,7 +8,9 @@ import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
  * control (via {@link ControlRenderer}) on the frame's top band, and paints the collapse handle (via {@link
  * NotchRenderer}) protruding past the frame's right edge. A tab panel is a panel plus a header plus a
  * handle, so its paint is the panel's paint plus one control drawn on top plus the notch; the single frame
- * is the body placement's whole-footprint box, so there is one border, drawn once by the delegate.
+ * is the body placement's whole-footprint box, so there is one border, drawn once by the delegate. A
+ * bodyless panel carries no notch (nothing to collapse), so the handle and the collapse clip are both
+ * skipped and it paints as its bordered tab row alone.
  *
  * <p>While collapsing, the body and header are clipped to the shrinking box, so the panel reads as a
  * horizontal wipe toward its anchored edge and, fully docked, reduces to the border-only rail the collapsed
@@ -44,10 +46,14 @@ public final class TabPanelRenderer {
             NotchState notchState,
             float opacity) {
         var box = placement.body().box();
+        // A null notch marks a bodyless, non-collapsible panel (nothing to fold): it draws no handle and
+        // never clips, so a stale docked fraction left in the controller by another tab cannot scissor its
+        // tab row down to the border box and hide it with no handle to bring it back.
+        var notch = placement.notch();
         // Any collapse clips the body and header to the box, so the frame narrows the visible content with
         // it and the docked state shows only the rail. Fully expanded there is no clip, leaving a wide tab
         // row free to overhang the frame.
-        var isCollapsing = notchState.collapseFraction() > 0f;
+        var isCollapsing = notch != null && notchState.collapseFraction() > 0f;
         if (isCollapsing) {
             UiScissor.push(box);
         }
@@ -61,7 +67,10 @@ public final class TabPanelRenderer {
             UiScissor.pop();
         }
         // The handle draws last and unclipped, over the map beyond the frame's right edge, so it stays
-        // reachable to expand the panel even when the body has wiped away to the docked rail.
-        NotchRenderer.render(placement.notch(), style, borderWidth, notchState, opacity);
+        // reachable to expand the panel even when the body has wiped away to the docked rail. A bodyless
+        // panel has no handle, so there is nothing to draw here.
+        if (notch != null) {
+            NotchRenderer.render(notch, style, borderWidth, notchState, opacity);
+        }
     }
 }

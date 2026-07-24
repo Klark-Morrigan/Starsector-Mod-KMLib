@@ -177,6 +177,19 @@ final class TabPanelLayoutTest {
         }
 
         @Test
+        void computePlacementExposesANotchWhenTheBodyHasControlsToCollapse() {
+            // A body with controls is collapsible, so the panel carries a handle to fold it with.
+            assertThat(place(BODY).notch()).isNotNull();
+        }
+
+        @Test
+        void computePlacementExposesNoNotchWhenTheBodyIsEmpty() {
+            // An empty body has nothing to collapse, so the panel is not collapsible and carries no handle
+            // - a notch protruding off a bodyless tab row would fold a body that is not there.
+            assertThat(place(List.of()).notch()).isNull();
+        }
+
+        @Test
         void computePlacementSitsTheNotchOnTheRightBorderEdgeCentredOnTheFrame() {
             var placement = place(BODY, 0f);
             var box = placement.body().box();
