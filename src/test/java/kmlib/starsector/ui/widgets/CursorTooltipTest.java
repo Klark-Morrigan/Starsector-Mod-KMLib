@@ -90,15 +90,28 @@ class CursorTooltipTest {
         }
 
         @Test
-        void leavesTheCrestBoxNullButReservesTheColumnForACrestLessRow() {
+        void reservesTheCrestColumnForACrestLessRowWhenAnotherRowCarriesACrest() {
+            var crestless = new TooltipRow(0f, null, "AA", Color.WHITE, "", Color.GRAY);
+            var crested = new TooltipRow(0f, "crest", "BB", Color.WHITE, "", Color.GRAY);
+
+            var crestlessRow = layOut(List.of(crestless, crested)).rows().get(0);
+
+            // The box carries a crest, so the crest-less row still reserves the column (null crest box,
+            // label anchored past the reserved 15 + 6 gutter) and lines up under the crested row.
+            assertThat(crestlessRow.crestBox()).isNull();
+            assertThat(crestlessRow.textX()).isCloseTo(247f, within(TOLERANCE));
+        }
+
+        @Test
+        void collapsesTheCrestColumnWhenNoRowCarriesACrest() {
             var crestless = new TooltipRow(0f, null, "AA", Color.WHITE, "", Color.GRAY);
 
             var only = layOut(List.of(crestless)).rows().get(0);
 
-            // No crest to draw, but the label still anchors past the reserved crest column, so it lines
-            // up with the crested rows a mixed stack would place beside it.
+            // No row carries a crest, so the gutter collapses and the label lays flush at the left
+            // content edge (226) rather than past a phantom crest column - the empty-state box case.
             assertThat(only.crestBox()).isNull();
-            assertThat(only.textX()).isCloseTo(247f, within(TOLERANCE));
+            assertThat(only.textX()).isCloseTo(226f, within(TOLERANCE));
         }
     }
 }
