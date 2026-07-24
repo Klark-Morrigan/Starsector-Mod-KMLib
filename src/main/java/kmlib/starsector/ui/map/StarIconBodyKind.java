@@ -14,6 +14,9 @@ public enum StarIconBodyKind {
     /** A nebula centre, sized off a fixed base rather than its diffuse radius. */
     NEBULA_CENTRE,
 
+    /** A black hole - sized like a star, but named apart since callers dial its icon separately. */
+    BLACK_HOLE,
+
     /** Any other body, sized straight from its radius. */
     OTHER
 }

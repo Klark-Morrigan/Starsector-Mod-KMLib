@@ -111,5 +111,12 @@ class StarIconHitTestTest {
             assertThat(StarIconHitTest.computeIconWorldRadius(100f, 2f, StarIconBodyKind.OTHER))
                     .isEqualTo(1000f, within(1e-3f));
         }
+
+        @Test
+        void computeIconWorldRadiusReducesABlackHoleLikeAStar() {
+            // A black hole takes the same star reduction as a star: 5 * 100 * 1 * 0.75 = 375.
+            assertThat(StarIconHitTest.computeIconWorldRadius(100f, 1f, StarIconBodyKind.BLACK_HOLE))
+                    .isEqualTo(375f, within(1e-3f));
+        }
     }
 }

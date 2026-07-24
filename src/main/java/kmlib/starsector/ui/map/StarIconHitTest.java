@@ -83,6 +83,10 @@ public final class StarIconHitTest {
             float bodyRadius, float scaleMultMapIcon, StarIconBodyKind bodyKind) {
         var base = bodyKind == StarIconBodyKind.NEBULA_CENTRE ? NEBULA_ICON_BASE_RADIUS : bodyRadius;
         var worldRadius = ICON_RADIUS_WORLD_SCALE * base * scaleMultMapIcon;
-        return bodyKind == StarIconBodyKind.STAR ? worldRadius * STAR_ICON_SCALE : worldRadius;
+        // A star and a black hole both take the star reduction; other bodies and a nebula centre do
+        // not.
+        var isStarSized =
+                bodyKind == StarIconBodyKind.STAR || bodyKind == StarIconBodyKind.BLACK_HOLE;
+        return isStarSized ? worldRadius * STAR_ICON_SCALE : worldRadius;
     }
 }
