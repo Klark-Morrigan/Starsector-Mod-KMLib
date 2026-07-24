@@ -2,6 +2,8 @@ package kmlib.starsector.ui.render.gl;
 
 import com.fs.starfarer.api.graphics.SpriteAPI;
 
+import kmlib.math.geometry.Rectangle;
+
 import org.lwjgl.opengl.GL11;
 
 import java.awt.Color;
@@ -28,25 +30,21 @@ public final class UiSprite {
     }
 
     /**
-     * Draws {@code sprite} into the rectangle at {@code (x, y)}, sized to {@code width} x
-     * {@code height} and composited over the existing pixels by {@code alpha}. Must run with a current
-     * GL context, like any immediate-mode GL call.
+     * Draws {@code sprite} into {@code bounds}, sized to the rectangle and composited over the
+     * existing pixels by {@code alpha}. Must run with a current GL context, like any immediate-mode
+     * GL call.
      *
      * @param sprite the image to draw; its size, tint, and alpha are set here before rendering
-     * @param x      left edge, in UI coordinates
-     * @param y      bottom edge, in UI coordinates (UI origin is bottom-left)
-     * @param width  the width to scale the sprite to
-     * @param height the height to scale the sprite to
+     * @param bounds the rectangle to draw into, in UI coordinates (UI origin is bottom-left)
      * @param alpha  overall opacity, 0..1, composited over what is behind
      */
-    public static void renderQuad(SpriteAPI sprite, float x, float y, float width, float height,
-            float alpha) {
+    public static void renderQuad(SpriteAPI sprite, Rectangle bounds, float alpha) {
         GL11.glEnable(GL11.GL_TEXTURE_2D);
         GL11.glEnable(GL11.GL_BLEND);
         GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        sprite.setSize(width, height);
+        sprite.setSize(bounds.width(), bounds.height());
         sprite.setColor(Color.WHITE);
         sprite.setAlphaMult(alpha);
-        sprite.render(x, y);
+        sprite.render(bounds.x(), bounds.y());
     }
 }

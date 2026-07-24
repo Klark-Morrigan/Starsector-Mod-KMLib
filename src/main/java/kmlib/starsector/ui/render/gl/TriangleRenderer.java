@@ -3,8 +3,6 @@ package kmlib.starsector.ui.render.gl;
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.TriangleDirection;
 
-import java.awt.Color;
-
 /**
  * Raw-GL paint for a small filled triangle sized to a box: an up triangle (apex on the box's top edge)
  * or a down triangle (apex on the bottom edge), filling {@code box} in one colour faded by one opacity
@@ -24,18 +22,13 @@ public final class TriangleRenderer {
      *
      * @param box       the box the triangle fills, in UI coordinates
      * @param direction which way the triangle points, up or down
-     * @param color     the fill colour
-     * @param opacity   overall alpha, 0..1
+     * @param paint     the fill colour and its compositing alpha
      */
-    public static void render(
-            Rectangle box,
-            TriangleDirection direction,
-            Color color,
-            float opacity) {
+    public static void render(Rectangle box, TriangleDirection direction, UiElementPaint paint) {
         var vertices = direction == TriangleDirection.UP
                 ? computeUpTriangle(box)
                 : computeDownTriangle(box);
-        UiFill.renderTriangle(vertices, color, opacity);
+        UiFill.renderTriangle(vertices, paint);
     }
 
     // An up triangle: its base along the box's bottom edge and its apex centred on the top edge, so it

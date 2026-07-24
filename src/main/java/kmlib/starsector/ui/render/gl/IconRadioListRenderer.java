@@ -45,24 +45,42 @@ public final class IconRadioListRenderer {
      * @param colors        the frame stroke and selected-wash palette
      * @param opacity       overall alpha, 0..1
      */
-    public static void render(Rectangle bounds, List<String> iconPaths, int selectedIndex,
-            int columnCount, RadioColors colors, float opacity) {
+    public static void render(
+            Rectangle bounds,
+            List<String> iconPaths,
+            int selectedIndex,
+            int columnCount,
+            RadioColors colors,
+            float opacity) {
+
         var optionCount = iconPaths.size();
-        RadioRowRenderer.renderVerticalGrid(bounds, optionCount, selectedIndex, columnCount,
-                colors, opacity);
-        var segments = RadioRow.splitIntoGrid(bounds, optionCount, columnCount);
+        RadioRowRenderer.renderVerticalGrid(
+                bounds,
+                optionCount,
+                selectedIndex,
+                columnCount,
+                colors,
+                opacity);
+
+        var segments = RadioRow.splitIntoGrid(
+                bounds,
+                optionCount,
+                columnCount);
+
         for (var index = 0; index < segments.size(); index++) {
+            
             var iconPath = iconPaths.get(index);
             if (iconPath == null) {
                 continue;
             }
+
             var sprite = StarsectorSprites.loadSprite(iconPath);
             if (sprite == null) {
                 continue;
             }
+
             var iconBox = IconLabelRow.computeIconBox(segments.get(index));
-            UiSprite.renderQuad(sprite, iconBox.x(), iconBox.y(), iconBox.width(), iconBox.height(),
-                    opacity);
+            UiSprite.renderQuad(sprite, iconBox, opacity);
         }
     }
 }

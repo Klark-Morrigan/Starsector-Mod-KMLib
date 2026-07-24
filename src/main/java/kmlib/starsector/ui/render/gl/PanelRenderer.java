@@ -46,9 +46,8 @@ public final class PanelRenderer {
             BorderedBoxRenderer.render(
                     placement.box(),
                     border,
-                    style.panelFill(),
-                    style.accent(),
-                    opacity);
+                    new UiElementPaint(style.panelFill(), opacity),
+                    new UiElementPaint(style.accent(), opacity));
             drawBodyControls(placement, style, opacity);
         });
     }

@@ -42,20 +42,13 @@ public final class ToggleButton {
 
         if (isOn) {
             UiFill.renderQuad(
-                    bounds.x(),
-                    bounds.y(),
-                    bounds.width(),
-                    bounds.height(),
-                    onColor,
-                    opacity * ON_FILL_ALPHA_MULT);
+                    bounds,
+                    new UiElementPaint(onColor, opacity * ON_FILL_ALPHA_MULT));
         }
+        
         UiBoxes.renderBorder(
-                bounds.x(),
-                bounds.y(),
-                bounds.width(),
-                bounds.height(),
+                bounds,
                 new BoxBorder(OUTLINE_THICKNESS),
-                frameColor,
-                opacity);
+                new UiElementPaint(frameColor, opacity));
     }
 }

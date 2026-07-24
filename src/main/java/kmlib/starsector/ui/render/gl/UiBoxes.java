@@ -1,6 +1,6 @@
 package kmlib.starsector.ui.render.gl;
 
-import java.awt.Color;
+import kmlib.math.geometry.Rectangle;
 
 /**
  * Draws the frame of a rectangular UI panel in screen/UI coordinates. A one-liner in intent
@@ -17,56 +17,62 @@ public final class UiBoxes {
     }
 
     /**
-     * Strokes the {@code border}'s edges around the rectangle at {@code (x, y)} with the given size, each
-     * edge inset so it falls inside the footprint (the top and right edges offset by the border width,
-     * matching the bottom and left). An omitted edge leaves that side open, so a box drawn flush against
-     * another's edge can drop the border there rather than doubling it.
+     * Strokes the {@code border}'s edges around {@code bounds}, each edge inset so it falls inside the
+     * footprint (the top and right edges offset by the border width, matching the bottom and left). An
+     * omitted edge leaves that side open, so a box drawn flush against another's edge can drop the
+     * border there rather than doubling it.
      *
-     * @param x      left edge, in UI coordinates
-     * @param y      bottom edge, in UI coordinates (UI origin is bottom-left)
-     * @param width  rectangle width
-     * @param height rectangle height
+     * @param bounds the footprint to frame, in UI coordinates (UI origin is bottom-left)
      * @param border the border width and which of the four edges to stroke
-     * @param color  edge colour
-     * @param alpha  edge alpha, 0..1
+     * @param paint  the edge colour and alpha
      */
-    public static void renderBorder(
-            float x,
-            float y,
-            float width,
-            float height,
-            BoxBorder border,
-            Color color,
-            float alpha) {
-
+    public static void renderBorder(Rectangle bounds, BoxBorder border, UiElementPaint paint) {
         // Every edge is the same quad differing only in placement and size, so bind the shared
-        // colour and alpha once and let each edge supply its own rectangle.
+        // paint once and let each edge supply its own rectangle.
         var thickness = border.width();
         var edges = border.edges();
-        QuadPlacer strokeEdge =
-                (edgeX, edgeY, edgeWidth, edgeHeight) ->
-                        UiFill.renderQuad(edgeX, edgeY, edgeWidth, edgeHeight, color, alpha);
+        var x = bounds.x();
+        var y = bounds.y();
+        var width = bounds.width();
+        var height = bounds.height();
+        QuadPlacer strokeEdge = edgeBounds -> UiFill.renderQuad(edgeBounds, paint);
 
         if (edges.contains(BoxEdge.BOTTOM)) {
-            strokeEdge.placeQuad(x, y, width, thickness);
+            strokeEdge.placeQuad(new Rectangle(
+                    x,
+                    y,
+                    width,
+                    thickness));
         }
         if (edges.contains(BoxEdge.TOP)) {
-            strokeEdge.placeQuad(x, y + height - thickness, width, thickness);
+            strokeEdge.placeQuad(new Rectangle(
+                    x,
+                    y + height - thickness,
+                    width,
+                    thickness));
         }
         if (edges.contains(BoxEdge.LEFT)) {
-            strokeEdge.placeQuad(x, y, thickness, height);
+            strokeEdge.placeQuad(new Rectangle(
+                    x,
+                    y,
+                    thickness,
+                    height));
         }
         if (edges.contains(BoxEdge.RIGHT)) {
-            strokeEdge.placeQuad(x + width - thickness, y, thickness, height);
+            strokeEdge.placeQuad(new Rectangle(
+                    x + width - thickness,
+                    y,
+                    thickness,
+                    height));
         }
     }
 
     /**
-     * Places one quad from its bottom-left corner and size. Lets {@link #renderBorder} bind the
-     * shared colour and alpha once and vary only each edge's rectangle.
+     * Places one edge quad. Lets {@link #renderBorder} bind the shared paint once and vary only each
+     * edge's rectangle.
      */
     @FunctionalInterface
     private interface QuadPlacer {
-        void placeQuad(float x, float y, float width, float height);
+        void placeQuad(Rectangle edgeBounds);
     }
 }

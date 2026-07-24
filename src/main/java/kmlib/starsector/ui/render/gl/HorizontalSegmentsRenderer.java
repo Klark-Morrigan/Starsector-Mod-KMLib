@@ -41,8 +41,9 @@ public final class HorizontalSegmentsRenderer {
      * @param opacity overall alpha, 0..1
      */
     public static void renderSelectedWash(Rectangle segment, Color color, float opacity) {
-        UiFill.renderQuad(segment.x(), segment.y(), segment.width(), segment.height(), color,
-                opacity * SELECTED_WASH_ALPHA_MULT);
+
+        var selectedPaint = new UiElementPaint(color, opacity * SELECTED_WASH_ALPHA_MULT);
+        UiFill.renderQuad(segment, selectedPaint);
     }
 
     /**
@@ -58,8 +59,9 @@ public final class HorizontalSegmentsRenderer {
      */
     public static void renderSeamDividers(List<Rectangle> segments, Color color, float opacity) {
         for (var divider : HorizontalSegments.computeDividers(segments, DIVIDER_THICKNESS)) {
-            UiFill.renderQuad(divider.x(), divider.y(), divider.width(), divider.height(), color,
-                    opacity * DIVIDER_ALPHA_MULT);
+
+            var dividerPaint = new UiElementPaint(color, opacity * DIVIDER_ALPHA_MULT);
+            UiFill.renderQuad(divider, dividerPaint);
         }
     }
 }

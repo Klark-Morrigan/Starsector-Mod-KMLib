@@ -2,6 +2,7 @@ package kmlib.starsector.ui.debug;
 
 import com.fs.starfarer.api.Global;
 
+import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.font.LazyFontCache;
 import kmlib.starsector.ui.font.LazyFontMeasurer;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
@@ -9,6 +10,7 @@ import kmlib.starsector.ui.font.TextFace;
 import kmlib.starsector.ui.render.gl.GlStateGuard;
 import kmlib.starsector.ui.render.gl.LabelRenderer;
 import kmlib.starsector.ui.render.gl.LabelStyle;
+import kmlib.starsector.ui.render.gl.UiElementPaint;
 import kmlib.starsector.ui.render.gl.UiFill;
 
 import org.lazywizard.lazylib.ui.LazyFont;
@@ -43,8 +45,10 @@ public final class DebugHud {
 
     // A half-opaque black plate behind each line, padded a little past the glyphs, so bright debug
     // text stays legible over a busy map instead of vanishing into same-coloured terrain beneath it.
-    private static final Color BACKDROP_COLOUR = Color.BLACK;
-    private static final float BACKDROP_OPACITY = 0.5f;
+    private static final UiElementPaint BACKDROP_PAINT = new UiElementPaint(
+            Color.BLACK,
+            0.5f);
+            
     private static final float BACKDROP_PADDING = 3f;
 
     // One shared readout the whole run pushes to, since a debug print has no owner to hang an
@@ -171,12 +175,12 @@ public final class DebugHud {
         var width = (float) measurer.measureLineWidth(line.text(), line.fontSize());
         var height = (float) line.fontSize();
         var left = line.isRightAligned() ? line.x() - width : line.x();
-        UiFill.renderQuad(
+        var quadBounds = new Rectangle(
                 left - BACKDROP_PADDING,
                 line.y() - height - BACKDROP_PADDING,
                 width + 2f * BACKDROP_PADDING,
-                height + 2f * BACKDROP_PADDING,
-                BACKDROP_COLOUR,
-                BACKDROP_OPACITY);
+                height + 2f * BACKDROP_PADDING);
+
+        UiFill.renderQuad(quadBounds, BACKDROP_PAINT);
     }
 }

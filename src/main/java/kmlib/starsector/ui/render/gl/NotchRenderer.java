@@ -3,8 +3,6 @@ package kmlib.starsector.ui.render.gl;
 import kmlib.math.geometry.Rectangle;
 import kmlib.math.ranges.Ranges;
 
-import java.awt.Color;
-
 /**
  * Raw-GL paint for the collapse handle: the notch protruding past the panel's right border edge, the
  * chevron inside it whose orientation tracks the collapse fraction, and the hover lighting. It draws the
@@ -50,23 +48,29 @@ public final class NotchRenderer {
             float borderWidth,
             NotchState state,
             float opacity) {
+
         // Solid backdrop so the handle reads as panel chrome protruding over the map, not a floating glyph.
-        UiFill.renderQuad(notch.x(), notch.y(), notch.width(), notch.height(), style.panelFill(), opacity);
+        var notchPaint = new UiElementPaint(style.panelFill(), opacity);
+        UiFill.renderQuad(notch, notchPaint);
+
         if (state.isHovered()) {
             // Light the whole notch face on hover, so the handle answers the pointer as one lit unit.
-            UiFill.renderQuad(
-                    notch.x(),
-                    notch.y(),
-                    notch.width(),
-                    notch.height(),
-                    style.accent(),
-                    opacity * HOVER_WASH_ALPHA);
+            var hoverPaint = new UiElementPaint(style.accent(), opacity * HOVER_WASH_ALPHA);
+            UiFill.renderQuad(notch, hoverPaint);
         }
+
         var notchBorder = computeNotchBorder(borderWidth);
-        strokeOuterEdges(notch, notchBorder, style.accent(), opacity);
+        strokeOuterEdges(notch, notchBorder, new UiElementPaint(style.accent(), opacity));
+
         // The chevron brightens on hover, so the direction cue reads clearest exactly when it is actionable.
-        drawChevron(computeChevronArms(notch, state.collapseFraction()), notchBorder,
-                state.isHovered() ? style.brightAccent() : style.accent(), opacity);
+        var chevronColour = state.isHovered()
+            ? style.brightAccent()
+            : style.accent();
+
+        drawChevron(
+                computeChevronArms(notch, state.collapseFraction()),
+                notchBorder,
+                new UiElementPaint(chevronColour, opacity));
     }
 
     /**
@@ -98,32 +102,61 @@ public final class NotchRenderer {
         // Half the travel each way off centre: negative before the midpoint (apex left, opening right),
         // zero at it (a straight line), positive after (apex right, opening left).
         var swing = (fraction - 0.5f) * 2f * CHEVRON_APEX_TRAVEL;
-        return new ChevronArms(centreX - swing, centreX + swing, topY, midY, bottomY);
+        return new ChevronArms(
+                centreX - swing,
+                centreX + swing,
+                topY,
+                midY,
+                bottomY);
     }
 
     // Strokes the notch's three outer edges - top, right, bottom - leaving the left open where it meets the
     // box's right border, so the handle reads as a protrusion merging with the frame, not a boxed-in second
     // frame doubling the border along the shared edge.
-    private static void strokeOuterEdges(Rectangle notch, float thickness, Color color, float opacity) {
+    private static void strokeOuterEdges(Rectangle notch, float thickness, UiElementPaint paint) {
+
         var top = notch.y() + notch.height();
         var right = notch.x() + notch.width();
-        UiFill.renderQuad(notch.x(), notch.y(), notch.width(), thickness, color, opacity);
-        UiFill.renderQuad(notch.x(), top - thickness, notch.width(), thickness, color, opacity);
-        UiFill.renderQuad(right - thickness, notch.y(), thickness, notch.height(), color, opacity);
+
+        var topEdge = new Rectangle(
+                notch.x(),
+                top - thickness,
+                notch.width(),
+                thickness);
+        var rightEdge = new Rectangle(
+                right - thickness,
+                notch.y(),
+                thickness,
+                notch.height());
+        var bottomEdge = new Rectangle(
+                notch.x(),
+                notch.y(),
+                notch.width(),
+                thickness);
+
+        UiFill.renderQuad(topEdge, paint);
+        UiFill.renderQuad(rightEdge, paint);
+        UiFill.renderQuad(bottomEdge, paint);
     }
 
     // Strokes the two arms of the chevron as thick segments meeting at the apex: the top end down to the
     // apex, then the apex down to the bottom end.
-    private static void drawChevron(ChevronArms arms, float thickness, Color color, float opacity) {
-        strokeArm(arms.endsX(), arms.topY(), arms.apexX(), arms.midY(), thickness, color, opacity);
-        strokeArm(arms.apexX(), arms.midY(), arms.endsX(), arms.bottomY(), thickness, color, opacity);
+    private static void drawChevron(ChevronArms arms, float thickness, UiElementPaint paint) {
+        strokeArm(arms.endsX(), arms.topY(), arms.apexX(), arms.midY(), thickness, paint);
+        strokeArm(arms.apexX(), arms.midY(), arms.endsX(), arms.bottomY(), thickness, paint);
     }
 
     // Draws a thick line segment from (x1, y1) to (x2, y2) as two triangles offset perpendicular to the
     // segment by half the thickness, since the fill primitive draws triangles, not strokes. A zero-length
     // segment (the straightened chevron's degenerate arms never reach it, but guard anyway) draws nothing.
-    private static void strokeArm(float x1, float y1, float x2, float y2, float thickness, Color color,
-            float opacity) {
+    private static void strokeArm(
+            float x1,
+            float y1,
+            float x2,
+            float y2,
+            float thickness,
+            UiElementPaint paint) {
+
         var deltaX = x2 - x1;
         var deltaY = y2 - y1;
         var length = (float) Math.sqrt(deltaX * deltaX + deltaY * deltaY);
@@ -131,18 +164,25 @@ public final class NotchRenderer {
             return;
         }
         var half = thickness / 2f;
+        
         // Perpendicular to the segment, scaled to half the thickness: offsets each endpoint to both sides.
         var offsetX = -deltaY / length * half;
         var offsetY = deltaX / length * half;
-        UiFill.renderTriangle(new float[] {
-                x1 + offsetX, y1 + offsetY,
-                x1 - offsetX, y1 - offsetY,
-                x2 - offsetX, y2 - offsetY,
-        }, color, opacity);
-        UiFill.renderTriangle(new float[] {
-                x1 + offsetX, y1 + offsetY,
-                x2 - offsetX, y2 - offsetY,
-                x2 + offsetX, y2 + offsetY,
-        }, color, opacity);
+
+        UiFill.renderTriangle(
+                new float[] {
+                        x1 + offsetX, y1 + offsetY,
+                        x1 - offsetX, y1 - offsetY,
+                        x2 - offsetX, y2 - offsetY,
+                },
+                paint);
+
+        UiFill.renderTriangle(
+                new float[] {
+                        x1 + offsetX, y1 + offsetY,
+                        x2 - offsetX, y2 - offsetY,
+                        x2 + offsetX, y2 + offsetY,
+                },
+                paint);
     }
 }

@@ -100,9 +100,8 @@ public final class ControlRenderer {
         CheckboxRenderer.render(
                 bounds,
                 spec.isLit(),
-                style.accent(),
-                style.brightAccent(),
-                paint.opacity());
+                new UiElementPaint(style.accent(), paint.opacity()),
+                new UiElementPaint(style.brightAccent(), paint.opacity()));
 
         var box = Checkbox.computeTickBox(bounds);
         var labelX = box.x()
@@ -229,11 +228,13 @@ public final class ControlRenderer {
         var direction = spec.directionAt(index);
         if (direction != null) {
             // In the row's body text tone so it reads as a quiet annotation like the value it replaces.
+            var trianglePaint = new UiElementPaint(
+                    StarsectorUiColor.VANILLA_TEXT.resolve(),
+                    paint.opacity());
             TriangleRenderer.render(
                     IconLabelRow.computeDirectionTriangleBox(segment),
                     direction,
-                    StarsectorUiColor.VANILLA_TEXT.resolve(),
-                    paint.opacity());
+                    trianglePaint);
             return;
         }
         var trailing = spec.trailingLabelAt(index);

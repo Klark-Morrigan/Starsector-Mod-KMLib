@@ -16,8 +16,8 @@ import java.awt.Color;
 public final class DividerRenderer {
     // The rule sits below a full control frame's weight so it reads as a quiet section break rather
     // than another bordered widget.
-    private static final float RULE_ALPHA_MULT = 0.5f;
-    private static final float RULE_THICKNESS = 1f;
+    private static final float DIVIDER_ALPHA_MULT = 0.5f;
+    private static final float DIVIDER_THICKNESS = 1f;
 
     private DividerRenderer() {
     }
@@ -27,13 +27,25 @@ public final class DividerRenderer {
      * {@code ruleColor} faded by {@code opacity}. Must run with a current GL context, like any
      * immediate-mode GL call.
      *
-     * @param bounds    the divider row's footprint, in UI coordinates
-     * @param ruleColor the rule colour, the body's frame colour
-     * @param opacity   overall alpha, 0..1
+     * @param dividerBounds  the divider row's footprint, in UI coordinates
+     * @param ruleColor      the rule colour, the body's frame colour
+     * @param opacity        overall alpha, 0..1
      */
-    public static void render(Rectangle bounds, Color ruleColor, float opacity) {
-        var ruleY = bounds.computeCenterY() - RULE_THICKNESS / 2f;
-        UiFill.renderQuad(bounds.x(), ruleY, bounds.width(), RULE_THICKNESS, ruleColor,
-                opacity * RULE_ALPHA_MULT);
+    public static void render(
+            Rectangle dividerBounds,
+            Color ruleColor,
+            float opacity) {
+
+        var dividerY = dividerBounds.computeCenterY() - DIVIDER_THICKNESS / 2f;
+        var rect = new Rectangle(
+                dividerBounds.x(),
+                dividerY,
+                dividerBounds.width(),
+                DIVIDER_THICKNESS);
+        var rulePaint = new UiElementPaint(
+                ruleColor,
+                opacity * DIVIDER_ALPHA_MULT);
+
+        UiFill.renderQuad(rect, rulePaint);
     }
 }

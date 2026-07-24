@@ -2,13 +2,12 @@ package kmlib.starsector.ui.render.gl;
 
 import com.fs.starfarer.api.util.Misc;
 
+import kmlib.math.geometry.Rectangle;
 import kmlib.opengl.GlColor;
 import kmlib.opengl.GlQuads;
 import kmlib.opengl.GlTriangles;
 
 import org.lwjgl.opengl.GL11;
-
-import java.awt.Color;
 
 /**
  * Fills a convex primitive (a rectangle or a triangle) in screen/UI coordinates, compositing it
@@ -33,46 +32,51 @@ public final class UiFill {
     }
 
     /**
-     * Fills the rectangle at {@code (x, y)} with {@code color}, composited over the existing
-     * pixels by {@code alpha}: 0 leaves the destination untouched, 1 paints the colour solid.
-     * Must run with a current GL context, like any immediate-mode GL call.
+     * Fills {@code bounds} with {@code paint}, composited over the existing pixels by the paint's
+     * alpha: 0 leaves the destination untouched, 1 paints the colour solid. A hidden paint (no
+     * colour or non-positive alpha) emits nothing, since the blend would only discard the run. Must
+     * run with a current GL context, like any immediate-mode GL call.
      *
-     * @param x      left edge, in UI coordinates
-     * @param y      bottom edge, in UI coordinates (UI origin is bottom-left)
-     * @param width  rectangle width
-     * @param height rectangle height
-     * @param color  fill colour; its own alpha is honoured and further scaled by {@code alpha}
-     * @param alpha  overall opacity, 0..1, composited over what is behind
+     * @param bounds the rectangle to fill, in UI coordinates (UI origin is bottom-left)
+     * @param paint  the fill colour and its compositing alpha
      */
-    public static void renderQuad(float x, float y, float width, float height, Color color,
-            float alpha) {
+    public static void renderQuad(Rectangle bounds, UiElementPaint paint) {
+        if (paint.isHidden()) {
+            return;
+        }
         GL11.glDisable(GL11.GL_TEXTURE_2D);
         GL11.glEnable(GL11.GL_BLEND);
         GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        GlColor.set(color, alpha);
+        GlColor.set(paint.color(), paint.alpha());
+        var left = bounds.x();
+        var bottom = bounds.y();
+        var right = left + bounds.width();
+        var top = bottom + bounds.height();
         GlQuads.fillQuad(new float[] {
-                x, y,
-                x, y + height,
-                x + width, y + height,
-                x + width, y,
+                left, bottom,
+                left, top,
+                right, top,
+                right, bottom,
         });
     }
 
     /**
      * Fills the triangle whose corners are {@code vertices} - a flat {@code [x1, y1, x2, y2, x3, y3]}
-     * run in winding order - with {@code color}, composited over the existing pixels by {@code alpha}
-     * exactly as {@link #renderQuad} composites a rectangle. Must run with a current GL context, like
-     * any immediate-mode GL call.
+     * run in winding order - with {@code paint}, composited over the existing pixels exactly as
+     * {@link #renderQuad} composites a rectangle. A hidden paint emits nothing. Must run with a
+     * current GL context, like any immediate-mode GL call.
      *
      * @param vertices the three corners, in UI coordinates, in winding order
-     * @param color    fill colour; its own alpha is honoured and further scaled by {@code alpha}
-     * @param alpha    overall opacity, 0..1, composited over what is behind
+     * @param paint    the fill colour and its compositing alpha
      */
-    public static void renderTriangle(float[] vertices, Color color, float alpha) {
+    public static void renderTriangle(float[] vertices, UiElementPaint paint) {
+        if (paint.isHidden()) {
+            return;
+        }
         GL11.glDisable(GL11.GL_TEXTURE_2D);
         GL11.glEnable(GL11.GL_BLEND);
         GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        GlColor.set(color, alpha);
+        GlColor.set(paint.color(), paint.alpha());
         GlTriangles.fillTriangle(vertices);
     }
 }

@@ -54,6 +54,7 @@ public final class CursorTooltipRenderer {
                 UiCursor.getUiY(),
                 settings.getScreenWidth(),
                 settings.getScreenHeight());
+                
         // The core map and its tooltips draw after this pass, so the box, crests, and text run inside
         // the shared state save that restores the blend and colour the draw touched on the way out.
         GlStateGuard.bracket(() -> drawRows(rows, layout, style));
@@ -61,13 +62,16 @@ public final class CursorTooltipRenderer {
 
     // Paints the frame then each row into the laid-out box: the box first, then per row its crest,
     // label, and value at the anchors the widget resolved, so the draw never re-derives the geometry.
-    private static void drawRows(List<TooltipRow> rows, TooltipLayout layout, CursorTooltipStyle style) {
+    private static void drawRows(
+            List<TooltipRow> rows,
+            TooltipLayout layout,
+            CursorTooltipStyle style) {
+
         BorderedBoxRenderer.render(
                 layout.box(),
                 new BoxBorder(style.borderWidth()),
-                style.fillColor(),
-                style.borderColor(),
-                style.opacity());
+                new UiElementPaint(style.fillColor(), style.opacity()),
+                new UiElementPaint(style.borderColor(), style.opacity()));
         for (var index = 0; index < rows.size(); index++) {
             drawRow(
                     rows.get(index),
@@ -87,13 +91,9 @@ public final class CursorTooltipRenderer {
         if (placement.crestBox() != null) {
             var crest = StarsectorSprites.loadSprite(row.crestSpritePath());
             if (crest != null) {
-                var box = placement.crestBox();
                 UiSprite.renderQuad(
                         crest,
-                        box.x(),
-                        box.y(),
-                        box.width(),
-                        box.height(),
+                        placement.crestBox(),
                         style.opacity());
             }
         }
@@ -109,6 +109,7 @@ public final class CursorTooltipRenderer {
                 placement.textX(),
                 placement.textY(),
                 LazyFont.TextAnchor.TOP_LEFT);
+
         LabelRenderer.render(
                 createStyleInColour.apply(row.valueColor()),
                 row.value(),

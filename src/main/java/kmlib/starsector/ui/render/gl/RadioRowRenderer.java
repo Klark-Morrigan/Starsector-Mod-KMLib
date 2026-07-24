@@ -48,25 +48,9 @@ public final class RadioRowRenderer {
             RadioColors colors,
             float opacity) {
 
-        if (selectedIndex >= 0 && selectedIndex < segments.size()) {
-            HorizontalSegmentsRenderer.renderSelectedWash(
-                    segments.get(selectedIndex),
-                    colors.selectedWash(),
-                    opacity);
-        }
-        HorizontalSegmentsRenderer.renderSeamDividers(
-                segments,
-                colors.frame(),
-                opacity);
-
-        UiBoxes.renderBorder(
-                bounds.x(),
-                bounds.y(),
-                bounds.width(),
-                bounds.height(),
-                new BoxBorder(OUTLINE_THICKNESS),
-                colors.frame(),
-                opacity);
+        washSelectedSegment(segments, selectedIndex, colors, opacity);
+        HorizontalSegmentsRenderer.renderSeamDividers(segments, colors.frame(), opacity);
+        strokeOuterFrame(bounds, colors, opacity);
     }
 
     /**
@@ -92,49 +76,57 @@ public final class RadioRowRenderer {
             float opacity) {
 
         var segments = RadioRow.splitIntoGrid(bounds, optionCount, columnCount);
+        washSelectedSegment(segments, selectedIndex, colors, opacity);
+        // The tallest column, matching the grid split, so the row rules land on the same boundaries
+        // the cells abut on. The grid's column and row rules are the vertical list's own (a flat seam
+        // list cannot reconstruct them), but draw at the shared divider strength and thickness so they
+        // read the same as a horizontal row's seams.
+        var dividerPaint = new UiElementPaint(
+                colors.frame(),
+                opacity * HorizontalSegmentsRenderer.DIVIDER_ALPHA_MULT);
+        var thickness = HorizontalSegmentsRenderer.DIVIDER_THICKNESS;
+        var rowCount = RadioRow.computeRowsPerColumn(optionCount, columnCount);
+        var columnWidth = bounds.width() / columnCount;
+        var rowHeight = bounds.height() / rowCount;
+
+        for (var column = 1; column < columnCount; column++) {
+            var columnX = bounds.x() + column * columnWidth;
+            UiFill.renderQuad(
+                    new Rectangle(columnX, bounds.y(), thickness, bounds.height()),
+                    dividerPaint);
+        }
+
+        for (var row = 1; row < rowCount; row++) {
+            var boundaryY = bounds.y() + bounds.height() - row * rowHeight;
+            UiFill.renderQuad(
+                    new Rectangle(bounds.x(), boundaryY - thickness, bounds.width(), thickness),
+                    dividerPaint);
+        }
+
+        strokeOuterFrame(bounds, colors, opacity);
+    }
+
+    // Washes the lit segment when the selection falls inside the laid segments; a selectedIndex
+    // outside the row lights none. Shared by both flows, which differ only in how they derive the
+    // segments they hand in.
+    private static void washSelectedSegment(
+            List<Rectangle> segments,
+            int selectedIndex,
+            RadioColors colors,
+            float opacity) {
+
         if (selectedIndex >= 0 && selectedIndex < segments.size()) {
             HorizontalSegmentsRenderer.renderSelectedWash(
                     segments.get(selectedIndex),
                     colors.selectedWash(),
                     opacity);
         }
-        // The tallest column, matching the grid split, so the row rules land on the same boundaries
-        // the cells abut on. The grid's column and row rules are the vertical list's own (a flat seam
-        // list cannot reconstruct them), but draw at the shared divider strength and thickness so they
-        // read the same as a horizontal row's seams.
-        var dividerColor = colors.frame();
-        var dividerAlpha = opacity * HorizontalSegmentsRenderer.DIVIDER_ALPHA_MULT;
-        var thickness = HorizontalSegmentsRenderer.DIVIDER_THICKNESS;
-        var rowCount = RadioRow.computeRowsPerColumn(optionCount, columnCount);
-        var columnWidth = bounds.width() / columnCount;
-        var rowHeight = bounds.height() / rowCount;
-        for (var column = 1; column < columnCount; column++) {
-            var columnX = bounds.x() + column * columnWidth;
-            UiFill.renderQuad(
-                    columnX,
-                    bounds.y(),
-                    thickness,
-                    bounds.height(),
-                    dividerColor,
-                    dividerAlpha);
-        }
-        for (var row = 1; row < rowCount; row++) {
-            var boundaryY = bounds.y() + bounds.height() - row * rowHeight;
-            UiFill.renderQuad(
-                    bounds.x(),
-                    boundaryY - thickness,
-                    bounds.width(),
-                    thickness,
-                    dividerColor,
-                    dividerAlpha);
-        }
-        UiBoxes.renderBorder(
-                bounds.x(),
-                bounds.y(),
-                bounds.width(),
-                bounds.height(),
-                new BoxBorder(OUTLINE_THICKNESS),
-                colors.frame(),
-                opacity);
+    }
+
+    // The radio's own outline around the whole footprint - the one piece of chrome not shared with a
+    // tab strip. Both the horizontal row and the vertical grid frame their bounds this same way.
+    private static void strokeOuterFrame(Rectangle bounds, RadioColors colors, float opacity) {
+        var framePaint = new UiElementPaint(colors.frame(), opacity);
+        UiBoxes.renderBorder(bounds, new BoxBorder(OUTLINE_THICKNESS), framePaint);
     }
 }

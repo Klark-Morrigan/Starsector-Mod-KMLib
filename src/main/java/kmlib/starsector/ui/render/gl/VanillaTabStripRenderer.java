@@ -116,13 +116,8 @@ public final class VanillaTabStripRenderer {
             VanillaTabColors colors,
             float opacity) {
 
-        UiFill.renderQuad(
-                bounds.x(),
-                bounds.y(),
-                bounds.width(),
-                bounds.height(),
-                colors.backdrop(),
-                opacity);
+        var paint = new UiElementPaint(colors.backdrop(), opacity);
+        UiFill.renderQuad(bounds, paint);
 
         if (isSelected) {
             HorizontalSegmentsRenderer.renderSelectedWash(
@@ -130,31 +125,33 @@ public final class VanillaTabStripRenderer {
                     colors.accent(),
                     opacity);
         } else if (isHovered) {
-            UiFill.renderQuad(
-                    bounds.x(),
-                    bounds.y(),
-                    bounds.width(),
-                    bounds.height(),
+            var hoverPaint = new UiElementPaint(
                     colors.accent(),
                     opacity * HOVER_FILL_ALPHA_MULT);
+            UiFill.renderQuad(
+                    bounds, hoverPaint);
         }
 
         UiFill.renderQuad(
-                bounds.x(),
-                bounds.y(),
-                bounds.width(),
-                BASELINE_THICKNESS,
-                colors.accent(),
-                opacity * HorizontalSegmentsRenderer.DIVIDER_ALPHA_MULT);
+                new Rectangle(
+                        bounds.x(),
+                        bounds.y(),
+                        bounds.width(),
+                        BASELINE_THICKNESS),
+                new UiElementPaint(
+                        colors.accent(),
+                        opacity * HorizontalSegmentsRenderer.DIVIDER_ALPHA_MULT));
 
         if (isSelected) {
             UiFill.renderQuad(
-                    bounds.x(),
-                    bounds.y(),
-                    bounds.width(),
-                    UNDERLINE_THICKNESS,
-                    colors.accent(),
-                    opacity);
+                    new Rectangle(
+                            bounds.x(),
+                            bounds.y(),
+                            bounds.width(),
+                            UNDERLINE_THICKNESS),
+                    new UiElementPaint(
+                            colors.accent(),
+                            opacity));
         }
     }
 
