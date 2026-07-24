@@ -3,8 +3,10 @@ package kmlib.starsector.markets;
 import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
+import com.fs.starfarer.api.campaign.rules.MemoryAPI;
 import com.fs.starfarer.api.combat.StatBonus;
 import com.fs.starfarer.api.fleet.MutableMarketStatsAPI;
+import com.fs.starfarer.api.impl.campaign.ids.MemFlags;
 import com.fs.starfarer.api.impl.campaign.ids.Stats;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
 import com.fs.starfarer.api.util.DynamicStatsAPI;
@@ -261,6 +263,48 @@ final class MarketsTest {
         void returns_none_for_a_null_market() {
             assertThat(Markets.readPatrolCounts(null)).isEqualTo(PatrolCounts.NONE);
         }
+    }
+
+    @Nested
+    class FieldsPatrols {
+        @Test
+        void returns_true_when_the_patrol_flag_is_set() {
+            var market = marketWithPatrolFlag(true);
+
+            assertThat(Markets.fieldsPatrols(market)).isTrue();
+        }
+
+        @Test
+        void returns_false_when_the_patrol_flag_is_unset() {
+            // A hidden raider base writes the patrol-count stats but never sets
+            // $patrol, so it reads as fielding no patrols.
+            var market = marketWithPatrolFlag(false);
+
+            assertThat(Markets.fieldsPatrols(market)).isFalse();
+        }
+
+        @Test
+        void returns_false_for_a_market_with_no_memory() {
+            var marketMock = mock(MarketAPI.class);
+            when(marketMock.getMemoryWithoutUpdate()).thenReturn(null);
+
+            assertThat(Markets.fieldsPatrols(marketMock)).isFalse();
+        }
+
+        @Test
+        void returns_false_for_a_null_market() {
+            assertThat(Markets.fieldsPatrols(null)).isFalse();
+        }
+    }
+
+    // A market whose memory carries the $patrol flag at the given value - the signal a
+    // functional patrol HQ sets, vanilla's own "fields patrols" gate.
+    private static MarketAPI marketWithPatrolFlag(boolean fieldsPatrols) {
+        var memoryMock = mock(MemoryAPI.class);
+        when(memoryMock.getBoolean(MemFlags.MARKET_PATROL)).thenReturn(fieldsPatrols);
+        var marketMock = mock(MarketAPI.class);
+        when(marketMock.getMemoryWithoutUpdate()).thenReturn(memoryMock);
+        return marketMock;
     }
 
     // A market whose dynamic stats carry the three patrol-tier mods at the given

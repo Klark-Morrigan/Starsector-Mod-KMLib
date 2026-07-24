@@ -1,6 +1,7 @@
 package kmlib.starsector.markets;
 
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
+import com.fs.starfarer.api.impl.campaign.ids.MemFlags;
 import com.fs.starfarer.api.impl.campaign.ids.Stats;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
 import com.fs.starfarer.api.util.DynamicStatsAPI;
@@ -153,6 +154,29 @@ public final class Markets {
     }
 
     /**
+     * Whether a functional patrol HQ garrisons this market - the "does a patrol
+     * industry actually field patrols here" gate.
+     *
+     * <p>Reads vanilla's {@link MemFlags#MARKET_PATROL} (the {@code $patrol} flag) a
+     * functional patrol industry - a Patrol HQ, Military Base, or High Command, or a
+     * Lion's Guard HQ - sets on its market and clears when it stops, the same flag
+     * vanilla's patrol-spawn AI gates on. This is deliberately narrower than a
+     * non-zero {@link #readPatrolCounts}: the patrol-count stats are also written by
+     * hidden pirate and Luddic Path bases that never set the flag, so a caller
+     * asking "does a patrol HQ field patrols here" must read the flag, not the counts.
+     *
+     * @param market the market to test; null (or one with no memory) yields false
+     * @return true when a functional patrol industry fields patrols at this market
+     */
+    public static boolean fieldsPatrols(MarketAPI market) {
+        if (market == null) {
+            return false;
+        }
+        var memory = market.getMemoryWithoutUpdate();
+        return memory != null && memory.getBoolean(MemFlags.MARKET_PATROL);
+    }
+
+    /**
      * A market's configured patrol strength, read from the economy as the three
      * vanilla size-tier counts.
      *
@@ -163,6 +187,10 @@ public final class Markets {
      * flight, so it is stable across a pass. The read mirrors vanilla's own
      * {@code MilitaryBase.getMaxPatrols}: each tier's effective mod truncated to an
      * integer count, so this reads the same numbers the game would spawn against.
+     *
+     * <p>Non-zero counts do not imply a patrol HQ: hidden pirate and Luddic Path
+     * bases write these stats too. Gate on {@link #fieldsPatrols} first when the
+     * question is whether a functional patrol industry garrisons the market.
      *
      * @param market the market to read; null (or one with no stats) yields
      *               {@link PatrolCounts#NONE}
