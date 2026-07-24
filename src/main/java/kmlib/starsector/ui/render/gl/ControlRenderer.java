@@ -79,21 +79,41 @@ public final class ControlRenderer {
         var tabs = VanillaTabStrip.zipTabs(contents, control.segments());
         var hoveredIndex = VanillaTabStrip.findTabIndexAt(tabs, UiCursor.getUiX(), UiCursor.getUiY());
         var tabStyle = style.tabStyle();
-        VanillaTabStripRenderer.render(tabs, spec.selectedIndex(), hoveredIndex, tabStyle.colors(),
-                tabStyle.font(), tabStyle.fontSize(), opacity);
+        
+        VanillaTabStripRenderer.render(
+                tabs,
+                spec.selectedIndex(),
+                hoveredIndex,
+                tabStyle.colors(),
+                tabStyle.font(),
+                tabStyle.fontSize(),
+                opacity);
     }
 
     // A tick box lit when the spec's cell is selected, then its label to the right at the same gap the
     // layout reserved, so the label sits exactly in the space snapped for it.
-    private static void drawCheckbox(Control control, Color accent, Color brightAccent, String bodyFont,
+    private static void drawCheckbox(
+            Control control,
+            Color accent,
+            Color brightAccent,
+            String bodyFont,
             float opacity) {
         var spec = (ControlSpec.Checkbox) control.spec();
         var bounds = control.bounds();
         CheckboxRenderer.render(bounds, spec.isLit(), accent, brightAccent, opacity);
         var box = Checkbox.computeTickBox(bounds);
-        var labelX = box.x() + box.width() + ControlStripLayout.CHECKBOX_LABEL_GAP;
-        drawBodyLabel(bodyFont, spec.label(), labelX, bounds.computeCenterY(),
-                LazyFont.TextAnchor.CENTER_LEFT, opacity);
+
+        var labelX = box.x()
+                + box.width()
+                + ControlStripLayout.CHECKBOX_LABEL_GAP;
+
+        drawBodyLabel(
+                bodyFont,
+                spec.label(),
+                labelX,
+                bounds.computeCenterY(),
+                LazyFont.TextAnchor.CENTER_LEFT,
+                opacity);
     }
 
     // A radio group: the segments framed and the active one washed, then its labels. An icon table
@@ -114,21 +134,40 @@ public final class ControlRenderer {
         // Frame and wash both stroke the accent, the plain radio's single chrome tone.
         var colors = new RadioColors(accent, accent);
         if (spec instanceof ControlSpec.VerticalTable table) {
-            RadioRowRenderer.renderVerticalGrid(bounds, labels.size(), selectedIndex,
-                    table.columnCount(), colors, opacity);
+            RadioRowRenderer.renderVerticalGrid(
+                    bounds,
+                    labels.size(),
+                    selectedIndex,
+                    table.columnCount(),
+                    colors,
+                    opacity);
         } else {
             RadioRowRenderer.renderHorizontalRow(bounds, segments, selectedIndex, colors, opacity);
         }
         for (var index = 0; index < segments.size() && index < labels.size(); index++) {
             var segment = segments.get(index);
-            drawBodyLabel(bodyFont, labels.get(index), segment.computeCenterX(), segment.computeCenterY(),
-                    LazyFont.TextAnchor.CENTER, opacity);
+            drawBodyLabel(
+                    bodyFont,
+                    labels.get(index),
+                    segment.computeCenterX(),
+                    segment.computeCenterY(),
+                    LazyFont.TextAnchor.CENTER,
+                    opacity);
         }
         if (spec instanceof ControlSpec.HorizontalRadio radio
                 && KmlibStrings.hasText(radio.trailingLabel())) {
-            var trailingX = bounds.x() + bounds.width() + ControlStripLayout.TRAILING_LABEL_GAP;
-            drawBodyLabel(bodyFont, radio.trailingLabel(), trailingX, bounds.computeCenterY(),
-                    LazyFont.TextAnchor.CENTER_LEFT, opacity);
+
+            var trailingX = bounds.x()
+                    + bounds.width()
+                    + ControlStripLayout.TRAILING_LABEL_GAP;
+
+            drawBodyLabel(
+                    bodyFont,
+                    radio.trailingLabel(),
+                    trailingX,
+                    bounds.computeCenterY(),
+                    LazyFont.TextAnchor.CENTER_LEFT,
+                    opacity);
         }
     }
 
@@ -136,11 +175,20 @@ public final class ControlRenderer {
     // flush at the right edge. The list chrome and the icons are the widget's; the name and value draw
     // here at the same anchors the widget reserves, so an icon-less option reads as a plain name and a
     // value-less option shows only its name.
-    private static void drawIconRadio(Control control, ControlSpec.VerticalTable spec, Color accent,
-            String bodyFont, float opacity) {
+    private static void drawIconRadio(
+            Control control,
+            ControlSpec.VerticalTable spec,
+            Color accent,
+            String bodyFont,
+            float opacity) {
         var bounds = control.bounds();
-        IconRadioListRenderer.render(bounds, spec.iconPaths(), spec.selectedIndex(),
-                spec.columnCount(), new RadioColors(accent, accent), opacity);
+        IconRadioListRenderer.render(
+                bounds,
+                spec.iconPaths(),
+                spec.selectedIndex(),
+                spec.columnCount(),
+                new RadioColors(accent, accent),
+                opacity);
         var segments = control.segments();
         var labels = spec.labels();
         for (var index = 0; index < segments.size() && index < labels.size(); index++) {
@@ -148,8 +196,13 @@ public final class ControlRenderer {
             // The label starts past the icon when the option carries one, or at the row's left inset when
             // it does not - the same has-icon rule the layout sized the row with.
             var labelX = IconLabelRow.computeLabelAnchorX(segment, spec.hasIconAt(index));
-            drawBodyLabel(bodyFont, labels.get(index), labelX, segment.computeCenterY(),
-                    LazyFont.TextAnchor.CENTER_LEFT, opacity);
+            drawBodyLabel(
+                    bodyFont,
+                    labels.get(index),
+                    labelX,
+                    segment.computeCenterY(),
+                    LazyFont.TextAnchor.CENTER_LEFT,
+                    opacity);
             drawTrailing(spec, index, segment, bodyFont, opacity);
         }
     }
@@ -159,20 +212,32 @@ public final class ControlRenderer {
     // right-aligned text value the picker's ranked rows show. Both right-align to the same inset the
     // layout sized, so a triangle column and a value column occupy the same right-hand strip. A row
     // with neither draws nothing here.
-    private static void drawTrailing(ControlSpec.VerticalTable spec, int index, Rectangle segment,
-            String bodyFont, float opacity) {
+    private static void drawTrailing(
+            ControlSpec.VerticalTable spec,
+            int index,
+            Rectangle segment,
+            String bodyFont,
+            float opacity) {
         var direction = spec.directionAt(index);
         if (direction != null) {
             // In the row's body text tone so it reads as a quiet annotation like the value it replaces.
-            TriangleRenderer.render(IconLabelRow.computeDirectionTriangleBox(segment), direction,
-                    Misc.getTextColor(), opacity);
+            TriangleRenderer.render(
+                    IconLabelRow.computeDirectionTriangleBox(segment),
+                    direction,
+                    Misc.getTextColor(),
+                    opacity);
             return;
         }
         var trailing = spec.trailingLabelAt(index);
         if (KmlibStrings.hasText(trailing)) {
             // Drawn at the body size - the same size the layout reserved the column at.
-            drawBodyLabel(bodyFont, trailing, IconLabelRow.computeTrailingAnchorX(segment),
-                    segment.computeCenterY(), LazyFont.TextAnchor.CENTER_RIGHT, opacity,
+            drawBodyLabel(
+                    bodyFont,
+                    trailing,
+                    IconLabelRow.computeTrailingAnchorX(segment),
+                    segment.computeCenterY(),
+                    LazyFont.TextAnchor.CENTER_RIGHT,
+                    opacity,
                     ControlStripLayout.BODY_FONT_SIZE);
         }
     }
@@ -183,8 +248,13 @@ public final class ControlRenderer {
         var spec = (ControlSpec.Toggle) control.spec();
         var bounds = control.bounds();
         ToggleButton.render(bounds, spec.isLit(), accent, accent, opacity);
-        drawBodyLabel(bodyFont, spec.label(), bounds.computeCenterX(), bounds.computeCenterY(),
-                LazyFont.TextAnchor.CENTER, opacity);
+        drawBodyLabel(
+                bodyFont,
+                spec.label(),
+                bounds.computeCenterX(),
+                bounds.computeCenterY(),
+                LazyFont.TextAnchor.CENTER,
+                opacity);
     }
 
     // A divider row: a single hairline centred across the row in the accent, parting one run of controls
@@ -198,20 +268,44 @@ public final class ControlRenderer {
     private static void drawLabelRow(Control control, String bodyFont, float opacity) {
         var spec = (ControlSpec.Label) control.spec();
         var bounds = control.bounds();
-        drawBodyLabel(bodyFont, spec.text(), bounds.x(), bounds.computeCenterY(),
-                LazyFont.TextAnchor.CENTER_LEFT, opacity);
+        drawBodyLabel(
+                bodyFont,
+                spec.text(),
+                bounds.x(),
+                bounds.computeCenterY(),
+                LazyFont.TextAnchor.CENTER_LEFT,
+                opacity);
     }
 
     // Draws one body label at the body font size (the common case), delegating to the explicit-size draw.
-    private static void drawBodyLabel(String bodyFont, String text, float x, float y,
-            LazyFont.TextAnchor anchor, float opacity) {
-        drawBodyLabel(bodyFont, text, x, y, anchor, opacity, ControlStripLayout.BODY_FONT_SIZE);
+    private static void drawBodyLabel(
+            String bodyFont,
+            String text,
+            float x,
+            float y,
+            LazyFont.TextAnchor anchor,
+            float opacity) {
+        drawBodyLabel(
+                bodyFont,
+                text,
+                x,
+                y,
+                anchor,
+                opacity,
+                ControlStripLayout.BODY_FONT_SIZE);
     }
 
     // Draws one body label in the vanilla text colour, faded by opacity, at the given anchor and size,
     // through the shared label primitive so the control text and any other KM UI text share one cache.
-    private static void drawBodyLabel(String bodyFont, String text, float x, float y,
-            LazyFont.TextAnchor anchor, float opacity, double fontSize) {
-        LabelRenderer.render(bodyFont, text, x, y, anchor, Misc.getTextColor(), opacity, fontSize);
+    private static void drawBodyLabel(
+            String bodyFont,
+            String text,
+            float x,
+            float y,
+            LazyFont.TextAnchor anchor,
+            float opacity,
+            double fontSize) {
+        var labelStyle = new LabelStyle(bodyFont, Misc.getTextColor(), opacity, fontSize);
+        LabelRenderer.render(labelStyle, text, x, y, anchor);
     }
 }

@@ -12,7 +12,9 @@ import kmlib.starsector.ui.widgets.TooltipRow;
 
 import org.lazywizard.lazylib.ui.LazyFont;
 
+import java.awt.Color;
 import java.util.List;
+import java.util.function.Function;
 
 /**
  * Draws a {@link CursorTooltip}'s rows as a free-floating box at the cursor: it resolves the body
@@ -83,28 +85,32 @@ public final class CursorTooltipRenderer {
             var crest = StarsectorSprites.loadSprite(row.crestSpritePath());
             if (crest != null) {
                 var box = placement.crestBox();
-                UiSprite.renderQuad(crest, box.x(), box.y(), box.width(), box.height(), style.opacity());
+                UiSprite.renderQuad(
+                        crest,
+                        box.x(),
+                        box.y(),
+                        box.width(),
+                        box.height(),
+                        style.opacity());
             }
         }
-        
+
+        // Both labels share the row's face, opacity, and size; only the colour differs, so the look
+        // is built once here and each call supplies its own colour.
+        Function<Color, LabelStyle> createStyleInColour = colour ->
+                new LabelStyle(style.font(), colour, style.opacity(), style.fontSize());
+
         LabelRenderer.render(
-                style.font(),
+                createStyleInColour.apply(row.textColor()),
                 row.text(),
                 placement.textX(),
                 placement.textY(),
-                LazyFont.TextAnchor.TOP_LEFT,
-                row.textColor(),
-                style.opacity(),
-                style.fontSize());
-
+                LazyFont.TextAnchor.TOP_LEFT);
         LabelRenderer.render(
-                style.font(),
+                createStyleInColour.apply(row.valueColor()),
                 row.value(),
                 placement.valueX(),
                 placement.valueY(),
-                LazyFont.TextAnchor.TOP_RIGHT,
-                row.valueColor(),
-                style.opacity(),
-                style.fontSize());
+                LazyFont.TextAnchor.TOP_RIGHT);
     }
 }

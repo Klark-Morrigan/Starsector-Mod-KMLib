@@ -33,33 +33,32 @@ public final class LabelRenderer {
     }
 
     /**
-     * Draws {@code text} in {@code font} at {@code (x, y)}, positioned by {@code anchor}, in
-     * {@code baseColor} scaled by {@code opacity}. Skipped silently when the face cannot load.
+     * Draws {@code text} in {@code style} at {@code (x, y)}, positioned by {@code anchor}. Skipped
+     * silently when the face cannot load.
      *
-     * @param font      the body font's {@code graphics/fonts} basename
-     * @param text      the line to draw
-     * @param x         the anchor x, in UI coordinates
-     * @param y         the anchor y, in UI coordinates (UI origin is bottom-left)
-     * @param anchor    where {@code (x, y)} sits relative to the text box
-     * @param baseColor the text colour before the opacity fade
-     * @param opacity   overall alpha, 0..1
-     * @param fontSize  the glyph size to render at
+     * @param style  the face, colour, opacity, and size the line draws in
+     * @param text   the line to draw
+     * @param x      the anchor x, in UI coordinates
+     * @param y      the anchor y, in UI coordinates (UI origin is bottom-left)
+     * @param anchor where {@code (x, y)} sits relative to the text box
      */
     public static void render(
-            String font,
+            LabelStyle style,
             String text,
             float x,
             float y,
-            LazyFont.TextAnchor anchor,
-            Color baseColor,
-            float opacity,
-            double fontSize) {
-        var drawable = resolveText(font, text, fontSize);
+            LazyFont.TextAnchor anchor) {
+
+        var drawable = resolveText(
+                style.font(),
+                text,
+                style.fontSize());
+                
         if (drawable == null) {
             return;
         }
         drawable.setAnchor(anchor);
-        drawable.setBaseColor(Colors.scaleAlpha(baseColor, opacity));
+        drawable.setBaseColor(Colors.scaleAlpha(style.colour(), style.opacity()));
         drawable.draw(x, y);
     }
 
