@@ -62,8 +62,7 @@ public final class VanillaTabStripRenderer {
      * @param selectedIndex the active tab's index, or a value outside the row
      * @param hoveredIndex  the hovered tab's index, or a value outside the row
      * @param colors        the palette to paint with (see {@link VanillaTabColors#mapTabs})
-     * @param fontBasename  the {@code graphics/fonts} basename the labels draw in
-     * @param fontSize      the label font size
+     * @param textFace      the font basename and size the labels draw in
      * @param opacity       overall alpha, 0..1, applied to every quad and both text colours
      */
     public static void render(
@@ -71,8 +70,7 @@ public final class VanillaTabStripRenderer {
             int selectedIndex,
             int hoveredIndex,
             VanillaTabColors colors,
-            String fontBasename,
-            double fontSize,
+            TextFace textFace,
             float opacity) {
         for (var index = 0; index < tabs.size(); index++) {
             var tab = tabs.get(index);
@@ -85,8 +83,7 @@ public final class VanillaTabStripRenderer {
                     isSelected,
                     isHovered,
                     colors,
-                    fontBasename,
-                    fontSize,
+                    textFace,
                     opacity);
         }
         // The seams between tabs, ruled once over the laid boxes through the shared segmented-row
@@ -171,11 +168,10 @@ public final class VanillaTabStripRenderer {
             boolean isSelected,
             boolean isHovered,
             VanillaTabColors colors,
-            String fontBasename,
-            double fontSize,
+            TextFace textFace,
             float opacity) {
 
-        var label = resolveText(fontBasename, fontSize, content.label());
+        var label = resolveText(textFace, content.label());
         if (label == null) {
             return;
         }
@@ -191,8 +187,7 @@ public final class VanillaTabStripRenderer {
         // The delimiters take the label's state colour; only the key takes the gold accent.
         var shortcut = KmlibStrings.hasText(content.shortcut())
                 ? resolveShortcutSegments(
-                        fontBasename,
-                        fontSize,
+                        textFace,
                         content.shortcut(),
                         fadedLabelColor,
                         Colors.scaleAlpha(colors.shortcut(),
@@ -220,15 +215,14 @@ public final class VanillaTabStripRenderer {
     // paint pass and the layout snap cannot drift. Empty when any segment's font cannot load, so the
     // tab falls back to a bare label rather than a half-drawn shortcut.
     private static List<DrawableString> resolveShortcutSegments(
-            String fontBasename,
-            double fontSize,
+            TextFace textFace,
             String shortcut,
             Color delimiterColor,
             Color keyColor) {
 
-        var open = resolveText(fontBasename, fontSize, VanillaTabStrip.SHORTCUT_OPEN_DELIMITER);
-        var key = resolveText(fontBasename, fontSize, shortcut);
-        var close = resolveText(fontBasename, fontSize, VanillaTabStrip.SHORTCUT_CLOSE_DELIMITER);
+        var open = resolveText(textFace, VanillaTabStrip.SHORTCUT_OPEN_DELIMITER);
+        var key = resolveText(textFace, shortcut);
+        var close = resolveText(textFace, VanillaTabStrip.SHORTCUT_CLOSE_DELIMITER);
 
         if (open == null || key == null || close == null) {
             return List.of();
@@ -272,17 +266,13 @@ public final class VanillaTabStripRenderer {
     // Mints a drawable once per (font, size, text) and reuses it; the base colour is re-set before
     // each draw, so one buffer serves every frame. Null when the font face cannot load, in which
     // case the tab draws its chrome without text.
-    private static DrawableString resolveText(
-            String fontBasename,
-            double fontSize,
-            String text) {
-
-        var key = fontBasename + "|" + fontSize + "|" + text;
+    private static DrawableString resolveText(TextFace textFace, String text) {
+        var key = textFace.basename() + "|" + textFace.size() + "|" + text;
         var cached = TEXT_CACHE.get(key);
         if (cached != null) {
             return cached;
         }
-        var font = LazyFontCache.loadByBasename(fontBasename);
+        var font = LazyFontCache.loadByBasename(textFace.basename());
         if (font == null) {
             return null;
         }
@@ -291,9 +281,20 @@ public final class VanillaTabStripRenderer {
         var drawable = font.createText(
                 text,
                 StarsectorUiColor.WHITE.resolve(),
-                (float) fontSize);
-                
+                (float) textFace.size());
+
         TEXT_CACHE.put(key, drawable);
         return drawable;
+    }
+
+    /**
+     * A text face - the font basename and size a run of the strip's text draws in - bundled so the
+     * paint pass threads one value from the caller down through its label and shortcut draws rather
+     * than the basename-and-size pair at every hop.
+     *
+     * @param basename the {@code graphics/fonts} basename the text draws in
+     * @param size     the size the text draws at
+     */
+    public record TextFace(String basename, double size) {
     }
 }

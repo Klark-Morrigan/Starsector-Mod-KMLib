@@ -74,14 +74,14 @@ public final class ControlRenderer {
         var tabs = VanillaTabStrip.zipTabs(contents, control.segments());
         var hoveredIndex = VanillaTabStrip.findTabIndexAt(tabs, UiCursor.getUiX(), UiCursor.getUiY());
         var tabStyle = paint.style().tabStyle();
-        
+        var textFace = new VanillaTabStripRenderer.TextFace(tabStyle.font(), tabStyle.fontSize());
+
         VanillaTabStripRenderer.render(
                 tabs,
                 spec.selectedIndex(),
                 hoveredIndex,
                 tabStyle.colors(),
-                tabStyle.font(),
-                tabStyle.fontSize(),
+                textFace,
                 paint.opacity());
     }
 
