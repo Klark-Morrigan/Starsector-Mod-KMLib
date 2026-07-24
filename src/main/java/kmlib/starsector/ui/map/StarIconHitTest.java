@@ -73,17 +73,16 @@ public final class StarIconHitTest {
      * before the per-frame screen scaling. A nebula centre uses a fixed base in place of its radius;
      * a true star is drawn a shade smaller than another body of the same radius.
      *
-     * @param bodyRadius       the star (or other body) radius the icon is sized by; ignored for a
-     *                         nebula centre
+     * @param bodyRadius       the body radius the icon is sized by; ignored for a nebula centre
      * @param scaleMultMapIcon the body's per-spec map-icon scale multiplier
-     * @param isStar           whether the body is a true star, which the widget draws smaller
-     * @param isNebulaCentre   whether the body is a nebula centre, sized off the fixed base instead
+     * @param bodyKind         which kind of body the icon stands for, which decides the base and the
+     *                         star reduction
      * @return the icon's radius in world units
      */
     public static float computeIconWorldRadius(
-            float bodyRadius, float scaleMultMapIcon, boolean isStar, boolean isNebulaCentre) {
-        var base = isNebulaCentre ? NEBULA_ICON_BASE_RADIUS : bodyRadius;
+            float bodyRadius, float scaleMultMapIcon, StarIconBodyKind bodyKind) {
+        var base = bodyKind == StarIconBodyKind.NEBULA_CENTRE ? NEBULA_ICON_BASE_RADIUS : bodyRadius;
         var worldRadius = ICON_RADIUS_WORLD_SCALE * base * scaleMultMapIcon;
-        return isStar ? worldRadius * STAR_ICON_SCALE : worldRadius;
+        return bodyKind == StarIconBodyKind.STAR ? worldRadius * STAR_ICON_SCALE : worldRadius;
     }
 }

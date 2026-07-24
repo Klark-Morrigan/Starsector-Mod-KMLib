@@ -85,14 +85,14 @@ class StarIconHitTestTest {
         void computeIconWorldRadiusDrawsAStarSmallerThanAnEqualSizedBody() {
             // 5 * 100 * 1 * 0.75 = 375, three-quarters of the 500 a non-star body of the same
             // radius gets.
-            assertThat(StarIconHitTest.computeIconWorldRadius(100f, 1f, true, false))
+            assertThat(StarIconHitTest.computeIconWorldRadius(100f, 1f, StarIconBodyKind.STAR))
                     .isEqualTo(375f, within(1e-3f));
         }
 
         @Test
         void computeIconWorldRadiusLeavesANonStarBodyAtFullScale() {
             // 5 * 100 * 1 = 500, no star reduction.
-            assertThat(StarIconHitTest.computeIconWorldRadius(100f, 1f, false, false))
+            assertThat(StarIconHitTest.computeIconWorldRadius(100f, 1f, StarIconBodyKind.OTHER))
                     .isEqualTo(500f, within(1e-3f));
         }
 
@@ -100,14 +100,15 @@ class StarIconHitTestTest {
         void computeIconWorldRadiusSizesANebulaCentreOffTheFixedBase() {
             // The (large, diffuse) radius is ignored for a nebula centre; it is sized off the fixed
             // base: 5 * 200 * 1 = 1000.
-            assertThat(StarIconHitTest.computeIconWorldRadius(9999f, 1f, false, true))
+            assertThat(StarIconHitTest.computeIconWorldRadius(
+                    9999f, 1f, StarIconBodyKind.NEBULA_CENTRE))
                     .isEqualTo(1000f, within(1e-3f));
         }
 
         @Test
         void computeIconWorldRadiusAppliesTheMapIconScaleMultiplier() {
             // 5 * 100 * 2 = 1000: the per-spec multiplier scales the whole radius.
-            assertThat(StarIconHitTest.computeIconWorldRadius(100f, 2f, false, false))
+            assertThat(StarIconHitTest.computeIconWorldRadius(100f, 2f, StarIconBodyKind.OTHER))
                     .isEqualTo(1000f, within(1e-3f));
         }
     }
