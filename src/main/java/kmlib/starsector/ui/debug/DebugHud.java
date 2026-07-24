@@ -1,0 +1,109 @@
+package kmlib.starsector.ui.debug;
+
+import com.fs.starfarer.api.Global;
+
+import kmlib.starsector.ui.render.gl.GlStateGuard;
+import kmlib.starsector.ui.render.gl.LabelRenderer;
+
+import org.lazywizard.lazylib.ui.LazyFont;
+
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * A four-corner on-screen debug readout: any code pushes a keyed value to a corner, and one render
+ * pass a frame draws them all and clears, so the next frame starts empty. This is the shared
+ * "print a value onto the screen while chasing a bug" surface - a caller pushes what it wants seen
+ * rather than log-diving, and the values land in a fixed spot per corner frame to frame.
+ *
+ * <p>Immediate mode by design: pushing accumulates for the current frame only, and {@link #render}
+ * both draws and clears, so a value shown one frame and not pushed the next simply stops showing.
+ * The push-then-render ordering is the caller's to honour - pushes must land before the frame's
+ * render, which is why the render is wired last, into the pass composited over everything.
+ *
+ * <p>Single-threaded: pushed and rendered on the game's render thread, so the accumulator needs no
+ * synchronisation.
+ */
+public final class DebugHud {
+
+    // The body face both the key and value draw in, at the two sizes the layout sets, and the alpha
+    // they draw at - readable over the map without fully hiding what is behind them.
+    private static final String FONT = "insignia15LTaa";
+    private static final float OPACITY = 0.9f;
+
+    // One shared readout the whole run pushes to, since a debug print has no owner to hang an
+    // instance off and every caller wants the same on-screen surface.
+    private static final DebugHud INSTANCE = new DebugHud();
+
+    private final Map<DebugQuadrant, List<DebugHudEntry>> entriesByQuadrant =
+            new EnumMap<>(DebugQuadrant.class);
+
+    private DebugHud() {
+    }
+
+    /**
+     * @return the shared readout every caller pushes to and the one render pass draws
+     */
+    public static DebugHud getInstance() {
+        return INSTANCE;
+    }
+
+    /**
+     * Adds one keyed value to a corner for this frame, beneath anything already pushed there.
+     *
+     * @param quadrant the corner to stack it into
+     * @param key      the label, drawn small above the body
+     * @param body     the value, drawn beneath the key
+     */
+    public void push(DebugQuadrant quadrant, String key, String body) {
+        entriesByQuadrant.computeIfAbsent(quadrant, unused -> new ArrayList<>())
+                .add(new DebugHudEntry(key, body));
+    }
+
+    /**
+     * Draws every pushed entry and clears them, so the frame's readout does not carry into the
+     * next. Must run with a current GL context, in a pass composited over what it annotates.
+     */
+    public void render() {
+        var settings = Global.getSettings();
+        var screenWidth = settings.getScreenWidth();
+        var screenHeight = settings.getScreenHeight();
+        GlStateGuard.bracket(() -> drawAllCorners(screenWidth, screenHeight));
+        clear();
+    }
+
+    /**
+     * Drops every pushed entry without drawing, so a stream switched off mid-frame leaves nothing
+     * behind.
+     */
+    public void clear() {
+        entriesByQuadrant.clear();
+    }
+
+    private void drawAllCorners(float screenWidth, float screenHeight) {
+        for (var quadrant : DebugQuadrant.values()) {
+            var entries = entriesByQuadrant.get(quadrant);
+            if (entries == null || entries.isEmpty()) {
+                continue;
+            }
+            for (var line : DebugHudLayout.layOut(quadrant, entries, screenWidth, screenHeight)) {
+                // A left-half corner aligns its right edge to the anchor; a right-half corner its
+                // left. Only the top row is used since the layout stacks by the line's top.
+                var anchor = line.isRightAligned()
+                        ? LazyFont.TextAnchor.TOP_RIGHT
+                        : LazyFont.TextAnchor.TOP_LEFT;
+                LabelRenderer.render(
+                        FONT,
+                        line.text(),
+                        line.x(),
+                        line.y(),
+                        anchor,
+                        line.colour(),
+                        OPACITY,
+                        line.fontSize());
+            }
+        }
+    }
+}
