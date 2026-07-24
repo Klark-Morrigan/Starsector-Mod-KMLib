@@ -4,6 +4,7 @@ import kmlib.color.Colors;
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.color.StarsectorUiColor;
 import kmlib.starsector.ui.font.LazyFontCache;
+import kmlib.starsector.ui.font.TextFace;
 import kmlib.starsector.ui.widgets.tabs.VanillaTab;
 import kmlib.starsector.ui.widgets.tabs.VanillaTabContent;
 import kmlib.starsector.ui.widgets.tabs.VanillaTabStrip;
@@ -285,16 +286,5 @@ public final class VanillaTabStripRenderer {
 
         TEXT_CACHE.put(key, drawable);
         return drawable;
-    }
-
-    /**
-     * A text face - the font basename and size a run of the strip's text draws in - bundled so the
-     * paint pass threads one value from the caller down through its label and shortcut draws rather
-     * than the basename-and-size pair at every hop.
-     *
-     * @param basename the {@code graphics/fonts} basename the text draws in
-     * @param size     the size the text draws at
-     */
-    public record TextFace(String basename, double size) {
     }
 }

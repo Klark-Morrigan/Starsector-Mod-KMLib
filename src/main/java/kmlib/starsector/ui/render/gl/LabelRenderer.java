@@ -2,6 +2,7 @@ package kmlib.starsector.ui.render.gl;
 
 import kmlib.color.Colors;
 import kmlib.starsector.ui.font.LazyFontCache;
+import kmlib.starsector.ui.font.TextFace;
 
 import org.lazywizard.lazylib.ui.LazyFont;
 import org.lazywizard.lazylib.ui.LazyFont.DrawableString;
@@ -36,7 +37,7 @@ public final class LabelRenderer {
      * Draws {@code text} in {@code style} at {@code (x, y)}, positioned by {@code anchor}. Skipped
      * silently when the face cannot load.
      *
-     * @param style  the face, colour, opacity, and size the line draws in
+     * @param style  the face, colour, and opacity the line draws in
      * @param text   the line to draw
      * @param x      the anchor x, in UI coordinates
      * @param y      the anchor y, in UI coordinates (UI origin is bottom-left)
@@ -49,11 +50,7 @@ public final class LabelRenderer {
             float y,
             LazyFont.TextAnchor anchor) {
 
-        var drawable = resolveText(
-                style.font(),
-                text,
-                style.fontSize());
-                
+        var drawable = resolveText(style.face(), text);
         if (drawable == null) {
             return;
         }
@@ -65,17 +62,17 @@ public final class LabelRenderer {
     // Mints the glyph run once per (font, size, text) and reuses it; the base colour is re-set before
     // each draw, so one buffer serves every frame. Null when the face cannot load, in which case the
     // caller draws without that text.
-    private static DrawableString resolveText(String font, String text, double fontSize) {
-        var key = font + "|" + fontSize + "|" + text;
+    private static DrawableString resolveText(TextFace face, String text) {
+        var key = face.basename() + "|" + face.size() + "|" + text;
         var cached = TEXT_CACHE.get(key);
         if (cached != null) {
             return cached;
         }
-        var face = LazyFontCache.loadByBasename(font);
-        if (face == null) {
+        var font = LazyFontCache.loadByBasename(face.basename());
+        if (font == null) {
             return null;
         }
-        var drawable = face.createText(text, Color.WHITE, (float) fontSize);
+        var drawable = font.createText(text, Color.WHITE, (float) face.size());
         TEXT_CACHE.put(key, drawable);
         return drawable;
     }

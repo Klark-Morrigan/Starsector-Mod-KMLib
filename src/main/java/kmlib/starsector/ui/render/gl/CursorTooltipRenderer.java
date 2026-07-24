@@ -41,15 +41,15 @@ public final class CursorTooltipRenderer {
      * @param style the body font, size, opacity, and box chrome the whole tooltip draws in
      */
     public static void render(List<TooltipRow> rows, CursorTooltipStyle style) {
-        var face = LazyFontCache.loadByBasename(style.font());
-        if (face == null) {
+        var font = LazyFontCache.loadByBasename(style.face().basename());
+        if (font == null) {
             return;
         }
         var settings = Global.getSettings();
         var layout = CursorTooltip.layOut(
                 rows,
-                style.fontSize(),
-                new LazyFontMeasurer(face),
+                style.face().size(),
+                new LazyFontMeasurer(font),
                 UiCursor.getUiX(),
                 UiCursor.getUiY(),
                 settings.getScreenWidth(),
@@ -95,10 +95,10 @@ public final class CursorTooltipRenderer {
             }
         }
 
-        // Both labels share the row's face, opacity, and size; only the colour differs, so the look
-        // is built once here and each call supplies its own colour.
+        // Both labels share the row's face and opacity; only the colour differs, so the look is built
+        // once here and each call supplies its own colour.
         Function<Color, LabelStyle> createStyleInColour = colour ->
-                new LabelStyle(style.font(), colour, style.opacity(), style.fontSize());
+                new LabelStyle(style.face(), colour, style.opacity());
 
         LabelRenderer.render(
                 createStyleInColour.apply(row.textColor()),

@@ -16,7 +16,7 @@ import java.awt.Color;
  * @param accent       the frame / wash / label-chrome colour every element strokes with
  * @param brightAccent the brighter colour a checkbox ticks with
  * @param bodyFont     the {@code graphics/fonts} basename the body-control labels draw in
- * @param tabStyle     the look a tabs control draws in (colours + font), read only when one is drawn
+ * @param tabStyle     the look a tabs control draws in (colours + face), read only when one is drawn
  */
 public record WidgetStyle(
         Color panelFill,

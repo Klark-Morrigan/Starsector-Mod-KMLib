@@ -4,6 +4,7 @@ import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.color.StarsectorUiColor;
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlSpec;
+import kmlib.starsector.ui.font.TextFace;
 import kmlib.starsector.ui.input.UiCursor;
 import kmlib.starsector.ui.layout.ControlStripLayout;
 import kmlib.starsector.ui.widgets.Checkbox;
@@ -35,12 +36,12 @@ public final class ControlRenderer {
      * Draws {@code control} in the lit state its spec carries, styled from {@code style} and faded by
      * {@code opacity}. A tick box / toggle lights its accent when its cell is selected; a radio frames its
      * segments in the accent and washes the active one; a checkbox uses the bright accent for its tick; a
-     * tabs row draws the vanilla-styled strip in the style's tab colours and font, lighting the selected
+     * tabs row draws the vanilla-styled strip in the style's tab colours and face, lighting the selected
      * tab and the one under the cursor. Must run with a current GL context, like any immediate-mode GL
      * call.
      *
      * @param control the laid-out control to draw
-     * @param style   the look bundle - accents and body font for every kind, tab colours and font for a
+     * @param style   the look bundle - accents and body font for every kind, tab colours and face for a
      *                tabs row
      * @param opacity overall alpha, 0..1
      */
@@ -72,16 +73,20 @@ public final class ControlRenderer {
         var spec = (ControlSpec.Tabs) control.spec();
         var contents = ControlStripLayout.buildTabContents(spec);
         var tabs = VanillaTabStrip.zipTabs(contents, control.segments());
-        var hoveredIndex = VanillaTabStrip.findTabIndexAt(tabs, UiCursor.getUiX(), UiCursor.getUiY());
+        
+        var hoveredIndex = VanillaTabStrip.findTabIndexAt(
+                tabs,
+                UiCursor.getUiX(),
+                UiCursor.getUiY());
+
         var tabStyle = paint.style().tabStyle();
-        var textFace = new VanillaTabStripRenderer.TextFace(tabStyle.font(), tabStyle.fontSize());
 
         VanillaTabStripRenderer.render(
                 tabs,
                 spec.selectedIndex(),
                 hoveredIndex,
                 tabStyle.colors(),
-                textFace,
+                tabStyle.face(),
                 paint.opacity());
     }
 
@@ -311,10 +316,11 @@ public final class ControlRenderer {
             LazyFont.TextAnchor anchor,
             double fontSize) {
         var labelStyle = new LabelStyle(
-                paint.style().bodyFont(),
+                new TextFace(
+                        paint.style().bodyFont(),
+                        fontSize),
                 StarsectorUiColor.VANILLA_TEXT.resolve(),
-                paint.opacity(),
-                fontSize);
+                paint.opacity());
         LabelRenderer.render(labelStyle, text, x, y, anchor);
     }
 

@@ -5,6 +5,7 @@ import com.fs.starfarer.api.Global;
 import kmlib.starsector.ui.font.LazyFontCache;
 import kmlib.starsector.ui.font.LazyFontMeasurer;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
+import kmlib.starsector.ui.font.TextFace;
 import kmlib.starsector.ui.render.gl.GlStateGuard;
 import kmlib.starsector.ui.render.gl.LabelRenderer;
 import kmlib.starsector.ui.render.gl.LabelStyle;
@@ -149,7 +150,10 @@ public final class DebugHud {
                 ? LazyFont.TextAnchor.TOP_RIGHT
                 : LazyFont.TextAnchor.TOP_LEFT;
         LabelRenderer.render(
-                new LabelStyle(FONT, line.colour(), OPACITY, line.fontSize()),
+                new LabelStyle(
+                        new TextFace(FONT, line.fontSize()),
+                        line.colour(),
+                        OPACITY),
                 line.text(),
                 line.x(),
                 line.y(),
