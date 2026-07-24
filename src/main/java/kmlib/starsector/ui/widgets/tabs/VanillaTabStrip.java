@@ -14,10 +14,24 @@ import java.util.List;
  * width and resolves which tab a point falls in. Substrate-independent - it produces {@link
  * VanillaTab} models and renders nothing - so a GL or a UI-API renderer can paint the row against it.
  * Derived from the base {@link TabStrip} for the snapping math; it composes each tab's display string
- * ("Label  [K]") so the layout measures exactly the text the paint draws. The raw-GL paint lives in
+ * ("Label  (K)") so the layout measures exactly the text the paint draws. The raw-GL paint lives in
  * {@link kmlib.starsector.ui.render.gl.VanillaTabStripRenderer}.
  */
 public final class VanillaTabStrip {
+    /**
+     * The opening delimiter wrapped around a shortcut key in the display string - a round parenthesis,
+     * the way vanilla brackets a hotkey. Public so the paint pass draws the delimiter as its own text
+     * segment - in the label colour, apart from the gold key - off the same literal the display string
+     * is measured with.
+     */
+    public static final String SHORTCUT_OPEN_DELIMITER = "(";
+
+    /**
+     * The closing delimiter wrapped around a shortcut key in the display string, the pair to
+     * {@link #SHORTCUT_OPEN_DELIMITER}.
+     */
+    public static final String SHORTCUT_CLOSE_DELIMITER = ")";
+
     // The layout approximates the label-to-shortcut gap with two spaces in the measured display
     // string; the tab padding absorbs the small difference against the paint pass, so it never clips.
     private static final String SHORTCUT_GAP_TEXT = "  ";
@@ -37,14 +51,21 @@ public final class VanillaTabStrip {
      * @param measurer  measures each display string's rendered width
      * @return one {@link VanillaTab} per content, in the same order
      */
-    public static List<VanillaTab> layoutTabs(float originX, float rowTopY, float tabHeight,
-            SegmentSpec spec, List<VanillaTabContent> contents, LineWidthMeasurer measurer) {
+    public static List<VanillaTab> layoutTabs(
+            float originX,
+            float rowTopY,
+            float tabHeight,
+            SegmentSpec spec,
+            List<VanillaTabContent> contents,
+            LineWidthMeasurer measurer) {
+
         var displays = new ArrayList<String>(contents.size());
         for (var content : contents) {
             displays.add(composeDisplay(content));
         }
         var laidOut = TabStrip.layoutTabs(originX, rowTopY, tabHeight, spec, displays, measurer);
         var bounds = new ArrayList<Rectangle>(laidOut.size());
+
         for (var tab : laidOut) {
             bounds.add(tab.bounds());
         }
@@ -62,11 +83,17 @@ public final class VanillaTabStrip {
      * @param bounds   each tab's box, in the same order as {@code contents}
      * @return one {@link VanillaTab} per paired (content, box), in order
      */
-    public static List<VanillaTab> zipTabs(List<VanillaTabContent> contents, List<Rectangle> bounds) {
+    public static List<VanillaTab> zipTabs(
+            List<VanillaTabContent> contents,
+            List<Rectangle> bounds) {
+
         var count = Math.min(contents.size(), bounds.size());
         var tabs = new ArrayList<VanillaTab>(count);
+
         for (var index = 0; index < count; index++) {
-            tabs.add(new VanillaTab(contents.get(index), bounds.get(index)));
+            tabs.add(new VanillaTab(
+                    contents.get(index),
+                    bounds.get(index)));
         }
         return List.copyOf(tabs);
     }
@@ -82,8 +109,11 @@ public final class VanillaTabStrip {
      * @param measurer measures each display string's rendered width
      * @return the summed snapped width of the row, or 0 for no contents
      */
-    public static float measureRowWidth(List<VanillaTabContent> contents, SegmentSpec spec,
+    public static float measureRowWidth(
+            List<VanillaTabContent> contents,
+            SegmentSpec spec,
             LineWidthMeasurer measurer) {
+
         var displays = new ArrayList<String>(contents.size());
         for (var content : contents) {
             displays.add(composeDisplay(content));
@@ -100,12 +130,19 @@ public final class VanillaTabStrip {
      * @param pointY the point's y, in UI coordinates
      * @return the containing tab's index, or {@link TabStrip#NO_TAB}
      */
-    public static int findTabIndexAt(List<VanillaTab> tabs, float pointX, float pointY) {
-        return Rectangles.findIndexContaining(tabs, VanillaTab::bounds, pointX, pointY);
+    public static int findTabIndexAt(
+            List<VanillaTab> tabs,
+            float pointX,
+            float pointY) {
+        return Rectangles.findIndexContaining(
+                tabs,
+                VanillaTab::bounds,
+                pointX,
+                pointY);
     }
 
     /**
-     * A tab's display string - "Label  [K]" when it has a shortcut, else just the label - so the
+     * A tab's display string - "Label  (K)" when it has a shortcut, else just the label - so the
      * layout pass measures the same text the paint pass draws. Public so the renderer composes the
      * identical string rather than re-deriving the spacing convention.
      *
@@ -116,18 +153,22 @@ public final class VanillaTabStrip {
         if (!KmlibStrings.hasText(content.shortcut())) {
             return content.label();
         }
-        return content.label() + SHORTCUT_GAP_TEXT + bracketShortcut(content.shortcut());
+        return content.label()
+                + SHORTCUT_GAP_TEXT
+                + wrapShortcut(content.shortcut());
     }
 
     /**
-     * A shortcut wrapped in brackets - "[K]" - the form both the measured display string and the
-     * gold paint drawable use, kept here as the single source so the two never drift on the bracket
-     * convention.
+     * A shortcut wrapped in its delimiters - "(K)" - the form the layout measures, kept here as the
+     * single source so the measured display string and the paint pass never drift on the delimiter
+     * convention. The paint pass draws the same three pieces ({@link #SHORTCUT_OPEN_DELIMITER}, the
+     * key, {@link #SHORTCUT_CLOSE_DELIMITER}) as separate coloured segments rather than this one
+     * string, so it builds off the same delimiters this composes from.
      *
      * @param shortcut the raw shortcut key name
-     * @return the bracketed shortcut
+     * @return the delimited shortcut
      */
-    public static String bracketShortcut(String shortcut) {
-        return "[" + shortcut + "]";
+    public static String wrapShortcut(String shortcut) {
+        return SHORTCUT_OPEN_DELIMITER + shortcut + SHORTCUT_CLOSE_DELIMITER;
     }
 }

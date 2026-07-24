@@ -17,7 +17,7 @@ import java.awt.Color;
  * @param labelDefault  a resting tab's label colour
  * @param labelSelected the active tab's label colour
  * @param labelHovered  the hovered tab's label colour
- * @param shortcut      the gold the bracketed shortcut key paints in
+ * @param shortcut      the gold the shortcut key paints in, apart from its label-coloured delimiters
  */
 public record VanillaTabColors(Color backdrop, Color accent, Color labelDefault,
         Color labelSelected, Color labelHovered, Color shortcut) {

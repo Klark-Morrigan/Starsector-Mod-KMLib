@@ -12,6 +12,7 @@ import kmlib.text.KmlibStrings;
 import org.lazywizard.lazylib.ui.LazyFont;
 import org.lazywizard.lazylib.ui.LazyFont.DrawableString;
 
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -20,17 +21,18 @@ import java.util.Map;
 /**
  * Raw-GL paint for a {@link VanillaTabStrip}: the sector-map Sector/System tab look - a black strip
  * with the active tab lit by a player-colour wash and underline, the hovered tab washed fainter,
- * hairline dividers, and each label drawn with its bracketed shortcut in accent gold. The tab
+ * hairline dividers, and each label drawn beside its shortcut - the key alone in accent gold, its
+ * delimiters in the label colour, the way vanilla highlights only the key. The tab
  * geometry lives on the substrate-independent widget; this draws it. The wash on the selected tab and
  * the seams between tabs are the chrome every horizontal segmented control shares, so they come from
  * {@link HorizontalSegmentsRenderer} (as a radio row's do); the black backdrop, the hover wash, the
- * baseline, the underline, and the two-colour label are this strip's own. Unlike the plain renderers it
- * draws the label text itself (through {@link LazyFontCache}), since the two-colour
- * label-plus-gold-shortcut is the whole point of the style.
+ * baseline, the underline, and the multi-colour label are this strip's own. Unlike the plain renderers it
+ * draws the label text itself (through {@link LazyFontCache}), since the
+ * label-with-a-gold-key-shortcut is the whole point of the style.
  *
- * <p>Opacity scales every quad and both text colours by one value, so the whole strip fades as a
- * unit. The gold shortcut is a second drawable re-coloured per frame (rather than a baked
- * multi-colour run) precisely so it fades with the rest instead of staying opaque.
+ * <p>Opacity scales every quad and every text colour by one value, so the whole strip fades as a
+ * unit. The shortcut is drawn as separate delimiter and key drawables re-coloured per frame (rather
+ * than one baked multi-colour run) precisely so they fade with the rest instead of staying opaque.
  */
 public final class VanillaTabStripRenderer {
     // How much of the strip opacity the hover wash carries, so a hovered tab lights fainter than the
@@ -39,7 +41,7 @@ public final class VanillaTabStripRenderer {
 
     private static final float BASELINE_THICKNESS = 1f;
     private static final float UNDERLINE_THICKNESS = 2f;
-    // Pixel gap drawn between the label and its bracketed shortcut, matching the two-space gap the
+    // Pixel gap drawn between the label and its delimited shortcut, matching the two-space gap the
     // layout measured with.
     private static final float SHORTCUT_GAP = 6f;
 
@@ -64,21 +66,37 @@ public final class VanillaTabStripRenderer {
      * @param fontSize      the label font size
      * @param opacity       overall alpha, 0..1, applied to every quad and both text colours
      */
-    public static void render(List<VanillaTab> tabs, int selectedIndex, int hoveredIndex,
-            VanillaTabColors colors, String fontBasename, double fontSize, float opacity) {
+    public static void render(
+            List<VanillaTab> tabs,
+            int selectedIndex,
+            int hoveredIndex,
+            VanillaTabColors colors,
+            String fontBasename,
+            double fontSize,
+            float opacity) {
         for (var index = 0; index < tabs.size(); index++) {
             var tab = tabs.get(index);
             var isSelected = index == selectedIndex;
             var isHovered = index == hoveredIndex;
             renderChrome(tab.bounds(), isSelected, isHovered, colors, opacity);
-            renderTabText(tab.bounds(), tab.content(), isSelected, isHovered, colors, fontBasename,
-                    fontSize, opacity);
+            renderTabText(
+                    tab.bounds(),
+                    tab.content(),
+                    isSelected,
+                    isHovered,
+                    colors,
+                    fontBasename,
+                    fontSize,
+                    opacity);
         }
         // The seams between tabs, ruled once over the laid boxes through the shared segmented-row
         // primitive so this strip and a radio row divide their segments the same way. Drawn after the
         // per-tab chrome (a divider must sit over the backdrops it parts) and clear of the centred
         // labels, so the single pass reads identically to a per-tab rule.
-        HorizontalSegmentsRenderer.renderSeamDividers(collectBounds(tabs), colors.accent(), opacity);
+        HorizontalSegmentsRenderer.renderSeamDividers(
+                collectBounds(tabs),
+                colors.accent(),
+                opacity);
     }
 
     // The laid tab boxes, in row order, for the shared seam-divider pass.
@@ -93,58 +111,172 @@ public final class VanillaTabStripRenderer {
     // Black backdrop, an accent wash on the selected (or fainter, hovered) tab, a faint baseline
     // grounding the row, and a bright underline capping the active tab. The inter-tab seams are drawn
     // once by the caller through the shared primitive, not here.
-    private static void renderChrome(Rectangle bounds, boolean isSelected, boolean isHovered,
-            VanillaTabColors colors, float opacity) {
-        UiFill.renderQuad(bounds.x(), bounds.y(), bounds.width(), bounds.height(),
-                colors.backdrop(), opacity);
+    private static void renderChrome(
+            Rectangle bounds,
+            boolean isSelected,
+            boolean isHovered,
+            VanillaTabColors colors,
+            float opacity) {
+
+        UiFill.renderQuad(
+                bounds.x(),
+                bounds.y(),
+                bounds.width(),
+                bounds.height(),
+                colors.backdrop(),
+                opacity);
+
         if (isSelected) {
-            HorizontalSegmentsRenderer.renderSelectedWash(bounds, colors.accent(), opacity);
+            HorizontalSegmentsRenderer.renderSelectedWash(
+                    bounds,
+                    colors.accent(),
+                    opacity);
         } else if (isHovered) {
-            UiFill.renderQuad(bounds.x(), bounds.y(), bounds.width(), bounds.height(),
-                    colors.accent(), opacity * HOVER_FILL_ALPHA_MULT);
+            UiFill.renderQuad(
+                    bounds.x(),
+                    bounds.y(),
+                    bounds.width(),
+                    bounds.height(),
+                    colors.accent(),
+                    opacity * HOVER_FILL_ALPHA_MULT);
         }
-        UiFill.renderQuad(bounds.x(), bounds.y(), bounds.width(), BASELINE_THICKNESS,
-                colors.accent(), opacity * HorizontalSegmentsRenderer.DIVIDER_ALPHA_MULT);
+
+        UiFill.renderQuad(
+                bounds.x(),
+                bounds.y(),
+                bounds.width(),
+                BASELINE_THICKNESS,
+                colors.accent(),
+                opacity * HorizontalSegmentsRenderer.DIVIDER_ALPHA_MULT);
+
         if (isSelected) {
-            UiFill.renderQuad(bounds.x(), bounds.y(), bounds.width(), UNDERLINE_THICKNESS,
-                    colors.accent(), opacity);
+            UiFill.renderQuad(
+                    bounds.x(),
+                    bounds.y(),
+                    bounds.width(),
+                    UNDERLINE_THICKNESS,
+                    colors.accent(),
+                    opacity);
         }
     }
 
-    // Draws the label in its state colour and, when present, the bracketed shortcut in gold,
-    // centred as one group inside the tab. Both colours fade by opacity so the text tracks the
-    // strip. Skipped silently when the font cannot load.
-    private static void renderTabText(Rectangle bounds,
-            VanillaTabContent content, boolean isSelected, boolean isHovered,
-            VanillaTabColors colors, String fontBasename, double fontSize, float opacity) {
+    // Draws the label in its state colour and, when present, the shortcut - centred as one group
+    // inside the tab. The shortcut paints as three segments so only the key carries the accent gold
+    // while its delimiters share the label colour, matching how vanilla highlights the key alone
+    // inside its parentheses. Every colour fades by opacity so the text tracks the strip. Skipped
+    // silently when the font cannot load.
+    private static void renderTabText(
+            Rectangle bounds,
+            VanillaTabContent content,
+            boolean isSelected,
+            boolean isHovered,
+            VanillaTabColors colors,
+            String fontBasename,
+            double fontSize,
+            float opacity) {
+
         var label = resolveText(fontBasename, fontSize, content.label());
         if (label == null) {
             return;
         }
-        var labelColor = isSelected ? colors.labelSelected()
-                : isHovered ? colors.labelHovered() : colors.labelDefault();
-        label.setBaseColor(Colors.scaleAlpha(labelColor, opacity));
+        var labelColor = isSelected
+                ? colors.labelSelected()
+                : isHovered
+                        ? colors.labelHovered()
+                        : colors.labelDefault();
+
+        var fadedLabelColor = Colors.scaleAlpha(labelColor, opacity);
+        label.setBaseColor(fadedLabelColor);
+
+        // The delimiters take the label's state colour; only the key takes the gold accent.
         var shortcut = KmlibStrings.hasText(content.shortcut())
-                ? resolveText(fontBasename, fontSize, VanillaTabStrip.bracketShortcut(content.shortcut()))
-                : null;
+                ? resolveShortcutSegments(
+                        fontBasename,
+                        fontSize,
+                        content.shortcut(),
+                        fadedLabelColor,
+                        Colors.scaleAlpha(colors.shortcut(),
+                        opacity))
+                : List.<DrawableString>of();
+
         var labelWidth = label.getWidth();
-        var gap = shortcut != null ? SHORTCUT_GAP : 0f;
-        var shortcutWidth = shortcut != null ? shortcut.getWidth() : 0f;
+        var gap = shortcut.isEmpty() ? 0f : SHORTCUT_GAP;
+        var shortcutWidth = sumSegmentWidths(shortcut);
         var startX = bounds.x() + (bounds.width() - (labelWidth + gap + shortcutWidth)) / 2f;
         var centerY = bounds.computeCenterY();
+
         label.setAnchor(LazyFont.TextAnchor.CENTER_LEFT);
         label.draw(startX, centerY);
-        if (shortcut != null) {
-            shortcut.setBaseColor(Colors.scaleAlpha(colors.shortcut(), opacity));
-            shortcut.setAnchor(LazyFont.TextAnchor.CENTER_LEFT);
-            shortcut.draw(startX + labelWidth + gap, centerY);
+
+        drawSegmentsInOrder(
+                shortcut,
+                startX + labelWidth + gap,
+                centerY);
+    }
+
+    // Resolves the shortcut's three drawables - open delimiter, key, close delimiter - each set to
+    // its colour so the key alone lights gold while its delimiters read as label text. The delimiters
+    // come from VanillaTabStrip, the same source the measured display string delimits with, so the
+    // paint pass and the layout snap cannot drift. Empty when any segment's font cannot load, so the
+    // tab falls back to a bare label rather than a half-drawn shortcut.
+    private static List<DrawableString> resolveShortcutSegments(
+            String fontBasename,
+            double fontSize,
+            String shortcut,
+            Color delimiterColor,
+            Color keyColor) {
+
+        var open = resolveText(fontBasename, fontSize, VanillaTabStrip.SHORTCUT_OPEN_DELIMITER);
+        var key = resolveText(fontBasename, fontSize, shortcut);
+        var close = resolveText(fontBasename, fontSize, VanillaTabStrip.SHORTCUT_CLOSE_DELIMITER);
+
+        if (open == null || key == null || close == null) {
+            return List.of();
+        }
+
+        open.setBaseColor(delimiterColor);
+        key.setBaseColor(keyColor);
+        close.setBaseColor(delimiterColor);
+
+        var segments = List.of(open, key, close);
+        for (var segment : segments) {
+            segment.setAnchor(LazyFont.TextAnchor.CENTER_LEFT);
+        }
+        return segments;
+    }
+
+    // The summed rendered width of the shortcut segments, so the group centres against the label as
+    // if it were the one delimited string the layout measured.
+    private static float sumSegmentWidths(List<DrawableString> segments) {
+        var total = 0f;
+        for (var segment : segments) {
+            total += segment.getWidth();
+        }
+        return total;
+    }
+
+    // Draws the segments left to right from startX, advancing the cursor by each one's width so they
+    // read as a single continuous "(K)" run despite carrying two colours.
+    private static void drawSegmentsInOrder(
+            List<DrawableString> segments,
+            float startX,
+            float centerY) {
+
+        var cursorX = startX;
+        for (var segment : segments) {
+            segment.draw(cursorX, centerY);
+            cursorX += segment.getWidth();
         }
     }
 
     // Mints a drawable once per (font, size, text) and reuses it; the base colour is re-set before
     // each draw, so one buffer serves every frame. Null when the font face cannot load, in which
     // case the tab draws its chrome without text.
-    private static DrawableString resolveText(String fontBasename, double fontSize, String text) {
+    private static DrawableString resolveText(
+            String fontBasename,
+            double fontSize,
+            String text) {
+
         var key = fontBasename + "|" + fontSize + "|" + text;
         var cached = TEXT_CACHE.get(key);
         if (cached != null) {
@@ -156,7 +288,11 @@ public final class VanillaTabStripRenderer {
         }
         // The base colour is a throwaway - render re-sets it per frame before drawing - so a
         // null-safe palette literal serves; the live label/shortcut colours arrive at draw time.
-        var drawable = font.createText(text, StarsectorUiColor.WHITE.resolve(), (float) fontSize);
+        var drawable = font.createText(
+                text,
+                StarsectorUiColor.WHITE.resolve(),
+                (float) fontSize);
+                
         TEXT_CACHE.put(key, drawable);
         return drawable;
     }
