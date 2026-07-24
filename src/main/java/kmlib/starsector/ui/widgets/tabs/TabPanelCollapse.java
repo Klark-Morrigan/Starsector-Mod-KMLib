@@ -34,6 +34,23 @@ public final class TabPanelCollapse {
     private boolean isCollapsing;
 
     /**
+     * A collapse seeded fully docked and idle, for a panel that opens collapsed - the rail already showing
+     * and the body reclaimed - rather than at the expanded default. The next handle toggle reverses it
+     * toward expanded, so a docked start animates open exactly as an expanded start animates shut.
+     *
+     * @return a collapse already settled at the docked end
+     */
+    public static TabPanelCollapse createDocked() {
+        var collapse = new TabPanelCollapse();
+        // Seed the linear parameter at the docked end and aim it there, so the eased read reports a full
+        // fraction and the next toggle reverses it toward expanded - the same end state a full collapse
+        // settles into, reached without stepping through the animation.
+        collapse.progress = 1f;
+        collapse.isCollapsing = true;
+        return collapse;
+    }
+
+    /**
      * Flips the direction, so the handle both starts a collapse and reverses one. From expanded or still
      * collapsing it heads for docked; from docked or still expanding it heads back to expanded. Progress is
      * left where it is, so a reversal mid-flight eases on from the current fraction rather than restarting.

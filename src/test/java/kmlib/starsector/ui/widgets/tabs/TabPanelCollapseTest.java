@@ -21,6 +21,38 @@ final class TabPanelCollapseTest {
     private static final float QUARTER_DURATION = DURATION / 4f;
 
     @Nested
+    class CreateDocked {
+
+        @Test
+        void createDockedStartsFullyCollapsedAtTheDockedRail() {
+            var collapse = TabPanelCollapse.createDocked();
+            assertThat(collapse.getCollapseFraction()).isCloseTo(1f, within(TOLERANCE));
+            assertThat(collapse.isDocked()).isTrue();
+        }
+
+        @Test
+        void createDockedIsSettledSoAFrameDoesNotDriftItOffTheDockedEnd() {
+            var collapse = TabPanelCollapse.createDocked();
+            // Seeded at the docked end and aimed there, an unconditional per-frame advance leaves it put
+            // rather than pushing progress past one.
+            collapse.advanceByElapsedTime(FULL_DURATION, DURATION);
+            assertThat(collapse.getCollapseFraction()).isCloseTo(1f, within(TOLERANCE));
+            assertThat(collapse.isAnimating()).isFalse();
+        }
+
+        @Test
+        void createDockedExpandsBackToZeroAfterTheHandleReverses() {
+            var collapse = TabPanelCollapse.createDocked();
+            // The next toggle sends a docked start toward expanded, so a full duration back reaches the
+            // expanded end - a docked start animates open just as an expanded start animates shut.
+            collapse.toggleCollapse();
+            collapse.advanceByElapsedTime(FULL_DURATION, DURATION);
+            assertThat(collapse.getCollapseFraction()).isCloseTo(0f, within(TOLERANCE));
+            assertThat(collapse.isDocked()).isFalse();
+        }
+    }
+
+    @Nested
     class GetCollapseFraction {
 
         @Test

@@ -19,7 +19,9 @@ import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
  * {@link #getCollapseFraction()} when it lays the panel out, advances the collapse each frame it draws, and
  * feeds it pointer events. The collapse state lives here beside the scroll offset because both are the
  * panel's own transient per-session UI state, not the host's; a consumer that lays out a placement and
- * pumps this controller inherits the collapse handle without wiring the animation itself.
+ * pumps this controller inherits the collapse handle without wiring the animation itself. The panel opens
+ * expanded by default, or collapsed to its docked rail via {@link #createStartingDocked()}, so a host picks
+ * the initial fold at construction rather than driving the animation to reach it.
  */
 public final class TabPanelController {
     // The body's controller, owning the scroll and drag state; this routes everything but a header-tab or
@@ -28,12 +30,34 @@ public final class TabPanelController {
 
     // The collapse animation - how far the body is folded to its docked rail and which way it is heading.
     // Held beside the scroll offset so any tab-panel consumer inherits the handle by pumping this controller.
-    private final TabPanelCollapse collapse = new TabPanelCollapse();
+    private final TabPanelCollapse collapse;
 
     // Whether the pointer sat over the collapse notch as of the last pointer event, so the render pass can
     // light the handle. Only the input pass sees the pointer, so it is latched here; hover changes only when
     // the pointer moves, so the last-seen value stays correct on the frames between moves.
     private boolean isNotchHovered;
+
+    /** A controller whose panel opens expanded - the fold a tab panel starts at unless a host asks otherwise. */
+    public TabPanelController() {
+        this(new TabPanelCollapse());
+    }
+
+    // Shared construction taking the collapse seed, so the expanded default and the docked start differ only
+    // in that seed and neither construction path learns a second one.
+    private TabPanelController(TabPanelCollapse collapse) {
+        this.collapse = collapse;
+    }
+
+    /**
+     * A controller whose panel opens collapsed to its docked rail rather than expanded, for a host that
+     * wants the body out of the way until the player expands it. The handle then animates it open exactly as
+     * an expanded panel animates shut.
+     *
+     * @return a controller seeded at the docked end
+     */
+    public static TabPanelController createStartingDocked() {
+        return new TabPanelController(TabPanelCollapse.createDocked());
+    }
 
     /**
      * @return the body's scroll position, for the layout to read (the requested offset) and settle
