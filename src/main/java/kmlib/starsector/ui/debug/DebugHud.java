@@ -2,15 +2,22 @@ package kmlib.starsector.ui.debug;
 
 import com.fs.starfarer.api.Global;
 
+import kmlib.starsector.ui.font.LazyFontCache;
+import kmlib.starsector.ui.font.LazyFontMeasurer;
+import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.render.gl.GlStateGuard;
 import kmlib.starsector.ui.render.gl.LabelRenderer;
+import kmlib.starsector.ui.render.gl.LabelStyle;
+import kmlib.starsector.ui.render.gl.UiFill;
 
 import org.lazywizard.lazylib.ui.LazyFont;
 
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 /**
  * A four-corner on-screen debug readout: any code pushes a keyed value to a corner, and one render
@@ -32,6 +39,12 @@ public final class DebugHud {
     // they draw at - readable over the map without fully hiding what is behind them.
     private static final String FONT = "insignia15LTaa";
     private static final float OPACITY = 0.9f;
+
+    // A half-opaque black plate behind each line, padded a little past the glyphs, so bright debug
+    // text stays legible over a busy map instead of vanishing into same-coloured terrain beneath it.
+    private static final Color BACKDROP_COLOUR = Color.BLACK;
+    private static final float BACKDROP_OPACITY = 0.5f;
+    private static final float BACKDROP_PADDING = 3f;
 
     // One shared readout the whole run pushes to, since a debug print has no owner to hang an
     // instance off and every caller wants the same on-screen surface.
@@ -58,20 +71,43 @@ public final class DebugHud {
      * @param body     the value, drawn beneath the key
      */
     public void push(DebugQuadrant quadrant, String key, String body) {
-        entriesByQuadrant.computeIfAbsent(quadrant, unused -> new ArrayList<>())
+        entriesByQuadrant
+                .computeIfAbsent(quadrant, unused -> new ArrayList<>())
                 .add(new DebugHudEntry(key, body));
     }
 
     /**
-     * Draws every pushed entry and clears them, so the frame's readout does not carry into the
-     * next. Must run with a current GL context, in a pass composited over what it annotates.
+     * Draws every pushed entry pinned to its screen corner and clears them, so the frame's readout
+     * does not carry into the next. Must run with a current GL context, in a pass composited over
+     * what it annotates.
+     *
+     * @param edgePadding how far in from each screen edge a corner's block sits
      */
-    public void render() {
+    public void renderAtCorners(float edgePadding) {
         var settings = Global.getSettings();
         var screenWidth = settings.getScreenWidth();
         var screenHeight = settings.getScreenHeight();
-        GlStateGuard.bracket(() -> drawAllCorners(screenWidth, screenHeight));
-        clear();
+        drawAndClear(quadrant -> DebugHudLayout.layOutAtCorner(
+                quadrant,
+                entriesByQuadrant.get(quadrant),
+                screenWidth,
+                screenHeight,
+                edgePadding));
+    }
+
+    /**
+     * Draws every pushed entry fanned out around the cursor and clears them, so a reading sits
+     * beside the pointer it annotates. Must run with a current GL context.
+     *
+     * @param cursorX the cursor x in UI coordinates
+     * @param cursorY the cursor y in UI coordinates
+     */
+    public void renderAroundCursor(float cursorX, float cursorY) {
+        drawAndClear(quadrant -> DebugHudLayout.layOutAroundCursor(
+                quadrant,
+                entriesByQuadrant.get(quadrant),
+                cursorX,
+                cursorY));
     }
 
     /**
@@ -82,28 +118,61 @@ public final class DebugHud {
         entriesByQuadrant.clear();
     }
 
-    private void drawAllCorners(float screenWidth, float screenHeight) {
-        for (var quadrant : DebugQuadrant.values()) {
-            var entries = entriesByQuadrant.get(quadrant);
-            if (entries == null || entries.isEmpty()) {
-                continue;
+    // Draws each non-empty corner's lines through the given layout, inside one GL state bracket, then
+    // clears - the shared body of both render modes, which differ only in how a corner is laid out.
+    // The face is resolved once so each line's backdrop can be sized to its glyphs; a face that fails
+    // to load leaves the backdrop off (measurer null) and the text draw skips itself the same way.
+    private void drawAndClear(Function<DebugQuadrant, List<DebugHudLine>> layout) {
+        var face = LazyFontCache.loadByBasename(FONT);
+        var measurer = face == null ? null : new LazyFontMeasurer(face);
+        GlStateGuard.bracket(() -> {
+            for (var quadrant : DebugQuadrant.values()) {
+                var entries = entriesByQuadrant.get(quadrant);
+                if (entries == null || entries.isEmpty()) {
+                    continue;
+                }
+                for (var line : layout.apply(quadrant)) {
+                    drawLine(line, measurer);
+                }
             }
-            for (var line : DebugHudLayout.layOut(quadrant, entries, screenWidth, screenHeight)) {
-                // A left-half corner aligns its right edge to the anchor; a right-half corner its
-                // left. Only the top row is used since the layout stacks by the line's top.
-                var anchor = line.isRightAligned()
-                        ? LazyFont.TextAnchor.TOP_RIGHT
-                        : LazyFont.TextAnchor.TOP_LEFT;
-                LabelRenderer.render(
-                        FONT,
-                        line.text(),
-                        line.x(),
-                        line.y(),
-                        anchor,
-                        line.colour(),
-                        OPACITY,
-                        line.fontSize());
-            }
+        });
+        clear();
+    }
+
+    // Draws one line's backdrop plate then its text. The plate goes first so the glyphs land on top
+    // of it rather than behind it.
+    private static void drawLine(DebugHudLine line, LineWidthMeasurer measurer) {
+        drawBackdrop(line, measurer);
+        // A left-half corner aligns its right edge to the anchor; a right-half corner its left. Only
+        // the top row is used since the layout stacks by the line's top.
+        var anchor = line.isRightAligned()
+                ? LazyFont.TextAnchor.TOP_RIGHT
+                : LazyFont.TextAnchor.TOP_LEFT;
+        LabelRenderer.render(
+                new LabelStyle(FONT, line.colour(), OPACITY, line.fontSize()),
+                line.text(),
+                line.x(),
+                line.y(),
+                anchor);
+    }
+
+    // Fills the half-opaque black plate behind one line, sized to the measured glyph run and padded a
+    // little on every side. The line's y is its top and it stacks downward, so the plate drops a font
+    // height below it; a right-aligned line's x is its right edge, so the plate extends left of it.
+    // Skipped when the face could not be measured, leaving the text to draw over the map unbacked.
+    private static void drawBackdrop(DebugHudLine line, LineWidthMeasurer measurer) {
+        if (measurer == null) {
+            return;
         }
+        var width = (float) measurer.measureLineWidth(line.text(), line.fontSize());
+        var height = (float) line.fontSize();
+        var left = line.isRightAligned() ? line.x() - width : line.x();
+        UiFill.renderQuad(
+                left - BACKDROP_PADDING,
+                line.y() - height - BACKDROP_PADDING,
+                width + 2f * BACKDROP_PADDING,
+                height + 2f * BACKDROP_PADDING,
+                BACKDROP_COLOUR,
+                BACKDROP_OPACITY);
     }
 }
