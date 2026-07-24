@@ -45,6 +45,44 @@ class RectangleTest {
     }
 
     @Nested
+    class IntersectWith {
+        @Test
+        void narrowsToTheBoundThatClipsAnOverhangingRectangle() {
+            var box = new Rectangle(0f, 0f, 100f, 40f);
+            var viewport = new Rectangle(20f, 10f, 200f, 200f);
+            assertThat(viewport.intersectWith(box)).isEqualTo(new Rectangle(20f, 10f, 80f, 30f));
+        }
+
+        @Test
+        void keepsARectangleWhollyInsideTheOtherUnchanged() {
+            var box = new Rectangle(0f, 0f, 100f, 100f);
+            var viewport = new Rectangle(10f, 20f, 30f, 40f);
+            assertThat(viewport.intersectWith(box)).isEqualTo(new Rectangle(10f, 20f, 30f, 40f));
+        }
+
+        @Test
+        void narrowsToTheOtherWhenItLiesWhollyInsideThisRectangle() {
+            var viewport = new Rectangle(0f, 0f, 200f, 200f);
+            var box = new Rectangle(30f, 40f, 20f, 20f);
+            assertThat(viewport.intersectWith(box)).isEqualTo(new Rectangle(30f, 40f, 20f, 20f));
+        }
+
+        @Test
+        void collapsesToAZeroExtentRectangleWhenTheTwoDoNotOverlap() {
+            var box = new Rectangle(0f, 0f, 50f, 50f);
+            var viewport = new Rectangle(200f, 200f, 30f, 30f);
+            assertThat(viewport.intersectWith(box)).isEqualTo(new Rectangle(200f, 200f, 0f, 0f));
+        }
+
+        @Test
+        void yieldsAZeroWidthRectangleWhenADockedBoxSharesOnlyAnEdge() {
+            var viewport = new Rectangle(20f, 0f, 0f, 100f);
+            var box = new Rectangle(0f, 0f, 20f, 100f);
+            assertThat(viewport.intersectWith(box)).isEqualTo(new Rectangle(20f, 0f, 0f, 100f));
+        }
+    }
+
+    @Nested
     class ComputeCenterX {
 
         @Test

@@ -33,13 +33,20 @@ public final class PanelRenderer {
      * @param borderWidth the outer border thickness; 0 draws no border
      * @param opacity     overall alpha, 0..1, fading the whole panel
      */
-    public static void render(PanelPlacement placement, WidgetStyle style, float borderWidth,
+    public static void render(
+            PanelPlacement placement,
+            WidgetStyle style,
+            float borderWidth,
             float opacity) {
         // Belt-and-suspenders around the raw GL: the map chrome and tooltips draw after a UI-overlay
         // pass, so any state the panel touches must be restored. The whole draw shares this one save.
         GlStateGuard.bracket(() -> {
-            BorderedBoxRenderer.render(placement.box(), borderWidth, style.panelFill(),
-                    style.accent(), opacity);
+            BorderedBoxRenderer.render(
+                    placement.box(),
+                    borderWidth,
+                    style.panelFill(),
+                    style.accent(),
+                    opacity);
             drawBodyControls(placement, style, opacity);
         });
     }
@@ -50,7 +57,13 @@ public final class PanelRenderer {
     private static void drawBodyControls(PanelPlacement placement, WidgetStyle style, float opacity) {
         for (var control : placement.bodyControls()) {
             if (control.spec() instanceof ControlSpec.VerticalTable table && table.scrolls()) {
-                UiScissor.push(placement.flexViewport());
+                // The scroll clip replaces any outer clip (a raw GL scissor is absolute), so it is
+                // intersected with the box first: when a collapsing tab panel narrows the box, the list
+                // stays inside that shrinking frame and wipes with it rather than escaping to full width.
+                // Uncollapsed the viewport already sits within the box, so the intersection is a no-op.
+                UiScissor.push(placement
+                        .flexViewport()
+                        .intersectWith(placement.box()));
                 drawControl(control, style, opacity);
                 UiScissor.pop();
             } else {
@@ -72,6 +85,10 @@ public final class PanelRenderer {
     private static void drawScrollbar(PanelPlacement placement, WidgetStyle style, float opacity) {
         var track = PanelScrollbars.computeTrack(placement);
         var thumb = PanelScrollbars.computeThumb(placement);
-        ScrollbarRenderer.render(track, thumb, style.accent(), opacity);
+        ScrollbarRenderer.render(
+                track,
+                thumb,
+                style.accent(),
+                opacity);
     }
 }
