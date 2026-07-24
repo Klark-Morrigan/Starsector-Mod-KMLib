@@ -24,8 +24,8 @@ public final class NotchRenderer {
     private static final float HOVER_WASH_ALPHA = 0.35f;
     // The chevron's footprint inside the notch: how far the arms inset from the notch's top and bottom
     // edges, and how far the apex swings off centre at each end of the collapse.
-    private static final float CHEVRON_INSET = 6f;
-    private static final float CHEVRON_APEX_TRAVEL = 5f;
+    private static final float CHEVRON_INSET = 8f;
+    private static final float CHEVRON_APEX_TRAVEL = 4f;
     // The notch strokes one pixel thinner than the frame, floored so a hairline frame still leaves an
     // edge to trace.
     private static final float MIN_NOTCH_BORDER = 1f;

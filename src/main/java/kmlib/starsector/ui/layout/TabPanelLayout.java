@@ -43,7 +43,7 @@ public final class TabPanelLayout {
      * and the input pass hit-tests it against the one rect the layout exposes on the placement.
      */
     public static final float NOTCH_WIDTH = 16f;
-    public static final float NOTCH_HEIGHT = 44f;
+    public static final float NOTCH_HEIGHT = 24f;
     public static final float NOTCH_CENTRE_OFFSET = 0f;
 
     private TabPanelLayout() {
