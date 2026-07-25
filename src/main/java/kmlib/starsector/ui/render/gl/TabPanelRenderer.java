@@ -29,22 +29,32 @@ import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
  * other draw helpers.
  */
 public final class TabPanelRenderer {
+    // The tabs header is opaque chrome, not part of the translucent body: it paints at full alpha
+    // regardless of the body's opacity, so the tab row reads as a solid cap over a see-through panel
+    // rather than fading with it. The body's translucency comes from its panelFill's own alpha and the
+    // opacity parameter; the header opts out of both. This is the seam where the tab chrome decouples
+    // from the panel's global opacity - the strip renderer still fades faithfully by whatever alpha it
+    // is handed, it is simply handed full alpha here.
+    private static final float HEADER_OPACITY = 1f;
+
     private TabPanelRenderer() {
     }
 
     /**
      * Draws the tab panel: the bordered frame, body controls, and scrollbar via {@link PanelRenderer},
-     * then the tabs header on top, then the collapse handle past the right edge, all faded by {@code
-     * opacity}. Must run with a current GL context. The {@code border} names which frame edges to stroke,
-     * so a panel flush against another's edge can drop the border there; the header, the notch, and the
-     * collapse clip are unaffected.
+     * then the tabs header on top, then the collapse handle past the right edge. The body and handle fade
+     * by {@code opacity}; the header is opaque chrome and paints at full alpha regardless (see {@code
+     * HEADER_OPACITY}). Must run with a current GL context. The {@code border} names which frame edges to
+     * stroke, so a panel flush against another's edge can drop the border there; the header, the notch,
+     * and the collapse clip are unaffected.
      *
      * @param placement  the laid-out tab panel to draw
      * @param style      how the panel looks (fill, accents, body font, and the tab style for the header)
      * @param border     the outer border width and which edges to stroke; a zero width draws no border
      * @param notchState how far the body is collapsed (0 lays out full and unclipped, 1 docks to the rail,
      *                   and it orients the notch's chevron) and whether the handle is hovered
-     * @param opacity    overall alpha, 0..1, fading the whole panel
+     * @param opacity    overall alpha, 0..1, fading the body and the collapse handle; the tabs header
+     *                   ignores it and paints opaque
      */
     public static void render(
             TabPanelPlacement placement,
@@ -85,10 +95,13 @@ public final class TabPanelRenderer {
         if (isCollapsing) {
             UiScissor.push(BorderedBox.computeContentBounds(box, border.width()));
         }
+
+        // Tab headers:
         GlStateGuard.bracket(() -> ControlRenderer.render(
                 placement.tabsHeader(),
                 style,
-                opacity));
+                HEADER_OPACITY));
+
         if (isCollapsing) {
             UiScissor.pop();
         }
