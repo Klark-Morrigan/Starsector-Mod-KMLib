@@ -9,6 +9,7 @@ import com.fs.starfarer.campaign.comms.F;
 import com.fs.starfarer.campaign.comms.v2.EventsPanel;
 
 import kmlib.math.geometry.Rectangle;
+import kmlib.starsector.ui.layout.VanillaPositions;
 
 import org.apache.log4j.Logger;
 
@@ -57,11 +58,7 @@ public final class VanillaIntelScreenView implements IntelScreenView {
         if (position == null) {
             return null;
         }
-        return new Rectangle(
-                position.getX(),
-                position.getY(),
-                position.getWidth(),
-                position.getHeight());
+        return VanillaPositions.toRectangle(position);
     }
 
     private CampaignUIAPI readCampaignUi() {
