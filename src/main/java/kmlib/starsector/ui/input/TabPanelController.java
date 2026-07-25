@@ -84,6 +84,15 @@ public final class TabPanelController {
     }
 
     /**
+     * @return true only when the panel is fully expanded and idle - not docked, docking, or undocking - so
+     *         a host can gate expanded-only input such as tab hotkeys, which should not switch tabs while
+     *         the body is folded or in motion
+     */
+    public boolean isFullyExpanded() {
+        return collapse.isFullyExpanded();
+    }
+
+    /**
      * Steps the collapse animation toward its current direction's end by a frame's worth of time, for the
      * host to call each frame it draws so the fold accelerates and settles under the eased curve. The
      * duration is the host's to supply, so it can expose the pace as a setting; a settled panel is left

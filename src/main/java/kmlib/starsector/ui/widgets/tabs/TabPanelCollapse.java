@@ -101,4 +101,15 @@ public final class TabPanelCollapse {
     public boolean isAnimating() {
         return isCollapsing ? progress < 1f : progress > 0f;
     }
+
+    /**
+     * @return true only when the body sits idle at the fully expanded end - progress at zero and not aimed
+     *         back toward the dock - so a consumer can gate expanded-only input such as tab hotkeys, which
+     *         must stay inert while the panel is docked, docking, or undocking. The direction guard is what
+     *         separates the settled-expanded state from the first frame of a fresh collapse, where progress
+     *         is still zero but the panel is already heading for the dock; false in every non-expanded state
+     */
+    public boolean isFullyExpanded() {
+        return progress <= 0f && !isCollapsing;
+    }
 }

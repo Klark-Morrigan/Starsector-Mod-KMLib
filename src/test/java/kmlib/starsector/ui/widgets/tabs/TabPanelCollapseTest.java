@@ -293,4 +293,61 @@ final class TabPanelCollapseTest {
             assertThat(collapse.isAnimating()).isFalse();
         }
     }
+
+    @Nested
+    class IsFullyExpanded {
+
+        @Test
+        void isFullyExpandedIsTrueForAFreshExpandedHolder() {
+            // The expanded default sits idle at zero, so a consumer's expanded-only input is live from open.
+            assertThat(new TabPanelCollapse().isFullyExpanded()).isTrue();
+        }
+
+        @Test
+        void isFullyExpandedIsFalseTheFrameACollapseBegins() {
+            var collapse = new TabPanelCollapse();
+            collapse.toggleCollapse();
+            // Aimed at the dock but not yet stepped, progress is still zero - the direction guard is what
+            // reports this docking-from-the-start frame as not expanded.
+            assertThat(collapse.isFullyExpanded()).isFalse();
+        }
+
+        @Test
+        void isFullyExpandedIsFalseMidCollapse() {
+            var collapse = new TabPanelCollapse();
+            collapse.toggleCollapse();
+            collapse.advanceByElapsedTime(HALF_DURATION, DURATION);
+            assertThat(collapse.isFullyExpanded()).isFalse();
+        }
+
+        @Test
+        void isFullyExpandedIsFalseWhenDocked() {
+            var collapse = new TabPanelCollapse();
+            collapse.toggleCollapse();
+            collapse.advanceByElapsedTime(FULL_DURATION, DURATION);
+            assertThat(collapse.isFullyExpanded()).isFalse();
+        }
+
+        @Test
+        void isFullyExpandedIsFalseWhileUndocking() {
+            var collapse = new TabPanelCollapse();
+            collapse.toggleCollapse();
+            collapse.advanceByElapsedTime(FULL_DURATION, DURATION);
+            // Reversed off the dock and stepped part-way back, it is heading for expanded but not there yet.
+            collapse.toggleCollapse();
+            collapse.advanceByElapsedTime(HALF_DURATION, DURATION);
+            assertThat(collapse.isFullyExpanded()).isFalse();
+        }
+
+        @Test
+        void isFullyExpandedIsTrueOnceAnUndockCompletes() {
+            var collapse = new TabPanelCollapse();
+            collapse.toggleCollapse();
+            collapse.advanceByElapsedTime(FULL_DURATION, DURATION);
+            // A full duration back from the dock settles at the expanded end, so expanded-only input resumes.
+            collapse.toggleCollapse();
+            collapse.advanceByElapsedTime(FULL_DURATION, DURATION);
+            assertThat(collapse.isFullyExpanded()).isTrue();
+        }
+    }
 }

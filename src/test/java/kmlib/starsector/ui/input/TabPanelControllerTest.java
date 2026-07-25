@@ -33,4 +33,20 @@ final class TabPanelControllerTest {
                     .isCloseTo(1f, within(TOLERANCE));
         }
     }
+
+    @Nested
+    class IsFullyExpanded {
+
+        @Test
+        void isFullyExpandedIsTrueForTheExpandedDefault() {
+            // The expanded default is idle at the open end, so a host's expanded-only hotkeys are live.
+            assertThat(new TabPanelController().isFullyExpanded()).isTrue();
+        }
+
+        @Test
+        void isFullyExpandedIsFalseForADockedStart() {
+            // A panel opened docked is not expanded, so its hotkeys stay inert until it is animated open.
+            assertThat(TabPanelController.createStartingDocked().isFullyExpanded()).isFalse();
+        }
+    }
 }
