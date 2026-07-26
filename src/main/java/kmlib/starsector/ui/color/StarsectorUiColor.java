@@ -28,11 +28,9 @@ public enum StarsectorUiColor {
     VANILLA_GRAY(Misc::getGrayColor),
     VANILLA_TEXT(Misc::getTextColor),
     VANILLA_BUTTON_TEXT(Misc::getButtonTextColor),
-    // The engine's shared button fills from settings.json ("buttonBg" / "buttonBgDark") - the bright
-    // cyan an active button/tab fills with and the dark teal a resting one does. These are the fixed
-    // UI palette, NOT the player-faction shades, so they match the map's own Sector/System tabs even
-    // when a modded player faction recolours VANILLA_PLAYER_*.
-    VANILLA_BUTTON_BG(() -> Global.getSettings().getColor("buttonBg")),
+    // The engine's dark button fill from settings.json ("buttonBgDark") - the dark teal a resting
+    // button/tab fills with. The fixed UI palette, NOT the player-faction shades, so it matches the
+    // map's own Sector/System tabs even when a modded player faction recolours VANILLA_PLAYER_*.
     VANILLA_BUTTON_BG_DARK(() -> Global.getSettings().getColor("buttonBgDark")),
     VANILLA_PLAYER_BASE(Misc::getBasePlayerColor),
     VANILLA_PLAYER_BRIGHT(Misc::getBrightPlayerColor),
@@ -67,7 +65,16 @@ public enum StarsectorUiColor {
      * the active player faction (which is what
      * {@link #VANILLA_PLAYER_DARK} tracks).
      */
-    DARK_BLUE(new Color(31, 94, 112, 175));
+    DARK_BLUE(new Color(31, 94, 112, 175)),
+    /**
+     * Literal of the vanilla SELECTED map-tab fill, measured in-game. The engine composes it inside the
+     * tab widget rather than exposing it as a named settings colour, so it is captured here as a literal:
+     * over the near-black tab backing its baked alpha composites to about {@code #487b8d}, the lit
+     * companion to {@code buttonBgDark}'s resting fill (which composites to about {@code #17424e}).
+     * Frozen like {@link #LIGHT_BLUE} / {@link #DARK_BLUE} - a sampled vanilla value that does not track
+     * the player faction.
+     */
+    STEEL_BLUE(new Color(105, 179, 206, 175));
 
     private final Supplier<Color> source;
 
