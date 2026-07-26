@@ -91,9 +91,14 @@ public final class TabPanelRenderer {
         // (past the border), not the whole box: the header lays out at the panel's full width, so a
         // full-box clip would wipe its fill onto the right border and cover it across the header band while
         // the body keeps it - the step at the header/body seam. Interior-clipped, its wipe stops at the
-        // border's inner edge and the right border reads continuously past the header.
+        // border's inner edge and the right border reads continuously past the header. The interior insets
+        // only the STROKED edges, so a dropped edge (the intel panel's left) keeps the header flush there
+        // rather than clipping a border-width strip off a side that has no border to protect.
         if (isCollapsing) {
-            UiScissor.push(BorderedBox.computeContentBounds(box, border.width()));
+            UiScissor.push(BorderedBox.computeContentBounds(
+                    box,
+                    border.width(),
+                    border.edges()));
         }
 
         // Tab headers:
