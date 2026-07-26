@@ -20,9 +20,9 @@ import org.apache.log4j.Logger;
  * core classes is permitted, and the classes touched are marked do-not-obfuscate, so their names
  * stay stable across game builds.
  *
- * <p>The reach into the concrete panel fails closed: a missing or unexpected link, or a blanked
- * preview, resolves to "no visor", so a caller reading the visor rectangle simply gets {@code null}
- * while there is nothing on the intel screen to draw over.
+ * <p>The reach into the concrete panel fails closed: a missing or unexpected link, a sibling sub-tab
+ * showing instead, or a blanked preview all resolve to "no visor", so a caller reading the visor
+ * rectangle simply gets {@code null} while there is nothing on the intel screen to draw over.
  */
 public final class VanillaIntelScreenView implements IntelScreenView {
     private static final Logger LOG = Global.getLogger(VanillaIntelScreenView.class);
@@ -30,6 +30,11 @@ public final class VanillaIntelScreenView implements IntelScreenView {
     // The preview widget's opacity is hard-set to 1.0 while it is showing and 0.0 when a
     // large-description item blanks it, so any threshold between the two reads "is the visor lit".
     private static final float VISOR_VISIBLE_MIN_OPACITY = 0.5f;
+
+    // The sub-tab switch forces the panel faders fully in and out rather than easing them, so the
+    // events panel's brightness is only ever dark or lit and any threshold between the two reads
+    // "is the intel sub-tab the one showing".
+    private static final float INTEL_SUBTAB_SHOWING_MIN_BRIGHTNESS = 0.5f;
 
     // One-shot: a campaign UI of a type other than CampaignState (a wrapping mod) means the cast
     // the panel reach relies on cannot land - a genuine anomaly worth naming once, not on every
@@ -46,6 +51,14 @@ public final class VanillaIntelScreenView implements IntelScreenView {
     public Rectangle getVisorRect() {
         EventsPanel intelPanel = resolveIntelPanel();
         if (intelPanel == null) {
+            return null;
+        }
+        // The intel core tab hosts three sub-tabs - Intel, Planets, Factions - sharing one container,
+        // and switching between them only fades the events panel out; it is never torn down and its
+        // map widget keeps full opacity behind whichever sub-tab is up. So the events panel's own
+        // fader, not the map widget's opacity, is what says which sub-tab is showing, and a dark
+        // panel reads as no visor.
+        if (intelPanel.getFader().getBrightness() < INTEL_SUBTAB_SHOWING_MIN_BRIGHTNESS) {
             return null;
         }
         var mapWidget = intelPanel.getMap();
