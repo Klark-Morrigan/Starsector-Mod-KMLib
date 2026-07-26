@@ -5,6 +5,7 @@ import com.fs.starfarer.api.impl.campaign.ids.MemFlags;
 import com.fs.starfarer.api.impl.campaign.ids.Stats;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
 import com.fs.starfarer.api.util.DynamicStatsAPI;
+import com.fs.starfarer.api.util.Misc;
 
 /**
  * Queries over a single market's state.
@@ -174,6 +175,28 @@ public final class Markets {
         }
         var memory = market.getMemoryWithoutUpdate();
         return memory != null && memory.getBoolean(MemFlags.MARKET_PATROL);
+    }
+
+    /**
+     * Whether a market is a military one - a garrison rather than a plain colony.
+     *
+     * <p>Delegates to {@link Misc#isMilitary}, which reads the
+     * {@link MemFlags#MARKET_MILITARY} ({@code $military}) flag a market's military
+     * industries raise. The read is delegated rather than reproduced: the flag and
+     * the conditions that raise it are vanilla's to change, and a second
+     * implementation of the same rule would be free to drift from it.
+     *
+     * <p>Broader than {@link #fieldsPatrols}, and the two answer different questions.
+     * A market is military by virtue of what it <em>is</em>; it fields patrols by
+     * virtue of a patrol industry currently running there. A caller weighing military
+     * standing - claim scoring, threat estimates - wants this one; a caller asking
+     * whether fleets actually launch from here wants the patrol flag.
+     *
+     * @param market the market to test; null yields false
+     * @return true when the market counts as military
+     */
+    public static boolean isMilitary(MarketAPI market) {
+        return Misc.isMilitary(market);
     }
 
     /**

@@ -11,6 +11,10 @@ import com.fs.starfarer.api.impl.campaign.ids.Stats;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
 import com.fs.starfarer.api.util.DynamicStatsAPI;
 
+import kmlib.starsector.testing.StarsectorSettingsFake;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -23,9 +27,11 @@ import static org.mockito.Mockito.when;
 /**
  * Pins the contracts of {@link Markets#isOwnedColony},
  * {@link Markets#hasAttachedStation}, {@link Markets#getStabilityFraction},
- * {@link Markets#isKnownToPlayer} and {@link Markets#isCountedAsColony}. The cases
- * live in a {@link Nested} group per method so the suite reports as a per-method
- * tree; the shared mock builders stay on the outer class.
+ * {@link Markets#isKnownToPlayer}, {@link Markets#isCountedAsColony},
+ * {@link Markets#fieldsPatrols}, {@link Markets#readPatrolCounts} and
+ * {@link Markets#isMilitary}. The cases live in a {@link Nested} group per method so
+ * the suite reports as a per-method tree; the shared mock builders stay on the outer
+ * class.
  */
 final class MarketsTest {
 
@@ -297,11 +303,56 @@ final class MarketsTest {
         }
     }
 
+    @Nested
+    class IsMilitary {
+
+        @BeforeEach
+        void setUp() {
+            // Misc's static initialiser reads Global.getSettings(), so the no-op proxy
+            // must be installed before the delegating read loads the class.
+            StarsectorSettingsFake.installSettings();
+        }
+
+        @AfterEach
+        void tearDown() {
+            StarsectorSettingsFake.clearSettings();
+        }
+
+        @Test
+        void returns_true_when_the_military_flag_is_set() {
+            var market = marketWithMilitaryFlag(true);
+
+            assertThat(Markets.isMilitary(market)).isTrue();
+        }
+
+        @Test
+        void returns_false_when_the_military_flag_is_unset() {
+            var market = marketWithMilitaryFlag(false);
+
+            assertThat(Markets.isMilitary(market)).isFalse();
+        }
+
+        @Test
+        void returns_false_for_a_null_market() {
+            assertThat(Markets.isMilitary(null)).isFalse();
+        }
+    }
+
     // A market whose memory carries the $patrol flag at the given value - the signal a
     // functional patrol HQ sets, vanilla's own "fields patrols" gate.
     private static MarketAPI marketWithPatrolFlag(boolean fieldsPatrols) {
         var memoryMock = mock(MemoryAPI.class);
         when(memoryMock.getBoolean(MemFlags.MARKET_PATROL)).thenReturn(fieldsPatrols);
+        var marketMock = mock(MarketAPI.class);
+        when(marketMock.getMemoryWithoutUpdate()).thenReturn(memoryMock);
+        return marketMock;
+    }
+
+    // A market whose memory carries the $military flag at the given value - the signal a
+    // military industry raises, and the one vanilla's own classification reads.
+    private static MarketAPI marketWithMilitaryFlag(boolean isMilitary) {
+        var memoryMock = mock(MemoryAPI.class);
+        when(memoryMock.getBoolean(MemFlags.MARKET_MILITARY)).thenReturn(isMilitary);
         var marketMock = mock(MarketAPI.class);
         when(marketMock.getMemoryWithoutUpdate()).thenReturn(memoryMock);
         return marketMock;
