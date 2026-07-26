@@ -80,10 +80,10 @@ public final class CursorTooltipRenderer {
         }
     }
 
-    // Draws one row's crest, label, and right-aligned value at its resolved anchors. A row with no
-    // crest has a null crest box and skips the icon draw; a missing crest asset resolves to null and is
-    // skipped the same way, so its label still reads. The value is drawn unconditionally - an empty
-    // value string paints nothing.
+    // Draws one row's crest, label, trailing marker, and right-aligned value at its resolved anchors. A
+    // row with no crest has a null crest box and skips the icon draw; a missing crest asset resolves to
+    // null and is skipped the same way, so its label still reads. The marker and the value are drawn
+    // unconditionally - an empty string paints nothing.
     private static void drawRow(
             TooltipRow row,
             TooltipLayout.TooltipRowLayout placement,
@@ -98,7 +98,7 @@ public final class CursorTooltipRenderer {
             }
         }
 
-        // Both labels share the row's face and opacity; only the colour differs, so the look is built
+        // Every span shares the row's face and opacity; only the colour differs, so the look is built
         // once here and each call supplies its own colour.
         Function<Color, LabelStyle> createStyleInColour = colour ->
                 new LabelStyle(style.face(), colour, style.opacity());
@@ -108,6 +108,13 @@ public final class CursorTooltipRenderer {
                 row.text(),
                 placement.textX(),
                 placement.textY(),
+                LazyFont.TextAnchor.TOP_LEFT);
+
+        LabelRenderer.render(
+                createStyleInColour.apply(row.markerColor()),
+                row.marker(),
+                placement.markerX(),
+                placement.markerY(),
                 LazyFont.TextAnchor.TOP_LEFT);
 
         LabelRenderer.render(

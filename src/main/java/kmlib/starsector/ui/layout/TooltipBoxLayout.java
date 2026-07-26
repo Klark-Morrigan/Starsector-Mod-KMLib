@@ -24,33 +24,41 @@ public final class TooltipBoxLayout {
     }
 
     /**
-     * Builds the tooltip box for measured content of {@code contentWidth} spanning {@code lineCount}
-     * lines of {@code lineHeight} each, offset from the cursor and clamped fully on screen. When the
-     * box is larger than the screen on an axis the clamp pins that axis to the origin, so the box
-     * stays anchored rather than sliding off the far edge.
+     * Builds the tooltip box around measured content of {@code contentWidth} by {@code contentHeight},
+     * offset from the cursor and clamped fully on screen. When the box is larger than the screen on an
+     * axis the clamp pins that axis to the origin, so the box stays anchored rather than sliding off
+     * the far edge.
      *
-     * @param contentWidth the widest measured text line, in UI units
-     * @param lineCount    how many text lines the box holds (at least one)
-     * @param lineHeight   the height of one text line, in UI units
-     * @param cursorX      the cursor x, in UI coordinates (UI origin is bottom-left)
-     * @param cursorY      the cursor y, in UI coordinates
-     * @param screenWidth  the screen width in UI units, the right clamp bound
-     * @param screenHeight the screen height in UI units, the top clamp bound
+     * <p>The content's own height is the input rather than a line count, because how tall a stack of
+     * content stands is the content's rule, not the box's: lines of one height, a break opening a
+     * section, a rule between blocks all stack differently. This adds the padding around whatever that
+     * comes to and places the result, which is the whole of what a box knows.
+     *
+     * @param contentWidth  the widest measured content line, in UI units
+     * @param contentHeight the full height the content stacks to, in UI units
+     * @param cursorX       the cursor x, in UI coordinates (UI origin is bottom-left)
+     * @param cursorY       the cursor y, in UI coordinates
+     * @param screenWidth   the screen width in UI units, the right clamp bound
+     * @param screenHeight  the screen height in UI units, the top clamp bound
      * @return the box footprint, lower-left origin, fully within the screen
      */
     public static Rectangle computeBox(
             double contentWidth,
-            int lineCount,
-            double lineHeight,
+            double contentHeight,
             float cursorX,
             float cursorY,
             float screenWidth,
             float screenHeight) {
+                
         var width = (float) contentWidth + PADDING + PADDING;
-        var textHeight = (float) (lineCount * lineHeight) + (lineCount - 1) * LINE_GAP;
-        var height = textHeight + PADDING + PADDING;
+        var height = (float) contentHeight + PADDING + PADDING;
         var x = Math.min(cursorX + CURSOR_OFFSET, screenWidth - width);
         var y = Math.min(cursorY + CURSOR_OFFSET, screenHeight - height);
-        return new Rectangle(Math.max(x, 0f), Math.max(y, 0f), width, height);
+
+        return new Rectangle(
+                Math.max(x, 0f),
+                Math.max(y, 0f),
+                width,
+                height);
     }
 }
