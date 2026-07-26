@@ -30,4 +30,48 @@ public record TooltipRow(
         Color textColor,
         String value,
         Color valueColor) {
+
+    /**
+     * Builds a row flush with the box's left content edge - a header, or any line that opens a block
+     * rather than sitting inside one. Names the tier so a caller states what the row is instead of
+     * spelling out the zero inset that makes it so.
+     *
+     * @param crestSpritePath the leading crest's {@code graphics} texture path, or null for no crest
+     * @param text            the row's label
+     * @param textColor       the label's colour before the tooltip's opacity fade
+     * @param value           the right-aligned value, or the empty string for a row with none
+     * @param valueColor      the value's colour before the opacity fade
+     * @return the row at zero indent
+     */
+    public static TooltipRow createFlushRow(
+            String crestSpritePath,
+            String text,
+            Color textColor,
+            String value,
+            Color valueColor) {
+        return new TooltipRow(0f, crestSpritePath, text, textColor, value, valueColor);
+    }
+
+    /**
+     * Builds a row inset under the line above it, for a member or entry that reads as belonging to
+     * that line. The step is the caller's, since how far a tier sets in is a decision of the layout
+     * the rows are authored for, not of the row itself.
+     *
+     * @param indent          the label's inset from the box's left content edge, in UI units
+     * @param crestSpritePath the leading crest's {@code graphics} texture path, or null for no crest
+     * @param text            the row's label
+     * @param textColor       the label's colour before the tooltip's opacity fade
+     * @param value           the right-aligned value, or the empty string for a row with none
+     * @param valueColor      the value's colour before the opacity fade
+     * @return the row at {@code indent}
+     */
+    public static TooltipRow createIndentedRow(
+            float indent,
+            String crestSpritePath,
+            String text,
+            Color textColor,
+            String value,
+            Color valueColor) {
+        return new TooltipRow(indent, crestSpritePath, text, textColor, value, valueColor);
+    }
 }
