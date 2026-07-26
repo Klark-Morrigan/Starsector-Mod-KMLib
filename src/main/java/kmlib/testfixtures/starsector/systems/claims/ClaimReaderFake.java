@@ -1,8 +1,8 @@
-package kmlib.testfixtures.starsector.systems;
+package kmlib.testfixtures.starsector.systems.claims;
 
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 
-import kmlib.starsector.systems.ClaimReader;
+import kmlib.starsector.systems.claims.ClaimReader;
 
 import java.util.HashMap;
 import java.util.Map;

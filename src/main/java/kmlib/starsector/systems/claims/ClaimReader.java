@@ -1,4 +1,4 @@
-package kmlib.starsector.systems;
+package kmlib.starsector.systems.claims;
 
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 
