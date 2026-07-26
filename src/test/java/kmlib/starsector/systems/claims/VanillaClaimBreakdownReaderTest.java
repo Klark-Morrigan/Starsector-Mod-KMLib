@@ -35,9 +35,9 @@ final class VanillaClaimBreakdownReaderTest {
         @Test
         void scoresAFactionOnItsStrongestMarket() {
             var hegemony = claimContest.buildFaction("hegemony", true);
-            var garrison = claimContest.buildMarket(hegemony, 3, false);
+            var garrison = claimContest.buildMarket(hegemony, 3);
             claimContest.markMarketAsMilitary(garrison);
-            claimContest.placeMarketsInSystem(claimContest.buildMarket(hegemony, 5, false),
+            claimContest.placeMarketsInSystem(claimContest.buildMarket(hegemony, 5),
                     garrison);
 
             var breakdown =
@@ -55,8 +55,8 @@ final class VanillaClaimBreakdownReaderTest {
         @Test
         void countsHiddenSiblingMarketsTowardsAScore() {
             var hegemony = claimContest.buildFaction("hegemony", true);
-            claimContest.placeMarketsInSystem(claimContest.buildMarket(hegemony, 3, false),
-                    claimContest.buildMarket(hegemony, 2, true));
+            claimContest.placeMarketsInSystem(claimContest.buildMarket(hegemony, 3),
+                    claimContest.buildHiddenMarket(hegemony, 2));
 
             var breakdown =
                     new VanillaClaimBreakdownReader().readBreakdown(claimContest.getSystem());
@@ -73,8 +73,8 @@ final class VanillaClaimBreakdownReaderTest {
             var pirates = claimContest.buildFaction("pirates", true);
             var player = claimContest.buildFaction("player", true);
             when(player.isPlayerFaction()).thenReturn(true);
-            claimContest.placeMarketsInSystem(claimContest.buildMarket(pirates, 6, true),
-                    claimContest.buildMarket(player, 8, false));
+            claimContest.placeMarketsInSystem(claimContest.buildHiddenMarket(pirates, 6),
+                    claimContest.buildMarket(player, 8));
 
             var breakdown =
                     new VanillaClaimBreakdownReader().readBreakdown(claimContest.getSystem());
@@ -87,8 +87,8 @@ final class VanillaClaimBreakdownReaderTest {
         void ranksPresentFactionsByScoreDescending() {
             var hegemony = claimContest.buildFaction("hegemony", true);
             var tritachyon = claimContest.buildFaction("tritachyon", true);
-            claimContest.placeMarketsInSystem(claimContest.buildMarket(hegemony, 4, false),
-                    claimContest.buildMarket(tritachyon, 7, false));
+            claimContest.placeMarketsInSystem(claimContest.buildMarket(hegemony, 4),
+                    claimContest.buildMarket(tritachyon, 7));
 
             var breakdown =
                     new VanillaClaimBreakdownReader().readBreakdown(claimContest.getSystem());
@@ -103,8 +103,8 @@ final class VanillaClaimBreakdownReaderTest {
         void reportsANonTerritorialFactionWithoutLettingItClaim() {
             var pirates = claimContest.buildFaction("pirates", false);
             var hegemony = claimContest.buildFaction("hegemony", true);
-            claimContest.placeMarketsInSystem(claimContest.buildMarket(pirates, 9, false),
-                    claimContest.buildMarket(hegemony, 3, false));
+            claimContest.placeMarketsInSystem(claimContest.buildMarket(pirates, 9),
+                    claimContest.buildMarket(hegemony, 3));
 
             var breakdown =
                     new VanillaClaimBreakdownReader().readBreakdown(claimContest.getSystem());
@@ -120,9 +120,9 @@ final class VanillaClaimBreakdownReaderTest {
         @Test
         void resolvesATiedContestToTheFirstMarketTheEconomyLists() {
             var hegemonyColony =
-                    claimContest.buildMarket(claimContest.buildFaction("hegemony", true), 5, false);
+                    claimContest.buildMarket(claimContest.buildFaction("hegemony", true), 5);
             var tritachyonColony = claimContest.buildMarket(
-                    claimContest.buildFaction("tritachyon", true), 5, false);
+                    claimContest.buildFaction("tritachyon", true), 5);
             var reader = new VanillaClaimBreakdownReader();
 
             claimContest.placeMarketsInSystem(hegemonyColony, tritachyonColony);
@@ -138,9 +138,44 @@ final class VanillaClaimBreakdownReaderTest {
         }
 
         @Test
+        void leavesEquallyScoredFactionsInEconomyOrder() {
+            var hegemony = claimContest.buildFaction("hegemony", true);
+            var tritachyon = claimContest.buildFaction("tritachyon", true);
+            claimContest.placeMarketsInSystem(claimContest.buildMarket(tritachyon, 5),
+                    claimContest.buildMarket(hegemony, 5));
+
+            var breakdown =
+                    new VanillaClaimBreakdownReader().readBreakdown(claimContest.getSystem());
+
+            // Ranking is by score alone, and the sort has to be stable: a tie in the listing
+            // must read in the order the tie was decided in, or the ranking would contradict
+            // the claimant sitting above it.
+            assertThat(breakdown.scores())
+                    .extracting(FactionClaimScore::factionId)
+                    .containsExactly("tritachyon", "hegemony");
+        }
+
+        @Test
+        void skipsAMarketWithNoOwningFaction() {
+            var hegemony = claimContest.buildFaction("hegemony", true);
+            claimContest.placeMarketsInSystem(claimContest.buildMarket(null, 9),
+                    claimContest.buildMarket(hegemony, 3));
+
+            var breakdown =
+                    new VanillaClaimBreakdownReader().readBreakdown(claimContest.getSystem());
+
+            // An unowned market belongs to nobody's standing, and the mechanic would throw on
+            // one; skipping it keeps a malformed economy from taking down a hover read.
+            assertThat(breakdown.scores())
+                    .extracting(FactionClaimScore::factionId)
+                    .containsExactly("hegemony");
+            assertThat(breakdown.claimantFactionId()).isEqualTo("hegemony");
+        }
+
+        @Test
         void reportsAnOverrideAsClaimantWhileStillScoringPresentFactions() {
             var hegemony = claimContest.buildFaction("hegemony", true);
-            claimContest.placeMarketsInSystem(claimContest.buildMarket(hegemony, 6, false));
+            claimContest.placeMarketsInSystem(claimContest.buildMarket(hegemony, 6));
             claimContest.overrideClaimingFaction("luddic_church");
 
             var breakdown =
@@ -158,7 +193,7 @@ final class VanillaClaimBreakdownReaderTest {
         @Test
         void reportsNoClaimantWhenOnlyNonTerritorialFactionsArePresent() {
             var pirates = claimContest.buildFaction("pirates", false);
-            claimContest.placeMarketsInSystem(claimContest.buildMarket(pirates, 9, false));
+            claimContest.placeMarketsInSystem(claimContest.buildMarket(pirates, 9));
 
             var breakdown =
                     new VanillaClaimBreakdownReader().readBreakdown(claimContest.getSystem());

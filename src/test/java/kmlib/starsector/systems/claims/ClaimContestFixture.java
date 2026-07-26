@@ -7,6 +7,7 @@ import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.campaign.econ.EconomyAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.campaign.rules.MemoryAPI;
+import com.fs.starfarer.api.impl.campaign.ids.MemFlags;
 
 import kmlib.starsector.factions.FactionCustomFixture;
 import kmlib.starsector.testing.StarsectorSettingsFake;
@@ -37,11 +38,6 @@ import static org.mockito.Mockito.when;
  * spent once closed.
  */
 final class ClaimContestFixture implements AutoCloseable {
-
-    // The vanilla memory keys a claim override and a garrison are set under, spelled out rather
-    // than read from MemFlags so a production read pointed at another key fails the suites.
-    private static final String CLAIMING_FACTION_FLAG = "$claimingFaction";
-    private static final String MILITARY_FLAG = "$military";
 
     private final MockedStatic<Global> globalMock;
     private final EconomyAPI economyMock;
@@ -76,23 +72,26 @@ final class ClaimContestFixture implements AutoCloseable {
 
     /** Sets the system's claiming-faction memory flag, the override that settles a claim. */
     void overrideClaimingFaction(String factionId) {
-        when(systemMemoryMock.getString(CLAIMING_FACTION_FLAG)).thenReturn(factionId);
+        when(systemMemoryMock.getString(MemFlags.CLAIMING_FACTION)).thenReturn(factionId);
     }
 
     /** Raises a market's military flag, the condition behind vanilla's flat garrison bonus. */
     void markMarketAsMilitary(MarketAPI market) {
-        when(market.getMemoryWithoutUpdate().getBoolean(MILITARY_FLAG)).thenReturn(true);
+        when(market.getMemoryWithoutUpdate().getBoolean(MemFlags.MARKET_MILITARY))
+                .thenReturn(true);
     }
 
-    MarketAPI buildMarket(FactionAPI faction, int size, boolean isHidden) {
-        var marketMock = mock(MarketAPI.class);
-        when(marketMock.getFaction()).thenReturn(faction);
-        when(marketMock.getSize()).thenReturn(size);
-        when(marketMock.isHidden()).thenReturn(isHidden);
-        // Every market carries memory, so the military read runs for real against it and a
-        // market is a garrison only once its flag is actually raised.
-        when(marketMock.getMemoryWithoutUpdate()).thenReturn(mock(MemoryAPI.class));
-        return marketMock;
+    /** A market of the given faction and size, visible to the player. */
+    MarketAPI buildMarket(FactionAPI faction, int size) {
+        return createMarket(faction, size, false);
+    }
+
+    /**
+     * A market the player cannot see. It is present for its faction's sibling count but is
+     * never scored on its own account, which is the asymmetry worth stating at a call site.
+     */
+    MarketAPI buildHiddenMarket(FactionAPI faction, int size) {
+        return createMarket(faction, size, true);
     }
 
     FactionAPI buildFaction(String id, boolean isTerritorial) {
@@ -101,6 +100,17 @@ final class ClaimContestFixture implements AutoCloseable {
         when(factionMock.getCustom())
                 .thenReturn(FactionCustomFixture.buildPunitiveExpeditionCustom(isTerritorial));
         return factionMock;
+    }
+
+    private MarketAPI createMarket(FactionAPI faction, int size, boolean isHidden) {
+        var marketMock = mock(MarketAPI.class);
+        when(marketMock.getFaction()).thenReturn(faction);
+        when(marketMock.getSize()).thenReturn(size);
+        when(marketMock.isHidden()).thenReturn(isHidden);
+        // Every market carries memory, so the military read runs for real against it and a
+        // market is a garrison only once its flag is actually raised.
+        when(marketMock.getMemoryWithoutUpdate()).thenReturn(mock(MemoryAPI.class));
+        return marketMock;
     }
 
     @Override

@@ -36,8 +36,8 @@ class VanillaClaimReaderTest {
         void reportsTheTopScoringTerritorialFaction() {
             var hegemony = claimContest.buildFaction("hegemony", true);
             var tritachyon = claimContest.buildFaction("tritachyon", true);
-            claimContest.placeMarketsInSystem(claimContest.buildMarket(hegemony, 4, false),
-                    claimContest.buildMarket(tritachyon, 7, false));
+            claimContest.placeMarketsInSystem(claimContest.buildMarket(hegemony, 4),
+                    claimContest.buildMarket(tritachyon, 7));
 
             var claimantId = new VanillaClaimReader()
                     .readClaimingFactionId(claimContest.getSystem());
@@ -48,7 +48,7 @@ class VanillaClaimReaderTest {
         @Test
         void reportsTheOverrideAheadOfAnyScore() {
             var hegemony = claimContest.buildFaction("hegemony", true);
-            claimContest.placeMarketsInSystem(claimContest.buildMarket(hegemony, 6, false));
+            claimContest.placeMarketsInSystem(claimContest.buildMarket(hegemony, 6));
             claimContest.overrideClaimingFaction("luddic_church");
 
             var claimantId = new VanillaClaimReader()
@@ -60,7 +60,7 @@ class VanillaClaimReaderTest {
         @Test
         void reportsUnclaimedWhenNoTerritorialFactionIsPresent() {
             var pirates = claimContest.buildFaction("pirates", false);
-            claimContest.placeMarketsInSystem(claimContest.buildMarket(pirates, 9, false));
+            claimContest.placeMarketsInSystem(claimContest.buildMarket(pirates, 9));
 
             var claimantId = new VanillaClaimReader()
                     .readClaimingFactionId(claimContest.getSystem());

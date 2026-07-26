@@ -57,20 +57,29 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
             if (faction == null || market.isHidden() || faction.isPlayerFaction()) {
                 continue;
             }
-            var score = computeMarketScore(market, markets);
-            var isTerritorial = FactionFlags.isTerritorial(faction);
-            recordBestScore(bestScoreByFactionId, faction.getId(), score, isTerritorial);
-            if (isTerritorial && score > topScore) {
-                topScore = score;
-                topTerritorialFactionId = faction.getId();
+            var standing = new FactionClaimScore(
+                    faction.getId(),
+                    computeMarketScore(market, markets),
+                    FactionFlags.isTerritorial(faction));
+
+            recordBestScore(bestScoreByFactionId, standing);
+
+            if (standing.isTerritorial() && standing.score() > topScore) {
+                topScore = standing.score();
+                topTerritorialFactionId = standing.factionId();
             }
         }
         // An override answers the question before any market is weighed, so it stands as the
         // claimant even where the scores point elsewhere; those scores stay on as context.
         var claimantFactionId =
-                overrideFactionId != null ? overrideFactionId : topTerritorialFactionId;
+                overrideFactionId != null
+                        ? overrideFactionId
+                        : topTerritorialFactionId;
+
         return new SystemClaimBreakdown(
-                overrideFactionId, claimantFactionId, rankScores(bestScoreByFactionId.values()));
+                overrideFactionId,
+                claimantFactionId,
+                rankScores(bestScoreByFactionId.values()));
     }
 
     @Override
@@ -84,15 +93,13 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
     // is the order ties have to resolve in.
     private static void recordBestScore(
             LinkedHashMap<String, FactionClaimScore> bestByFactionId,
-            String factionId,
-            int score,
-            boolean isTerritorial) {
+            FactionClaimScore standing) {
 
-        var best = bestByFactionId.get(factionId);
-        if (best == null || score > best.score()) {
+        var best = bestByFactionId.get(standing.factionId());
+        if (best == null || standing.score() > best.score()) {
             bestByFactionId.put(
-                    factionId,
-                    new FactionClaimScore(factionId, score, isTerritorial));
+                    standing.factionId(),
+                    standing);
         }
     }
 
