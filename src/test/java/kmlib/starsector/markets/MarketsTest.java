@@ -333,6 +333,16 @@ final class MarketsTest {
         }
 
         @Test
+        void returns_false_for_a_market_with_no_memory() {
+            // Vanilla's own read would throw here; the neighbouring flag reads absorb it, so
+            // this one does too rather than being the single read a caller must defend.
+            var marketMock = mock(MarketAPI.class);
+            when(marketMock.getMemoryWithoutUpdate()).thenReturn(null);
+
+            assertThat(Markets.isMilitary(marketMock)).isFalse();
+        }
+
+        @Test
         void returns_false_for_a_null_market() {
             assertThat(Markets.isMilitary(null)).isFalse();
         }

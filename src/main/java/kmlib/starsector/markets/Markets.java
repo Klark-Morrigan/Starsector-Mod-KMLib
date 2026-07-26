@@ -192,10 +192,17 @@ public final class Markets {
      * standing - claim scoring, threat estimates - wants this one; a caller asking
      * whether fleets actually launch from here wants the patrol flag.
      *
-     * @param market the market to test; null yields false
+     * @param market the market to test; null (or one with no memory) yields false
      * @return true when the market counts as military
      */
     public static boolean isMilitary(MarketAPI market) {
+        // The memory guard is this library's, not vanilla's: Misc reads the flag straight off
+        // the market's memory and would throw on a market that has none. Its neighbours here
+        // absorb that case, so this one does too rather than being the single read a caller
+        // has to defend against.
+        if (market == null || market.getMemoryWithoutUpdate() == null) {
+            return false;
+        }
         return Misc.isMilitary(market);
     }
 
