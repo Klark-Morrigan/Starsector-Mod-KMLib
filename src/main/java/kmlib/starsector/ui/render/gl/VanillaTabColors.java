@@ -11,16 +11,21 @@ import java.awt.Color;
  * defaults through the {@link StarsectorUiColor} palette, so the strip recolours with the
  * current player faction and never receives a null shade from an early-boot accessor.
  *
- * @param backdrop      the black fill behind every tab, so labels read over the map
- * @param accent        the player-colour wash lighting the selected/hovered tab, plus the
- *                      dividers, baseline, and selected underline
- * @param labelDefault  a resting tab's label colour
- * @param labelSelected the active tab's label colour
- * @param labelHovered  the hovered tab's label colour
- * @param shortcut      the gold the shortcut key paints in, apart from its label-coloured delimiters
+ * @param backdrop    the black fill behind every tab, so labels read over the map
+ * @param accent      the player-colour wash lighting the selected/hovered tab, plus the
+ *                    dividers, baseline, and selected underline
+ * @param tabDefault  a resting tab's label colour
+ * @param tabSelected the active tab's label colour
+ * @param tabHovered  the hovered tab's label colour
+ * @param hotkey      the gold the shortcut key paints in, apart from its label-coloured delimiters
  */
-public record VanillaTabColors(Color backdrop, Color accent, Color labelDefault,
-        Color labelSelected, Color labelHovered, Color shortcut) {
+public record VanillaTabColors(
+        Color backdrop,
+        Color accent,
+        Color tabDefault,
+        Color tabSelected,
+        Color tabHovered,
+        Color hotkey) {
 
     /**
      * The live vanilla map-tab palette: a black backdrop, the player base colour as the accent
@@ -32,11 +37,11 @@ public record VanillaTabColors(Color backdrop, Color accent, Color labelDefault,
      */
     public static VanillaTabColors mapTabs() {
         return new VanillaTabColors(
-                StarsectorUiColor.BLACK.resolve(),
-                StarsectorUiColor.VANILLA_PLAYER_BASE.resolve(),
-                StarsectorUiColor.VANILLA_BUTTON_TEXT.resolve(),
-                StarsectorUiColor.VANILLA_PLAYER_BRIGHT.resolve(),
-                StarsectorUiColor.VANILLA_PLAYER_BASE.resolve(),
-                StarsectorUiColor.VANILLA_HIGHLIGHT_GOLD.resolve());
+                StarsectorUiColor.BLACK.resolve(), // Backdrop.
+                StarsectorUiColor.VANILLA_PLAYER_BASE.resolve(), // Accent.
+                StarsectorUiColor.VANILLA_BUTTON_TEXT.resolve(), // Tab Default.
+                StarsectorUiColor.VANILLA_PLAYER_BRIGHT.resolve(), // Tab Selected.
+                StarsectorUiColor.VANILLA_PLAYER_BASE.resolve(), // Tab Hovered.
+                StarsectorUiColor.VANILLA_HIGHLIGHT_GOLD.resolve()); // Hotkey.
     }
 }

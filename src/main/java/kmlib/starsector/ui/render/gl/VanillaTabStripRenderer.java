@@ -174,10 +174,10 @@ public final class VanillaTabStripRenderer {
             return;
         }
         var labelColor = isSelected
-                ? colors.labelSelected()
+                ? colors.tabSelected()
                 : isHovered
-                        ? colors.labelHovered()
-                        : colors.labelDefault();
+                        ? colors.tabHovered()
+                        : colors.tabDefault();
 
         var fadedLabelColor = Colors.scaleAlpha(labelColor, opacity);
         label.setBaseColor(fadedLabelColor);
@@ -188,7 +188,7 @@ public final class VanillaTabStripRenderer {
                         textFace,
                         content.shortcut(),
                         fadedLabelColor,
-                        Colors.scaleAlpha(colors.shortcut(),
+                        Colors.scaleAlpha(colors.hotkey(),
                         opacity))
                 : List.<DrawableString>of();
 
