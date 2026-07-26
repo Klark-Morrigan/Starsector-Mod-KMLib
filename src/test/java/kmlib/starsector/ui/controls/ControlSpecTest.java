@@ -516,23 +516,23 @@ final class ControlSpecTest {
     }
 
     @Nested
-    class HorizontalRadioHasCaption {
+    class HorizontalRadioHasTrailingCaption {
 
         @Test
-        void hasCaptionIsFalseOnAPlainRow() {
+        void hasTrailingCaptionIsFalseOnAPlainRow() {
             var radio = ControlSpec.HorizontalRadio.of(List.of("Short", "Full"), 0, ControlAction.NONE);
             assertThat(radio.hasTrailingCaption()).isFalse();
         }
 
         @Test
-        void hasCaptionIsTrueOnACaptionedRow() {
+        void hasTrailingCaptionIsTrueOnACaptionedRow() {
             var radio = ControlSpec.HorizontalRadio.of(List.of("Short", "Full"), 0, ControlAction.NONE)
                     .showsCaption("Names");
             assertThat(radio.hasTrailingCaption()).isTrue();
         }
 
         @Test
-        void hasCaptionIsFalseOnAWhitespaceOnlyCaption() {
+        void hasTrailingCaptionIsFalseOnAWhitespaceOnlyCaption() {
             // A host that assembles a caption from parts and comes up with only spacing gets the
             // uncaptioned row, so the layout reserves no footprint the renderer then draws nothing in.
             var radio = ControlSpec.HorizontalRadio.of(List.of("Short", "Full"), 0, ControlAction.NONE)
