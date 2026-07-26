@@ -160,8 +160,7 @@ public final class ControlRenderer {
                     segment.computeCenterY(),
                     LazyFont.TextAnchor.CENTER);
         }
-        if (spec instanceof ControlSpec.HorizontalRadio radio
-                && KmlibStrings.hasText(radio.trailingLabel())) {
+        if (spec instanceof ControlSpec.HorizontalRadio radio && radio.hasTrailingCaption()) {
 
             var trailingX = bounds.x()
                     + bounds.width()

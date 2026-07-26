@@ -4,6 +4,7 @@ import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.ControlAction;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.ReselectBehaviour;
+import kmlib.starsector.ui.controls.SegmentSizing;
 import kmlib.starsector.ui.controls.TriangleDirection;
 import kmlib.starsector.ui.controls.VerticalTableSpecs;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
@@ -75,8 +76,8 @@ final class ControlStripLayoutTest {
 
         @Test
         void measureStripSizesAHorizontalRadioRowToEqualSegments() {
-            var radio = ControlSpec.HorizontalRadio.uniform(List.of("Short", "Full"), "Names",
-                    ControlSpec.NO_SELECTION, ControlAction.NONE);
+            var radio = ControlSpec.HorizontalRadio.of(List.of("Short", "Full"),
+                    ControlSpec.NO_SELECTION, ControlAction.NONE).showsCaption("Names");
             var measurement = ControlStripLayout.measureStrip(List.<ControlSpec>of(radio), measurerFake);
             // Each segment is the widest option ("Short", 5 chars) plus the segment padding; the row
             // is the two equal segments side by side.
@@ -89,8 +90,8 @@ final class ControlStripLayoutTest {
             // A snapped horizontal radio sizes each cell to its own label plus the padding, so "Short"
             // (5) and "Full" (4) span 9 characters plus two paddings - narrower than the uniform row's
             // two widest-label cells.
-            var radio = ControlSpec.HorizontalRadio.snapped(List.of("Short", "Full"), "",
-                    ControlSpec.NO_SELECTION, ControlAction.NONE);
+            var radio = ControlSpec.HorizontalRadio.of(List.of("Short", "Full"),
+                    ControlSpec.NO_SELECTION, ControlAction.NONE).sizesSegments(SegmentSizing.SNAPPED);
             var measurement = ControlStripLayout.measureStrip(List.<ControlSpec>of(radio), measurerFake);
             var expected = 9 * WIDTH_PER_CHAR + 2 * ControlStripLayout.RADIO_SEGMENT_PADDING;
             assertThat(measurement.rowWidths().get(0)).isCloseTo(expected, within(TOLERANCE));
@@ -288,8 +289,8 @@ final class ControlStripLayoutTest {
 
         @Test
         void layoutControlsSplitsARadioIntoAbuttingEqualSegments() {
-            var specs = List.<ControlSpec>of(ControlSpec.HorizontalRadio.uniform(List.of("Short", "Full"), "Names",
-                    ControlSpec.NO_SELECTION, ControlAction.NONE));
+            var specs = List.<ControlSpec>of(ControlSpec.HorizontalRadio.of(List.of("Short", "Full"),
+                    ControlSpec.NO_SELECTION, ControlAction.NONE).showsCaption("Names"));
             var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
             var radio = ControlStripLayout.layoutControls(frameBody(measurement), specs,
                     measurement.rowHeights(), measurement.rowWidths(), measurerFake).get(0);
@@ -307,8 +308,8 @@ final class ControlStripLayoutTest {
             // A snapped horizontal radio splits into cells sized to each label, so "Short" (5) is wider
             // than "Full" (4) rather than sharing one width - the ragged row the render chrome then rules
             // its seams on.
-            var specs = List.<ControlSpec>of(ControlSpec.HorizontalRadio.snapped(List.of("Short", "Full"), "",
-                    ControlSpec.NO_SELECTION, ControlAction.NONE));
+            var specs = List.<ControlSpec>of(ControlSpec.HorizontalRadio.of(List.of("Short", "Full"),
+                    ControlSpec.NO_SELECTION, ControlAction.NONE).sizesSegments(SegmentSizing.SNAPPED));
             var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
             var radio = ControlStripLayout.layoutControls(frameBody(measurement), specs,
                     measurement.rowHeights(), measurement.rowWidths(), measurerFake).get(0);

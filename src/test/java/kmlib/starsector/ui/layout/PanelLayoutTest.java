@@ -46,8 +46,8 @@ final class PanelLayoutTest {
     // alone, so each control's lit state is left unset here.
     private static final List<ControlSpec> BODY = List.of(
             ControlSpec.Checkbox.lit("Uninhabited systems", false, ControlAction.NONE),
-            ControlSpec.HorizontalRadio.uniform(List.of("Short", "Full"), "Names",
-                    ControlSpec.NO_SELECTION, ControlAction.NONE),
+            ControlSpec.HorizontalRadio.of(List.of("Short", "Full"),
+                    ControlSpec.NO_SELECTION, ControlAction.NONE).showsCaption("Names"),
             ControlSpec.Toggle.lit("Factions", false, ControlAction.NONE));
 
     // Content is inset from the box by the border on every edge; with no header the body hangs straight

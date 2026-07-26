@@ -11,7 +11,6 @@ import kmlib.starsector.ui.widgets.segments.HorizontalSegments;
 import kmlib.starsector.ui.widgets.segments.SegmentSpec;
 import kmlib.starsector.ui.widgets.tabs.VanillaTabContent;
 import kmlib.starsector.ui.widgets.tabs.VanillaTabStrip;
-import kmlib.text.KmlibStrings;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -478,8 +477,7 @@ public final class ControlStripLayout {
     // Extra footprint a trailing label adds past the control's own row, or none when it is blank. Only a
     // horizontal radio carries a trailing caption; every other control reserves nothing here.
     private static float measureTrailingWidth(ControlSpec spec, LineWidthMeasurer measurer) {
-        if (!(spec instanceof ControlSpec.HorizontalRadio radio)
-                || !KmlibStrings.hasText(radio.trailingLabel())) {
+        if (!(spec instanceof ControlSpec.HorizontalRadio radio) || !radio.hasTrailingCaption()) {
             return 0f;
         }
         return TRAILING_LABEL_GAP + measureWidth(measurer, radio.trailingLabel());

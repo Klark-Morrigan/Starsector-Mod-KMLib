@@ -1,5 +1,7 @@
 package kmlib.starsector.ui.controls;
 
+import kmlib.text.KmlibStrings;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -32,6 +34,9 @@ public sealed interface ControlSpec {
 
     /** The single cell of a checkbox or toggle: its whole row is one hit target, lit at index 0. */
     int SINGLE_CELL = 0;
+
+    /** Trailing-caption value meaning the control draws no caption after its row. */
+    String NO_TRAILING_CAPTION = "";
 
     /**
      * The control's own label(s): one for a checkbox, toggle, or caption, one per option for a radio
@@ -85,7 +90,11 @@ public sealed interface ControlSpec {
      * @param selectedIndex {@link #SINGLE_CELL} when ticked, {@link #NO_SELECTION} when off
      * @param action        what a click on the row does
      */
-    record Checkbox(String label, int selectedIndex, ControlAction action) implements Interactive {
+    record Checkbox(
+            String label,
+            int selectedIndex,
+            ControlAction action)
+            implements Interactive {
         /**
          * Builds a checkbox in its current lit state, mapping on/off to the single-cell {@code
          * selectedIndex} in one place so no host re-derives the "cell 0 lit or nothing" convention.
@@ -96,7 +105,10 @@ public sealed interface ControlSpec {
          * @return the checkbox spec
          */
         public static Checkbox lit(String label, boolean isOn, ControlAction action) {
-            return new Checkbox(label, isOn ? SINGLE_CELL : NO_SELECTION, action);
+            return new Checkbox(
+                    label,
+                    isOn ? SINGLE_CELL : NO_SELECTION,
+                    action);
         }
 
         @Override
@@ -126,7 +138,10 @@ public sealed interface ControlSpec {
          * @return the toggle spec
          */
         public static Toggle lit(String label, boolean isOn, ControlAction action) {
-            return new Toggle(label, isOn ? SINGLE_CELL : NO_SELECTION, action);
+            return new Toggle(
+                    label,
+                    isOn ? SINGLE_CELL : NO_SELECTION,
+                    action);
         }
 
         @Override
@@ -173,84 +188,113 @@ public sealed interface ControlSpec {
      * @param labels        the option labels, left to right, in segment order
      * @param selectedIndex the lit option's index, or {@link #NO_SELECTION} when nothing is picked
      * @param action        what a click on an option does, keyed by the option index
-     * @param trailingLabel a caption drawn after the row, or blank for none
+     * @param trailingLabel a caption drawn after the row, or {@link #NO_TRAILING_CAPTION} for none
      * @param segmentSizing how the segments size (uniform cells, or each snapped to its own label)
      * @param reselect      what a re-pick of the lit segment does (inert for an option pair, deselect for
      *                      a clearable selector)
      */
-    record HorizontalRadio(List<String> labels, int selectedIndex, ControlAction action,
-            String trailingLabel, SegmentSizing segmentSizing, ReselectBehaviour reselect)
+    record HorizontalRadio(
+            List<String> labels,
+            int selectedIndex,
+            ControlAction action,
+            String trailingLabel,
+            SegmentSizing segmentSizing,
+            ReselectBehaviour reselect)
             implements Interactive {
-        /**
-         * Builds an even-cell horizontal radio - the standard option pair, sized {@link
-         * SegmentSizing#UNIFORM}.
-         *
-         * @param labels        the option labels, left to right, in segment order
-         * @param trailingLabel a caption drawn after the row, or blank for none
-         * @param selectedIndex the lit option's index, or {@link #NO_SELECTION}
-         * @param action        what a click on an option does, keyed by the option index
-         * @return the uniform horizontal radio spec
-         */
-        public static HorizontalRadio uniform(
-                List<String> labels,
-                String trailingLabel,
-                int selectedIndex,
-                ControlAction action) {
-            return new HorizontalRadio(
-                    List.copyOf(labels),
-                    selectedIndex,
-                    action,
-                    trailingLabel,
-                    SegmentSizing.UNIFORM,
-                    ReselectBehaviour.INERT);
+        /** Copies the label list defensively, so a later edit to a caller's list cannot mutate the spec. */
+        public HorizontalRadio {
+            labels = List.copyOf(labels);
         }
 
         /**
-         * Builds a horizontal radio whose segments each snap to their own label's width ({@link
-         * SegmentSizing#SNAPPED}), for a ragged option row that would waste space as even cells.
+         * Builds the plain option row a host reaches for by default: even cells, no trailing caption, and
+         * a re-pick of the lit segment inert, so the row always holds one option once one is picked.
          *
-         * @param labels        the option labels, left to right, in segment order
-         * @param trailingLabel a caption drawn after the row, or blank for none
-         * @param selectedIndex the lit option's index, or {@link #NO_SELECTION}
-         * @param action        what a click on an option does, keyed by the option index
-         * @return the snapped horizontal radio spec
-         */
-        public static HorizontalRadio snapped(
-                List<String> labels,
-                String trailingLabel,
-                int selectedIndex,
-                ControlAction action) {
-            return new HorizontalRadio(
-                    List.copyOf(labels),
-                    selectedIndex,
-                    action,
-                    trailingLabel,
-                    SegmentSizing.SNAPPED,
-                    ReselectBehaviour.INERT);
-        }
-
-        /**
-         * Builds an even-cell horizontal radio that clears to nothing when its lit segment is re-picked
-         * ({@link ReselectBehaviour#DESELECT}) - the shape a horizontal on/off selector takes, where a
-         * re-click of the active option turns it off. It carries no trailing caption and sizes {@link
-         * SegmentSizing#UNIFORM}, so a short option row reads as even cells.
+         * <p>The caption, the segment sizing, and the re-pick behaviour are three independent refinements
+         * a host layers on with {@link #showsCaption}, {@link #sizesSegments}, and {@link
+         * #handlesReselect} - so any combination of the three is reachable, rather than only the
+         * combinations a fixed set of factories happened to name.
          *
          * @param labels        the option labels, left to right, in segment order
          * @param selectedIndex the lit option's index, or {@link #NO_SELECTION} when nothing is picked
          * @param action        what a click on an option does, keyed by the option index
-         * @return the deselectable horizontal radio spec
+         * @return the plain horizontal radio spec
          */
-        public static HorizontalRadio deselectable(
+        public static HorizontalRadio of(
                 List<String> labels,
                 int selectedIndex,
                 ControlAction action) {
             return new HorizontalRadio(
-                    List.copyOf(labels),
+                    labels,
                     selectedIndex,
                     action,
-                    "",
+                    NO_TRAILING_CAPTION,
                     SegmentSizing.UNIFORM,
-                    ReselectBehaviour.DESELECT);
+                    ReselectBehaviour.INERT);
+        }
+
+        /**
+         * Whether the row draws a trailing caption - any text past its segments. One rule read by both
+         * the layout that reserves the caption's footprint and the renderer that draws it, so the two
+         * cannot disagree on which rows carry one. Blank-but-present text reads as no caption, so a host
+         * that assembles a caption from parts and comes up empty gets the uncaptioned row it should.
+         *
+         * @return true when the row carries a trailing caption
+         */
+        public boolean hasTrailingCaption() {
+            return KmlibStrings.hasText(trailingLabel);
+        }
+
+        /**
+         * Returns a copy of this radio captioned with {@code trailingLabel}, drawn after the row - for a
+         * row whose segment labels alone do not say what the options choose between.
+         *
+         * @param trailingLabel the caption drawn after the row
+         * @return an otherwise-identical radio carrying that caption
+         */
+        public HorizontalRadio showsCaption(String trailingLabel) {
+            return new HorizontalRadio(
+                    labels,
+                    selectedIndex,
+                    action,
+                    trailingLabel,
+                    segmentSizing,
+                    reselect);
+        }
+
+        /**
+         * Returns a copy of this radio sizing its segments the given way - {@link SegmentSizing#SNAPPED}
+         * for a ragged row whose labels differ enough in width that even cells would waste space.
+         *
+         * @param segmentSizing how the segments size (uniform cells, or each snapped to its own label)
+         * @return an otherwise-identical radio sized that way
+         */
+        public HorizontalRadio sizesSegments(SegmentSizing segmentSizing) {
+            return new HorizontalRadio(
+                    labels,
+                    selectedIndex,
+                    action,
+                    trailingLabel,
+                    segmentSizing,
+                    reselect);
+        }
+
+        /**
+         * Returns a copy of this radio handling a re-pick of its lit segment the given way - {@link
+         * ReselectBehaviour#DESELECT} for a clearable selector, where a re-click of the active option
+         * turns the row off rather than leaving it lit.
+         *
+         * @param reselect what a re-pick of the lit segment does
+         * @return an otherwise-identical radio handling a re-pick that way
+         */
+        public HorizontalRadio handlesReselect(ReselectBehaviour reselect) {
+            return new HorizontalRadio(
+                    labels,
+                    selectedIndex,
+                    action,
+                    trailingLabel,
+                    segmentSizing,
+                    reselect);
         }
     }
 
@@ -295,7 +339,8 @@ public sealed interface ControlSpec {
             ControlAction action,
             ReselectBehaviour reselect,
             int columnCount,
-            boolean scrolls) implements Interactive {
+            boolean scrolls)
+            implements Interactive {
         /**
          * Copies the option lists defensively - null-tolerantly, since a null entry is a real "no icon",
          * "no value", or "no triangle" - and rejects a column count the layout cannot lay out, so a

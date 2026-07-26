@@ -4,6 +4,7 @@ import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlAction;
 import kmlib.starsector.ui.controls.ControlSpec;
+import kmlib.starsector.ui.controls.ReselectBehaviour;
 import kmlib.starsector.ui.controls.VerticalTableSpecs;
 
 import org.junit.jupiter.api.Nested;
@@ -130,8 +131,8 @@ final class PanelControllerTest {
             // A DESELECT horizontal radio wants the re-pick to reach the action so the host turns the
             // control off, so a press on the left, lit segment fires it by its index (not swallowed).
             var radio = buildTwoSegmentHorizontalRadioAtRow(
-                    ControlSpec.HorizontalRadio.deselectable(List.of("Factions", "Alliances"), 0,
-                            cell -> firedCell[0] = cell));
+                    ControlSpec.HorizontalRadio.of(List.of("Factions", "Alliances"), 0,
+                            cell -> firedCell[0] = cell).handlesReselect(ReselectBehaviour.DESELECT));
             var acted = PanelController.activateControlIfHit(radio, FULL_VIEWPORT,
                     ROW.x() + ROW.width() / 4f, ROW.y() + ROW.height() / 2f);
             assertThat(acted).isTrue();
@@ -144,7 +145,7 @@ final class PanelControllerTest {
             // A plain option pair is always one lit (INERT reselect), so a press on the lit segment
             // reaches no action - the standard radio behaviour a deselectable row opts out of.
             var radio = buildTwoSegmentHorizontalRadioAtRow(
-                    ControlSpec.HorizontalRadio.uniform(List.of("Short", "Full"), "", 0,
+                    ControlSpec.HorizontalRadio.of(List.of("Short", "Full"), 0,
                             cell -> fired[0] = true));
             var acted = PanelController.activateControlIfHit(radio, FULL_VIEWPORT,
                     ROW.x() + ROW.width() / 4f, ROW.y() + ROW.height() / 2f);

@@ -31,7 +31,7 @@ final class ControlSpecTest {
                     .isInstanceOf(ControlSpec.Interactive.class);
             assertThat(ControlSpec.Toggle.lit("Muted", true, ControlAction.NONE))
                     .isInstanceOf(ControlSpec.Interactive.class);
-            assertThat(ControlSpec.HorizontalRadio.uniform(List.of("A"), "", 0, ControlAction.NONE))
+            assertThat(ControlSpec.HorizontalRadio.of(List.of("A"), 0, ControlAction.NONE))
                     .isInstanceOf(ControlSpec.Interactive.class);
             assertThat(VerticalTableSpecs.buildPlainTable(List.of("A"), 0, ControlAction.NONE,
                     ReselectBehaviour.INERT)).isInstanceOf(ControlSpec.Interactive.class);
@@ -462,85 +462,131 @@ final class ControlSpecTest {
     }
 
     @Nested
-    class HorizontalRadioUniform {
+    class HorizontalRadioConstruction {
 
         @Test
-        void uniformIsAHorizontalRadioSizedUniform() {
-            // The standard side-by-side option pair, its cells all the widest label's width (even cells).
-            var radio = ControlSpec.HorizontalRadio.uniform(List.of("Short", "Full"), "Names", 0,
-                    ControlAction.NONE);
-            assertThat(radio.segmentSizing()).isEqualTo(SegmentSizing.UNIFORM);
-            assertThat(radio.trailingLabel()).isEqualTo("Names");
+        void constructorCopiesTheLabelListDefensively() {
+            // The canonical constructor is public on a record, so a host can reach it directly; the copy
+            // has to live there rather than in the factory for a caller's later edit not to reach the spec.
+            var sourceLabels = new ArrayList<>(List.of("Short", "Full"));
+            var radio = new ControlSpec.HorizontalRadio(sourceLabels, 0, ControlAction.NONE, "",
+                    SegmentSizing.UNIFORM, ReselectBehaviour.INERT);
+            sourceLabels.add("Mutated");
             assertThat(radio.labels()).containsExactly("Short", "Full");
-            assertThat(radio.selectedIndex()).isZero();
-        }
-
-        @Test
-        void uniformCarriesTheClickActionByOptionIndex() {
-            var firedCell = new int[]{-99};
-            var radio = ControlSpec.HorizontalRadio.uniform(List.of("Short", "Full"), "", 0,
-                    cell -> firedCell[0] = cell);
-            radio.action().activateCell(1);
-            assertThat(firedCell[0]).isEqualTo(1);
         }
     }
 
     @Nested
-    class HorizontalRadioSnapped {
+    class HorizontalRadioOf {
 
         @Test
-        void snappedIsAHorizontalRadioSizedSnapped() {
-            // The snapped horizontal radio: a standard side-by-side option row whose cells each snap to
-            // their own label width rather than sharing the widest option's, so a ragged row does not
-            // waste space as even cells.
-            var radio = ControlSpec.HorizontalRadio.snapped(List.of("Short", "Full"), "Names", 0,
-                    ControlAction.NONE);
-            assertThat(radio.segmentSizing()).isEqualTo(SegmentSizing.SNAPPED);
-            assertThat(radio.labels()).containsExactly("Short", "Full");
-            assertThat(radio.selectedIndex()).isZero();
-        }
-
-        @Test
-        void snappedCarriesTheClickActionByOptionIndex() {
-            var firedCell = new int[]{-99};
-            var radio = ControlSpec.HorizontalRadio.snapped(List.of("Short", "Full"), "", 0,
-                    cell -> firedCell[0] = cell);
-            radio.action().activateCell(1);
-            assertThat(firedCell[0]).isEqualTo(1);
-        }
-
-        @Test
-        void snappedIsInertOnARepick() {
-            // A plain option row is always one lit, so re-picking the lit segment does nothing.
-            var radio = ControlSpec.HorizontalRadio.snapped(List.of("Short", "Full"), "", 0,
-                    ControlAction.NONE);
+        void ofIsAUniformInertRadioCarryingNoCaption() {
+            // The plain option row a host reaches for by default: cells all the widest label's width, no
+            // trailing caption, and always one lit (a re-pick of the lit segment does nothing).
+            var radio = ControlSpec.HorizontalRadio.of(List.of("Short", "Full"), 0, ControlAction.NONE);
+            assertThat(radio.segmentSizing()).isEqualTo(SegmentSizing.UNIFORM);
             assertThat(radio.reselect()).isEqualTo(ReselectBehaviour.INERT);
+            assertThat(radio.trailingLabel()).isEqualTo(ControlSpec.NO_TRAILING_CAPTION);
+            assertThat(radio.hasTrailingCaption()).isFalse();
+            assertThat(radio.labels()).containsExactly("Short", "Full");
+            assertThat(radio.selectedIndex()).isZero();
+        }
+
+        @Test
+        void ofCarriesTheClickActionByOptionIndex() {
+            var firedCell = new int[]{-99};
+            var radio = ControlSpec.HorizontalRadio.of(List.of("Short", "Full"), 0,
+                    cell -> firedCell[0] = cell);
+            radio.action().activateCell(1);
+            assertThat(firedCell[0]).isEqualTo(1);
+        }
+
+        @Test
+        void ofComposesWithEveryRefinementAtOnce() {
+            // The three refinements are independent axes, so a host reaches combinations no single factory
+            // names - here a captioned, snapped, clearable row all at once.
+            var radio = ControlSpec.HorizontalRadio.of(List.of("Short", "Full"), 0, ControlAction.NONE)
+                    .showsCaption("Names")
+                    .sizesSegments(SegmentSizing.SNAPPED)
+                    .handlesReselect(ReselectBehaviour.DESELECT);
+            assertThat(radio.trailingLabel()).isEqualTo("Names");
+            assertThat(radio.segmentSizing()).isEqualTo(SegmentSizing.SNAPPED);
+            assertThat(radio.reselect()).isEqualTo(ReselectBehaviour.DESELECT);
         }
     }
 
     @Nested
-    class HorizontalRadioDeselectable {
+    class HorizontalRadioHasCaption {
 
         @Test
-        void deselectableIsAUniformRadioThatClearsOnARepick() {
-            // A horizontal on/off selector: even cells, no trailing caption, and DESELECT so re-picking
-            // the lit segment fires the action to turn the control off.
-            var radio = ControlSpec.HorizontalRadio.deselectable(List.of("Factions", "Alliances"),
-                    ControlSpec.NO_SELECTION, ControlAction.NONE);
+        void hasCaptionIsFalseOnAPlainRow() {
+            var radio = ControlSpec.HorizontalRadio.of(List.of("Short", "Full"), 0, ControlAction.NONE);
+            assertThat(radio.hasTrailingCaption()).isFalse();
+        }
+
+        @Test
+        void hasCaptionIsTrueOnACaptionedRow() {
+            var radio = ControlSpec.HorizontalRadio.of(List.of("Short", "Full"), 0, ControlAction.NONE)
+                    .showsCaption("Names");
+            assertThat(radio.hasTrailingCaption()).isTrue();
+        }
+
+        @Test
+        void hasCaptionIsFalseOnAWhitespaceOnlyCaption() {
+            // A host that assembles a caption from parts and comes up with only spacing gets the
+            // uncaptioned row, so the layout reserves no footprint the renderer then draws nothing in.
+            var radio = ControlSpec.HorizontalRadio.of(List.of("Short", "Full"), 0, ControlAction.NONE)
+                    .showsCaption("   ");
+            assertThat(radio.hasTrailingCaption()).isFalse();
+        }
+    }
+
+    @Nested
+    class HorizontalRadioShowsCaption {
+
+        @Test
+        void showsCaptionSetsOnlyTheTrailingLabel() {
+            var radio = ControlSpec.HorizontalRadio.of(List.of("Short", "Full"), 0, ControlAction.NONE)
+                    .showsCaption("Names");
+            assertThat(radio.trailingLabel()).isEqualTo("Names");
             assertThat(radio.segmentSizing()).isEqualTo(SegmentSizing.UNIFORM);
+            assertThat(radio.reselect()).isEqualTo(ReselectBehaviour.INERT);
+            assertThat(radio.labels()).containsExactly("Short", "Full");
+            assertThat(radio.selectedIndex()).isZero();
+        }
+    }
+
+    @Nested
+    class HorizontalRadioSizesSegments {
+
+        @Test
+        void sizesSegmentsSetsOnlyTheSegmentSizing() {
+            // A snapped row's cells each take their own label's width rather than sharing the widest
+            // option's, so a ragged row does not waste space as even cells.
+            var radio = ControlSpec.HorizontalRadio.of(List.of("Short", "Full"), 0, ControlAction.NONE)
+                    .sizesSegments(SegmentSizing.SNAPPED);
+            assertThat(radio.segmentSizing()).isEqualTo(SegmentSizing.SNAPPED);
+            assertThat(radio.trailingLabel()).isEmpty();
+            assertThat(radio.reselect()).isEqualTo(ReselectBehaviour.INERT);
+            assertThat(radio.labels()).containsExactly("Short", "Full");
+            assertThat(radio.selectedIndex()).isZero();
+        }
+    }
+
+    @Nested
+    class HorizontalRadioHandlesReselect {
+
+        @Test
+        void handlesReselectSetsOnlyTheReselectBehaviour() {
+            // A horizontal on/off selector: re-picking the lit segment fires the action to turn it off.
+            var radio = ControlSpec.HorizontalRadio.of(List.of("Factions", "Alliances"),
+                    ControlSpec.NO_SELECTION, ControlAction.NONE)
+                    .handlesReselect(ReselectBehaviour.DESELECT);
             assertThat(radio.reselect()).isEqualTo(ReselectBehaviour.DESELECT);
+            assertThat(radio.segmentSizing()).isEqualTo(SegmentSizing.UNIFORM);
             assertThat(radio.trailingLabel()).isEmpty();
             assertThat(radio.labels()).containsExactly("Factions", "Alliances");
             assertThat(radio.selectedIndex()).isEqualTo(ControlSpec.NO_SELECTION);
-        }
-
-        @Test
-        void deselectableCarriesTheClickActionByOptionIndex() {
-            var firedCell = new int[]{-99};
-            var radio = ControlSpec.HorizontalRadio.deselectable(List.of("Factions", "Alliances"), 0,
-                    cell -> firedCell[0] = cell);
-            radio.action().activateCell(1);
-            assertThat(firedCell[0]).isEqualTo(1);
         }
     }
 }
