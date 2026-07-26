@@ -60,9 +60,11 @@ public final class Colors {
      * @return a colour with the same RGB and the scaled, clamped alpha
      */
     public static Color scaleAlpha(Color color, float alphaMult) {
-        var scaledAlpha = Math.round(color.getAlpha() * alphaMult);
-        var clampedAlpha = Math.max(0, Math.min(MAX_CHANNEL_VALUE, scaledAlpha));
-        return new Color(color.getRed(), color.getGreen(), color.getBlue(), clampedAlpha);
+        return new Color(
+                color.getRed(),
+                color.getGreen(),
+                color.getBlue(),
+                roundToChannel(color.getAlpha() * alphaMult));
     }
 
     /**
@@ -87,10 +89,15 @@ public final class Colors {
                 color.getAlpha());
     }
 
-    // Scales one 0-255 channel by the factor, rounding to the nearest channel value and clamping
-    // into range so an over-1 factor saturates rather than overflowing Color's constructor.
+    // Scales one 0-255 channel by the factor.
     private static int scaleChannel(int channel, float factor) {
-        var scaled = Math.round(channel * factor);
-        return Math.max(0, Math.min(MAX_CHANNEL_VALUE, scaled));
+        return roundToChannel(channel * factor);
+    }
+
+    // Rounds a computed channel value to the nearest int and clamps it into the 0-255 range, so a
+    // scaled or lerped channel saturates rather than overflowing Color's constructor. The one place
+    // every channel transform funnels its result through, so the round-then-clamp rule lives once.
+    private static int roundToChannel(float value) {
+        return Math.max(0, Math.min(MAX_CHANNEL_VALUE, Math.round(value)));
     }
 }
