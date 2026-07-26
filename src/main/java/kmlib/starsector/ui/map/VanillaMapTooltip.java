@@ -47,9 +47,12 @@ public final class VanillaMapTooltip {
     // subclass is what the map actually shows, so the walk up from the runtime class finds this.
     private static final String TOOLTIP_CLASS_NAME = "com.fs.starfarer.ui.impl.StandardTooltipV2";
 
-    // The core UI's own accessors, driven by name through ReflectionUtils: the host's current tooltip,
-    // a panel's children, and (to tell a shown tooltip from a merely-configured one) the tooltip's fade
-    // state. All are part of the core UI's contract, so they survive obfuscation.
+    // The core UI's own accessors, driven by name through ReflectionUtils: the core and its current tab
+    // (the reach to the map subtree), a host's current tooltip, a panel's children, and (to tell a shown
+    // tooltip from a merely-configured one) the tooltip's fade state. All are part of the core UI's
+    // contract, so they survive obfuscation.
+    private static final String GET_CORE_METHOD = "getCore";
+    private static final String GET_CURRENT_TAB_METHOD = "getCurrentTab";
     private static final String GET_TOOLTIP_METHOD = "getTooltip";
     private static final String GET_CHILDREN_METHOD = "getChildrenCopy";
     private static final String GET_FADER_METHOD = "getFader";
@@ -88,12 +91,12 @@ public final class VanillaMapTooltip {
             if (sector == null || sector.getCampaignUI() == null) {
                 return reportOutcome(false, "no campaign UI", null);
             }
-            var core = invokeNoArg(sector.getCampaignUI(), "getCore");
+            var core = invokeNoArg(sector.getCampaignUI(), GET_CORE_METHOD);
             if (core == null) {
                 return reportOutcome(
                         false, "getCore null on " + sector.getCampaignUI().getClass().getName(), null);
             }
-            var currentTab = invokeNoArg(core, "getCurrentTab");
+            var currentTab = invokeNoArg(core, GET_CURRENT_TAB_METHOD);
             if (currentTab == null) {
                 return reportOutcome(
                         false, "getCurrentTab null on " + core.getClass().getName(), null);
@@ -256,7 +259,9 @@ public final class VanillaMapTooltip {
         }
 
         private String describe() {
-            return "tab=" + tabClassName + " visited=" + nodesVisited + " shownTooltips=" + shownTooltips;
+            return "tab=" + tabClassName
+                    + " visited=" + nodesVisited
+                    + " shownTooltips=" + shownTooltips;
         }
     }
 }
