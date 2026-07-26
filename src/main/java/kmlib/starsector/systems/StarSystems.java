@@ -4,6 +4,7 @@ import com.fs.starfarer.api.campaign.PlanetAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
+import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.impl.campaign.GateEntityPlugin;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
 
@@ -178,6 +179,33 @@ public final class StarSystems {
     }
 
     /**
+     * The markets the economy places in {@code system}, in the order it lists them.
+     *
+     * <p>A system does not hold its own markets - the economy owns that mapping - so
+     * every "what is in this system" read has to go through the sector. Centralised
+     * here so callers share one traversal, and so an unreachable economy is handled
+     * once: outside a running game (or before the economy exists) the read yields an
+     * empty list rather than throwing, which reads as an empty system.
+     *
+     * <p>Economy order is preserved and load-bearing for some callers: vanilla's own
+     * claim mechanic settles a tied contest on whichever market it meets first, so a
+     * caller mirroring that rule depends on this order being the economy's, not one
+     * imposed here.
+     *
+     * @param sector the sector whose economy is read; null (or a null economy) yields
+     *               an empty list
+     * @param system the system to read; null yields an empty list
+     * @return the system's markets in economy order; never null
+     */
+    public static List<MarketAPI> readMarkets(SectorAPI sector, StarSystemAPI system) {
+        if (sector == null || system == null || sector.getEconomy() == null) {
+            return List.of();
+        }
+        var markets = sector.getEconomy().getMarkets(system);
+        return markets == null ? List.of() : markets;
+    }
+
+    /**
      * Whether at least one owned colony exists in {@code system}. Composes the
      * ownership filter {@link Markets#isOwnedColony} with the visibility filter
      * {@link Markets#isKnownToPlayer}, so "counts as a known colony" means one thing
@@ -195,10 +223,7 @@ public final class StarSystems {
      */
     public static boolean hasKnownOwnedMarket(SectorAPI sector, StarSystemAPI system,
             boolean shouldIncludeUndiscoveredMarkets) {
-        if (sector == null || system == null || sector.getEconomy() == null) {
-            return false;
-        }
-        for (var market : sector.getEconomy().getMarkets(system)) {
+        for (var market : readMarkets(sector, system)) {
             if (Markets.isCountedAsColony(market, shouldIncludeUndiscoveredMarkets)) {
                 return true;
             }

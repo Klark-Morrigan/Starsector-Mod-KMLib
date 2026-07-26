@@ -369,6 +369,57 @@ final class StarSystemsTest {
     }
 
     @Nested
+    class ReadMarkets {
+        @Test
+        void returns_the_systems_markets_in_economy_order() {
+            var first = visibleColony();
+            var second = conditionOnlyMarket();
+            var sector = sectorWithMarkets(first, second);
+
+            // Order is the economy's, unfiltered: a caller mirroring vanilla's tie rule
+            // resolves on which market comes first, so the traversal must not reorder.
+            assertThat(StarSystems.readMarkets(sector, onlySystem(sector)))
+                    .containsExactly(first, second);
+        }
+
+        @Test
+        void returns_empty_for_a_system_with_no_markets() {
+            var sector = sectorWithMarkets();
+
+            assertThat(StarSystems.readMarkets(sector, onlySystem(sector))).isEmpty();
+        }
+
+        @Test
+        void returns_empty_for_a_null_sector() {
+            assertThat(StarSystems.readMarkets(null, mock(StarSystemAPI.class))).isEmpty();
+        }
+
+        @Test
+        void returns_empty_for_a_null_system() {
+            assertThat(StarSystems.readMarkets(mock(SectorAPI.class), null)).isEmpty();
+        }
+
+        @Test
+        void returns_empty_when_the_sector_has_no_economy() {
+            var sectorMock = mock(SectorAPI.class);
+            when(sectorMock.getEconomy()).thenReturn(null);
+
+            assertThat(StarSystems.readMarkets(sectorMock, mock(StarSystemAPI.class))).isEmpty();
+        }
+
+        @Test
+        void returns_empty_when_the_economy_reports_no_market_list() {
+            var economyMock = mock(EconomyAPI.class);
+            var systemMock = mock(StarSystemAPI.class);
+            when(economyMock.getMarkets(systemMock)).thenReturn(null);
+            var sectorMock = mock(SectorAPI.class);
+            when(sectorMock.getEconomy()).thenReturn(economyMock);
+
+            assertThat(StarSystems.readMarkets(sectorMock, systemMock)).isEmpty();
+        }
+    }
+
+    @Nested
     class IsReachable {
         @Test
         void returns_true_for_a_system_with_a_jump_point() {
