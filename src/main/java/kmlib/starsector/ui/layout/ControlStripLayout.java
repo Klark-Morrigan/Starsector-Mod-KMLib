@@ -66,7 +66,7 @@ public final class ControlStripLayout {
     public static final float TAB_HEIGHT = 24f;
     public static final float TAB_TEXT_PADDING = 16f;
     public static final float MIN_TAB_WIDTH = 48f;
-    public static final double TAB_FONT_SIZE = 14d;
+    public static final double TAB_FONT_SIZE = 15d;
 
     private ControlStripLayout() {
     }
