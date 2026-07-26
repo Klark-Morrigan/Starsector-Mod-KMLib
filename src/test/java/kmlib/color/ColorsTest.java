@@ -16,7 +16,10 @@ import static org.assertj.core.api.Assertions.within;
  *    multiplier as a rounded channel, and an over-1 multiplier saturates rather than
  *    throwing;
  *  - {@link Colors#darken} - each RGB channel scales toward black by the factor, the
- *    alpha is kept, and an over-1 factor saturates at white rather than throwing.
+ *    alpha is kept, and an over-1 factor saturates at white rather than throwing;
+ *  - {@link Colors#blendRgbTowards} - each RGB channel lerps from base toward target
+ *    by the amount, base's own alpha is kept (the target's is ignored), and an
+ *    out-of-range amount saturates rather than throwing.
  */
 final class ColorsTest {
 
@@ -129,6 +132,62 @@ final class ColorsTest {
             var brighter = Colors.darken(new Color(200, 0, 0, 255), 2f);
 
             assertThat(brighter.getRed()).isEqualTo(255);
+        }
+    }
+
+    @Nested
+    class BlendRgbTowards {
+        @Test
+        void lerps_each_rgb_channel_toward_the_target_and_keeps_base_alpha() {
+            var washed = Colors.blendRgbTowards(
+                    new Color(40, 80, 120, 200),
+                    new Color(240, 80, 20, 255),
+                    0.5f);
+
+            // 40 + (240-40)*0.5 = 140, 80 + (80-80)*0.5 = 80, 120 + (20-120)*0.5 = 70.
+            assertThat(washed.getRed()).isEqualTo(140);
+            assertThat(washed.getGreen()).isEqualTo(80);
+            assertThat(washed.getBlue()).isEqualTo(70);
+            // Base's own alpha is kept; the target's 255 is ignored.
+            assertThat(washed.getAlpha()).isEqualTo(200);
+        }
+
+        @Test
+        void returns_the_base_rgb_at_a_zero_amount() {
+            var washed = Colors.blendRgbTowards(
+                    new Color(10, 20, 30, 128),
+                    new Color(200, 200, 200, 255),
+                    0f);
+
+            assertThat(washed.getRed()).isEqualTo(10);
+            assertThat(washed.getGreen()).isEqualTo(20);
+            assertThat(washed.getBlue()).isEqualTo(30);
+            assertThat(washed.getAlpha()).isEqualTo(128);
+        }
+
+        @Test
+        void reaches_the_target_rgb_at_an_amount_of_one_but_keeps_base_alpha() {
+            var washed = Colors.blendRgbTowards(
+                    new Color(10, 20, 30, 128),
+                    new Color(200, 150, 100, 255),
+                    1f);
+
+            assertThat(washed.getRed()).isEqualTo(200);
+            assertThat(washed.getGreen()).isEqualTo(150);
+            assertThat(washed.getBlue()).isEqualTo(100);
+            // The target's alpha (255) is ignored - base's 128 survives the full wash.
+            assertThat(washed.getAlpha()).isEqualTo(128);
+        }
+
+        @Test
+        void saturates_at_the_max_channel_when_the_amount_exceeds_one() {
+            // 200 + (255-200)*2 = 310 would overflow Color's 0-255 range, so it clamps to 255.
+            var washed = Colors.blendRgbTowards(
+                    new Color(200, 0, 0, 255),
+                    new Color(255, 0, 0, 255),
+                    2f);
+
+            assertThat(washed.getRed()).isEqualTo(255);
         }
     }
 }

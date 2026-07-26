@@ -89,9 +89,35 @@ public final class Colors {
                 color.getAlpha());
     }
 
+    /**
+     * Lerps {@code base}'s red, green, and blue toward {@code target}'s by {@code amount}, keeping
+     * {@code base}'s own alpha - so a caller can wash a fill toward a brighter shade (e.g. a tab fill
+     * toward white on hover) as a pure brightness shift without also changing its transparency. An
+     * amount of 0 returns {@code base}'s RGB, 1 returns {@code target}'s, and values between
+     * interpolate; each channel is rounded and clamped, so an out-of-range amount saturates rather
+     * than throwing from {@link Color}'s constructor.
+     *
+     * @param base   the colour to wash from; its own alpha is preserved
+     * @param target the colour to wash toward; its alpha is ignored
+     * @param amount the fraction to move each RGB channel from base toward target
+     * @return base's RGB moved toward target by amount, with base's original alpha
+     */
+    public static Color blendRgbTowards(Color base, Color target, float amount) {
+        return new Color(
+                lerpChannel(base.getRed(), target.getRed(), amount),
+                lerpChannel(base.getGreen(), target.getGreen(), amount),
+                lerpChannel(base.getBlue(), target.getBlue(), amount),
+                base.getAlpha());
+    }
+
     // Scales one 0-255 channel by the factor.
     private static int scaleChannel(int channel, float factor) {
         return roundToChannel(channel * factor);
+    }
+
+    // Lerps one 0-255 channel from -> to by t.
+    private static int lerpChannel(int from, int to, float t) {
+        return roundToChannel(from + (to - from) * t);
     }
 
     // Rounds a computed channel value to the nearest int and clamps it into the 0-255 range, so a
