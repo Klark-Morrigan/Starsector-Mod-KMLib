@@ -77,7 +77,7 @@ public final class NotchRenderer {
                 computeChevronArms(notch, state.collapseFraction()),
                 notchBorder,
                 new UiElementPaint(
-                        style.notchColors().chooseChevronColour(state.isHovered()),
+                        style.notchColors().resolveChevronColour(state.isHovered()),
                         opacity));
     }
 

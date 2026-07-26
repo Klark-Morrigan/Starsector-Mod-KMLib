@@ -27,7 +27,7 @@ public record NotchColors(Color chevron, Color chevronHovered) {
      * @param isHovered true while the pointer is over the handle
      * @return the colour to stroke the chevron with
      */
-    public Color chooseChevronColour(boolean isHovered) {
+    public Color resolveChevronColour(boolean isHovered) {
         return isHovered
                 ? chevronHovered
                 : chevron;

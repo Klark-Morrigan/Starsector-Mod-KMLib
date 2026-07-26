@@ -18,16 +18,16 @@ final class NotchColorsTest {
     private static final NotchColors COLORS = new NotchColors(RESTING, HOVERED);
 
     @Nested
-    class ChooseChevronColour {
+    class ResolveChevronColour {
 
         @Test
-        void chooseChevronColourTakesTheRestingShadeWhenTheHandleIsNotHovered() {
-            assertThat(COLORS.chooseChevronColour(false)).isEqualTo(RESTING);
+        void resolveChevronColourTakesTheRestingShadeWhenTheHandleIsNotHovered() {
+            assertThat(COLORS.resolveChevronColour(false)).isEqualTo(RESTING);
         }
 
         @Test
-        void chooseChevronColourTakesTheHoveredShadeWhenTheHandleIsHovered() {
-            assertThat(COLORS.chooseChevronColour(true)).isEqualTo(HOVERED);
+        void resolveChevronColourTakesTheHoveredShadeWhenTheHandleIsHovered() {
+            assertThat(COLORS.resolveChevronColour(true)).isEqualTo(HOVERED);
         }
     }
 }
