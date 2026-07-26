@@ -11,6 +11,7 @@ import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.campaign.econ.EconomyAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
+import com.fs.starfarer.api.campaign.rules.MemoryAPI;
 import com.fs.starfarer.api.impl.campaign.GateEntityPlugin;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
 
@@ -34,12 +35,17 @@ import static org.mockito.Mockito.when;
  * {@link StarSystems#getPlayerStarSystem}, {@link StarSystems#getStars},
  * {@link StarSystems#hasKnownOwnedMarket}, {@link StarSystems#getCentremostStar},
  * {@link StarSystems#getOrbitalDistanceTo}, {@link StarSystems#isReachable},
- * {@link StarSystems#find}, and {@link StarSystems#findById}. Each method's cases live in a
+ * {@link StarSystems#find}, {@link StarSystems#findById}, {@link StarSystems#readMarkets}
+ * and {@link StarSystems#readFactionClaimOverride}. Each method's cases live in a
  * {@link Nested} group so
  * the suite reports as a per-method tree; the shared mock builders stay on the
  * outer class.
  */
 final class StarSystemsTest {
+
+    // The vanilla memory key a decreed claim is set under, spelled out rather than read from
+    // MemFlags so a read pointed at another key fails here.
+    private static final String CLAIMING_FACTION_FLAG = "$claimingFaction";
 
     @Nested
     class GetHyperspacePositions {
@@ -420,6 +426,35 @@ final class StarSystemsTest {
     }
 
     @Nested
+    class ReadFactionClaimOverride {
+        @Test
+        void returns_the_decreed_faction_id() {
+            assertThat(StarSystems.readFactionClaimOverride(systemClaimedBy("luddic_church")))
+                    .isEqualTo("luddic_church");
+        }
+
+        @Test
+        void returns_null_when_no_claim_is_imposed() {
+            // The ordinary case: vanilla scores markets for an unflagged system, so most
+            // claimed systems carry no flag at all.
+            assertThat(StarSystems.readFactionClaimOverride(systemClaimedBy(null))).isNull();
+        }
+
+        @Test
+        void returns_null_for_a_system_with_no_memory() {
+            var systemMock = mock(StarSystemAPI.class);
+            when(systemMock.getMemoryWithoutUpdate()).thenReturn(null);
+
+            assertThat(StarSystems.readFactionClaimOverride(systemMock)).isNull();
+        }
+
+        @Test
+        void returns_null_for_a_null_system() {
+            assertThat(StarSystems.readFactionClaimOverride(null)).isNull();
+        }
+    }
+
+    @Nested
     class IsReachable {
         @Test
         void returns_true_for_a_system_with_a_jump_point() {
@@ -675,6 +710,16 @@ final class StarSystemsTest {
         var planetMock = mock(PlanetAPI.class);
         when(planetMock.isStar()).thenReturn(isStar);
         return planetMock;
+    }
+
+    // A system whose memory carries the claiming-faction flag at the given value; a null id
+    // stands for the flag never having been set.
+    private static StarSystemAPI systemClaimedBy(String factionId) {
+        var memoryMock = mock(MemoryAPI.class);
+        when(memoryMock.getString(CLAIMING_FACTION_FLAG)).thenReturn(factionId);
+        var systemMock = mock(StarSystemAPI.class);
+        when(systemMock.getMemoryWithoutUpdate()).thenReturn(memoryMock);
+        return systemMock;
     }
 
     private static StarSystemAPI systemAt(String id, float x, float y) {

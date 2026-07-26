@@ -6,6 +6,7 @@ import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.impl.campaign.GateEntityPlugin;
+import com.fs.starfarer.api.impl.campaign.ids.MemFlags;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
 
 import kmlib.math.geometry.Points;
@@ -203,6 +204,26 @@ public final class StarSystems {
         }
         var markets = sector.getEconomy().getMarkets(system);
         return markets == null ? List.of() : markets;
+    }
+
+    /**
+     * The faction id decreed as {@code system}'s claimant by its
+     * {@link MemFlags#CLAIMING_FACTION} ({@code $claimingFaction}) memory flag.
+     *
+     * <p>This is the imposed claim only - a flag a script or mod sets to hand a system
+     * to a faction outright. It is not "who claims this system": vanilla resolves an
+     * unflagged system's claimant by scoring the markets in it, so most claimed systems
+     * report null here. A caller wanting the resolved claimant wants that computation,
+     * not this flag.
+     *
+     * @param system the system to read; null (or one with no memory) yields null
+     * @return the decreed claimant's faction id, or null when no claim is imposed
+     */
+    public static String readFactionClaimOverride(StarSystemAPI system) {
+        if (system == null || system.getMemoryWithoutUpdate() == null) {
+            return null;
+        }
+        return system.getMemoryWithoutUpdate().getString(MemFlags.CLAIMING_FACTION);
     }
 
     /**
