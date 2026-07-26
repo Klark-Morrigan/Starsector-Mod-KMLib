@@ -19,18 +19,18 @@ import java.util.List;
  */
 public final class VanillaTabStrip {
     /**
-     * The opening delimiter wrapped around a shortcut key in the display string - a round parenthesis,
-     * the way vanilla brackets a hotkey. Public so the paint pass draws the delimiter as its own text
-     * segment - in the label colour, apart from the gold key - off the same literal the display string
-     * is measured with.
+     * The opening delimiter wrapped around a shortcut key in the display string - a square bracket, the
+     * way vanilla brackets a hotkey (the map's own {@code Sector [O]} / {@code System [W]} tabs). Public
+     * so the paint pass draws the delimiter as its own text segment - in the label colour, apart from the
+     * gold key - off the same literal the display string is measured with.
      */
-    public static final String SHORTCUT_OPEN_DELIMITER = "(";
+    public static final String SHORTCUT_OPEN_DELIMITER = "[";
 
     /**
      * The closing delimiter wrapped around a shortcut key in the display string, the pair to
      * {@link #SHORTCUT_OPEN_DELIMITER}.
      */
-    public static final String SHORTCUT_CLOSE_DELIMITER = ")";
+    public static final String SHORTCUT_CLOSE_DELIMITER = "]";
 
     // The layout approximates the label-to-shortcut gap with two spaces in the measured display
     // string; the tab padding absorbs the small difference against the paint pass, so it never clips.
@@ -159,7 +159,7 @@ public final class VanillaTabStrip {
     }
 
     /**
-     * A shortcut wrapped in its delimiters - "(K)" - the form the layout measures, kept here as the
+     * A shortcut wrapped in its delimiters - "[K]" - the form the layout measures, kept here as the
      * single source so the measured display string and the paint pass never drift on the delimiter
      * convention. The paint pass draws the same three pieces ({@link #SHORTCUT_OPEN_DELIMITER}, the
      * key, {@link #SHORTCUT_CLOSE_DELIMITER}) as separate coloured segments rather than this one

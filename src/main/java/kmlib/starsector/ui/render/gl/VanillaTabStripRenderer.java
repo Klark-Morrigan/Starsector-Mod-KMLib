@@ -248,7 +248,7 @@ public final class VanillaTabStripRenderer {
     }
 
     // Draws the segments left to right from startX, advancing the cursor by each one's width so they
-    // read as a single continuous "(K)" run despite carrying two colours.
+    // read as a single continuous "[K]" run despite carrying two colours.
     private static void drawSegmentsInOrder(
             List<DrawableString> segments,
             float startX,

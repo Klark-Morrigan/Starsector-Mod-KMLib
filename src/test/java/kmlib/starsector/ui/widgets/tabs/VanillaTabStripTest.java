@@ -19,8 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * than the same label without. Also pins {@link VanillaTabStrip#zipTabs}, the pairing both the
  * strip's own layout and a consumer holding the boxes separately build their tabs through, and the
  * display-string SSOT ({@link VanillaTabStrip#wrapShortcut}, {@link VanillaTabStrip#composeDisplay})
- * the layout measures and the paint pass draws off - so the vanilla-parity "(K)" delimiter cannot
- * silently drift back to brackets.
+ * the layout measures and the paint pass draws off - so the vanilla-parity "[K]" delimiter cannot
+ * silently drift back to round parentheses.
  */
 class VanillaTabStripTest {
     // Each character measures 10 wide, so a display string's width is a plain multiple of length.
@@ -81,10 +81,11 @@ class VanillaTabStripTest {
     class WrapShortcut {
 
         @Test
-        void wrapsTheKeyInRoundParentheses() {
-            // The delimiter is the vanilla-parity contract - a hotkey reads "(P)", not "[P]" - and
-            // the renderer paints these exact delimiters, so pin the string lest it silently regress.
-            assertThat(VanillaTabStrip.wrapShortcut("P")).isEqualTo("(P)");
+        void wrapsTheKeyInSquareBrackets() {
+            // The delimiter is the vanilla-parity contract - a hotkey reads "[P]", not "(P)", matching
+            // the map's own Sector [O] / System [W] tabs - and the renderer paints these exact
+            // delimiters, so pin the string lest it silently regress.
+            assertThat(VanillaTabStrip.wrapShortcut("P")).isEqualTo("[P]");
         }
     }
 
