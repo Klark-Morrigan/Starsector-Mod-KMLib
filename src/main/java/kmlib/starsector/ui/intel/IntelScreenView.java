@@ -5,8 +5,9 @@ import kmlib.math.geometry.Rectangle;
 /**
  * Reads the campaign intel screen (the {@code Intel} tab) from code that lives outside that screen.
  * Two things it exposes are not on the published UI API: whether the intel tab is the one showing,
- * and the screen rectangle of the intel screen's embedded map preview (the "visor") while that
- * preview is actually lit.
+ * and the screen rectangle of the intel screen's embedded map preview (its "map visor") while that
+ * preview is actually lit. The reads name the map visor rather than a bare "visor" because the intel
+ * screen carries only this one map, and the rectangle is that map's - not the screen's own bounds.
  *
  * <p>The two are separate questions, not one: the intel core tab is a container for three sub-tabs -
  * Intel, Planets and Factions - and only the Intel one carries the visor, so the tab-open read stays
@@ -31,5 +32,5 @@ public interface IntelScreenView {
      *         large-description item hides it). A non-null result is exactly the signal that the
      *         visor is present.
      */
-    Rectangle getVisorRect();
+    Rectangle getMapVisorRect();
 }

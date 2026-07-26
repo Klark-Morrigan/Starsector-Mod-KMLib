@@ -15,7 +15,7 @@ import org.apache.log4j.Logger;
 
 /**
  * {@link IntelScreenView} binding backed by the live campaign UI. The tab-open read is published
- * API; the visor rectangle reaches the game's concrete intel panel by casting to it - the game's
+ * API; the map visor rectangle reaches the game's concrete intel panel by casting to it - the game's
  * script classloader denies {@code java.lang.reflect} to mod code, while loading and casting to
  * core classes is permitted, and the classes touched are marked do-not-obfuscate, so their names
  * stay stable across game builds.
@@ -28,8 +28,8 @@ public final class VanillaIntelScreenView implements IntelScreenView {
     private static final Logger LOG = Global.getLogger(VanillaIntelScreenView.class);
 
     // The preview widget's opacity is hard-set to 1.0 while it is showing and 0.0 when a
-    // large-description item blanks it, so any threshold between the two reads "is the visor lit".
-    private static final float VISOR_VISIBLE_MIN_OPACITY = 0.5f;
+    // large-description item blanks it, so any threshold between the two reads "is the preview lit".
+    private static final float MAP_WIDGET_VISIBLE_MIN_OPACITY = 0.5f;
 
     // The sub-tab switch forces the panel faders fully in and out rather than easing them, so the
     // events panel's brightness is only ever dark or lit and any threshold between the two reads
@@ -48,23 +48,16 @@ public final class VanillaIntelScreenView implements IntelScreenView {
     }
 
     @Override
-    public Rectangle getVisorRect() {
+    public Rectangle getMapVisorRect() {
         EventsPanel intelPanel = resolveIntelPanel();
         if (intelPanel == null) {
             return null;
         }
-        // The intel core tab hosts three sub-tabs - Intel, Planets, Factions - sharing one container,
-        // and switching between them only fades the events panel out; it is never torn down and its
-        // map widget keeps full opacity behind whichever sub-tab is up. So the events panel's own
-        // fader, not the map widget's opacity, is what says which sub-tab is showing, and a dark
-        // panel reads as no visor.
-        if (intelPanel.getFader().getBrightness() < INTEL_SUBTAB_SHOWING_MIN_BRIGHTNESS) {
+        var mapWidget = intelPanel.getMap();
+        if (mapWidget == null) {
             return null;
         }
-        var mapWidget = intelPanel.getMap();
-        // A blanked preview (opacity 0, set when a large-description item is selected) has no lit
-        // canvas to draw over, so it reports as no visor even though the widget is still laid out.
-        if (mapWidget == null || mapWidget.getOpacity() < VISOR_VISIBLE_MIN_OPACITY) {
+        if (!isMapVisorLit(intelPanel.getFader().getBrightness(), mapWidget.getOpacity())) {
             return null;
         }
         PositionAPI position = mapWidget.getPosition();
@@ -72,6 +65,21 @@ public final class VanillaIntelScreenView implements IntelScreenView {
             return null;
         }
         return VanillaPositions.toRectangle(position);
+    }
+
+    // Whether the two live signals add up to a lit map visor. Kept apart from the walk that fetches
+    // them because they answer different questions: the walk is about reaching the game's widgets,
+    // this is the rule about what their numbers mean, stated in the plain floats it actually needs.
+    //
+    // Both readings are load-bearing and neither implies the other. The intel core tab hosts three
+    // sub-tabs - Intel, Planets, Factions - sharing one container, and switching between them only
+    // fades the events panel out; it is never torn down and its map widget keeps full opacity behind
+    // whichever sub-tab is up, so panel brightness is the only signal that says which sub-tab shows.
+    // Conversely the Intel sub-tab can be showing with its preview blanked, which zeroes the map
+    // widget's opacity while the panel stays lit. Either alone leaves nothing to draw over.
+    static boolean isMapVisorLit(float intelSubtabBrightness, float mapWidgetOpacity) {
+        return intelSubtabBrightness >= INTEL_SUBTAB_SHOWING_MIN_BRIGHTNESS
+                && mapWidgetOpacity >= MAP_WIDGET_VISIBLE_MIN_OPACITY;
     }
 
     private CampaignUIAPI readCampaignUi() {

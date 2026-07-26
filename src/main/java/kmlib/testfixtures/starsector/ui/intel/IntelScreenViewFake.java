@@ -13,14 +13,14 @@ import kmlib.starsector.ui.intel.IntelScreenView;
  */
 public final class IntelScreenViewFake implements IntelScreenView {
     private boolean isIntelTabOpen;
-    private Rectangle visorRect;
+    private Rectangle mapVisorRect;
 
     public void setIntelTabOpen(boolean isIntelTabOpen) {
         this.isIntelTabOpen = isIntelTabOpen;
     }
 
-    public void setVisorRect(Rectangle visorRect) {
-        this.visorRect = visorRect;
+    public void setMapVisorRect(Rectangle mapVisorRect) {
+        this.mapVisorRect = mapVisorRect;
     }
 
     @Override
@@ -29,7 +29,7 @@ public final class IntelScreenViewFake implements IntelScreenView {
     }
 
     @Override
-    public Rectangle getVisorRect() {
-        return visorRect;
+    public Rectangle getMapVisorRect() {
+        return mapVisorRect;
     }
 }
