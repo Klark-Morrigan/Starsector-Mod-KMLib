@@ -1,5 +1,6 @@
 package kmlib.starsector.ui.layout;
 
+import kmlib.math.geometry.BoxEdge;
 import kmlib.starsector.ui.controls.ControlAction;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
@@ -9,7 +10,9 @@ import kmlib.testfixtures.starsector.ui.font.LineWidthMeasurerFake;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
@@ -88,6 +91,39 @@ final class TabPanelLayoutTest {
             assertThat(box.width()).isCloseTo(body.width() + 2f * BORDER_WIDTH, within(TOLERANCE));
             assertThat(box.x()).isCloseTo(PADDING_LEFT, within(TOLERANCE));
             assertThat(box.y() + box.height()).isCloseTo(BOX_TOP_Y, within(TOLERANCE));
+        }
+
+        @Test
+        void computePlacementPullsContentFlushAndShrinksTheBoxWhenTheLeftBorderIsDropped() {
+            var framed = place(BODY);
+            var droppedLeft = place(BODY, 0f, EnumSet.of(BoxEdge.TOP, BoxEdge.RIGHT, BoxEdge.BOTTOM));
+
+            var body = droppedLeft.body().body();
+            var box = droppedLeft.body().box();
+            // With no left border to reserve, the content sits flush at the box's left edge (the anchor)
+            // rather than inset by the border, and the header's first tab starts there too.
+            assertThat(body.x()).isCloseTo(PADDING_LEFT, within(TOLERANCE));
+            assertThat(droppedLeft.tabsHeader().segments().get(0).x())
+                    .isCloseTo(PADDING_LEFT, within(TOLERANCE));
+            // The box stays anchored at the same left edge but reclaims the dropped border's width, so it is
+            // exactly one border narrower than the fully framed box - no bare strip where the border was.
+            assertThat(box.x()).isCloseTo(PADDING_LEFT, within(TOLERANCE));
+            assertThat(box.width())
+                    .isCloseTo(body.width() + BORDER_WIDTH, within(TOLERANCE));
+            assertThat(framed.body().box().width() - box.width())
+                    .isCloseTo(BORDER_WIDTH, within(TOLERANCE));
+        }
+
+        @Test
+        void computePlacementKeepsTheBoxHeightWhenOnlyASideBorderIsDropped() {
+            var framed = place(BODY);
+            var droppedLeft = place(BODY, 0f, EnumSet.of(BoxEdge.TOP, BoxEdge.RIGHT, BoxEdge.BOTTOM));
+            // Dropping the left border collapses width only; the top and bottom are still framed, so the box
+            // keeps its full height and top anchor.
+            assertThat(droppedLeft.body().box().height())
+                    .isCloseTo(framed.body().box().height(), within(TOLERANCE));
+            assertThat(droppedLeft.body().box().y() + droppedLeft.body().box().height())
+                    .isCloseTo(BOX_TOP_Y, within(TOLERANCE));
         }
 
         @Test
@@ -229,8 +265,8 @@ final class TabPanelLayoutTest {
         @Test
         void computePlacementDocksToAZeroWidthRailWhenThereIsNoBorder() {
             var placement = TabPanelLayout.computePlacement(SCREEN_HEIGHT,
-                    new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT), 0, TABS, BODY, measurerFake,
-                    0f, 1f);
+                    new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT), 0, BoxEdge.ALL, TABS, BODY,
+                    measurerFake, 0f, 1f);
             var box = placement.body().box();
             // With no border, the docked rail has no interior and no border to keep, so the box collapses
             // to zero width - yet the placement stays well-formed and the notch still anchors to the edge.
@@ -254,9 +290,14 @@ final class TabPanelLayoutTest {
         }
 
         private TabPanelPlacement place(List<ControlSpec> bodyControls, float collapseFraction) {
+            return place(bodyControls, collapseFraction, BoxEdge.ALL);
+        }
+
+        private TabPanelPlacement place(
+                List<ControlSpec> bodyControls, float collapseFraction, Set<BoxEdge> borderedEdges) {
             return TabPanelLayout.computePlacement(SCREEN_HEIGHT,
-                    new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT), BORDER_WIDTH, TABS,
-                    bodyControls, measurerFake, 0f, collapseFraction);
+                    new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT), BORDER_WIDTH, borderedEdges,
+                    TABS, bodyControls, measurerFake, 0f, collapseFraction);
         }
     }
 }

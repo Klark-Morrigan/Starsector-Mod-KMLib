@@ -1,5 +1,7 @@
 package kmlib.starsector.ui.render.gl;
 
+import kmlib.math.geometry.BoxEdge;
+
 import java.util.Set;
 
 /**

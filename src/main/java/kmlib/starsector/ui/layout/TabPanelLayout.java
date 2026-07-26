@@ -1,5 +1,6 @@
 package kmlib.starsector.ui.layout;
 
+import kmlib.math.geometry.BoxEdge;
 import kmlib.math.geometry.Rectangle;
 import kmlib.math.ranges.Ranges;
 import kmlib.starsector.ui.controls.ControlSpec;
@@ -7,6 +8,7 @@ import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Composes a tab panel: a tabs-control header over the shared body composition, wrapped in one bordered
@@ -62,6 +64,9 @@ public final class TabPanelLayout {
      * @param padding         the panel's edge margins: the top-left anchor and the bottom keep-clear
      *                        margin the body caps to (the right inset is unused - a panel grows rightward)
      * @param borderWidth     the outer border thickness framing the footprint; 0 leaves no inset
+     * @param borderedEdges   which edges are framed; a dropped edge reserves no inset, so the box shrinks to
+     *                        sit flush against a neighbour instead of leaving a bare strip where its border
+     *                        would have been
      * @param tabsSpec        the tabs control (labels + per-tab shortcuts) drawn across the header band
      * @param bodyControls    the active tab's body controls, top to bottom (empty for no body)
      * @param measurer        measures each label's rendered width for text snapping
@@ -77,14 +82,21 @@ public final class TabPanelLayout {
             float screenHeight,
             Padding padding,
             int borderWidth,
+            Set<BoxEdge> borderedEdges,
             ControlSpec.Tabs tabsSpec,
             List<ControlSpec> bodyControls,
             LineWidthMeasurer measurer,
             float rawScrollOffset,
             float collapseFraction) {
+
         // The box hangs from the screen's top-left, same anchor a plain panel uses; the header sits flush
-        // under the top border and the body hangs beneath the header band.
-        var origin = PanelLayout.computeContentOrigin(screenHeight, padding, borderWidth);
+        // under the top border (or flush with the top edge when it is dropped) and the body hangs beneath
+        // the header band.
+        var origin = PanelLayout.computeContentOrigin(
+                screenHeight,
+                padding,
+                borderWidth,
+                borderedEdges);
 
         // Header: the tabs control laid flush at the content top, reusing the strip's tab measurement and
         // segment split so it is not bespoke tab-strip framing.
@@ -93,16 +105,21 @@ public final class TabPanelLayout {
                 origin.contentX(),
                 origin.contentTopY(),
                 measurer);
+
         var bodyTopY = origin.contentTopY() - ControlStripLayout.TAB_HEIGHT;
 
         // Body: the same shared composition a plain panel frames, hung beneath the header band and capped
         // so the box (header included) clears the bottom margin - the header height counted against the
-        // vertical budget the same way a plain panel counts only its own border.
+        // vertical budget the same way a plain panel counts only its own border. The vertical budget spends
+        // the border only on the edges that are framed, so a dropped top or bottom returns that width to the
+        // body.
         var maxBodyHeight = screenHeight
                 - padding.top()
-                - 2f * borderWidth
+                - PanelLayout.edgeInset(borderedEdges, BoxEdge.TOP, borderWidth)
+                - PanelLayout.edgeInset(borderedEdges, BoxEdge.BOTTOM, borderWidth)
                 - ControlStripLayout.TAB_HEIGHT
                 - padding.bottom();
+
         var bodyStrip = CappedStripLayout.layoutBodyStrip(
                 origin.contentX(),
                 bodyTopY,
@@ -130,13 +147,18 @@ public final class TabPanelLayout {
                 padding.left(),
                 origin.boxTopY(),
                 borderWidth,
+                borderedEdges,
                 framedBody,
                 ControlStripLayout.TAB_HEIGHT,
                 bodyStrip);
+
         // No body controls means nothing to collapse, so the panel is not collapsible and exposes no
         // handle: the notch is left absent. An empty-body panel is just its bordered tab row, and a
         // collapse handle protruding off it would fold a body that is not there.
-        var notch = bodyControls.isEmpty() ? null : computeNotchRect(bodyPlacement.box());
+        var notch = bodyControls.isEmpty()
+                ? null
+                : computeNotchRect(bodyPlacement.box());
+
         return new TabPanelPlacement(tabsHeader, bodyPlacement, notch);
     }
 
@@ -144,7 +166,13 @@ public final class TabPanelLayout {
     // the frame (NOTCH_CENTRE_OFFSET shifts it off centre). It rides the box's right edge, so as the body
     // collapses leftward the handle tracks the shrinking edge and stays reachable to expand again.
     private static Rectangle computeNotchRect(Rectangle box) {
-        var notchY = box.computeCenterY() - NOTCH_HEIGHT / 2f + NOTCH_CENTRE_OFFSET;
-        return new Rectangle(box.x() + box.width(), notchY, NOTCH_WIDTH, NOTCH_HEIGHT);
+        var notchY = box.computeCenterY()
+                - NOTCH_HEIGHT / 2f
+                + NOTCH_CENTRE_OFFSET;
+        return new Rectangle(
+                box.x() + box.width(),
+                notchY,
+                NOTCH_WIDTH,
+                NOTCH_HEIGHT);
     }
 }

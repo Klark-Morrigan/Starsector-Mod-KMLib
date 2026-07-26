@@ -1,11 +1,13 @@
 package kmlib.starsector.ui.layout;
 
+import kmlib.math.geometry.BoxEdge;
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.widgets.PanelPlacement;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Composes a headerless panel: it frames a bordered box around the shared body composition. The frame is
@@ -50,8 +52,8 @@ public final class PanelLayout {
             List<ControlSpec> bodyControls,
             LineWidthMeasurer measurer,
             float rawScrollOffset) {
-        // The box hangs from the screen's top-left; the content is inset by the border on every edge.
-        var origin = computeContentOrigin(screenHeight, padding, borderWidth);
+        // A plain panel frames every side, so the content is inset by the border on all four edges.
+        var origin = computeContentOrigin(screenHeight, padding, borderWidth, BoxEdge.ALL);
         // The shared body composition, capped so the box never runs past the bottom margin.
         var maxBodyHeight = screenHeight
                 - padding.top()
@@ -69,6 +71,7 @@ public final class PanelLayout {
                 padding.left(),
                 origin.boxTopY(),
                 borderWidth,
+                BoxEdge.ALL,
                 bodyStrip.bounds(),
                 0f,
                 bodyStrip);
@@ -79,14 +82,27 @@ public final class PanelLayout {
      * panel and a tab panel hang their content from. Shared with {@link TabPanelLayout} so the two anchor
      * identically and only their content differs.
      *
-     * @param screenHeight the UI-coordinate screen height, giving the top edge to hang from
-     * @param padding      the panel's edge margins
-     * @param borderWidth  the outer border thickness inset on every edge
-     * @return the box top edge and the inset content top-left, in UI coordinates
+     * @param screenHeight  the UI-coordinate screen height, giving the top edge to hang from
+     * @param padding       the panel's edge margins
+     * @param borderWidth   the outer border thickness inset on a framed edge
+     * @param borderedEdges which edges are framed; a framed edge insets its content by the border, while a
+     *                      dropped edge insets by nothing so the content sits flush against that side
+     * @return the box top edge and the content top-left, inset only on the framed edges, in UI coordinates
      */
-    static ContentOrigin computeContentOrigin(float screenHeight, Padding padding, int borderWidth) {
+    static ContentOrigin computeContentOrigin(
+            float screenHeight,
+            Padding padding,
+            int borderWidth,
+            Set<BoxEdge> borderedEdges) {
+
         var boxTopY = screenHeight - padding.top();
-        return new ContentOrigin(boxTopY, padding.left() + (float) borderWidth, boxTopY - borderWidth);
+        var leftInset = edgeInset(borderedEdges, BoxEdge.LEFT, borderWidth);
+        var topInset = edgeInset(borderedEdges, BoxEdge.TOP, borderWidth);
+
+        return new ContentOrigin(
+                boxTopY,
+                padding.left() + leftInset,
+                boxTopY - topInset);
     }
 
     /**
@@ -105,7 +121,9 @@ public final class PanelLayout {
      *
      * @param leftX           the box's left edge (the panel's left margin), in UI coordinates
      * @param boxTopY         the box's top edge, in UI coordinates
-     * @param borderWidth     the outer border thickness inset on every edge
+     * @param borderWidth     the outer border thickness framing a bordered edge
+     * @param borderedEdges   which edges are framed; the box grows by the border on each framed edge and by
+     *                        nothing on a dropped edge, so it shrinks to sit flush where it drops a border
      * @param framedBody      the body rectangle the box frames and reports as its interior
      * @param headerBandHeight the height of the header band above the body (0 for a plain panel)
      * @param bodyStrip       the laid-out body strip whose controls and scroll geometry the placement carries
@@ -115,16 +133,29 @@ public final class PanelLayout {
             int leftX,
             float boxTopY,
             int borderWidth,
+            Set<BoxEdge> borderedEdges,
             Rectangle framedBody,
             float headerBandHeight,
             CappedStripLayout.BodyStrip bodyStrip) {
+
+        // Each side contributes the border to the box only where it is framed; a dropped edge reserves
+        // nothing, so the box shrinks against the neighbour it sits flush with rather than leaving a bare
+        // strip where the border would have been. The box stays anchored at leftX / boxTopY, so a dropped
+        // left or top edge pulls the content out to the anchor instead of moving the box.
+        var leftInset = edgeInset(borderedEdges, BoxEdge.LEFT, borderWidth);
+        var rightInset = edgeInset(borderedEdges, BoxEdge.RIGHT, borderWidth);
+        var topInset = edgeInset(borderedEdges, BoxEdge.TOP, borderWidth);
+        var bottomInset = edgeInset(borderedEdges, BoxEdge.BOTTOM, borderWidth);
         var contentHeight = headerBandHeight + framedBody.height();
+
         var box = new Rectangle(
                 leftX,
-                boxTopY - (contentHeight + 2f * borderWidth),
-                framedBody.width() + 2f * borderWidth,
-                contentHeight + 2f * borderWidth);
+                boxTopY - (contentHeight + topInset + bottomInset),
+                framedBody.width() + leftInset + rightInset,
+                contentHeight + topInset + bottomInset);
+
         var capped = bodyStrip.placement();
+
         return new PanelPlacement(
                 box,
                 framedBody,
@@ -134,12 +165,23 @@ public final class PanelLayout {
                 capped.scrollOverflow());
     }
 
+    // The inset one edge contributes: the border width where that edge is framed, nothing where it is
+    // dropped. The single source both the content-origin and the box-framing math read, so a dropped edge
+    // pulls the content flush and shrinks the box by exactly the same amount.
+    static float edgeInset(Set<BoxEdge> borderedEdges, BoxEdge edge, int borderWidth) {
+        return borderedEdges.contains(edge)
+                ? (float) borderWidth
+                : 0f;
+    }
+
     /**
-     * A panel's framing origin: the box's top edge and the border-inset content top-left.
+     * A panel's framing origin: the box's top edge and the content top-left, inset only where framed.
      *
      * @param boxTopY     the box's top edge, in UI coordinates
-     * @param contentX    the content's left edge, inset from the box left by the border
-     * @param contentTopY the content's top edge, inset from the box top by the border
+     * @param contentX    the content's left edge, inset from the box left by the border when the left is
+     *                    framed and flush with it when the left border is dropped
+     * @param contentTopY the content's top edge, inset from the box top by the border when the top is framed
+     *                    and flush with it when the top border is dropped
      */
     record ContentOrigin(float boxTopY, float contentX, float contentTopY) {
     }
