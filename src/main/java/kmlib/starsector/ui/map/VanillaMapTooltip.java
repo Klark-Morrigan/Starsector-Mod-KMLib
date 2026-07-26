@@ -2,9 +2,8 @@ package kmlib.starsector.ui.map;
 
 import com.fs.starfarer.api.Global;
 
-import kmlib.reflection.Reflection;
-
 import org.apache.log4j.Logger;
+import org.magiclib.ReflectionUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,23 +21,23 @@ import java.util.List;
  * {@code getTooltip()} returns a live {@code StandardTooltipV2}. That is the same read the core UI does
  * itself to render a child's tooltip, so it tracks exactly when a tooltip is up.
  *
- * <p>The tooltip is matched by the returned value's runtime class <em>name</em> walked up its hierarchy,
- * not by a field name, a declared field type, or {@code Class.forName} identity: the host stores it
- * behind the general tooltip interface (so a declared-type match misses it), the obfuscated field name is
- * not stable across builds, and a name walk sidesteps any classloader-identity mismatch between the mod
- * and the game class.
+ * <p>The private core-UI methods and the private tooltip host are reached through MagicLib's {@link
+ * ReflectionUtils}, the ecosystem's proven bypass of the game's script-classloader reflection ban (it
+ * drives {@code java.lang.reflect} through method handles so no reflect type is named in mod code). The
+ * tooltip is matched by the returned value's runtime class <em>name</em> walked up its hierarchy, not by
+ * a field name or {@code Class} identity, so an obfuscated rename or a classloader mismatch cannot make a
+ * real tooltip read as foreign.
  *
- * <p>The whole read is best-effort: reflecting into obfuscated internals can fail on any game build,
- * and this runs every frame the map is up. On any failure it reports no tooltip - the overlay then
- * draws, so a broken read costs a possible double tooltip rather than a missing overlay - and warns
- * once per session so the failure is visible without flooding the log.
+ * <p>The whole read is best-effort: reflecting into obfuscated internals can fail on any game build, and
+ * on an install without MagicLib the reflection class is absent entirely. On any failure it reports no
+ * tooltip - the overlay then draws, so a broken read costs a possible double tooltip rather than a
+ * missing overlay - and warns once per session so the failure is visible without flooding the log.
  *
  * <p>Because the reach is fragile and only observable in-engine, the read narrates itself when DEBUG
  * logging is on: each time its outcome changes it logs one line naming the current tab, how many nodes
- * it walked, every tooltip host it found and what that host's {@code getTooltip()} returned, and the
- * verdict. That is what turns "it does not suppress" from a guess into a diagnosis - which hop failed, or
- * which host was or was not reached - without flooding the log frame to frame. With DEBUG off it builds
- * none of that, so the walk stays a bare tree search.
+ * it walked, the tooltips it saw shown, and the verdict. That is what turns "it does not suppress" from a
+ * guess into a diagnosis - which hop failed, or whether the map's host was reached - without flooding the
+ * log frame to frame. With DEBUG off it builds none of that, so the walk stays a bare tree search.
  */
 public final class VanillaMapTooltip {
 
@@ -48,18 +47,26 @@ public final class VanillaMapTooltip {
     // subclass is what the map actually shows, so the walk up from the runtime class finds this.
     private static final String TOOLTIP_CLASS_NAME = "com.fs.starfarer.ui.impl.StandardTooltipV2";
 
-    // The core UI's own name for the "what tooltip is this host showing" accessor - part of the tooltip
-    // contract the core UI reads to render a child's tooltip, so it survives obfuscation where a private
-    // field name does not.
+    // The core UI's own accessors, driven by name through ReflectionUtils: the host's current tooltip,
+    // a panel's children, and (to tell a shown tooltip from a merely-configured one) the tooltip's fade
+    // state. All are part of the core UI's contract, so they survive obfuscation.
     private static final String GET_TOOLTIP_METHOD = "getTooltip";
+    private static final String GET_CHILDREN_METHOD = "getChildrenCopy";
+    private static final String GET_FADER_METHOD = "getFader";
+    private static final String IS_FADED_OUT_METHOD = "isFadedOut";
+
+    // ReflectionUtils.invoke resolves a public method (declared=false) matching these argument types -
+    // none, for the no-arg reads here.
+    private static final Object[] NO_ARGS = new Object[0];
+    private static final boolean PUBLIC_METHOD = false;
 
     // How deep to search the current tab's subtree for a tooltip-showing host. The map's tooltip host
     // sits several panels down inside the map tab; a bound keeps a pathological tree from a runaway walk.
     private static final int MAX_SEARCH_DEPTH = 12;
 
-    // Cap on the hosts named in one diagnostic line, so a tree with many tooltip-bearing widgets logs a
+    // Cap on the tooltips named in one diagnostic line, so a tree with many shown tooltips logs a
     // readable sample rather than a wall of text.
-    private static final int MAX_TRACE_HOSTS = 24;
+    private static final int MAX_TRACE_TOOLTIPS = 24;
 
     // The last diagnostic line logged, so the probe narrates only when its outcome changes rather than
     // every frame the map is up.
@@ -81,12 +88,12 @@ public final class VanillaMapTooltip {
             if (sector == null || sector.getCampaignUI() == null) {
                 return reportOutcome(false, "no campaign UI", null);
             }
-            var core = Reflection.invokeNoArg(sector.getCampaignUI(), "getCore");
+            var core = invokeNoArg(sector.getCampaignUI(), "getCore");
             if (core == null) {
                 return reportOutcome(
                         false, "getCore null on " + sector.getCampaignUI().getClass().getName(), null);
             }
-            var currentTab = Reflection.invokeNoArg(core, "getCurrentTab");
+            var currentTab = invokeNoArg(core, "getCurrentTab");
             if (currentTab == null) {
                 return reportOutcome(
                         false, "getCurrentTab null on " + core.getClass().getName(), null);
@@ -102,25 +109,37 @@ public final class VanillaMapTooltip {
         }
     }
 
+    // Invokes a public no-arg method by name on {@code instance} through MagicLib's reflection bypass,
+    // returning its result. {@code invoke} is an instance method on the ReflectionUtils singleton (only
+    // set/get are static), and resolves a public method matching the argument types - none here. Throws
+    // when the method is absent or the call fails; a caller that expects an absent method (a leaf node)
+    // catches, while the reach hops let it reach the fail-open catch.
+    private static Object invokeNoArg(Object instance, String methodName) {
+        return ReflectionUtils.INSTANCE.invoke(methodName, instance, NO_ARGS, PUBLIC_METHOD);
+    }
+
     // The first live vanilla tooltip in this subtree, or null when none is up. Recurses the panel's
     // children by depth, stopping at the bound so a malformed tree cannot loop the walk. Records every
-    // host it passes into the trace (when one is given, i.e. DEBUG is on) so a walk that finds nothing
-    // still says what it saw.
-    private static Object findShownTooltip(Object component, int depthRemaining, WalkTrace trace)
-            throws Throwable {
+    // shown tooltip into the trace (when one is given, i.e. DEBUG is on) so a walk that finds no vanilla
+    // tooltip still says what it saw.
+    private static Object findShownTooltip(Object component, int depthRemaining, WalkTrace trace) {
         if (component == null || depthRemaining < 0) {
             return null;
         }
         if (trace != null) {
             trace.nodesVisited++;
         }
-        var read = readTooltipOf(component);
-        if (read.isHost()) {
+        var tooltip = tooltipShownBy(component);
+        if (tooltip != null && isStandardTooltip(tooltip)) {
+            // A widget can hold a configured tooltip whose fader sits idle at zero (never hovered), which
+            // must not suppress our overlay - only a tooltip actually faded in should. So gate on the
+            // fader, the same read vanilla does before it renders a child's tooltip.
+            var visible = isTooltipVisible(tooltip);
             if (trace != null) {
-                trace.recordHost(component, read.tooltip());
+                trace.recordShownTooltip(tooltip, visible);
             }
-            if (read.tooltip() != null && isStandardTooltip(read.tooltip())) {
-                return read.tooltip();
+            if (visible) {
+                return tooltip;
             }
         }
         for (var child : childrenOf(component)) {
@@ -132,19 +151,15 @@ public final class VanillaMapTooltip {
         return null;
     }
 
-    // What a component's getTooltip reports: whether it is a tooltip host at all (has the method) and,
-    // if so, the tooltip it currently shows (null when it shows none). Kept apart so the walk can tell
-    // "not a host" (the common leaf) from "a host showing nothing", which the diagnostics need to
-    // distinguish a tree that never reaches the map's host from one where the host holds no tooltip.
-    private static TooltipRead readTooltipOf(Object component) {
+    // The tooltip a component is currently showing, via the same getTooltip the core UI reads; null for
+    // a component that is not a tooltip host (no such method - the common leaf) or that shows none now. A
+    // host clears this to null when its tooltip hides, so a non-null value means one is up.
+    private static Object tooltipShownBy(Object component) {
         try {
-            return new TooltipRead(true, Reflection.invokeNoArg(component, GET_TOOLTIP_METHOD));
-        } catch (NoSuchMethodException notAHost) {
-            return TooltipRead.NOT_A_HOST;
-        } catch (Throwable readFailed) {
-            // A host whose getTooltip threw: still a host, but showing nothing we can read. Rare; the
-            // diagnostics record it via the null tooltip so a systemic read fault is visible.
-            return TooltipRead.HOST_READ_FAILED;
+            return invokeNoArg(component, GET_TOOLTIP_METHOD);
+        } catch (Throwable notATooltipHost) {
+            // Most components expose no getTooltip: not a host, so it shows no tooltip to step aside for.
+            return null;
         }
     }
 
@@ -161,13 +176,28 @@ public final class VanillaMapTooltip {
         return false;
     }
 
-    // A component's children, or none when it exposes no getChildrenCopy - most components are
-    // leaves with no such method, so a failed children read ends the walk down that branch rather
-    // than aborting the whole read. A genuine failure still surfaces through the fail-open catch;
-    // only the expected "this is a leaf" case is swallowed here.
+    // Whether the tooltip is actually on screen rather than merely configured on a widget: its fader is
+    // not faded out. A tooltip a widget holds but has never shown sits idle at zero brightness, which
+    // reads as faded out and so does not suppress our overlay. Any unreadable fader returns false, so an
+    // uncertain read leaves our overlay drawing (fail-open) rather than hiding it on a guess.
+    private static boolean isTooltipVisible(Object tooltip) {
+        try {
+            var fader = invokeNoArg(tooltip, GET_FADER_METHOD);
+            return fader != null
+                    && invokeNoArg(fader, IS_FADED_OUT_METHOD) instanceof Boolean fadedOut
+                    && !fadedOut;
+        } catch (Throwable cannotReadFader) {
+            return false;
+        }
+    }
+
+    // A component's children, or none when it exposes no getChildrenCopy - most components are leaves
+    // with no such method, so a failed children read ends the walk down that branch rather than aborting
+    // the whole read. A genuine failure still surfaces through the fail-open catch; only the expected
+    // "this is a leaf" case is swallowed here.
     private static List<?> childrenOf(Object component) {
         try {
-            if (Reflection.invokeNoArg(component, "getChildrenCopy") instanceof List<?> children) {
+            if (invokeNoArg(component, GET_CHILDREN_METHOD) instanceof List<?> children) {
                 return children;
             }
         } catch (Throwable notAParent) {
@@ -204,40 +234,29 @@ public final class VanillaMapTooltip {
                 failure);
     }
 
-    // What one component's getTooltip read yielded: whether it is a host, and the tooltip it shows.
-    private record TooltipRead(boolean isHost, Object tooltip) {
-        private static final TooltipRead NOT_A_HOST = new TooltipRead(false, null);
-        private static final TooltipRead HOST_READ_FAILED = new TooltipRead(true, null);
-    }
-
-    // Accumulates what one walk saw - the current tab, how many nodes it visited, and each tooltip host
-    // with the tooltip it showed - so a walk that finds no tooltip can still say why: whether it reached
-    // the map's host at all, and what that host held.
+    // Accumulates what one walk saw - the current tab, how many nodes it visited, and the tooltips it
+    // found shown - so a walk that finds no vanilla tooltip can still say whether it reached the map's
+    // host at all and what it held.
     private static final class WalkTrace {
         private final String tabClassName;
-        private final List<String> hostFindings = new ArrayList<>();
+        private final List<String> shownTooltips = new ArrayList<>();
         private int nodesVisited;
-        private int hostsFound;
 
         private WalkTrace(String tabClassName) {
             this.tabClassName = tabClassName;
         }
 
-        // Notes one tooltip host and the tooltip it is showing (or "none"), up to the trace cap so a
-        // busy tree logs a readable sample.
-        private void recordHost(Object host, Object tooltip) {
-            hostsFound++;
-            if (hostFindings.size() < MAX_TRACE_HOSTS) {
-                var shown = tooltip == null
-                        ? "none"
-                        : tooltip.getClass().getName();
-                hostFindings.add(host.getClass().getName() + "=>" + shown);
+        // Notes one found tooltip's class and whether it read as visible, up to the trace cap so a busy
+        // tree logs a readable sample. The visibility is what separates "found a tooltip but it was
+        // faded out" from "found a shown one", the distinction a wrong suppression is diagnosed against.
+        private void recordShownTooltip(Object tooltip, boolean visible) {
+            if (shownTooltips.size() < MAX_TRACE_TOOLTIPS) {
+                shownTooltips.add(tooltip.getClass().getName() + "(visible=" + visible + ")");
             }
         }
 
         private String describe() {
-            return "tab=" + tabClassName + " visited=" + nodesVisited + " hosts=" + hostsFound
-                    + " " + hostFindings;
+            return "tab=" + tabClassName + " visited=" + nodesVisited + " shownTooltips=" + shownTooltips;
         }
     }
 }

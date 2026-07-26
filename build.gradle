@@ -41,6 +41,17 @@ def lazyLibJarFile = file("${project.ext.starsectorRoot}/mods/lw_lazylib/jars/La
 def ratJars = fileTree(
         dir: "${project.ext.starsectorRoot}/mods", include: ['**/jars/RandomAssortmentofThings.jar'])
 
+// MagicLib backs VanillaMapTooltip's reflection into the live core-UI tree: its ReflectionUtils
+// drives the java.lang.reflect ops through method handles, the sanctioned bypass of the script
+// classloader's reflection ban, and is the pattern proven across the mod ecosystem. Soft dependency,
+// the same stance as LunaLib/LazyLib/RAT above: compileOnly with no MagicLib mod dependency, so an
+// install without MagicLib never resolves the class and VanillaMapTooltip.isShowing fails open (its
+// catch swallows the resulting NoClassDefFoundError), while the game classloader supplies the jar at
+// runtime for installs that ship it. Globbed since the install folder can vary; testRuntimeOnly so
+// the class can load under test.
+def magicLibJars = fileTree(
+        dir: "${project.ext.starsectorRoot}/mods", include: ['**/jars/MagicLib.jar'])
+
 // org.json backs LunaSettingsWriter's write path: LunaLib's backing store is a
 // LazyLib CommonDataJSONObject, which extends org.json.JSONObject, so javac must
 // resolve JSONObject#put and JSONException to compile the write. The classes ship
@@ -143,6 +154,10 @@ dependencies {
     compileOnly ratJars
     testCompileOnly ratJars
     testRuntimeOnly ratJars
+
+    compileOnly magicLibJars
+    testCompileOnly magicLibJars
+    testRuntimeOnly magicLibJars
 
     compileOnly files(lazyLibJarFile)
     testCompileOnly files(lazyLibJarFile)
