@@ -3,8 +3,6 @@ package kmlib.starsector.ui.render.gl;
 import kmlib.math.geometry.Rectangle;
 import kmlib.math.ranges.Ranges;
 
-import java.awt.Color;
-
 /**
  * Raw-GL paint for the collapse handle: the notch protruding past the panel's right border edge, the
  * chevron inside it whose orientation tracks the collapse fraction, and the hover lighting. It draws the
@@ -21,8 +19,9 @@ import java.awt.Color;
  * accents, so how far the direction cue stands out from the chrome carrying it is the consumer's call.
  */
 public final class NotchRenderer {
-    // Hover wash: a translucent accent overlay lighting the notch when the pointer is over it, so the
-    // handle answers the hover without a second colour in the style bundle.
+    // Hover wash: a translucent accent overlay lighting the whole notch face when the pointer is over
+    // it, so the handle answers the hover as one lit unit rather than by the chevron alone - which
+    // leaves a look free to hold a single chevron shade across both states.
     private static final float HOVER_WASH_ALPHA = 0.35f;
     // The chevron's footprint inside the notch: how far the arms inset from the notch's top and bottom
     // edges, and how far the apex swings off centre at each end of the collapse.
@@ -38,8 +37,7 @@ public final class NotchRenderer {
     /**
      * Draws the notch: a panel-fill backdrop (accent-washed on hover), the three outer edges stroked one
      * pixel thinner than the frame, and the fraction-oriented chevron in the style's handle shades, all
-     * faded by {@code opacity}. Must
-     * run with a current GL context, like any immediate-mode GL call.
+     * faded by {@code opacity}. Must run with a current GL context, like any immediate-mode GL call.
      *
      * @param notch       the collapse-handle rect on the box's right border edge, in UI coordinates
      * @param style       the panel look (the fill and accent the handle's backdrop and frame draw in,
@@ -62,9 +60,8 @@ public final class NotchRenderer {
         if (state.isHovered()) {
             // Light the whole notch face on hover, so the handle answers the pointer as one lit unit.
             var hoverPaint = new UiElementPaint(
-                        style.accent(),
-                        opacity * HOVER_WASH_ALPHA);
-                        
+                    style.accent(),
+                    opacity * HOVER_WASH_ALPHA);
             UiFill.renderQuad(notch, hoverPaint);
         }
 
@@ -80,7 +77,7 @@ public final class NotchRenderer {
                 computeChevronArms(notch, state.collapseFraction()),
                 notchBorder,
                 new UiElementPaint(
-                        chooseChevronColour(style.notchStyle(), state),
+                        style.notchStyle().chooseChevronColour(state.isHovered()),
                         opacity));
     }
 
@@ -91,21 +88,6 @@ public final class NotchRenderer {
      */
     static float computeNotchBorder(float borderWidth) {
         return Math.max(MIN_NOTCH_BORDER, borderWidth - 1f);
-    }
-
-    /**
-     * Picks which of the handle's two shades the chevron draws in: the hovered shade while the pointer is
-     * over the handle, the resting one otherwise. A look that does not distinguish the two supplies the
-     * same colour for both, so the pick stays one rule rather than a flag the caller also has to set.
-     *
-     * @param style the handle's resting and hovered chevron shades
-     * @param state the live handle state, read for whether the pointer is over it
-     * @return the colour to stroke the chevron with
-     */
-    static Color chooseChevronColour(NotchStyle style, NotchState state) {
-        return state.isHovered()
-                ? style.chevronHovered()
-                : style.chevron();
     }
 
     /**

@@ -18,4 +18,18 @@ import java.awt.Color;
  * @param chevronHovered the chevron's colour while the handle is hovered
  */
 public record NotchStyle(Color chevron, Color chevronHovered) {
+
+    /**
+     * Picks which of the two shades the chevron draws in: the hovered shade while the pointer is over
+     * the handle, the resting one otherwise. A look that does not distinguish the two supplies the same
+     * colour for both, so the pick stays one rule rather than a flag the caller also has to set.
+     *
+     * @param isHovered true while the pointer is over the handle
+     * @return the colour to stroke the chevron with
+     */
+    public Color chooseChevronColour(boolean isHovered) {
+        return isHovered
+                ? chevronHovered
+                : chevron;
+    }
 }

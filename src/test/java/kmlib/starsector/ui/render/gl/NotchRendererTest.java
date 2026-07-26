@@ -5,8 +5,6 @@ import kmlib.math.geometry.Rectangle;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import java.awt.Color;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 
@@ -14,19 +12,12 @@ import static org.assertj.core.api.Assertions.within;
  * Pins {@link NotchRenderer}'s pure computations - the ones that carry the handle's semantics rather than
  * just emit GL. {@link NotchRenderer#computeChevronArms} owns the rotating-glyph contract: the chevron
  * points the way that cues the action at each end of the collapse and straightens to a vertical line
- * between them. {@link NotchRenderer#computeNotchBorder} owns the one-pixel-thinner floor. {@link
- * NotchRenderer#chooseChevronColour} owns which of the style's two shades the glyph takes.
+ * between them. {@link NotchRenderer#computeNotchBorder} owns the one-pixel-thinner floor.
  */
 final class NotchRendererTest {
     private static final float TOLERANCE = 0.001f;
     // A notch off the origin so a centred apex is a non-trivial coordinate, not zero by construction.
     private static final Rectangle NOTCH = new Rectangle(100f, 200f, 16f, 44f);
-    // Two distinguishable shades, so which one the pick returned is unambiguous.
-    private static final Color RESTING = Color.BLUE;
-    private static final Color HOVERED = Color.YELLOW;
-    private static final NotchStyle STYLE = new NotchStyle(RESTING, HOVERED);
-    // A mid-collapse fraction: the pick reads only the hover flag, so the fraction is held constant.
-    private static final float HALF_COLLAPSED = 0.5f;
 
     @Nested
     class ComputeChevronArms {
@@ -79,33 +70,6 @@ final class NotchRendererTest {
             // The apex's y sits between the two arm ends' ys, so the glyph is a chevron, not a skewed line.
             assertThat(arms.midY()).isBetween(arms.bottomY(), arms.topY());
             assertThat(arms.midY()).isCloseTo(NOTCH.computeCenterY(), within(TOLERANCE));
-        }
-    }
-
-    @Nested
-    class ChooseChevronColour {
-
-        @Test
-        void chooseChevronColourTakesTheRestingShadeWhenTheHandleIsNotHovered() {
-            var state = new NotchState(HALF_COLLAPSED, false);
-            assertThat(NotchRenderer.chooseChevronColour(STYLE, state)).isEqualTo(RESTING);
-        }
-
-        @Test
-        void chooseChevronColourTakesTheHoveredShadeWhenTheHandleIsHovered() {
-            var state = new NotchState(HALF_COLLAPSED, true);
-            assertThat(NotchRenderer.chooseChevronColour(STYLE, state)).isEqualTo(HOVERED);
-        }
-
-        @Test
-        void chooseChevronColourHoldsOneShadeAcrossBothStatesWhenTheStyleRepeatsIt() {
-            // A look that does not answer hover on the glyph passes the same colour twice, so the pick
-            // returns it either way rather than the caller needing a "does this look brighten" flag.
-            var flatStyle = new NotchStyle(RESTING, RESTING);
-            assertThat(NotchRenderer.chooseChevronColour(flatStyle, new NotchState(HALF_COLLAPSED, true)))
-                    .isEqualTo(RESTING);
-            assertThat(NotchRenderer.chooseChevronColour(flatStyle, new NotchState(HALF_COLLAPSED, false)))
-                    .isEqualTo(RESTING);
         }
     }
 
