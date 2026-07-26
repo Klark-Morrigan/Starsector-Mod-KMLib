@@ -20,13 +20,13 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Raw-GL paint for a {@link VanillaTabStrip}: the sector-map Sector/System tab look - a black strip
- * with the active tab lit by a player-colour wash and underline, the hovered tab washed fainter,
- * hairline dividers, and each label drawn beside its shortcut - the key alone in accent gold, its
- * delimiters in the label colour, the way vanilla highlights only the key. The tab
- * geometry lives on the substrate-independent widget; this draws it. The wash on the selected tab and
- * the seams between tabs are the chrome every horizontal segmented control shares, so they come from
- * {@link HorizontalSegmentsRenderer} (as a radio row's do); the black backdrop, the hover wash, the
+ * Raw-GL paint for a {@link VanillaTabStrip}: the sector-map Sector/System tab look - each tab a solid
+ * state fill (a dark fill at rest, a bright fill when active), the hovered tab washed a little toward
+ * white, a bright underline capping the active tab, hairline dividers, and each label drawn beside its
+ * shortcut - the key alone in accent gold, its delimiters in the label colour, the way vanilla
+ * highlights only the key. The tab geometry lives on the substrate-independent widget; this draws it.
+ * The seams between tabs are the chrome every horizontal segmented control shares, so they come from
+ * {@link HorizontalSegmentsRenderer} (as a radio row's do); the per-state fill, the hover wash, the
  * baseline, the underline, and the multi-colour label are this strip's own. Unlike the plain renderers it
  * draws the label text itself (through {@link LazyFontCache}), since the
  * label-with-a-gold-key-shortcut is the whole point of the style.
@@ -36,9 +36,11 @@ import java.util.Map;
  * than one baked multi-colour run) precisely so they fade with the rest instead of staying opaque.
  */
 public final class VanillaTabStripRenderer {
-    // How much of the strip opacity the hover wash carries, so a hovered tab lights fainter than the
-    // selected one (whose wash strength is the shared HorizontalSegmentsRenderer.SELECTED_WASH_ALPHA_MULT).
-    private static final float HOVER_FILL_ALPHA_MULT = 0.15f;
+    // How far a hovered tab's fill washes toward white - a small constant lift, so a hovered tab reads
+    // brighter than its resting state the way the vanilla map tabs do. Tunable against the real tabs
+    // in-game. The click and hotkey pulses (added later) wash the same fill by a larger, animated
+    // amount, so they layer on this same mechanism.
+    private static final float HOVER_WHITE_WASH = 0.15f;
 
     private static final float BASELINE_THICKNESS = 1f;
     private static final float UNDERLINE_THICKNESS = 2f;
@@ -55,9 +57,9 @@ public final class VanillaTabStripRenderer {
     }
 
     /**
-     * Paints the whole strip: each tab's backdrop and accents, the dividers, and each label with
-     * its gold shortcut. The selected and hovered tabs light up; a {@code selectedIndex} or
-     * {@code hoveredIndex} outside the row simply lights none.
+     * Paints the whole strip: each tab's state fill and accents, the dividers, and each label with
+     * its gold shortcut. The selected tab draws its bright fill and underline, a hovered tab washes
+     * toward white; a {@code selectedIndex} or {@code hoveredIndex} outside the row simply lights none.
      *
      * @param tabs          the laid-out tabs, in row order
      * @param selectedIndex the active tab's index, or a value outside the row
@@ -106,9 +108,11 @@ public final class VanillaTabStripRenderer {
         return bounds;
     }
 
-    // Black backdrop, an accent wash on the selected (or fainter, hovered) tab, a faint baseline
-    // grounding the row, and a bright underline capping the active tab. The inter-tab seams are drawn
-    // once by the caller through the shared primitive, not here.
+    // The tab's solid state fill - the selected tab's bright fill or a resting tab's dark fill,
+    // washed toward white while hovered - a faint baseline grounding the row, and a bright underline
+    // capping the active tab. The fill IS the tab's surface: there is no black backdrop underneath, so
+    // an unselected tab reads as its solid colour rather than that colour bled over black. The
+    // inter-tab seams are drawn once by the caller through the shared primitive, not here.
     private static void renderChrome(
             Rectangle bounds,
             boolean isSelected,
@@ -116,21 +120,13 @@ public final class VanillaTabStripRenderer {
             VanillaTabColors colors,
             float opacity) {
 
-        var paint = new UiElementPaint(colors.backdrop(), opacity);
-        UiFill.renderQuad(bounds, paint);
-
-        if (isSelected) {
-            HorizontalSegmentsRenderer.renderSelectedWash(
-                    bounds,
-                    colors.accent(),
-                    opacity);
-        } else if (isHovered) {
-            var hoverPaint = new UiElementPaint(
-                    colors.accent(),
-                    opacity * HOVER_FILL_ALPHA_MULT);
-            UiFill.renderQuad(
-                    bounds, hoverPaint);
-        }
+        var baseFill = isSelected ? colors.fillSelected() : colors.fillDefault();
+        // A hovered tab lifts by washing its fill a small amount toward white; a resting tab draws its
+        // bare state fill. The pulse states (click, hotkey) added later wash this same fill further.
+        var fill = isHovered
+                ? Colors.blendRgbTowards(baseFill, StarsectorUiColor.WHITE.resolve(), HOVER_WHITE_WASH)
+                : baseFill;
+        UiFill.renderQuad(bounds, new UiElementPaint(fill, opacity));
 
         UiFill.renderQuad(
                 new Rectangle(
