@@ -2,6 +2,7 @@ package kmlib.starsector.ui.render.gl;
 
 import kmlib.math.geometry.Rectangle;
 import kmlib.math.ranges.Ranges;
+import kmlib.starsector.ui.color.StarsectorUiColor;
 
 /**
  * Raw-GL paint for the collapse handle: the notch protruding past the panel's right border edge, the
@@ -14,7 +15,9 @@ import kmlib.math.ranges.Ranges;
  * <p>The chevron reads as one glyph rotating through the collapse: left-pointing at full expansion (the
  * collapse cue), straightening to a plain vertical line at the midpoint, and flipped to point right once
  * docked (the expand cue). Its outline is stroked one pixel thinner than the frame ({@code max(1,
- * borderWidth - 1)}) so the handle reads as a lighter appendage of the border rather than a second frame.
+ * borderWidth - 1)}) so the handle reads as a lighter appendage of the border rather than a second frame,
+ * and it paints in the highlight gold ({@link StarsectorUiColor#VANILLA_HIGHLIGHT_GOLD}) rather than the
+ * style's accent, so the actionable glyph stands apart from the chrome carrying it.
  */
 public final class NotchRenderer {
     // Hover wash: a translucent accent overlay lighting the notch when the pointer is over it, so the
@@ -33,11 +36,13 @@ public final class NotchRenderer {
 
     /**
      * Draws the notch: a panel-fill backdrop (accent-washed on hover), the three outer edges stroked one
-     * pixel thinner than the frame, and the fraction-oriented chevron, all faded by {@code opacity}. Must
+     * pixel thinner than the frame, and the fraction-oriented chevron in the highlight gold, all faded by
+     * {@code opacity}. Must
      * run with a current GL context, like any immediate-mode GL call.
      *
      * @param notch       the collapse-handle rect on the box's right border edge, in UI coordinates
-     * @param style       the panel look (fill and accent the handle draws in)
+     * @param style       the panel look (the fill and accent the handle's backdrop and frame draw in;
+     *                    the chevron takes the highlight gold instead)
      * @param borderWidth the frame's border thickness; the notch strokes one pixel thinner, floored at 1
      * @param state       how far the body is collapsed (orienting the chevron) and whether the handle is hovered
      * @param opacity     overall alpha, 0..1, fading the handle with the panel
@@ -62,15 +67,13 @@ public final class NotchRenderer {
         var notchBorder = computeNotchBorder(borderWidth);
         strokeOuterEdges(notch, notchBorder, new UiElementPaint(style.accent(), opacity));
 
-        // The chevron brightens on hover, so the direction cue reads clearest exactly when it is actionable.
-        var chevronColour = state.isHovered()
-            ? style.brightAccent()
-            : style.accent();
-
+        // The chevron paints in the highlight gold rather than the panel accent, so the direction cue
+        // separates from the chrome it sits in instead of reading as more frame. Hover is already answered
+        // by the wash lighting the whole notch face, so the glyph holds one colour across both states.
         drawChevron(
                 computeChevronArms(notch, state.collapseFraction()),
                 notchBorder,
-                new UiElementPaint(chevronColour, opacity));
+                new UiElementPaint(StarsectorUiColor.VANILLA_HIGHLIGHT_GOLD.resolve(), opacity));
     }
 
     /**
