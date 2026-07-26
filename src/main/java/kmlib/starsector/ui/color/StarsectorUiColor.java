@@ -1,5 +1,6 @@
 package kmlib.starsector.ui.color;
 
+import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.util.Misc;
 
 import java.awt.Color;
@@ -27,6 +28,12 @@ public enum StarsectorUiColor {
     VANILLA_GRAY(Misc::getGrayColor),
     VANILLA_TEXT(Misc::getTextColor),
     VANILLA_BUTTON_TEXT(Misc::getButtonTextColor),
+    // The engine's shared button fills from settings.json ("buttonBg" / "buttonBgDark") - the bright
+    // cyan an active button/tab fills with and the dark teal a resting one does. These are the fixed
+    // UI palette, NOT the player-faction shades, so they match the map's own Sector/System tabs even
+    // when a modded player faction recolours VANILLA_PLAYER_*.
+    VANILLA_BUTTON_BG(() -> Global.getSettings().getColor("buttonBg")),
+    VANILLA_BUTTON_BG_DARK(() -> Global.getSettings().getColor("buttonBgDark")),
     VANILLA_PLAYER_BASE(Misc::getBasePlayerColor),
     VANILLA_PLAYER_BRIGHT(Misc::getBrightPlayerColor),
     VANILLA_PLAYER_DARK(Misc::getDarkPlayerColor),
