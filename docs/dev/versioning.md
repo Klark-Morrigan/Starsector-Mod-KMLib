@@ -83,8 +83,10 @@ conventional reading of pre-1.0 SemVer and avoids spending MAJOR before APIs
 have stabilized.
 
 KMU starts at `0.1.0`. KMLib's first stable tag is `1.0.0`, cut once it has
-at least one external consumer pinning it (KMU, per the
-[KMLib reusable workflows plan](implementation/001-reusable-ci-release-workflows/plan.md)).
+at least one external consumer pinning it - which KMU does, through the
+`kmlib` dependency in its `mod_info.json` that
+[validate-versioning](../../.github/actions/validate-versioning/action.yml)
+holds to a well-formed SemVer pin at release time.
 
 ## Tag format
 

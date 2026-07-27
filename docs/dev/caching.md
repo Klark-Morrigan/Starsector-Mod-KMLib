@@ -154,3 +154,5 @@ see KMU's refresh signals for what that looks like in practice.
   and does not guarantee, including under Fast Rendering.
 - [`starsector/ui/font/`](../../src/main/java/kmlib/starsector/ui/font/) - the
   face enum, the two caches, and the width-measurement port.
+- [`starsector/ui/label/`](../../src/main/java/kmlib/starsector/ui/label/) - the
+  estimator that memoises wraps, and the fitter that asks it repeatedly.
