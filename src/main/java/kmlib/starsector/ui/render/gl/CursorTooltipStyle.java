@@ -11,7 +11,7 @@ import java.awt.Color;
  * states its face once rather than threading it through every row and draw call - the per-row text,
  * colour, crest, and value live on the {@link kmlib.starsector.ui.widgets.TooltipRow}s instead.
  *
- * @param face        the body face - basename and size - resolved once for every row; the size is also
+ * @param face        the body face - atlas and size - resolved once for every row; the size is also
  *                    each row's line height and crest side
  * @param opacity     overall alpha, 0..1, applied to the box, the crests, and the text alike
  * @param borderWidth the box border thickness; 0 draws only the fill

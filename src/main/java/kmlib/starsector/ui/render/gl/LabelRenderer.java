@@ -1,34 +1,20 @@
 package kmlib.starsector.ui.render.gl;
 
 import kmlib.color.Colors;
-import kmlib.starsector.ui.font.LazyFontCache;
-import kmlib.starsector.ui.font.TextFace;
+import kmlib.starsector.ui.font.DrawableStringCache;
 
 import org.lazywizard.lazylib.ui.LazyFont;
-import org.lazywizard.lazylib.ui.LazyFont.DrawableString;
-
-import java.awt.Color;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
- * Raw-GL paint for one line of body text: it resolves the face by basename, mints the glyph run
- * once, and draws it at an anchor in a base colour faded by an opacity. The single place the
- * cached-{@link DrawableString} draw pattern lives, so every KM UI surface that writes text -
- * a laid-out control, a free-floating map tooltip - draws it the same way and shares the cache
- * rather than each minting its own GL buffer per frame.
+ * Raw-GL paint for one line of body text: it takes the cached glyph run for the line and draws it at
+ * an anchor in a base colour faded by an opacity. The single place that whole-line draw lives, so
+ * every KM UI surface that writes a plain line of text - a laid-out control, a free-floating map
+ * tooltip - draws it the same way.
  *
- * <p>A steady body is a handful of distinct strings, so one GL text buffer per distinct
- * (font, size, text) serves the whole run; the base colour is re-applied before each draw, so
- * one buffer serves every frame at any colour or opacity. When the face cannot load the draw is
- * skipped silently, so a caller's chrome still shows without its text. Must run with a current GL
- * context, like any immediate-mode GL call.
+ * <p>When the face cannot load the draw is skipped silently, so a caller's chrome still shows without
+ * its text. Must run with a current GL context, like any immediate-mode GL call.
  */
 public final class LabelRenderer {
-    // Cached across the run: one GL text buffer per distinct (font, size, text) rather than a fresh
-    // buffer per frame. Keyed on all three because a differing size or text is a different glyph run;
-    // colour is not in the key because it is re-set before each draw.
-    private static final Map<String, DrawableString> TEXT_CACHE = new HashMap<>();
 
     private LabelRenderer() {
     }
@@ -50,30 +36,12 @@ public final class LabelRenderer {
             float y,
             LazyFont.TextAnchor anchor) {
 
-        var drawable = resolveText(style.face(), text);
+        var drawable = DrawableStringCache.resolveRun(style.face(), text);
         if (drawable == null) {
             return;
         }
         drawable.setAnchor(anchor);
         drawable.setBaseColor(Colors.scaleAlpha(style.colour(), style.opacity()));
         drawable.draw(x, y);
-    }
-
-    // Mints the glyph run once per (font, size, text) and reuses it; the base colour is re-set before
-    // each draw, so one buffer serves every frame. Null when the face cannot load, in which case the
-    // caller draws without that text.
-    private static DrawableString resolveText(TextFace face, String text) {
-        var key = face.font().name() + "|" + face.size() + "|" + text;
-        var cached = TEXT_CACHE.get(key);
-        if (cached != null) {
-            return cached;
-        }
-        var font = LazyFontCache.loadByFace(face.font());
-        if (font == null) {
-            return null;
-        }
-        var drawable = font.createText(text, Color.WHITE, (float) face.size());
-        TEXT_CACHE.put(key, drawable);
-        return drawable;
     }
 }

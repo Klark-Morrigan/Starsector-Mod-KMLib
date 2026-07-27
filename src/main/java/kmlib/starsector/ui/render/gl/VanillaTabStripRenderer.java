@@ -3,7 +3,7 @@ package kmlib.starsector.ui.render.gl;
 import kmlib.color.Colors;
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.color.StarsectorUiColor;
-import kmlib.starsector.ui.font.LazyFontCache;
+import kmlib.starsector.ui.font.DrawableStringCache;
 import kmlib.starsector.ui.font.TextFace;
 import kmlib.starsector.ui.widgets.tabs.VanillaTab;
 import kmlib.starsector.ui.widgets.tabs.VanillaTabContent;
@@ -15,9 +15,7 @@ import org.lazywizard.lazylib.ui.LazyFont.DrawableString;
 
 import java.awt.Color;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Raw-GL paint for a {@link VanillaTabStrip}: the sector-map Sector/System tab look - each tab a solid
@@ -28,7 +26,7 @@ import java.util.Map;
  * The seams between tabs are the chrome every horizontal segmented control shares, so they come from
  * {@link HorizontalSegmentsRenderer} (as a radio row's do); the per-state fill, the hover wash, the
  * baseline, the underline, and the multi-colour label are this strip's own. Unlike the plain renderers it
- * draws the label text itself (through {@link LazyFontCache}), since the
+ * draws the label text itself (off {@link DrawableStringCache}), since the
  * label-with-a-gold-key-shortcut is the whole point of the style.
  *
  * <p>Opacity scales every quad and every text colour by one value, so the whole strip fades as a
@@ -48,11 +46,6 @@ public final class VanillaTabStripRenderer {
     // layout measured with.
     private static final float SHORTCUT_GAP = 6f;
 
-    // The strip's labels are a handful of static strings, so one GL text buffer per distinct
-    // (font, size, text) serves the whole run rather than leaking a buffer per frame. Shared
-    // across instances since the strings and font rarely differ between callers.
-    private static final Map<String, DrawableString> TEXT_CACHE = new HashMap<>();
-
     private VanillaTabStripRenderer() {
     }
 
@@ -65,7 +58,7 @@ public final class VanillaTabStripRenderer {
      * @param selectedIndex the active tab's index, or a value outside the row
      * @param hoveredIndex  the hovered tab's index, or a value outside the row
      * @param colors        the palette to paint with (see {@link VanillaTabColors#mapTabs})
-     * @param textFace      the font basename and size the labels draw in
+     * @param textFace      the face and size the labels draw in
      * @param opacity       overall alpha, 0..1, applied to every quad and both text colours
      */
     public static void render(
@@ -165,7 +158,7 @@ public final class VanillaTabStripRenderer {
             TextFace textFace,
             float opacity) {
 
-        var label = resolveText(textFace, content.label());
+        var label = DrawableStringCache.resolveRun(textFace, content.label());
         if (label == null) {
             return;
         }
@@ -214,9 +207,9 @@ public final class VanillaTabStripRenderer {
             Color delimiterColor,
             Color keyColor) {
 
-        var open = resolveText(textFace, VanillaTabStrip.SHORTCUT_OPEN_DELIMITER);
-        var key = resolveText(textFace, shortcut);
-        var close = resolveText(textFace, VanillaTabStrip.SHORTCUT_CLOSE_DELIMITER);
+        var open = DrawableStringCache.resolveRun(textFace, VanillaTabStrip.SHORTCUT_OPEN_DELIMITER);
+        var key = DrawableStringCache.resolveRun(textFace, shortcut);
+        var close = DrawableStringCache.resolveRun(textFace, VanillaTabStrip.SHORTCUT_CLOSE_DELIMITER);
 
         if (open == null || key == null || close == null) {
             return List.of();
@@ -257,27 +250,4 @@ public final class VanillaTabStripRenderer {
         }
     }
 
-    // Mints a drawable once per (font, size, text) and reuses it; the base colour is re-set before
-    // each draw, so one buffer serves every frame. Null when the font face cannot load, in which
-    // case the tab draws its chrome without text.
-    private static DrawableString resolveText(TextFace textFace, String text) {
-        var key = textFace.font().name() + "|" + textFace.size() + "|" + text;
-        var cached = TEXT_CACHE.get(key);
-        if (cached != null) {
-            return cached;
-        }
-        var font = LazyFontCache.loadByFace(textFace.font());
-        if (font == null) {
-            return null;
-        }
-        // The base colour is a throwaway - render re-sets it per frame before drawing - so a
-        // null-safe palette literal serves; the live label/shortcut colours arrive at draw time.
-        var drawable = font.createText(
-                text,
-                StarsectorUiColor.WHITE.resolve(),
-                (float) textFace.size());
-
-        TEXT_CACHE.put(key, drawable);
-        return drawable;
-    }
 }

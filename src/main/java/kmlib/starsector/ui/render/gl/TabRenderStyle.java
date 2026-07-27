@@ -15,7 +15,7 @@ import kmlib.starsector.ui.font.TextFace;
  * dimensions. The two describe one strip from either side of the layout/paint split.
  *
  * @param colors the tab strip's selected / hovered / idle colour scheme
- * @param face   the font basename and size the tab labels draw in
+ * @param face   the font and size the tab labels draw in
  */
 public record TabRenderStyle(VanillaTabColors colors, TextFace face) {
 }

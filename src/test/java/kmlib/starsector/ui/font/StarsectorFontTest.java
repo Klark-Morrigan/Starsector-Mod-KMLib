@@ -5,34 +5,47 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
+import java.util.Arrays;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 class StarsectorFontTest {
 
     @Nested
     class ResolvePath {
-        @Test
-        void resolvePathWrapsBasenameInTheGamesFontDirectoryAndExtension() {
-            assertThat(StarsectorFont.VANILLA_INSIGNIA_15.resolvePath())
-                    .isEqualTo("graphics/fonts/insignia15LTaa.fnt");
-        }
-
+        // The atlas each value names, as it is spelled under starsector-core/graphics/fonts. Asserted
+        // rather than derived: a path built from the value under test would agree with any typo in it,
+        // and a misspelled basename is exactly the failure the enum exists to make impossible.
         @ParameterizedTest
         @EnumSource(StarsectorFont.class)
-        void resolvePathIsLoadableForEveryFace(StarsectorFont font) {
-            // The loader hands this straight to LazyLib, which resolves it against the game's own
-            // file tree - so the shape has to hold for every value, not just the one spelled above.
-            assertThat(font.resolvePath())
-                    .isEqualTo("graphics/fonts/" + font.getBasename() + ".fnt");
+        void resolvePathNamesTheAtlasUnderTheGamesFontDirectory(StarsectorFont font) {
+            var expected = switch (font) {
+                case VANILLA_INSIGNIA_15 -> "graphics/fonts/insignia15LTaa.fnt";
+                case VANILLA_ORBITRON_20AA -> "graphics/fonts/orbitron20aa.fnt";
+                case VANILLA_INSIGNIA_42 -> "graphics/fonts/insignia42LTaa.fnt";
+            };
+
+            assertThat(font.resolvePath()).isEqualTo(expected);
+        }
+
+        @Test
+        void resolvePathIsDistinctForEveryFace() {
+            // The path is what the face cache keys on, so two values sharing one - the copy-paste that
+            // adding a face invites - would silently serve one atlas under two names.
+            var paths = Arrays.stream(StarsectorFont.values())
+                    .map(StarsectorFont::resolvePath)
+                    .toList();
+
+            assertThat(paths).doesNotHaveDuplicates();
         }
     }
 
     @Nested
     class GetNativeSize {
         // The size each atlas was rasterised at, read off the "size=" in its .fnt descriptor under
-        // starsector-core/graphics/fonts. Restated here rather than parsed from the descriptor: a
-        // unit test has no game install to read, and the point of the check is that a value's
-        // declared native size still matches the atlas its basename names.
+        // starsector-core/graphics/fonts. Restated here rather than parsed from the descriptor: a unit
+        // test has no game install to read, and the point of the check is that a value's declared
+        // native size still matches the atlas its path names.
         @ParameterizedTest
         @EnumSource(StarsectorFont.class)
         void getNativeSizeReportsTheSizeItsAtlasWasRasterisedAt(StarsectorFont font) {

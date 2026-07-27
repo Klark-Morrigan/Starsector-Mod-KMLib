@@ -47,14 +47,6 @@ public enum StarsectorFont {
     }
 
     /**
-     * @return the atlas's {@code graphics/fonts} basename, without the {@code .fnt} suffix - the
-     *         identity a glyph cache keys a face by
-     */
-    public String getBasename() {
-        return basename;
-    }
-
-    /**
      * @return the size the atlas was rasterised at (its descriptor's {@code size=}), the one size
      *         its glyphs draw at 1:1
      */
