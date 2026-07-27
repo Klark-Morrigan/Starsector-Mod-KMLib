@@ -5,7 +5,7 @@ import java.awt.Color;
 /**
  * A neutrally-named look bundle both a {@link PanelRenderer} and the generic {@link ControlRenderer}
  * read: the backdrop fill, the accent the chrome and controls stroke with, the brighter accent a
- * checkbox ticks with, the body-control font, the {@link TabStyle} a tabs control draws in, and the
+ * checkbox ticks with, the body-control font, the {@link TabRenderStyle} a tabs control draws in, and the
  * {@link NotchColors} a collapse handle draws in. It bundles the look so a consumer builds it once
  * (typically each frame from its live player colours and settings) rather than threading a dozen loose
  * arguments through the render call. The tab-specific and handle-specific looks are grouped into their
@@ -17,7 +17,7 @@ import java.awt.Color;
  * @param accent       the frame / wash / label-chrome colour every element strokes with
  * @param brightAccent the brighter colour a checkbox ticks with
  * @param bodyFont     the {@code graphics/fonts} basename the body-control labels draw in
- * @param tabStyle     the look a tabs control draws in (colours + face), read only when one is drawn
+ * @param tabRenderStyle the paint a tabs control draws in (colours + face), read only when one is drawn
  * @param notchColors  the chevron shades a collapse handle draws in, read only when one is drawn
  */
 public record WidgetStyle(
@@ -25,6 +25,6 @@ public record WidgetStyle(
         Color accent,
         Color brightAccent,
         String bodyFont,
-        TabStyle tabStyle,
+        TabRenderStyle tabRenderStyle,
         NotchColors notchColors) {
 }

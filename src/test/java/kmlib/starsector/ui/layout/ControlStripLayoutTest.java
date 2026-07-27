@@ -10,6 +10,7 @@ import kmlib.starsector.ui.controls.VerticalTableSpecs;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.layout.ControlStripLayout.StripMeasurement;
 import kmlib.starsector.ui.widgets.IconLabelRow;
+import kmlib.starsector.ui.widgets.tabs.TabStyle;
 import kmlib.testfixtures.starsector.ui.font.LineWidthMeasurerFake;
 
 import org.junit.jupiter.api.Nested;
@@ -492,6 +493,60 @@ final class ControlStripLayoutTest {
                     .as("the second tab abuts the first")
                     .isCloseTo(first.x() + first.width(), within(TOLERANCE));
             assertThat(second.height()).isCloseTo(ControlStripLayout.TAB_HEIGHT, within(TOLERANCE));
+        }
+    }
+
+    @Nested
+    class LayoutTabsHeader {
+        // A header anchor clear of the body origin, so an assertion cannot pass by landing on a stale value.
+        private static final float HEADER_X = 40f;
+        private static final float HEADER_TOP_Y = 500f;
+        private static final float BAND_HEIGHT = 17f;
+
+        private static final ControlSpec.Tabs TABS = new ControlSpec.Tabs(
+                List.of("No Layer", "Political Map"), List.of("N", "P"), 0, ControlAction.NONE);
+
+        @Test
+        void layoutTabsHeaderHangsTheBandFromTheContentTopAtTheStyledHeight() {
+            var header = ControlStripLayout.layoutTabsHeader(
+                    TABS, HEADER_X, HEADER_TOP_Y, new TabStyle(BAND_HEIGHT), measurerFake);
+
+            // Flush at the content top with no body inset - a header is framed directly under the border,
+            // unlike a body row, which pulls in by the body padding.
+            assertThat(header.bounds().y() + header.bounds().height())
+                    .isCloseTo(HEADER_TOP_Y, within(TOLERANCE));
+            assertThat(header.bounds().x()).isCloseTo(HEADER_X, within(TOLERANCE));
+            assertThat(header.bounds().height()).isCloseTo(BAND_HEIGHT, within(TOLERANCE));
+        }
+
+        @Test
+        void layoutTabsHeaderSplitsEveryTabToTheStyledBandHeight() {
+            // The segments are the hit rects the renderer paints; if they kept a fixed height while the band
+            // moved, a styled header would be clickable somewhere other than where it is drawn.
+            var header = ControlStripLayout.layoutTabsHeader(
+                    TABS, HEADER_X, HEADER_TOP_Y, new TabStyle(BAND_HEIGHT), measurerFake);
+
+            assertThat(header.segments()).hasSize(2);
+            for (var segment : header.segments()) {
+                assertThat(segment.height()).isCloseTo(BAND_HEIGHT, within(TOLERANCE));
+                assertThat(segment.y()).isCloseTo(header.bounds().y(), within(TOLERANCE));
+            }
+        }
+
+        @Test
+        void layoutTabsHeaderLeavesABodyTabsRowOnTheUnstyledHeight() {
+            // A tabs control placed in the BODY takes no style - it sizes itself through the strip's row
+            // measurement - so it stands at the baseline band while a styled header does not. The two paths
+            // are deliberately separate; this pins that the body one is unaffected by a header's style.
+            var specs = List.<ControlSpec>of(TABS);
+            var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
+            var bodyTabs = ControlStripLayout.layoutControls(frameBody(measurement), specs,
+                    measurement.rowHeights(), measurement.rowWidths(), measurerFake).get(0);
+
+            assertThat(bodyTabs.bounds().height())
+                    .isCloseTo(TabStyle.DEFAULT.headerBandHeight(), within(TOLERANCE));
+            assertThat(bodyTabs.segments().get(0).height())
+                    .isCloseTo(TabStyle.DEFAULT.headerBandHeight(), within(TOLERANCE));
         }
     }
 

@@ -6,6 +6,7 @@ import kmlib.starsector.graphics.StarsectorSprites;
 import kmlib.starsector.ui.font.LazyFontCache;
 import kmlib.starsector.ui.font.LazyFontMeasurer;
 import kmlib.starsector.ui.input.UiCursor;
+import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.CursorTooltip;
 import kmlib.starsector.ui.widgets.TooltipLayout;
 import kmlib.starsector.ui.widgets.TooltipRow;

@@ -1,6 +1,7 @@
 package kmlib.starsector.ui.render.gl;
 
 import kmlib.math.geometry.Rectangle;
+import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.RadioRow;
 
 import java.util.List;

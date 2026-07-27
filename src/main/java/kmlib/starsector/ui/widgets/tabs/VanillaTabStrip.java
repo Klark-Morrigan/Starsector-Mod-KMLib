@@ -59,11 +59,8 @@ public final class VanillaTabStrip {
             List<VanillaTabContent> contents,
             LineWidthMeasurer measurer) {
 
-        var displays = new ArrayList<String>(contents.size());
-        for (var content : contents) {
-            displays.add(composeDisplay(content));
-        }
-        var laidOut = TabStrip.layoutTabs(originX, rowTopY, tabHeight, spec, displays, measurer);
+        var laidOut = TabStrip.layoutTabs(
+                originX, rowTopY, tabHeight, spec, composeDisplays(contents), measurer);
         var bounds = new ArrayList<Rectangle>(laidOut.size());
 
         for (var tab : laidOut) {
@@ -114,11 +111,22 @@ public final class VanillaTabStrip {
             SegmentSpec spec,
             LineWidthMeasurer measurer) {
 
+        return TabStrip.measureRowWidth(composeDisplays(contents), spec, measurer);
+    }
+
+    /**
+     * Each content's display string, in row order. The one place a run of tabs is turned into the text the
+     * strip works against, so measuring a row and laying it out cannot disagree about what is being sized.
+     *
+     * @param contents the tabs' labels and optional shortcuts, in row order
+     * @return one display string per content, in the same order
+     */
+    public static List<String> composeDisplays(List<VanillaTabContent> contents) {
         var displays = new ArrayList<String>(contents.size());
         for (var content : contents) {
             displays.add(composeDisplay(content));
         }
-        return TabStrip.measureRowWidth(displays, spec, measurer);
+        return List.copyOf(displays);
     }
 
     /**

@@ -4,7 +4,9 @@ import kmlib.math.geometry.BoxEdge;
 import kmlib.starsector.ui.controls.ControlAction;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
+import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
+import kmlib.starsector.ui.widgets.tabs.TabPanelViewState;
 import kmlib.starsector.ui.widgets.tabs.TabStyle;
 import kmlib.testfixtures.starsector.ui.font.LineWidthMeasurerFake;
 
@@ -273,8 +275,8 @@ final class TabPanelLayoutTest {
         @Test
         void computePlacementDocksToAZeroWidthRailWhenThereIsNoBorder() {
             var placement = TabPanelLayout.computePlacement(SCREEN_HEIGHT,
-                    new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT), 0, BoxEdge.ALL,
-                    TabStyle.DEFAULT, TABS, BODY, measurerFake, 0f, 1f);
+                    new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT), new BoxBorder(0f),
+                    TabStyle.DEFAULT, TABS, BODY, measurerFake, new TabPanelViewState(0f, 1f));
             var box = placement.body().box();
             // With no border, the docked rail has no interior and no border to keep, so the box collapses
             // to zero width - yet the placement stays well-formed and the notch still anchors to the edge.
@@ -327,8 +329,9 @@ final class TabPanelLayoutTest {
 
         private TabPanelPlacement placeStyled(TabStyle tabStyle, List<ControlSpec> bodyControls) {
             return TabPanelLayout.computePlacement(SCREEN_HEIGHT,
-                    new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT), BORDER_WIDTH, BoxEdge.ALL,
-                    tabStyle, TABS, bodyControls, measurerFake, 0f, 0f);
+                    new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT),
+                    new BoxBorder(BORDER_WIDTH), tabStyle, TABS, bodyControls, measurerFake,
+                    TabPanelViewState.RESTING);
         }
 
         private TabPanelPlacement place(List<ControlSpec> bodyControls, float collapseFraction) {
@@ -338,8 +341,9 @@ final class TabPanelLayoutTest {
         private TabPanelPlacement place(
                 List<ControlSpec> bodyControls, float collapseFraction, Set<BoxEdge> borderedEdges) {
             return TabPanelLayout.computePlacement(SCREEN_HEIGHT,
-                    new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT), BORDER_WIDTH, borderedEdges,
-                    TabStyle.DEFAULT, TABS, bodyControls, measurerFake, 0f, collapseFraction);
+                    new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT),
+                    new BoxBorder(BORDER_WIDTH, borderedEdges), TabStyle.DEFAULT, TABS, bodyControls,
+                    measurerFake, new TabPanelViewState(0f, collapseFraction));
         }
     }
 }

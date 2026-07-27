@@ -1,6 +1,7 @@
 package kmlib.starsector.ui.render.gl;
 
 import kmlib.starsector.ui.widgets.BorderedBox;
+import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
 
 /**
@@ -95,10 +96,7 @@ public final class TabPanelRenderer {
         // only the STROKED edges, so a dropped edge (the intel panel's left) keeps the header flush there
         // rather than clipping a border-width strip off a side that has no border to protect.
         if (isCollapsing) {
-            UiScissor.push(BorderedBox.computeContentBounds(
-                    box,
-                    border.width(),
-                    border.edges()));
+            UiScissor.push(BorderedBox.computeContentBounds(box, border));
         }
 
         // Tab headers:

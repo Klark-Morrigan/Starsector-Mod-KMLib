@@ -1,6 +1,7 @@
 package kmlib.starsector.ui.render.gl;
 
 import kmlib.math.geometry.Rectangle;
+import kmlib.starsector.ui.widgets.BoxBorder;
 
 /**
  * Raw-GL paint for a {@link kmlib.starsector.ui.widgets.BorderedBox}: fills the footprint and, when

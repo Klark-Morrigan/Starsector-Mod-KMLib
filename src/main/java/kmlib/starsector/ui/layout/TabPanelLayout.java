@@ -2,14 +2,14 @@ package kmlib.starsector.ui.layout;
 
 import kmlib.math.geometry.BoxEdge;
 import kmlib.math.geometry.Rectangle;
-import kmlib.math.ranges.Ranges;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
+import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
+import kmlib.starsector.ui.widgets.tabs.TabPanelViewState;
 import kmlib.starsector.ui.widgets.tabs.TabStyle;
 
 import java.util.List;
-import java.util.Set;
 
 /**
  * Composes a tab panel: a tabs-control header over the shared body composition, wrapped in one bordered
@@ -65,20 +65,16 @@ public final class TabPanelLayout {
      * @param screenHeight    the UI-coordinate screen height, giving the top edge to hang from
      * @param padding         the panel's edge margins: the top-left anchor and the bottom keep-clear
      *                        margin the body caps to (the right inset is unused - a panel grows rightward)
-     * @param borderWidth     the outer border thickness framing the footprint; 0 leaves no inset
-     * @param borderedEdges   which edges are framed; a dropped edge reserves no inset, so the box shrinks to
-     *                        sit flush against a neighbour instead of leaving a bare strip where its border
-     *                        would have been
-     * @param tabStyle        the tab dimensions the header band is laid to, so two panels sharing this one
-     *                        layout can still stand their tab rows at different heights; the band height is
-     *                        content-space, standing under the top border rather than including it
-     * @param tabsSpec        the tabs control (labels + per-tab shortcuts) drawn across the header band
-     * @param bodyControls    the active tab's body controls, top to bottom (empty for no body)
-     * @param measurer        measures each label's rendered width for text snapping
-     * @param rawScrollOffset the requested scroll offset for the body's scrolling control, in pixels;
-     *                        clamped to its overflow by the capped layout
-     * @param collapseFraction how far the body is collapsed horizontally: 0 lays it out at full width, 1
-     *                        docks it to the border-only rail; clamped to the unit range
+     * @param border       the frame around the footprint; an open edge reserves no inset, so the box shrinks
+     *                     to sit flush against a neighbour instead of leaving a bare strip where its border
+     *                     would have been
+     * @param tabStyle     the tab dimensions the header band is laid to, so two panels sharing this one
+     *                     layout can still stand their tab rows at different heights; the band height is
+     *                     content-space, standing under the top border rather than including it
+     * @param tabsSpec     the tabs control (labels + per-tab shortcuts) drawn across the header band
+     * @param bodyControls the active tab's body controls, top to bottom (empty for no body)
+     * @param measurer     measures each label's rendered width for text snapping
+     * @param viewState    how far the panel is scrolled and folded
      * @return the laid-out tabs header, the body placement carrying the whole-footprint box, and the
      *         collapse-handle notch on the box's right border edge - null when {@code bodyControls} is
      *         empty, since a bodyless panel has nothing to collapse
@@ -86,14 +82,12 @@ public final class TabPanelLayout {
     public static TabPanelPlacement computePlacement(
             float screenHeight,
             Padding padding,
-            int borderWidth,
-            Set<BoxEdge> borderedEdges,
+            BoxBorder border,
             TabStyle tabStyle,
             ControlSpec.Tabs tabsSpec,
             List<ControlSpec> bodyControls,
             LineWidthMeasurer measurer,
-            float rawScrollOffset,
-            float collapseFraction) {
+            TabPanelViewState viewState) {
 
         // The one band height every step below frames against - the header's own bounds, the body's top,
         // the vertical budget, and the box - so a styled band cannot move one of them and not the rest.
@@ -102,11 +96,7 @@ public final class TabPanelLayout {
         // The box hangs from the screen's top-left, same anchor a plain panel uses; the header sits flush
         // under the top border (or flush with the top edge when it is dropped) and the body hangs beneath
         // the header band.
-        var origin = PanelLayout.computeContentOrigin(
-                screenHeight,
-                padding,
-                borderWidth,
-                borderedEdges);
+        var origin = PanelLayout.computeContentOrigin(screenHeight, padding, border);
 
         // Header: the tabs control laid flush at the content top, reusing the strip's tab measurement and
         // segment split so it is not bespoke tab-strip framing.
@@ -122,12 +112,12 @@ public final class TabPanelLayout {
         // Body: the same shared composition a plain panel frames, hung beneath the header band and capped
         // so the box (header included) clears the bottom margin - the header height counted against the
         // vertical budget the same way a plain panel counts only its own border. The vertical budget spends
-        // the border only on the edges that are framed, so a dropped top or bottom returns that width to the
+        // the border only on the edges that are stroked, so an open top or bottom returns that width to the
         // body.
         var maxBodyHeight = screenHeight
                 - padding.top()
-                - PanelLayout.edgeInset(borderedEdges, BoxEdge.TOP, borderWidth)
-                - PanelLayout.edgeInset(borderedEdges, BoxEdge.BOTTOM, borderWidth)
+                - border.computeEdgeInset(BoxEdge.TOP)
+                - border.computeEdgeInset(BoxEdge.BOTTOM)
                 - headerBandHeight
                 - padding.bottom();
 
@@ -137,17 +127,17 @@ public final class TabPanelLayout {
                 maxBodyHeight,
                 bodyControls,
                 measurer,
-                rawScrollOffset);
+                viewState.rawScrollOffset());
 
         // Collapse the interior horizontally by the fraction: the controls keep their laid-out positions
         // (the renderer clips them to the shrinking box), so only the framed body's width interpolates,
-        // from its full width down to nothing at full collapse.
+        // from its full width down to nothing at full collapse. The fraction arrives already clamped to the
+        // unit range, so an overshooting animation value cannot invert the width here.
         var fullBody = bodyStrip.bounds();
-        var clampedFraction = Ranges.clampToUnit(collapseFraction);
         var framedBody = new Rectangle(
                 fullBody.x(),
                 fullBody.y(),
-                fullBody.width() * (1f - clampedFraction),
+                fullBody.width() * (1f - viewState.collapseFraction()),
                 fullBody.height());
 
         // Reuse the plain panel's framing, sizing the box to the interpolated body's width so the tab row
@@ -157,8 +147,7 @@ public final class TabPanelLayout {
         var bodyPlacement = PanelLayout.framePlacement(
                 padding.left(),
                 origin.boxTopY(),
-                borderWidth,
-                borderedEdges,
+                border,
                 framedBody,
                 headerBandHeight,
                 bodyStrip);

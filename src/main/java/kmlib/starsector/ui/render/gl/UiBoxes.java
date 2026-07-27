@@ -2,6 +2,7 @@ package kmlib.starsector.ui.render.gl;
 
 import kmlib.math.geometry.BoxEdge;
 import kmlib.math.geometry.Rectangle;
+import kmlib.starsector.ui.widgets.BoxBorder;
 
 /**
  * Draws the frame of a rectangular UI panel in screen/UI coordinates. A one-liner in intent

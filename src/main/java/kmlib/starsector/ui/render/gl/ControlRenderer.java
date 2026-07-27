@@ -79,14 +79,14 @@ public final class ControlRenderer {
                 UiCursor.getUiX(),
                 UiCursor.getUiY());
 
-        var tabStyle = paint.style().tabStyle();
+        var tabRenderStyle = paint.style().tabRenderStyle();
 
         VanillaTabStripRenderer.render(
                 tabs,
                 spec.selectedIndex(),
                 hoveredIndex,
-                tabStyle.colors(),
-                tabStyle.face(),
+                tabRenderStyle.colors(),
+                tabRenderStyle.face(),
                 paint.opacity());
     }
 

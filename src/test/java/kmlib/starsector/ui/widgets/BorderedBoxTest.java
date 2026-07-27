@@ -23,7 +23,7 @@ class BorderedBoxTest {
 
         @Test
         void insetsByTheBorderOnEveryStrokedEdge() {
-            assertThat(BorderedBox.computeContentBounds(outer, 4f, BoxEdge.ALL))
+            assertThat(BorderedBox.computeContentBounds(outer, new BoxBorder(4f)))
                     .isEqualTo(new Rectangle(14f, 24f, 92f, 42f));
         }
 
@@ -32,20 +32,20 @@ class BorderedBoxTest {
             // With the left edge open (the intel panel's flush side), the content keeps the box's left at
             // x, insetting only the three stroked edges - so nothing clips a border-width strip off a side
             // that draws no border.
-            var content = BorderedBox.computeContentBounds(
-                    outer, 4f, EnumSet.of(BoxEdge.TOP, BoxEdge.RIGHT, BoxEdge.BOTTOM));
+            var content = BorderedBox.computeContentBounds(outer,
+                    new BoxBorder(4f, EnumSet.of(BoxEdge.TOP, BoxEdge.RIGHT, BoxEdge.BOTTOM)));
             assertThat(content.x()).isEqualTo(outer.x());
             assertThat(content.width()).isEqualTo(outer.width() - 4f);
         }
 
         @Test
         void returnsTheOuterBoxWhenTheBorderIsZero() {
-            assertThat(BorderedBox.computeContentBounds(outer, 0f, BoxEdge.ALL)).isEqualTo(outer);
+            assertThat(BorderedBox.computeContentBounds(outer, new BoxBorder(0f))).isEqualTo(outer);
         }
 
         @Test
         void collapsesToZeroWhenTheBorderExceedsHalfTheBox() {
-            var content = BorderedBox.computeContentBounds(outer, 40f, BoxEdge.ALL);
+            var content = BorderedBox.computeContentBounds(outer, new BoxBorder(40f));
             assertThat(content.height()).isEqualTo(0f);
         }
     }
