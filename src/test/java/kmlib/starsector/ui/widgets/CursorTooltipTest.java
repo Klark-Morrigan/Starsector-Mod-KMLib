@@ -60,9 +60,10 @@ class CursorTooltipTest {
             createStyle(HEADING_FONT, HEADING_LINE_HEIGHT),
             createStyle(BODY_FONT, BODY_LINE_HEIGHT));
 
-    // A flush top-tier row (short label, no value) and a wider indented member (longer label, a value):
-    // the member is the widest laid-out row, so it must drive the box width even though it is the
-    // indented one - the point of measuring across tiers. Both are body lines, as an unstyled row is.
+    // A top-tier row at no indent (short label, no value) and a wider indented member (longer label, a
+    // value): the member is the widest laid-out row, so it must drive the box width even though it is the
+    // indented one - the point of measuring across tiers. Both are crest-aligned body lines, as a row
+    // built without stating a placement or a kind of line is.
     private static final TooltipRow TOP_TIER = TooltipRow.createRow("AA", Color.WHITE)
             .carriesCrest("crest_a");
     private static final TooltipRow MEMBER = TooltipRow.createRow("BBBB", Color.LIGHT_GRAY)
@@ -369,7 +370,9 @@ class CursorTooltipTest {
 
         @Test
         void sizesTheBoxToTheWidestRowMeasuredOnItsOwnFace() {
-            var box = layOut(List.of(createHeadingRow("AAA"), createCrestlessRow("AAAAA")), TWO_FACE_STYLE).box();
+            var rows = List.of(createHeadingRow("AAA"), createCrestlessRow("AAAAA"));
+
+            var box = layOut(rows, TWO_FACE_STYLE).box();
 
             // Heading: 3 characters at 3 = 9 + value gap 16 = 25, against the longer body row's 5 + 16 =
             // 21. The shorter heading is the wider row, so it sizes the box: 25 + 16 padding = 41.
@@ -413,6 +416,32 @@ class CursorTooltipTest {
             assertThat(layout.rows().get(0).crestBox().height()).isCloseTo(20f, within(TOLERANCE));
             assertThat(layout.rows().get(0).textX()).isCloseTo(252f, within(TOLERANCE));
             assertThat(layout.rows().get(1).textX()).isCloseTo(266f, within(TOLERANCE));
+        }
+
+        @Test
+        void collapsesTheCrestColumnWhenOnlyARowOutsideItCarriesACrest() {
+            // A crest on a flush row sits at the content edge, not in the column, so it opens no column
+            // for the rows that do sit in one - which would otherwise indent them past a gutter holding
+            // nothing.
+            var flushCrested = createCrestlessRow("AA")
+                    .carriesCrest("crest")
+                    .clearsCrestColumn();
+
+            var columnRow = layOut(List.of(flushCrested, createCrestlessRow("BB"))).rows().get(1);
+
+            assertThat(columnRow.textX()).isCloseTo(226f, within(TOLERANCE));
+        }
+
+        @Test
+        void anchorsAHeadingRowsMarkerPastItsLabelOnTheHeadingFace() {
+            // The marker rides off the label's own measured width, so a heading's marker has to clear the
+            // label as the heading face measures it: 226 + label 2 * 3 + marker gap 6 = 238, where the
+            // body face's measurement would have set it at 234 and let the wider label run under it.
+            var marked = createHeadingRow("AA").carriesMarker("MMM", Color.YELLOW);
+
+            var markedRow = layOut(List.of(marked), TWO_FACE_STYLE).rows().get(0);
+
+            assertThat(markedRow.markerX()).isCloseTo(238f, within(TOLERANCE));
         }
 
         @Test

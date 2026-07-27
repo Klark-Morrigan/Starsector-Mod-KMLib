@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.within;
  * Pins {@link TooltipRow}'s content model: the bare row a caller starts from carries none of the
  * optional parts, and each refinement adds exactly its own without disturbing what the row already
  * holds. The absences are the contract worth fixing - a caller never states them, so the bare row has
- * to be the plain flush, crest-less, marker-less, value-less line every refinement builds on.
+ * to be the plain crest-aligned, crest-less, marker-less, value-less line every refinement builds on.
  */
 class TooltipRowTest {
     private static final String CREST = "crest_a";
@@ -45,8 +45,15 @@ class TooltipRowTest {
             assertThat(row.marker()).isEmpty();
             assertThat(row.value()).isEmpty();
             assertThat(row.hasSectionBreak()).isFalse();
-            assertThat(row.isOutsideCrestColumn()).isFalse();
-            assertThat(row.isLabelCentred()).isFalse();
+            assertThat(row.hasCrest()).isFalse();
+        }
+
+        @Test
+        void createRowAlignsItsLabelWithTheCrestedRows() {
+            // An ordinary content row lines up with the box's other entries, so a caller that says
+            // nothing about placement gets that - starting at the content edge instead, or centring as a
+            // standalone span, is each stated.
+            assertThat(bareRow().labelPlacement()).isEqualTo(TooltipLabelPlacement.ALIGNED_WITH_CRESTS);
         }
 
         @Test
@@ -77,6 +84,19 @@ class TooltipRowTest {
             assertThat(row.crestSpritePath()).isEqualTo(CREST);
             assertThat(row.text()).isEqualTo(TEXT);
             assertThat(row.value()).isEmpty();
+        }
+    }
+
+    @Nested
+    class HasCrest {
+        @Test
+        void hasCrestIsFalseForABareRow() {
+            assertThat(bareRow().hasCrest()).isFalse();
+        }
+
+        @Test
+        void hasCrestIsTrueForACrestedRow() {
+            assertThat(bareRow().carriesCrest(CREST).hasCrest()).isTrue();
         }
     }
 
@@ -142,20 +162,31 @@ class TooltipRowTest {
     @Nested
     class ClearsCrestColumn {
         @Test
-        void clearsCrestColumnMarksTheRowAsLayingFlush() {
+        void clearsCrestColumnStartsTheLabelAtTheContentEdge() {
             var row = bareRow().clearsCrestColumn();
 
-            assertThat(row.isOutsideCrestColumn()).isTrue();
+            assertThat(row.labelPlacement()).isEqualTo(TooltipLabelPlacement.AT_CONTENT_EDGE);
+        }
+
+        @Test
+        void clearsCrestColumnKeepsTheValueColumn() {
+            // Only the crest gutter is cleared. A title still carries a trailing value the way the rows
+            // it heads do, so the value column is not part of what the placement decides.
+            var row = bareRow()
+                    .carriesValue(VALUE, Color.GRAY)
+                    .clearsCrestColumn();
+
+            assertThat(row.value()).isEqualTo(VALUE);
         }
     }
 
     @Nested
     class Centred {
         @Test
-        void centredMarksTheRowAsAStandaloneCentredLine() {
+        void centredLaysTheLabelAsAStandaloneCentredSpan() {
             var row = bareRow().centred();
 
-            assertThat(row.isLabelCentred()).isTrue();
+            assertThat(row.labelPlacement()).isEqualTo(TooltipLabelPlacement.CENTRED);
         }
 
         @Test
@@ -168,6 +199,15 @@ class TooltipRowTest {
 
             assertThat(row.text()).isEqualTo(TEXT);
             assertThat(row.marker()).isEqualTo(MARKER);
+        }
+
+        @Test
+        void centredReplacesAFlushPlacementRatherThanCompoundingWithIt() {
+            // One placement, so the last one stated wins: a centred span is already clear of the columns,
+            // and there is no state in which a row is both an edge-flush line and a centred one.
+            var row = bareRow().clearsCrestColumn().centred();
+
+            assertThat(row.labelPlacement()).isEqualTo(TooltipLabelPlacement.CENTRED);
         }
     }
 
@@ -191,7 +231,7 @@ class TooltipRowTest {
 
             assertThat(row.text()).isEqualTo(TEXT);
             assertThat(row.marker()).isEqualTo(MARKER);
-            assertThat(row.isLabelCentred()).isTrue();
+            assertThat(row.labelPlacement()).isEqualTo(TooltipLabelPlacement.CENTRED);
         }
     }
 

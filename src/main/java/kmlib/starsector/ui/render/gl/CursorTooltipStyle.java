@@ -16,7 +16,8 @@ import java.awt.Color;
  * own widgets. What is left here is the chrome that only a raw-GL box has to decide.
  *
  * @param typography  the look of each kind of line, from which every row's face, size, casing, and
- *                    default colour is resolved; a line's face size is also its line height and crest side
+ *                    default colour is resolved; a line's face size is also its line height and
+ *                    crest side
  * @param opacity     overall alpha, 0..1, applied to the box, the crests, and the text alike
  * @param borderWidth the box border thickness; 0 draws only the fill
  * @param fillColor   the box's backdrop colour

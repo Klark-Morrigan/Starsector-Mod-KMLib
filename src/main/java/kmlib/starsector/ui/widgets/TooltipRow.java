@@ -30,39 +30,37 @@ import java.awt.Color;
  * right-aligning like the value. That is what a caller reaches for when one span of a line - a status
  * word, a called-out flag - must be picked out in a different colour while the rest stays plain.
  *
- * <p>A {@linkplain #centred centred} row steps out of the table altogether: it is a standalone
- * line, so the layout ignores its indent, its crest column, and the value column, and lays its label
- * (with any marker) centred between the box's content edges. That is for a line that speaks for the
- * whole box - a title over the rows, a lone statement instead of them - which lining up as one entry of
- * that table would misname.
+ * <p>Where the label starts across the box is one decision, not a set of flags: its {@link
+ * TooltipLabelPlacement} puts it past the crest gutter, at the content edge, or centred as a standalone
+ * span. The decision is stated of the <em>label</em>, because the label is what a row is - the crest
+ * leads it in and the value trails it, and neither of them is the thing being placed. The value column
+ * is not part of that choice: every placement but the centred one keeps it clear to the right, so a
+ * title carries a trailing value exactly as an ordinary row does.
  *
  * <p>The one thing a row says about its own look is which {@link TooltipLineStyle kind of line} it is,
  * and even that is a statement about content: a heading is a heading whichever face the host draws
  * headings in. The face, size, and casing that kind resolves to live on the host's {@link TooltipStyle},
  * so a row is authored by whatever knows the subject matter and never by whatever knows the typography.
  *
- * @param lineStyle            the kind of line this is, which the host tooltip turns into a look
- * @param indent               the label's inset from the box's left content edge, in UI units - zero
- *                             for a top-tier row, a positive step for a nested one
- * @param isOutsideCrestColumn whether the label lays flush at the box's content edge, outside the
- *                             crest column the box reserves for its crested rows
- * @param isLabelCentred       whether the label is a standalone line centred in the box's content
- *                             region, rather than an entry laid into its columns
- * @param hasSectionBreak      whether the row opens a section, taking breathing room above it so it
- *                             reads as starting a block rather than continuing the one above
- * @param crestSpritePath      the leading crest's {@code graphics} texture path, or null for no crest
- * @param text                 the row's label
- * @param textColor            the label's colour before the tooltip's opacity fade
- * @param marker               the qualifier drawn just after the label, or the empty string for none
- * @param markerColor          the marker's colour before the opacity fade
- * @param value                the right-aligned value, or the empty string for a row with none
- * @param valueColor           the value's colour before the opacity fade
+ * @param lineStyle       the kind of line this is, which the host tooltip turns into a look
+ * @param labelPlacement  where the label starts across the box - past the crest gutter, at the content
+ *                        edge, or centred on its own
+ * @param indent          the label's inset from the box's left content edge, in UI units - zero for a
+ *                        top-tier row, a positive step for a nested one
+ * @param hasSectionBreak whether the row opens a section, taking breathing room above it so it reads
+ *                        as starting a block rather than continuing the one above
+ * @param crestSpritePath the leading crest's {@code graphics} texture path, or null for no crest
+ * @param text            the row's label
+ * @param textColor       the label's colour before the tooltip's opacity fade
+ * @param marker          the qualifier drawn just after the label, or the empty string for none
+ * @param markerColor     the marker's colour before the opacity fade
+ * @param value           the right-aligned value, or the empty string for a row with none
+ * @param valueColor      the value's colour before the opacity fade
  */
 public record TooltipRow(
         TooltipLineStyle lineStyle,
+        TooltipLabelPlacement labelPlacement,
         float indent,
-        boolean isOutsideCrestColumn,
-        boolean isLabelCentred,
         boolean hasSectionBreak,
         String crestSpritePath,
         String text,
@@ -72,21 +70,24 @@ public record TooltipRow(
         String value,
         Color valueColor) {
 
-    // What a row that carries none of the optional parts holds: a line of the body, flush against the
-    // content edge, inside the crest column, continuing the row above it, and with no crest, marker, or
-    // value. An absent marker or value takes the label's own colour, so no colour is ever null even
-    // where nothing draws. Body text is the default kind because most lines of a tooltip are its body -
-    // a heading is the exception a caller states.
+    // What a row that carries none of the optional parts holds: a line of the body, its label starting
+    // where the crested rows' labels start, continuing the row above it, and with no crest, marker, or
+    // value. An absent marker or value takes the label's own colour, so no colour is ever null even where
+    // nothing draws. Body text is the default kind because most lines of a tooltip are its body, and
+    // crest-aligned is the default placement because that is what an ordinary content row is - a heading
+    // and a title are each the exception a caller states.
     private static final TooltipLineStyle DEFAULT_LINE_STYLE = TooltipLineStyle.PARAGRAPH;
+    private static final TooltipLabelPlacement DEFAULT_LABEL_PLACEMENT =
+            TooltipLabelPlacement.ALIGNED_WITH_CRESTS;
     private static final float NO_INDENT = 0f;
     private static final String NO_CREST = null;
     private static final String NO_MARKER = "";
     private static final String NO_VALUE = "";
 
     /**
-     * Builds the plainest row there is: a label alone, flush with the box's left content edge. Every
-     * other part is layered on with a refinement below, so what a caller writes is exactly what the
-     * row carries.
+     * Builds the plainest row there is: a label alone, laid as an entry in the box's columns at no
+     * indent. Every other part is layered on with a refinement below, so what a caller writes is
+     * exactly what the row carries.
      *
      * @param text      the row's label
      * @param textColor the label's colour before the tooltip's opacity fade
@@ -95,9 +96,8 @@ public record TooltipRow(
     public static TooltipRow createRow(String text, Color textColor) {
         return new TooltipRow(
                 DEFAULT_LINE_STYLE,
+                DEFAULT_LABEL_PLACEMENT,
                 NO_INDENT,
-                false,
-                false,
                 false,
                 NO_CREST,
                 text,
@@ -106,6 +106,17 @@ public record TooltipRow(
                 textColor,
                 NO_VALUE,
                 textColor);
+    }
+
+    /**
+     * Whether the row leads with a crest. One rule read by the column the crests share, the square each
+     * one hangs in, and the draw that paints it, so none of the three can disagree about which rows have
+     * one.
+     *
+     * @return true when the row leads with a crest
+     */
+    public boolean hasCrest() {
+        return crestSpritePath != null;
     }
 
     /**
@@ -131,9 +142,8 @@ public record TooltipRow(
     public TooltipRow carriesCrest(String crestSpritePath) {
         return new TooltipRow(
                 lineStyle,
+                labelPlacement,
                 indent,
-                isOutsideCrestColumn,
-                isLabelCentred,
                 hasSectionBreak,
                 crestSpritePath,
                 text,
@@ -155,9 +165,8 @@ public record TooltipRow(
     public TooltipRow carriesMarker(String marker, Color markerColor) {
         return new TooltipRow(
                 lineStyle,
+                labelPlacement,
                 indent,
-                isOutsideCrestColumn,
-                isLabelCentred,
                 hasSectionBreak,
                 crestSpritePath,
                 text,
@@ -179,9 +188,8 @@ public record TooltipRow(
     public TooltipRow carriesValue(String value, Color valueColor) {
         return new TooltipRow(
                 lineStyle,
+                labelPlacement,
                 indent,
-                isOutsideCrestColumn,
-                isLabelCentred,
                 hasSectionBreak,
                 crestSpritePath,
                 text,
@@ -203,9 +211,8 @@ public record TooltipRow(
     public TooltipRow indentsBy(float indent) {
         return new TooltipRow(
                 lineStyle,
+                labelPlacement,
                 indent,
-                isOutsideCrestColumn,
-                isLabelCentred,
                 hasSectionBreak,
                 crestSpritePath,
                 text,
@@ -226,9 +233,8 @@ public record TooltipRow(
     public TooltipRow opensSection() {
         return new TooltipRow(
                 lineStyle,
+                labelPlacement,
                 indent,
-                isOutsideCrestColumn,
-                isLabelCentred,
                 true,
                 crestSpritePath,
                 text,
@@ -249,9 +255,8 @@ public record TooltipRow(
     public TooltipRow clearsCrestColumn() {
         return new TooltipRow(
                 lineStyle,
+                TooltipLabelPlacement.AT_CONTENT_EDGE,
                 indent,
-                true,
-                isLabelCentred,
                 hasSectionBreak,
                 crestSpritePath,
                 text,
@@ -274,9 +279,8 @@ public record TooltipRow(
     public TooltipRow centred() {
         return new TooltipRow(
                 lineStyle,
+                TooltipLabelPlacement.CENTRED,
                 indent,
-                isOutsideCrestColumn,
-                true,
                 hasSectionBreak,
                 crestSpritePath,
                 text,
@@ -298,9 +302,8 @@ public record TooltipRow(
     public TooltipRow readsAs(TooltipLineStyle lineStyle) {
         return new TooltipRow(
                 lineStyle,
+                labelPlacement,
                 indent,
-                isOutsideCrestColumn,
-                isLabelCentred,
                 hasSectionBreak,
                 crestSpritePath,
                 text,

@@ -11,9 +11,10 @@ import java.util.function.ToDoubleFunction;
 /**
  * The layout of a free-floating tooltip that follows the cursor: a vertical stack of {@link
  * TooltipRow}s - each an optional crest, a label, an optional marker trailing it, and an optional
- * right-aligned value - sized to hold its widest row and placed near the pointer. Substrate-independent: it measures text through a
- * {@link TextSpanMeasurer} port and returns rectangles and anchors, rendering nothing, so a GL or a
- * UI-API renderer paints against the same geometry. The raw-GL paint lives in
+ * right-aligned value - sized to hold its widest row and placed near the pointer.
+ * Substrate-independent: it measures text through a {@link TextSpanMeasurer} port and returns
+ * rectangles and anchors, rendering nothing, so a GL or a UI-API renderer paints against the same
+ * geometry. The raw-GL paint lives in
  * {@link kmlib.starsector.ui.render.gl.CursorTooltipRenderer}.
  *
  * <p>The padding and the screen clamp are {@link TooltipBoxLayout}'s; this widget adds the row model
@@ -21,12 +22,12 @@ import java.util.function.ToDoubleFunction;
  * anchor, marker anchor, and value anchor within the placed box. The value gap is reserved on every
  * row, so a value-less row keeps its label clear of the value column; the marker gap is not, since a
  * marker reads as part of its label's line rather than as a column the other rows align to. The crest
- * column is reserved per box, not per row: it is reserved only when at least one row carries a crest,
- * so a box whose rows are all crest-less lays its labels flush with no empty crest gutter, while a box
- * with any crest reserves the column on every row so a crest-less row still aligns under the crested
- * ones - except a row that steps out of the column deliberately, which lays flush regardless. One width
- * for the whole box, wide enough for its tallest crest: the column exists so that labels line up, which
- * a width settled row by row would defeat.
+ * column is reserved per box, not per row: it is reserved only when some crest-aligned row carries a
+ * crest, so a box whose rows are all crest-less lays its labels at the content edge with no empty
+ * gutter, while a box with any crest reserves the column on every crest-aligned row so a crest-less one
+ * still lines up under the crested ones. One width for the whole box, wide enough for its tallest crest:
+ * the column exists so that labels line up, which a width settled row by row would defeat. Which rows
+ * align to it at all is each row's own {@link TooltipLabelPlacement}.
  *
  * <p>A centred row is laid outside that column model entirely: its label and marker centre as one span
  * in the content region, and it is sized to that span alone, so a title or a lone statement centres over
@@ -137,7 +138,12 @@ public final class CursorTooltip {
         var isReserved = false;
         var tallestCrest = 0d;
         for (var styledRow : rows) {
-            if (styledRow.row().crestSpritePath() != null) {
+            var row = styledRow.row();
+
+            // Only the crests of the rows that align to the column size it. A label placed anywhere else
+            // starts before it - so its crest neither needs the column nor gets a say in how wide it is,
+            // and one edge-flush row cannot open a gutter that shifts every row that does align to it.
+            if (row.hasCrest() && row.labelPlacement() == TooltipLabelPlacement.ALIGNED_WITH_CRESTS) {
                 isReserved = true;
                 tallestCrest = Math.max(tallestCrest, styledRow.lineHeight());
             }
@@ -232,15 +238,15 @@ public final class CursorTooltip {
         // The crest is squared off the row's own line height, so it sits level with the label beside it
         // whatever face that label draws in - which is why it is the row's height and not the column's.
         var crestSize = (float) styledRow.lineHeight();
-        var crestBox = row.crestSpritePath() == null
-                ? null
-                : new Rectangle(
+        var crestBox = row.hasCrest()
+                ? new Rectangle(
                         crestX,
                         rowTopY - crestSize,
                         crestSize,
-                        crestSize);
+                        crestSize)
+                : null;
 
-        var textX = row.isLabelCentred()
+        var textX = row.labelPlacement() == TooltipLabelPlacement.CENTRED
                 ? centreLabelX(styledRow, leftX, rightX)
                 : crestX + measureCrestOffset(styledRow, crestColumnWidth);
 
@@ -275,7 +281,7 @@ public final class CursorTooltip {
         for (var styledRow : rows) {
             var row = styledRow.row();
             var labelSpan = measureLabelSpan(styledRow);
-            var rowWidth = row.isLabelCentred()
+            var rowWidth = row.labelPlacement() == TooltipLabelPlacement.CENTRED
                     ? labelSpan
                     : row.indent()
                             + measureCrestOffset(styledRow, crestColumnWidth)
@@ -318,13 +324,14 @@ public final class CursorTooltip {
         return MARKER_GAP + styledRow.measureWidth().applyAsDouble(styledRow.row().marker());
     }
 
-    // The horizontal space the crest column costs this row - the box's one column width, or nothing when
-    // the box reserves no column or when this row steps out of it to lay flush. One source so the width
-    // measurement and the label placement agree on the offset, row by row.
+    // The horizontal space the crest gutter costs this row - the box's one column width for a label that
+    // aligns to it, nothing for one that starts before it (and nothing either way in a box that reserved
+    // no column, whose width is already nothing). One source so the width measurement and the label
+    // placement agree on the offset, row by row.
     private static float measureCrestOffset(StyledRow styledRow, float crestColumnWidth) {
-        return styledRow.row().isOutsideCrestColumn()
-                ? NO_CREST_COLUMN
-                : crestColumnWidth;
+        return styledRow.row().labelPlacement() == TooltipLabelPlacement.ALIGNED_WITH_CRESTS
+                ? crestColumnWidth
+                : NO_CREST_COLUMN;
     }
 
     /**
