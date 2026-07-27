@@ -1,7 +1,7 @@
 package kmlib.starsector.ui.widgets;
 
 import kmlib.math.geometry.Rectangle;
-import kmlib.starsector.ui.font.LineWidthMeasurer;
+import kmlib.starsector.ui.font.TextSpanMeasurer;
 import kmlib.starsector.ui.layout.TooltipBoxLayout;
 
 import java.util.ArrayList;
@@ -12,7 +12,7 @@ import java.util.function.ToDoubleFunction;
  * The layout of a free-floating tooltip that follows the cursor: a vertical stack of {@link
  * TooltipRow}s - each an optional crest, a label, an optional marker trailing it, and an optional
  * right-aligned value - sized to hold its widest row and placed near the pointer. Substrate-independent: it measures text through a
- * {@link LineWidthMeasurer} port and returns rectangles and anchors, rendering nothing, so a GL or a
+ * {@link TextSpanMeasurer} port and returns rectangles and anchors, rendering nothing, so a GL or a
  * UI-API renderer paints against the same geometry. The raw-GL paint lives in
  * {@link kmlib.starsector.ui.render.gl.CursorTooltipRenderer}.
  *
@@ -24,7 +24,9 @@ import java.util.function.ToDoubleFunction;
  * column is reserved per box, not per row: it is reserved only when at least one row carries a crest,
  * so a box whose rows are all crest-less lays its labels flush with no empty crest gutter, while a box
  * with any crest reserves the column on every row so a crest-less row still aligns under the crested
- * ones - except a row that steps out of the column deliberately, which lays flush regardless.
+ * ones - except a row that steps out of the column deliberately, which lays flush regardless. One width
+ * for the whole box, wide enough for its tallest crest: the column exists so that labels line up, which
+ * a width settled row by row would defeat.
  *
  * <p>A centred row is laid outside that column model entirely: its label and marker centre as one span
  * in the content region, and it is sized to that span alone, so a title or a lone statement centres over
@@ -33,6 +35,12 @@ import java.util.function.ToDoubleFunction;
  * <p>Rows stack a line apart, and a row that opens a section takes half a line more above it. The
  * break is the widget's rather than the caller's arithmetic: a caller says which rows start a block,
  * and how far apart blocks stand is one decision made here for every tooltip.
+ *
+ * <p>Every row's own look is resolved up front from the box's {@link TooltipStyle}, because a box's rows
+ * need not share a face: a heading drawn in the game's blockier title atlas is far wider than a body
+ * line of the same size, and it stacks at its own height. So the line height a row occupies and the face
+ * its spans are measured on are both read per row rather than threaded once through the whole layout,
+ * and a heading is measured on exactly the face it will be painted in.
  *
  * <p>Cursor-follow placement is the counterpart to {@link kmlib.starsector.ui.layout.BoxPlacement}'s
  * fixed screen-anchor placement: a docked panel pins to an edge, a tooltip trails the pointer and
@@ -49,6 +57,10 @@ public final class CursorTooltip {
     private static final float MARKER_GAP = 6f;
     private static final float VALUE_GAP = 16f;
 
+    // The crest column's width in a box that reserves none - either because no row carries a crest, or
+    // for a row that steps out of the column to lay flush.
+    private static final float NO_CREST_COLUMN = 0f;
+
     // The breathing room above a row that opens a section, as a fraction of the line height, so the
     // break scales with the text rather than being a fixed pixel step. Half a line reads as a parted
     // block without looking like a dropped row.
@@ -60,14 +72,16 @@ public final class CursorTooltip {
     /**
      * Lays {@code rows} into a cursor-following box: sizes it to the widest row across all tiers,
      * places it up-and-right of the cursor clamped on screen, and resolves each row's crest, label,
-     * and value anchors within it. The crest square is one line tall, so it sits level with its label.
-     * The crest column is reserved only when some row carries a crest: in a mixed box a crest-less row
-     * still reserves it (and gets a null crest box) so its label aligns under the crested rows, while
-     * an all-crest-less box reserves nothing and lays its labels flush.
+     * and value anchors within it. Each row stacks at - and hangs a crest square as tall as - the line
+     * height its own kind of line draws at, so a heading takes the room its face needs. The crest column
+     * is reserved only when some row carries a crest, and then at one width across the box: in a mixed
+     * box a crest-less row still reserves it (and gets a null crest box) so its label aligns under the
+     * crested rows, while an all-crest-less box reserves nothing and lays its labels flush.
      *
      * @param rows         the content rows, top to bottom; an empty list yields a padding-only box
-     * @param lineHeight   the text line height, which is also each crest square's side, in UI units
-     * @param measurer     the font-agnostic width measurement for the labels and values
+     * @param style        the look each kind of line draws in, from which every row's face, size, and
+     *                     casing is resolved
+     * @param measurer     the font-agnostic width measurement, asked per face
      * @param cursorX      the cursor x, in UI coordinates (UI origin is bottom-left)
      * @param cursorY      the cursor y, in UI coordinates
      * @param screenWidth  the screen width in UI units, the right clamp bound
@@ -76,89 +90,95 @@ public final class CursorTooltip {
      */
     public static TooltipLayout layOut(
             List<TooltipRow> rows,
-            double lineHeight,
-            LineWidthMeasurer measurer,
+            TooltipStyle style,
+            TextSpanMeasurer measurer,
             float cursorX,
             float cursorY,
             float screenWidth,
             float screenHeight) {
 
-        var crestSize = (float) lineHeight;
-        var reservesCrestColumn = anyRowCarriesCrest(rows);
+        var styledRows = bindRowsToStyles(rows, style, measurer);
+        var crestColumnWidth = measureCrestColumnWidth(styledRows);
 
-        // Every width below is measured at this one size, so the size is bound in here once rather
-        // than travelling beside the measurer through each step that measures a span.
-        ToDoubleFunction<String> measureWidth = line ->
-                measurer.measureLineWidth(line, lineHeight);
-
-        var contentWidth = measureContentWidth(
-                rows,
-                reservesCrestColumn,
-                crestSize,
-                measureWidth);
         var box = TooltipBoxLayout.computeBox(
-                contentWidth,
-                measureContentHeight(rows, lineHeight),
+                measureContentWidth(styledRows, crestColumnWidth),
+                measureContentHeight(styledRows),
                 cursorX,
                 cursorY,
                 screenWidth,
                 screenHeight);
-        var rowLayouts = placeRows(
-                rows,
+        return new TooltipLayout(
                 box,
-                reservesCrestColumn,
-                crestSize,
-                measureWidth,
-                lineHeight);
-        return new TooltipLayout(box, rowLayouts);
+                placeRows(styledRows, box, crestColumnWidth));
     }
 
-    // Whether any row carries a crest, so the box reserves the crest column for every row. When no row
-    // does, the column collapses and the labels lay flush against the left content edge.
-    private static boolean anyRowCarriesCrest(List<TooltipRow> rows) {
+    // Resolves every row's look once, before anything is measured. Everything below then reads the
+    // resolved pair rather than the style and the measurer, which is what makes it impossible for one
+    // row to be measured on one face and then laid out at another's line height.
+    private static List<StyledRow> bindRowsToStyles(
+            List<TooltipRow> rows,
+            TooltipStyle style,
+            TextSpanMeasurer measurer) {
+
+        var styledRows = new ArrayList<StyledRow>(rows.size());
         for (var row : rows) {
-            if (row.crestSpritePath() != null) {
-                return true;
+            styledRows.add(StyledRow.bindRowToStyle(row, style, measurer));
+        }
+        return styledRows;
+    }
+
+    // The crest column's one width for the whole box: room for the tallest crest any row carries, plus
+    // the gap to the labels past it. Nothing at all when no row carries a crest, so the column collapses
+    // and the labels lay flush against the left content edge. Settled per box rather than per row even
+    // though the crests are squared off their own rows' line heights, because the column exists so that
+    // the labels line up - a width settled row by row would set each label at its own offset, leaving no
+    // column to align to - and sized to the tallest so that no crest is clipped by the column holding it.
+    private static float measureCrestColumnWidth(List<StyledRow> rows) {
+        var isReserved = false;
+        var tallestCrest = 0d;
+        for (var styledRow : rows) {
+            if (styledRow.row().crestSpritePath() != null) {
+                isReserved = true;
+                tallestCrest = Math.max(tallestCrest, styledRow.lineHeight());
             }
         }
-        return false;
+        return isReserved
+                ? (float) tallestCrest + CREST_GAP
+                : NO_CREST_COLUMN;
     }
 
-    // How tall the rows stack: a line each, the inter-line gap between them, and the extra break above
-    // every row that opens a section. The one place that rule lives - the placement below steps down by
-    // the same amounts, so the box is always exactly as tall as the rows drawn into it.
-    private static double measureContentHeight(List<TooltipRow> rows, double lineHeight) {
+    // How tall the rows stack: each row's own line height, the inter-line gap between them, and the extra
+    // break above every row that opens a section. The one place that rule lives - the placement below
+    // steps down by the same amounts, so the box is always exactly as tall as the rows drawn into it.
+    private static double measureContentHeight(List<StyledRow> rows) {
         var height = 0d;
         for (var index = 0; index < rows.size(); index++) {
-            height += lineHeight + measureLeadingGap(
-                    rows.get(index),
-                    index,
-                    lineHeight);
+            var styledRow = rows.get(index);
+            height += styledRow.lineHeight() + measureLeadingGap(styledRow, index);
         }
         return height;
     }
 
     // What a row adds above itself before its own line: nothing for the first row, which already sits
     // under the box's padding; otherwise the inter-line gap, plus the section break when the row opens
-    // one. A break on the first row is deliberately dropped rather than padding the box's top edge.
-    private static double measureLeadingGap(TooltipRow row, int index, double lineHeight) {
+    // one. A break on the first row is deliberately dropped rather than padding the box's top edge. The
+    // break is a fraction of the opening row's own line height, so a heading opens a section with the
+    // breathing room its own size asks for rather than the body's.
+    private static double measureLeadingGap(StyledRow styledRow, int index) {
         if (index == 0) {
             return 0d;
         }
-        return row.hasSectionBreak()
-                ? TooltipBoxLayout.LINE_GAP + lineHeight * SECTION_BREAK_FRACTION
+        return styledRow.row().hasSectionBreak()
+                ? TooltipBoxLayout.LINE_GAP + styledRow.lineHeight() * SECTION_BREAK_FRACTION
                 : TooltipBoxLayout.LINE_GAP;
     }
 
-    // Places each row's crest, label, and value within the box, stepping down one line height plus its
-    // leading gap per row from the top content edge, so the rows stack the way the box was sized.
+    // Places each row's crest, label, and value within the box, stepping down its own line height plus
+    // its leading gap per row from the top content edge, so the rows stack the way the box was sized.
     private static List<TooltipLayout.TooltipRowLayout> placeRows(
-            List<TooltipRow> rows,
+            List<StyledRow> rows,
             Rectangle box,
-            boolean reservesCrestColumn,
-            float crestSize,
-            ToDoubleFunction<String> measureWidth,
-            double lineHeight) {
+            float crestColumnWidth) {
 
         var leftX = box.x()
                 + TooltipBoxLayout.PADDING;
@@ -178,18 +198,16 @@ public final class CursorTooltip {
         var rowTopY = topY;
 
         for (var index = 0; index < rows.size(); index++) {
-            var row = rows.get(index);
-            rowTopY -= (float) measureLeadingGap(row, index, lineHeight);
+            var styledRow = rows.get(index);
+            rowTopY -= (float) measureLeadingGap(styledRow, index);
 
             placements.add(placeRow(
-                    row,
+                    styledRow,
                     leftX,
                     rightX,
                     rowTopY,
-                    reservesCrestColumn,
-                    crestSize,
-                    measureWidth));
-            rowTopY -= (float) lineHeight;
+                    crestColumnWidth));
+            rowTopY -= (float) styledRow.lineHeight();
         }
         return placements;
     }
@@ -202,15 +220,18 @@ public final class CursorTooltip {
     // label anchors off the content region's midpoint instead - while its marker still rides off that
     // anchor, so the label and its marker centre as one span.
     private static TooltipLayout.TooltipRowLayout placeRow(
-            TooltipRow row,
+            StyledRow styledRow,
             float leftX,
             float rightX,
             float rowTopY,
-            boolean reservesCrestColumn,
-            float crestSize,
-            ToDoubleFunction<String> measureWidth) {
+            float crestColumnWidth) {
 
+        var row = styledRow.row();
         var crestX = leftX + row.indent();
+
+        // The crest is squared off the row's own line height, so it sits level with the label beside it
+        // whatever face that label draws in - which is why it is the row's height and not the column's.
+        var crestSize = (float) styledRow.lineHeight();
         var crestBox = row.crestSpritePath() == null
                 ? null
                 : new Rectangle(
@@ -220,15 +241,15 @@ public final class CursorTooltip {
                         crestSize);
 
         var textX = row.isLabelCentred()
-                ? centreLabelX(row, leftX, rightX, measureWidth)
-                : crestX + crestColumnWidth(row, reservesCrestColumn, crestSize);
+                ? centreLabelX(styledRow, leftX, rightX)
+                : crestX + measureCrestOffset(styledRow, crestColumnWidth);
 
         var markerX = row.hasMarker()
                 ? textX
-                        + (float) measureWidth.applyAsDouble(row.text())
+                        + (float) styledRow.measureWidth().applyAsDouble(row.text())
                         + MARKER_GAP
                 : textX;
-                
+
         return new TooltipLayout.TooltipRowLayout(
                 crestBox,
                 textX,
@@ -243,24 +264,24 @@ public final class CursorTooltip {
     // its label span, the value gap, and its measured value, so a wide indented member sizes the box
     // just as a wide header would. A centred row is charged its label span alone - it occupies none of
     // those columns, so charging them would widen the box for space the centred line never fills, and
-    // its own centring would then push it off the middle. The content width before the box layout adds
-    // its padding.
+    // its own centring would then push it off the middle. Each row is measured on its own face, so a
+    // heading in a wider atlas sizes the box to the width it will actually paint at. The content width
+    // before the box layout adds its padding.
     private static double measureContentWidth(
-            List<TooltipRow> rows,
-            boolean reservesCrestColumn,
-            float crestSize,
-            ToDoubleFunction<String> measureWidth) {
+            List<StyledRow> rows,
+            float crestColumnWidth) {
 
         var widest = 0d;
-        for (var row : rows) {
-            var labelSpan = measureLabelSpan(row, measureWidth);
+        for (var styledRow : rows) {
+            var row = styledRow.row();
+            var labelSpan = measureLabelSpan(styledRow);
             var rowWidth = row.isLabelCentred()
                     ? labelSpan
                     : row.indent()
-                            + crestColumnWidth(row, reservesCrestColumn, crestSize)
+                            + measureCrestOffset(styledRow, crestColumnWidth)
                             + labelSpan
                             + VALUE_GAP
-                            + measureWidth.applyAsDouble(row.value());
+                            + styledRow.measureWidth().applyAsDouble(row.value());
 
             widest = Math.max(widest, rowWidth);
         }
@@ -270,46 +291,76 @@ public final class CursorTooltip {
     // The span a row's own text occupies: its label plus its marker's gap and width when it carries one.
     // Shared by the width measurement and the centring below, so a centred row is placed against exactly
     // the span the box was sized to hold.
-    private static double measureLabelSpan(
-            TooltipRow row,
-            ToDoubleFunction<String> measureWidth) {
-        return measureWidth.applyAsDouble(row.text()) + measureMarkerSpan(row, measureWidth);
+    private static double measureLabelSpan(StyledRow styledRow) {
+        return styledRow.measureWidth().applyAsDouble(styledRow.row().text())
+                + measureMarkerSpan(styledRow);
     }
 
     // Where a centred row's label starts: its span set in the middle of the content region, the leftover
     // split evenly to either side. A centred row that is itself the widest row sized the region to its
     // own span, so it lands flush at the content edge and nothing shifts.
     private static float centreLabelX(
-            TooltipRow row,
+            StyledRow styledRow,
             float leftX,
-            float rightX,
-            ToDoubleFunction<String> measureWidth) {
+            float rightX) {
 
-        var slack = rightX - leftX - (float) measureLabelSpan(row, measureWidth);
+        var slack = rightX - leftX - (float) measureLabelSpan(styledRow);
         return leftX + slack / 2f;
     }
 
     // What a row's marker adds to its width: its gap plus its own measured text, or nothing at all for
     // a marker-less row - the gap is charged with the marker rather than reserved on every row, so an
     // unmarked box is never padded for a marker column no row fills.
-    private static double measureMarkerSpan(
-            TooltipRow row,
-            ToDoubleFunction<String> measureWidth) {
-        if (!row.hasMarker()) {
+    private static double measureMarkerSpan(StyledRow styledRow) {
+        if (!styledRow.row().hasMarker()) {
             return 0d;
         }
-        return MARKER_GAP + measureWidth.applyAsDouble(row.marker());
+        return MARKER_GAP + styledRow.measureWidth().applyAsDouble(styledRow.row().marker());
     }
 
-    // The horizontal space the crest column costs this row - the crest square plus its gap when the box
-    // reserves the column, or nothing when no row carries a crest or when this row steps out of the
-    // column to lay flush. One source so the width measurement and the label placement agree on the
-    // offset, row by row.
-    private static float crestColumnWidth(
-            TooltipRow row, boolean reservesCrestColumn, float crestSize) {
-        if (row.isOutsideCrestColumn() || !reservesCrestColumn) {
-            return 0f;
+    // The horizontal space the crest column costs this row - the box's one column width, or nothing when
+    // the box reserves no column or when this row steps out of it to lay flush. One source so the width
+    // measurement and the label placement agree on the offset, row by row.
+    private static float measureCrestOffset(StyledRow styledRow, float crestColumnWidth) {
+        return styledRow.row().isOutsideCrestColumn()
+                ? NO_CREST_COLUMN
+                : crestColumnWidth;
+    }
+
+    /**
+     * One row bound to the look its kind of line resolved to: the height it stacks at, and a width
+     * measurement already bound to its face and its casing. Bound once per layout so the height
+     * measurement, the width measurement, and the placement cannot read three different looks for one
+     * row - and so no step below has to carry the box's style and the measurer alongside the row it is
+     * working on.
+     *
+     * @param row          the content row as its caller authored it
+     * @param lineHeight   the height the row stacks at, which is also its crest square's side
+     * @param measureWidth the width of one of this row's spans, in this row's own face
+     */
+    private record StyledRow(
+            TooltipRow row,
+            double lineHeight,
+            ToDoubleFunction<String> measureWidth) {
+
+        // Resolves the look for one row's kind of line and binds a measurement to it. The face doubles as
+        // the line height, as a bitmap face's size is the room one line of it needs.
+        private static StyledRow bindRowToStyle(
+                TooltipRow row,
+                TooltipStyle style,
+                TextSpanMeasurer measurer) {
+
+            var textStyle = style.resolveStyleFor(row.lineStyle());
+
+            // Measured through the style's own display text, not the authored text: a shouted line
+            // measured as authored measures narrower than it paints, so the box sized from that
+            // measurement would clip the text drawn into it.
+            return new StyledRow(
+                    row,
+                    textStyle.face().size(),
+                    span -> measurer.measureSpanWidth(
+                            textStyle.face(),
+                            textStyle.resolveDisplayText(span)));
         }
-        return crestSize + CREST_GAP;
     }
 }

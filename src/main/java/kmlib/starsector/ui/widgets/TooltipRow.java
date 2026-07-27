@@ -36,6 +36,12 @@ import java.awt.Color;
  * whole box - a title over the rows, a lone statement instead of them - which lining up as one entry of
  * that table would misname.
  *
+ * <p>The one thing a row says about its own look is which {@link TooltipLineStyle kind of line} it is,
+ * and even that is a statement about content: a heading is a heading whichever face the host draws
+ * headings in. The face, size, and casing that kind resolves to live on the host's {@link TooltipStyle},
+ * so a row is authored by whatever knows the subject matter and never by whatever knows the typography.
+ *
+ * @param lineStyle            the kind of line this is, which the host tooltip turns into a look
  * @param indent               the label's inset from the box's left content edge, in UI units - zero
  *                             for a top-tier row, a positive step for a nested one
  * @param isOutsideCrestColumn whether the label lays flush at the box's content edge, outside the
@@ -53,6 +59,7 @@ import java.awt.Color;
  * @param valueColor           the value's colour before the opacity fade
  */
 public record TooltipRow(
+        TooltipLineStyle lineStyle,
         float indent,
         boolean isOutsideCrestColumn,
         boolean isLabelCentred,
@@ -65,9 +72,12 @@ public record TooltipRow(
         String value,
         Color valueColor) {
 
-    // What a row that carries none of the optional parts holds: flush against the content edge, inside
-    // the crest column, continuing the row above it, and with no crest, marker, or value. An absent
-    // marker or value takes the label's own colour, so no colour is ever null even where nothing draws.
+    // What a row that carries none of the optional parts holds: a line of the body, flush against the
+    // content edge, inside the crest column, continuing the row above it, and with no crest, marker, or
+    // value. An absent marker or value takes the label's own colour, so no colour is ever null even
+    // where nothing draws. Body text is the default kind because most lines of a tooltip are its body -
+    // a heading is the exception a caller states.
+    private static final TooltipLineStyle DEFAULT_LINE_STYLE = TooltipLineStyle.PARAGRAPH;
     private static final float NO_INDENT = 0f;
     private static final String NO_CREST = null;
     private static final String NO_MARKER = "";
@@ -84,6 +94,7 @@ public record TooltipRow(
      */
     public static TooltipRow createRow(String text, Color textColor) {
         return new TooltipRow(
+                DEFAULT_LINE_STYLE,
                 NO_INDENT,
                 false,
                 false,
@@ -119,6 +130,7 @@ public record TooltipRow(
      */
     public TooltipRow carriesCrest(String crestSpritePath) {
         return new TooltipRow(
+                lineStyle,
                 indent,
                 isOutsideCrestColumn,
                 isLabelCentred,
@@ -142,6 +154,7 @@ public record TooltipRow(
      */
     public TooltipRow carriesMarker(String marker, Color markerColor) {
         return new TooltipRow(
+                lineStyle,
                 indent,
                 isOutsideCrestColumn,
                 isLabelCentred,
@@ -165,6 +178,7 @@ public record TooltipRow(
      */
     public TooltipRow carriesValue(String value, Color valueColor) {
         return new TooltipRow(
+                lineStyle,
                 indent,
                 isOutsideCrestColumn,
                 isLabelCentred,
@@ -188,6 +202,7 @@ public record TooltipRow(
      */
     public TooltipRow indentsBy(float indent) {
         return new TooltipRow(
+                lineStyle,
                 indent,
                 isOutsideCrestColumn,
                 isLabelCentred,
@@ -210,6 +225,7 @@ public record TooltipRow(
      */
     public TooltipRow opensSection() {
         return new TooltipRow(
+                lineStyle,
                 indent,
                 isOutsideCrestColumn,
                 isLabelCentred,
@@ -232,6 +248,7 @@ public record TooltipRow(
      */
     public TooltipRow clearsCrestColumn() {
         return new TooltipRow(
+                lineStyle,
                 indent,
                 true,
                 isLabelCentred,
@@ -256,9 +273,34 @@ public record TooltipRow(
      */
     public TooltipRow centred() {
         return new TooltipRow(
+                lineStyle,
                 indent,
                 isOutsideCrestColumn,
                 true,
+                hasSectionBreak,
+                crestSpritePath,
+                text,
+                textColor,
+                marker,
+                markerColor,
+                value,
+                valueColor);
+    }
+
+    /**
+     * Returns a copy of this row reading as {@code lineStyle} - a heading that names the box rather than
+     * a line of its body, say. What that kind draws in is the host tooltip's decision, so a caller
+     * marking a row as a heading is describing the row rather than choosing a face for it.
+     *
+     * @param lineStyle the kind of line this row is
+     * @return an otherwise-identical row reading as that kind of line
+     */
+    public TooltipRow readsAs(TooltipLineStyle lineStyle) {
+        return new TooltipRow(
+                lineStyle,
+                indent,
+                isOutsideCrestColumn,
+                isLabelCentred,
                 hasSectionBreak,
                 crestSpritePath,
                 text,

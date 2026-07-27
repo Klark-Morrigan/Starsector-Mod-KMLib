@@ -50,6 +50,14 @@ class TooltipRowTest {
         }
 
         @Test
+        void createRowReadsAsAParagraph() {
+            // Most of a tooltip is its body, so a caller that says nothing about the kind of line it is
+            // authoring gets a body line - which is what lets a whole existing body be built without
+            // naming a kind at all.
+            assertThat(bareRow().lineStyle()).isEqualTo(TooltipLineStyle.PARAGRAPH);
+        }
+
+        @Test
         void createRowColoursTheAbsentPartsWithTheLabel() {
             // Nothing draws in these colours on a bare row, but they must not be null: a refinement
             // that sets only one part leaves the others' colours to be read by the renderer regardless.
@@ -160,6 +168,30 @@ class TooltipRowTest {
 
             assertThat(row.text()).isEqualTo(TEXT);
             assertThat(row.marker()).isEqualTo(MARKER);
+        }
+    }
+
+    @Nested
+    class ReadsAs {
+        @Test
+        void readsAsSetsTheKindOfLine() {
+            var row = bareRow().readsAs(TooltipLineStyle.HEADER);
+
+            assertThat(row.lineStyle()).isEqualTo(TooltipLineStyle.HEADER);
+        }
+
+        @Test
+        void readsAsKeepsTheRestOfTheRow() {
+            // A heading is still a row: naming its kind must not disturb the content or the placement it
+            // was already built with, since the kind decides only how it is drawn.
+            var row = bareRow()
+                    .centred()
+                    .carriesMarker(MARKER, Color.YELLOW)
+                    .readsAs(TooltipLineStyle.HEADER);
+
+            assertThat(row.text()).isEqualTo(TEXT);
+            assertThat(row.marker()).isEqualTo(MARKER);
+            assertThat(row.isLabelCentred()).isTrue();
         }
     }
 
