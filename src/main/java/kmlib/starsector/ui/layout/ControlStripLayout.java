@@ -63,7 +63,7 @@ public final class ControlStripLayout {
     // touch the edges and a floor so a short tab still gives a clickable box, and measured/drawn at the
     // tab face size. Public so the panel frame and the renderer read the same values the layout snapped
     // the tabs to.
-    public static final float TAB_HEIGHT = 24f;
+    public static final float TAB_HEIGHT = 19f;
     public static final float TAB_TEXT_PADDING = 16f;
     public static final float MIN_TAB_WIDTH = 48f;
     public static final double TAB_FONT_SIZE = 15d;
