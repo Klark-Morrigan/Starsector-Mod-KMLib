@@ -101,6 +101,9 @@ src/main/java/kmlib/
       render/gl/   - the GL paint layer: panel, tabs, controls,
                      scrollbar, collapse notch, cursor tooltips, fills,
                      scissor
+      text/        - substrate-neutral text look: where a run of text
+                     sits relative to its draw point, with each render
+                     substrate owning the adapter into its own anchors
       tooltip/     - vanilla TooltipMakerAPI helpers
       widgets/     - widget models and their geometry, with scroll/,
                      segments/, and tabs/ beneath
