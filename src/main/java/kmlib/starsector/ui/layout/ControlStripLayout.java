@@ -9,6 +9,7 @@ import kmlib.starsector.ui.widgets.IconLabelRow;
 import kmlib.starsector.ui.widgets.RadioRow;
 import kmlib.starsector.ui.widgets.segments.HorizontalSegments;
 import kmlib.starsector.ui.widgets.segments.SegmentSpec;
+import kmlib.starsector.ui.widgets.tabs.TabStyle;
 import kmlib.starsector.ui.widgets.tabs.VanillaTabContent;
 import kmlib.starsector.ui.widgets.tabs.VanillaTabStrip;
 
@@ -62,8 +63,9 @@ public final class ControlStripLayout {
     // tab face is larger), each tab snapped to its label-plus-shortcut width with slack so text does not
     // touch the edges and a floor so a short tab still gives a clickable box, and measured/drawn at the
     // tab face size. Public so the panel frame and the renderer read the same values the layout snapped
-    // the tabs to.
-    public static final float TAB_HEIGHT = 19f;
+    // the tabs to. The height reads off the baseline style rather than repeating its literal, so a body
+    // TABS row - which sizes itself and takes no injected style - matches an unstyled header band.
+    public static final float TAB_HEIGHT = TabStyle.DEFAULT.headerBandHeight();
     public static final float TAB_TEXT_PADDING = 16f;
     public static final float MIN_TAB_WIDTH = 48f;
     public static final double TAB_FONT_SIZE = 15d;
@@ -85,26 +87,35 @@ public final class ControlStripLayout {
      * @param measurer measures each label's rendered width for text snapping
      * @return the strip footprint and the per-row dimensions behind it, for {@link #layoutControls}
      */
-    public static StripMeasurement measureStrip(List<ControlSpec> specs,
+    public static StripMeasurement measureStrip(
+            List<ControlSpec> specs,
             LineWidthMeasurer measurer) {
+
         if (specs.isEmpty()) {
-            return new StripMeasurement(0f, 0f, List.of(), List.of());
+            return StripMeasurement.EMPTY;
         }
         var rowWidths = new ArrayList<Float>(specs.size());
         var rowHeights = new ArrayList<Float>(specs.size());
         var contentWidth = 0f;
+
         for (var spec : specs) {
             var rowWidth = measureRowWidth(spec, measurer);
             rowWidths.add(rowWidth);
             rowHeights.add(measureRowHeight(spec));
-            contentWidth = Math.max(contentWidth, rowWidth + measureTrailingWidth(spec, measurer));
+            contentWidth = Math.max(
+                    contentWidth,
+                    rowWidth + measureTrailingWidth(spec, measurer));
         }
         // A divider carries no intrinsic width here (it measures zero) - it is stretched to the full
         // framed body at placement time, once the host has framed a body rectangle, so it never drives
         // the content width it later spans.
         var bodyWidth = contentWidth + 2f * BODY_PADDING;
         var bodyHeight = 2f * BODY_PADDING + measureStackedHeight(rowHeights);
-        return new StripMeasurement(bodyWidth, bodyHeight, List.copyOf(rowWidths),
+
+        return new StripMeasurement(
+                bodyWidth,
+                bodyHeight,
+                List.copyOf(rowWidths),
                 List.copyOf(rowHeights));
     }
 
@@ -122,36 +133,67 @@ public final class ControlStripLayout {
      * @param measurer   measures each label's rendered width, for snapping a tabs row's per-tab segments
      * @return the laid-out controls, top to bottom; empty when {@code specs} is empty
      */
-    public static List<Control> layoutControls(Rectangle body, List<ControlSpec> specs,
-            List<Float> rowHeights, List<Float> rowWidths, LineWidthMeasurer measurer) {
+    public static List<Control> layoutControls(
+            Rectangle body,
+            List<ControlSpec> specs,
+            List<Float> rowHeights,
+            List<Float> rowWidths,
+            LineWidthMeasurer measurer) {
+
         if (specs.isEmpty()) {
             return List.of();
         }
         var bodyTopY = body.y() + body.height();
-        var rows = RowStack.layoutRows(body.x() + BODY_PADDING, bodyTopY - BODY_PADDING,
-                ROW_GAP, rowHeights, rowWidths);
-        return toControls(specs, spanDividerRowsToBody(specs, rows, body), measurer);
+        var rows = RowStack.layoutRows(
+                body.x() + BODY_PADDING,
+                bodyTopY - BODY_PADDING,
+                ROW_GAP,
+                rowHeights,
+                rowWidths);
+
+        return toControls(
+                specs,
+                spanDividerRowsToBody(specs, rows, body),
+                measurer);
     }
 
     /**
      * Lays a tabs control flush as a panel header: the tabs snapped to their labels from
-     * {@code (originX, topY)} down one {@link #TAB_HEIGHT} band, split into per-tab segments. Unlike a
+     * {@code (originX, topY)} down the style's header band, split into per-tab segments. Unlike a
      * body control it takes no {@link #BODY_PADDING} inset - a header sits flush at the interior top - so
      * a tab panel frames it directly under the border. Reuses the same tab measurement and segment split
      * a body {@link ControlSpec.Tabs} control uses, so a header tab is hit exactly where a body tab would
      * be and the header is not bespoke tab-strip framing.
      *
+     * <p>The band height arrives with the call rather than as a fixed constant, so two panels sharing this
+     * one layout can still stand their tab rows at different heights.
+     *
      * @param tabsSpec the tabs control, its labels and per-tab shortcuts in row order
      * @param originX  the header's left edge (the content inset), in UI coordinates
      * @param topY     the header's top edge (the content top), in UI coordinates
+     * @param tabStyle the tab dimensions to lay to; its band height is the height every tab shares
      * @param measurer measures each tab label's rendered width for snapping
      * @return the laid-out tabs control, its bounds the header band and its segments split per tab
      */
-    public static Control layoutTabsHeader(ControlSpec.Tabs tabsSpec, float originX, float topY,
+    public static Control layoutTabsHeader(
+            ControlSpec.Tabs tabsSpec,
+            float originX,
+            float topY,
+            TabStyle tabStyle,
             LineWidthMeasurer measurer) {
+
+        var bandHeight = tabStyle.headerBandHeight();
         var rowWidth = measureTabsRowWidth(tabsSpec, measurer);
-        var bounds = new Rectangle(originX, topY - TAB_HEIGHT, rowWidth, TAB_HEIGHT);
-        return toControl(tabsSpec, bounds, measurer);
+        var bounds = new Rectangle(
+                originX,
+                topY - bandHeight,
+                rowWidth,
+                bandHeight);
+
+        return toControl(
+                tabsSpec,
+                bounds,
+                measurer);
     }
 
     /**
@@ -166,7 +208,9 @@ public final class ControlStripLayout {
     public static List<VanillaTabContent> buildTabContents(ControlSpec.Tabs tabs) {
         var contents = new ArrayList<VanillaTabContent>(tabs.labels().size());
         for (var index = 0; index < tabs.labels().size(); index++) {
-            contents.add(new VanillaTabContent(tabs.labels().get(index), tabs.shortcutAt(index)));
+            contents.add(new VanillaTabContent(
+                    tabs.labels().get(index),
+                    tabs.shortcutAt(index)));
         }
         return contents;
     }
@@ -200,18 +244,29 @@ public final class ControlStripLayout {
      * @param measurer measures each label's rendered width, for snapping a tabs row's per-tab segments
      * @return the laid-out controls, in the same order
      */
-    static List<Control> toControls(List<ControlSpec> specs, List<Rectangle> rows,
+    static List<Control> toControls(
+            List<ControlSpec> specs,
+            List<Rectangle> rows,
             LineWidthMeasurer measurer) {
+
         var controls = new ArrayList<Control>(specs.size());
+
         for (var index = 0; index < specs.size(); index++) {
             var spec = specs.get(index);
+            
             // A side-by-side group is not one control but two columns of them: it expands into its
             // children's laid-out controls here, so downstream sees only ordinary controls with absolute
             // bounds. Every other kind is its own single control.
             if (spec instanceof ControlSpec.SideBySide pair) {
-                controls.addAll(expandSideBySide(pair, rows.get(index), measurer));
+                controls.addAll(expandSideBySide(
+                        pair,
+                        rows.get(index),
+                        measurer));
             } else {
-                controls.add(toControl(spec, rows.get(index), measurer));
+                controls.add(toControl(
+                        spec,
+                        rows.get(index),
+                        measurer));
             }
         }
         return List.copyOf(controls);
@@ -234,12 +289,22 @@ public final class ControlStripLayout {
         // segments; a tabs row snaps its tabs to text, so it alone reads the measurer. Every other kind
         // is a single-hit row with no segments.
         List<Rectangle> segments;
+
         if (spec instanceof ControlSpec.HorizontalRadio radio) {
-            segments = splitHorizontalRadioIntoSegments(radio, row, measurer);
+            segments = splitHorizontalRadioIntoSegments(
+                    radio,
+                    row,
+                    measurer);
         } else if (spec instanceof ControlSpec.VerticalTable table) {
-            segments = RadioRow.splitIntoGrid(row, table.labels().size(), table.columnCount());
+            segments = RadioRow.splitIntoGrid(
+                    row,
+                    table.labels().size(),
+                    table.columnCount());
         } else if (spec instanceof ControlSpec.Tabs tabs) {
-            segments = splitTabsIntoSegments(tabs, row, measurer);
+            segments = splitTabsIntoSegments(
+                    tabs,
+                    row,
+                    measurer);
         } else {
             segments = List.of();
         }
@@ -259,13 +324,20 @@ public final class ControlStripLayout {
      * @param body  the framed body rectangle whose full width a divider spans
      * @return the rows with each divider widened to the body, every other row unchanged
      */
-    static List<Rectangle> spanDividerRowsToBody(List<ControlSpec> specs, List<Rectangle> rows,
+    static List<Rectangle> spanDividerRowsToBody(
+            List<ControlSpec> specs,
+            List<Rectangle> rows,
             Rectangle body) {
+
         var spanned = new ArrayList<Rectangle>(rows.size());
         for (var index = 0; index < rows.size(); index++) {
             var row = rows.get(index);
             spanned.add(specs.get(index) instanceof ControlSpec.Divider
-                    ? new Rectangle(body.x(), row.y(), body.width(), row.height())
+                    ? new Rectangle(
+                            body.x(),
+                            row.y(),
+                            body.width(),
+                            row.height())
                     : row);
         }
         return List.copyOf(spanned);
@@ -276,12 +348,27 @@ public final class ControlStripLayout {
     // column's width, each a vertical run placed exactly as the top-level strip stacks its rows. The
     // group has no chrome of its own, so it contributes only its children (with absolute bounds), which
     // is why the caller flattens it into the strip rather than keeping it as one control.
-    private static List<Control> expandSideBySide(ControlSpec.SideBySide pair, Rectangle row,
+    private static List<Control> expandSideBySide(
+            ControlSpec.SideBySide pair,
+            Rectangle row,
             LineWidthMeasurer measurer) {
+
         var rowTopY = row.y() + row.height();
-        var leftControls = layoutColumn(pair.leftColumn(), row.x(), rowTopY, measurer);
-        var rightX = row.x() + measureColumnWidth(pair.leftColumn(), measurer) + COLUMN_GAP;
-        var rightControls = layoutColumn(pair.rightColumn(), rightX, rowTopY, measurer);
+        var leftControls = layoutColumn(
+                pair.leftColumn(),
+                row.x(),
+                rowTopY,
+                measurer);
+
+        var rightX = row.x()
+                + measureColumnWidth(pair.leftColumn(), measurer)
+                + COLUMN_GAP;
+        var rightControls = layoutColumn(
+                pair.rightColumn(),
+                rightX,
+                rowTopY,
+                measurer);
+
         var controls = new ArrayList<Control>(leftControls.size() + rightControls.size());
         controls.addAll(leftControls);
         controls.addAll(rightControls);
@@ -293,35 +380,65 @@ public final class ControlStripLayout {
     // turning the snapped rows into controls through the shared zip so a column's radio splits into the
     // same segments a top-level radio would. A column holds only ordinary controls, so the zip never
     // recurses back into another group.
-    private static List<Control> layoutColumn(List<ControlSpec> specs, float columnX, float columnTopY,
+    private static List<Control> layoutColumn(
+            List<ControlSpec> specs,
+            float columnX,
+            float columnTopY,
             LineWidthMeasurer measurer) {
+
         var rowHeights = new ArrayList<Float>(specs.size());
         var rowWidths = new ArrayList<Float>(specs.size());
         for (var spec : specs) {
             rowHeights.add(measureRowHeight(spec));
             rowWidths.add(measureRowWidth(spec, measurer));
         }
-        var rows = RowStack.layoutRows(columnX, columnTopY, ROW_GAP, rowHeights, rowWidths);
+        var rows = RowStack.layoutRows(
+                columnX,
+                columnTopY,
+                ROW_GAP,
+                rowHeights,
+                rowWidths);
+
         return toControls(specs, rows, measurer);
     }
 
     // The per-cell hit segments of a horizontal radio row, sized through the radio's own segment rule
     // and laid from the row's left edge. The same split the renderer draws against, so the drawn cells
     // are the clickable ones. A vertical table splits geometrically into its column grid instead.
-    private static List<Rectangle> splitHorizontalRadioIntoSegments(ControlSpec.HorizontalRadio radio,
-            Rectangle row, LineWidthMeasurer measurer) {
-        var widths = HorizontalSegments.computeSegmentWidths(radio.labels(),
-                radioSegmentSpec(radio.segmentSizing()), measurer);
-        return HorizontalSegments.placeSegments(row.x(), row.y(), row.height(), widths);
+    private static List<Rectangle> splitHorizontalRadioIntoSegments(
+            ControlSpec.HorizontalRadio radio,
+            Rectangle row,
+            LineWidthMeasurer measurer) {
+
+        var widths = HorizontalSegments.computeSegmentWidths(
+                radio.labels(),
+                radioSegmentSpec(radio.segmentSizing()),
+                measurer);
+
+        return HorizontalSegments.placeSegments(
+                row.x(),
+                row.y(),
+                row.height(),
+                widths);
     }
 
     // The per-tab hit segments of a tabs row, each snapped to its label-plus-shortcut width via the
-    // shared VanillaTabStrip geometry, so the tabs are hit exactly where they are drawn. The tabs hang
-    // from the row's top edge at the tab height, so the segments align to the row the strip snapped.
-    private static List<Rectangle> splitTabsIntoSegments(ControlSpec.Tabs tabs, Rectangle row,
+    // shared VanillaTabStrip geometry, so the tabs are hit exactly where they are drawn. The tabs fill the
+    // row they were laid into rather than a fixed height, so a header band standing at an injected height
+    // splits into tabs of that height instead of segments floating loose in a taller or shorter band.
+    private static List<Rectangle> splitTabsIntoSegments(
+            ControlSpec.Tabs tabs,
+            Rectangle row,
             LineWidthMeasurer measurer) {
-        var laidOut = VanillaTabStrip.layoutTabs(row.x(), row.y() + row.height(), TAB_HEIGHT,
-                tabsSegmentSpec(), buildTabContents(tabs), measurer);
+
+        var laidOut = VanillaTabStrip.layoutTabs(
+                row.x(),
+                row.y() + row.height(),
+                row.height(),
+                tabsSegmentSpec(),
+                buildTabContents(tabs),
+                measurer);
+
         var segments = new ArrayList<Rectangle>(laidOut.size());
         for (var tab : laidOut) {
             segments.add(tab.bounds());
@@ -336,7 +453,9 @@ public final class ControlStripLayout {
     // is stretched to the full framed body at placement - so it contributes nothing to the width here.
     private static float measureRowWidth(ControlSpec spec, LineWidthMeasurer measurer) {
         if (spec instanceof ControlSpec.Checkbox checkbox) {
-            return CONTROL_ROW_HEIGHT + CHECKBOX_LABEL_GAP + measureWidth(measurer, checkbox.label());
+            return CONTROL_ROW_HEIGHT
+                    + CHECKBOX_LABEL_GAP
+                    + measureWidth(measurer, checkbox.label());
         }
         if (spec instanceof ControlSpec.Toggle toggle) {
             return measureWidth(measurer, toggle.label()) + TOGGLE_TEXT_PADDING;
@@ -345,8 +464,10 @@ public final class ControlStripLayout {
             return measureWidth(measurer, label.text());
         }
         if (spec instanceof ControlSpec.HorizontalRadio radio) {
-            return HorizontalSegments.measureRowWidth(radio.labels(),
-                    radioSegmentSpec(radio.segmentSizing()), measurer);
+            return HorizontalSegments.measureRowWidth(
+                    radio.labels(),
+                    radioSegmentSpec(radio.segmentSizing()),
+                    measurer);
         }
         if (spec instanceof ControlSpec.VerticalTable table) {
             return measureVerticalTableRowWidth(table, measurer);
@@ -356,7 +477,8 @@ public final class ControlStripLayout {
         }
         if (spec instanceof ControlSpec.SideBySide pair) {
             // The two columns side by side: the left column, the gap parting them, then the right.
-            return measureColumnWidth(pair.leftColumn(), measurer) + COLUMN_GAP
+            return measureColumnWidth(pair.leftColumn(), measurer)
+                    + COLUMN_GAP
                     + measureColumnWidth(pair.rightColumn(), measurer);
         }
         return 0f;
@@ -368,7 +490,8 @@ public final class ControlStripLayout {
     private static float measureColumnWidth(List<ControlSpec> specs, LineWidthMeasurer measurer) {
         var widest = 0f;
         for (var spec : specs) {
-            widest = Math.max(widest,
+            widest = Math.max(
+                    widest,
                     measureRowWidth(spec, measurer) + measureTrailingWidth(spec, measurer));
         }
         return widest;
@@ -389,7 +512,10 @@ public final class ControlStripLayout {
     // width through the shared VanillaTabStrip geometry - the same snap layoutTabs later applies - so the
     // measured strip is exactly as wide as the drawn tabs.
     private static float measureTabsRowWidth(ControlSpec.Tabs tabs, LineWidthMeasurer measurer) {
-        return VanillaTabStrip.measureRowWidth(buildTabContents(tabs), tabsSegmentSpec(), measurer);
+        return VanillaTabStrip.measureRowWidth(
+                buildTabContents(tabs),
+                tabsSegmentSpec(),
+                measurer);
     }
 
     // The width a vertical radio table needs: its column count wide. Each column sizes to the same
@@ -397,7 +523,8 @@ public final class ControlStripLayout {
     // being one segment wide), an icon table (non-empty icon paths) to its widest icon-and-label row -
     // and the columns sit side by side, so a two-column table needs twice one column's width. One column
     // is the plain single-column stack.
-    private static float measureVerticalTableRowWidth(ControlSpec.VerticalTable table,
+    private static float measureVerticalTableRowWidth(
+            ControlSpec.VerticalTable table,
             LineWidthMeasurer measurer) {
         var columnWidth = table.iconPaths().isEmpty()
                 ? measureTableColumnWidth(table, measurer)
@@ -412,7 +539,9 @@ public final class ControlStripLayout {
     // stands one tab-height tall (taller than a body row), drawn in the larger tab face.
     private static float measureRowHeight(ControlSpec spec) {
         if (spec instanceof ControlSpec.VerticalTable table) {
-            var rowCount = RadioRow.computeRowsPerColumn(table.labels().size(), table.columnCount());
+            var rowCount = RadioRow.computeRowsPerColumn(
+                    table.labels().size(),
+                    table.columnCount());
             return rowCount * CONTROL_ROW_HEIGHT;
         }
         if (spec instanceof ControlSpec.Tabs) {
@@ -421,7 +550,8 @@ public final class ControlStripLayout {
         if (spec instanceof ControlSpec.SideBySide pair) {
             // The group stands as tall as its taller column, so the shorter column top-aligns and
             // leaves the space below it empty rather than stretching the group.
-            return Math.max(measureColumnHeight(pair.leftColumn()),
+            return Math.max(
+                    measureColumnHeight(pair.leftColumn()),
                     measureColumnHeight(pair.rightColumn()));
         }
         return CONTROL_ROW_HEIGHT;
@@ -432,18 +562,28 @@ public final class ControlStripLayout {
     // carries one) without clipping. The option rows are one control-row tall, the height the icon
     // square derives from, so every stacked row shows an equal icon and the column is wide enough that
     // the longest name still clears its right-aligned value.
-    private static float measureIconTableRowWidth(ControlSpec.VerticalTable table,
+    private static float measureIconTableRowWidth(
+            ControlSpec.VerticalTable table,
             LineWidthMeasurer measurer) {
+                
         var widest = 0f;
         for (var index = 0; index < table.labels().size(); index++) {
             var labelWidth = measureWidth(measurer, table.labels().get(index));
+
             // A direction row reserves the fixed triangle slot instead of a measured text width, so the
             // column is sized to the drawn triangle rather than to letters it no longer draws.
             var trailingWidth = table.directionAt(index) != null
                     ? IconLabelRow.computeDirectionTriangleSlotWidth(CONTROL_ROW_HEIGHT)
-                    : (float) measurer.measureLineWidth(table.trailingLabelAt(index), BODY_FONT_SIZE);
-            var rowWidth = IconLabelRow.measureRowWidth(CONTROL_ROW_HEIGHT, labelWidth,
-                    table.hasIconAt(index), trailingWidth);
+                    : (float) measurer.measureLineWidth(
+                            table.trailingLabelAt(index),
+                            BODY_FONT_SIZE);
+
+            var rowWidth = IconLabelRow.measureRowWidth(
+                    CONTROL_ROW_HEIGHT,
+                    labelWidth,
+                    table.hasIconAt(index),
+                    trailingWidth);
+
             widest = Math.max(widest, rowWidth);
         }
         return widest;
@@ -453,11 +593,16 @@ public final class ControlStripLayout {
     // through the shared segment rule so a stacked column sizes exactly as a horizontal cell would. A
     // vertical table's columns are uniform by construction, so this reads UNIFORM. An option-less table
     // has no widths, so it falls back to the bare segment padding.
-    private static float measureTableColumnWidth(ControlSpec.VerticalTable table,
+    private static float measureTableColumnWidth(
+            ControlSpec.VerticalTable table,
             LineWidthMeasurer measurer) {
-        var widths = HorizontalSegments.computeSegmentWidths(table.labels(),
-                radioSegmentSpec(SegmentSizing.UNIFORM), measurer);
-        return widths.isEmpty() ? RADIO_SEGMENT_PADDING : widths.get(0);
+        var widths = HorizontalSegments.computeSegmentWidths(
+                table.labels(),
+                radioSegmentSpec(SegmentSizing.UNIFORM),
+                measurer);
+        return widths.isEmpty()
+                ? RADIO_SEGMENT_PADDING
+                : widths.get(0);
     }
 
     // The segment-sizing rule for a radio row: the radio padding, no floor, and the body font under the
@@ -465,13 +610,21 @@ public final class ControlStripLayout {
     // horizontal radio, SNAPPED per-label when a snapped horizontal radio opts in. The horizontal split,
     // the horizontal row-width, and the vertical column width all size through this one rule.
     private static SegmentSpec radioSegmentSpec(SegmentSizing sizing) {
-        return new SegmentSpec(RADIO_SEGMENT_PADDING, RADIO_SEGMENT_MIN_WIDTH, BODY_FONT_SIZE, sizing);
+        return new SegmentSpec(
+                RADIO_SEGMENT_PADDING,
+                RADIO_SEGMENT_MIN_WIDTH,
+                BODY_FONT_SIZE,
+                sizing);
     }
 
     // The segment-sizing rule for a tabs row: the tab padding, minimum, and tab font. A tabs row always
     // snaps each tab to its own label-plus-shortcut width, so this reads SNAPPED.
     private static SegmentSpec tabsSegmentSpec() {
-        return new SegmentSpec(TAB_TEXT_PADDING, MIN_TAB_WIDTH, TAB_FONT_SIZE, SegmentSizing.SNAPPED);
+        return new SegmentSpec(
+                TAB_TEXT_PADDING,
+                MIN_TAB_WIDTH,
+                TAB_FONT_SIZE,
+                SegmentSizing.SNAPPED);
     }
 
     // Extra footprint a trailing label adds past the control's own row, or none when it is blank. Only a
@@ -490,14 +643,24 @@ public final class ControlStripLayout {
     /**
      * The strip's measured footprint and the per-row dimensions behind it, returned together so the
      * size feeds the host's frame and the same row dimensions place the controls without measuring
-     * twice. Both lists are empty and the footprint zero for an empty strip.
+     * twice. A strip holding no controls measures to {@link StripMeasurement#EMPTY}.
      *
      * @param bodyWidth  the strip footprint width, inset included
      * @param bodyHeight the strip footprint height, inset included
      * @param rowWidths  each control row's measured width, top to bottom
      * @param rowHeights each control row's measured height, top to bottom
      */
-    public record StripMeasurement(float bodyWidth, float bodyHeight, List<Float> rowWidths,
+    public record StripMeasurement(
+            float bodyWidth,
+            float bodyHeight,
+            List<Float> rowWidths,
             List<Float> rowHeights) {
+        /**
+         * The measurement of a strip holding no controls: a zero footprint with no rows behind it. A
+         * named value rather than a literal spelled out wherever the empty case is reached, so "no
+         * controls measures to nothing" is stated once and a reader meets the state by name.
+         */
+        public static final StripMeasurement EMPTY =
+                new StripMeasurement(0f, 0f, List.of(), List.of());
     }
 }

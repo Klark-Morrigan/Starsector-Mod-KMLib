@@ -6,6 +6,7 @@ import kmlib.math.ranges.Ranges;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
+import kmlib.starsector.ui.widgets.tabs.TabStyle;
 
 import java.util.List;
 import java.util.Set;
@@ -19,7 +20,8 @@ import java.util.Set;
  * framePlacement} frames a body rectangle, not a bordered box, reusing it frames one border, not two. It
  * also reuses {@link CappedStripLayout#layoutBodyStrip} for the body and
  * adds {@link ControlStripLayout#layoutTabsHeader} for the flush header, so the only thing unique here is
- * where the header sits.
+ * where the header sits. How tall that header stands is an injected {@link TabStyle} rather than a fixed
+ * constant, so two panels composed through this one path can size their tab rows to their own surroundings.
  *
  * <p>The header is laid flush at the interior top (no body inset) through {@link
  * ControlStripLayout#layoutTabsHeader}, so a header tab measures, draws, and hit-tests through the same
@@ -52,9 +54,9 @@ public final class TabPanelLayout {
     }
 
     /**
-     * Lays the tab panel out for the given screen height, padding, border, tabs, and body controls: a
-     * {@link ControlStripLayout#TAB_HEIGHT} header band flush under the top border carrying the tabs
-     * control, and the body strip framed beneath it (capped to the bottom margin). The returned body's
+     * Lays the tab panel out for the given screen height, padding, border, tab style, tabs, and body
+     * controls: a header band flush under the top border carrying the tabs control at the style's height,
+     * and the body strip framed beneath it (capped to the bottom margin). The returned body's
      * {@link PanelPlacement#box()} sizes its width to the body alone and its height to the header band plus
      * the body, so the one border wraps the header band while a tab row wider than the body overhangs it.
      * An empty {@code bodyControls} leaves the bordered tab row with no body beneath, and, with nothing to
@@ -67,6 +69,9 @@ public final class TabPanelLayout {
      * @param borderedEdges   which edges are framed; a dropped edge reserves no inset, so the box shrinks to
      *                        sit flush against a neighbour instead of leaving a bare strip where its border
      *                        would have been
+     * @param tabStyle        the tab dimensions the header band is laid to, so two panels sharing this one
+     *                        layout can still stand their tab rows at different heights; the band height is
+     *                        content-space, standing under the top border rather than including it
      * @param tabsSpec        the tabs control (labels + per-tab shortcuts) drawn across the header band
      * @param bodyControls    the active tab's body controls, top to bottom (empty for no body)
      * @param measurer        measures each label's rendered width for text snapping
@@ -83,11 +88,16 @@ public final class TabPanelLayout {
             Padding padding,
             int borderWidth,
             Set<BoxEdge> borderedEdges,
+            TabStyle tabStyle,
             ControlSpec.Tabs tabsSpec,
             List<ControlSpec> bodyControls,
             LineWidthMeasurer measurer,
             float rawScrollOffset,
             float collapseFraction) {
+
+        // The one band height every step below frames against - the header's own bounds, the body's top,
+        // the vertical budget, and the box - so a styled band cannot move one of them and not the rest.
+        var headerBandHeight = tabStyle.headerBandHeight();
 
         // The box hangs from the screen's top-left, same anchor a plain panel uses; the header sits flush
         // under the top border (or flush with the top edge when it is dropped) and the body hangs beneath
@@ -104,9 +114,10 @@ public final class TabPanelLayout {
                 tabsSpec,
                 origin.contentX(),
                 origin.contentTopY(),
+                tabStyle,
                 measurer);
 
-        var bodyTopY = origin.contentTopY() - ControlStripLayout.TAB_HEIGHT;
+        var bodyTopY = origin.contentTopY() - headerBandHeight;
 
         // Body: the same shared composition a plain panel frames, hung beneath the header band and capped
         // so the box (header included) clears the bottom margin - the header height counted against the
@@ -117,7 +128,7 @@ public final class TabPanelLayout {
                 - padding.top()
                 - PanelLayout.edgeInset(borderedEdges, BoxEdge.TOP, borderWidth)
                 - PanelLayout.edgeInset(borderedEdges, BoxEdge.BOTTOM, borderWidth)
-                - ControlStripLayout.TAB_HEIGHT
+                - headerBandHeight
                 - padding.bottom();
 
         var bodyStrip = CappedStripLayout.layoutBodyStrip(
@@ -149,7 +160,7 @@ public final class TabPanelLayout {
                 borderWidth,
                 borderedEdges,
                 framedBody,
-                ControlStripLayout.TAB_HEIGHT,
+                headerBandHeight,
                 bodyStrip);
 
         // No body controls means nothing to collapse, so the panel is not collapsible and exposes no

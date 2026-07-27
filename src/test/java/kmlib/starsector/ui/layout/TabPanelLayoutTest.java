@@ -5,6 +5,7 @@ import kmlib.starsector.ui.controls.ControlAction;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
+import kmlib.starsector.ui.widgets.tabs.TabStyle;
 import kmlib.testfixtures.starsector.ui.font.LineWidthMeasurerFake;
 
 import org.junit.jupiter.api.Nested;
@@ -39,7 +40,14 @@ final class TabPanelLayoutTest {
     private static final float BOX_TOP_Y = SCREEN_HEIGHT - PADDING_TOP;
     private static final float CONTENT_X = PADDING_LEFT + BORDER_WIDTH;
     private static final float CONTENT_TOP_Y = BOX_TOP_Y - BORDER_WIDTH;
-    private static final float HEADER_BOTTOM_Y = CONTENT_TOP_Y - ControlStripLayout.TAB_HEIGHT;
+    // The band the default style stands, so the expected header edges track whatever style is injected
+    // rather than a constant the layout no longer reads.
+    private static final float DEFAULT_BAND_HEIGHT = TabStyle.DEFAULT.headerBandHeight();
+    private static final float HEADER_BOTTOM_Y = CONTENT_TOP_Y - DEFAULT_BAND_HEIGHT;
+
+    // A band deliberately unlike the default, so an assertion that the injected height is honoured cannot
+    // pass by coincidence against the baseline.
+    private static final float CUSTOM_BAND_HEIGHT = 17f;
 
     // "No Layer" is 8 chars, "Political Map" 13; each snaps to its measured width plus the tab text
     // padding, floored at the minimum tab width.
@@ -73,7 +81,7 @@ final class TabPanelLayoutTest {
             assertThat(first.y() + first.height())
                     .as("the header sits flush under the top border, not inset like a body row")
                     .isCloseTo(CONTENT_TOP_Y, within(TOLERANCE));
-            assertThat(first.height()).isCloseTo(ControlStripLayout.TAB_HEIGHT, within(TOLERANCE));
+            assertThat(first.height()).isCloseTo(DEFAULT_BAND_HEIGHT, within(TOLERANCE));
 
             var second = header.segments().get(1);
             assertThat(second.x()).isCloseTo(CONTENT_X + FIRST_TAB_WIDTH, within(TOLERANCE));
@@ -265,8 +273,8 @@ final class TabPanelLayoutTest {
         @Test
         void computePlacementDocksToAZeroWidthRailWhenThereIsNoBorder() {
             var placement = TabPanelLayout.computePlacement(SCREEN_HEIGHT,
-                    new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT), 0, BoxEdge.ALL, TABS, BODY,
-                    measurerFake, 0f, 1f);
+                    new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT), 0, BoxEdge.ALL,
+                    TabStyle.DEFAULT, TABS, BODY, measurerFake, 0f, 1f);
             var box = placement.body().box();
             // With no border, the docked rail has no interior and no border to keep, so the box collapses
             // to zero width - yet the placement stays well-formed and the notch still anchors to the edge.
@@ -285,8 +293,42 @@ final class TabPanelLayoutTest {
                     .isCloseTo(place(BODY, 0f).body().box().width(), within(TOLERANCE));
         }
 
+        @Test
+        void computePlacementStandsTheHeaderBandAtTheInjectedHeight() {
+            var placement = placeStyled(TabStyle.DEFAULT, BODY);
+            var styled = placeStyled(new TabStyle(CUSTOM_BAND_HEIGHT), BODY);
+
+            // Every tab in the band takes the injected height, and the band hangs from the same content top,
+            // so a shorter style shortens the row downward rather than floating it inside a fixed band.
+            var styledTab = styled.tabsHeader().segments().get(0);
+            assertThat(styledTab.height()).isCloseTo(CUSTOM_BAND_HEIGHT, within(TOLERANCE));
+            assertThat(styledTab.y() + styledTab.height()).isCloseTo(CONTENT_TOP_Y, within(TOLERANCE));
+
+            // The band is content the box wraps, so the whole footprint shortens by exactly what the band
+            // gave up - the body keeps its own height rather than stretching to absorb the difference.
+            assertThat(styled.body().body().height())
+                    .isCloseTo(placement.body().body().height(), within(TOLERANCE));
+            assertThat(placement.body().box().height() - styled.body().box().height())
+                    .isCloseTo(DEFAULT_BAND_HEIGHT - CUSTOM_BAND_HEIGHT, within(TOLERANCE));
+        }
+
+        @Test
+        void computePlacementClampsANegativeBandToABandlessPanel() {
+            // A negative height would hang the tab row above its own top edge; it floors at zero instead, so
+            // the panel degrades to its body under the border rather than inverting the header.
+            var styled = placeStyled(new TabStyle(-8f), BODY);
+            assertThat(styled.tabsHeader().bounds().height()).isCloseTo(0f, within(TOLERANCE));
+            assertThat(styled.tabsHeader().bounds().y()).isCloseTo(CONTENT_TOP_Y, within(TOLERANCE));
+        }
+
         private TabPanelPlacement place(List<ControlSpec> bodyControls) {
             return place(bodyControls, 0f);
+        }
+
+        private TabPanelPlacement placeStyled(TabStyle tabStyle, List<ControlSpec> bodyControls) {
+            return TabPanelLayout.computePlacement(SCREEN_HEIGHT,
+                    new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT), BORDER_WIDTH, BoxEdge.ALL,
+                    tabStyle, TABS, bodyControls, measurerFake, 0f, 0f);
         }
 
         private TabPanelPlacement place(List<ControlSpec> bodyControls, float collapseFraction) {
@@ -297,7 +339,7 @@ final class TabPanelLayoutTest {
                 List<ControlSpec> bodyControls, float collapseFraction, Set<BoxEdge> borderedEdges) {
             return TabPanelLayout.computePlacement(SCREEN_HEIGHT,
                     new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT), BORDER_WIDTH, borderedEdges,
-                    TABS, bodyControls, measurerFake, 0f, collapseFraction);
+                    TabStyle.DEFAULT, TABS, bodyControls, measurerFake, 0f, collapseFraction);
         }
     }
 }
