@@ -142,8 +142,14 @@ class CampaignMapTransformTest {
         // 1 the division that undoes it is invisible.
         private static final float MAP_ZOOM = 2f;
 
+        // Stated here rather than read off the class under test, because the number is LWJGL's
+        // requirement and not this code's choice: a test that borrowed the production constant
+        // would follow it wherever it moved instead of holding it to the external contract.
+        private static final int GL_GET_INTEGER_MIN_BUFFER_INTS = 16;
+
         private MockedStatic<Global> globalMock;
         private MockedStatic<GL11> glMock;
+        private int viewportBufferElementsOfferedToGl;
 
         @BeforeEach
         void setUp() {
@@ -158,6 +164,9 @@ class CampaignMapTransformTest {
             glMock.when(() -> GL11.glGetInteger(eq(GL11.GL_VIEWPORT), any(IntBuffer.class)))
                     .thenAnswer(invocation -> {
                         IntBuffer buffer = invocation.getArgument(1);
+                        // Recorded at call time: the caller reads its four ints back out of the
+                        // buffer afterwards, which moves the position LWJGL's check reads from.
+                        viewportBufferElementsOfferedToGl = buffer.remaining();
                         for (var slot = 0; slot < PIXEL_SCALED_VIEWPORT.length; slot++) {
                             buffer.put(slot, PIXEL_SCALED_VIEWPORT[slot]);
                         }
@@ -188,6 +197,20 @@ class CampaignMapTransformTest {
                     SCREEN_WIDTH * PIXEL_SCALE / 2f, SCREEN_HEIGHT * PIXEL_SCALE / 2f);
             assertThat(world.x).isCloseTo((SCREEN_WIDTH / 2f - PAN_X) / MAP_ZOOM, TOLERANCE);
             assertThat(world.y).isCloseTo((SCREEN_HEIGHT / 2f - PAN_Y) / MAP_ZOOM, TOLERANCE);
+        }
+
+        @Test
+        void asksGlForAViewportInABufferItsSizeCheckAccepts() {
+            var modelviewMatrixReaderFake =
+                    new ModelviewMatrixReaderFake(buildTranslationMatrix(PAN_X, PAN_Y));
+
+            CampaignMapTransform.captureFromMapPass(MAP_ZOOM, modelviewMatrixReaderFake);
+
+            // Stock LWJGL rejects a glGetInteger buffer holding fewer than 16 elements whatever
+            // the pname would fill, so the size is asserted directly: a viewport-sized buffer
+            // throws in-engine while sailing through a mocked GL11 unnoticed.
+            assertThat(viewportBufferElementsOfferedToGl)
+                    .isGreaterThanOrEqualTo(GL_GET_INTEGER_MIN_BUFFER_INTS);
         }
 
         @Test

@@ -50,6 +50,12 @@ public record CampaignMapTransform(
     private static final int MATRIX_FLOAT_COUNT = 16;
     private static final int VIEWPORT_INT_COUNT = 4;
 
+    // LWJGL sizes its glGetInteger check against the largest result any pname can return rather
+    // than against the one being asked for, so every read must hand over a 16-int buffer however
+    // few ints it actually fills. A viewport-sized buffer is rejected outright, which is a crash
+    // and not a short read.
+    private static final int GL_GET_INTEGER_MIN_BUFFER_INTS = 16;
+
     // The matrix that transforms nothing, held to recognise a modelview that describes no pass.
     private static final float[] IDENTITY_MATRIX = {
         1f, 0f, 0f, 0f,
@@ -130,8 +136,10 @@ public record CampaignMapTransform(
         }
         // glGet* only writes into direct buffers, so the read lands in one and is then copied into
         // a plain array: the snapshot must own its data rather than alias a scratch buffer, and an
-        // array keeps unprojectToWorld free of any native-buffer setup.
-        var viewportBuffer = BufferUtils.createIntBuffer(VIEWPORT_INT_COUNT);
+        // array keeps unprojectToWorld free of any native-buffer setup. The buffer is sized for
+        // LWJGL's check rather than for the four ints a viewport fills, and only those four are
+        // copied back out.
+        var viewportBuffer = BufferUtils.createIntBuffer(GL_GET_INTEGER_MIN_BUFFER_INTS);
         GL11.glGetInteger(GL11.GL_VIEWPORT, viewportBuffer);
         var viewport = new int[VIEWPORT_INT_COUNT];
         viewportBuffer.get(viewport);
