@@ -261,12 +261,12 @@ public final class VanillaTabStripRenderer {
     // each draw, so one buffer serves every frame. Null when the font face cannot load, in which
     // case the tab draws its chrome without text.
     private static DrawableString resolveText(TextFace textFace, String text) {
-        var key = textFace.basename() + "|" + textFace.size() + "|" + text;
+        var key = textFace.font().name() + "|" + textFace.size() + "|" + text;
         var cached = TEXT_CACHE.get(key);
         if (cached != null) {
             return cached;
         }
-        var font = LazyFontCache.loadByBasename(textFace.basename());
+        var font = LazyFontCache.loadByFace(textFace.font());
         if (font == null) {
             return null;
         }

@@ -63,12 +63,12 @@ public final class LabelRenderer {
     // each draw, so one buffer serves every frame. Null when the face cannot load, in which case the
     // caller draws without that text.
     private static DrawableString resolveText(TextFace face, String text) {
-        var key = face.basename() + "|" + face.size() + "|" + text;
+        var key = face.font().name() + "|" + face.size() + "|" + text;
         var cached = TEXT_CACHE.get(key);
         if (cached != null) {
             return cached;
         }
-        var font = LazyFontCache.loadByBasename(face.basename());
+        var font = LazyFontCache.loadByFace(face.font());
         if (font == null) {
             return null;
         }

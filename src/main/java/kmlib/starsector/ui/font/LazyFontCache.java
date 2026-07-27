@@ -12,9 +12,9 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Loads LazyLib bitmap fonts by their {@code graphics/fonts} basename and caches them,
- * so a face loads once however many times it is asked for and a face that will not load
- * is logged once and then skipped rather than retried - and re-logged - on every call.
+ * Loads LazyLib bitmap fonts and caches them, so a face loads once however many times it
+ * is asked for and a face that will not load is logged once and then skipped rather than
+ * retried - and re-logged - on every call.
  *
  * <p>The load-once / fail-once-logged policy that every caller drawing cached text needs,
  * kept in one place so no mod re-implements it around LazyLib's own
@@ -24,11 +24,6 @@ import java.util.Set;
  */
 public final class LazyFontCache {
     private static final Logger LOG = Global.getLogger(LazyFontCache.class);
-
-    // The game's bitmap fonts live under graphics/fonts with a .fnt extension, so a
-    // basename resolves to a loadable path by wrapping.
-    private static final String FONT_DIR = "graphics/fonts/";
-    private static final String FONT_EXTENSION = ".fnt";
 
     // Faces loaded so far, cached by path so a face already selected loads once even
     // after switching away and back. failedPaths remembers a face that would not load, so
@@ -41,16 +36,15 @@ public final class LazyFontCache {
     }
 
     /**
-     * The face for a {@code graphics/fonts} basename (e.g. {@code insignia15LTaa}),
-     * loaded and cached, or null when that face cannot load (a missing or malformed
-     * {@code .fnt}). A face known to have failed returns null without retrying.
+     * The loaded, cached face for one of the game's atlases, or null when that face cannot
+     * load (a missing or malformed {@code .fnt}). A face known to have failed returns null
+     * without retrying.
      *
-     * @param basename the font's basename under {@code graphics/fonts}, without the
-     *                 {@code .fnt} suffix
+     * @param font the atlas to load; the enum names its own loadable path
      * @return the cached face, or null when it will not load
      */
-    public static LazyFont loadByBasename(String basename) {
-        return getFont(FONT_DIR + basename + FONT_EXTENSION);
+    public static LazyFont loadByFace(StarsectorFont font) {
+        return getFont(font.resolvePath());
     }
 
     // Loads one face and caches it by path. A face known to have failed returns null
@@ -70,8 +64,11 @@ public final class LazyFontCache {
             return loaded;
         } catch (FontException exception) {
             FAILED_FONT_PATHS.add(fontPath);
-            LOG.error("Could not load font '" + fontPath
-                    + "'; text using this font disabled this session", exception);
+            LOG.error(
+                    "Could not load font '"
+                            + fontPath
+                            + "'; text using this font disabled this session",
+                    exception);
             return null;
         }
     }

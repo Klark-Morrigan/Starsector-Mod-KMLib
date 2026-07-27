@@ -1,5 +1,7 @@
 package kmlib.starsector.ui.render.gl;
 
+import kmlib.starsector.ui.font.StarsectorFont;
+
 import java.awt.Color;
 
 /**
@@ -16,7 +18,7 @@ import java.awt.Color;
  * @param panelFill    the box backdrop, filled behind the chrome and controls
  * @param accent       the frame / wash / label-chrome colour every element strokes with
  * @param brightAccent the brighter colour a checkbox ticks with
- * @param bodyFont     the {@code graphics/fonts} basename the body-control labels draw in
+ * @param bodyFont     the atlas the body-control labels draw in
  * @param tabRenderStyle the paint a tabs control draws in (colours + face), read only when one is drawn
  * @param notchColors  the chevron shades a collapse handle draws in, read only when one is drawn
  */
@@ -24,7 +26,7 @@ public record WidgetStyle(
         Color panelFill,
         Color accent,
         Color brightAccent,
-        String bodyFont,
+        StarsectorFont bodyFont,
         TabRenderStyle tabRenderStyle,
         NotchColors notchColors) {
 }

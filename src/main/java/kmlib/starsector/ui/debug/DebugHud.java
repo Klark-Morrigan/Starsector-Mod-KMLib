@@ -6,6 +6,7 @@ import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.font.LazyFontCache;
 import kmlib.starsector.ui.font.LazyFontMeasurer;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
+import kmlib.starsector.ui.font.StarsectorFont;
 import kmlib.starsector.ui.font.TextFace;
 import kmlib.starsector.ui.render.gl.GlStateGuard;
 import kmlib.starsector.ui.render.gl.LabelRenderer;
@@ -40,7 +41,7 @@ public final class DebugHud {
 
     // The body face both the key and value draw in, at the two sizes the layout sets, and the alpha
     // they draw at - readable over the map without fully hiding what is behind them.
-    private static final String FONT = "insignia15LTaa";
+    private static final StarsectorFont FONT = StarsectorFont.VANILLA_INSIGNIA_15;
     private static final float OPACITY = 0.9f;
 
     // A half-opaque black plate behind each line, padded a little past the glyphs, so bright debug
@@ -128,7 +129,7 @@ public final class DebugHud {
     // The face is resolved once so each line's backdrop can be sized to its glyphs; a face that fails
     // to load leaves the backdrop off (measurer null) and the text draw skips itself the same way.
     private void drawAndClear(Function<DebugQuadrant, List<DebugHudLine>> layout) {
-        var face = LazyFontCache.loadByBasename(FONT);
+        var face = LazyFontCache.loadByFace(FONT);
         var measurer = face == null ? null : new LazyFontMeasurer(face);
         GlStateGuard.bracket(() -> {
             for (var quadrant : DebugQuadrant.values()) {

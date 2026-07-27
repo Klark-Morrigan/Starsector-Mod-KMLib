@@ -42,7 +42,7 @@ public final class CursorTooltipRenderer {
      * @param style the body font, size, opacity, and box chrome the whole tooltip draws in
      */
     public static void render(List<TooltipRow> rows, CursorTooltipStyle style) {
-        var font = LazyFontCache.loadByBasename(style.face().basename());
+        var font = LazyFontCache.loadByFace(style.face().font());
         if (font == null) {
             return;
         }
