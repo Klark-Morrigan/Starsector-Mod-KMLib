@@ -29,7 +29,7 @@ public final class VanillaIntelScreenView implements IntelScreenView {
 
     // The preview widget's opacity is hard-set to 1.0 while it is showing and 0.0 when a
     // large-description item blanks it, so any threshold between the two reads "is the preview lit".
-    private static final float MAP_WIDGET_VISIBLE_MIN_OPACITY = 0.5f;
+    private static final float MAP_WIDGET_VISIBLE_MIN_OPACITY = 0.9f;
 
     // The sub-tab switch forces the panel faders fully in and out rather than easing them, so the
     // events panel's brightness is only ever dark or lit and any threshold between the two reads
