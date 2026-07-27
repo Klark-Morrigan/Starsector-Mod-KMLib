@@ -23,11 +23,12 @@ import static org.mockito.Mockito.when;
  * across each way it fails closed, and {@link VanillaIntelScreenView#isMapVisorLit}, the rule that
  * decides whether the two widget readings amount to a visor worth drawing over.
  *
- * <p>{@link VanillaIntelScreenView#getMapVisorRect} itself is not unit-tested: it casts to the
+ * <p>{@link VanillaIntelScreenView#getMapVisorRect} and
+ * {@link VanillaIntelScreenView#isMapStarscapeModeOn} are not unit-tested: both cast to the
  * obfuscated intel classes, whose dotted member names fail class-load under a verifying JVM (they
- * only load under the game's non-verifying one), so not even its fail-closed branches can be entered
- * here and the walk is exercised in-game. Only its widget-fetching is out of reach that way, which is
- * why the rule it applies is reachable on its own.
+ * only load under the game's non-verifying one), so not even their fail-closed branches can be
+ * entered here and the walks are exercised in-game. Only that widget-fetching is out of reach, which
+ * is why the rule the visor read applies is reachable on its own.
  */
 class VanillaIntelScreenViewTest {
 
@@ -116,12 +117,15 @@ class VanillaIntelScreenViewTest {
         }
 
         @Test
-        void isMapVisorLitTreatsAPartlyFadedPanelAsShowing() {
+        void isMapVisorLitPinsTheThresholdOfEachReading() {
             // Nothing eases these readings today, so a mid value is only reachable if the game changes
-            // to fade them. Pinning the halfway point keeps that from silently flipping the gate.
-            assertThat(VanillaIntelScreenView.isMapVisorLit(0.5f, 0.5f)).isTrue();
+            // to fade them. The two thresholds differ - a panel counts as showing from halfway, while
+            // the preview has to be all but fully opaque - so each is pinned on its own, keeping a
+            // change to either from silently flipping the gate.
+            assertThat(VanillaIntelScreenView.isMapVisorLit(0.5f, LIT)).isTrue();
             assertThat(VanillaIntelScreenView.isMapVisorLit(0.49f, LIT)).isFalse();
-            assertThat(VanillaIntelScreenView.isMapVisorLit(LIT, 0.49f)).isFalse();
+            assertThat(VanillaIntelScreenView.isMapVisorLit(LIT, 0.9f)).isTrue();
+            assertThat(VanillaIntelScreenView.isMapVisorLit(LIT, 0.89f)).isFalse();
         }
     }
 }

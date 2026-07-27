@@ -15,14 +15,16 @@ import org.apache.log4j.Logger;
 
 /**
  * {@link IntelScreenView} binding backed by the live campaign UI. The tab-open read is published
- * API; the map visor rectangle reaches the game's concrete intel panel by casting to it - the game's
- * script classloader denies {@code java.lang.reflect} to mod code, while loading and casting to
- * core classes is permitted, and the classes touched are marked do-not-obfuscate, so their names
- * stay stable across game builds.
+ * API; the map visor rectangle and its starscape state reach the game's concrete intel panel by
+ * casting to it - the game's script classloader denies {@code java.lang.reflect} to mod code, while
+ * loading and casting to core classes is permitted, and the classes touched are marked
+ * do-not-obfuscate, so their names stay stable across game builds.
  *
  * <p>The reach into the concrete panel fails closed: a missing or unexpected link, a sibling sub-tab
  * showing instead, or a blanked preview all resolve to "no visor", so a caller reading the visor
- * rectangle simply gets {@code null} while there is nothing on the intel screen to draw over.
+ * rectangle simply gets {@code null} while there is nothing on the intel screen to draw over. The
+ * starscape read fails the same way to "not in starscape mode", which is what an unreachable panel
+ * is leaving the game doing anyway.
  */
 public final class VanillaIntelScreenView implements IntelScreenView {
     private static final Logger LOG = Global.getLogger(VanillaIntelScreenView.class);
@@ -65,6 +67,21 @@ public final class VanillaIntelScreenView implements IntelScreenView {
             return null;
         }
         return VanillaPositions.toRectangle(position);
+    }
+
+    @Override
+    public boolean isMapStarscapeModeOn() {
+        EventsPanel intelPanel = resolveIntelPanel();
+        if (intelPanel == null) {
+            return false;
+        }
+        // Two steps in: the panel's map member is the framed holder widget, and the map inside it is
+        // what owns the filter state. Its own starscape read is used rather than the raw filter flag,
+        // so this says exactly what the game says - the filter alone is not starscape mode, which
+        // also needs the map to be showing hyperspace.
+        var mapWidget = intelPanel.getMap();
+        var map = mapWidget == null ? null : mapWidget.getMap();
+        return map != null && map.isStarscapeMode();
     }
 
     // Whether the two live signals add up to a lit map visor. Kept apart from the walk that fetches

@@ -4,10 +4,11 @@ import kmlib.math.geometry.Rectangle;
 
 /**
  * Reads the campaign intel screen (the {@code Intel} tab) from code that lives outside that screen.
- * Two things it exposes are not on the published UI API: whether the intel tab is the one showing,
- * and the screen rectangle of the intel screen's embedded map preview (its "map visor") while that
- * preview is actually lit. The reads name the map visor rather than a bare "visor" because the intel
- * screen carries only this one map, and the rectangle is that map's - not the screen's own bounds.
+ * What it exposes is not on the published UI API: whether the intel tab is the one showing, the
+ * screen rectangle of the intel screen's embedded map preview (its "map visor") while that preview
+ * is actually lit, and whether that preview is drawing the starscape rather than the ordinary map.
+ * The reads name the map visor rather than a bare "visor" because the intel screen carries only this
+ * one map, and the rectangle is that map's - not the screen's own bounds.
  *
  * <p>The two are separate questions, not one: the intel core tab is a container for three sub-tabs -
  * Intel, Planets and Factions - and only the Intel one carries the visor, so the tab-open read stays
@@ -33,4 +34,17 @@ public interface IntelScreenView {
      *         visor is present.
      */
     Rectangle getMapVisorRect();
+
+    /**
+     * Whether the map visor is in starscape mode: its Starscape filter checked while it shows
+     * hyperspace. The game then paints the stylised starfield in place of the ordinary map and
+     * suppresses the terrain layers drawn above it, so a custom overlay riding those layers is not
+     * on screen even though the visor is lit. The intel screen keeps its own filter state, separate
+     * from the full campaign map's, so this answers for the preview alone.
+     *
+     * @return whether the map visor is drawing the starscape, or {@code false} when the state
+     *         cannot be read - the same answer as the game painting the map normally, which is what
+     *         an unreadable link leaves it doing
+     */
+    boolean isMapStarscapeModeOn();
 }

@@ -9,14 +9,21 @@ import kmlib.starsector.ui.intel.IntelScreenView;
  * tests drive the intel-screen seam through one shared double.
  *
  * <p>A {@code null} visor rectangle stands for "no lit visor to draw over" - the intel tab is not
- * showing, or the preview is blanked - which is the state the port models and callers survive.
+ * showing, or the preview is blanked - which is the state the port models and callers survive. The
+ * starscape flag is set independently of it, since a lit visor can be drawing either the ordinary
+ * map or the starscape.
  */
 public final class IntelScreenViewFake implements IntelScreenView {
     private boolean isIntelTabOpen;
+    private boolean isMapStarscapeModeOn;
     private Rectangle mapVisorRect;
 
     public void setIntelTabOpen(boolean isIntelTabOpen) {
         this.isIntelTabOpen = isIntelTabOpen;
+    }
+
+    public void setMapStarscapeModeOn(boolean isMapStarscapeModeOn) {
+        this.isMapStarscapeModeOn = isMapStarscapeModeOn;
     }
 
     public void setMapVisorRect(Rectangle mapVisorRect) {
@@ -31,5 +38,10 @@ public final class IntelScreenViewFake implements IntelScreenView {
     @Override
     public Rectangle getMapVisorRect() {
         return mapVisorRect;
+    }
+
+    @Override
+    public boolean isMapStarscapeModeOn() {
+        return isMapStarscapeModeOn;
     }
 }
