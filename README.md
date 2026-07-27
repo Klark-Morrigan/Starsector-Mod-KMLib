@@ -15,6 +15,7 @@ on at compile and runtime.
 - [Reusable CI / release actions](#reusable-ci--release-actions)
 - [Consuming KMLib](#consuming-kmlib)
 - [Rendering environment](#rendering-environment)
+- [Caching](#caching)
 - [Player Faction Resolution](#player-faction-resolution)
 - [UI Colour Palette](#ui-colour-palette)
 - [Highlighted Text](#highlighted-text)
@@ -137,7 +138,12 @@ scripts/
     release time (changelog section, mod_info.json version match,
     kmlib dep SemVer pin)
   tests/                       - bats-core tests for the action scripts
-  workflows/ci.yml             - KMLib's own CI; runs the bats tests
+  workflows/ci-gradle.yml      - the Gradle gate, on the self-hosted
+    kmlib-runner; built twice, with and without Fast Rendering's jar
+  workflows/release.yml        - release entry point; delegates to
+    mod-release.yml below
+  workflows/mod-release.yml    - the reusable release pipeline this
+    repo hosts for the whole KM series
 ```
 
 Packages with more behind them than one line can carry:
@@ -166,16 +172,19 @@ the KM series consume via
 delegates to a shell script under its own `scripts/` directory so the
 logic stays unit-testable with bats-core; the matching tests live in
 [.github/tests/](.github/tests/). Run them with `bats .github/tests/`
-from the KMLib root (requires `bats-core` and `jq`). KMLib's own
-[ci.yml](.github/workflows/ci.yml) workflow runs the same bats suite on
-GitHub-hosted `ubuntu-latest` for every pull request, and also exposes
-`workflow_call` so other workflows can re-trigger it. The Gradle build
-is not gated in this workflow because it depends on Starsector binaries
-that the hosted runner does not have.
+from the KMLib root (requires `bats-core` and `jq`).
+[ci-bash.yml](.github/workflows/ci-bash.yml) runs the same bats suite on
+every pull request, through Common-Automation's reusable bash workflow.
+The Gradle build is gated separately in
+[ci-gradle.yml](.github/workflows/ci-gradle.yml), because it needs
+Starsector binaries and so runs on the self-hosted `kmlib-runner`.
 
 - [read-mod-info](.github/actions/read-mod-info/action.yml) reads the
-  caller's `mod_info.json` and emits the derived values defined in
-  [docs/dev/implementation/001-reusable-ci-release-workflows/problem.md](docs/dev/implementation/001-reusable-ci-release-workflows/problem.md#convention-derived-from-modinfojson).
+  caller's `mod_info.json` and emits the values every other workflow
+  derives from it by convention: the mod id and version verbatim, plus
+  the `<mod-id>-runner` label, the `dist/<mod-id>/` directory, the
+  `<mod-id>-<version>.zip` release name, and the first declared jar.
+  The action's own `outputs:` block is the statement of that convention.
 - [check-version](.github/actions/check-version/action.yml) compares
   `mod_info.json`'s `.version` to the latest git tag in the caller
   checkout and emits `version` plus `version-updated`, which gates the
@@ -324,6 +333,23 @@ has Fast Rendering and never on one that does not. It is written up as an
 upstream report, and is why the matrix readers in
 [`starsector/ui/map/`](src/main/java/kmlib/starsector/ui/map/) are behind a
 port with one implementation per environment.
+
+## Caching
+
+KMLib holds three caches, all of them in front of font work: the loaded faces, the
+glyph runs minted from them, and the balanced line wraps a label fitter searches
+through. All three are safe to hold indefinitely because none of them derives from
+the campaign - a cached value here cannot disagree with the sector, which is why
+nothing in this library carries an invalidation signal.
+
+[docs/dev/caching.md](docs/dev/caching.md) records what each one keys on, how long
+it lives, and the two traps worth knowing (a never-evicting cache fed
+per-frame-varying strings, and who owns a GL text buffer's disposal). It also
+states what is deliberately *not* cached: every Starsector-facing wrapper reads
+live, because only a consumer knows which campaign changes it must react to.
+
+Consuming mods that cache derived campaign state should read it alongside their own
+invalidation model - KMU's is the worked example.
 
 ## Player Faction Resolution
 
