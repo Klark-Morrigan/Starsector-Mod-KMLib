@@ -32,9 +32,9 @@ import java.awt.Color;
  *
  * <p>A {@linkplain #centred centred} row steps out of the table altogether: it is a standalone
  * line, so the layout ignores its indent, its crest column, and the value column, and lays its label
- * (with any marker) centred between the box's content edges. That is for a line stating something about
- * the whole box - a status, a "nothing here" - which reading as an entry of the list above or below it
- * would misname.
+ * (with any marker) centred between the box's content edges. That is for a line that speaks for the
+ * whole box - a title over the rows, a lone statement instead of them - which lining up as one entry of
+ * that table would misname.
  *
  * @param indent               the label's inset from the box's left content edge, in UI units - zero
  *                             for a top-tier row, a positive step for a nested one

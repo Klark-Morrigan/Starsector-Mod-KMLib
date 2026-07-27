@@ -27,8 +27,8 @@ import java.util.function.ToDoubleFunction;
  * ones - except a row that steps out of the column deliberately, which lays flush regardless.
  *
  * <p>A centred row is laid outside that column model entirely: its label and marker centre as one span
- * in the content region, and it is sized to that span alone, so a standalone line reads as centred under
- * whatever the box holds rather than as an entry of it.
+ * in the content region, and it is sized to that span alone, so a title or a lone statement centres over
+ * whatever the box holds rather than aligning as an entry of it.
  *
  * <p>Rows stack a line apart, and a row that opens a section takes half a line more above it. The
  * break is the widget's rather than the caller's arithmetic: a caller says which rows start a block,
