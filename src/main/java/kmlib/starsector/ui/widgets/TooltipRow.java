@@ -30,10 +30,18 @@ import java.awt.Color;
  * right-aligning like the value. That is what a caller reaches for when one span of a line - a status
  * word, a called-out flag - must be picked out in a different colour while the rest stays plain.
  *
+ * <p>A {@linkplain #centred centred} row steps out of the table altogether: it is a standalone
+ * line, so the layout ignores its indent, its crest column, and the value column, and lays its label
+ * (with any marker) centred between the box's content edges. That is for a line stating something about
+ * the whole box - a status, a "nothing here" - which reading as an entry of the list above or below it
+ * would misname.
+ *
  * @param indent               the label's inset from the box's left content edge, in UI units - zero
  *                             for a top-tier row, a positive step for a nested one
  * @param isOutsideCrestColumn whether the label lays flush at the box's content edge, outside the
  *                             crest column the box reserves for its crested rows
+ * @param isLabelCentred       whether the label is a standalone line centred in the box's content
+ *                             region, rather than an entry laid into its columns
  * @param hasSectionBreak      whether the row opens a section, taking breathing room above it so it
  *                             reads as starting a block rather than continuing the one above
  * @param crestSpritePath      the leading crest's {@code graphics} texture path, or null for no crest
@@ -47,6 +55,7 @@ import java.awt.Color;
 public record TooltipRow(
         float indent,
         boolean isOutsideCrestColumn,
+        boolean isLabelCentred,
         boolean hasSectionBreak,
         String crestSpritePath,
         String text,
@@ -76,6 +85,7 @@ public record TooltipRow(
     public static TooltipRow createRow(String text, Color textColor) {
         return new TooltipRow(
                 NO_INDENT,
+                false,
                 false,
                 false,
                 NO_CREST,
@@ -111,6 +121,7 @@ public record TooltipRow(
         return new TooltipRow(
                 indent,
                 isOutsideCrestColumn,
+                isLabelCentred,
                 hasSectionBreak,
                 crestSpritePath,
                 text,
@@ -133,6 +144,7 @@ public record TooltipRow(
         return new TooltipRow(
                 indent,
                 isOutsideCrestColumn,
+                isLabelCentred,
                 hasSectionBreak,
                 crestSpritePath,
                 text,
@@ -155,6 +167,7 @@ public record TooltipRow(
         return new TooltipRow(
                 indent,
                 isOutsideCrestColumn,
+                isLabelCentred,
                 hasSectionBreak,
                 crestSpritePath,
                 text,
@@ -177,6 +190,7 @@ public record TooltipRow(
         return new TooltipRow(
                 indent,
                 isOutsideCrestColumn,
+                isLabelCentred,
                 hasSectionBreak,
                 crestSpritePath,
                 text,
@@ -198,6 +212,7 @@ public record TooltipRow(
         return new TooltipRow(
                 indent,
                 isOutsideCrestColumn,
+                isLabelCentred,
                 true,
                 crestSpritePath,
                 text,
@@ -218,6 +233,31 @@ public record TooltipRow(
     public TooltipRow clearsCrestColumn() {
         return new TooltipRow(
                 indent,
+                true,
+                isLabelCentred,
+                hasSectionBreak,
+                crestSpritePath,
+                text,
+                textColor,
+                marker,
+                markerColor,
+                value,
+                valueColor);
+    }
+
+    /**
+     * Returns a copy of this row centred in the box's content region as a standalone line: the layout
+     * drops its indent, its crest column, and the value column, and centres the label with any marker
+     * between the content edges. For a line that speaks for the whole box rather than sitting as an
+     * entry in its table - a row so centred carries no crest and no value, since both are columns of
+     * that table.
+     *
+     * @return an otherwise-identical row centred as a standalone line
+     */
+    public TooltipRow centred() {
+        return new TooltipRow(
+                indent,
+                isOutsideCrestColumn,
                 true,
                 hasSectionBreak,
                 crestSpritePath,

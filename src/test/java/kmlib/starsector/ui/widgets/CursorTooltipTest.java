@@ -15,8 +15,9 @@ import static org.assertj.core.api.Assertions.within;
 /**
  * Pins {@link CursorTooltip}'s row layout: the box sizes to the widest row across indent tiers and to
  * however tall the rows stack, each row's crest, label, marker, and value anchor within the placed box,
- * a crest-less row still reserves its column unless it steps out of it, and a row opening a section is
- * parted from the one above it. The box padding and screen clamp themselves are {@link
+ * a crest-less row still reserves its column unless it steps out of it, a centred row lays as a
+ * standalone span in the middle of the content region, and a row opening a section is parted from the
+ * one above it. The box padding and screen clamp themselves are {@link
  * kmlib.starsector.ui.layout.TooltipBoxLayout}'s and covered there; this fixes the row model on top of
  * it. The cursor sits clear of every edge so no clamp perturbs the anchors under test.
  */
@@ -148,6 +149,55 @@ class CursorTooltipTest {
             // Title: label 10 + value gap 16 = 26, under the member's 56, so the member still sizes the
             // box at 56 + 16 padding = 72 - which it would not if the title were charged the gutter.
             assertThat(box.width()).isCloseTo(72f, within(TOLERANCE));
+        }
+
+        @Test
+        void centresACentredRowInTheContentRegion() {
+            // The status-line case: a wide title sizes the box (label 10 + value gap 16 = 26, box 42),
+            // and the short centred line sits in the middle of that 26-wide region - 226 + (26 - 2) / 2.
+            var title = crestlessRow("AAAAAAAAAA").clearsCrestColumn();
+            var centred = crestlessRow("BB").centred();
+
+            var centredRow = layOut(List.of(title, centred)).rows().get(1);
+
+            assertThat(centredRow.textX()).isCloseTo(238f, within(TOLERANCE));
+        }
+
+        @Test
+        void ignoresAnIndentOnACentredRow() {
+            // A row built as a nested entry and then centred is no longer an entry: the indent that
+            // would have set it under the line above is dropped rather than shifting it off the middle.
+            var title = crestlessRow("AAAAAAAAAA").clearsCrestColumn();
+            var centred = crestlessRow("BB").indentsBy(14f).centred();
+
+            var centredRow = layOut(List.of(title, centred)).rows().get(1);
+
+            assertThat(centredRow.textX()).isCloseTo(238f, within(TOLERANCE));
+        }
+
+        @Test
+        void sizesACentredRowToItsLabelSpanAlone() {
+            // Label 2 + 8 padding each side = 18, where the same row uncentred would measure 34 for the
+            // value column it never occupies - and a box widened for that column would then centre the
+            // line against space nothing fills.
+            var box = layOut(List.of(crestlessRow("AA").centred())).box();
+
+            assertThat(box.width()).isCloseTo(18f, within(TOLERANCE));
+        }
+
+        @Test
+        void centresACentredRowsLabelAndMarkerAsOneSpan() {
+            // Span: label 2 + marker gap 6 + marker 3 = 11, centred in the title's 26-wide region, so
+            // the label starts at 226 + (26 - 11) / 2 and the marker still trails one gap past it.
+            var title = crestlessRow("AAAAAAAAAA").clearsCrestColumn();
+            var centred = crestlessRow("BB")
+                    .carriesMarker("MMM", Color.YELLOW)
+                    .centred();
+
+            var centredRow = layOut(List.of(title, centred)).rows().get(1);
+
+            assertThat(centredRow.textX()).isCloseTo(233.5f, within(TOLERANCE));
+            assertThat(centredRow.markerX()).isCloseTo(241.5f, within(TOLERANCE));
         }
 
         @Test

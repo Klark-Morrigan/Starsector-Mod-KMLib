@@ -46,6 +46,7 @@ class TooltipRowTest {
             assertThat(row.value()).isEmpty();
             assertThat(row.hasSectionBreak()).isFalse();
             assertThat(row.isOutsideCrestColumn()).isFalse();
+            assertThat(row.isLabelCentred()).isFalse();
         }
 
         @Test
@@ -137,6 +138,28 @@ class TooltipRowTest {
             var row = bareRow().clearsCrestColumn();
 
             assertThat(row.isOutsideCrestColumn()).isTrue();
+        }
+    }
+
+    @Nested
+    class Centred {
+        @Test
+        void centredMarksTheRowAsAStandaloneCentredLine() {
+            var row = bareRow().centred();
+
+            assertThat(row.isLabelCentred()).isTrue();
+        }
+
+        @Test
+        void centredKeepsTheLabelAndItsMarker() {
+            // Centring changes where the line sits, not what it says, so the marker it may carry rides
+            // along with the label rather than being dropped from the centred span.
+            var row = bareRow()
+                    .carriesMarker(MARKER, Color.YELLOW)
+                    .centred();
+
+            assertThat(row.text()).isEqualTo(TEXT);
+            assertThat(row.marker()).isEqualTo(MARKER);
         }
     }
 

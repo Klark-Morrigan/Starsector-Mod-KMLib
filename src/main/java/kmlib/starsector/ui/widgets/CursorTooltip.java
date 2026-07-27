@@ -26,6 +26,10 @@ import java.util.function.ToDoubleFunction;
  * with any crest reserves the column on every row so a crest-less row still aligns under the crested
  * ones - except a row that steps out of the column deliberately, which lays flush regardless.
  *
+ * <p>A centred row is laid outside that column model entirely: its label and marker centre as one span
+ * in the content region, and it is sized to that span alone, so a standalone line reads as centred under
+ * whatever the box holds rather than as an entry of it.
+ *
  * <p>Rows stack a line apart, and a row that opens a section takes half a line more above it. The
  * break is the widget's rather than the caller's arithmetic: a caller says which rows start a block,
  * and how far apart blocks stand is one decision made here for every tooltip.
@@ -194,8 +198,9 @@ public final class CursorTooltip {
     // the renderer skips it while the label still clears any reserved column), the label past the
     // column, a marker one gap past the label's own width, and the value right-anchored to the box's
     // right content edge. The crest column is added to the label offset only when the box reserves it;
-    // an all-crest-less box lays the label at the row's indent. Only a marked row pays to measure its
-    // label, since that width is what the marker anchors off and nothing else here needs it.
+    // an all-crest-less box lays the label at the row's indent. A centred row takes none of that - its
+    // label anchors off the content region's midpoint instead - while its marker still rides off that
+    // anchor, so the label and its marker centre as one span.
     private static TooltipLayout.TooltipRowLayout placeRow(
             TooltipRow row,
             float leftX,
@@ -214,7 +219,10 @@ public final class CursorTooltip {
                         crestSize,
                         crestSize);
 
-        var textX = crestX + crestColumnWidth(row, reservesCrestColumn, crestSize);
+        var textX = row.isLabelCentred()
+                ? centreLabelX(row, leftX, rightX, measureWidth)
+                : crestX + crestColumnWidth(row, reservesCrestColumn, crestSize);
+
         var markerX = row.hasMarker()
                 ? textX
                         + (float) measureWidth.applyAsDouble(row.text())
@@ -232,9 +240,11 @@ public final class CursorTooltip {
     }
 
     // The widest laid-out row: each row is its indent, the reserved crest column (when the box has one),
-    // its measured label, its marker span when it carries one, the value gap, and its measured value, so
-    // a wide indented member sizes the box just as a wide header would. The content width before the box
-    // layout adds its padding.
+    // its label span, the value gap, and its measured value, so a wide indented member sizes the box
+    // just as a wide header would. A centred row is charged its label span alone - it occupies none of
+    // those columns, so charging them would widen the box for space the centred line never fills, and
+    // its own centring would then push it off the middle. The content width before the box layout adds
+    // its padding.
     private static double measureContentWidth(
             List<TooltipRow> rows,
             boolean reservesCrestColumn,
@@ -243,19 +253,40 @@ public final class CursorTooltip {
 
         var widest = 0d;
         for (var row : rows) {
-            var textWidth = measureWidth.applyAsDouble(row.text());
-            var valueWidth = measureWidth.applyAsDouble(row.value());
-
-            var rowWidth = row.indent()
-                    + crestColumnWidth(row, reservesCrestColumn, crestSize)
-                    + textWidth
-                    + measureMarkerSpan(row, measureWidth)
-                    + VALUE_GAP
-                    + valueWidth;
+            var labelSpan = measureLabelSpan(row, measureWidth);
+            var rowWidth = row.isLabelCentred()
+                    ? labelSpan
+                    : row.indent()
+                            + crestColumnWidth(row, reservesCrestColumn, crestSize)
+                            + labelSpan
+                            + VALUE_GAP
+                            + measureWidth.applyAsDouble(row.value());
 
             widest = Math.max(widest, rowWidth);
         }
         return widest;
+    }
+
+    // The span a row's own text occupies: its label plus its marker's gap and width when it carries one.
+    // Shared by the width measurement and the centring below, so a centred row is placed against exactly
+    // the span the box was sized to hold.
+    private static double measureLabelSpan(
+            TooltipRow row,
+            ToDoubleFunction<String> measureWidth) {
+        return measureWidth.applyAsDouble(row.text()) + measureMarkerSpan(row, measureWidth);
+    }
+
+    // Where a centred row's label starts: its span set in the middle of the content region, the leftover
+    // split evenly to either side. A centred row that is itself the widest row sized the region to its
+    // own span, so it lands flush at the content edge and nothing shifts.
+    private static float centreLabelX(
+            TooltipRow row,
+            float leftX,
+            float rightX,
+            ToDoubleFunction<String> measureWidth) {
+
+        var slack = rightX - leftX - (float) measureLabelSpan(row, measureWidth);
+        return leftX + slack / 2f;
     }
 
     // What a row's marker adds to its width: its gap plus its own measured text, or nothing at all for
