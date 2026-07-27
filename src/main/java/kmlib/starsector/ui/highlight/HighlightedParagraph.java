@@ -25,7 +25,7 @@ import java.util.Objects;
  * </ul>
  *
  * <p>{@link #getBaseColor()} is non-null. The convenience constructor
- * that omits it defaults to {@link StarsectorUiColor#TEXT_WHITE}, so
+ * that omits it defaults to {@link StarsectorUiColor#VANILLA_TEXT}, so
  * call sites only set a base colour when they want something different
  * (e.g. a grey section header).
  */
@@ -44,10 +44,9 @@ public final class HighlightedParagraph {
     }
 
     /**
-     * Overload that defaults the base colour to
-     * {@link StarsectorUiColor#TEXT_WHITE} - the right pick for the
-     * vast majority of paragraphs, where only individual highlights
-     * deviate from the default text colour.
+     * Defaults the base colour to {@link StarsectorUiColor#VANILLA_TEXT}
+     * - the right pick for the vast majority of paragraphs, where only
+     * individual highlights deviate from the default text colour.
      */
     public HighlightedParagraph(String text, Highlight... highlights) {
         this(text, StarsectorUiColor.VANILLA_TEXT.resolve(), highlights);
