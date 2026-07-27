@@ -5,7 +5,8 @@ import java.awt.Color;
 /**
  * The collapse handle's own two shades: the colour its chevron draws in at rest, and the colour it takes
  * while the pointer is over the handle. Grouped into its own record rather than spread across {@link
- * WidgetStyle} for the same reason {@link TabRenderStyle} is - the handle is the one piece of chrome whose
+ * WidgetStyle} for the same reason the tab look travels as its own
+ * {@link kmlib.starsector.ui.widgets.tabs.TabStyle} - the handle is the one piece of chrome whose
  * emphasis a consumer may want pitched apart from the panel's accents, since a direction cue can be
  * asked either to stand out from the frame carrying it or to read as part of it - so its shades travel
  * as one unit that is swapped wholesale.

@@ -5,7 +5,9 @@ import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.color.StarsectorUiColor;
 import kmlib.starsector.ui.font.DrawableStringCache;
 import kmlib.starsector.ui.font.TextFace;
+import kmlib.starsector.ui.widgets.tabs.TabStyle;
 import kmlib.starsector.ui.widgets.tabs.VanillaTab;
+import kmlib.starsector.ui.widgets.tabs.VanillaTabColors;
 import kmlib.starsector.ui.widgets.tabs.VanillaTabContent;
 import kmlib.starsector.ui.widgets.tabs.VanillaTabStrip;
 import kmlib.text.KmlibStrings;
@@ -57,17 +59,19 @@ public final class VanillaTabStripRenderer {
      * @param tabs          the laid-out tabs, in row order
      * @param selectedIndex the active tab's index, or a value outside the row
      * @param hoveredIndex  the hovered tab's index, or a value outside the row
-     * @param colors        the palette to paint with (see {@link VanillaTabColors#mapTabs})
-     * @param textFace      the face and size the labels draw in
+     * @param style         the strip's look; its palette (see {@link VanillaTabColors#mapTabs}) and face
+     *                      are read here, its band height having been spent laying the tabs out
      * @param opacity       overall alpha, 0..1, applied to every quad and both text colours
      */
     public static void render(
             List<VanillaTab> tabs,
             int selectedIndex,
             int hoveredIndex,
-            VanillaTabColors colors,
-            TextFace textFace,
+            TabStyle style,
             float opacity) {
+
+        var colors = style.colors();
+        var textFace = style.face();
         for (var index = 0; index < tabs.size(); index++) {
             var tab = tabs.get(index);
             var isSelected = index == selectedIndex;

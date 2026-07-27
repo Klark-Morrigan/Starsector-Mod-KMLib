@@ -11,6 +11,7 @@ import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.layout.ControlStripLayout.StripMeasurement;
 import kmlib.starsector.ui.widgets.IconLabelRow;
 import kmlib.starsector.ui.widgets.tabs.TabStyle;
+import kmlib.starsector.ui.widgets.tabs.TabStyles;
 import kmlib.testfixtures.starsector.ui.font.LineWidthMeasurerFake;
 
 import org.junit.jupiter.api.Nested;
@@ -509,7 +510,8 @@ final class ControlStripLayoutTest {
         @Test
         void layoutTabsHeaderHangsTheBandFromTheContentTopAtTheStyledHeight() {
             var header = ControlStripLayout.layoutTabsHeader(
-                    TABS, HEADER_X, HEADER_TOP_Y, new TabStyle(BAND_HEIGHT), measurerFake);
+                    TABS, HEADER_X, HEADER_TOP_Y, TabStyles.buildAtBandHeight(BAND_HEIGHT),
+                    measurerFake);
 
             // Flush at the content top with no body inset - a header is framed directly under the border,
             // unlike a body row, which pulls in by the body padding.
@@ -524,7 +526,8 @@ final class ControlStripLayoutTest {
             // The segments are the hit rects the renderer paints; if they kept a fixed height while the band
             // moved, a styled header would be clickable somewhere other than where it is drawn.
             var header = ControlStripLayout.layoutTabsHeader(
-                    TABS, HEADER_X, HEADER_TOP_Y, new TabStyle(BAND_HEIGHT), measurerFake);
+                    TABS, HEADER_X, HEADER_TOP_Y, TabStyles.buildAtBandHeight(BAND_HEIGHT),
+                    measurerFake);
 
             assertThat(header.segments()).hasSize(2);
             for (var segment : header.segments()) {
@@ -544,9 +547,9 @@ final class ControlStripLayoutTest {
                     measurement.rowHeights(), measurement.rowWidths(), measurerFake).get(0);
 
             assertThat(bodyTabs.bounds().height())
-                    .isCloseTo(TabStyle.DEFAULT.headerBandHeight(), within(TOLERANCE));
+                    .isCloseTo(TabStyle.DEFAULT_HEADER_BAND_HEIGHT, within(TOLERANCE));
             assertThat(bodyTabs.segments().get(0).height())
-                    .isCloseTo(TabStyle.DEFAULT.headerBandHeight(), within(TOLERANCE));
+                    .isCloseTo(TabStyle.DEFAULT_HEADER_BAND_HEIGHT, within(TOLERANCE));
         }
     }
 

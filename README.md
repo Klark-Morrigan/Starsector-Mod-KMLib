@@ -83,7 +83,8 @@ src/main/java/kmlib/
       controls/    - declarative control specs and their actions:
                      what a control is, not how it paints
       debug/       - quadrant-anchored on-screen debug HUD
-      font/        - LazyFont cache and width measurers
+      font/        - the face enum every caller names an atlas through,
+                     the font and glyph-run caches, and width measurers
       highlight/   - highlight + paragraph + message types (renders to
                      text panel, tooltip, label, and MessageIntel)
       input/       - pointer / key controllers driving panel and
@@ -148,6 +149,7 @@ Packages with more behind them than one line can carry:
 | [`starsector/ui/highlight/`](src/main/java/kmlib/starsector/ui/highlight/) | [Highlighted Text](#highlighted-text) |
 | [`starsector/intel/`](src/main/java/kmlib/starsector/intel/) | [Intel Base Classes](#intel-base-classes) |
 | [`opengl/`](src/main/java/kmlib/opengl/), [`starsector/ui/map/`](src/main/java/kmlib/starsector/ui/map/), [`starsector/ui/render/gl/`](src/main/java/kmlib/starsector/ui/render/gl/) | [Rendering environment](#rendering-environment) |
+| [`starsector/ui/font/`](src/main/java/kmlib/starsector/ui/font/), [`starsector/ui/label/`](src/main/java/kmlib/starsector/ui/label/) | [Caching](#caching) |
 | [`testfixtures/`](src/main/java/kmlib/testfixtures/), [`starsector/testing/`](src/main/java/kmlib/starsector/testing/) | [Build & Test](#build--test) |
 
 The two obf-cast seams, [`starsector/ui/intel/`](src/main/java/kmlib/starsector/ui/intel/)

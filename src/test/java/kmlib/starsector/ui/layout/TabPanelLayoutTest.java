@@ -8,6 +8,7 @@ import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
 import kmlib.starsector.ui.widgets.tabs.TabPanelViewState;
 import kmlib.starsector.ui.widgets.tabs.TabStyle;
+import kmlib.starsector.ui.widgets.tabs.TabStyles;
 import kmlib.testfixtures.starsector.ui.font.LineWidthMeasurerFake;
 
 import org.junit.jupiter.api.Nested;
@@ -42,9 +43,11 @@ final class TabPanelLayoutTest {
     private static final float BOX_TOP_Y = SCREEN_HEIGHT - PADDING_TOP;
     private static final float CONTENT_X = PADDING_LEFT + BORDER_WIDTH;
     private static final float CONTENT_TOP_Y = BOX_TOP_Y - BORDER_WIDTH;
-    // The band the default style stands, so the expected header edges track whatever style is injected
+    // The band the baseline style stands, so the expected header edges track whatever style is injected
     // rather than a constant the layout no longer reads.
-    private static final float DEFAULT_BAND_HEIGHT = TabStyle.DEFAULT.headerBandHeight();
+    private static final float DEFAULT_BAND_HEIGHT = TabStyle.DEFAULT_HEADER_BAND_HEIGHT;
+    private static final TabStyle DEFAULT_TAB_STYLE =
+            TabStyles.buildAtBandHeight(TabStyle.DEFAULT_HEADER_BAND_HEIGHT);
     private static final float HEADER_BOTTOM_Y = CONTENT_TOP_Y - DEFAULT_BAND_HEIGHT;
 
     // A band deliberately unlike the default, so an assertion that the injected height is honoured cannot
@@ -276,7 +279,7 @@ final class TabPanelLayoutTest {
         void computePlacementDocksToAZeroWidthRailWhenThereIsNoBorder() {
             var placement = TabPanelLayout.computePlacement(SCREEN_HEIGHT,
                     new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT), new BoxBorder(0f),
-                    TabStyle.DEFAULT, TABS, BODY, measurerFake, new TabPanelViewState(0f, 1f));
+                    DEFAULT_TAB_STYLE, TABS, BODY, measurerFake, new TabPanelViewState(0f, 1f));
             var box = placement.body().box();
             // With no border, the docked rail has no interior and no border to keep, so the box collapses
             // to zero width - yet the placement stays well-formed and the notch still anchors to the edge.
@@ -297,8 +300,8 @@ final class TabPanelLayoutTest {
 
         @Test
         void computePlacementStandsTheHeaderBandAtTheInjectedHeight() {
-            var placement = placeStyled(TabStyle.DEFAULT, BODY);
-            var styled = placeStyled(new TabStyle(CUSTOM_BAND_HEIGHT), BODY);
+            var placement = placeStyled(DEFAULT_TAB_STYLE, BODY);
+            var styled = placeStyled(TabStyles.buildAtBandHeight(CUSTOM_BAND_HEIGHT), BODY);
 
             // Every tab in the band takes the injected height, and the band hangs from the same content top,
             // so a shorter style shortens the row downward rather than floating it inside a fixed band.
@@ -318,7 +321,7 @@ final class TabPanelLayoutTest {
         void computePlacementClampsANegativeBandToABandlessPanel() {
             // A negative height would hang the tab row above its own top edge; it floors at zero instead, so
             // the panel degrades to its body under the border rather than inverting the header.
-            var styled = placeStyled(new TabStyle(-8f), BODY);
+            var styled = placeStyled(TabStyles.buildAtBandHeight(-8f), BODY);
             assertThat(styled.tabsHeader().bounds().height()).isCloseTo(0f, within(TOLERANCE));
             assertThat(styled.tabsHeader().bounds().y()).isCloseTo(CONTENT_TOP_Y, within(TOLERANCE));
         }
@@ -342,7 +345,7 @@ final class TabPanelLayoutTest {
                 List<ControlSpec> bodyControls, float collapseFraction, Set<BoxEdge> borderedEdges) {
             return TabPanelLayout.computePlacement(SCREEN_HEIGHT,
                     new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT),
-                    new BoxBorder(BORDER_WIDTH, borderedEdges), TabStyle.DEFAULT, TABS, bodyControls,
+                    new BoxBorder(BORDER_WIDTH, borderedEdges), DEFAULT_TAB_STYLE, TABS, bodyControls,
                     measurerFake, new TabPanelViewState(0f, collapseFraction));
         }
     }

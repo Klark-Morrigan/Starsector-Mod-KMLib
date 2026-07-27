@@ -79,14 +79,13 @@ public final class ControlRenderer {
                 UiCursor.getUiX(),
                 UiCursor.getUiY());
 
-        var tabRenderStyle = paint.style().tabRenderStyle();
-
+        // The same value the layout measured the band against, so a strip is drawn in exactly the look
+        // it was laid out under.
         VanillaTabStripRenderer.render(
                 tabs,
                 spec.selectedIndex(),
                 hoveredIndex,
-                tabRenderStyle.colors(),
-                tabRenderStyle.face(),
+                paint.style().tabStyle(),
                 paint.opacity());
     }
 

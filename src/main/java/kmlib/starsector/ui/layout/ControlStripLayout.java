@@ -63,9 +63,9 @@ public final class ControlStripLayout {
     // tab face is larger), each tab snapped to its label-plus-shortcut width with slack so text does not
     // touch the edges and a floor so a short tab still gives a clickable box, and measured/drawn at the
     // tab face size. Public so the panel frame and the renderer read the same values the layout snapped
-    // the tabs to. The height reads off the baseline style rather than repeating its literal, so a body
-    // TABS row - which sizes itself and takes no injected style - matches an unstyled header band.
-    public static final float TAB_HEIGHT = TabStyle.DEFAULT.headerBandHeight();
+    // the tabs to. The height reads off the baseline dimension rather than repeating its literal, so a
+    // body TABS row - which sizes itself and takes no injected style - matches an unstyled header band.
+    public static final float TAB_HEIGHT = TabStyle.DEFAULT_HEADER_BAND_HEIGHT;
     public static final float TAB_TEXT_PADDING = 16f;
     public static final float MIN_TAB_WIDTH = 48f;
     public static final double TAB_FONT_SIZE = 15d;

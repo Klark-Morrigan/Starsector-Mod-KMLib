@@ -1,15 +1,18 @@
-package kmlib.starsector.ui.render.gl;
+package kmlib.starsector.ui.widgets.tabs;
 
 import kmlib.starsector.ui.color.StarsectorUiColor;
 
 import java.awt.Color;
 
 /**
- * The palette a {@link kmlib.starsector.ui.widgets.tabs.VanillaTabStrip} paints with, one colour per
- * role. Kept as a record so a
+ * The palette a {@link VanillaTabStrip} paints with, one colour per role. Kept as a record so a
  * consumer can override any shade, with {@link #mapTabs()} supplying the live vanilla map-tab
  * defaults through the {@link StarsectorUiColor} palette, so the strip recolours with the
  * current player faction and never receives a null shade from an early-boot accessor.
+ *
+ * <p>Substrate-independent, like the rest of this package: it is a palette of {@link Color} with
+ * nothing GL about it, so it travels inside the {@link TabStyle} the layout is measured against and
+ * the renderer paints from, rather than sitting on the paint side of the layout/paint split.
  *
  * @param fillDefault  the solid fill of a resting (unselected) tab - the vanilla dark button teal
  * @param fillSelected the solid fill of the active tab - the vanilla selected map-tab steel-blue
