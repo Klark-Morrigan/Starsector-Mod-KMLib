@@ -1,7 +1,9 @@
 # Klark Morrigan's Library (KMLib)
 
 Starsector utility mod that hosts shared Java helpers used by the
-other KM mod series members ([KMU](../KMU), [KMO](../KMO)). KMLib
+other KM mod series members
+([KMU](https://github.com/Klark-Morrigan/Starsector-Mod-KMU),
+[KMO](https://github.com/Klark-Morrigan/Starsector-Mod-KMO)). KMLib
 carries no game-loop hooks; it only ships a jar that other mods depend
 on at compile and runtime.
 
@@ -24,22 +26,85 @@ on at compile and runtime.
 mod_info.json
 build.gradle / settings.gradle / gradlew[.bat]
 src/main/java/kmlib/
-  text/                     - Starsector-agnostic string predicates
-                              (hasText)
-  starsector/factions/      - player-faction lifecycle helpers
-                              (established-check + display-name
-                              normaliser; handles vanilla + Nex defaults)
-  starsector/strings/       - defensive wrapper around settings.json
-                              localisation lookups (loud REDACTED on
-                              missing / malformed entries)
-  starsector/ui/color/      - palette enum + Misc-backed resolver
-  starsector/ui/highlight/  - highlight + paragraph + message types
-                              (renders to text panel, tooltip, label,
-                              and MessageIntel)
-  starsector/intel/         - intel-plugin base classes
-                              (BaseTaggedIntelPlugin for tab-tag
-                              mix-in; BaseExpiringIntelPlugin layers
-                              auto-removal on top)
+  Game-agnostic helpers (no Starsector API on the signature):
+  collections/     - small Collection / Map helpers
+  color/           - AWT Color to normalised GL channels, folding in an
+                     alpha multiplier so one factor fades a palette
+  input/           - rising-edge click detection, for polled input with
+                     no discrete event to consume
+  logging/         - log4j level control over one mod's package subtree
+  math/            - easing/, geometry/ (polygon offsetting, smoothing,
+                     regions, rings, Voronoi cells, principal axis,
+                     spans, disks), hashing/ (avalanche, content
+                     fingerprints), motion/, random/, ranges/, solving/
+  opengl/          - GL primitive emission (lines, quads, triangles,
+                     vertex runs), polygon tessellation, hatching, and
+                     what KM code must know about Fast Rendering
+                     (whether it is in force, how to read its matrix)
+  profiling/       - section timings + timing report
+  text/            - string and number formatting / predicates
+
+  Starsector-facing wrappers and seams:
+  console/         - Console Commands base class and KMLib's own
+                     commands, with input/, output/, parsing/, and
+                     validation/ behind them
+  settings/        - LunaLib settings read / write + labelled choices
+  starsector/
+    entities/      - spawning custom campaign entities, their orbits,
+                     and name generation (Gates as a type helper)
+    factions/      - player-faction lifecycle (established-check +
+                     display-name normaliser; handles vanilla + Nex
+                     defaults), faction colours, crests, flags
+    fleet/         - player fleet proximity
+    geometry/      - distance and bearing between campaign entities,
+                     the game-typed sibling of kmlib.math.geometry
+    graphics/      - sprite lookup
+    intel/         - intel-plugin base classes (BaseTaggedIntelPlugin
+                     for tab-tag mix-in; BaseExpiringIntelPlugin layers
+                     auto-removal on top)
+    map/           - which systems the sector map marks
+    markets/       - market queries, decivilised markets, patrol counts
+    memory/        - typed sector-memory accessors (flag, string)
+    rat/           - Random Assortment of Things entity matching
+    relation/      - player relationship formatting
+    scripts/       - sector script registration helpers
+    strings/       - defensive wrapper around settings.json
+                     localisation lookups (loud REDACTED on missing /
+                     malformed entries)
+    systems/       - star system queries and motion tracking;
+                     claims/ reads vanilla system claims behind a port
+    testing/       - the no-op SettingsAPI proxy KM tests install into
+                     Global before touching Misc (whose static
+                     initialiser would otherwise NPE)
+    time/          - campaign clock wrapper
+    ui/            - UI toolkit, tiered by render substrate:
+                     controls -> widgets -> layout -> render.gl
+      color/       - palette enum + Misc-backed resolver
+      controls/    - declarative control specs and their actions:
+                     what a control is, not how it paints
+      debug/       - quadrant-anchored on-screen debug HUD
+      font/        - LazyFont cache and width measurers
+      highlight/   - highlight + paragraph + message types (renders to
+                     text panel, tooltip, label, and MessageIntel)
+      input/       - pointer / key controllers driving panel and
+                     tab-panel state (scroll, drag, collapse)
+      intel/       - obf-cast seam onto the intel screen: tab open,
+                     map visor rect, that map's starscape flag
+      label/       - label length estimation and box fitting
+      layout/      - pure placement maths: padding, anchors, strips,
+                     panel and tab-panel layout
+      map/         - obf-cast seam onto the campaign map: view state,
+                     screen/world transform, modelview matrix readers,
+                     vanilla map tooltip
+      render/gl/   - the GL paint layer: panel, tabs, controls,
+                     scrollbar, collapse notch, cursor tooltips, fills,
+                     scissor
+      tooltip/     - vanilla TooltipMakerAPI helpers
+      widgets/     - widget models and their geometry, with scroll/,
+                     segments/, and tabs/ beneath
+  testfixtures/    - Fakes for KMLib's own ports (claims, fonts, intel
+                     screen, modelview, console output). Ships in the
+                     MAIN jar so consumer mods' tests can use them
 src/bridgestubs/java/ - compile-only mirrors of the Fast Rendering bridge
                         members KMLib reads, so an install without fr.jar
                         still compiles (see Build & Test); never shipped,
@@ -73,6 +138,23 @@ scripts/
   tests/                       - bats-core tests for the action scripts
   workflows/ci.yml             - KMLib's own CI; runs the bats tests
 ```
+
+Packages with more behind them than one line can carry:
+
+| Package | Read |
+| --- | --- |
+| [`starsector/factions/`](src/main/java/kmlib/starsector/factions/) | [Player Faction Resolution](#player-faction-resolution) |
+| [`starsector/ui/color/`](src/main/java/kmlib/starsector/ui/color/) | [UI Colour Palette](#ui-colour-palette) |
+| [`starsector/ui/highlight/`](src/main/java/kmlib/starsector/ui/highlight/) | [Highlighted Text](#highlighted-text) |
+| [`starsector/intel/`](src/main/java/kmlib/starsector/intel/) | [Intel Base Classes](#intel-base-classes) |
+| [`opengl/`](src/main/java/kmlib/opengl/), [`starsector/ui/map/`](src/main/java/kmlib/starsector/ui/map/), [`starsector/ui/render/gl/`](src/main/java/kmlib/starsector/ui/render/gl/) | [Rendering environment](#rendering-environment) |
+| [`testfixtures/`](src/main/java/kmlib/testfixtures/), [`starsector/testing/`](src/main/java/kmlib/starsector/testing/) | [Build & Test](#build--test) |
+
+The two obf-cast seams, [`starsector/ui/intel/`](src/main/java/kmlib/starsector/ui/intel/)
+and [`starsector/ui/map/`](src/main/java/kmlib/starsector/ui/map/), are the only
+packages that reach into the game's concrete UI classes. Both compile against the
+obfuscated jars and cast rather than using reflection, and both fail closed - an
+unresolvable link reports "nothing there" instead of throwing on a live screen.
 
 ## Reusable CI / release actions
 
@@ -232,6 +314,14 @@ those facts, each cited into the decompiled sources cache so it can be
 re-verified rather than trusted. Read it before touching GL state, adding a
 matrix read, or diagnosing an overlay that misbehaves only for some players.
 Consuming mods link there rather than restating it.
+
+[docs/dev/issues/genir-glgetfloat.md](docs/dev/issues/genir-glgetfloat.md) is
+the worked example: the bridge ships no buffer-taking `glGetFloat`, so reading
+`GL_MODELVIEW_MATRIX` throws `NoSuchMethodError` mid-render on an install that
+has Fast Rendering and never on one that does not. It is written up as an
+upstream report, and is why the matrix readers in
+[`starsector/ui/map/`](src/main/java/kmlib/starsector/ui/map/) are behind a
+port with one implementation per environment.
 
 ## Player Faction Resolution
 
