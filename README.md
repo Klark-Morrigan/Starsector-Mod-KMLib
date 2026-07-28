@@ -122,7 +122,7 @@ src/main/java/kmlib/
       text/        - substrate-neutral text look: the face, colour,
                      casing, and anchoring a run of text draws with,
                      with each render substrate owning the adapter into
-                     its own anchors
+                     its own anchors, plus a run's width in a settled look
       tooltip/     - vanilla TooltipMakerAPI helpers
       widgets/     - widget models and their geometry, with scroll/,
                      segments/, and tabs/ beneath
@@ -180,6 +180,7 @@ Packages with more behind them than one line can carry:
 | [`starsector/ui/color/`](src/main/java/kmlib/starsector/ui/color/) | [UI Colour Palette](#ui-colour-palette) |
 | [`starsector/ui/font/`](src/main/java/kmlib/starsector/ui/font/), [`starsector/ui/label/`](src/main/java/kmlib/starsector/ui/label/) | [Caching](#caching) |
 | [`starsector/ui/highlight/`](src/main/java/kmlib/starsector/ui/highlight/) | [Highlighted Text](#highlighted-text) |
+| [`starsector/ui/text/`](src/main/java/kmlib/starsector/ui/text/) | [Two span measurers](src/main/java/kmlib/starsector/ui/README.md#two-span-measurers) |
 
 The two obf-cast seams, [`starsector/ui/intel/`](src/main/java/kmlib/starsector/ui/intel/)
 and [`starsector/ui/map/`](src/main/java/kmlib/starsector/ui/map/), are the only

@@ -15,6 +15,7 @@ content. Pairs that look like duplication across the tiers usually are not - see
 - [The neutral middle](#the-neutral-middle)
 - [Pairs that look like duplicates](#pairs-that-look-like-duplicates)
 - [Ports across the boundary](#ports-across-the-boundary)
+- [Two span measurers](#two-span-measurers)
 - [Where each package sits](#where-each-package-sits)
 
 ## Two surfaces
@@ -110,11 +111,28 @@ the surface supplies the implementation:
 content, the action is behaviour the container owns. A content model that held its own
 `ControlAction` would have absorbed interaction it has no business holding.
 
+## Two span measurers
+
+[`TextSpanMeasurer`](font/TextSpanMeasurer.java) takes the face per call;
+[`StyledSpanMeasurer`](text/StyledSpanMeasurer.java) has the look bound and takes the span
+alone. Reach for the bound one wherever a piece of content is asked its own width - a
+[`RowSlot`](widgets/RowSlot.java) holding a value, say. Such a piece holds no face, and
+could not supply one without first learning which style its line resolved to, nor apply
+the casing that style shouts the text in - and text measured as authored measures narrower
+than it paints, so a box sized from that measurement clips what is drawn into it. Whatever
+resolved the style binds the measurement once and passes it down.
+
+Neither a port nor a duplicate, which is why it appears in neither table above. Nothing
+implements it per surface: the binding closes over `TextSpanMeasurer`, so the LazyLib
+adapter is still the only thing that knows a glyph width. And it lives in `text` rather
+than beside its sibling in `font` because `text` already reads `font` (a `TextStyle` holds
+a `TextFace`), so a port in `font` naming `TextSpan` would close that into a cycle.
+
 ## Where each package sits
 
 | Package | Tier | Holds |
 | --- | --- | --- |
-| [`text`](text/) | neutral | `TextSpan`, `TextStyle`, `TextAlignment` |
+| [`text`](text/) | neutral | `TextSpan`, `TextStyle`, `TextAlignment`, `StyledSpanMeasurer` |
 | [`controls`](controls/) | neutral | the sealed `ControlSpec` set and its enums |
 | [`widgets`](widgets/) | neutral | row and box content plus their geometry ([`tabs`](widgets/tabs/), [`scroll`](widgets/scroll/), [`segments`](widgets/segments/)) |
 | [`layout`](layout/) | neutral | box placement, strips, padding, screen anchors |
