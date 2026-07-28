@@ -3,29 +3,20 @@ package kmlib.starsector.ui.widgets;
 import kmlib.starsector.ui.text.TextSpan;
 
 import java.awt.Color;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 
 /**
- * One line of a {@link CursorTooltip}: a label read as one sentence, and around it whatever else the
- * line carries - a leading crest, a right-aligned value, an indent for its tier, a break opening a
- * section above it. The content model a caller fills to say what a tooltip shows, without saying how it
- * is measured or drawn - the geometry ({@link CursorTooltip}) reads the indent, the crest presence, the
- * label's runs, and the value to size the box, and the renderer paints them.
+ * One line of a {@link CursorTooltip}: the {@link LabelledRow content} it shows - a leading crest, a
+ * label read as one sentence, a right-aligned value - and the four facts that are the tooltip's own
+ * rather than any row's: the kind of line it is, where its label starts across the box, its indent for
+ * its tier, and whether it opens a section. The content model a caller fills to say what a tooltip
+ * shows, without saying how it is measured or drawn - the geometry ({@link CursorTooltip}) reads the
+ * indent, the crest, the label's runs, and the value to size the box, and the renderer paints them.
  *
- * <p>A label is a list of {@link TextSpan} runs rather than one span, because a line often has to pick
- * one stretch of itself out in another colour - a status word, a called-out flag - while the rest stays
- * plain. Runs are laid inline: each starts where the one before it measured out, so the whole label
- * reads as one sentence rather than as columns the rows around it align to. A one-colour label is the
- * list of one that {@link #createRow} builds, so a caller that never needs a second colour never sees
- * the list.
- *
- * <p>Each run is a {@link TextSpan} rather than a text field beside a colour field, because a run and
- * the colour it draws in are one thing: split across two components they can be reached for separately,
- * refined separately, and eventually disagree, and neither half can be handed anywhere on its own. A
- * row with nothing to say in its value still holds a span - a blank one - so measuring, styling, and
- * drawing take the same path whether or not the run is filled.
+ * <p>The content is embedded rather than spread back out over this record, because a measurement or a
+ * paint written against a labelled row then serves this row and any other widget's alike. What stays
+ * here is what a tooltip line has and a row in general does not: a heading is a heading only within a
+ * box that draws headings, and an indent is a tier within a stack that has tiers.
  *
  * <p>Everything past the label is a refinement on {@link #createRow}, not a parameter of it: a caller
  * states what its row <em>has</em> and never spells out the absences. That matters because most rows
@@ -35,10 +26,10 @@ import java.util.Objects;
  *
  * <p>Header and member rows differ only in these values - a header sits at zero indent in a bright
  * colour, a nested member indents in a plainer one - so a stack of rows carries a two-tier hierarchy
- * as flat data and the draw path never branches on tier. A row with no crest leaves the path null and
- * still reserves the icon column, so its label stays aligned with the crested rows around it, unless
- * it {@linkplain #clearsCrestColumn steps out of that column} - which a title heading the whole box
- * does, since it names the box rather than sitting in its table.
+ * as flat data and the draw path never branches on tier. A row with no crest leaves its leading slot
+ * unfilled and still reserves the icon column, so its label stays aligned with the crested rows around
+ * it, unless it {@linkplain #clearsCrestColumn steps out of that column} - which a title heading the
+ * whole box does, since it names the box rather than sitting in its table.
  *
  * <p>Where the label starts across the box is one decision, not a set of flags: its {@link
  * TooltipLabelPlacement} puts it past the crest gutter, at the content edge, or centred as a standalone
@@ -60,19 +51,14 @@ import java.util.Objects;
  *                        top-tier row, a positive step for a nested one
  * @param hasSectionBreak whether the row opens a section, taking breathing room above it so it reads
  *                        as starting a block rather than continuing the one above
- * @param crestSpritePath the leading crest's {@code graphics} texture path, or null for no crest
- * @param labelTextSpans  the label's runs in reading order, each in the colour it draws in before the
- *                        tooltip's opacity fade; never empty
- * @param valueTextSpan   the right-aligned value, blank for a row carrying none
+ * @param labelledRow     what the line carries: its crest, its label's runs, and its value
  */
 public record TooltipRow(
         TooltipLineStyle lineStyle,
         TooltipLabelPlacement labelPlacement,
         float indent,
         boolean hasSectionBreak,
-        String crestSpritePath,
-        List<TextSpan> labelTextSpans,
-        TextSpan valueTextSpan) {
+        LabelledRow labelledRow) {
 
     // What a row that carries none of the optional parts holds: a line of the body, its label starting
     // where the crested rows' labels start, continuing the row above it, and with no crest, second run,
@@ -83,23 +69,14 @@ public record TooltipRow(
     private static final TooltipLabelPlacement DEFAULT_LABEL_PLACEMENT =
             TooltipLabelPlacement.ALIGNED_WITH_CRESTS;
     private static final float NO_INDENT = 0f;
-    private static final String NO_CREST = null;
 
     /**
-     * Copies the label's runs and rejects an empty or null-bearing label at construction, where the
-     * caller that built the row is still on the stack. A row is a label with things around it, so a
-     * label with no runs at all is not a row - and a null run, or a null value span, otherwise surfaces
-     * inside a measurement or a draw call, well past the point that could say which row was meant. The
-     * value is always present as a span, an unfilled one being blank rather than absent. The crest path
-     * is the one part that is genuinely optional, and it keeps null as its spelling of absence.
+     * Rejects a null content at construction, where the caller that built the row is still on the
+     * stack. What the content itself must hold - a label of at least one run, a slot rather than a null
+     * on each flank - is {@link LabelledRow}'s own rule, checked where that content is built.
      */
     public TooltipRow {
-        Objects.requireNonNull(labelTextSpans, "labelTextSpans");
-        labelTextSpans = List.copyOf(labelTextSpans);
-        if (labelTextSpans.isEmpty()) {
-            throw new IllegalArgumentException("labelTextSpans carries at least one run");
-        }
-        Objects.requireNonNull(valueTextSpan, "valueTextSpan");
+        Objects.requireNonNull(labelledRow, "labelledRow");
     }
 
     /**
@@ -112,16 +89,12 @@ public record TooltipRow(
      * @return the bare row
      */
     public static TooltipRow createRow(String labelText, Color labelColour) {
-        // The unfilled value takes the label's own colour rather than none: a blank span still has to
-        // answer what it would draw in, so nothing downstream needs a branch for the empty case.
         return new TooltipRow(
                 DEFAULT_LINE_STYLE,
                 DEFAULT_LABEL_PLACEMENT,
                 NO_INDENT,
                 false,
-                NO_CREST,
-                List.of(new TextSpan(labelText, labelColour)),
-                TextSpan.createBlank(labelColour));
+                LabelledRow.createRow(labelText, labelColour));
     }
 
     /**
@@ -132,25 +105,29 @@ public record TooltipRow(
      * @return true when the row leads with a crest
      */
     public boolean hasCrest() {
-        return crestSpritePath != null;
+        return labelledRow.leadingRowSlot() instanceof RowSlot.Image;
     }
 
     /**
      * Returns a copy of this row leading with {@code crestSpritePath} - the faction crest, icon, or
-     * other small image drawn in the column before the label.
+     * other small image drawn in the column before the label. A null path leaves the row crest-less, so
+     * a caller resolving a crest that a faction may simply not have hands the result straight over
+     * rather than branching around this.
      *
-     * @param crestSpritePath the crest's {@code graphics} texture path
+     * @param crestSpritePath the crest's {@code graphics} texture path, or null for no crest
      * @return an otherwise-identical row carrying that crest
      */
     public TooltipRow carriesCrest(String crestSpritePath) {
+        var crestRowSlot = crestSpritePath == null
+                ? RowSlot.EMPTY
+                : new RowSlot.Image(crestSpritePath);
+
         return new TooltipRow(
                 lineStyle,
                 labelPlacement,
                 indent,
                 hasSectionBreak,
-                crestSpritePath,
-                labelTextSpans,
-                valueTextSpan);
+                labelledRow.leadsWith(crestRowSlot));
     }
 
     /**
@@ -163,22 +140,20 @@ public record TooltipRow(
      * @return an otherwise-identical row whose label carries that run last
      */
     public TooltipRow continuesWith(String runText, Color runColour) {
-        var continuedTextSpans = new ArrayList<>(labelTextSpans);
-        continuedTextSpans.add(new TextSpan(runText, runColour));
-
         return new TooltipRow(
                 lineStyle,
                 labelPlacement,
                 indent,
                 hasSectionBreak,
-                crestSpritePath,
-                continuedTextSpans,
-                valueTextSpan);
+                labelledRow.continuesWith(runText, runColour));
     }
 
     /**
      * Returns a copy of this row carrying {@code valueText} right-aligned to the box's content edge, in
-     * {@code valueColour} - the number or short text a stack of rows reads as its value column.
+     * {@code valueColour} - the number or short text a stack of rows reads as its value column. Text
+     * that comes out blank fills the slot with a run that draws nothing, rather than emptying it: a
+     * caller assembling a value from parts said its row has one, and a row that never says so leaves
+     * the slot unfilled instead.
      *
      * @param valueText   the right-aligned value
      * @param valueColour the value's colour before the tooltip's opacity fade
@@ -190,9 +165,7 @@ public record TooltipRow(
                 labelPlacement,
                 indent,
                 hasSectionBreak,
-                crestSpritePath,
-                labelTextSpans,
-                new TextSpan(valueText, valueColour));
+                labelledRow.trailsWith(new RowSlot.Text(new TextSpan(valueText, valueColour))));
     }
 
     /**
@@ -209,9 +182,7 @@ public record TooltipRow(
                 labelPlacement,
                 indent,
                 hasSectionBreak,
-                crestSpritePath,
-                labelTextSpans,
-                valueTextSpan);
+                labelledRow);
     }
 
     /**
@@ -227,9 +198,7 @@ public record TooltipRow(
                 labelPlacement,
                 indent,
                 true,
-                crestSpritePath,
-                labelTextSpans,
-                valueTextSpan);
+                labelledRow);
     }
 
     /**
@@ -245,9 +214,7 @@ public record TooltipRow(
                 TooltipLabelPlacement.AT_CONTENT_EDGE,
                 indent,
                 hasSectionBreak,
-                crestSpritePath,
-                labelTextSpans,
-                valueTextSpan);
+                labelledRow);
     }
 
     /**
@@ -265,9 +232,7 @@ public record TooltipRow(
                 TooltipLabelPlacement.CENTRED,
                 indent,
                 hasSectionBreak,
-                crestSpritePath,
-                labelTextSpans,
-                valueTextSpan);
+                labelledRow);
     }
 
     /**
@@ -284,8 +249,6 @@ public record TooltipRow(
                 labelPlacement,
                 indent,
                 hasSectionBreak,
-                crestSpritePath,
-                labelTextSpans,
-                valueTextSpan);
+                labelledRow);
     }
 }

@@ -10,6 +10,7 @@ import kmlib.starsector.ui.text.TextSpan;
 import kmlib.starsector.ui.text.TextStyle;
 import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.CursorTooltip;
+import kmlib.starsector.ui.widgets.RowSlot;
 import kmlib.starsector.ui.widgets.TooltipLayout;
 import kmlib.starsector.ui.widgets.TooltipRow;
 
@@ -87,15 +88,22 @@ public final class CursorTooltipRenderer {
 
     // Draws one row's crest, its label's runs, and its right-aligned value at their resolved anchors. A
     // row with no crest has a null crest box and skips the icon draw; a missing crest asset resolves to
-    // null and is skipped the same way, so its label still reads. Every run and the value are drawn
-    // unconditionally - a blank span paints nothing.
+    // null and is skipped the same way, so its label still reads. Every run is drawn unconditionally -
+    // a blank span paints nothing - while a slot the row left unfilled has nothing to paint at all.
     private static void drawRow(
             TooltipRow row,
             TooltipLayout.TooltipRowLayout placement,
             CursorTooltipStyle style) {
 
-        if (placement.crestBox() != null) {
-            var crest = StarsectorSprites.loadSprite(row.crestSpritePath());
+        var labelledRow = row.labelledRow();
+
+        // The path is read off the slot the row leads with rather than asked of the row, so a slot
+        // holding something other than an image draws nothing here instead of resolving to a texture
+        // lookup that was never meant for it.
+        if (placement.crestBox() != null
+                && labelledRow.leadingRowSlot() instanceof RowSlot.Image crestRowSlot) {
+
+            var crest = StarsectorSprites.loadSprite(crestRowSlot.spritePath());
             if (crest != null) {
                 UiSprite.renderQuad(
                         crest,
@@ -113,7 +121,7 @@ public final class CursorTooltipRenderer {
         // Anchored as the layout pinned them, not by each style's own alignment: the columns are the
         // layout's decision, so a style's default anchor has no say in a box that resolved its own. The
         // runs walk in step with the anchors the same rows produced, so run and anchor cannot slip.
-        var labelTextSpans = row.labelTextSpans();
+        var labelTextSpans = labelledRow.labelTextSpans();
         for (var index = 0; index < labelTextSpans.size(); index++) {
             rowPaint.drawSpan(
                     labelTextSpans.get(index),
@@ -122,11 +130,15 @@ public final class CursorTooltipRenderer {
                     LazyFont.TextAnchor.TOP_LEFT);
         }
 
-        rowPaint.drawSpan(
-                row.valueTextSpan(),
-                placement.valueX(),
-                placement.valueY(),
-                LazyFont.TextAnchor.TOP_RIGHT);
+        // Only a slot holding a run has a value to draw: an unfilled one carries neither text nor the
+        // colour text would be drawn in, so there is nothing to hand the paint.
+        if (labelledRow.trailingRowSlot() instanceof RowSlot.Text valueRowSlot) {
+            rowPaint.drawSpan(
+                    valueRowSlot.textSpan(),
+                    placement.valueX(),
+                    placement.valueY(),
+                    LazyFont.TextAnchor.TOP_RIGHT);
+        }
     }
 
     /**

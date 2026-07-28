@@ -124,8 +124,11 @@ src/main/java/kmlib/
                      with each render substrate owning the adapter into
                      its own anchors, plus a run's width in a settled look
       tooltip/     - vanilla TooltipMakerAPI helpers
-      widgets/     - widget models and their geometry, with scroll/,
-                     segments/, and tabs/ beneath
+      widgets/     - widget models and their geometry: one shared
+                     labelled-row core - a label read as one sentence
+                     with a slot to either side - and the rows and boxes
+                     built on it, with scroll/, segments/, and tabs/
+                     beneath
   testfixtures/    - Fakes for KMLib's own ports (claims, fonts, intel
                      screen, modelview, console output). Ships in the
                      MAIN jar so consumer mods' tests can use them

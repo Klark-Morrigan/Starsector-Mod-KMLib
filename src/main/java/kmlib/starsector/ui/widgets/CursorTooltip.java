@@ -292,7 +292,7 @@ public final class CursorTooltip {
                             + measureCrestOffset(styledRow, crestColumnWidth)
                             + labelSpan
                             + VALUE_GAP
-                            + styledRow.measureSpanWidth(row.valueTextSpan());
+                            + styledRow.measureSlotWidth(row.labelledRow().trailingRowSlot());
 
             widest = Math.max(widest, rowWidth);
         }
@@ -309,7 +309,7 @@ public final class CursorTooltip {
     // caller assembling a run from parts and coming up blank gets the line it would have had without it,
     // rather than a gap reserved in front of no glyphs.
     private static LabelRunOffsets measureLabelRunOffsets(StyledRow styledRow) {
-        var labelTextSpans = styledRow.row().labelTextSpans();
+        var labelTextSpans = styledRow.row().labelledRow().labelTextSpans();
         var runOffsetXs = new ArrayList<Float>(labelTextSpans.size());
         var runsWidth = 0f;
         var hasDrawnRun = false;
@@ -398,6 +398,14 @@ public final class CursorTooltip {
                     spanText -> measurer.measureSpanWidth(
                             textStyle.face(),
                             textStyle.resolveDisplayText(spanText)));
+        }
+
+        // The width one of this row's flanking slots occupies. Each kind of slot answers for itself off
+        // the line height and, where its width is glyphs rather than geometry, the measurement bound to
+        // this row - so a column can be reserved for whatever a row was filled with without this
+        // widget branching on the kind.
+        private float measureSlotWidth(RowSlot rowSlot) {
+            return rowSlot.computeWidth((float) lineHeight, this::measureSpanWidth);
         }
 
         // The width one of this row's spans occupies, in this row's own face. Asked of the span rather

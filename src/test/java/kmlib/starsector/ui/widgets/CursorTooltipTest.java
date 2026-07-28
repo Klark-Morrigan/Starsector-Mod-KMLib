@@ -379,6 +379,16 @@ class CursorTooltipTest {
         }
 
         @Test
+        void chargesNothingForAValueThatCameOutBlank() {
+            // The value column is charged what its slot draws, not what its text would have measured:
+            // a caller that assembles a value from parts and comes up with whitespace gets the box it
+            // would have had without one (34), where charging the space would have widened it to 35.
+            var blankValued = createCrestlessRow("AA").carriesValue(" ", Color.GRAY);
+
+            assertThat(layOut(List.of(blankValued)).box().width()).isCloseTo(34f, within(TOLERANCE));
+        }
+
+        @Test
         void opensNoGapInFrontOfTheFirstRunThatDraws() {
             // The gap sits between two runs that draw, not in front of the first one that does, so a
             // label whose opening run came out blank starts flush at the content edge (226) and is
