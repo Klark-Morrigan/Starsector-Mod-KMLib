@@ -17,6 +17,7 @@ content. Pairs that look like duplication across the tiers usually are not - see
   - [`Highlight` versus `TextSpan`](#highlight-versus-textspan)
 - [Ports across the boundary](#ports-across-the-boundary)
 - [Two span measurers](#two-span-measurers)
+- [Two hosts, one map widget](#two-hosts-one-map-widget)
 - [Where each package sits](#where-each-package-sits)
 
 ## Two surfaces
@@ -129,6 +130,47 @@ adapter is still the only thing that knows a glyph width. And it lives in `text`
 than beside its sibling in `font` because `text` already reads `font` (a `TextStyle` holds
 a `TextFace`), so a port in `font` naming `TextSpan` would close that into a cycle.
 
+## Two hosts, one map widget
+
+The game shows the same map widget in two places, and each keeps its own filter state: the
+sector map on the `M` screen, and the intel screen's embedded map preview (its "map visor").
+So "is a map showing, and in which mode" has two answers at once, and which one a caller
+wants depends on what it is deciding.
+
+| Question | Read | Why |
+| --- | --- | --- |
+| about the sector map | [`CampaignMapView`](map/CampaignMapView.java) | the `M` screen's own tab, sub-view and filter |
+| about the intel screen | [`IntelScreenView`](intel/IntelScreenView.java) | the visor's own rectangle and filter |
+| about whichever screen is up | [`StarscapeMapPresence`](map/StarscapeMapPresence.java) | either screen counts, and the asker cannot tell which it was called from |
+
+The host-blind read exists for one situation: code reached through a hook that is not told
+which host invoked it, so it cannot ask a host-specific question even though it would prefer
+to. Anything deciding **where** to draw, or whether to put controls over a particular
+surface, asks that surface instead - the blind read is true while a different host entirely
+is the one in starscape.
+
+That is a disjunction rather than a switch, and the reason is worth knowing before trusting
+either read too far. One core tab shows at a time, so the two usually exclude each other -
+but they are not reading the same thing. The sector read goes through `getCurrentCoreTab()`,
+which answers for an **interaction dialog's own** core UI whenever such a dialog is up,
+while the intel read always walks the **main** core UI. So the pair can be aimed at two
+different core UIs, and nothing in either read rules out both answering yes at once. Treat
+the exclusivity as the usual case rather than a guarantee.
+
+Filter state follows the same split, and it is per map rather than global. Each map widget
+binds to the filter its params carry, falling back to the campaign's persisted filter when
+they carry none. The core-UI map tab carries none - so the `M` screen and a dialog-hosted map
+tab share the persisted filter, which is the one the sector read reports. Every embedded
+preview supplies its own instead, the intel visor included, which is why that screen is asked
+about its own state and never about the campaign's.
+
+Those settings are independent, and they start out disagreeing: the persisted filter is built
+with Starscape on - a new game's first look at the sector map is the starfield - while every
+embedded filter is built with it off. Toggling one leaves the other alone, which is the whole
+reason the host-blind read is an OR over two sources rather than one flag consulted once.
+
+All three fail closed, so an unreadable link answers "not showing" rather than guessing.
+
 ## Where each package sits
 
 | Package | Tier | Holds |
@@ -146,7 +188,7 @@ a `TextFace`), so a port in `font` naming `TextSpan` would close that into a cyc
 | [`highlight`](highlight/) | vanilla | `Highlight`, `HighlightedParagraph`, `HighlightedMessage` |
 | [`tooltip`](tooltip/) | vanilla | `Tooltips`, the `TooltipCreator` boilerplate wrapper |
 | [`intel`](intel/) | split | the screen-view port and its vanilla implementation |
-| [`map`](map/) | split | the transform port, its two implementations, [`VanillaMapTooltip`](map/VanillaMapTooltip.java) |
+| [`map`](map/) | split | the transform port, its two implementations, the campaign map's [view state](map/CampaignMapView.java) and the [starscape presence](map/StarscapeMapPresence.java) that folds it together with the intel screen's own map, [`VanillaMapTooltip`](map/VanillaMapTooltip.java) |
 
 `layout.VanillaPositions` is the one deliberate exception in a neutral package: it holds
 vanilla screen coordinates, which are a fact about the game's own layout rather than

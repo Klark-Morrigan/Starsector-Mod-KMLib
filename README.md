@@ -114,6 +114,7 @@ src/main/java/kmlib/
       layout/      - pure placement maths: padding, anchors, strips,
                      panel and tab-panel layout
       map/         - obf-cast seam onto the campaign map: view state,
+                     the cross-host "is a starscape map up" fold-in,
                      screen/world transform, modelview matrix readers,
                      vanilla map tooltip
       render/gl/   - the GL paint layer: panel, tabs, controls,
