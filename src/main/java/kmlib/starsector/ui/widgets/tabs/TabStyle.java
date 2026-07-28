@@ -4,17 +4,17 @@ import kmlib.starsector.ui.font.TextFace;
 
 /**
  * How a tab strip is sized and painted, carried as one injected value: its dimensions, its colour
- * scheme, and the face its labels draw in. Tab look is a look, not a law: two panels can share the whole
- * layout and still want their tabs sized or shaded differently - one floating free with room to breathe,
- * another crowded against a neighbour's chrome - so the whole description travels with the call rather
- * than living as constants every strip inherits alike.
+ * scheme, how it presents a bound key, and the face its labels draw in. Tab look is a look, not a law:
+ * two panels can share the whole layout and still want their tabs sized or shaded differently - one
+ * floating free with room to breathe, another crowded against a neighbour's chrome - so the whole
+ * description travels with the call rather than living as constants every strip inherits alike.
  *
  * <p>One value rather than a dimensions/paint pair split by which tier reads it, so a strip's geometry
  * and its paint cannot disagree. The cost is that a caller laying out without drawing still supplies the
  * paint, and one drawing pre-laid tabs still supplies the band height; that is the cheaper side of the
- * trade. Substrate-independent throughout - {@link VanillaTabColors} is a palette of AWT colours and
- * {@link TextFace} a font and size - so the layout may measure against this value and the renderer may
- * paint from it.
+ * trade. Substrate-independent throughout - {@link VanillaTabColors} is a palette of AWT colours,
+ * {@link HotkeyStyle} a colour and two dimensions, and {@link TextFace} a font and size - so the layout
+ * may measure against this value and the renderer may paint from it.
  *
  * <p>Every dimension is UI-coordinate pixels and content-space: it measures the tab surface itself, not
  * any border a host strokes around the panel that carries it. A bordered box grows outward around its
@@ -24,11 +24,14 @@ import kmlib.starsector.ui.font.TextFace;
  *                         in it shares; a non-positive value collapses the band to nothing rather than
  *                         inverting it, leaving the panel its body alone
  * @param colors           the strip's selected / hovered / idle colour scheme
+ * @param hotkey           how a tab presents the key it is bound to - the key's colour and whether it
+ *                         is underlined
  * @param face             the font and size the tab labels are measured and drawn in
  */
 public record TabStyle(
         float headerBandHeight,
         VanillaTabColors colors,
+        HotkeyStyle hotkey,
         TextFace face) {
     /**
      * The baseline band height: room enough for the larger tab face with a little slack above and below

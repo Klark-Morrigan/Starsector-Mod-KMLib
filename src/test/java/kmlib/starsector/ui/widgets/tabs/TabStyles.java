@@ -7,10 +7,10 @@ import java.awt.Color;
 
 /**
  * Test-only builders for a {@link TabStyle} at a chosen band height. A style describes a strip end to
- * end, so even a test exercising nothing but the layout has to name a palette and a face; these fill both
- * with fixed stand-ins, since no layout or geometry assertion reads a colour. The palette is literal
- * rather than {@link VanillaTabColors#mapTabs()} because that resolves through the live engine palette,
- * which a unit test has no sector to supply.
+ * end, so even a test exercising nothing but the layout has to name a palette, a hotkey look, and a face;
+ * these fill all three with fixed stand-ins, since no layout or geometry assertion reads a colour. They
+ * are literal rather than {@link VanillaTabColors#mapTabs()} / {@link HotkeyStyle#createUnderlined()}
+ * because those resolve through the live engine palette, which a unit test has no sector to supply.
  */
 public final class TabStyles {
     // One flat shade in every role: the tests here assert dimensions and geometry, so which colour sits
@@ -24,8 +24,16 @@ public final class TabStyles {
             STAND_IN_SHADE,
             STAND_IN_SHADE,
             STAND_IN_SHADE,
-            STAND_IN_SHADE,
             STAND_IN_SHADE);
+
+    // A plain key in the same stand-in shade: the tests here draw nothing, so how a bound key is
+    // presented never reaches an assertion, and the un-emphasised look keeps the fixture from implying
+    // the layout reserves room for a rule (it does not - the emphasis costs no width).
+    private static final HotkeyStyle STAND_IN_HOTKEY = new HotkeyStyle(
+            STAND_IN_SHADE,
+            false,
+            0f,
+            0f);
 
     // The face the vanilla map tabs read in, at its own atlas size - a real face rather than an invented
     // one, so a test that does measure text measures against a size a host actually asks for.
@@ -37,13 +45,18 @@ public final class TabStyles {
     }
 
     /**
-     * Builds a tab style standing its band at the given height, with the stand-in palette and face.
+     * Builds a tab style standing its band at the given height, with the stand-in palette, hotkey look,
+     * and face.
      *
      * @param headerBandHeight how tall the tab band stands, passed through to the style unchanged (so a
      *                         negative value still exercises the style's own clamp)
      * @return the tab style at that band height
      */
     public static TabStyle buildAtBandHeight(float headerBandHeight) {
-        return new TabStyle(headerBandHeight, STAND_IN_COLORS, STAND_IN_FACE);
+        return new TabStyle(
+                headerBandHeight,
+                STAND_IN_COLORS,
+                STAND_IN_HOTKEY,
+                STAND_IN_FACE);
     }
 }
