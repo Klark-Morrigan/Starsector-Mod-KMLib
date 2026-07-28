@@ -76,6 +76,7 @@ public final class CursorTooltipRenderer {
                 new BoxBorder(style.borderWidth()),
                 new UiElementPaint(style.fillColor(), style.opacity()),
                 new UiElementPaint(style.borderColor(), style.opacity()));
+                
         for (var index = 0; index < rows.size(); index++) {
             drawRow(
                     rows.get(index),
@@ -84,15 +85,15 @@ public final class CursorTooltipRenderer {
         }
     }
 
-    // Draws one row's crest, label, trailing marker, and right-aligned value at its resolved anchors. A
+    // Draws one row's crest, its label's runs, and its right-aligned value at their resolved anchors. A
     // row with no crest has a null crest box and skips the icon draw; a missing crest asset resolves to
-    // null and is skipped the same way, so its label still reads. The marker and the value are drawn
+    // null and is skipped the same way, so its label still reads. Every run and the value are drawn
     // unconditionally - a blank span paints nothing.
     private static void drawRow(
             TooltipRow row,
             TooltipLayout.TooltipRowLayout placement,
             CursorTooltipStyle style) {
-                
+
         if (placement.crestBox() != null) {
             var crest = StarsectorSprites.loadSprite(row.crestSpritePath());
             if (crest != null) {
@@ -103,25 +104,23 @@ public final class CursorTooltipRenderer {
             }
         }
 
-        // The kind of line the row is decides the face, size, and casing all three of its spans share -
+        // The kind of line the row is decides the face, size, and casing every span of it shares -
         // resolved once here, the same lookup the layout made when it measured them.
         var rowPaint = new RowPaint(
                 style.typography().resolveStyleFor(row.lineStyle()),
                 style.opacity());
 
         // Anchored as the layout pinned them, not by each style's own alignment: the columns are the
-        // layout's decision, so a style's default anchor has no say in a box that resolved its own.
-        rowPaint.drawSpan(
-                row.labelTextSpan(),
-                placement.textX(),
-                placement.textY(),
-                LazyFont.TextAnchor.TOP_LEFT);
-
-        rowPaint.drawSpan(
-                row.markerTextSpan(),
-                placement.markerX(),
-                placement.markerY(),
-                LazyFont.TextAnchor.TOP_LEFT);
+        // layout's decision, so a style's default anchor has no say in a box that resolved its own. The
+        // runs walk in step with the anchors the same rows produced, so run and anchor cannot slip.
+        var labelTextSpans = row.labelTextSpans();
+        for (var index = 0; index < labelTextSpans.size(); index++) {
+            rowPaint.drawSpan(
+                    labelTextSpans.get(index),
+                    placement.labelRunXs().get(index),
+                    placement.labelY(),
+                    LazyFont.TextAnchor.TOP_LEFT);
+        }
 
         rowPaint.drawSpan(
                 row.valueTextSpan(),
@@ -132,9 +131,16 @@ public final class CursorTooltipRenderer {
 
     /**
      * One row's resolved look bound to the box's opacity - the two things every span of that row draws
-     * with, so a span states only its own colour and placement. Bound once because the three spans of a
-     * row must not each restate the look they share: a marker drawn on a face the label was not would
-     * neither line up nor read as part of the same line.
+     * with, so a span states only its own colour and placement. Bound once because the spans of a row
+     * must not each restate the look they share: a second label run drawn on a face the first was not
+     * would neither line up nor read as part of the same line.
+     *
+     * <p>Each span is drawn on its own, through the whole-line paint that caches one glyph run per
+     * (face, text) pair and applies the box's fade as it draws. Batching a row's runs into one
+     * {@code DrawableString} through {@code append(text, colour)} would bake each run's colour absolute
+     * at append time, after which the base colour the fade is applied through recolours only the
+     * segment before the first tinted run - so the box's opacity would stop applying to exactly the
+     * runs a caller picked out.
      *
      * @param textStyle the face, size, and casing the row's spans draw in
      * @param opacity   the alpha the whole box and its text fade by
@@ -142,8 +148,8 @@ public final class CursorTooltipRenderer {
     private record RowPaint(TextStyle textStyle, float opacity) {
 
         // Draws one span at an anchor in its own colour. The span's own colour wins over the style's
-        // default, since a marker or value picked out in the row model must not be flattened to one
-        // colour by the look.
+        // default, since a label run or a value picked out in the row model must not be flattened to
+        // one colour by the look.
         private void drawSpan(
                 TextSpan textSpan,
                 float x,

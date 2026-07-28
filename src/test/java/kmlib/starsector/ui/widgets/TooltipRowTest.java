@@ -6,29 +6,32 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.awt.Color;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
 
 /**
- * Pins {@link TooltipRow}'s content model: the bare row a caller starts from carries none of the
- * optional parts, and each refinement adds exactly its own without disturbing what the row already
- * holds. The absences are the contract worth fixing - a caller never states them, so the bare row has
- * to be the plain crest-aligned, crest-less, marker-less, value-less line every refinement builds on.
+ * Pins {@link TooltipRow}'s content model: the bare row a caller starts from carries a one-run label
+ * and none of the optional parts, and each refinement adds exactly its own without disturbing what the
+ * row already holds. The absences are the contract worth fixing - a caller never states them, so the
+ * bare row has to be the plain crest-aligned, crest-less, value-less line every refinement builds on.
  *
  * <p>Each refinement is pinned twice: once for the component it sets, and once for everything it must
- * leave alone. The second half is not redundant. A refinement rebuilds all eight components
- * positionally, three of which are same-typed neighbouring spans, so a refinement that wrote a value
- * into the marker slot would compile and would satisfy any assertion list that did not happen to name
- * both slots.
+ * leave alone. The second half is not redundant. A refinement rebuilds all seven components
+ * positionally, so one that dropped a component - or rebuilt it from the bare row rather than carrying
+ * the one it was handed - would compile and would satisfy any assertion list that did not happen to
+ * name it.
  */
 class TooltipRowTest {
     private static final String CREST = "crest_a";
     private static final String OTHER_CREST = "crest_b";
     private static final String TEXT = "Hegemony";
-    private static final String MARKER = "core territory";
-    private static final String OTHER_MARKER = "contested";
+    private static final String RUN_TEXT = "core territory";
+    private static final String OTHER_RUN_TEXT = "contested";
     private static final String VALUE = "12";
     private static final String OTHER_VALUE = "34";
     private static final float INDENT = 14f;
@@ -39,8 +42,7 @@ class TooltipRowTest {
 
     // Pins a refinement to exactly the components it names: every other component must come through
     // untouched. One comparison rather than an enumeration of survivors, because an enumeration only
-    // catches a component it thought to name - and the components most likely to be crossed are the
-    // three spans, which an enumeration written around the refinement under test tends to skip.
+    // catches a component it thought to name.
     private static void assertRefinementChangesOnly(
             TooltipRow refined,
             TooltipRow original,
@@ -62,16 +64,16 @@ class TooltipRowTest {
     private static TooltipRow buildRichRow() {
         return buildBareRow()
                 .carriesCrest(CREST)
-                .carriesMarker(MARKER, Color.YELLOW)
+                .continuesWith(RUN_TEXT, Color.YELLOW)
                 .carriesValue(VALUE, Color.GRAY)
                 .indentsBy(INDENT);
     }
 
-    // The canonical constructor reached by its spans alone. The row-level facts have no say in what it
-    // rejects, and spelling all eight components per case would bury the one component under test.
+    // The canonical constructor reached by its label runs and its value alone. The row-level facts have
+    // no say in what it rejects, and spelling all seven components per case would bury the one component
+    // under test.
     private static TooltipRow createRowWithSpans(
-            TextSpan labelTextSpan,
-            TextSpan markerTextSpan,
+            List<TextSpan> labelTextSpans,
             TextSpan valueTextSpan) {
 
         return new TooltipRow(
@@ -80,53 +82,74 @@ class TooltipRowTest {
                 0f,
                 false,
                 null,
-                labelTextSpan,
-                markerTextSpan,
+                labelTextSpans,
                 valueTextSpan);
     }
 
     @Nested
     class Constructor {
         @Test
-        void constructorRejectsANullLabelSpan() {
-            assertThatThrownBy(() -> createRowWithSpans(null, BLANK_SPAN, BLANK_SPAN))
+        void constructorRejectsANullLabelRunList() {
+            assertThatThrownBy(() -> createRowWithSpans(null, BLANK_SPAN))
                     .isInstanceOf(NullPointerException.class)
-                    .hasMessageContaining("labelTextSpan");
+                    .hasMessageContaining("labelTextSpans");
         }
 
         @Test
-        void constructorRejectsANullMarkerSpan() {
-            // An unfilled marker is a blank span, not a missing one, so a null here is a caller that
-            // meant the blank and reached for the absence instead - caught while it is still on the
-            // stack rather than inside the measurement that asks the marker whether it has text.
-            assertThatThrownBy(() -> createRowWithSpans(BLANK_SPAN, null, BLANK_SPAN))
-                    .isInstanceOf(NullPointerException.class)
-                    .hasMessageContaining("markerTextSpan");
+        void constructorRejectsALabelWithNoRuns() {
+            // A row is a label with things around it, so a label of no runs is not a row at all - the
+            // floor that stops the model dissolving into a bag of optional parts with no centre.
+            assertThatThrownBy(() -> createRowWithSpans(List.of(), BLANK_SPAN))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        void constructorRejectsANullLabelRun() {
+            // An unfilled run is a blank span, not a missing one, so a null here is a caller that meant
+            // the blank and reached for the absence instead - caught while it is still on the stack
+            // rather than inside the measurement that asks each run whether it has text.
+            assertThatThrownBy(() -> createRowWithSpans(Arrays.asList(BLANK_SPAN, null), BLANK_SPAN))
+                    .isInstanceOf(NullPointerException.class);
         }
 
         @Test
         void constructorRejectsANullValueSpan() {
-            assertThatThrownBy(() -> createRowWithSpans(BLANK_SPAN, BLANK_SPAN, null))
+            assertThatThrownBy(() -> createRowWithSpans(List.of(BLANK_SPAN), null))
                     .isInstanceOf(NullPointerException.class)
                     .hasMessageContaining("valueTextSpan");
+        }
+
+        @Test
+        void constructorCopiesTheLabelRuns() {
+            // A row is a value, so a caller still holding the list it built must not be able to add a
+            // run to a row already handed to a layout - which would size a box for runs and then draw
+            // another.
+            var labelTextSpans = new ArrayList<TextSpan>();
+            labelTextSpans.add(new TextSpan(TEXT, Color.WHITE));
+            var row = createRowWithSpans(labelTextSpans, BLANK_SPAN);
+
+            labelTextSpans.add(new TextSpan(RUN_TEXT, Color.YELLOW));
+
+            assertThat(row.labelTextSpans()).hasSize(1);
         }
 
         @Test
         void constructorAcceptsAnAbsentCrestPath() {
             // The crest is the one genuinely optional part, so null stays its spelling of absence and
             // must not be swept up by the span checks beside it.
-            assertThat(createRowWithSpans(BLANK_SPAN, BLANK_SPAN, BLANK_SPAN).hasCrest()).isFalse();
+            assertThat(createRowWithSpans(List.of(BLANK_SPAN), BLANK_SPAN).hasCrest()).isFalse();
         }
     }
 
     @Nested
     class CreateRow {
         @Test
-        void createRowCarriesTheLabelAndItsColour() {
+        void createRowCarriesTheLabelAsOneRun() {
             var row = buildBareRow();
 
-            assertThat(row.labelTextSpan().text()).isEqualTo(TEXT);
-            assertThat(row.labelTextSpan().colour()).isEqualTo(Color.WHITE);
+            assertThat(row.labelTextSpans()).hasSize(1);
+            assertThat(row.labelTextSpans().get(0).text()).isEqualTo(TEXT);
+            assertThat(row.labelTextSpans().get(0).colour()).isEqualTo(Color.WHITE);
         }
 
         @Test
@@ -135,7 +158,6 @@ class TooltipRowTest {
 
             assertThat(row.indent()).isCloseTo(0f, within(TOLERANCE));
             assertThat(row.crestSpritePath()).isNull();
-            assertThat(row.markerTextSpan().hasText()).isFalse();
             assertThat(row.valueTextSpan().hasText()).isFalse();
             assertThat(row.hasSectionBreak()).isFalse();
             assertThat(row.hasCrest()).isFalse();
@@ -159,14 +181,11 @@ class TooltipRowTest {
         }
 
         @Test
-        void createRowColoursTheAbsentPartsWithTheLabel() {
-            // Nothing draws in these colours on a bare row, but the spans must still carry one: a
+        void createRowColoursTheAbsentValueWithTheLabel() {
+            // Nothing draws in that colour on a bare row, but the span must still carry one: a
             // refinement that sets only one part leaves the others to be measured, styled, and drawn by
             // the same path regardless, and that path reads a colour off every span it is handed.
-            var row = buildBareRow();
-
-            assertThat(row.markerTextSpan().colour()).isEqualTo(Color.WHITE);
-            assertThat(row.valueTextSpan().colour()).isEqualTo(Color.WHITE);
+            assertThat(buildBareRow().valueTextSpan().colour()).isEqualTo(Color.WHITE);
         }
     }
 
@@ -219,23 +238,47 @@ class TooltipRowTest {
     }
 
     @Nested
-    class CarriesMarker {
+    class ContinuesWith {
         @Test
-        void carriesMarkerSetsTheMarkerAndItsColour() {
-            var row = buildBareRow().carriesMarker(MARKER, Color.YELLOW);
+        void continuesWithAppendsTheRunAndItsColour() {
+            var row = buildBareRow().continuesWith(RUN_TEXT, Color.YELLOW);
 
-            assertThat(row.markerTextSpan().text()).isEqualTo(MARKER);
-            assertThat(row.markerTextSpan().colour()).isEqualTo(Color.YELLOW);
+            assertThat(row.labelTextSpans()).hasSize(2);
+            assertThat(row.labelTextSpans().get(1).text()).isEqualTo(RUN_TEXT);
+            assertThat(row.labelTextSpans().get(1).colour()).isEqualTo(Color.YELLOW);
         }
 
         @Test
-        void carriesMarkerChangesNothingElse() {
-            // The point of composing refinements: a marker cannot restate - or lose - the tier, crest,
-            // and value the row was already built with.
+        void continuesWithKeepsTheRunsAlreadyOnTheLabel() {
+            // The label is a sentence, so a run is added to what is there rather than replacing it -
+            // otherwise a second colour would cost the caller the first.
+            var row = buildBareRow().continuesWith(RUN_TEXT, Color.YELLOW);
+
+            assertThat(row.labelTextSpans().get(0).text()).isEqualTo(TEXT);
+            assertThat(row.labelTextSpans().get(0).colour()).isEqualTo(Color.WHITE);
+        }
+
+        @Test
+        void continuesWithAppliedTwiceLaysThreeRunsInOrder() {
+            // The point of runs over a fixed second slot: a third colour on one line costs the model
+            // nothing, and the runs stay in the order they were written.
+            var row = buildBareRow()
+                    .continuesWith(RUN_TEXT, Color.YELLOW)
+                    .continuesWith(OTHER_RUN_TEXT, Color.CYAN);
+
+            assertThat(row.labelTextSpans())
+                    .extracting(TextSpan::text)
+                    .containsExactly(TEXT, RUN_TEXT, OTHER_RUN_TEXT);
+        }
+
+        @Test
+        void continuesWithChangesNothingElse() {
+            // The point of composing refinements: a run cannot restate - or lose - the tier, crest, and
+            // value the row was already built with.
             assertRefinementChangesOnly(
-                    buildRichRow().carriesMarker(OTHER_MARKER, Color.CYAN),
+                    buildRichRow().continuesWith(OTHER_RUN_TEXT, Color.CYAN),
                     buildRichRow(),
-                    "markerTextSpan");
+                    "labelTextSpans");
         }
     }
 
@@ -306,8 +349,8 @@ class TooltipRowTest {
 
         @Test
         void centredChangesNothingElse() {
-            // Centring changes where the line sits, not what it says, so the marker it may carry rides
-            // along with the label rather than being dropped from the centred span.
+            // Centring changes where the line sits, not what it says, so every run of the label rides
+            // along rather than being dropped from the centred span.
             assertRefinementChangesOnly(
                     buildRichRow().centred(),
                     buildRichRow(),
@@ -341,26 +384,6 @@ class TooltipRowTest {
                     buildRichRow().centred().readsAs(TooltipLineStyle.HEADER),
                     buildRichRow().centred(),
                     "lineStyle");
-        }
-    }
-
-    @Nested
-    class HasMarker {
-        @Test
-        void hasMarkerIsFalseForABareRow() {
-            assertThat(buildBareRow().hasMarker()).isFalse();
-        }
-
-        @Test
-        void hasMarkerIsTrueForAMarkedRow() {
-            assertThat(buildBareRow().carriesMarker(MARKER, Color.YELLOW).hasMarker()).isTrue();
-        }
-
-        @Test
-        void hasMarkerIsFalseForABlankMarker() {
-            // A caller that assembles a marker from parts and comes up with whitespace gets the
-            // unmarked row it meant, rather than a gap reserved before nothing.
-            assertThat(buildBareRow().carriesMarker(" ", Color.YELLOW).hasMarker()).isFalse();
         }
     }
 }
