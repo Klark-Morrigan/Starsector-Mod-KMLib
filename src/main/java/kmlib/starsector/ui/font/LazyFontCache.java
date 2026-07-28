@@ -18,9 +18,11 @@ import java.util.Set;
  *
  * <p>The load-once / fail-once-logged policy that every caller drawing cached text needs,
  * kept in one place so no mod re-implements it around LazyLib's own
- * {@link LazyFont#loadFont}. LazyLib is a soft dependency of KMLib (compileOnly, no
- * {@code mod_info.json} entry): this class classloads only when a caller invokes it, so a
- * mod that never draws cached text and never ships LazyLib never resolves it.
+ * {@link LazyFont#loadFont}.
+ *
+ * <p>Guards a missing or malformed {@code .fnt}. A missing LazyLib is a different failure -
+ * {@code NoClassDefFoundError}, raised where no check can reach - and is prevented by the
+ * {@code mod_info.json} dependency instead.
  */
 public final class LazyFontCache {
     private static final Logger LOG = Global.getLogger(LazyFontCache.class);

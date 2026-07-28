@@ -9,6 +9,7 @@ on at compile and runtime.
 
 ## Index
 
+- [Requirements](#requirements)
 - [Layout](#layout)
 - [Build & Test](#build--test)
 - [Local linting](#local-linting)
@@ -20,6 +21,23 @@ on at compile and runtime.
 - [UI Colour Palette](#ui-colour-palette)
 - [Highlighted Text](#highlighted-text)
 - [Intel Base Classes](#intel-base-classes)
+
+## Requirements
+
+Hard dependencies:
+
+- **LazyLib** - exposes game fonts to be used for drawing labels directly with GL:
+  [UI primitives](src/main/java/kmlib/starsector/ui/README.md).
+- **MagicLib** - provides code reflection utilities.
+
+Soft dependencies:
+
+- **LunaLib** - for in-game mod settings, defaults for which are hardcoded otherwise.
+- **Console Commands** - for KMLib's console commands.
+
+Compatibility coded in:
+
+- **Random Assortment of Things** - KMLib recognises RAT's Abyssal Fractures.
 
 ## Layout
 
@@ -314,12 +332,8 @@ compileOnly files("${configuredStarsectorRoot}/mods/KMLib/jars/KMLib.jar")
 ```
 
 Tests in consuming mods that touch KMLib types also add the same jar as
-`testCompileOnly` / `testRuntimeOnly`.
-
-KMLib declares one dependency of its own, LazyLib, so players of any consuming mod
-need it. All GL text draws through `LazyFont`, and an absent LazyLib throws inside a
-render pass where no guard can catch it. Every other jar KMLib compiles against
-(LunaLib, Console Commands, RAT, MagicLib) stays soft.
+`testCompileOnly` / `testRuntimeOnly`. KMLib's hard dependencies apply to every mod
+that depends on it - see [Requirements](#requirements).
 
 ## Rendering environment
 

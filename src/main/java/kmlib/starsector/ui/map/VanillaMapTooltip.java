@@ -28,10 +28,11 @@ import java.util.List;
  * a field name or {@code Class} identity, so an obfuscated rename or a classloader mismatch cannot make a
  * real tooltip read as foreign.
  *
- * <p>The whole read is best-effort: reflecting into obfuscated internals can fail on any game build, and
- * on an install without MagicLib the reflection class is absent entirely. On any failure it reports no
- * tooltip - the overlay then draws, so a broken read costs a possible double tooltip rather than a
- * missing overlay - and warns once per session so the failure is visible without flooding the log.
+ * <p>The whole read is best-effort, since reflecting into obfuscated internals can fail on any game
+ * build. On any failure it reports no tooltip - the overlay then draws, so a broken read costs a
+ * possible double tooltip rather than a missing overlay - and warns once per session so the failure is
+ * visible without flooding the log. A missing MagicLib is not among those failures - it is a
+ * declared {@code mod_info.json} dependency.
  *
  * <p>Because the reach is fragile and only observable in-engine, the read narrates itself when DEBUG
  * logging is on: each time its outcome changes it logs one line naming the current tab, how many nodes
