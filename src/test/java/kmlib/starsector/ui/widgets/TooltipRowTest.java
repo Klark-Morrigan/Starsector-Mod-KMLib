@@ -32,8 +32,8 @@ class TooltipRowTest {
         void createRowCarriesTheLabelAndItsColour() {
             var row = bareRow();
 
-            assertThat(row.text()).isEqualTo(TEXT);
-            assertThat(row.textColor()).isEqualTo(Color.WHITE);
+            assertThat(row.labelTextSpan().text()).isEqualTo(TEXT);
+            assertThat(row.labelTextSpan().colour()).isEqualTo(Color.WHITE);
         }
 
         @Test
@@ -42,8 +42,8 @@ class TooltipRowTest {
 
             assertThat(row.indent()).isCloseTo(0f, within(TOLERANCE));
             assertThat(row.crestSpritePath()).isNull();
-            assertThat(row.marker()).isEmpty();
-            assertThat(row.value()).isEmpty();
+            assertThat(row.markerTextSpan().hasText()).isFalse();
+            assertThat(row.valueTextSpan().hasText()).isFalse();
             assertThat(row.hasSectionBreak()).isFalse();
             assertThat(row.hasCrest()).isFalse();
         }
@@ -66,12 +66,13 @@ class TooltipRowTest {
 
         @Test
         void createRowColoursTheAbsentPartsWithTheLabel() {
-            // Nothing draws in these colours on a bare row, but they must not be null: a refinement
-            // that sets only one part leaves the others' colours to be read by the renderer regardless.
+            // Nothing draws in these colours on a bare row, but the spans must still carry one: a
+            // refinement that sets only one part leaves the others to be measured, styled, and drawn by
+            // the same path regardless, and that path reads a colour off every span it is handed.
             var row = bareRow();
 
-            assertThat(row.markerColor()).isEqualTo(Color.WHITE);
-            assertThat(row.valueColor()).isEqualTo(Color.WHITE);
+            assertThat(row.markerTextSpan().colour()).isEqualTo(Color.WHITE);
+            assertThat(row.valueTextSpan().colour()).isEqualTo(Color.WHITE);
         }
     }
 
@@ -82,8 +83,8 @@ class TooltipRowTest {
             var row = bareRow().carriesCrest(CREST);
 
             assertThat(row.crestSpritePath()).isEqualTo(CREST);
-            assertThat(row.text()).isEqualTo(TEXT);
-            assertThat(row.value()).isEmpty();
+            assertThat(row.labelTextSpan().text()).isEqualTo(TEXT);
+            assertThat(row.valueTextSpan().hasText()).isFalse();
         }
     }
 
@@ -106,8 +107,8 @@ class TooltipRowTest {
         void carriesValueSetsTheValueAndItsColour() {
             var row = bareRow().carriesValue(VALUE, Color.GRAY);
 
-            assertThat(row.value()).isEqualTo(VALUE);
-            assertThat(row.valueColor()).isEqualTo(Color.GRAY);
+            assertThat(row.valueTextSpan().text()).isEqualTo(VALUE);
+            assertThat(row.valueTextSpan().colour()).isEqualTo(Color.GRAY);
         }
     }
 
@@ -117,8 +118,8 @@ class TooltipRowTest {
         void carriesMarkerSetsTheMarkerAndItsColour() {
             var row = bareRow().carriesMarker(MARKER, Color.YELLOW);
 
-            assertThat(row.marker()).isEqualTo(MARKER);
-            assertThat(row.markerColor()).isEqualTo(Color.YELLOW);
+            assertThat(row.markerTextSpan().text()).isEqualTo(MARKER);
+            assertThat(row.markerTextSpan().colour()).isEqualTo(Color.YELLOW);
         }
 
         @Test
@@ -133,9 +134,9 @@ class TooltipRowTest {
 
             assertThat(row.indent()).isCloseTo(INDENT, within(TOLERANCE));
             assertThat(row.crestSpritePath()).isEqualTo(CREST);
-            assertThat(row.text()).isEqualTo(TEXT);
-            assertThat(row.value()).isEqualTo(VALUE);
-            assertThat(row.valueColor()).isEqualTo(Color.GRAY);
+            assertThat(row.labelTextSpan().text()).isEqualTo(TEXT);
+            assertThat(row.valueTextSpan().text()).isEqualTo(VALUE);
+            assertThat(row.valueTextSpan().colour()).isEqualTo(Color.GRAY);
         }
     }
 
@@ -176,7 +177,7 @@ class TooltipRowTest {
                     .carriesValue(VALUE, Color.GRAY)
                     .clearsCrestColumn();
 
-            assertThat(row.value()).isEqualTo(VALUE);
+            assertThat(row.valueTextSpan().text()).isEqualTo(VALUE);
         }
     }
 
@@ -197,8 +198,8 @@ class TooltipRowTest {
                     .carriesMarker(MARKER, Color.YELLOW)
                     .centred();
 
-            assertThat(row.text()).isEqualTo(TEXT);
-            assertThat(row.marker()).isEqualTo(MARKER);
+            assertThat(row.labelTextSpan().text()).isEqualTo(TEXT);
+            assertThat(row.markerTextSpan().text()).isEqualTo(MARKER);
         }
 
         @Test
@@ -229,8 +230,8 @@ class TooltipRowTest {
                     .carriesMarker(MARKER, Color.YELLOW)
                     .readsAs(TooltipLineStyle.HEADER);
 
-            assertThat(row.text()).isEqualTo(TEXT);
-            assertThat(row.marker()).isEqualTo(MARKER);
+            assertThat(row.labelTextSpan().text()).isEqualTo(TEXT);
+            assertThat(row.markerTextSpan().text()).isEqualTo(MARKER);
             assertThat(row.labelPlacement()).isEqualTo(TooltipLabelPlacement.CENTRED);
         }
     }

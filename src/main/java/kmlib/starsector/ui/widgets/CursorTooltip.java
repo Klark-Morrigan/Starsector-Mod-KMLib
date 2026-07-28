@@ -252,7 +252,7 @@ public final class CursorTooltip {
 
         var markerX = row.hasMarker()
                 ? textX
-                        + (float) styledRow.measureWidth().applyAsDouble(row.text())
+                        + (float) styledRow.measureWidth().applyAsDouble(row.labelTextSpan().text())
                         + MARKER_GAP
                 : textX;
 
@@ -287,7 +287,7 @@ public final class CursorTooltip {
                             + measureCrestOffset(styledRow, crestColumnWidth)
                             + labelSpan
                             + VALUE_GAP
-                            + styledRow.measureWidth().applyAsDouble(row.value());
+                            + styledRow.measureWidth().applyAsDouble(row.valueTextSpan().text());
 
             widest = Math.max(widest, rowWidth);
         }
@@ -298,7 +298,7 @@ public final class CursorTooltip {
     // Shared by the width measurement and the centring below, so a centred row is placed against exactly
     // the span the box was sized to hold.
     private static double measureLabelSpan(StyledRow styledRow) {
-        return styledRow.measureWidth().applyAsDouble(styledRow.row().text())
+        return styledRow.measureWidth().applyAsDouble(styledRow.row().labelTextSpan().text())
                 + measureMarkerSpan(styledRow);
     }
 
@@ -321,7 +321,8 @@ public final class CursorTooltip {
         if (!styledRow.row().hasMarker()) {
             return 0d;
         }
-        return MARKER_GAP + styledRow.measureWidth().applyAsDouble(styledRow.row().marker());
+        return MARKER_GAP
+                + styledRow.measureWidth().applyAsDouble(styledRow.row().markerTextSpan().text());
     }
 
     // The horizontal space the crest gutter costs this row - the box's one column width for a label that

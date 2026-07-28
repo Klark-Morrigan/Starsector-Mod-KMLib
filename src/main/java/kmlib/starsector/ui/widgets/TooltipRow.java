@@ -1,6 +1,6 @@
 package kmlib.starsector.ui.widgets;
 
-import kmlib.text.KmlibStrings;
+import kmlib.starsector.ui.text.TextSpan;
 
 import java.awt.Color;
 
@@ -9,8 +9,14 @@ import java.awt.Color;
  * a leading crest, a marker trailing the label in its own colour, a right-aligned value, an indent for
  * its tier, a break opening a section above it. The content model a caller fills to say what a tooltip
  * shows, without saying how it is measured or drawn - the geometry ({@link CursorTooltip}) reads the
- * indent, the crest presence, and the three texts to size the box, and the renderer reads the colours
- * and the crest path to paint it.
+ * indent, the crest presence, and the three spans to size the box, and the renderer paints those spans
+ * and the crest.
+ *
+ * <p>Each of the three runs is a {@link TextSpan} rather than a text field beside a colour field,
+ * because a run and the colour it draws in are one thing: split across two components they can be
+ * reached for separately, refined separately, and eventually disagree, and neither half can be handed
+ * anywhere on its own. A row with nothing to say in one of the three still holds a span - a blank one -
+ * so measuring, styling, and drawing take the same path whether or not the run is filled.
  *
  * <p>Everything past the label is a refinement on {@link #createRow}, not a parameter of it: a caller
  * states what its row <em>has</em> and never spells out the absences. That matters because most rows
@@ -41,6 +47,7 @@ import java.awt.Color;
  * and even that is a statement about content: a heading is a heading whichever face the host draws
  * headings in. The face, size, and casing that kind resolves to live on the host's {@link TooltipStyle},
  * so a row is authored by whatever knows the subject matter and never by whatever knows the typography.
+ * A span carries no face for the same reason, so the three of them are spoken in one voice per row.
  *
  * @param lineStyle       the kind of line this is, which the host tooltip turns into a look
  * @param labelPlacement  where the label starts across the box - past the crest gutter, at the content
@@ -50,12 +57,9 @@ import java.awt.Color;
  * @param hasSectionBreak whether the row opens a section, taking breathing room above it so it reads
  *                        as starting a block rather than continuing the one above
  * @param crestSpritePath the leading crest's {@code graphics} texture path, or null for no crest
- * @param text            the row's label
- * @param textColor       the label's colour before the tooltip's opacity fade
- * @param marker          the qualifier drawn just after the label, or the empty string for none
- * @param markerColor     the marker's colour before the opacity fade
- * @param value           the right-aligned value, or the empty string for a row with none
- * @param valueColor      the value's colour before the opacity fade
+ * @param labelTextSpan   the row's label, in the colour it draws in before the tooltip's opacity fade
+ * @param markerTextSpan  the qualifier drawn just after the label, blank for a row carrying none
+ * @param valueTextSpan   the right-aligned value, blank for a row carrying none
  */
 public record TooltipRow(
         TooltipLineStyle lineStyle,
@@ -63,17 +67,13 @@ public record TooltipRow(
         float indent,
         boolean hasSectionBreak,
         String crestSpritePath,
-        String text,
-        Color textColor,
-        String marker,
-        Color markerColor,
-        String value,
-        Color valueColor) {
+        TextSpan labelTextSpan,
+        TextSpan markerTextSpan,
+        TextSpan valueTextSpan) {
 
     // What a row that carries none of the optional parts holds: a line of the body, its label starting
     // where the crested rows' labels start, continuing the row above it, and with no crest, marker, or
-    // value. An absent marker or value takes the label's own colour, so no colour is ever null even where
-    // nothing draws. Body text is the default kind because most lines of a tooltip are its body, and
+    // value. Body text is the default kind because most lines of a tooltip are its body, and
     // crest-aligned is the default placement because that is what an ordinary content row is - a heading
     // and a title are each the exception a caller states.
     private static final TooltipLineStyle DEFAULT_LINE_STYLE = TooltipLineStyle.PARAGRAPH;
@@ -81,31 +81,28 @@ public record TooltipRow(
             TooltipLabelPlacement.ALIGNED_WITH_CRESTS;
     private static final float NO_INDENT = 0f;
     private static final String NO_CREST = null;
-    private static final String NO_MARKER = "";
-    private static final String NO_VALUE = "";
 
     /**
      * Builds the plainest row there is: a label alone, laid as an entry in the box's columns at no
      * indent. Every other part is layered on with a refinement below, so what a caller writes is
      * exactly what the row carries.
      *
-     * @param text      the row's label
-     * @param textColor the label's colour before the tooltip's opacity fade
+     * @param label       the row's label
+     * @param labelColour the label's colour before the tooltip's opacity fade
      * @return the bare row
      */
-    public static TooltipRow createRow(String text, Color textColor) {
+    public static TooltipRow createRow(String label, Color labelColour) {
+        // The unfilled marker and value take the label's own colour rather than none: a blank span still
+        // has to answer what it would draw in, so nothing downstream needs a branch for the empty case.
         return new TooltipRow(
                 DEFAULT_LINE_STYLE,
                 DEFAULT_LABEL_PLACEMENT,
                 NO_INDENT,
                 false,
                 NO_CREST,
-                text,
-                textColor,
-                NO_MARKER,
-                textColor,
-                NO_VALUE,
-                textColor);
+                new TextSpan(label, labelColour),
+                TextSpan.createBlank(labelColour),
+                TextSpan.createBlank(labelColour));
     }
 
     /**
@@ -120,16 +117,15 @@ public record TooltipRow(
     }
 
     /**
-     * Whether the row carries a marker worth drawing. One rule read by both the measurement that
-     * charges the marker's span and the placement that anchors it, so the two cannot disagree about
-     * which rows carry one. Blank-but-present text reads as no marker, so a caller assembling one
-     * from parts and coming up empty gets the unmarked row it should rather than a reserved gap
-     * before nothing.
+     * Whether the row carries a marker worth drawing. Named at the row because the measurement that
+     * charges the marker's span and the placement that anchors it both ask the row, not the span, and
+     * so cannot disagree about which rows carry one. What counts as filled is the span's own rule, so a
+     * caller assembling a marker from parts and coming up blank gets the unmarked row it should.
      *
      * @return true when the row carries a marker
      */
     public boolean hasMarker() {
-        return KmlibStrings.hasText(marker);
+        return markerTextSpan.hasText();
     }
 
     /**
@@ -146,58 +142,49 @@ public record TooltipRow(
                 indent,
                 hasSectionBreak,
                 crestSpritePath,
-                text,
-                textColor,
-                marker,
-                markerColor,
-                value,
-                valueColor);
+                labelTextSpan,
+                markerTextSpan,
+                valueTextSpan);
     }
 
     /**
-     * Returns a copy of this row trailing {@code marker} after its label in {@code markerColor} - a
+     * Returns a copy of this row trailing {@code marker} after its label in {@code markerColour} - a
      * qualifier picked out in its own colour while the label stays plain.
      *
-     * @param marker      the qualifier drawn just after the label
-     * @param markerColor the marker's colour before the tooltip's opacity fade
+     * @param marker       the qualifier drawn just after the label
+     * @param markerColour the marker's colour before the tooltip's opacity fade
      * @return an otherwise-identical row carrying that marker
      */
-    public TooltipRow carriesMarker(String marker, Color markerColor) {
+    public TooltipRow carriesMarker(String marker, Color markerColour) {
         return new TooltipRow(
                 lineStyle,
                 labelPlacement,
                 indent,
                 hasSectionBreak,
                 crestSpritePath,
-                text,
-                textColor,
-                marker,
-                markerColor,
-                value,
-                valueColor);
+                labelTextSpan,
+                new TextSpan(marker, markerColour),
+                valueTextSpan);
     }
 
     /**
      * Returns a copy of this row carrying {@code value} right-aligned to the box's content edge, in
-     * {@code valueColor} - the number or short text a stack of rows reads as its value column.
+     * {@code valueColour} - the number or short text a stack of rows reads as its value column.
      *
-     * @param value      the right-aligned value
-     * @param valueColor the value's colour before the tooltip's opacity fade
+     * @param value       the right-aligned value
+     * @param valueColour the value's colour before the tooltip's opacity fade
      * @return an otherwise-identical row carrying that value
      */
-    public TooltipRow carriesValue(String value, Color valueColor) {
+    public TooltipRow carriesValue(String value, Color valueColour) {
         return new TooltipRow(
                 lineStyle,
                 labelPlacement,
                 indent,
                 hasSectionBreak,
                 crestSpritePath,
-                text,
-                textColor,
-                marker,
-                markerColor,
-                value,
-                valueColor);
+                labelTextSpan,
+                markerTextSpan,
+                new TextSpan(value, valueColour));
     }
 
     /**
@@ -215,12 +202,9 @@ public record TooltipRow(
                 indent,
                 hasSectionBreak,
                 crestSpritePath,
-                text,
-                textColor,
-                marker,
-                markerColor,
-                value,
-                valueColor);
+                labelTextSpan,
+                markerTextSpan,
+                valueTextSpan);
     }
 
     /**
@@ -237,12 +221,9 @@ public record TooltipRow(
                 indent,
                 true,
                 crestSpritePath,
-                text,
-                textColor,
-                marker,
-                markerColor,
-                value,
-                valueColor);
+                labelTextSpan,
+                markerTextSpan,
+                valueTextSpan);
     }
 
     /**
@@ -259,12 +240,9 @@ public record TooltipRow(
                 indent,
                 hasSectionBreak,
                 crestSpritePath,
-                text,
-                textColor,
-                marker,
-                markerColor,
-                value,
-                valueColor);
+                labelTextSpan,
+                markerTextSpan,
+                valueTextSpan);
     }
 
     /**
@@ -283,12 +261,9 @@ public record TooltipRow(
                 indent,
                 hasSectionBreak,
                 crestSpritePath,
-                text,
-                textColor,
-                marker,
-                markerColor,
-                value,
-                valueColor);
+                labelTextSpan,
+                markerTextSpan,
+                valueTextSpan);
     }
 
     /**
@@ -306,11 +281,8 @@ public record TooltipRow(
                 indent,
                 hasSectionBreak,
                 crestSpritePath,
-                text,
-                textColor,
-                marker,
-                markerColor,
-                value,
-                valueColor);
+                labelTextSpan,
+                markerTextSpan,
+                valueTextSpan);
     }
 }

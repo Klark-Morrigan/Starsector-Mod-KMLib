@@ -6,6 +6,7 @@ import kmlib.starsector.graphics.StarsectorSprites;
 import kmlib.starsector.ui.font.LazyFontCache;
 import kmlib.starsector.ui.font.LazyFontSpanMeasurer;
 import kmlib.starsector.ui.input.UiCursor;
+import kmlib.starsector.ui.text.TextSpan;
 import kmlib.starsector.ui.text.TextStyle;
 import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.CursorTooltip;
@@ -14,7 +15,6 @@ import kmlib.starsector.ui.widgets.TooltipRow;
 
 import org.lazywizard.lazylib.ui.LazyFont;
 
-import java.awt.Color;
 import java.util.List;
 
 /**
@@ -87,7 +87,7 @@ public final class CursorTooltipRenderer {
     // Draws one row's crest, label, trailing marker, and right-aligned value at its resolved anchors. A
     // row with no crest has a null crest box and skips the icon draw; a missing crest asset resolves to
     // null and is skipped the same way, so its label still reads. The marker and the value are drawn
-    // unconditionally - an empty string paints nothing.
+    // unconditionally - a blank span paints nothing.
     private static void drawRow(
             TooltipRow row,
             TooltipLayout.TooltipRowLayout placement,
@@ -112,22 +112,19 @@ public final class CursorTooltipRenderer {
         // Anchored as the layout pinned them, not by each style's own alignment: the columns are the
         // layout's decision, so a style's default anchor has no say in a box that resolved its own.
         rowPaint.drawSpan(
-                row.textColor(),
-                row.text(),
+                row.labelTextSpan(),
                 placement.textX(),
                 placement.textY(),
                 LazyFont.TextAnchor.TOP_LEFT);
 
         rowPaint.drawSpan(
-                row.markerColor(),
-                row.marker(),
+                row.markerTextSpan(),
                 placement.markerX(),
                 placement.markerY(),
                 LazyFont.TextAnchor.TOP_LEFT);
 
         rowPaint.drawSpan(
-                row.valueColor(),
-                row.value(),
+                row.valueTextSpan(),
                 placement.valueX(),
                 placement.valueY(),
                 LazyFont.TextAnchor.TOP_RIGHT);
@@ -144,21 +141,20 @@ public final class CursorTooltipRenderer {
      */
     private record RowPaint(TextStyle textStyle, float opacity) {
 
-        // Draws one span at an anchor in its own colour. The row's own colours win over the style's
+        // Draws one span at an anchor in its own colour. The span's own colour wins over the style's
         // default, since a marker or value picked out in the row model must not be flattened to one
         // colour by the look.
         private void drawSpan(
-                Color colour,
-                String span,
+                TextSpan textSpan,
                 float x,
                 float y,
                 LazyFont.TextAnchor anchor) {
 
             LabelRenderer.render(
-                    new LabelStyle(textStyle.face(), colour, opacity),
+                    new LabelStyle(textStyle.face(), textSpan.colour(), opacity),
                     // Painted from the look's own display form, the same one the layout measured, or a
                     // shouted line would be drawn wider than the box sized to hold it.
-                    textStyle.resolveDisplayText(span),
+                    textStyle.resolveDisplayText(textSpan.text()),
                     x,
                     y,
                     anchor);
