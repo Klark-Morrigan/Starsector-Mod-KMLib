@@ -18,39 +18,6 @@ KM mod family and the reusable CI / release pipeline that ships it.
 
 ### Added
 
-#### Library helpers (`kmlib.*`)
-- `text` - Starsector-agnostic utilities: `KmlibStrings` string predicates
-  (`hasText`) and `KmlibNumbers` numeric formatting (`formatDelta`, signed
-  delta with an explicit leading `+`).
-- `starsector.strings` - `StarsectorStrings`, a defensive wrapper around
-  `settings.json` localisation lookups that emits a loud `REDACTED` on
-  missing / malformed entries; and `StarsectorFormat.formatPercent`, which
-  renders a `[0, 1]` fraction as a truncated whole-percent string.
-- `starsector.factions` - `StarsectorPlayerFactionResolver`, centralising
-  player-faction display-name normalisation across vanilla and Nexerelin
-  defaults (`isPlayerFactionEstablished`, `resolveDisplayName`).
-- `starsector.relation` - `StarsectorPlayerRelationshipFormatter` for
-  player-relationship display copy.
-- `starsector.ui.color` - `StarsectorUiColor`, a palette enum that routes
-  vanilla shades through `Misc` suppliers and resolves to a live `Color`.
-- `starsector.ui.highlight` - `Highlight`, `HighlightedParagraph`, and
-  `HighlightedMessage`, binding substrings to colours and rendering to
-  `TextPanelAPI`, `TooltipMakerAPI`, `LabelAPI`, and `MessageIntel`.
-- `starsector.ui.tooltip` - `Tooltips`, a wrapper over the tooltip-make API.
-- `starsector.intel` - `BaseTaggedIntelPlugin` (tab-tag mix-in over vanilla's
-  `BaseIntelPlugin`) and `BaseExpiringIntelPlugin` (timestamped auto-removal
-  with a default one-month window and a static `findActive` lookup).
-- `starsector.scripts` - `SectorScripts`, for safely registering scripts on
-  the `SectorAPI`.
-- `starsector.time` - `StarsectorClock`, exposing engine calendar constants
-  vanilla keeps private (`DAYS_PER_MONTH`).
-- `math` - `Jitter`, a uniform random multiplier centred on `1.0` whose
-  single parameter is the band half-width (`roll(0.15)` yields
-  `[0.85, 1.15]`); one shared definition for consumers that scale a value by
-  random monthly variation.
-- `starsector.testing` - `StarsectorSettingsFake`, a test seam for the
-  settings-backed helpers.
-
 #### CI / release pipeline
 - Reusable `mod-release.yml` workflow that any KM-family mod consumes with a
   one-line `release.yml`, deriving all mod-specific values from the caller's
