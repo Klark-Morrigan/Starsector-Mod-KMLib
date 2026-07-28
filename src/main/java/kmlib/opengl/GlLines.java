@@ -9,8 +9,8 @@ import org.lwjgl.opengl.GL11;
  * relied on for.
  *
  * <p>Dashed lines are the case in point: {@code glLineStipple} is legacy
- * fixed-function GL that some Starsector renderer bridges (e.g.
- * {@code com.genir.renderer.bridge.GL11}) do not implement and fatal on, so a
+ * fixed-function GL that some Starsector renderer bridges (Fast Rendering's
+ * {@code GL11} among them) do not implement and fatal on, so a
  * dash is emitted as its own short {@code GL_LINES} segment instead - immediate-
  * mode vertices are always available. {@link #strokeLoop} is the plain closed-outline
  * counterpart, any vertex count, for a debug overlay tracing a polygon's edge. Like

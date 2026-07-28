@@ -6,25 +6,27 @@ Bridge GL11 has no buffer-taking `glGetFloat`: reading `GL_MODELVIEW_MATRIX` / `
 
 ## Summary
 
-`com.genir.renderer.bridge.GL11` implements no `glGetFloat(int, FloatBuffer)` overload. Since
-the classloader rewrites `org/lwjgl/opengl/GL11` to the bridge in every jar, a mod that
+`com.genir.renderer.bridge.commands.GL11` implements no `glGetFloat(int, FloatBuffer)` overload.
+Since the classloader rewrites `org/lwjgl/opengl/GL11` to the bridge in every jar, a mod that
 compiled fine against real LWJGL binds to the bridge at runtime and dies with a
 `NoSuchMethodError` the first time it reads a matrix back - from inside its render pass, so it
 takes the screen down with it rather than failing at load.
 
-Verified against **v0.7.2** (`fr.jar`, SHA-256
-`c7f62dbf7511bad1b12d7eeae620030ad432d9de29ccb2c9a65057b9c5081e09`, 548847 bytes) on Starsector
-0.98a-RC8, and re-read on current `master` (last pushed 2026-06-05), where the `glGet*` surface
-is unchanged.
+Verified against **v0.7.6** (`fr.jar`, SHA-256
+`f8b00d3bef7d5ad0cf59e74c23d2d045c4a5e4c8c2b62f3ed11e41597f194cae`, 632557 bytes) on Starsector
+0.98a-RC8. It was first written against v0.7.2 and re-read on every release since: the `glGet*`
+surface has not changed across them, though the bridge package has (v0.7.4 moved it from
+`com.genir.renderer.bridge` to `com.genir.renderer.bridge.commands`, and the command interfaces
+to `com.genir.renderer.bridge.interfaces`).
 
 ## Details
 
 The bridge's entire `glGet*` surface is `glGetInteger(int)`, `glGetInteger(int, IntBuffer)`,
 `glGetString(int)`, `glGetFloat(int)`, `glGetError()`, `glGetTexLevelParameteri`, and two
-`glGetTexImage` overloads
-(`modules/renderer/src/com/genir/renderer/bridge/GL11.java`, the `glGet*` block around
-L1523-L1732 on master). `glGetFloat` exists only in its scalar form (L1622), which cannot take
-a matrix.
+`glGetTexImage` overloads (`GL11.java`, the `glGet*` block; in the shipped v0.7.6 jar it
+decompiles to L1264-L1462). `glGetFloat` exists only in its scalar form, which cannot take a
+matrix - and it answers `GL_LINE_WIDTH` inline, so the shape for serving a value from tracked
+state without a stall is already there.
 
 The affected pattern is the standard one for turning a cursor into world coordinates:
 
@@ -43,11 +45,11 @@ fails.)
 Adding `glGetFloat(int, FloatBuffer)` that just delegates to `org.lwjgl.opengl.GL11` would stop
 the crash and replace it with something worse.
 
-While `cpuModelView` is set, `TransformManager` deliberately keeps GL's modelview at identity
+While `cpuMode` is set, `TransformManager` deliberately keeps GL's modelview at identity
 and multiplies each vertex by the CPU matrix instead
-(`TransformManager.setCPUModelView` L22-32 and `getCPUModelView` L47-53;
-`VertexInterceptor.glVertex3f`). `shouldDelegate()` (L154-156) means modelview calls are not
-forwarded to real GL at all in that mode. So a delegating read hands back identity while the
+(`TransformManager.setCPUMode` and `getCPUModelView`; `VertexInterceptor.glVertex3f`).
+`shouldDelegate()` means modelview calls are not forwarded to real GL at all in that mode.
+So a delegating read hands back identity while the
 real transform sits in a Java object, and the caller gets sixteen plausible floats that are
 silently wrong - a mod resolves the wrong point on the map with nothing thrown. The current
 `NoSuchMethodError` is at least loud.
@@ -82,6 +84,10 @@ fatal. `Executor.wait` calls `StallDetector.detectStall`
 open map runs every frame, so a synchronous read there stalls 60 of 60 and brings the game down
 within about a second. A mod cannot read the modelview synchronously every frame at all.
 
+Detection is armed on the first `CombatEngine` construction (`overrides/CombatEngine.java`), so a
+stalling read is silently tolerated until then. That makes the failure look intermittent to mod
+authors: the same code can survive a menu-and-map session and die on the first battle.
+
 This is a constraint on mods, not on the bridge itself: the bridge owns the detector, so an
 in-bridge implementation is free of it.
 
@@ -93,13 +99,13 @@ current CPU modelview mirrored in caller-side state (an `AttribTracker`-style sh
 `glTranslatef`/`glLoadMatrix`/`glPushMatrix`/`glPopMatrix` records commands), so the getter can
 return it without a render-thread round trip:
 
-- `GL_MODELVIEW_MATRIX` -> the caller-side modelview shadow when `cpuModelView` is set, otherwise
+- `GL_MODELVIEW_MATRIX` -> the caller-side modelview shadow when `cpuMode` is set, otherwise
   the real GL read. Serving it from `transformManager` on the caller thread instead reintroduces
   the render-thread race above; serving it through `Executor.get`/`wait` reintroduces the stall.
 - Store with `storeTranspose`, not `store`. The bridge's `Matrix4f` fields are row-major
   (`VertexInterceptor.glVertex3f` takes the translation from `m03/m13/m23`), transposed from what
-  GL and `gluUnProject` expect - which is the same conversion `setGPUModelView` (L41) already does
-  on the way out.
+  GL and `gluUnProject` expect - which is the same conversion `setGPUMode` already does on the
+  way out.
 - `GL_PROJECTION_MATRIX` has no CPU shadow, so a plain delegation is correct for it.
 
 Callers would then get the matrix the vertices are actually drawn with, under both renderers, with
@@ -110,7 +116,11 @@ no stall and no threading hazard.
 Read the CPU matrix one frame late, without stalling. `Context.exec.execute(GLCommand)` enqueues a
 command and returns immediately - no `wait`, no stall - and the command runs on the `FR-Render`
 thread at your pass's position in the stream, where the matrix is your caller's transform. Have it
-copy the matrix into a holder you own, and read the *previous* frame's copy:
+copy the matrix into a holder you own, and read the *previous* frame's copy.
+
+`GLCommand` is `com.genir.renderer.bridge.interfaces.GLCommand` from v0.7.4 and
+`com.genir.renderer.bridge.context.commands.GLCommand` before it; its method is
+`run(Context, float[], int)`, and a command that takes no packed arguments ignores the last two:
 
 ```java
 // held on your reader, published across the render/game thread boundary

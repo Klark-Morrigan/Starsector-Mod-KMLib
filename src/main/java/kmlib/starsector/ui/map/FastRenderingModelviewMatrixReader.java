@@ -5,7 +5,7 @@ import kmlib.opengl.FastRendering;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.genir.renderer.bridge.context.ContextManager;
-import com.genir.renderer.bridge.context.commands.GLCommand;
+import com.genir.renderer.bridge.interfaces.GLCommand;
 
 /**
  * Reports the modelview Fast Rendering holds on the CPU, the binding of

@@ -1,6 +1,6 @@
 package com.genir.renderer.bridge.context;
 
-import com.genir.renderer.bridge.context.commands.GLCommand;
+import com.genir.renderer.bridge.interfaces.GLCommand;
 
 /**
  * Compile-only mirror of Fast Rendering's {@code Executor}. Declares only {@code execute}, the one

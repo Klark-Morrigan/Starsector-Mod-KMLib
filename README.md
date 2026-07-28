@@ -316,6 +316,11 @@ compileOnly files("${configuredStarsectorRoot}/mods/KMLib/jars/KMLib.jar")
 Tests in consuming mods that touch KMLib types also add the same jar as
 `testCompileOnly` / `testRuntimeOnly`.
 
+KMLib declares one dependency of its own, LazyLib, so players of any consuming mod
+need it. All GL text draws through `LazyFont`, and an absent LazyLib throws inside a
+render pass where no guard can catch it. Every other jar KMLib compiles against
+(LunaLib, Console Commands, RAT, MagicLib) stays soft.
+
 ## Rendering environment
 
 KMLib's map and UI code draws straight against OpenGL, where two things are not

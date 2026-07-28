@@ -18,9 +18,13 @@ import java.nio.FloatBuffer;
  */
 public final class FastRendering {
 
-    // What org.lwjgl.opengl.GL11 resolves to once Fast Rendering's classloader has rewritten this
-    // jar's class references.
-    private static final String BRIDGE_GL11_CLASS_NAME = "com.genir.renderer.bridge.GL11";
+    // The package every Fast Rendering bridge class sits under, whatever the release calls the rest
+    // of the name. Matching the prefix rather than a whole class name is deliberate: the bridge has
+    // been relocated within this package before (v0.7.4 moved GL11 from
+    // com.genir.renderer.bridge to com.genir.renderer.bridge.commands), and a full-name comparison
+    // answers "stock" for any release whose layout it does not know. That is the one wrong answer
+    // with teeth - it routes callers into GL reads the bridge cannot serve, which fail mid-render.
+    private static final String BRIDGE_PACKAGE_PREFIX = "com.genir.renderer.";
 
     private static final int MATRIX_FLOAT_COUNT = 16;
 
@@ -40,7 +44,7 @@ public final class FastRendering {
      * @return {@code true} when GL calls from this jar reach Fast Rendering's bridge
      */
     public static boolean isFastRenderingActive() {
-        return BRIDGE_GL11_CLASS_NAME.equals(GL11.class.getName());
+        return isBridgeClassName(GL11.class.getName());
     }
 
     /**
@@ -67,5 +71,12 @@ public final class FastRendering {
         var columnMajorFloats = new float[MATRIX_FLOAT_COUNT];
         matrixBuffer.get(columnMajorFloats);
         return columnMajorFloats;
+    }
+
+    // Split from the class-literal read so the rule can be stated against names from releases this
+    // machine does not have installed, which is the only way the tolerance for a relocated bridge
+    // is checkable at all - the live read reports whichever renderer happens to be underneath.
+    static boolean isBridgeClassName(String glClassName) {
+        return glClassName.startsWith(BRIDGE_PACKAGE_PREFIX);
     }
 }

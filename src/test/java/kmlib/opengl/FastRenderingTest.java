@@ -52,6 +52,30 @@ class FastRenderingTest {
     }
 
     @Nested
+    class IsBridgeClassName {
+
+        @Test
+        void fastRendering_isBridgeClassName_ReportsTrue_IfNameIsRelocatedBridge() {
+            // The layout from v0.7.4 onwards. Fast Rendering relocated its bridge within its own
+            // package without saying so, and a check keyed to one release's full class name
+            // reported "stock" afterwards - which sent callers into GL reads it cannot serve.
+            assertThat(FastRendering.isBridgeClassName("com.genir.renderer.bridge.commands.GL11"))
+                    .isTrue();
+        }
+
+        @Test
+        void fastRendering_isBridgeClassName_ReportsTrue_IfNameIsEarlierBridgeLayout() {
+            // The layout up to v0.7.3, still in the field on installs that have not updated.
+            assertThat(FastRendering.isBridgeClassName("com.genir.renderer.bridge.GL11")).isTrue();
+        }
+
+        @Test
+        void fastRendering_isBridgeClassName_ReportsFalse_IfNameIsStockLwjgl() {
+            assertThat(FastRendering.isBridgeClassName("org.lwjgl.opengl.GL11")).isFalse();
+        }
+    }
+
+    @Nested
     class CopyAsColumnMajorFloats {
 
         @Test
