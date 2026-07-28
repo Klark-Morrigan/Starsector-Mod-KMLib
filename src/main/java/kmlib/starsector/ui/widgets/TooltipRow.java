@@ -3,6 +3,7 @@ package kmlib.starsector.ui.widgets;
 import kmlib.starsector.ui.text.TextSpan;
 
 import java.awt.Color;
+import java.util.Objects;
 
 /**
  * One line of a {@link CursorTooltip}: a coloured label, and around it whatever else the line carries -
@@ -83,15 +84,28 @@ public record TooltipRow(
     private static final String NO_CREST = null;
 
     /**
+     * Rejects null spans at construction, where the caller that built the row is still on the stack. All
+     * three runs are always present on a row - an unfilled one is a blank span rather than an absent one
+     * - so a null is a mistake, and one left to be caught downstream surfaces inside a measurement or a
+     * draw call, well past the point that could say which row was meant. The crest path is the one part
+     * that is genuinely optional, and it keeps null as its spelling of absence.
+     */
+    public TooltipRow {
+        Objects.requireNonNull(labelTextSpan, "labelTextSpan");
+        Objects.requireNonNull(markerTextSpan, "markerTextSpan");
+        Objects.requireNonNull(valueTextSpan, "valueTextSpan");
+    }
+
+    /**
      * Builds the plainest row there is: a label alone, laid as an entry in the box's columns at no
      * indent. Every other part is layered on with a refinement below, so what a caller writes is
      * exactly what the row carries.
      *
-     * @param label       the row's label
+     * @param labelText   the row's label
      * @param labelColour the label's colour before the tooltip's opacity fade
      * @return the bare row
      */
-    public static TooltipRow createRow(String label, Color labelColour) {
+    public static TooltipRow createRow(String labelText, Color labelColour) {
         // The unfilled marker and value take the label's own colour rather than none: a blank span still
         // has to answer what it would draw in, so nothing downstream needs a branch for the empty case.
         return new TooltipRow(
@@ -100,7 +114,7 @@ public record TooltipRow(
                 NO_INDENT,
                 false,
                 NO_CREST,
-                new TextSpan(label, labelColour),
+                new TextSpan(labelText, labelColour),
                 TextSpan.createBlank(labelColour),
                 TextSpan.createBlank(labelColour));
     }
@@ -148,14 +162,14 @@ public record TooltipRow(
     }
 
     /**
-     * Returns a copy of this row trailing {@code marker} after its label in {@code markerColour} - a
-     * qualifier picked out in its own colour while the label stays plain.
+     * Returns a copy of this row trailing {@code markerText} after its label in {@code markerColour} -
+     * a qualifier picked out in its own colour while the label stays plain.
      *
-     * @param marker       the qualifier drawn just after the label
+     * @param markerText   the qualifier drawn just after the label
      * @param markerColour the marker's colour before the tooltip's opacity fade
      * @return an otherwise-identical row carrying that marker
      */
-    public TooltipRow carriesMarker(String marker, Color markerColour) {
+    public TooltipRow carriesMarker(String markerText, Color markerColour) {
         return new TooltipRow(
                 lineStyle,
                 labelPlacement,
@@ -163,19 +177,19 @@ public record TooltipRow(
                 hasSectionBreak,
                 crestSpritePath,
                 labelTextSpan,
-                new TextSpan(marker, markerColour),
+                new TextSpan(markerText, markerColour),
                 valueTextSpan);
     }
 
     /**
-     * Returns a copy of this row carrying {@code value} right-aligned to the box's content edge, in
+     * Returns a copy of this row carrying {@code valueText} right-aligned to the box's content edge, in
      * {@code valueColour} - the number or short text a stack of rows reads as its value column.
      *
-     * @param value       the right-aligned value
+     * @param valueText   the right-aligned value
      * @param valueColour the value's colour before the tooltip's opacity fade
      * @return an otherwise-identical row carrying that value
      */
-    public TooltipRow carriesValue(String value, Color valueColour) {
+    public TooltipRow carriesValue(String valueText, Color valueColour) {
         return new TooltipRow(
                 lineStyle,
                 labelPlacement,
@@ -184,7 +198,7 @@ public record TooltipRow(
                 crestSpritePath,
                 labelTextSpan,
                 markerTextSpan,
-                new TextSpan(value, valueColour));
+                new TextSpan(valueText, valueColour));
     }
 
     /**

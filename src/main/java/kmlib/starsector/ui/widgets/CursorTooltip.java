@@ -3,6 +3,7 @@ package kmlib.starsector.ui.widgets;
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.font.TextSpanMeasurer;
 import kmlib.starsector.ui.layout.TooltipBoxLayout;
+import kmlib.starsector.ui.text.TextSpan;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -252,7 +253,7 @@ public final class CursorTooltip {
 
         var markerX = row.hasMarker()
                 ? textX
-                        + (float) styledRow.measureWidth().applyAsDouble(row.labelTextSpan().text())
+                        + (float) styledRow.measureSpanWidth(row.labelTextSpan())
                         + MARKER_GAP
                 : textX;
 
@@ -287,7 +288,7 @@ public final class CursorTooltip {
                             + measureCrestOffset(styledRow, crestColumnWidth)
                             + labelSpan
                             + VALUE_GAP
-                            + styledRow.measureWidth().applyAsDouble(row.valueTextSpan().text());
+                            + styledRow.measureSpanWidth(row.valueTextSpan());
 
             widest = Math.max(widest, rowWidth);
         }
@@ -298,7 +299,7 @@ public final class CursorTooltip {
     // Shared by the width measurement and the centring below, so a centred row is placed against exactly
     // the span the box was sized to hold.
     private static double measureLabelSpan(StyledRow styledRow) {
-        return styledRow.measureWidth().applyAsDouble(styledRow.row().labelTextSpan().text())
+        return styledRow.measureSpanWidth(styledRow.row().labelTextSpan())
                 + measureMarkerSpan(styledRow);
     }
 
@@ -321,8 +322,7 @@ public final class CursorTooltip {
         if (!styledRow.row().hasMarker()) {
             return 0d;
         }
-        return MARKER_GAP
-                + styledRow.measureWidth().applyAsDouble(styledRow.row().markerTextSpan().text());
+        return MARKER_GAP + styledRow.measureSpanWidth(styledRow.row().markerTextSpan());
     }
 
     // The horizontal space the crest gutter costs this row - the box's one column width for a label that
@@ -344,7 +344,7 @@ public final class CursorTooltip {
      *
      * @param row          the content row as its caller authored it
      * @param lineHeight   the height the row stacks at, which is also its crest square's side
-     * @param measureWidth the width of one of this row's spans, in this row's own face
+     * @param measureWidth the width of one of this row's span texts, in this row's own face
      */
     private record StyledRow(
             TooltipRow row,
@@ -366,9 +366,16 @@ public final class CursorTooltip {
             return new StyledRow(
                     row,
                     textStyle.face().size(),
-                    span -> measurer.measureSpanWidth(
+                    spanText -> measurer.measureSpanWidth(
                             textStyle.face(),
-                            textStyle.resolveDisplayText(span)));
+                            textStyle.resolveDisplayText(spanText)));
+        }
+
+        // The width one of this row's spans occupies, in this row's own face. Asked of the span rather
+        // than of its text, so no step above has to unpack a span and reach past the bound measurement
+        // to charge it - and so the binding itself stays this record's own business.
+        private double measureSpanWidth(TextSpan textSpan) {
+            return measureWidth.applyAsDouble(textSpan.text());
         }
     }
 }
