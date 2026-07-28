@@ -2,6 +2,7 @@ package kmlib.starsector.ui.render.gl;
 
 import com.fs.starfarer.api.Global;
 
+import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.graphics.StarsectorSprites;
 import kmlib.starsector.ui.font.LazyFontCache;
 import kmlib.starsector.ui.font.LazyFontSpanMeasurer;
@@ -10,6 +11,7 @@ import kmlib.starsector.ui.text.TextSpan;
 import kmlib.starsector.ui.text.TextStyle;
 import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.CursorTooltip;
+import kmlib.starsector.ui.widgets.LabelledRow;
 import kmlib.starsector.ui.widgets.RowSlot;
 import kmlib.starsector.ui.widgets.TooltipLayout;
 import kmlib.starsector.ui.widgets.TooltipRow;
@@ -86,31 +88,13 @@ public final class CursorTooltipRenderer {
         }
     }
 
-    // Draws one row's crest, its label's runs, and its right-aligned value at their resolved anchors. A
-    // row with no crest has a null crest box and skips the icon draw; a missing crest asset resolves to
-    // null and is skipped the same way, so its label still reads. Every run is drawn unconditionally -
-    // a blank span paints nothing - while a slot the row left unfilled has nothing to paint at all.
+    // Draws one row's flanks and its label's runs at their resolved anchors. Only a table row has flanks
+    // at all - a centred row is its label alone - so the label draw is what the two kinds share and the
+    // one branch here is over what the row holds rather than over how it is laid.
     private static void drawRow(
             TooltipRow row,
             TooltipLayout.TooltipRowLayout placement,
             CursorTooltipStyle style) {
-
-        var labelledRow = row.labelledRow();
-
-        // The path is read off the slot the row leads with rather than asked of the row, so a slot
-        // holding something other than an image draws nothing here instead of resolving to a texture
-        // lookup that was never meant for it.
-        if (placement.crestBox() != null
-                && labelledRow.leadingRowSlot() instanceof RowSlot.Image crestRowSlot) {
-
-            var crest = StarsectorSprites.loadSprite(crestRowSlot.spritePath());
-            if (crest != null) {
-                UiSprite.renderQuad(
-                        crest,
-                        placement.crestBox(),
-                        style.opacity());
-            }
-        }
 
         // The kind of line the row is decides the face, size, and casing every span of it shares -
         // resolved once here, the same lookup the layout made when it measured them.
@@ -118,27 +102,67 @@ public final class CursorTooltipRenderer {
                 style.typography().resolveStyleFor(row.lineStyle()),
                 style.opacity());
 
+        if (row instanceof TooltipRow.TableRow tableRow) {
+            drawFlankingRowSlots(tableRow.labelledRow(), placement, rowPaint);
+        }
+
         // Anchored as the layout pinned them, not by each style's own alignment: the columns are the
         // layout's decision, so a style's default anchor has no say in a box that resolved its own. The
-        // runs walk in step with the anchors the same rows produced, so run and anchor cannot slip.
-        var labelTextSpans = labelledRow.labelTextSpans();
+        // runs walk in step with the anchors the same rows produced, so run and anchor cannot slip. Every
+        // run is drawn unconditionally - a blank span paints nothing.
+        var labelTextSpans = row.labelTextSpans();
         for (var index = 0; index < labelTextSpans.size(); index++) {
             rowPaint.drawSpan(
                     labelTextSpans.get(index),
                     placement.labelRunXs().get(index),
-                    placement.labelY(),
+                    placement.rowTopY(),
                     LazyFont.TextAnchor.TOP_LEFT);
         }
+    }
 
-        // Only a slot holding a run has a value to draw: an unfilled one carries neither text nor the
-        // colour text would be drawn in, so there is nothing to hand the paint.
+    // Draws what a table row carries either side of its label: an image in the leading column and a run
+    // of text in the trailing one. A slot the row left unfilled has nothing to paint, and a slot holding
+    // a kind this pass has not been taught draws nothing - the layout reserved the column from that
+    // slot's own width either way, so the unpainted kind costs the box its room rather than overlapping
+    // the label.
+    private static void drawFlankingRowSlots(
+            LabelledRow labelledRow,
+            TooltipLayout.TooltipRowLayout placement,
+            RowPaint rowPaint) {
+
+        // What the leading column holds decides what is drawn in it: a slot holding something other than
+        // an image draws nothing here rather than resolving to a texture lookup never meant for it. A
+        // missing crest asset resolves to null and is skipped the same way, so the label still reads.
+        if (labelledRow.leadingRowSlot() instanceof RowSlot.Image crestRowSlot) {
+            var crest = StarsectorSprites.loadSprite(crestRowSlot.spritePath());
+            if (crest != null) {
+                // Faded through the paint the row's text draws with, so a crest and the label beside it
+                // cannot end up compositing at two different alphas.
+                UiSprite.renderQuad(
+                        crest,
+                        computeCrestBox(placement),
+                        rowPaint.opacity());
+            }
+        }
         if (labelledRow.trailingRowSlot() instanceof RowSlot.Text valueRowSlot) {
             rowPaint.drawSpan(
                     valueRowSlot.textSpan(),
-                    placement.valueX(),
-                    placement.valueY(),
+                    placement.trailingRowSlotX(),
+                    placement.rowTopY(),
                     LazyFont.TextAnchor.TOP_RIGHT);
         }
+    }
+
+    // The square a crest hangs in: the leading column's left edge, the row's own line on each side. The
+    // image slot reports exactly that width to the layout, so the column reserved for the crest and the
+    // square painted into it are the same size, and the crest sits level with the label beside it
+    // whatever face that label draws in.
+    private static Rectangle computeCrestBox(TooltipLayout.TooltipRowLayout placement) {
+        return new Rectangle(
+                placement.leadingRowSlotX(),
+                placement.rowTopY() - placement.lineHeight(),
+                placement.lineHeight(),
+                placement.lineHeight());
     }
 
     /**

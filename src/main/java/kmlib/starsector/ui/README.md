@@ -72,7 +72,7 @@ and would tie the value to a single surface, which is the first argument again.
 | --- | --- | --- | --- |
 | a run of text and its colour | [`TextSpan`](text/TextSpan.java) | [`Highlight`](highlight/Highlight.java) | [`LabelRenderer`](render/gl/LabelRenderer.java) |
 | where text sits at its draw point | [`TextAlignment`](text/TextAlignment.java) | `api.ui.Alignment` | `LazyFont.TextAnchor` |
-| a line with parts in other colours | a label's runs on [`LabelledRow`](widgets/LabelledRow.java) | [`HighlightedParagraph`](highlight/HighlightedParagraph.java) | [`CursorTooltipRenderer`](render/gl/CursorTooltipRenderer.java) |
+| a line with parts in other colours | a label's runs, on [`LabelledRow`](widgets/LabelledRow.java) or [`TooltipRow`](widgets/TooltipRow.java) | [`HighlightedParagraph`](highlight/HighlightedParagraph.java) | [`CursorTooltipRenderer`](render/gl/CursorTooltipRenderer.java) |
 | a hover tooltip | [`CursorTooltip`](widgets/CursorTooltip.java) | [`Tooltips`](tooltip/Tooltips.java) | [`CursorTooltipRenderer`](render/gl/CursorTooltipRenderer.java) |
 | the width of a run | [`TextSpanMeasurer`](font/TextSpanMeasurer.java) | - | [`LazyFontSpanMeasurer`](font/LazyFontSpanMeasurer.java) |
 

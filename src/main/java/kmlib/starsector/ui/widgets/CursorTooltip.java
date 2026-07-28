@@ -11,28 +11,34 @@ import java.util.function.ToDoubleFunction;
 
 /**
  * The layout of a free-floating tooltip that follows the cursor: a vertical stack of {@link
- * TooltipRow}s - each an optional crest, a label of one or more runs, and an optional right-aligned
- * value - sized to hold its widest row and placed near the pointer.
- * Substrate-independent: it measures text through a {@link TextSpanMeasurer} port and returns
- * rectangles and anchors, rendering nothing, so a GL or a UI-API renderer paints against the same
+ * TooltipRow}s - table rows of an optional crest, a label of one or more runs, and an optional
+ * right-aligned value, and centred rows of a label alone - sized to hold its widest row and placed near
+ * the pointer. Substrate-independent: it measures text through a {@link TextSpanMeasurer} port and
+ * returns rectangles and anchors, rendering nothing, so a GL or a UI-API renderer paints against the same
  * geometry. The raw-GL paint lives in
  * {@link kmlib.starsector.ui.render.gl.CursorTooltipRenderer}.
  *
  * <p>The padding and the screen clamp are {@link TooltipBoxLayout}'s; this widget adds the row model
- * on top - it measures how wide and how tall the rows stack, and lays each row's crest square, label
- * run anchors, and value anchor within the placed box. The value gap is reserved on every row, so a
- * value-less row keeps its label clear of the value column; the gap between two label runs is not,
- * since the runs read as one sentence rather than as columns the other rows align to. The crest
- * column is reserved per box, not per row: it is reserved only when some crest-aligned row carries a
- * crest, so a box whose rows are all crest-less lays its labels at the content edge with no empty
- * gutter, while a box with any crest reserves the column on every crest-aligned row so a crest-less one
- * still lines up under the crested ones. One width for the whole box, wide enough for its tallest crest:
- * the column exists so that labels line up, which a width settled row by row would defeat. Which rows
- * align to it at all is each row's own {@link TooltipLabelPlacement}.
+ * on top - it measures how wide and how tall the rows stack, and lays each row's line and its three
+ * column anchors within the placed box. The value gap is reserved on every row, so a value-less row
+ * keeps its label clear of the value column; the gap between two label runs is not, since the runs read
+ * as one sentence rather than as columns the other rows align to. The crest column is reserved per box,
+ * not per row: it is reserved only when some crest-aligned row fills its leading slot, so a box whose
+ * rows all leave it unfilled lays its labels at the content edge with no empty gutter, while a box with
+ * any crest reserves the column on every crest-aligned row so a crest-less one still lines up under the
+ * crested ones. One width for the whole box, wide enough for its widest crest: the column exists so that
+ * labels line up, which a width settled row by row would defeat. Which rows align to it at all is each
+ * row's own {@link TooltipLabelPlacement}.
  *
- * <p>A centred row is laid outside that column model entirely: its label's runs centre together as one
- * span in the content region, and it is sized to that span alone, so a title or a lone statement centres
- * over whatever the box holds rather than aligning as an entry of it.
+ * <p>Both columns are reserved from what the rows' own {@link RowSlot}s report, never from what those
+ * slots turn out to hold, so a row that leads or trails with something other than the crest and value a
+ * tooltip usually carries is measured and placed by the same arithmetic as the rest.
+ *
+ * <p>A {@link TooltipRow.CentredRow} is laid outside that column model entirely: its label's runs centre
+ * together as one span in the content region, and it is sized to that span alone, so a title or a lone
+ * statement centres over whatever the box holds rather than aligning as an entry of it. Such a row holds
+ * no slots at all, which is what lets the box be sized to the span alone: there is nothing of it that
+ * could land in a column the box was not widened for.
  *
  * <p>Rows stack a line apart, and a row that opens a section takes half a line more above it. The
  * break is the widget's rather than the caller's arithmetic: a caller says which rows start a block,
@@ -73,12 +79,12 @@ public final class CursorTooltip {
 
     /**
      * Lays {@code rows} into a cursor-following box: sizes it to the widest row across all tiers,
-     * places it up-and-right of the cursor clamped on screen, and resolves each row's crest, label,
-     * and value anchors within it. Each row stacks at - and hangs a crest square as tall as - the line
-     * height its own kind of line draws at, so a heading takes the room its face needs. The crest column
-     * is reserved only when some row carries a crest, and then at one width across the box: in a mixed
-     * box a crest-less row still reserves it (and gets a null crest box) so its label aligns under the
-     * crested rows, while an all-crest-less box reserves nothing and lays its labels flush.
+     * places it up-and-right of the cursor clamped on screen, and resolves each row's line and column
+     * anchors within it. Each row stacks at - and hangs its leading slot as tall as - the line height
+     * its own kind of line draws at, so a heading takes the room its face needs. The crest column is
+     * reserved only when some table row fills its leading slot, and then at one width across the box: in
+     * a mixed box a crest-less row still reserves it so its label aligns under the crested rows, while an
+     * all-crest-less box reserves nothing and lays its labels flush.
      *
      * @param rows         the content rows, top to bottom; an empty list yields a padding-only box
      * @param style        the look each kind of line draws in, from which every row's face, size, and
@@ -129,28 +135,37 @@ public final class CursorTooltip {
         return styledRows;
     }
 
-    // The crest column's one width for the whole box: room for the tallest crest any row carries, plus
-    // the gap to the labels past it. Nothing at all when no row carries a crest, so the column collapses
+    // The crest column's one width for the whole box: room for the widest leading slot any row fills,
+    // plus the gap to the labels past it. Nothing at all when no row fills one, so the column collapses
     // and the labels lay flush against the left content edge. Settled per box rather than per row even
-    // though the crests are squared off their own rows' line heights, because the column exists so that
-    // the labels line up - a width settled row by row would set each label at its own offset, leaving no
-    // column to align to - and sized to the tallest so that no crest is clipped by the column holding it.
+    // though a crest is squared off its own row's line height, because the column exists so that the
+    // labels line up - a width settled row by row would set each label at its own offset, leaving no
+    // column to align to - and sized to the widest so that nothing is clipped by the column holding it.
+    //
+    // Each slot is asked its own width rather than being read for a crest, so a row leading with
+    // something other than an image reserves exactly what that thing takes and this measurement never
+    // learns which kinds exist.
     private static float measureCrestColumnWidth(List<StyledRow> rows) {
-        var isReserved = false;
-        var tallestCrest = 0d;
+        var widestLeadingRowSlotWidth = RowSlot.NO_WIDTH;
         for (var styledRow : rows) {
-            var row = styledRow.row();
 
-            // Only the crests of the rows that align to the column size it. A label placed anywhere else
-            // starts before it - so its crest neither needs the column nor gets a say in how wide it is,
-            // and one edge-flush row cannot open a gutter that shifts every row that does align to it.
-            if (row.hasCrest() && row.labelPlacement() == TooltipLabelPlacement.ALIGNED_WITH_CRESTS) {
-                isReserved = true;
-                tallestCrest = Math.max(tallestCrest, styledRow.lineHeight());
+            // Only the rows that align to the column size it. A centred line holds no leading slot at
+            // all, and a label placed at the content edge starts before the column - so neither needs it
+            // nor gets a say in how wide it is, and one edge-flush row cannot open a gutter that shifts
+            // every row that does align to it.
+            if (!(styledRow.row() instanceof TooltipRow.TableRow tableRow)
+                    || tableRow.labelPlacement() != TooltipLabelPlacement.ALIGNED_WITH_CRESTS) {
+                continue;
             }
+            widestLeadingRowSlotWidth = Math.max(
+                    widestLeadingRowSlotWidth,
+                    styledRow.measureSlotWidth(tableRow.labelledRow().leadingRowSlot()));
         }
-        return isReserved
-                ? (float) tallestCrest + CREST_GAP
+
+        // An unfilled slot - and a run that came out blank - is worth nothing, so a box whose rows fill
+        // no leading slot opens no gutter rather than one of zero width plus a gap.
+        return widestLeadingRowSlotWidth > RowSlot.NO_WIDTH
+                ? widestLeadingRowSlotWidth + CREST_GAP
                 : NO_CREST_COLUMN;
     }
 
@@ -219,12 +234,14 @@ public final class CursorTooltip {
         return placements;
     }
 
-    // Places one row: the crest square in the indented icon column (null when the row has no crest, so
-    // the renderer skips it while the label still clears any reserved column), the label's runs past the
-    // column, and the value right-anchored to the box's right content edge. The crest column is added to
-    // the label offset only when the box reserves it; an all-crest-less box lays the label at the row's
-    // indent. A centred row takes none of that - its label anchors off the content region's midpoint
-    // instead - while its later runs still ride off that anchor, so a whole label centres as one span.
+    // Places one row's three columns off its own line: the leading slot at the indented icon column, the
+    // label's runs past that column, and the trailing slot right-anchored to the box's right content
+    // edge. The crest column is added to the label offset only when the box reserves it; an
+    // all-crest-less box lays the label at the row's indent.
+    //
+    // The line is handed over once, as a top edge and the height the row stacks at, since every column
+    // of the row sits on it. What each column then fills is the drawing side's to size, off its own
+    // slot, so nothing here has to know which kinds a row can carry.
     private static TooltipLayout.TooltipRowLayout placeRow(
             StyledRow styledRow,
             float leftX,
@@ -232,30 +249,27 @@ public final class CursorTooltip {
             float rowTopY,
             float crestColumnWidth) {
 
-        var row = styledRow.row();
-        var crestX = leftX + row.indent();
-
-        // The crest is squared off the row's own line height, so it sits level with the label beside it
-        // whatever face that label draws in - which is why it is the row's height and not the column's.
-        var crestSize = (float) styledRow.lineHeight();
-        var crestBox = row.hasCrest()
-                ? new Rectangle(
-                        crestX,
-                        rowTopY - crestSize,
-                        crestSize,
-                        crestSize)
-                : null;
-
-        var labelStartX = row.labelPlacement() == TooltipLabelPlacement.CENTRED
-                ? centreLabelX(styledRow, leftX, rightX)
-                : crestX + measureCrestOffset(styledRow, crestColumnWidth);
+        // A centred line holds no columns to place. Its label anchors off the content region's midpoint
+        // instead - its later runs still ride off that anchor, so a whole label centres as one span -
+        // and the column anchors it is handed are the box's own content edges, which it draws nothing in.
+        if (!(styledRow.row() instanceof TooltipRow.TableRow tableRow)) {
+            return new TooltipLayout.TooltipRowLayout(
+                    rowTopY,
+                    (float) styledRow.lineHeight(),
+                    leftX,
+                    anchorLabelRuns(styledRow, centreLabelX(styledRow, leftX, rightX)),
+                    rightX);
+        }
+        var leadingRowSlotX = leftX + tableRow.indent();
 
         return new TooltipLayout.TooltipRowLayout(
-                crestBox,
-                anchorLabelRuns(styledRow, labelStartX),
                 rowTopY,
-                rightX,
-                rowTopY);
+                (float) styledRow.lineHeight(),
+                leadingRowSlotX,
+                anchorLabelRuns(
+                        styledRow,
+                        leadingRowSlotX + measureCrestOffset(tableRow, crestColumnWidth)),
+                rightX);
     }
 
     // Where each of a row's label runs anchors in the placed box: the offsets the runs measured out at,
@@ -272,27 +286,26 @@ public final class CursorTooltip {
     }
 
     // The widest laid-out row: each row is its indent, the reserved crest column (when the box has one),
-    // its label span, the value gap, and its measured value, so a wide indented member sizes the box
-    // just as a wide header would. A centred row is charged its label span alone - it occupies none of
-    // those columns, so charging them would widen the box for space the centred line never fills, and
-    // its own centring would then push it off the middle. Each row is measured on its own face, so a
-    // heading in a wider atlas sizes the box to the width it will actually paint at. The content width
-    // before the box layout adds its padding.
+    // its label span, the value gap, and whatever its trailing slot reports, so a wide indented member
+    // sizes the box just as a wide header would. A centred row is charged its label span alone - it
+    // fills neither flanking slot and occupies neither column, so charging them would widen the box for
+    // space the centred line never fills, and its own centring would then push it off the middle. Each
+    // row is measured on its own face, so a heading in a wider atlas sizes the box to the width it will
+    // actually paint at. The content width before the box layout adds its padding.
     private static double measureContentWidth(
             List<StyledRow> rows,
             float crestColumnWidth) {
 
         var widest = 0d;
         for (var styledRow : rows) {
-            var row = styledRow.row();
             var labelSpan = measureLabelRunOffsets(styledRow).runsWidth();
-            var rowWidth = row.labelPlacement() == TooltipLabelPlacement.CENTRED
-                    ? labelSpan
-                    : row.indent()
-                            + measureCrestOffset(styledRow, crestColumnWidth)
+            var rowWidth = styledRow.row() instanceof TooltipRow.TableRow tableRow
+                    ? tableRow.indent()
+                            + measureCrestOffset(tableRow, crestColumnWidth)
                             + labelSpan
                             + VALUE_GAP
-                            + styledRow.measureSlotWidth(row.labelledRow().trailingRowSlot());
+                            + styledRow.measureSlotWidth(tableRow.labelledRow().trailingRowSlot())
+                    : labelSpan;
 
             widest = Math.max(widest, rowWidth);
         }
@@ -309,7 +322,7 @@ public final class CursorTooltip {
     // caller assembling a run from parts and coming up blank gets the line it would have had without it,
     // rather than a gap reserved in front of no glyphs.
     private static LabelRunOffsets measureLabelRunOffsets(StyledRow styledRow) {
-        var labelTextSpans = styledRow.row().labelledRow().labelTextSpans();
+        var labelTextSpans = styledRow.row().labelTextSpans();
         var runOffsetXs = new ArrayList<Float>(labelTextSpans.size());
         var runsWidth = 0f;
         var hasDrawnRun = false;
@@ -345,8 +358,8 @@ public final class CursorTooltip {
     // aligns to it, nothing for one that starts before it (and nothing either way in a box that reserved
     // no column, whose width is already nothing). One source so the width measurement and the label
     // placement agree on the offset, row by row.
-    private static float measureCrestOffset(StyledRow styledRow, float crestColumnWidth) {
-        return styledRow.row().labelPlacement() == TooltipLabelPlacement.ALIGNED_WITH_CRESTS
+    private static float measureCrestOffset(TooltipRow.TableRow tableRow, float crestColumnWidth) {
+        return tableRow.labelPlacement() == TooltipLabelPlacement.ALIGNED_WITH_CRESTS
                 ? crestColumnWidth
                 : NO_CREST_COLUMN;
     }

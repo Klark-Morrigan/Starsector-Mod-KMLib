@@ -45,7 +45,7 @@ class LabelledRowTest {
     }
 
     private static LabelledRow buildBareRow() {
-        return LabelledRow.createRow(TEXT, Color.WHITE);
+        return LabelledRow.createRow(new TextSpan(TEXT, Color.WHITE));
     }
 
     // Content with both flanks filled and a second run on the label, so a refinement applied to it has
@@ -54,7 +54,7 @@ class LabelledRowTest {
     private static LabelledRow buildRichRow() {
         return buildBareRow()
                 .leadsWith(CREST_SLOT)
-                .continuesWith(RUN_TEXT, Color.YELLOW)
+                .continuesWith(new TextSpan(RUN_TEXT, Color.YELLOW))
                 .trailsWith(VALUE_SLOT);
     }
 
@@ -161,7 +161,7 @@ class LabelledRowTest {
     class ContinuesWith {
         @Test
         void continuesWithAppendsTheRunAndItsColour() {
-            var labelledRow = buildBareRow().continuesWith(RUN_TEXT, Color.YELLOW);
+            var labelledRow = buildBareRow().continuesWith(new TextSpan(RUN_TEXT, Color.YELLOW));
 
             assertThat(labelledRow.labelTextSpans()).hasSize(2);
             assertThat(labelledRow.labelTextSpans().get(1).text()).isEqualTo(RUN_TEXT);
@@ -172,7 +172,7 @@ class LabelledRowTest {
         void continuesWithKeepsTheRunsAlreadyOnTheLabel() {
             // The label is a sentence, so a run is added to what is there rather than replacing it -
             // otherwise a second colour would cost the caller the first.
-            var labelledRow = buildBareRow().continuesWith(RUN_TEXT, Color.YELLOW);
+            var labelledRow = buildBareRow().continuesWith(new TextSpan(RUN_TEXT, Color.YELLOW));
 
             assertThat(labelledRow.labelTextSpans().get(0).text()).isEqualTo(TEXT);
             assertThat(labelledRow.labelTextSpans().get(0).colour()).isEqualTo(Color.WHITE);
@@ -183,8 +183,8 @@ class LabelledRowTest {
             // The point of runs over a fixed second slot: a third colour on one line costs the model
             // nothing, and the runs stay in the order they were written.
             var labelledRow = buildBareRow()
-                    .continuesWith(RUN_TEXT, Color.YELLOW)
-                    .continuesWith(OTHER_RUN_TEXT, Color.CYAN);
+                    .continuesWith(new TextSpan(RUN_TEXT, Color.YELLOW))
+                    .continuesWith(new TextSpan(OTHER_RUN_TEXT, Color.CYAN));
 
             assertThat(labelledRow.labelTextSpans())
                     .extracting(TextSpan::text)
@@ -194,7 +194,7 @@ class LabelledRowTest {
         @Test
         void continuesWithChangesNothingElse() {
             assertRefinementChangesOnly(
-                    buildRichRow().continuesWith(OTHER_RUN_TEXT, Color.CYAN),
+                    buildRichRow().continuesWith(new TextSpan(OTHER_RUN_TEXT, Color.CYAN)),
                     buildRichRow(),
                     "labelTextSpans");
         }

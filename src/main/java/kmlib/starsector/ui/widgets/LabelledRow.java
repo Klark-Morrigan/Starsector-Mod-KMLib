@@ -2,7 +2,6 @@ package kmlib.starsector.ui.widgets;
 
 import kmlib.starsector.ui.text.TextSpan;
 
-import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -44,20 +43,16 @@ public record LabelledRow(
         RowSlot trailingRowSlot) {
 
     /**
-     * Copies the label's runs and rejects an empty or null-bearing label at construction, where the
-     * caller that built the row is still on the stack. A label with no runs at all is not a row, and a
-     * null run - or a null slot - otherwise surfaces inside a measurement or a draw call, well past the
-     * point that could say which row was meant. An unfilled slot is {@link RowSlot#EMPTY} rather than
-     * null, so nothing below has to read a missing slot and an empty one as the same thing.
+     * Holds the label to the floor every label is held to ({@link #copyLabelTextSpans}) and rejects a
+     * null slot, at construction, where the caller that built the row is still on the stack. An unfilled
+     * slot is {@link RowSlot#EMPTY} rather than null, so nothing below has to read a missing slot and an
+     * empty one as the same thing - and a null would otherwise surface inside a measurement or a draw
+     * call, well past the point that could say which row was meant.
      */
     public LabelledRow {
         Objects.requireNonNull(leadingRowSlot, "leadingRowSlot");
         Objects.requireNonNull(trailingRowSlot, "trailingRowSlot");
-        Objects.requireNonNull(labelTextSpans, "labelTextSpans");
-        labelTextSpans = List.copyOf(labelTextSpans);
-        if (labelTextSpans.isEmpty()) {
-            throw new IllegalArgumentException("labelTextSpans must carry at least one run");
-        }
+        labelTextSpans = copyLabelTextSpans(labelTextSpans);
     }
 
     /**
@@ -65,14 +60,13 @@ public record LabelledRow(
      * the label and what else the label says are each layered on with a refinement below, so a caller
      * states what its row <em>has</em> and never spells out the absences.
      *
-     * @param labelText   the label's one run
-     * @param labelColour the run's colour before any opacity fade the host applies
+     * @param labelTextSpan the label's one run and the colour it draws in
      * @return the bare content
      */
-    public static LabelledRow createRow(String labelText, Color labelColour) {
+    public static LabelledRow createRow(TextSpan labelTextSpan) {
         return new LabelledRow(
                 RowSlot.EMPTY,
-                List.of(new TextSpan(labelText, labelColour)),
+                List.of(labelTextSpan),
                 RowSlot.EMPTY);
     }
 
@@ -88,19 +82,18 @@ public record LabelledRow(
     }
 
     /**
-     * Returns a copy whose label runs on into {@code runText} in {@code runColour} - the next stretch
-     * of the same sentence, picked out in its own colour while what came before it stays as it was.
-     * Applied twice, a line reads in three colours at no extra cost to the model.
+     * Returns a copy whose label runs on into {@code runTextSpan} - the next stretch of the same
+     * sentence, picked out in its own colour while what came before it stays as it was. Applied twice,
+     * a line reads in three colours at no extra cost to the model.
      *
-     * @param runText   the text continuing the label
-     * @param runColour the run's colour before any opacity fade the host applies
+     * @param runTextSpan the text continuing the label and the colour it draws in
      * @return otherwise-identical content whose label carries that run last
      */
-    public LabelledRow continuesWith(String runText, Color runColour) {
-        var continuedTextSpans = new ArrayList<>(labelTextSpans);
-        continuedTextSpans.add(new TextSpan(runText, runColour));
-
-        return new LabelledRow(leadingRowSlot, continuedTextSpans, trailingRowSlot);
+    public LabelledRow continuesWith(TextSpan runTextSpan) {
+        return new LabelledRow(
+                leadingRowSlot,
+                appendLabelTextSpan(labelTextSpans, runTextSpan),
+                trailingRowSlot);
     }
 
     /**
@@ -112,5 +105,42 @@ public record LabelledRow(
      */
     public LabelledRow trailsWith(RowSlot trailingRowSlot) {
         return new LabelledRow(leadingRowSlot, labelTextSpans, trailingRowSlot);
+    }
+
+    /**
+     * Copies a label's runs and rejects an empty or null-bearing one, where the caller that built it is
+     * still on the stack. The floor a label is held to lives here rather than at each thing that carries
+     * one, so a line whose label is all it holds cannot be held to a looser rule than a line with slots
+     * around it.
+     *
+     * <p>A label with no runs at all is not a line, and a null run otherwise surfaces inside a
+     * measurement or a draw call, well past the point that could say which line was meant.
+     *
+     * @param labelTextSpans the label's runs in reading order
+     * @return an immutable copy of the runs
+     */
+    /**
+     * Returns {@code labelTextSpans} with {@code runTextSpan} appended - the label's runs read as one
+     * sentence, so a run is added to what is already there rather than replacing it, and a second colour
+     * never costs a caller the first. Held here beside the floor so that everything carrying a label
+     * continues one the same way.
+     *
+     * @param labelTextSpans the label's runs so far, left as they are
+     * @param runTextSpan    the run continuing the label
+     * @return the runs with that one last, for the caller's own constructor to hold to the floor
+     */
+    static List<TextSpan> appendLabelTextSpan(List<TextSpan> labelTextSpans, TextSpan runTextSpan) {
+        var continuedTextSpans = new ArrayList<>(labelTextSpans);
+        continuedTextSpans.add(runTextSpan);
+        return continuedTextSpans;
+    }
+
+    static List<TextSpan> copyLabelTextSpans(List<TextSpan> labelTextSpans) {
+        Objects.requireNonNull(labelTextSpans, "labelTextSpans");
+        var copiedTextSpans = List.copyOf(labelTextSpans);
+        if (copiedTextSpans.isEmpty()) {
+            throw new IllegalArgumentException("labelTextSpans must carry at least one run");
+        }
+        return copiedTextSpans;
     }
 }
