@@ -14,6 +14,7 @@ content. Pairs that look like duplication across the tiers usually are not - see
 - [Two surfaces](#two-surfaces)
 - [The neutral middle](#the-neutral-middle)
 - [Pairs that look like duplicates](#pairs-that-look-like-duplicates)
+  - [`Highlight` versus `TextSpan`](#highlight-versus-textspan)
 - [Ports across the boundary](#ports-across-the-boundary)
 - [Two span measurers](#two-span-measurers)
 - [Where each package sits](#where-each-package-sits)
