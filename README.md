@@ -172,13 +172,14 @@ Packages with more behind them than one line can carry:
 
 | Package | Read |
 | --- | --- |
-| [`starsector/factions/`](src/main/java/kmlib/starsector/factions/) | [Player Faction Resolution](#player-faction-resolution) |
-| [`starsector/ui/color/`](src/main/java/kmlib/starsector/ui/color/) | [UI Colour Palette](#ui-colour-palette) |
-| [`starsector/ui/highlight/`](src/main/java/kmlib/starsector/ui/highlight/) | [Highlighted Text](#highlighted-text) |
-| [`starsector/intel/`](src/main/java/kmlib/starsector/intel/) | [Intel Base Classes](#intel-base-classes) |
 | [`opengl/`](src/main/java/kmlib/opengl/), [`starsector/ui/map/`](src/main/java/kmlib/starsector/ui/map/), [`starsector/ui/render/gl/`](src/main/java/kmlib/starsector/ui/render/gl/) | [Rendering environment](#rendering-environment) |
+| [`starsector/factions/`](src/main/java/kmlib/starsector/factions/) | [Player Faction Resolution](#player-faction-resolution) |
+| [`starsector/intel/`](src/main/java/kmlib/starsector/intel/) | [Intel Base Classes](#intel-base-classes) |
+| [`starsector/testing/`](src/main/java/kmlib/starsector/testing/), [`testfixtures/`](src/main/java/kmlib/testfixtures/) | [Build & Test](#build--test) |
+| [`starsector/ui/`](src/main/java/kmlib/starsector/ui/) | [UI primitives, tiered by surface](src/main/java/kmlib/starsector/ui/README.md) |
+| [`starsector/ui/color/`](src/main/java/kmlib/starsector/ui/color/) | [UI Colour Palette](#ui-colour-palette) |
 | [`starsector/ui/font/`](src/main/java/kmlib/starsector/ui/font/), [`starsector/ui/label/`](src/main/java/kmlib/starsector/ui/label/) | [Caching](#caching) |
-| [`testfixtures/`](src/main/java/kmlib/testfixtures/), [`starsector/testing/`](src/main/java/kmlib/starsector/testing/) | [Build & Test](#build--test) |
+| [`starsector/ui/highlight/`](src/main/java/kmlib/starsector/ui/highlight/) | [Highlighted Text](#highlighted-text) |
 
 The two obf-cast seams, [`starsector/ui/intel/`](src/main/java/kmlib/starsector/ui/intel/)
 and [`starsector/ui/map/`](src/main/java/kmlib/starsector/ui/map/), are the only
