@@ -12,7 +12,6 @@ on at compile and runtime.
 - [Reusable CI / release actions](#reusable-ci--release-actions)
 - [Consuming KMLib](#consuming-kmlib)
 - [UI Colour Palette](#ui-colour-palette)
-- [Highlighted Text](#highlighted-text)
 
 ## Layout
 
@@ -20,10 +19,7 @@ on at compile and runtime.
 mod_info.json
 build.gradle / settings.gradle / gradlew[.bat]
 src/main/java/kmlib/
-  starsector/ui/color/      - palette enum + Misc-backed resolver
-  starsector/ui/highlight/  - highlight + paragraph + message types
-                              (renders to text panel, tooltip, label,
-                              and MessageIntel)
+  starsector/ui/color/ - palette enum + Misc-backed resolver
 src/test/java/kmlib/  - JUnit 5 + Mockito unit tests
 jars/                  - build output (gitignored); KMLib.jar
 .github/
@@ -123,27 +119,8 @@ is the palette enum: vanilla shades route through `Misc::...` suppliers
 they track the game's UI palette automatically, and custom shades hold a
 literal `java.awt.Color` (`WHITE`, `DIM_GRAY`, `ORANGE`, `DARK_RED`,
 `MUTED_RED`, `BRIGHT_RED`, `DARK_GREEN`, `BRIGHT_GREEN`, `LIGHT_BLUE`).
-Call `StarsectorUiColor#resolve()` to obtain the live `Color`; the
-resolver null-checks the supplier output and tags the failure with the
-enum name (Misc accessors can return null during early engine boot).
-
-## Highlighted Text
-
-[Highlight](src/main/java/kmlib/starsector/ui/highlight/Highlight.java)
-binds a substring to the colour it should render in. The Starsector
-text APIs natively take two parallel arrays (substrings + colours)
-that are easy to drift apart at the call site; binding them once
-removes the alignment risk.
-[HighlightedParagraph](src/main/java/kmlib/starsector/ui/highlight/HighlightedParagraph.java)
-is "one line of text + base colour + highlights" with render methods
-for `TextPanelAPI`, `TooltipMakerAPI`, and `LabelAPI`.
-[HighlightedMessage](src/main/java/kmlib/starsector/ui/highlight/HighlightedMessage.java)
-extends the family to the campaign side panel: it is an ordered list
-of paragraphs whose `toMessageIntel()` maps one paragraph per
-`MessageIntel.addLine(...)` for vanilla-spaced multi-line
-notifications. Callers dispatch the resulting `MessageIntel` themselves
-through `Global.getSector().getCampaignUI().addMessage(...)` - KMLib
-deliberately stops at the value type so the campaign-API call stays
-visible at the call site. Icon, sound, and the rest of the
-`MessageIntel` surface are not exposed yet; they'll be added the
-first time a consumer needs them.
+[StarsectorUiColorProvider.get](src/main/java/kmlib/starsector/ui/color/StarsectorUiColorProvider.java)
+resolves an entry to its `Color`, throwing on null input and rejecting
+entries that somehow carry neither source. The split exists so tests can
+stub `Misc` statically without booting Starsector while custom shades
+stay pure-data and need no runtime at all.
