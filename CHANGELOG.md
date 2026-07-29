@@ -12,7 +12,7 @@ section here.
 
 ## [Unreleased]
 
-## [0.1.0] - 2026-06-18
+## [0.1.0]
 First tagged release. Establishes the shared Java helper jar consumed by the
 KM mod family and the reusable CI / release pipeline that ships it.
 
