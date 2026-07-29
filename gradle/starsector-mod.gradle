@@ -58,6 +58,30 @@ ext.starsectorRoot = configuredStarsectorRoot
 ext.apiJarFile = apiJarFile
 ext.starsectorCoreJars = starsectorCoreJars
 
+// Locate a dependency mod's jar without spelling out its folder name, which is
+// version-stamped for several mods (Nexerelin-0.12.0a, ...). Looks exactly one
+// level down - <mods>/<anyModFolder>/jars/<jarName>, the layout the launcher
+// requires - rather than matching a recursive '**/jars/<jarName>' pattern.
+//
+// The depth matters for build time, not just tidiness: Gradle re-walks a
+// filtered file tree every time it snapshots it and never caches the result, so
+// a recursive tree over mods/ is re-scanned once per glob per task that carries
+// it on a classpath. A modded install holds ~175k files there, which costs
+// seconds each time and turns an up-to-date build into a minute of pure
+// input-checking. A directory listing plus one stat per mod folder is free by
+// comparison, and the resulting FileCollection holds plain files, which Gradle
+// does cache.
+//
+// Returns a FileCollection (empty when the mod is absent) so callers can hand it
+// straight to a dependency declaration and still ask '.files.isEmpty()' when they
+// want to fail the build with an "install this mod" message.
+ext.findModJars = { String jarName ->
+    def modFolders = file("${configuredStarsectorRoot}/mods").listFiles() ?: new File[0]
+    return files(modFolders
+            .collect { modFolder -> new File(modFolder, "jars/${jarName}") }
+            .findAll { candidateJar -> candidateJar.isFile() })
+}
+
 dependencies {
     // Starsector ships the API in starsector-core. compileOnly because the
     // game classloader already provides it at runtime - and so do mods that

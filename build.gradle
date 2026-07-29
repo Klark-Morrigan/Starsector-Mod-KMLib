@@ -17,10 +17,9 @@ def lunaLibJarFile = file("${project.ext.starsectorRoot}/mods/lunalib/jars/LunaL
 // Soft dependency: compileOnly, and KMLib declares no Console Commands mod
 // dependency. Command classes load only when Console Commands reads KMLib's
 // commands.csv, so a game without it never touches these classes and KMLib
-// stays usable on its own. Resolved by glob since the install folder is
+// stays usable on its own. Located by jar name since the install folder is
 // version-stamped.
-def consoleCommandsJars = fileTree(
-        dir: "${project.ext.starsectorRoot}/mods", include: ['**/jars/lw_Console.jar'])
+def consoleCommandsJars = findModJars('lw_Console.jar')
 
 // LazyLib backs LazyFontCache's bitmap-font loading; the game exposes no way to draw
 // text at arbitrary coordinates in a render pass. compileOnly, and declared in
@@ -46,19 +45,17 @@ def lazyLibKotlinRuntimeJarFile = file(
 // same stance as LunaLib/LazyLib/Console above - KMLib declares no RAT mod
 // dependency, the matcher gates every use behind a mod-enabled check so a RAT-free
 // install never resolves the type, and the game classloader supplies the jar at
-// runtime for installs that ship it. Globbed since the install folder is
-// version-stamped; testRuntimeOnly so the matcher's tests can load under test.
-def ratJars = fileTree(
-        dir: "${project.ext.starsectorRoot}/mods", include: ['**/jars/RandomAssortmentofThings.jar'])
+// runtime for installs that ship it. Located by jar name since the install folder
+// is version-stamped; testRuntimeOnly so the matcher's tests can load under test.
+def ratJars = findModJars('RandomAssortmentofThings.jar')
 
 // MagicLib backs VanillaMapTooltip's reflection into the live core-UI tree: its ReflectionUtils
 // drives the java.lang.reflect ops through method handles, the sanctioned bypass of the script
 // classloader's reflection ban. compileOnly, and declared in mod_info.json: its absence fails
 // open - the read reports no tooltip, so an overlay double-draws over the vanilla one rather
-// than breaking. Globbed since the install folder can vary; testRuntimeOnly so the class can
-// load under test.
-def magicLibJars = fileTree(
-        dir: "${project.ext.starsectorRoot}/mods", include: ['**/jars/MagicLib.jar'])
+// than breaking. Located by jar name since the install folder can vary; testRuntimeOnly so the
+// class can load under test.
+def magicLibJars = findModJars('MagicLib.jar')
 
 // org.json backs LunaSettingsWriter's write path: LunaLib's backing store is a
 // LazyLib CommonDataJSONObject, which extends org.json.JSONObject, so javac must
