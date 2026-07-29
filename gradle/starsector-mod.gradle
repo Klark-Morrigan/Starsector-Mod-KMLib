@@ -1,8 +1,9 @@
-// Starsector-specific build conventions shared by every KM mod (KMLib, KMU,
-// KMO, ...). Layered on top of Common-Java's generic JVM conventions: this
-// script applies that base first, then adds only what a Starsector mod
-// needs - the game's API jars on the compile/test classpath, mod_info.json
-// as the version source, and the jar output location the launcher expects.
+// Starsector-specific build conventions, shared by any mod that applies this
+// script (KMLib, KMU, KMO, ...). Layered on top of Common-Java's generic JVM
+// conventions: this script applies that base first, then adds only what a
+// Starsector mod needs - the game's API jars on the compile/test classpath,
+// mod_info.json as the version source, and the jar output location the
+// launcher expects.
 //
 // Owned by KMLib (not Common-Java) because all of this is Starsector
 // knowledge; it is build-time only and is not part of the shipped KMLib.jar.
@@ -81,6 +82,17 @@ ext.findModJars = { String jarName ->
             .collect { modFolder -> new File(modFolder, "jars/${jarName}") }
             .findAll { candidateJar -> candidateJar.isFile() })
 }
+
+// A mod applying these conventions usually compiles against KMLib, so where
+// KMLib sits is resolved once here rather than in each build that wants it.
+// Located by jar name, not by a fixed <mods>/KMLib path: the folder a player
+// ends up with is theirs to name, and a build that hardcodes one silently
+// reads the wrong thing on a case-insensitive filesystem while failing
+// outright on a case-sensitive one. Empty when KMLib is absent, so a build can
+// hand it straight to a dependency declaration and still fail with its own
+// install message. Computed for KMLib's own build too, which does not use it.
+def kmlibJarName = 'KMLib.jar'
+ext.kmlibJars = findModJars(kmlibJarName)
 
 dependencies {
     // Starsector ships the API in starsector-core. compileOnly because the

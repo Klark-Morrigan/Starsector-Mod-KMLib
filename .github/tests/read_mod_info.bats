@@ -33,6 +33,12 @@ write_mod_info() {
 EOF
 }
 
+# Reads one emitted key back out of $GITHUB_OUTPUT, for values whose exact
+# text is awkward to assert with grep -qx (JSON carrying quotes and braces).
+read_output_value() {
+    sed -n "s/^$1=//p" "$GITHUB_OUTPUT"
+}
+
 @test "emits all derived values for a well-formed mod_info.json" {
     write_mod_info "kmu" "0.1.0" "jars/KMU.jar"
     cd "$WORK_DIR"
@@ -41,9 +47,32 @@ EOF
     grep -qx "mod-id=kmu"                        "$GITHUB_OUTPUT"
     grep -qx "version=0.1.0"                     "$GITHUB_OUTPUT"
     grep -qx "runner-label=kmu-runner"           "$GITHUB_OUTPUT"
-    grep -qx "dist-dir=dist/kmu/"                "$GITHUB_OUTPUT"
-    grep -qx "zip-name=kmu-0.1.0.zip"            "$GITHUB_OUTPUT"
+    grep -qx "mod-folder-name=KMU"               "$GITHUB_OUTPUT"
+    grep -qx "dist-dir=dist/KMU/"                "$GITHUB_OUTPUT"
+    grep -qx "zip-name=KMU-0.1.0.zip"            "$GITHUB_OUTPUT"
     grep -qx "jar-source=jars/KMU.jar"           "$GITHUB_OUTPUT"
+}
+
+@test "names the shipped folder after the jar, not after the mod id" {
+    write_mod_info "kmu" "0.1.0" "jars/KMU.jar"
+    cd "$WORK_DIR"
+    run bash "$SCRIPT"
+    [ "$status" -eq 0 ]
+    # The id is lowercase and the folder is not: a build that looks for
+    # <mods>/KMU/jars/KMU.jar has to find what the zip unpacks, on a
+    # case-sensitive filesystem as much as on Windows.
+    grep -qx "mod-id=kmu"                        "$GITHUB_OUTPUT"
+    grep -qx "mod-folder-name=KMU"               "$GITHUB_OUTPUT"
+}
+
+@test "strips only the jar extension from a nested jar path" {
+    write_mod_info "kmu" "0.1.0" "jars/internal/KMU-Core.jar"
+    cd "$WORK_DIR"
+    run bash "$SCRIPT"
+    [ "$status" -eq 0 ]
+    grep -qx "mod-folder-name=KMU-Core"          "$GITHUB_OUTPUT"
+    grep -qx "dist-dir=dist/KMU-Core/"           "$GITHUB_OUTPUT"
+    grep -qx "zip-name=KMU-Core-0.1.0.zip"       "$GITHUB_OUTPUT"
 }
 
 @test "works for KMLib itself (no transformation of id)" {
@@ -53,9 +82,42 @@ EOF
     [ "$status" -eq 0 ]
     grep -qx "mod-id=kmlib"                      "$GITHUB_OUTPUT"
     grep -qx "runner-label=kmlib-runner"         "$GITHUB_OUTPUT"
-    grep -qx "dist-dir=dist/kmlib/"              "$GITHUB_OUTPUT"
-    grep -qx "zip-name=kmlib-1.0.0.zip"          "$GITHUB_OUTPUT"
+    grep -qx "mod-folder-name=KMLib"             "$GITHUB_OUTPUT"
+    grep -qx "dist-dir=dist/KMLib/"              "$GITHUB_OUTPUT"
+    grep -qx "zip-name=KMLib-1.0.0.zip"          "$GITHUB_OUTPUT"
     grep -qx "jar-source=jars/KMLib.jar"         "$GITHUB_OUTPUT"
+}
+
+@test "emits Common-Java and KMLib as siblings for a consumer mod" {
+    write_mod_info "kmu" "0.1.0" "jars/KMU.jar"
+    cd "$WORK_DIR"
+    run bash "$SCRIPT"
+    [ "$status" -eq 0 ]
+    siblings="$(read_output_value "sibling-checkouts")"
+    [ "$(jq -r 'length' <<< "$siblings")" -eq 2 ]
+    [ "$(jq -r '.[0].repo' <<< "$siblings")" = "Klark-Morrigan/Common-Java" ]
+    [ "$(jq -r '.[0].path' <<< "$siblings")" = "Common-Java" ]
+    [ "$(jq -r '.[1].repo' <<< "$siblings")" = "Klark-Morrigan/Starsector-Mod-KMLib" ]
+    [ "$(jq -r '.[1].path' <<< "$siblings")" = "Starsector-Mod-KMLib" ]
+}
+
+@test "omits the KMLib sibling when the mod being built is KMLib" {
+    write_mod_info "kmlib" "0.1.0" "jars/KMLib.jar"
+    cd "$WORK_DIR"
+    run bash "$SCRIPT"
+    [ "$status" -eq 0 ]
+    siblings="$(read_output_value "sibling-checkouts")"
+    [ "$(jq -r 'length' <<< "$siblings")" -eq 1 ]
+    [ "$(jq -r '.[0].repo' <<< "$siblings")" = "Klark-Morrigan/Common-Java" ]
+}
+
+@test "emits the sibling set on a single line so it parses as one output key" {
+    write_mod_info "kmu" "0.1.0" "jars/KMU.jar"
+    cd "$WORK_DIR"
+    run bash "$SCRIPT"
+    [ "$status" -eq 0 ]
+    [ "$(grep -c '^sibling-checkouts=' "$GITHUB_OUTPUT")" -eq 1 ]
+    [ "$(wc -l < "$GITHUB_OUTPUT")" -eq 8 ]
 }
 
 @test "fails when mod_info.json is absent" {

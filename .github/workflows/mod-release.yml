@@ -1,4 +1,7 @@
-# Reusable release pipeline for every Starsector mod in the KM family.
+# Reusable release pipeline for a Starsector mod built on KMLib's shared
+# Gradle conventions (gradle/starsector-mod.gradle) and laid out the way this
+# repo's actions expect: mod_info.json at the root, a CHANGELOG.md section per
+# released version, and a self-hosted runner labelled <mod-id>-runner.
 #
 # A consumer mod ships a one-line release.yml that triggers on push to its
 # default branch and delegates here:
@@ -10,10 +13,10 @@
 #         contents: write
 #       secrets: inherit
 #
-# All mod-specific values (id, version, runner label, zip name, jar path)
-# are derived inside this workflow from the consumer's mod_info.json via the
-# read-mod-info composite action - callers pass nothing. See:
-#   docs/dev/implementation/001-reusable-ci-release-workflows/problem.md
+# All mod-specific values (id, version, runner label, zip name, jar path, and
+# the repos to clone beside the checkout) are derived inside this workflow from
+# the consumer's mod_info.json via the read-mod-info composite action - callers
+# pass nothing. That action documents each value it emits and how it derives it.
 #
 # The pipeline only does real work when mod_info.json's version differs from
 # the latest git tag, so an ordinary push (no version bump) costs one cheap
@@ -52,11 +55,18 @@ jobs:
       version: ${{ steps.check.outputs.version }}
       version-updated: ${{ steps.check.outputs.version-updated }}
       mod-id: ${{ steps.read.outputs.mod-id }}
+      # Folder the mod ships as (KMU, KMLib), which is not the mod id - see
+      # the read-mod-info action for why the jar name is what names it.
+      mod-folder-name: ${{ steps.read.outputs.mod-folder-name }}
+      dist-dir: ${{ steps.read.outputs.dist-dir }}
       zip-name: ${{ steps.read.outputs.zip-name }}
       jar-source: ${{ steps.read.outputs.jar-source }}
       # JSON label set for self-hosted jobs: a mod builds on its own runner
       # (<mod-id>-runner) which carries STARSECTOR_HOME and the install.
       runner-json: ${{ steps.runner.outputs.json }}
+      # Repos the mod's Gradle build applies shared scripts from by relative
+      # path, so they must be cloned beside its checkout - see the build jobs.
+      sibling-checkouts: ${{ steps.read.outputs.sibling-checkouts }}
     steps:
       # Default checkout pulls the CONSUMER repo (the one that triggered the
       # release), so mod_info.json and CHANGELOG.md below are the consumer's.
@@ -128,10 +138,21 @@ jobs:
       runner: ${{ needs.config.outputs.runner-json }}
       gradle-tasks: coverage
       setup-java: false
+      # The build applies shared Gradle scripts from neighbouring repos by
+      # paths relative to its own root, so the checkout cannot sit at the
+      # workspace root: it goes one level down with the neighbours cloned
+      # beside it. The directory name is free - the siblings only need
+      # somewhere to sit next to - so the already-derived mod id is used
+      # rather than introducing another value that could drift.
+      checkout-path: ${{ needs.config.outputs.mod-id }}
+      working-directory: ${{ needs.config.outputs.mod-id }}
+      sibling-checkouts: ${{ needs.config.outputs.sibling-checkouts }}
     secrets: inherit
 
   # Assemble the runtime payload and zip it. Runs on the mod's runner so the
-  # jar rebuild has the Starsector install on hand.
+  # jar rebuild has the Starsector install on hand. Uses the same one-level-down
+  # layout as ci-gradle above, for the same reason: the build reads shared
+  # Gradle scripts from repos that have to sit beside the checkout.
   prepare-artifact:
     needs: [config, ci-bash, ci-gradle]
     if: needs.config.outputs.version-updated == 'true'
@@ -139,6 +160,30 @@ jobs:
     steps:
       - name: Check out consumer repo
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        with:
+          path: ${{ needs.config.outputs.mod-id }}
+
+      # Mirrors the clone step inside Common-Java's _ci-gradle and consumes the
+      # identical { repo, path } shape, so both build jobs see one workspace
+      # layout. Kept as its own copy rather than a shared action because an
+      # action in a sibling repo is only reachable by checking that repo out
+      # first (see the config job), which costs more than the loop it saves.
+      - name: Check out sibling repos
+        env:
+          # Assigned to env (not interpolated into the script body) so the
+          # JSON cannot break out of the shell command.
+          SIBLINGS: ${{ needs.config.outputs.sibling-checkouts }}
+          GH_TOKEN: ${{ secrets.sibling_checkout_token || github.token }}
+        run: |
+          set -euo pipefail
+          echo "$SIBLINGS" | jq -c '.[]' | while read -r entry; do
+            repo=$(jq -rn --argjson e "$entry" '$e.repo')
+            path=$(jq -rn --argjson e "$entry" '$e.path')
+            echo "::group::clone ${repo} -> ${path}"
+            git clone --depth 1 \
+              "https://x-access-token:${GH_TOKEN}@github.com/${repo}.git" "${path}"
+            echo "::endgroup::"
+          done
 
       - name: Set up Java 17
         uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287 # v5.3.0
@@ -147,23 +192,27 @@ jobs:
           distribution: temurin
 
       - name: Make Gradle wrapper executable
+        working-directory: ${{ needs.config.outputs.mod-id }}
         run: chmod +x gradlew
 
       # Tests already passed in ci-gradle; rebuild only the jar for packaging.
       - name: Build jar
+        working-directory: ${{ needs.config.outputs.mod-id }}
         run: ./gradlew jar --no-daemon --console=plain
 
-      # Copy only the runtime payload into dist/<mod-id>/ - no source, tests,
+      # Copy only the runtime payload into the dist folder - no source, tests,
       # docs/dev, build caches, or Gradle wrapper. Asset dirs are copied when
       # present, so a jar-only utility (KMLib) and an asset-bearing content
-      # mod share one generic step.
+      # mod share one generic step. The folder is the one read-mod-info
+      # derived, so what a player unzips carries the name a build compiling
+      # against this mod expects to find it under.
       - name: Assemble dist payload
+        working-directory: ${{ needs.config.outputs.mod-id }}
         env:
-          MOD_ID: ${{ needs.config.outputs.mod-id }}
+          DIST: ${{ needs.config.outputs.dist-dir }}
           JAR_SOURCE: ${{ needs.config.outputs.jar-source }}
         run: |
           set -euo pipefail
-          DIST="dist/${MOD_ID}"
           mkdir -p "${DIST}/jars"
           cp mod_info.json "${DIST}/"
           for f in README.md CHANGELOG.md LICENSE; do
@@ -175,19 +224,23 @@ jobs:
           cp "${JAR_SOURCE}" "${DIST}/jars/"
 
       - name: Create release zip
+        working-directory: ${{ needs.config.outputs.mod-id }}
         env:
-          MOD_ID: ${{ needs.config.outputs.mod-id }}
+          MOD_FOLDER_NAME: ${{ needs.config.outputs.mod-folder-name }}
           ZIP_NAME: ${{ needs.config.outputs.zip-name }}
         run: |
           set -euo pipefail
           cd dist
-          zip -r "../${ZIP_NAME}" "${MOD_ID}/"
+          zip -r "../${ZIP_NAME}" "${MOD_FOLDER_NAME}/"
 
+      # The zip lands inside the checkout, one level down from the workspace,
+      # so the upload path carries that prefix; the artifact NAME stays bare
+      # because create-release downloads it by name into its own workspace root.
       - name: Upload artifact
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: ${{ needs.config.outputs.zip-name }}
-          path: ${{ needs.config.outputs.zip-name }}
+          path: ${{ needs.config.outputs.mod-id }}/${{ needs.config.outputs.zip-name }}
           if-no-files-found: error
 
   # Tag the released commit. Separate from create-release so the tag exists

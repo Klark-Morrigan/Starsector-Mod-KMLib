@@ -210,8 +210,11 @@ Starsector binaries and so runs on the self-hosted `kmlib-runner`.
 - [read-mod-info](.github/actions/read-mod-info/action.yml) reads the
   caller's `mod_info.json` and emits the values every other workflow
   derives from it by convention: the mod id and version verbatim, plus
-  the `<mod-id>-runner` label, the `dist/<mod-id>/` directory, the
-  `<mod-id>-<version>.zip` release name, and the first declared jar.
+  the `<mod-id>-runner` label, the first declared jar, the repos to clone
+  beside the checkout, and - named after that jar rather than after the
+  mod id, so a zip install and a hand-deployed one share one folder
+  layout - the shipped folder name, the `dist/<mod-folder-name>/`
+  directory, and the `<mod-folder-name>-<version>.zip` release name.
   The action's own `outputs:` block is the statement of that convention.
 - [check-version](.github/actions/check-version/action.yml) compares
   `mod_info.json`'s `.version` to the latest git tag in the caller

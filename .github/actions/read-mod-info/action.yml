@@ -1,14 +1,15 @@
-# Reads the caller's mod_info.json and emits the derived values shared by
-# KMLib's reusable CI and release workflows. See:
-#   docs/dev/implementation/001-reusable-ci-release-workflows/problem.md
-#   (section: Convention - derived from mod_info.json).
+# Reads the caller's mod_info.json and emits the derived values KMLib's
+# reusable CI and release workflows run on, so a consumer passes no inputs:
+# each value is either stated in that file or follows from it by a convention
+# stated in the outputs below.
 #
 # The action shells out to scripts/read_mod_info.sh so the logic is unit-
 # tested with bats. Composite actions themselves are not unit-testable.
 name: Read mod info
 description: >-
   Reads mod_info.json from the caller checkout and emits the mod id, version,
-  runner label, dist directory, zip name, and jar source path as outputs.
+  runner label, dist directory, zip name, jar source path, and sibling
+  checkout set as outputs.
 
 outputs:
   mod-id:
@@ -20,15 +21,27 @@ outputs:
   runner-label:
     description: "Self-hosted runner label: <mod-id>-runner."
     value: ${{ steps.read.outputs.runner-label }}
+  mod-folder-name:
+    description: >-
+      Folder the mod ships and installs as, taken from the jar's basename
+      (jars/KMU.jar -> KMU) so a zip install matches a hand-deployed one.
+    value: ${{ steps.read.outputs.mod-folder-name }}
   dist-dir:
-    description: "Distribution directory: dist/<mod-id>/."
+    description: "Distribution directory: dist/<mod-folder-name>/."
     value: ${{ steps.read.outputs.dist-dir }}
   zip-name:
-    description: "Release zip filename: <mod-id>-<version>.zip."
+    description: "Release zip filename: <mod-folder-name>-<version>.zip."
     value: ${{ steps.read.outputs.zip-name }}
   jar-source:
     description: "First jar path from mod_info.json (.jars[0])."
     value: ${{ steps.read.outputs.jar-source }}
+  sibling-checkouts:
+    description: >-
+      JSON array of { repo, path } entries to clone beside the caller's
+      checkout, in the shape Common-Java's _ci-gradle sibling-checkouts input
+      takes: the repos hosting the shared Gradle scripts the build applies -
+      Common-Java always, plus KMLib for any mod that is not KMLib itself.
+    value: ${{ steps.read.outputs.sibling-checkouts }}
 
 runs:
   using: composite
