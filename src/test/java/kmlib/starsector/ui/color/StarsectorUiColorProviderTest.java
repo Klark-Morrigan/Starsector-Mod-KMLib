@@ -11,9 +11,9 @@ import java.awt.Color;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
-class StarsectorUiColorTest {
+class StarsectorUiColorProviderTest {
     @Test
-    void resolveReturnsStarsectorColorForVanillaEntry() {
+    void getReturnsStarsectorColorWhenRawColorUsesMisc() {
         Color expected = new Color(1, 2, 3);
 
         // Misc.<clinit> reads from Global.getSettings(), so a no-op
@@ -24,7 +24,7 @@ class StarsectorUiColorTest {
         try (MockedStatic<Misc> misc = Mockito.mockStatic(Misc.class)) {
             misc.when(Misc::getHighlightColor).thenReturn(expected);
 
-            assertThat(StarsectorUiColor.VANILLA_HIGHLIGHT_GOLD.resolve())
+            assertThat(StarsectorUiColorProvider.get(StarsectorUiColor.GOLD))
                     .isEqualTo(expected);
         } finally {
             StarsectorSettingsFake.clearSettings();
@@ -32,13 +32,44 @@ class StarsectorUiColorTest {
     }
 
     @Test
-    void resolveReturnsLiteralForCustomEntry() {
-        assertThat(StarsectorUiColor.ORANGE.resolve())
+    void getReturnsCustomColorWhenRawColorHasNoStarsectorSource() {
+        assertThat(StarsectorUiColorProvider.get(StarsectorUiColor.ORANGE))
                 .isEqualTo(new Color(255, 100, 0, 255));
     }
 
     @Test
-    void resolveRejectsNullFromStarsectorSupplier() {
+    void getRejectsMissingColor() {
+        assertThatNullPointerException()
+                .isThrownBy(() -> StarsectorUiColorProvider.get(null));
+    }
+
+    @Test
+    void distinguishesCustomAndStarsectorColors() {
+        assertThat(StarsectorUiColor.ORANGE.isCustom()).isTrue();
+        assertThat(StarsectorUiColor.GRAY.isCustom()).isFalse();
+    }
+
+    @Test
+    void customEntryExposesNoStarsectorSource() {
+        // Guards the branch selection in get(): a custom-only entry must
+        // skip resolveStarsectorColor entirely, otherwise Misc would be
+        // invoked for shades that have no vanilla equivalent.
+        assertThat(StarsectorUiColor.ORANGE.starsectorColor()).isEmpty();
+        assertThat(StarsectorUiColor.ORANGE.customColor())
+                .contains(new Color(255, 100, 0, 255));
+    }
+
+    @Test
+    void starsectorEntryExposesNoCustomValue() {
+        // Mirror of the above for vanilla entries - ensures the resolver
+        // never silently falls back to a literal when the Misc supplier
+        // is the intended source of truth.
+        assertThat(StarsectorUiColor.GRAY.customColor()).isEmpty();
+        assertThat(StarsectorUiColor.GRAY.starsectorColor()).isPresent();
+    }
+
+    @Test
+    void getRejectsNullFromStarsectorSupplier() {
         // Misc returns null during early engine boot for some palette
         // accessors; surfacing that as an NPE with the enum name beats
         // letting a null Color propagate into UI code.
@@ -47,7 +78,7 @@ class StarsectorUiColorTest {
             misc.when(Misc::getHighlightColor).thenReturn(null);
 
             assertThatNullPointerException()
-                    .isThrownBy(StarsectorUiColor.VANILLA_HIGHLIGHT_GOLD::resolve)
+                    .isThrownBy(() -> StarsectorUiColorProvider.get(StarsectorUiColor.GOLD))
                     .withMessageContaining("GOLD");
         } finally {
             StarsectorSettingsFake.clearSettings();
