@@ -34,14 +34,19 @@ against anything else.
 | What | Version | Identity |
 | --- | --- | --- |
 | Starsector | `0.98a-RC8` | - |
-| Fast Rendering | `v0.7.6` | `fr.jar` SHA-256 `f8b00d3bef7d5ad0cf59e74c23d2d045c4a5e4c8c2b62f3ed11e41597f194cae`, 632557 bytes |
+| Fast Rendering | `v0.7.7` | `fr.jar` SHA-256 `3162638435a2538e3b3a8457a010c1abac370f1477a256fbdc4beeffdf71f021`, 632640 bytes |
 
-Fast Rendering does not state its own version anywhere a machine can read it:
-`fr.jar` carries no manifest, `com.genir` holds no version constant, and the
-`fr.readme.txt` beside it names no release. So the version above is not
-self-reported; it was established by hashing `fr.jar` against the release assets,
-and the SHA-256 is what actually identifies the bytes these citations were read
-from.
+Fast Rendering names itself only coarsely. `fr.jar` carries no manifest,
+`com.genir` holds no version constant, and the `fr.readme.txt` beside it names no
+release. What it does carry is a display string in its shadowed copy of the
+game's own version class - `"Starsector 0.98a-RC8 FR7.7"`
+(`starsector-core/fr/com/fs/starfarer/Version.java:27`, `:42`), which is what
+puts `FR7.7` on the launcher and main menu. That is a two-component release
+number baked into a string literal, so it identifies a minor line and not a
+build: it cannot separate `v0.7.1` from `v0.7.1b`, and it changes only when
+genir bumps the literal. So the version above was established by hashing
+`fr.jar` against the release assets, and the SHA-256 is what actually identifies
+the bytes these citations were read from.
 
 Releases are published at
 [Halke1986/starsector-render](https://github.com/Halke1986/starsector-render/releases),
@@ -52,9 +57,11 @@ arbitrary install, hash its jar and compare:
 sha256sum "<starsector>/starsector-core/fr.jar"
 ```
 
-Sizes alone separate neighbouring releases (`v0.7.4` is 555210 bytes, `v0.7.5` is
-617776, `v0.7.6` is 632557), so a size mismatch is a fast first check before
-hashing.
+Sizes still separate neighbouring releases (`v0.7.4` is 555210 bytes, `v0.7.5` is
+617776, `v0.7.6` is 632557, `v0.7.7` is 632640), so a size mismatch is a fast
+first check before hashing. Treat only the mismatch as informative: `v0.7.6` and
+`v0.7.7` are 83 bytes apart, close enough that a size *match* is weak evidence
+and hashing is what settles it.
 
 Names below are release-specific, and a rename is not announced. `v0.7.4` moved
 the whole GL bridge from `com.genir.renderer.bridge` to
@@ -334,7 +341,7 @@ thread](#it-defers-every-gl-call-to-a-render-thread)).
 
 `fr.jar` also ships patched copies of core game classes under `com.fs.*` (and
 `sound.*`), not just the GL bridge, and they shadow the game's own copies in
-`starfarer_obf.jar` / `fs.common_obf.jar`. There are 20 on `v0.7.6`, reaching well
+`starfarer_obf.jar` / `fs.common_obf.jar`. There are 20 on `v0.7.7`, reaching well
 past rendering: `Version`, `BaseGameState`, `combat/CombatEngine`,
 `combat/CombatState`, `combat/entities/Ship`, `combat/ai/admiral/G`,
 `graphics/TextureLoader`, `graphics/LayeredRenderer`, `loading/SpecStore`,

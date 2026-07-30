@@ -12,8 +12,8 @@ compiled fine against real LWJGL binds to the bridge at runtime and dies with a
 `NoSuchMethodError` the first time it reads a matrix back - from inside its render pass, so it
 takes the screen down with it rather than failing at load.
 
-Verified against **v0.7.6** (`fr.jar`, SHA-256
-`f8b00d3bef7d5ad0cf59e74c23d2d045c4a5e4c8c2b62f3ed11e41597f194cae`, 632557 bytes) on Starsector
+Verified against **v0.7.7** (`fr.jar`, SHA-256
+`3162638435a2538e3b3a8457a010c1abac370f1477a256fbdc4beeffdf71f021`, 632640 bytes) on Starsector
 0.98a-RC8. It was first written against v0.7.2 and re-read on every release since: the `glGet*`
 surface has not changed across them, though the bridge package has (v0.7.4 moved it from
 `com.genir.renderer.bridge` to `com.genir.renderer.bridge.commands`, and the command interfaces
@@ -23,7 +23,7 @@ to `com.genir.renderer.bridge.interfaces`).
 
 The bridge's entire `glGet*` surface is `glGetInteger(int)`, `glGetInteger(int, IntBuffer)`,
 `glGetString(int)`, `glGetFloat(int)`, `glGetError()`, `glGetTexLevelParameteri`, and two
-`glGetTexImage` overloads (`GL11.java`, the `glGet*` block; in the shipped v0.7.6 jar it
+`glGetTexImage` overloads (`GL11.java`, the `glGet*` block; in the shipped v0.7.7 jar it
 decompiles to L1264-L1462). `glGetFloat` exists only in its scalar form, which cannot take a
 matrix - and it answers `GL_LINE_WIDTH` inline, so the shape for serving a value from tracked
 state without a stall is already there.
