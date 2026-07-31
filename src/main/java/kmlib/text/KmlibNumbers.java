@@ -10,6 +10,12 @@ import java.util.Locale;
  */
 public final class KmlibNumbers {
 
+    // "%,d" inserts the locale's grouping separator every three
+    // digits. The separator only appears once a value reaches four
+    // figures, so a smaller value renders bare and grouping shows
+    // only when it is warranted.
+    private static final String GROUPED_INTEGER = "%,d";
+
     private KmlibNumbers() {
     }
 
@@ -59,5 +65,19 @@ public final class KmlibNumbers {
      */
     public static String formatDelta(float value) {
         return formatDelta((int) value);
+    }
+
+    /**
+     * Formats {@code value} as a whole number grouped by thousands,
+     * e.g. {@code 1234567 -> "1,234,567"}, so a large tally reads at
+     * a glance.
+     *
+     * <p>{@link Locale#ROOT} is forced so the separator is a comma
+     * regardless of the JVM's default locale - the grouping is a
+     * fixed presentation style matching the English copy the KM*
+     * mods are written in, not locale-sensitive prose.
+     */
+    public static String formatGroupedInteger(int value) {
+        return String.format(Locale.ROOT, GROUPED_INTEGER, value);
     }
 }

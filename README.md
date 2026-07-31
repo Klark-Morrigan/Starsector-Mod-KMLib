@@ -89,7 +89,9 @@ src/main/java/kmlib/
     scripts/       - sector script registration helpers
     strings/       - defensive wrapper around settings.json
                      localisation lookups (loud REDACTED on missing /
-                     malformed entries)
+                     malformed entries), plus the number-to-copy
+                     shaping that fills their numeric slots
+                     (StarsectorFormat's truncating percent)
     systems/       - star system queries and motion tracking;
                      claims/ reads vanilla system claims behind a port
     testing/       - the no-op SettingsAPI proxy KM tests install into

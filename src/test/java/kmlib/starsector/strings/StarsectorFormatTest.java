@@ -19,14 +19,16 @@ class StarsectorFormatTest {
         @Test
         void formatPercentRendersWholePercentWithSign() {
             // Default-shape value from a one-significant-figure setting.
-            assertThat(StarsectorFormat.formatPercent(0.20f)).isEqualTo("20%");
+            assertThat(StarsectorFormat.formatPercent(0.20f))
+                .isEqualTo("20%");
         }
 
         @Test
         void formatPercentRendersSmallFractionAsOnePercent() {
             // 0.01f is the KMU/KMO baseline magnitude for per-instance
             // bonuses; rendering it as 1% is the everyday case.
-            assertThat(StarsectorFormat.formatPercent(0.01f)).isEqualTo("1%");
+            assertThat(StarsectorFormat.formatPercent(0.01f))
+                .isEqualTo("1%");
         }
 
         @Test
@@ -36,12 +38,14 @@ class StarsectorFormatTest {
             // to 1% rather than rounding up to 2%. Pinning the upper edge
             // catches a future swap of (int) for Math.round() that would
             // otherwise look harmless on the default-magnitude cases.
-            assertThat(StarsectorFormat.formatPercent(0.019f)).isEqualTo("1%");
+            assertThat(StarsectorFormat.formatPercent(0.019f))
+                .isEqualTo("1%");
         }
 
         @Test
         void formatPercentRendersZeroAsZero() {
-            assertThat(StarsectorFormat.formatPercent(0f)).isEqualTo("0%");
+            assertThat(StarsectorFormat.formatPercent(0f))
+                .isEqualTo("0%");
         }
     }
 }
