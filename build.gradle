@@ -6,6 +6,14 @@ apply from: "${rootDir}/gradle/starsector-mod.gradle"
 
 group = 'kmlib'
 
+// On-demand Java formatting (`gradlew spotlessApply`). The wiring and the
+// rationale live in the shared script; the only thing KMLib decides here is
+// that bridgeStubs is exempt, for the same reason
+// checkstyleBridgeStubs is disabled below - the stubs mirror a third party's
+// shape, which is not ours to restyle.
+ext.spotlessExcludedSourceSets = ['bridgeStubs']
+apply from: "${rootDir}/../Common-Java/gradle/spotless-java.gradle"
+
 // LunaLib backs KmLogging's in-game log-level binding. compileOnly: KMLib
 // declares no LunaLib mod dependency (it must stay usable by mods that do not
 // ship LunaLib), so only callers that depend on LunaLib may invoke that code;
