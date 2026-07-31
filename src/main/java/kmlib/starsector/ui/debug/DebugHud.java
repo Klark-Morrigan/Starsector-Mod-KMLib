@@ -47,9 +47,9 @@ public final class DebugHud {
     // A half-opaque black plate behind each line, padded a little past the glyphs, so bright debug
     // text stays legible over a busy map instead of vanishing into same-coloured terrain beneath it.
     private static final UiElementPaint BACKDROP_PAINT = new UiElementPaint(
-            Color.BLACK,
-            0.5f);
-            
+        Color.BLACK,
+        0.5f);
+
     private static final float BACKDROP_PADDING = 3f;
 
     // One shared readout the whole run pushes to, since a debug print has no owner to hang an
@@ -57,7 +57,7 @@ public final class DebugHud {
     private static final DebugHud INSTANCE = new DebugHud();
 
     private final Map<DebugQuadrant, List<DebugHudEntry>> entriesByQuadrant =
-            new EnumMap<>(DebugQuadrant.class);
+        new EnumMap<>(DebugQuadrant.class);
 
     private DebugHud() {
     }
@@ -78,8 +78,8 @@ public final class DebugHud {
      */
     public void push(DebugQuadrant quadrant, String key, String body) {
         entriesByQuadrant
-                .computeIfAbsent(quadrant, unused -> new ArrayList<>())
-                .add(new DebugHudEntry(key, body));
+            .computeIfAbsent(quadrant, unused -> new ArrayList<>())
+            .add(new DebugHudEntry(key, body));
     }
 
     /**
@@ -94,11 +94,11 @@ public final class DebugHud {
         var screenWidth = settings.getScreenWidth();
         var screenHeight = settings.getScreenHeight();
         drawAndClear(quadrant -> DebugHudLayout.layOutAtCorner(
-                quadrant,
-                entriesByQuadrant.get(quadrant),
-                screenWidth,
-                screenHeight,
-                edgePadding));
+            quadrant,
+            entriesByQuadrant.get(quadrant),
+            screenWidth,
+            screenHeight,
+            edgePadding));
     }
 
     /**
@@ -110,10 +110,10 @@ public final class DebugHud {
      */
     public void renderAroundCursor(float cursorX, float cursorY) {
         drawAndClear(quadrant -> DebugHudLayout.layOutAroundCursor(
-                quadrant,
-                entriesByQuadrant.get(quadrant),
-                cursorX,
-                cursorY));
+            quadrant,
+            entriesByQuadrant.get(quadrant),
+            cursorX,
+            cursorY));
     }
 
     /**
@@ -152,17 +152,17 @@ public final class DebugHud {
         // A left-half corner aligns its right edge to the anchor; a right-half corner its left. Only
         // the top row is used since the layout stacks by the line's top.
         var anchor = line.isRightAligned()
-                ? LazyFont.TextAnchor.TOP_RIGHT
-                : LazyFont.TextAnchor.TOP_LEFT;
+            ? LazyFont.TextAnchor.TOP_RIGHT
+            : LazyFont.TextAnchor.TOP_LEFT;
         LabelRenderer.render(
-                new LabelStyle(
-                        new TextFace(FONT, line.fontSize()),
-                        line.colour(),
-                        OPACITY),
-                line.text(),
-                line.x(),
-                line.y(),
-                anchor);
+            new LabelStyle(
+                new TextFace(FONT, line.fontSize()),
+                line.colour(),
+                OPACITY),
+            line.text(),
+            line.x(),
+            line.y(),
+            anchor);
     }
 
     // Fills the half-opaque black plate behind one line, sized to the measured glyph run and padded a
@@ -177,10 +177,10 @@ public final class DebugHud {
         var height = (float) line.fontSize();
         var left = line.isRightAligned() ? line.x() - width : line.x();
         var quadBounds = new Rectangle(
-                left - BACKDROP_PADDING,
-                line.y() - height - BACKDROP_PADDING,
-                width + 2f * BACKDROP_PADDING,
-                height + 2f * BACKDROP_PADDING);
+            left - BACKDROP_PADDING,
+            line.y() - height - BACKDROP_PADDING,
+            width + 2f * BACKDROP_PADDING,
+            height + 2f * BACKDROP_PADDING);
 
         UiFill.renderQuad(quadBounds, BACKDROP_PAINT);
     }

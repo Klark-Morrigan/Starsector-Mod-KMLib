@@ -25,8 +25,8 @@ class RadioRowTest {
         @Test
         void dividesTheRowIntoEqualWidthSegmentsLeftToRightWhenHorizontal() {
             assertThat(RadioRow.splitIntoSegments(row, 2, RadioAlignment.HORIZONTAL))
-                    .containsExactly(new Rectangle(0f, 0f, 50f, 20f),
-                            new Rectangle(50f, 0f, 50f, 20f));
+                .containsExactly(new Rectangle(0f, 0f, 50f, 20f),
+                    new Rectangle(50f, 0f, 50f, 20f));
         }
 
         @Test
@@ -34,9 +34,9 @@ class RadioRowTest {
             // A 100-tall column split in two: element 0 is the top half (y=50), element 1 the
             // bottom half (y=0), each full row width.
             assertThat(RadioRow.splitIntoSegments(new Rectangle(0f, 0f, 40f, 100f), 2,
-                    RadioAlignment.VERTICAL))
-                    .containsExactly(new Rectangle(0f, 50f, 40f, 50f),
-                            new Rectangle(0f, 0f, 40f, 50f));
+                RadioAlignment.VERTICAL))
+                .containsExactly(new Rectangle(0f, 50f, 40f, 50f),
+                    new Rectangle(0f, 0f, 40f, 50f));
         }
 
         @Test
@@ -55,11 +55,11 @@ class RadioRowTest {
             // 60-wide, 90-tall list gives 30-wide columns and 30-tall rows.
             var grid = RadioRow.splitIntoGrid(new Rectangle(0f, 0f, 60f, 90f), 5, 2);
             assertThat(grid).containsExactly(
-                    new Rectangle(0f, 60f, 30f, 30f),
-                    new Rectangle(0f, 30f, 30f, 30f),
-                    new Rectangle(0f, 0f, 30f, 30f),
-                    new Rectangle(30f, 60f, 30f, 30f),
-                    new Rectangle(30f, 30f, 30f, 30f));
+                new Rectangle(0f, 60f, 30f, 30f),
+                new Rectangle(0f, 30f, 30f, 30f),
+                new Rectangle(0f, 0f, 30f, 30f),
+                new Rectangle(30f, 60f, 30f, 30f),
+                new Rectangle(30f, 30f, 30f, 30f));
         }
 
         @Test
@@ -68,7 +68,7 @@ class RadioRowTest {
             // rectangle for rectangle - the grid is the general case the single stack is a case of.
             var bounds = new Rectangle(0f, 0f, 40f, 100f);
             assertThat(RadioRow.splitIntoGrid(bounds, 4, 1))
-                    .isEqualTo(RadioRow.splitIntoSegments(bounds, 4, RadioAlignment.VERTICAL));
+                .isEqualTo(RadioRow.splitIntoSegments(bounds, 4, RadioAlignment.VERTICAL));
         }
 
         @Test
@@ -106,8 +106,8 @@ class RadioRowTest {
     @Nested
     class FindSegmentIndexAt {
         private final List<Rectangle> segments =
-                RadioRow.splitIntoSegments(new Rectangle(0f, 0f, 100f, 20f), 2,
-                        RadioAlignment.HORIZONTAL);
+            RadioRow.splitIntoSegments(new Rectangle(0f, 0f, 100f, 20f), 2,
+                RadioAlignment.HORIZONTAL);
 
         @Test
         void findsTheSegmentAPointFallsIn() {
@@ -122,14 +122,14 @@ class RadioRowTest {
         @Test
         void reportsNoSegmentForAPointOutsideTheRow() {
             assertThat(RadioRow.findSegmentIndexAt(segments, 150f, 10f))
-                    .isEqualTo(RadioRow.NO_SEGMENT);
+                .isEqualTo(RadioRow.NO_SEGMENT);
         }
 
         @Test
         void findsTheStackedSegmentAPointFallsInWhenVertical() {
             // Top row is element 0 (y in [50,100]), bottom is element 1 (y in [0,50]).
             var vertical = RadioRow.splitIntoSegments(new Rectangle(0f, 0f, 40f, 100f), 2,
-                    RadioAlignment.VERTICAL);
+                RadioAlignment.VERTICAL);
             assertThat(RadioRow.findSegmentIndexAt(vertical, 20f, 75f)).isEqualTo(0);
             assertThat(RadioRow.findSegmentIndexAt(vertical, 20f, 25f)).isEqualTo(1);
         }
@@ -138,8 +138,8 @@ class RadioRowTest {
     @Nested
     class FindHitElement {
         private final List<Rectangle> segments =
-                RadioRow.splitIntoSegments(new Rectangle(0f, 0f, 100f, 20f), 2,
-                        RadioAlignment.HORIZONTAL);
+            RadioRow.splitIntoSegments(new Rectangle(0f, 0f, 100f, 20f), 2,
+                RadioAlignment.HORIZONTAL);
 
         @Test
         void findsTheHitSegmentWhenItIsNotTheSelectedOne() {
@@ -149,13 +149,13 @@ class RadioRowTest {
         @Test
         void reportsNoElementWhenTheHitIsTheAlreadySelectedSegment() {
             assertThat(RadioRow.findHitElement(segments, 1, 75f, 10f))
-                    .isEqualTo(RadioRow.NO_SEGMENT);
+                .isEqualTo(RadioRow.NO_SEGMENT);
         }
 
         @Test
         void reportsNoElementForAPointOutsideTheRow() {
             assertThat(RadioRow.findHitElement(segments, 0, 150f, 10f))
-                    .isEqualTo(RadioRow.NO_SEGMENT);
+                .isEqualTo(RadioRow.NO_SEGMENT);
         }
     }
 }

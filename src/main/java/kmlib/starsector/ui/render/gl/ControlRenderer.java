@@ -73,20 +73,20 @@ public final class ControlRenderer {
         var spec = (ControlSpec.Tabs) control.spec();
         var contents = ControlStripLayout.buildTabContents(spec);
         var tabs = VanillaTabStrip.zipTabs(contents, control.segments());
-        
+
         var hoveredIndex = VanillaTabStrip.findTabIndexAt(
-                tabs,
-                UiCursor.getUiX(),
-                UiCursor.getUiY());
+            tabs,
+            UiCursor.getUiX(),
+            UiCursor.getUiY());
 
         // The same value the layout measured the band against, so a strip is drawn in exactly the look
         // it was laid out under.
         VanillaTabStripRenderer.render(
-                tabs,
-                spec.selectedIndex(),
-                hoveredIndex,
-                paint.style().tabStyle(),
-                paint.opacity());
+            tabs,
+            spec.selectedIndex(),
+            hoveredIndex,
+            paint.style().tabStyle(),
+            paint.opacity());
     }
 
     // A tick box lit when the spec's cell is selected, then its label to the right at the same gap the
@@ -97,22 +97,22 @@ public final class ControlRenderer {
         var bounds = control.bounds();
 
         CheckboxRenderer.render(
-                bounds,
-                spec.isLit(),
-                new UiElementPaint(style.accent(), paint.opacity()),
-                new UiElementPaint(style.brightAccent(), paint.opacity()));
+            bounds,
+            spec.isLit(),
+            new UiElementPaint(style.accent(), paint.opacity()),
+            new UiElementPaint(style.brightAccent(), paint.opacity()));
 
         var box = Checkbox.computeTickBox(bounds);
         var labelX = box.x()
-                + box.width()
-                + ControlStripLayout.CHECKBOX_LABEL_GAP;
+            + box.width()
+            + ControlStripLayout.CHECKBOX_LABEL_GAP;
 
         drawBodyLabel(
-                paint,
-                spec.label(),
-                labelX,
-                bounds.computeCenterY(),
-                LazyFont.TextAnchor.CENTER_LEFT);
+            paint,
+            spec.label(),
+            labelX,
+            bounds.computeCenterY(),
+            LazyFont.TextAnchor.CENTER_LEFT);
     }
 
     // A radio group: the segments framed and the active one washed, then its labels. An icon table
@@ -136,41 +136,41 @@ public final class ControlRenderer {
         var colors = new RadioColors(accent, accent);
         if (spec instanceof ControlSpec.VerticalTable table) {
             RadioRowRenderer.renderVerticalGrid(
-                    bounds,
-                    labels.size(),
-                    selectedIndex,
-                    table.columnCount(),
-                    colors,
-                    paint.opacity());
+                bounds,
+                labels.size(),
+                selectedIndex,
+                table.columnCount(),
+                colors,
+                paint.opacity());
         } else {
             RadioRowRenderer.renderHorizontalRow(
-                    bounds,
-                    segments,
-                    selectedIndex,
-                    colors,
-                    paint.opacity());
+                bounds,
+                segments,
+                selectedIndex,
+                colors,
+                paint.opacity());
         }
         for (var index = 0; index < segments.size() && index < labels.size(); index++) {
             var segment = segments.get(index);
             drawBodyLabel(
-                    paint,
-                    labels.get(index),
-                    segment.computeCenterX(),
-                    segment.computeCenterY(),
-                    LazyFont.TextAnchor.CENTER);
+                paint,
+                labels.get(index),
+                segment.computeCenterX(),
+                segment.computeCenterY(),
+                LazyFont.TextAnchor.CENTER);
         }
         if (spec instanceof ControlSpec.HorizontalRadio radio && radio.hasTrailingCaption()) {
 
             var trailingX = bounds.x()
-                    + bounds.width()
-                    + ControlStripLayout.TRAILING_LABEL_GAP;
+                + bounds.width()
+                + ControlStripLayout.TRAILING_LABEL_GAP;
 
             drawBodyLabel(
-                    paint,
-                    radio.trailingLabel(),
-                    trailingX,
-                    bounds.computeCenterY(),
-                    LazyFont.TextAnchor.CENTER_LEFT);
+                paint,
+                radio.trailingLabel(),
+                trailingX,
+                bounds.computeCenterY(),
+                LazyFont.TextAnchor.CENTER_LEFT);
         }
     }
 
@@ -182,33 +182,39 @@ public final class ControlRenderer {
             Control control,
             ControlSpec.VerticalTable spec,
             ControlPaint paint) {
+
         var accent = paint.style().accent();
         var bounds = control.bounds();
+
         IconRadioListRenderer.render(
-                bounds,
-                spec.iconPaths(),
-                spec.selectedIndex(),
-                spec.columnCount(),
-                new RadioColors(accent, accent),
-                paint.opacity());
+            bounds,
+            spec.iconPaths(),
+            spec.selectedIndex(),
+            spec.columnCount(),
+            new RadioColors(accent, accent),
+            paint.opacity());
+
         var segments = control.segments();
         var labels = spec.labels();
+
         for (var index = 0; index < segments.size() && index < labels.size(); index++) {
             var segment = segments.get(index);
             // The label starts past the icon when the option carries one, or at the row's left inset when
             // it does not - the same has-icon rule the layout sized the row with.
             var labelX = IconLabelRow.computeLabelAnchorX(segment, spec.hasIconAt(index));
+            
             drawBodyLabel(
-                    paint,
-                    labels.get(index),
-                    labelX,
-                    segment.computeCenterY(),
-                    LazyFont.TextAnchor.CENTER_LEFT);
+                paint,
+                labels.get(index),
+                labelX,
+                segment.computeCenterY(),
+                LazyFont.TextAnchor.CENTER_LEFT);
+
             drawTrailing(
-                    spec,
-                    index,
-                    segment,
-                    paint);
+                spec,
+                index,
+                segment,
+                paint);
         }
     }
 
@@ -227,24 +233,24 @@ public final class ControlRenderer {
         if (direction != null) {
             // In the row's body text tone so it reads as a quiet annotation like the value it replaces.
             var trianglePaint = new UiElementPaint(
-                    StarsectorUiColor.VANILLA_TEXT.resolve(),
-                    paint.opacity());
+                StarsectorUiColor.VANILLA_TEXT.resolve(),
+                paint.opacity());
             TriangleRenderer.render(
-                    IconLabelRow.computeDirectionTriangleBox(segment),
-                    direction,
-                    trianglePaint);
+                IconLabelRow.computeDirectionTriangleBox(segment),
+                direction,
+                trianglePaint);
             return;
         }
         var trailing = spec.trailingLabelAt(index);
         if (KmlibStrings.hasText(trailing)) {
             // Drawn at the body size - the same size the layout reserved the column at.
             drawBodyLabel(
-                    paint,
-                    trailing,
-                    IconLabelRow.computeTrailingAnchorX(segment),
-                    segment.computeCenterY(),
-                    LazyFont.TextAnchor.CENTER_RIGHT,
-                    ControlStripLayout.BODY_FONT_SIZE);
+                paint,
+                trailing,
+                IconLabelRow.computeTrailingAnchorX(segment),
+                segment.computeCenterY(),
+                LazyFont.TextAnchor.CENTER_RIGHT,
+                ControlStripLayout.BODY_FONT_SIZE);
         }
     }
 
@@ -256,18 +262,18 @@ public final class ControlRenderer {
         var bounds = control.bounds();
 
         ToggleButton.render(
-                bounds,
-                spec.isLit(),
-                accent,
-                accent,
-                paint.opacity());
+            bounds,
+            spec.isLit(),
+            accent,
+            accent,
+            paint.opacity());
 
         drawBodyLabel(
-                paint,
-                spec.label(),
-                bounds.computeCenterX(),
-                bounds.computeCenterY(),
-                LazyFont.TextAnchor.CENTER);
+            paint,
+            spec.label(),
+            bounds.computeCenterX(),
+            bounds.computeCenterY(),
+            LazyFont.TextAnchor.CENTER);
     }
 
     // A divider row: a single hairline centred across the row in the accent, parting one run of controls
@@ -282,11 +288,11 @@ public final class ControlRenderer {
         var spec = (ControlSpec.Label) control.spec();
         var bounds = control.bounds();
         drawBodyLabel(
-                paint,
-                spec.text(),
-                bounds.x(),
-                bounds.computeCenterY(),
-                LazyFont.TextAnchor.CENTER_LEFT);
+            paint,
+            spec.text(),
+            bounds.x(),
+            bounds.computeCenterY(),
+            LazyFont.TextAnchor.CENTER_LEFT);
     }
 
     // Draws one body label at the body font size (the common case), delegating to the explicit-size draw.
@@ -297,12 +303,12 @@ public final class ControlRenderer {
             float y,
             LazyFont.TextAnchor anchor) {
         drawBodyLabel(
-                paint,
-                text,
-                x,
-                y,
-                anchor,
-                ControlStripLayout.BODY_FONT_SIZE);
+            paint,
+            text,
+            x,
+            y,
+            anchor,
+            ControlStripLayout.BODY_FONT_SIZE);
     }
 
     // Draws one body label in the vanilla text colour, faded by opacity, at the given anchor and size,
@@ -315,11 +321,11 @@ public final class ControlRenderer {
             LazyFont.TextAnchor anchor,
             double fontSize) {
         var labelStyle = new LabelStyle(
-                new TextFace(
-                        paint.style().bodyFont(),
-                        fontSize),
-                StarsectorUiColor.VANILLA_TEXT.resolve(),
-                paint.opacity());
+            new TextFace(
+                paint.style().bodyFont(),
+                fontSize),
+            StarsectorUiColor.VANILLA_TEXT.resolve(),
+            paint.opacity());
         LabelRenderer.render(labelStyle, text, x, y, anchor);
     }
 

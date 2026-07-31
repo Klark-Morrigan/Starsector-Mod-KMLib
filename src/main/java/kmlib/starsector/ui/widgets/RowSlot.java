@@ -63,7 +63,8 @@ public sealed interface RowSlot {
      *
      * @param spritePath the image's {@code graphics} texture path
      */
-    record Image(String spritePath) implements RowSlot {
+    record Image(
+        String spritePath) implements RowSlot {
 
         /**
          * Rejects a null path, since a slot holding no image is {@link #EMPTY} rather than an image
@@ -87,7 +88,8 @@ public sealed interface RowSlot {
      *
      * @param textSpan the run and the colour it draws in, before any opacity fade the host applies
      */
-    record Text(TextSpan textSpan) implements RowSlot {
+    record Text(
+        TextSpan textSpan) implements RowSlot {
 
         /**
          * Rejects a null span, since a slot holding no text is {@link #EMPTY} - and a blank-but-present
@@ -118,7 +120,8 @@ public sealed interface RowSlot {
      *
      * @param isTicked whether the box draws ticked
      */
-    record Tick(boolean isTicked) implements RowSlot {
+    record Tick(
+        boolean isTicked) implements RowSlot {
 
         @Override
         public float computeWidth(float lineHeight, StyledSpanMeasurer spanMeasurer) {
@@ -133,7 +136,8 @@ public sealed interface RowSlot {
      *
      * @param triangleDirection which way the triangle points
      */
-    record Triangle(TriangleDirection triangleDirection) implements RowSlot {
+    record Triangle(
+        TriangleDirection triangleDirection) implements RowSlot {
 
         /**
          * Rejects a null direction, since a slot showing no triangle is {@link #EMPTY} rather than a

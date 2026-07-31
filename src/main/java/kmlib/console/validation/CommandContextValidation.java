@@ -20,9 +20,9 @@ import java.util.function.Supplier;
  *
  * <pre>
  * CommandValidationResult command = new CommandContextValidation(context, output)
- *         .requireCampaign()
- *         .requireStarSystem()
- *         .validateAndPrintFeedback();
+ *     .requireCampaign()
+ *     .requireStarSystem()
+ *     .validateAndPrintFeedback();
  * if (!command.isValid()) {
  *     return command.getResult();
  * }
@@ -59,17 +59,19 @@ public final class CommandContextValidation {
 
     public CommandContextValidation requireCampaign() {
         checks.add(() -> context.isInCampaign()
-                ? null
-                : new Failure("This command can only run in a campaign.",
-                        CommandResult.WRONG_CONTEXT));
+            ? null
+            : new Failure(
+                "This command can only run in a campaign.",
+                CommandResult.WRONG_CONTEXT));
         return this;
     }
 
     public CommandContextValidation requireStarSystem() {
         checks.add(() -> StarSystems.getPlayerStarSystem(Global.getSector()) != null
-                ? null
-                : new Failure("This command must be run inside a star system.",
-                        CommandResult.WRONG_CONTEXT));
+            ? null
+            : new Failure(
+                "This command must be run inside a star system.",
+                CommandResult.WRONG_CONTEXT));
         return this;
     }
 

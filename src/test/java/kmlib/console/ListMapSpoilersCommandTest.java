@@ -46,7 +46,7 @@ final class ListMapSpoilersCommandTest {
         @Test
         void omitsOrdinaryFullyVisibleSystems() {
             var sector = sectorWith(system("Corvus", false,
-                    ownedMarket("Jangala", "Hegemony", Visibility.SHOWN)));
+                ownedMarket("Jangala", "Hegemony", Visibility.SHOWN)));
 
             var report = ListMapSpoilersCommand.buildReport(sector);
 
@@ -57,7 +57,7 @@ final class ListMapSpoilersCommandTest {
         @Test
         void listsCutOffSystemAndFlagsIt() {
             var sector = sectorWith(system("Black Site", true,
-                    ownedMarket("Station", "Tri-Tachyon", Visibility.SHOWN)));
+                ownedMarket("Station", "Tri-Tachyon", Visibility.SHOWN)));
 
             var report = ListMapSpoilersCommand.buildReport(sector);
 
@@ -70,7 +70,7 @@ final class ListMapSpoilersCommandTest {
             // A concealed pirate base sets its entity discoverable, so before the
             // player finds it the entity-discoverability signal surfaces it.
             var sector = sectorWith(system("Hideout", false,
-                    ownedMarket("Pirate Base", "Pirates", Visibility.UNDISCOVERED)));
+                ownedMarket("Pirate Base", "Pirates", Visibility.UNDISCOVERED)));
 
             var report = ListMapSpoilersCommand.buildReport(sector);
 
@@ -83,7 +83,7 @@ final class ListMapSpoilersCommandTest {
             // not linger in the list: once its entity is no longer discoverable
             // it drops out, exactly like any other discovered colony.
             var sector = sectorWith(system("Hideout", false,
-                    ownedMarket("Pirate Base", "Pirates", Visibility.SHOWN)));
+                ownedMarket("Pirate Base", "Pirates", Visibility.SHOWN)));
 
             var report = ListMapSpoilersCommand.buildReport(sector);
 
@@ -94,7 +94,7 @@ final class ListMapSpoilersCommandTest {
         @Test
         void listsSystemWithUndiscoveredMarketAndFlagsTheMarket() {
             var sector = sectorWith(system("Libra System", false,
-                    ownedMarket("Battlestar Libra", "Knights", Visibility.UNDISCOVERED)));
+                ownedMarket("Battlestar Libra", "Knights", Visibility.UNDISCOVERED)));
 
             var report = ListMapSpoilersCommand.buildReport(sector);
 
@@ -124,7 +124,7 @@ final class ListMapSpoilersCommandTest {
             // the spoiler list rather than linger - the entity is no longer
             // discoverable and is not a hidden base.
             var sector = sectorWith(system("Mia's Star", false,
-                    ownedMarket("Forgeship", "holdout", Visibility.SHOWN)));
+                ownedMarket("Forgeship", "holdout", Visibility.SHOWN)));
 
             var report = ListMapSpoilersCommand.buildReport(sector);
 
@@ -192,7 +192,7 @@ final class ListMapSpoilersCommandTest {
 
             assertThat(result).isEqualTo(CommandResult.SUCCESS);
             assertThat(outputFake.getMessages())
-                    .anyMatch(message -> message.contains("Map spoilers"));
+                .anyMatch(message -> message.contains("Map spoilers"));
         }
 
         @Test
@@ -201,7 +201,7 @@ final class ListMapSpoilersCommandTest {
 
             assertThat(result).isEqualTo(CommandResult.BAD_SYNTAX);
             assertThat(outputFake.getMessages())
-                    .anyMatch(message -> message.contains("Too many arguments"));
+                .anyMatch(message -> message.contains("Too many arguments"));
         }
 
         @Test
@@ -210,11 +210,13 @@ final class ListMapSpoilersCommandTest {
 
             assertThat(result).isEqualTo(CommandResult.WRONG_CONTEXT);
             assertThat(outputFake.getMessages())
-                    .anyMatch(message -> message.contains("can only run in a campaign"));
+                .anyMatch(message -> message.contains("can only run in a campaign"));
         }
     }
 
-    private enum Visibility { SHOWN, UNDISCOVERED }
+    private enum Visibility {
+        SHOWN, UNDISCOVERED
+    }
 
     private static SectorAPI sectorWith(SystemWithMarkets... systems) {
         var economyMock = mock(EconomyAPI.class);

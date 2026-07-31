@@ -43,10 +43,10 @@ public final class CheckboxRenderer {
 
             var inset = box.height() * TICK_INSET_FRACTION;
             var tickBounds = new Rectangle(
-                    box.x() + inset,
-                    box.y() + inset,
-                    box.width() - 2f * inset,
-                    box.height() - 2f * inset);
+                box.x() + inset,
+                box.y() + inset,
+                box.width() - 2f * inset,
+                box.height() - 2f * inset);
 
             UiFill.renderQuad(tickBounds, tickPaint);
         }

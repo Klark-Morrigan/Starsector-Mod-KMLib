@@ -26,12 +26,18 @@ public final class BorderedBox {
      * @return the content rectangle inside the stroked edges
      */
     public static Rectangle computeContentBounds(Rectangle outer, BoxBorder border) {
+
         var leftInset = border.computeEdgeInset(BoxEdge.LEFT);
         var rightInset = border.computeEdgeInset(BoxEdge.RIGHT);
         var topInset = border.computeEdgeInset(BoxEdge.TOP);
         var bottomInset = border.computeEdgeInset(BoxEdge.BOTTOM);
         var width = Math.max(0f, outer.width() - leftInset - rightInset);
         var height = Math.max(0f, outer.height() - topInset - bottomInset);
-        return new Rectangle(outer.x() + leftInset, outer.y() + bottomInset, width, height);
+
+        return new Rectangle(
+            outer.x() + leftInset,
+            outer.y() + bottomInset,
+            width,
+            height);
     }
 }

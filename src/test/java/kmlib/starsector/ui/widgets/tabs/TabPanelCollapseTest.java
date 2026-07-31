@@ -123,7 +123,7 @@ final class TabPanelCollapseTest {
             oneStep.toggleCollapse();
             oneStep.advanceByElapsedTime(HALF_DURATION, DURATION);
             assertThat(manySteps.getCollapseFraction())
-                    .isCloseTo(oneStep.getCollapseFraction(), within(TOLERANCE));
+                .isCloseTo(oneStep.getCollapseFraction(), within(TOLERANCE));
         }
 
         @Test
@@ -184,7 +184,7 @@ final class TabPanelCollapseTest {
             atDefault.toggleCollapse();
             atDefault.advanceByElapsedTime(QUARTER_DURATION, DURATION);
             assertThat(stretched.getCollapseFraction())
-                    .isCloseTo(atDefault.getCollapseFraction(), within(TOLERANCE));
+                .isCloseTo(atDefault.getCollapseFraction(), within(TOLERANCE));
         }
     }
 

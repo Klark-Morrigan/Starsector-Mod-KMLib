@@ -30,7 +30,7 @@ final class TabPanelControllerTest {
         @Test
         void createStartingDockedOpensFullyCollapsedAtTheDockedRail() {
             assertThat(TabPanelController.createStartingDocked().getCollapseFraction())
-                    .isCloseTo(1f, within(TOLERANCE));
+                .isCloseTo(1f, within(TOLERANCE));
         }
     }
 

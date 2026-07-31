@@ -47,11 +47,11 @@ public sealed interface TooltipRow {
      */
     static TableRow createRow(TextSpan labelTextSpan) {
         return new TableRow(
-                TableRow.DEFAULT_LINE_STYLE,
-                TableRow.DEFAULT_LABEL_PLACEMENT,
-                TableRow.NO_INDENT,
-                false,
-                LabelledRow.createRow(labelTextSpan));
+            TableRow.DEFAULT_LINE_STYLE,
+            TableRow.DEFAULT_LABEL_PLACEMENT,
+            TableRow.NO_INDENT,
+            false,
+            LabelledRow.createRow(labelTextSpan));
     }
 
     /**
@@ -69,9 +69,9 @@ public sealed interface TooltipRow {
      */
     static CentredRow createCentredRow(TextSpan labelTextSpan) {
         return new CentredRow(
-                TableRow.DEFAULT_LINE_STYLE,
-                false,
-                List.of(labelTextSpan));
+            TableRow.DEFAULT_LINE_STYLE,
+            false,
+            List.of(labelTextSpan));
     }
 
     /**
@@ -159,11 +159,11 @@ public sealed interface TooltipRow {
      * @param labelledRow     what the line carries: its crest, its label's runs, and its value
      */
     record TableRow(
-            TooltipLineStyle lineStyle,
-            TooltipLabelPlacement labelPlacement,
-            float indent,
-            boolean hasSectionBreak,
-            LabelledRow labelledRow) implements TooltipRow {
+        TooltipLineStyle lineStyle,
+        TooltipLabelPlacement labelPlacement,
+        float indent,
+        boolean hasSectionBreak,
+        LabelledRow labelledRow) implements TooltipRow {
 
         // What a line that carries none of the optional parts holds: a line of the body, its label
         // starting where the crested lines' labels start, continuing the line above it, and with no
@@ -172,7 +172,7 @@ public sealed interface TooltipRow {
         // line is - a heading and a title are each the exception a caller states.
         private static final TooltipLineStyle DEFAULT_LINE_STYLE = TooltipLineStyle.PARAGRAPH;
         private static final TooltipLabelPlacement DEFAULT_LABEL_PLACEMENT =
-                TooltipLabelPlacement.ALIGNED_WITH_CRESTS;
+            TooltipLabelPlacement.ALIGNED_WITH_CRESTS;
         private static final float NO_INDENT = 0f;
 
         /**
@@ -200,8 +200,8 @@ public sealed interface TooltipRow {
          */
         public TableRow carriesCrest(String crestSpritePath) {
             var crestRowSlot = crestSpritePath == null
-                    ? RowSlot.EMPTY
-                    : new RowSlot.Image(crestSpritePath);
+                ? RowSlot.EMPTY
+                : new RowSlot.Image(crestSpritePath);
 
             return rebuildWithContent(labelledRow.leadsWith(crestRowSlot));
         }
@@ -239,11 +239,11 @@ public sealed interface TooltipRow {
          */
         public TableRow indentsBy(float indent) {
             return new TableRow(
-                    lineStyle,
-                    labelPlacement,
-                    indent,
-                    hasSectionBreak,
-                    labelledRow);
+                lineStyle,
+                labelPlacement,
+                indent,
+                hasSectionBreak,
+                labelledRow);
         }
 
         /**
@@ -255,31 +255,31 @@ public sealed interface TooltipRow {
          */
         public TableRow clearsCrestColumn() {
             return new TableRow(
-                    lineStyle,
-                    TooltipLabelPlacement.AT_CONTENT_EDGE,
-                    indent,
-                    hasSectionBreak,
-                    labelledRow);
+                lineStyle,
+                TooltipLabelPlacement.AT_CONTENT_EDGE,
+                indent,
+                hasSectionBreak,
+                labelledRow);
         }
 
         @Override
         public TableRow opensSection() {
             return new TableRow(
-                    lineStyle,
-                    labelPlacement,
-                    indent,
-                    true,
-                    labelledRow);
+                lineStyle,
+                labelPlacement,
+                indent,
+                true,
+                labelledRow);
         }
 
         @Override
         public TableRow readsAs(TooltipLineStyle lineStyle) {
             return new TableRow(
-                    lineStyle,
-                    labelPlacement,
-                    indent,
-                    hasSectionBreak,
-                    labelledRow);
+                lineStyle,
+                labelPlacement,
+                indent,
+                hasSectionBreak,
+                labelledRow);
         }
 
         // Rebuilds the line around new content, carrying every row-level fact over untouched. The three
@@ -287,11 +287,11 @@ public sealed interface TooltipRow {
         // four facts they leave alone - one of which would eventually be restated wrongly.
         private TableRow rebuildWithContent(LabelledRow labelledRow) {
             return new TableRow(
-                    lineStyle,
-                    labelPlacement,
-                    indent,
-                    hasSectionBreak,
-                    labelledRow);
+                lineStyle,
+                labelPlacement,
+                indent,
+                hasSectionBreak,
+                labelledRow);
         }
     }
 
@@ -312,9 +312,9 @@ public sealed interface TooltipRow {
      *                        tooltip's opacity fade; never empty
      */
     record CentredRow(
-            TooltipLineStyle lineStyle,
-            boolean hasSectionBreak,
-            List<TextSpan> labelTextSpans) implements TooltipRow {
+        TooltipLineStyle lineStyle,
+        boolean hasSectionBreak,
+        List<TextSpan> labelTextSpans) implements TooltipRow {
 
         /**
          * Copies the label's runs and rejects an empty or null-bearing label at construction, through
@@ -328,9 +328,9 @@ public sealed interface TooltipRow {
         @Override
         public CentredRow continuesWith(TextSpan runTextSpan) {
             return new CentredRow(
-                    lineStyle,
-                    hasSectionBreak,
-                    LabelledRow.appendLabelTextSpan(labelTextSpans, runTextSpan));
+                lineStyle,
+                hasSectionBreak,
+                LabelledRow.appendLabelTextSpan(labelTextSpans, runTextSpan));
         }
 
         @Override

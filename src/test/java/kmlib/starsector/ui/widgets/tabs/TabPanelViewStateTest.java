@@ -20,7 +20,7 @@ final class TabPanelViewStateTest {
         @Test
         void collapseFractionKeepsAFractionInsideTheUnitRange() {
             assertThat(new TabPanelViewState(0f, 0.4f).collapseFraction())
-                    .isCloseTo(0.4f, within(TOLERANCE));
+                .isCloseTo(0.4f, within(TOLERANCE));
         }
 
         @Test
@@ -42,7 +42,7 @@ final class TabPanelViewStateTest {
             // An offset past the list's end is not wrong yet - the overflow it must fit is only known once
             // the strip is laid out - so it survives to be settled there rather than being cut off here.
             assertThat(new TabPanelViewState(9000f, 0f).rawScrollOffset())
-                    .isCloseTo(9000f, within(TOLERANCE));
+                .isCloseTo(9000f, within(TOLERANCE));
         }
     }
 

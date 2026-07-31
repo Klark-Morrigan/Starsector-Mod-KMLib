@@ -31,10 +31,10 @@ import java.util.Locale;
  * @param isUpperCased  whether the text is shouted, as vanilla draws its headings
  */
 public record TextStyle(
-        TextFace face,
-        Color colour,
-        TextAlignment alignment,
-        boolean isUpperCased) {
+    TextFace face,
+    Color colour,
+    TextAlignment alignment,
+    boolean isUpperCased) {
 
     // The baseline a caller gets without saying anything: plain body colour, hanging down and to the
     // right of its draw point, spoken rather than shouted. Named here so the one place that builds the
@@ -58,10 +58,10 @@ public record TextStyle(
      */
     public static TextStyle createStyle(StarsectorFont font) {
         return new TextStyle(
-                new TextFace(font, font.getNativeSize()),
-                DEFAULT_COLOUR.resolve(),
-                DEFAULT_ALIGNMENT,
-                IS_NOT_UPPER_CASED);
+            new TextFace(font, font.getNativeSize()),
+            DEFAULT_COLOUR.resolve(),
+            DEFAULT_ALIGNMENT,
+            IS_NOT_UPPER_CASED);
     }
 
     /**

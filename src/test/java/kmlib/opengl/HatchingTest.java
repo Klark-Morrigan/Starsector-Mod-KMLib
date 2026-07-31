@@ -21,7 +21,7 @@ final class HatchingTest {
         // its y extent (0..4), so unit spacing lays lines at y = 0, 1, 2, 3, with the apex
         // line at y = 4 collapsing to the corner and dropping out.
         private static final float[] RIGHT_TRIANGLE = {
-                0f, 0f, 4f, 0f, 0f, 4f};
+            0f, 0f, 4f, 0f, 0f, 4f};
 
         @Test
         void compute_hatch_segments_yields_an_empty_run_for_zero_spacing() {
@@ -37,7 +37,7 @@ final class HatchingTest {
         void compute_hatch_segments_yields_an_empty_run_for_a_soup_smaller_than_a_triangle() {
             // Two vertices cannot form a triangle, so there is no area to hatch.
             assertThat(Hatching.computeHatchSegments(new float[] {0f, 0f, 1f, 0f}, 0, 1))
-                    .isEmpty();
+                .isEmpty();
         }
 
         @Test
@@ -47,10 +47,10 @@ final class HatchingTest {
             var run = Hatching.computeHatchSegments(RIGHT_TRIANGLE, 0, 1);
 
             assertThat(run).containsExactly(
-                    0f, 0f, 4f, 0f,
-                    0f, 1f, 3f, 1f,
-                    0f, 2f, 2f, 2f,
-                    0f, 3f, 1f, 3f);
+                0f, 0f, 4f, 0f,
+                0f, 1f, 3f, 1f,
+                0f, 2f, 2f, 2f,
+                0f, 3f, 1f, 3f);
         }
 
         @Test

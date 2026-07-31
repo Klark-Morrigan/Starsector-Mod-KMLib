@@ -57,13 +57,18 @@ public final class RadioRow {
         var columnWidth = bounds.width() / columnCount;
         var rowHeight = bounds.height() / rowCount;
         var segments = new ArrayList<Rectangle>(optionCount);
+
         for (var index = 0; index < optionCount; index++) {
+
             var column = index / rowCount;
             var rowInColumn = index % rowCount;
+
             // UI y grows up, so row 0 hangs from the top edge and each later row drops one row height.
-            segments.add(new Rectangle(bounds.x() + column * columnWidth,
-                    bounds.y() + bounds.height() - (rowInColumn + 1) * rowHeight,
-                    columnWidth, rowHeight));
+            segments.add(new Rectangle(
+                bounds.x() + column * columnWidth,
+                bounds.y() + bounds.height() - (rowInColumn + 1) * rowHeight,
+                columnWidth,
+                rowHeight));
         }
         return List.copyOf(segments);
     }
@@ -80,24 +85,33 @@ public final class RadioRow {
      * @param alignment    the direction the cells flow in
      * @return the segment rectangles, in flow order (empty when {@code segmentCount <= 0})
      */
-    public static List<Rectangle> splitIntoSegments(Rectangle bounds, int segmentCount,
+    public static List<Rectangle> splitIntoSegments(
+            Rectangle bounds,
+            int segmentCount,
             RadioAlignment alignment) {
+
         if (segmentCount <= 0) {
             return List.of();
         }
         if (alignment != RadioAlignment.VERTICAL) {
             var equalWidth = bounds.width() / segmentCount;
-            return HorizontalSegments.placeSegments(bounds.x(), bounds.y(), bounds.height(),
-                    Collections.nCopies(segmentCount, equalWidth));
+            return HorizontalSegments.placeSegments(
+                bounds.x(),
+                bounds.y(),
+                bounds.height(),
+                Collections.nCopies(segmentCount, equalWidth));
         }
         // Cells stack top to bottom; the first hangs from the top edge and each later cell drops one
         // cell height, so element 0 is the topmost row (UI y grows up).
         var segments = new ArrayList<Rectangle>(segmentCount);
         var segmentHeight = bounds.height() / segmentCount;
+
         for (var index = 0; index < segmentCount; index++) {
-            segments.add(new Rectangle(bounds.x(),
-                    bounds.y() + bounds.height() - (index + 1) * segmentHeight,
-                    bounds.width(), segmentHeight));
+            segments.add(new Rectangle(
+                bounds.x(),
+                bounds.y() + bounds.height() - (index + 1) * segmentHeight,
+                bounds.width(),
+                segmentHeight));
         }
         return List.copyOf(segments);
     }
@@ -153,8 +167,12 @@ public final class RadioRow {
      * @param pointY        the point's y, in UI coordinates
      * @return the actionable segment's index, or {@link #NO_SEGMENT}
      */
-    public static int findHitElement(List<Rectangle> segments, int selectedIndex, float pointX,
+    public static int findHitElement(
+            List<Rectangle> segments,
+            int selectedIndex,
+            float pointX,
             float pointY) {
+                
         var hitIndex = findSegmentIndexAt(segments, pointX, pointY);
         if (hitIndex == selectedIndex) {
             return NO_SEGMENT;

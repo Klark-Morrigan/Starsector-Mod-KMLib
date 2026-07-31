@@ -96,7 +96,7 @@ final class KmLoggingTest {
             // this binding's logger subtree, so its explicit level stays unset.
             var root = Logger.getLogger("kmlibtest_filter_root");
             var binding =
-                    new LunaLogBinding("kmlibtest_filter", "kmlibtest_filter_root", "f", Level.DEBUG);
+                new LunaLogBinding("kmlibtest_filter", "kmlibtest_filter_root", "f", Level.DEBUG);
 
             binding.settingsChanged("some_other_mod");
 

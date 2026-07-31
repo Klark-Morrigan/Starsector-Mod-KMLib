@@ -33,7 +33,7 @@ final class DecivilisedMarketsTest {
         @Test
         void is_true_for_an_encountered_revealed_planet() {
             var system = systemWithPlanets("a",
-                    planetWithMarket(decivilisedMarket(MarketAPI.SurveyLevel.FULL, true, true)));
+                planetWithMarket(decivilisedMarket(MarketAPI.SurveyLevel.FULL, true, true)));
 
             assertThat(DecivilisedMarkets.hasRevealedDecivilisedPlanet(system)).isTrue();
         }
@@ -43,7 +43,7 @@ final class DecivilisedMarketsTest {
             // A condition visible on contact reveals as soon as the planet is
             // encountered, without a survey.
             var system = systemWithPlanets("a",
-                    planetWithMarket(decivilisedMarket(MarketAPI.SurveyLevel.SEEN, false, false)));
+                planetWithMarket(decivilisedMarket(MarketAPI.SurveyLevel.SEEN, false, false)));
 
             assertThat(DecivilisedMarkets.hasRevealedDecivilisedPlanet(system)).isTrue();
         }
@@ -53,7 +53,7 @@ final class DecivilisedMarketsTest {
             // Still at SurveyLevel.NONE: the player has never been here, so even a
             // surveyed-flagged condition must not leak onto the map.
             var system = systemWithPlanets("a",
-                    planetWithMarket(decivilisedMarket(MarketAPI.SurveyLevel.NONE, false, true)));
+                planetWithMarket(decivilisedMarket(MarketAPI.SurveyLevel.NONE, false, true)));
 
             assertThat(DecivilisedMarkets.hasRevealedDecivilisedPlanet(system)).isFalse();
         }
@@ -61,7 +61,7 @@ final class DecivilisedMarketsTest {
         @Test
         void is_false_when_the_condition_still_needs_surveying() {
             var system = systemWithPlanets("a", planetWithMarket(
-                    decivilisedMarket(MarketAPI.SurveyLevel.PRELIMINARY, true, false)));
+                decivilisedMarket(MarketAPI.SurveyLevel.PRELIMINARY, true, false)));
 
             assertThat(DecivilisedMarkets.hasRevealedDecivilisedPlanet(system)).isFalse();
         }
@@ -71,7 +71,7 @@ final class DecivilisedMarketsTest {
             // An ordinary surveyed rock - encountered, but carrying no decivilised
             // condition - is not a dead colony.
             var system = systemWithPlanets("a",
-                    planetWithMarket(marketWithoutDecivilisedCondition(MarketAPI.SurveyLevel.FULL)));
+                planetWithMarket(marketWithoutDecivilisedCondition(MarketAPI.SurveyLevel.FULL)));
 
             assertThat(DecivilisedMarkets.hasRevealedDecivilisedPlanet(system)).isFalse();
         }
@@ -81,7 +81,7 @@ final class DecivilisedMarketsTest {
             // The central star has no market; the ruin on a later planet still
             // counts.
             var system = systemWithPlanets("a", starWithoutMarket(),
-                    planetWithMarket(decivilisedMarket(MarketAPI.SurveyLevel.FULL, false, false)));
+                planetWithMarket(decivilisedMarket(MarketAPI.SurveyLevel.FULL, false, false)));
 
             assertThat(DecivilisedMarkets.hasRevealedDecivilisedPlanet(system)).isTrue();
         }
@@ -97,12 +97,12 @@ final class DecivilisedMarketsTest {
         @Test
         void collects_only_systems_with_a_revealed_ruin() {
             var withRuin = systemWithPlanets("ruined",
-                    planetWithMarket(decivilisedMarket(MarketAPI.SurveyLevel.FULL, false, false)));
+                planetWithMarket(decivilisedMarket(MarketAPI.SurveyLevel.FULL, false, false)));
             var withoutRuin = systemWithPlanets("clean",
-                    planetWithMarket(marketWithoutDecivilisedCondition(MarketAPI.SurveyLevel.FULL)));
+                planetWithMarket(marketWithoutDecivilisedCondition(MarketAPI.SurveyLevel.FULL)));
 
             assertThat(DecivilisedMarkets.findRevealedDecivilisedSystemIds(
-                    sectorOf(withRuin, withoutRuin))).containsExactly("ruined");
+                sectorOf(withRuin, withoutRuin))).containsExactly("ruined");
         }
 
         @Test

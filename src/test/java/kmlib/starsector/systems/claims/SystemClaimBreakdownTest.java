@@ -27,17 +27,17 @@ final class SystemClaimBreakdownTest {
             scores.clear();
 
             assertThat(breakdown.scores())
-                    .extracting(FactionClaimScore::factionId)
-                    .containsExactly("hegemony");
+                .extracting(FactionClaimScore::factionId)
+                .containsExactly("hegemony");
         }
 
         @Test
         void rejectsAnAttemptToChangeTheStandings() {
             var breakdown = new SystemClaimBreakdown(
-                    null, "hegemony", List.of(new FactionClaimScore("hegemony", 6, true)));
+                null, "hegemony", List.of(new FactionClaimScore("hegemony", 6, true)));
 
             assertThatThrownBy(() -> breakdown.scores().clear())
-                    .isInstanceOf(UnsupportedOperationException.class);
+                .isInstanceOf(UnsupportedOperationException.class);
         }
 
         @Test

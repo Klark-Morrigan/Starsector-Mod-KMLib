@@ -54,7 +54,7 @@ class StarsectorPointsTest {
             var to = entityAt(5f, 6f);
 
             assertThat(StarsectorPoints.computeAngleDegreesBetween(from, to))
-                    .isCloseTo(53.13, within(0.01));
+                .isCloseTo(53.13, within(0.01));
         }
     }
 

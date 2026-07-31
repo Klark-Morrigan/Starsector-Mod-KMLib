@@ -256,8 +256,8 @@ class CampaignMapViewTest {
             stubUiDataWithStarscape(true, hyperspaceLocation());
 
             assertThat(CampaignMapView.describeViewState()).isEqualTo(
-                    "tab=MAP starscape=true mapLocation=hyperspace"
-                            + " state=SHOWING_IN_STARSCAPE_MODE");
+                "tab=MAP starscape=true mapLocation=hyperspace"
+                    + " state=SHOWING_IN_STARSCAPE_MODE");
         }
 
         @Test
@@ -267,7 +267,7 @@ class CampaignMapViewTest {
             when(sectorMock.getUIData()).thenReturn(mock(PersistentUIDataAPI.class));
 
             assertThat(CampaignMapView.describeViewState())
-                    .isEqualTo("tab=MAP starscape=unreadable mapLocation=null state=NOT_SHOWING");
+                .isEqualTo("tab=MAP starscape=unreadable mapLocation=null state=NOT_SHOWING");
         }
 
         @Test
@@ -280,7 +280,7 @@ class CampaignMapViewTest {
             stubUiDataWithStarscape(false, locationMock);
 
             assertThat(CampaignMapView.describeViewState()).isEqualTo(
-                    "tab=MAP starscape=false mapLocation=system_corvus state=NOT_SHOWING");
+                "tab=MAP starscape=false mapLocation=system_corvus state=NOT_SHOWING");
         }
     }
 

@@ -45,22 +45,25 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
         var markets = StarSystems.readMarkets(Global.getSector(), system);
         var bestScoreByFactionId = new LinkedHashMap<String, FactionClaimScore>();
         String topTerritorialFactionId = null;
+
         // The running maximum starts at 0 and only ever rises on a strictly greater
         // territorial score. Two consequences are load-bearing and mirrored on purpose: a tie
         // leaves the market the economy listed first in front, and a score of zero can never
         // take a system.
         var topScore = 0;
+
         for (var market : markets) {
             var faction = market == null ? null : market.getFaction();
+            
             // A hidden market is not a visible presence and a player market is not a rival,
             // so neither is scored - the same two exclusions the mechanic applies.
             if (faction == null || market.isHidden() || faction.isPlayerFaction()) {
                 continue;
             }
             var standing = new FactionClaimScore(
-                    faction.getId(),
-                    computeMarketScore(market, markets),
-                    FactionFlags.isTerritorial(faction));
+                faction.getId(),
+                computeMarketScore(market, markets),
+                FactionFlags.isTerritorial(faction));
 
             recordBestScore(bestScoreByFactionId, standing);
 
@@ -72,14 +75,14 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
         // An override answers the question before any market is weighed, so it stands as the
         // claimant even where the scores point elsewhere; those scores stay on as context.
         var claimantFactionId =
-                overrideFactionId != null
-                        ? overrideFactionId
-                        : topTerritorialFactionId;
+            overrideFactionId != null
+                ? overrideFactionId
+                : topTerritorialFactionId;
 
         return new SystemClaimBreakdown(
-                overrideFactionId,
-                claimantFactionId,
-                rankScores(bestScoreByFactionId.values()));
+            overrideFactionId,
+            claimantFactionId,
+            rankScores(bestScoreByFactionId.values()));
     }
 
     @Override
@@ -98,8 +101,8 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
         var best = bestByFactionId.get(standing.factionId());
         if (best == null || standing.score() > best.score()) {
             bestByFactionId.put(
-                    standing.factionId(),
-                    standing);
+                standing.factionId(),
+                standing);
         }
     }
 
@@ -109,8 +112,8 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
     private static List<FactionClaimScore> rankScores(Collection<FactionClaimScore> scores) {
         var ranked = new ArrayList<>(scores);
         ranked.sort(Comparator
-                .comparingInt(FactionClaimScore::score)
-                .reversed());
+            .comparingInt(FactionClaimScore::score)
+            .reversed());
         return ranked;
     }
 
@@ -127,7 +130,7 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
             }
         }
         return Markets.isMilitary(market)
-                ? score + MILITARY_MARKET_BONUS
-                : score;
+            ? score + MILITARY_MARKET_BONUS
+            : score;
     }
 }

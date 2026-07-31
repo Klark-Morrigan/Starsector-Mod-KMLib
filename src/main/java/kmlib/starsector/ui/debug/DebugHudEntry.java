@@ -8,5 +8,7 @@ package kmlib.starsector.ui.debug;
  * @param key  the label, drawn small above the body
  * @param body the value, drawn in the larger body face beneath the key
  */
-public record DebugHudEntry(String key, String body) {
+public record DebugHudEntry(
+    String key,
+    String body) {
 }

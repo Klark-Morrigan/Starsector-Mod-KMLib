@@ -45,7 +45,7 @@ final class RandomAssortmentOfThingsMatcherTest {
                 stubModEnabled(globalMock, false);
 
                 assertThat(RandomAssortmentOfThingsMatcher.isAbyssalFracture(entityMock))
-                        .isFalse();
+                    .isFalse();
             }
         }
 
@@ -56,7 +56,7 @@ final class RandomAssortmentOfThingsMatcherTest {
                 stubModEnabled(globalMock, true);
 
                 assertThat(RandomAssortmentOfThingsMatcher.isAbyssalFracture(entityMock))
-                        .isFalse();
+                    .isFalse();
             }
         }
 
@@ -67,7 +67,7 @@ final class RandomAssortmentOfThingsMatcherTest {
                 stubModEnabled(globalMock, true);
 
                 assertThat(RandomAssortmentOfThingsMatcher.isAbyssalFracture(entityMock))
-                        .isTrue();
+                    .isTrue();
             }
         }
     }

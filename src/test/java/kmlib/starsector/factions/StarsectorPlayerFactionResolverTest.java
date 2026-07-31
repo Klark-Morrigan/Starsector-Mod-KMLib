@@ -44,7 +44,7 @@ class StarsectorPlayerFactionResolverTest {
         @Test
         void establishedIsFalseOnDefaultNameAndNoMarkets() {
             var established = StarsectorPlayerFactionResolver.isPlayerFactionEstablished(
-                    stubSource("Independent", false));
+                stubSource("Independent", false));
 
             assertThat(established).isFalse();
         }
@@ -54,7 +54,7 @@ class StarsectorPlayerFactionResolverTest {
             // Nex's custom-faction-at-game-start case: name customised
             // before any colony exists. Either signal alone passes.
             var established = StarsectorPlayerFactionResolver.isPlayerFactionEstablished(
-                    stubSource("Concord", false));
+                stubSource("Concord", false));
 
             assertThat(established).isTrue();
         }
@@ -64,7 +64,7 @@ class StarsectorPlayerFactionResolverTest {
             // Vanilla rename-prompt-dismissed case: name stays default,
             // player still owns a colony.
             var established = StarsectorPlayerFactionResolver.isPlayerFactionEstablished(
-                    stubSource("Independent", true));
+                stubSource("Independent", true));
 
             assertThat(established).isTrue();
         }
@@ -74,9 +74,9 @@ class StarsectorPlayerFactionResolverTest {
             // Both the lowercase id (Nex's stock player.faction) and the
             // capitalised variant must resolve as unestablished.
             assertThat(StarsectorPlayerFactionResolver.isPlayerFactionEstablished(
-                    stubSource("player", false))).isFalse();
+                stubSource("player", false))).isFalse();
             assertThat(StarsectorPlayerFactionResolver.isPlayerFactionEstablished(
-                    stubSource("Player", false))).isFalse();
+                stubSource("Player", false))).isFalse();
         }
 
         @Test
@@ -84,17 +84,17 @@ class StarsectorPlayerFactionResolverTest {
             // Defensive: a null player faction (no-sector / pre-game-load)
             // resolves as unestablished rather than throwing.
             var established = StarsectorPlayerFactionResolver.isPlayerFactionEstablished(
-                    new PlayerFactionSource() {
-                        @Override
-                        public FactionAPI playerFaction() {
-                            return null;
-                        }
+                new PlayerFactionSource() {
+                    @Override
+                    public FactionAPI playerFaction() {
+                        return null;
+                    }
 
-                        @Override
-                        public boolean ownsAnyMarket() {
-                            return false;
-                        }
-                    });
+                    @Override
+                    public boolean ownsAnyMarket() {
+                        return false;
+                    }
+                });
 
             assertThat(established).isFalse();
         }
@@ -108,7 +108,7 @@ class StarsectorPlayerFactionResolverTest {
             Mockito.when(factionMock.getDisplayName()).thenReturn("Hegemony");
 
             var resolved = StarsectorPlayerFactionResolver.resolveDisplayName(
-                    factionMock, "Independent");
+                factionMock, "Independent");
 
             assertThat(resolved).isEqualTo("Hegemony");
         }
@@ -119,7 +119,7 @@ class StarsectorPlayerFactionResolverTest {
             Mockito.when(factionMock.getDisplayName()).thenReturn("player");
 
             var resolved = StarsectorPlayerFactionResolver.resolveDisplayName(
-                    factionMock, "Independent");
+                factionMock, "Independent");
 
             assertThat(resolved).isEqualTo("Independent");
         }
@@ -127,7 +127,7 @@ class StarsectorPlayerFactionResolverTest {
         @Test
         void resolveDisplayNameFallsBackOnNullFaction() {
             var resolved = StarsectorPlayerFactionResolver.resolveDisplayName(
-                    null, "faction leader");
+                null, "faction leader");
 
             assertThat(resolved).isEqualTo("faction leader");
         }
@@ -138,7 +138,7 @@ class StarsectorPlayerFactionResolverTest {
             Mockito.when(factionMock.getDisplayName()).thenReturn("   ");
 
             var resolved = StarsectorPlayerFactionResolver.resolveDisplayName(
-                    factionMock, "Independent");
+                factionMock, "Independent");
 
             assertThat(resolved).isEqualTo("Independent");
         }
@@ -153,14 +153,14 @@ class StarsectorPlayerFactionResolverTest {
             // must read the updated set rather than the built-in defaults
             // so the extension actually takes effect.
             StarsectorPlayerFactionResolver.setUnestablishedPlayerFactionNames(
-                    Set.of("Unaffiliated"));
+                Set.of("Unaffiliated"));
 
             assertThat(StarsectorPlayerFactionResolver.isPlayerFactionEstablished(
-                    stubSource("Unaffiliated", false))).isFalse();
+                stubSource("Unaffiliated", false))).isFalse();
             // The previous defaults are no longer recognised - replace,
             // not merge, is the documented contract.
             assertThat(StarsectorPlayerFactionResolver.isPlayerFactionEstablished(
-                    stubSource("Independent", false))).isTrue();
+                stubSource("Independent", false))).isTrue();
         }
 
         @Test
@@ -168,12 +168,12 @@ class StarsectorPlayerFactionResolverTest {
             // The display-name fallback shares the set with the established
             // check, so an extension must steer the fallback too.
             StarsectorPlayerFactionResolver.setUnestablishedPlayerFactionNames(
-                    Set.of("Unaffiliated"));
+                Set.of("Unaffiliated"));
             var factionMock = Mockito.mock(FactionAPI.class);
             Mockito.when(factionMock.getDisplayName()).thenReturn("Unaffiliated");
 
             var resolved = StarsectorPlayerFactionResolver.resolveDisplayName(
-                    factionMock, "faction");
+                factionMock, "faction");
 
             assertThat(resolved).isEqualTo("faction");
         }
@@ -183,11 +183,11 @@ class StarsectorPlayerFactionResolverTest {
             // Null is the documented reset signal so callers do not need to
             // hold onto a snapshot of the defaults to restore them.
             StarsectorPlayerFactionResolver.setUnestablishedPlayerFactionNames(
-                    Set.of("Unaffiliated"));
+                Set.of("Unaffiliated"));
             StarsectorPlayerFactionResolver.setUnestablishedPlayerFactionNames(null);
 
             assertThat(StarsectorPlayerFactionResolver.getUnestablishedPlayerFactionNames())
-                    .containsExactlyInAnyOrder("Independent", "player", "Player");
+                .containsExactlyInAnyOrder("Independent", "player", "Player");
         }
 
         @Test
@@ -198,7 +198,7 @@ class StarsectorPlayerFactionResolverTest {
             StarsectorPlayerFactionResolver.setUnestablishedPlayerFactionNames(Set.of());
 
             assertThat(StarsectorPlayerFactionResolver.getUnestablishedPlayerFactionNames())
-                    .containsExactlyInAnyOrder("Independent", "player", "Player");
+                .containsExactlyInAnyOrder("Independent", "player", "Player");
         }
 
         @Test
@@ -210,7 +210,7 @@ class StarsectorPlayerFactionResolverTest {
             caller.add("StillStrangers");
 
             assertThat(StarsectorPlayerFactionResolver.getUnestablishedPlayerFactionNames())
-                    .containsExactly("Unaffiliated");
+                .containsExactly("Unaffiliated");
         }
     }
 
@@ -222,7 +222,7 @@ class StarsectorPlayerFactionResolverTest {
             // the resolver's back, so an extension has to go through the
             // setter (which copies).
             var live =
-                    StarsectorPlayerFactionResolver.getUnestablishedPlayerFactionNames();
+                StarsectorPlayerFactionResolver.getUnestablishedPlayerFactionNames();
 
             try {
                 live.add("Unaffiliated");

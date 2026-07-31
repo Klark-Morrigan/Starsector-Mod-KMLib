@@ -23,15 +23,15 @@ class TextAnchorsTest {
         @EnumSource(TextAlignment.class)
         void resolveAnchorNamesTheLazyFontAnchorForTheSamePosition(TextAlignment alignment) {
             var expected = switch (alignment) {
-                case TOP_LEFT -> LazyFont.TextAnchor.TOP_LEFT;
-                case TOP_CENTER -> LazyFont.TextAnchor.TOP_CENTER;
-                case TOP_RIGHT -> LazyFont.TextAnchor.TOP_RIGHT;
-                case CENTER_LEFT -> LazyFont.TextAnchor.CENTER_LEFT;
-                case CENTER -> LazyFont.TextAnchor.CENTER;
-                case CENTER_RIGHT -> LazyFont.TextAnchor.CENTER_RIGHT;
-                case BOTTOM_LEFT -> LazyFont.TextAnchor.BOTTOM_LEFT;
-                case BOTTOM_CENTER -> LazyFont.TextAnchor.BOTTOM_CENTER;
-                case BOTTOM_RIGHT -> LazyFont.TextAnchor.BOTTOM_RIGHT;
+            case TOP_LEFT -> LazyFont.TextAnchor.TOP_LEFT;
+            case TOP_CENTER -> LazyFont.TextAnchor.TOP_CENTER;
+            case TOP_RIGHT -> LazyFont.TextAnchor.TOP_RIGHT;
+            case CENTER_LEFT -> LazyFont.TextAnchor.CENTER_LEFT;
+            case CENTER -> LazyFont.TextAnchor.CENTER;
+            case CENTER_RIGHT -> LazyFont.TextAnchor.CENTER_RIGHT;
+            case BOTTOM_LEFT -> LazyFont.TextAnchor.BOTTOM_LEFT;
+            case BOTTOM_CENTER -> LazyFont.TextAnchor.BOTTOM_CENTER;
+            case BOTTOM_RIGHT -> LazyFont.TextAnchor.BOTTOM_RIGHT;
             };
 
             assertThat(TextAnchors.resolveAnchor(alignment)).isEqualTo(expected);
@@ -42,8 +42,8 @@ class TextAnchorsTest {
             // Nine positions to nine anchors: two alignments sharing one anchor - the copy-paste a
             // hand-written switch invites - would pin text of one alignment where the other belongs.
             var anchors = Arrays.stream(TextAlignment.values())
-                    .map(TextAnchors::resolveAnchor)
-                    .toList();
+                .map(TextAnchors::resolveAnchor)
+                .toList();
 
             assertThat(anchors).doesNotHaveDuplicates();
         }

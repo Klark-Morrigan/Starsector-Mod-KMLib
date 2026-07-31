@@ -57,7 +57,7 @@ class StarsectorPlayerFleetProximityTest {
             stubPlayerFleetAt(0f, 0f);
 
             assertThat(StarsectorPlayerFleetProximity.isPlayerFleetInOrbitOf(planet, 200f))
-                    .isTrue();
+                .isTrue();
         }
 
         @Test
@@ -68,7 +68,7 @@ class StarsectorPlayerFleetProximityTest {
             stubPlayerFleetAt(0f, 0f);
 
             assertThat(StarsectorPlayerFleetProximity.isPlayerFleetInOrbitOf(planet, 200f))
-                    .isFalse();
+                .isFalse();
         }
 
         @Test
@@ -80,7 +80,7 @@ class StarsectorPlayerFleetProximityTest {
             stubPlayerFleetAt(0f, 0f);
 
             assertThat(StarsectorPlayerFleetProximity.isPlayerFleetInOrbitOf(planet, 200f))
-                    .isTrue();
+                .isTrue();
         }
 
         @Test
@@ -92,7 +92,7 @@ class StarsectorPlayerFleetProximityTest {
             stubPlayerFleetAt(0f, 0f);
 
             assertThat(StarsectorPlayerFleetProximity.isPlayerFleetInOrbitOf(planet, 200f))
-                    .isTrue();
+                .isTrue();
         }
 
         @Test
@@ -103,7 +103,7 @@ class StarsectorPlayerFleetProximityTest {
             var planet = planetAt(0f, 0f, 100f);
 
             assertThat(StarsectorPlayerFleetProximity.isPlayerFleetInOrbitOf(planet, 200f))
-                    .isFalse();
+                .isFalse();
         }
 
         @Test
@@ -114,7 +114,7 @@ class StarsectorPlayerFleetProximityTest {
             stubPlayerFleetAt(0f, 0f);
 
             assertThat(StarsectorPlayerFleetProximity.isPlayerFleetInOrbitOf(null, 200f))
-                    .isFalse();
+                .isFalse();
         }
 
         @Test
@@ -126,7 +126,7 @@ class StarsectorPlayerFleetProximityTest {
             var planet = planetAt(0f, 0f, 100f);
 
             assertThat(StarsectorPlayerFleetProximity.isPlayerFleetInOrbitOf(planet, 200f))
-                    .isFalse();
+                .isFalse();
         }
     }
 

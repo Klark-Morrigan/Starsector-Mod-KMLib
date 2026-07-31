@@ -38,8 +38,7 @@ public final class HighlightedMessage {
     public HighlightedMessage(HighlightedParagraph... lines) {
         Objects.requireNonNull(lines, "lines");
         if (lines.length == 0) {
-            throw new IllegalArgumentException(
-                    "HighlightedMessage requires at least one paragraph");
+            throw new IllegalArgumentException("HighlightedMessage requires at least one paragraph");
         }
         for (var i = 0; i < lines.length; i++) {
             Objects.requireNonNull(lines[i], "lines[" + i + "]");
@@ -68,10 +67,10 @@ public final class HighlightedMessage {
             // MessageIntel.addLine accepts as "no highlights on this
             // line" - no special-casing needed here.
             intel.addLine(
-                    line.getText(),
-                    line.getBaseColor(),
-                    line.getHighlightTexts(),
-                    line.getHighlightColors());
+                line.getText(),
+                line.getBaseColor(),
+                line.getHighlightTexts(),
+                line.getHighlightColors());
         }
         return intel;
     }

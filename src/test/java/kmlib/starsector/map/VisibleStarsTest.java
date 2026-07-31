@@ -32,7 +32,7 @@ final class VisibleStarsTest {
         void is_true_when_a_visible_star_anchor_leads_into_it() {
             var system = systemWithId("alpha");
             var visibleStars = VisibleStars.scan(
-                    sectorWithHyperEntities(starAnchorLeadingTo(system, false)));
+                sectorWithHyperEntities(starAnchorLeadingTo(system, false)));
 
             assertThat(visibleStars.isStarVisibleForSystem(system)).isTrue();
         }
@@ -41,7 +41,7 @@ final class VisibleStarsTest {
         void is_false_when_its_star_anchor_is_hidden_on_map() {
             var system = systemWithId("alpha");
             var visibleStars = VisibleStars.scan(
-                    sectorWithHyperEntities(starAnchorLeadingTo(system, true)));
+                sectorWithHyperEntities(starAnchorLeadingTo(system, true)));
 
             assertThat(visibleStars.isStarVisibleForSystem(system)).isFalse();
         }
@@ -58,7 +58,7 @@ final class VisibleStarsTest {
             // Resolution is by the destination system's identity, so an anchor for
             // "alpha" cannot make "beta" read as visible.
             var visibleStars = VisibleStars.scan(
-                    sectorWithHyperEntities(starAnchorLeadingTo(systemWithId("alpha"), false)));
+                sectorWithHyperEntities(starAnchorLeadingTo(systemWithId("alpha"), false)));
 
             assertThat(visibleStars.isStarVisibleForSystem(systemWithId("beta"))).isFalse();
         }
@@ -68,7 +68,7 @@ final class VisibleStarsTest {
             // A malformed anchor with no destination must drop out of the scan
             // rather than crash it or admit a phantom system.
             var visibleStars = VisibleStars.scan(
-                    sectorWithHyperEntities(starAnchorLeadingTo(null, false)));
+                sectorWithHyperEntities(starAnchorLeadingTo(null, false)));
 
             assertThat(visibleStars.isStarVisibleForSystem(systemWithId("alpha"))).isFalse();
         }

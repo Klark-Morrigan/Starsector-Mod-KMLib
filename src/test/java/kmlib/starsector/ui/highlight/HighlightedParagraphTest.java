@@ -39,7 +39,7 @@ class HighlightedParagraphTest {
         labelMock = mock(LabelAPI.class);
         when(panelMock.addPara(anyString(), any(Color.class))).thenReturn(labelMock);
         when(panelMock.addPara(anyString(), any(Color.class), any(Color.class), any(String[].class)))
-                .thenReturn(labelMock);
+            .thenReturn(labelMock);
     }
 
     @AfterEach
@@ -69,8 +69,8 @@ class HighlightedParagraphTest {
         @Test
         void rejectsNullBaseColor() {
             assertThatThrownBy(() -> new HighlightedParagraph("text", (Color) null))
-                    .isInstanceOf(NullPointerException.class)
-                    .hasMessageContaining("baseColor");
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("baseColor");
         }
     }
 
@@ -101,29 +101,29 @@ class HighlightedParagraphTest {
             // nothing to highlight - otherwise the engine would receive
             // an empty highlight array unnecessarily.
             verify(panelMock, never()).addPara(
-                    anyString(), any(Color.class), any(Color.class), any(String[].class));
+                anyString(), any(Color.class), any(Color.class), any(String[].class));
             verify(panelMock, never()).setHighlightColorsInLastPara(any(Color[].class));
         }
 
         @Test
         void addToWithHighlightsFansThePairsIntoParallelArrays() {
             var paragraph = new HighlightedParagraph(
-                    "host: %s pad: Landing Pad cost: %s",
-                    Color.WHITE,
-                    new Highlight("the Hegemony's", Color.RED),
-                    new Highlight("Landing Pad", Color.YELLOW),
-                    new Highlight("5,000 cr", Color.YELLOW));
+                "host: %s pad: Landing Pad cost: %s",
+                Color.WHITE,
+                new Highlight("the Hegemony's", Color.RED),
+                new Highlight("Landing Pad", Color.YELLOW),
+                new Highlight("5,000 cr", Color.YELLOW));
 
             paragraph.addTo(panelMock);
 
             var highlights = ArgumentCaptor.forClass(String[].class);
             verify(panelMock).addPara(
-                    eq("host: %s pad: Landing Pad cost: %s"),
-                    eq(Color.WHITE),
-                    eq(Color.RED), // first highlight's colour - safe fallback
-                    highlights.capture());
+                eq("host: %s pad: Landing Pad cost: %s"),
+                eq(Color.WHITE),
+                eq(Color.RED), // first highlight's colour - safe fallback
+                highlights.capture());
             assertThat(highlights.getValue()).containsExactly(
-                    "the Hegemony's", "Landing Pad", "5,000 cr");
+                "the Hegemony's", "Landing Pad", "5,000 cr");
 
             var colors = ArgumentCaptor.forClass(Color[].class);
             verify(panelMock).setHighlightColorsInLastPara(colors.capture());
@@ -149,10 +149,10 @@ class HighlightedParagraphTest {
             var tooltipMock = mock(TooltipMakerAPI.class);
             when(tooltipMock.addPara(anyString(), any(Color.class), eq(8f))).thenReturn(labelMock);
             var paragraph = new HighlightedParagraph(
-                    "text",
-                    Color.WHITE,
-                    new Highlight("a", Color.RED),
-                    new Highlight("b", Color.YELLOW));
+                "text",
+                Color.WHITE,
+                new Highlight("a", Color.RED),
+                new Highlight("b", Color.YELLOW));
 
             var returned = paragraph.addTo(tooltipMock, 8f);
 
@@ -174,9 +174,9 @@ class HighlightedParagraphTest {
         @Test
         void applyToFansHighlightsIntoTheParallelLabelSetters() {
             var paragraph = new HighlightedParagraph(
-                    "text",
-                    new Highlight("a", Color.RED),
-                    new Highlight("b", Color.WHITE));
+                "text",
+                new Highlight("a", Color.RED),
+                new Highlight("b", Color.WHITE));
 
             paragraph.applyTo(labelMock);
 

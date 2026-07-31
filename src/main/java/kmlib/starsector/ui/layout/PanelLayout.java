@@ -52,30 +52,34 @@ public final class PanelLayout {
             List<ControlSpec> bodyControls,
             LineWidthMeasurer measurer,
             float rawScrollOffset) {
+
         // A plain panel frames every side, so the content is inset by the border on all four edges.
         var border = new BoxBorder(borderWidth);
         var origin = computeContentOrigin(screenHeight, padding, border);
+
         // The shared body composition, capped so the box never runs past the bottom margin.
         var maxBodyHeight = screenHeight
-                - padding.top()
-                - border.computeEdgeInset(BoxEdge.TOP)
-                - border.computeEdgeInset(BoxEdge.BOTTOM)
-                - padding.bottom();
+            - padding.top()
+            - border.computeEdgeInset(BoxEdge.TOP)
+            - border.computeEdgeInset(BoxEdge.BOTTOM)
+            - padding.bottom();
+
         var bodyStrip = CappedStripLayout.layoutBodyStrip(
-                origin.contentX(),
-                origin.contentTopY(),
-                maxBodyHeight,
-                bodyControls,
-                measurer,
-                rawScrollOffset);
+            origin.contentX(),
+            origin.contentTopY(),
+            maxBodyHeight,
+            bodyControls,
+            measurer,
+            rawScrollOffset);
+
         // A plain panel's framed content is just the body, with no header band above it.
         return framePlacement(
-                padding.left(),
-                origin.boxTopY(),
-                border,
-                bodyStrip.bounds(),
-                0f,
-                bodyStrip);
+            padding.left(),
+            origin.boxTopY(),
+            border,
+            bodyStrip.bounds(),
+            0f,
+            bodyStrip);
     }
 
     /**
@@ -97,9 +101,9 @@ public final class PanelLayout {
         var boxTopY = screenHeight - padding.top();
 
         return new ContentOrigin(
-                boxTopY,
-                padding.left() + border.computeEdgeInset(BoxEdge.LEFT),
-                boxTopY - border.computeEdgeInset(BoxEdge.TOP));
+            boxTopY,
+            padding.left() + border.computeEdgeInset(BoxEdge.LEFT),
+            boxTopY - border.computeEdgeInset(BoxEdge.TOP));
     }
 
     /**
@@ -146,20 +150,20 @@ public final class PanelLayout {
         var contentHeight = headerBandHeight + framedBody.height();
 
         var box = new Rectangle(
-                leftX,
-                boxTopY - (contentHeight + topInset + bottomInset),
-                framedBody.width() + leftInset + rightInset,
-                contentHeight + topInset + bottomInset);
+            leftX,
+            boxTopY - (contentHeight + topInset + bottomInset),
+            framedBody.width() + leftInset + rightInset,
+            contentHeight + topInset + bottomInset);
 
         var capped = bodyStrip.placement();
 
         return new PanelPlacement(
-                box,
-                framedBody,
-                capped.controls(),
-                capped.flexViewport(),
-                capped.scrollOffset(),
-                capped.scrollOverflow());
+            box,
+            framedBody,
+            capped.controls(),
+            capped.flexViewport(),
+            capped.scrollOffset(),
+            capped.scrollOverflow());
     }
 
     /**
@@ -171,6 +175,9 @@ public final class PanelLayout {
      * @param contentTopY the content's top edge, inset from the box top by the border when the top is
      *                    stroked and flush with it when the top border is open
      */
-    record ContentOrigin(float boxTopY, float contentX, float contentTopY) {
+    record ContentOrigin(
+        float boxTopY,
+        float contentX,
+        float contentTopY) {
     }
 }

@@ -15,9 +15,9 @@ class StarsectorStringsTest {
         @Test
         void returnsConfiguredStringFromSource() {
             var value = StarsectorStrings.get(
-                    CATEGORY,
-                    KEY,
-                    (category, key) -> "Configured");
+                CATEGORY,
+                KEY,
+                (category, key) -> "Configured");
 
             assertThat(value).isEqualTo("Configured");
         }
@@ -30,13 +30,13 @@ class StarsectorStringsTest {
             var seen = new String[2];
 
             StarsectorStrings.get(
-                    CATEGORY,
-                    KEY,
-                    (category, key) -> {
-                        seen[0] = category;
-                        seen[1] = key;
-                        return "ok";
-                    });
+                CATEGORY,
+                KEY,
+                (category, key) -> {
+                    seen[0] = category;
+                    seen[1] = key;
+                    return "ok";
+                });
 
             assertThat(seen).containsExactly(CATEGORY, KEY);
         }
@@ -44,9 +44,9 @@ class StarsectorStringsTest {
         @Test
         void redactsWhenSourceReturnsNull() {
             var value = StarsectorStrings.get(
-                    CATEGORY,
-                    KEY,
-                    (category, key) -> null);
+                CATEGORY,
+                KEY,
+                (category, key) -> null);
 
             assertThat(value).isEqualTo(StarsectorStrings.REDACTED);
         }
@@ -54,9 +54,9 @@ class StarsectorStringsTest {
         @Test
         void redactsWhenSourceReturnsBlankValue() {
             var value = StarsectorStrings.get(
-                    CATEGORY,
-                    KEY,
-                    (category, key) -> "  ");
+                CATEGORY,
+                KEY,
+                (category, key) -> "  ");
 
             assertThat(value).isEqualTo(StarsectorStrings.REDACTED);
         }
@@ -64,11 +64,11 @@ class StarsectorStringsTest {
         @Test
         void redactsWhenSourceThrows() {
             var value = StarsectorStrings.get(
-                    CATEGORY,
-                    KEY,
-                    (category, key) -> {
-                        throw new IllegalStateException("missing settings");
-                    });
+                CATEGORY,
+                KEY,
+                (category, key) -> {
+                    throw new IllegalStateException("missing settings");
+                });
 
             assertThat(value).isEqualTo(StarsectorStrings.REDACTED);
         }
@@ -79,11 +79,11 @@ class StarsectorStringsTest {
         @Test
         void formatsConfiguredStringUsingRootLocale() {
             var value = StarsectorStrings.format(
-                    CATEGORY,
-                    KEY,
-                    (category, key) -> "%d configured %d",
-                    3,
-                    2);
+                CATEGORY,
+                KEY,
+                (category, key) -> "%d configured %d",
+                3,
+                2);
 
             assertThat(value).isEqualTo("3 configured 2");
         }
@@ -91,11 +91,11 @@ class StarsectorStringsTest {
         @Test
         void redactsWhenConfiguredFormatIsInvalid() {
             var value = StarsectorStrings.format(
-                    CATEGORY,
-                    KEY,
-                    (category, key) -> "%q",
-                    3,
-                    2);
+                CATEGORY,
+                KEY,
+                (category, key) -> "%q",
+                3,
+                2);
 
             assertThat(value).isEqualTo(StarsectorStrings.REDACTED);
         }

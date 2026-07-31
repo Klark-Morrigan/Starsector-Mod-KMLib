@@ -60,7 +60,13 @@ public final class VanillaTabStrip {
             LineWidthMeasurer measurer) {
 
         var laidOut = TabStrip.layoutTabs(
-                originX, rowTopY, tabHeight, spec, composeDisplays(contents), measurer);
+            originX,
+            rowTopY,
+            tabHeight,
+            spec,
+            composeDisplays(contents),
+            measurer);
+
         var bounds = new ArrayList<Rectangle>(laidOut.size());
 
         for (var tab : laidOut) {
@@ -89,8 +95,8 @@ public final class VanillaTabStrip {
 
         for (var index = 0; index < count; index++) {
             tabs.add(new VanillaTab(
-                    contents.get(index),
-                    bounds.get(index)));
+                contents.get(index),
+                bounds.get(index)));
         }
         return List.copyOf(tabs);
     }
@@ -111,7 +117,10 @@ public final class VanillaTabStrip {
             SegmentSpec spec,
             LineWidthMeasurer measurer) {
 
-        return TabStrip.measureRowWidth(composeDisplays(contents), spec, measurer);
+        return TabStrip.measureRowWidth(
+            composeDisplays(contents),
+            spec,
+            measurer);
     }
 
     /**
@@ -142,11 +151,12 @@ public final class VanillaTabStrip {
             List<VanillaTab> tabs,
             float pointX,
             float pointY) {
+                
         return Rectangles.findIndexContaining(
-                tabs,
-                VanillaTab::bounds,
-                pointX,
-                pointY);
+            tabs,
+            VanillaTab::bounds,
+            pointX,
+            pointY);
     }
 
     /**
@@ -162,8 +172,8 @@ public final class VanillaTabStrip {
             return content.label();
         }
         return content.label()
-                + SHORTCUT_GAP_TEXT
-                + wrapShortcut(content.shortcut());
+            + SHORTCUT_GAP_TEXT
+            + wrapShortcut(content.shortcut());
     }
 
     /**

@@ -37,10 +37,10 @@ class VanillaClaimReaderTest {
             var hegemony = claimContest.buildFaction("hegemony", true);
             var tritachyon = claimContest.buildFaction("tritachyon", true);
             claimContest.placeMarketsInSystem(claimContest.buildMarket(hegemony, 4),
-                    claimContest.buildMarket(tritachyon, 7));
+                claimContest.buildMarket(tritachyon, 7));
 
             var claimantId = new VanillaClaimReader()
-                    .readClaimingFactionId(claimContest.getSystem());
+                .readClaimingFactionId(claimContest.getSystem());
 
             assertThat(claimantId).isEqualTo("tritachyon");
         }
@@ -52,7 +52,7 @@ class VanillaClaimReaderTest {
             claimContest.overrideClaimingFaction("luddic_church");
 
             var claimantId = new VanillaClaimReader()
-                    .readClaimingFactionId(claimContest.getSystem());
+                .readClaimingFactionId(claimContest.getSystem());
 
             assertThat(claimantId).isEqualTo("luddic_church");
         }
@@ -63,7 +63,7 @@ class VanillaClaimReaderTest {
             claimContest.placeMarketsInSystem(claimContest.buildMarket(pirates, 9));
 
             var claimantId = new VanillaClaimReader()
-                    .readClaimingFactionId(claimContest.getSystem());
+                .readClaimingFactionId(claimContest.getSystem());
 
             assertThat(claimantId).isNull();
         }

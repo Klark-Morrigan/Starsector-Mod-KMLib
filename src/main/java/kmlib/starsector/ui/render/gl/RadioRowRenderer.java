@@ -78,13 +78,15 @@ public final class RadioRowRenderer {
 
         var segments = RadioRow.splitIntoGrid(bounds, optionCount, columnCount);
         washSelectedSegment(segments, selectedIndex, colors, opacity);
+
         // The tallest column, matching the grid split, so the row rules land on the same boundaries
         // the cells abut on. The grid's column and row rules are the vertical list's own (a flat seam
         // list cannot reconstruct them), but draw at the shared divider strength and thickness so they
         // read the same as a horizontal row's seams.
         var dividerPaint = new UiElementPaint(
-                colors.frame(),
-                opacity * HorizontalSegmentsRenderer.DIVIDER_ALPHA_MULT);
+            colors.frame(),
+            opacity * HorizontalSegmentsRenderer.DIVIDER_ALPHA_MULT);
+            
         var thickness = HorizontalSegmentsRenderer.DIVIDER_THICKNESS;
         var rowCount = RadioRow.computeRowsPerColumn(optionCount, columnCount);
         var columnWidth = bounds.width() / columnCount;
@@ -93,15 +95,15 @@ public final class RadioRowRenderer {
         for (var column = 1; column < columnCount; column++) {
             var columnX = bounds.x() + column * columnWidth;
             UiFill.renderQuad(
-                    new Rectangle(columnX, bounds.y(), thickness, bounds.height()),
-                    dividerPaint);
+                new Rectangle(columnX, bounds.y(), thickness, bounds.height()),
+                dividerPaint);
         }
 
         for (var row = 1; row < rowCount; row++) {
             var boundaryY = bounds.y() + bounds.height() - row * rowHeight;
             UiFill.renderQuad(
-                    new Rectangle(bounds.x(), boundaryY - thickness, bounds.width(), thickness),
-                    dividerPaint);
+                new Rectangle(bounds.x(), boundaryY - thickness, bounds.width(), thickness),
+                dividerPaint);
         }
 
         strokeOuterFrame(bounds, colors, opacity);
@@ -118,9 +120,9 @@ public final class RadioRowRenderer {
 
         if (selectedIndex >= 0 && selectedIndex < segments.size()) {
             HorizontalSegmentsRenderer.renderSelectedWash(
-                    segments.get(selectedIndex),
-                    colors.selectedWash(),
-                    opacity);
+                segments.get(selectedIndex),
+                colors.selectedWash(),
+                opacity);
         }
     }
 

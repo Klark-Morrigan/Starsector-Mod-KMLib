@@ -56,7 +56,7 @@ class RowSlotTest {
             // Matching the image's width is what lets a row leading with a tick lay its label exactly
             // where a crested row lays its own.
             assertThat(computeWidth(new RowSlot.Tick(true), LINE_HEIGHT))
-                    .isEqualTo(computeWidth(new RowSlot.Image("crest_a"), LINE_HEIGHT));
+                .isEqualTo(computeWidth(new RowSlot.Image("crest_a"), LINE_HEIGHT));
         }
 
         @Test
@@ -64,7 +64,7 @@ class RowSlotTest {
             // A ticked box and a clear one occupy the same column, so a list cannot shift as its
             // options are ticked.
             assertThat(computeWidth(new RowSlot.Tick(false), LINE_HEIGHT))
-                    .isEqualTo(computeWidth(new RowSlot.Tick(true), LINE_HEIGHT));
+                .isEqualTo(computeWidth(new RowSlot.Tick(true), LINE_HEIGHT));
         }
 
         @Test
@@ -72,14 +72,14 @@ class RowSlotTest {
             // The reserved width is the width the marker is drawn at, so the column and the shape in it
             // cannot disagree - and it stays narrower than the line, reading as a compact marker.
             assertThat(computeWidth(new RowSlot.Triangle(TriangleDirection.UP), LINE_HEIGHT))
-                    .isEqualTo(IconLabelRow.computeDirectionTriangleSlotWidth(LINE_HEIGHT))
-                    .isLessThan(LINE_HEIGHT);
+                .isEqualTo(IconLabelRow.computeDirectionTriangleSlotWidth(LINE_HEIGHT))
+                .isLessThan(LINE_HEIGHT);
         }
 
         @Test
         void computeWidthIsUnchangedByWhichWayATrianglePoints() {
             assertThat(computeWidth(new RowSlot.Triangle(TriangleDirection.DOWN), LINE_HEIGHT))
-                    .isEqualTo(computeWidth(new RowSlot.Triangle(TriangleDirection.UP), LINE_HEIGHT));
+                .isEqualTo(computeWidth(new RowSlot.Triangle(TriangleDirection.UP), LINE_HEIGHT));
         }
 
         @Test
@@ -87,7 +87,7 @@ class RowSlotTest {
             // Four characters at one unit each: the slot spends the measurement it was handed rather
             // than deriving a width from the line it sits on.
             assertThat(computeWidth(new RowSlot.Text(new TextSpan("9999", SLOT_COLOUR)), LINE_HEIGHT))
-                    .isEqualTo(4f);
+                .isEqualTo(4f);
         }
 
         @Test
@@ -95,7 +95,7 @@ class RowSlotTest {
             // A caller that assembled a run from parts and came up empty gets the column it would have
             // had without the run, rather than a gap held open in front of no glyphs.
             assertThat(computeWidth(new RowSlot.Text(TextSpan.createBlank(SLOT_COLOUR)), LINE_HEIGHT))
-                    .isEqualTo(RowSlot.NO_WIDTH);
+                .isEqualTo(RowSlot.NO_WIDTH);
         }
 
         @Test
@@ -103,7 +103,7 @@ class RowSlotTest {
             // Which runs read as nothing-to-draw is TextSpan's rule, so a run of separators is charged
             // as blank here too rather than as the width its spaces happen to measure.
             assertThat(computeWidth(new RowSlot.Text(new TextSpan("   ", SLOT_COLOUR)), LINE_HEIGHT))
-                    .isEqualTo(RowSlot.NO_WIDTH);
+                .isEqualTo(RowSlot.NO_WIDTH);
         }
 
         @Test
@@ -116,14 +116,14 @@ class RowSlotTest {
             // An image, a tick, and a triangle answer from the line alone, so a container with no text
             // measurement to hand - or one bound to another face - still gets their widths.
             assertThat(new RowSlot.Image("crest_a").computeWidth(LINE_HEIGHT, UNSPENDABLE_MEASURER))
-                    .isEqualTo(LINE_HEIGHT);
+                .isEqualTo(LINE_HEIGHT);
             assertThat(new RowSlot.Tick(true).computeWidth(LINE_HEIGHT, UNSPENDABLE_MEASURER))
-                    .isEqualTo(LINE_HEIGHT);
+                .isEqualTo(LINE_HEIGHT);
             assertThat(new RowSlot.Triangle(TriangleDirection.UP)
-                    .computeWidth(LINE_HEIGHT, UNSPENDABLE_MEASURER))
-                    .isEqualTo(IconLabelRow.computeDirectionTriangleSlotWidth(LINE_HEIGHT));
+                .computeWidth(LINE_HEIGHT, UNSPENDABLE_MEASURER))
+                .isEqualTo(IconLabelRow.computeDirectionTriangleSlotWidth(LINE_HEIGHT));
             assertThat(RowSlot.EMPTY.computeWidth(LINE_HEIGHT, UNSPENDABLE_MEASURER))
-                    .isEqualTo(RowSlot.NO_WIDTH);
+                .isEqualTo(RowSlot.NO_WIDTH);
         }
 
         @Test
@@ -131,11 +131,11 @@ class RowSlotTest {
             // Every kind whose width is geometry rather than glyphs grows with the line, so a stack
             // drawn larger keeps the same proportions rather than shrinking its slots.
             assertThat(computeWidth(new RowSlot.Image("crest_a"), TALLER_LINE_HEIGHT))
-                    .isGreaterThan(computeWidth(new RowSlot.Image("crest_a"), LINE_HEIGHT));
+                .isGreaterThan(computeWidth(new RowSlot.Image("crest_a"), LINE_HEIGHT));
             assertThat(computeWidth(new RowSlot.Tick(true), TALLER_LINE_HEIGHT))
-                    .isGreaterThan(computeWidth(new RowSlot.Tick(true), LINE_HEIGHT));
+                .isGreaterThan(computeWidth(new RowSlot.Tick(true), LINE_HEIGHT));
             assertThat(computeWidth(new RowSlot.Triangle(TriangleDirection.UP), TALLER_LINE_HEIGHT))
-                    .isGreaterThan(computeWidth(new RowSlot.Triangle(TriangleDirection.UP), LINE_HEIGHT));
+                .isGreaterThan(computeWidth(new RowSlot.Triangle(TriangleDirection.UP), LINE_HEIGHT));
         }
 
         @Test
@@ -145,7 +145,7 @@ class RowSlotTest {
             var textSlot = new RowSlot.Text(new TextSpan("9999", SLOT_COLOUR));
 
             assertThat(computeWidth(textSlot, TALLER_LINE_HEIGHT))
-                    .isEqualTo(computeWidth(textSlot, LINE_HEIGHT));
+                .isEqualTo(computeWidth(textSlot, LINE_HEIGHT));
         }
     }
 
@@ -166,22 +166,22 @@ class RowSlotTest {
             // A slot holding no image is RowSlot.EMPTY; a null path would otherwise surface at the
             // texture lookup inside a draw call.
             assertThatThrownBy(() -> new RowSlot.Image(null))
-                    .isInstanceOf(NullPointerException.class)
-                    .hasMessageContaining("spritePath");
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("spritePath");
         }
 
         @Test
         void constructorRejectsATextSlotWithNoSpan() {
             assertThatThrownBy(() -> new RowSlot.Text(null))
-                    .isInstanceOf(NullPointerException.class)
-                    .hasMessageContaining("textSpan");
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("textSpan");
         }
 
         @Test
         void constructorRejectsATriangleWithNoDirection() {
             assertThatThrownBy(() -> new RowSlot.Triangle(null))
-                    .isInstanceOf(NullPointerException.class)
-                    .hasMessageContaining("triangleDirection");
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("triangleDirection");
         }
     }
 }

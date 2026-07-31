@@ -35,7 +35,7 @@ public final class ModelviewMatrixReaders {
             // from, so it is the first thing worth knowing about a hover that resolves the wrong
             // cell - and it is not otherwise visible from a log.
             LOG.info("Modelview matrix source resolved; reader="
-                    + activeReader.getClass().getSimpleName());
+                + activeReader.getClass().getSimpleName());
         }
         return activeReader;
     }

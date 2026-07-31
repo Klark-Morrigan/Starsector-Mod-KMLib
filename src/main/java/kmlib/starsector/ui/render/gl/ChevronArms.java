@@ -16,5 +16,10 @@ package kmlib.starsector.ui.render.gl;
  * @param midY    the apex's y, midway between the ends
  * @param bottomY the bottom arm end's y
  */
-public record ChevronArms(float endsX, float apexX, float topY, float midY, float bottomY) {
+public record ChevronArms(
+    float endsX,
+    float apexX,
+    float topY,
+    float midY,
+    float bottomY) {
 }

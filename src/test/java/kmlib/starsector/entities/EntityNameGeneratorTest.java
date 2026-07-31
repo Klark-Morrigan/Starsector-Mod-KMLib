@@ -38,7 +38,7 @@ final class EntityNameGeneratorTest {
     void setUp() {
         stringsMock = mockStatic(StarsectorStrings.class);
         stringsMock.when(() -> StarsectorStrings.get(anyString(), anyString()))
-                .thenReturn("Jump-point");
+            .thenReturn("Jump-point");
     }
 
     @AfterEach

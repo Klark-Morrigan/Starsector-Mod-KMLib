@@ -26,19 +26,19 @@ final class GeometryTestSupport {
     // tests.
     static List<double[]> square() {
         return Arrays.asList(
-                new double[] {0, 0},
-                new double[] {10, 0},
-                new double[] {10, 10},
-                new double[] {0, 10});
+            new double[] {0, 0},
+            new double[] {10, 0},
+            new double[] {10, 10},
+            new double[] {0, 10});
     }
 
     // CCW square of the given side, anchored at the origin.
     static List<double[]> bigSquare(double side) {
         return Arrays.asList(
-                new double[] {0, 0},
-                new double[] {side, 0},
-                new double[] {side, side},
-                new double[] {0, side});
+            new double[] {0, 0},
+            new double[] {side, 0},
+            new double[] {side, side},
+            new double[] {0, side});
     }
 
     // The signed area of a closed ring; positive is counter-clockwise. Delegates to

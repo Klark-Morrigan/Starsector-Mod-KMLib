@@ -60,7 +60,7 @@ final class ActivateGateCommandTest {
 
         starSystemsMock = mockStatic(StarSystems.class);
         starSystemsMock.when(() -> StarSystems.getPlayerStarSystem(any()))
-                .thenReturn(systemMock);
+            .thenReturn(systemMock);
 
         gatesMock = mockStatic(Gates.class);
 
@@ -80,13 +80,13 @@ final class ActivateGateCommandTest {
         @Test
         void reports_the_unknown_id_and_activates_nothing() {
             starSystemsMock.when(() -> StarSystems.find(systemMock, Tags.GATE, "ghost"))
-                    .thenReturn(null);
+                .thenReturn(null);
 
             var result = command.runCommand("ghost", CommandContext.CAMPAIGN_MAP);
 
             assertThat(result).isEqualTo(CommandResult.ERROR);
             assertThat(outputFake.getMessages())
-                    .anyMatch(message -> message.contains("No gate with id 'ghost'"));
+                .anyMatch(message -> message.contains("No gate with id 'ghost'"));
             // A typo'd id must leave the gate network dark.
             gatesMock.verifyNoInteractions();
         }
@@ -95,7 +95,7 @@ final class ActivateGateCommandTest {
         void activates_the_resolved_gate_and_reports_success() {
             var gateMock = mock(SectorEntityToken.class);
             starSystemsMock.when(() -> StarSystems.find(systemMock, Tags.GATE, "gate1"))
-                    .thenReturn(gateMock);
+                .thenReturn(gateMock);
 
             var result = command.runCommand("gate1", CommandContext.CAMPAIGN_MAP);
 
@@ -104,7 +104,7 @@ final class ActivateGateCommandTest {
             // state change.
             gatesMock.verify(() -> Gates.activateGate(gateMock));
             assertThat(outputFake.getMessages())
-                    .anyMatch(message -> message.contains("Activated gate 'gate1'"));
+                .anyMatch(message -> message.contains("Activated gate 'gate1'"));
         }
 
         @Test
@@ -113,7 +113,7 @@ final class ActivateGateCommandTest {
 
             assertThat(result).isEqualTo(CommandResult.BAD_SYNTAX);
             assertThat(outputFake.getMessages())
-                    .anyMatch(message -> message.contains("Missing required parameter 'id'"));
+                .anyMatch(message -> message.contains("Missing required parameter 'id'"));
             // With no id there is nothing to resolve or activate.
             gatesMock.verifyNoInteractions();
         }
@@ -124,7 +124,7 @@ final class ActivateGateCommandTest {
 
             assertThat(result).isEqualTo(CommandResult.BAD_SYNTAX);
             assertThat(outputFake.getMessages())
-                    .anyMatch(message -> message.contains("Too many arguments"));
+                .anyMatch(message -> message.contains("Too many arguments"));
             gatesMock.verifyNoInteractions();
         }
 
@@ -134,7 +134,7 @@ final class ActivateGateCommandTest {
 
             assertThat(result).isEqualTo(CommandResult.WRONG_CONTEXT);
             assertThat(outputFake.getMessages())
-                    .anyMatch(message -> message.contains("can only run in a campaign"));
+                .anyMatch(message -> message.contains("can only run in a campaign"));
             // A wrong-context run resolves no gate and changes no state.
             gatesMock.verifyNoInteractions();
         }

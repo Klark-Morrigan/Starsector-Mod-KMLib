@@ -38,10 +38,10 @@ public final class Colors {
      */
     public static float[] getGlComponents(Color color, float alphaMult) {
         return new float[] {
-                color.getRed() / MAX_CHANNEL,
-                color.getGreen() / MAX_CHANNEL,
-                color.getBlue() / MAX_CHANNEL,
-                color.getAlpha() / MAX_CHANNEL * alphaMult,
+            color.getRed() / MAX_CHANNEL,
+            color.getGreen() / MAX_CHANNEL,
+            color.getBlue() / MAX_CHANNEL,
+            color.getAlpha() / MAX_CHANNEL * alphaMult,
         };
     }
 
@@ -61,10 +61,10 @@ public final class Colors {
      */
     public static Color scaleAlpha(Color color, float alphaMult) {
         return new Color(
-                color.getRed(),
-                color.getGreen(),
-                color.getBlue(),
-                roundToChannel(color.getAlpha() * alphaMult));
+            color.getRed(),
+            color.getGreen(),
+            color.getBlue(),
+            roundToChannel(color.getAlpha() * alphaMult));
     }
 
     /**
@@ -83,10 +83,10 @@ public final class Colors {
      */
     public static Color darken(Color color, float factor) {
         return new Color(
-                scaleChannel(color.getRed(), factor),
-                scaleChannel(color.getGreen(), factor),
-                scaleChannel(color.getBlue(), factor),
-                color.getAlpha());
+            scaleChannel(color.getRed(), factor),
+            scaleChannel(color.getGreen(), factor),
+            scaleChannel(color.getBlue(), factor),
+            color.getAlpha());
     }
 
     /**
@@ -104,10 +104,10 @@ public final class Colors {
      */
     public static Color blendRgbTowards(Color base, Color target, float amount) {
         return new Color(
-                lerpChannel(base.getRed(), target.getRed(), amount),
-                lerpChannel(base.getGreen(), target.getGreen(), amount),
-                lerpChannel(base.getBlue(), target.getBlue(), amount),
-                base.getAlpha());
+            lerpChannel(base.getRed(), target.getRed(), amount),
+            lerpChannel(base.getGreen(), target.getGreen(), amount),
+            lerpChannel(base.getBlue(), target.getBlue(), amount),
+            base.getAlpha());
     }
 
     // Scales one 0-255 channel by the factor.

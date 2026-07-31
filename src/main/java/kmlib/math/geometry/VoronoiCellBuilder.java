@@ -159,7 +159,7 @@ public final class VoronoiCellBuilder {
             double maxCellRadius,
             int boundSegments) {
         return buildLabelledCell(indexOf(sites, site), sites, maxCellRadius, boundSegments)
-                .vertices();
+            .vertices();
     }
 
     /**
@@ -214,7 +214,7 @@ public final class VoronoiCellBuilder {
         // cut edge with that neighbour's index. What survives labels each edge
         // with the site across it, or BOUND_EDGE where the seed was never cut.
         var cell = LabelledPolygon.createRegularPolygon(
-                site, maxCellRadius, boundSegments, BOUND_EDGE);
+            site, maxCellRadius, boundSegments, BOUND_EDGE);
         for (var other = 0; other < sites.size(); other++) {
             if (other == siteIndex) {
                 continue;
@@ -262,8 +262,8 @@ public final class VoronoiCellBuilder {
         var enclosesArea = ring.size() >= Limits.MIN_VERTICES_TO_ENCLOSE_AREA;
         for (var siteIndex = 0; siteIndex < sites.size(); siteIndex++) {
             pieces.add(enclosesArea
-                    ? computeNearestRegion(ring, sites, siteIndex)
-                    : new ArrayList<>());
+                ? computeNearestRegion(ring, sites, siteIndex)
+                : new ArrayList<>());
         }
         return pieces;
     }
@@ -294,8 +294,8 @@ public final class VoronoiCellBuilder {
         // would have to re-test before drawing.
         var vertices = region.getVertices();
         return vertices.size() < Limits.MIN_VERTICES_TO_ENCLOSE_AREA
-                ? new ArrayList<>()
-                : vertices;
+            ? new ArrayList<>()
+            : vertices;
     }
 
     // Clips a cell to the half-plane of points at least as close to {@code keep}
@@ -310,9 +310,10 @@ public final class VoronoiCellBuilder {
             double[] drop,
             int dropIndex) {
         return cell.clipToHalfPlane(
-                new HalfPlane((keep[0] + drop[0]) * 0.5, (keep[1] + drop[1]) * 0.5,
-                        keep[0] - drop[0], keep[1] - drop[1]),
-                dropIndex);
+            new HalfPlane(
+                (keep[0] + drop[0]) * 0.5, (keep[1] + drop[1]) * 0.5,
+                keep[0] - drop[0], keep[1] - drop[1]),
+            dropIndex);
     }
 
     // Locates {@code site} in {@code sites} by reference, the identity the

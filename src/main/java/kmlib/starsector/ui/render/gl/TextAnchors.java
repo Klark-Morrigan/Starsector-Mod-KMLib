@@ -26,15 +26,15 @@ public final class TextAnchors {
         // error here - a name-matched lookup would instead fail at runtime, and an ordinal-matched
         // one would quietly anchor text somewhere else.
         return switch (alignment) {
-            case TOP_LEFT -> LazyFont.TextAnchor.TOP_LEFT;
-            case TOP_CENTER -> LazyFont.TextAnchor.TOP_CENTER;
-            case TOP_RIGHT -> LazyFont.TextAnchor.TOP_RIGHT;
-            case CENTER_LEFT -> LazyFont.TextAnchor.CENTER_LEFT;
-            case CENTER -> LazyFont.TextAnchor.CENTER;
-            case CENTER_RIGHT -> LazyFont.TextAnchor.CENTER_RIGHT;
-            case BOTTOM_LEFT -> LazyFont.TextAnchor.BOTTOM_LEFT;
-            case BOTTOM_CENTER -> LazyFont.TextAnchor.BOTTOM_CENTER;
-            case BOTTOM_RIGHT -> LazyFont.TextAnchor.BOTTOM_RIGHT;
+        case TOP_LEFT -> LazyFont.TextAnchor.TOP_LEFT;
+        case TOP_CENTER -> LazyFont.TextAnchor.TOP_CENTER;
+        case TOP_RIGHT -> LazyFont.TextAnchor.TOP_RIGHT;
+        case CENTER_LEFT -> LazyFont.TextAnchor.CENTER_LEFT;
+        case CENTER -> LazyFont.TextAnchor.CENTER;
+        case CENTER_RIGHT -> LazyFont.TextAnchor.CENTER_RIGHT;
+        case BOTTOM_LEFT -> LazyFont.TextAnchor.BOTTOM_LEFT;
+        case BOTTOM_CENTER -> LazyFont.TextAnchor.BOTTOM_CENTER;
+        case BOTTOM_RIGHT -> LazyFont.TextAnchor.BOTTOM_RIGHT;
         };
     }
 }

@@ -31,15 +31,15 @@ class TextSpanTest {
         @Test
         void constructorRejectsNullText() {
             assertThatThrownBy(() -> new TextSpan(null, SPAN_COLOUR))
-                    .isInstanceOf(NullPointerException.class)
-                    .hasMessageContaining("text");
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("text");
         }
 
         @Test
         void constructorRejectsNullColour() {
             assertThatThrownBy(() -> new TextSpan("Contested by", null))
-                    .isInstanceOf(NullPointerException.class)
-                    .hasMessageContaining("colour");
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("colour");
         }
     }
 

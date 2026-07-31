@@ -25,7 +25,7 @@ final class FactionCrestsTest {
             when(factionMock.getCrest()).thenReturn("graphics/hegemony_crest.png");
 
             assertThat(FactionCrests.resolveCrestPath(factionMock))
-                    .isEqualTo("graphics/hegemony_crest.png");
+                .isEqualTo("graphics/hegemony_crest.png");
         }
 
         @Test

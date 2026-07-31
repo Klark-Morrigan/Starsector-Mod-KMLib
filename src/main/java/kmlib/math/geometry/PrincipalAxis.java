@@ -18,8 +18,13 @@ import java.util.List;
  * <p>The axis is a direction, not an arrow: its sign is arbitrary (a cloud has no
  * inherent front or back), so a consumer that needs upright text may flip it freely.
  */
-public record PrincipalAxis(double centroidX, double centroidY, double axisX, double axisY,
-        double length, double minorLength) {
+public record PrincipalAxis(
+        double centroidX,
+        double centroidY,
+        double axisX,
+        double axisY,
+        double length,
+        double minorLength) {
 
     /**
      * Fits a {@link PrincipalAxis} to a cloud of {@code {x, y}} points: the mean
@@ -102,7 +107,8 @@ public record PrincipalAxis(double centroidX, double centroidY, double axisX, do
         // needs no 4 * det term.
         var halfTrace = (varX + varY) / 2.0;
         var determinant = varX * varY - covXY * covXY;
-        var majorEigenvalue = halfTrace + Math.sqrt(Math.max(0.0, halfTrace * halfTrace - determinant));
+        var majorEigenvalue = halfTrace
+            + Math.sqrt(Math.max(0.0, halfTrace * halfTrace - determinant));
         var candidateX = majorEigenvalue - varY;
         var candidateY = covXY;
         var alternateX = covXY;
@@ -119,7 +125,9 @@ public record PrincipalAxis(double centroidX, double centroidY, double axisX, do
     // The span of the points projected onto the unit axis: the foremost projection
     // minus the rearmost. The centroid offset cancels in the difference, so the extent
     // reads straight off the points' own projections. Zero for a single point.
-    private static double computeProjectedExtent(List<double[]> points, double axisX,
+    private static double computeProjectedExtent(
+            List<double[]> points,
+            double axisX,
             double axisY) {
         var extent = Points.projectExtentOnto(points, axisX, axisY);
         return extent[1] - extent[0];

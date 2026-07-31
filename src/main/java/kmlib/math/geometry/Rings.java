@@ -37,7 +37,8 @@ final class Rings {
     // records twice, not a side of the shape. Dropping it leaves the same region
     // bounded by edges that all have a direction.
     static List<double[]> removeConsecutiveDuplicates(List<double[]> polygon) {
-        return collectPointsAt(polygon, findSurvivingVertices(polygon).pointIndices());
+        return collectPointsAt(polygon, findSurvivingVertices(polygon)
+            .pointIndices());
     }
 
     // As removeConsecutiveDuplicates(List) for a ring whose edges carry labels, so a
@@ -52,7 +53,7 @@ final class Rings {
             cleanedLabels[i] = labels[outgoingEdges[i]];
         }
         return LabelledPolygon.fromLabelledEdges(
-                collectPointsAt(vertices, survivors.pointIndices()), cleanedLabels);
+            collectPointsAt(vertices, survivors.pointIndices()), cleanedLabels);
     }
 
     // Which of a ring's vertices survive the dedup, and where each of the two halves
@@ -81,13 +82,16 @@ final class Rings {
         // The ring wraps onto its own first corner, so the last survivor is that
         // corner recorded once more. It goes, and with it the zero-length edge closing
         // the ring - the edge reaching it is a real one, and keeps what it carries.
-        if (count > 1 && isSamePoint(
-                polygon.get(pointIndices[0]), polygon.get(pointIndices[count - 1]))) {
+        var isLastSurvivorDuplicateOfFirst = count > 1
+            && isSamePoint(
+                polygon.get(pointIndices[0]),
+                polygon.get(pointIndices[count - 1]));
+        if (isLastSurvivorDuplicateOfFirst) {
             count--;
         }
         return new SurvivingVertices(
-                Arrays.copyOf(pointIndices, count),
-                Arrays.copyOf(outgoingEdgeIndices, count));
+            Arrays.copyOf(pointIndices, count),
+            Arrays.copyOf(outgoingEdgeIndices, count));
     }
 
     // The points of {@code polygon} at {@code indices}, in that order.

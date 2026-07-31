@@ -26,11 +26,19 @@ public final class BoxPlacement {
      * @param anchor       the corner, edge midpoint, or centre to pin the box to
      * @return the placed box, its {@code x}/{@code y} at the lower-left corner
      */
-    public static Rectangle placeBox(float screenWidth, float screenHeight, float boxWidth,
-            float boxHeight, float margin, ScreenAnchor anchor) {
-        var boxX = margin + anchor.getHorizontalFraction() * (screenWidth - boxWidth - 2f * margin);
+    public static Rectangle placeBox(
+            float screenWidth,
+            float screenHeight,
+            float boxWidth,
+            float boxHeight,
+            float margin,
+            ScreenAnchor anchor) {
+                
+        var boxX = margin
+            + anchor.getHorizontalFraction() * (screenWidth - boxWidth - 2f * margin);
         var boxY = margin
-                + anchor.getVerticalFraction() * (screenHeight - boxHeight - 2f * margin);
+            + anchor.getVerticalFraction() * (screenHeight - boxHeight - 2f * margin);
+
         return new Rectangle(boxX, boxY, boxWidth, boxHeight);
     }
 }

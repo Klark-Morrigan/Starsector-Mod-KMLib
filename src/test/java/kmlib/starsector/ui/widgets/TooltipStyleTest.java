@@ -30,10 +30,10 @@ class TooltipStyleTest {
 
     private static TextStyle createStyleIn(StarsectorFont font) {
         return new TextStyle(
-                new TextFace(font, font.getNativeSize()),
-                Color.WHITE,
-                TextAlignment.TOP_LEFT,
-                false);
+            new TextFace(font, font.getNativeSize()),
+            Color.WHITE,
+            TextAlignment.TOP_LEFT,
+            false);
     }
 
     private static TooltipStyle twoFacedStyle() {
@@ -50,7 +50,7 @@ class TooltipStyleTest {
         @Test
         void resolveStyleForReturnsTheParagraphLookForAParagraphLine() {
             assertThat(twoFacedStyle().resolveStyleFor(TooltipLineStyle.PARAGRAPH))
-                    .isEqualTo(PARAGRAPH_STYLE);
+                .isEqualTo(PARAGRAPH_STYLE);
         }
 
         @ParameterizedTest

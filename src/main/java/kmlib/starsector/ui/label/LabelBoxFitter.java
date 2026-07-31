@@ -67,8 +67,10 @@ public final class LabelBoxFitter {
     public BoxFit fitLargestBox(RegionChord chord) {
         BoxFit best = null;
         for (var lineCount = 1; lineCount <= maxLines; lineCount++) {
-            best = Picks.pickHigher(best, fitForLineCount(chord, lineCount),
-                    BoxFit::fontHeight);
+            best = Picks.pickHigher(
+                best,
+                fitForLineCount(chord, lineCount),
+                BoxFit::fontHeight);
         }
         return best;
     }
@@ -78,16 +80,21 @@ public final class LabelBoxFitter {
     // which reads the pre-margin clear span of a minimum-height band; the fit proper
     // reaches it through the line-count sizing below.
     public BandSpan fitBand(RegionChord chord, double halfThickness) {
-        var interiorSpans = PolygonRegions.findBandInteriorSpans(chord.rings(), chord.line(),
-                halfThickness);
+
+        var interiorSpans = PolygonRegions.findBandInteriorSpans(
+            chord.rings(),
+            chord.line(),
+            halfThickness);
+
         if (interiorSpans.isEmpty()) {
             return new BandSpan(null, null);
         }
         var clear = Spans.findLongestClearSubsegment(
-                interiorSpans,
-                chord.line(),
-                chord.keepOuts(),
-                keepOutClearance);
+            interiorSpans,
+            chord.line(),
+            chord.keepOuts(),
+            keepOutClearance);
+
         if (clear == null) {
             return new BandSpan(null, null);
         }
@@ -96,8 +103,8 @@ public final class LabelBoxFitter {
         // An interval shorter than twice the end inset leaves no room for text between
         // the margins; only the pre-margin clear span survives, for the red diagnostic.
         return start < end
-                ? new BandSpan(clear, new double[] {start, end})
-                : new BandSpan(clear, null);
+            ? new BandSpan(clear, new double[] {start, end})
+            : new BandSpan(clear, null);
     }
 
     // Sizes the box for one fixed line count by growing the font to the largest height
@@ -108,12 +115,20 @@ public final class LabelBoxFitter {
         if (!bandHoldsText(chord, minFontHeight, lineCount, linesFactor)) {
             return null;
         }
-        var fontHeight = Bisection.findLargestPassing(minFontHeight, maxFontHeight,
-                FONT_HEIGHT_BISECTION_STEPS,
-                candidate -> bandHoldsText(chord, candidate, lineCount, linesFactor));
+        var fontHeight = Bisection.findLargestPassing(
+            minFontHeight,
+            maxFontHeight,
+            FONT_HEIGHT_BISECTION_STEPS,
+            candidate -> bandHoldsText(chord, candidate, lineCount, linesFactor));
+
         var thickness = fontHeight * linesFactor;
         var span = fitBand(chord, thickness / 2.0).insetSpan();
-        return new BoxFit(chord.toSegment(span), thickness, lineCount, fontHeight);
+
+        return new BoxFit(
+            chord.toSegment(span),
+            thickness,
+            lineCount,
+            fontHeight);
     }
 
     // Whether a font of the given height, stacked into lineCount lines, has room along
@@ -141,7 +156,9 @@ public final class LabelBoxFitter {
      * actually gets), or null when the margin leaves nothing. The clear span is null only
      * when the band finds no keep-out-clear interior at all.
      */
-    public record BandSpan(double[] clearSpan, double[] insetSpan) {
+    public record BandSpan(
+        double[] clearSpan,
+        double[] insetSpan) {
     }
 
     /**
@@ -150,6 +167,10 @@ public final class LabelBoxFitter {
      * into, and the per-line font height the fit achieved - the quantity a search
      * maximises, before it docks steep candidates by any slope penalty.
      */
-    public record BoxFit(Segment segment, double thickness, int lineCount, double fontHeight) {
+    public record BoxFit(
+        Segment segment,
+        double thickness,
+        int lineCount,
+        double fontHeight) {
     }
 }

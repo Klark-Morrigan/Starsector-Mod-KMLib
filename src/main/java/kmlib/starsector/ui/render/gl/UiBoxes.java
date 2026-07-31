@@ -41,31 +41,31 @@ public final class UiBoxes {
 
         if (edges.contains(BoxEdge.BOTTOM)) {
             strokeEdge.placeQuad(new Rectangle(
-                    x,
-                    y,
-                    width,
-                    thickness));
+                x,
+                y,
+                width,
+                thickness));
         }
         if (edges.contains(BoxEdge.TOP)) {
             strokeEdge.placeQuad(new Rectangle(
-                    x,
-                    y + height - thickness,
-                    width,
-                    thickness));
+                x,
+                y + height - thickness,
+                width,
+                thickness));
         }
         if (edges.contains(BoxEdge.LEFT)) {
             strokeEdge.placeQuad(new Rectangle(
-                    x,
-                    y,
-                    thickness,
-                    height));
+                x,
+                y,
+                thickness,
+                height));
         }
         if (edges.contains(BoxEdge.RIGHT)) {
             strokeEdge.placeQuad(new Rectangle(
-                    x + width - thickness,
-                    y,
-                    thickness,
-                    height));
+                x + width - thickness,
+                y,
+                thickness,
+                height));
         }
     }
 

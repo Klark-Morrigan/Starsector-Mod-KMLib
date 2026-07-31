@@ -87,7 +87,7 @@ public final class MotionTracker {
             // only a position past the noise floor from its baseline marks motion.
             if (lastPosition != null
                     && Points.computeDistanceSquared(lastPosition, entry.getValue())
-                            > motionThresholdSquared) {
+                        > motionThresholdSquared) {
                 movingKeys.add(entry.getKey());
             }
         }

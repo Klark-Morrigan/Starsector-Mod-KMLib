@@ -28,8 +28,13 @@ public final class RowStack {
      * @param rowWidths each row's width, in stack order top to bottom
      * @return one rectangle per width, in the same order
      */
-    public static List<Rectangle> layoutRows(float originX, float topY, float rowHeight,
-            float rowGap, List<Float> rowWidths) {
+    public static List<Rectangle> layoutRows(
+            float originX,
+            float topY,
+            float rowHeight,
+            float rowGap,
+            List<Float> rowWidths) {
+
         var rowHeights = new ArrayList<Float>(rowWidths.size());
         for (var index = 0; index < rowWidths.size(); index++) {
             rowHeights.add(rowHeight);
@@ -51,8 +56,13 @@ public final class RowStack {
      * @param rowWidths  each row's width, in the same order (same size as {@code rowHeights})
      * @return one rectangle per row, in the same order
      */
-    public static List<Rectangle> layoutRows(float originX, float topY, float rowGap,
-            List<Float> rowHeights, List<Float> rowWidths) {
+    public static List<Rectangle> layoutRows(
+            float originX,
+            float topY,
+            float rowGap,
+            List<Float> rowHeights,
+            List<Float> rowWidths) {
+                
         var rows = new ArrayList<Rectangle>(rowWidths.size());
         var rowTop = topY;
         for (var index = 0; index < rowWidths.size(); index++) {

@@ -76,9 +76,9 @@ public final class SpawnEntityCommand extends KmlibBaseConsoleCommand {
         // the parameter parse, so this command drives the two collaborators
         // directly rather than through CommandInput.
         var command = new CommandContextValidation(context, output)
-                .requireCampaign()
-                .requireStarSystem()
-                .validateAndPrintFeedback();
+            .requireCampaign()
+            .requireStarSystem()
+            .validateAndPrintFeedback();
         if (!command.isValid()) {
             return command.getResult();
         }
@@ -88,8 +88,11 @@ public final class SpawnEntityCommand extends KmlibBaseConsoleCommand {
 
         var kind = SpawnableKind.fromArg(tokens[0]);
         if (kind == null) {
-            output.showMessage("Unknown entity type '" + tokens[0] + "'. Supported: "
-                    + SpawnableKind.listSupportedArgs() + '.');
+            output.showMessage("Unknown entity type '"
+                + tokens[0]
+                + "'. Supported: "
+                + SpawnableKind.listSupportedArgs()
+                + '.');
             return CommandResult.ERROR;
         }
         // The spec prints why on a malformed argument; surface that as bad
@@ -117,10 +120,12 @@ public final class SpawnEntityCommand extends KmlibBaseConsoleCommand {
         // rate from the orbit radius. The jitter then widens whichever base by the
         // requested (or default) spread - it applies in either case.
         var baseSpeedDegPerDay = parsed.get(SPEC.speed) != null
-                ? parsed.get(SPEC.speed)
-                : EntityOrbits.deriveBaseSpeedDegPerDay(distance);
+            ? parsed.get(SPEC.speed)
+            : EntityOrbits.deriveBaseSpeedDegPerDay(distance);
         var speedDegPerDay = EntityOrbits.applyJitter(
-                baseSpeedDegPerDay, parsed.get(SPEC.jitter), new Random());
+            baseSpeedDegPerDay,
+            parsed.get(SPEC.jitter),
+            new Random());
 
         var entity = kind.spawnOrbiting(focus, distance, speedDegPerDay, angle);
 
@@ -144,17 +149,22 @@ public final class SpawnEntityCommand extends KmlibBaseConsoleCommand {
             var focusId = focusArg.trim();
             var focus = system.getEntityById(focusId);
             if (focus == null) {
-                output.showMessage("No entity with id '" + focusId + "' in "
-                        + system.getName() + ".");
+                output.showMessage("No entity with id '"
+                    + focusId
+                    + "' in "
+                    + system.getName()
+                    + ".");
             }
             return focus;
         }
         var stars = StarSystems.getStars(system);
         if (stars.size() >= 2) {
-            output.showMessage("This system has " + stars.size() + " stars ("
-                    + KmlibCollections.join(stars, ", ", PlanetAPI::getId) + "). Re-run"
-                    + " with an orbit_focus_id - one of those star ids, or any entity"
-                    + " id in the system.");
+            output.showMessage("This system has "
+                + stars.size()
+                + " stars ("
+                + KmlibCollections.join(stars, ", ", PlanetAPI::getId)
+                + "). Re-run with an orbit_focus_id -"
+                + " one of those star ids, or any entity id in the system.");
             return null;
         }
         return system.getCenter();
@@ -169,13 +179,15 @@ public final class SpawnEntityCommand extends KmlibBaseConsoleCommand {
      */
     private static final class SpawnSpec extends ParameterSpec {
         private final Parameter<String> focus =
-                acceptsPositional("focus", "<id>", text()).defaultsTo("");
+            acceptsPositional("focus", "<id>", text()).defaultsTo("");
         private final Parameter<Float> speed =
-                acceptsPositional("speed", "<deg/day>", decimal("a number in degrees per day"));
+            acceptsPositional("speed", "<deg/day>", decimal("a number in degrees per day"));
         private final Parameter<Float> jitter =
-                acceptsNamed("jitter", "<frac>",
-                        nonNegativeDecimal("a non-negative fraction (e.g. 0.25)"))
-                        .defaultsTo(EntityOrbits.VANILLA_JITTER_FRACTION);
+            acceptsNamed(
+                    "jitter",
+                    "<frac>",
+                    nonNegativeDecimal("a non-negative fraction (e.g. 0.25)"))
+                .defaultsTo(EntityOrbits.VANILLA_JITTER_FRACTION);
 
         private SpawnSpec() {
             super("Usage: kmlib_spawn <kind> [orbit_focus_id] [speed] [jitter=<frac>].");
@@ -192,38 +204,56 @@ public final class SpawnEntityCommand extends KmlibBaseConsoleCommand {
     private enum SpawnableKind {
         GATE("gate") {
             @Override
-            SectorEntityToken spawnOrbiting(SectorEntityToken focus, float distance,
-                    float speedDegPerDay, float startAngleDegrees) {
+            SectorEntityToken spawnOrbiting(
+                    SectorEntityToken focus,
+                    float distance,
+                    float speedDegPerDay,
+                    float startAngleDegrees) {
                 // The gate is spawned inactive: it grants no access until the
                 // gate-activation command brings it online.
-                return EntitySpawner.spawnOrbitingCustomEntity(focus, Entities.INACTIVE_GATE,
-                        "neutral", distance, speedDegPerDay, startAngleDegrees);
+                return EntitySpawner.spawnOrbitingCustomEntity(
+                    focus,
+                    Entities.INACTIVE_GATE,
+                    "neutral",
+                    distance,
+                    speedDegPerDay,
+                    startAngleDegrees);
             }
 
             @Override
             String describeSpawn(SectorEntityToken spawned, StarSystemAPI system) {
-                return "Added an inactive gate (id " + spawned.getId() + ") at your fleet"
-                        + " position. Activate it with the gate-activation command and"
-                        + " this id.";
+                return "Added an inactive gate (id "
+                    + spawned.getId()
+                    + ") at your fleet position."
+                    + " Activate it with the gate-activation command and this id.";
             }
         },
         JUMP_POINT("jump_point") {
             @Override
-            SectorEntityToken spawnOrbiting(SectorEntityToken focus, float distance,
-                    float speedDegPerDay, float startAngleDegrees) {
+            SectorEntityToken spawnOrbiting(
+                    SectorEntityToken focus,
+                    float distance,
+                    float speedDegPerDay,
+                    float startAngleDegrees) {
                 // The name is derived from the focus and orbit radius so the point
                 // reads like a charted body; spawnOrbitingJumpPoint also generates
                 // the hyperspace entrance and clears the system's cut-off tag.
                 var name = EntityNameGenerator.generateJumpPointName(focus, distance);
-                return EntitySpawner.spawnOrbitingJumpPoint(focus, name, distance,
-                        speedDegPerDay, startAngleDegrees);
+                return EntitySpawner.spawnOrbitingJumpPoint(
+                    focus, name,
+                    distance,
+                    speedDegPerDay,
+                    startAngleDegrees);
             }
 
             @Override
             String describeSpawn(SectorEntityToken spawned, StarSystemAPI system) {
-                return "Spawned " + spawned.getName() + " at your fleet position in "
-                        + system.getName() + ", generated its hyperspace entrance, and"
-                        + " cleared the cut-off tag.";
+                return "Spawned "
+                    + spawned.getName()
+                    + " at your fleet position in "
+                    + system.getName()
+                    + ", generated its hyperspace entrance,"
+                    + " and cleared the cut-off tag.";
             }
         };
 
@@ -235,8 +265,11 @@ public final class SpawnEntityCommand extends KmlibBaseConsoleCommand {
 
         // Spawns this kind orbiting focus on the shared orbit geometry the
         // command supplies, and returns the spawned entity.
-        abstract SectorEntityToken spawnOrbiting(SectorEntityToken focus, float distance,
-                float speedDegPerDay, float startAngleDegrees);
+        abstract SectorEntityToken spawnOrbiting(
+                SectorEntityToken focus,
+                float distance,
+                float speedDegPerDay,
+                float startAngleDegrees);
 
         // The player-facing report for a completed spawn, read back from the
         // spawned entity (and its system) so the message reflects what was added.
@@ -256,7 +289,10 @@ public final class SpawnEntityCommand extends KmlibBaseConsoleCommand {
         // Comma-separated argument keywords, for telling the player which kinds
         // are accepted when their argument did not match one.
         private static String listSupportedArgs() {
-            return KmlibCollections.join(Arrays.asList(values()), ", ", kind -> kind.arg);
+            return KmlibCollections.join(
+                Arrays.asList(values()),
+                ", ",
+                kind -> kind.arg);
         }
     }
 }

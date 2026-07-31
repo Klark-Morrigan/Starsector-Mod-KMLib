@@ -14,7 +14,10 @@ package kmlib.starsector.markets;
  * @param medium the medium-tier patrols the market fields
  * @param large  the heavy-tier patrols the market fields
  */
-public record PatrolCounts(int small, int medium, int large) {
+public record PatrolCounts(
+    int small,
+    int medium,
+    int large) {
 
     /** A market with no military industry fields no patrols of any tier. */
     public static final PatrolCounts NONE = new PatrolCounts(0, 0, 0);

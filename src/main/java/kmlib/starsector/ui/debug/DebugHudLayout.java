@@ -57,14 +57,14 @@ public final class DebugHudLayout {
         // and grows further left; a right corner grows right. The gap holds it off the pointer.
         var isRightAligned = quadrant.isLeftHalf();
         var anchorX = quadrant.isLeftHalf()
-                ? cursorX - CURSOR_GAP
-                : cursorX + CURSOR_GAP;
+            ? cursorX - CURSOR_GAP
+            : cursorX + CURSOR_GAP;
 
         // A top corner's block sits above the cursor (its bottom a gap up from it), a bottom corner's
         // below (its top a gap down).
         var blockTopY = quadrant.isTopHalf()
-                ? cursorY + CURSOR_GAP + measureBlockHeight(entries.size())
-                : cursorY - CURSOR_GAP;
+            ? cursorY + CURSOR_GAP + measureBlockHeight(entries.size())
+            : cursorY - CURSOR_GAP;
 
         return placeStackingDown(entries, anchorX, blockTopY, isRightAligned);
     }
@@ -91,14 +91,14 @@ public final class DebugHudLayout {
         // right corner right-aligns in from the right edge.
         var isRightAligned = !quadrant.isLeftHalf();
         var anchorX = quadrant.isLeftHalf()
-                ? edgePadding
-                : screenWidth - edgePadding;
+            ? edgePadding
+            : screenWidth - edgePadding;
 
         // A top corner grows down from the top edge; a bottom corner pins its block's bottom to the
         // bottom edge and grows up.
         var blockTopY = quadrant.isTopHalf()
-                ? screenHeight - edgePadding
-                : edgePadding + measureBlockHeight(entries.size());
+            ? screenHeight - edgePadding
+            : edgePadding + measureBlockHeight(entries.size());
 
         return placeStackingDown(entries, anchorX, blockTopY, isRightAligned);
     }
@@ -111,27 +111,28 @@ public final class DebugHudLayout {
             float anchorX,
             float blockTopY,
             boolean isRightAligned) {
+                
         var lines = new ArrayList<DebugHudLine>();
         var y = blockTopY;
         for (var entry : entries) {
 
             lines.add(new DebugHudLine(
-                    entry.key(),
-                    anchorX,
-                    y,
-                    isRightAligned,
-                    KEY_COLOUR,
-                    KEY_FONT_SIZE));
+                entry.key(),
+                anchorX,
+                y,
+                isRightAligned,
+                KEY_COLOUR,
+                KEY_FONT_SIZE));
 
             y -= KEY_FONT_SIZE + LINE_GAP;
 
             lines.add(new DebugHudLine(
-                    entry.body(),
-                    anchorX,
-                    y,
-                    isRightAligned,
-                    BODY_COLOUR,
-                    BODY_FONT_SIZE));
+                entry.body(),
+                anchorX,
+                y,
+                isRightAligned,
+                BODY_COLOUR,
+                BODY_FONT_SIZE));
 
             y -= BODY_FONT_SIZE + LINE_GAP + ENTRY_GAP;
         }
@@ -143,6 +144,6 @@ public final class DebugHudLayout {
     // entry gap is left in, which only shifts the block by one small gap and keeps the maths one line.
     private static float measureBlockHeight(int entryCount) {
         return entryCount
-                * (KEY_FONT_SIZE + LINE_GAP + BODY_FONT_SIZE + LINE_GAP + ENTRY_GAP);
+            * (KEY_FONT_SIZE + LINE_GAP + BODY_FONT_SIZE + LINE_GAP + ENTRY_GAP);
     }
 }

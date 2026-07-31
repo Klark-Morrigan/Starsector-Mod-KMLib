@@ -53,10 +53,10 @@ public final class UiFill {
         var right = left + bounds.width();
         var top = bottom + bounds.height();
         GlQuads.fillQuad(new float[] {
-                left, bottom,
-                left, top,
-                right, top,
-                right, bottom,
+            left, bottom,
+            left, top,
+            right, top,
+            right, bottom,
         });
     }
 

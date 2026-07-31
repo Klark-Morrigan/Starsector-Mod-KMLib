@@ -77,13 +77,13 @@ public final class Disks {
             double radius,
             int segments) {
         return computeDiskSplit(
-                buildUnlabelledSubject(polygon),
-                center,
-                radius,
-                segments,
-                UNUSED_EDGE_LABEL,
-                UNUSED_EDGE_LABEL)
-                        .inside();
+            buildUnlabelledSubject(polygon),
+            center,
+            radius,
+            segments,
+            UNUSED_EDGE_LABEL,
+            UNUSED_EDGE_LABEL)
+            .inside();
     }
 
     /**
@@ -115,12 +115,12 @@ public final class Disks {
             int segments) {
         var pieces = new ArrayList<List<double[]>>();
         for (var piece : subtractDiskWithLabels(
-                buildUnlabelledSubject(polygon),
-                center,
-                radius,
-                segments,
-                UNUSED_EDGE_LABEL,
-                UNUSED_EDGE_LABEL)) {
+            buildUnlabelledSubject(polygon),
+            center,
+            radius,
+            segments,
+            UNUSED_EDGE_LABEL,
+            UNUSED_EDGE_LABEL)) {
             pieces.add(piece.getVertices());
         }
         return pieces;
@@ -161,7 +161,7 @@ public final class Disks {
             int rimLabel,
             int fanCutLabel) {
         return computeDiskSplit(polygon, center, radius, segments, rimLabel, fanCutLabel)
-                .outsidePieces();
+            .outsidePieces();
     }
 
     // The two senses of one disk clip, produced by the single walk that computes them.
@@ -190,8 +190,8 @@ public final class Disks {
             int fanCutLabel) {
         if (segments < Limits.MIN_VERTICES_TO_ENCLOSE_AREA) {
             throw new IllegalArgumentException(
-                    "segments must be at least " + Limits.MIN_VERTICES_TO_ENCLOSE_AREA
-                            + " to approximate a disk: " + segments);
+                "segments must be at least " + Limits.MIN_VERTICES_TO_ENCLOSE_AREA
+                    + " to approximate a disk: " + segments);
         }
         var subject = Rings.removeConsecutiveDuplicates(polygon);
         var subjectLabels = subject.getEdgeLabels();
@@ -208,21 +208,34 @@ public final class Disks {
         }
 
         var disk = LabelledPolygon
-                .createRegularPolygon(center, radius, segments, UNUSED_EDGE_LABEL)
-                .getVertices();
+            .createRegularPolygon(center, radius, segments, UNUSED_EDGE_LABEL)
+            .getVertices();
         var outsidePieces = new ArrayList<LabelledPolygon>();
+
         // Restate the subject's edges by index while the walk runs, so a cut edge can be
         // told from a subject edge that happens to carry the same label as the cuts do.
         var remainder = LabelledPolygon.fromLabelledEdges(
-                subject.getVertices(), buildEdgeIndexLabels(subjectLabels.length));
+            subject.getVertices(),
+            buildEdgeIndexLabels(subjectLabels.length));
+
         for (var i = 0; i < disk.size() && !remainder.isEmpty(); i++) {
             var inside = buildInsideHalfPlane(disk, i);
             var shed = remainder.clipToHalfPlane(
-                    new HalfPlane(inside.pointX(), inside.pointY(),
-                            -inside.normalX(), -inside.normalY()),
-                    OUTSIDE_CUT_LABEL);
+                new HalfPlane(
+                    inside.pointX(),
+                    inside.pointY(),
+                    -inside.normalX(),
+                    -inside.normalY()),
+                OUTSIDE_CUT_LABEL);
+
             var piece = Rings.removeConsecutiveDuplicates(buildResolvedPiece(
-                    shed, subjectLabels, disk, i, rimLabel, fanCutLabel));
+                shed,
+                subjectLabels,
+                disk,
+                i,
+                rimLabel,
+                fanCutLabel));
+
             if (isEnclosingArea(piece)) {
                 outsidePieces.add(piece);
             }
@@ -231,8 +244,10 @@ public final class Disks {
 
         var inside = Rings.removeConsecutiveDuplicates(remainder);
         return new DiskSplit(
-                isEnclosingArea(inside) ? inside.getVertices() : new ArrayList<>(),
-                outsidePieces);
+            isEnclosingArea(inside)
+                ? inside.getVertices()
+                : new ArrayList<>(),
+            outsidePieces);
     }
 
     // The half-plane of the disk's interior side of edge {@code index}: the line the
@@ -243,9 +258,9 @@ public final class Disks {
         var from = disk.get(index);
         var to = disk.get((index + 1) % disk.size());
         return new HalfPlane(
-                from[0], from[1],
-                -(to[1] - from[1]),
-                to[0] - from[0]);
+            from[0], from[1],
+            -(to[1] - from[1]),
+            to[0] - from[0]);
     }
 
     // Restates a shed piece's edges in the caller's labels - what lies across each one.
@@ -271,13 +286,19 @@ public final class Disks {
         for (var i = 0; i < vertices.size(); i++) {
             points.add(vertices.get(i));
             if (labels[i] == OUTSIDE_CUT_LABEL) {
-                appendChordSpans(points, resolved,
-                        vertices.get(i), vertices.get((i + 1) % vertices.size()),
-                        chordStart, chordEnd, rimLabel, fanCutLabel);
+                appendChordSpans(
+                    points,
+                    resolved,
+                    vertices.get(i),
+                    vertices.get((i + 1) % vertices.size()),
+                    chordStart,
+                    chordEnd,
+                    rimLabel,
+                    fanCutLabel);
             } else {
                 resolved.add(labels[i] == INSIDE_CUT_LABEL
-                        ? fanCutLabel
-                        : subjectLabels[labels[i]]);
+                    ? fanCutLabel
+                    : subjectLabels[labels[i]]);
             }
         }
         return LabelledPolygon.fromLabelledEdges(points, buildLabelArray(resolved));
@@ -337,8 +358,8 @@ public final class Disks {
             int fanCutLabel) {
         var middle = (spanStart + spanEnd) * 0.5;
         return middle >= CHORD_START_PARAMETER && middle <= CHORD_END_PARAMETER
-                ? rimLabel
-                : fanCutLabel;
+            ? rimLabel
+            : fanCutLabel;
     }
 
     // Where {@code point} falls along the chord's line, as a multiple of the chord: 0 at
@@ -352,7 +373,7 @@ public final class Disks {
         var chordX = chordEnd[0] - chordStart[0];
         var chordY = chordEnd[1] - chordStart[1];
         return ((point[0] - chordStart[0]) * chordX + (point[1] - chordStart[1]) * chordY)
-                / (chordX * chordX + chordY * chordY);
+            / (chordX * chordX + chordY * chordY);
     }
 
     // The point at {@code parameter} along the chord's line - the inverse of
@@ -362,8 +383,8 @@ public final class Disks {
             double[] chordEnd,
             double parameter) {
         return new double[] {
-                chordStart[0] + parameter * (chordEnd[0] - chordStart[0]),
-                chordStart[1] + parameter * (chordEnd[1] - chordStart[1]),
+            chordStart[0] + parameter * (chordEnd[0] - chordStart[0]),
+            chordStart[1] + parameter * (chordEnd[1] - chordStart[1]),
         };
     }
 

@@ -51,15 +51,20 @@ final class ParameterParser {
             var name = token.substring(0, separator);
             var parameter = findByName(parameters, name);
             if (parameter == null) {
-                output.showMessage("Unknown parameter '" + name + "'. Use "
-                        + describeAcceptedParameters(parameters) + '.');
+                output.showMessage("Unknown parameter '"
+                    + name
+                    + "'. Use "
+                    + describeAcceptedParameters(parameters)
+                    + '.');
                 return ParsedParameters.createInvalid(CommandResult.BAD_SYNTAX);
             }
             if (parameter.isFlag()) {
                 // Naming a flag with a value is a distinct mistake from naming
                 // something unknown, so it gets its own correction.
-                output.showMessage("'" + name + "' is a flag; give it on its own,"
-                        + " without '='.");
+                output.showMessage("'"
+                    + name
+                    + "' is a flag; give it on its own,"
+                    + " without '='.");
                 return ParsedParameters.createInvalid(CommandResult.BAD_SYNTAX);
             }
             if (!storeValue(parameter, token.substring(separator + 1), supplied, output)) {
@@ -81,7 +86,8 @@ final class ParameterParser {
             return ParsedParameters.createInvalid(CommandResult.BAD_SYNTAX);
         }
         for (var index = 0; index < positionals.size(); index++) {
-            if (!storeValue(openSlots.get(index), positionals.get(index), supplied, output)) {
+            var isStored = storeValue(openSlots.get(index), positionals.get(index), supplied, output);
+            if (!isStored) {
                 return ParsedParameters.createInvalid(CommandResult.BAD_SYNTAX);
             }
         }
@@ -98,14 +104,22 @@ final class ParameterParser {
     // Parses raw for parameter and records it, or prints why it was rejected and
     // returns false (so the caller can stop with BAD_SYNTAX). Framing the message
     // here keeps every malformed value reading the same way.
-    private static boolean storeValue(Parameter<?> parameter, String raw,
-            Map<Parameter<?>, Object> supplied, CommandOutput output) {
+    private static boolean storeValue(
+            Parameter<?> parameter,
+            String raw,
+            Map<Parameter<?>, Object> supplied,
+            CommandOutput output) {
         try {
             supplied.put(parameter, parameter.parseValue(raw));
             return true;
         } catch (ValueParseException malformed) {
-            output.showMessage("Invalid " + parameter.getName() + " '" + raw
-                    + "'. Expected " + malformed.getMessage() + '.');
+            output.showMessage("Invalid "
+                + parameter.getName()
+                + " '"
+                + raw
+                + "'. Expected "
+                + malformed.getMessage()
+                + '.');
             return false;
         }
     }

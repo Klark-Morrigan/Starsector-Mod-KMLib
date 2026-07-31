@@ -35,18 +35,18 @@ class VanillaTabStripTest {
         void keepsEachContentBesideItsGeometry() {
             var factions = new VanillaTabContent("Political Map", "P");
             var tabs = VanillaTabStrip.layoutTabs(0f, 100f, 24f, TABS, List.of(factions),
-                    measurerFake);
+                measurerFake);
             assertThat(tabs.get(0).content()).isEqualTo(factions);
         }
 
         @Test
         void snapsAWiderTabForATabThatCarriesAShortcut() {
             var withShortcut = VanillaTabStrip.layoutTabs(0f, 100f, 24f, TABS,
-                    List.of(new VanillaTabContent("Political Map", "P")), measurerFake);
+                List.of(new VanillaTabContent("Political Map", "P")), measurerFake);
             var withoutShortcut = VanillaTabStrip.layoutTabs(0f, 100f, 24f, TABS,
-                    List.of(new VanillaTabContent("Political Map", null)), measurerFake);
+                List.of(new VanillaTabContent("Political Map", null)), measurerFake);
             assertThat(withShortcut.get(0).bounds().width())
-                    .isGreaterThan(withoutShortcut.get(0).bounds().width());
+                .isGreaterThan(withoutShortcut.get(0).bounds().width());
         }
     }
 
@@ -58,7 +58,7 @@ class VanillaTabStripTest {
             var withShortcut = List.of(new VanillaTabContent("Political Map", "P"));
             var withoutShortcut = List.of(new VanillaTabContent("Political Map", null));
             assertThat(VanillaTabStrip.measureRowWidth(withShortcut, TABS, measurerFake))
-                    .isGreaterThan(VanillaTabStrip.measureRowWidth(withoutShortcut, TABS, measurerFake));
+                .isGreaterThan(VanillaTabStrip.measureRowWidth(withoutShortcut, TABS, measurerFake));
         }
 
         @Test
@@ -66,14 +66,14 @@ class VanillaTabStripTest {
             // The measured row must equal the summed widths layoutTabs places the same contents at, so the
             // panel sizing its box off the measure lands exactly where the tabs are drawn.
             var contents = List.of(new VanillaTabContent("Political Map", "P"),
-                    new VanillaTabContent("Alliances", null));
+                new VanillaTabContent("Alliances", null));
             var tabs = VanillaTabStrip.layoutTabs(0f, 100f, 24f, TABS, contents, measurerFake);
             var laidOutTotal = 0f;
             for (var tab : tabs) {
                 laidOutTotal += tab.bounds().width();
             }
             assertThat(VanillaTabStrip.measureRowWidth(contents, TABS, measurerFake))
-                    .isEqualTo(laidOutTotal);
+                .isEqualTo(laidOutTotal);
         }
     }
 
@@ -95,7 +95,7 @@ class VanillaTabStripTest {
         @Test
         void returnsTheBareLabelWhenTheTabHasNoShortcut() {
             assertThat(VanillaTabStrip.composeDisplay(new VanillaTabContent("Political Map", null)))
-                    .isEqualTo("Political Map");
+                .isEqualTo("Political Map");
         }
 
         @Test
@@ -103,8 +103,8 @@ class VanillaTabStripTest {
             // Pins the composition - label then the wrapped shortcut - without re-pinning the gap
             // width or the delimiter, which WrapShortcut owns.
             assertThat(VanillaTabStrip.composeDisplay(new VanillaTabContent("Political Map", "P")))
-                    .startsWith("Political Map")
-                    .endsWith(VanillaTabStrip.wrapShortcut("P"));
+                .startsWith("Political Map")
+                .endsWith(VanillaTabStrip.wrapShortcut("P"));
         }
     }
 
@@ -118,9 +118,9 @@ class VanillaTabStripTest {
             var politicalBox = new Rectangle(0f, 0f, 40f, 24f);
             var alliancesBox = new Rectangle(40f, 0f, 30f, 24f);
             var tabs = VanillaTabStrip.zipTabs(List.of(political, alliances),
-                    List.of(politicalBox, alliancesBox));
+                List.of(politicalBox, alliancesBox));
             assertThat(tabs).containsExactly(new VanillaTab(political, politicalBox),
-                    new VanillaTab(alliances, alliancesBox));
+                new VanillaTab(alliances, alliancesBox));
         }
 
         @Test
@@ -135,7 +135,7 @@ class VanillaTabStripTest {
         @Test
         void pairsNothingWhenEitherSideIsEmpty() {
             var tabs = VanillaTabStrip.zipTabs(List.of(),
-                    List.of(new Rectangle(0f, 0f, 40f, 24f)));
+                List.of(new Rectangle(0f, 0f, 40f, 24f)));
             assertThat(tabs).isEmpty();
         }
     }

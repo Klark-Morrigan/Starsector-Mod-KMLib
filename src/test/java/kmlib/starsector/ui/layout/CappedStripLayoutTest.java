@@ -40,8 +40,8 @@ final class CappedStripLayoutTest {
     // come out [20, 80, 20]: one control row for each checkbox, four for the list.
     private List<ControlSpec> headerFlexFooterStrip() {
         return List.of(ControlSpec.Checkbox.lit("H", false, ControlAction.NONE),
-                scrollingList(FLEX_OPTION_COUNT), ControlSpec.Checkbox.lit("F", false,
-                        ControlAction.NONE));
+            scrollingList(FLEX_OPTION_COUNT), ControlSpec.Checkbox.lit("F", false,
+                ControlAction.NONE));
     }
 
     private static ControlSpec scrollingList(int optionCount) {
@@ -52,7 +52,7 @@ final class CappedStripLayoutTest {
             icons.add(null);
         }
         return VerticalTableSpecs.buildIconList(labels, icons, ControlSpec.NO_SELECTION,
-                ControlAction.NONE).asScrolling();
+            ControlAction.NONE).asScrolling();
     }
 
     @Nested
@@ -67,9 +67,9 @@ final class CappedStripLayoutTest {
         @Test
         void findScrollingIndexReturnsNoFlexRegionWhenNoneScroll() {
             var specs = List.<ControlSpec>of(ControlSpec.Checkbox.lit("A", false, ControlAction.NONE),
-                    ControlSpec.Checkbox.lit("B", false, ControlAction.NONE));
+                ControlSpec.Checkbox.lit("B", false, ControlAction.NONE));
             assertThat(CappedStripLayout.findScrollingIndex(specs))
-                    .isEqualTo(CappedStripLayout.NO_FLEX_REGION);
+                .isEqualTo(CappedStripLayout.NO_FLEX_REGION);
         }
     }
 
@@ -81,18 +81,18 @@ final class CappedStripLayoutTest {
             var strip = measure(headerFlexFooterStrip());
             // A cap well above the natural height leaves it untouched, so the strip draws at full size.
             assertThat(CappedStripLayout.capBodyHeight(strip, 1, strip.bodyHeight() + 100f))
-                    .isCloseTo(strip.bodyHeight(), within(TOLERANCE));
+                .isCloseTo(strip.bodyHeight(), within(TOLERANCE));
         }
 
         @Test
         void capBodyHeightKeepsTheNaturalHeightWhenNoControlScrolls() {
             var specs = List.<ControlSpec>of(ControlSpec.Checkbox.lit("A", false, ControlAction.NONE),
-                    ControlSpec.Checkbox.lit("B", false, ControlAction.NONE));
+                ControlSpec.Checkbox.lit("B", false, ControlAction.NONE));
             var strip = measure(specs);
             // With no flex region there is nothing to shrink, so a tight cap cannot reduce the body -
             // the strip keeps its natural height (and would overflow the box, as it does today).
             assertThat(CappedStripLayout.capBodyHeight(strip, CappedStripLayout.NO_FLEX_REGION, 10f))
-                    .isCloseTo(strip.bodyHeight(), within(TOLERANCE));
+                .isCloseTo(strip.bodyHeight(), within(TOLERANCE));
         }
 
         @Test
@@ -111,9 +111,9 @@ final class CappedStripLayoutTest {
             // floors at that minimum (16 inset + 8 gaps + 20 header + 20 footer + 20 one row = 84) rather
             // than collapsing the list.
             var flooredHeight = 2f * ControlStripLayout.BODY_PADDING + 2f * ControlStripLayout.ROW_GAP
-                    + 3f * ControlStripLayout.CONTROL_ROW_HEIGHT;
+                + 3f * ControlStripLayout.CONTROL_ROW_HEIGHT;
             assertThat(CappedStripLayout.capBodyHeight(strip, 1, 10f))
-                    .isCloseTo(flooredHeight, within(TOLERANCE));
+                .isCloseTo(flooredHeight, within(TOLERANCE));
         }
     }
 
@@ -123,19 +123,19 @@ final class CappedStripLayoutTest {
         @Test
         void layoutCappedControlsMatchesThePlainStackWhenNothingScrolls() {
             var specs = List.<ControlSpec>of(ControlSpec.Checkbox.lit("A", false, ControlAction.NONE),
-                    ControlSpec.Checkbox.lit("B", false, ControlAction.NONE));
+                ControlSpec.Checkbox.lit("B", false, ControlAction.NONE));
             var strip = measure(specs);
             var body = frameBody(strip.bodyHeight(), strip.bodyWidth());
             var capped = CappedStripLayout.layoutCappedControls(body, specs, strip.rowHeights(),
-                    strip.rowWidths(), CappedStripLayout.NO_FLEX_REGION, 0f, measurerFake);
+                strip.rowWidths(), CappedStripLayout.NO_FLEX_REGION, 0f, measurerFake);
             var plain = ControlStripLayout.layoutControls(body, specs, strip.rowHeights(),
-                    strip.rowWidths(), measurerFake);
+                strip.rowWidths(), measurerFake);
             // A strip with no flex region pins whole, so the capped placement is the plain stack with no
             // viewport and no overflow.
             assertThat(capped.controls()).hasSameSizeAs(plain);
             for (var index = 0; index < plain.size(); index++) {
                 assertThat(capped.controls().get(index).bounds())
-                        .isEqualTo(plain.get(index).bounds());
+                    .isEqualTo(plain.get(index).bounds());
             }
             assertThat(capped.scrollOverflow()).isZero();
             assertThat(capped.isScrollbarNeeded()).isFalse();
@@ -147,13 +147,13 @@ final class CappedStripLayoutTest {
             var strip = measure(specs);
             var body = frameBody(strip.bodyHeight(), strip.bodyWidth());
             var capped = CappedStripLayout.layoutCappedControls(body, specs, strip.rowHeights(),
-                    strip.rowWidths(), 1, 0f, measurerFake);
+                strip.rowWidths(), 1, 0f, measurerFake);
             // At full height the list fills its viewport exactly - no overflow, no scrollbar, and the
             // viewport is as tall as the list's natural rows.
             assertThat(capped.scrollOverflow()).isCloseTo(0f, within(TOLERANCE));
             assertThat(capped.isScrollbarNeeded()).isFalse();
             assertThat(capped.flexViewport().height())
-                    .isCloseTo(strip.rowHeights().get(1), within(TOLERANCE));
+                .isCloseTo(strip.rowHeights().get(1), within(TOLERANCE));
         }
 
         @Test
@@ -175,12 +175,12 @@ final class CappedStripLayoutTest {
             var cappedHeight = strip.bodyHeight() - 40f;
             var body = frameBody(cappedHeight, strip.bodyWidth());
             var capped = CappedStripLayout.layoutCappedControls(body, specs, strip.rowHeights(),
-                    strip.rowWidths(), 1, 0f, measurerFake);
+                strip.rowWidths(), 1, 0f, measurerFake);
             // The footer (last control) sits one inset above the body's bottom edge, flush at the bottom
             // rather than trailing the scrolled list.
             var footer = capped.controls().get(capped.controls().size() - 1).bounds();
             assertThat(footer.y()).isCloseTo(body.y() + ControlStripLayout.BODY_PADDING,
-                    within(TOLERANCE));
+                within(TOLERANCE));
         }
 
         @Test
@@ -189,7 +189,7 @@ final class CappedStripLayoutTest {
             var strip = measure(specs);
             var body = frameBody(strip.bodyHeight() - 40f, strip.bodyWidth());
             var capped = CappedStripLayout.layoutCappedControls(body, specs, strip.rowHeights(),
-                    strip.rowWidths(), 1, 0f, measurerFake);
+                strip.rowWidths(), 1, 0f, measurerFake);
             // The 40px the body lost all came off the list, so the list overruns its viewport by exactly
             // that much and a scrollbar is due.
             assertThat(capped.scrollOverflow()).isCloseTo(40f, within(TOLERANCE));
@@ -204,7 +204,7 @@ final class CappedStripLayoutTest {
             // A request far past the last row settles at the overflow, so the list stops with its bottom
             // row flush against the viewport bottom rather than scrolling into blank space.
             var capped = CappedStripLayout.layoutCappedControls(body, specs, strip.rowHeights(),
-                    strip.rowWidths(), 1, 9999f, measurerFake);
+                strip.rowWidths(), 1, 9999f, measurerFake);
             assertThat(capped.scrollOffset()).isCloseTo(40f, within(TOLERANCE));
         }
 
@@ -214,7 +214,7 @@ final class CappedStripLayoutTest {
             var strip = measure(specs);
             var body = frameBody(strip.bodyHeight() - 40f, strip.bodyWidth());
             var capped = CappedStripLayout.layoutCappedControls(body, specs, strip.rowHeights(),
-                    strip.rowWidths(), 1, -50f, measurerFake);
+                strip.rowWidths(), 1, -50f, measurerFake);
             assertThat(capped.scrollOffset()).isZero();
         }
 
@@ -224,9 +224,9 @@ final class CappedStripLayoutTest {
             var strip = measure(specs);
             var body = frameBody(strip.bodyHeight() - 40f, strip.bodyWidth());
             var atTop = flexBounds(CappedStripLayout.layoutCappedControls(body, specs,
-                    strip.rowHeights(), strip.rowWidths(), 1, 0f, measurerFake));
+                strip.rowHeights(), strip.rowWidths(), 1, 0f, measurerFake));
             var scrolled = flexBounds(CappedStripLayout.layoutCappedControls(body, specs,
-                    strip.rowHeights(), strip.rowWidths(), 1, 40f, measurerFake));
+                strip.rowHeights(), strip.rowWidths(), 1, 40f, measurerFake));
             // Scrolling down slides the list's full-height content upward (UI y grows up) by the offset,
             // so the lower rows come into the viewport while the content keeps its natural height.
             assertThat(scrolled.y()).isCloseTo(atTop.y() + 40f, within(TOLERANCE));
@@ -240,7 +240,7 @@ final class CappedStripLayoutTest {
             var strip = measure(specs);
             var body = frameBody(strip.bodyHeight() - 40f, strip.bodyWidth());
             var capped = CappedStripLayout.layoutCappedControls(body, specs, strip.rowHeights(),
-                    strip.rowWidths(), 1, 40f, measurerFake);
+                strip.rowWidths(), 1, 40f, measurerFake);
             // Fully scrolled, the list's bottom edge meets the viewport's bottom edge, so the last row is
             // the one flush at the bottom of the scroll region.
             var list = flexBounds(capped);
@@ -256,11 +256,11 @@ final class CappedStripLayoutTest {
             var left = ControlSpec.Checkbox.lit("L", false, ControlAction.NONE);
             var right = ControlSpec.Checkbox.lit("RR", false, ControlAction.NONE);
             var specs = List.<ControlSpec>of(new ControlSpec.SideBySide(List.of(left), List.of(right)),
-                    scrollingList(FLEX_OPTION_COUNT));
+                scrollingList(FLEX_OPTION_COUNT));
             var strip = measure(specs);
             var body = frameBody(strip.bodyHeight(), strip.bodyWidth());
             var capped = CappedStripLayout.layoutCappedControls(body, specs, strip.rowHeights(),
-                    strip.rowWidths(), 1, 0f, measurerFake);
+                strip.rowWidths(), 1, 0f, measurerFake);
 
             // The group's two children pin ahead of the list, side by side (the right one to the right of
             // the left), and the scrolling list follows.
@@ -268,7 +268,7 @@ final class CappedStripLayoutTest {
             assertThat(capped.controls().get(0).spec()).isEqualTo(left);
             assertThat(capped.controls().get(1).spec()).isEqualTo(right);
             assertThat(capped.controls().get(1).bounds().x())
-                    .isGreaterThan(capped.controls().get(0).bounds().x());
+                .isGreaterThan(capped.controls().get(0).bounds().x());
             assertThat(capped.controls().get(2).spec()).isInstanceOf(ControlSpec.VerticalTable.class);
         }
 
@@ -278,12 +278,12 @@ final class CappedStripLayoutTest {
             // as the strip's main region, spreads to the body's content width rather than leaving a
             // gutter of dead space between it and the scrollbar pinned at the body's right edge.
             var wideHeader = ControlSpec.Checkbox.lit("HeaderWiderThanTheList", false,
-                    ControlAction.NONE);
+                ControlAction.NONE);
             var specs = List.<ControlSpec>of(wideHeader, scrollingList(FLEX_OPTION_COUNT));
             var strip = measure(specs);
             var body = frameBody(strip.bodyHeight(), strip.bodyWidth());
             var capped = CappedStripLayout.layoutCappedControls(body, specs, strip.rowHeights(),
-                    strip.rowWidths(), 1, 0f, measurerFake);
+                strip.rowWidths(), 1, 0f, measurerFake);
             var list = flexBounds(capped);
             var contentWidth = body.width() - 2f * ControlStripLayout.BODY_PADDING;
             // The list and its viewport both fill the content width, and the fill only ever grows the
@@ -302,7 +302,7 @@ final class CappedStripLayoutTest {
             var strip = measure(specs);
             var body = frameBody(strip.bodyHeight(), strip.bodyWidth());
             var capped = CappedStripLayout.layoutCappedControls(body, specs, strip.rowHeights(),
-                    strip.rowWidths(), 1, 0f, measurerFake);
+                strip.rowWidths(), 1, 0f, measurerFake);
             var divider = capped.controls().get(0).bounds();
             assertThat(divider.x()).isCloseTo(body.x(), within(TOLERANCE));
             assertThat(divider.width()).isCloseTo(body.width(), within(TOLERANCE));
@@ -319,7 +319,7 @@ final class CappedStripLayoutTest {
     private Rectangle firstControlBounds(List<ControlSpec> specs, StripMeasurement strip, float height) {
         var body = frameBody(height, strip.bodyWidth());
         return CappedStripLayout.layoutCappedControls(body, specs, strip.rowHeights(),
-                strip.rowWidths(), 1, 0f, measurerFake).controls().get(0).bounds();
+            strip.rowWidths(), 1, 0f, measurerFake).controls().get(0).bounds();
     }
 
     private StripMeasurement measure(List<ControlSpec> specs) {

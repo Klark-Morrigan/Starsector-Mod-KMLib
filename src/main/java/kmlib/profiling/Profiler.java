@@ -87,7 +87,9 @@ public final class Profiler {
      * @param elapsedNanos the duration to add
      */
     public void record(String section, long elapsedNanos) {
-        statsBySection.computeIfAbsent(section, key -> new MutableStat()).add(elapsedNanos);
+        statsBySection
+            .computeIfAbsent(section, key -> new MutableStat())
+            .add(elapsedNanos);
     }
 
     /**
@@ -98,8 +100,12 @@ public final class Profiler {
         var timings = new ArrayList<SectionTiming>();
         for (var entry : statsBySection.entrySet()) {
             var stat = entry.getValue();
-            timings.add(new SectionTiming(entry.getKey(), stat.count, stat.totalNanos,
-                    stat.minNanos, stat.maxNanos));
+            timings.add(new SectionTiming(
+                entry.getKey(),
+                stat.count,
+                stat.totalNanos,
+                stat.minNanos,
+                stat.maxNanos));
         }
         return timings;
     }

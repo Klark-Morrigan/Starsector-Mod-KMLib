@@ -78,14 +78,18 @@ public abstract class ParameterSpec {
 
     // Records a parameter that may be supplied positionally (in declaration
     // order) or by name, and returns its key.
-    protected final <T> Parameter<T> acceptsPositional(String name, String valueHint,
+    protected final <T> Parameter<T> acceptsPositional(
+            String name,
+            String valueHint,
             ValueParser<T> valueParser) {
         return record(Parameter.positional(name, valueHint, valueParser));
     }
 
     // Records a name-only parameter - one that never claims a positional slot -
     // and returns its key.
-    protected final <T> Parameter<T> acceptsNamed(String name, String valueHint,
+    protected final <T> Parameter<T> acceptsNamed(
+            String name,
+            String valueHint,
             ValueParser<T> valueParser) {
         return record(Parameter.named(name, valueHint, valueParser));
     }

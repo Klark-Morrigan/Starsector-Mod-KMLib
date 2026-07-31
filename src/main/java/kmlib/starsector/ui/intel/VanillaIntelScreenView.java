@@ -46,7 +46,8 @@ public final class VanillaIntelScreenView implements IntelScreenView {
     @Override
     public boolean isIntelTabOpen() {
         CampaignUIAPI campaignUi = readCampaignUi();
-        return campaignUi != null && campaignUi.getCurrentCoreTab() == CoreUITabId.INTEL;
+        return campaignUi != null
+            && campaignUi.getCurrentCoreTab() == CoreUITabId.INTEL;
     }
 
     @Override
@@ -96,7 +97,7 @@ public final class VanillaIntelScreenView implements IntelScreenView {
     // widget's opacity while the panel stays lit. Either alone leaves nothing to draw over.
     static boolean isMapVisorLit(float intelSubtabBrightness, float mapWidgetOpacity) {
         return intelSubtabBrightness >= INTEL_SUBTAB_SHOWING_MIN_BRIGHTNESS
-                && mapWidgetOpacity >= MAP_WIDGET_VISIBLE_MIN_OPACITY;
+            && mapWidgetOpacity >= MAP_WIDGET_VISIBLE_MIN_OPACITY;
     }
 
     private CampaignUIAPI readCampaignUi() {
@@ -129,8 +130,9 @@ public final class VanillaIntelScreenView implements IntelScreenView {
     private void warnOnceAboutUnexpectedCampaignUi(CampaignUIAPI campaignUi) {
         if (campaignUi != null && !hasLoggedUnexpectedCampaignUiType) {
             hasLoggedUnexpectedCampaignUiType = true;
-            LOG.warn("Campaign UI is a " + campaignUi.getClass().getName()
-                    + ", not CampaignState; intel-screen visor reads stay inert");
+            LOG.warn("Campaign UI is a "
+                + campaignUi.getClass().getName()
+                + ", not CampaignState; intel-screen visor reads stay inert");
         }
     }
 }

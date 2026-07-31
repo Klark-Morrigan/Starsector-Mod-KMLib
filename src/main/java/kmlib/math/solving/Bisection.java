@@ -39,8 +39,12 @@ public final class Bisection {
      * @param holds the monotone feasibility test
      * @return the largest value found at which {@code holds} is true
      */
-    public static double findLargestPassing(double low, double high, int steps,
+    public static double findLargestPassing(
+            double low,
+            double high,
+            int steps,
             DoublePredicate holds) {
+
         if (holds.test(high)) {
             return high;
         }

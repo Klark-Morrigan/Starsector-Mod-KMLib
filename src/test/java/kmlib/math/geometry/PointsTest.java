@@ -18,7 +18,7 @@ class PointsTest {
         @Test
         void computeMeanAveragesEachCoordinateOverEveryPoint() {
             var mean = Points.computeMean(List.of(
-                    new double[] {0, 0}, new double[] {4, 0}, new double[] {2, 6}));
+                new double[] {0, 0}, new double[] {4, 0}, new double[] {2, 6}));
 
             assertThat(mean).containsExactly(2.0, 2.0);
         }
@@ -26,7 +26,7 @@ class PointsTest {
         @Test
         void computeMeanOfOnePointIsThatPoint() {
             assertThat(Points.computeMean(List.of(new double[] {3, -7})))
-                    .containsExactly(3.0, -7.0);
+                .containsExactly(3.0, -7.0);
         }
 
         @Test
@@ -34,8 +34,8 @@ class PointsTest {
             // Unweighted, so three coincident vertices outvote the lone far one: the mean
             // answers where the vertices are, not where a shape's area is.
             var mean = Points.computeMean(List.of(
-                    new double[] {0, 0}, new double[] {0, 0}, new double[] {0, 0},
-                    new double[] {8, 0}));
+                new double[] {0, 0}, new double[] {0, 0}, new double[] {0, 0},
+                new double[] {8, 0}));
 
             assertThat(mean).containsExactly(2.0, 0.0);
         }
@@ -43,7 +43,7 @@ class PointsTest {
         @Test
         void computeMeanThrowsForNoPoints() {
             assertThatThrownBy(() -> Points.computeMean(List.of()))
-                    .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(IllegalArgumentException.class);
         }
     }
 
@@ -62,13 +62,13 @@ class PointsTest {
         @Test
         void computeDistanceArrayOverloadMatchesCoordinateForm() {
             assertThat(Points.computeDistance(new double[] {1, 1}, new double[] {4, 5}))
-                    .isEqualTo(5.0);
+                .isEqualTo(5.0);
         }
 
         @Test
         void computeDistanceVectorOverloadMatchesCoordinateForm() {
             assertThat(Points.computeDistance(new Vector2f(1, 1), new Vector2f(4, 5)))
-                    .isEqualTo(5.0);
+                .isEqualTo(5.0);
         }
     }
 
@@ -88,7 +88,7 @@ class PointsTest {
         @Test
         void computeDistanceSquaredArrayOverloadMatchesCoordinateForm() {
             assertThat(Points.computeDistanceSquared(new double[] {1, 1}, new double[] {4, 5}))
-                    .isEqualTo(25.0);
+                .isEqualTo(25.0);
         }
     }
 
@@ -137,7 +137,7 @@ class PointsTest {
             // Swapping x and y cannot change a sum of squares, so the length is the
             // same either way round.
             assertThat(Points.computeVectorLength(3, 4))
-                    .isEqualTo(Points.computeVectorLength(4, 3));
+                .isEqualTo(Points.computeVectorLength(4, 3));
         }
 
         @Test
@@ -167,7 +167,7 @@ class PointsTest {
             // 1e200 * sqrt(2), well within range. An overflow-safe evaluation keeps
             // the answer finite and correct.
             assertThat(Points.computeVectorLength(1e200, 1e200))
-                    .isCloseTo(1e200 * Math.sqrt(2), withinPercentage(1e-6));
+                .isCloseTo(1e200 * Math.sqrt(2), withinPercentage(1e-6));
         }
 
         @Test
@@ -176,7 +176,7 @@ class PointsTest {
             // reports zero for a non-zero vector. An overflow-safe evaluation keeps
             // the small magnitude 1e-200 * sqrt(2).
             assertThat(Points.computeVectorLength(1e-200, 1e-200))
-                    .isCloseTo(1e-200 * Math.sqrt(2), withinPercentage(1e-6));
+                .isCloseTo(1e-200 * Math.sqrt(2), withinPercentage(1e-6));
         }
     }
 
@@ -247,14 +247,44 @@ class PointsTest {
     }
 
     @Nested
+    class ProjectPointOnto {
+        @Test
+        void projectPointOntoReturnsTheDistanceAlongAUnitAxis() {
+            // (3, 4) onto the unit 3-4-5 direction lands at the point's own length, since
+            // the point lies along that direction.
+            assertThat(Points.projectPointOnto(3, 4, 0.6, 0.8)).isCloseTo(5.0, within(1e-12));
+        }
+
+        @Test
+        void projectPointOntoIsZeroPerpendicularToTheAxis() {
+            // A point straight up the y-axis has no position along the x-axis.
+            assertThat(Points.projectPointOnto(0, 5, 1, 0)).isCloseTo(0.0, within(1e-12));
+        }
+
+        @Test
+        void projectPointOntoIsNegativeBehindTheOrigin() {
+            // The projection is signed, so the far side of the origin reads negative - what
+            // a caller keying on which side of a line a point falls on relies on.
+            assertThat(Points.projectPointOnto(-2, 0, 1, 0)).isCloseTo(-2.0, within(1e-12));
+        }
+
+        @Test
+        void projectPointOntoScalesWithANonUnitAxis() {
+            // Doubling the axis doubles the projection, so only a unit axis reads as a
+            // world distance.
+            assertThat(Points.projectPointOnto(3, 4, 1.2, 1.6)).isCloseTo(10.0, within(1e-12));
+        }
+    }
+
+    @Nested
     class ProjectExtentOnto {
         @Test
         void projectExtentOntoReturnsTheMinAndMaxProjection() {
             // Projected onto the x-axis the cloud spans x 1..7; the y values do not
             // reach the x-axis projection, so the extent is {1, 7}.
             var extent = Points.projectExtentOnto(
-                    List.of(new double[] {1, 5}, new double[] {7, 2}, new double[] {4, 9}),
-                    1, 0);
+                List.of(new double[] {1, 5}, new double[] {7, 2}, new double[] {4, 9}),
+                1, 0);
 
             assertThat(extent).containsExactly(1.0, 7.0);
         }
@@ -263,8 +293,8 @@ class PointsTest {
         void projectExtentOntoProjectsOntoAnArbitraryAxis() {
             // Onto the y-axis the same cloud spans y 2..9.
             var extent = Points.projectExtentOnto(
-                    List.of(new double[] {1, 5}, new double[] {7, 2}, new double[] {4, 9}),
-                    0, 1);
+                List.of(new double[] {1, 5}, new double[] {7, 2}, new double[] {4, 9}),
+                0, 1);
 
             assertThat(extent).containsExactly(2.0, 9.0);
         }
@@ -291,7 +321,7 @@ class PointsTest {
         @Test
         void projectExtentOntoThrowsForNoPoints() {
             assertThatThrownBy(() -> Points.projectExtentOnto(List.of(), 1, 0))
-                    .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(IllegalArgumentException.class);
         }
     }
 
@@ -302,10 +332,10 @@ class PointsTest {
             // Two groups projected onto the x-axis: the first spans x 1..4, the second
             // x 6..9, so the combined extent is {1, 9}.
             var extent = Points.projectCombinedExtentOnto(
-                    List.of(
-                            List.of(new double[] {1, 5}, new double[] {4, 2}),
-                            List.of(new double[] {6, 0}, new double[] {9, 3})),
-                    1, 0);
+                List.of(
+                    List.of(new double[] {1, 5}, new double[] {4, 2}),
+                    List.of(new double[] {6, 0}, new double[] {9, 3})),
+                1, 0);
 
             assertThat(extent[0]).isCloseTo(1.0, within(1e-12));
             assertThat(extent[1]).isCloseTo(9.0, within(1e-12));
@@ -318,13 +348,13 @@ class PointsTest {
             var group = List.of(new double[] {1, 5}, new double[] {7, 2}, new double[] {4, 9});
 
             assertThat(Points.projectCombinedExtentOnto(List.of(group), 0, 1))
-                    .containsExactly(Points.projectExtentOnto(group, 0, 1));
+                .containsExactly(Points.projectExtentOnto(group, 0, 1));
         }
 
         @Test
         void projectCombinedExtentOntoThrowsForNoGroups() {
             assertThatThrownBy(() -> Points.projectCombinedExtentOnto(List.of(), 1, 0))
-                    .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(IllegalArgumentException.class);
         }
 
         @Test
@@ -332,8 +362,8 @@ class PointsTest {
             // An empty group has no extent to contribute, so the projection rejects it
             // rather than folding in a nonsensical infinite bound.
             assertThatThrownBy(() -> Points.projectCombinedExtentOnto(
-                    List.of(List.of(new double[] {1, 2}), List.of()), 1, 0))
-                    .isInstanceOf(IllegalArgumentException.class);
+                List.of(List.of(new double[] {1, 2}), List.of()), 1, 0))
+                .isInstanceOf(IllegalArgumentException.class);
         }
     }
 
@@ -342,7 +372,7 @@ class PointsTest {
         @Test
         void computeAngleDegreesVectorOverloadMatchesCoordinateForm() {
             assertThat(Points.computeAngleDegrees(new Vector2f(0, 0), new Vector2f(1, 1)))
-                    .isEqualTo(45.0);
+                .isEqualTo(45.0);
         }
 
         @Test
@@ -355,7 +385,7 @@ class PointsTest {
         @Test
         void computeAngleDegreesIsRelativeToTheFirstPoint() {
             assertThat(Points.computeAngleDegrees(2, 2, 5, 6)).isCloseTo(53.13,
-                    within(0.01));
+                within(0.01));
         }
     }
 
@@ -369,13 +399,13 @@ class PointsTest {
         @Test
         void computeAngleBetweenIsPiForOppositeDirections() {
             assertThat(Points.computeAngleBetween(1, 0, -4, 0, 1e-6))
-                    .isCloseTo(Math.PI, within(1e-9));
+                .isCloseTo(Math.PI, within(1e-9));
         }
 
         @Test
         void computeAngleBetweenIsARightAngleForPerpendicularVectors() {
             assertThat(Points.computeAngleBetween(1, 0, 0, 1, 1e-6))
-                    .isCloseTo(Math.PI / 2, within(1e-9));
+                .isCloseTo(Math.PI / 2, within(1e-9));
         }
 
         @Test
@@ -392,7 +422,7 @@ class PointsTest {
         void computeAngleBetweenIgnoresVectorLength() {
             // Only direction matters, so scaling either vector leaves the angle put.
             assertThat(Points.computeAngleBetween(100, 0, 0, 0.01, 1e-6))
-                    .isCloseTo(Math.PI / 2, within(1e-9));
+                .isCloseTo(Math.PI / 2, within(1e-9));
         }
 
         @Test

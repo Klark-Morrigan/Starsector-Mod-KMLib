@@ -1,6 +1,7 @@
 package kmlib.opengl;
 
 import kmlib.math.geometry.Limits;
+import kmlib.math.geometry.Points;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,52 +48,34 @@ public final class Hatching {
      * @return the clipped hatch segments as a {@code GL_LINES} run; empty when the spacing is
      *         non-positive or the soup encloses no area for a line to cross
      */
-    public static float[] computeHatchSegments(float[] triangleSoup, double angleRadians,
+    public static float[] computeHatchSegments(
+            float[] triangleSoup,
+            double angleRadians,
             double spacing) {
         if (spacing <= 0 || triangleSoup.length < FLOATS_PER_TRIANGLE) {
             return GlVertexRuns.NO_VERTICES;
         }
-        // The lines run along (dirX, dirY); the level axis (normalX, normalY) is that direction
-        // turned 90 degrees, so a point's level is its perpendicular offset and the hatch lines
-        // are the loci where level is an integer multiple of the spacing.
-        var dirX = Math.cos(angleRadians);
-        var dirY = Math.sin(angleRadians);
-        var normalX = -dirY;
-        var normalY = dirX;
+        var axes = HatchAxes.computeAxesFromAngle(angleRadians, spacing);
         var segments = new ArrayList<Float>();
         for (var i = 0; i + FLOATS_PER_TRIANGLE <= triangleSoup.length; i += FLOATS_PER_TRIANGLE) {
-            hatchTriangle(triangleSoup, i, dirX, dirY, normalX, normalY, spacing, segments);
+            hatchTriangle(readLevelledTriangle(triangleSoup, i, axes), axes, segments);
         }
         return GlVertexRuns.packFloats(segments);
     }
 
-    // Clips every hatch line crossing the triangle at {@code base} into {@code segments}. The
-    // lines that can touch this triangle are those whose level falls within the triangle's own
-    // level span, so only that integer range of lines is walked rather than the whole plane.
-    private static void hatchTriangle(float[] soup, int base, double dirX, double dirY,
-            double normalX, double normalY, double spacing, List<Float> segments) {
-        // The three vertices are packed one after another, so each starts a full vertex stride
-        // past the last and its y sits one float past its x.
-        var aX = soup[base];
-        var aY = soup[base + 1];
-        var bX = soup[base + GlVertexRuns.FLOATS_PER_VERTEX];
-        var bY = soup[base + GlVertexRuns.FLOATS_PER_VERTEX + 1];
-        var cX = soup[base + 2 * GlVertexRuns.FLOATS_PER_VERTEX];
-        var cY = soup[base + 2 * GlVertexRuns.FLOATS_PER_VERTEX + 1];
-        var levelA = aX * normalX + aY * normalY;
-        var levelB = bX * normalX + bY * normalY;
-        var levelC = cX * normalX + cY * normalY;
-        var minLevel = Math.min(levelA, Math.min(levelB, levelC));
-        var maxLevel = Math.max(levelA, Math.max(levelB, levelC));
-        // Only the integer multiples within the triangle's own level span carry a line across
-        // it, so a triangle is walked over just its own range rather than the whole plane. A
-        // multiple landing exactly on the min or max level touches only that extreme corner;
+    // Clips every hatch line crossing {@code triangle} into {@code segments}. The lines that
+    // can touch a triangle are those whose level falls within its own level span, so only that
+    // integer range of lines is walked rather than the whole plane.
+    private static void hatchTriangle(
+            LevelledTriangle triangle,
+            HatchAxes axes,
+            List<Float> segments) {
+        // A multiple landing exactly on the min or max level touches only that extreme corner;
         // it collapses to a point and drops out in the length guard downstream.
-        var firstLine = (int) Math.ceil(minLevel / spacing);
-        var lastLine = (int) Math.floor(maxLevel / spacing);
+        var firstLine = (int) Math.ceil(triangle.computeMinLevel() / axes.spacing());
+        var lastLine = (int) Math.floor(triangle.computeMaxLevel() / axes.spacing());
         for (var line = firstLine; line <= lastLine; line++) {
-            clipLineToTriangle(line * spacing, dirX, dirY,
-                    aX, aY, levelA, bX, bY, levelB, cX, cY, levelC, segments);
+            clipLineToTriangle(line * axes.spacing(), triangle, axes, segments);
         }
     }
 
@@ -101,13 +84,15 @@ public final class Hatching {
     // edges are gathered and the two farthest apart along the line direction become the
     // segment's ends. Fewer than two distinct crossings (the line only touches a corner) adds
     // nothing.
-    private static void clipLineToTriangle(double level, double dirX, double dirY,
-            double aX, double aY, double levelA, double bX, double bY, double levelB,
-            double cX, double cY, double levelC, List<Float> segments) {
+    private static void clipLineToTriangle(
+            double level,
+            LevelledTriangle triangle,
+            HatchAxes axes,
+            List<Float> segments) {
         var crossings = new ArrayList<double[]>();
-        addEdgeCrossing(crossings, level, aX, aY, levelA, bX, bY, levelB);
-        addEdgeCrossing(crossings, level, bX, bY, levelB, cX, cY, levelC);
-        addEdgeCrossing(crossings, level, cX, cY, levelC, aX, aY, levelA);
+        addEdgeCrossing(crossings, level, triangle.vertexA(), triangle.vertexB());
+        addEdgeCrossing(crossings, level, triangle.vertexB(), triangle.vertexC());
+        addEdgeCrossing(crossings, level, triangle.vertexC(), triangle.vertexA());
         if (crossings.size() < 2) {
             return;
         }
@@ -119,7 +104,7 @@ public final class Hatching {
         double[] startPoint = null;
         double[] endPoint = null;
         for (var crossing : crossings) {
-            var along = crossing[0] * dirX + crossing[1] * dirY;
+            var along = axes.computeDistanceAlong(crossing[0], crossing[1]);
             if (along < minAlong) {
                 minAlong = along;
                 startPoint = crossing;
@@ -138,23 +123,104 @@ public final class Hatching {
         segments.add((float) endPoint[1]);
     }
 
-    // Adds the point where the constant-level line crosses the edge from (startX, startY) to
-    // (endX, endY), if it does. An edge lying flat on the line (both ends at the level) is
+    // Adds the point where the constant-level line crosses the edge from {@code start} to
+    // {@code end}, if it does. An edge lying flat on the line (both ends at the level) is
     // skipped: its direction along the line is undefined, and its endpoints re-enter through
     // the two adjacent edges anyway, so nothing is lost.
-    private static void addEdgeCrossing(List<double[]> crossings, double level,
-            double startX, double startY, double startLevel,
-            double endX, double endY, double endLevel) {
-        var levelSpan = endLevel - startLevel;
+    private static void addEdgeCrossing(
+            List<double[]> crossings,
+            double level,
+            LevelledVertex start,
+            LevelledVertex end) {
+        var levelSpan = end.level() - start.level();
         if (Math.abs(levelSpan) < Limits.MIN_EDGE_LENGTH) {
             return;
         }
-        var fraction = (level - startLevel) / levelSpan;
+        var fraction = (level - start.level()) / levelSpan;
         if (fraction < 0 || fraction > 1) {
             return;
         }
         crossings.add(new double[] {
-                startX + fraction * (endX - startX),
-                startY + fraction * (endY - startY)});
+            start.x() + fraction * (end.x() - start.x()),
+            start.y() + fraction * (end.y() - start.y())});
+    }
+
+    // Reads the triangle starting at {@code base} in the soup. Its three vertices are packed
+    // one after another, so each starts a full vertex stride past the last.
+    private static LevelledTriangle readLevelledTriangle(
+            float[] soup,
+            int base,
+            HatchAxes axes) {
+        return new LevelledTriangle(
+            readLevelledVertex(soup, base, axes),
+            readLevelledVertex(soup, base + GlVertexRuns.FLOATS_PER_VERTEX, axes),
+            readLevelledVertex(soup, base + 2 * GlVertexRuns.FLOATS_PER_VERTEX, axes));
+    }
+
+    // Reads the vertex starting at {@code offset} - its y sits one float past its x - and
+    // levels it as it is read, so the clip walk that visits each corner once per crossing
+    // line never recomputes the same level.
+    private static LevelledVertex readLevelledVertex(float[] soup, int offset, HatchAxes axes) {
+        var x = soup[offset];
+        var y = soup[offset + 1];
+        return new LevelledVertex(x, y, axes.computeLevel(x, y));
+    }
+
+    // The hatch line family as the two axes it is defined on, so the direction, its normal and
+    // the spacing travel as one value instead of five loose doubles threaded down the clip.
+    // Owning the two projections as well keeps the "which line is this point on" and "how far
+    // along the line is it" arithmetic in one place rather than restated at each use site.
+    private record HatchAxes(
+            double directionX,
+            double directionY,
+            double normalX,
+            double normalY,
+            double spacing) {
+
+        // The lines run along the direction; the level axis is that direction turned 90
+        // degrees, so the hatch lines are the loci where the level is an integer multiple of
+        // the spacing.
+        private static HatchAxes computeAxesFromAngle(double angleRadians, double spacing) {
+            var directionX = Math.cos(angleRadians);
+            var directionY = Math.sin(angleRadians);
+            return new HatchAxes(directionX, directionY, -directionY, directionX, spacing);
+        }
+
+        // How far along the line direction the point sits - the ordering a clipped segment's
+        // two ends are picked by.
+        private double computeDistanceAlong(double x, double y) {
+            return Points.projectPointOnto(x, y, directionX, directionY);
+        }
+
+        // The point's perpendicular offset, which names the hatch line through it once
+        // divided by the spacing.
+        private double computeLevel(double x, double y) {
+            return Points.projectPointOnto(x, y, normalX, normalY);
+        }
+    }
+
+    // One triangle of the soup with each corner already levelled, the unit a hatch clip works
+    // on. Named corners rather than nine loose doubles, so an edge is passed as its two
+    // endpoints and no call site can transpose a coordinate for a level.
+    private record LevelledTriangle(
+            LevelledVertex vertexA,
+            LevelledVertex vertexB,
+            LevelledVertex vertexC) {
+
+        // The far end of the triangle's level span; with the min, the range of hatch lines
+        // that can cross it at all.
+        private double computeMaxLevel() {
+            return Math.max(vertexA.level(), Math.max(vertexB.level(), vertexC.level()));
+        }
+
+        // The near end of the triangle's level span.
+        private double computeMinLevel() {
+            return Math.min(vertexA.level(), Math.min(vertexB.level(), vertexC.level()));
+        }
+    }
+
+    // A triangle corner paired with its level on the hatch axes - the perpendicular offset
+    // that decides which hatch lines reach it and where along each edge they cross.
+    private record LevelledVertex(double x, double y, double level) {
     }
 }

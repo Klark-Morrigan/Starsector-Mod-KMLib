@@ -78,7 +78,7 @@ final class ClaimContestFixture implements AutoCloseable {
     /** Raises a market's military flag, the condition behind vanilla's flat garrison bonus. */
     void markMarketAsMilitary(MarketAPI market) {
         when(market.getMemoryWithoutUpdate().getBoolean(MemFlags.MARKET_MILITARY))
-                .thenReturn(true);
+            .thenReturn(true);
     }
 
     /** A market of the given faction and size, visible to the player. */
@@ -98,7 +98,7 @@ final class ClaimContestFixture implements AutoCloseable {
         var factionMock = mock(FactionAPI.class);
         when(factionMock.getId()).thenReturn(id);
         when(factionMock.getCustom())
-                .thenReturn(FactionCustomFixture.buildPunitiveExpeditionCustom(isTerritorial));
+            .thenReturn(FactionCustomFixture.buildPunitiveExpeditionCustom(isTerritorial));
         return factionMock;
     }
 

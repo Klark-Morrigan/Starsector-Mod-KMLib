@@ -35,9 +35,9 @@ public final class ActivateGateCommand extends KmlibBaseConsoleCommand {
         // Context guards run first; the id is then required, so a missing or
         // surplus argument is reported as bad syntax before any gate lookup.
         var parsed = readInput(context, args)
-                .requireCampaign()
-                .requireStarSystem()
-                .parseArguments(SPEC);
+            .requireCampaign()
+            .requireStarSystem()
+            .parseArguments(SPEC);
         if (!parsed.isValid()) {
             return parsed.getResult();
         }
@@ -46,14 +46,20 @@ public final class ActivateGateCommand extends KmlibBaseConsoleCommand {
         var id = parsed.get(SPEC.id);
         var gate = StarSystems.find(system, Tags.GATE, id);
         if (gate == null) {
-            output.showMessage("No gate with id '" + id + "' in "
-                    + system.getName() + ".");
+            output.showMessage("No gate with id '"
+                + id
+                + "' in "
+                + system.getName()
+                + ".");
             return CommandResult.ERROR;
         }
         Gates.activateGate(gate);
 
-        output.showMessage("Activated gate '" + id + "' in "
-                + system.getName() + "; it lights up on its next advance.");
+        output.showMessage("Activated gate '"
+            + id
+            + "' in "
+            + system.getName()
+            + "; it lights up on its next advance.");
         return CommandResult.SUCCESS;
     }
 
@@ -64,7 +70,7 @@ public final class ActivateGateCommand extends KmlibBaseConsoleCommand {
      */
     private static final class ActivateGateSpec extends ParameterSpec {
         private final Parameter<String> id =
-                acceptsPositional("id", "<gate-id>", text()).markRequired();
+            acceptsPositional("id", "<gate-id>", text()).markRequired();
 
         private ActivateGateSpec() {
             super("Usage: kmlib_activate_gate <id>.");

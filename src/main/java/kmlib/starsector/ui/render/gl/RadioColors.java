@@ -13,5 +13,7 @@ import java.awt.Color;
  * @param frame        the outer outline and the inter-segment dividers
  * @param selectedWash the wash lighting the lit segment
  */
-public record RadioColors(Color frame, Color selectedWash) {
+public record RadioColors(
+    Color frame,
+    Color selectedWash) {
 }

@@ -65,9 +65,9 @@ public record LabelledRow(
      */
     public static LabelledRow createRow(TextSpan labelTextSpan) {
         return new LabelledRow(
-                RowSlot.EMPTY,
-                List.of(labelTextSpan),
-                RowSlot.EMPTY);
+            RowSlot.EMPTY,
+            List.of(labelTextSpan),
+            RowSlot.EMPTY);
     }
 
     /**
@@ -91,9 +91,9 @@ public record LabelledRow(
      */
     public LabelledRow continuesWith(TextSpan runTextSpan) {
         return new LabelledRow(
-                leadingRowSlot,
-                appendLabelTextSpan(labelTextSpans, runTextSpan),
-                trailingRowSlot);
+            leadingRowSlot,
+            appendLabelTextSpan(labelTextSpans, runTextSpan),
+            trailingRowSlot);
     }
 
     /**

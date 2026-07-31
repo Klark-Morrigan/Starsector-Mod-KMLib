@@ -43,8 +43,11 @@ public final class Rectangles {
      * @param <T>      the element type
      * @return the first matching element's index, or {@link #NONE}
      */
-    public static <T> int findIndexContaining(List<T> items, Function<T, Rectangle> boundsOf,
-            float pointX, float pointY) {
+    public static <T> int findIndexContaining(
+            List<T> items,
+            Function<T, Rectangle> boundsOf,
+            float pointX,
+            float pointY) {
         for (var index = 0; index < items.size(); index++) {
             if (boundsOf.apply(items.get(index)).containsPoint(pointX, pointY)) {
                 return index;

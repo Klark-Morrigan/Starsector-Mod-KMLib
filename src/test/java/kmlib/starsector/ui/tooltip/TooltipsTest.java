@@ -39,16 +39,17 @@ class TooltipsTest {
             var targetMock = mock(UIComponentAPI.class);
 
             Tooltips.attach(
-                    parentMock,
-                    targetMock,
-                    TooltipMakerAPI.TooltipLocation.RIGHT,
-                    WIDTH,
-                    tt -> { /* unused for this assertion */ });
+                parentMock,
+                targetMock,
+                TooltipMakerAPI.TooltipLocation.RIGHT,
+                WIDTH,
+                tt -> {
+                    /* unused for this assertion */ });
 
             verify(parentMock).addTooltipTo(
-                    any(TooltipMakerAPI.TooltipCreator.class),
-                    eq(targetMock),
-                    eq(TooltipMakerAPI.TooltipLocation.RIGHT));
+                any(TooltipMakerAPI.TooltipCreator.class),
+                eq(targetMock),
+                eq(TooltipMakerAPI.TooltipLocation.RIGHT));
         }
 
         @Test
@@ -57,14 +58,15 @@ class TooltipsTest {
             var targetMock = mock(UIComponentAPI.class);
 
             Tooltips.attach(
-                    parentMock,
-                    targetMock,
-                    TooltipMakerAPI.TooltipLocation.BELOW,
-                    WIDTH,
-                    tt -> { /* unused for this assertion */ });
+                parentMock,
+                targetMock,
+                TooltipMakerAPI.TooltipLocation.BELOW,
+                WIDTH,
+                tt -> {
+                    /* unused for this assertion */ });
 
             var creator = captureCreator(
-                    parentMock, targetMock, TooltipMakerAPI.TooltipLocation.BELOW);
+                parentMock, targetMock, TooltipMakerAPI.TooltipLocation.BELOW);
             // Both engine-facing predicates pinned: the expandable flag stays
             // false (all current call sites are single-shot bodies) and the
             // width matches the caller's value so a future regression that
@@ -81,20 +83,20 @@ class TooltipsTest {
             var invocations = new AtomicInteger();
 
             Tooltips.attach(
-                    parentMock,
-                    targetMock,
-                    TooltipMakerAPI.TooltipLocation.RIGHT,
-                    WIDTH,
-                    tt -> {
-                        invocations.incrementAndGet();
-                        // The body must receive the same tooltip the engine
-                        // hands the creator - otherwise paint lands on the
-                        // wrong surface.
-                        assertThat(tt).isSameAs(engineTooltipMock);
-                    });
+                parentMock,
+                targetMock,
+                TooltipMakerAPI.TooltipLocation.RIGHT,
+                WIDTH,
+                tt -> {
+                    invocations.incrementAndGet();
+                    // The body must receive the same tooltip the engine
+                    // hands the creator - otherwise paint lands on the
+                    // wrong surface.
+                    assertThat(tt).isSameAs(engineTooltipMock);
+                });
 
             var creator = captureCreator(
-                    parentMock, targetMock, TooltipMakerAPI.TooltipLocation.RIGHT);
+                parentMock, targetMock, TooltipMakerAPI.TooltipLocation.RIGHT);
             creator.createTooltip(engineTooltipMock, false, null);
             creator.createTooltip(engineTooltipMock, true, null);
 
@@ -108,23 +110,24 @@ class TooltipsTest {
         void rejectsNullsFastAtTheCallSite() {
             var parentMock = mock(TooltipMakerAPI.class);
             var targetMock = mock(UIComponentAPI.class);
-            Consumer<TooltipMakerAPI> body = tt -> { /* unused */ };
+            Consumer<TooltipMakerAPI> body = tt -> {
+                /* unused */ };
 
             // Null-check coverage: failing inside the engine's UI loop later
             // is much harder to diagnose than failing at the registration
             // call.
             assertThatThrownBy(() -> Tooltips.attach(
-                    null, targetMock, TooltipMakerAPI.TooltipLocation.RIGHT, WIDTH, body))
-                    .isInstanceOf(NullPointerException.class);
+                null, targetMock, TooltipMakerAPI.TooltipLocation.RIGHT, WIDTH, body))
+                .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> Tooltips.attach(
-                    parentMock, null, TooltipMakerAPI.TooltipLocation.RIGHT, WIDTH, body))
-                    .isInstanceOf(NullPointerException.class);
+                parentMock, null, TooltipMakerAPI.TooltipLocation.RIGHT, WIDTH, body))
+                .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> Tooltips.attach(
-                    parentMock, targetMock, null, WIDTH, body))
-                    .isInstanceOf(NullPointerException.class);
+                parentMock, targetMock, null, WIDTH, body))
+                .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> Tooltips.attach(
-                    parentMock, targetMock, TooltipMakerAPI.TooltipLocation.RIGHT, WIDTH, null))
-                    .isInstanceOf(NullPointerException.class);
+                parentMock, targetMock, TooltipMakerAPI.TooltipLocation.RIGHT, WIDTH, null))
+                .isInstanceOf(NullPointerException.class);
         }
     }
 
@@ -133,11 +136,11 @@ class TooltipsTest {
             UIComponentAPI target,
             TooltipMakerAPI.TooltipLocation location) {
         var captor =
-                ArgumentCaptor.forClass(TooltipMakerAPI.TooltipCreator.class);
+            ArgumentCaptor.forClass(TooltipMakerAPI.TooltipCreator.class);
         verify(parent).addTooltipTo(
-                captor.capture(),
-                eq(target),
-                eq(location));
+            captor.capture(),
+            eq(target),
+            eq(location));
         return captor.getValue();
     }
 

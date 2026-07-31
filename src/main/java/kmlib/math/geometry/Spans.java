@@ -51,17 +51,23 @@ public final class Spans {
             DirectedLine line,
             Collection<double[]> obstacles,
             double clearance) {
-        var direction = Points.computeUnitVector(line.directionX(), line.directionY(),
-                Limits.MIN_EDGE_LENGTH);
+
+        var direction = Points.computeUnitVector(
+            line.directionX(),
+            line.directionY(),
+            Limits.MIN_EDGE_LENGTH);
+
         if (direction == null) {
             return null;
         }
         var unitLine = new DirectedLine(
-                line.originX(),
-                line.originY(),
-                direction[0],
-                direction[1]);
+            line.originX(),
+            line.originY(),
+            direction[0],
+            direction[1]);
+
         var blocked = computeBlockedIntervals(unitLine, obstacles, clearance);
+
         // Sorted by start, the blockers can be walked once per span with a single
         // advancing cursor instead of re-scanning the whole set per gap.
         blocked.sort(Comparator.comparingDouble(interval -> interval[0]));
@@ -152,6 +158,7 @@ public final class Spans {
             var offsetX = obstacle[0] - line.originX();
             var offsetY = obstacle[1] - line.originY();
             var along = offsetX * line.directionX() + offsetY * line.directionY();
+
             // Perpendicular distance to the line: the offset projected onto the line's
             // unit normal (perpendicular to its direction).
             var perpendicular = Math.abs(offsetX * -line.directionY() + offsetY * line.directionX());
@@ -178,8 +185,9 @@ public final class Spans {
             if (interval[1] <= cursor) {
                 continue;
             }
-            longest = pickLonger(longest,
-                    new double[] {cursor, Math.min(interval[0], span[1])});
+            longest = pickLonger(
+                longest,
+                new double[] {cursor, Math.min(interval[0], span[1])});
             cursor = Math.max(cursor, interval[1]);
         }
         if (cursor < span[1]) {

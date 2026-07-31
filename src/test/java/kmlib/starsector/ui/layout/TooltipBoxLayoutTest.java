@@ -33,7 +33,7 @@ final class TooltipBoxLayoutTest {
         @Test
         void grows_the_width_to_the_content_plus_padding_on_both_sides() {
             var box = TooltipBoxLayout.computeBox(100d, ONE_LINE_HEIGHT, 200f, 300f,
-                    SCREEN_WIDTH, SCREEN_HEIGHT);
+                SCREEN_WIDTH, SCREEN_HEIGHT);
 
             // 100 content + 8 padding on each side.
             assertThat(box.width()).isCloseTo(116f, within(TOLERANCE));
@@ -42,7 +42,7 @@ final class TooltipBoxLayoutTest {
         @Test
         void grows_the_height_to_the_content_plus_padding_top_and_bottom() {
             var box = TooltipBoxLayout.computeBox(100d, ONE_LINE_HEIGHT, 200f, 300f,
-                    SCREEN_WIDTH, SCREEN_HEIGHT);
+                SCREEN_WIDTH, SCREEN_HEIGHT);
 
             // One 15-tall line + 8 padding top and bottom.
             assertThat(box.height()).isCloseTo(31f, within(TOLERANCE));
@@ -51,7 +51,7 @@ final class TooltipBoxLayoutTest {
         @Test
         void wraps_a_taller_content_stack_without_reinterpreting_it() {
             var box = TooltipBoxLayout.computeBox(100d, TWO_LINE_HEIGHT, 200f, 300f,
-                    SCREEN_WIDTH, SCREEN_HEIGHT);
+                SCREEN_WIDTH, SCREEN_HEIGHT);
 
             // The 34 the caller measured - two lines and their gap - plus the same 16 of padding.
             assertThat(box.height()).isCloseTo(50f, within(TOLERANCE));
@@ -60,7 +60,7 @@ final class TooltipBoxLayoutTest {
         @Test
         void places_the_box_up_and_right_of_the_cursor_when_there_is_room() {
             var box = TooltipBoxLayout.computeBox(100d, ONE_LINE_HEIGHT, 200f, 300f,
-                    SCREEN_WIDTH, SCREEN_HEIGHT);
+                SCREEN_WIDTH, SCREEN_HEIGHT);
 
             // Cursor + the 18 offset, clear of both edges.
             assertThat(box.x()).isCloseTo(218f, within(TOLERANCE));
@@ -70,7 +70,7 @@ final class TooltipBoxLayoutTest {
         @Test
         void clamps_to_the_right_edge_when_the_cursor_is_near_it() {
             var box = TooltipBoxLayout.computeBox(100d, ONE_LINE_HEIGHT, 1850f, 300f,
-                    SCREEN_WIDTH, SCREEN_HEIGHT);
+                SCREEN_WIDTH, SCREEN_HEIGHT);
 
             // 1850 + 18 would overrun; the box pulls left to screenWidth - width (1920 - 116).
             assertThat(box.x()).isCloseTo(1804f, within(TOLERANCE));
@@ -79,7 +79,7 @@ final class TooltipBoxLayoutTest {
         @Test
         void clamps_to_the_top_edge_when_the_cursor_is_near_it() {
             var box = TooltipBoxLayout.computeBox(100d, ONE_LINE_HEIGHT, 200f, 1060f,
-                    SCREEN_WIDTH, SCREEN_HEIGHT);
+                SCREEN_WIDTH, SCREEN_HEIGHT);
 
             // 1060 + 18 would overrun; the box drops to screenHeight - height (1080 - 31).
             assertThat(box.y()).isCloseTo(1049f, within(TOLERANCE));

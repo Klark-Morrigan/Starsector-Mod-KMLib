@@ -21,7 +21,9 @@ import java.util.List;
  * @param line     the infinite line the chord runs along (unit direction, so a parameter
  *                 reads as a world distance), measured inside the region
  */
-public record RegionChord(List<List<double[]>> rings, Collection<double[]> keepOuts,
+public record RegionChord(
+        List<List<double[]>> rings,
+        Collection<double[]> keepOuts,
         DirectedLine line) {
 
     /**
@@ -33,9 +35,9 @@ public record RegionChord(List<List<double[]>> rings, Collection<double[]> keepO
      */
     public Segment toSegment(double[] span) {
         return new Segment(
-                line.originX() + line.directionX() * span[0],
-                line.originY() + line.directionY() * span[0],
-                line.originX() + line.directionX() * span[1],
-                line.originY() + line.directionY() * span[1]);
+            line.originX() + line.directionX() * span[0],
+            line.originY() + line.directionY() * span[0],
+            line.originX() + line.directionX() * span[1],
+            line.originY() + line.directionY() * span[1]);
     }
 }

@@ -56,6 +56,7 @@ import java.util.function.ToDoubleFunction;
  * rather than each re-deriving it.
  */
 public final class CursorTooltip {
+
     // The gap between a row's crest and its label, between two runs of one label, and between the label
     // and a right-aligned value, in UI units. The value gap is reserved on every row (a value-less row
     // measures a zero-width value), so the value column stays clear of the widest label whether or not
@@ -109,15 +110,15 @@ public final class CursorTooltip {
         var crestColumnWidth = measureCrestColumnWidth(styledRows);
 
         var box = TooltipBoxLayout.computeBox(
-                measureContentWidth(styledRows, crestColumnWidth),
-                measureContentHeight(styledRows),
-                cursorX,
-                cursorY,
-                screenWidth,
-                screenHeight);
+            measureContentWidth(styledRows, crestColumnWidth),
+            measureContentHeight(styledRows),
+            cursorX,
+            cursorY,
+            screenWidth,
+            screenHeight);
         return new TooltipLayout(
-                box,
-                placeRows(styledRows, box, crestColumnWidth));
+            box,
+            placeRows(styledRows, box, crestColumnWidth));
     }
 
     // Resolves every row's look once, before anything is measured. Everything below then reads the
@@ -158,15 +159,15 @@ public final class CursorTooltip {
                 continue;
             }
             widestLeadingRowSlotWidth = Math.max(
-                    widestLeadingRowSlotWidth,
-                    styledRow.measureSlotWidth(tableRow.labelledRow().leadingRowSlot()));
+                widestLeadingRowSlotWidth,
+                styledRow.measureSlotWidth(tableRow.labelledRow().leadingRowSlot()));
         }
 
         // An unfilled slot - and a run that came out blank - is worth nothing, so a box whose rows fill
         // no leading slot opens no gutter rather than one of zero width plus a gap.
         return widestLeadingRowSlotWidth > RowSlot.NO_WIDTH
-                ? widestLeadingRowSlotWidth + CREST_GAP
-                : NO_CREST_COLUMN;
+            ? widestLeadingRowSlotWidth + CREST_GAP
+            : NO_CREST_COLUMN;
     }
 
     // How tall the rows stack: each row's own line height, the inter-line gap between them, and the extra
@@ -191,8 +192,8 @@ public final class CursorTooltip {
             return 0d;
         }
         return styledRow.row().hasSectionBreak()
-                ? TooltipBoxLayout.LINE_GAP + styledRow.lineHeight() * SECTION_BREAK_FRACTION
-                : TooltipBoxLayout.LINE_GAP;
+            ? TooltipBoxLayout.LINE_GAP + styledRow.lineHeight() * SECTION_BREAK_FRACTION
+            : TooltipBoxLayout.LINE_GAP;
     }
 
     // Places each row's crest, label, and value within the box, stepping down its own line height plus
@@ -203,15 +204,15 @@ public final class CursorTooltip {
             float crestColumnWidth) {
 
         var leftX = box.x()
-                + TooltipBoxLayout.PADDING;
+            + TooltipBoxLayout.PADDING;
 
         var rightX = box.x()
-                + box.width()
-                - TooltipBoxLayout.PADDING;
+            + box.width()
+            - TooltipBoxLayout.PADDING;
 
         var topY = box.y()
-                + box.height()
-                - TooltipBoxLayout.PADDING;
+            + box.height()
+            - TooltipBoxLayout.PADDING;
 
         var placements = new ArrayList<TooltipLayout.TooltipRowLayout>(rows.size());
 
@@ -224,11 +225,11 @@ public final class CursorTooltip {
             rowTopY -= (float) measureLeadingGap(styledRow, index);
 
             placements.add(placeRow(
-                    styledRow,
-                    leftX,
-                    rightX,
-                    rowTopY,
-                    crestColumnWidth));
+                styledRow,
+                leftX,
+                rightX,
+                rowTopY,
+                crestColumnWidth));
             rowTopY -= (float) styledRow.lineHeight();
         }
         return placements;
@@ -254,22 +255,22 @@ public final class CursorTooltip {
         // and the column anchors it is handed are the box's own content edges, which it draws nothing in.
         if (!(styledRow.row() instanceof TooltipRow.TableRow tableRow)) {
             return new TooltipLayout.TooltipRowLayout(
-                    rowTopY,
-                    (float) styledRow.lineHeight(),
-                    leftX,
-                    anchorLabelRuns(styledRow, centreLabelX(styledRow, leftX, rightX)),
-                    rightX);
+                rowTopY,
+                (float) styledRow.lineHeight(),
+                leftX,
+                anchorLabelRuns(styledRow, centreLabelX(styledRow, leftX, rightX)),
+                rightX);
         }
         var leadingRowSlotX = leftX + tableRow.indent();
 
         return new TooltipLayout.TooltipRowLayout(
-                rowTopY,
-                (float) styledRow.lineHeight(),
-                leadingRowSlotX,
-                anchorLabelRuns(
-                        styledRow,
-                        leadingRowSlotX + measureCrestOffset(tableRow, crestColumnWidth)),
-                rightX);
+            rowTopY,
+            (float) styledRow.lineHeight(),
+            leadingRowSlotX,
+            anchorLabelRuns(
+                styledRow,
+                leadingRowSlotX + measureCrestOffset(tableRow, crestColumnWidth)),
+            rightX);
     }
 
     // Where each of a row's label runs anchors in the placed box: the offsets the runs measured out at,
@@ -277,8 +278,10 @@ public final class CursorTooltip {
     // the offsets per placement is what keeps the anchors and the width the box was sized to in step
     // whatever the row's placement turns out to be.
     private static List<Float> anchorLabelRuns(StyledRow styledRow, float labelStartX) {
+
         var runOffsetXs = measureLabelRunOffsets(styledRow).runOffsetXs();
         var runXs = new ArrayList<Float>(runOffsetXs.size());
+
         for (var runOffsetX : runOffsetXs) {
             runXs.add(labelStartX + runOffsetX);
         }
@@ -300,12 +303,12 @@ public final class CursorTooltip {
         for (var styledRow : rows) {
             var labelSpan = measureLabelRunOffsets(styledRow).runsWidth();
             var rowWidth = styledRow.row() instanceof TooltipRow.TableRow tableRow
-                    ? tableRow.indent()
-                            + measureCrestOffset(tableRow, crestColumnWidth)
-                            + labelSpan
-                            + VALUE_GAP
-                            + styledRow.measureSlotWidth(tableRow.labelledRow().trailingRowSlot())
-                    : labelSpan;
+                ? tableRow.indent()
+                    + measureCrestOffset(tableRow, crestColumnWidth)
+                    + labelSpan
+                    + VALUE_GAP
+                    + styledRow.measureSlotWidth(tableRow.labelledRow().trailingRowSlot())
+                : labelSpan;
 
             widest = Math.max(widest, rowWidth);
         }
@@ -322,6 +325,7 @@ public final class CursorTooltip {
     // caller assembling a run from parts and coming up blank gets the line it would have had without it,
     // rather than a gap reserved in front of no glyphs.
     private static LabelRunOffsets measureLabelRunOffsets(StyledRow styledRow) {
+
         var labelTextSpans = styledRow.row().labelTextSpans();
         var runOffsetXs = new ArrayList<Float>(labelTextSpans.size());
         var runsWidth = 0f;
@@ -350,7 +354,10 @@ public final class CursorTooltip {
             float leftX,
             float rightX) {
 
-        var slack = rightX - leftX - measureLabelRunOffsets(styledRow).runsWidth();
+        var slack = rightX
+            - leftX
+            - measureLabelRunOffsets(styledRow).runsWidth();
+
         return leftX + slack / 2f;
     }
 
@@ -360,8 +367,8 @@ public final class CursorTooltip {
     // placement agree on the offset, row by row.
     private static float measureCrestOffset(TooltipRow.TableRow tableRow, float crestColumnWidth) {
         return tableRow.labelPlacement() == TooltipLabelPlacement.ALIGNED_WITH_CRESTS
-                ? crestColumnWidth
-                : NO_CREST_COLUMN;
+            ? crestColumnWidth
+            : NO_CREST_COLUMN;
     }
 
     /**
@@ -374,7 +381,9 @@ public final class CursorTooltip {
      * @param runOffsetXs each run's offset from the label's left edge, in run order
      * @param runsWidth   the width the runs occupy together, gaps included
      */
-    private record LabelRunOffsets(List<Float> runOffsetXs, float runsWidth) {
+    private record LabelRunOffsets(
+        List<Float> runOffsetXs,
+        float runsWidth) {
     }
 
     /**
@@ -389,9 +398,9 @@ public final class CursorTooltip {
      * @param measureWidth the width of one of this row's span texts, in this row's own face
      */
     private record StyledRow(
-            TooltipRow row,
-            double lineHeight,
-            ToDoubleFunction<String> measureWidth) {
+        TooltipRow row,
+        double lineHeight,
+        ToDoubleFunction<String> measureWidth) {
 
         // Resolves the look for one row's kind of line and binds a measurement to it. The face doubles as
         // the line height, as a bitmap face's size is the room one line of it needs.
@@ -406,11 +415,11 @@ public final class CursorTooltip {
             // measured as authored measures narrower than it paints, so the box sized from that
             // measurement would clip the text drawn into it.
             return new StyledRow(
-                    row,
-                    textStyle.face().size(),
-                    spanText -> measurer.measureSpanWidth(
-                            textStyle.face(),
-                            textStyle.resolveDisplayText(spanText)));
+                row,
+                textStyle.face().size(),
+                spanText -> measurer.measureSpanWidth(
+                    textStyle.face(),
+                    textStyle.resolveDisplayText(spanText)));
         }
 
         // The width one of this row's flanking slots occupies. Each kind of slot answers for itself off

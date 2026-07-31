@@ -46,7 +46,7 @@ public final class UiScissor {
         var uiHeight = settings.getScreenHeight();
         var pixelWidth = settings.getScreenWidthPixels();
         var pixelHeight = settings.getScreenHeightPixels();
-        
+
         // The scissor box is the UI rectangle in framebuffer pixels: both spaces share the bottom-left
         // origin, so the lower-left corner and the size each rescale on their own axis.
         var pixelX = UiCursor.convertUiToPixel(uiRegion.x(), uiWidth, pixelWidth);
@@ -62,10 +62,10 @@ public final class UiScissor {
         // Floor to whole pixels and never pass a negative extent (a no-display axis rescales to -1), so
         // a degenerate region clips everything out instead of erroring.
         GL11.glScissor(
-                Math.round(pixelX),
-                Math.round(pixelY),
-                Math.max(0, Math.round(pixelBoxWidth)),
-                Math.max(0, Math.round(pixelBoxHeight)));
+            Math.round(pixelX),
+            Math.round(pixelY),
+            Math.max(0, Math.round(pixelBoxWidth)),
+            Math.max(0, Math.round(pixelBoxHeight)));
     }
 
     /**

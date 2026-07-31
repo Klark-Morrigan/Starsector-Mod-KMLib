@@ -85,7 +85,7 @@ public record CampaignMapTransform(
     // is a flat layer viewed head-on, so every depth along the ray through the cursor gives the
     // same x/y; the near plane is chosen simply because it is a well-defined end of that ray.
     private static final float NEAR_PLANE_DEPTH = 0f;
-    
+
     // gluUnProject writes x, y and z, so it is handed a 3-float target even though a flat map
     // overlay only reads x and y back.
     private static final int WORLD_POINT_FLOAT_COUNT = 3;
@@ -94,18 +94,22 @@ public record CampaignMapTransform(
         // A wrong-sized matrix or viewport would otherwise be read out of bounds deep inside
         // gluUnProject, so the shape is rejected at the boundary where the size is still named.
         if (modelviewMatrix.length != MATRIX_FLOAT_COUNT) {
-            throw new IllegalArgumentException(
-                    "Modelview matrix must be " + MATRIX_FLOAT_COUNT + " floats, got "
-                            + modelviewMatrix.length);
+            throw new IllegalArgumentException("Modelview matrix must be "
+                + MATRIX_FLOAT_COUNT
+                + " floats, got "
+                + modelviewMatrix.length);
         }
         if (projectionMatrix.length != MATRIX_FLOAT_COUNT) {
-            throw new IllegalArgumentException(
-                    "Projection matrix must be " + MATRIX_FLOAT_COUNT + " floats, got "
-                            + projectionMatrix.length);
+            throw new IllegalArgumentException("Projection matrix must be "
+                + MATRIX_FLOAT_COUNT
+                + " floats, got "
+                + projectionMatrix.length);
         }
         if (viewport.length != VIEWPORT_INT_COUNT) {
-            throw new IllegalArgumentException(
-                    "Viewport must be " + VIEWPORT_INT_COUNT + " ints, got " + viewport.length);
+            throw new IllegalArgumentException("Viewport must be "
+                + VIEWPORT_INT_COUNT
+                + " ints, got "
+                + viewport.length);
         }
     }
 
@@ -126,7 +130,9 @@ public record CampaignMapTransform(
      */
     public static CampaignMapTransform captureFromMapPass(
             float factor, ModelviewMatrixReader modelviewMatrixReader) {
+
         var modelviewMatrix = modelviewMatrixReader.readModelviewMatrix();
+
         // Identity is the tell that a reading did not come from the map: a real map pass composes
         // the UI's own translate with the map widget's, so identity means the source was not
         // carrying the map's transform when asked (see docs/dev/rendering-environment.md). The
@@ -134,6 +140,7 @@ public record CampaignMapTransform(
         if (modelviewMatrix == null || Arrays.equals(modelviewMatrix, IDENTITY_MATRIX)) {
             return null;
         }
+
         // glGet* only writes into direct buffers, so the read lands in one and is then copied into
         // a plain array: the snapshot must own its data rather than alias a scratch buffer, and an
         // array keeps unprojectToWorld free of any native-buffer setup. The buffer is sized for
@@ -145,10 +152,10 @@ public record CampaignMapTransform(
         viewportBuffer.get(viewport);
         var settings = Global.getSettings();
         return new CampaignMapTransform(
-                modelviewMatrix,
-                buildUiOrthoProjectionMatrix(settings.getScreenWidth(), settings.getScreenHeight()),
-                viewport,
-                factor);
+            modelviewMatrix,
+            buildUiOrthoProjectionMatrix(settings.getScreenWidth(), settings.getScreenHeight()),
+            viewport,
+            factor);
     }
 
     /**
@@ -172,21 +179,22 @@ public record CampaignMapTransform(
         }
         var worldPoint = BufferUtils.createFloatBuffer(WORLD_POINT_FLOAT_COUNT);
         var isUnprojected = GLU.gluUnProject(
-                pixelX,
-                pixelY,
-                NEAR_PLANE_DEPTH,
-                FloatBuffer.wrap(modelviewMatrix),
-                FloatBuffer.wrap(projectionMatrix),
-                IntBuffer.wrap(viewport),
-                worldPoint);
+            pixelX,
+            pixelY,
+            NEAR_PLANE_DEPTH,
+            FloatBuffer.wrap(modelviewMatrix),
+            FloatBuffer.wrap(projectionMatrix),
+            IntBuffer.wrap(viewport),
+            worldPoint);
+
         if (!isUnprojected) {
             return null;
         }
         // Undo the per-vertex scale the render pass applied on the way out, landing back in the
         // unscaled world coordinates the overlay's geometry is stored in.
         return new Vector2f(
-                worldPoint.get(0) / factor,
-                worldPoint.get(1) / factor);
+            worldPoint.get(0) / factor,
+            worldPoint.get(1) / factor);
     }
 
     /**
@@ -204,11 +212,13 @@ public record CampaignMapTransform(
      * @return the ortho as 16 floats, column-major, the layout {@code gluUnProject} expects
      */
     static float[] buildUiOrthoProjectionMatrix(float screenWidth, float screenHeight) {
+
         var depthSpan = UI_ORTHO_NEAR_PLANE - UI_ORTHO_FAR_PLANE;
         var matrix = new float[MATRIX_FLOAT_COUNT];
         matrix[SCALE_X_SLOT] = 2f / screenWidth;
         matrix[SCALE_Y_SLOT] = 2f / screenHeight;
         matrix[SCALE_Z_SLOT] = 2f / depthSpan;
+
         // The x and y ortho spans run 0..size rather than being centred, so each axis shifts a
         // full half-span to move its origin onto the viewport's bottom-left corner. The depth
         // range is symmetric about zero and so needs no shift.
@@ -216,6 +226,7 @@ public record CampaignMapTransform(
         matrix[TRANSLATE_Y_SLOT] = -1f;
         matrix[TRANSLATE_Z_SLOT] = (UI_ORTHO_NEAR_PLANE + UI_ORTHO_FAR_PLANE) / depthSpan;
         matrix[HOMOGENEOUS_W_SLOT] = 1f;
+        
         return matrix;
     }
 }

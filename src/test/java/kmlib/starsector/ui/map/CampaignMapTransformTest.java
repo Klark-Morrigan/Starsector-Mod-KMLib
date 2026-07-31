@@ -93,17 +93,17 @@ class CampaignMapTransformTest {
             // scales each span onto -1..1, the last column shifts the 0..size origin onto the
             // corner, and the depth range is symmetric so its shift stays zero.
             assertThat(projection).usingComparatorWithPrecision(MATRIX_TOLERANCE).containsExactly(
-                    0.00125f, 0f, 0f, 0f,
-                    0f, 0.002f, 0f, 0f,
-                    0f, 0f, -2f / 12000f, 0f,
-                    -1f, -1f, 0f, 1f);
+                0.00125f, 0f, 0f, 0f,
+                0f, 0.002f, 0f, 0f,
+                0f, 0f, -2f / 12000f, 0f,
+                -1f, -1f, 0f, 1f);
         }
 
         @Test
         void unprojectsTheViewportCentreToTheScreenCentre() {
             var viewport = new int[] {0, 0, (int) SCREEN_WIDTH, (int) SCREEN_HEIGHT};
             var transform = new CampaignMapTransform(
-                    IDENTITY_MATRIX, buildProjection(), viewport, NO_SCALE);
+                IDENTITY_MATRIX, buildProjection(), viewport, NO_SCALE);
 
             var world = transform.unprojectToWorld(SCREEN_WIDTH / 2f, SCREEN_HEIGHT / 2f);
 
@@ -119,10 +119,10 @@ class CampaignMapTransformTest {
             var pixelScaledViewport = new int[] {
                 0, 0, (int) SCREEN_WIDTH * PIXEL_SCALE, (int) SCREEN_HEIGHT * PIXEL_SCALE};
             var transform = new CampaignMapTransform(
-                    IDENTITY_MATRIX, buildProjection(), pixelScaledViewport, NO_SCALE);
+                IDENTITY_MATRIX, buildProjection(), pixelScaledViewport, NO_SCALE);
 
             var world = transform.unprojectToWorld(
-                    SCREEN_WIDTH * PIXEL_SCALE, SCREEN_HEIGHT * PIXEL_SCALE);
+                SCREEN_WIDTH * PIXEL_SCALE, SCREEN_HEIGHT * PIXEL_SCALE);
 
             assertThat(world.x).isCloseTo(SCREEN_WIDTH, TOLERANCE);
             assertThat(world.y).isCloseTo(SCREEN_HEIGHT, TOLERANCE);
@@ -162,16 +162,16 @@ class CampaignMapTransformTest {
             // so the stub writes absolutely, the way the capture reads it back.
             glMock = mockStatic(GL11.class);
             glMock.when(() -> GL11.glGetInteger(eq(GL11.GL_VIEWPORT), any(IntBuffer.class)))
-                    .thenAnswer(invocation -> {
-                        IntBuffer buffer = invocation.getArgument(1);
-                        // Recorded at call time: the caller reads its four ints back out of the
-                        // buffer afterwards, which moves the position LWJGL's check reads from.
-                        viewportBufferElementsOfferedToGl = buffer.remaining();
-                        for (var slot = 0; slot < PIXEL_SCALED_VIEWPORT.length; slot++) {
-                            buffer.put(slot, PIXEL_SCALED_VIEWPORT[slot]);
-                        }
-                        return null;
-                    });
+                .thenAnswer(invocation -> {
+                    IntBuffer buffer = invocation.getArgument(1);
+                    // Recorded at call time: the caller reads its four ints back out of the
+                    // buffer afterwards, which moves the position LWJGL's check reads from.
+                    viewportBufferElementsOfferedToGl = buffer.remaining();
+                    for (var slot = 0; slot < PIXEL_SCALED_VIEWPORT.length; slot++) {
+                        buffer.put(slot, PIXEL_SCALED_VIEWPORT[slot]);
+                    }
+                    return null;
+                });
         }
 
         @AfterEach
@@ -183,10 +183,10 @@ class CampaignMapTransformTest {
         @Test
         void composesAReadModelviewIntoASnapshotThatUnprojects() {
             var modelviewMatrixReaderFake =
-                    new ModelviewMatrixReaderFake(buildTranslationMatrix(PAN_X, PAN_Y));
+                new ModelviewMatrixReaderFake(buildTranslationMatrix(PAN_X, PAN_Y));
 
             var transform = CampaignMapTransform.captureFromMapPass(
-                    MAP_ZOOM, modelviewMatrixReaderFake);
+                MAP_ZOOM, modelviewMatrixReaderFake);
 
             // Every input the capture is responsible for threading shows up in this one expected
             // point, so none of them can be dropped unnoticed: the viewport's centre pixel
@@ -194,7 +194,7 @@ class CampaignMapTransformTest {
             // pan comes back off only if the port's matrix did, and the zoom divides out only if
             // the factor did.
             var world = transform.unprojectToWorld(
-                    SCREEN_WIDTH * PIXEL_SCALE / 2f, SCREEN_HEIGHT * PIXEL_SCALE / 2f);
+                SCREEN_WIDTH * PIXEL_SCALE / 2f, SCREEN_HEIGHT * PIXEL_SCALE / 2f);
             assertThat(world.x).isCloseTo((SCREEN_WIDTH / 2f - PAN_X) / MAP_ZOOM, TOLERANCE);
             assertThat(world.y).isCloseTo((SCREEN_HEIGHT / 2f - PAN_Y) / MAP_ZOOM, TOLERANCE);
         }
@@ -202,7 +202,7 @@ class CampaignMapTransformTest {
         @Test
         void asksGlForAViewportInABufferItsSizeCheckAccepts() {
             var modelviewMatrixReaderFake =
-                    new ModelviewMatrixReaderFake(buildTranslationMatrix(PAN_X, PAN_Y));
+                new ModelviewMatrixReaderFake(buildTranslationMatrix(PAN_X, PAN_Y));
 
             CampaignMapTransform.captureFromMapPass(MAP_ZOOM, modelviewMatrixReaderFake);
 
@@ -210,7 +210,7 @@ class CampaignMapTransformTest {
             // the pname would fill, so the size is asserted directly: a viewport-sized buffer
             // throws in-engine while sailing through a mocked GL11 unnoticed.
             assertThat(viewportBufferElementsOfferedToGl)
-                    .isGreaterThanOrEqualTo(GL_GET_INTEGER_MIN_BUFFER_INTS);
+                .isGreaterThanOrEqualTo(GL_GET_INTEGER_MIN_BUFFER_INTS);
         }
 
         @Test
@@ -218,7 +218,7 @@ class CampaignMapTransformTest {
             var modelviewMatrixReaderFake = new ModelviewMatrixReaderFake(null);
 
             assertThat(CampaignMapTransform.captureFromMapPass(MAP_ZOOM, modelviewMatrixReaderFake))
-                    .isNull();
+                .isNull();
         }
 
         @Test
@@ -228,7 +228,7 @@ class CampaignMapTransformTest {
             var modelviewMatrixReaderFake = new ModelviewMatrixReaderFake(IDENTITY_MATRIX);
 
             assertThat(CampaignMapTransform.captureFromMapPass(MAP_ZOOM, modelviewMatrixReaderFake))
-                    .isNull();
+                .isNull();
         }
     }
 
@@ -237,19 +237,19 @@ class CampaignMapTransformTest {
         @Test
         void rejectsAWrongSizedModelviewMatrix() {
             assertThatIllegalArgumentException().isThrownBy(() -> new CampaignMapTransform(
-                    new float[] {1f}, IDENTITY_MATRIX, VIEWPORT, NO_SCALE));
+                new float[] {1f}, IDENTITY_MATRIX, VIEWPORT, NO_SCALE));
         }
 
         @Test
         void rejectsAWrongSizedProjectionMatrix() {
             assertThatIllegalArgumentException().isThrownBy(() -> new CampaignMapTransform(
-                    IDENTITY_MATRIX, new float[] {1f}, VIEWPORT, NO_SCALE));
+                IDENTITY_MATRIX, new float[] {1f}, VIEWPORT, NO_SCALE));
         }
 
         @Test
         void rejectsAWrongSizedViewport() {
             assertThatIllegalArgumentException().isThrownBy(() -> new CampaignMapTransform(
-                    IDENTITY_MATRIX, IDENTITY_MATRIX, new int[] {0, 0}, NO_SCALE));
+                IDENTITY_MATRIX, IDENTITY_MATRIX, new int[] {0, 0}, NO_SCALE));
         }
     }
 
@@ -258,7 +258,7 @@ class CampaignMapTransformTest {
         @Test
         void mapsTheViewportCentreToTheOriginUnderAnIdentityTransform() {
             var transform = new CampaignMapTransform(
-                    IDENTITY_MATRIX, IDENTITY_MATRIX, VIEWPORT, NO_SCALE);
+                IDENTITY_MATRIX, IDENTITY_MATRIX, VIEWPORT, NO_SCALE);
 
             var world = transform.unprojectToWorld(50f, 50f);
 
@@ -269,7 +269,7 @@ class CampaignMapTransformTest {
         @Test
         void mapsTheViewportCornerToTheFarEdgeOfNormalisedSpace() {
             var transform = new CampaignMapTransform(
-                    IDENTITY_MATRIX, IDENTITY_MATRIX, VIEWPORT, NO_SCALE);
+                IDENTITY_MATRIX, IDENTITY_MATRIX, VIEWPORT, NO_SCALE);
 
             var world = transform.unprojectToWorld(100f, 100f);
 
@@ -282,7 +282,7 @@ class CampaignMapTransformTest {
             // The map widget's centring shows up here: with the view shifted by (10, 20), the
             // world point under the centre pixel is the one that lands back on the origin.
             var transform = new CampaignMapTransform(
-                    buildTranslationMatrix(10f, 20f), IDENTITY_MATRIX, VIEWPORT, NO_SCALE);
+                buildTranslationMatrix(10f, 20f), IDENTITY_MATRIX, VIEWPORT, NO_SCALE);
 
             var world = transform.unprojectToWorld(50f, 50f);
 
@@ -295,7 +295,7 @@ class CampaignMapTransformTest {
             // A projection that halves coordinates means the far edge of normalised space is
             // twice as far out in the space being unprojected into.
             var transform = new CampaignMapTransform(
-                    IDENTITY_MATRIX, buildScaleMatrix(0.5f), VIEWPORT, NO_SCALE);
+                IDENTITY_MATRIX, buildScaleMatrix(0.5f), VIEWPORT, NO_SCALE);
 
             var world = transform.unprojectToWorld(100f, 100f);
 
@@ -308,7 +308,7 @@ class CampaignMapTransformTest {
             // The same pixel as the corner case above, but the render pass scaled every vertex
             // by 2 on the way in, so the world coordinate behind it is half as far out.
             var transform = new CampaignMapTransform(
-                    IDENTITY_MATRIX, IDENTITY_MATRIX, VIEWPORT, 2f);
+                IDENTITY_MATRIX, IDENTITY_MATRIX, VIEWPORT, 2f);
 
             var world = transform.unprojectToWorld(100f, 100f);
 
@@ -319,7 +319,7 @@ class CampaignMapTransformTest {
         @Test
         void returnsNoPointWhenTheFactorIsZero() {
             var transform = new CampaignMapTransform(
-                    IDENTITY_MATRIX, IDENTITY_MATRIX, VIEWPORT, 0f);
+                IDENTITY_MATRIX, IDENTITY_MATRIX, VIEWPORT, 0f);
 
             assertThat(transform.unprojectToWorld(50f, 50f)).isNull();
         }
@@ -329,7 +329,7 @@ class CampaignMapTransformTest {
             // An all-zero projection collapses every world point onto one, so no pixel has a
             // world point behind it.
             var transform = new CampaignMapTransform(
-                    IDENTITY_MATRIX, new float[IDENTITY_MATRIX.length], VIEWPORT, NO_SCALE);
+                IDENTITY_MATRIX, new float[IDENTITY_MATRIX.length], VIEWPORT, NO_SCALE);
 
             assertThat(transform.unprojectToWorld(50f, 50f)).isNull();
         }

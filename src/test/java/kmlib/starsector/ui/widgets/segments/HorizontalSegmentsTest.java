@@ -37,7 +37,7 @@ class HorizontalSegmentsTest {
             // "AB" measures 20, "LONGER" 60; the widest (60) plus 8 padding is 68, and every segment
             // shares that one width so the cells read even.
             assertThat(HorizontalSegments.computeSegmentWidths(List.of("AB", "LONGER"), UNIFORM,
-                    measurerFake)).containsExactly(68f, 68f);
+                measurerFake)).containsExactly(68f, 68f);
         }
 
         @Test
@@ -45,7 +45,7 @@ class HorizontalSegmentsTest {
             // "AB" measures 20 (+8 = 28) then floors to the 40 minimum, "LONGER" 60 (+8 = 68); each
             // segment takes its own width rather than the widest.
             assertThat(HorizontalSegments.computeSegmentWidths(List.of("AB", "LONGER"), SNAPPED,
-                    measurerFake)).containsExactly(40f, 68f);
+                measurerFake)).containsExactly(40f, 68f);
         }
 
         @Test
@@ -53,13 +53,13 @@ class HorizontalSegmentsTest {
             // "AB" measures 20 (+8 = 28) with no floor, "LONGER" 60 (+8 = 68) - the raw snapped widths.
             var noFloorSnapped = new SegmentSpec(8f, 0f, 13d, SegmentSizing.SNAPPED);
             assertThat(HorizontalSegments.computeSegmentWidths(List.of("AB", "LONGER"), noFloorSnapped,
-                    measurerFake)).containsExactly(28f, 68f);
+                measurerFake)).containsExactly(28f, 68f);
         }
 
         @Test
         void yieldsNoWidthsForNoLabels() {
             assertThat(HorizontalSegments.computeSegmentWidths(List.of(), UNIFORM, measurerFake))
-                    .isEmpty();
+                .isEmpty();
         }
     }
 
@@ -70,14 +70,14 @@ class HorizontalSegmentsTest {
         void sumsTheUniformSegmentWidths() {
             // Two 68-wide uniform segments span 136.
             assertThat(HorizontalSegments.measureRowWidth(List.of("AB", "LONGER"), UNIFORM,
-                    measurerFake)).isEqualTo(136f);
+                measurerFake)).isEqualTo(136f);
         }
 
         @Test
         void sumsTheSnappedSegmentWidths() {
             // A 40-floored "AB" plus a 68-wide "LONGER" span 108.
             assertThat(HorizontalSegments.measureRowWidth(List.of("AB", "LONGER"), SNAPPED,
-                    measurerFake)).isEqualTo(108f);
+                measurerFake)).isEqualTo(108f);
         }
 
         @Test
@@ -92,8 +92,8 @@ class HorizontalSegmentsTest {
         @Test
         void laysTheWidthsSideBySideFromTheOrigin() {
             assertThat(HorizontalSegments.placeSegments(100f, 0f, 24f, List.of(40f, 68f)))
-                    .containsExactly(new Rectangle(100f, 0f, 40f, 24f),
-                            new Rectangle(140f, 0f, 68f, 24f));
+                .containsExactly(new Rectangle(100f, 0f, 40f, 24f),
+                    new Rectangle(140f, 0f, 68f, 24f));
         }
 
         @Test
@@ -110,7 +110,7 @@ class HorizontalSegmentsTest {
             // Even 50-wide cells: the one seam sits at 50, the second segment's left edge.
             var segments = List.of(new Rectangle(0f, 0f, 50f, 20f), new Rectangle(50f, 0f, 50f, 20f));
             assertThat(HorizontalSegments.computeDividers(segments, 1f))
-                    .containsExactly(new Rectangle(50f, 0f, 1f, 20f));
+                .containsExactly(new Rectangle(50f, 0f, 1f, 20f));
         }
 
         @Test
@@ -118,16 +118,16 @@ class HorizontalSegmentsTest {
             // Snapped, unequal segments: the seams follow the real left edges (40, then 108), not the
             // even thirds a bounds-and-count re-derivation would place them at.
             var segments = List.of(new Rectangle(0f, 0f, 40f, 20f), new Rectangle(40f, 0f, 68f, 20f),
-                    new Rectangle(108f, 0f, 28f, 20f));
+                new Rectangle(108f, 0f, 28f, 20f));
             assertThat(HorizontalSegments.computeDividers(segments, 1f))
-                    .containsExactly(new Rectangle(40f, 0f, 1f, 20f),
-                            new Rectangle(108f, 0f, 1f, 20f));
+                .containsExactly(new Rectangle(40f, 0f, 1f, 20f),
+                    new Rectangle(108f, 0f, 1f, 20f));
         }
 
         @Test
         void yieldsNoDividersForFewerThanTwoSegments() {
             assertThat(HorizontalSegments.computeDividers(
-                    List.of(new Rectangle(0f, 0f, 50f, 20f)), 1f)).isEmpty();
+                List.of(new Rectangle(0f, 0f, 50f, 20f)), 1f)).isEmpty();
             assertThat(HorizontalSegments.computeDividers(List.of(), 1f)).isEmpty();
         }
     }
@@ -149,7 +149,7 @@ class HorizontalSegmentsTest {
                     laidOutTotal += segment.width();
                 }
                 assertThat(HorizontalSegments.measureRowWidth(labels, spec, measurerFake))
-                        .isEqualTo(laidOutTotal);
+                    .isEqualTo(laidOutTotal);
             }
         }
     }

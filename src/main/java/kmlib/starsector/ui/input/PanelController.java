@@ -84,7 +84,10 @@ public final class PanelController {
             scrollListUnderPointer(event, placement);
         } else if (event.isLMBDownEvent()) {
             if (!beginThumbDragIfPressed(event, placement)) {
-                actOnLeftPress(placement, event.getX(), event.getY());
+                actOnLeftPress(
+                    placement,
+                    event.getX(),
+                    event.getY());
             }
         }
         event.consume();
@@ -105,9 +108,13 @@ public final class PanelController {
      * @param pointY       the press y, in UI coordinates
      * @return whether the press landed on an actionable cell and fired its action
      */
-    static boolean activateControlIfHit(Control control, Rectangle flexViewport, float pointX,
+    static boolean activateControlIfHit(
+            Control control,
+            Rectangle flexViewport,
+            float pointX,
             float pointY) {
-        if (control.spec() instanceof ControlSpec.VerticalTable table && table.scrolls()
+        if (control.spec() instanceof ControlSpec.VerticalTable table
+                && table.scrolls()
                 && !flexViewport.containsPoint(pointX, pointY)) {
             return false;
         }
@@ -148,9 +155,15 @@ public final class PanelController {
         if (isSegmented(interactive)) {
             var reselect = reselectBehaviourOf(interactive);
             var segmentIndex = reselect.firesOnReselect()
-                    ? RadioRow.findSegmentIndexAt(control.segments(), pointX, pointY)
-                    : RadioRow.findHitElement(control.segments(), interactive.selectedIndex(),
-                            pointX, pointY);
+                ? RadioRow.findSegmentIndexAt(
+                    control.segments(),
+                    pointX,
+                    pointY)
+                : RadioRow.findHitElement(
+                    control.segments(),
+                    interactive.selectedIndex(),
+                    pointX,
+                    pointY);
             if (segmentIndex == RadioRow.NO_SEGMENT) {
                 return false;
             }
@@ -179,8 +192,8 @@ public final class PanelController {
         isDraggingThumb = true;
         var thumb = PanelScrollbars.computeThumb(placement);
         thumbGrabOffsetY = thumb.containsPoint(event.getX(), event.getY())
-                ? event.getY() - thumb.computeCenterY()
-                : 0f;
+            ? event.getY() - thumb.computeCenterY()
+            : 0f;
         updateDragOffset(placement, event.getY());
         return true;
     }
@@ -205,7 +218,7 @@ public final class PanelController {
     // pointer.
     private void updateDragOffset(PanelPlacement placement, float pointerY) {
         scrollState.setOffset(
-                PanelScrollbars.resolveOffsetForPointer(placement, pointerY - thumbGrabOffsetY));
+            PanelScrollbars.resolveOffsetForPointer(placement, pointerY - thumbGrabOffsetY));
     }
 
     // Scrolls the flex list when the wheel turns over its scroll region and it has somewhere to scroll.
@@ -250,7 +263,7 @@ public final class PanelController {
     // on its bounds instead.
     private static boolean isSegmented(ControlSpec.Interactive control) {
         return control instanceof ControlSpec.HorizontalRadio
-                || control instanceof ControlSpec.VerticalTable
-                || control instanceof ControlSpec.Tabs;
+            || control instanceof ControlSpec.VerticalTable
+            || control instanceof ControlSpec.Tabs;
     }
 }

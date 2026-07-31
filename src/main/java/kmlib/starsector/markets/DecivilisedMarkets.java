@@ -87,6 +87,6 @@ public final class DecivilisedMarkets {
         // and the colony UI show.
         var condition = market.getFirstCondition(Conditions.DECIVILIZED);
         return condition != null
-                && (!condition.requiresSurveying() || condition.isSurveyed());
+            && (!condition.requiresSurveying() || condition.isSurveyed());
     }
 }

@@ -54,7 +54,7 @@ final class FactionFlagsTest {
     private static FactionAPI buildFaction(boolean isTerritorial) {
         var factionMock = mock(FactionAPI.class);
         when(factionMock.getCustom())
-                .thenReturn(FactionCustomFixture.buildPunitiveExpeditionCustom(isTerritorial));
+            .thenReturn(FactionCustomFixture.buildPunitiveExpeditionCustom(isTerritorial));
         return factionMock;
     }
 }

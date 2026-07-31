@@ -111,8 +111,10 @@ public final class EdgeRings {
             double weldTolerance) {
         if (segmentValues.length != segments.size()) {
             throw new IllegalArgumentException(
-                    "segmentValues must be parallel to the segments: "
-                            + segmentValues.length + " vs " + segments.size());
+                "segmentValues must be parallel to the segments: "
+                    + segmentValues.length
+                    + " vs "
+                    + segments.size());
         }
         var rings = new ArrayList<RingWithEdgeValues>();
         for (var indexRing : chainIntoSegmentIndexRings(segments, weldTolerance)) {
@@ -187,8 +189,7 @@ public final class EdgeRings {
             int seed,
             int[] startId,
             int[] endId,
-            Map<Integer,
-            ArrayDeque<Integer>> outgoingByCorner,
+            Map<Integer, ArrayDeque<Integer>> outgoingByCorner,
             boolean[] consumed) {
         var ringStartCorner = startId[seed];
         var ring = new ArrayList<Integer>();
@@ -273,8 +274,9 @@ public final class EdgeRings {
             }
             var newId = canonicalPoints.size();
             canonicalPoints.add(new double[] {x, y});
-            pointsByCell.computeIfAbsent(packCell(cellX, cellY), cell -> new ArrayList<>())
-                    .add(newId);
+            pointsByCell
+                .computeIfAbsent(packCell(cellX, cellY), cell -> new ArrayList<>())
+                .add(newId);
             return newId;
         }
 

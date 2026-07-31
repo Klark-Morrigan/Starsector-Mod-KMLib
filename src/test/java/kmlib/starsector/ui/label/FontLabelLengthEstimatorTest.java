@@ -36,7 +36,7 @@ final class FontLabelLengthEstimatorTest {
             // Splitting after "Persean" leaves a 15-char second line; after "League" a
             // 14-char first line - the balanced pick - so the widest line is 14 chars.
             var estimator = new FontLabelLengthEstimator(characterWideMeasurer(),
-                    "Persean League Alliance");
+                "Persean League Alliance");
 
             assertThat(estimator.requiredLengthFor(100.0, 2)).isCloseTo(1400.0, within(1e-3));
         }
@@ -57,7 +57,7 @@ final class FontLabelLengthEstimatorTest {
         @Test
         void wrapIntoLinesReturnsTheWholeTextForOneLine() {
             var estimator = new FontLabelLengthEstimator(characterWideMeasurer(),
-                    "Persean League Alliance");
+                "Persean League Alliance");
 
             assertThat(estimator.wrapIntoLines(1)).containsExactly("Persean League Alliance");
         }
@@ -68,19 +68,19 @@ final class FontLabelLengthEstimatorTest {
             // (widest line 14 chars) beats breaking after "Persean" (15 chars), so the
             // drawn block matches the measured fit.
             var estimator = new FontLabelLengthEstimator(characterWideMeasurer(),
-                    "Persean League Alliance");
+                "Persean League Alliance");
 
             assertThat(estimator.wrapIntoLines(2))
-                    .containsExactly("Persean League", "Alliance");
+                .containsExactly("Persean League", "Alliance");
         }
 
         @Test
         void wrapIntoLinesReturnsExactlyTheRequestedLineCount() {
             var estimator = new FontLabelLengthEstimator(characterWideMeasurer(),
-                    "Persean League Alliance");
+                "Persean League Alliance");
 
             assertThat(estimator.wrapIntoLines(3))
-                    .containsExactly("Persean", "League", "Alliance");
+                .containsExactly("Persean", "League", "Alliance");
         }
 
         @Test

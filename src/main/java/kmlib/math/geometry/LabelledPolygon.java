@@ -36,14 +36,17 @@ public final class LabelledPolygon {
      * @param seedLabel the label every edge starts with, until a clip cuts it
      * @return the seed polygon
      */
-    public static LabelledPolygon createRegularPolygon(double[] center, double radius,
-            int segments, int seedLabel) {
+    public static LabelledPolygon createRegularPolygon(
+            double[] center,
+            double radius,
+            int segments,
+            int seedLabel) {
         var vertices = new ArrayList<LabelledVertex>(segments);
         for (var i = 0; i < segments; i++) {
             var angle = 2.0 * Math.PI * i / segments;
             vertices.add(new LabelledVertex(new double[] {
-                    center[0] + radius * Math.cos(angle),
-                    center[1] + radius * Math.sin(angle),
+                center[0] + radius * Math.cos(angle),
+                center[1] + radius * Math.sin(angle),
             }, seedLabel));
         }
         return new LabelledPolygon(vertices);
@@ -70,8 +73,10 @@ public final class LabelledPolygon {
     public static LabelledPolygon fromLabelledEdges(List<double[]> vertices, int[] edgeLabels) {
         if (vertices.size() != edgeLabels.length) {
             throw new IllegalArgumentException(
-                    "vertices and edgeLabels must be parallel: " + vertices.size()
-                            + " vs " + edgeLabels.length);
+                "vertices and edgeLabels must be parallel: "
+                    + vertices.size()
+                    + " vs "
+                    + edgeLabels.length);
         }
         var labelled = new ArrayList<LabelledVertex>(vertices.size());
         for (var i = 0; i < vertices.size(); i++) {
@@ -117,9 +122,17 @@ public final class LabelledPolygon {
                 result.add(current);
             }
             if ((currentOffset >= 0) != (nextOffset >= 0)) {
+
                 var crossing = Segment.computeCrossingPoint(
-                        current.point(), next.point(), currentOffset, nextOffset);
-                var crossingLabel = currentOffset >= 0 ? clipLabel : current.outgoingEdgeLabel();
+                    current.point(),
+                    next.point(),
+                    currentOffset,
+                    nextOffset);
+
+                var crossingLabel = currentOffset >= 0
+                    ? clipLabel
+                    : current.outgoingEdgeLabel();
+
                 result.add(new LabelledVertex(crossing, crossingLabel));
             }
         }

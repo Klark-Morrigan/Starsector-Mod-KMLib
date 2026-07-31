@@ -23,12 +23,14 @@ public record Segment(double startX, double startY, double endX, double endY) {
     // asking, so the denominator is never zero. Takes the endpoints loose rather
     // than a Segment instance so the clip walk, which already holds them as
     // {x, y} arrays, need not allocate a Segment per edge.
-    static double[] computeCrossingPoint(double[] start, double[] end,
-            double signedStart, double signedEnd) {
+    static double[] computeCrossingPoint(
+            double[] start, double[] end,
+            double signedStart,
+            double signedEnd) {
         var fraction = signedStart / (signedStart - signedEnd);
         return new double[] {
-                start[0] + fraction * (end[0] - start[0]),
-                start[1] + fraction * (end[1] - start[1]),
+            start[0] + fraction * (end[0] - start[0]),
+            start[1] + fraction * (end[1] - start[1]),
         };
     }
 }

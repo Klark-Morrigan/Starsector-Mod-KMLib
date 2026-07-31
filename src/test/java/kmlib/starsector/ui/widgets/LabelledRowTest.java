@@ -39,9 +39,9 @@ class LabelledRowTest {
             String... changedComponents) {
 
         assertThat(refined)
-                .usingRecursiveComparison()
-                .ignoringFields(changedComponents)
-                .isEqualTo(original);
+            .usingRecursiveComparison()
+            .ignoringFields(changedComponents)
+            .isEqualTo(original);
     }
 
     private static LabelledRow buildBareRow() {
@@ -53,9 +53,9 @@ class LabelledRowTest {
     // parts that are absent there anyway.
     private static LabelledRow buildRichRow() {
         return buildBareRow()
-                .leadsWith(CREST_SLOT)
-                .continuesWith(new TextSpan(RUN_TEXT, Color.YELLOW))
-                .trailsWith(VALUE_SLOT);
+            .leadsWith(CREST_SLOT)
+            .continuesWith(new TextSpan(RUN_TEXT, Color.YELLOW))
+            .trailsWith(VALUE_SLOT);
     }
 
     @Nested
@@ -63,8 +63,8 @@ class LabelledRowTest {
         @Test
         void constructorRejectsANullLabelRunList() {
             assertThatThrownBy(() -> new LabelledRow(RowSlot.EMPTY, null, RowSlot.EMPTY))
-                    .isInstanceOf(NullPointerException.class)
-                    .hasMessageContaining("labelTextSpans");
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("labelTextSpans");
         }
 
         @Test
@@ -72,8 +72,8 @@ class LabelledRowTest {
             // A row is a label with things around it, so a label of no runs is not a row at all - the
             // floor that stops the model dissolving into a bag of optional parts with no centre.
             assertThatThrownBy(() -> new LabelledRow(RowSlot.EMPTY, List.of(), RowSlot.EMPTY))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("labelTextSpans");
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("labelTextSpans");
         }
 
         @Test
@@ -82,10 +82,10 @@ class LabelledRowTest {
             // the blank and reached for the absence instead - caught while it is still on the stack
             // rather than inside the measurement that asks each run whether it has text.
             assertThatThrownBy(() -> new LabelledRow(
-                    RowSlot.EMPTY,
-                    Arrays.asList(BLANK_SPAN, null),
-                    RowSlot.EMPTY))
-                    .isInstanceOf(NullPointerException.class);
+                RowSlot.EMPTY,
+                Arrays.asList(BLANK_SPAN, null),
+                RowSlot.EMPTY))
+                .isInstanceOf(NullPointerException.class);
         }
 
         @Test
@@ -93,15 +93,15 @@ class LabelledRowTest {
             // A row that leads with nothing holds RowSlot.EMPTY, so a null would be a second spelling of
             // an absence the slot set already spells once.
             assertThatThrownBy(() -> new LabelledRow(null, List.of(BLANK_SPAN), RowSlot.EMPTY))
-                    .isInstanceOf(NullPointerException.class)
-                    .hasMessageContaining("leadingRowSlot");
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("leadingRowSlot");
         }
 
         @Test
         void constructorRejectsANullTrailingSlot() {
             assertThatThrownBy(() -> new LabelledRow(RowSlot.EMPTY, List.of(BLANK_SPAN), null))
-                    .isInstanceOf(NullPointerException.class)
-                    .hasMessageContaining("trailingRowSlot");
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("trailingRowSlot");
         }
 
         @Test
@@ -151,9 +151,9 @@ class LabelledRowTest {
         @Test
         void leadsWithChangesNothingElse() {
             assertRefinementChangesOnly(
-                    buildRichRow().leadsWith(new RowSlot.Tick(true)),
-                    buildRichRow(),
-                    "leadingRowSlot");
+                buildRichRow().leadsWith(new RowSlot.Tick(true)),
+                buildRichRow(),
+                "leadingRowSlot");
         }
     }
 
@@ -183,20 +183,20 @@ class LabelledRowTest {
             // The point of runs over a fixed second slot: a third colour on one line costs the model
             // nothing, and the runs stay in the order they were written.
             var labelledRow = buildBareRow()
-                    .continuesWith(new TextSpan(RUN_TEXT, Color.YELLOW))
-                    .continuesWith(new TextSpan(OTHER_RUN_TEXT, Color.CYAN));
+                .continuesWith(new TextSpan(RUN_TEXT, Color.YELLOW))
+                .continuesWith(new TextSpan(OTHER_RUN_TEXT, Color.CYAN));
 
             assertThat(labelledRow.labelTextSpans())
-                    .extracting(TextSpan::text)
-                    .containsExactly(TEXT, RUN_TEXT, OTHER_RUN_TEXT);
+                .extracting(TextSpan::text)
+                .containsExactly(TEXT, RUN_TEXT, OTHER_RUN_TEXT);
         }
 
         @Test
         void continuesWithChangesNothingElse() {
             assertRefinementChangesOnly(
-                    buildRichRow().continuesWith(new TextSpan(OTHER_RUN_TEXT, Color.CYAN)),
-                    buildRichRow(),
-                    "labelTextSpans");
+                buildRichRow().continuesWith(new TextSpan(OTHER_RUN_TEXT, Color.CYAN)),
+                buildRichRow(),
+                "labelTextSpans");
         }
     }
 
@@ -210,9 +210,9 @@ class LabelledRowTest {
         @Test
         void trailsWithChangesNothingElse() {
             assertRefinementChangesOnly(
-                    buildRichRow().trailsWith(RowSlot.EMPTY),
-                    buildRichRow(),
-                    "trailingRowSlot");
+                buildRichRow().trailsWith(RowSlot.EMPTY),
+                buildRichRow(),
+                "trailingRowSlot");
         }
     }
 }

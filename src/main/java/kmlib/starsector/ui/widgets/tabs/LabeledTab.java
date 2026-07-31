@@ -11,5 +11,7 @@ import kmlib.math.geometry.Rectangle;
  * @param text   the tab's label, exactly as measured when the box was sized
  * @param bounds the tab's footprint in UI coordinates
  */
-public record LabeledTab(String text, Rectangle bounds) {
+public record LabeledTab(
+    String text,
+    Rectangle bounds) {
 }

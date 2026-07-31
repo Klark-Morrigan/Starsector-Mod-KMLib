@@ -15,8 +15,12 @@ public final class SectionTiming {
     private final long minNanos;
     private final long maxNanos;
 
-    public SectionTiming(String section, long count, long totalNanos,
-            long minNanos, long maxNanos) {
+    public SectionTiming(
+            String section,
+            long count,
+            long totalNanos,
+            long minNanos,
+            long maxNanos) {
         this.section = section;
         this.count = count;
         this.totalNanos = totalNanos;

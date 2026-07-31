@@ -71,7 +71,7 @@ final class ListSystemEntitiesCommandTest {
             var drifting = entity("probe", "Probe", 500f, 0f, null, 0f, false);
             var fleet = fleet("Patrol", 2000f, 0f);
             var system = system(star,
-                    List.of(star, planet, gate, otherPlanet, drifting), List.of(fleet));
+                List.of(star, planet, gate, otherPlanet, drifting), List.of(fleet));
 
             var report = ListSystemEntitiesCommand.buildReport(system, true);
 
@@ -103,7 +103,7 @@ final class ListSystemEntitiesCommandTest {
             globalMock.when(Global::getSector).thenReturn(mock(SectorAPI.class));
             starSystemsMock = mockStatic(StarSystems.class);
             starSystemsMock.when(() -> StarSystems.getPlayerStarSystem(any()))
-                    .thenReturn(systemMock);
+                .thenReturn(systemMock);
 
             outputFake = new CommandOutputFake();
             command = new ListSystemEntitiesCommand(outputFake);
@@ -121,8 +121,8 @@ final class ListSystemEntitiesCommandTest {
 
             assertThat(result).isEqualTo(CommandResult.SUCCESS);
             assertThat(outputFake.getMessages())
-                    .anyMatch(message -> message.contains("System entities in Test System")
-                            && !message.contains("(gates only)"));
+                .anyMatch(message -> message.contains("System entities in Test System")
+                        && !message.contains("(gates only)"));
         }
 
         @Test
@@ -132,7 +132,7 @@ final class ListSystemEntitiesCommandTest {
             assertThat(result).isEqualTo(CommandResult.SUCCESS);
             // The flag flips the report into its gates-only form.
             assertThat(outputFake.getMessages())
-                    .anyMatch(message -> message.contains("(gates only)"));
+                .anyMatch(message -> message.contains("(gates only)"));
         }
 
         @Test
@@ -141,7 +141,7 @@ final class ListSystemEntitiesCommandTest {
 
             assertThat(result).isEqualTo(CommandResult.BAD_SYNTAX);
             assertThat(outputFake.getMessages())
-                    .anyMatch(message -> message.contains("Too many arguments"));
+                .anyMatch(message -> message.contains("Too many arguments"));
         }
 
         @Test
@@ -150,7 +150,7 @@ final class ListSystemEntitiesCommandTest {
 
             assertThat(result).isEqualTo(CommandResult.WRONG_CONTEXT);
             assertThat(outputFake.getMessages())
-                    .anyMatch(message -> message.contains("can only run in a campaign"));
+                .anyMatch(message -> message.contains("can only run in a campaign"));
         }
     }
 

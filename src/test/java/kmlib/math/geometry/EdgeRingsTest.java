@@ -37,10 +37,10 @@ final class EdgeRingsTest {
             // CCW unit square handed over out of order; the walk stitches it back
             // into one ring of its four corners.
             var segments = Arrays.asList(
-                    segment(10, 10, 0, 10),
-                    segment(0, 0, 10, 0),
-                    segment(10, 0, 10, 10),
-                    segment(0, 10, 0, 0));
+                segment(10, 10, 0, 10),
+                segment(0, 0, 10, 0),
+                segment(10, 0, 10, 10),
+                segment(0, 10, 0, 0));
 
             var rings = EdgeRings.chainIntoRings(segments, WELD_TOLERANCE);
 
@@ -61,9 +61,9 @@ final class EdgeRingsTest {
             // so the ring closes rather than splitting at the seam.
             var drift = WELD_TOLERANCE / 10;
             var segments = Arrays.asList(
-                    segment(0, 0, 10, 0),
-                    segment(10 + drift, drift, 10, 10),
-                    segment(10, 10, 0, 0));
+                segment(0, 0, 10, 0),
+                segment(10 + drift, drift, 10, 10),
+                segment(10, 10, 0, 0));
 
             var rings = EdgeRings.chainIntoRings(segments, WELD_TOLERANCE);
 
@@ -80,10 +80,10 @@ final class EdgeRingsTest {
             // existing corner.
             var speck = WELD_TOLERANCE / 10;
             var segments = Arrays.asList(
-                    segment(0, 0, 10, 0),
-                    segment(10, 0, 10 + speck, speck),
-                    segment(10 + speck, speck, 10, 10),
-                    segment(10, 10, 0, 0));
+                segment(0, 0, 10, 0),
+                segment(10, 0, 10 + speck, speck),
+                segment(10 + speck, speck, 10, 10),
+                segment(10, 10, 0, 0));
 
             var rings = EdgeRings.chainIntoRings(segments, WELD_TOLERANCE);
 
@@ -94,14 +94,14 @@ final class EdgeRingsTest {
         @Test
         void disjoint_squares_come_back_as_two_rings() {
             var segments = Arrays.asList(
-                    segment(0, 0, 10, 0),
-                    segment(10, 0, 10, 10),
-                    segment(10, 10, 0, 10),
-                    segment(0, 10, 0, 0),
-                    segment(100, 100, 110, 100),
-                    segment(110, 100, 110, 110),
-                    segment(110, 110, 100, 110),
-                    segment(100, 110, 100, 100));
+                segment(0, 0, 10, 0),
+                segment(10, 0, 10, 10),
+                segment(10, 10, 0, 10),
+                segment(0, 10, 0, 0),
+                segment(100, 100, 110, 100),
+                segment(110, 100, 110, 110),
+                segment(110, 110, 100, 110),
+                segment(100, 110, 100, 100));
 
             var rings = EdgeRings.chainIntoRings(segments, WELD_TOLERANCE);
 
@@ -114,9 +114,9 @@ final class EdgeRingsTest {
             // Three segments that march away without returning to the start: no
             // ring closes, so nothing is emitted (never a stray open loop).
             var segments = Arrays.asList(
-                    segment(0, 0, 10, 0),
-                    segment(10, 0, 20, 0),
-                    segment(20, 0, 30, 0));
+                segment(0, 0, 10, 0),
+                segment(10, 0, 20, 0),
+                segment(20, 0, 30, 0));
 
             assertThat(EdgeRings.chainIntoRings(segments, WELD_TOLERANCE)).isEmpty();
         }
@@ -136,10 +136,10 @@ final class EdgeRingsTest {
             // edge's carried value still equals its corner's x - so every value rode
             // along with the segment it was attached to rather than staying by index.
             var segments = Arrays.asList(
-                    segment(10, 10, 0, 10),
-                    segment(0, 0, 10, 0),
-                    segment(10, 0, 10, 10),
-                    segment(0, 10, 0, 0));
+                segment(10, 10, 0, 10),
+                segment(0, 0, 10, 0),
+                segment(10, 0, 10, 10),
+                segment(0, 10, 0, 0));
             var values = new double[] {10.0, 0.0, 10.0, 0.0};
 
             var rings = EdgeRings.chainIntoRingsWithEdgeValues(segments, values, WELD_TOLERANCE);
@@ -156,24 +156,24 @@ final class EdgeRingsTest {
         @Test
         void a_value_array_not_parallel_to_the_segments_is_rejected() {
             var segments = Arrays.asList(
-                    segment(0, 0, 10, 0),
-                    segment(10, 0, 10, 10),
-                    segment(10, 10, 0, 0));
+                segment(0, 0, 10, 0),
+                segment(10, 0, 10, 10),
+                segment(10, 10, 0, 0));
 
             assertThatThrownBy(() -> EdgeRings.chainIntoRingsWithEdgeValues(
-                    segments, new double[] {1.0, 2.0}, WELD_TOLERANCE))
-                    .isInstanceOf(IllegalArgumentException.class);
+                segments, new double[] {1.0, 2.0}, WELD_TOLERANCE))
+                .isInstanceOf(IllegalArgumentException.class);
         }
 
         @Test
         void an_unclosed_strand_drops_with_its_values() {
             var segments = Arrays.asList(
-                    segment(0, 0, 10, 0),
-                    segment(10, 0, 20, 0),
-                    segment(20, 0, 30, 0));
+                segment(0, 0, 10, 0),
+                segment(10, 0, 20, 0),
+                segment(20, 0, 30, 0));
 
             assertThat(EdgeRings.chainIntoRingsWithEdgeValues(
-                    segments, new double[] {1.0, 2.0, 3.0}, WELD_TOLERANCE)).isEmpty();
+                segments, new double[] {1.0, 2.0, 3.0}, WELD_TOLERANCE)).isEmpty();
         }
     }
 }

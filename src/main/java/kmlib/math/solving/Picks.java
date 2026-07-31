@@ -34,6 +34,7 @@ public final class Picks {
             return current;
         }
         return current == null || key.applyAsDouble(candidate) > key.applyAsDouble(current)
-                ? candidate : current;
+            ? candidate
+            : current;
     }
 }

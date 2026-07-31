@@ -22,7 +22,8 @@ final class ProfilerTest {
             var clock = new ScriptedClock(100, 250);
             var profiler = new Profiler(clock);
 
-            profiler.measure("build", () -> { });
+            profiler.measure("build", () -> {
+            });
 
             var timing = profiler.snapshot().get(0);
             assertThat(timing.getSection()).isEqualTo("build");
@@ -36,8 +37,10 @@ final class ProfilerTest {
             var clock = new ScriptedClock(100, 150, 150, 350);
             var profiler = new Profiler(clock);
 
-            profiler.measure("render", () -> { });
-            profiler.measure("render", () -> { });
+            profiler.measure("render", () -> {
+            });
+            profiler.measure("render", () -> {
+            });
 
             var timing = profiler.snapshot().get(0);
             assertThat(timing.getCount()).isEqualTo(2);
@@ -65,11 +68,13 @@ final class ProfilerTest {
         void snapshotFollowsFirstRecordOrder() {
             var profiler = new Profiler(new ScriptedClock(0, 0, 0, 0));
 
-            profiler.measure("second", () -> { });
-            profiler.measure("first", () -> { });
+            profiler.measure("second", () -> {
+            });
+            profiler.measure("first", () -> {
+            });
 
             assertThat(profiler.snapshot()).extracting(SectionTiming::getSection)
-                    .containsExactly("second", "first");
+                .containsExactly("second", "first");
         }
     }
 
@@ -79,7 +84,8 @@ final class ProfilerTest {
         void resetClearsAllSections() {
             var profiler = new Profiler(new ScriptedClock(0, 10));
 
-            profiler.measure("build", () -> { });
+            profiler.measure("build", () -> {
+            });
             profiler.reset();
 
             assertThat(profiler.snapshot()).isEmpty();

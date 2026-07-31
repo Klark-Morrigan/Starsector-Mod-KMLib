@@ -75,9 +75,9 @@ public final class TabPanelLayout {
      * @param bodyControls the active tab's body controls, top to bottom (empty for no body)
      * @param measurer     measures each label's rendered width for text snapping
      * @param viewState    how far the panel is scrolled and folded
-     * @return the laid-out tabs header, the body placement carrying the whole-footprint box, and the
-     *         collapse-handle notch on the box's right border edge - null when {@code bodyControls} is
-     *         empty, since a bodyless panel has nothing to collapse
+     * @return the laid-out tabs header, the body placement carrying the whole-footprint box, the border it
+     *         was framed around, and the collapse-handle notch on the box's right border edge - null when
+     *         {@code bodyControls} is empty, since a bodyless panel has nothing to collapse
      */
     public static TabPanelPlacement computePlacement(
             float screenHeight,
@@ -101,11 +101,11 @@ public final class TabPanelLayout {
         // Header: the tabs control laid flush at the content top, reusing the strip's tab measurement and
         // segment split so it is not bespoke tab-strip framing.
         var tabsHeader = ControlStripLayout.layoutTabsHeader(
-                tabsSpec,
-                origin.contentX(),
-                origin.contentTopY(),
-                tabStyle,
-                measurer);
+            tabsSpec,
+            origin.contentX(),
+            origin.contentTopY(),
+            tabStyle,
+            measurer);
 
         var bodyTopY = origin.contentTopY() - headerBandHeight;
 
@@ -115,19 +115,19 @@ public final class TabPanelLayout {
         // the border only on the edges that are stroked, so an open top or bottom returns that width to the
         // body.
         var maxBodyHeight = screenHeight
-                - padding.top()
-                - border.computeEdgeInset(BoxEdge.TOP)
-                - border.computeEdgeInset(BoxEdge.BOTTOM)
-                - headerBandHeight
-                - padding.bottom();
+            - padding.top()
+            - border.computeEdgeInset(BoxEdge.TOP)
+            - border.computeEdgeInset(BoxEdge.BOTTOM)
+            - headerBandHeight
+            - padding.bottom();
 
         var bodyStrip = CappedStripLayout.layoutBodyStrip(
-                origin.contentX(),
-                bodyTopY,
-                maxBodyHeight,
-                bodyControls,
-                measurer,
-                viewState.rawScrollOffset());
+            origin.contentX(),
+            bodyTopY,
+            maxBodyHeight,
+            bodyControls,
+            measurer,
+            viewState.rawScrollOffset());
 
         // Collapse the interior horizontally by the fraction: the controls keep their laid-out positions
         // (the renderer clips them to the shrinking box), so only the framed body's width interpolates,
@@ -135,31 +135,34 @@ public final class TabPanelLayout {
         // unit range, so an overshooting animation value cannot invert the width here.
         var fullBody = bodyStrip.bounds();
         var framedBody = new Rectangle(
-                fullBody.x(),
-                fullBody.y(),
-                fullBody.width() * (1f - viewState.collapseFraction()),
-                fullBody.height());
+            fullBody.x(),
+            fullBody.y(),
+            fullBody.width() * (1f - viewState.collapseFraction()),
+            fullBody.height());
 
         // Reuse the plain panel's framing, sizing the box to the interpolated body's width so the tab row
         // never widens it and a collapse narrows the box with the interior, and adding the header band so
         // the one border wraps it. A tab row wider than the body overhangs the frame. The body placement
         // carries that box; the tab panel pairs it with the header and the collapse-handle notch.
         var bodyPlacement = PanelLayout.framePlacement(
-                padding.left(),
-                origin.boxTopY(),
-                border,
-                framedBody,
-                headerBandHeight,
-                bodyStrip);
+            padding.left(),
+            origin.boxTopY(),
+            border,
+            framedBody,
+            headerBandHeight,
+            bodyStrip);
 
         // No body controls means nothing to collapse, so the panel is not collapsible and exposes no
         // handle: the notch is left absent. An empty-body panel is just its bordered tab row, and a
         // collapse handle protruding off it would fold a body that is not there.
         var notch = bodyControls.isEmpty()
-                ? null
-                : computeNotchRect(bodyPlacement.box());
+            ? null
+            : computeNotchRect(bodyPlacement.box());
 
-        return new TabPanelPlacement(tabsHeader, bodyPlacement, notch);
+        // The border travels on the placement so the pass that strokes it uses the width this layout
+        // just spent on insets, rather than reading the same source a second time and hoping the two
+        // agree.
+        return new TabPanelPlacement(tabsHeader, bodyPlacement, border, notch);
     }
 
     // The collapse-handle notch: a rect protruding past the box's right border edge, vertically centred on
@@ -167,12 +170,12 @@ public final class TabPanelLayout {
     // collapses leftward the handle tracks the shrinking edge and stays reachable to expand again.
     private static Rectangle computeNotchRect(Rectangle box) {
         var notchY = box.computeCenterY()
-                - NOTCH_HEIGHT / 2f
-                + NOTCH_CENTRE_OFFSET;
+            - NOTCH_HEIGHT / 2f
+            + NOTCH_CENTRE_OFFSET;
         return new Rectangle(
-                box.x() + box.width(),
-                notchY,
-                NOTCH_WIDTH,
-                NOTCH_HEIGHT);
+            box.x() + box.width(),
+            notchY,
+            NOTCH_WIDTH,
+            NOTCH_HEIGHT);
     }
 }

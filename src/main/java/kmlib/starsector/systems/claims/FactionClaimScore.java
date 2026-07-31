@@ -17,5 +17,8 @@ package kmlib.starsector.systems.claims;
  * @param isTerritorial whether the faction's punitive-expedition data marks it territorial -
  *                      the gate a faction must pass before any score can claim a system
  */
-public record FactionClaimScore(String factionId, int score, boolean isTerritorial) {
+public record FactionClaimScore(
+    String factionId,
+    int score,
+    boolean isTerritorial) {
 }

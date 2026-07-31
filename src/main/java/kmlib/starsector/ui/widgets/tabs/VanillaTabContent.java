@@ -8,5 +8,7 @@ package kmlib.starsector.ui.widgets.tabs;
  * @param label    the tab's main label
  * @param shortcut the shortcut key's display name, or null/blank when the tab has none
  */
-public record VanillaTabContent(String label, String shortcut) {
+public record VanillaTabContent(
+    String label,
+    String shortcut) {
 }

@@ -36,7 +36,7 @@ final class CommandInputTest {
     // from a parse success (id supplied) apart from the context outcome.
     private static final class SampleSpec extends ParameterSpec {
         private final Parameter<String> id =
-                acceptsPositional("id", "<id>", ParameterValues.text()).markRequired();
+            acceptsPositional("id", "<id>", ParameterValues.text()).markRequired();
 
         private SampleSpec() {
             super("Usage: sample <id>.");
@@ -52,23 +52,23 @@ final class CommandInputTest {
             // Context is wrong and the arguments are also malformed (surplus), but
             // the context guard runs first, so its result wins.
             var parsed = new CommandInput(CommandContext.COMBAT_MISSION, "a b c", outputFake)
-                    .requireCampaign()
-                    .parseArguments(spec);
+                .requireCampaign()
+                .parseArguments(spec);
 
             assertThat(parsed.isValid()).isFalse();
             assertThat(parsed.getResult()).isEqualTo(CommandResult.WRONG_CONTEXT);
             assertThat(outputFake.getMessages())
-                    .anyMatch(message -> message.contains("can only run in a campaign"));
+                .anyMatch(message -> message.contains("can only run in a campaign"));
             // The tokens were never parsed, so no syntax complaint reached the player.
             assertThat(outputFake.getMessages())
-                    .noneMatch(message -> message.contains("Too many arguments"));
+                .noneMatch(message -> message.contains("Too many arguments"));
         }
 
         @Test
         void parsesTheArgumentsOnceTheContextPasses() {
             var parsed = new CommandInput(CommandContext.CAMPAIGN_MAP, "gate1", outputFake)
-                    .requireCampaign()
-                    .parseArguments(spec);
+                .requireCampaign()
+                .parseArguments(spec);
 
             assertThat(parsed.isValid()).isTrue();
             assertThat(parsed.get(spec.id)).isEqualTo("gate1");
@@ -77,13 +77,13 @@ final class CommandInputTest {
         @Test
         void reportsABadArgumentAsBadSyntaxOnceTheContextPasses() {
             var parsed = new CommandInput(CommandContext.CAMPAIGN_MAP, "", outputFake)
-                    .requireCampaign()
-                    .parseArguments(spec);
+                .requireCampaign()
+                .parseArguments(spec);
 
             assertThat(parsed.isValid()).isFalse();
             assertThat(parsed.getResult()).isEqualTo(CommandResult.BAD_SYNTAX);
             assertThat(outputFake.getMessages())
-                    .anyMatch(message -> message.contains("Missing required parameter 'id'"));
+                .anyMatch(message -> message.contains("Missing required parameter 'id'"));
         }
     }
 }

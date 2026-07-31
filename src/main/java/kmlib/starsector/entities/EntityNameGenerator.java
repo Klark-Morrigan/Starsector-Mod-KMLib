@@ -49,9 +49,13 @@ public final class EntityNameGenerator {
      */
     public static String generateJumpPointName(SectorEntityToken focus, float orbitRadius) {
         var jumpPointWord = StarsectorStrings.get(
-                KmlibStringKeys.CATEGORY, KmlibStringKeys.JUMP_POINT_LABEL);
-        return getLabel(focus) + " " + jumpPointWord + " "
-                + KmlibNumbers.formatScientific(orbitRadius);
+            KmlibStringKeys.CATEGORY,
+            KmlibStringKeys.JUMP_POINT_LABEL);
+        return getLabel(focus)
+            + " "
+            + jumpPointWord
+            + " "
+            + KmlibNumbers.formatScientific(orbitRadius);
     }
 
     // A human-readable focus tag, preferring the most specific name available:

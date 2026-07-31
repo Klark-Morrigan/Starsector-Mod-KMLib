@@ -10,5 +10,7 @@ package kmlib.starsector.ui.render.gl;
  *                         orients the chevron and gates the collapse clip
  * @param isHovered        true when the pointer is over the notch, lighting the handle
  */
-public record NotchState(float collapseFraction, boolean isHovered) {
+public record NotchState(
+    float collapseFraction,
+    boolean isHovered) {
 }

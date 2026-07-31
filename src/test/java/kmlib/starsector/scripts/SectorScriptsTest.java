@@ -25,11 +25,20 @@ import static org.mockito.Mockito.when;
  */
 final class SectorScriptsTest {
 
-    private interface DemoScript extends EveryFrameScript {}
+    private interface DemoScript extends EveryFrameScript {
+    }
     private static final class DemoScriptImpl implements DemoScript {
-        @Override public boolean isDone() { return false; }
-        @Override public boolean runWhilePaused() { return false; }
-        @Override public void advance(float amount) {}
+        @Override
+        public boolean isDone() {
+            return false;
+        }
+        @Override
+        public boolean runWhilePaused() {
+            return false;
+        }
+        @Override
+        public void advance(float amount) {
+        }
     }
 
     @Nested
@@ -41,7 +50,7 @@ final class SectorScriptsTest {
             scripts.add(new DemoScriptImpl());
             when(sectorMock.getScripts()).thenReturn(scripts);
 
-            boolean[] factoryFired = { false };
+            boolean[] factoryFired = {false};
             SectorScripts.addIfAbsent(sectorMock, DemoScript.class, () -> {
                 factoryFired[0] = true;
                 return new DemoScriptImpl();
@@ -77,7 +86,7 @@ final class SectorScriptsTest {
 
         @Test
         void null_sector_is_a_silent_noop() {
-            boolean[] factoryFired = { false };
+            boolean[] factoryFired = {false};
             SectorScripts.addIfAbsent(null, DemoScript.class, () -> {
                 factoryFired[0] = true;
                 return new DemoScriptImpl();
@@ -92,11 +101,20 @@ final class SectorScriptsTest {
             // an isAbsent check on its parent type - same semantics
             // Sector.removeScriptsOfClass would use.
             class Parent implements EveryFrameScript {
-                @Override public boolean isDone() { return false; }
-                @Override public boolean runWhilePaused() { return false; }
-                @Override public void advance(float amount) {}
+                @Override
+                public boolean isDone() {
+                    return false;
+                }
+                @Override
+                public boolean runWhilePaused() {
+                    return false;
+                }
+                @Override
+                public void advance(float amount) {
+                }
             }
-            class Child extends Parent {}
+            class Child extends Parent {
+            }
 
             var sectorMock = mock(SectorAPI.class);
             var scripts = new ArrayList<EveryFrameScript>();

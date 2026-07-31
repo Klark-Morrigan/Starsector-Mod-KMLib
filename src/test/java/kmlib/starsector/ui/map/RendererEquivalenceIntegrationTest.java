@@ -41,7 +41,7 @@ class RendererEquivalenceIntegrationTest {
 
     private static final int[] VIEWPORT = {0, 0, 1600, 1000};
     private static final float[] PROJECTION =
-            CampaignMapTransform.buildUiOrthoProjectionMatrix(1600f, 1000f);
+        CampaignMapTransform.buildUiOrthoProjectionMatrix(1600f, 1000f);
 
     // A zoom, so the comparison runs through the factor divide rather than past it.
     private static final float MAP_ZOOM = 0.75f;
@@ -91,7 +91,7 @@ class RendererEquivalenceIntegrationTest {
             var stockGlPoint = resolveWorldPointFrom(buildMatrixAsStockGlReportsIt());
 
             var fastRenderingPoint = resolveWorldPointFrom(
-                    FastRendering.copyAsColumnMajorFloats(buildMatrixAsFastRenderingHoldsIt()));
+                FastRendering.copyAsColumnMajorFloats(buildMatrixAsFastRenderingHoldsIt()));
 
             assertThat(fastRenderingPoint.x).isCloseTo(stockGlPoint.x, TOLERANCE);
             assertThat(fastRenderingPoint.y).isCloseTo(stockGlPoint.y, TOLERANCE);
@@ -107,9 +107,9 @@ class RendererEquivalenceIntegrationTest {
             // gluUnProject inverts the pass, so the pan subtracts, and the factor divides out the
             // zoom the same way it does for a live overlay's geometry.
             assertThat(stockGlPoint.x)
-                    .isCloseTo((CURSOR_PIXEL_X - PAN_X) / MAP_ZOOM, TOLERANCE);
+                .isCloseTo((CURSOR_PIXEL_X - PAN_X) / MAP_ZOOM, TOLERANCE);
             assertThat(stockGlPoint.y)
-                    .isCloseTo((CURSOR_PIXEL_Y - PAN_Y) / MAP_ZOOM, TOLERANCE);
+                .isCloseTo((CURSOR_PIXEL_Y - PAN_Y) / MAP_ZOOM, TOLERANCE);
         }
     }
 
@@ -122,12 +122,12 @@ class RendererEquivalenceIntegrationTest {
             // by a reader over the reading it would return. What is under test is the layouts
             // converging, which is the part that is theirs rather than the renderers'.
             ModelviewMatrixReader stockGlReaderFake =
-                    new ModelviewMatrixReaderFake(buildMatrixAsStockGlReportsIt());
+                new ModelviewMatrixReaderFake(buildMatrixAsStockGlReportsIt());
             ModelviewMatrixReader fastRenderingReaderFake = new ModelviewMatrixReaderFake(
-                    FastRendering.copyAsColumnMajorFloats(buildMatrixAsFastRenderingHoldsIt()));
+                FastRendering.copyAsColumnMajorFloats(buildMatrixAsFastRenderingHoldsIt()));
 
             assertThat(fastRenderingReaderFake.readModelviewMatrix())
-                    .containsExactly(stockGlReaderFake.readModelviewMatrix());
+                .containsExactly(stockGlReaderFake.readModelviewMatrix());
         }
     }
 }

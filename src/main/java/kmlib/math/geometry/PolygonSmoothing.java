@@ -68,13 +68,17 @@ public final class PolygonSmoothing {
             var previous = vertices.get((i - 1 + count) % count);
             var corner = vertices.get(i);
             var next = vertices.get((i + 1) % count);
+
             // Clamp the cut to half of the shorter adjacent edge so two corners
             // sharing an edge cannot eat into each other.
-            var cut = Math.min(radius,
-                    0.5 * Math.min(Points.computeDistance(corner, previous),
-                            Points.computeDistance(corner, next)));
+            var cut = Math.min(
+                radius,
+                0.5 * Math.min(
+                    Points.computeDistance(corner, previous),
+                    Points.computeDistance(corner, next)));
             var arcStart = computePointToward(corner, previous, cut);
             var arcEnd = computePointToward(corner, next, cut);
+
             // Below the threshold a rounded arc would still read as a spike, so
             // cut straight across the corner: the two step-back points alone.
             if (bevelBelowAngleRadians > 0
@@ -84,13 +88,13 @@ public final class PolygonSmoothing {
                 continue;
             }
             appendCircularArc(
-                    rounded,
-                    previous,
-                    corner,
-                    next,
-                    arcStart,
-                    arcEnd,
-                    segmentsPerCorner);
+                rounded,
+                previous,
+                corner,
+                next,
+                arcStart,
+                arcEnd,
+                segmentsPerCorner);
         }
         return rounded;
     }
@@ -134,7 +138,8 @@ public final class PolygonSmoothing {
             double maxCornerAngleRadians) {
         var vertices = Rings.removeConsecutiveDuplicates(polygon);
         if (vertices.size() < Limits.MIN_VERTICES_TO_ENCLOSE_AREA
-                || maxSpikeHeight <= 0 || maxCornerAngleRadians <= 0) {
+                || maxSpikeHeight <= 0
+                || maxCornerAngleRadians <= 0) {
             return vertices;
         }
 
@@ -150,8 +155,10 @@ public final class PolygonSmoothing {
                 var corner = vertices.get(i);
                 var next = vertices.get((i + 1) % count);
                 if (computeInteriorAngle(previous, corner, next) < maxCornerAngleRadians
-                        && Lines.computePerpendicularDistance(corner, previous, next)
-                                < maxSpikeHeight) {
+                        && Lines.computePerpendicularDistance(
+                            corner,
+                            previous,
+                            next) < maxSpikeHeight) {
                     vertices.remove(i);
                     removedAny = true;
                     break;
@@ -196,8 +203,8 @@ public final class PolygonSmoothing {
         for (var step = 0; step <= segments; step++) {
             var angle = startAngle + sweep * step / segments;
             out.add(new double[] {
-                    center[0] + radius * Math.cos(angle),
-                    center[1] + radius * Math.sin(angle),
+                center[0] + radius * Math.cos(angle),
+                center[1] + radius * Math.sin(angle),
             });
         }
     }
@@ -218,12 +225,12 @@ public final class PolygonSmoothing {
         // perpendiculars cross is the centre. Parallel means collinear edges - no
         // corner - so there is no centre.
         return Lines.intersectLines(
-                arcStart,
-                -(corner[1] - previous[1]),
-                corner[0] - previous[0],
-                arcEnd,
-                -(next[1] - corner[1]),
-                next[0] - corner[0]);
+            arcStart,
+            -(corner[1] - previous[1]),
+            corner[0] - previous[0],
+            arcEnd,
+            -(next[1] - corner[1]),
+            next[0] - corner[0]);
     }
 
     // A point {@code distance} from {@code from} toward {@code to}; returns from
@@ -236,8 +243,8 @@ public final class PolygonSmoothing {
             return new double[] {from[0], from[1]};
         }
         return new double[] {
-                from[0] + deltaX / length * distance,
-                from[1] + deltaY / length * distance,
+            from[0] + deltaX / length * distance,
+            from[1] + deltaY / length * distance,
         };
     }
 
@@ -252,11 +259,11 @@ public final class PolygonSmoothing {
             double[] corner,
             double[] next) {
         var angle = Points.computeAngleBetween(
-                previous[0] - corner[0],
-                previous[1] - corner[1],
-                next[0] - corner[0],
-                next[1] - corner[1],
-                Limits.MIN_EDGE_LENGTH);
+            previous[0] - corner[0],
+            previous[1] - corner[1],
+            next[0] - corner[0],
+            next[1] - corner[1],
+            Limits.MIN_EDGE_LENGTH);
         return Double.isNaN(angle) ? Math.PI : angle;
     }
 }

@@ -49,9 +49,9 @@ public final class ListSystemEntitiesCommand extends KmlibBaseConsoleCommand {
     @Override
     public CommandResult runCommand(String args, CommandContext context) {
         var parsed = readInput(context, args)
-                .requireCampaign()
-                .requireStarSystem()
-                .parseArguments(SPEC);
+            .requireCampaign()
+            .requireStarSystem()
+            .parseArguments(SPEC);
         if (!parsed.isValid()) {
             return parsed.getResult();
         }
@@ -86,7 +86,9 @@ public final class ListSystemEntitiesCommand extends KmlibBaseConsoleCommand {
                 childrenByFocus.computeIfAbsent(focus, key -> new ArrayList<>()).add(entity);
             }
         }
-        Set<SectorEntityToken> keep = isGatesOnly ? collectGatesAndAncestors(entities, center) : null;
+        Set<SectorEntityToken> keep = isGatesOnly
+            ? collectGatesAndAncestors(entities, center)
+            : null;
 
         var report = new StringBuilder("System entities in ").append(system.getName());
         if (isGatesOnly) {
@@ -97,11 +99,17 @@ public final class ListSystemEntitiesCommand extends KmlibBaseConsoleCommand {
         var inTree = new HashSet<SectorEntityToken>();
         appendOrbitTree(report, center, childrenByFocus, 0, keep, inTree);
 
-        appendPositionedSection(report, "Unorbited entities (nearest center first)",
-                collectUnorbitedEntities(entities, inTree, isGatesOnly), center);
+        appendPositionedSection(
+            report,
+            "Unorbited entities (nearest center first)",
+            collectUnorbitedEntities(entities, inTree, isGatesOnly),
+            center);
         if (!isGatesOnly) {
-            appendPositionedSection(report, "Fleets (nearest center first)",
-                    new ArrayList<SectorEntityToken>(system.getFleets()), center);
+            appendPositionedSection(
+                report,
+                "Fleets (nearest center first)",
+                new ArrayList<SectorEntityToken>(system.getFleets()),
+                center);
         }
         return report.toString();
     }
@@ -109,14 +117,15 @@ public final class ListSystemEntitiesCommand extends KmlibBaseConsoleCommand {
     // Gates plus every body each orbits, up to the center - the nodes to keep in
     // a gates-only tree so each gate's orbit chain still shows.
     private static Set<SectorEntityToken> collectGatesAndAncestors(
-            List<SectorEntityToken> entities, SectorEntityToken center) {
+            List<SectorEntityToken> entities,
+            SectorEntityToken center) {
         var keep = new HashSet<SectorEntityToken>();
         for (var entity : entities) {
             if (!entity.hasTag(Tags.GATE)) {
                 continue;
             }
             for (var node = entity; node != null && keep.add(node);
-                    node = node.getOrbitFocus()) {
+                node = node.getOrbitFocus()) {
                 // walk up the orbit chain, stopping when a node is already kept
             }
         }
@@ -126,9 +135,13 @@ public final class ListSystemEntitiesCommand extends KmlibBaseConsoleCommand {
         return keep;
     }
 
-    private static void appendOrbitTree(StringBuilder report, SectorEntityToken node,
-            Map<SectorEntityToken, List<SectorEntityToken>> childrenByFocus, int depth,
-            Set<SectorEntityToken> keep, Set<SectorEntityToken> inTree) {
+    private static void appendOrbitTree(
+            StringBuilder report,
+            SectorEntityToken node,
+            Map<SectorEntityToken, List<SectorEntityToken>> childrenByFocus,
+            int depth,
+            Set<SectorEntityToken> keep,
+            Set<SectorEntityToken> inTree) {
         if (node == null || !inTree.add(node)) {
             return;
         }
@@ -146,15 +159,23 @@ public final class ListSystemEntitiesCommand extends KmlibBaseConsoleCommand {
         var children = childrenByFocus.get(node);
         if (children != null) {
             children.sort(Comparator.comparingDouble(
-                    child -> StarsectorPoints.computeDistanceBetween(child, node)));
+                child -> StarsectorPoints.computeDistanceBetween(child, node)));
             for (var child : children) {
-                appendOrbitTree(report, child, childrenByFocus, depth + 1, keep, inTree);
+                appendOrbitTree(
+                    report,
+                    child,
+                    childrenByFocus,
+                    depth + 1,
+                    keep,
+                    inTree);
             }
         }
     }
 
     private static List<SectorEntityToken> collectUnorbitedEntities(
-            List<SectorEntityToken> entities, Set<SectorEntityToken> inTree, boolean gatesOnly) {
+            List<SectorEntityToken> entities,
+            Set<SectorEntityToken> inTree,
+            boolean gatesOnly) {
         var unorbited = new ArrayList<SectorEntityToken>();
         for (var entity : entities) {
             if (inTree.contains(entity) || (gatesOnly && !entity.hasTag(Tags.GATE))) {
@@ -165,17 +186,26 @@ public final class ListSystemEntitiesCommand extends KmlibBaseConsoleCommand {
         return unorbited;
     }
 
-    private static void appendPositionedSection(StringBuilder report, String heading,
-            List<SectorEntityToken> entities, SectorEntityToken center) {
+    private static void appendPositionedSection(
+            StringBuilder report,
+            String heading,
+            List<SectorEntityToken> entities,
+            SectorEntityToken center) {
         if (entities.isEmpty()) {
             return;
         }
         entities.sort(Comparator.comparingDouble(
-                entity -> StarsectorPoints.computeDistanceBetween(entity, center)));
+            entity -> StarsectorPoints.computeDistanceBetween(entity, center)));
         report.append("\n\n").append(heading).append(':');
         for (var entity : entities) {
-            report.append("\n  ").append(describe(entity)).append(String.format(Locale.ROOT,
-                    "  (%.0f, %.0f)", entity.getLocation().x, entity.getLocation().y));
+            report
+                .append("\n  ")
+                .append(describe(entity))
+                .append(String.format(
+                    Locale.ROOT,
+                    "  (%.0f, %.0f)",
+                    entity.getLocation().x,
+                    entity.getLocation().y));
         }
     }
 
@@ -186,13 +216,17 @@ public final class ListSystemEntitiesCommand extends KmlibBaseConsoleCommand {
         if (focus == null) {
             return describe(entity);
         }
-        return describe(entity) + String.format(Locale.ROOT, "  dist=%.0f  speed=%.2f deg/day",
-                StarsectorPoints.computeDistanceBetween(entity, focus),
-                computeOrbitalSpeedDegPerDay(entity));
+        return describe(entity) + String.format(
+            Locale.ROOT,
+            "  dist=%.0f  speed=%.2f deg/day",
+            StarsectorPoints.computeDistanceBetween(entity, focus),
+            computeOrbitalSpeedDegPerDay(entity));
     }
 
     private static String describe(SectorEntityToken entity) {
-        var name = entity.getName() != null ? entity.getName() : "(unnamed)";
+        var name = entity.getName() != null
+            ? entity.getName()
+            : "(unnamed)";
         return name + " [" + entity.getId() + ']';
     }
 

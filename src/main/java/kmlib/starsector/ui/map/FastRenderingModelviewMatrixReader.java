@@ -64,8 +64,8 @@ public enum FastRenderingModelviewMatrixReader implements ModelviewMatrixReader 
     private final GLCommand copyModelviewCommand = (renderThreadContext, args, argsOffset) -> {
         var cpuModelView = renderThreadContext.transformManager.getCPUModelView();
         latestModelview.set(cpuModelView == null
-                ? null
-                : FastRendering.copyAsColumnMajorFloats(cpuModelView));
+            ? null
+            : FastRendering.copyAsColumnMajorFloats(cpuModelView));
     };
 
     @Override

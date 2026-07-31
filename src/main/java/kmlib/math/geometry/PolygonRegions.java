@@ -71,12 +71,22 @@ public final class PolygonRegions {
         for (var i = 0; i < count; i++) {
             var edgeStart = ring.get(i);
             var edgeEnd = ring.get((i + 1) % count);
-            // The edge straddles the ray's height (an endpoint exactly at the height
-            // counts below, so a shared corner toggles once rather than twice), and its
-            // crossing with the ray's horizontal line lies to the point's right.
-            if ((edgeStart[1] > y) != (edgeEnd[1] > y)
-                    && x < edgeStart[0] + (y - edgeStart[1]) * (edgeEnd[0] - edgeStart[0])
-                            / (edgeEnd[1] - edgeStart[1])) {
+
+            // Only an edge that straddles the ray's height can cross it. An endpoint
+            // exactly at the height counts below, so a shared corner toggles once
+            // rather than twice.
+            var isStraddlingRayHeight = (edgeStart[1] > y) != (edgeEnd[1] > y);
+            if (!isStraddlingRayHeight) {
+                continue;
+            }
+
+            // Where the edge meets the ray's horizontal line. A straddling edge spans
+            // the height by definition, so the height delta below is never zero.
+            var crossingX = edgeStart[0]
+                + (y - edgeStart[1]) * (edgeEnd[0] - edgeStart[0])
+                    / (edgeEnd[1] - edgeStart[1]);
+            // Only crossings to the point's right count, so the ray runs one way.
+            if (x < crossingX) {
                 isInside = !isInside;
             }
         }
@@ -113,17 +123,17 @@ public final class PolygonRegions {
             DirectedLine line) {
         var spans = new ArrayList<double[]>();
         var direction = Points.computeUnitVector(
-                line.directionX(),
-                line.directionY(),
-                Limits.MIN_EDGE_LENGTH);
+            line.directionX(),
+            line.directionY(),
+            Limits.MIN_EDGE_LENGTH);
         if (direction == null) {
             return spans;
         }
         var unitLine = new DirectedLine(
-                line.originX(),
-                line.originY(),
-                direction[0],
-                direction[1]);
+            line.originX(),
+            line.originY(),
+            direction[0],
+            direction[1]);
         var crossings = collectLineCrossingParameters(rings, unitLine);
         crossings.sort(null);
         // Between two consecutive crossings the line stays on one side of every
@@ -138,9 +148,9 @@ public final class PolygonRegions {
             }
             var midT = (tStart + tEnd) / 2.0;
             if (!isPointInsideRings(
-                    rings,
-                    unitLine.originX() + midT * unitLine.directionX(),
-                    unitLine.originY() + midT * unitLine.directionY())) {
+                rings,
+                unitLine.originX() + midT * unitLine.directionX(),
+                unitLine.originY() + midT * unitLine.directionY())) {
                 continue;
             }
             // A vertex sitting exactly on the line can split one true span into two
@@ -192,9 +202,9 @@ public final class PolygonRegions {
             DirectedLine line,
             double halfThickness) {
         var direction = Points.computeUnitVector(
-                line.directionX(),
-                line.directionY(),
-                Limits.MIN_EDGE_LENGTH);
+            line.directionX(),
+            line.directionY(),
+            Limits.MIN_EDGE_LENGTH);
         if (direction == null) {
             return new ArrayList<>();
         }
@@ -207,15 +217,15 @@ public final class PolygonRegions {
             // Rails evenly spaced across the full band width, both edges included.
             var offset = halfThickness * (2.0 * rail / (BAND_RAIL_COUNT - 1) - 1.0);
             var railSpans = findLineInteriorSpans(
-                    rings,
-                    new DirectedLine(
-                            line.originX() + offset * normalX,
-                            line.originY() + offset * normalY,
-                            direction[0],
-                            direction[1]));
+                rings,
+                new DirectedLine(
+                    line.originX() + offset * normalX,
+                    line.originY() + offset * normalY,
+                    direction[0],
+                    direction[1]));
             bandSpans = bandSpans == null
-                    ? railSpans
-                    : Spans.intersectSpans(bandSpans, railSpans);
+                ? railSpans
+                : Spans.intersectSpans(bandSpans, railSpans);
             // A rail wholly outside leaves nothing for the rest to keep; stop early.
             if (bandSpans.isEmpty()) {
                 return bandSpans;
@@ -233,10 +243,15 @@ public final class PolygonRegions {
             List<List<double[]>> rings,
             DirectedLine line) {
         var crossings = new ArrayList<Double>();
+
         // The half-plane whose boundary is the line: offsets measured against its normal
         // tell an edge endpoint's side of the line.
-        var boundary = new HalfPlane(line.originX(), line.originY(),
-                -line.directionY(), line.directionX());
+        var boundary = new HalfPlane(
+            line.originX(),
+            line.originY(),
+            -line.directionY(),
+            line.directionX());
+
         for (var ring : rings) {
             var count = ring.size();
             for (var i = 0; i < count; i++) {
@@ -248,12 +263,12 @@ public final class PolygonRegions {
                     continue;
                 }
                 var crossing = Segment.computeCrossingPoint(
-                        edgeStart,
-                        edgeEnd,
-                        offsetStart,
-                        offsetEnd);
+                    edgeStart,
+                    edgeEnd,
+                    offsetStart,
+                    offsetEnd);
                 crossings.add((crossing[0] - line.originX()) * line.directionX()
-                        + (crossing[1] - line.originY()) * line.directionY());
+                    + (crossing[1] - line.originY()) * line.directionY());
             }
         }
         return crossings;

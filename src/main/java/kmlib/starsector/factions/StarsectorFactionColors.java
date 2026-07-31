@@ -61,6 +61,8 @@ public final class StarsectorFactionColors {
         if (faction == null) {
             return new FactionPalette(NEUTRAL_FALLBACK_COLOR, NEUTRAL_FALLBACK_COLOR);
         }
-        return new FactionPalette(faction.getBrightUIColor(), faction.getDarkUIColor());
+        return new FactionPalette(
+            faction.getBrightUIColor(),
+            faction.getDarkUIColor());
     }
 }

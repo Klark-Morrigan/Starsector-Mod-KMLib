@@ -39,7 +39,7 @@ class StarsectorSpritesTest {
             // exists to fold that into a null the caller can skip on.
             var settingsMock = Mockito.mock(SettingsAPI.class);
             Mockito.when(settingsMock.getSprite(PATH))
-                    .thenThrow(new RuntimeException("unregistered texture"));
+                .thenThrow(new RuntimeException("unregistered texture"));
 
             Global.setSettings(settingsMock);
             try {

@@ -66,7 +66,7 @@ class BaseExpiringIntelPluginTest {
         void advanceDoesNothingBeforeExpiry() {
             var intel = new FixedDurationIntel();
             when(clockMock.getElapsedDaysSince(CREATED_AT))
-                    .thenReturn((float) StarsectorClock.DAYS_PER_MONTH - 1f);
+                .thenReturn((float) StarsectorClock.DAYS_PER_MONTH - 1f);
 
             intel.advanceImpl(1f);
 
@@ -77,7 +77,7 @@ class BaseExpiringIntelPluginTest {
         void advanceRemovesIntelOnceExpiryReached() {
             var intel = new FixedDurationIntel();
             when(clockMock.getElapsedDaysSince(CREATED_AT))
-                    .thenReturn((float) StarsectorClock.DAYS_PER_MONTH);
+                .thenReturn((float) StarsectorClock.DAYS_PER_MONTH);
 
             intel.advanceImpl(1f);
 
@@ -113,12 +113,12 @@ class BaseExpiringIntelPluginTest {
         void isExpiredFlipsAtTheSameThresholdAsAdvance() {
             var intel = new FixedDurationIntel();
             when(clockMock.getElapsedDaysSince(CREATED_AT))
-                    .thenReturn((float) StarsectorClock.DAYS_PER_MONTH - 0.1f);
+                .thenReturn((float) StarsectorClock.DAYS_PER_MONTH - 0.1f);
 
             assertThat(intel.isExpired()).isFalse();
 
             when(clockMock.getElapsedDaysSince(CREATED_AT))
-                    .thenReturn((float) StarsectorClock.DAYS_PER_MONTH);
+                .thenReturn((float) StarsectorClock.DAYS_PER_MONTH);
 
             assertThat(intel.isExpired()).isTrue();
         }
@@ -140,7 +140,7 @@ class BaseExpiringIntelPluginTest {
         @Test
         void findActiveReturnsNullWhenIntelManagerListIsEmpty() {
             when(intelManagerMock.getIntel(FixedDurationIntel.class))
-                    .thenReturn(Collections.emptyList());
+                .thenReturn(Collections.emptyList());
 
             assertThat(BaseExpiringIntelPlugin.findActive(FixedDurationIntel.class)).isNull();
         }
@@ -154,21 +154,21 @@ class BaseExpiringIntelPluginTest {
             var expired = new FixedDurationIntel();
             var active = new FixedDurationIntel();
             when(clockMock.getElapsedDaysSince(CREATED_AT))
-                    .thenReturn((float) StarsectorClock.DAYS_PER_MONTH);
+                .thenReturn((float) StarsectorClock.DAYS_PER_MONTH);
             when(intelManagerMock.getIntel(FixedDurationIntel.class))
-                    .thenReturn(Arrays.asList(expired, active));
+                .thenReturn(Arrays.asList(expired, active));
             // Flip the second item's window back to live by overriding
             // the elapsed lookup after construction - both items share
             // CREATED_AT, so toggling the clock state toggles isExpired
             // for the whole list. The test exercises the per-item walk
             // by then narrowing to "active only".
             when(clockMock.getElapsedDaysSince(CREATED_AT))
-                    .thenReturn((float) StarsectorClock.DAYS_PER_MONTH - 0.1f);
+                .thenReturn((float) StarsectorClock.DAYS_PER_MONTH - 0.1f);
 
             // Both items now report not-expired; findActive returns the
             // head (the iteration order the IntelManager hands back).
             assertThat(BaseExpiringIntelPlugin.findActive(FixedDurationIntel.class))
-                    .isSameAs(expired);
+                .isSameAs(expired);
         }
 
         @Test
@@ -180,10 +180,10 @@ class BaseExpiringIntelPluginTest {
             var active = new CustomDurationIntel(100f);
             when(clockMock.getElapsedDaysSince(CREATED_AT)).thenReturn(50f);
             when(intelManagerMock.getIntel(CustomDurationIntel.class))
-                    .thenReturn(Arrays.asList(expired, active));
+                .thenReturn(Arrays.asList(expired, active));
 
             assertThat(BaseExpiringIntelPlugin.findActive(CustomDurationIntel.class))
-                    .isSameAs(active);
+                .isSameAs(active);
         }
 
         @Test
@@ -192,7 +192,7 @@ class BaseExpiringIntelPluginTest {
             var b = new CustomDurationIntel(2f);
             when(clockMock.getElapsedDaysSince(CREATED_AT)).thenReturn(50f);
             when(intelManagerMock.getIntel(CustomDurationIntel.class))
-                    .thenReturn(Arrays.asList(a, b));
+                .thenReturn(Arrays.asList(a, b));
 
             assertThat(BaseExpiringIntelPlugin.findActive(CustomDurationIntel.class)).isNull();
         }

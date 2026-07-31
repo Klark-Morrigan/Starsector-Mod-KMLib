@@ -23,7 +23,10 @@ public final class Parameter<T> {
     private boolean required;
     private T defaultValue;
 
-    private Parameter(String name, String valueHint, boolean positional,
+    private Parameter(
+            String name,
+            String valueHint,
+            boolean positional,
             ValueParser<T> valueParser) {
         this.name = name;
         this.valueHint = valueHint;
@@ -46,14 +49,18 @@ public final class Parameter<T> {
 
     // A parameter that may be supplied positionally (in declared order) or by
     // name. Created through ParameterSpec#acceptsPositional, which records it.
-    static <T> Parameter<T> positional(String name, String valueHint,
+    static <T> Parameter<T> positional(
+            String name,
+            String valueHint,
             ValueParser<T> valueParser) {
         return new Parameter<>(name, valueHint, true, valueParser);
     }
 
     // A name-only parameter: it never claims a positional slot, so it must be
     // given as name=value. Created through ParameterSpec#acceptsNamed.
-    static <T> Parameter<T> named(String name, String valueHint,
+    static <T> Parameter<T> named(
+            String name,
+            String valueHint,
             ValueParser<T> valueParser) {
         return new Parameter<>(name, valueHint, false, valueParser);
     }

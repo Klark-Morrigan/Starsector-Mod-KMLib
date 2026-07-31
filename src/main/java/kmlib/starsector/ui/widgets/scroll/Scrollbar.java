@@ -18,6 +18,7 @@ import kmlib.math.ranges.Ranges;
  * bottom-left, y grows up), so a taller offset (scrolled further down the content) sits the thumb lower.
  */
 public final class Scrollbar {
+
     /** The track's width, and the gap holding it off the container's right edge so it clears a border. */
     public static final float DEFAULT_TRACK_WIDTH = 3f;
     public static final float DEFAULT_RIGHT_MARGIN = 3f;
@@ -56,15 +57,25 @@ public final class Scrollbar {
      * @return the thumb rectangle within the track
      */
     public static Rectangle computeThumb(ScrollRegion region, Rectangle track) {
-        var thumbHeight = resolveThumbHeight(track, region.computeContentHeight(),
-                region.viewport().height());
+
+        var thumbHeight = resolveThumbHeight(
+            track,
+            region.computeContentHeight(),
+            region.viewport().height());
+
         var travel = track.height() - thumbHeight;
         var overflow = region.overflow();
+
         // The thumb hangs from the track top at offset 0 and drops through the travel as the content
         // scrolls, so its fraction of the travel matches the offset's fraction of the overflow.
         var fraction = overflow <= 0f ? 0f : Ranges.clampToUnit(region.offset() / overflow);
         var thumbY = track.y() + travel * (1f - fraction);
-        return new Rectangle(track.x(), thumbY, track.width(), thumbHeight);
+
+        return new Rectangle(
+            track.x(),
+            thumbY,
+            track.width(),
+            thumbHeight);
     }
 
     /**
@@ -77,11 +88,17 @@ public final class Scrollbar {
      * @return the grab column, in UI coordinates
      */
     public static Rectangle computeGrabColumn(ScrollRegion region) {
+
         var viewport = region.viewport();
         var container = region.container();
         var listRight = viewport.x() + viewport.width();
         var containerRight = container.x() + container.width();
-        return new Rectangle(listRight, viewport.y(), containerRight - listRight, viewport.height());
+
+        return new Rectangle(
+            listRight,
+            viewport.y(),
+            containerRight - listRight,
+            viewport.height());
     }
 
     /**
@@ -96,9 +113,13 @@ public final class Scrollbar {
      * @return the scroll offset, 0..overflow
      */
     public static float resolveOffsetForPointer(ScrollRegion region, Rectangle track, float pointerY) {
+
         var overflow = region.overflow();
-        var thumbHeight = resolveThumbHeight(track, region.computeContentHeight(),
-                region.viewport().height());
+        var thumbHeight = resolveThumbHeight(
+            track,
+            region.computeContentHeight(),
+            region.viewport().height());
+
         var travel = track.height() - thumbHeight;
         if (overflow <= 0f || travel <= 0f) {
             return 0f;
@@ -108,18 +129,21 @@ public final class Scrollbar {
         // bottom to the full overflow.
         var centreTop = track.y() + track.height() - thumbHeight / 2f;
         var fraction = Ranges.clampToUnit((centreTop - pointerY) / travel);
+
         return fraction * overflow;
     }
 
     // The thumb's height: the track scaled by the fraction of the content that is visible, floored to a
     // grabbable minimum and capped at the track height (a content that fits fills the track).
-    private static float resolveThumbHeight(Rectangle track, float contentHeight,
+    private static float resolveThumbHeight(
+            Rectangle track,
+            float contentHeight,
             float viewportHeight) {
+
         if (contentHeight <= 0f || viewportHeight >= contentHeight) {
             return track.height();
         }
         var proportional = track.height() * viewportHeight / contentHeight;
         return Math.min(track.height(), Math.max(MIN_THUMB_HEIGHT, proportional));
     }
-
 }

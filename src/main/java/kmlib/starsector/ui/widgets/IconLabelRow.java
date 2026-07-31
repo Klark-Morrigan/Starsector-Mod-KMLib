@@ -31,6 +31,7 @@ import kmlib.math.geometry.Rectangle;
  * {@link kmlib.starsector.ui.render.gl.IconRadioListRenderer}.
  */
 public final class IconLabelRow {
+
     // The left inset both the icon and (icon-less) label start from, so content clears the row's
     // frame and divider rather than touching it.
     private static final float LEADING_PADDING = 4f;
@@ -71,7 +72,11 @@ public final class IconLabelRow {
      */
     public static Rectangle computeIconBox(Rectangle row) {
         var side = computeIconSide(row.height());
-        return new Rectangle(row.x() + LEADING_PADDING, row.y() + ICON_VERTICAL_INSET, side, side);
+        return new Rectangle(
+            row.x() + LEADING_PADDING,
+            row.y() + ICON_VERTICAL_INSET,
+            side,
+            side);
     }
 
     /**
@@ -87,7 +92,10 @@ public final class IconLabelRow {
         if (!hasIcon) {
             return row.x() + LEADING_PADDING;
         }
-        return row.x() + LEADING_PADDING + computeIconSide(row.height()) + ICON_LABEL_GAP;
+        return row.x()
+            + LEADING_PADDING
+            + computeIconSide(row.height())
+            + ICON_LABEL_GAP;
     }
 
     /**
@@ -100,7 +108,9 @@ public final class IconLabelRow {
      * @return the trailing value's right-anchor x, in UI coordinates
      */
     public static float computeTrailingAnchorX(Rectangle row) {
-        return row.x() + row.width() - TRAILING_PADDING;
+        return row.x()
+            + row.width()
+            - TRAILING_PADDING;
     }
 
     /**
@@ -125,11 +135,17 @@ public final class IconLabelRow {
      * @return the triangle's box, at the row's trailing edge
      */
     public static Rectangle computeDirectionTriangleBox(Rectangle row) {
+
         var width = computeDirectionTriangleSlotWidth(row.height());
         var height = row.height() * TRIANGLE_HEIGHT_FRACTION;
         var rightEdge = computeTrailingAnchorX(row);
         var bottom = row.computeCenterY() - height / 2f;
-        return new Rectangle(rightEdge - width, bottom, width, height);
+
+        return new Rectangle(
+            rightEdge - width,
+            bottom,
+            width,
+            height);
     }
 
     /**
@@ -160,11 +176,25 @@ public final class IconLabelRow {
      * @param trailingWidth the trailing value's measured rendered width, or 0 for a row with no value
      * @return the row's required width, in UI coordinates
      */
-    public static float measureRowWidth(float rowHeight, float labelWidth, boolean hasIcon,
+    public static float measureRowWidth(
+            float rowHeight,
+            float labelWidth,
+            boolean hasIcon,
             float trailingWidth) {
-        var iconExtent = hasIcon ? computeIconSide(rowHeight) + ICON_LABEL_GAP : 0f;
-        var trailingExtent = trailingWidth > 0f ? LABEL_TRAILING_GAP + trailingWidth : 0f;
-        return LEADING_PADDING + iconExtent + labelWidth + trailingExtent + TRAILING_PADDING;
+
+        var iconExtent = hasIcon
+            ? computeIconSide(rowHeight) + ICON_LABEL_GAP
+            : 0f;
+
+        var trailingExtent = trailingWidth > 0f
+            ? LABEL_TRAILING_GAP + trailingWidth
+            : 0f;
+
+        return LEADING_PADDING
+            + iconExtent
+            + labelWidth
+            + trailingExtent
+            + TRAILING_PADDING;
     }
 
     // The icon square's side for a given row height: the row height less the inset off each of the

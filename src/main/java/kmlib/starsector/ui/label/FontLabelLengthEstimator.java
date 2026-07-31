@@ -47,8 +47,9 @@ public final class FontLabelLengthEstimator implements LabelLengthEstimator {
     @Override
     public double requiredLengthFor(double lineHeight, int lineCount) {
         var wrap = resolveWrapFor(lineCount);
-        return wrap == null ? Double.POSITIVE_INFINITY
-                : wrap.widestWidthPerUnitHeight() * lineHeight;
+        return wrap == null
+            ? Double.POSITIVE_INFINITY
+            : wrap.widestWidthPerUnitHeight() * lineHeight;
     }
 
     @Override
@@ -92,8 +93,8 @@ public final class FontLabelLengthEstimator implements LabelLengthEstimator {
             var lineWidth = measureWidthPerUnitHeight(line);
             var rest = findBestPartition(endWord, linesLeft - 1);
             var candidate = prependLine(line, lineWidth, rest);
-            if (best == null || candidate.widestWidthPerUnitHeight()
-                    < best.widestWidthPerUnitHeight()) {
+            if (best == null
+                    || candidate.widestWidthPerUnitHeight() < best.widestWidthPerUnitHeight()) {
                 best = candidate;
             }
         }
@@ -116,8 +117,9 @@ public final class FontLabelLengthEstimator implements LabelLengthEstimator {
         var lines = new ArrayList<String>(rest.lines().size() + 1);
         lines.add(line);
         lines.addAll(rest.lines());
-        return new LineWrap(List.copyOf(lines),
-                Math.max(lineWidth, rest.widestWidthPerUnitHeight()));
+        return new LineWrap(
+            List.copyOf(lines),
+            Math.max(lineWidth, rest.widestWidthPerUnitHeight()));
     }
 
     /**

@@ -23,8 +23,8 @@ import kmlib.starsector.ui.text.TextStyle;
  * @param paragraphStyle the look of a line of the box's body
  */
 public record TooltipStyle(
-        TextStyle headerStyle,
-        TextStyle paragraphStyle) {
+    TextStyle headerStyle,
+    TextStyle paragraphStyle) {
 
     /**
      * Answers what {@code lineStyle} draws in - the lookup a renderer makes once per row, before

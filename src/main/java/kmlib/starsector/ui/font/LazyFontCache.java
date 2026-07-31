@@ -67,10 +67,10 @@ public final class LazyFontCache {
         } catch (FontException exception) {
             FAILED_FONT_PATHS.add(fontPath);
             LOG.error(
-                    "Could not load font '"
-                            + fontPath
-                            + "'; text using this font disabled this session",
-                    exception);
+                "Could not load font '"
+                    + fontPath
+                    + "'; text using this font disabled this session",
+                exception);
             return null;
         }
     }

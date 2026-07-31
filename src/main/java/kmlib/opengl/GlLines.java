@@ -39,14 +39,20 @@ public final class GlLines {
      * @param worldToScreen scale applied to every coordinate (world -> screen); a
      *                      non-positive value draws nothing
      */
-    public static void drawDashedSegments(float[] segments, float dashOnScreen,
-            float dashGapScreen, float worldToScreen) {
+    public static void drawDashedSegments(
+            float[] segments,
+            float dashOnScreen,
+            float dashGapScreen,
+            float worldToScreen) {
+
         if (worldToScreen <= 0) {
             return;
         }
         var onWorldLength = dashOnScreen / worldToScreen;
         var periodWorldLength = (dashOnScreen + dashGapScreen) / worldToScreen;
+
         GL11.glBegin(GL11.GL_LINES);
+
         for (var i = 0; i < segments.length; i += GlVertexRuns.FLOATS_PER_SEGMENT) {
             emitDashes(segments, i, onWorldLength, periodWorldLength, worldToScreen);
         }
@@ -71,8 +77,13 @@ public final class GlLines {
     // Emits the on-dash sub-segments of the segment at {@code index}, stepping
     // along it in period-length strides and drawing the first onWorldLength of
     // each stride.
-    private static void emitDashes(float[] segments, int index, float onWorldLength,
-            float periodWorldLength, float worldToScreen) {
+    private static void emitDashes(
+            float[] segments,
+            int index,
+            float onWorldLength,
+            float periodWorldLength,
+            float worldToScreen) {
+
         var x1 = segments[index];
         var y1 = segments[index + 1];
         var endIndex = index + 2;
@@ -86,10 +97,12 @@ public final class GlLines {
         var unitY = deltaY / length;
         for (var along = 0f; along < length; along += periodWorldLength) {
             var onEnd = Math.min(along + onWorldLength, length);
-            GL11.glVertex2f((x1 + unitX * along) * worldToScreen,
-                    (y1 + unitY * along) * worldToScreen);
-            GL11.glVertex2f((x1 + unitX * onEnd) * worldToScreen,
-                    (y1 + unitY * onEnd) * worldToScreen);
+            GL11.glVertex2f(
+                (x1 + unitX * along) * worldToScreen,
+                (y1 + unitY * along) * worldToScreen);
+            GL11.glVertex2f(
+                (x1 + unitX * onEnd) * worldToScreen,
+                (y1 + unitY * onEnd) * worldToScreen);
         }
     }
 }

@@ -26,8 +26,10 @@ public final class UiCursor {
      */
     public static float getUiX() {
         var settings = Global.getSettings();
-        return convertPixelToUi(Mouse.getX(), settings.getScreenWidth(),
-                settings.getScreenWidthPixels());
+        return convertPixelToUi(
+            Mouse.getX(),
+            settings.getScreenWidth(),
+            settings.getScreenWidthPixels());
     }
 
     /**
@@ -36,8 +38,10 @@ public final class UiCursor {
      */
     public static float getUiY() {
         var settings = Global.getSettings();
-        return convertPixelToUi(Mouse.getY(), settings.getScreenHeight(),
-                settings.getScreenHeightPixels());
+        return convertPixelToUi(
+            Mouse.getY(),
+            settings.getScreenHeight(),
+            settings.getScreenHeightPixels());
     }
 
     /**

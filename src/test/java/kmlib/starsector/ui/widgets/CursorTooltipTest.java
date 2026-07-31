@@ -61,38 +61,38 @@ class CursorTooltipTest {
     // The uniform style is what every case not about per-row looks lays out through, so those cases read
     // as the plain row-model arithmetic they are testing rather than as typography.
     private static final TooltipStyle UNIFORM_STYLE = new TooltipStyle(
-            createStyle(BODY_FONT, BODY_LINE_HEIGHT),
-            createStyle(BODY_FONT, BODY_LINE_HEIGHT));
+        createStyle(BODY_FONT, BODY_LINE_HEIGHT),
+        createStyle(BODY_FONT, BODY_LINE_HEIGHT));
     private static final TooltipStyle TWO_FACE_STYLE = new TooltipStyle(
-            createStyle(HEADING_FONT, HEADING_LINE_HEIGHT),
-            createStyle(BODY_FONT, BODY_LINE_HEIGHT));
+        createStyle(HEADING_FONT, HEADING_LINE_HEIGHT),
+        createStyle(BODY_FONT, BODY_LINE_HEIGHT));
 
     // A top-tier row at no indent (short label, no value) and a wider indented member (longer label, a
     // value): the member is the widest laid-out row, so it must drive the box width even though it is the
     // indented one - the point of measuring across tiers. Both are crest-aligned body lines, as a row
     // built without stating a placement or a kind of line is.
     private static final TooltipRow TOP_TIER = TooltipRow.createRow(new TextSpan("AA", Color.WHITE))
-            .carriesCrest("crest_a");
+        .carriesCrest("crest_a");
     private static final TooltipRow MEMBER = TooltipRow.createRow(new TextSpan("BBBB", Color.LIGHT_GRAY))
-            .carriesCrest("crest_b")
-            .carriesValue(new TextSpan("9", Color.GRAY))
-            .indentsBy(14f);
+        .carriesCrest("crest_b")
+        .carriesValue(new TextSpan("9", Color.GRAY))
+        .indentsBy(14f);
 
     private static TextStyle createStyle(StarsectorFont font, double size) {
         // Built by hand rather than through TextStyle's own factory: its baseline colour resolves from the
         // running game's palette, which a layout test has no business standing up for a value it never
         // reads.
         return new TextStyle(
-                new TextFace(font, size),
-                Color.WHITE,
-                TextAlignment.TOP_LEFT,
-                false);
+            new TextFace(font, size),
+            Color.WHITE,
+            TextAlignment.TOP_LEFT,
+            false);
     }
 
     private static double measureSpanWidth(TextFace face, String span) {
         var widthPerCharacter = face.font() == HEADING_FONT
-                ? HEADING_WIDTH_PER_CHARACTER
-                : BODY_WIDTH_PER_CHARACTER;
+            ? HEADING_WIDTH_PER_CHARACTER
+            : BODY_WIDTH_PER_CHARACTER;
 
         var characterCost = 0d;
         for (var character : span.toCharArray()) {
@@ -108,7 +108,7 @@ class CursorTooltipTest {
     private static TooltipLayout layOut(List<TooltipRow> rows, TooltipStyle style) {
         TextSpanMeasurer measurer = CursorTooltipTest::measureSpanWidth;
         return CursorTooltip.layOut(rows, style, measurer, CURSOR_X, CURSOR_Y, SCREEN_WIDTH,
-                SCREEN_HEIGHT);
+            SCREEN_HEIGHT);
     }
 
     private static TooltipRow.TableRow createCrestlessRow(String text) {
@@ -124,17 +124,17 @@ class CursorTooltipTest {
     // the column has to be reserved from what that slot reports whatever kind it turns out to be.
     private static TooltipRow.TableRow createRowLeadingWith(String text, RowSlot leadingRowSlot) {
         return new TooltipRow.TableRow(
-                TooltipLineStyle.PARAGRAPH,
-                TooltipLabelPlacement.ALIGNED_WITH_CRESTS,
-                0f,
-                false,
-                LabelledRow.createRow(new TextSpan(text, Color.WHITE)).leadsWith(leadingRowSlot));
+            TooltipLineStyle.PARAGRAPH,
+            TooltipLabelPlacement.ALIGNED_WITH_CRESTS,
+            0f,
+            false,
+            LabelledRow.createRow(new TextSpan(text, Color.WHITE)).leadsWith(leadingRowSlot));
     }
 
     private static TooltipRow.TableRow createHeadingRow(String text) {
         return createCrestlessRow(text)
-                .clearsCrestColumn()
-                .readsAs(TooltipLineStyle.HEADER);
+            .clearsCrestColumn()
+            .readsAs(TooltipLineStyle.HEADER);
     }
 
     // Where one of a row's label runs anchors. Read by position rather than by name, since the runs are
@@ -237,8 +237,8 @@ class CursorTooltipTest {
             // blank leaves the labels flush at the content edge rather than opening a gutter of the gap
             // alone in front of no glyphs.
             var blankLed = createRowLeadingWith(
-                    "AA",
-                    new RowSlot.Text(TextSpan.createBlank(Color.WHITE)));
+                "AA",
+                new RowSlot.Text(TextSpan.createBlank(Color.WHITE)));
 
             var blankLedRow = layOut(List.of(blankLed)).rows().get(0);
 
@@ -308,7 +308,7 @@ class CursorTooltipTest {
             // it - the runs centre together because they are one sentence, not two columns.
             var title = createCrestlessRow("AAAAAAAAAA").clearsCrestColumn();
             var centred = createCentredRow("BB")
-                    .continuesWith(new TextSpan("MMM", Color.YELLOW));
+                .continuesWith(new TextSpan("MMM", Color.YELLOW));
 
             var centredRow = layOut(List.of(title, centred)).rows().get(1);
 
@@ -364,8 +364,8 @@ class CursorTooltipTest {
             // A third colour on one line costs the layout nothing beyond another gap: 226 + 2 + 6 = 234
             // for the second run, + its 3 + 6 = 243 for the third.
             var continued = createCrestlessRow("AA")
-                    .continuesWith(new TextSpan("MMM", Color.YELLOW))
-                    .continuesWith(new TextSpan("XX", Color.CYAN));
+                .continuesWith(new TextSpan("MMM", Color.YELLOW))
+                .continuesWith(new TextSpan("XX", Color.CYAN));
 
             var only = layOut(List.of(continued)).rows().get(0);
 
@@ -494,8 +494,8 @@ class CursorTooltipTest {
         @Test
         void partsASectionByTheOpeningRowsOwnLineHeight() {
             var step = measureRowStep(
-                    List.of(MEMBER, createHeadingRow("AA").opensSection()),
-                    TWO_FACE_STYLE);
+                List.of(MEMBER, createHeadingRow("AA").opensSection()),
+                TWO_FACE_STYLE);
 
             // The member's 15 + its 4 line gap + half of the heading's own 20-tall line = 29, so a
             // heading opens a section with the breathing room its own size asks for.
@@ -505,8 +505,8 @@ class CursorTooltipTest {
         @Test
         void reservesTheCrestColumnForTheTallestCrestInTheBox() {
             var heading = createCrestlessRow("AA")
-                    .carriesCrest("crest_heading")
-                    .readsAs(TooltipLineStyle.HEADER);
+                .carriesCrest("crest_heading")
+                .readsAs(TooltipLineStyle.HEADER);
 
             var layout = layOut(List.of(heading, MEMBER), TWO_FACE_STYLE);
 
@@ -525,8 +525,8 @@ class CursorTooltipTest {
             // for the rows that do sit in one - which would otherwise indent them past a gutter holding
             // nothing.
             var flushCrested = createCrestlessRow("AA")
-                    .carriesCrest("crest")
-                    .clearsCrestColumn();
+                .carriesCrest("crest")
+                .clearsCrestColumn();
 
             var columnRow = layOut(List.of(flushCrested, createCrestlessRow("BB"))).rows().get(1);
 
@@ -548,8 +548,8 @@ class CursorTooltipTest {
         @Test
         void measuresARowAsItsStyleWillDrawIt() {
             var shoutingStyle = new TooltipStyle(
-                    createStyle(BODY_FONT, BODY_LINE_HEIGHT),
-                    createStyle(BODY_FONT, BODY_LINE_HEIGHT).inUpperCase());
+                createStyle(BODY_FONT, BODY_LINE_HEIGHT),
+                createStyle(BODY_FONT, BODY_LINE_HEIGHT).inUpperCase());
 
             var box = layOut(List.of(createCrestlessRow("iiii")), shoutingStyle).box();
 

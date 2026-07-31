@@ -35,15 +35,15 @@ class HighlightedMessageTest {
         @Test
         void rejectsEmptyParagraphList() {
             assertThatThrownBy(() -> new HighlightedMessage())
-                    .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(IllegalArgumentException.class);
         }
 
         @Test
         void rejectsNullParagraph() {
             assertThatThrownBy(() -> new HighlightedMessage(
-                    new HighlightedParagraph("ok"),
-                    null))
-                    .isInstanceOf(NullPointerException.class);
+                new HighlightedParagraph("ok"),
+                null))
+                .isInstanceOf(NullPointerException.class);
         }
     }
 
@@ -65,8 +65,8 @@ class HighlightedMessageTest {
         @Test
         void toMessageIntelEmitsOneLinePerParagraph() throws Exception {
             var message = new HighlightedMessage(
-                    new HighlightedParagraph("first line"),
-                    new HighlightedParagraph("second line"));
+                new HighlightedParagraph("first line"),
+                new HighlightedParagraph("second line"));
 
             var intel = message.toMessageIntel();
 
@@ -77,21 +77,21 @@ class HighlightedMessageTest {
         @Test
         void toMessageIntelPropagatesHighlightsAndColorsPerParagraph() throws Exception {
             var paragraph = new HighlightedParagraph(
-                    "construction complete on Test Prime.",
-                    Color.GRAY,
-                    Highlight.of("complete", Color.GREEN),
-                    Highlight.of("Test Prime", Color.YELLOW));
+                "construction complete on Test Prime.",
+                Color.GRAY,
+                Highlight.of("complete", Color.GREEN),
+                Highlight.of("Test Prime", Color.YELLOW));
 
             var intel = new HighlightedMessage(paragraph).toMessageIntel();
 
             var line = readLines(intel).get(0);
             assertThat(readLineField(line, "text"))
-                    .isEqualTo("construction complete on Test Prime.");
+                .isEqualTo("construction complete on Test Prime.");
             assertThat(readLineField(line, "color")).isEqualTo(Color.GRAY);
             assertThat((String[]) readLineField(line, "highlights"))
-                    .containsExactly("complete", "Test Prime");
+                .containsExactly("complete", "Test Prime");
             assertThat((Color[]) readLineField(line, "colors"))
-                    .containsExactly(Color.GREEN, Color.YELLOW);
+                .containsExactly(Color.GREEN, Color.YELLOW);
         }
     }
 

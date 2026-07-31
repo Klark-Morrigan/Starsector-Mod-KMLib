@@ -61,9 +61,12 @@ final class JitterTest {
             var sawAbove = false;
             for (var i = 0; i < SAMPLE_COUNT; i++) {
                 var rolled = Jitter.roll(0.15f);
-                if (rolled < 1f) sawBelow = true;
-                if (rolled > 1f) sawAbove = true;
-                if (sawBelow && sawAbove) break;
+                if (rolled < 1f)
+                    sawBelow = true;
+                if (rolled > 1f)
+                    sawAbove = true;
+                if (sawBelow && sawAbove)
+                    break;
             }
             assertThat(sawBelow).isTrue();
             assertThat(sawAbove).isTrue();

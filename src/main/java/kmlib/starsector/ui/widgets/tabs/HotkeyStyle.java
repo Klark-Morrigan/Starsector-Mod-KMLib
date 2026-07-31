@@ -61,10 +61,10 @@ public record HotkeyStyle(
      */
     public static HotkeyStyle createPlain() {
         return new HotkeyStyle(
-                StarsectorUiColor.VANILLA_HIGHLIGHT_GOLD.resolve(),
-                false,
-                0f,
-                0f);
+            StarsectorUiColor.VANILLA_HIGHLIGHT_GOLD.resolve(),
+            false,
+            0f,
+            0f);
     }
 
     /**
@@ -76,10 +76,10 @@ public record HotkeyStyle(
      */
     public static HotkeyStyle createUnderlined() {
         return new HotkeyStyle(
-                StarsectorUiColor.VANILLA_HIGHLIGHT_GOLD.resolve(),
-                true,
-                VANILLA_UNDERLINE_THICKNESS,
-                VANILLA_UNDERLINE_GAP);
+            StarsectorUiColor.VANILLA_HIGHLIGHT_GOLD.resolve(),
+            true,
+            VANILLA_UNDERLINE_THICKNESS,
+            VANILLA_UNDERLINE_GAP);
     }
 
     /**
@@ -94,9 +94,9 @@ public record HotkeyStyle(
      */
     public Rectangle computeUnderlineBox(Rectangle keyBox) {
         return new Rectangle(
-                keyBox.x(),
-                keyBox.y() - underlineGap - underlineThickness,
-                keyBox.width(),
-                underlineThickness);
+            keyBox.x(),
+            keyBox.y() - underlineGap - underlineThickness,
+            keyBox.width(),
+            underlineThickness);
     }
 }

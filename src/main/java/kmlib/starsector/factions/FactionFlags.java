@@ -48,6 +48,6 @@ public final class FactionFlags {
         }
         var punitiveExpeditionData = custom.optJSONObject(PUNITIVE_EXPEDITION_DATA);
         return punitiveExpeditionData != null
-                && punitiveExpeditionData.optBoolean(TERRITORIAL_FLAG);
+            && punitiveExpeditionData.optBoolean(TERRITORIAL_FLAG);
     }
 }

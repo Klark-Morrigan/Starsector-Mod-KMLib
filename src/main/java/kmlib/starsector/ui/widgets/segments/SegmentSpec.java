@@ -18,5 +18,9 @@ import kmlib.starsector.ui.controls.SegmentSizing;
  * @param fontSize the size the labels are measured (and later drawn) at
  * @param sizing   whether the segments share one width (uniform) or each snaps to its own label
  */
-public record SegmentSpec(float padding, float minWidth, double fontSize, SegmentSizing sizing) {
+public record SegmentSpec(
+    float padding,
+    float minWidth,
+    double fontSize,
+    SegmentSizing sizing) {
 }

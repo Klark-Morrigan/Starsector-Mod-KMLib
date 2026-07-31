@@ -45,11 +45,11 @@ final class RingsTest {
             // that really leaves the corner is the third's - the first two only step to
             // the next duplicate.
             var ring = List.of(
-                    new double[] {0, 0},
-                    new double[] {10, 0},
-                    new double[] {10 + WHISKER, 0},
-                    new double[] {10, WHISKER},
-                    new double[] {10, 10});
+                new double[] {0, 0},
+                new double[] {10, 0},
+                new double[] {10 + WHISKER, 0},
+                new double[] {10, WHISKER},
+                new double[] {10, 10});
 
             var survivors = Rings.findSurvivingVertices(ring);
 
@@ -63,10 +63,10 @@ final class RingsTest {
             // zero-length edge. The repeat goes, and the edge reaching it - a real one -
             // stays, so the survivors still name three real edges.
             var ring = List.of(
-                    new double[] {0, 0},
-                    new double[] {10, 0},
-                    new double[] {10, 10},
-                    new double[] {WHISKER, 0});
+                new double[] {0, 0},
+                new double[] {10, 0},
+                new double[] {10, 10},
+                new double[] {WHISKER, 0});
 
             var survivors = Rings.findSurvivingVertices(ring);
 
@@ -95,10 +95,10 @@ final class RingsTest {
         @Test
         void a_duplicated_corner_is_recorded_once() {
             var ring = List.of(
-                    new double[] {0, 0},
-                    new double[] {10, 0},
-                    new double[] {10 + WHISKER, 0},
-                    new double[] {10, 10});
+                new double[] {0, 0},
+                new double[] {10, 0},
+                new double[] {10 + WHISKER, 0},
+                new double[] {10, 10});
 
             var cleaned = Rings.removeConsecutiveDuplicates(ring);
 
@@ -109,10 +109,10 @@ final class RingsTest {
         @Test
         void the_repeat_of_the_first_corner_closing_the_ring_drops() {
             var ring = List.of(
-                    new double[] {0, 0},
-                    new double[] {10, 0},
-                    new double[] {10, 10},
-                    new double[] {WHISKER, 0});
+                new double[] {0, 0},
+                new double[] {10, 0},
+                new double[] {10, 10},
+                new double[] {WHISKER, 0});
 
             var cleaned = Rings.removeConsecutiveDuplicates(ring);
 
@@ -125,7 +125,7 @@ final class RingsTest {
         @Test
         void a_ring_with_no_duplicates_keeps_every_label_where_it_was() {
             var cleaned = Rings.removeConsecutiveDuplicates(LabelledPolygon.fromLabelledEdges(
-                    GeometryTestSupport.square(), SQUARE_EDGE_LABELS));
+                GeometryTestSupport.square(), SQUARE_EDGE_LABELS));
 
             assertThat(cleaned.getEdgeLabels()).containsExactly(SQUARE_EDGE_LABELS);
         }
@@ -137,12 +137,12 @@ final class RingsTest {
             // outgoing edge (label 12). Taking 11 here would hand the corner a label
             // naming nothing, and slide every label after it out of step.
             var ring = LabelledPolygon.fromLabelledEdges(
-                    List.of(
-                            new double[] {0, 0},
-                            new double[] {10, 0},
-                            new double[] {10 + WHISKER, 0},
-                            new double[] {10, 10}),
-                    SQUARE_EDGE_LABELS);
+                List.of(
+                    new double[] {0, 0},
+                    new double[] {10, 0},
+                    new double[] {10 + WHISKER, 0},
+                    new double[] {10, 10}),
+                SQUARE_EDGE_LABELS);
 
             var cleaned = Rings.removeConsecutiveDuplicates(ring);
 
@@ -156,12 +156,12 @@ final class RingsTest {
             // one closing the ring and its label (13) names nothing. The edge reaching
             // it (12) is real and must survive.
             var ring = LabelledPolygon.fromLabelledEdges(
-                    List.of(
-                            new double[] {0, 0},
-                            new double[] {10, 0},
-                            new double[] {10, 10},
-                            new double[] {WHISKER, 0}),
-                    SQUARE_EDGE_LABELS);
+                List.of(
+                    new double[] {0, 0},
+                    new double[] {10, 0},
+                    new double[] {10, 10},
+                    new double[] {WHISKER, 0}),
+                SQUARE_EDGE_LABELS);
 
             var cleaned = Rings.removeConsecutiveDuplicates(ring);
 

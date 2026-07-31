@@ -38,13 +38,13 @@ public final class DividerRenderer {
 
         var dividerY = dividerBounds.computeCenterY() - DIVIDER_THICKNESS / 2f;
         var rect = new Rectangle(
-                dividerBounds.x(),
-                dividerY,
-                dividerBounds.width(),
-                DIVIDER_THICKNESS);
+            dividerBounds.x(),
+            dividerY,
+            dividerBounds.width(),
+            DIVIDER_THICKNESS);
         var rulePaint = new UiElementPaint(
-                ruleColor,
-                opacity * DIVIDER_ALPHA_MULT);
+            ruleColor,
+            opacity * DIVIDER_ALPHA_MULT);
 
         UiFill.renderQuad(rect, rulePaint);
     }

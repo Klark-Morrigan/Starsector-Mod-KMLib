@@ -41,7 +41,7 @@ final class PanelScrollbarsTest {
             // viewport - so it sits in the gutter, projected from the placement's scroll region.
             assertThat(track.x()).isGreaterThan(VIEWPORT.x() + VIEWPORT.width());
             assertThat(track.x() + track.width())
-                    .isCloseTo(BODY.x() + BODY.width() - Scrollbar.DEFAULT_RIGHT_MARGIN, within(TOLERANCE));
+                .isCloseTo(BODY.x() + BODY.width() - Scrollbar.DEFAULT_RIGHT_MARGIN, within(TOLERANCE));
             assertThat(track.y()).isCloseTo(VIEWPORT.y(), within(TOLERANCE));
             assertThat(track.height()).isCloseTo(VIEWPORT.height(), within(TOLERANCE));
         }
@@ -74,7 +74,7 @@ final class PanelScrollbarsTest {
             // From the viewport's right edge (228) to the body's right edge (300), at the viewport height.
             assertThat(grab.x()).isCloseTo(VIEWPORT.x() + VIEWPORT.width(), within(TOLERANCE));
             assertThat(grab.x() + grab.width())
-                    .isCloseTo(BODY.x() + BODY.width(), within(TOLERANCE));
+                .isCloseTo(BODY.x() + BODY.width(), within(TOLERANCE));
             assertThat(grab.height()).isCloseTo(VIEWPORT.height(), within(TOLERANCE));
         }
     }
@@ -86,7 +86,7 @@ final class PanelScrollbarsTest {
         void resolveOffsetForPointerIsZeroAtTheTrackTop() {
             var track = PanelScrollbars.computeTrack(placement(0f));
             var offset = PanelScrollbars.resolveOffsetForPointer(placement(0f),
-                    track.y() + track.height());
+                track.y() + track.height());
             assertThat(offset).isCloseTo(0f, within(TOLERANCE));
         }
 

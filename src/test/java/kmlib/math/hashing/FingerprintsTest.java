@@ -31,7 +31,7 @@ final class FingerprintsTest {
             // Order matters, so two sources that swap values still fold apart rather than aliasing to
             // the same fingerprint.
             assertThat(Fingerprints.compute(() -> 3, () -> 7))
-                    .isNotEqualTo(Fingerprints.compute(() -> 7, () -> 3));
+                .isNotEqualTo(Fingerprints.compute(() -> 7, () -> 3));
         }
 
         @Test

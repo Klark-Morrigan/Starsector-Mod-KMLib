@@ -146,8 +146,11 @@ public final class LunaSettingsWriter {
     private static void writeSetting(String modId, String fieldId, Object value, boolean shouldSaveNow) {
         var store = LunaSettingsLoader.getSettings().get(modId);
         if (store == null) {
-            LOG.warn("No LunaLib settings store for mod '" + modId + "'; skipping write of '"
-                    + fieldId + "' (settings screen not opened yet this session)");
+            LOG.warn("No LunaLib settings store for mod '"
+                + modId
+                + "'; skipping write of '"
+                + fieldId
+                + "' (settings screen not opened yet this session)");
             return;
         }
         try {
@@ -160,8 +163,12 @@ public final class LunaSettingsWriter {
             }
             LunaSettings.reportSettingsChanged(modId);
         } catch (JSONException | IOException exception) {
-            LOG.error("Failed to write LunaLib setting '" + fieldId + "' for mod '" + modId + "'",
-                    exception);
+            LOG.error("Failed to write LunaLib setting '"
+                + fieldId
+                + "' for mod '"
+                + modId
+                + "'",
+                exception);
         }
     }
 }

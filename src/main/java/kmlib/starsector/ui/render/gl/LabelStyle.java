@@ -14,5 +14,8 @@ import java.awt.Color;
  * @param colour  the text colour before the opacity fade
  * @param opacity overall alpha, 0..1
  */
-public record LabelStyle(TextFace face, Color colour, float opacity) {
+public record LabelStyle(
+    TextFace face,
+    Color colour,
+    float opacity) {
 }

@@ -95,10 +95,14 @@ public final class CampaignMapView {
         var uiData = readConcreteUiData();
         var filterData = uiData == null ? null : uiData.getMapFilterData();
         var mapLocation = uiData == null ? null : uiData.getCampaignMapLocation();
-        return "tab=" + campaignUi.getCurrentCoreTab()
-                + " starscape=" + (filterData == null ? "unreadable" : filterData.starscape)
-                + " mapLocation=" + describeLocation(mapLocation)
-                + " state=" + resolveSectorMapState();
+        return "tab="
+            + campaignUi.getCurrentCoreTab()
+            + " starscape="
+            + (filterData == null ? "unreadable" : filterData.starscape)
+            + " mapLocation="
+            + describeLocation(mapLocation)
+            + " state="
+            + resolveSectorMapState();
     }
 
     // Classifies the three signals the public gates decide from - active tab, map sub-view, and
@@ -134,8 +138,8 @@ public final class CampaignMapView {
             return SectorMapState.SHOWING_WITH_UNREADABLE_FILTER;
         }
         return filterData.starscape
-                ? SectorMapState.SHOWING_IN_STARSCAPE_MODE
-                : SectorMapState.SHOWING_WITH_STARSCAPE_OFF;
+            ? SectorMapState.SHOWING_IN_STARSCAPE_MODE
+            : SectorMapState.SHOWING_WITH_STARSCAPE_OFF;
     }
 
     // The one place the concrete-class coupling lives: null when the game hands back some
@@ -149,8 +153,9 @@ public final class CampaignMapView {
         }
         if (uiData != null && !hasLoggedUnexpectedUiDataType) {
             hasLoggedUnexpectedUiDataType = true;
-            LOG.warn("Campaign UI data is a " + uiData.getClass().getName()
-                    + ", not CampaignUIPersistentData; map-gated overlays stay hidden");
+            LOG.warn("Campaign UI data is a "
+                + uiData.getClass().getName()
+                + ", not CampaignUIPersistentData; map-gated overlays stay hidden");
         }
         return null;
     }

@@ -2,6 +2,7 @@ package kmlib.starsector.ui.widgets.tabs;
 
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.Control;
+import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.PanelPlacement;
 
 /**
@@ -25,10 +26,23 @@ import kmlib.starsector.ui.widgets.PanelPlacement;
  * so it exposes no handle, and the render and input passes both skip it. Consumers reading {@code notch}
  * must null-check it.
  *
+ * <p>The {@code border} is the frame the box was laid out around, carried on the placement so a renderer
+ * strokes the width the layout actually reserved rather than reading it back from wherever the layout read
+ * it. Those two reads agreeing is what keeps the stroke inside the box: a frame stroked wider than the inset
+ * the layout spent would overlap the content it was supposed to sit outside. A host that strokes a different
+ * set of edges than the layout reserved - one dropping an edge it now sits flush against - still composes
+ * its own {@link BoxBorder}, since which edges are open is its decision and can only be made once the box
+ * has a resolved position; the width is not.
+ *
  * @param tabsHeader the laid-out tabs control across the header band, its segments split per tab
  * @param body       the headerless panel placement beneath the header (its box frames the header band too)
+ * @param border     the frame the box was laid out around - the width every stroke of it must use
  * @param notch      the collapse-handle rect on the box's right border edge, centred on the frame, or null
  *                   when the panel has no body to collapse and so no handle
  */
-public record TabPanelPlacement(Control tabsHeader, PanelPlacement body, Rectangle notch) {
+public record TabPanelPlacement(
+    Control tabsHeader,
+    PanelPlacement body,
+    BoxBorder border,
+    Rectangle notch) {
 }

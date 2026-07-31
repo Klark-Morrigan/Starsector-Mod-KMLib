@@ -54,8 +54,8 @@ public final class StarsectorPlayerRelationshipFormatter {
             var level = relationship.getLevel();
             if (level != null) {
                 return new RelationshipSummary(
-                        formatRelationshipDescription(level, relationship.getRepInt()),
-                        relationship.getRelColor());
+                    formatRelationshipDescription(level, relationship.getRepInt()),
+                    relationship.getRelColor());
             }
         }
 
@@ -80,11 +80,11 @@ public final class StarsectorPlayerRelationshipFormatter {
             levelName = level.name();
         }
         return String.format(
-                Locale.ROOT,
-                PLAYER_RELATIONSHIP_DESCRIPTION_FORMAT,
-                levelName,
-                repInt,
-                MAX_RELATIONSHIP_REPUTATION);
+            Locale.ROOT,
+            PLAYER_RELATIONSHIP_DESCRIPTION_FORMAT,
+            levelName,
+            repInt,
+            MAX_RELATIONSHIP_REPUTATION);
     }
 
     public static final class RelationshipSummary {

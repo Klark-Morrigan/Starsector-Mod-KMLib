@@ -21,6 +21,10 @@ public final class Checkbox {
      * @return the square tick box at the row's left
      */
     public static Rectangle computeTickBox(Rectangle bounds) {
-        return new Rectangle(bounds.x(), bounds.y(), bounds.height(), bounds.height());
+        return new Rectangle(
+            bounds.x(),
+            bounds.y(),
+            bounds.height(),
+            bounds.height());
     }
 }

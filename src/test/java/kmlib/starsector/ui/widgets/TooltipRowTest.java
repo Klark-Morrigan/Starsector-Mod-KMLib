@@ -52,9 +52,9 @@ class TooltipRowTest {
             String... changedComponents) {
 
         assertThat(refined)
-                .usingRecursiveComparison()
-                .ignoringFields(changedComponents)
-                .isEqualTo(original);
+            .usingRecursiveComparison()
+            .ignoringFields(changedComponents)
+            .isEqualTo(original);
     }
 
     private static TooltipRow.TableRow buildBareRow() {
@@ -66,10 +66,10 @@ class TooltipRowTest {
     // there anyway.
     private static TooltipRow.TableRow buildRichRow() {
         return buildBareRow()
-                .carriesCrest(CREST)
-                .continuesWith(new TextSpan(RUN_TEXT, Color.YELLOW))
-                .carriesValue(new TextSpan(VALUE, Color.GRAY))
-                .indentsBy(INDENT);
+            .carriesCrest(CREST)
+            .continuesWith(new TextSpan(RUN_TEXT, Color.YELLOW))
+            .carriesValue(new TextSpan(VALUE, Color.GRAY))
+            .indentsBy(INDENT);
     }
 
     private static TooltipRow.CentredRow buildBareCentredRow() {
@@ -80,8 +80,8 @@ class TooltipRowTest {
     // refinements have something to preserve.
     private static TooltipRow.CentredRow buildRichCentredRow() {
         return buildBareCentredRow()
-                .continuesWith(new TextSpan(RUN_TEXT, Color.YELLOW))
-                .opensSection();
+            .continuesWith(new TextSpan(RUN_TEXT, Color.YELLOW))
+            .opensSection();
     }
 
     @Nested
@@ -92,13 +92,13 @@ class TooltipRowTest {
             // line - and a null would otherwise surface inside a measurement, well past the point that
             // could say which line was meant.
             assertThatThrownBy(() -> new TooltipRow.TableRow(
-                    TooltipLineStyle.PARAGRAPH,
-                    TooltipLabelPlacement.ALIGNED_WITH_CRESTS,
-                    0f,
-                    false,
-                    null))
-                    .isInstanceOf(NullPointerException.class)
-                    .hasMessageContaining("labelledRow");
+                TooltipLineStyle.PARAGRAPH,
+                TooltipLabelPlacement.ALIGNED_WITH_CRESTS,
+                0f,
+                false,
+                null))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("labelledRow");
         }
 
         @Test
@@ -106,11 +106,11 @@ class TooltipRowTest {
             // A centred line holds its label directly rather than through a labelled row, so the floor
             // that a line has a label has to hold here too - it is the same floor, not a second one.
             assertThatThrownBy(() -> new TooltipRow.CentredRow(
-                    TooltipLineStyle.PARAGRAPH,
-                    false,
-                    List.of()))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("labelTextSpans");
+                TooltipLineStyle.PARAGRAPH,
+                false,
+                List.of()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("labelTextSpans");
         }
 
         @Test
@@ -130,11 +130,11 @@ class TooltipRowTest {
         @Test
         void constructorRejectsACentredRowWithANullLabel() {
             assertThatThrownBy(() -> new TooltipRow.CentredRow(
-                    TooltipLineStyle.PARAGRAPH,
-                    false,
-                    null))
-                    .isInstanceOf(NullPointerException.class)
-                    .hasMessageContaining("labelTextSpans");
+                TooltipLineStyle.PARAGRAPH,
+                false,
+                null))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("labelTextSpans");
         }
     }
 
@@ -164,7 +164,7 @@ class TooltipRowTest {
             // An ordinary content line lines up with the box's other entries, so a caller that says
             // nothing about placement gets that - starting at the content edge instead is stated.
             assertThat(buildBareRow().labelPlacement())
-                    .isEqualTo(TooltipLabelPlacement.ALIGNED_WITH_CRESTS);
+                .isEqualTo(TooltipLabelPlacement.ALIGNED_WITH_CRESTS);
         }
 
         @Test
@@ -203,7 +203,7 @@ class TooltipRowTest {
         @Test
         void carriesCrestLeadsTheRowWithThatImage() {
             assertThat(buildBareRow().carriesCrest(CREST).labelledRow().leadingRowSlot())
-                    .isEqualTo(new RowSlot.Image(CREST));
+                .isEqualTo(new RowSlot.Image(CREST));
         }
 
         @Test
@@ -211,15 +211,15 @@ class TooltipRowTest {
             // A caller resolving a crest a faction may simply not have hands the result straight over,
             // so a null is a crest-less line rather than an image slot holding nothing to load.
             assertThat(buildBareRow().carriesCrest(null).labelledRow().leadingRowSlot())
-                    .isEqualTo(RowSlot.EMPTY);
+                .isEqualTo(RowSlot.EMPTY);
         }
 
         @Test
         void carriesCrestChangesNothingElse() {
             assertRefinementChangesOnly(
-                    buildRichRow().carriesCrest(OTHER_CREST),
-                    buildRichRow(),
-                    "labelledRow.leadingRowSlot");
+                buildRichRow().carriesCrest(OTHER_CREST),
+                buildRichRow(),
+                "labelledRow.leadingRowSlot");
         }
     }
 
@@ -230,7 +230,7 @@ class TooltipRowTest {
             var valueTextSpan = new TextSpan(VALUE, Color.GRAY);
 
             assertThat(buildBareRow().carriesValue(valueTextSpan).labelledRow().trailingRowSlot())
-                    .isEqualTo(new RowSlot.Text(valueTextSpan));
+                .isEqualTo(new RowSlot.Text(valueTextSpan));
         }
 
         @Test
@@ -241,15 +241,15 @@ class TooltipRowTest {
             var row = buildBareRow().carriesValue(TextSpan.createBlank(Color.GRAY));
 
             assertThat(row.labelledRow().trailingRowSlot())
-                    .isEqualTo(new RowSlot.Text(TextSpan.createBlank(Color.GRAY)));
+                .isEqualTo(new RowSlot.Text(TextSpan.createBlank(Color.GRAY)));
         }
 
         @Test
         void carriesValueChangesNothingElse() {
             assertRefinementChangesOnly(
-                    buildRichRow().carriesValue(new TextSpan(OTHER_VALUE, Color.CYAN)),
-                    buildRichRow(),
-                    "labelledRow.trailingRowSlot");
+                buildRichRow().carriesValue(new TextSpan(OTHER_VALUE, Color.CYAN)),
+                buildRichRow(),
+                "labelledRow.trailingRowSlot");
         }
     }
 
@@ -258,8 +258,8 @@ class TooltipRowTest {
         @Test
         void continuesWithAppendsTheRun() {
             var labelTextSpans = buildBareRow()
-                    .continuesWith(new TextSpan(RUN_TEXT, Color.YELLOW))
-                    .labelTextSpans();
+                .continuesWith(new TextSpan(RUN_TEXT, Color.YELLOW))
+                .labelTextSpans();
 
             assertThat(labelTextSpans).extracting(TextSpan::text).containsExactly(TEXT, RUN_TEXT);
             assertThat(labelTextSpans.get(1).colour()).isEqualTo(Color.YELLOW);
@@ -270,8 +270,8 @@ class TooltipRowTest {
             // A centred line reads in more than one colour exactly as a table row does: the runs are the
             // label, and the label is the one thing the two kinds carry alike.
             var labelTextSpans = buildBareCentredRow()
-                    .continuesWith(new TextSpan(RUN_TEXT, Color.YELLOW))
-                    .labelTextSpans();
+                .continuesWith(new TextSpan(RUN_TEXT, Color.YELLOW))
+                .labelTextSpans();
 
             assertThat(labelTextSpans).extracting(TextSpan::text).containsExactly(TEXT, RUN_TEXT);
         }
@@ -281,17 +281,17 @@ class TooltipRowTest {
             // The point of composing refinements: a run cannot restate - or lose - the tier, crest, and
             // value the line was already built with.
             assertRefinementChangesOnly(
-                    buildRichRow().continuesWith(new TextSpan(OTHER_RUN_TEXT, Color.CYAN)),
-                    buildRichRow(),
-                    "labelledRow.labelTextSpans");
+                buildRichRow().continuesWith(new TextSpan(OTHER_RUN_TEXT, Color.CYAN)),
+                buildRichRow(),
+                "labelledRow.labelTextSpans");
         }
 
         @Test
         void continuesWithChangesNothingElseOnACentredRow() {
             assertRefinementChangesOnly(
-                    buildRichCentredRow().continuesWith(new TextSpan(OTHER_RUN_TEXT, Color.CYAN)),
-                    buildRichCentredRow(),
-                    "labelTextSpans");
+                buildRichCentredRow().continuesWith(new TextSpan(OTHER_RUN_TEXT, Color.CYAN)),
+                buildRichCentredRow(),
+                "labelTextSpans");
         }
     }
 
@@ -307,9 +307,9 @@ class TooltipRowTest {
         @Test
         void indentsByChangesNothingElse() {
             assertRefinementChangesOnly(
-                    buildRichRow().indentsBy(OTHER_INDENT),
-                    buildRichRow(),
-                    "indent");
+                buildRichRow().indentsBy(OTHER_INDENT),
+                buildRichRow(),
+                "indent");
         }
     }
 
@@ -330,9 +330,9 @@ class TooltipRowTest {
         @Test
         void opensSectionChangesNothingElse() {
             assertRefinementChangesOnly(
-                    buildRichRow().opensSection(),
-                    buildRichRow(),
-                    "hasSectionBreak");
+                buildRichRow().opensSection(),
+                buildRichRow(),
+                "hasSectionBreak");
         }
     }
 
@@ -350,9 +350,9 @@ class TooltipRowTest {
             // Only the crest gutter is cleared. A title still carries a trailing value the way the rows
             // it heads do, so the value column is not part of what the placement decides.
             assertRefinementChangesOnly(
-                    buildRichRow().clearsCrestColumn(),
-                    buildRichRow(),
-                    "labelPlacement");
+                buildRichRow().clearsCrestColumn(),
+                buildRichRow(),
+                "labelPlacement");
         }
     }
 
@@ -377,17 +377,17 @@ class TooltipRowTest {
             // A heading is still a line: naming its kind must not disturb the content or the placement it
             // was already built with, since the kind decides only how it is drawn.
             assertRefinementChangesOnly(
-                    buildRichRow().readsAs(TooltipLineStyle.HEADER),
-                    buildRichRow(),
-                    "lineStyle");
+                buildRichRow().readsAs(TooltipLineStyle.HEADER),
+                buildRichRow(),
+                "lineStyle");
         }
 
         @Test
         void readsAsChangesNothingElseOnACentredRow() {
             assertRefinementChangesOnly(
-                    buildRichCentredRow().readsAs(TooltipLineStyle.HEADER),
-                    buildRichCentredRow(),
-                    "lineStyle");
+                buildRichCentredRow().readsAs(TooltipLineStyle.HEADER),
+                buildRichCentredRow(),
+                "lineStyle");
         }
     }
 }

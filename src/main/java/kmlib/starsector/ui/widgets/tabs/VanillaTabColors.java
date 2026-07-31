@@ -46,11 +46,11 @@ public record VanillaTabColors(
      */
     public static VanillaTabColors mapTabs() {
         return new VanillaTabColors(
-                StarsectorUiColor.VANILLA_BUTTON_BG_DARK.resolve(), // Fill: resting.
-                StarsectorUiColor.STEEL_BLUE.resolve(), // Fill: selected.
-                StarsectorUiColor.VANILLA_PLAYER_BASE.resolve(), // Accent.
-                StarsectorUiColor.VANILLA_BUTTON_TEXT.resolve(), // Tab Default.
-                StarsectorUiColor.VANILLA_PLAYER_BRIGHT.resolve(), // Tab Selected.
-                StarsectorUiColor.VANILLA_PLAYER_BASE.resolve()); // Tab Hovered.
+            StarsectorUiColor.VANILLA_BUTTON_BG_DARK.resolve(), // Fill: resting.
+            StarsectorUiColor.STEEL_BLUE.resolve(), // Fill: selected.
+            StarsectorUiColor.VANILLA_PLAYER_BASE.resolve(), // Accent.
+            StarsectorUiColor.VANILLA_BUTTON_TEXT.resolve(), // Tab Default.
+            StarsectorUiColor.VANILLA_PLAYER_BRIGHT.resolve(), // Tab Selected.
+            StarsectorUiColor.VANILLA_PLAYER_BASE.resolve()); // Tab Hovered.
     }
 }

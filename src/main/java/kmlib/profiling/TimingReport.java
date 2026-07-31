@@ -37,18 +37,25 @@ public final class TimingReport {
         }
 
         var report = new StringBuilder();
-        report.append(String.format(Locale.ROOT,
-                "%-" + sectionWidth + "s  %8s  %10s  %10s  %10s  %11s",
-                SECTION_HEADER, "COUNT", "AVG ms", "MIN ms", "MAX ms", "TOTAL ms"));
+        report.append(String.format(
+            Locale.ROOT,
+            "%-" + sectionWidth + "s  %8s  %10s  %10s  %10s  %11s",
+            SECTION_HEADER,
+            "COUNT",
+            "AVG ms",
+            "MIN ms",
+            "MAX ms",
+            "TOTAL ms"));
         for (var timing : timings) {
             report.append('\n');
-            report.append(String.format(Locale.ROOT,
-                    "%-" + sectionWidth + "s  %8d  %10.3f  %10.3f  %10.3f  %11.3f",
-                    timing.getSection(), timing.getCount(),
-                    Timings.convertNanosToMillis(timing.getAverageNanos()),
-                    Timings.convertNanosToMillis(timing.getMinNanos()),
-                    Timings.convertNanosToMillis(timing.getMaxNanos()),
-                    Timings.convertNanosToMillis(timing.getTotalNanos())));
+            report.append(String.format(
+                Locale.ROOT,
+                "%-" + sectionWidth + "s  %8d  %10.3f  %10.3f  %10.3f  %11.3f",
+                timing.getSection(), timing.getCount(),
+                Timings.convertNanosToMillis(timing.getAverageNanos()),
+                Timings.convertNanosToMillis(timing.getMinNanos()),
+                Timings.convertNanosToMillis(timing.getMaxNanos()),
+                Timings.convertNanosToMillis(timing.getTotalNanos())));
         }
         return report.toString();
     }

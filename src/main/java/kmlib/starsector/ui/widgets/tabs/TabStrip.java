@@ -40,11 +40,27 @@ public final class TabStrip {
      * @param measurer  measures each label's rendered width in the label font
      * @return one {@link LabeledTab} per label, in the same order
      */
-    public static List<LabeledTab> layoutTabs(float originX, float rowTopY, float tabHeight,
-            SegmentSpec spec, List<String> labels, LineWidthMeasurer measurer) {
-        var widths = HorizontalSegments.computeSegmentWidths(labels, spec, measurer);
-        var rects = HorizontalSegments.placeSegments(originX, rowTopY - tabHeight, tabHeight, widths);
+    public static List<LabeledTab> layoutTabs(
+            float originX,
+            float rowTopY,
+            float tabHeight,
+            SegmentSpec spec,
+            List<String> labels,
+            LineWidthMeasurer measurer) {
+
+        var widths = HorizontalSegments.computeSegmentWidths(
+            labels,
+            spec,
+            measurer);
+
+        var rects = HorizontalSegments.placeSegments(
+            originX,
+            rowTopY - tabHeight,
+            tabHeight,
+            widths);
+
         var tabs = new ArrayList<LabeledTab>(labels.size());
+
         for (var index = 0; index < labels.size(); index++) {
             tabs.add(new LabeledTab(labels.get(index), rects.get(index)));
         }
@@ -62,8 +78,11 @@ public final class TabStrip {
      * @param measurer measures each label's rendered width
      * @return the summed snapped width of the row, or 0 for no labels
      */
-    public static float measureRowWidth(List<String> labels, SegmentSpec spec,
+    public static float measureRowWidth(
+            List<String> labels,
+            SegmentSpec spec,
             LineWidthMeasurer measurer) {
+
         return HorizontalSegments.measureRowWidth(labels, spec, measurer);
     }
 
@@ -78,6 +97,10 @@ public final class TabStrip {
      * @return the containing tab's index, or {@link #NO_TAB}
      */
     public static int findTabIndexAt(List<LabeledTab> tabs, float pointX, float pointY) {
-        return Rectangles.findIndexContaining(tabs, LabeledTab::bounds, pointX, pointY);
+        return Rectangles.findIndexContaining(
+            tabs,
+            LabeledTab::bounds,
+            pointX,
+            pointY);
     }
 }

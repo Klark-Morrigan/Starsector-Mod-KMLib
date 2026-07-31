@@ -37,8 +37,8 @@ final class PolygonTessellatorTest {
             // CCW L-shape: a 30x30 square with a 20x20 bite out of the top-right,
             // area 900 - 400 = 500.
             var lShape = Arrays.asList(
-                    new double[] {0, 0}, new double[] {30, 0}, new double[] {30, 10},
-                    new double[] {10, 10}, new double[] {10, 30}, new double[] {0, 30});
+                new double[] {0, 0}, new double[] {30, 0}, new double[] {30, 10},
+                new double[] {10, 10}, new double[] {10, 30}, new double[] {0, 30});
 
             var triangles = PolygonTessellator.tessellateToTriangles(List.of(lShape));
 
@@ -50,11 +50,11 @@ final class PolygonTessellatorTest {
             // CCW 40x40 outer (area 1600) with a CW 20x20 hole (area 400): the filled
             // region is 1600 - 400 = 1200.
             var outer = Arrays.asList(
-                    new double[] {0, 0}, new double[] {40, 0},
-                    new double[] {40, 40}, new double[] {0, 40});
+                new double[] {0, 0}, new double[] {40, 0},
+                new double[] {40, 40}, new double[] {0, 40});
             var hole = Arrays.asList(
-                    new double[] {10, 10}, new double[] {10, 30},
-                    new double[] {30, 30}, new double[] {30, 10});
+                new double[] {10, 10}, new double[] {10, 30},
+                new double[] {30, 30}, new double[] {30, 10});
 
             var triangles = PolygonTessellator.tessellateToTriangles(List.of(outer, hole));
 
@@ -81,14 +81,14 @@ final class PolygonTessellatorTest {
             // A 20x20 square at the origin and a 20x20 square offset by (10, 10):
             // their overlap is the 10x10 square [10,10]-[20,20], area 100.
             var lower = Arrays.asList(
-                    new double[] {0, 0}, new double[] {20, 0},
-                    new double[] {20, 20}, new double[] {0, 20});
+                new double[] {0, 0}, new double[] {20, 0},
+                new double[] {20, 20}, new double[] {0, 20});
             var upper = Arrays.asList(
-                    new double[] {10, 10}, new double[] {30, 10},
-                    new double[] {30, 30}, new double[] {10, 30});
+                new double[] {10, 10}, new double[] {30, 10},
+                new double[] {30, 30}, new double[] {10, 30});
 
             var triangles = PolygonTessellator.tessellateIntersectionToTriangles(
-                    List.of(lower), List.of(upper));
+                List.of(lower), List.of(upper));
 
             assertThat(totalTriangleArea(triangles)).isCloseTo(100.0, within(AREA_TOLERANCE));
         }
@@ -98,14 +98,14 @@ final class PolygonTessellatorTest {
             // A 20x20 square wholly inside a 40x40 square: the overlap is the inner
             // square itself, area 400.
             var outer = Arrays.asList(
-                    new double[] {0, 0}, new double[] {40, 0},
-                    new double[] {40, 40}, new double[] {0, 40});
+                new double[] {0, 0}, new double[] {40, 0},
+                new double[] {40, 40}, new double[] {0, 40});
             var inner = Arrays.asList(
-                    new double[] {10, 10}, new double[] {30, 10},
-                    new double[] {30, 30}, new double[] {10, 30});
+                new double[] {10, 10}, new double[] {30, 10},
+                new double[] {30, 30}, new double[] {10, 30});
 
             var triangles = PolygonTessellator.tessellateIntersectionToTriangles(
-                    List.of(outer), List.of(inner));
+                List.of(outer), List.of(inner));
 
             assertThat(totalTriangleArea(triangles)).isCloseTo(400.0, within(AREA_TOLERANCE));
         }
@@ -113,14 +113,14 @@ final class PolygonTessellatorTest {
         @Test
         void disjoint_regions_produce_no_triangles() {
             var left = Arrays.asList(
-                    new double[] {0, 0}, new double[] {10, 0},
-                    new double[] {10, 10}, new double[] {0, 10});
+                new double[] {0, 0}, new double[] {10, 0},
+                new double[] {10, 10}, new double[] {0, 10});
             var right = Arrays.asList(
-                    new double[] {20, 20}, new double[] {30, 20},
-                    new double[] {30, 30}, new double[] {20, 30});
+                new double[] {20, 20}, new double[] {30, 20},
+                new double[] {30, 30}, new double[] {20, 30});
 
             assertThat(PolygonTessellator.tessellateIntersectionToTriangles(
-                    List.of(left), List.of(right))).isEmpty();
+                List.of(left), List.of(right))).isEmpty();
         }
 
         @Test
@@ -129,17 +129,17 @@ final class PolygonTessellatorTest {
             // 20x20 square [10,10]-[30,30] that sits over the hole: the overlap is the
             // 20x20 square (400) minus the hole it fully contains (100), area 300.
             var holedOuter = Arrays.asList(
-                    new double[] {0, 0}, new double[] {40, 0},
-                    new double[] {40, 40}, new double[] {0, 40});
+                new double[] {0, 0}, new double[] {40, 0},
+                new double[] {40, 40}, new double[] {0, 40});
             var hole = Arrays.asList(
-                    new double[] {15, 15}, new double[] {15, 25},
-                    new double[] {25, 25}, new double[] {25, 15});
+                new double[] {15, 15}, new double[] {15, 25},
+                new double[] {25, 25}, new double[] {25, 15});
             var probe = Arrays.asList(
-                    new double[] {10, 10}, new double[] {30, 10},
-                    new double[] {30, 30}, new double[] {10, 30});
+                new double[] {10, 10}, new double[] {30, 10},
+                new double[] {30, 30}, new double[] {10, 30});
 
             var triangles = PolygonTessellator.tessellateIntersectionToTriangles(
-                    Arrays.asList(holedOuter, hole), List.of(probe));
+                Arrays.asList(holedOuter, hole), List.of(probe));
 
             assertThat(totalTriangleArea(triangles)).isCloseTo(300.0, within(AREA_TOLERANCE));
         }
@@ -152,18 +152,18 @@ final class PolygonTessellatorTest {
             // the true overlap with the (10,10)-offset square - the 10x10 corner, 100 -
             // not the whole 20x20 square (400).
             var firstCopy = Arrays.asList(
-                    new double[] {0, 0}, new double[] {20, 0},
-                    new double[] {20, 20}, new double[] {0, 20});
+                new double[] {0, 0}, new double[] {20, 0},
+                new double[] {20, 20}, new double[] {0, 20});
             var secondCopy = Arrays.asList(
-                    new double[] {0, 0}, new double[] {20, 0},
-                    new double[] {20, 20}, new double[] {0, 20});
+                new double[] {0, 0}, new double[] {20, 0},
+                new double[] {20, 20}, new double[] {0, 20});
             var doubledSquare = Arrays.asList(firstCopy, secondCopy);
             var offset = Arrays.asList(
-                    new double[] {10, 10}, new double[] {30, 10},
-                    new double[] {30, 30}, new double[] {10, 30});
+                new double[] {10, 10}, new double[] {30, 10},
+                new double[] {30, 30}, new double[] {10, 30});
 
             var triangles = PolygonTessellator.tessellateIntersectionToTriangles(
-                    doubledSquare, List.of(offset));
+                doubledSquare, List.of(offset));
 
             assertThat(totalTriangleArea(triangles)).isCloseTo(100.0, within(AREA_TOLERANCE));
         }
@@ -171,11 +171,11 @@ final class PolygonTessellatorTest {
         @Test
         void an_empty_operand_produces_no_triangles() {
             var square = Arrays.asList(
-                    new double[] {0, 0}, new double[] {10, 0},
-                    new double[] {10, 10}, new double[] {0, 10});
+                new double[] {0, 0}, new double[] {10, 0},
+                new double[] {10, 10}, new double[] {0, 10});
 
             assertThat(PolygonTessellator.tessellateIntersectionToTriangles(
-                    List.of(), List.of(square))).isEmpty();
+                List.of(), List.of(square))).isEmpty();
         }
     }
 
@@ -186,14 +186,14 @@ final class PolygonTessellatorTest {
             // The same overlap the triangle form covers, as a boundary loop: the 10x10
             // square [10,10]-[20,20], area 100.
             var lower = Arrays.asList(
-                    new double[] {0, 0}, new double[] {20, 0},
-                    new double[] {20, 20}, new double[] {0, 20});
+                new double[] {0, 0}, new double[] {20, 0},
+                new double[] {20, 20}, new double[] {0, 20});
             var upper = Arrays.asList(
-                    new double[] {10, 10}, new double[] {30, 10},
-                    new double[] {30, 30}, new double[] {10, 30});
+                new double[] {10, 10}, new double[] {30, 10},
+                new double[] {30, 30}, new double[] {10, 30});
 
             var loops = PolygonTessellator.tessellateIntersectionToBoundaryLoops(
-                    List.of(lower), List.of(upper));
+                List.of(lower), List.of(upper));
 
             var total = loops.stream().mapToDouble(PolygonTessellatorTest::loopArea).sum();
             assertThat(total).isCloseTo(100.0, within(AREA_TOLERANCE));
@@ -204,14 +204,14 @@ final class PolygonTessellatorTest {
             // A 20x20 square wholly inside a 40x40 square outlines the inner square
             // untouched, area 400 - the clip leaves an interior operand alone.
             var outer = Arrays.asList(
-                    new double[] {0, 0}, new double[] {40, 0},
-                    new double[] {40, 40}, new double[] {0, 40});
+                new double[] {0, 0}, new double[] {40, 0},
+                new double[] {40, 40}, new double[] {0, 40});
             var inner = Arrays.asList(
-                    new double[] {10, 10}, new double[] {30, 10},
-                    new double[] {30, 30}, new double[] {10, 30});
+                new double[] {10, 10}, new double[] {30, 10},
+                new double[] {30, 30}, new double[] {10, 30});
 
             var loops = PolygonTessellator.tessellateIntersectionToBoundaryLoops(
-                    List.of(outer), List.of(inner));
+                List.of(outer), List.of(inner));
 
             var total = loops.stream().mapToDouble(PolygonTessellatorTest::loopArea).sum();
             assertThat(total).isCloseTo(400.0, within(AREA_TOLERANCE));
@@ -223,17 +223,17 @@ final class PolygonTessellatorTest {
             // the intersection is two loops - the case that makes the boundary a list of loops
             // rather than one ring. Each overlap is a 20x20 square (400), so the two sum to 800.
             var bar = Arrays.asList(
-                    new double[] {0, 40}, new double[] {100, 40},
-                    new double[] {100, 60}, new double[] {0, 60});
+                new double[] {0, 40}, new double[] {100, 40},
+                new double[] {100, 60}, new double[] {0, 60});
             var leftPillar = Arrays.asList(
-                    new double[] {10, 0}, new double[] {30, 0},
-                    new double[] {30, 100}, new double[] {10, 100});
+                new double[] {10, 0}, new double[] {30, 0},
+                new double[] {30, 100}, new double[] {10, 100});
             var rightPillar = Arrays.asList(
-                    new double[] {70, 0}, new double[] {90, 0},
-                    new double[] {90, 100}, new double[] {70, 100});
+                new double[] {70, 0}, new double[] {90, 0},
+                new double[] {90, 100}, new double[] {70, 100});
 
             var loops = PolygonTessellator.tessellateIntersectionToBoundaryLoops(
-                    List.of(bar), Arrays.asList(leftPillar, rightPillar));
+                List.of(bar), Arrays.asList(leftPillar, rightPillar));
 
             assertThat(loops).hasSize(2);
             var total = loops.stream().mapToDouble(PolygonTessellatorTest::loopArea).sum();
@@ -246,17 +246,17 @@ final class PolygonTessellatorTest {
             // 20x20 probe (400) minus the 10x10 hole it fully contains (100), area 300, and the
             // hole comes back as its own loop.
             var holedOuter = Arrays.asList(
-                    new double[] {0, 0}, new double[] {40, 0},
-                    new double[] {40, 40}, new double[] {0, 40});
+                new double[] {0, 0}, new double[] {40, 0},
+                new double[] {40, 40}, new double[] {0, 40});
             var hole = Arrays.asList(
-                    new double[] {15, 15}, new double[] {15, 25},
-                    new double[] {25, 25}, new double[] {25, 15});
+                new double[] {15, 15}, new double[] {15, 25},
+                new double[] {25, 25}, new double[] {25, 15});
             var probe = Arrays.asList(
-                    new double[] {10, 10}, new double[] {30, 10},
-                    new double[] {30, 30}, new double[] {10, 30});
+                new double[] {10, 10}, new double[] {30, 10},
+                new double[] {30, 30}, new double[] {10, 30});
 
             var loops = PolygonTessellator.tessellateIntersectionToBoundaryLoops(
-                    Arrays.asList(holedOuter, hole), List.of(probe));
+                Arrays.asList(holedOuter, hole), List.of(probe));
 
             var net = loops.stream().mapToDouble(PolygonTessellatorTest::signedLoopArea).sum();
             assertThat(Math.abs(net)).isCloseTo(300.0, within(AREA_TOLERANCE));
@@ -265,24 +265,24 @@ final class PolygonTessellatorTest {
         @Test
         void disjoint_regions_produce_no_loops() {
             var left = Arrays.asList(
-                    new double[] {0, 0}, new double[] {10, 0},
-                    new double[] {10, 10}, new double[] {0, 10});
+                new double[] {0, 0}, new double[] {10, 0},
+                new double[] {10, 10}, new double[] {0, 10});
             var right = Arrays.asList(
-                    new double[] {20, 20}, new double[] {30, 20},
-                    new double[] {30, 30}, new double[] {20, 30});
+                new double[] {20, 20}, new double[] {30, 20},
+                new double[] {30, 30}, new double[] {20, 30});
 
             assertThat(PolygonTessellator.tessellateIntersectionToBoundaryLoops(
-                    List.of(left), List.of(right))).isEmpty();
+                List.of(left), List.of(right))).isEmpty();
         }
 
         @Test
         void an_empty_operand_produces_no_loops() {
             var square = Arrays.asList(
-                    new double[] {0, 0}, new double[] {10, 0},
-                    new double[] {10, 10}, new double[] {0, 10});
+                new double[] {0, 0}, new double[] {10, 0},
+                new double[] {10, 10}, new double[] {0, 10});
 
             assertThat(PolygonTessellator.tessellateIntersectionToBoundaryLoops(
-                    List.of(), List.of(square))).isEmpty();
+                List.of(), List.of(square))).isEmpty();
         }
     }
 
@@ -291,8 +291,8 @@ final class PolygonTessellatorTest {
         @Test
         void a_simple_square_returns_one_loop_of_its_area() {
             var square = Arrays.asList(
-                    new double[] {0, 0}, new double[] {10, 0},
-                    new double[] {10, 10}, new double[] {0, 10});
+                new double[] {0, 0}, new double[] {10, 0},
+                new double[] {10, 10}, new double[] {0, 10});
 
             var loops = PolygonTessellator.tessellateToBoundaryLoops(List.of(square));
 
@@ -308,8 +308,8 @@ final class PolygonTessellatorTest {
             // self-crossing edge - so the reversed lobe (which would read as a stray
             // ear) is dropped. Each lobe is a 10x10 triangle of area 25.
             var bowtie = Arrays.asList(
-                    new double[] {0, 0}, new double[] {10, 10},
-                    new double[] {0, 10}, new double[] {10, 0});
+                new double[] {0, 0}, new double[] {10, 10},
+                new double[] {0, 10}, new double[] {10, 0});
 
             var loops = PolygonTessellator.tessellateToBoundaryLoops(List.of(bowtie));
 

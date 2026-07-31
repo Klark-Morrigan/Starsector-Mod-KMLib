@@ -81,7 +81,8 @@ public final class StarSystems {
      *         star-system order; a system with no location is skipped, having no
      *         position to record
      */
-    public static Map<String, double[]> collectPositionsById(SectorAPI sector,
+    public static Map<String, double[]> collectPositionsById(
+            SectorAPI sector,
             Predicate<StarSystemAPI> shouldInclude) {
         var positions = new LinkedHashMap<String, double[]>();
         if (sector == null) {
@@ -97,7 +98,9 @@ public final class StarSystems {
             if (shouldInclude != null && !shouldInclude.test(system)) {
                 continue;
             }
-            positions.put(system.getId(), new double[] {location.x, location.y});
+            positions.put(
+                system.getId(),
+                new double[] {location.x, location.y});
         }
         return positions;
     }
@@ -242,7 +245,9 @@ public final class StarSystems {
      *                                         an unfound colony counts too
      * @return true when a qualifying faction colony exists in the system
      */
-    public static boolean hasKnownOwnedMarket(SectorAPI sector, StarSystemAPI system,
+    public static boolean hasKnownOwnedMarket(
+            SectorAPI sector,
+            StarSystemAPI system,
             boolean shouldIncludeUndiscoveredMarkets) {
         for (var market : readMarkets(sector, system)) {
             if (Markets.isCountedAsColony(market, shouldIncludeUndiscoveredMarkets)) {
@@ -274,8 +279,8 @@ public final class StarSystems {
         var nearestDistance = Double.POSITIVE_INFINITY;
         for (var star : getStars(system)) {
             var distance = centreLocation == null
-                    ? 0.0
-                    : Points.computeDistance(centreLocation, star.getLocation());
+                ? 0.0
+                : Points.computeDistance(centreLocation, star.getLocation());
             if (isNearerCentre(distance, nearestDistance, star, nearestStar)) {
                 nearestDistance = distance;
                 nearestStar = star;
@@ -392,6 +397,7 @@ public final class StarSystems {
             double nearestDistance,
             SectorEntityToken candidate,
             SectorEntityToken nearest) {
+                
         if (candidateDistance != nearestDistance) {
             return candidateDistance < nearestDistance;
         }

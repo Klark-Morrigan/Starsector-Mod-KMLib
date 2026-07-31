@@ -89,7 +89,7 @@ class RectangleTest {
         void isHalfTheWidthInFromTheLeftEdge() {
             // A 100-wide rectangle from x=10 centres at x=60.
             assertThat(new Rectangle(10f, 20f, 100f, 50f).computeCenterX())
-                    .isCloseTo(60f, within(TOLERANCE));
+                .isCloseTo(60f, within(TOLERANCE));
         }
     }
 
@@ -100,7 +100,7 @@ class RectangleTest {
         void isHalfTheHeightUpFromTheBottomEdge() {
             // A 50-tall rectangle from y=20 centres at y=45.
             assertThat(new Rectangle(10f, 20f, 100f, 50f).computeCenterY())
-                    .isCloseTo(45f, within(TOLERANCE));
+                .isCloseTo(45f, within(TOLERANCE));
         }
     }
 }

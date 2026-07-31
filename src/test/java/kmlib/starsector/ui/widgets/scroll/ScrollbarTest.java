@@ -43,7 +43,7 @@ final class ScrollbarTest {
             // The track's right edge sits the default margin in from the container's right edge (300), at
             // the default width - so it lands in the container's gutter, not against the list column.
             assertThat(track.x() + track.width())
-                    .isCloseTo(300f - Scrollbar.DEFAULT_RIGHT_MARGIN, within(TOLERANCE));
+                .isCloseTo(300f - Scrollbar.DEFAULT_RIGHT_MARGIN, within(TOLERANCE));
             assertThat(track.width()).isCloseTo(Scrollbar.DEFAULT_TRACK_WIDTH, within(TOLERANCE));
         }
 
@@ -72,7 +72,7 @@ final class ScrollbarTest {
             var thumb = Scrollbar.computeThumb(region(0f), track());
             // At offset 0 the thumb's top edge meets the track's top edge (UI y grows up).
             assertThat(thumb.y() + thumb.height())
-                    .isCloseTo(track().y() + track().height(), within(TOLERANCE));
+                .isCloseTo(track().y() + track().height(), within(TOLERANCE));
         }
 
         @Test
@@ -121,7 +121,7 @@ final class ScrollbarTest {
             // hit exactly, and right of the content so it never competes with a content click.
             assertThat(grab.x()).isCloseTo(VIEWPORT.x() + VIEWPORT.width(), within(TOLERANCE));
             assertThat(grab.x() + grab.width())
-                    .isCloseTo(CONTAINER.x() + CONTAINER.width(), within(TOLERANCE));
+                .isCloseTo(CONTAINER.x() + CONTAINER.width(), within(TOLERANCE));
             assertThat(grab.width()).isGreaterThan(Scrollbar.DEFAULT_TRACK_WIDTH);
             assertThat(grab.y()).isCloseTo(VIEWPORT.y(), within(TOLERANCE));
             assertThat(grab.height()).isCloseTo(VIEWPORT.height(), within(TOLERANCE));
@@ -135,7 +135,7 @@ final class ScrollbarTest {
         void resolveOffsetForPointerIsZeroAtTheTrackTop() {
             // A pointer at the very top scrolls the content to its first row (offset 0).
             var offset = Scrollbar.resolveOffsetForPointer(region(0f), track(),
-                    track().y() + track().height());
+                track().y() + track().height());
             assertThat(offset).isCloseTo(0f, within(TOLERANCE));
         }
 
@@ -150,7 +150,7 @@ final class ScrollbarTest {
         void resolveOffsetForPointerClampsAPointerAboveTheTrack() {
             // A pointer past the top stays at 0 rather than a negative offset.
             var offset = Scrollbar.resolveOffsetForPointer(region(0f), track(),
-                    track().y() + track().height() + 500f);
+                track().y() + track().height() + 500f);
             assertThat(offset).isCloseTo(0f, within(TOLERANCE));
         }
 

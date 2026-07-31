@@ -11,5 +11,8 @@ import java.util.List;
  * listener hit-tests the same rectangles, so the control the player sees is the one the click
  * resolves to.
  */
-public record Control(ControlSpec spec, Rectangle bounds, List<Rectangle> segments) {
+public record Control(
+    ControlSpec spec,
+    Rectangle bounds,
+    List<Rectangle> segments) {
 }

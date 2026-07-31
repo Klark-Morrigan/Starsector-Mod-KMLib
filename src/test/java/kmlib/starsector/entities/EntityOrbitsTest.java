@@ -76,7 +76,7 @@ final class EntityOrbitsTest {
             when(randomMock.nextFloat()).thenReturn(1f);
 
             var speed = EntityOrbits.applyJitter(ROUND_BASE_SPEED,
-                    EntityOrbits.VANILLA_JITTER_FRACTION, randomMock);
+                EntityOrbits.VANILLA_JITTER_FRACTION, randomMock);
 
             // 2.0 * (1 + 1 * 0.25) = 2.5.
             assertThat(speed).isCloseTo(2.5f, within(TOLERANCE));
@@ -88,7 +88,7 @@ final class EntityOrbitsTest {
             when(randomMock.nextFloat()).thenReturn(0.5f);
 
             var speed = EntityOrbits.applyJitter(ROUND_BASE_SPEED,
-                    EntityOrbits.VANILLA_JITTER_FRACTION, randomMock);
+                EntityOrbits.VANILLA_JITTER_FRACTION, randomMock);
 
             // 2.0 * (1 + 0.5 * 0.25) = 2.25.
             assertThat(speed).isCloseTo(2.25f, within(TOLERANCE));
@@ -112,7 +112,7 @@ final class EntityOrbitsTest {
 
             // A pinned (zero) speed must stay pinned even with a spread applied.
             var speed = EntityOrbits.applyJitter(0f, EntityOrbits.VANILLA_JITTER_FRACTION,
-                    randomMock);
+                randomMock);
 
             assertThat(speed).isEqualTo(0f);
         }

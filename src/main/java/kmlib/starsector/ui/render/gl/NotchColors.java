@@ -18,7 +18,9 @@ import java.awt.Color;
  * @param chevron        the chevron's colour at rest
  * @param chevronHovered the chevron's colour while the handle is hovered
  */
-public record NotchColors(Color chevron, Color chevronHovered) {
+public record NotchColors(
+    Color chevron,
+    Color chevronHovered) {
 
     /**
      * Picks which of the two shades the chevron draws in: the hovered shade while the pointer is over
@@ -30,7 +32,7 @@ public record NotchColors(Color chevron, Color chevronHovered) {
      */
     public Color resolveChevronColour(boolean isHovered) {
         return isHovered
-                ? chevronHovered
-                : chevron;
+            ? chevronHovered
+            : chevron;
     }
 }

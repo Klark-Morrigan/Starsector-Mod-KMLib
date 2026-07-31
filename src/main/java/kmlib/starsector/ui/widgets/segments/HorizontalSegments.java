@@ -42,6 +42,7 @@ public final class HorizontalSegments {
             List<String> labels,
             SegmentSpec spec,
             LineWidthMeasurer measurer) {
+                
         if (labels.isEmpty()) {
             return List.of();
         }
@@ -76,6 +77,7 @@ public final class HorizontalSegments {
             List<String> labels,
             SegmentSpec spec,
             LineWidthMeasurer measurer) {
+
         var total = 0f;
         for (var width : computeSegmentWidths(labels, spec, measurer)) {
             total += width;
@@ -100,8 +102,10 @@ public final class HorizontalSegments {
             float bottomY,
             float height,
             List<Float> widths) {
+
         var segments = new ArrayList<Rectangle>(widths.size());
         var cursorX = originX;
+
         for (var width : widths) {
             segments.add(new Rectangle(cursorX, bottomY, width, height));
             cursorX += width;
@@ -123,7 +127,9 @@ public final class HorizontalSegments {
     public static List<Rectangle> computeDividers(
             List<Rectangle> segments,
             float thickness) {
+
         var dividers = new ArrayList<Rectangle>(Math.max(0, segments.size() - 1));
+
         for (var index = 1; index < segments.size(); index++) {
             var segment = segments.get(index);
             dividers.add(new Rectangle(segment.x(), segment.y(), thickness, segment.height()));

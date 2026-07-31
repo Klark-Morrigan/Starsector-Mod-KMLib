@@ -97,19 +97,19 @@ final class SpawnEntityCommandTest {
 
         starSystemsMock = mockStatic(StarSystems.class);
         starSystemsMock.when(() -> StarSystems.getPlayerStarSystem(any()))
-                .thenReturn(systemMock);
+            .thenReturn(systemMock);
 
         nameGeneratorMock = mockStatic(EntityNameGenerator.class);
         nameGeneratorMock.when(() -> EntityNameGenerator.generateJumpPointName(any(), anyFloat()))
-                .thenReturn(GENERATED_NAME);
+            .thenReturn(GENERATED_NAME);
 
         spawnerMock = mockStatic(EntitySpawner.class);
 
         entityOrbitsMock = mockStatic(EntityOrbits.class);
         entityOrbitsMock.when(() -> EntityOrbits.deriveBaseSpeedDegPerDay(anyFloat()))
-                .thenReturn(DERIVED_BASE_SPEED);
+            .thenReturn(DERIVED_BASE_SPEED);
         entityOrbitsMock.when(() -> EntityOrbits.applyJitter(anyFloat(), anyFloat(), any()))
-                .thenReturn(JITTERED_SPEED);
+            .thenReturn(JITTERED_SPEED);
 
         outputFake = new CommandOutputFake();
         command = new SpawnEntityCommand(outputFake);
@@ -132,9 +132,9 @@ final class SpawnEntityCommandTest {
 
             assertThat(result).isEqualTo(CommandResult.ERROR);
             assertThat(outputFake.getMessages())
-                    .anyMatch(message -> message.contains("Unknown entity type 'bogus'")
-                            && message.contains("gate")
-                            && message.contains("jump_point"));
+                .anyMatch(message -> message.contains("Unknown entity type 'bogus'")
+                        && message.contains("gate")
+                        && message.contains("jump_point"));
             spawnerMock.verifyNoInteractions();
         }
 
@@ -143,9 +143,9 @@ final class SpawnEntityCommandTest {
             var spawnedMock = mock(SectorEntityToken.class);
             when(spawnedMock.getId()).thenReturn("gate_42");
             spawnerMock.when(() -> EntitySpawner.spawnOrbitingCustomEntity(
-                            eq(focusMock), eq(Entities.INACTIVE_GATE), eq("neutral"),
-                            anyFloat(), anyFloat(), anyFloat()))
-                    .thenReturn(spawnedMock);
+                eq(focusMock), eq(Entities.INACTIVE_GATE), eq("neutral"),
+                anyFloat(), anyFloat(), anyFloat()))
+                .thenReturn(spawnedMock);
 
             var result = command.runCommand("gate", CommandContext.CAMPAIGN_MAP);
 
@@ -153,7 +153,7 @@ final class SpawnEntityCommandTest {
             // The spawned id must reach the player so they can target it with the
             // gate-activation command.
             assertThat(outputFake.getMessages())
-                    .anyMatch(message -> message.contains("gate_42"));
+                .anyMatch(message -> message.contains("gate_42"));
         }
 
         @Test
@@ -161,8 +161,8 @@ final class SpawnEntityCommandTest {
             var spawnedMock = mock(JumpPointAPI.class);
             when(spawnedMock.getName()).thenReturn(GENERATED_NAME);
             spawnerMock.when(() -> EntitySpawner.spawnOrbitingJumpPoint(
-                            eq(focusMock), eq(GENERATED_NAME), anyFloat(), anyFloat(), anyFloat()))
-                    .thenReturn(spawnedMock);
+                eq(focusMock), eq(GENERATED_NAME), anyFloat(), anyFloat(), anyFloat()))
+                .thenReturn(spawnedMock);
 
             var result = command.runCommand("jump_point", CommandContext.CAMPAIGN_MAP);
 
@@ -171,12 +171,12 @@ final class SpawnEntityCommandTest {
             // and that widened rate is what the spawner receives.
             entityOrbitsMock.verify(() -> EntityOrbits.deriveBaseSpeedDegPerDay(eq(ORBIT_RADIUS)));
             entityOrbitsMock.verify(() -> EntityOrbits.applyJitter(
-                    eq(DERIVED_BASE_SPEED), eq(EntityOrbits.VANILLA_JITTER_FRACTION), any()));
+                eq(DERIVED_BASE_SPEED), eq(EntityOrbits.VANILLA_JITTER_FRACTION), any()));
             spawnerMock.verify(() -> EntitySpawner.spawnOrbitingJumpPoint(
-                    eq(focusMock), eq(GENERATED_NAME), anyFloat(), eq(JITTERED_SPEED), anyFloat()));
+                eq(focusMock), eq(GENERATED_NAME), anyFloat(), eq(JITTERED_SPEED), anyFloat()));
             assertThat(outputFake.getMessages())
-                    .anyMatch(message -> message.contains("Spawned " + GENERATED_NAME)
-                            && message.contains("Corvus"));
+                .anyMatch(message -> message.contains("Spawned " + GENERATED_NAME)
+                        && message.contains("Corvus"));
         }
 
         @Test
@@ -184,8 +184,8 @@ final class SpawnEntityCommandTest {
             var spawnedMock = mock(JumpPointAPI.class);
             when(spawnedMock.getName()).thenReturn(GENERATED_NAME);
             spawnerMock.when(() -> EntitySpawner.spawnOrbitingJumpPoint(
-                            eq(focusMock), eq(GENERATED_NAME), anyFloat(), anyFloat(), anyFloat()))
-                    .thenReturn(spawnedMock);
+                eq(focusMock), eq(GENERATED_NAME), anyFloat(), anyFloat(), anyFloat()))
+                .thenReturn(spawnedMock);
 
             var result = command.runCommand("jump_point jitter=0.5", CommandContext.CAMPAIGN_MAP);
 
@@ -193,9 +193,9 @@ final class SpawnEntityCommandTest {
             // The named jitter shapes the widening of the radius-derived base in
             // place of the default.
             entityOrbitsMock.verify(() -> EntityOrbits.applyJitter(
-                    eq(DERIVED_BASE_SPEED), eq(0.5f), any()));
+                eq(DERIVED_BASE_SPEED), eq(0.5f), any()));
             spawnerMock.verify(() -> EntitySpawner.spawnOrbitingJumpPoint(
-                    eq(focusMock), eq(GENERATED_NAME), anyFloat(), eq(JITTERED_SPEED), anyFloat()));
+                eq(focusMock), eq(GENERATED_NAME), anyFloat(), eq(JITTERED_SPEED), anyFloat()));
         }
 
         @Test
@@ -203,8 +203,8 @@ final class SpawnEntityCommandTest {
             var spawnedMock = mock(JumpPointAPI.class);
             when(spawnedMock.getName()).thenReturn(GENERATED_NAME);
             spawnerMock.when(() -> EntitySpawner.spawnOrbitingJumpPoint(
-                            eq(focusMock), eq(GENERATED_NAME), anyFloat(), anyFloat(), anyFloat()))
-                    .thenReturn(spawnedMock);
+                eq(focusMock), eq(GENERATED_NAME), anyFloat(), anyFloat(), anyFloat()))
+                .thenReturn(spawnedMock);
 
             var result = command.runCommand("jump_point speed=5", CommandContext.CAMPAIGN_MAP);
 
@@ -213,9 +213,9 @@ final class SpawnEntityCommandTest {
             // default jitter still widens it before it reaches the spawner.
             entityOrbitsMock.verify(() -> EntityOrbits.deriveBaseSpeedDegPerDay(anyFloat()), never());
             entityOrbitsMock.verify(() -> EntityOrbits.applyJitter(
-                    eq(5f), eq(EntityOrbits.VANILLA_JITTER_FRACTION), any()));
+                eq(5f), eq(EntityOrbits.VANILLA_JITTER_FRACTION), any()));
             spawnerMock.verify(() -> EntitySpawner.spawnOrbitingJumpPoint(
-                    eq(focusMock), eq(GENERATED_NAME), anyFloat(), eq(JITTERED_SPEED), anyFloat()));
+                eq(focusMock), eq(GENERATED_NAME), anyFloat(), eq(JITTERED_SPEED), anyFloat()));
         }
 
         @Test
@@ -223,11 +223,11 @@ final class SpawnEntityCommandTest {
             var spawnedMock = mock(JumpPointAPI.class);
             when(spawnedMock.getName()).thenReturn(GENERATED_NAME);
             spawnerMock.when(() -> EntitySpawner.spawnOrbitingJumpPoint(
-                            eq(focusMock), eq(GENERATED_NAME), anyFloat(), anyFloat(), anyFloat()))
-                    .thenReturn(spawnedMock);
+                eq(focusMock), eq(GENERATED_NAME), anyFloat(), anyFloat(), anyFloat()))
+                .thenReturn(spawnedMock);
 
             var result = command.runCommand("jump_point speed=5 jitter=0.5",
-                    CommandContext.CAMPAIGN_MAP);
+                CommandContext.CAMPAIGN_MAP);
 
             assertThat(result).isEqualTo(CommandResult.SUCCESS);
             // speed and jitter combine: the explicit speed is the base, widened by
@@ -235,7 +235,7 @@ final class SpawnEntityCommandTest {
             entityOrbitsMock.verify(() -> EntityOrbits.deriveBaseSpeedDegPerDay(anyFloat()), never());
             entityOrbitsMock.verify(() -> EntityOrbits.applyJitter(eq(5f), eq(0.5f), any()));
             spawnerMock.verify(() -> EntitySpawner.spawnOrbitingJumpPoint(
-                    eq(focusMock), eq(GENERATED_NAME), anyFloat(), eq(JITTERED_SPEED), anyFloat()));
+                eq(focusMock), eq(GENERATED_NAME), anyFloat(), eq(JITTERED_SPEED), anyFloat()));
         }
 
         @Test
@@ -246,9 +246,9 @@ final class SpawnEntityCommandTest {
             var spawnedMock = mock(JumpPointAPI.class);
             when(spawnedMock.getName()).thenReturn(GENERATED_NAME);
             spawnerMock.when(() -> EntitySpawner.spawnOrbitingJumpPoint(
-                            eq(namedFocusMock), eq(GENERATED_NAME),
-                            anyFloat(), anyFloat(), anyFloat()))
-                    .thenReturn(spawnedMock);
+                eq(namedFocusMock), eq(GENERATED_NAME),
+                anyFloat(), anyFloat(), anyFloat()))
+                .thenReturn(spawnedMock);
 
             var result = command.runCommand("jump_point beta 5", CommandContext.CAMPAIGN_MAP);
 
@@ -256,9 +256,9 @@ final class SpawnEntityCommandTest {
             // First bare token is the focus id, the second the speed (base 5), which
             // the default jitter widens before it reaches the spawner.
             entityOrbitsMock.verify(() -> EntityOrbits.applyJitter(
-                    eq(5f), eq(EntityOrbits.VANILLA_JITTER_FRACTION), any()));
+                eq(5f), eq(EntityOrbits.VANILLA_JITTER_FRACTION), any()));
             spawnerMock.verify(() -> EntitySpawner.spawnOrbitingJumpPoint(
-                    eq(namedFocusMock), eq(GENERATED_NAME), anyFloat(), eq(JITTERED_SPEED), anyFloat()));
+                eq(namedFocusMock), eq(GENERATED_NAME), anyFloat(), eq(JITTERED_SPEED), anyFloat()));
         }
 
         @Test
@@ -267,7 +267,7 @@ final class SpawnEntityCommandTest {
 
             assertThat(result).isEqualTo(CommandResult.BAD_SYNTAX);
             assertThat(outputFake.getMessages())
-                    .anyMatch(message -> message.contains("Invalid speed 'fast'"));
+                .anyMatch(message -> message.contains("Invalid speed 'fast'"));
             spawnerMock.verifyNoInteractions();
         }
 
@@ -277,7 +277,7 @@ final class SpawnEntityCommandTest {
 
             assertThat(result).isEqualTo(CommandResult.BAD_SYNTAX);
             assertThat(outputFake.getMessages())
-                    .anyMatch(message -> message.contains("Invalid jitter 'lots'"));
+                .anyMatch(message -> message.contains("Invalid jitter 'lots'"));
             spawnerMock.verifyNoInteractions();
         }
 
@@ -287,7 +287,7 @@ final class SpawnEntityCommandTest {
 
             assertThat(result).isEqualTo(CommandResult.BAD_SYNTAX);
             assertThat(outputFake.getMessages())
-                    .anyMatch(message -> message.contains("Invalid jitter '-0.5'"));
+                .anyMatch(message -> message.contains("Invalid jitter '-0.5'"));
             spawnerMock.verifyNoInteractions();
         }
 
@@ -297,7 +297,7 @@ final class SpawnEntityCommandTest {
 
             assertThat(result).isEqualTo(CommandResult.BAD_SYNTAX);
             assertThat(outputFake.getMessages())
-                    .anyMatch(message -> message.contains("Unknown parameter 'color'"));
+                .anyMatch(message -> message.contains("Unknown parameter 'color'"));
             spawnerMock.verifyNoInteractions();
         }
 
@@ -307,7 +307,7 @@ final class SpawnEntityCommandTest {
 
             assertThat(result).isEqualTo(CommandResult.BAD_SYNTAX);
             assertThat(outputFake.getMessages())
-                    .anyMatch(message -> message.contains("Too many arguments"));
+                .anyMatch(message -> message.contains("Too many arguments"));
             spawnerMock.verifyNoInteractions();
         }
 
@@ -323,9 +323,9 @@ final class SpawnEntityCommandTest {
             assertThat(result).isEqualTo(CommandResult.BAD_SYNTAX);
             // The error names the candidate stars so the player can re-run.
             assertThat(outputFake.getMessages())
-                    .anyMatch(message -> message.contains("This system has 2 stars")
-                            && message.contains("alpha")
-                            && message.contains("beta"));
+                .anyMatch(message -> message.contains("This system has 2 stars")
+                        && message.contains("alpha")
+                        && message.contains("beta"));
             spawnerMock.verifyNoInteractions();
         }
 
@@ -337,7 +337,7 @@ final class SpawnEntityCommandTest {
 
             assertThat(result).isEqualTo(CommandResult.BAD_SYNTAX);
             assertThat(outputFake.getMessages())
-                    .anyMatch(message -> message.contains("No entity with id 'ghost'"));
+                .anyMatch(message -> message.contains("No entity with id 'ghost'"));
             spawnerMock.verifyNoInteractions();
         }
 
@@ -349,16 +349,16 @@ final class SpawnEntityCommandTest {
             var spawnedMock = mock(JumpPointAPI.class);
             when(spawnedMock.getName()).thenReturn(GENERATED_NAME);
             spawnerMock.when(() -> EntitySpawner.spawnOrbitingJumpPoint(
-                            eq(namedFocusMock), eq(GENERATED_NAME),
-                            anyFloat(), anyFloat(), anyFloat()))
-                    .thenReturn(spawnedMock);
+                eq(namedFocusMock), eq(GENERATED_NAME),
+                anyFloat(), anyFloat(), anyFloat()))
+                .thenReturn(spawnedMock);
 
             var result = command.runCommand("jump_point beta", CommandContext.CAMPAIGN_MAP);
 
             assertThat(result).isEqualTo(CommandResult.SUCCESS);
             // The named entity, not the system center, is the orbit focus.
             spawnerMock.verify(() -> EntitySpawner.spawnOrbitingJumpPoint(
-                    eq(namedFocusMock), eq(GENERATED_NAME), anyFloat(), anyFloat(), anyFloat()));
+                eq(namedFocusMock), eq(GENERATED_NAME), anyFloat(), anyFloat(), anyFloat()));
         }
 
         @Test
@@ -367,7 +367,7 @@ final class SpawnEntityCommandTest {
 
             assertThat(result).isEqualTo(CommandResult.WRONG_CONTEXT);
             assertThat(outputFake.getMessages())
-                    .anyMatch(message -> message.contains("can only run in a campaign"));
+                .anyMatch(message -> message.contains("can only run in a campaign"));
             spawnerMock.verifyNoInteractions();
         }
     }

@@ -25,7 +25,7 @@ class IconLabelRowTest {
         void placesASquareInsetOffTheTopAndBottomFlushWithTheLeftPadding() {
             // Left padding 4 -> x=14; vertical inset 2 -> y=22 and side 24-2*2=20.
             assertThat(IconLabelRow.computeIconBox(row))
-                    .isEqualTo(new Rectangle(14f, 22f, 20f, 20f));
+                .isEqualTo(new Rectangle(14f, 22f, 20f, 20f));
         }
     }
 
@@ -61,7 +61,7 @@ class IconLabelRowTest {
             // Its width is the slot width, its right edge the same trailing inset a value anchors to,
             // and its centre the row's centre, so a triangle column lines up where a value column would.
             assertThat(box.width())
-                    .isEqualTo(IconLabelRow.computeDirectionTriangleSlotWidth(row.height()));
+                .isEqualTo(IconLabelRow.computeDirectionTriangleSlotWidth(row.height()));
             assertThat(box.x() + box.width()).isEqualTo(IconLabelRow.computeTrailingAnchorX(row));
             assertThat(box.computeCenterY()).isEqualTo(row.computeCenterY());
         }
@@ -71,7 +71,7 @@ class IconLabelRowTest {
             // A taller row yields a wider slot, so a stack of equal-height rows shows even triangles.
             var tallerRow = new Rectangle(10f, 20f, 100f, 40f);
             assertThat(IconLabelRow.computeDirectionTriangleSlotWidth(tallerRow.height()))
-                    .isGreaterThan(IconLabelRow.computeDirectionTriangleSlotWidth(row.height()));
+                .isGreaterThan(IconLabelRow.computeDirectionTriangleSlotWidth(row.height()));
         }
     }
 
@@ -101,7 +101,7 @@ class IconLabelRowTest {
             // A zero-width value is "no value", so the four-arg width matches the three-arg one and a
             // value-less row is sized exactly as before.
             assertThat(IconLabelRow.measureRowWidth(24f, 50f, true, 0f))
-                    .isEqualTo(IconLabelRow.measureRowWidth(24f, 50f, true));
+                .isEqualTo(IconLabelRow.measureRowWidth(24f, 50f, true));
         }
     }
 }

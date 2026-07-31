@@ -24,9 +24,9 @@ import java.awt.Color;
  * @param borderColor the box's border colour
  */
 public record CursorTooltipStyle(
-        TooltipStyle typography,
-        float opacity,
-        float borderWidth,
-        Color fillColor,
-        Color borderColor) {
+    TooltipStyle typography,
+    float opacity,
+    float borderWidth,
+    Color fillColor,
+    Color borderColor) {
 }

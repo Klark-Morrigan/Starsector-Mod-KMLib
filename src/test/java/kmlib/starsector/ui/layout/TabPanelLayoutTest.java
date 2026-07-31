@@ -47,7 +47,7 @@ final class TabPanelLayoutTest {
     // rather than a constant the layout no longer reads.
     private static final float DEFAULT_BAND_HEIGHT = TabStyle.DEFAULT_HEADER_BAND_HEIGHT;
     private static final TabStyle DEFAULT_TAB_STYLE =
-            TabStyles.buildAtBandHeight(TabStyle.DEFAULT_HEADER_BAND_HEIGHT);
+        TabStyles.buildAtBandHeight(TabStyle.DEFAULT_HEADER_BAND_HEIGHT);
     private static final float HEADER_BOTTOM_Y = CONTENT_TOP_Y - DEFAULT_BAND_HEIGHT;
 
     // A band deliberately unlike the default, so an assertion that the injected height is honoured cannot
@@ -57,19 +57,19 @@ final class TabPanelLayoutTest {
     // "No Layer" is 8 chars, "Political Map" 13; each snaps to its measured width plus the tab text
     // padding, floored at the minimum tab width.
     private static final float FIRST_TAB_WIDTH = Math.max(
-            8 * WIDTH_PER_CHAR + ControlStripLayout.TAB_TEXT_PADDING, ControlStripLayout.MIN_TAB_WIDTH);
+        8 * WIDTH_PER_CHAR + ControlStripLayout.TAB_TEXT_PADDING, ControlStripLayout.MIN_TAB_WIDTH);
     private static final float SECOND_TAB_WIDTH = Math.max(
-            13 * WIDTH_PER_CHAR + ControlStripLayout.TAB_TEXT_PADDING, ControlStripLayout.MIN_TAB_WIDTH);
+        13 * WIDTH_PER_CHAR + ControlStripLayout.TAB_TEXT_PADDING, ControlStripLayout.MIN_TAB_WIDTH);
     private static final float HEADER_WIDTH = FIRST_TAB_WIDTH + SECOND_TAB_WIDTH;
 
     private final LineWidthMeasurer measurerFake = new LineWidthMeasurerFake(WIDTH_PER_CHAR);
 
     private static final ControlSpec.Tabs TABS = new ControlSpec.Tabs(
-            List.of("No Layer", "Political Map"), List.of(), 0, ControlAction.NONE);
+        List.of("No Layer", "Political Map"), List.of(), 0, ControlAction.NONE);
 
     // A one-checkbox body, so the body has a definite non-zero height beneath the header.
     private static final List<ControlSpec> BODY = List.of(
-            ControlSpec.Checkbox.lit("X", false, ControlAction.NONE));
+        ControlSpec.Checkbox.lit("X", false, ControlAction.NONE));
 
     @Nested
     class ComputePlacement {
@@ -84,8 +84,8 @@ final class TabPanelLayoutTest {
             assertThat(first.x()).isCloseTo(CONTENT_X, within(TOLERANCE));
             assertThat(first.width()).isCloseTo(FIRST_TAB_WIDTH, within(TOLERANCE));
             assertThat(first.y() + first.height())
-                    .as("the header sits flush under the top border, not inset like a body row")
-                    .isCloseTo(CONTENT_TOP_Y, within(TOLERANCE));
+                .as("the header sits flush under the top border, not inset like a body row")
+                .isCloseTo(CONTENT_TOP_Y, within(TOLERANCE));
             assertThat(first.height()).isCloseTo(DEFAULT_BAND_HEIGHT, within(TOLERANCE));
 
             var second = header.segments().get(1);
@@ -117,14 +117,14 @@ final class TabPanelLayoutTest {
             // rather than inset by the border, and the header's first tab starts there too.
             assertThat(body.x()).isCloseTo(PADDING_LEFT, within(TOLERANCE));
             assertThat(droppedLeft.tabsHeader().segments().get(0).x())
-                    .isCloseTo(PADDING_LEFT, within(TOLERANCE));
+                .isCloseTo(PADDING_LEFT, within(TOLERANCE));
             // The box stays anchored at the same left edge but reclaims the dropped border's width, so it is
             // exactly one border narrower than the fully framed box - no bare strip where the border was.
             assertThat(box.x()).isCloseTo(PADDING_LEFT, within(TOLERANCE));
             assertThat(box.width())
-                    .isCloseTo(body.width() + BORDER_WIDTH, within(TOLERANCE));
+                .isCloseTo(body.width() + BORDER_WIDTH, within(TOLERANCE));
             assertThat(framed.body().box().width() - box.width())
-                    .isCloseTo(BORDER_WIDTH, within(TOLERANCE));
+                .isCloseTo(BORDER_WIDTH, within(TOLERANCE));
         }
 
         @Test
@@ -134,9 +134,9 @@ final class TabPanelLayoutTest {
             // Dropping the left border collapses width only; the top and bottom are still framed, so the box
             // keeps its full height and top anchor.
             assertThat(droppedLeft.body().box().height())
-                    .isCloseTo(framed.body().box().height(), within(TOLERANCE));
+                .isCloseTo(framed.body().box().height(), within(TOLERANCE));
             assertThat(droppedLeft.body().box().y() + droppedLeft.body().box().height())
-                    .isCloseTo(BOX_TOP_Y, within(TOLERANCE));
+                .isCloseTo(BOX_TOP_Y, within(TOLERANCE));
         }
 
         @Test
@@ -149,7 +149,7 @@ final class TabPanelLayoutTest {
             // panel leaves for the build to resolve, and which the header's own segments stay hit-testable
             // over since input reads the tab geometry, not the box.
             assertThat(header.bounds().x() + header.bounds().width())
-                    .isGreaterThan(box.x() + box.width());
+                .isGreaterThan(box.x() + box.width());
         }
 
         @Test
@@ -166,8 +166,8 @@ final class TabPanelLayoutTest {
             var body = place(BODY).body().body();
             assertThat(body.x()).isCloseTo(CONTENT_X, within(TOLERANCE));
             assertThat(body.y() + body.height())
-                    .as("the body's top edge abuts the header band's bottom")
-                    .isCloseTo(HEADER_BOTTOM_Y, within(TOLERANCE));
+                .as("the body's top edge abuts the header band's bottom")
+                .isCloseTo(HEADER_BOTTOM_Y, within(TOLERANCE));
             assertThat(body.height()).isGreaterThan(0f);
         }
 
@@ -181,13 +181,13 @@ final class TabPanelLayoutTest {
             assertThat(box.x()).isCloseTo(PADDING_LEFT, within(TOLERANCE));
             assertThat(box.y() + box.height()).isCloseTo(BOX_TOP_Y, within(TOLERANCE));
             assertThat(box.height())
-                    .isCloseTo(ControlStripLayout.TAB_HEIGHT + body.height() + 2f * BORDER_WIDTH,
-                            within(TOLERANCE));
+                .isCloseTo(ControlStripLayout.TAB_HEIGHT + body.height() + 2f * BORDER_WIDTH,
+                    within(TOLERANCE));
             // And it encloses both the header segments and the body.
             var header = placement.tabsHeader();
             assertThat(box.y()).isLessThanOrEqualTo(body.y() + TOLERANCE);
             assertThat(header.bounds().y() + header.bounds().height())
-                    .isLessThanOrEqualTo(box.y() + box.height() + TOLERANCE);
+                .isLessThanOrEqualTo(box.y() + box.height() + TOLERANCE);
         }
 
         @Test
@@ -206,7 +206,7 @@ final class TabPanelLayoutTest {
             assertThat(halfWidth).isCloseTo(fullWidth * 0.5f, within(TOLERANCE));
             // ...and the box tracks the interpolated interior plus the border on each edge.
             assertThat(halfPlacement.body().box().width())
-                    .isCloseTo(halfWidth + 2f * BORDER_WIDTH, within(TOLERANCE));
+                .isCloseTo(halfWidth + 2f * BORDER_WIDTH, within(TOLERANCE));
         }
 
         @Test
@@ -222,7 +222,7 @@ final class TabPanelLayoutTest {
             assertThat(box.y() + box.height()).isCloseTo(BOX_TOP_Y, within(TOLERANCE));
             // The collapse is horizontal only, so the rail keeps the fully expanded box's height.
             assertThat(box.height())
-                    .isCloseTo(place(BODY, 0f).body().box().height(), within(TOLERANCE));
+                .isCloseTo(place(BODY, 0f).body().box().height(), within(TOLERANCE));
         }
 
         @Test
@@ -258,9 +258,9 @@ final class TabPanelLayoutTest {
             // The notch rides the box's right edge at every fraction, so as the body collapses leftward the
             // handle moves in with it and stays reachable to expand the docked panel again.
             assertThat(expanded.notch().x())
-                    .isCloseTo(expanded.body().box().x() + expanded.body().box().width(), within(TOLERANCE));
+                .isCloseTo(expanded.body().box().x() + expanded.body().box().width(), within(TOLERANCE));
             assertThat(docked.notch().x())
-                    .isCloseTo(docked.body().box().x() + docked.body().box().width(), within(TOLERANCE));
+                .isCloseTo(docked.body().box().x() + docked.body().box().width(), within(TOLERANCE));
             assertThat(docked.notch().x()).isLessThan(expanded.notch().x());
         }
 
@@ -278,8 +278,8 @@ final class TabPanelLayoutTest {
         @Test
         void computePlacementDocksToAZeroWidthRailWhenThereIsNoBorder() {
             var placement = TabPanelLayout.computePlacement(SCREEN_HEIGHT,
-                    new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT), new BoxBorder(0f),
-                    DEFAULT_TAB_STYLE, TABS, BODY, measurerFake, new TabPanelViewState(0f, 1f));
+                new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT), new BoxBorder(0f),
+                DEFAULT_TAB_STYLE, TABS, BODY, measurerFake, new TabPanelViewState(0f, 1f));
             var box = placement.body().box();
             // With no border, the docked rail has no interior and no border to keep, so the box collapses
             // to zero width - yet the placement stays well-formed and the notch still anchors to the edge.
@@ -293,9 +293,9 @@ final class TabPanelLayoutTest {
             // A fraction past the ends behaves as the nearest end - past 1 stays fully docked, below 0 stays
             // fully expanded - so an overshooting animation value never inverts the geometry.
             assertThat(place(BODY, 2f).body().box().width())
-                    .isCloseTo(place(BODY, 1f).body().box().width(), within(TOLERANCE));
+                .isCloseTo(place(BODY, 1f).body().box().width(), within(TOLERANCE));
             assertThat(place(BODY, -1f).body().box().width())
-                    .isCloseTo(place(BODY, 0f).body().box().width(), within(TOLERANCE));
+                .isCloseTo(place(BODY, 0f).body().box().width(), within(TOLERANCE));
         }
 
         @Test
@@ -312,9 +312,9 @@ final class TabPanelLayoutTest {
             // The band is content the box wraps, so the whole footprint shortens by exactly what the band
             // gave up - the body keeps its own height rather than stretching to absorb the difference.
             assertThat(styled.body().body().height())
-                    .isCloseTo(placement.body().body().height(), within(TOLERANCE));
+                .isCloseTo(placement.body().body().height(), within(TOLERANCE));
             assertThat(placement.body().box().height() - styled.body().box().height())
-                    .isCloseTo(DEFAULT_BAND_HEIGHT - CUSTOM_BAND_HEIGHT, within(TOLERANCE));
+                .isCloseTo(DEFAULT_BAND_HEIGHT - CUSTOM_BAND_HEIGHT, within(TOLERANCE));
         }
 
         @Test
@@ -326,15 +326,28 @@ final class TabPanelLayoutTest {
             assertThat(styled.tabsHeader().bounds().y()).isCloseTo(CONTENT_TOP_Y, within(TOLERANCE));
         }
 
+        @Test
+        void computePlacementCarriesTheBorderItFramedTheBoxAround() {
+            // The width a later stroke must use: handed back on the placement so the pass that paints
+            // the frame spends exactly the inset this layout reserved for it, rather than re-reading
+            // the width from the source the caller read it from.
+            var borderedEdges = Set.of(BoxEdge.TOP, BoxEdge.LEFT);
+
+            var placement = place(BODY, 0f, borderedEdges);
+
+            assertThat(placement.border().width()).isCloseTo(BORDER_WIDTH, within(TOLERANCE));
+            assertThat(placement.border().edges()).isEqualTo(borderedEdges);
+        }
+
         private TabPanelPlacement place(List<ControlSpec> bodyControls) {
             return place(bodyControls, 0f);
         }
 
         private TabPanelPlacement placeStyled(TabStyle tabStyle, List<ControlSpec> bodyControls) {
             return TabPanelLayout.computePlacement(SCREEN_HEIGHT,
-                    new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT),
-                    new BoxBorder(BORDER_WIDTH), tabStyle, TABS, bodyControls, measurerFake,
-                    TabPanelViewState.RESTING);
+                new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT),
+                new BoxBorder(BORDER_WIDTH), tabStyle, TABS, bodyControls, measurerFake,
+                TabPanelViewState.RESTING);
         }
 
         private TabPanelPlacement place(List<ControlSpec> bodyControls, float collapseFraction) {
@@ -344,9 +357,9 @@ final class TabPanelLayoutTest {
         private TabPanelPlacement place(
                 List<ControlSpec> bodyControls, float collapseFraction, Set<BoxEdge> borderedEdges) {
             return TabPanelLayout.computePlacement(SCREEN_HEIGHT,
-                    new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT),
-                    new BoxBorder(BORDER_WIDTH, borderedEdges), DEFAULT_TAB_STYLE, TABS, bodyControls,
-                    measurerFake, new TabPanelViewState(0f, collapseFraction));
+                new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT),
+                new BoxBorder(BORDER_WIDTH, borderedEdges), DEFAULT_TAB_STYLE, TABS, bodyControls,
+                measurerFake, new TabPanelViewState(0f, collapseFraction));
         }
     }
 }

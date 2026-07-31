@@ -30,10 +30,10 @@ public record SystemClaimBreakdown(
 
     /** An unreadable or wholly empty system: nobody present, nobody claiming, no override. */
     public static final SystemClaimBreakdown NONE =
-            new SystemClaimBreakdown(
-                    null,
-                    null,
-                    List.of());
+        new SystemClaimBreakdown(
+            null,
+            null,
+            List.of());
 
     /**
      * Takes an immutable copy of the standings, and reads a null list as an empty one, so a

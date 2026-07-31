@@ -33,8 +33,14 @@ import java.util.List;
  * @param scrollOffset   the applied scroll offset in pixels, baked into the scrolling control's bounds
  * @param scrollOverflow how far the scrolling control overruns its viewport, zero when it fits
  */
-public record PanelPlacement(Rectangle box, Rectangle body, List<Control> bodyControls,
-        Rectangle flexViewport, float scrollOffset, float scrollOverflow) {
+public record PanelPlacement(
+    Rectangle box,
+    Rectangle body,
+    List<Control> bodyControls,
+    Rectangle flexViewport,
+    float scrollOffset,
+    float scrollOverflow) {
+
     /**
      * @return whether the scrolling control overruns its viewport, so the renderer draws a scrollbar and
      *         the input listener scrolls on a wheel event
@@ -52,6 +58,10 @@ public record PanelPlacement(Rectangle box, Rectangle body, List<Control> bodyCo
      * @return the scroll region for this panel's scrolling control
      */
     public ScrollRegion toScrollRegion() {
-        return new ScrollRegion(body(), flexViewport(), scrollOffset(), scrollOverflow());
+        return new ScrollRegion(
+            body(),
+            flexViewport(),
+            scrollOffset(),
+            scrollOverflow());
     }
 }

@@ -41,6 +41,30 @@ public final class Points {
     }
 
     /**
+     * The signed projection of {@code (x, y)} onto an axis - {@code point . axis}, how far
+     * along that direction the point sits, measured from the origin.
+     *
+     * <p>The one home for the arithmetic every axis-relative measure is built from: a point's
+     * position along a direction, its perpendicular offset (the same projection taken onto
+     * that direction's normal), and the bounds {@link #projectExtentOnto} takes over a cloud.
+     * Stated once here so a caller names what its projection means rather than restating the
+     * formula, where a transposed component reads as plausible code.
+     *
+     * <p>The axis need not be unit length: scaling it scales the projection by the same
+     * factor, so the sign and the ordering of two projections survive either way, while only
+     * a unit axis makes the result a true world distance.
+     *
+     * @param x     x of the point to project
+     * @param y     y of the point to project
+     * @param axisX x of the direction to project onto
+     * @param axisY y of the direction to project onto
+     * @return the signed projection along the axis
+     */
+    public static double projectPointOnto(double x, double y, double axisX, double axisY) {
+        return x * axisX + y * axisY;
+    }
+
+    /**
      * The extent of a point cloud projected onto an axis, as {@code {min, max}} - the
      * lowest and highest of each point's signed projection {@code point . axis}. The
      * width of the cloud along that direction is {@code max - min}: measuring a spread
@@ -69,7 +93,7 @@ public final class Points {
         var min = Double.POSITIVE_INFINITY;
         var max = Double.NEGATIVE_INFINITY;
         for (var point : points) {
-            var projection = point[0] * axisX + point[1] * axisY;
+            var projection = projectPointOnto(point[0], point[1], axisX, axisY);
             min = Math.min(min, projection);
             max = Math.max(max, projection);
         }
@@ -100,7 +124,7 @@ public final class Points {
             double axisY) {
         if (pointGroups.isEmpty()) {
             throw new IllegalArgumentException(
-                    "Cannot project a combined extent of no point groups");
+                "Cannot project a combined extent of no point groups");
         }
         var min = Double.POSITIVE_INFINITY;
         var max = Double.NEGATIVE_INFINITY;

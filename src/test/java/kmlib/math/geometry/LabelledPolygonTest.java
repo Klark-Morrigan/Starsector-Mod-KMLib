@@ -30,7 +30,7 @@ final class LabelledPolygonTest {
             assertThat(polygon.isEmpty()).isFalse();
             assertThat(polygon.getVertices()).hasSize(4);
             assertThat(polygon.getEdgeLabels()).containsExactly(SEED_LABEL, SEED_LABEL, SEED_LABEL,
-                    SEED_LABEL);
+                SEED_LABEL);
         }
 
         @Test
@@ -52,7 +52,7 @@ final class LabelledPolygonTest {
         @Test
         void fromLabelledEdgesKeepsTheVerticesAndPerEdgeLabels() {
             var vertices = java.util.List.of(
-                    new double[] {0, 0}, new double[] {10, 0}, new double[] {10, 10});
+                new double[] {0, 0}, new double[] {10, 0}, new double[] {10, 10});
 
             var polygon = LabelledPolygon.fromLabelledEdges(vertices, new int[] {1, 2, 3});
 
@@ -65,7 +65,7 @@ final class LabelledPolygonTest {
             var vertices = java.util.List.of(new double[] {0, 0}, new double[] {10, 0});
 
             assertThatThrownBy(() -> LabelledPolygon.fromLabelledEdges(vertices, new int[] {1}))
-                    .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(IllegalArgumentException.class);
         }
     }
 
@@ -81,8 +81,8 @@ final class LabelledPolygonTest {
             var clipped = diamond.clipToHalfPlane(new HalfPlane(50, 0, 1, 0), CLIP_LABEL);
 
             assertThat(clipped.getVertices()).isNotEmpty();
-            assertThat(clipped.getVertices()).allSatisfy(vertex ->
-                    assertThat(vertex[0]).isGreaterThanOrEqualTo(50 - 1e-9));
+            assertThat(clipped.getVertices())
+                .allSatisfy(vertex -> assertThat(vertex[0]).isGreaterThanOrEqualTo(50 - 1e-9));
         }
 
         @Test

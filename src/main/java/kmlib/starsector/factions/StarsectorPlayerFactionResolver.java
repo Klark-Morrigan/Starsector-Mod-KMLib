@@ -72,7 +72,7 @@ public final class StarsectorPlayerFactionResolver {
      *  {@code player.faction} file). Any of these as a live
      *  {@code displayName} reads worse in prose than a context fallback. */
     private static final Set<String> DEFAULT_UNESTABLISHED_PLACEHOLDERS =
-            Set.of("Independent", "player", "Player");
+        Set.of("Independent", "player", "Player");
 
     /** Live placeholder set the established-check and the display-name
      *  fallback both read from. Mutable so a downstream mod (or a
@@ -82,7 +82,7 @@ public final class StarsectorPlayerFactionResolver {
      *  collections cannot mutate the live set behind the resolver's
      *  back. */
     private static volatile Set<String> unestablishedPlayerFactionNames =
-            DEFAULT_UNESTABLISHED_PLACEHOLDERS;
+        DEFAULT_UNESTABLISHED_PLACEHOLDERS;
 
     private StarsectorPlayerFactionResolver() {
     }
@@ -113,7 +113,7 @@ public final class StarsectorPlayerFactionResolver {
         // Defensive copy so later mutations on the caller's collection
         // do not bleed into the resolver's live set.
         unestablishedPlayerFactionNames =
-                Collections.unmodifiableSet(new LinkedHashSet<>(names));
+            Collections.unmodifiableSet(new LinkedHashSet<>(names));
     }
 
     /**
@@ -182,8 +182,8 @@ public final class StarsectorPlayerFactionResolver {
         @Override
         public FactionAPI playerFaction() {
             return Global.getSector() == null
-                    ? null
-                    : Global.getSector().getPlayerFaction();
+                ? null
+                : Global.getSector().getPlayerFaction();
         }
 
         @Override

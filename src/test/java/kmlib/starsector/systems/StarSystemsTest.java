@@ -101,7 +101,7 @@ final class StarSystemsTest {
             when(sectorMock.getStarSystems()).thenReturn(List.of(kept, rejected));
 
             var positions = StarSystems.collectPositionsById(sectorMock,
-                    system -> system.getId().equals("kept"));
+                system -> system.getId().equals("kept"));
 
             assertThat(positions).containsOnlyKeys("kept");
         }
@@ -306,7 +306,7 @@ final class StarSystemsTest {
         @Test
         void yields_infinity_for_a_null_body() {
             assertThat(StarSystems.getOrbitalDistanceTo(null, mock(SectorEntityToken.class)))
-                    .isEqualTo(Double.POSITIVE_INFINITY);
+                .isEqualTo(Double.POSITIVE_INFINITY);
         }
     }
 
@@ -370,7 +370,7 @@ final class StarSystemsTest {
             when(sectorMock.getEconomy()).thenReturn(null);
 
             assertThat(StarSystems.hasKnownOwnedMarket(sectorMock, mock(StarSystemAPI.class)))
-                    .isFalse();
+                .isFalse();
         }
     }
 
@@ -385,7 +385,7 @@ final class StarSystemsTest {
             // Order is the economy's, unfiltered: a caller mirroring vanilla's tie rule
             // resolves on which market comes first, so the traversal must not reorder.
             assertThat(StarSystems.readMarkets(sector, onlySystem(sector)))
-                    .containsExactly(first, second);
+                .containsExactly(first, second);
         }
 
         @Test
@@ -430,7 +430,7 @@ final class StarSystemsTest {
         @Test
         void returns_the_decreed_faction_id() {
             assertThat(StarSystems.readFactionClaimOverride(systemClaimedBy("luddic_church")))
-                    .isEqualTo("luddic_church");
+                .isEqualTo("luddic_church");
         }
 
         @Test

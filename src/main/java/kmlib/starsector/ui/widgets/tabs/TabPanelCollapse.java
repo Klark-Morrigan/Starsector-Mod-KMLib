@@ -29,6 +29,7 @@ public final class TabPanelCollapse {
     // Linear animation parameter in [0, 1]: 0 fully expanded, 1 fully docked. Stepped linearly by elapsed
     // time and eased only on read, so the eased fraction stays continuous when the direction reverses.
     private float progress;
+
     // Which end the animation is heading for: true steps progress toward docked (1), false toward expanded
     // (0). A settled panel keeps its last direction, so the next toggle sends it the other way.
     private boolean isCollapsing;
@@ -42,11 +43,13 @@ public final class TabPanelCollapse {
      */
     public static TabPanelCollapse createDocked() {
         var collapse = new TabPanelCollapse();
+
         // Seed the linear parameter at the docked end and aim it there, so the eased read reports a full
         // fraction and the next toggle reverses it toward expanded - the same end state a full collapse
         // settles into, reached without stepping through the animation.
         collapse.progress = 1f;
         collapse.isCollapsing = true;
+
         return collapse;
     }
 
@@ -72,8 +75,15 @@ public final class TabPanelCollapse {
      * @param durationSeconds how long a full collapse or expand should take; zero or less snaps instantly
      */
     public void advanceByElapsedTime(float elapsedSeconds, float durationSeconds) {
-        var step = durationSeconds > 0f ? elapsedSeconds / durationSeconds : 1f;
-        var stepped = isCollapsing ? progress + step : progress - step;
+
+        var step = durationSeconds > 0f
+            ? elapsedSeconds / durationSeconds
+            : 1f;
+
+        var stepped = isCollapsing
+            ? progress + step
+            : progress - step;
+            
         progress = Ranges.clampToUnit(stepped);
     }
 

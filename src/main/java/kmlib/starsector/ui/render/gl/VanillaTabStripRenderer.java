@@ -44,9 +44,9 @@ public final class VanillaTabStripRenderer {
     // in-game. The click and hotkey pulses (added later) wash the same fill by a larger, animated
     // amount, so they layer on this same mechanism.
     private static final float HOVER_WHITE_WASH = 0.15f;
-
     private static final float BASELINE_THICKNESS = 1f;
     private static final float UNDERLINE_THICKNESS = 2f;
+
     // Pixel gap drawn between the label and its delimited shortcut, matching the two-space gap the
     // layout measured with.
     private static final float SHORTCUT_GAP = 6f;
@@ -82,23 +82,23 @@ public final class VanillaTabStripRenderer {
             var isHovered = index == hoveredIndex;
             renderChrome(tab.bounds(), isSelected, isHovered, colors, opacity);
             renderTabText(
-                    tab.bounds(),
-                    tab.content(),
-                    isSelected,
-                    isHovered,
-                    colors,
-                    style.hotkey(),
-                    textFace,
-                    opacity);
+                tab.bounds(),
+                tab.content(),
+                isSelected,
+                isHovered,
+                colors,
+                style.hotkey(),
+                textFace,
+                opacity);
         }
         // The seams between tabs, ruled once over the laid boxes through the shared segmented-row
         // primitive so this strip and a radio row divide their segments the same way. Drawn after the
         // per-tab chrome (a divider must sit over the backdrops it parts) and clear of the centred
         // labels, so the single pass reads identically to a per-tab rule.
         HorizontalSegmentsRenderer.renderSeamDividers(
-                collectBounds(tabs),
-                colors.accent(),
-                opacity);
+            collectBounds(tabs),
+            colors.accent(),
+            opacity);
     }
 
     // The laid tab boxes, in row order, for the shared seam-divider pass.
@@ -122,37 +122,40 @@ public final class VanillaTabStripRenderer {
             VanillaTabColors colors,
             float opacity) {
 
-        var baseFill = isSelected ? colors.fillSelected() : colors.fillDefault();
+        var baseFill = isSelected
+            ? colors.fillSelected()
+            : colors.fillDefault();
+
         // A hovered tab lifts by washing its fill a small amount toward white; a resting tab draws its
         // bare state fill. The pulse states (click, hotkey) added later wash this same fill further.
         var fill = isHovered
-                ? Colors.blendRgbTowards(
-                        baseFill,
-                        StarsectorUiColor.WHITE.resolve(),
-                        HOVER_WHITE_WASH)
-                : baseFill;
-        UiFill.renderQuad(bounds, new UiElementPaint(fill, opacity));
+            ? Colors.blendRgbTowards(
+                baseFill,
+                StarsectorUiColor.WHITE.resolve(),
+                HOVER_WHITE_WASH)
+            : baseFill;
 
+        UiFill.renderQuad(bounds, new UiElementPaint(fill, opacity));
         UiFill.renderQuad(
-                new Rectangle(
-                        bounds.x(),
-                        bounds.y(),
-                        bounds.width(),
-                        BASELINE_THICKNESS),
-                new UiElementPaint(
-                        colors.accent(),
-                        opacity * HorizontalSegmentsRenderer.DIVIDER_ALPHA_MULT));
+            new Rectangle(
+                bounds.x(),
+                bounds.y(),
+                bounds.width(),
+                BASELINE_THICKNESS),
+            new UiElementPaint(
+                colors.accent(),
+                opacity * HorizontalSegmentsRenderer.DIVIDER_ALPHA_MULT));
 
         if (isSelected) {
             UiFill.renderQuad(
-                    new Rectangle(
-                            bounds.x(),
-                            bounds.y(),
-                            bounds.width(),
-                            UNDERLINE_THICKNESS),
-                    new UiElementPaint(
-                            colors.accent(),
-                            opacity));
+                new Rectangle(
+                    bounds.x(),
+                    bounds.y(),
+                    bounds.width(),
+                    UNDERLINE_THICKNESS),
+                new UiElementPaint(
+                    colors.accent(),
+                    opacity));
         }
     }
 
@@ -176,22 +179,22 @@ public final class VanillaTabStripRenderer {
             return;
         }
         var labelColor = isSelected
-                ? colors.tabSelected()
-                : isHovered
-                        ? colors.tabHovered()
-                        : colors.tabDefault();
+            ? colors.tabSelected()
+            : isHovered
+                ? colors.tabHovered()
+            : colors.tabDefault();
 
         var fadedLabelColor = Colors.scaleAlpha(labelColor, opacity);
         label.setBaseColor(fadedLabelColor);
 
         // The delimiters take the label's state colour; only the key takes the styled hotkey colour.
         var shortcut = KmlibStrings.hasText(content.shortcut())
-                ? resolveShortcutSegments(
-                        textFace,
-                        content.shortcut(),
-                        fadedLabelColor,
-                        Colors.scaleAlpha(hotkeyStyle.keyColor(), opacity))
-                : null;
+            ? resolveShortcutSegments(
+                textFace,
+                content.shortcut(),
+                fadedLabelColor,
+                Colors.scaleAlpha(hotkeyStyle.keyColor(), opacity))
+            : null;
 
         var labelWidth = label.getWidth();
         var gap = shortcut == null ? 0f : SHORTCUT_GAP;
@@ -204,11 +207,11 @@ public final class VanillaTabStripRenderer {
 
         if (shortcut != null) {
             drawShortcut(
-                    shortcut,
-                    startX + labelWidth + gap,
-                    centerY,
-                    hotkeyStyle,
-                    opacity);
+                shortcut,
+                startX + labelWidth + gap,
+                centerY,
+                hotkeyStyle,
+                opacity);
         }
     }
 
@@ -266,14 +269,14 @@ public final class VanillaTabStripRenderer {
         // draw y. The style places the underline against that box, so every renderer drawing this look
         // puts it in the same spot. Faded by the strip's opacity like every other quad here.
         var keyBox = new Rectangle(
-                keyX,
-                centerY - key.getHeight() / 2f,
-                key.getWidth(),
-                key.getHeight());
+            keyX,
+            centerY - key.getHeight() / 2f,
+            key.getWidth(),
+            key.getHeight());
 
         UiFill.renderQuad(
-                hotkeyStyle.computeUnderlineBox(keyBox),
-                new UiElementPaint(hotkeyStyle.keyColor(), opacity));
+            hotkeyStyle.computeUnderlineBox(keyBox),
+            new UiElementPaint(hotkeyStyle.keyColor(), opacity));
     }
 
     // The shortcut's three drawn pieces, named rather than positional so the paint pass can single the

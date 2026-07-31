@@ -24,7 +24,7 @@ class BorderedBoxTest {
         @Test
         void insetsByTheBorderOnEveryStrokedEdge() {
             assertThat(BorderedBox.computeContentBounds(outer, new BoxBorder(4f)))
-                    .isEqualTo(new Rectangle(14f, 24f, 92f, 42f));
+                .isEqualTo(new Rectangle(14f, 24f, 92f, 42f));
         }
 
         @Test
@@ -33,7 +33,7 @@ class BorderedBoxTest {
             // x, insetting only the three stroked edges - so nothing clips a border-width strip off a side
             // that draws no border.
             var content = BorderedBox.computeContentBounds(outer,
-                    new BoxBorder(4f, EnumSet.of(BoxEdge.TOP, BoxEdge.RIGHT, BoxEdge.BOTTOM)));
+                new BoxBorder(4f, EnumSet.of(BoxEdge.TOP, BoxEdge.RIGHT, BoxEdge.BOTTOM)));
             assertThat(content.x()).isEqualTo(outer.x());
             assertThat(content.width()).isEqualTo(outer.width() - 4f);
         }

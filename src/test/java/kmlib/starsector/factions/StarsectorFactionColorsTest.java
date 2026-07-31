@@ -34,13 +34,13 @@ class StarsectorFactionColorsTest {
             when(sectorMock.getFaction("neutral")).thenReturn(neutralMock);
 
             assertThat(StarsectorFactionColors.resolveNeutralColor(sectorMock))
-                    .isEqualTo(NEUTRAL_BASE);
+                .isEqualTo(NEUTRAL_BASE);
         }
 
         @Test
         void resolveNeutralColorFallsBackToGrayForNullSector() {
             assertThat(StarsectorFactionColors.resolveNeutralColor(null))
-                    .isEqualTo(Color.GRAY);
+                .isEqualTo(Color.GRAY);
         }
 
         @Test
@@ -51,7 +51,7 @@ class StarsectorFactionColorsTest {
             when(sectorMock.getFaction("neutral")).thenReturn(null);
 
             assertThat(StarsectorFactionColors.resolveNeutralColor(sectorMock))
-                    .isEqualTo(Color.GRAY);
+                .isEqualTo(Color.GRAY);
         }
     }
 
@@ -67,13 +67,13 @@ class StarsectorFactionColorsTest {
             when(sectorMock.getFaction(FACTION_ID)).thenReturn(factionMock);
 
             assertThat(StarsectorFactionColors.resolvePalette(sectorMock, FACTION_ID))
-                    .isEqualTo(new FactionPalette(new Color(10, 20, 30), new Color(40, 50, 60)));
+                .isEqualTo(new FactionPalette(new Color(10, 20, 30), new Color(40, 50, 60)));
         }
 
         @Test
         void resolvePaletteFallsBackToGrayPairForNullSector() {
             assertThat(StarsectorFactionColors.resolvePalette(null, FACTION_ID))
-                    .isEqualTo(new FactionPalette(Color.GRAY, Color.GRAY));
+                .isEqualTo(new FactionPalette(Color.GRAY, Color.GRAY));
         }
 
         @Test
@@ -82,7 +82,7 @@ class StarsectorFactionColorsTest {
             when(sectorMock.getFaction(FACTION_ID)).thenReturn(null);
 
             assertThat(StarsectorFactionColors.resolvePalette(sectorMock, FACTION_ID))
-                    .isEqualTo(new FactionPalette(Color.GRAY, Color.GRAY));
+                .isEqualTo(new FactionPalette(Color.GRAY, Color.GRAY));
         }
     }
 }

@@ -13,7 +13,9 @@ import java.util.List;
  * @param box  the tooltip's full footprint, lower-left origin, clamped on screen
  * @param rows one placement per content row, in the same order the rows were given
  */
-public record TooltipLayout(Rectangle box, List<TooltipRowLayout> rows) {
+public record TooltipLayout(
+    Rectangle box,
+    List<TooltipRowLayout> rows) {
 
     public TooltipLayout {
         rows = List.copyOf(rows);
@@ -44,11 +46,11 @@ public record TooltipLayout(Rectangle box, List<TooltipRowLayout> rows) {
      * @param trailingRowSlotX the trailing column's right-anchor x, in UI coordinates
      */
     public record TooltipRowLayout(
-            float rowTopY,
-            float lineHeight,
-            float leadingRowSlotX,
-            List<Float> labelRunXs,
-            float trailingRowSlotX) {
+        float rowTopY,
+        float lineHeight,
+        float leadingRowSlotX,
+        List<Float> labelRunXs,
+        float trailingRowSlotX) {
 
         public TooltipRowLayout {
             labelRunXs = List.copyOf(labelRunXs);

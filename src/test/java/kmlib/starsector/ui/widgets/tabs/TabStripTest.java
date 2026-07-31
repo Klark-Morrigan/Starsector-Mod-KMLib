@@ -28,7 +28,7 @@ class TabStripTest {
     class LayoutTabs {
         // "AB" measures 20 (+8 padding = 28, floored to 40); "LONGER" measures 60 (+8 = 68).
         private final List<LabeledTab> tabs = TabStrip.layoutTabs(100f, 200f, 24f, SNAPPED,
-                List.of("AB", "LONGER"), measurerFake);
+            List.of("AB", "LONGER"), measurerFake);
 
         @Test
         void laysTabsLeftToRightFromTheOrigin() {
@@ -81,7 +81,7 @@ class TabStripTest {
                 laidOutTotal += tab.bounds().width();
             }
             assertThat(TabStrip.measureRowWidth(labels, SNAPPED, measurerFake))
-                    .isEqualTo(laidOutTotal);
+                .isEqualTo(laidOutTotal);
         }
 
         @Test
@@ -93,7 +93,7 @@ class TabStripTest {
     @Nested
     class FindTabIndexAt {
         private final List<LabeledTab> tabs = TabStrip.layoutTabs(100f, 200f, 24f, SNAPPED,
-                List.of("AB", "LONGER"), measurerFake);
+            List.of("AB", "LONGER"), measurerFake);
 
         @Test
         void findsTheTabAPointFallsIn() {

@@ -31,7 +31,7 @@ final class LabelBoxFitterTest {
             // it can get: the band cannot exceed the 700 the region allows, so the fit caps
             // it just under 700 and the whole band, centred at y=350, stays within y 0..700.
             var box = fitter(1.0, 100.0, 2000.0, 1, 1.0)
-                    .fitLargestBox(horizontalChord(rectangle(0, 0, 2000, 700), 1000, 350));
+                .fitLargestBox(horizontalChord(rectangle(0, 0, 2000, 700), 1000, 350));
 
             assertThat(box).isNotNull();
             assertThat(box.lineCount()).isEqualTo(1);
@@ -47,7 +47,7 @@ final class LabelBoxFitterTest {
             // the spare girth - and taller than three, which the girth cannot make taller
             // still.
             var box = fitter(6.0, 100.0, 1700.0, 3, 1.15)
-                    .fitLargestBox(horizontalChord(rectangle(0, 0, 1700, 1700), 850, 850));
+                .fitLargestBox(horizontalChord(rectangle(0, 0, 1700, 1700), 850, 850));
 
             assertThat(box).isNotNull();
             assertThat(box.lineCount()).isEqualTo(2);
@@ -60,7 +60,7 @@ final class LabelBoxFitterTest {
             // a smaller font - lose to it: a block goes multi-line only when stacking
             // renders a strictly larger font.
             var box = fitter(4.0, 100.0, 2000.0, 3, 1.0)
-                    .fitLargestBox(horizontalChord(rectangle(0, 0, 2000, 700), 1000, 350));
+                .fitLargestBox(horizontalChord(rectangle(0, 0, 2000, 700), 1000, 350));
 
             assertThat(box).isNotNull();
             assertThat(box.lineCount()).isEqualTo(1);
@@ -74,7 +74,7 @@ final class LabelBoxFitterTest {
             // 700 the region allows: wrapping rescues text the single line cannot carry
             // at readable size.
             var box = fitter(10.0, 340.0, 2000.0, 2, 1.0)
-                    .fitLargestBox(horizontalChord(rectangle(0, 0, 2000, 700), 1000, 350));
+                .fitLargestBox(horizontalChord(rectangle(0, 0, 2000, 700), 1000, 350));
 
             assertThat(box).isNotNull();
             assertThat(box.lineCount()).isEqualTo(2);
@@ -86,7 +86,7 @@ final class LabelBoxFitterTest {
             // need 720 of girth (more than the 700 the region allows) - every count fails
             // at the readability floor, so no box at all.
             var box = fitter(10.0, 360.0, 2000.0, 2, 1.0)
-                    .fitLargestBox(horizontalChord(rectangle(0, 0, 2000, 700), 1000, 350));
+                .fitLargestBox(horizontalChord(rectangle(0, 0, 2000, 700), 1000, 350));
 
             assertThat(box).isNull();
         }
@@ -96,7 +96,7 @@ final class LabelBoxFitterTest {
             // The square that would prefer two lines is held to one when the line cap is
             // one, so the text stays a single line at the smaller font the cap forces.
             var box = fitter(6.0, 100.0, 1700.0, 1, 1.15)
-                    .fitLargestBox(horizontalChord(rectangle(0, 0, 1700, 1700), 850, 850));
+                .fitLargestBox(horizontalChord(rectangle(0, 0, 1700, 1700), 850, 850));
 
             assertThat(box).isNotNull();
             assertThat(box.lineCount()).isEqualTo(1);
@@ -107,7 +107,7 @@ final class LabelBoxFitterTest {
             // A minimum font taller than the 1700 the square holds cannot sit anywhere,
             // so the fit finds no box at all.
             var box = fitter(6.0, 3000.0, 4000.0, 1, 1.0)
-                    .fitLargestBox(horizontalChord(rectangle(0, 0, 1700, 1700), 850, 850));
+                .fitLargestBox(horizontalChord(rectangle(0, 0, 1700, 1700), 850, 850));
 
             assertThat(box).isNull();
         }
@@ -119,8 +119,8 @@ final class LabelBoxFitterTest {
     private static LabelBoxFitter fitter(double aspect, double minFontHeight,
             double maxFontHeight, int maxLines, double lineSpacing) {
         return new LabelBoxFitter(
-                new NameFitSpecification(minFontHeight, maxFontHeight, maxLines, lineSpacing),
-                0.0, 0.0, new AspectLabelLengthEstimator(aspect));
+            new NameFitSpecification(minFontHeight, maxFontHeight, maxLines, lineSpacing),
+            0.0, 0.0, new AspectLabelLengthEstimator(aspect));
     }
 
     // A horizontal candidate line through the given point against one boundary ring and
@@ -128,16 +128,16 @@ final class LabelBoxFitterTest {
     private static RegionChord horizontalChord(List<double[]> ring, double throughX,
             double throughY) {
         return new RegionChord(List.of(ring), List.of(),
-                new DirectedLine(throughX, throughY, 1.0, 0.0));
+            new DirectedLine(throughX, throughY, 1.0, 0.0));
     }
 
     // A counter-clockwise rectangle ring anchored at (minX, minY).
     private static List<double[]> rectangle(double minX, double minY, double width,
             double height) {
         return Arrays.asList(
-                new double[] {minX, minY},
-                new double[] {minX + width, minY},
-                new double[] {minX + width, minY + height},
-                new double[] {minX, minY + height});
+            new double[] {minX, minY},
+            new double[] {minX + width, minY},
+            new double[] {minX + width, minY + height},
+            new double[] {minX, minY + height});
     }
 }

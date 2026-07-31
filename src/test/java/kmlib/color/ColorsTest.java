@@ -140,9 +140,9 @@ final class ColorsTest {
         @Test
         void lerps_each_rgb_channel_toward_the_target_and_keeps_base_alpha() {
             var washed = Colors.blendRgbTowards(
-                    new Color(40, 80, 120, 200),
-                    new Color(240, 80, 20, 255),
-                    0.5f);
+                new Color(40, 80, 120, 200),
+                new Color(240, 80, 20, 255),
+                0.5f);
 
             // 40 + (240-40)*0.5 = 140, 80 + (80-80)*0.5 = 80, 120 + (20-120)*0.5 = 70.
             assertThat(washed.getRed()).isEqualTo(140);
@@ -155,9 +155,9 @@ final class ColorsTest {
         @Test
         void returns_the_base_rgb_at_a_zero_amount() {
             var washed = Colors.blendRgbTowards(
-                    new Color(10, 20, 30, 128),
-                    new Color(200, 200, 200, 255),
-                    0f);
+                new Color(10, 20, 30, 128),
+                new Color(200, 200, 200, 255),
+                0f);
 
             assertThat(washed.getRed()).isEqualTo(10);
             assertThat(washed.getGreen()).isEqualTo(20);
@@ -168,9 +168,9 @@ final class ColorsTest {
         @Test
         void reaches_the_target_rgb_at_an_amount_of_one_but_keeps_base_alpha() {
             var washed = Colors.blendRgbTowards(
-                    new Color(10, 20, 30, 128),
-                    new Color(200, 150, 100, 255),
-                    1f);
+                new Color(10, 20, 30, 128),
+                new Color(200, 150, 100, 255),
+                1f);
 
             assertThat(washed.getRed()).isEqualTo(200);
             assertThat(washed.getGreen()).isEqualTo(150);
@@ -183,9 +183,9 @@ final class ColorsTest {
         void saturates_at_the_max_channel_when_the_amount_exceeds_one() {
             // 200 + (255-200)*2 = 310 would overflow Color's 0-255 range, so it clamps to 255.
             var washed = Colors.blendRgbTowards(
-                    new Color(200, 0, 0, 255),
-                    new Color(255, 0, 0, 255),
-                    2f);
+                new Color(200, 0, 0, 255),
+                new Color(255, 0, 0, 255),
+                2f);
 
             assertThat(washed.getRed()).isEqualTo(255);
         }

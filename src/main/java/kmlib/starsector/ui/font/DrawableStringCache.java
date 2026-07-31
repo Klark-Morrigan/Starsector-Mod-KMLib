@@ -57,6 +57,8 @@ public final class DrawableStringCache {
     // What makes two runs the same buffer: the same text drawn in the same face at the same size. A
     // record rather than a composed string key, so adding to the identity is a compile-time change
     // rather than a silently divergent bit of concatenation at each call site.
-    private record TextRun(TextFace face, String text) {
+    private record TextRun(
+        TextFace face,
+        String text) {
     }
 }

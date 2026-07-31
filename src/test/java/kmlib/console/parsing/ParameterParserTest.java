@@ -39,12 +39,12 @@ final class ParameterParserTest {
     // its keys exposed so a test can read parsed values back by key.
     private static final class SampleSpec extends ParameterSpec {
         private final Parameter<String> focus =
-                acceptsPositional("focus", "<id>", ParameterValues.text()).defaultsTo("");
+            acceptsPositional("focus", "<id>", ParameterValues.text()).defaultsTo("");
         private final Parameter<Float> speed = acceptsPositional("speed", "<deg/day>",
-                ParameterValues.decimal("a number in degrees per day"));
+            ParameterValues.decimal("a number in degrees per day"));
         private final Parameter<Float> jitter = acceptsNamed("jitter", "<frac>",
-                ParameterValues.nonNegativeDecimal("a non-negative fraction (e.g. 0.25)"))
-                .defaultsTo(0.25f);
+            ParameterValues.nonNegativeDecimal("a non-negative fraction (e.g. 0.25)"))
+            .defaultsTo(0.25f);
 
         private SampleSpec() {
             super(USAGE);
@@ -58,7 +58,7 @@ final class ParameterParserTest {
         @Test
         void reads_named_values_into_their_typed_keys() {
             var parsed = spec.parse(
-                    new String[] {"focus=beta", "speed=5", "jitter=0.5"}, outputFake);
+                new String[] {"focus=beta", "speed=5", "jitter=0.5"}, outputFake);
 
             assertThat(parsed.isValid()).isTrue();
             assertThat(parsed.get(spec.focus)).isEqualTo("beta");
@@ -120,10 +120,10 @@ final class ParameterParserTest {
             assertThat(parsed.isValid()).isFalse();
             assertThat(parsed.getResult()).isEqualTo(CommandResult.BAD_SYNTAX);
             assertThat(outputFake.getMessages())
-                    .anyMatch(message -> message.contains("Unknown parameter 'color'")
-                            && message.contains("focus=<id>")
-                            && message.contains("speed=<deg/day>")
-                            && message.contains("jitter=<frac>"));
+                .anyMatch(message -> message.contains("Unknown parameter 'color'")
+                        && message.contains("focus=<id>")
+                        && message.contains("speed=<deg/day>")
+                        && message.contains("jitter=<frac>"));
         }
 
         @Test
@@ -132,8 +132,8 @@ final class ParameterParserTest {
 
             assertThat(parsed.isValid()).isFalse();
             assertThat(outputFake.getMessages())
-                    .anyMatch(message -> message.equals(
-                            "Invalid speed 'fast'. Expected a number in degrees per day."));
+                .anyMatch(message -> message.equals(
+                    "Invalid speed 'fast'. Expected a number in degrees per day."));
         }
 
         @Test
@@ -146,8 +146,8 @@ final class ParameterParserTest {
             assertThat(parsed.isValid()).isFalse();
             assertThat(parsed.getResult()).isEqualTo(CommandResult.BAD_SYNTAX);
             assertThat(outputFake.getMessages())
-                    .anyMatch(message -> message.equals(
-                            "Invalid speed 'fast'. Expected a number in degrees per day."));
+                .anyMatch(message -> message.equals(
+                    "Invalid speed 'fast'. Expected a number in degrees per day."));
         }
 
         @Test
@@ -178,8 +178,8 @@ final class ParameterParserTest {
 
             assertThat(parsed.isValid()).isFalse();
             assertThat(outputFake.getMessages())
-                    .anyMatch(message -> message.equals(
-                            "Invalid jitter '-0.5'. Expected a non-negative fraction (e.g. 0.25)."));
+                .anyMatch(message -> message.equals(
+                    "Invalid jitter '-0.5'. Expected a non-negative fraction (e.g. 0.25)."));
         }
 
         @Test
@@ -188,8 +188,8 @@ final class ParameterParserTest {
 
             assertThat(parsed.isValid()).isFalse();
             assertThat(outputFake.getMessages())
-                    .anyMatch(message -> message.contains("Too many arguments")
-                            && message.contains(USAGE));
+                .anyMatch(message -> message.contains("Too many arguments")
+                        && message.contains(USAGE));
         }
 
         @Test
@@ -200,7 +200,7 @@ final class ParameterParserTest {
 
             assertThat(parsed.isValid()).isFalse();
             assertThat(outputFake.getMessages())
-                    .anyMatch(message -> message.contains("Too many arguments"));
+                .anyMatch(message -> message.contains("Too many arguments"));
         }
     }
 
@@ -217,7 +217,7 @@ final class ParameterParserTest {
             assertThat(parsed.isValid()).isFalse();
             assertThat(parsed.getResult()).isEqualTo(CommandResult.BAD_SYNTAX);
             assertThat(outputFake.getMessages())
-                    .anyMatch(message -> message.contains("Missing required parameter 'target'"));
+                .anyMatch(message -> message.contains("Missing required parameter 'target'"));
         }
 
         @Test
@@ -231,7 +231,7 @@ final class ParameterParserTest {
 
     private static final class RequiredSpec extends ParameterSpec {
         private final Parameter<String> target =
-                acceptsNamed("target", "<id>", ParameterValues.text()).markRequired();
+            acceptsNamed("target", "<id>", ParameterValues.text()).markRequired();
 
         private RequiredSpec() {
             super("Usage: sample target=<id>.");
@@ -286,7 +286,7 @@ final class ParameterParserTest {
             assertThat(parsed.isValid()).isFalse();
             assertThat(parsed.getResult()).isEqualTo(CommandResult.BAD_SYNTAX);
             assertThat(outputFake.getMessages())
-                    .anyMatch(message -> message.contains("'verbose' is a flag"));
+                .anyMatch(message -> message.contains("'verbose' is a flag"));
         }
 
         @Test
@@ -295,11 +295,11 @@ final class ParameterParserTest {
 
             assertThat(parsed.isValid()).isFalse();
             assertThat(outputFake.getMessages())
-                    .anyMatch(message -> message.contains("Unknown parameter 'color'")
-                            && message.contains("name=<id>")
-                            // The flag is offered as a bare keyword, not name=hint.
-                            && message.contains("verbose")
-                            && !message.contains("verbose="));
+                .anyMatch(message -> message.contains("Unknown parameter 'color'")
+                        && message.contains("name=<id>")
+                        // The flag is offered as a bare keyword, not name=hint.
+                        && message.contains("verbose")
+                        && !message.contains("verbose="));
         }
     }
 
@@ -307,7 +307,7 @@ final class ParameterParserTest {
     // a flag stays out of the positional order.
     private static final class FlagSpec extends ParameterSpec {
         private final Parameter<String> name =
-                acceptsPositional("name", "<id>", ParameterValues.text()).defaultsTo("");
+            acceptsPositional("name", "<id>", ParameterValues.text()).defaultsTo("");
         private final Parameter<Boolean> verbose = acceptsFlag("verbose");
 
         private FlagSpec() {
@@ -318,7 +318,7 @@ final class ParameterParserTest {
     @Nested
     class TakingNoArguments {
         private final ParameterSpec spec =
-                ParameterSpec.takingNoArguments("Usage: sample.");
+            ParameterSpec.takingNoArguments("Usage: sample.");
 
         @Test
         void accepts_an_empty_argument_list() {
@@ -335,8 +335,8 @@ final class ParameterParserTest {
             assertThat(parsed.isValid()).isFalse();
             assertThat(parsed.getResult()).isEqualTo(CommandResult.BAD_SYNTAX);
             assertThat(outputFake.getMessages())
-                    .anyMatch(message -> message.contains("Too many arguments")
-                            && message.contains("Usage: sample."));
+                .anyMatch(message -> message.contains("Too many arguments")
+                        && message.contains("Usage: sample."));
         }
     }
 }

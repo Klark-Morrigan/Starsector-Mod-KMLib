@@ -32,7 +32,7 @@ class LabeledChoicesTest {
         @Test
         void resolvesTheOptionWhoseLabelMatches() {
             var resolved = LabeledChoices.fromLabel(SampleChoice.values(), "Second",
-                    SampleChoice.FIRST);
+                SampleChoice.FIRST);
 
             assertThat(resolved).isEqualTo(SampleChoice.SECOND);
         }
@@ -40,7 +40,7 @@ class LabeledChoicesTest {
         @Test
         void fallsBackWhenNoLabelMatches() {
             var resolved = LabeledChoices.fromLabel(SampleChoice.values(), "Third",
-                    SampleChoice.FIRST);
+                SampleChoice.FIRST);
 
             assertThat(resolved).isEqualTo(SampleChoice.FIRST);
         }
@@ -48,7 +48,7 @@ class LabeledChoicesTest {
         @Test
         void fallsBackWhenLabelIsNull() {
             var resolved = LabeledChoices.fromLabel(SampleChoice.values(), null,
-                    SampleChoice.SECOND);
+                SampleChoice.SECOND);
 
             assertThat(resolved).isEqualTo(SampleChoice.SECOND);
         }

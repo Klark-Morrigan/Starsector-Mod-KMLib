@@ -20,7 +20,7 @@ final class GlVertexRunsTest {
         @Test
         void flatten_vertices_packs_each_point_in_order_as_an_x_y_pair() {
             var flat = GlVertexRuns.flattenVertices(List.of(
-                    new double[] {1, 2}, new double[] {3, 4}, new double[] {5, 6}));
+                new double[] {1, 2}, new double[] {3, 4}, new double[] {5, 6}));
 
             assertThat(flat).containsExactly(1f, 2f, 3f, 4f, 5f, 6f);
         }
@@ -38,7 +38,7 @@ final class GlVertexRunsTest {
             var vertices = GlVertexRuns.unflattenVertices(new float[] {1, 2, 3, 4, 5, 6});
 
             assertThat(vertices).containsExactly(
-                    new double[] {1, 2}, new double[] {3, 4}, new double[] {5, 6});
+                new double[] {1, 2}, new double[] {3, 4}, new double[] {5, 6});
         }
 
         @Test
@@ -46,10 +46,10 @@ final class GlVertexRunsTest {
             // The two halves of the packing must agree; a stride that drifted apart would
             // survive either test alone.
             var polygon = List.of(
-                    new double[] {0, 0}, new double[] {4, 0}, new double[] {0, 3});
+                new double[] {0, 0}, new double[] {4, 0}, new double[] {0, 3});
 
             var roundTripped = GlVertexRuns.unflattenVertices(
-                    GlVertexRuns.flattenVertices(polygon));
+                GlVertexRuns.flattenVertices(polygon));
 
             assertThat(roundTripped).containsExactlyElementsOf(polygon);
         }
@@ -81,12 +81,12 @@ final class GlVertexRunsTest {
         void flatten_closed_loop_emits_one_segment_per_edge_including_the_wrap() {
             // A triangle yields three segments: 0->1, 1->2, and the wrap 2->0.
             var flat = GlVertexRuns.flattenClosedLoopAsSegments(List.of(
-                    new double[] {0, 0}, new double[] {4, 0}, new double[] {0, 3}));
+                new double[] {0, 0}, new double[] {4, 0}, new double[] {0, 3}));
 
             assertThat(flat).containsExactly(
-                    0f, 0f, 4f, 0f,
-                    4f, 0f, 0f, 3f,
-                    0f, 3f, 0f, 0f);
+                0f, 0f, 4f, 0f,
+                4f, 0f, 0f, 3f,
+                0f, 3f, 0f, 0f);
         }
 
         @Test

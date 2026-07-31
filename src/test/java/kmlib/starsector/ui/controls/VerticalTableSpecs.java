@@ -29,15 +29,15 @@ public final class VerticalTableSpecs {
             ControlAction action,
             ReselectBehaviour reselect) {
         return new ControlSpec.VerticalTable(
-                labels,
-                List.of(),
-                List.of(),
-                List.of(),
-                selectedIndex,
-                action,
-                reselect,
-                ControlSpec.SINGLE_COLUMN,
-                false);
+            labels,
+            List.of(),
+            List.of(),
+            List.of(),
+            selectedIndex,
+            action,
+            reselect,
+            ControlSpec.SINGLE_COLUMN,
+            false);
     }
 
     /**
@@ -55,12 +55,12 @@ public final class VerticalTableSpecs {
             int selectedIndex,
             ControlAction action) {
         return ControlSpec.VerticalTable.iconList(
-                labels,
-                iconPaths,
-                List.of(),
-                selectedIndex,
-                action,
-                ControlSpec.SINGLE_COLUMN);
+            labels,
+            iconPaths,
+            List.of(),
+            selectedIndex,
+            action,
+            ControlSpec.SINGLE_COLUMN);
     }
 
     /**
@@ -80,11 +80,11 @@ public final class VerticalTableSpecs {
             int selectedIndex,
             ControlAction action) {
         return ControlSpec.VerticalTable.iconList(
-                labels,
-                iconPaths,
-                trailingLabels,
-                selectedIndex,
-                action,
-                ControlSpec.SINGLE_COLUMN);
+            labels,
+            iconPaths,
+            trailingLabels,
+            selectedIndex,
+            action,
+            ControlSpec.SINGLE_COLUMN);
     }
 }

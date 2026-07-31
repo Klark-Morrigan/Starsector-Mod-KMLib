@@ -22,8 +22,8 @@ class DebugHudLayoutTest {
     private static final float CURSOR_Y = 400f;
 
     private static final List<DebugHudEntry> TWO_ENTRIES = List.of(
-            new DebugHudEntry("first-key", "first-body"),
-            new DebugHudEntry("second-key", "second-body"));
+        new DebugHudEntry("first-key", "first-body"),
+        new DebugHudEntry("second-key", "second-body"));
 
     @Nested
     class LayOutAtCorner {
@@ -33,7 +33,7 @@ class DebugHudLayoutTest {
             var lines = corner(DebugQuadrant.TOP_LEFT);
 
             assertThat(lines).extracting(DebugHudLine::text)
-                    .containsExactly("first-key", "first-body", "second-key", "second-body");
+                .containsExactly("first-key", "first-body", "second-key", "second-body");
             assertThat(lines.get(0).fontSize()).isLessThan(lines.get(1).fontSize());
             assertThat(lines.get(0).colour()).isNotEqualTo(lines.get(1).colour());
             for (var i = 1; i < lines.size(); i++) {
@@ -60,7 +60,7 @@ class DebugHudLayoutTest {
         @Test
         void layOutAtCornerStartsATopCornerNearTheTopEdge() {
             assertThat(corner(DebugQuadrant.TOP_RIGHT).get(0).y())
-                    .isEqualTo(SCREEN_HEIGHT - EDGE_PADDING);
+                .isEqualTo(SCREEN_HEIGHT - EDGE_PADDING);
         }
 
         @Test
@@ -75,9 +75,9 @@ class DebugHudLayoutTest {
         @Test
         void layOutAtCornerPushesTheBlockFurtherInAsPaddingGrows() {
             var near = DebugHudLayout.layOutAtCorner(
-                    DebugQuadrant.TOP_LEFT, TWO_ENTRIES, SCREEN_WIDTH, SCREEN_HEIGHT, 10f);
+                DebugQuadrant.TOP_LEFT, TWO_ENTRIES, SCREEN_WIDTH, SCREEN_HEIGHT, 10f);
             var far = DebugHudLayout.layOutAtCorner(
-                    DebugQuadrant.TOP_LEFT, TWO_ENTRIES, SCREEN_WIDTH, SCREEN_HEIGHT, 60f);
+                DebugQuadrant.TOP_LEFT, TWO_ENTRIES, SCREEN_WIDTH, SCREEN_HEIGHT, 60f);
 
             // More padding pushes the left corner rightward and its top downward, off the edges.
             assertThat(far.get(0).x()).isGreaterThan(near.get(0).x());
@@ -87,13 +87,13 @@ class DebugHudLayoutTest {
         @Test
         void layOutAtCornerHasNothingToPlaceForNoEntries() {
             assertThat(DebugHudLayout.layOutAtCorner(
-                    DebugQuadrant.TOP_LEFT, List.of(), SCREEN_WIDTH, SCREEN_HEIGHT, EDGE_PADDING))
-                    .isEmpty();
+                DebugQuadrant.TOP_LEFT, List.of(), SCREEN_WIDTH, SCREEN_HEIGHT, EDGE_PADDING))
+                .isEmpty();
         }
 
         private static List<DebugHudLine> corner(DebugQuadrant quadrant) {
             return DebugHudLayout.layOutAtCorner(
-                    quadrant, TWO_ENTRIES, SCREEN_WIDTH, SCREEN_HEIGHT, EDGE_PADDING);
+                quadrant, TWO_ENTRIES, SCREEN_WIDTH, SCREEN_HEIGHT, EDGE_PADDING);
         }
     }
 
@@ -119,13 +119,13 @@ class DebugHudLayoutTest {
         @Test
         void layOutAroundCursorStacksATopQuadrantAboveTheCursor() {
             assertThat(cursor(DebugQuadrant.TOP_RIGHT)).allSatisfy(
-                    line -> assertThat(line.y()).isGreaterThan(CURSOR_Y));
+                line -> assertThat(line.y()).isGreaterThan(CURSOR_Y));
         }
 
         @Test
         void layOutAroundCursorStacksABottomQuadrantBelowTheCursor() {
             assertThat(cursor(DebugQuadrant.BOTTOM_LEFT)).allSatisfy(
-                    line -> assertThat(line.y()).isLessThan(CURSOR_Y));
+                line -> assertThat(line.y()).isLessThan(CURSOR_Y));
         }
 
         private static List<DebugHudLine> cursor(DebugQuadrant quadrant) {

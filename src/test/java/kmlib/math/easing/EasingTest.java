@@ -48,7 +48,7 @@ final class EasingTest {
             // easeInOut(t) + easeInOut(1 - t) == 1, so a forward and a reversed run trace the same shape.
             for (var t = 0f; t <= 1f; t += 0.1f) {
                 assertThat(Easing.easeInOut(t) + Easing.easeInOut(1f - t))
-                        .isCloseTo(1f, within(TOLERANCE));
+                    .isCloseTo(1f, within(TOLERANCE));
             }
         }
 

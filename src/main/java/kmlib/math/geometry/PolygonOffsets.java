@@ -65,8 +65,11 @@ public final class PolygonOffsets {
             boolean[] insetEdge,
             double distance) {
         if (insetEdge.length != polygon.size()) {
-            throw new IllegalArgumentException("insetEdge must be parallel to the polygon edges: "
-                    + insetEdge.length + " vs " + polygon.size());
+            throw new IllegalArgumentException(
+                "insetEdge must be parallel to the polygon edges: "
+                    + insetEdge.length
+                    + " vs "
+                    + polygon.size());
         }
 
         // Fold the mask-plus-one-scalar form into the per-edge form the primitive
@@ -125,8 +128,10 @@ public final class PolygonOffsets {
         var count = polygon.size();
         if (edgeDistances.length != count) {
             throw new IllegalArgumentException(
-                    "edgeDistances must be parallel to the polygon edges: "
-                            + edgeDistances.length + " vs " + count);
+                "edgeDistances must be parallel to the polygon edges: "
+                    + edgeDistances.length
+                    + " vs "
+                    + count);
         }
         if (count < Limits.MIN_VERTICES_TO_ENCLOSE_AREA) {
             return new SelectiveInset(new ArrayList<>(), new boolean[0]);
@@ -153,8 +158,11 @@ public final class PolygonOffsets {
             if (edgeDistances[i] <= 0) {
                 continue;
             }
-            var line = computeInwardOffsetLine(polygon.get(i), polygon.get((i + 1) % count),
-                    edgeDistances[i]);
+            var line = computeInwardOffsetLine(
+                polygon.get(i),
+                polygon.get((i + 1) % count),
+                edgeDistances[i]);
+
             if (line == null) {
                 continue;
             }
@@ -218,8 +226,11 @@ public final class PolygonOffsets {
         // the labels are dropped on the way out.
         var working = LabelledPolygon.fromLabelledEdges(vertices, new int[count]);
         for (var i = 0; i < count && !working.isEmpty(); i++) {
-            var line = computeInwardOffsetLine(vertices.get(i), vertices.get((i + 1) % count),
-                    distance);
+            var line = computeInwardOffsetLine(
+                vertices.get(i),
+                vertices.get((i + 1) % count),
+                distance);
+
             if (line == null) {
                 continue;
             }
@@ -277,8 +288,14 @@ public final class PolygonOffsets {
         for (var i = 0; i < count; i++) {
             // The whole-polygon inset shifts every edge the same distance, so both
             // of a corner's edges take the one scalar.
-            appendInsetCorner(inset, vertices.get((i - 1 + count) % count), vertices.get(i),
-                    vertices.get((i + 1) % count), distance, distance, miterSpikeLimit);
+            appendInsetCorner(
+                inset,
+                vertices.get((i - 1 + count) % count),
+                vertices.get(i),
+                vertices.get((i + 1) % count),
+                distance,
+                distance,
+                miterSpikeLimit);
         }
         return inset;
     }
@@ -329,8 +346,10 @@ public final class PolygonOffsets {
             double miterSpikeLimit) {
         if (edgeDistances.length != polygon.size()) {
             throw new IllegalArgumentException(
-                    "edgeDistances must be parallel to the polygon edges: "
-                            + edgeDistances.length + " vs " + polygon.size());
+                "edgeDistances must be parallel to the polygon edges: "
+                    + edgeDistances.length
+                    + " vs "
+                    + polygon.size());
         }
 
         // Dedup while carrying each surviving edge's distance with it, so dropping a
@@ -348,9 +367,14 @@ public final class PolygonOffsets {
         for (var i = 0; i < count; i++) {
             // The inbound edge (previous -> corner) is edge (i - 1); the outbound
             // edge (corner -> next) is edge i. Each carries its own signed distance.
-            appendInsetCorner(inset, vertices.get((i - 1 + count) % count), vertices.get(i),
-                    vertices.get((i + 1) % count), distances[(i - 1 + count) % count],
-                    distances[i], miterSpikeLimit);
+            appendInsetCorner(
+                inset,
+                vertices.get((i - 1 + count) % count),
+                vertices.get(i),
+                vertices.get((i + 1) % count),
+                distances[(i - 1 + count) % count],
+                distances[i],
+                miterSpikeLimit);
         }
         return inset;
     }
@@ -386,8 +410,8 @@ public final class PolygonOffsets {
                 continue;
             }
             segments.add(new Segment(
-                    a[0] + normal[0] * distance, a[1] + normal[1] * distance,
-                    b[0] + normal[0] * distance, b[1] + normal[1] * distance));
+                a[0] + normal[0] * distance, a[1] + normal[1] * distance,
+                b[0] + normal[0] * distance, b[1] + normal[1] * distance));
         }
         return segments;
     }
@@ -412,24 +436,29 @@ public final class PolygonOffsets {
             var normal = inboundNormal == null ? outboundNormal : inboundNormal;
             var distance = inboundNormal == null ? outboundDistance : inboundDistance;
             inset.add(normal == null
-                    ? new double[] {corner[0], corner[1]}
-                    : new double[] {corner[0] + normal[0] * distance, corner[1] + normal[1] * distance});
+                ? new double[] {corner[0], corner[1]}
+                : new double[] {corner[0] + normal[0] * distance, corner[1] + normal[1] * distance});
             return;
         }
 
         var inboundPoint = new double[] {
-                corner[0] + inboundNormal[0] * inboundDistance,
-                corner[1] + inboundNormal[1] * inboundDistance};
+            corner[0] + inboundNormal[0] * inboundDistance,
+            corner[1] + inboundNormal[1] * inboundDistance};
         var outboundPoint = new double[] {
-                corner[0] + outboundNormal[0] * outboundDistance,
-                corner[1] + outboundNormal[1] * outboundDistance};
+            corner[0] + outboundNormal[0] * outboundDistance,
+            corner[1] + outboundNormal[1] * outboundDistance};
         // Left turn (positive cross) is convex for a CCW ring; a right turn is the
         // reflex corner whose miter would spike, so it bevels.
         var turn = (corner[0] - previous[0]) * (next[1] - corner[1])
-                - (corner[1] - previous[1]) * (next[0] - corner[0]);
+            - (corner[1] - previous[1]) * (next[0] - corner[0]);
         if (turn > 0) {
-            var miter = computeMiterVertex(corner, inboundNormal, outboundNormal,
-                    inboundPoint, outboundPoint);
+            var miter = computeMiterVertex(
+                corner,
+                inboundNormal,
+                outboundNormal,
+                inboundPoint,
+                outboundPoint);
+
             // The spike scale is the larger of the two edges' offset magnitudes: it
             // reduces to the scalar case when they match, and, being a magnitude,
             // flags an outward (negative-distance) bulge that spikes past the corner
@@ -458,8 +487,13 @@ public final class PolygonOffsets {
         // through the shifted point along it is the shifted edge; where the two
         // shifted edges cross is the miter. Collinear edges never cross - fall back
         // to the outbound shifted point.
-        var crossing = Lines.intersectLines(inboundPoint, inboundNormal[1], -inboundNormal[0],
-                outboundPoint, outboundNormal[1], -outboundNormal[0]);
+        var crossing = Lines.intersectLines(
+            inboundPoint,
+            inboundNormal[1],
+            -inboundNormal[0],
+            outboundPoint,
+            outboundNormal[1],
+            -outboundNormal[0]);
         return crossing == null ? outboundPoint : crossing;
     }
 
@@ -488,7 +522,10 @@ public final class PolygonOffsets {
             return null;
         }
         return new HalfPlane(
-                a[0] + normal[0] * distance, a[1] + normal[1] * distance, normal[0], normal[1]);
+            a[0] + normal[0] * distance,
+            a[1] + normal[1] * distance,
+            normal[0],
+            normal[1]);
     }
 
     // The inward unit normal of directed edge {@code a -> b} for a CCW polygon:

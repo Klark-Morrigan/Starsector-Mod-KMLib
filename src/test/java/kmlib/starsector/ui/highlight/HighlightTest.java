@@ -23,15 +23,15 @@ class HighlightTest {
         @Test
         void rejectsNullText() {
             assertThatThrownBy(() -> new Highlight(null, Color.WHITE))
-                    .isInstanceOf(NullPointerException.class)
-                    .hasMessageContaining("text");
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("text");
         }
 
         @Test
         void rejectsNullColor() {
             assertThatThrownBy(() -> new Highlight("token", null))
-                    .isInstanceOf(NullPointerException.class)
-                    .hasMessageContaining("color");
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("color");
         }
     }
 

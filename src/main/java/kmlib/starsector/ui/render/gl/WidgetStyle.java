@@ -25,10 +25,10 @@ import java.awt.Color;
  * @param notchColors  the chevron shades a collapse handle draws in, read only when one is drawn
  */
 public record WidgetStyle(
-        Color panelFill,
-        Color accent,
-        Color brightAccent,
-        StarsectorFont bodyFont,
-        TabStyle tabStyle,
-        NotchColors notchColors) {
+    Color panelFill,
+    Color accent,
+    Color brightAccent,
+    StarsectorFont bodyFont,
+    TabStyle tabStyle,
+    NotchColors notchColors) {
 }

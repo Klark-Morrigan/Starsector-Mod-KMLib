@@ -20,9 +20,9 @@ class StarsectorFontTest {
         @EnumSource(StarsectorFont.class)
         void resolvePathNamesTheAtlasUnderTheGamesFontDirectory(StarsectorFont font) {
             var expected = switch (font) {
-                case VANILLA_INSIGNIA_15 -> "graphics/fonts/insignia15LTaa.fnt";
-                case VANILLA_ORBITRON_20AA -> "graphics/fonts/orbitron20aa.fnt";
-                case VANILLA_INSIGNIA_42 -> "graphics/fonts/insignia42LTaa.fnt";
+            case VANILLA_INSIGNIA_15 -> "graphics/fonts/insignia15LTaa.fnt";
+            case VANILLA_ORBITRON_20AA -> "graphics/fonts/orbitron20aa.fnt";
+            case VANILLA_INSIGNIA_42 -> "graphics/fonts/insignia42LTaa.fnt";
             };
 
             assertThat(font.resolvePath()).isEqualTo(expected);
@@ -33,8 +33,8 @@ class StarsectorFontTest {
             // The path is what the face cache keys on, so two values sharing one - the copy-paste that
             // adding a face invites - would silently serve one atlas under two names.
             var paths = Arrays.stream(StarsectorFont.values())
-                    .map(StarsectorFont::resolvePath)
-                    .toList();
+                .map(StarsectorFont::resolvePath)
+                .toList();
 
             assertThat(paths).doesNotHaveDuplicates();
         }
@@ -50,9 +50,9 @@ class StarsectorFontTest {
         @EnumSource(StarsectorFont.class)
         void getNativeSizeReportsTheSizeItsAtlasWasRasterisedAt(StarsectorFont font) {
             var expected = switch (font) {
-                case VANILLA_INSIGNIA_15 -> 15;
-                case VANILLA_ORBITRON_20AA -> 20;
-                case VANILLA_INSIGNIA_42 -> 42;
+            case VANILLA_INSIGNIA_15 -> 15;
+            case VANILLA_ORBITRON_20AA -> 20;
+            case VANILLA_INSIGNIA_42 -> 42;
             };
 
             assertThat(font.getNativeSize()).isEqualTo(expected);

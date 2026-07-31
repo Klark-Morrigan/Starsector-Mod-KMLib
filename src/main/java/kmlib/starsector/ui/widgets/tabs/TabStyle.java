@@ -29,10 +29,11 @@ import kmlib.starsector.ui.font.TextFace;
  * @param face             the font and size the tab labels are measured and drawn in
  */
 public record TabStyle(
-        float headerBandHeight,
-        VanillaTabColors colors,
-        HotkeyStyle hotkey,
-        TextFace face) {
+    float headerBandHeight,
+    VanillaTabColors colors,
+    HotkeyStyle hotkey,
+    TextFace face) {
+        
     /**
      * The baseline band height: room enough for the larger tab face with a little slack above and below
      * it. The one place the baseline dimension is written down, so a caller wanting a number off the

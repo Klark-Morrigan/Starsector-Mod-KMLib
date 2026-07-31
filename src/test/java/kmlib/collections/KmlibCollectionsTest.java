@@ -19,13 +19,13 @@ class KmlibCollectionsTest {
         @Test
         void joinRendersASingleItemWithoutADelimiter() {
             assertThat(KmlibCollections.join(List.of("alpha"), ", ", value -> value))
-                    .isEqualTo("alpha");
+                .isEqualTo("alpha");
         }
 
         @Test
         void joinSeparatesRenderedItemsWithTheDelimiter() {
             assertThat(KmlibCollections.join(List.of(1, 2, 3), ", ", String::valueOf))
-                    .isEqualTo("1, 2, 3");
+                .isEqualTo("1, 2, 3");
         }
 
         @Test
@@ -33,7 +33,7 @@ class KmlibCollectionsTest {
             // The renderer selects a field rather than the element's toString, the
             // reason this exists instead of String.join over a pre-mapped list.
             assertThat(KmlibCollections.join(List.of("alpha", "beta"), "-",
-                    value -> value.toUpperCase())).isEqualTo("ALPHA-BETA");
+                value -> value.toUpperCase())).isEqualTo("ALPHA-BETA");
         }
 
         @Test
@@ -41,7 +41,7 @@ class KmlibCollectionsTest {
             // A first-item flag, not length() > 0, so an empty render between two
             // others still gets its surrounding delimiters.
             assertThat(KmlibCollections.join(List.of("a", "", "b"), ",", value -> value))
-                    .isEqualTo("a,,b");
+                .isEqualTo("a,,b");
         }
     }
 }

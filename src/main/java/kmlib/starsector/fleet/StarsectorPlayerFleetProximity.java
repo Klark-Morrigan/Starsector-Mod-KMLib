@@ -47,8 +47,8 @@ public final class StarsectorPlayerFleetProximity {
             return false;
         }
         var playerFleet = Global.getSector() == null
-                ? null
-                : Global.getSector().getPlayerFleet();
+            ? null
+            : Global.getSector().getPlayerFleet();
         if (playerFleet == null) {
             return false;
         }

@@ -29,7 +29,7 @@ public final class FactionCustomFixture {
     public static JSONObject buildPunitiveExpeditionCustom(boolean isTerritorial) {
         try {
             return new JSONObject().put(PUNITIVE_EXPEDITION_DATA,
-                    new JSONObject().put(TERRITORIAL_FLAG, isTerritorial));
+                new JSONObject().put(TERRITORIAL_FLAG, isTerritorial));
         } catch (JSONException failure) {
             throw new IllegalStateException(failure);
         }

@@ -60,7 +60,7 @@ class FastRenderingTest {
             // package without saying so, and a check keyed to one release's full class name
             // reported "stock" afterwards - which sent callers into GL reads it cannot serve.
             assertThat(FastRendering.isBridgeClassName("com.genir.renderer.bridge.commands.GL11"))
-                    .isTrue();
+                .isTrue();
         }
 
         @Test
@@ -81,13 +81,13 @@ class FastRenderingTest {
         @Test
         void fastRendering_copyAsColumnMajorFloats_PutsTranslationLast_IfMatrixIsRowMajor() {
             var columnMajorFloats =
-                    FastRendering.copyAsColumnMajorFloats(buildRowMajorTranslationMatrix());
+                FastRendering.copyAsColumnMajorFloats(buildRowMajorTranslationMatrix());
 
             assertThat(columnMajorFloats).containsExactly(
-                    1f, 0f, 0f, 0f,
-                    0f, 1f, 0f, 0f,
-                    0f, 0f, 1f, 0f,
-                    TRANSLATE_X, TRANSLATE_Y, TRANSLATE_Z, 1f);
+                1f, 0f, 0f, 0f,
+                0f, 1f, 0f, 0f,
+                0f, 0f, 1f, 0f,
+                TRANSLATE_X, TRANSLATE_Y, TRANSLATE_Z, 1f);
         }
 
         @Test

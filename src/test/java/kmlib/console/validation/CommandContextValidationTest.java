@@ -34,9 +34,9 @@ final class CommandContextValidationTest {
             var outputFake = new CommandOutputFake();
 
             var result =
-                    new CommandContextValidation(CommandContext.CAMPAIGN_MAP, outputFake)
-                            .requireCampaign()
-                            .validateAndPrintFeedback();
+                new CommandContextValidation(CommandContext.CAMPAIGN_MAP, outputFake)
+                    .requireCampaign()
+                    .validateAndPrintFeedback();
 
             assertThat(result.isValid()).isTrue();
             assertThat(outputFake.getMessages()).isEmpty();
@@ -47,8 +47,8 @@ final class CommandContextValidationTest {
             var outputFake = new CommandOutputFake();
 
             var result =
-                    new CommandContextValidation(CommandContext.CAMPAIGN_MAP, outputFake)
-                            .validateAndPrintFeedback();
+                new CommandContextValidation(CommandContext.CAMPAIGN_MAP, outputFake)
+                    .validateAndPrintFeedback();
 
             assertThat(result.isValid()).isTrue();
             assertThat(outputFake.getMessages()).isEmpty();
@@ -59,14 +59,14 @@ final class CommandContextValidationTest {
             var outputFake = new CommandOutputFake();
 
             var result =
-                    new CommandContextValidation(CommandContext.COMBAT_MISSION, outputFake)
-                            .requireCampaign()
-                            .validateAndPrintFeedback();
+                new CommandContextValidation(CommandContext.COMBAT_MISSION, outputFake)
+                    .requireCampaign()
+                    .validateAndPrintFeedback();
 
             assertThat(result.isValid()).isFalse();
             assertThat(result.getResult()).isEqualTo(CommandResult.WRONG_CONTEXT);
             assertThat(outputFake.getMessages())
-                    .anyMatch(message -> message.contains("can only run in a campaign"));
+                .anyMatch(message -> message.contains("can only run in a campaign"));
         }
 
         @Test
@@ -75,21 +75,21 @@ final class CommandContextValidationTest {
             // requireStarSystem is the one guard that reads the live sector, so
             // stub the lookup it makes rather than reach for a running game.
             try (var globalMock = mockStatic(Global.class);
-                    var starSystemsMock = mockStatic(StarSystems.class)) {
+                var starSystemsMock = mockStatic(StarSystems.class)) {
                 var sectorMock = mock(SectorAPI.class);
                 globalMock.when(Global::getSector).thenReturn(sectorMock);
                 starSystemsMock.when(() -> StarSystems.getPlayerStarSystem(sectorMock))
-                        .thenReturn(null);
+                    .thenReturn(null);
 
                 var result =
-                        new CommandContextValidation(CommandContext.CAMPAIGN_MAP, outputFake)
-                                .requireStarSystem()
-                                .validateAndPrintFeedback();
+                    new CommandContextValidation(CommandContext.CAMPAIGN_MAP, outputFake)
+                        .requireStarSystem()
+                        .validateAndPrintFeedback();
 
                 assertThat(result.isValid()).isFalse();
                 assertThat(result.getResult()).isEqualTo(CommandResult.WRONG_CONTEXT);
                 assertThat(outputFake.getMessages())
-                        .anyMatch(message -> message.contains("must be run inside a star system"));
+                    .anyMatch(message -> message.contains("must be run inside a star system"));
             }
         }
 
@@ -101,15 +101,15 @@ final class CommandContextValidationTest {
             // chain must stop at the first, so only its message reaches the player
             // and the second guard's live-sector lookup is never reached.
             var result =
-                    new CommandContextValidation(CommandContext.COMBAT_MISSION, outputFake)
-                            .requireCampaign()
-                            .requireStarSystem()
-                            .validateAndPrintFeedback();
+                new CommandContextValidation(CommandContext.COMBAT_MISSION, outputFake)
+                    .requireCampaign()
+                    .requireStarSystem()
+                    .validateAndPrintFeedback();
 
             assertThat(result.isValid()).isFalse();
             assertThat(result.getResult()).isEqualTo(CommandResult.WRONG_CONTEXT);
             assertThat(outputFake.getMessages())
-                    .containsExactly("This command can only run in a campaign.");
+                .containsExactly("This command can only run in a campaign.");
         }
     }
 

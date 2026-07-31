@@ -59,7 +59,7 @@ class BoxPlacementTest {
 
         private Rectangle place(ScreenAnchor anchor) {
             return BoxPlacement.placeBox(SCREEN_WIDTH, SCREEN_HEIGHT, BOX_WIDTH, BOX_HEIGHT,
-                    MARGIN, anchor);
+                MARGIN, anchor);
         }
     }
 }

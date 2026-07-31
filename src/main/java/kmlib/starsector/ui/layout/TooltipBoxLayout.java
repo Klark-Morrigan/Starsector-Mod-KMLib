@@ -49,16 +49,16 @@ public final class TooltipBoxLayout {
             float cursorY,
             float screenWidth,
             float screenHeight) {
-                
+
         var width = (float) contentWidth + PADDING + PADDING;
         var height = (float) contentHeight + PADDING + PADDING;
         var x = Math.min(cursorX + CURSOR_OFFSET, screenWidth - width);
         var y = Math.min(cursorY + CURSOR_OFFSET, screenHeight - height);
 
         return new Rectangle(
-                Math.max(x, 0f),
-                Math.max(y, 0f),
-                width,
-                height);
+            Math.max(x, 0f),
+            Math.max(y, 0f),
+            width,
+            height);
     }
 }

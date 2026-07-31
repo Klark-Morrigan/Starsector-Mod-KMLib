@@ -30,7 +30,7 @@ class StarsectorUiColorTest {
                 miscMock.when(Misc::getHighlightColor).thenReturn(expected);
 
                 assertThat(StarsectorUiColor.VANILLA_HIGHLIGHT_GOLD.resolve())
-                        .isEqualTo(expected);
+                    .isEqualTo(expected);
             } finally {
                 StarsectorSettingsFake.clearSettings();
             }
@@ -39,7 +39,7 @@ class StarsectorUiColorTest {
         @Test
         void resolveReturnsLiteralForCustomEntry() {
             assertThat(StarsectorUiColor.ORANGE.resolve())
-                    .isEqualTo(new Color(255, 100, 0, 255));
+                .isEqualTo(new Color(255, 100, 0, 255));
         }
 
         @Test
@@ -52,8 +52,8 @@ class StarsectorUiColorTest {
                 miscMock.when(Misc::getHighlightColor).thenReturn(null);
 
                 assertThatNullPointerException()
-                        .isThrownBy(StarsectorUiColor.VANILLA_HIGHLIGHT_GOLD::resolve)
-                        .withMessageContaining("GOLD");
+                    .isThrownBy(StarsectorUiColor.VANILLA_HIGHLIGHT_GOLD::resolve)
+                    .withMessageContaining("GOLD");
             } finally {
                 StarsectorSettingsFake.clearSettings();
             }

@@ -92,17 +92,26 @@ public final class EntityOrbits {
      * @param speedDegPerDay   orbital angular speed; 0 or less means static
      * @param startAngleDegrees angle from the focus at which the entity starts
      */
-    public static void applyCircularOrbit(SectorEntityToken entity, SectorEntityToken focus,
-            float orbitDistance, float speedDegPerDay, float startAngleDegrees) {
+    public static void applyCircularOrbit(
+            SectorEntityToken entity,
+            SectorEntityToken focus,
+            float orbitDistance,
+            float speedDegPerDay,
+            float startAngleDegrees) {
+
         if (speedDegPerDay <= 0f) {
             var focusLocation = focus.getLocation();
             var radians = Math.toRadians(startAngleDegrees);
             entity.setFixedLocation(
-                    focusLocation.x + (float) (Math.cos(radians) * orbitDistance),
-                    focusLocation.y + (float) (Math.sin(radians) * orbitDistance));
+                focusLocation.x + (float) (Math.cos(radians) * orbitDistance),
+                focusLocation.y + (float) (Math.sin(radians) * orbitDistance));
             return;
         }
         var orbitalPeriodDays = DEGREES_PER_CIRCLE / speedDegPerDay;
-        entity.setCircularOrbit(focus, startAngleDegrees, orbitDistance, orbitalPeriodDays);
+        entity.setCircularOrbit(
+            focus,
+            startAngleDegrees,
+            orbitDistance,
+            orbitalPeriodDays);
     }
 }

@@ -55,20 +55,20 @@ public final class IconRadioListRenderer {
 
         var optionCount = iconPaths.size();
         RadioRowRenderer.renderVerticalGrid(
-                bounds,
-                optionCount,
-                selectedIndex,
-                columnCount,
-                colors,
-                opacity);
+            bounds,
+            optionCount,
+            selectedIndex,
+            columnCount,
+            colors,
+            opacity);
 
         var segments = RadioRow.splitIntoGrid(
-                bounds,
-                optionCount,
-                columnCount);
+            bounds,
+            optionCount,
+            columnCount);
 
         for (var index = 0; index < segments.size(); index++) {
-            
+
             var iconPath = iconPaths.get(index);
             if (iconPath == null) {
                 continue;

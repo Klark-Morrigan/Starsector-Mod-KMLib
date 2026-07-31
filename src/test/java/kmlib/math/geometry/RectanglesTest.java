@@ -17,7 +17,7 @@ class RectanglesTest {
     @Nested
     class FindIndexContaining {
         private final List<Rectangle> boxes = List.of(new Rectangle(0f, 0f, 10f, 10f),
-                new Rectangle(10f, 0f, 10f, 10f));
+            new Rectangle(10f, 0f, 10f, 10f));
 
         @Test
         void findsTheFirstBoxContainingThePoint() {
@@ -39,9 +39,9 @@ class RectanglesTest {
             record Labelled(String name, Rectangle bounds) {
             }
             var items = List.of(new Labelled("a", new Rectangle(0f, 0f, 10f, 10f)),
-                    new Labelled("b", new Rectangle(10f, 0f, 10f, 10f)));
+                new Labelled("b", new Rectangle(10f, 0f, 10f, 10f)));
             assertThat(Rectangles.findIndexContaining(items, Labelled::bounds, 15f, 5f))
-                    .isEqualTo(1);
+                .isEqualTo(1);
         }
     }
 }

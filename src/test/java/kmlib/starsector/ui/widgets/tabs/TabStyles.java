@@ -19,27 +19,27 @@ public final class TabStyles {
     private static final Color STAND_IN_SHADE = Color.GRAY;
 
     private static final VanillaTabColors STAND_IN_COLORS = new VanillaTabColors(
-            STAND_IN_SHADE,
-            STAND_IN_SHADE,
-            STAND_IN_SHADE,
-            STAND_IN_SHADE,
-            STAND_IN_SHADE,
-            STAND_IN_SHADE);
+        STAND_IN_SHADE,
+        STAND_IN_SHADE,
+        STAND_IN_SHADE,
+        STAND_IN_SHADE,
+        STAND_IN_SHADE,
+        STAND_IN_SHADE);
 
     // A plain key in the same stand-in shade: the tests here draw nothing, so how a bound key is
     // presented never reaches an assertion, and the un-emphasised look keeps the fixture from implying
     // the layout reserves room for a rule (it does not - the emphasis costs no width).
     private static final HotkeyStyle STAND_IN_HOTKEY = new HotkeyStyle(
-            STAND_IN_SHADE,
-            false,
-            0f,
-            0f);
+        STAND_IN_SHADE,
+        false,
+        0f,
+        0f);
 
     // The face the vanilla map tabs read in, at its own atlas size - a real face rather than an invented
     // one, so a test that does measure text measures against a size a host actually asks for.
     private static final TextFace STAND_IN_FACE = new TextFace(
-            StarsectorFont.VANILLA_ORBITRON_20AA,
-            StarsectorFont.VANILLA_ORBITRON_20AA.getNativeSize());
+        StarsectorFont.VANILLA_ORBITRON_20AA,
+        StarsectorFont.VANILLA_ORBITRON_20AA.getNativeSize());
 
     private TabStyles() {
     }
@@ -54,9 +54,9 @@ public final class TabStyles {
      */
     public static TabStyle buildAtBandHeight(float headerBandHeight) {
         return new TabStyle(
-                headerBandHeight,
-                STAND_IN_COLORS,
-                STAND_IN_HOTKEY,
-                STAND_IN_FACE);
+            headerBandHeight,
+            STAND_IN_COLORS,
+            STAND_IN_HOTKEY,
+            STAND_IN_FACE);
     }
 }

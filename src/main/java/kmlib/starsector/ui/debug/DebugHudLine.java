@@ -18,10 +18,10 @@ import java.awt.Color;
  * @param fontSize       the glyph size to draw at
  */
 public record DebugHudLine(
-        String text,
-        float x,
-        float y,
-        boolean isRightAligned,
-        Color colour,
-        double fontSize) {
+    String text,
+    float x,
+    float y,
+    boolean isRightAligned,
+    Color colour,
+    double fontSize) {
 }

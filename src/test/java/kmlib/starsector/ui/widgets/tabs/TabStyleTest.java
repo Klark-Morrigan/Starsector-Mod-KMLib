@@ -21,7 +21,7 @@ final class TabStyleTest {
         @Test
         void headerBandHeightCarriesThePositiveValueThrough() {
             assertThat(TabStyles.buildAtBandHeight(17f).headerBandHeight())
-                    .isCloseTo(17f, within(TOLERANCE));
+                .isCloseTo(17f, within(TOLERANCE));
         }
 
         @Test
@@ -29,7 +29,7 @@ final class TabStyleTest {
             // A negative band would hang a tab row above the top edge it descends from, so it collapses to
             // nothing instead - a bandless panel, not an inverted one.
             assertThat(TabStyles.buildAtBandHeight(-8f).headerBandHeight())
-                    .isCloseTo(0f, within(TOLERANCE));
+                .isCloseTo(0f, within(TOLERANCE));
         }
 
         @Test
@@ -37,7 +37,7 @@ final class TabStyleTest {
             // Zero is a legitimate ask (a panel wanting no tab row at all), so it passes through rather than
             // being nudged up to some minimum.
             assertThat(TabStyles.buildAtBandHeight(0f).headerBandHeight())
-                    .isCloseTo(0f, within(TOLERANCE));
+                .isCloseTo(0f, within(TOLERANCE));
         }
     }
 }

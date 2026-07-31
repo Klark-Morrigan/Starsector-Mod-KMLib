@@ -17,20 +17,20 @@ final class PicksTest {
         @Test
         void pickHigherReturnsTheCandidateWhenItScoresHigher() {
             assertThat(Picks.pickHigher("current", "candidate",
-                    value -> value.equals("candidate") ? 2.0 : 1.0)).isEqualTo("candidate");
+                value -> value.equals("candidate") ? 2.0 : 1.0)).isEqualTo("candidate");
         }
 
         @Test
         void pickHigherKeepsTheCurrentOnATie() {
             // First seen wins a tie - the deterministic pick a repeated search needs.
             assertThat(Picks.pickHigher("current", "candidate", value -> 1.0))
-                    .isEqualTo("current");
+                .isEqualTo("current");
         }
 
         @Test
         void pickHigherReturnsTheCandidateWhenCurrentIsNull() {
             assertThat(Picks.<String>pickHigher(null, "candidate", value -> 1.0))
-                    .isEqualTo("candidate");
+                .isEqualTo("candidate");
         }
 
         @Test

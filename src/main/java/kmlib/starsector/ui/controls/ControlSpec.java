@@ -93,8 +93,7 @@ public sealed interface ControlSpec {
     record Checkbox(
             String label,
             int selectedIndex,
-            ControlAction action)
-            implements Interactive {
+            ControlAction action) implements Interactive {
         /**
          * Builds a checkbox in its current lit state, mapping on/off to the single-cell {@code
          * selectedIndex} in one place so no host re-derives the "cell 0 lit or nothing" convention.
@@ -106,9 +105,9 @@ public sealed interface ControlSpec {
          */
         public static Checkbox lit(String label, boolean isOn, ControlAction action) {
             return new Checkbox(
-                    label,
-                    isOn ? SINGLE_CELL : NO_SELECTION,
-                    action);
+                label,
+                isOn ? SINGLE_CELL : NO_SELECTION,
+                action);
         }
 
         @Override
@@ -127,7 +126,10 @@ public sealed interface ControlSpec {
      * @param selectedIndex {@link #SINGLE_CELL} when on, {@link #NO_SELECTION} when off
      * @param action        what a click on the button does
      */
-    record Toggle(String label, int selectedIndex, ControlAction action) implements Interactive {
+    record Toggle(
+            String label,
+            int selectedIndex,
+            ControlAction action) implements Interactive {
         /**
          * Builds a toggle in its current lit state, mapping on/off to the single-cell {@code
          * selectedIndex} as {@link Checkbox#lit} does for a tick box.
@@ -139,9 +141,9 @@ public sealed interface ControlSpec {
          */
         public static Toggle lit(String label, boolean isOn, ControlAction action) {
             return new Toggle(
-                    label,
-                    isOn ? SINGLE_CELL : NO_SELECTION,
-                    action);
+                label,
+                isOn ? SINGLE_CELL : NO_SELECTION,
+                action);
         }
 
         @Override
@@ -156,7 +158,9 @@ public sealed interface ControlSpec {
      *
      * @param text the caption text
      */
-    record Label(String text) implements ControlSpec {
+    record Label(
+        String text) implements ControlSpec {
+
         @Override
         public List<String> labels() {
             return List.of(text);
@@ -169,6 +173,7 @@ public sealed interface ControlSpec {
      * it to the content width and the renderer draws the rule.
      */
     record Divider() implements ControlSpec {
+
         @Override
         public List<String> labels() {
             return List.of();
@@ -199,8 +204,8 @@ public sealed interface ControlSpec {
             ControlAction action,
             String trailingLabel,
             SegmentSizing segmentSizing,
-            ReselectBehaviour reselect)
-            implements Interactive {
+            ReselectBehaviour reselect) implements Interactive {
+
         /** Copies the label list defensively, so a later edit to a caller's list cannot mutate the spec. */
         public HorizontalRadio {
             labels = List.copyOf(labels);
@@ -224,13 +229,14 @@ public sealed interface ControlSpec {
                 List<String> labels,
                 int selectedIndex,
                 ControlAction action) {
+                    
             return new HorizontalRadio(
-                    labels,
-                    selectedIndex,
-                    action,
-                    NO_TRAILING_CAPTION,
-                    SegmentSizing.UNIFORM,
-                    ReselectBehaviour.INERT);
+                labels,
+                selectedIndex,
+                action,
+                NO_TRAILING_CAPTION,
+                SegmentSizing.UNIFORM,
+                ReselectBehaviour.INERT);
         }
 
         /**
@@ -254,12 +260,12 @@ public sealed interface ControlSpec {
          */
         public HorizontalRadio showsCaption(String trailingLabel) {
             return new HorizontalRadio(
-                    labels,
-                    selectedIndex,
-                    action,
-                    trailingLabel,
-                    segmentSizing,
-                    reselect);
+                labels,
+                selectedIndex,
+                action,
+                trailingLabel,
+                segmentSizing,
+                reselect);
         }
 
         /**
@@ -271,12 +277,12 @@ public sealed interface ControlSpec {
          */
         public HorizontalRadio sizesSegments(SegmentSizing segmentSizing) {
             return new HorizontalRadio(
-                    labels,
-                    selectedIndex,
-                    action,
-                    trailingLabel,
-                    segmentSizing,
-                    reselect);
+                labels,
+                selectedIndex,
+                action,
+                trailingLabel,
+                segmentSizing,
+                reselect);
         }
 
         /**
@@ -289,12 +295,12 @@ public sealed interface ControlSpec {
          */
         public HorizontalRadio handlesReselect(ReselectBehaviour reselect) {
             return new HorizontalRadio(
-                    labels,
-                    selectedIndex,
-                    action,
-                    trailingLabel,
-                    segmentSizing,
-                    reselect);
+                labels,
+                selectedIndex,
+                action,
+                trailingLabel,
+                segmentSizing,
+                reselect);
         }
     }
 
@@ -339,8 +345,7 @@ public sealed interface ControlSpec {
             ControlAction action,
             ReselectBehaviour reselect,
             int columnCount,
-            boolean scrolls)
-            implements Interactive {
+            boolean scrolls) implements Interactive {
         /**
          * Copies the option lists defensively - null-tolerantly, since a null entry is a real "no icon",
          * "no value", or "no triangle" - and rejects a column count the layout cannot lay out, so a
@@ -352,8 +357,10 @@ public sealed interface ControlSpec {
             trailingLabels = Collections.unmodifiableList(new ArrayList<>(trailingLabels));
             trailingDirections = Collections.unmodifiableList(new ArrayList<>(trailingDirections));
             if (columnCount < SINGLE_COLUMN) {
-                throw new IllegalArgumentException("columnCount must be at least " + SINGLE_COLUMN
-                        + ", was " + columnCount);
+                throw new IllegalArgumentException("columnCount must be at least "
+                    + SINGLE_COLUMN
+                    + ", was "
+                    + columnCount);
             }
         }
 
@@ -380,16 +387,17 @@ public sealed interface ControlSpec {
                 int selectedIndex,
                 ControlAction action,
                 int columnCount) {
+
             return new VerticalTable(
-                    labels,
-                    iconPaths,
-                    trailingLabels,
-                    List.of(),
-                    selectedIndex,
-                    action,
-                    ReselectBehaviour.DESELECT,
-                    columnCount,
-                    false);
+                labels,
+                iconPaths,
+                trailingLabels,
+                List.of(),
+                selectedIndex,
+                action,
+                ReselectBehaviour.DESELECT,
+                columnCount,
+                false);
         }
 
         /**
@@ -414,16 +422,17 @@ public sealed interface ControlSpec {
                 int selectedIndex,
                 ControlAction action,
                 ReselectBehaviour reselect) {
+
             return new VerticalTable(
-                    labels,
-                    Collections.<String>nCopies(labels.size(), null),
-                    List.of(),
-                    trailingDirections,
-                    selectedIndex,
-                    action,
-                    reselect,
-                    SINGLE_COLUMN,
-                    false);
+                labels,
+                Collections.<String>nCopies(labels.size(), null),
+                List.of(),
+                trailingDirections,
+                selectedIndex,
+                action,
+                reselect,
+                SINGLE_COLUMN,
+                false);
         }
 
         /**
@@ -480,15 +489,15 @@ public sealed interface ControlSpec {
          */
         public VerticalTable asScrolling() {
             return new VerticalTable(
-                    labels,
-                    iconPaths,
-                    trailingLabels,
-                    trailingDirections,
-                    selectedIndex,
-                    action,
-                    reselect,
-                    columnCount,
-                    true);
+                labels,
+                iconPaths,
+                trailingLabels,
+                trailingDirections,
+                selectedIndex,
+                action,
+                reselect,
+                columnCount,
+                true);
         }
     }
 
@@ -508,8 +517,8 @@ public sealed interface ControlSpec {
             List<String> labels,
             List<String> shortcuts,
             int selectedIndex,
-            ControlAction action)
-            implements Interactive {
+            ControlAction action) implements Interactive {
+
         /** Copies the label and shortcut lists defensively; a null shortcut entry is a real "no hint". */
         public Tabs {
             labels = List.copyOf(labels);
@@ -550,8 +559,10 @@ public sealed interface ControlSpec {
      * @param leftColumn  the controls filling the left column, top to bottom
      * @param rightColumn the controls filling the right column, top to bottom
      */
-    record SideBySide(List<ControlSpec> leftColumn, List<ControlSpec> rightColumn)
-            implements ControlSpec {
+    record SideBySide(
+            List<ControlSpec> leftColumn,
+            List<ControlSpec> rightColumn) implements ControlSpec {
+
         /** Copies both columns defensively, so a later edit to a caller's list cannot mutate the spec. */
         public SideBySide {
             leftColumn = List.copyOf(leftColumn);

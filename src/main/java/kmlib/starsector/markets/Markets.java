@@ -52,8 +52,8 @@ public final class Markets {
      */
     public static boolean isOwnedColony(MarketAPI market) {
         return market != null
-                && market.getFaction() != null
-                && !market.isPlanetConditionMarketOnly();
+            && market.getFaction() != null
+            && !market.isPlanetConditionMarketOnly();
     }
 
     /**
@@ -147,7 +147,9 @@ public final class Markets {
      * @return true when a faction owns the market and it is either known or the reveal is on
      */
     public static boolean isCountedAsColony(
-            MarketAPI market, boolean shouldIncludeUndiscoveredMarkets) {
+            MarketAPI market,
+            boolean shouldIncludeUndiscoveredMarkets) {
+                
         if (!isOwnedColony(market)) {
             return false;
         }
@@ -233,9 +235,9 @@ public final class Markets {
         }
         var dynamic = market.getStats().getDynamic();
         return new PatrolCounts(
-                readPatrolTierCount(dynamic, Stats.PATROL_NUM_LIGHT_MOD),
-                readPatrolTierCount(dynamic, Stats.PATROL_NUM_MEDIUM_MOD),
-                readPatrolTierCount(dynamic, Stats.PATROL_NUM_HEAVY_MOD));
+            readPatrolTierCount(dynamic, Stats.PATROL_NUM_LIGHT_MOD),
+            readPatrolTierCount(dynamic, Stats.PATROL_NUM_MEDIUM_MOD),
+            readPatrolTierCount(dynamic, Stats.PATROL_NUM_HEAVY_MOD));
     }
 
     // One patrol tier's count off the dynamic stats, mirroring vanilla's truncation

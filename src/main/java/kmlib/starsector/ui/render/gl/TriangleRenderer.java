@@ -26,8 +26,8 @@ public final class TriangleRenderer {
      */
     public static void render(Rectangle box, TriangleDirection direction, UiElementPaint paint) {
         var vertices = direction == TriangleDirection.UP
-                ? computeUpTriangle(box)
-                : computeDownTriangle(box);
+            ? computeUpTriangle(box)
+            : computeDownTriangle(box);
         UiFill.renderTriangle(vertices, paint);
     }
 
@@ -36,12 +36,12 @@ public final class TriangleRenderer {
     private static float[] computeUpTriangle(Rectangle box) {
         var top = box.y() + box.height();
         return new float[] {
-                box.x(),
-                box.y(),
-                box.x() + box.width(),
-                box.y(),
-                box.computeCenterX(),
-                top,
+            box.x(),
+            box.y(),
+            box.x() + box.width(),
+            box.y(),
+            box.computeCenterX(),
+            top,
         };
     }
 
@@ -50,12 +50,12 @@ public final class TriangleRenderer {
     private static float[] computeDownTriangle(Rectangle box) {
         var top = box.y() + box.height();
         return new float[] {
-                box.x(),
-                top,
-                box.x() + box.width(),
-                top,
-                box.computeCenterX(),
-                box.y(),
+            box.x(),
+            top,
+            box.x() + box.width(),
+            top,
+            box.computeCenterX(),
+            box.y(),
         };
     }
 }

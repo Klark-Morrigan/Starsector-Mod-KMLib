@@ -13,9 +13,9 @@ public record Rectangle(float x, float y, float width, float height) {
      */
     public boolean containsPoint(float pointX, float pointY) {
         return pointX >= x
-                && pointX <= x + width
-                && pointY >= y
-                && pointY <= y + height;
+            && pointX <= x + width
+            && pointY >= y
+            && pointY <= y + height;
     }
 
     /**
@@ -34,10 +34,10 @@ public record Rectangle(float x, float y, float width, float height) {
         var right = Math.min(x + width, other.x + other.width);
         var top = Math.min(y + height, other.y + other.height);
         return new Rectangle(
-                left,
-                bottom,
-                Math.max(0f, right - left),
-                Math.max(0f, top - bottom));
+            left,
+            bottom,
+            Math.max(0f, right - left),
+            Math.max(0f, top - bottom));
     }
 
     /**

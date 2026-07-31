@@ -144,10 +144,10 @@ class TextStyleTest {
             // The point of composing refinements: a heading built face-first cannot lose the size,
             // colour, and anchor it was already given by the one that shouts it.
             var style = baselineStyle()
-                    .sizedAt(OVERRIDE_SIZE)
-                    .inColour(OVERRIDE_COLOUR)
-                    .alignedTo(TextAlignment.CENTER)
-                    .inUpperCase();
+                .sizedAt(OVERRIDE_SIZE)
+                .inColour(OVERRIDE_COLOUR)
+                .alignedTo(TextAlignment.CENTER)
+                .inUpperCase();
 
             assertThat(style.face().size()).isCloseTo(OVERRIDE_SIZE, within(TOLERANCE));
             assertThat(style.colour()).isEqualTo(OVERRIDE_COLOUR);
@@ -177,7 +177,7 @@ class TextStyleTest {
         @Test
         void resolveDisplayTextShoutsWhenUpperCased() {
             assertThat(baselineStyle().inUpperCase().resolveDisplayText("Contested by"))
-                    .isEqualTo("CONTESTED BY");
+                .isEqualTo("CONTESTED BY");
         }
     }
 }

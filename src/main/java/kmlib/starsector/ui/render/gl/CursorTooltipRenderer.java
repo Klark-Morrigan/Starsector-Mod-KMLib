@@ -54,13 +54,13 @@ public final class CursorTooltipRenderer {
         }
         var settings = Global.getSettings();
         var layout = CursorTooltip.layOut(
-                rows,
-                style.typography(),
-                LazyFontSpanMeasurer::measureSpanWidth,
-                UiCursor.getUiX(),
-                UiCursor.getUiY(),
-                settings.getScreenWidth(),
-                settings.getScreenHeight());
+            rows,
+            style.typography(),
+            LazyFontSpanMeasurer::measureSpanWidth,
+            UiCursor.getUiX(),
+            UiCursor.getUiY(),
+            settings.getScreenWidth(),
+            settings.getScreenHeight());
 
         // The core map and its tooltips draw after this pass, so the box, crests, and text run inside
         // the shared state save that restores the blend and colour the draw touched on the way out.
@@ -75,16 +75,16 @@ public final class CursorTooltipRenderer {
             CursorTooltipStyle style) {
 
         BorderedBoxRenderer.render(
-                layout.box(),
-                new BoxBorder(style.borderWidth()),
-                new UiElementPaint(style.fillColor(), style.opacity()),
-                new UiElementPaint(style.borderColor(), style.opacity()));
-                
+            layout.box(),
+            new BoxBorder(style.borderWidth()),
+            new UiElementPaint(style.fillColor(), style.opacity()),
+            new UiElementPaint(style.borderColor(), style.opacity()));
+
         for (var index = 0; index < rows.size(); index++) {
             drawRow(
-                    rows.get(index),
-                    layout.rows().get(index),
-                    style);
+                rows.get(index),
+                layout.rows().get(index),
+                style);
         }
     }
 
@@ -99,8 +99,8 @@ public final class CursorTooltipRenderer {
         // The kind of line the row is decides the face, size, and casing every span of it shares -
         // resolved once here, the same lookup the layout made when it measured them.
         var rowPaint = new RowPaint(
-                style.typography().resolveStyleFor(row.lineStyle()),
-                style.opacity());
+            style.typography().resolveStyleFor(row.lineStyle()),
+            style.opacity());
 
         if (row instanceof TooltipRow.TableRow tableRow) {
             drawFlankingRowSlots(tableRow.labelledRow(), placement, rowPaint);
@@ -113,10 +113,10 @@ public final class CursorTooltipRenderer {
         var labelTextSpans = row.labelTextSpans();
         for (var index = 0; index < labelTextSpans.size(); index++) {
             rowPaint.drawSpan(
-                    labelTextSpans.get(index),
-                    placement.labelRunXs().get(index),
-                    placement.rowTopY(),
-                    LazyFont.TextAnchor.TOP_LEFT);
+                labelTextSpans.get(index),
+                placement.labelRunXs().get(index),
+                placement.rowTopY(),
+                LazyFont.TextAnchor.TOP_LEFT);
         }
     }
 
@@ -139,17 +139,17 @@ public final class CursorTooltipRenderer {
                 // Faded through the paint the row's text draws with, so a crest and the label beside it
                 // cannot end up compositing at two different alphas.
                 UiSprite.renderQuad(
-                        crest,
-                        computeCrestBox(placement),
-                        rowPaint.opacity());
+                    crest,
+                    computeCrestBox(placement),
+                    rowPaint.opacity());
             }
         }
         if (labelledRow.trailingRowSlot() instanceof RowSlot.Text valueRowSlot) {
             rowPaint.drawSpan(
-                    valueRowSlot.textSpan(),
-                    placement.trailingRowSlotX(),
-                    placement.rowTopY(),
-                    LazyFont.TextAnchor.TOP_RIGHT);
+                valueRowSlot.textSpan(),
+                placement.trailingRowSlotX(),
+                placement.rowTopY(),
+                LazyFont.TextAnchor.TOP_RIGHT);
         }
     }
 
@@ -159,10 +159,10 @@ public final class CursorTooltipRenderer {
     // whatever face that label draws in.
     private static Rectangle computeCrestBox(TooltipLayout.TooltipRowLayout placement) {
         return new Rectangle(
-                placement.leadingRowSlotX(),
-                placement.rowTopY() - placement.lineHeight(),
-                placement.lineHeight(),
-                placement.lineHeight());
+            placement.leadingRowSlotX(),
+            placement.rowTopY() - placement.lineHeight(),
+            placement.lineHeight(),
+            placement.lineHeight());
     }
 
     /**
@@ -193,13 +193,13 @@ public final class CursorTooltipRenderer {
                 LazyFont.TextAnchor anchor) {
 
             LabelRenderer.render(
-                    new LabelStyle(textStyle.face(), textSpan.colour(), opacity),
-                    // Painted from the look's own display form, the same one the layout measured, or a
-                    // shouted line would be drawn wider than the box sized to hold it.
-                    textStyle.resolveDisplayText(textSpan.text()),
-                    x,
-                    y,
-                    anchor);
+                new LabelStyle(textStyle.face(), textSpan.colour(), opacity),
+                // Painted from the look's own display form, the same one the layout measured, or a
+                // shouted line would be drawn wider than the box sized to hold it.
+                textStyle.resolveDisplayText(textSpan.text()),
+                x,
+                y,
+                anchor);
         }
     }
 }

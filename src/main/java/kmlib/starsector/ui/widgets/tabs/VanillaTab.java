@@ -10,5 +10,7 @@ import kmlib.math.geometry.Rectangle;
  * @param content the tab's label and optional shortcut
  * @param bounds  the tab's footprint in UI coordinates
  */
-public record VanillaTab(VanillaTabContent content, Rectangle bounds) {
+public record VanillaTab(
+    VanillaTabContent content,
+    Rectangle bounds) {
 }

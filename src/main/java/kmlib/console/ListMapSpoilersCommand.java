@@ -39,7 +39,7 @@ public final class ListMapSpoilersCommand extends KmlibBaseConsoleCommand {
     // No parameters; declaring the spec still makes the parser reject a stray
     // argument as bad syntax rather than silently ignoring it.
     private static final ParameterSpec SPEC =
-            ParameterSpec.takingNoArguments("Usage: kmlib_list_map_spoilers.");
+        ParameterSpec.takingNoArguments("Usage: kmlib_list_map_spoilers.");
 
     public ListMapSpoilersCommand() {
     }
@@ -51,8 +51,8 @@ public final class ListMapSpoilersCommand extends KmlibBaseConsoleCommand {
     @Override
     public CommandResult runCommand(String args, CommandContext context) {
         var parsed = readInput(context, args)
-                .requireCampaign()
-                .parseArguments(SPEC);
+            .requireCampaign()
+            .parseArguments(SPEC);
         if (!parsed.isValid()) {
             return parsed.getResult();
         }
@@ -71,7 +71,7 @@ public final class ListMapSpoilersCommand extends KmlibBaseConsoleCommand {
      */
     static String buildReport(SectorAPI sector) {
         var report = new StringBuilder(
-                "Map spoilers - cut-off systems and undiscovered markets:");
+            "Map spoilers - cut-off systems and undiscovered markets:");
         var systemCount = 0;
         for (var system : sector.getStarSystems()) {
             var ownedMarkets = collectOwnedMarkets(sector, system);
@@ -91,9 +91,13 @@ public final class ListMapSpoilersCommand extends KmlibBaseConsoleCommand {
                 report.append("  [cut off]");
             }
             for (var market : ownedMarkets) {
-                report.append("\n    ").append(market.getName())
-                        .append("  (").append(market.getFaction().getDisplayName()).append(')')
-                        .append(getVisibilitySuffix(market));
+                report
+                    .append("\n    ")
+                    .append(market.getName())
+                    .append("  (")
+                    .append(market.getFaction().getDisplayName())
+                    .append(')')
+                    .append(getVisibilitySuffix(market));
             }
         }
         if (systemCount == 0) {
@@ -115,7 +119,8 @@ public final class ListMapSpoilersCommand extends KmlibBaseConsoleCommand {
         var ownedMarkets = new ArrayList<MarketAPI>();
         for (var market : sector.getEconomy().getMarkets(system)) {
             var faction = market.getFaction();
-            if (market.isPlanetConditionMarketOnly() || faction == null
+            if (market.isPlanetConditionMarketOnly()
+                    || faction == null
                     || NEUTRAL_FACTION_ID.equals(faction.getId())) {
                 continue;
             }

@@ -35,10 +35,10 @@ public final class ScrollbarRenderer {
      */
     public static void render(Rectangle track, Rectangle thumb, Color accent, float opacity) {
         UiFill.renderQuad(
-                track,
-                new UiElementPaint(accent, opacity * TRACK_ALPHA_MULT));
+            track,
+            new UiElementPaint(accent, opacity * TRACK_ALPHA_MULT));
         UiFill.renderQuad(
-                thumb,
-                new UiElementPaint(accent, opacity * THUMB_ALPHA_MULT));
+            thumb,
+            new UiElementPaint(accent, opacity * THUMB_ALPHA_MULT));
     }
 }

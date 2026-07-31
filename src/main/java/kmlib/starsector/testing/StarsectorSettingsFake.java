@@ -117,6 +117,9 @@ public final class StarsectorSettingsFake {
     }
 
     private static <T> T proxy(Class<T> type, InvocationHandler handler) {
-        return type.cast(Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[]{type}, handler));
+        return type.cast(Proxy.newProxyInstance(
+            type.getClassLoader(),
+            new Class<?>[] {type},
+            handler));
     }
 }

@@ -24,9 +24,9 @@ public final class VanillaPositions {
      */
     public static Rectangle toRectangle(PositionAPI position) {
         return new Rectangle(
-                position.getX(),
-                position.getY(),
-                position.getWidth(),
-                position.getHeight());
+            position.getX(),
+            position.getY(),
+            position.getWidth(),
+            position.getHeight());
     }
 }

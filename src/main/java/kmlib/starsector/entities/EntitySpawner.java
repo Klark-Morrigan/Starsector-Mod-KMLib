@@ -28,14 +28,24 @@ public final class EntitySpawner {
      * @param startAngleDegrees angle from the focus at which the entity starts
      * @return the spawned entity
      */
-    public static SectorEntityToken spawnOrbitingCustomEntity(SectorEntityToken focus, String entityType,
-            String factionId, float orbitDistance, float speedDegPerDay, float startAngleDegrees) {
+    public static SectorEntityToken spawnOrbitingCustomEntity(
+            SectorEntityToken focus,
+            String entityType,
+            String factionId,
+            float orbitDistance,
+            float speedDegPerDay,
+            float startAngleDegrees) {
+
         var location = focus.getContainingLocation();
         // id and name left null: the engine auto-assigns a unique id and the
         // entity uses its type's default name. entityType is the type slot.
         var entity = location.addCustomEntity(null, null, entityType, factionId);
-        EntityOrbits.applyCircularOrbit(entity, focus, orbitDistance, speedDegPerDay,
-                startAngleDegrees);
+        EntityOrbits.applyCircularOrbit(
+            entity,
+            focus,
+            orbitDistance,
+            speedDegPerDay,
+            startAngleDegrees);
         return entity;
     }
 
@@ -59,14 +69,25 @@ public final class EntitySpawner {
      * @param startAngleDegrees angle from the focus at which the entity starts
      * @return the spawned jump point
      */
-    public static JumpPointAPI spawnOrbitingJumpPoint(SectorEntityToken focus, String name,
-            float orbitDistance, float speedDegPerDay, float startAngleDegrees) {
+    public static JumpPointAPI spawnOrbitingJumpPoint(
+            SectorEntityToken focus,
+            String name,
+            float orbitDistance,
+            float speedDegPerDay,
+            float startAngleDegrees) {
+
         var location = focus.getContainingLocation();
         var jumpPoint = Global.getFactory().createJumpPoint(null, name);
         jumpPoint.setStandardWormholeToHyperspaceVisual();
         location.addEntity(jumpPoint);
-        EntityOrbits.applyCircularOrbit(jumpPoint, focus, orbitDistance, speedDegPerDay,
-                startAngleDegrees);
+        
+        EntityOrbits.applyCircularOrbit(
+            jumpPoint,
+            focus,
+            orbitDistance,
+            speedDegPerDay,
+            startAngleDegrees);
+
         if (location instanceof StarSystemAPI) {
             var system = (StarSystemAPI) location;
             system.autogenerateHyperspaceJumpPoints();

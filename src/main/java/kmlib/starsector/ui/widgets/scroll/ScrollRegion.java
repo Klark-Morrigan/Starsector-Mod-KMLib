@@ -18,7 +18,12 @@ import kmlib.math.geometry.Rectangle;
  * @param offset    how far the content is scrolled, 0..overflow
  * @param overflow  how far the content overruns the viewport, 0 when it fits
  */
-public record ScrollRegion(Rectangle container, Rectangle viewport, float offset, float overflow) {
+public record ScrollRegion(
+    Rectangle container,
+    Rectangle viewport,
+    float offset,
+    float overflow) {
+    
     /**
      * @return the full height of the scrolled content: the visible viewport plus how far it overruns
      */

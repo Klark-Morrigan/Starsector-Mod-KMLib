@@ -38,9 +38,9 @@ final class VoronoiCellBuilderTest {
         @Test
         void one_cell_is_built_per_site() {
             var sites = Arrays.asList(
-                    new double[] {-1, 0},
-                    new double[] {1, 0},
-                    new double[] {0, 1});
+                new double[] {-1, 0},
+                new double[] {1, 0},
+                new double[] {0, 1});
 
             assertThat(VoronoiCellBuilder.buildCells(sites, MAX_CELL_RADIUS)).hasSize(3);
         }
@@ -49,37 +49,36 @@ final class VoronoiCellBuilderTest {
         void a_lone_site_fills_a_bounded_disc() {
             double[] site = {500, 500};
             var cells = VoronoiCellBuilder.buildCells(
-                    List.of(site), MAX_CELL_RADIUS);
+                List.of(site), MAX_CELL_RADIUS);
 
             assertThat(cells).hasSize(1);
             assertThat(cells.get(0).size()).isGreaterThan(4);
-            assertThat(cells.get(0)).allMatch(vertex ->
-                    distance(vertex, site) <= MAX_CELL_RADIUS + 1e-6);
+            assertThat(cells.get(0)).allMatch(vertex -> distance(vertex, site) <= MAX_CELL_RADIUS + 1e-6);
         }
 
         @Test
         void every_cell_stays_within_the_bound_radius() {
             var sites = Arrays.asList(
-                    new double[] {-300, -300},
-                    new double[] {300, -300},
-                    new double[] {0, 400},
-                    new double[] {0, 0});
+                new double[] {-300, -300},
+                new double[] {300, -300},
+                new double[] {0, 400},
+                new double[] {0, 0});
 
             var cells = VoronoiCellBuilder.buildCells(sites, MAX_CELL_RADIUS);
 
             for (var i = 0; i < sites.size(); i++) {
                 var site = sites.get(i);
                 assertThat(cells.get(i))
-                        .as("cell %d stays within the bound radius of its site", i)
-                        .allMatch(vertex -> distance(vertex, site) <= MAX_CELL_RADIUS + 1e-6);
+                    .as("cell %d stays within the bound radius of its site", i)
+                    .allMatch(vertex -> distance(vertex, site) <= MAX_CELL_RADIUS + 1e-6);
             }
         }
 
         @Test
         void two_sites_split_along_their_bisector() {
             var sites = Arrays.asList(
-                    new double[] {-1000, 0},
-                    new double[] {1000, 0});
+                new double[] {-1000, 0},
+                new double[] {1000, 0});
 
             var cells = VoronoiCellBuilder.buildCells(sites, MAX_CELL_RADIUS);
 
@@ -90,17 +89,17 @@ final class VoronoiCellBuilderTest {
         @Test
         void each_site_lies_inside_its_own_cell() {
             var sites = Arrays.asList(
-                    new double[] {-300, -300},
-                    new double[] {300, -300},
-                    new double[] {0, 400},
-                    new double[] {0, 0});
+                new double[] {-300, -300},
+                new double[] {300, -300},
+                new double[] {0, 400},
+                new double[] {0, 0});
 
             var cells = VoronoiCellBuilder.buildCells(sites, MAX_CELL_RADIUS);
 
             for (var i = 0; i < sites.size(); i++) {
                 assertThat(isPointInsidePolygon(sites.get(i), cells.get(i)))
-                        .as("site %d lies inside its own cell", i)
-                        .isTrue();
+                    .as("site %d lies inside its own cell", i)
+                    .isTrue();
             }
         }
     }
@@ -110,10 +109,10 @@ final class VoronoiCellBuilderTest {
         @Test
         void labelled_cell_vertices_match_the_unlabelled_build_cell() {
             var sites = Arrays.asList(
-                    new double[] {-300, -300},
-                    new double[] {300, -300},
-                    new double[] {0, 400},
-                    new double[] {0, 0});
+                new double[] {-300, -300},
+                new double[] {300, -300},
+                new double[] {0, 400},
+                new double[] {0, 0});
 
             // The labelled build only adds edge tags; its geometry must be the
             // same polygon the unlabelled path returns.
@@ -123,7 +122,7 @@ final class VoronoiCellBuilderTest {
                 assertThat(labelled.vertices()).hasSameSizeAs(plain);
                 for (var v = 0; v < plain.size(); v++) {
                     assertThat(labelled.vertices().get(v)).containsExactly(plain.get(v),
-                            org.assertj.core.data.Offset.offset(1e-9));
+                        org.assertj.core.data.Offset.offset(1e-9));
                 }
             }
         }
@@ -131,9 +130,9 @@ final class VoronoiCellBuilderTest {
         @Test
         void there_is_one_edge_label_per_edge() {
             var sites = Arrays.asList(
-                    new double[] {-300, -300},
-                    new double[] {300, -300},
-                    new double[] {0, 0});
+                new double[] {-300, -300},
+                new double[] {300, -300},
+                new double[] {0, 0});
 
             for (var i = 0; i < sites.size(); i++) {
                 var cell = VoronoiCellBuilder.buildLabelledCell(i, sites, MAX_CELL_RADIUS);
@@ -150,63 +149,63 @@ final class VoronoiCellBuilderTest {
             // count. This is the lever a caller trades frontier smoothness for
             // fewer vertices with; the no-count builder uses the default.
             assertThat(VoronoiCellBuilder.buildLabelledCell(0, site, MAX_CELL_RADIUS, 24).vertices())
-                    .hasSize(24);
+                .hasSize(24);
             assertThat(VoronoiCellBuilder.buildLabelledCell(0, site, MAX_CELL_RADIUS).vertices())
-                    .hasSize(VoronoiCellBuilder.DEFAULT_CELL_BOUND_SEGMENTS);
+                .hasSize(VoronoiCellBuilder.DEFAULT_CELL_BOUND_SEGMENTS);
         }
 
         @Test
         void a_lone_site_has_only_bound_edges() {
             var cell = VoronoiCellBuilder.buildLabelledCell(
-                    0, List.of(new double[] {500, 500}), MAX_CELL_RADIUS);
+                0, List.of(new double[] {500, 500}), MAX_CELL_RADIUS);
 
             // Nothing to clip against, so every edge is the max-radius bound: no
             // neighbour, no adjacency.
             assertThat(cell.edgeNeighbourSiteIndices())
-                    .containsOnly(VoronoiCellBuilder.BOUND_EDGE);
+                .containsOnly(VoronoiCellBuilder.BOUND_EDGE);
         }
 
         @Test
         void two_close_sites_each_tag_the_other_across_their_shared_edge() {
             var sites = Arrays.asList(
-                    new double[] {-1000, 0},
-                    new double[] {1000, 0});
+                new double[] {-1000, 0},
+                new double[] {1000, 0});
 
             // The only non-bound edge of each cell is the shared bisector, tagged
             // with the other site - the adjacency between them.
             assertThat(neighboursOf(VoronoiCellBuilder.buildLabelledCell(0, sites, MAX_CELL_RADIUS)))
-                    .containsExactly(1);
+                .containsExactly(1);
             assertThat(neighboursOf(VoronoiCellBuilder.buildLabelledCell(1, sites, MAX_CELL_RADIUS)))
-                    .containsExactly(0);
+                .containsExactly(0);
         }
 
         @Test
         void a_far_site_is_not_tagged_as_a_neighbour() {
             var sites = Arrays.asList(
-                    new double[] {0, 0},
-                    new double[] {100, 0},
-                    new double[] {50_000, 0});
+                new double[] {0, 0},
+                new double[] {100, 0},
+                new double[] {50_000, 0});
 
             // The distant third site never clips either near cell, so neither
             // names it; the two near sites remain each other's only neighbour.
             assertThat(neighboursOf(VoronoiCellBuilder.buildLabelledCell(0, sites, MAX_CELL_RADIUS)))
-                    .containsExactly(1);
+                .containsExactly(1);
             assertThat(neighboursOf(VoronoiCellBuilder.buildLabelledCell(1, sites, MAX_CELL_RADIUS)))
-                    .containsExactly(0);
+                .containsExactly(0);
         }
 
         @Test
         void adjacency_is_symmetric() {
             var sites = Arrays.asList(
-                    new double[] {-300, -300},
-                    new double[] {300, -300},
-                    new double[] {0, 400},
-                    new double[] {0, 0});
+                new double[] {-300, -300},
+                new double[] {300, -300},
+                new double[] {0, 400},
+                new double[] {0, 0});
 
             var neighboursBySite = new ArrayList<Set<Integer>>();
             for (var i = 0; i < sites.size(); i++) {
                 neighboursBySite.add(
-                        neighboursOf(VoronoiCellBuilder.buildLabelledCell(i, sites, MAX_CELL_RADIUS)));
+                    neighboursOf(VoronoiCellBuilder.buildLabelledCell(i, sites, MAX_CELL_RADIUS)));
             }
 
             // A shared Voronoi edge belongs to both cells, so adjacency must read
@@ -214,8 +213,8 @@ final class VoronoiCellBuilderTest {
             for (var i = 0; i < sites.size(); i++) {
                 for (var j = 0; j < sites.size(); j++) {
                     assertThat(neighboursBySite.get(i).contains(j))
-                            .as("site %d lists %d iff %d lists %d", i, j, j, i)
-                            .isEqualTo(neighboursBySite.get(j).contains(i));
+                        .as("site %d lists %d iff %d lists %d", i, j, j, i)
+                        .isEqualTo(neighboursBySite.get(j).contains(i));
                 }
             }
         }
@@ -264,12 +263,12 @@ final class VoronoiCellBuilderTest {
             // does the timing below compare like with like.
             for (var i = 0; i < sites.size(); i++) {
                 var labelled =
-                        VoronoiCellBuilder.buildLabelledCell(i, sites, MAX_CELL_RADIUS).vertices();
+                    VoronoiCellBuilder.buildLabelledCell(i, sites, MAX_CELL_RADIUS).vertices();
                 var bare = buildBareCell(i, sites);
                 assertThat(labelled).hasSameSizeAs(bare);
                 for (var v = 0; v < bare.size(); v++) {
                     assertThat(labelled.get(v))
-                            .containsExactly(bare.get(v), org.assertj.core.data.Offset.offset(1e-9));
+                        .containsExactly(bare.get(v), org.assertj.core.data.Offset.offset(1e-9));
                 }
             }
 
@@ -292,7 +291,7 @@ final class VoronoiCellBuilderTest {
             var sites = new ArrayList<double[]>(SITE_COUNT);
             for (var i = 0; i < SITE_COUNT; i++) {
                 sites.add(new double[] {
-                        random.nextDouble() * SITE_SPREAD, random.nextDouble() * SITE_SPREAD});
+                    random.nextDouble() * SITE_SPREAD, random.nextDouble() * SITE_SPREAD});
             }
             return sites;
         }
@@ -309,8 +308,8 @@ final class VoronoiCellBuilderTest {
                 }
                 var neighbour = sites.get(other);
                 cell = bareClipToHalfPlane(cell, new HalfPlane(
-                        (site[0] + neighbour[0]) * 0.5, (site[1] + neighbour[1]) * 0.5,
-                        site[0] - neighbour[0], site[1] - neighbour[1]));
+                    (site[0] + neighbour[0]) * 0.5, (site[1] + neighbour[1]) * 0.5,
+                    site[0] - neighbour[0], site[1] - neighbour[1]));
                 if (cell.isEmpty()) {
                     break;
                 }
@@ -339,7 +338,7 @@ final class VoronoiCellBuilderTest {
                 }
                 if ((currentOffset >= 0) != (nextOffset >= 0)) {
                     result.add(
-                            Segment.computeCrossingPoint(current, next, currentOffset, nextOffset));
+                        Segment.computeCrossingPoint(current, next, currentOffset, nextOffset));
                 }
             }
             return result;
@@ -350,8 +349,8 @@ final class VoronoiCellBuilderTest {
             for (var i = 0; i < BOUND_SEGMENTS; i++) {
                 var angle = 2.0 * Math.PI * i / BOUND_SEGMENTS;
                 polygon.add(new double[] {
-                        center[0] + MAX_CELL_RADIUS * Math.cos(angle),
-                        center[1] + MAX_CELL_RADIUS * Math.sin(angle)});
+                    center[0] + MAX_CELL_RADIUS * Math.cos(angle),
+                    center[1] + MAX_CELL_RADIUS * Math.sin(angle)});
             }
             return polygon;
         }
@@ -372,31 +371,31 @@ final class VoronoiCellBuilderTest {
             }
             var nanosPerBuild = (System.nanoTime() - start) / TIMED_BUILDS;
             var bytesPerBuild = bean == null
-                    ? -1
-                    : (bean.getCurrentThreadAllocatedBytes() - allocBefore) / TIMED_BUILDS;
+                ? -1
+                : (bean.getCurrentThreadAllocatedBytes() - allocBefore) / TIMED_BUILDS;
             return new long[] {nanosPerBuild, bytesPerBuild};
         }
 
         private void reportCost(long[] labelled, long[] bare) {
             System.out.printf("%nVoronoiCellBuilder partition (%d sites):%n", SITE_COUNT);
             System.out.printf("  labelled: %,d ns/build (%,d ns/cell)  %s%n",
-                    labelled[0], labelled[0] / SITE_COUNT, allocText(labelled[1]));
+                labelled[0], labelled[0] / SITE_COUNT, allocText(labelled[1]));
             System.out.printf("  bare:     %,d ns/build (%,d ns/cell)  %s%n",
-                    bare[0], bare[0] / SITE_COUNT, allocText(bare[1]));
+                bare[0], bare[0] / SITE_COUNT, allocText(bare[1]));
             System.out.printf("  labelled/bare: %.2fx time%s%n",
-                    ratio(labelled[0], bare[0]), allocRatioText(labelled[1], bare[1]));
+                ratio(labelled[0], bare[0]), allocRatioText(labelled[1], bare[1]));
         }
 
         private String allocText(long bytesPerBuild) {
             return bytesPerBuild < 0
-                    ? "(alloc n/a)"
-                    : String.format("%,d bytes/build", bytesPerBuild);
+                ? "(alloc n/a)"
+                : String.format("%,d bytes/build", bytesPerBuild);
         }
 
         private String allocRatioText(long labelledBytes, long bareBytes) {
             return labelledBytes < 0 || bareBytes <= 0
-                    ? ""
-                    : String.format(", %.2fx alloc", ratio(labelledBytes, bareBytes));
+                ? ""
+                : String.format(", %.2fx alloc", ratio(labelledBytes, bareBytes));
         }
 
         private double ratio(long numerator, long denominator) {
@@ -421,21 +420,21 @@ final class VoronoiCellBuilderTest {
         @Test
         void build_cell_matches_the_same_site_from_build_cells() {
             var sites = Arrays.asList(
-                    new double[] {-300, -300},
-                    new double[] {300, -300},
-                    new double[] {0, 400},
-                    new double[] {0, 0});
+                new double[] {-300, -300},
+                new double[] {300, -300},
+                new double[] {0, 400},
+                new double[] {0, 0});
             var cells = VoronoiCellBuilder.buildCells(sites, MAX_CELL_RADIUS);
 
             // Recomputing one site's cell on its own yields the same polygon as the
             // full partition - the property the incremental update relies on.
             for (var i = 0; i < sites.size(); i++) {
                 var single = VoronoiCellBuilder.buildCell(
-                        sites.get(i), sites, MAX_CELL_RADIUS);
+                    sites.get(i), sites, MAX_CELL_RADIUS);
                 assertThat(single).hasSameSizeAs(cells.get(i));
                 for (var v = 0; v < single.size(); v++) {
                     assertThat(single.get(v)).containsExactly(cells.get(i).get(v),
-                            org.assertj.core.data.Offset.offset(1e-9));
+                        org.assertj.core.data.Offset.offset(1e-9));
                 }
             }
         }
@@ -446,7 +445,7 @@ final class VoronoiCellBuilderTest {
         @Test
         void no_sites_yield_no_pieces() {
             assertThat(VoronoiCellBuilder.splitPolygonAmongSites(
-                    GeometryTestSupport.bigSquare(SPLIT_SQUARE_SIDE), List.of())).isEmpty();
+                GeometryTestSupport.bigSquare(SPLIT_SQUARE_SIDE), List.of())).isEmpty();
         }
 
         @Test
@@ -454,42 +453,42 @@ final class VoronoiCellBuilderTest {
             var polygon = GeometryTestSupport.bigSquare(SPLIT_SQUARE_SIDE);
 
             var pieces = VoronoiCellBuilder.splitPolygonAmongSites(
-                    polygon, List.of(new double[] {5, 5}));
+                polygon, List.of(new double[] {5, 5}));
 
             // Nothing to clip against, so the split is the identity on the polygon.
             assertThat(pieces).hasSize(1);
             assertThat(GeometryTestSupport.signedArea(pieces.get(0)))
-                    .isCloseTo(WHOLE_SQUARE_AREA, GeometryTestSupport.within());
+                .isCloseTo(WHOLE_SQUARE_AREA, GeometryTestSupport.within());
         }
 
         @Test
         void two_sites_split_the_polygon_along_their_bisector() {
             var sites = Arrays.asList(
-                    new double[] {2, 5},
-                    new double[] {8, 5});
+                new double[] {2, 5},
+                new double[] {8, 5});
 
             var pieces = VoronoiCellBuilder.splitPolygonAmongSites(
-                    GeometryTestSupport.bigSquare(SPLIT_SQUARE_SIDE), sites);
+                GeometryTestSupport.bigSquare(SPLIT_SQUARE_SIDE), sites);
 
             // The bisector of the two sites is x = 5, so each takes its own half of
             // the square and neither crosses the line.
             assertThat(pieces.get(0)).allMatch(vertex -> vertex[0] <= 5 + 1e-9);
             assertThat(pieces.get(1)).allMatch(vertex -> vertex[0] >= 5 - 1e-9);
             assertThat(GeometryTestSupport.signedArea(pieces.get(0)))
-                    .isCloseTo(WHOLE_SQUARE_AREA / 2, GeometryTestSupport.within());
+                .isCloseTo(WHOLE_SQUARE_AREA / 2, GeometryTestSupport.within());
             assertThat(GeometryTestSupport.signedArea(pieces.get(1)))
-                    .isCloseTo(WHOLE_SQUARE_AREA / 2, GeometryTestSupport.within());
+                .isCloseTo(WHOLE_SQUARE_AREA / 2, GeometryTestSupport.within());
         }
 
         @Test
         void three_sites_take_disjoint_pieces_that_cover_the_polygon() {
             var sites = Arrays.asList(
-                    new double[] {3, 3},
-                    new double[] {7, 3},
-                    new double[] {5, 8});
+                new double[] {3, 3},
+                new double[] {7, 3},
+                new double[] {5, 8});
 
             var pieces = VoronoiCellBuilder.splitPolygonAmongSites(
-                    GeometryTestSupport.bigSquare(SPLIT_SQUARE_SIDE), sites);
+                GeometryTestSupport.bigSquare(SPLIT_SQUARE_SIDE), sites);
 
             // Areas summing to the whole square pins both halves of the contract at
             // once: no piece is dropped (they cover it) and no area is handed out
@@ -497,8 +496,8 @@ final class VoronoiCellBuilderTest {
             var total = 0.0;
             for (var i = 0; i < sites.size(); i++) {
                 assertThat(isPointInsidePolygon(sites.get(i), pieces.get(i)))
-                        .as("site %d lies inside its own piece", i)
-                        .isTrue();
+                    .as("site %d lies inside its own piece", i)
+                    .isTrue();
                 total += GeometryTestSupport.signedArea(pieces.get(i));
             }
             assertThat(total).isCloseTo(WHOLE_SQUARE_AREA, GeometryTestSupport.within());
@@ -507,31 +506,31 @@ final class VoronoiCellBuilderTest {
         @Test
         void a_site_with_no_nearest_region_gets_an_empty_piece() {
             var sites = Arrays.asList(
-                    new double[] {5, 5},
-                    new double[] {1000, 1000});
+                new double[] {5, 5},
+                new double[] {1000, 1000});
 
             var pieces = VoronoiCellBuilder.splitPolygonAmongSites(
-                    GeometryTestSupport.bigSquare(SPLIT_SQUARE_SIDE), sites);
+                GeometryTestSupport.bigSquare(SPLIT_SQUARE_SIDE), sites);
 
             // The far site is beaten to every point of the square by the near one,
             // so it is handed nothing rather than a degenerate shape.
             assertThat(GeometryTestSupport.signedArea(pieces.get(0)))
-                    .isCloseTo(WHOLE_SQUARE_AREA, GeometryTestSupport.within());
+                .isCloseTo(WHOLE_SQUARE_AREA, GeometryTestSupport.within());
             assertThat(pieces.get(1)).isEmpty();
         }
 
         @Test
         void a_polygon_that_encloses_no_area_splits_into_empty_pieces() {
             var degenerate = Arrays.asList(
-                    new double[] {0, 0},
-                    new double[] {10, 0});
+                new double[] {0, 0},
+                new double[] {10, 0});
             var sites = Arrays.asList(
-                    new double[] {2, 5},
-                    new double[] {8, 5});
+                new double[] {2, 5},
+                new double[] {8, 5});
 
             assertThat(VoronoiCellBuilder.splitPolygonAmongSites(degenerate, sites))
-                    .hasSize(2)
-                    .allMatch(List::isEmpty);
+                .hasSize(2)
+                .allMatch(List::isEmpty);
         }
     }
 
@@ -551,7 +550,7 @@ final class VoronoiCellBuilderTest {
             var from = polygon.get(i);
             var to = polygon.get((i + 1) % count);
             var cross = (to[0] - from[0]) * (point[1] - from[1])
-                    - (to[1] - from[1]) * (point[0] - from[0]);
+                - (to[1] - from[1]) * (point[0] - from[0]);
             if (cross > 1e-9) {
                 hasPositive = true;
             } else if (cross < -1e-9) {

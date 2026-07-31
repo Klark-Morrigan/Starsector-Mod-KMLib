@@ -91,6 +91,8 @@ public enum StarsectorUiColor {
 
     public Color resolve() {
         var resolved = source.get();
-        return Objects.requireNonNull(resolved, () -> "Missing color value for " + name());
+        return Objects.requireNonNull(
+            resolved,
+            () -> "Missing color value for " + name());
     }
 }

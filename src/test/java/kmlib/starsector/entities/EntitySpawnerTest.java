@@ -65,15 +65,15 @@ final class EntitySpawnerTest {
             // Null id and name let the engine auto-assign; the type and faction
             // are the spawn slots passed through.
             when(locationMock.addCustomEntity(null, null, "inactive_gate", "neutral"))
-                    .thenReturn(entityMock);
+                .thenReturn(entityMock);
 
             var result = EntitySpawner.spawnOrbitingCustomEntity(focusMock, "inactive_gate",
-                    "neutral", 100f, 2f, 45f);
+                "neutral", 100f, 2f, 45f);
 
             assertThat(result).isSameAs(entityMock);
             // The freshly added entity is placed on the requested orbit geometry.
             entityOrbitsMock.verify(() -> EntityOrbits.applyCircularOrbit(
-                    entityMock, focusMock, 100f, 2f, 45f));
+                entityMock, focusMock, 100f, 2f, 45f));
         }
     }
 
@@ -88,13 +88,13 @@ final class EntitySpawnerTest {
             when(factoryMock.createJumpPoint(null, "Corvus Jump-point")).thenReturn(jumpPointMock);
 
             var result = EntitySpawner.spawnOrbitingJumpPoint(focusMock, "Corvus Jump-point",
-                    200f, 3f, 90f);
+                200f, 3f, 90f);
 
             assertThat(result).isSameAs(jumpPointMock);
             verify(jumpPointMock).setStandardWormholeToHyperspaceVisual();
             verify(systemMock).addEntity(jumpPointMock);
             entityOrbitsMock.verify(() -> EntityOrbits.applyCircularOrbit(
-                    jumpPointMock, focusMock, 200f, 3f, 90f));
+                jumpPointMock, focusMock, 200f, 3f, 90f));
             // The reachability wiring: generate the hyperspace entrance and clear
             // the cut-off tag so the system is no longer sealed off.
             verify(systemMock).autogenerateHyperspaceJumpPoints();
@@ -113,13 +113,13 @@ final class EntitySpawnerTest {
             when(factoryMock.createJumpPoint(null, "Lone Jump-point")).thenReturn(jumpPointMock);
 
             var result = EntitySpawner.spawnOrbitingJumpPoint(focusMock, "Lone Jump-point",
-                    50f, 1f, 0f);
+                50f, 1f, 0f);
 
             assertThat(result).isSameAs(jumpPointMock);
             verify(jumpPointMock).setStandardWormholeToHyperspaceVisual();
             verify(locationMock).addEntity(jumpPointMock);
             entityOrbitsMock.verify(() -> EntityOrbits.applyCircularOrbit(
-                    jumpPointMock, focusMock, 50f, 1f, 0f));
+                jumpPointMock, focusMock, 50f, 1f, 0f));
         }
     }
 }

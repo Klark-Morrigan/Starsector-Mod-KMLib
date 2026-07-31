@@ -34,11 +34,10 @@ final class PolygonSmoothingTest {
             var rounded = PolygonSmoothing.roundCorners(bigSquare(100), 10.0, 3, 0.0);
 
             assertThat(rounded).hasSize(16);
-            assertThat(rounded).allMatch(vertex ->
-                    vertex[0] >= 0 && vertex[0] <= 100 && vertex[1] >= 0 && vertex[1] <= 100);
+            assertThat(rounded)
+                .allMatch(vertex -> vertex[0] >= 0 && vertex[0] <= 100 && vertex[1] >= 0 && vertex[1] <= 100);
             // A straight-edge point survives untouched between the rounded corners.
-            assertThat(rounded).anyMatch(vertex ->
-                    Math.abs(vertex[1]) < 1e-6 && vertex[0] > 0 && vertex[0] < 100);
+            assertThat(rounded).anyMatch(vertex -> Math.abs(vertex[1]) < 1e-6 && vertex[0] > 0 && vertex[0] < 100);
         }
 
         @Test
@@ -47,8 +46,8 @@ final class PolygonSmoothingTest {
             // result still stays inside the square instead of overshooting.
             var rounded = PolygonSmoothing.roundCorners(bigSquare(100), 10_000.0, 3, 0.0);
 
-            assertThat(rounded).allMatch(vertex ->
-                    vertex[0] >= 0 && vertex[0] <= 100 && vertex[1] >= 0 && vertex[1] <= 100);
+            assertThat(rounded)
+                .allMatch(vertex -> vertex[0] >= 0 && vertex[0] <= 100 && vertex[1] >= 0 && vertex[1] <= 100);
         }
 
         @Test
@@ -63,7 +62,7 @@ final class PolygonSmoothingTest {
             // points only) while the two near-90 deg corners stay rounded into
             // 3 + 1 points each. 2 + 4 + 4 = 10.
             var triangle = Arrays.asList(
-                    new double[] {0, 0}, new double[] {100, 0}, new double[] {100, 10});
+                new double[] {0, 0}, new double[] {100, 0}, new double[] {100, 10});
 
             var rounded = PolygonSmoothing.roundCorners(triangle, 5.0, 3, Math.toRadians(45));
 
@@ -80,18 +79,17 @@ final class PolygonSmoothingTest {
             // radius 3 it steps back to (13,10) and (10,13) and curves through about
             // (10.9,10.9). Six corners arced at 3 + 1 points each = 24.
             var lShape = Arrays.asList(
-                    new double[] {0, 0}, new double[] {30, 0}, new double[] {30, 10},
-                    new double[] {10, 10}, new double[] {10, 30}, new double[] {0, 30});
+                new double[] {0, 0}, new double[] {30, 0}, new double[] {30, 10},
+                new double[] {10, 10}, new double[] {10, 30}, new double[] {0, 30});
 
             var rounded = PolygonSmoothing.roundCorners(lShape, 3.0, 3, 0.0);
 
             assertThat(rounded).hasSize(24);
-            assertThat(rounded).allMatch(vertex ->
-                    vertex[0] >= -1e-6 && vertex[0] <= 30 + 1e-6
-                            && vertex[1] >= -1e-6 && vertex[1] <= 30 + 1e-6);
+            assertThat(rounded).allMatch(vertex -> vertex[0] >= -1e-6 && vertex[0] <= 30 + 1e-6
+                    && vertex[1] >= -1e-6 && vertex[1] <= 30 + 1e-6);
             // The reflex arc bulges into the notch rather than cutting across it.
-            assertThat(rounded).anyMatch(vertex ->
-                    vertex[0] > 10 && vertex[0] < 12 && vertex[1] > 10 && vertex[1] < 12);
+            assertThat(rounded)
+                .anyMatch(vertex -> vertex[0] > 10 && vertex[0] < 12 && vertex[1] > 10 && vertex[1] < 12);
         }
     }
 
@@ -108,9 +106,9 @@ final class PolygonSmoothingTest {
             // the y = 100 chord. With the height bar at 20 it is spliced out, leaving
             // the four square corners.
             var squareWithNeedle = Arrays.asList(
-                    new double[] {0, 0}, new double[] {100, 0}, new double[] {100, 100},
-                    new double[] {51, 100}, new double[] {50, 108}, new double[] {49, 100},
-                    new double[] {0, 100});
+                new double[] {0, 0}, new double[] {100, 0}, new double[] {100, 100},
+                new double[] {51, 100}, new double[] {50, 108}, new double[] {49, 100},
+                new double[] {0, 100});
 
             var cleaned = PolygonSmoothing.removeSpikes(squareWithNeedle, 20.0, MAX_CORNER_ANGLE);
 
@@ -127,16 +125,15 @@ final class PolygonSmoothingTest {
             // edge - an inward cusp of the same 8-unit depth. Because the interior
             // angle is unsigned, it is treated like the outward needle and removed.
             var squareWithCusp = Arrays.asList(
-                    new double[] {0, 0}, new double[] {100, 0}, new double[] {100, 100},
-                    new double[] {51, 100}, new double[] {50, 92}, new double[] {49, 100},
-                    new double[] {0, 100});
+                new double[] {0, 0}, new double[] {100, 0}, new double[] {100, 100},
+                new double[] {51, 100}, new double[] {50, 92}, new double[] {49, 100},
+                new double[] {0, 100});
 
             var cleaned = PolygonSmoothing.removeSpikes(squareWithCusp, 20.0, MAX_CORNER_ANGLE);
 
             // The inward nick apex at (50,92) is gone. As with the needle the spliced
             // shoulders stay collinear on y = 100, so the count drops short of 4.
-            assertThat(cleaned).noneMatch(vertex ->
-                    Math.abs(vertex[0] - 50) < 1e-6 && Math.abs(vertex[1] - 92) < 1e-6);
+            assertThat(cleaned).noneMatch(vertex -> Math.abs(vertex[0] - 50) < 1e-6 && Math.abs(vertex[1] - 92) < 1e-6);
             assertThat(cleaned).hasSizeLessThan(7);
         }
 
@@ -146,9 +143,9 @@ final class PolygonSmoothingTest {
             // (50,160) rises 60 above the y = 100 chord, past the 20 height bar, so
             // even though it is sharp it survives.
             var squareWithPeninsula = Arrays.asList(
-                    new double[] {0, 0}, new double[] {100, 0}, new double[] {100, 100},
-                    new double[] {60, 100}, new double[] {50, 160}, new double[] {40, 100},
-                    new double[] {0, 100});
+                new double[] {0, 0}, new double[] {100, 0}, new double[] {100, 100},
+                new double[] {60, 100}, new double[] {50, 160}, new double[] {40, 100},
+                new double[] {0, 100});
 
             var cleaned = PolygonSmoothing.removeSpikes(squareWithPeninsula, 20.0, MAX_CORNER_ANGLE);
 
@@ -161,9 +158,9 @@ final class PolygonSmoothingTest {
             // near-straight (well over 45 deg). It clears the angle bar and stays even
             // though it is under the height bar - the pass sands slivers, not curves.
             var squareWithBump = Arrays.asList(
-                    new double[] {0, 0}, new double[] {100, 0}, new double[] {100, 100},
-                    new double[] {70, 100}, new double[] {50, 108}, new double[] {30, 100},
-                    new double[] {0, 100});
+                new double[] {0, 0}, new double[] {100, 0}, new double[] {100, 100},
+                new double[] {70, 100}, new double[] {50, 108}, new double[] {30, 100},
+                new double[] {0, 100});
 
             var cleaned = PolygonSmoothing.removeSpikes(squareWithBump, 20.0, MAX_CORNER_ANGLE);
 
@@ -173,12 +170,12 @@ final class PolygonSmoothingTest {
         @Test
         void remove_spikes_leaves_the_polygon_unchanged_for_a_non_positive_threshold() {
             var squareWithNeedle = Arrays.asList(
-                    new double[] {0, 0}, new double[] {100, 0}, new double[] {100, 100},
-                    new double[] {51, 100}, new double[] {50, 108}, new double[] {49, 100},
-                    new double[] {0, 100});
+                new double[] {0, 0}, new double[] {100, 0}, new double[] {100, 100},
+                new double[] {51, 100}, new double[] {50, 108}, new double[] {49, 100},
+                new double[] {0, 100});
 
             assertThat(PolygonSmoothing.removeSpikes(squareWithNeedle, 0.0, MAX_CORNER_ANGLE))
-                    .hasSize(7);
+                .hasSize(7);
             assertThat(PolygonSmoothing.removeSpikes(squareWithNeedle, 20.0, 0.0)).hasSize(7);
         }
 
@@ -188,7 +185,7 @@ final class PolygonSmoothingTest {
             // not eat it down to a line - it stops at three so the caller's own area
             // check discards it.
             var sliver = Arrays.asList(
-                    new double[] {0, 0}, new double[] {100, 1}, new double[] {50, 2});
+                new double[] {0, 0}, new double[] {100, 1}, new double[] {50, 2});
 
             assertThat(PolygonSmoothing.removeSpikes(sliver, 20.0, MAX_CORNER_ANGLE)).hasSize(3);
         }

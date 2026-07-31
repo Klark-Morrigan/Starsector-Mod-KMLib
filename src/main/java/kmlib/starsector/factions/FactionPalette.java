@@ -9,5 +9,7 @@ import java.awt.Color;
  * @param primaryColor   the faction's bright UI color
  * @param secondaryColor the faction's dark UI color
  */
-public record FactionPalette(Color primaryColor, Color secondaryColor) {
+public record FactionPalette(
+    Color primaryColor,
+    Color secondaryColor) {
 }

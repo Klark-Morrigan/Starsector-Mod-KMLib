@@ -21,7 +21,9 @@ public final class ParsedParameters {
     // parameter's default.
     private final Map<Parameter<?>, Object> suppliedValues;
 
-    private ParsedParameters(boolean valid, CommandResult result,
+    private ParsedParameters(
+            boolean valid,
+            CommandResult result,
             Map<Parameter<?>, Object> suppliedValues) {
         this.valid = valid;
         this.result = result;

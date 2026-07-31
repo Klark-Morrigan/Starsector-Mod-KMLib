@@ -67,8 +67,11 @@ public final class KmLogging {
      * @param fieldId    the LunaSettings field holding the level name
      * @param fallback   level used when the field is null, blank, or invalid
      */
-    public static void bindToLunaSetting(String modId, String loggerRoot,
-            String fieldId, Level fallback) {
+    public static void bindToLunaSetting(
+            String modId,
+            String loggerRoot,
+            String fieldId,
+            Level fallback) {
         var binding = new LunaLogBinding(modId, loggerRoot, fieldId, fallback);
         LunaSettings.addSettingsListener(binding);
         binding.applyConfiguredLevel();

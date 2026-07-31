@@ -11,5 +11,9 @@ package kmlib.starsector.ui.layout;
  * @param bottom pixels of inset at the bottom edge
  * @param left   pixels of inset at the left edge
  */
-public record Padding(int top, int right, int bottom, int left) {
+public record Padding(
+    int top,
+    int right,
+    int bottom,
+    int left) {
 }

@@ -95,12 +95,12 @@ public final class VanillaMapTooltip {
             var core = invokeNoArg(sector.getCampaignUI(), GET_CORE_METHOD);
             if (core == null) {
                 return reportOutcome(
-                        false, "getCore null on " + sector.getCampaignUI().getClass().getName(), null);
+                    false, "getCore null on " + sector.getCampaignUI().getClass().getName(), null);
             }
             var currentTab = invokeNoArg(core, GET_CURRENT_TAB_METHOD);
             if (currentTab == null) {
                 return reportOutcome(
-                        false, "getCurrentTab null on " + core.getClass().getName(), null);
+                    false, "getCurrentTab null on " + core.getClass().getName(), null);
             }
             // Build the diagnostic trace only when DEBUG is on, so a normal frame is a bare tree walk
             // with no per-node string work.
@@ -172,7 +172,7 @@ public final class VanillaMapTooltip {
     // the game class cannot make a real tooltip read as foreign.
     private static boolean isStandardTooltip(Object tooltip) {
         for (var clazz = tooltip.getClass(); clazz != null && clazz != Object.class;
-                clazz = clazz.getSuperclass()) {
+            clazz = clazz.getSuperclass()) {
             if (clazz.getName().equals(TOOLTIP_CLASS_NAME)) {
                 return true;
             }
@@ -188,8 +188,8 @@ public final class VanillaMapTooltip {
         try {
             var fader = invokeNoArg(tooltip, GET_FADER_METHOD);
             return fader != null
-                    && invokeNoArg(fader, IS_FADED_OUT_METHOD) instanceof Boolean fadedOut
-                    && !fadedOut;
+                && invokeNoArg(fader, IS_FADED_OUT_METHOD) instanceof Boolean fadedOut
+                && !fadedOut;
         } catch (Throwable cannotReadFader) {
             return false;
         }
@@ -219,8 +219,9 @@ public final class VanillaMapTooltip {
             return verdict;
         }
         var outcome = reachFailure != null
-                ? "verdict=" + verdict + " (" + reachFailure + ")"
-                : "verdict=" + verdict + " " + (trace == null ? "" : trace.describe());
+            ? "verdict=" + verdict + " (" + reachFailure + ")"
+            : "verdict=" + verdict + " " + (trace == null ? "" : trace.describe());
+
         if (!outcome.equals(lastLoggedOutcome)) {
             lastLoggedOutcome = outcome;
             LOG.debug("Vanilla map-tooltip probe: " + outcome);
@@ -233,9 +234,11 @@ public final class VanillaMapTooltip {
             return;
         }
         hasWarnedThisSession = true;
-        LOG.warn("Could not read the vanilla map tooltip state by reflection; the overlay tooltip "
-                + "will not suppress for it. This is safe but means both may show over a star icon.",
-                failure);
+        LOG.warn(
+            "Could not read the vanilla map tooltip state by reflection; "
+                + "the overlay tooltip will not suppress for it. "
+                + "This is safe but means both may show over a star icon.",
+            failure);
     }
 
     // Accumulates what one walk saw - the current tab, how many nodes it visited, and the tooltips it
@@ -261,8 +264,8 @@ public final class VanillaMapTooltip {
 
         private String describe() {
             return "tab=" + tabClassName
-                    + " visited=" + nodesVisited
-                    + " shownTooltips=" + shownTooltips;
+                + " visited=" + nodesVisited
+                + " shownTooltips=" + shownTooltips;
         }
     }
 }

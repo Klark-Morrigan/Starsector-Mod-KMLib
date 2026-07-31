@@ -55,32 +55,33 @@ public final class Tooltips {
             TooltipMakerAPI.TooltipLocation location,
             float width,
             Consumer<TooltipMakerAPI> body) {
+                
         Objects.requireNonNull(parent, "parent");
         Objects.requireNonNull(target, "target");
         Objects.requireNonNull(location, "location");
         Objects.requireNonNull(body, "body");
 
         parent.addTooltipTo(
-                new TooltipMakerAPI.TooltipCreator() {
-                    @Override
-                    public boolean isTooltipExpandable(Object tooltipParam) {
-                        return false;
-                    }
+            new TooltipMakerAPI.TooltipCreator() {
+                @Override
+                public boolean isTooltipExpandable(Object tooltipParam) {
+                    return false;
+                }
 
-                    @Override
-                    public float getTooltipWidth(Object tooltipParam) {
-                        return width;
-                    }
+                @Override
+                public float getTooltipWidth(Object tooltipParam) {
+                    return width;
+                }
 
-                    @Override
-                    public void createTooltip(
-                            TooltipMakerAPI tooltip,
-                            boolean expanded,
-                            Object tooltipParam) {
-                        body.accept(tooltip);
-                    }
-                },
-                target,
-                location);
+                @Override
+                public void createTooltip(
+                        TooltipMakerAPI tooltip,
+                        boolean expanded,
+                        Object tooltipParam) {
+                    body.accept(tooltip);
+                }
+            },
+            target,
+            location);
     }
 }

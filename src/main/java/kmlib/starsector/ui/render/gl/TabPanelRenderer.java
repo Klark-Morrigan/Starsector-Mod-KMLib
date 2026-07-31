@@ -101,9 +101,9 @@ public final class TabPanelRenderer {
 
         // Tab headers:
         GlStateGuard.bracket(() -> ControlRenderer.render(
-                placement.tabsHeader(),
-                style,
-                HEADER_OPACITY));
+            placement.tabsHeader(),
+            style,
+            HEADER_OPACITY));
 
         if (isCollapsing) {
             UiScissor.pop();
@@ -114,11 +114,11 @@ public final class TabPanelRenderer {
         // panel has no handle, so there is nothing to draw here.
         if (notch != null) {
             NotchRenderer.render(
-                    notch,
-                    style,
-                    border.width(),
-                    notchState,
-                    opacity);
+                notch,
+                style,
+                border.width(),
+                notchState,
+                opacity);
         }
     }
 }
