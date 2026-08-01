@@ -1,7 +1,7 @@
 package kmlib.starsector.ui.widgets.tabs;
 
 import kmlib.math.geometry.Rectangle;
-import kmlib.starsector.ui.color.StarsectorUiColor;
+import kmlib.starsector.ui.colour.StarsectorUiColour;
 
 import java.awt.Color;
 
@@ -21,7 +21,7 @@ import java.awt.Color;
  * hovered. Substrate-independent like the rest of this package - an AWT colour and plain dimensions - so
  * the value travels inside the {@link TabStyle} a renderer paints from.
  *
- * @param keyColor           the colour the key glyph paints in, apart from its label-coloured delimiters
+ * @param keyColour          the colour the key glyph paints in, apart from its label-coloured delimiters
  * @param isKeyUnderlined    whether a line is drawn beneath the key; false leaves the dimensions below
  *                           unread
  * @param underlineThickness how tall the underline stands, in UI pixels; floored at zero, since a
@@ -32,7 +32,7 @@ import java.awt.Color;
  *                           gap legitimately lifts the underline up into it, closer to the baseline
  */
 public record HotkeyStyle(
-        Color keyColor,
+        Color keyColour,
         boolean isKeyUnderlined,
         float underlineThickness,
         float underlineGap) {
@@ -55,13 +55,13 @@ public record HotkeyStyle(
     /**
      * The plain-key vanilla convention: the key lit in the highlight gold and left bare, the way the
      * intel screen's raised buttons present theirs. Resolves the gold through {@link
-     * StarsectorUiColor} on each call, so it tracks a live palette change.
+     * StarsectorUiColour} on each call, so it tracks a live palette change.
      *
      * @return a hotkey look with no underline
      */
     public static HotkeyStyle createPlain() {
         return new HotkeyStyle(
-            StarsectorUiColor.VANILLA_HIGHLIGHT_GOLD.resolve(),
+            StarsectorUiColour.VANILLA_HIGHLIGHT_GOLD.resolve(),
             false,
             0f,
             0f);
@@ -70,13 +70,13 @@ public record HotkeyStyle(
     /**
      * The underlined-key vanilla convention: the key lit in the highlight gold and underlined, the way the
      * sector map's own Sector/System tabs present theirs. Resolves the gold through {@link
-     * StarsectorUiColor} on each call, so it tracks a live palette change.
+     * StarsectorUiColour} on each call, so it tracks a live palette change.
      *
      * @return a hotkey look drawing a hairline under the key
      */
     public static HotkeyStyle createUnderlined() {
         return new HotkeyStyle(
-            StarsectorUiColor.VANILLA_HIGHLIGHT_GOLD.resolve(),
+            StarsectorUiColour.VANILLA_HIGHLIGHT_GOLD.resolve(),
             true,
             VANILLA_UNDERLINE_THICKNESS,
             VANILLA_UNDERLINE_GAP);

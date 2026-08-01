@@ -15,7 +15,7 @@ import kmlib.math.ranges.Ranges;
  * collapse cue), straightening to a plain vertical line at the midpoint, and flipped to point right once
  * docked (the expand cue). Its outline is stroked one pixel thinner than the frame ({@code max(1,
  * borderWidth - 1)}) so the handle reads as a lighter appendage of the border rather than a second frame.
- * Its two shades - resting and hovered - come from the style's {@link NotchColors} rather than the panel
+ * Its two shades - resting and hovered - come from the style's {@link NotchColours} rather than the panel
  * accents, so how far the direction cue stands out from the chrome carrying it is the consumer's call.
  */
 public final class NotchRenderer {
@@ -44,7 +44,7 @@ public final class NotchRenderer {
      *
      * @param notch       the collapse-handle rect on the box's right border edge, in UI coordinates
      * @param style       the panel look (the fill and accent the handle's backdrop and frame draw in,
-     *                    plus the {@link NotchColors} shades its chevron takes)
+     *                    plus the {@link NotchColours} shades its chevron takes)
      * @param borderWidth the frame's border thickness; the notch strokes one pixel thinner, floored at 1
      * @param state       how far the body is collapsed (orienting the chevron) and whether the handle is hovered
      * @param opacity     overall alpha, 0..1, fading the handle with the panel
@@ -80,7 +80,7 @@ public final class NotchRenderer {
             computeChevronArms(notch, state.collapseFraction()),
             notchBorder,
             new UiElementPaint(
-                style.notchColors().resolveChevronColour(state.isHovered()),
+                style.notchColours().resolveChevronColour(state.isHovered()),
                 opacity));
     }
 

@@ -1,6 +1,6 @@
 package kmlib.starsector.ui.render.gl;
 
-import kmlib.color.Colors;
+import kmlib.colour.Colours;
 import kmlib.starsector.ui.font.DrawableStringCache;
 
 import org.lazywizard.lazylib.ui.LazyFont;
@@ -41,7 +41,7 @@ public final class LabelRenderer {
             return;
         }
         drawable.setAnchor(anchor);
-        drawable.setBaseColor(Colors.scaleAlpha(style.colour(), style.opacity()));
+        drawable.setBaseColor(Colours.scaleAlpha(style.colour(), style.opacity()));
         drawable.draw(x, y);
     }
 }

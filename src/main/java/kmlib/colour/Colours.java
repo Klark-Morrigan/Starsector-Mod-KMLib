@@ -1,4 +1,4 @@
-package kmlib.color;
+package kmlib.colour;
 
 import java.awt.Color;
 
@@ -11,7 +11,7 @@ import java.awt.Color;
  * folding in an alpha multiplier so a faded layer can dim a whole palette
  * with one factor.
  */
-public final class Colors {
+public final class Colours {
 
     // The inclusive maximum of an 8-bit colour channel, one source for both forms: the
     // float normalizes channels to 0..1 for GL, the int clamps a scaled alpha back into
@@ -19,11 +19,11 @@ public final class Colors {
     private static final int MAX_CHANNEL_VALUE = 255;
     private static final float MAX_CHANNEL = MAX_CHANNEL_VALUE;
 
-    private Colors() {
+    private Colours() {
     }
 
     /**
-     * Converts {@code color} to normalized {r, g, b, a} float components in
+     * Converts {@code colour} to normalized {r, g, b, a} float components in
      * [0, 1], with the alpha further scaled by {@code alphaMult}.
      *
      * <p>Lets a caller hand a single {@link Color} - a literal, a palette
@@ -31,22 +31,22 @@ public final class Colors {
      * without per-channel float bookkeeping, and fade a whole render pass by
      * passing its viewport alpha as {@code alphaMult}.
      *
-     * @param color     the source colour; its own alpha is honoured
+     * @param colour    the source colour; its own alpha is honoured
      * @param alphaMult extra alpha scale (e.g. a map/viewport fade); 1 keeps
      *                  the colour's own alpha
      * @return {r, g, b, a}, each in [0, 1]
      */
-    public static float[] getGlComponents(Color color, float alphaMult) {
+    public static float[] getGlComponents(Color colour, float alphaMult) {
         return new float[] {
-            color.getRed() / MAX_CHANNEL,
-            color.getGreen() / MAX_CHANNEL,
-            color.getBlue() / MAX_CHANNEL,
-            color.getAlpha() / MAX_CHANNEL * alphaMult,
+            colour.getRed() / MAX_CHANNEL,
+            colour.getGreen() / MAX_CHANNEL,
+            colour.getBlue() / MAX_CHANNEL,
+            colour.getAlpha() / MAX_CHANNEL * alphaMult,
         };
     }
 
     /**
-     * A copy of {@code color} with its own alpha scaled by {@code alphaMult} - the AWT
+     * A copy of {@code colour} with its own alpha scaled by {@code alphaMult} - the AWT
      * {@link Color} counterpart of {@link #getGlComponents}, for a consumer that needs a
      * faded {@link Color} object (e.g. a LazyLib DrawableString's base colour) rather
      * than GL float components. The red, green, and blue channels are unchanged; the
@@ -54,21 +54,21 @@ public final class Colors {
      * {@code alphaMult} above 1 saturates instead of throwing from {@link Color}'s
      * constructor.
      *
-     * @param color     the source colour; its own alpha is honoured
+     * @param colour    the source colour; its own alpha is honoured
      * @param alphaMult extra alpha scale (e.g. a map/viewport fade); 1 keeps the
      *                  colour's own alpha
      * @return a colour with the same RGB and the scaled, clamped alpha
      */
-    public static Color scaleAlpha(Color color, float alphaMult) {
+    public static Color scaleAlpha(Color colour, float alphaMult) {
         return new Color(
-            color.getRed(),
-            color.getGreen(),
-            color.getBlue(),
-            roundToChannel(color.getAlpha() * alphaMult));
+            colour.getRed(),
+            colour.getGreen(),
+            colour.getBlue(),
+            roundToChannel(colour.getAlpha() * alphaMult));
     }
 
     /**
-     * A copy of {@code color} with its red, green, and blue channels scaled toward black by
+     * A copy of {@code colour} with its red, green, and blue channels scaled toward black by
      * {@code factor}, its own alpha kept - so a caller can sink a fill to a darker, more
      * recessive shade of the same hue without touching its transparency. A factor of 1 leaves
      * the colour unchanged, 0 returns black, and values between darken proportionally. Each
@@ -76,17 +76,17 @@ public final class Colors {
      * factor above 1 (a brighten) saturates at white instead of throwing from {@link Color}'s
      * constructor.
      *
-     * @param color  the source colour; its own alpha is preserved
+     * @param colour the source colour; its own alpha is preserved
      * @param factor the fraction of each RGB channel to keep; 1 leaves the colour unchanged,
      *               0 returns black
      * @return a colour with each RGB channel scaled by {@code factor} and the original alpha
      */
-    public static Color darken(Color color, float factor) {
+    public static Color darken(Color colour, float factor) {
         return new Color(
-            scaleChannel(color.getRed(), factor),
-            scaleChannel(color.getGreen(), factor),
-            scaleChannel(color.getBlue(), factor),
-            color.getAlpha());
+            scaleChannel(colour.getRed(), factor),
+            scaleChannel(colour.getGreen(), factor),
+            scaleChannel(colour.getBlue(), factor),
+            colour.getAlpha());
     }
 
     /**

@@ -56,7 +56,7 @@ class HotkeyStyleTest {
         void HotkeyStyle_createUnderlined_drawsALineUnderTheKeyInTheHighlightGold() {
             var style = HotkeyStyle.createUnderlined();
 
-            assertThat(style.keyColor()).isEqualTo(GOLD);
+            assertThat(style.keyColour()).isEqualTo(GOLD);
             assertThat(style.isKeyUnderlined()).isTrue();
             assertThat(style.underlineThickness()).isGreaterThan(0f);
         }
@@ -68,7 +68,7 @@ class HotkeyStyleTest {
             var recoloured = new Color(10, 20, 30);
             miscMock.when(Misc::getHighlightColor).thenReturn(recoloured);
 
-            assertThat(HotkeyStyle.createUnderlined().keyColor()).isEqualTo(recoloured);
+            assertThat(HotkeyStyle.createUnderlined().keyColour()).isEqualTo(recoloured);
         }
     }
 
@@ -80,7 +80,7 @@ class HotkeyStyleTest {
             // from the map's in the emphasis alone - the gold is common to both.
             var style = HotkeyStyle.createPlain();
 
-            assertThat(style.keyColor()).isEqualTo(GOLD);
+            assertThat(style.keyColour()).isEqualTo(GOLD);
             assertThat(style.isKeyUnderlined()).isFalse();
         }
     }

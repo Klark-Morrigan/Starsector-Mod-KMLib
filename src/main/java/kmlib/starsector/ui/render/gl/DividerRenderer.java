@@ -24,16 +24,16 @@ public final class DividerRenderer {
 
     /**
      * Draws the rule across {@code bounds}, one hairline thick and vertically centred, in
-     * {@code ruleColor} faded by {@code opacity}. Must run with a current GL context, like any
+     * {@code ruleColour} faded by {@code opacity}. Must run with a current GL context, like any
      * immediate-mode GL call.
      *
-     * @param dividerBounds  the divider row's footprint, in UI coordinates
-     * @param ruleColor      the rule colour, the body's frame colour
-     * @param opacity        overall alpha, 0..1
+     * @param dividerBounds the divider row's footprint, in UI coordinates
+     * @param ruleColour    the rule colour, the body's frame colour
+     * @param opacity       overall alpha, 0..1
      */
     public static void render(
             Rectangle dividerBounds,
-            Color ruleColor,
+            Color ruleColour,
             float opacity) {
 
         var dividerY = dividerBounds.computeCenterY() - DIVIDER_THICKNESS / 2f;
@@ -43,7 +43,7 @@ public final class DividerRenderer {
             dividerBounds.width(),
             DIVIDER_THICKNESS);
         var rulePaint = new UiElementPaint(
-            ruleColor,
+            ruleColour,
             opacity * DIVIDER_ALPHA_MULT);
 
         UiFill.renderQuad(rect, rulePaint);

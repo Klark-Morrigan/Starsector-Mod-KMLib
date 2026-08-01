@@ -47,7 +47,7 @@ build.gradle / settings.gradle / gradlew[.bat]
 src/main/java/kmlib/
   Game-agnostic helpers (no Starsector API on the signature):
   collections/     - small Collection / Map helpers
-  color/           - AWT Color to normalised GL channels, folding in an
+  colour/          - AWT Color to normalised GL channels, folding in an
                      alpha multiplier so one factor fades a palette
   input/           - rising-edge click detection, for polled input with
                      no discrete event to consume
@@ -100,7 +100,7 @@ src/main/java/kmlib/
     time/          - campaign clock wrapper
     ui/            - UI toolkit, tiered by render substrate:
                      controls -> widgets -> layout -> render.gl
-      color/       - palette enum + Misc-backed resolver
+      colour/      - palette enum + Misc-backed resolver
       controls/    - declarative control specs and their actions:
                      what a control is, not how it paints
       debug/       - quadrant-anchored on-screen debug HUD
@@ -183,7 +183,7 @@ Packages with more behind them than one line can carry:
 | [`starsector/intel/`](src/main/java/kmlib/starsector/intel/) | [Intel Base Classes](#intel-base-classes) |
 | [`starsector/testing/`](src/main/java/kmlib/starsector/testing/), [`testfixtures/`](src/main/java/kmlib/testfixtures/) | [Build & Test](#build--test) |
 | [`starsector/ui/`](src/main/java/kmlib/starsector/ui/) | [UI primitives, tiered by surface](src/main/java/kmlib/starsector/ui/README.md) |
-| [`starsector/ui/color/`](src/main/java/kmlib/starsector/ui/color/) | [UI Colour Palette](#ui-colour-palette) |
+| [`starsector/ui/colour/`](src/main/java/kmlib/starsector/ui/colour/) | [UI Colour Palette](#ui-colour-palette) |
 | [`starsector/ui/font/`](src/main/java/kmlib/starsector/ui/font/), [`starsector/ui/label/`](src/main/java/kmlib/starsector/ui/label/) | [Caching](#caching) |
 | [`starsector/ui/highlight/`](src/main/java/kmlib/starsector/ui/highlight/) | [Highlighted Text](#highlighted-text) |
 | [`starsector/ui/text/`](src/main/java/kmlib/starsector/ui/text/) | [Two span measurers](src/main/java/kmlib/starsector/ui/README.md#two-span-measurers) |
@@ -417,13 +417,13 @@ takes a `PlayerFactionSource` test seam so unit tests stub the live
 
 ## UI Colour Palette
 
-[StarsectorUiColor](src/main/java/kmlib/starsector/ui/color/StarsectorUiColor.java)
+[StarsectorUiColour](src/main/java/kmlib/starsector/ui/colour/StarsectorUiColour.java)
 is the palette enum: vanilla shades route through `Misc::...` suppliers
 (`GRAY`, `TEXT_WHITE`, `BLUE`, `DARK_BLUE`, `GOLD`, `RED`, `GREEN`) so
 they track the game's UI palette automatically, and custom shades hold a
 literal `java.awt.Color` (`WHITE`, `DIM_GRAY`, `ORANGE`, `DARK_RED`,
 `MUTED_RED`, `BRIGHT_RED`, `DARK_GREEN`, `BRIGHT_GREEN`, `LIGHT_BLUE`).
-Call `StarsectorUiColor#resolve()` to obtain the live `Color`; the
+Call `StarsectorUiColour#resolve()` to obtain the live `Color`; the
 resolver null-checks the supplier output and tags the failure with the
 enum name (Misc accessors can return null during early engine boot).
 

@@ -19,7 +19,7 @@ class HighlightedMessageTest {
 
     @BeforeEach
     void setUp() {
-        // HighlightedParagraph's default-color path resolves Misc.getTextColor,
+        // HighlightedParagraph's default-colour path resolves Misc.getTextColor,
         // whose <clinit> reads from SettingsAPI. Install the fake first so
         // any paragraph constructed below stays inert.
         StarsectorSettingsFake.installSettings();
@@ -75,7 +75,7 @@ class HighlightedMessageTest {
         }
 
         @Test
-        void toMessageIntelPropagatesHighlightsAndColorsPerParagraph() throws Exception {
+        void toMessageIntelPropagatesHighlightsAndColoursPerParagraph() throws Exception {
             var paragraph = new HighlightedParagraph(
                 "construction complete on Test Prime.",
                 Color.GRAY,

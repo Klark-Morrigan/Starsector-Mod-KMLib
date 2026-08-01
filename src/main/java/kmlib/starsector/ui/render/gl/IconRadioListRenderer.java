@@ -42,7 +42,7 @@ public final class IconRadioListRenderer {
      *                      option with no icon. The list size is the option count
      * @param selectedIndex the lit option's index, or a value outside the list to light none
      * @param columnCount   how many columns the options wrap across (one is a single stack)
-     * @param colors        the frame stroke and selected-wash palette
+     * @param colours       the frame stroke and selected-wash palette
      * @param opacity       overall alpha, 0..1
      */
     public static void render(
@@ -50,7 +50,7 @@ public final class IconRadioListRenderer {
             List<String> iconPaths,
             int selectedIndex,
             int columnCount,
-            RadioColors colors,
+            RadioColours colours,
             float opacity) {
 
         var optionCount = iconPaths.size();
@@ -59,7 +59,7 @@ public final class IconRadioListRenderer {
             optionCount,
             selectedIndex,
             columnCount,
-            colors,
+            colours,
             opacity);
 
         var segments = RadioRow.splitIntoGrid(

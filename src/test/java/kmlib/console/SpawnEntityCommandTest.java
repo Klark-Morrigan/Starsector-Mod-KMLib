@@ -293,11 +293,11 @@ final class SpawnEntityCommandTest {
 
         @Test
         void rejects_an_unknown_named_parameter() {
-            var result = command.runCommand("jump_point color=red", CommandContext.CAMPAIGN_MAP);
+            var result = command.runCommand("jump_point colour=red", CommandContext.CAMPAIGN_MAP);
 
             assertThat(result).isEqualTo(CommandResult.BAD_SYNTAX);
             assertThat(outputFake.getMessages())
-                .anyMatch(message -> message.contains("Unknown parameter 'color'"));
+                .anyMatch(message -> message.contains("Unknown parameter 'colour'"));
             spawnerMock.verifyNoInteractions();
         }
 

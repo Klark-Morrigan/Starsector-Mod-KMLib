@@ -28,28 +28,28 @@ public final class ToggleButton {
      * Frames {@code bounds} and, when {@code isOn}, washes its interior. Both draws fade by
      * {@code opacity}.
      *
-     * @param bounds     the button's footprint, in UI coordinates
-     * @param isOn       whether to draw the lit wash
-     * @param frameColor the outline colour
-     * @param onColor    the lit-wash colour
-     * @param opacity    overall alpha, 0..1
+     * @param bounds      the button's footprint, in UI coordinates
+     * @param isOn        whether to draw the lit wash
+     * @param frameColour the outline colour
+     * @param onColour    the lit-wash colour
+     * @param opacity     overall alpha, 0..1
      */
     public static void render(
             Rectangle bounds,
             boolean isOn,
-            Color frameColor,
-            Color onColor,
+            Color frameColour,
+            Color onColour,
             float opacity) {
 
         if (isOn) {
             UiFill.renderQuad(
                 bounds,
-                new UiElementPaint(onColor, opacity * ON_FILL_ALPHA_MULT));
+                new UiElementPaint(onColour, opacity * ON_FILL_ALPHA_MULT));
         }
 
         UiBoxes.renderBorder(
             bounds,
             new BoxBorder(OUTLINE_THICKNESS),
-            new UiElementPaint(frameColor, opacity));
+            new UiElementPaint(frameColour, opacity));
     }
 }

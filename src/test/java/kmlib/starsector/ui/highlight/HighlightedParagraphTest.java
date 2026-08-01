@@ -48,29 +48,29 @@ class HighlightedParagraphTest {
     }
 
     @Nested
-    class GetBaseColor {
+    class GetBaseColour {
         @Test
-        void defaultConstructorPicksTextWhiteAsBaseColor() {
+        void defaultConstructorPicksTextWhiteAsBaseColour() {
             var paragraph = new HighlightedParagraph("text");
 
             // Routes through VANILLA_TEXT.resolve() -> Misc.getTextColor(),
             // which the fake-installed proxy returns as Color.WHITE for
-            // any color slot.
-            assertThat(paragraph.getBaseColor()).isEqualTo(Color.WHITE);
+            // any colour slot.
+            assertThat(paragraph.getBaseColour()).isEqualTo(Color.WHITE);
         }
 
         @Test
-        void explicitBaseColorOverridesTheDefault() {
+        void explicitBaseColourOverridesTheDefault() {
             var paragraph = new HighlightedParagraph("text", Color.GRAY);
 
-            assertThat(paragraph.getBaseColor()).isEqualTo(Color.GRAY);
+            assertThat(paragraph.getBaseColour()).isEqualTo(Color.GRAY);
         }
 
         @Test
-        void rejectsNullBaseColor() {
+        void rejectsNullBaseColour() {
             assertThatThrownBy(() -> new HighlightedParagraph("text", (Color) null))
                 .isInstanceOf(NullPointerException.class)
-                .hasMessageContaining("baseColor");
+                .hasMessageContaining("baseColour");
         }
     }
 
@@ -125,9 +125,9 @@ class HighlightedParagraphTest {
             assertThat(highlights.getValue()).containsExactly(
                 "the Hegemony's", "Landing Pad", "5,000 cr");
 
-            var colors = ArgumentCaptor.forClass(Color[].class);
-            verify(panelMock).setHighlightColorsInLastPara(colors.capture());
-            assertThat(colors.getValue()).containsExactly(Color.RED, Color.YELLOW, Color.YELLOW);
+            var colours = ArgumentCaptor.forClass(Color[].class);
+            verify(panelMock).setHighlightColorsInLastPara(colours.capture());
+            assertThat(colours.getValue()).containsExactly(Color.RED, Color.YELLOW, Color.YELLOW);
         }
     }
 
@@ -163,9 +163,9 @@ class HighlightedParagraphTest {
             var texts = ArgumentCaptor.forClass(String[].class);
             verify(labelMock).setHighlight(texts.capture());
             assertThat(texts.getValue()).containsExactly("a", "b");
-            var colors = ArgumentCaptor.forClass(Color[].class);
-            verify(labelMock).setHighlightColors(colors.capture());
-            assertThat(colors.getValue()).containsExactly(Color.RED, Color.YELLOW);
+            var colours = ArgumentCaptor.forClass(Color[].class);
+            verify(labelMock).setHighlightColors(colours.capture());
+            assertThat(colours.getValue()).containsExactly(Color.RED, Color.YELLOW);
         }
     }
 
@@ -184,9 +184,9 @@ class HighlightedParagraphTest {
             verify(labelMock).setHighlight(texts.capture());
             assertThat(texts.getValue()).containsExactly("a", "b");
 
-            var colors = ArgumentCaptor.forClass(Color[].class);
-            verify(labelMock).setHighlightColors(colors.capture());
-            assertThat(colors.getValue()).containsExactly(Color.RED, Color.WHITE);
+            var colours = ArgumentCaptor.forClass(Color[].class);
+            verify(labelMock).setHighlightColors(colours.capture());
+            assertThat(colours.getValue()).containsExactly(Color.RED, Color.WHITE);
         }
 
         @Test

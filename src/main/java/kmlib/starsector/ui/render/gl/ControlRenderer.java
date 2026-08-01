@@ -1,7 +1,7 @@
 package kmlib.starsector.ui.render.gl;
 
 import kmlib.math.geometry.Rectangle;
-import kmlib.starsector.ui.color.StarsectorUiColor;
+import kmlib.starsector.ui.colour.StarsectorUiColour;
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.font.TextFace;
@@ -133,21 +133,21 @@ public final class ControlRenderer {
         var selectedIndex = ((ControlSpec.Interactive) spec).selectedIndex();
 
         // Frame and wash both stroke the accent, the plain radio's single chrome tone.
-        var colors = new RadioColors(accent, accent);
+        var colours = new RadioColours(accent, accent);
         if (spec instanceof ControlSpec.VerticalTable table) {
             RadioRowRenderer.renderVerticalGrid(
                 bounds,
                 labels.size(),
                 selectedIndex,
                 table.columnCount(),
-                colors,
+                colours,
                 paint.opacity());
         } else {
             RadioRowRenderer.renderHorizontalRow(
                 bounds,
                 segments,
                 selectedIndex,
-                colors,
+                colours,
                 paint.opacity());
         }
         for (var index = 0; index < segments.size() && index < labels.size(); index++) {
@@ -191,7 +191,7 @@ public final class ControlRenderer {
             spec.iconPaths(),
             spec.selectedIndex(),
             spec.columnCount(),
-            new RadioColors(accent, accent),
+            new RadioColours(accent, accent),
             paint.opacity());
 
         var segments = control.segments();
@@ -233,7 +233,7 @@ public final class ControlRenderer {
         if (direction != null) {
             // In the row's body text tone so it reads as a quiet annotation like the value it replaces.
             var trianglePaint = new UiElementPaint(
-                StarsectorUiColor.VANILLA_TEXT.resolve(),
+                StarsectorUiColour.VANILLA_TEXT.resolve(),
                 paint.opacity());
             TriangleRenderer.render(
                 IconLabelRow.computeDirectionTriangleBox(segment),
@@ -324,7 +324,7 @@ public final class ControlRenderer {
             new TextFace(
                 paint.style().bodyFont(),
                 fontSize),
-            StarsectorUiColor.VANILLA_TEXT.resolve(),
+            StarsectorUiColour.VANILLA_TEXT.resolve(),
             paint.opacity());
         LabelRenderer.render(labelStyle, text, x, y, anchor);
     }

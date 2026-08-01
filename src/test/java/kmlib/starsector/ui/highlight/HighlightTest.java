@@ -13,11 +13,11 @@ class HighlightTest {
     @Nested
     class Constructor {
         @Test
-        void exposesTextAndColor() {
+        void exposesTextAndColour() {
             var highlight = new Highlight("the Hegemony's", Color.RED);
 
             assertThat(highlight.getText()).isEqualTo("the Hegemony's");
-            assertThat(highlight.getColor()).isEqualTo(Color.RED);
+            assertThat(highlight.getColour()).isEqualTo(Color.RED);
         }
 
         @Test
@@ -28,10 +28,10 @@ class HighlightTest {
         }
 
         @Test
-        void rejectsNullColor() {
+        void rejectsNullColour() {
             assertThatThrownBy(() -> new Highlight("token", null))
                 .isInstanceOf(NullPointerException.class)
-                .hasMessageContaining("color");
+                .hasMessageContaining("colour");
         }
     }
 
@@ -42,7 +42,7 @@ class HighlightTest {
             var built = Highlight.of("token", Color.WHITE);
 
             assertThat(built.getText()).isEqualTo("token");
-            assertThat(built.getColor()).isEqualTo(Color.WHITE);
+            assertThat(built.getColour()).isEqualTo(Color.WHITE);
         }
     }
 }

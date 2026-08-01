@@ -3,7 +3,7 @@ package kmlib.starsector.ui.render.gl;
 import com.fs.starfarer.api.util.Misc;
 
 import kmlib.math.geometry.Rectangle;
-import kmlib.opengl.GlColor;
+import kmlib.opengl.GlColour;
 import kmlib.opengl.GlQuads;
 import kmlib.opengl.GlTriangles;
 
@@ -22,7 +22,7 @@ import org.lwjgl.opengl.GL11;
  * compositing, so opacity 0 is fully transparent (the backdrop vanishes and the map shows
  * through) and 1 fully opaque.
  *
- * <p>Raw GL passthrough (over {@link GlColor} for the colour and {@link GlQuads} for the
+ * <p>Raw GL passthrough (over {@link GlColour} for the colour and {@link GlQuads} for the
  * vertices), exercised in-engine like the other draw helpers. It owns only the state that makes
  * the fill composite - texture off, standard alpha blend - and leaves the quad emission to the
  * shared {@link GlQuads#fillQuad}.
@@ -47,7 +47,7 @@ public final class UiFill {
         GL11.glDisable(GL11.GL_TEXTURE_2D);
         GL11.glEnable(GL11.GL_BLEND);
         GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        GlColor.set(paint.color(), paint.alpha());
+        GlColour.set(paint.colour(), paint.alpha());
         var left = bounds.x();
         var bottom = bounds.y();
         var right = left + bounds.width();
@@ -76,7 +76,7 @@ public final class UiFill {
         GL11.glDisable(GL11.GL_TEXTURE_2D);
         GL11.glEnable(GL11.GL_BLEND);
         GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        GlColor.set(paint.color(), paint.alpha());
+        GlColour.set(paint.colour(), paint.alpha());
         GlTriangles.fillTriangle(vertices);
     }
 }

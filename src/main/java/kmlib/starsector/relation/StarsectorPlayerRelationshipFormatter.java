@@ -65,11 +65,11 @@ public final class StarsectorPlayerRelationshipFormatter {
             return RelationshipSummary.createEmptySummary();
         }
         var repInt = RepLevel.getRepInt(rel);
-        var color = faction.getRelColor(Factions.PLAYER);
-        if (color == null) {
-            color = Misc.getRelColor(rel);
+        var colour = faction.getRelColor(Factions.PLAYER);
+        if (colour == null) {
+            colour = Misc.getRelColor(rel);
         }
-        return new RelationshipSummary(formatRelationshipDescription(level, repInt), color);
+        return new RelationshipSummary(formatRelationshipDescription(level, repInt), colour);
     }
 
     private static String formatRelationshipDescription(RepLevel level, int repInt) {
@@ -89,19 +89,19 @@ public final class StarsectorPlayerRelationshipFormatter {
 
     public static final class RelationshipSummary {
         private final String description;
-        private final Color color;
+        private final Color colour;
 
-        private RelationshipSummary(String description, Color color) {
+        private RelationshipSummary(String description, Color colour) {
             this.description = description;
-            this.color = color;
+            this.colour = colour;
         }
 
         public String getDescription() {
             return description;
         }
 
-        public Color getColor() {
-            return color;
+        public Color getColour() {
+            return colour;
         }
 
         private static RelationshipSummary createEmptySummary() {

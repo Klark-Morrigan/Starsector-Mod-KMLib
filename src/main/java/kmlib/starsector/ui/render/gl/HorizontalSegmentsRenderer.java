@@ -32,17 +32,17 @@ public final class HorizontalSegmentsRenderer {
     }
 
     /**
-     * Washes one segment as a highlight: a fill of {@code color} faded to the shared selected-wash alpha
+     * Washes one segment as a highlight: a fill of {@code colour} faded to the shared selected-wash alpha
      * over {@code opacity}. The lit cell of a radio row or the selected tab of a strip, drawn as a wash
      * so the segment's backdrop still reads through it.
      *
      * @param segment the segment to wash, in UI coordinates
-     * @param color   the wash colour (the control's accent)
+     * @param colour  the wash colour (the control's accent)
      * @param opacity overall alpha, 0..1
      */
-    public static void renderSelectedWash(Rectangle segment, Color color, float opacity) {
+    public static void renderSelectedWash(Rectangle segment, Color colour, float opacity) {
 
-        var selectedPaint = new UiElementPaint(color, opacity * SELECTED_WASH_ALPHA_MULT);
+        var selectedPaint = new UiElementPaint(colour, opacity * SELECTED_WASH_ALPHA_MULT);
         UiFill.renderQuad(segment, selectedPaint);
     }
 
@@ -54,13 +54,13 @@ public final class HorizontalSegmentsRenderer {
      * or none has no interior seam and draws nothing.
      *
      * @param segments the laid-out segment rects, in row order left to right
-     * @param color    the divider colour (the control's accent)
+     * @param colour   the divider colour (the control's accent)
      * @param opacity  overall alpha, 0..1
      */
-    public static void renderSeamDividers(List<Rectangle> segments, Color color, float opacity) {
+    public static void renderSeamDividers(List<Rectangle> segments, Color colour, float opacity) {
         for (var divider : HorizontalSegments.computeDividers(segments, DIVIDER_THICKNESS)) {
 
-            var dividerPaint = new UiElementPaint(color, opacity * DIVIDER_ALPHA_MULT);
+            var dividerPaint = new UiElementPaint(colour, opacity * DIVIDER_ALPHA_MULT);
             UiFill.renderQuad(divider, dividerPaint);
         }
     }

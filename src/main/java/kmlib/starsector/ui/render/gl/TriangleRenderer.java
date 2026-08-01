@@ -16,7 +16,7 @@ public final class TriangleRenderer {
 
     /**
      * Fills the triangle inside {@code box}, pointing the way {@code direction} names, in
-     * {@code color} faded by {@code opacity}. The triangle spans the box's full width at its base and
+     * {@code colour} faded by {@code opacity}. The triangle spans the box's full width at its base and
      * meets at the apex on the opposite edge, so it sits centred in {@code box}. Must run with a
      * current GL context, like any immediate-mode GL call.
      *

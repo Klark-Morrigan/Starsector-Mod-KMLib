@@ -39,19 +39,19 @@ public final class RadioRowRenderer {
      * @param bounds        the row's footprint, in UI coordinates (for the outer frame)
      * @param segments      the laid-out segment rects, in row order left to right
      * @param selectedIndex the lit segment's index, or a value outside the row to light none
-     * @param colors        the frame stroke and selected-wash palette
+     * @param colours       the frame stroke and selected-wash palette
      * @param opacity       overall alpha, 0..1
      */
     public static void renderHorizontalRow(
             Rectangle bounds,
             List<Rectangle> segments,
             int selectedIndex,
-            RadioColors colors,
+            RadioColours colours,
             float opacity) {
 
-        washSelectedSegment(segments, selectedIndex, colors, opacity);
-        HorizontalSegmentsRenderer.renderSeamDividers(segments, colors.frame(), opacity);
-        strokeOuterFrame(bounds, colors, opacity);
+        washSelectedSegment(segments, selectedIndex, colours, opacity);
+        HorizontalSegmentsRenderer.renderSeamDividers(segments, colours.frame(), opacity);
+        strokeOuterFrame(bounds, colours, opacity);
     }
 
     /**
@@ -65,7 +65,7 @@ public final class RadioRowRenderer {
      * @param optionCount   how many options the list holds
      * @param selectedIndex the lit option's index, or a value outside the list to light none
      * @param columnCount   how many columns the options wrap across (one is a single stack)
-     * @param colors        the frame stroke and selected-wash palette
+     * @param colours       the frame stroke and selected-wash palette
      * @param opacity       overall alpha, 0..1
      */
     public static void renderVerticalGrid(
@@ -73,18 +73,18 @@ public final class RadioRowRenderer {
             int optionCount,
             int selectedIndex,
             int columnCount,
-            RadioColors colors,
+            RadioColours colours,
             float opacity) {
 
         var segments = RadioRow.splitIntoGrid(bounds, optionCount, columnCount);
-        washSelectedSegment(segments, selectedIndex, colors, opacity);
+        washSelectedSegment(segments, selectedIndex, colours, opacity);
 
         // The tallest column, matching the grid split, so the row rules land on the same boundaries
         // the cells abut on. The grid's column and row rules are the vertical list's own (a flat seam
         // list cannot reconstruct them), but draw at the shared divider strength and thickness so they
         // read the same as a horizontal row's seams.
         var dividerPaint = new UiElementPaint(
-            colors.frame(),
+            colours.frame(),
             opacity * HorizontalSegmentsRenderer.DIVIDER_ALPHA_MULT);
             
         var thickness = HorizontalSegmentsRenderer.DIVIDER_THICKNESS;
@@ -106,7 +106,7 @@ public final class RadioRowRenderer {
                 dividerPaint);
         }
 
-        strokeOuterFrame(bounds, colors, opacity);
+        strokeOuterFrame(bounds, colours, opacity);
     }
 
     // Washes the lit segment when the selection falls inside the laid segments; a selectedIndex
@@ -115,21 +115,21 @@ public final class RadioRowRenderer {
     private static void washSelectedSegment(
             List<Rectangle> segments,
             int selectedIndex,
-            RadioColors colors,
+            RadioColours colours,
             float opacity) {
 
         if (selectedIndex >= 0 && selectedIndex < segments.size()) {
             HorizontalSegmentsRenderer.renderSelectedWash(
                 segments.get(selectedIndex),
-                colors.selectedWash(),
+                colours.selectedWash(),
                 opacity);
         }
     }
 
     // The radio's own outline around the whole footprint - the one piece of chrome not shared with a
     // tab strip. Both the horizontal row and the vertical grid frame their bounds this same way.
-    private static void strokeOuterFrame(Rectangle bounds, RadioColors colors, float opacity) {
-        var framePaint = new UiElementPaint(colors.frame(), opacity);
+    private static void strokeOuterFrame(Rectangle bounds, RadioColours colours, float opacity) {
+        var framePaint = new UiElementPaint(colours.frame(), opacity);
         UiBoxes.renderBorder(bounds, new BoxBorder(OUTLINE_THICKNESS), framePaint);
     }
 }

@@ -18,7 +18,7 @@ import java.awt.Color;
  * @param chevron        the chevron's colour at rest
  * @param chevronHovered the chevron's colour while the handle is hovered
  */
-public record NotchColors(
+public record NotchColours(
     Color chevron,
     Color chevronHovered) {
 

@@ -12,7 +12,7 @@ import com.fs.starfarer.api.campaign.FactionAPI;
  * <p>Grouped rather than split one class per switch, because they share a substrate: each is a
  * nested lookup into the same JSON, each has to decide what absent or malformed data means, and
  * that decision belongs in one class rather than restated per field. Sibling to
- * {@link FactionCrests} and {@link StarsectorFactionColors}, which confine the crest and colour
+ * {@link FactionCrests} and {@link StarsectorFactionColours}, which confine the crest and colour
  * lookups.
  *
  * <p>Absent or malformed data reads as the off position throughout, matching the base game, so

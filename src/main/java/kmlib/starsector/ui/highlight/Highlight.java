@@ -16,23 +16,23 @@ import java.util.Objects;
  */
 public final class Highlight {
     private final String text;
-    private final Color color;
+    private final Color colour;
 
-    public Highlight(String text, Color color) {
+    public Highlight(String text, Color colour) {
         this.text = Objects.requireNonNull(text, "text");
-        this.color = Objects.requireNonNull(color, "color");
+        this.colour = Objects.requireNonNull(colour, "colour");
     }
 
     /** Short factory for call sites that import statically. */
-    public static Highlight of(String text, Color color) {
-        return new Highlight(text, color);
+    public static Highlight of(String text, Color colour) {
+        return new Highlight(text, colour);
     }
 
     public String getText() {
         return text;
     }
 
-    public Color getColor() {
-        return color;
+    public Color getColour() {
+        return colour;
     }
 }

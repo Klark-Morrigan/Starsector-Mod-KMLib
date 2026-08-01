@@ -14,8 +14,8 @@ import java.awt.Color;
  * discards. Geometry lives on the caller's own element record, not here, so a hidden
  * element can still take part in whatever the caller derives from its shape.
  */
-public record UiElementPaint(Color color, float alpha) {
+public record UiElementPaint(Color colour, float alpha) {
     public boolean isHidden() {
-        return color == null || alpha <= 0f;
+        return colour == null || alpha <= 0f;
     }
 }

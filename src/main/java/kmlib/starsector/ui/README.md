@@ -180,7 +180,7 @@ All three fail closed, so an unreadable link answers "not showing" rather than g
 | [`widgets`](widgets/) | neutral | the shared `LabelledRow` core, its `RowSlot` flanks, and the row and box content and geometry built on them ([`tabs`](widgets/tabs/), [`scroll`](widgets/scroll/), [`segments`](widgets/segments/)) |
 | [`layout`](layout/) | neutral | box placement, strips, padding, screen anchors |
 | [`label`](label/) | neutral | label fitting, plus the length-estimator port |
-| [`color`](color/) | neutral | `StarsectorUiColor`, the checked wrapper over vanilla's colour getters |
+| [`colour`](colour/) | neutral | `StarsectorUiColour`, the checked wrapper over vanilla's colour getters |
 | [`font`](font/) | split | measurement ports, and their LazyFont-bound implementations and [caches](../../../../../../docs/dev/caching.md) |
 | [`render/gl`](render/gl/) | GL | every raw-GL painter, its styles, and the [state guard](render/gl/GlStateGuard.java) |
 | [`debug`](debug/) | GL | the on-screen debug HUD |

@@ -77,8 +77,8 @@ public final class CursorTooltipRenderer {
         BorderedBoxRenderer.render(
             layout.box(),
             new BoxBorder(style.borderWidth()),
-            new UiElementPaint(style.fillColor(), style.opacity()),
-            new UiElementPaint(style.borderColor(), style.opacity()));
+            new UiElementPaint(style.fillColour(), style.opacity()),
+            new UiElementPaint(style.borderColour(), style.opacity()));
 
         for (var index = 0; index < rows.size(); index++) {
             drawRow(

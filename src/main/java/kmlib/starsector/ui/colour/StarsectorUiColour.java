@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.color;
+package kmlib.starsector.ui.colour;
 
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.util.Misc;
@@ -24,7 +24,7 @@ import java.util.function.Supplier;
  * during early engine boot and letting that propagate into UI code
  * produces a much less actionable error.
  */
-public enum StarsectorUiColor {
+public enum StarsectorUiColour {
     VANILLA_GRAY(Misc::getGrayColor),
     VANILLA_TEXT(Misc::getTextColor),
     VANILLA_BUTTON_TEXT(Misc::getButtonTextColor),
@@ -78,11 +78,11 @@ public enum StarsectorUiColor {
 
     private final Supplier<Color> source;
 
-    StarsectorUiColor(Supplier<Color> source) {
+    StarsectorUiColour(Supplier<Color> source) {
         this.source = source;
     }
 
-    StarsectorUiColor(Color literal) {
+    StarsectorUiColour(Color literal) {
         // Wrapping the literal in a supplier keeps resolve() uniform: no
         // branch on vanilla-vs-custom at call time, just one code path
         // that always null-checks the result.
@@ -93,6 +93,6 @@ public enum StarsectorUiColor {
         var resolved = source.get();
         return Objects.requireNonNull(
             resolved,
-            () -> "Missing color value for " + name());
+            () -> "Missing colour value for " + name());
     }
 }

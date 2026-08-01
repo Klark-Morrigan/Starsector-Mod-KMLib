@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.color;
+package kmlib.starsector.ui.colour;
 
 import com.fs.starfarer.api.util.Misc;
 
@@ -13,12 +13,12 @@ import java.awt.Color;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
-class StarsectorUiColorTest {
+class StarsectorUiColourTest {
 
     @Nested
     class Resolve {
         @Test
-        void resolveReturnsStarsectorColorForVanillaEntry() {
+        void resolveReturnsStarsectorColourForVanillaEntry() {
             var expected = new Color(1, 2, 3);
 
             // Misc.<clinit> reads from Global.getSettings(), so a no-op
@@ -29,7 +29,7 @@ class StarsectorUiColorTest {
             try (var miscMock = Mockito.mockStatic(Misc.class)) {
                 miscMock.when(Misc::getHighlightColor).thenReturn(expected);
 
-                assertThat(StarsectorUiColor.VANILLA_HIGHLIGHT_GOLD.resolve())
+                assertThat(StarsectorUiColour.VANILLA_HIGHLIGHT_GOLD.resolve())
                     .isEqualTo(expected);
             } finally {
                 StarsectorSettingsFake.clearSettings();
@@ -38,7 +38,7 @@ class StarsectorUiColorTest {
 
         @Test
         void resolveReturnsLiteralForCustomEntry() {
-            assertThat(StarsectorUiColor.ORANGE.resolve())
+            assertThat(StarsectorUiColour.ORANGE.resolve())
                 .isEqualTo(new Color(255, 100, 0, 255));
         }
 
@@ -52,7 +52,7 @@ class StarsectorUiColorTest {
                 miscMock.when(Misc::getHighlightColor).thenReturn(null);
 
                 assertThatNullPointerException()
-                    .isThrownBy(StarsectorUiColor.VANILLA_HIGHLIGHT_GOLD::resolve)
+                    .isThrownBy(StarsectorUiColour.VANILLA_HIGHLIGHT_GOLD::resolve)
                     .withMessageContaining("GOLD");
             } finally {
                 StarsectorSettingsFake.clearSettings();

@@ -67,7 +67,7 @@ public final class StarsectorSettingsFake {
 
     private static SettingsAPI settings(SettingsStringSource stringSource) {
         return proxy(SettingsAPI.class, (proxy, method, args) -> {
-            // Misc.<clinit> reads several floats and a color before any
+            // Misc.<clinit> reads several floats and a colour before any
             // test code runs; returning safe defaults keeps it quiet.
             if ("getFloat".equals(method.getName())) {
                 return 1f;

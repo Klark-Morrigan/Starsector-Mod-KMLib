@@ -17,7 +17,7 @@ import lunalib.lunaSettings.LunaSettingsListener;
  * consumer without LunaLib simply must not call in here.
  *
  * <p>Thin passthrough to {@code LunaSettings}, exercised in-engine rather than
- * in tests (like {@link kmlib.opengl.GlColor}'s GL passthrough): there is no
+ * in tests (like {@link kmlib.opengl.GlColour}'s GL passthrough): there is no
  * logic here beyond the null fallback and the mod-id filtering.
  */
 public final class LunaSettingsReader {

@@ -8,26 +8,26 @@ import java.awt.Color;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Pins {@link NotchColors}' one rule: which of the handle's two shades the chevron takes for a given
+ * Pins {@link NotchColours}' one rule: which of the handle's two shades the chevron takes for a given
  * hover state.
  */
-final class NotchColorsTest {
+final class NotchColoursTest {
     // Two distinguishable shades, so which one the pick returned is unambiguous.
     private static final Color RESTING = Color.BLUE;
     private static final Color HOVERED = Color.YELLOW;
-    private static final NotchColors COLORS = new NotchColors(RESTING, HOVERED);
+    private static final NotchColours COLOURS = new NotchColours(RESTING, HOVERED);
 
     @Nested
     class ResolveChevronColour {
 
         @Test
         void resolveChevronColourTakesTheRestingShadeWhenTheHandleIsNotHovered() {
-            assertThat(COLORS.resolveChevronColour(false)).isEqualTo(RESTING);
+            assertThat(COLOURS.resolveChevronColour(false)).isEqualTo(RESTING);
         }
 
         @Test
         void resolveChevronColourTakesTheHoveredShadeWhenTheHandleIsHovered() {
-            assertThat(COLORS.resolveChevronColour(true)).isEqualTo(HOVERED);
+            assertThat(COLOURS.resolveChevronColour(true)).isEqualTo(HOVERED);
         }
     }
 }

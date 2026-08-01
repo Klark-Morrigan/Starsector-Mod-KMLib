@@ -26,11 +26,11 @@ class StarsectorPlayerRelationshipFormatterTest {
             var result = formatPlayerRelationship(null);
 
             assertThat(result.getDescription()).isNull();
-            assertThat(result.getColor()).isNull();
+            assertThat(result.getColour()).isNull();
         }
 
         @Test
-        void formatsDescriptionAndColorViaRelationshipApiPath() {
+        void formatsDescriptionAndColourViaRelationshipApiPath() {
             var relationshipMock = mock(RelationshipAPI.class);
             when(relationshipMock.getLevel()).thenReturn(RepLevel.VENGEFUL);
             when(relationshipMock.getRepInt()).thenReturn(-100);
@@ -42,7 +42,7 @@ class StarsectorPlayerRelationshipFormatterTest {
             var result = formatPlayerRelationship(factionMock);
 
             assertThat(result.getDescription()).isEqualTo("Vengeful (-100 / 100)");
-            assertThat(result.getColor()).isEqualTo(RED);
+            assertThat(result.getColour()).isEqualTo(RED);
         }
 
         @Test
@@ -59,7 +59,7 @@ class StarsectorPlayerRelationshipFormatterTest {
 
             // Level name varies by Starsector version; verify only the numeric format.
             assertThat(result.getDescription()).isNotNull().contains("/ 100");
-            assertThat(result.getColor()).isEqualTo(RED);
+            assertThat(result.getColour()).isEqualTo(RED);
         }
     }
 }

@@ -1,6 +1,6 @@
 package kmlib.starsector.ui.text;
 
-import kmlib.starsector.ui.color.StarsectorUiColor;
+import kmlib.starsector.ui.colour.StarsectorUiColour;
 import kmlib.starsector.ui.font.StarsectorFont;
 import kmlib.starsector.ui.font.TextFace;
 
@@ -20,7 +20,7 @@ import java.util.Locale;
  * styled control whichever surface paints it, so binding it to one would fork it per surface.
  *
  * <p>A style is built per paint and never frozen into a static constant, because the colours it draws
- * from resolve live: {@link StarsectorUiColor} tracks the running game's palette, including the player
+ * from resolve live: {@link StarsectorUiColour} tracks the running game's palette, including the player
  * faction's own recolours. Role baselines - "how a heading looks", "how body text looks" - are therefore
  * verb-named factory methods on whatever owns the role, each calling {@link #createStyle} afresh.
  *
@@ -40,7 +40,7 @@ public record TextStyle(
     // right of its draw point, spoken rather than shouted. Named here so the one place that builds the
     // baseline reads as the decisions it is making rather than as a row of bare arguments.
     private static final TextAlignment DEFAULT_ALIGNMENT = TextAlignment.TOP_LEFT;
-    private static final StarsectorUiColor DEFAULT_COLOUR = StarsectorUiColor.VANILLA_TEXT;
+    private static final StarsectorUiColour DEFAULT_COLOUR = StarsectorUiColour.VANILLA_TEXT;
     private static final boolean IS_NOT_UPPER_CASED = false;
     private static final boolean IS_UPPER_CASED = true;
 

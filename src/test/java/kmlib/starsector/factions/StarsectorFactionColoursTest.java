@@ -19,38 +19,38 @@ import static org.mockito.Mockito.when;
  * Also pins the named-faction palette resolver, the same fallback shape applied
  * to a faction's bright/dark pair instead of the neutral faction's single shade.
  */
-class StarsectorFactionColorsTest {
+class StarsectorFactionColoursTest {
     private static final Color NEUTRAL_BASE = new Color(150, 150, 150);
     private static final String FACTION_ID = "independent";
 
     @Nested
-    class ResolveNeutralColor {
+    class ResolveNeutralColour {
 
         @Test
-        void resolveNeutralColorReturnsNeutralFactionBaseColor() {
+        void resolveNeutralColourReturnsNeutralFactionBaseColour() {
             var neutralMock = mock(FactionAPI.class);
             when(neutralMock.getBaseUIColor()).thenReturn(NEUTRAL_BASE);
             var sectorMock = mock(SectorAPI.class);
             when(sectorMock.getFaction("neutral")).thenReturn(neutralMock);
 
-            assertThat(StarsectorFactionColors.resolveNeutralColor(sectorMock))
+            assertThat(StarsectorFactionColours.resolveNeutralColour(sectorMock))
                 .isEqualTo(NEUTRAL_BASE);
         }
 
         @Test
-        void resolveNeutralColorFallsBackToGrayForNullSector() {
-            assertThat(StarsectorFactionColors.resolveNeutralColor(null))
+        void resolveNeutralColourFallsBackToGrayForNullSector() {
+            assertThat(StarsectorFactionColours.resolveNeutralColour(null))
                 .isEqualTo(Color.GRAY);
         }
 
         @Test
-        void resolveNeutralColorFallsBackToGrayWhenNeutralFactionAbsent() {
+        void resolveNeutralColourFallsBackToGrayWhenNeutralFactionAbsent() {
             // A sector with no "neutral" faction (a bare double, or a stripped
             // modded launcher) must not NPE - the grey fallback stands in.
             var sectorMock = mock(SectorAPI.class);
             when(sectorMock.getFaction("neutral")).thenReturn(null);
 
-            assertThat(StarsectorFactionColors.resolveNeutralColor(sectorMock))
+            assertThat(StarsectorFactionColours.resolveNeutralColour(sectorMock))
                 .isEqualTo(Color.GRAY);
         }
     }
@@ -59,20 +59,20 @@ class StarsectorFactionColorsTest {
     class ResolvePalette {
 
         @Test
-        void resolvePaletteReturnsTheFactionsBrightAndDarkColors() {
+        void resolvePaletteReturnsTheFactionsBrightAndDarkColours() {
             var factionMock = mock(FactionAPI.class);
             when(factionMock.getBrightUIColor()).thenReturn(new Color(10, 20, 30));
             when(factionMock.getDarkUIColor()).thenReturn(new Color(40, 50, 60));
             var sectorMock = mock(SectorAPI.class);
             when(sectorMock.getFaction(FACTION_ID)).thenReturn(factionMock);
 
-            assertThat(StarsectorFactionColors.resolvePalette(sectorMock, FACTION_ID))
+            assertThat(StarsectorFactionColours.resolvePalette(sectorMock, FACTION_ID))
                 .isEqualTo(new FactionPalette(new Color(10, 20, 30), new Color(40, 50, 60)));
         }
 
         @Test
         void resolvePaletteFallsBackToGrayPairForNullSector() {
-            assertThat(StarsectorFactionColors.resolvePalette(null, FACTION_ID))
+            assertThat(StarsectorFactionColours.resolvePalette(null, FACTION_ID))
                 .isEqualTo(new FactionPalette(Color.GRAY, Color.GRAY));
         }
 
@@ -81,7 +81,7 @@ class StarsectorFactionColorsTest {
             var sectorMock = mock(SectorAPI.class);
             when(sectorMock.getFaction(FACTION_ID)).thenReturn(null);
 
-            assertThat(StarsectorFactionColors.resolvePalette(sectorMock, FACTION_ID))
+            assertThat(StarsectorFactionColours.resolvePalette(sectorMock, FACTION_ID))
                 .isEqualTo(new FactionPalette(Color.GRAY, Color.GRAY));
         }
     }

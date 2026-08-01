@@ -115,12 +115,12 @@ final class ParameterParserTest {
 
         @Test
         void rejects_an_unknown_named_parameter() {
-            var parsed = spec.parse(new String[] {"color=red"}, outputFake);
+            var parsed = spec.parse(new String[] {"colour=red"}, outputFake);
 
             assertThat(parsed.isValid()).isFalse();
             assertThat(parsed.getResult()).isEqualTo(CommandResult.BAD_SYNTAX);
             assertThat(outputFake.getMessages())
-                .anyMatch(message -> message.contains("Unknown parameter 'color'")
+                .anyMatch(message -> message.contains("Unknown parameter 'colour'")
                         && message.contains("focus=<id>")
                         && message.contains("speed=<deg/day>")
                         && message.contains("jitter=<frac>"));
@@ -291,11 +291,11 @@ final class ParameterParserTest {
 
         @Test
         void lists_a_flag_as_a_bare_keyword_when_naming_an_unknown_parameter() {
-            var parsed = spec.parse(new String[] {"color=red"}, outputFake);
+            var parsed = spec.parse(new String[] {"colour=red"}, outputFake);
 
             assertThat(parsed.isValid()).isFalse();
             assertThat(outputFake.getMessages())
-                .anyMatch(message -> message.contains("Unknown parameter 'color'")
+                .anyMatch(message -> message.contains("Unknown parameter 'colour'")
                         && message.contains("name=<id>")
                         // The flag is offered as a bare keyword, not name=hint.
                         && message.contains("verbose")

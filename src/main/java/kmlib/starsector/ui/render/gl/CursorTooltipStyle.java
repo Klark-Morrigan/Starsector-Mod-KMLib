@@ -15,18 +15,18 @@ import java.awt.Color;
  * part of the look that is not GL's business: the same value describes a tooltip drawn with the game's
  * own widgets. What is left here is the chrome that only a raw-GL box has to decide.
  *
- * @param typography  the look of each kind of line, from which every row's face, size, casing, and
- *                    default colour is resolved; a line's face size is also its line height and
- *                    crest side
- * @param opacity     overall alpha, 0..1, applied to the box, the crests, and the text alike
- * @param borderWidth the box border thickness; 0 draws only the fill
- * @param fillColor   the box's backdrop colour
- * @param borderColor the box's border colour
+ * @param typography   the look of each kind of line, from which every row's face, size, casing, and
+ *                     default colour is resolved; a line's face size is also its line height and
+ *                     crest side
+ * @param opacity      overall alpha, 0..1, applied to the box, the crests, and the text alike
+ * @param borderWidth  the box border thickness; 0 draws only the fill
+ * @param fillColour   the box's backdrop colour
+ * @param borderColour the box's border colour
  */
 public record CursorTooltipStyle(
     TooltipStyle typography,
     float opacity,
     float borderWidth,
-    Color fillColor,
-    Color borderColor) {
+    Color fillColour,
+    Color borderColour) {
 }

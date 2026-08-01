@@ -4,7 +4,7 @@ import com.fs.starfarer.api.campaign.TextPanelAPI;
 import com.fs.starfarer.api.ui.LabelAPI;
 import com.fs.starfarer.api.ui.TooltipMakerAPI;
 
-import kmlib.starsector.ui.color.StarsectorUiColor;
+import kmlib.starsector.ui.colour.StarsectorUiColour;
 
 import java.awt.Color;
 import java.util.Objects;
@@ -24,19 +24,19 @@ import java.util.Objects;
  *       colours on an already-rendered {@code LabelAPI}.</li>
  * </ul>
  *
- * <p>{@link #getBaseColor()} is non-null. The convenience constructor
- * that omits it defaults to {@link StarsectorUiColor#VANILLA_TEXT}, so
+ * <p>{@link #getBaseColour()} is non-null. The convenience constructor
+ * that omits it defaults to {@link StarsectorUiColour#VANILLA_TEXT}, so
  * call sites only set a base colour when they want something different
  * (e.g. a grey section header).
  */
 public final class HighlightedParagraph {
     private final String text;
-    private final Color baseColor;
+    private final Color baseColour;
     private final Highlight[] highlights;
 
-    public HighlightedParagraph(String text, Color baseColor, Highlight... highlights) {
+    public HighlightedParagraph(String text, Color baseColour, Highlight... highlights) {
         this.text = Objects.requireNonNull(text, "text");
-        this.baseColor = Objects.requireNonNull(baseColor, "baseColor");
+        this.baseColour = Objects.requireNonNull(baseColour, "baseColour");
         this.highlights = highlights == null ? new Highlight[0] : highlights.clone();
         for (var i = 0; i < this.highlights.length; i++) {
             Objects.requireNonNull(this.highlights[i], "highlights[" + i + "]");
@@ -44,20 +44,20 @@ public final class HighlightedParagraph {
     }
 
     /**
-     * Defaults the base colour to {@link StarsectorUiColor#VANILLA_TEXT}
+     * Defaults the base colour to {@link StarsectorUiColour#VANILLA_TEXT}
      * - the right pick for the vast majority of paragraphs, where only
      * individual highlights deviate from the default text colour.
      */
     public HighlightedParagraph(String text, Highlight... highlights) {
-        this(text, StarsectorUiColor.VANILLA_TEXT.resolve(), highlights);
+        this(text, StarsectorUiColour.VANILLA_TEXT.resolve(), highlights);
     }
 
     public String getText() {
         return text;
     }
 
-    public Color getBaseColor() {
-        return baseColor;
+    public Color getBaseColour() {
+        return baseColour;
     }
 
     /** Defensive copy so callers cannot mutate the paragraph after construction. */
@@ -78,30 +78,30 @@ public final class HighlightedParagraph {
 
     /** Convenience projection - returns the highlight colours as a
      *  flat colour array, paired by index with {@link #getHighlightTexts()}. */
-    public Color[] getHighlightColors() {
-        Color[] colors = new Color[highlights.length];
+    public Color[] getHighlightColours() {
+        Color[] colours = new Color[highlights.length];
         for (var i = 0; i < highlights.length; i++) {
-            colors[i] = highlights[i].getColor();
+            colours[i] = highlights[i].getColour();
         }
-        return colors;
+        return colours;
     }
 
     /**
      * Adds the paragraph to {@code panel}, tinting each highlight from
-     * the paired {@link Highlight#getColor()}.
+     * the paired {@link Highlight#getColour()}.
      */
     public LabelAPI addTo(TextPanelAPI panel) {
         Objects.requireNonNull(panel, "panel");
 
         if (highlights.length == 0) {
-            return panel.addPara(text, baseColor);
+            return panel.addPara(text, baseColour);
         }
 
         String[] texts = new String[highlights.length];
-        Color[] colors = new Color[highlights.length];
+        Color[] colours = new Color[highlights.length];
         for (var i = 0; i < highlights.length; i++) {
             texts[i] = highlights[i].getText();
-            colors[i] = highlights[i].getColor();
+            colours[i] = highlights[i].getColour();
         }
 
         // The third arg to addPara is the single fallback highlight
@@ -109,8 +109,8 @@ public final class HighlightedParagraph {
         // a slot. We always set every slot below, so the value only
         // matters as a defensive default - the first highlight's own
         // colour is the most sensible pick.
-        var label = panel.addPara(text, baseColor, colors[0], texts);
-        panel.setHighlightColorsInLastPara(colors);
+        var label = panel.addPara(text, baseColour, colours[0], texts);
+        panel.setHighlightColorsInLastPara(colours);
         return label;
     }
 
@@ -133,7 +133,7 @@ public final class HighlightedParagraph {
      */
     public LabelAPI addTo(TooltipMakerAPI tooltip, float pad) {
         Objects.requireNonNull(tooltip, "tooltip");
-        var label = tooltip.addPara(text, baseColor, pad);
+        var label = tooltip.addPara(text, baseColour, pad);
         applyTo(label);
         return label;
     }
@@ -142,7 +142,7 @@ public final class HighlightedParagraph {
      * Tints an already-rendered label by setting its highlight tokens
      * and matching colours. The label's own text and base colour are
      * untouched - typical use is right after a renderer constructs the
-     * label from {@link #getText()} and {@link #getBaseColor()}.
+     * label from {@link #getText()} and {@link #getBaseColour()}.
      */
     public void applyTo(LabelAPI label) {
         Objects.requireNonNull(label, "label");
@@ -152,12 +152,12 @@ public final class HighlightedParagraph {
         }
 
         String[] texts = new String[highlights.length];
-        Color[] colors = new Color[highlights.length];
+        Color[] colours = new Color[highlights.length];
         for (var i = 0; i < highlights.length; i++) {
             texts[i] = highlights[i].getText();
-            colors[i] = highlights[i].getColor();
+            colours[i] = highlights[i].getColour();
         }
         label.setHighlight(texts);
-        label.setHighlightColors(colors);
+        label.setHighlightColors(colours);
     }
 }

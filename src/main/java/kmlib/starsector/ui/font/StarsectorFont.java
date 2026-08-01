@@ -2,7 +2,7 @@ package kmlib.starsector.ui.font;
 
 /**
  * The {@code graphics/fonts} atlases KM UI text draws in, one value per atlas. It is the single
- * door to the game's faces, the way {@code StarsectorUiColor} is to its colours: a face is named
+ * door to the game's faces, the way {@code StarsectorUiColour} is to its colours: a face is named
  * rather than spelled, so a mistyped basename is a compile error instead of text that silently
  * fails to draw at runtime, and the set of faces the mods actually use is answerable in one place
  * rather than by grepping string literals across two repositories.

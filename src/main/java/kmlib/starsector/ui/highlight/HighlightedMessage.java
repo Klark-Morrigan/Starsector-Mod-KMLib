@@ -62,15 +62,15 @@ public final class HighlightedMessage {
     public MessageIntel toMessageIntel() {
         var intel = new MessageIntel();
         for (HighlightedParagraph line : lines) {
-            // getHighlightTexts / getHighlightColors return zero-length
+            // getHighlightTexts / getHighlightColours return zero-length
             // arrays when the paragraph carries no highlights, which
             // MessageIntel.addLine accepts as "no highlights on this
             // line" - no special-casing needed here.
             intel.addLine(
                 line.getText(),
-                line.getBaseColor(),
+                line.getBaseColour(),
                 line.getHighlightTexts(),
-                line.getHighlightColors());
+                line.getHighlightColours());
         }
         return intel;
     }

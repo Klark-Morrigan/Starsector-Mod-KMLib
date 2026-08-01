@@ -1,14 +1,14 @@
 package kmlib.starsector.ui.render.gl;
 
-import kmlib.color.Colors;
+import kmlib.colour.Colours;
 import kmlib.math.geometry.Rectangle;
-import kmlib.starsector.ui.color.StarsectorUiColor;
+import kmlib.starsector.ui.colour.StarsectorUiColour;
 import kmlib.starsector.ui.font.DrawableStringCache;
 import kmlib.starsector.ui.font.TextFace;
 import kmlib.starsector.ui.widgets.tabs.HotkeyStyle;
 import kmlib.starsector.ui.widgets.tabs.TabStyle;
 import kmlib.starsector.ui.widgets.tabs.VanillaTab;
-import kmlib.starsector.ui.widgets.tabs.VanillaTabColors;
+import kmlib.starsector.ui.widgets.tabs.VanillaTabColours;
 import kmlib.starsector.ui.widgets.tabs.VanillaTabContent;
 import kmlib.starsector.ui.widgets.tabs.VanillaTabStrip;
 import kmlib.text.KmlibStrings;
@@ -62,7 +62,7 @@ public final class VanillaTabStripRenderer {
      * @param tabs          the laid-out tabs, in row order
      * @param selectedIndex the active tab's index, or a value outside the row
      * @param hoveredIndex  the hovered tab's index, or a value outside the row
-     * @param style         the strip's look; its palette (see {@link VanillaTabColors#mapTabs}), its
+     * @param style         the strip's look; its palette (see {@link VanillaTabColours#mapTabs}), its
      *                      hotkey presentation, and its face are read here, its band height having been
      *                      spent laying the tabs out
      * @param opacity       overall alpha, 0..1, applied to every quad and both text colours
@@ -74,19 +74,19 @@ public final class VanillaTabStripRenderer {
             TabStyle style,
             float opacity) {
 
-        var colors = style.colors();
+        var colours = style.colours();
         var textFace = style.face();
         for (var index = 0; index < tabs.size(); index++) {
             var tab = tabs.get(index);
             var isSelected = index == selectedIndex;
             var isHovered = index == hoveredIndex;
-            renderChrome(tab.bounds(), isSelected, isHovered, colors, opacity);
+            renderChrome(tab.bounds(), isSelected, isHovered, colours, opacity);
             renderTabText(
                 tab.bounds(),
                 tab.content(),
                 isSelected,
                 isHovered,
-                colors,
+                colours,
                 style.hotkey(),
                 textFace,
                 opacity);
@@ -97,7 +97,7 @@ public final class VanillaTabStripRenderer {
         // labels, so the single pass reads identically to a per-tab rule.
         HorizontalSegmentsRenderer.renderSeamDividers(
             collectBounds(tabs),
-            colors.accent(),
+            colours.accent(),
             opacity);
     }
 
@@ -119,19 +119,19 @@ public final class VanillaTabStripRenderer {
             Rectangle bounds,
             boolean isSelected,
             boolean isHovered,
-            VanillaTabColors colors,
+            VanillaTabColours colours,
             float opacity) {
 
         var baseFill = isSelected
-            ? colors.fillSelected()
-            : colors.fillDefault();
+            ? colours.fillSelected()
+            : colours.fillDefault();
 
         // A hovered tab lifts by washing its fill a small amount toward white; a resting tab draws its
         // bare state fill. The pulse states (click, hotkey) added later wash this same fill further.
         var fill = isHovered
-            ? Colors.blendRgbTowards(
+            ? Colours.blendRgbTowards(
                 baseFill,
-                StarsectorUiColor.WHITE.resolve(),
+                StarsectorUiColour.WHITE.resolve(),
                 HOVER_WHITE_WASH)
             : baseFill;
 
@@ -143,7 +143,7 @@ public final class VanillaTabStripRenderer {
                 bounds.width(),
                 BASELINE_THICKNESS),
             new UiElementPaint(
-                colors.accent(),
+                colours.accent(),
                 opacity * HorizontalSegmentsRenderer.DIVIDER_ALPHA_MULT));
 
         if (isSelected) {
@@ -154,7 +154,7 @@ public final class VanillaTabStripRenderer {
                     bounds.width(),
                     UNDERLINE_THICKNESS),
                 new UiElementPaint(
-                    colors.accent(),
+                    colours.accent(),
                     opacity));
         }
     }
@@ -169,7 +169,7 @@ public final class VanillaTabStripRenderer {
             VanillaTabContent content,
             boolean isSelected,
             boolean isHovered,
-            VanillaTabColors colors,
+            VanillaTabColours colours,
             HotkeyStyle hotkeyStyle,
             TextFace textFace,
             float opacity) {
@@ -178,22 +178,22 @@ public final class VanillaTabStripRenderer {
         if (label == null) {
             return;
         }
-        var labelColor = isSelected
-            ? colors.tabSelected()
+        var labelColour = isSelected
+            ? colours.tabSelected()
             : isHovered
-                ? colors.tabHovered()
-            : colors.tabDefault();
+                ? colours.tabHovered()
+            : colours.tabDefault();
 
-        var fadedLabelColor = Colors.scaleAlpha(labelColor, opacity);
-        label.setBaseColor(fadedLabelColor);
+        var fadedLabelColour = Colours.scaleAlpha(labelColour, opacity);
+        label.setBaseColor(fadedLabelColour);
 
         // The delimiters take the label's state colour; only the key takes the styled hotkey colour.
         var shortcut = KmlibStrings.hasText(content.shortcut())
             ? resolveShortcutSegments(
                 textFace,
                 content.shortcut(),
-                fadedLabelColor,
-                Colors.scaleAlpha(hotkeyStyle.keyColor(), opacity))
+                fadedLabelColour,
+                Colours.scaleAlpha(hotkeyStyle.keyColour(), opacity))
             : null;
 
         var labelWidth = label.getWidth();
@@ -223,8 +223,8 @@ public final class VanillaTabStripRenderer {
     private static ShortcutSegments resolveShortcutSegments(
             TextFace textFace,
             String shortcut,
-            Color delimiterColor,
-            Color keyColor) {
+            Color delimiterColour,
+            Color keyColour) {
 
         var open = DrawableStringCache.resolveRun(textFace, VanillaTabStrip.SHORTCUT_OPEN_DELIMITER);
         var key = DrawableStringCache.resolveRun(textFace, shortcut);
@@ -234,9 +234,9 @@ public final class VanillaTabStripRenderer {
             return null;
         }
 
-        open.setBaseColor(delimiterColor);
-        key.setBaseColor(keyColor);
-        close.setBaseColor(delimiterColor);
+        open.setBaseColor(delimiterColour);
+        key.setBaseColor(keyColour);
+        close.setBaseColor(delimiterColour);
 
         for (var segment : List.of(open, key, close)) {
             segment.setAnchor(LazyFont.TextAnchor.CENTER_LEFT);
@@ -276,7 +276,7 @@ public final class VanillaTabStripRenderer {
 
         UiFill.renderQuad(
             hotkeyStyle.computeUnderlineBox(keyBox),
-            new UiElementPaint(hotkeyStyle.keyColor(), opacity));
+            new UiElementPaint(hotkeyStyle.keyColour(), opacity));
     }
 
     // The shortcut's three drawn pieces, named rather than positional so the paint pass can single the
