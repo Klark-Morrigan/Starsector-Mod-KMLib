@@ -266,9 +266,9 @@ public final class CappedStripLayout {
      * scrolling region, in which case the offset and overflow are zero and the controls are the plain
      * stack.
      *
-     * @param controls     the laid-out controls, top to bottom
-     * @param flexViewport the clip rectangle for the flex list, zero-size when nothing scrolls
-     * @param scrollOffset the applied scroll offset in pixels, clamped to {@code scrollOverflow}
+     * @param controls       the laid-out controls, top to bottom
+     * @param flexViewport   the clip rectangle for the flex list, zero-size when nothing scrolls
+     * @param scrollOffset   the applied scroll offset in pixels, clamped to {@code scrollOverflow}
      * @param scrollOverflow how far the flex list overruns its viewport, zero when it fits
      */
     public record CappedStripPlacement(

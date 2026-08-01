@@ -83,7 +83,7 @@ public final class Profiler {
      * Records a pre-measured duration under {@code section}, for callers that
      * time a span themselves rather than wrapping a block.
      *
-     * @param section     the name to accumulate the duration under
+     * @param section      the name to accumulate the duration under
      * @param elapsedNanos the duration to add
      */
     public void record(String section, long elapsedNanos) {

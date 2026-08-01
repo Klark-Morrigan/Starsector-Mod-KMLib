@@ -65,9 +65,9 @@ public final class ListSystemEntitiesCommand extends KmlibBaseConsoleCommand {
      * console, so the tree, sorting, and gate filtering can be unit tested
      * against a stub system.
      *
-     * @param system    the system to scan
+     * @param system      the system to scan
      * @param isGatesOnly when true, restrict the output to gates (keeping the
-     *                  bodies they orbit so the tree still reads)
+     *                    bodies they orbit so the tree still reads)
      * @return the formatted report
      */
     static String buildReport(StarSystemAPI system, boolean isGatesOnly) {

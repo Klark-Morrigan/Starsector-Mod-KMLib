@@ -86,10 +86,10 @@ public final class EntityOrbits {
      * and by callers placing entities created elsewhere, e.g. a jump point built
      * through the factory.
      *
-     * @param entity           the entity to place
-     * @param focus            the entity to orbit
-     * @param orbitDistance    orbit radius from the focus
-     * @param speedDegPerDay   orbital angular speed; 0 or less means static
+     * @param entity            the entity to place
+     * @param focus             the entity to orbit
+     * @param orbitDistance     orbit radius from the focus
+     * @param speedDegPerDay    orbital angular speed; 0 or less means static
      * @param startAngleDegrees angle from the focus at which the entity starts
      */
     public static void applyCircularOrbit(

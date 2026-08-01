@@ -62,9 +62,9 @@ public final class TabPanelLayout {
      * An empty {@code bodyControls} leaves the bordered tab row with no body beneath, and, with nothing to
      * collapse, no notch either - the placement's collapse handle is absent.
      *
-     * @param screenHeight    the UI-coordinate screen height, giving the top edge to hang from
-     * @param padding         the panel's edge margins: the top-left anchor and the bottom keep-clear
-     *                        margin the body caps to (the right inset is unused - a panel grows rightward)
+     * @param screenHeight the UI-coordinate screen height, giving the top edge to hang from
+     * @param padding      the panel's edge margins: the top-left anchor and the bottom keep-clear
+     *                     margin the body caps to (the right inset is unused - a panel grows rightward)
      * @param border       the frame around the footprint; an open edge reserves no inset, so the box shrinks
      *                     to sit flush against a neighbour instead of leaving a bare strip where its border
      *                     would have been

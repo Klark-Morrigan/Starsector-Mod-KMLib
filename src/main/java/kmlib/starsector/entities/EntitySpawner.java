@@ -20,11 +20,11 @@ public final class EntitySpawner {
     /**
      * Adds a custom entity to {@code focus}'s location, orbiting {@code focus}.
      *
-     * @param focus            the entity to orbit
-     * @param entityType       the custom entity type id to spawn (e.g. a gate)
-     * @param factionId        the owning faction id
-     * @param orbitDistance    orbit radius from the focus
-     * @param speedDegPerDay   orbital angular speed; 0 or less means static
+     * @param focus             the entity to orbit
+     * @param entityType        the custom entity type id to spawn (e.g. a gate)
+     * @param factionId         the owning faction id
+     * @param orbitDistance     orbit radius from the focus
+     * @param speedDegPerDay    orbital angular speed; 0 or less means static
      * @param startAngleDegrees angle from the focus at which the entity starts
      * @return the spawned entity
      */
@@ -62,10 +62,10 @@ public final class EntitySpawner {
      * hyperspace wiring runs only when the focus is inside a star system; a
      * focus elsewhere just gets the placed-and-orbiting jump point.
      *
-     * @param focus            the entity to orbit
-     * @param name             the jump point's display name
-     * @param orbitDistance    orbit radius from the focus
-     * @param speedDegPerDay   orbital angular speed; 0 or less means static
+     * @param focus             the entity to orbit
+     * @param name              the jump point's display name
+     * @param orbitDistance     orbit radius from the focus
+     * @param speedDegPerDay    orbital angular speed; 0 or less means static
      * @param startAngleDegrees angle from the focus at which the entity starts
      * @return the spawned jump point
      */
