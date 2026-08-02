@@ -10,9 +10,12 @@ import java.util.List;
  * <p>Read-only counterpart to the offset and smoothing passes. {@link
  * #computeSignedArea} reports a ring's area and winding sign, the fold-guard a
  * caller keys on. {@link #isPointInsideRing} answers whether a single point falls
- * within a ring. {@link #findLineInteriorSpans} and {@link #findBandInteriorSpans}
- * answer where a label's baseline - a zero-width line, or a strip with girth - fits
- * within a province, so text lands inside the fill rather than straddling a border.
+ * within a ring. {@link #groupRingsIntoRegions} sorts a flat ring soup into the
+ * {@link RingRegion}s it bounds, which is the form the two span passes below already
+ * take their rings in. {@link #findLineInteriorSpans} and {@link
+ * #findBandInteriorSpans} answer where a label's baseline - a zero-width line, or a
+ * strip with girth - fits within a province, so text lands inside the fill rather
+ * than straddling a border.
  */
 public final class PolygonRegions {
 
@@ -69,6 +72,7 @@ public final class PolygonRegions {
         var isInside = false;
         var count = ring.size();
         for (var i = 0; i < count; i++) {
+
             var edgeStart = ring.get(i);
             var edgeEnd = ring.get((i + 1) % count);
 
@@ -79,18 +83,81 @@ public final class PolygonRegions {
             if (!isStraddlingRayHeight) {
                 continue;
             }
-
             // Where the edge meets the ray's horizontal line. A straddling edge spans
             // the height by definition, so the height delta below is never zero.
             var crossingX = edgeStart[0]
                 + (y - edgeStart[1]) * (edgeEnd[0] - edgeStart[0])
                     / (edgeEnd[1] - edgeStart[1]);
+
             // Only crossings to the point's right count, so the ray runs one way.
             if (x < crossingX) {
                 isInside = !isInside;
             }
         }
         return isInside;
+    }
+
+    /**
+     * Groups a flat ring soup into the regions it bounds - each outer ring paired with the
+     * holes cut out of it.
+     *
+     * <p>Which ring is which is read from its winding, the convention a boundary-only
+     * tessellation under the positive rule already emits: a counter-clockwise ring bounds
+     * filled ground, a clockwise one cuts a hole in it. So a soup that came back from such a
+     * tessellation needs nothing recorded alongside it to be sorted out again.
+     *
+     * <p>A hole is attributed to the <em>smallest</em> outer ring containing it, not the first
+     * found. An outer ring lying inside another ring's hole - an island in a lake - is
+     * contained by both, and only the tighter of the two is the body the hole is actually cut
+     * from; taking the first would hand an island's hole to the landmass around the lake.
+     *
+     * <p>A ring too short to enclose area is dropped, and so is a hole no outer ring contains:
+     * it cuts nothing out of anything, and carrying it would put a loop in a region whose
+     * interior it does not touch.
+     *
+     * @param rings the soup as {x, y} vertex lists, wound by the convention above
+     * @return one region per outer ring, in the order those rings arrived; empty when no ring
+     *         encloses area
+     */
+    public static List<RingRegion> groupRingsIntoRegions(List<List<double[]>> rings) {
+
+        var outerRings = new ArrayList<List<double[]>>();
+        var holeRings = new ArrayList<List<double[]>>();
+
+        for (var ring : rings) {
+            if (ring.size() < Limits.MIN_VERTICES_TO_ENCLOSE_AREA) {
+                continue;
+            }
+            // A zero-area ring falls through both arms: it winds neither way and bounds
+            // nothing, so it is no more a region than a two-vertex ring is.
+            var signedArea = computeSignedArea(ring);
+
+            if (signedArea > 0) {
+                outerRings.add(ring);
+            } else if (signedArea < 0) {
+                holeRings.add(ring);
+            }
+        }
+
+        // Accumulated per outer ring by index rather than built into the records directly,
+        // since a region's holes are only known once every hole has been attributed.
+        var holeRingsByOuterIndex = new ArrayList<List<List<double[]>>>(outerRings.size());
+
+        for (var i = 0; i < outerRings.size(); i++) {
+            holeRingsByOuterIndex.add(new ArrayList<>());
+        }
+        for (var holeRing : holeRings) {
+            var outerIndex = findSmallestContainingOuterRingIndex(outerRings, holeRing);
+            if (outerIndex >= 0) {
+                holeRingsByOuterIndex.get(outerIndex).add(holeRing);
+            }
+        }
+
+        var regions = new ArrayList<RingRegion>(outerRings.size());
+        for (var i = 0; i < outerRings.size(); i++) {
+            regions.add(new RingRegion(outerRings.get(i), holeRingsByOuterIndex.get(i)));
+        }
+        return regions;
     }
 
     /**
@@ -121,11 +188,13 @@ public final class PolygonRegions {
     public static List<double[]> findLineInteriorSpans(
             List<List<double[]>> rings,
             DirectedLine line) {
+
         var spans = new ArrayList<double[]>();
         var direction = Points.computeUnitVector(
             line.directionX(),
             line.directionY(),
             Limits.MIN_EDGE_LENGTH);
+
         if (direction == null) {
             return spans;
         }
@@ -134,19 +203,24 @@ public final class PolygonRegions {
             line.originY(),
             direction[0],
             direction[1]);
+
         var crossings = collectLineCrossingParameters(rings, unitLine);
         crossings.sort(null);
+
         // Between two consecutive crossings the line stays on one side of every
         // edge, so the whole interval shares its midpoint's inside/outside verdict.
         for (var i = 0; i + 1 < crossings.size(); i++) {
+
             var tStart = crossings.get(i);
             var tEnd = crossings.get(i + 1);
+
             // A grazing contact (a corner or tangent) reports two coincident
             // crossings; the zero-length interval between them is no span.
             if (tEnd - tStart < Limits.MIN_EDGE_LENGTH) {
                 continue;
             }
             var midT = (tStart + tEnd) / 2.0;
+
             if (!isPointInsideRings(
                 rings,
                 unitLine.originX() + midT * unitLine.directionX(),
@@ -156,6 +230,7 @@ public final class PolygonRegions {
             // A vertex sitting exactly on the line can split one true span into two
             // abutting intervals; fuse them back so a span is reported whole.
             var last = spans.isEmpty() ? null : spans.get(spans.size() - 1);
+
             if (last != null && tStart - last[1] < Limits.MIN_EDGE_LENGTH) {
                 last[1] = tEnd;
             } else {
@@ -201,10 +276,12 @@ public final class PolygonRegions {
             List<List<double[]>> rings,
             DirectedLine line,
             double halfThickness) {
+
         var direction = Points.computeUnitVector(
             line.directionX(),
             line.directionY(),
             Limits.MIN_EDGE_LENGTH);
+
         if (direction == null) {
             return new ArrayList<>();
         }
@@ -213,7 +290,9 @@ public final class PolygonRegions {
         var normalX = -direction[1];
         var normalY = direction[0];
         List<double[]> bandSpans = null;
+
         for (var rail = 0; rail < BAND_RAIL_COUNT; rail++) {
+
             // Rails evenly spaced across the full band width, both edges included.
             var offset = halfThickness * (2.0 * rail / (BAND_RAIL_COUNT - 1) - 1.0);
             var railSpans = findLineInteriorSpans(
@@ -223,15 +302,46 @@ public final class PolygonRegions {
                     line.originY() + offset * normalY,
                     direction[0],
                     direction[1]));
+
             bandSpans = bandSpans == null
                 ? railSpans
                 : Spans.intersectSpans(bandSpans, railSpans);
+
             // A rail wholly outside leaves nothing for the rest to keep; stop early.
             if (bandSpans.isEmpty()) {
                 return bandSpans;
             }
         }
         return bandSpans;
+    }
+
+    // The index of the smallest outer ring enclosing the hole, or -1 when none does. A hole
+    // is tested by its first vertex: a hole lies strictly within the body it is cut from, so
+    // any one of its vertices decides containment, and boundary points - the case the
+    // point-in-ring test leaves undefined - do not arise between a hole and its own outer.
+    private static int findSmallestContainingOuterRingIndex(
+            List<List<double[]>> outerRings,
+            List<double[]> holeRing) {
+
+        var vertex = holeRing.get(0);
+        var smallestIndex = -1;
+        var smallestArea = Double.MAX_VALUE;
+
+        for (var i = 0; i < outerRings.size(); i++) {
+            var outerRing = outerRings.get(i);
+            if (!isPointInsideRing(outerRing, vertex[0], vertex[1])) {
+                continue;
+            }
+            // Outer rings are positive by construction here, so the raw signed area orders
+            // them by size without an absolute value.
+            var area = computeSignedArea(outerRing);
+
+            if (area < smallestArea) {
+                smallestArea = area;
+                smallestIndex = i;
+            }
+        }
+        return smallestIndex;
     }
 
     // The parameters (distances from the origin along the unit direction) at which the
@@ -242,6 +352,7 @@ public final class PolygonRegions {
     private static List<Double> collectLineCrossingParameters(
             List<List<double[]>> rings,
             DirectedLine line) {
+
         var crossings = new ArrayList<Double>();
 
         // The half-plane whose boundary is the line: offsets measured against its normal
@@ -255,10 +366,12 @@ public final class PolygonRegions {
         for (var ring : rings) {
             var count = ring.size();
             for (var i = 0; i < count; i++) {
+
                 var edgeStart = ring.get(i);
                 var edgeEnd = ring.get((i + 1) % count);
                 var offsetStart = Lines.computeSignedOffsetFromLine(edgeStart, boundary);
                 var offsetEnd = Lines.computeSignedOffsetFromLine(edgeEnd, boundary);
+
                 if ((offsetStart > 0) == (offsetEnd > 0)) {
                     continue;
                 }
@@ -267,6 +380,7 @@ public final class PolygonRegions {
                     edgeEnd,
                     offsetStart,
                     offsetEnd);
+                    
                 crossings.add((crossing[0] - line.originX()) * line.directionX()
                     + (crossing[1] - line.originY()) * line.directionY());
             }
