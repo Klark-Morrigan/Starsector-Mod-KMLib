@@ -14,6 +14,13 @@ apply from: "${rootDir}/../Common-Java/gradle/java-conventions.gradle"
 
 import groovy.json.JsonSlurper
 
+// The knowledge-graph tool writes a generated wiki and report as markdown
+// under graphify-out/. Those are derived from the source tree rather than
+// authored beside it, so the doc-link gate must not judge their links. Every
+// KM mod runs the tool, and Common-Java knows nothing of it, so the exclusion
+// is declared here - the Starsector layer - rather than in the gate itself.
+docLinkScanExcludedDirectoryNames << 'graphify-out'
+
 // Mod metadata is the single source of truth for the artifact version, so
 // the jar name and Starsector's mod listing cannot drift.
 def modInfoFile = file('mod_info.json')

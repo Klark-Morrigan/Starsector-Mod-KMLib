@@ -11,7 +11,7 @@ group = 'kmlib'
 // that bridgeStubs is exempt, for the same reason
 // checkstyleBridgeStubs is disabled below - the stubs mirror a third party's
 // shape, which is not ours to restyle.
-ext.spotlessExcludedSourceSets = ['bridgeStubs']
+ext.formatterExcludedSourceSets = ['bridgeStubs']
 apply from: "${rootDir}/../Common-Java/gradle/spotless-java.gradle"
 
 // LunaLib backs KmLogging's in-game log-level binding. compileOnly: KMLib
