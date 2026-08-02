@@ -46,6 +46,13 @@ public final class LabelBoxFitter {
     private final double endInsetDistance;
     private final LabelLengthEstimator textLength;
 
+    // How many bands this fitter has measured. A band fit walks the rings and every
+    // keep-out, and the sizing runs one per bisection step per line count, so the count -
+    // not the candidate count above it - is what a fit's cost actually scales with. Kept
+    // per fitter rather than globally so it stays a plain field on a single-threaded fit
+    // and needs no synchronisation.
+    private int bandFitCount;
+
     public LabelBoxFitter(
             NameFitSpecification fit,
             double keepOutClearance,
@@ -81,6 +88,8 @@ public final class LabelBoxFitter {
     // reaches it through the line-count sizing below.
     public BandSpan fitBand(RegionChord chord, double halfThickness) {
 
+        bandFitCount++;
+
         var interiorSpans = PolygonRegions.findBandInteriorSpans(
             chord.rings(),
             chord.line(),
@@ -105,6 +114,19 @@ public final class LabelBoxFitter {
         return start < end
             ? new BandSpan(clear, new double[] {start, end})
             : new BandSpan(clear, null);
+    }
+
+    /**
+     * How many bands this fitter has measured since it was built - the work the sizing
+     * actually did, which the candidate count alone understates: each candidate costs one
+     * band fit per bisection step per line count, and a candidate whose minimum font
+     * already fails costs a single one. Reported so a slow fit is read off the count that
+     * grew rather than off the tuning it was asked for.
+     *
+     * @return the running total of {@link #fitBand} calls on this fitter
+     */
+    public int getBandFitCount() {
+        return bandFitCount;
     }
 
     // Sizes the box for one fixed line count by growing the font to the largest height
