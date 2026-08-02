@@ -17,11 +17,16 @@ import java.util.List;
  * must stand aside for the map's own chrome can be written against what is actually there.
  *
  * <p>An overlay hovering the map has no way to ask "is the cursor over vanilla UI?" - the game
- * publishes no such answer, and the map widget itself spans the screen with the chrome laid over
- * it, so the question is really "which of the tab's components is the cursor in, and which of them
- * is the map". That is a fact about one game build's widget tree, not something derivable, so this
- * reports it: hover the chrome and read off what contains the cursor, hover open space and read off
- * what does not.
+ * publishes no such answer, and the map surface spans nearly the whole tab with the chrome laid in
+ * strips over it, so the question is really "which of the tab's widgets is the cursor in, and which
+ * of those is the map". That is a fact about one game build's widget tree, not something derivable,
+ * so this reports it: hover the chrome and read off what contains the cursor, hover open space and
+ * read off what does not.
+ *
+ * <p>Reports depth and parent alongside each box, because the boxes alone do not say how the tree is
+ * shaped, and the shape is what a rule for telling map from chrome has to be built on. Two widgets
+ * can both contain the cursor because one encloses the other or because they merely overlap as
+ * siblings, and those want opposite rules; only the parentage tells them apart.
  *
  * <p>The walk is unpublished API and the hit-test is not. Reaching the tab's components needs
  * {@link CoreUiTree}'s by-name reach, but every component then answers {@code getPosition} and
@@ -58,13 +63,15 @@ public final class MapTabWidgetTrace {
 
     /**
      * The widgets in the current tab whose drawn box contains the cursor - outermost first, so the
-     * last named is the innermost the cursor is in - each with its class, box and opacity.
+     * last named is the innermost - each with its depth, class, box, opacity and parent.
      *
      * <p>Call from a map render path. Reads the cursor in UI coordinates, the space
      * {@code getPosition} reports in, so the boxes described are the boxes the player sees.
      *
-     * <p>Costs a tree walk per call and builds a string, so a caller in a render pass should ask
-     * only while it intends to report the answer.
+     * <p>Costs a tree walk and builds a string, so a caller in a render pass should ask only while
+     * it intends to report the answer. The cursor position is deliberately left out: a caller
+     * reporting only when the answer changes would otherwise log on every pixel of mouse movement,
+     * and each widget's box is in the line anyway.
      *
      * @return a one-line description for a log, or null when there is no tab to walk or the reach
      *         into the widget tree failed - neither of which the caller can act on differently
@@ -75,15 +82,16 @@ public final class MapTabWidgetTrace {
             if (currentTab == null) {
                 return null;
             }
-            var cursorX = UiCursor.getUiX();
-            var cursorY = UiCursor.getUiY();
             var widgetsUnderCursor = new ArrayList<String>();
             collectWidgetsContaining(
-                currentTab, cursorX, cursorY, MAX_SEARCH_DEPTH, widgetsUnderCursor);
+                currentTab,
+                null,
+                0,
+                UiCursor.getUiX(),
+                UiCursor.getUiY(),
+                widgetsUnderCursor);
 
-            return "tab=" + currentTab.getClass().getName()
-                + " cursor=(" + Math.round(cursorX) + "," + Math.round(cursorY) + ")"
-                + " under=" + widgetsUnderCursor;
+            return "tab=" + currentTab.getClass().getName() + " under=" + widgetsUnderCursor;
         } catch (Throwable failure) {
             // Swallowed rather than raised: this is a diagnostic, and one that cannot read the tree
             // must not take down the render pass its caller is in the middle of.
@@ -119,40 +127,54 @@ public final class MapTabWidgetTrace {
     }
 
     // Walks the subtree depth-first, appending each drawn component that contains the cursor. Order
-    // is outermost-first, so the last entry is the innermost widget the cursor is in - the one an
-    // overlay would be standing aside for.
+    // is outermost-first, so the last entry is the innermost widget the cursor is in. Carries the
+    // parent and the depth down rather than deriving them afterwards, since a flat list of hits
+    // cannot say which of them enclose each other.
     private static void collectWidgetsContaining(
             Object component,
+            Object parent,
+            int depth,
             float cursorX,
             float cursorY,
-            int depthRemaining,
             List<String> widgetsUnderCursor) {
 
-        if (component == null || depthRemaining < 0) {
+        if (component == null || depth > MAX_SEARCH_DEPTH) {
             return;
         }
         if (component instanceof UIComponentAPI widget) {
-            var position = widget.getPosition();
-            var box = position == null ? null : VanillaPositions.toRectangle(position);
+            var box = resolveBoxOf(widget);
             if (isWidgetUnderCursor(box, widget.getOpacity(), cursorX, cursorY)
                     && widgetsUnderCursor.size() < MAX_TRACE_WIDGETS) {
 
-                widgetsUnderCursor.add(describeWidget(widget, box));
+                widgetsUnderCursor.add(describeWidget(widget, box, depth, parent));
             }
         }
         for (var child : CoreUiTree.readChildrenOf(component)) {
             collectWidgetsContaining(
-                child, cursorX, cursorY, depthRemaining - 1, widgetsUnderCursor);
+                child, component, depth + 1, cursorX, cursorY, widgetsUnderCursor);
         }
     }
 
-    private static String describeWidget(UIComponentAPI widget, Rectangle box) {
-        return widget.getClass().getName()
+    // A widget's drawn box, or null when the layout never positioned it - it then occupies nothing.
+    private static Rectangle resolveBoxOf(UIComponentAPI widget) {
+        var position = widget.getPosition();
+        return position == null ? null : VanillaPositions.toRectangle(position);
+    }
+
+    private static String describeWidget(
+            UIComponentAPI widget,
+            Rectangle box,
+            int depth,
+            Object parent) {
+
+        return "d" + depth
+            + " " + widget.getClass().getName()
             + "[x=" + Math.round(box.x())
             + " y=" + Math.round(box.y())
             + " w=" + Math.round(box.width())
             + " h=" + Math.round(box.height())
             + " opacity=" + widget.getOpacity()
+            + " parent=" + (parent == null ? "none" : parent.getClass().getName())
             + "]";
     }
 

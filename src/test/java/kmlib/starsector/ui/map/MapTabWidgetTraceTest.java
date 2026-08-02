@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Pins the one rule the trace can be held to off the engine: which components count as being under
  * the cursor. The walk that finds them is unpublished-API reflection and only observable in a
  * running game, but what it does with each component it reaches is plain arithmetic over a box and
- * an opacity, and that is where a wrong answer would send the eventual suppression wrong.
+ * an opacity, and that is where a wrong answer would send a suppression built on it wrong.
  */
 class MapTabWidgetTraceTest {
 
