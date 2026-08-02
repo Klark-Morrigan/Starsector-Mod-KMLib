@@ -34,11 +34,17 @@ import java.util.List;
  * visible without flooding the log. A missing MagicLib is not among those failures - it is a
  * declared {@code mod_info.json} dependency.
  *
- * <p>Because the reach is fragile and only observable in-engine, the read narrates itself when DEBUG
- * logging is on: each time its outcome changes it logs one line naming the current tab, how many nodes
- * it walked, the tooltips it saw shown, and the verdict. That is what turns "it does not suppress" from a
- * guess into a diagnosis - which hop failed, or whether the map's host was reached - without flooding the
+ * <p>Because the reach is fragile and only observable in-engine, the read narrates itself at DEBUG:
+ * each time its outcome changes it logs one line naming the current tab, how many nodes it walked,
+ * the tooltips it saw shown, and the verdict. That is what turns "it does not suppress" from a guess
+ * into a diagnosis - which hop failed, or whether the map's host was reached - without flooding the
  * log frame to frame. With DEBUG off it builds none of that, so the walk stays a bare tree search.
+ * The level is this library's own, so a consuming mod's verbosity setting does not reach it; the
+ * warning below is the part that survives the default level, and it is the one that matters.
+ *
+ * <p>An instance rather than a static holder so a caller can stand a stub in its place: whether the
+ * map is drawing its own tooltip decides whether that caller draws at all, which is behaviour worth
+ * pinning without a live game.
  */
 public final class VanillaMapTooltip {
 
@@ -48,21 +54,13 @@ public final class VanillaMapTooltip {
     // subclass is what the map actually shows, so the walk up from the runtime class finds this.
     private static final String TOOLTIP_CLASS_NAME = "com.fs.starfarer.ui.impl.StandardTooltipV2";
 
-    // The core UI's own accessors, driven by name through ReflectionUtils: the core and its current tab
-    // (the reach to the map subtree), a host's current tooltip, a panel's children, and (to tell a shown
-    // tooltip from a merely-configured one) the tooltip's fade state. All are part of the core UI's
-    // contract, so they survive obfuscation.
-    private static final String GET_CORE_METHOD = "getCore";
-    private static final String GET_CURRENT_TAB_METHOD = "getCurrentTab";
+    // The accessors this probe names for itself: a host's current tooltip, and (to tell a shown tooltip
+    // from a merely-configured one) the tooltip's fade state. The hops down to the tab and a component's
+    // children are {@link CoreUiTree}'s. All are part of the core UI's contract, so they survive
+    // obfuscation.
     private static final String GET_TOOLTIP_METHOD = "getTooltip";
-    private static final String GET_CHILDREN_METHOD = "getChildrenCopy";
     private static final String GET_FADER_METHOD = "getFader";
     private static final String IS_FADED_OUT_METHOD = "isFadedOut";
-
-    // ReflectionUtils.invoke resolves a public method (declared=false) matching these argument types -
-    // none, for the no-arg reads here.
-    private static final Object[] NO_ARGS = new Object[0];
-    private static final boolean PUBLIC_METHOD = false;
 
     // How deep to search the current tab's subtree for a tooltip-showing host. The map's tooltip host
     // sits several panels down inside the map tab; a bound keeps a pathological tree from a runaway walk.
@@ -74,33 +72,20 @@ public final class VanillaMapTooltip {
 
     // The last diagnostic line logged, so the probe narrates only when its outcome changes rather than
     // every frame the map is up.
-    private static String lastLoggedOutcome;
+    private String lastLoggedOutcome;
 
     // One warning per session, so a build where the read breaks says so once rather than every frame.
-    private static boolean hasWarnedThisSession;
-
-    private VanillaMapTooltip() {
-    }
+    private boolean hasWarnedThisSession;
 
     /**
      * @return whether the vanilla map screen is currently drawing a tooltip; {@code false} on any
      *         read failure, so the caller draws rather than hides on a broken read
      */
-    public static boolean isShowing() {
+    public boolean isShowing() {
         try {
-            var sector = Global.getSector();
-            if (sector == null || sector.getCampaignUI() == null) {
-                return reportOutcome(false, "no campaign UI", null);
-            }
-            var core = invokeNoArg(sector.getCampaignUI(), GET_CORE_METHOD);
-            if (core == null) {
-                return reportOutcome(
-                    false, "getCore null on " + sector.getCampaignUI().getClass().getName(), null);
-            }
-            var currentTab = invokeNoArg(core, GET_CURRENT_TAB_METHOD);
+            var currentTab = CoreUiTree.resolveCurrentTab();
             if (currentTab == null) {
-                return reportOutcome(
-                    false, "getCurrentTab null on " + core.getClass().getName(), null);
+                return reportOutcome(false, "no current tab", null);
             }
             // Build the diagnostic trace only when DEBUG is on, so a normal frame is a bare tree walk
             // with no per-node string work.
@@ -111,15 +96,6 @@ public final class VanillaMapTooltip {
             warnOnce(failure);
             return false;
         }
-    }
-
-    // Invokes a public no-arg method by name on {@code instance} through MagicLib's reflection bypass,
-    // returning its result. {@code invoke} is an instance method on the ReflectionUtils singleton (only
-    // set/get are static), and resolves a public method matching the argument types - none here. Throws
-    // when the method is absent or the call fails; a caller that expects an absent method (a leaf node)
-    // catches, while the reach hops let it reach the fail-open catch.
-    private static Object invokeNoArg(Object instance, String methodName) {
-        return ReflectionUtils.INSTANCE.invoke(methodName, instance, NO_ARGS, PUBLIC_METHOD);
     }
 
     // The first live vanilla tooltip in this subtree, or null when none is up. Recurses the panel's
@@ -146,7 +122,7 @@ public final class VanillaMapTooltip {
                 return tooltip;
             }
         }
-        for (var child : childrenOf(component)) {
+        for (var child : CoreUiTree.readChildrenOf(component)) {
             var found = findShownTooltip(child, depthRemaining - 1, trace);
             if (found != null) {
                 return found;
@@ -160,7 +136,7 @@ public final class VanillaMapTooltip {
     // host clears this to null when its tooltip hides, so a non-null value means one is up.
     private static Object tooltipShownBy(Object component) {
         try {
-            return invokeNoArg(component, GET_TOOLTIP_METHOD);
+            return CoreUiTree.invokeNoArg(component, GET_TOOLTIP_METHOD);
         } catch (Throwable notATooltipHost) {
             // Most components expose no getTooltip: not a host, so it shows no tooltip to step aside for.
             return null;
@@ -186,35 +162,20 @@ public final class VanillaMapTooltip {
     // uncertain read leaves our overlay drawing (fail-open) rather than hiding it on a guess.
     private static boolean isTooltipVisible(Object tooltip) {
         try {
-            var fader = invokeNoArg(tooltip, GET_FADER_METHOD);
+            var fader = CoreUiTree.invokeNoArg(tooltip, GET_FADER_METHOD);
             return fader != null
-                && invokeNoArg(fader, IS_FADED_OUT_METHOD) instanceof Boolean fadedOut
+                && CoreUiTree.invokeNoArg(fader, IS_FADED_OUT_METHOD) instanceof Boolean fadedOut
                 && !fadedOut;
         } catch (Throwable cannotReadFader) {
             return false;
         }
     }
 
-    // A component's children, or none when it exposes no getChildrenCopy - most components are leaves
-    // with no such method, so a failed children read ends the walk down that branch rather than aborting
-    // the whole read. A genuine failure still surfaces through the fail-open catch; only the expected
-    // "this is a leaf" case is swallowed here.
-    private static List<?> childrenOf(Object component) {
-        try {
-            if (invokeNoArg(component, GET_CHILDREN_METHOD) instanceof List<?> children) {
-                return children;
-            }
-        } catch (Throwable notAParent) {
-            // No getChildrenCopy: a leaf. Descend no further down this branch.
-        }
-        return List.of();
-    }
-
     // Logs the probe's outcome, at DEBUG, the first time it reaches a given state and on every change
     // after, then returns the verdict so it reads as one line at the call site. A stable outcome logs
     // once; a tooltip appearing or disappearing logs the transition, so the log shows what the probe saw
     // without a per-frame flood. With DEBUG off it does nothing but return the verdict.
-    private static boolean reportOutcome(boolean verdict, String reachFailure, WalkTrace trace) {
+    private boolean reportOutcome(boolean verdict, String reachFailure, WalkTrace trace) {
         if (!LOG.isDebugEnabled()) {
             return verdict;
         }
@@ -229,7 +190,7 @@ public final class VanillaMapTooltip {
         return verdict;
     }
 
-    private static void warnOnce(Throwable failure) {
+    private void warnOnce(Throwable failure) {
         if (hasWarnedThisSession) {
             return;
         }
