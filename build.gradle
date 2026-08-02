@@ -14,12 +14,11 @@ group = 'kmlib'
 ext.formatterExcludedSourceSets = ['bridgeStubs']
 apply from: "${rootDir}/../Common-Java/gradle/spotless-java.gradle"
 
-// LunaLib backs KmLogging's in-game log-level binding. compileOnly: KMLib
-// declares no LunaLib mod dependency (it must stay usable by mods that do not
-// ship LunaLib), so only callers that depend on LunaLib may invoke that code;
-// the game classloader provides the jar at runtime for those that do.
-// testRuntimeOnly so classes implementing LunaLib's listener interface can be
-// loaded and verified under test.
+// LunaLib backs KmLogging's in-game log-level binding. compileOnly, and
+// declared in mod_info.json so a consumer can call into kmlib.logging and
+// kmlib.settings unconditionally; the game classloader provides the jar at
+// runtime. testRuntimeOnly so classes implementing LunaLib's listener interface
+// can be loaded and verified under test.
 def lunaLibJarFile = file("${project.ext.starsectorRoot}/mods/lunalib/jars/LunaLib.jar")
 
 // Soft dependency: compileOnly, and KMLib declares no Console Commands mod

@@ -37,7 +37,8 @@ final class KmLoggingTest {
 
             KmLogging.applyLevel("kmlibtest_named", "DEBUG", Level.INFO);
 
-            assertThat(descendant.getEffectiveLevel()).isEqualTo(Level.DEBUG);
+            assertThat(descendant.getEffectiveLevel())
+                .isEqualTo(Level.DEBUG);
         }
 
         @Test
@@ -46,7 +47,8 @@ final class KmLoggingTest {
 
             KmLogging.applyLevel("kmlibtest_pad", "  WARN  ", Level.INFO);
 
-            assertThat(descendant.getEffectiveLevel()).isEqualTo(Level.WARN);
+            assertThat(descendant.getEffectiveLevel())
+                .isEqualTo(Level.WARN);
         }
 
         @Test
@@ -55,7 +57,8 @@ final class KmLoggingTest {
 
             KmLogging.applyLevel("kmlibtest_null", null, Level.ERROR);
 
-            assertThat(descendant.getEffectiveLevel()).isEqualTo(Level.ERROR);
+            assertThat(descendant.getEffectiveLevel())
+                .isEqualTo(Level.ERROR);
         }
 
         @Test
@@ -64,7 +67,8 @@ final class KmLoggingTest {
 
             KmLogging.applyLevel("kmlibtest_bad", "nonsense", Level.ERROR);
 
-            assertThat(descendant.getEffectiveLevel()).isEqualTo(Level.ERROR);
+            assertThat(descendant.getEffectiveLevel())
+                .isEqualTo(Level.ERROR);
         }
 
         @Test
@@ -74,7 +78,8 @@ final class KmLoggingTest {
 
             KmLogging.applyLevel("kmlibtest_subtree", "OFF", Level.INFO);
 
-            assertThat(sibling.getEffectiveLevel()).isEqualTo(siblingBefore);
+            assertThat(sibling.getEffectiveLevel())
+                .isEqualTo(siblingBefore);
         }
     }
 
@@ -84,7 +89,8 @@ final class KmLoggingTest {
         void library_default_level_is_warn() {
             // Pins the shared fallback used by the no-default bindToLunaSetting
             // overload, so mods do not restate a default of their own.
-            assertThat(KmLogging.DEFAULT_LEVEL).isEqualTo(Level.WARN);
+            assertThat(KmLogging.DEFAULT_LEVEL)
+                .isEqualTo(Level.WARN);
         }
     }
 
@@ -100,7 +106,8 @@ final class KmLoggingTest {
 
             binding.settingsChanged("some_other_mod");
 
-            assertThat(root.getLevel()).isNull();
+            assertThat(root.getLevel())
+                .isNull();
         }
     }
 }

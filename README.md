@@ -28,11 +28,15 @@ Hard dependencies:
 
 - **LazyLib** - exposes game fonts to be used for drawing labels directly with GL:
   [UI primitives](src/main/java/kmlib/starsector/ui/README.md).
+- **LunaLib** - backs in-game mod settings, including the log-verbosity binding every KM
+  mod registers through `KmLogging` and KMLib's own (`kmlib_logLevel`, on its Dev tab).
+  The library needs a switch of its own because log4j scopes a level to a package subtree:
+  a mod's verbosity governs that mod's lines and cannot reach `kmlib` beneath them, and a
+  mod that set `kmlib` would be setting it for every other mod in the game.
 - **MagicLib** - provides code reflection utilities.
 
 Soft dependencies:
 
-- **LunaLib** - for in-game mod settings, defaults for which are hardcoded otherwise.
 - **Console Commands** - for KMLib's console commands.
 
 Compatibility coded in:
@@ -51,7 +55,8 @@ src/main/java/kmlib/
                      alpha multiplier so one factor fades a palette
   input/           - rising-edge click detection, for polled input with
                      no discrete event to consume
-  logging/         - log4j level control over one mod's package subtree
+  logging/         - log4j level control over one mod's package subtree, and the
+                   scoped names that put library work under the mod it was done for
   math/            - easing/, geometry/ (polygon offsetting, smoothing,
                      regions, rings, Voronoi cells, principal axis,
                      spans, disks), hashing/ (avalanche, content

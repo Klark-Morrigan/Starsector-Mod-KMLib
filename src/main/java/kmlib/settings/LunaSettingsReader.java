@@ -12,9 +12,8 @@ import lunalib.lunaSettings.LunaSettingsListener;
  * imports LunaLib itself, so the mod's own classpath stays free of LunaLib and
  * the dependency lives in one place.
  *
- * <p>Precondition: the calling mod must depend on LunaLib - these methods touch
- * {@code lunalib.*} types. KMLib declares no LunaLib mod dependency, so a
- * consumer without LunaLib simply must not call in here.
+ * <p>LunaLib is a declared KMLib dependency, so these methods are safe to call
+ * from any mod that depends on KMLib - it is present whenever KMLib is.
  *
  * <p>Thin passthrough to {@code LunaSettings}, exercised in-engine rather than
  * in tests (like {@link kmlib.opengl.GlColour}'s GL passthrough): there is no

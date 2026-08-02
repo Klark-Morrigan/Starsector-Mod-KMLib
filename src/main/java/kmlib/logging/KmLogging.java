@@ -23,9 +23,18 @@ import org.apache.log4j.Logger;
  * would scope it by enumerating every class (as LazyLib does); keeping it here
  * means every KM mod scopes its logging the same correct way.
  *
- * <p>Precondition: the calling mod must depend on LunaLib - these methods
- * touch {@code lunalib.*} types. KMLib itself declares no LunaLib dependency,
- * so a consumer without LunaLib simply must not call in here.
+ * <p>Scoped to the mod and no further. A level set here does not reach KMLib's
+ * own {@code kmlib} loggers, which sit under no mod's package - deliberately, so
+ * that one mod's verbosity cannot retune a shared library for every other mod in
+ * the same game. The library binds itself through here like any other mod, from
+ * its own setting; and library output written <em>for</em> one mod is handed
+ * back for that mod to log as its own rather than logged here at all, so a
+ * player chasing their own mod's behaviour does not have to know which library
+ * the code sits in. See {@code KmlibLunaSettings} and {@code MapTabWidgetTrace}
+ * for the two halves of that.
+ *
+ * <p>LunaLib is a declared KMLib dependency, so these methods are safe to call
+ * from any mod that depends on KMLib - it is present whenever KMLib is.
  */
 public final class KmLogging {
     /**
