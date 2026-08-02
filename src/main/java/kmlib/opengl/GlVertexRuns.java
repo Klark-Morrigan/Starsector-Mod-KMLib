@@ -51,6 +51,27 @@ public final class GlVertexRuns {
     }
 
     /**
+     * Packs each loop of a multi-loop shape into its own run, in order - the plural of
+     * {@link #flattenVertices}, for the common producer that has traced or tessellated
+     * geometry into several closed loops and hands GL one run per loop.
+     *
+     * <p>Held here rather than left as a loop at each call site because that loop is where
+     * the two shapes of this conversion drift apart: one call site accumulating into a list
+     * it was handed and another mapping to a fresh one read as different operations, and
+     * neither says that the run-per-loop correspondence is the whole of it.
+     *
+     * @param loops the loops to pack, each a list of {@code {x, y}} vertices
+     * @return one packed run per loop, in the loops' own order
+     */
+    public static List<float[]> flattenLoops(List<List<double[]>> loops) {
+        var runs = new ArrayList<float[]>(loops.size());
+        for (var loop : loops) {
+            runs.add(flattenVertices(loop));
+        }
+        return runs;
+    }
+
+    /**
      * Unpacks a flat {@code [x, y, x, y, ...]} run back into {@code {x, y}} vertices,
      * the inverse of {@link #flattenVertices}.
      *

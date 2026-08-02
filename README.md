@@ -57,8 +57,9 @@ src/main/java/kmlib/
                      spans, disks), hashing/ (avalanche, content
                      fingerprints), motion/, random/, ranges/, solving/
   opengl/          - GL primitive emission (lines, quads, triangles,
-                     vertex runs), polygon tessellation, hatching, and
-                     what KM code must know about Fast Rendering
+                     vertex runs), the saved-state scope a blended 2D
+                     pass draws inside, polygon tessellation, hatching,
+                     and what KM code must know about Fast Rendering
                      (whether it is in force, how to read its matrix)
   profiling/       - section timings + timing report
   text/            - string and number formatting / predicates
