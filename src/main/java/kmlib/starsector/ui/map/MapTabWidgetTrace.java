@@ -5,7 +5,6 @@ import com.fs.starfarer.api.ui.UIComponentAPI;
 
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.input.UiCursor;
-import kmlib.starsector.ui.layout.VanillaPositions;
 
 import org.apache.log4j.Logger;
 
@@ -50,10 +49,6 @@ public final class MapTabWidgetTrace {
 
     // Cap on the widgets named in one description, so a deeply nested hit stays readable.
     private static final int MAX_TRACE_WIDGETS = 24;
-
-    // Below this a component is drawn to nothing, so the cursor is not meaningfully "over" it and
-    // reporting it would suggest chrome where the player sees none.
-    private static final float MIN_VISIBLE_OPACITY = 0.01f;
 
     // One warning per session, so a build where the reach breaks says so once rather than per frame.
     private static boolean hasWarnedThisSession;
@@ -122,7 +117,7 @@ public final class MapTabWidgetTrace {
             float cursorY) {
 
         return box != null
-            && opacity >= MIN_VISIBLE_OPACITY
+            && opacity >= DrawnWidgets.MIN_VISIBLE_OPACITY
             && box.containsPoint(cursorX, cursorY);
     }
 
@@ -142,7 +137,7 @@ public final class MapTabWidgetTrace {
             return;
         }
         if (component instanceof UIComponentAPI widget) {
-            var box = resolveBoxOf(widget);
+            var box = DrawnWidgets.resolveBoxOf(widget);
             if (isWidgetUnderCursor(box, widget.getOpacity(), cursorX, cursorY)
                     && widgetsUnderCursor.size() < MAX_TRACE_WIDGETS) {
 
@@ -153,12 +148,6 @@ public final class MapTabWidgetTrace {
             collectWidgetsContaining(
                 child, component, depth + 1, cursorX, cursorY, widgetsUnderCursor);
         }
-    }
-
-    // A widget's drawn box, or null when the layout never positioned it - it then occupies nothing.
-    private static Rectangle resolveBoxOf(UIComponentAPI widget) {
-        var position = widget.getPosition();
-        return position == null ? null : VanillaPositions.toRectangle(position);
     }
 
     private static String describeWidget(
