@@ -4,27 +4,41 @@ import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.CampaignUIAPI;
 import com.fs.starfarer.api.campaign.CoreUITabId;
 import com.fs.starfarer.api.ui.PositionAPI;
-import com.fs.starfarer.campaign.CampaignState;
-import com.fs.starfarer.campaign.comms.F;
 import com.fs.starfarer.campaign.comms.v2.EventsPanel;
 
 import kmlib.math.geometry.Rectangle;
+import kmlib.starsector.ui.coreui.CoreUiTree;
 import kmlib.starsector.ui.layout.VanillaPositions;
 
 import org.apache.log4j.Logger;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * {@link IntelScreenView} binding backed by the live campaign UI. The tab-open read is published
  * API; the map visor rectangle and its starscape state reach the game's concrete intel panel by
- * casting to it - the game's script classloader denies {@code java.lang.reflect} to mod code, while
- * loading and casting to core classes is permitted, and the classes touched are marked
- * do-not-obfuscate, so their names stay stable across game builds.
+ * walking the live core-UI widget tree - the game's script classloader denies
+ * {@code java.lang.reflect} to mod code, so the hops down to the tab that is up are taken by method
+ * name through {@link CoreUiTree}, and the panel is picked out of that tab's subtree by its own
+ * type.
+ *
+ * <p>Nothing in the reach names a class the obfuscator chose. The intel tab's own class name is
+ * single-letter obfuscator output and is reshuffled between game builds, so recognising the tab
+ * would break silently on the next one; {@code EventsPanel} is a readable name, which is what a
+ * do-not-obfuscate class looks like, and it is the type the visor readings are taken off anyway.
  *
  * <p>The reach into the concrete panel fails closed: a missing or unexpected link, a sibling sub-tab
  * showing instead, or a blanked preview all resolve to "no visor", so a caller reading the visor
  * rectangle simply gets {@code null} while there is nothing on the intel screen to draw over. The
  * starscape read fails the same way to "not in starscape mode", which is what an unreachable panel
  * is leaving the game doing anyway.
+ *
+ * <p>Failing closed is silent by design, and silent is wrong for one of the ways it happens: being
+ * off the intel tab entirely is the ordinary case on every other screen, while a game build whose
+ * intel tab no longer yields a panel would stop every intel-screen overlay with nothing in the log.
+ * Those two are distinguishable, because the tab-open read is published API, so the second warns
+ * once per session.
  */
 public final class VanillaIntelScreenView implements IntelScreenView {
     private static final Logger LOG = Global.getLogger(VanillaIntelScreenView.class);
@@ -38,10 +52,14 @@ public final class VanillaIntelScreenView implements IntelScreenView {
     // "is the intel sub-tab the one showing".
     private static final float INTEL_SUBTAB_SHOWING_MIN_BRIGHTNESS = 0.5f;
 
-    // One-shot: a campaign UI of a type other than CampaignState (a wrapping mod) means the cast
-    // the panel reach relies on cannot land - a genuine anomaly worth naming once, not on every
-    // frame a visor read is attempted.
-    private boolean hasLoggedUnexpectedCampaignUiType;
+    // How deep below the tab to look for the panel. The intel tab adds it as a direct child, so one
+    // level is what the search actually reaches; the couple of spare levels are there for a build
+    // that wraps it in a holder, and the bound itself keeps a malformed tree from a runaway walk.
+    private static final int MAX_PANEL_SEARCH_DEPTH = 3;
+
+    // One-shot: the intel tab being up while its panel cannot be reached is a genuine anomaly worth
+    // naming once, not on every frame a visor read is attempted.
+    private boolean hasLoggedUnreachableIntelPanel;
 
     @Override
     public boolean isIntelTabOpen() {
@@ -100,39 +118,78 @@ public final class VanillaIntelScreenView implements IntelScreenView {
             && mapWidgetOpacity >= MAP_WIDGET_VISIBLE_MIN_OPACITY;
     }
 
+    // Names a failed reach only when there was something there to reach. An unreachable panel means
+    // one of two very different things: no intel tab is up, which is the ordinary state on every
+    // other screen and worth nothing, or the intel tab is up and the walk still came back empty,
+    // which is a game build this reach no longer fits and would otherwise stop every intel-screen
+    // overlay in silence. The tab-open read is published API, so the two are told apart rather than
+    // conflated.
+    //
+    // Kept apart from the walk for the same reason the visor rule is: the walk needs a live widget
+    // tree, while which of its failures counts as news is a rule that stands on its own.
+    //
+    // The two reads are not aimed at the same core UI, which is the one benign way this can fire:
+    // the tab read answers for an interaction dialog's own core UI while such a dialog is up,
+    // whereas the walk always goes through the main one. So an intel screen hosted by a dialog
+    // reads as open and is not where the walk is looking - hence the message names the tree that
+    // was actually searched rather than declaring the reach broken.
+    void warnOnceAboutUnreachableIntelPanel() {
+        if (hasLoggedUnreachableIntelPanel || !isIntelTabOpen()) {
+            return;
+        }
+        hasLoggedUnreachableIntelPanel = true;
+        LOG.warn("The intel tab is open but no EventsPanel was found in the main core UI's widget "
+            + "tree; intel-screen visor reads answer 'no visor' while that is so.");
+    }
+
+    // Walks the live core UI to the intel screen's events panel: campaign UI -> core -> current tab,
+    // then that tab's subtree. Answers null off the intel tab, since the tab that is up then holds
+    // no such panel, which is what leaves every caller inert on the other screens.
+    private EventsPanel resolveIntelPanel() {
+        EventsPanel intelPanel = null;
+        try {
+            intelPanel = findEventsPanelIn(CoreUiTree.resolveCurrentTab(), MAX_PANEL_SEARCH_DEPTH);
+        } catch (Throwable unreadableTree) {
+            // A hop that is absent or throws outright leaves the panel unreached, which is the same
+            // outcome for a caller as a tab that holds no panel. Swallowed rather than raised: a
+            // caller is in the middle of a render pass, and a read that cannot answer must not take
+            // down the frame it was meant to refine.
+        }
+        if (intelPanel == null) {
+            warnOnceAboutUnreachableIntelPanel();
+        }
+        return intelPanel;
+    }
+
+    // The first events panel at or below this component, or null when there is none.
+    //
+    // Breadth-first, and the order is what makes this cheap rather than the depth bound. The intel
+    // tab adds the panel after two large sibling panels, so a depth-first walk would descend both of
+    // their subtrees to the bound before ever reaching a sibling that sits one level down - hundreds
+    // of by-name child reads per call, twice a frame, to find something that was never more than one
+    // hop away. Level by level, the panel is found among the tab's own children and no subtree below
+    // them is read at all.
+    private static EventsPanel findEventsPanelIn(Object root, int maxDepth) {
+        List<?> level = root == null ? List.of() : List.of(root);
+        for (var depth = 0; depth <= maxDepth && !level.isEmpty(); depth++) {
+            for (var component : level) {
+                if (component instanceof EventsPanel intelPanel) {
+                    return intelPanel;
+                }
+            }
+            // Descend only once the whole level has missed, so finding the panel among the tab's
+            // children costs no child read below them.
+            var nextLevel = new ArrayList<>();
+            for (var component : level) {
+                nextLevel.addAll(CoreUiTree.readChildrenOf(component));
+            }
+            level = nextLevel;
+        }
+        return null;
+    }
+
     private CampaignUIAPI readCampaignUi() {
         var sector = Global.getSector();
         return sector == null ? null : sector.getCampaignUI();
-    }
-
-    // Walks the live core UI to the intel panel: campaign UI -> core -> current tab. The current
-    // tab is the intel container F only while the intel tab is showing, so an "off the intel tab"
-    // state and a wrapping-mod anomaly both resolve to null here and the caller stays inert.
-    private EventsPanel resolveIntelPanel() {
-        CampaignUIAPI campaignUi = readCampaignUi();
-        if (!(campaignUi instanceof CampaignState campaignState)) {
-            warnOnceAboutUnexpectedCampaignUi(campaignUi);
-            return null;
-        }
-        var core = campaignState.getCore();
-        if (core == null) {
-            return null;
-        }
-        if (!(core.getCurrentTab() instanceof F intelContainer)) {
-            return null;
-        }
-        return intelContainer.getEventsPanel();
-    }
-
-    // A null campaign UI is an ordinary "no campaign yet" state, not the anomaly this names: the
-    // warning is for a non-null UI of an unexpected type, the case that silently makes every visor
-    // read do nothing and whose actual class is what diagnoses it.
-    private void warnOnceAboutUnexpectedCampaignUi(CampaignUIAPI campaignUi) {
-        if (campaignUi != null && !hasLoggedUnexpectedCampaignUiType) {
-            hasLoggedUnexpectedCampaignUiType = true;
-            LOG.warn("Campaign UI is a "
-                + campaignUi.getClass().getName()
-                + ", not CampaignState; intel-screen visor reads stay inert");
-        }
     }
 }

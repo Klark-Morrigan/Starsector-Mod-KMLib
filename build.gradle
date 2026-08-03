@@ -56,12 +56,13 @@ def lazyLibKotlinRuntimeJarFile = file(
 // is version-stamped; testRuntimeOnly so the matcher's tests can load under test.
 def ratJars = findModJars('RandomAssortmentofThings.jar')
 
-// MagicLib backs VanillaMapTooltip's reflection into the live core-UI tree: its ReflectionUtils
-// drives the java.lang.reflect ops through method handles, the sanctioned bypass of the script
-// classloader's reflection ban. compileOnly, and declared in mod_info.json: its absence fails
-// open - the read reports no tooltip, so an overlay double-draws over the vanilla one rather
-// than breaking. Located by jar name since the install folder can vary; testRuntimeOnly so the
-// class can load under test.
+// MagicLib backs CoreUiTree, the one place that reflects into the live core-UI widget tree: its
+// ReflectionUtils drives the java.lang.reflect ops through method handles, the sanctioned bypass
+// of the script classloader's reflection ban. Every probe that walks that tree goes through it, so
+// this is a single seam rather than a per-probe dependency. compileOnly, and declared in
+// mod_info.json: its absence leaves the reach throwing, which each probe answers with its own
+// fail-open or fail-closed policy rather than breaking. Located by jar name since the install
+// folder can vary; testRuntimeOnly so the class can load under test.
 def magicLibJars = findModJars('MagicLib.jar')
 
 // org.json backs LunaSettingsWriter's write path: LunaLib's backing store is a
@@ -71,8 +72,9 @@ def magicLibJars = findModJars('MagicLib.jar')
 // compileOnly like the rest (testRuntime already sees it via starsectorCoreJars).
 def jsonJarFile = file("${project.ext.starsectorRoot}/starsector-core/json.jar")
 
-// The game's core (obfuscated) jar backs CampaignMapView's cast to the concrete
-// campaign-UI-data class, which the API jar does not publish. Reflection is not an
+// The game's core (obfuscated) jar backs the two casts to concrete campaign classes
+// the API jar does not publish: CampaignMapView's campaign-UI-data class, and the
+// intel screen's EventsPanel that its visor readings come off. Reflection is not an
 // option in its place: the game's script classloader denies java.lang.reflect to
 // mod code outright, while loading core classes is permitted. The classes KMLib
 // touches are marked DoNotObfuscate, so their names are stable across game builds.

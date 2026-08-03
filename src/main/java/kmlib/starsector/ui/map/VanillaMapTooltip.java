@@ -2,6 +2,8 @@ package kmlib.starsector.ui.map;
 
 import com.fs.starfarer.api.Global;
 
+import kmlib.starsector.ui.coreui.CoreUiTree;
+
 import org.apache.log4j.Logger;
 import org.magiclib.ReflectionUtils;
 

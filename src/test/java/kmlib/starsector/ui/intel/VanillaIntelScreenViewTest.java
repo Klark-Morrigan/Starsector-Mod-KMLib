@@ -16,21 +16,33 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Pins {@link VanillaIntelScreenView#isIntelTabOpen} - the one method that reads published API -
- * across each way it fails closed, and {@link VanillaIntelScreenView#isMapVisorLit}, the rule that
- * decides whether the two widget readings amount to a visor worth drawing over.
+ * Pins the two rules the class applies on its own: {@link VanillaIntelScreenView#isIntelTabOpen} -
+ * the one method that reads published API - across each way it fails closed,
+ * {@link VanillaIntelScreenView#isMapVisorLit}, which decides whether the two widget readings
+ * amount to a visor worth drawing over, and
+ * {@link VanillaIntelScreenView#warnOnceAboutUnreachableIntelPanel}, which decides when a panel
+ * the walk did not reach is worth saying so about.
  *
  * <p>{@link VanillaIntelScreenView#getMapVisorRect} and
- * {@link VanillaIntelScreenView#isMapStarscapeModeOn} are not unit-tested: both cast to the
- * obfuscated intel classes, whose dotted member names fail class-load under a verifying JVM (they
- * only load under the game's non-verifying one), so not even their fail-closed branches can be
- * entered here and the walks are exercised in-game. Only that widget-fetching is out of reach, which
- * is why the rule the visor read applies is reachable on its own.
+ * {@link VanillaIntelScreenView#isMapStarscapeModeOn} are not unit-tested: both name the obfuscated
+ * {@code EventsPanel}, whose dotted member names fail class-load under a verifying JVM (it only
+ * loads under the game's non-verifying one), so not even their fail-closed branches can be entered
+ * here and the walk itself is exercised in-game. Only that widget-fetching is out of reach, which is
+ * why the rules applied around it are reachable on their own.
  */
 class VanillaIntelScreenViewTest {
+
+    // The class caches its logger in a static field on first load, so a fresh per-test mock would be
+    // handed to the class only in whichever test happened to load it first. One instance for the
+    // whole class, cleared per test, is what makes the warning assertions see what was written.
+    private static final Logger loggerMock = mock(Logger.class);
 
     private MockedStatic<Global> globalMock;
     private SectorAPI sectorMock;
@@ -38,14 +50,25 @@ class VanillaIntelScreenViewTest {
 
     @BeforeEach
     void setUp() {
+        reset(loggerMock);
+
         sectorMock = mock(SectorAPI.class);
         campaignUiMock = mock(CampaignUIAPI.class);
+
         globalMock = mockStatic(Global.class);
-        globalMock.when(Global::getSector).thenReturn(sectorMock);
-        // The class logs a one-shot warning on an unexpected campaign-UI type; give it a logger so
-        // that static field init and that warn path do not dereference null under the mock.
-        globalMock.when(() -> Global.getLogger(any(Class.class))).thenReturn(mock(Logger.class));
-        when(sectorMock.getCampaignUI()).thenReturn(campaignUiMock);
+        globalMock
+            .when(Global::getSector)
+            .thenReturn(sectorMock);
+
+        // The class logs a one-shot warning when the intel tab is up but its panel is unreachable;
+        // give it a logger so that static field init and that warn path do not dereference null
+        // under the mock.
+        globalMock
+            .when(() -> Global.getLogger(any(Class.class)))
+            .thenReturn(loggerMock);
+
+        when(sectorMock.getCampaignUI())
+            .thenReturn(campaignUiMock);
     }
 
     @AfterEach
@@ -57,30 +80,41 @@ class VanillaIntelScreenViewTest {
     class IsIntelTabOpen {
         @Test
         void isTrueWhenTheIntelTabIsActive() {
-            when(campaignUiMock.getCurrentCoreTab()).thenReturn(CoreUITabId.INTEL);
 
-            assertThat(new VanillaIntelScreenView().isIntelTabOpen()).isTrue();
+            when(campaignUiMock.getCurrentCoreTab())
+                .thenReturn(CoreUITabId.INTEL);
+
+            assertThat(new VanillaIntelScreenView().isIntelTabOpen())
+                .isTrue();
         }
 
         @Test
         void isFalseWhenAnotherTabIsActive() {
-            when(campaignUiMock.getCurrentCoreTab()).thenReturn(CoreUITabId.MAP);
 
-            assertThat(new VanillaIntelScreenView().isIntelTabOpen()).isFalse();
+            when(campaignUiMock.getCurrentCoreTab())
+                .thenReturn(CoreUITabId.MAP);
+
+            assertThat(new VanillaIntelScreenView().isIntelTabOpen())
+                .isFalse();
         }
 
         @Test
         void isFalseWhenTheSectorIsMissing() {
-            globalMock.when(Global::getSector).thenReturn(null);
 
-            assertThat(new VanillaIntelScreenView().isIntelTabOpen()).isFalse();
+            globalMock.when(Global::getSector)
+                .thenReturn(null);
+
+            assertThat(new VanillaIntelScreenView().isIntelTabOpen())
+                .isFalse();
         }
 
         @Test
         void isFalseWhenTheCampaignUiIsMissing() {
-            when(sectorMock.getCampaignUI()).thenReturn(null);
+            when(sectorMock.getCampaignUI())
+                .thenReturn(null);
 
-            assertThat(new VanillaIntelScreenView().isIntelTabOpen()).isFalse();
+            assertThat(new VanillaIntelScreenView().isIntelTabOpen())
+                .isFalse();
         }
     }
 
@@ -92,7 +126,8 @@ class VanillaIntelScreenViewTest {
 
         @Test
         void isMapVisorLitIsTrueWhenTheIntelSubtabShowsAndThePreviewIsLit() {
-            assertThat(VanillaIntelScreenView.isMapVisorLit(LIT, LIT)).isTrue();
+            assertThat(VanillaIntelScreenView.isMapVisorLit(LIT, LIT))
+                .isTrue();
         }
 
         @Test
@@ -101,19 +136,22 @@ class VanillaIntelScreenViewTest {
             // only fades the events panel out - its map widget stays at full opacity behind them. Reading
             // that opacity alone therefore reports a visor that is not on screen, and the sidebar drew
             // over those sub-tabs. The dark panel is what rules them out.
-            assertThat(VanillaIntelScreenView.isMapVisorLit(DARK, LIT)).isFalse();
+            assertThat(VanillaIntelScreenView.isMapVisorLit(DARK, LIT))
+                .isFalse();
         }
 
         @Test
         void isMapVisorLitIsFalseWhenThePreviewIsBlanked() {
             // The Intel sub-tab is showing, but a large-description item has blanked the preview, so
             // there is a lit panel with no lit canvas inside it.
-            assertThat(VanillaIntelScreenView.isMapVisorLit(LIT, DARK)).isFalse();
+            assertThat(VanillaIntelScreenView.isMapVisorLit(LIT, DARK))
+                .isFalse();
         }
 
         @Test
         void isMapVisorLitIsFalseWhenNeitherReadingIsLit() {
-            assertThat(VanillaIntelScreenView.isMapVisorLit(DARK, DARK)).isFalse();
+            assertThat(VanillaIntelScreenView.isMapVisorLit(DARK, DARK))
+                .isFalse();
         }
 
         @Test
@@ -122,10 +160,59 @@ class VanillaIntelScreenViewTest {
             // to fade them. The two thresholds differ - a panel counts as showing from halfway, while
             // the preview has to be all but fully opaque - so each is pinned on its own, keeping a
             // change to either from silently flipping the gate.
-            assertThat(VanillaIntelScreenView.isMapVisorLit(0.5f, LIT)).isTrue();
-            assertThat(VanillaIntelScreenView.isMapVisorLit(0.49f, LIT)).isFalse();
-            assertThat(VanillaIntelScreenView.isMapVisorLit(LIT, 0.9f)).isTrue();
-            assertThat(VanillaIntelScreenView.isMapVisorLit(LIT, 0.89f)).isFalse();
+            assertThat(VanillaIntelScreenView.isMapVisorLit(0.5f, LIT))
+                .isTrue();
+            assertThat(VanillaIntelScreenView.isMapVisorLit(0.49f, LIT))
+                .isFalse();
+            assertThat(VanillaIntelScreenView.isMapVisorLit(LIT, 0.9f))
+                .isTrue();
+            assertThat(VanillaIntelScreenView.isMapVisorLit(LIT, 0.89f))
+                .isFalse();
+        }
+    }
+
+    @Nested
+    class WarnOnceAboutUnreachableIntelPanel {
+        @Test
+        void warnsWhenTheIntelTabIsOpen() {
+            // The case the warning exists for: the tab the panel lives on is up, so the walk had
+            // something to find and came back empty anyway. Without this line a game build that
+            // reshaped the intel tab would stop every intel-screen overlay in silence.
+            when(campaignUiMock.getCurrentCoreTab())
+                .thenReturn(CoreUITabId.INTEL);
+
+            new VanillaIntelScreenView().warnOnceAboutUnreachableIntelPanel();
+
+            verify(loggerMock)
+                .warn(any());
+        }
+
+        @Test
+        void staysSilentWhenAnotherTabIsShowing() {
+            // The ordinary state on every other screen: the tab that is up holds no events panel, so
+            // an unreached panel is the expected answer rather than news.
+            when(campaignUiMock.getCurrentCoreTab())
+                .thenReturn(CoreUITabId.MAP);
+
+            new VanillaIntelScreenView().warnOnceAboutUnreachableIntelPanel();
+
+            verify(loggerMock, never())
+                .warn(any());
+        }
+
+        @Test
+        void warnsOnlyOnceWhileTheReachKeepsFailing() {
+            // A visor read runs per frame, so a build this reach no longer fits would otherwise
+            // write the same line sixty times a second.
+            when(campaignUiMock.getCurrentCoreTab())
+                .thenReturn(CoreUITabId.INTEL);
+
+            var intelScreen = new VanillaIntelScreenView();
+            intelScreen.warnOnceAboutUnreachableIntelPanel();
+            intelScreen.warnOnceAboutUnreachableIntelPanel();
+
+            verify(loggerMock, times(1))
+                .warn(any());
         }
     }
 }

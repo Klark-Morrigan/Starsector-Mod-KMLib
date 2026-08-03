@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.map;
+package kmlib.starsector.ui.coreui;
 
 import com.fs.starfarer.api.Global;
 
@@ -16,13 +16,18 @@ import java.util.List;
  * is named in mod code. Names rather than casts because the tab classes carry illegal member names
  * an obfuscated build leaves unwritable in Java source.
  *
+ * <p>Names no tab and no screen. Every hop it takes is one the core UI offers whatever tab is up,
+ * which is why it sits in a package of its own rather than beside any one screen's probes: a probe
+ * for a second screen would otherwise have to reach through the first screen's package to get at
+ * the same three method names.
+ *
  * <p>Deliberately policy-free. Every hop either answers or throws, and what a failed read *means*
  * is the caller's to decide: a probe that suppresses an overlay wants a failure to read one way, a
  * probe that draws one wants the opposite, and baking either here would force both to live with
  * one. The only judgement made is that a component exposing no children is a leaf rather than a
  * failure, since most components are leaves and that would otherwise abort a walk at its first one.
  */
-final class CoreUiTree {
+public final class CoreUiTree {
 
     // The core UI's own accessors, driven by name. All are part of its contract, so they survive
     // obfuscation.
@@ -47,7 +52,7 @@ final class CoreUiTree {
      * @param component the component to descend into
      * @return its children, or an empty list when it is a leaf
      */
-    static List<?> readChildrenOf(Object component) {
+    public static List<?> readChildrenOf(Object component) {
         try {
             if (invokeNoArg(component, GET_CHILDREN_METHOD) instanceof List<?> children) {
                 return children;
@@ -68,7 +73,7 @@ final class CoreUiTree {
      *                          expects (a leaf that exposes no such method) or treats as its own
      *                          kind of read failure
      */
-    static Object invokeNoArg(Object instance, String methodName) {
+    public static Object invokeNoArg(Object instance, String methodName) {
         // invoke is an instance method on the ReflectionUtils singleton; only set/get are static.
         return ReflectionUtils.INSTANCE.invoke(methodName, instance, NO_ARGS, PUBLIC_METHOD);
     }
@@ -81,7 +86,7 @@ final class CoreUiTree {
      * @throws RuntimeException when a hop is absent or fails outright, so a caller applies its own
      *                          policy to a genuinely broken reach rather than to an empty screen
      */
-    static Object resolveCurrentTab() {
+    public static Object resolveCurrentTab() {
         var sector = Global.getSector();
         if (sector == null || sector.getCampaignUI() == null) {
             return null;

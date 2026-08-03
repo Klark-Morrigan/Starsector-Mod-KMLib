@@ -4,6 +4,7 @@ import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.ui.UIComponentAPI;
 
 import kmlib.math.geometry.Rectangle;
+import kmlib.starsector.ui.coreui.CoreUiTree;
 import kmlib.starsector.ui.input.UiCursor;
 
 import org.apache.log4j.Logger;
@@ -26,6 +27,11 @@ import java.util.List;
  * shaped, and the shape is what a rule for telling map from chrome has to be built on. Two widgets
  * can both contain the cursor because one encloses the other or because they merely overlap as
  * siblings, and those want opposite rules; only the parentage tells them apart.
+ *
+ * <p>Reports the tab's whole set of direct children too, with the box each occupies, and what
+ * {@link MapSurfaceBounds} picks out of them. A rule that chooses among siblings by size can only be
+ * held to account against the siblings it chose from, and the under-cursor view never shows the ones
+ * the cursor did not happen to visit.
  *
  * <p>The walk is unpublished API and the hit-test is not. Reaching the tab's components needs
  * {@link CoreUiTree}'s by-name reach, but every component then answers {@code getPosition} and
@@ -57,11 +63,20 @@ public final class MapTabWidgetTrace {
     }
 
     /**
-     * The widgets in the current tab whose drawn box contains the cursor - outermost first, so the
-     * last named is the innermost - each with its depth, class, box, opacity and parent.
+     * The current tab, the box each of its direct children occupies, which of them
+     * {@link MapSurfaceBounds} picks as the map surface, and the widgets whose drawn box contains
+     * the cursor - the last of those outermost first, so the innermost is named last, each with its
+     * depth, class, box, opacity and parent.
      *
      * <p>Call from a map render path. Reads the cursor in UI coordinates, the space
      * {@code getPosition} reports in, so the boxes described are the boxes the player sees.
+     *
+     * <p>Names every direct child, not only the ones under the cursor, because that is the list the
+     * surface rule chooses from and a cursor-filtered view of it cannot show what the rule passed
+     * over. A child the cursor never visits is invisible to the under-cursor walk while still being
+     * a candidate, so a rule that picks by size can only be checked against the whole list. The
+     * chosen surface is reported beside it, off the same candidates the live read uses, so the line
+     * shows the choice rather than leaving it to be re-derived from the boxes by eye.
      *
      * <p>Costs a tree walk and builds a string, so a caller in a render pass should ask only while
      * it intends to report the answer. The cursor position is deliberately left out: a caller
@@ -86,7 +101,11 @@ public final class MapTabWidgetTrace {
                 UiCursor.getUiY(),
                 widgetsUnderCursor);
 
-            return "tab=" + currentTab.getClass().getName() + " under=" + widgetsUnderCursor;
+            var children = CoreUiTree.readChildrenOf(currentTab);
+            return "tab=" + describeTab(currentTab)
+                + " surface=" + describeSurfacePickedFrom(currentTab, children)
+                + " children=" + describeDirectChildren(children)
+                + " under=" + widgetsUnderCursor;
         } catch (Throwable failure) {
             // Swallowed rather than raised: this is a diagnostic, and one that cannot read the tree
             // must not take down the render pass its caller is in the middle of.
@@ -158,13 +177,69 @@ public final class MapTabWidgetTrace {
 
         return "d" + depth
             + " " + widget.getClass().getName()
-            + "[x=" + Math.round(box.x())
-            + " y=" + Math.round(box.y())
-            + " w=" + Math.round(box.width())
-            + " h=" + Math.round(box.height())
+            + "[" + describeBox(box)
             + " opacity=" + widget.getOpacity()
             + " parent=" + (parent == null ? "none" : parent.getClass().getName())
             + "]";
+    }
+
+    private static String describeTab(Object currentTab) {
+        var tabBox = currentTab instanceof UIComponentAPI tab
+            ? DrawnWidgets.resolveBoxOf(tab)
+            : null;
+        return currentTab.getClass().getName()
+            + "[" + (tabBox == null ? "unpositioned" : describeBox(tabBox)) + "]";
+    }
+
+    // Every direct child with the box it occupies, drawn or not - a child faded out or never
+    // positioned is named too, since a rule that skipped it is only checkable against a list that
+    // says it was there to skip.
+    private static List<String> describeDirectChildren(List<?> children) {
+        var describedChildren = new ArrayList<String>();
+        for (var child : children) {
+            if (describedChildren.size() >= MAX_TRACE_WIDGETS) {
+                break;
+            }
+            describedChildren.add(describeDirectChild(child));
+        }
+        return describedChildren;
+    }
+
+    private static String describeDirectChild(Object child) {
+        if (!(child instanceof UIComponentAPI widget)) {
+            // Not a component, so it has neither box nor opacity to report - and cannot be the
+            // surface. Named anyway so the list is the tab's real children rather than a filtered
+            // view of them.
+            return child.getClass().getName() + "[not a component]";
+        }
+        var box = DrawnWidgets.resolveBoxOf(widget);
+        return widget.getClass().getName()
+            + "[" + (box == null ? "unpositioned" : describeBox(box))
+            + " opacity=" + widget.getOpacity()
+            + "]";
+    }
+
+    // What the surface rule makes of this tab's children. Re-derived here rather than read back from
+    // the live memo: the point of the line is what the rule says about the tree as it stands, which
+    // a remembered answer could no longer be.
+    private static String describeSurfacePickedFrom(Object currentTab, List<?> children) {
+        if (!(currentTab instanceof UIComponentAPI tab)) {
+            return "none";
+        }
+        var surfaceBox = MapSurfaceBounds.selectSurfaceBox(
+            DrawnWidgets.resolveBoxOf(tab),
+            MapSurfaceBounds.collectDrawnBoxesOf(children));
+
+        return surfaceBox == null ? "none" : "[" + describeBox(surfaceBox) + "]";
+    }
+
+    // Rounded to whole units: these are read off a log by eye against the game's own pixel grid, and
+    // a fractional layout coordinate is noise at that resolution.
+    private static String describeBox(Rectangle box) {
+        return "x=" + Math.round(box.x())
+            + " y=" + Math.round(box.y())
+            + " w=" + Math.round(box.width())
+            + " h=" + Math.round(box.height());
     }
 
     // Warns on this library's own logger rather than the caller's, since a reach that broke is the

@@ -4,9 +4,11 @@ import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.ui.UIComponentAPI;
 
 import kmlib.math.geometry.Rectangle;
+import kmlib.starsector.ui.coreui.CoreUiTree;
 
 import org.apache.log4j.Logger;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -55,14 +57,35 @@ public final class MapSurfaceBounds {
     // which costs nothing since either one means the same thing - the surface is unidentifiable.
     private static boolean hasWarnedThisSession;
 
+    // The last surface measured, and what it was measured against. Kept because a caller in a render
+    // pass asks per frame while the answer moves only when the layout does, and re-reading it is not
+    // free: the core's children accessor hands back a fresh copy of the list every call, so a
+    // per-frame measure is a per-frame allocation in the middle of a frame.
+    //
+    // Held weakly, and only against the tab it came from. A tab lays its children out once and keeps
+    // them, so the same tab instance on the same screen has the same surface - while a different
+    // instance is a tab rebuilt or a different screen entirely, whose layout this says nothing
+    // about. Weakly because a strong static reference would pin one save's whole tab subtree past
+    // the load that replaced it.
+    private static WeakReference<Object> measuredTab = new WeakReference<>(null);
+    private static Rectangle memoisedSurfaceBox;
+
+    // The screen the memo was measured on. The game fixes its resolution at launch, so this is
+    // expected never to move - it is here so that the memo rests on a checked fact rather than on
+    // that expectation, since a stale surface would silently misplace every suppression built on it.
+    private static float measuredScreenWidth;
+    private static float measuredScreenHeight;
+
     private MapSurfaceBounds() {
     }
 
     /**
      * The box the current tab draws its map in.
      *
-     * <p>Costs one children read and a box read per child - a single level, not a subtree walk - so
-     * a caller in a render pass can ask per frame.
+     * <p>Measured once per tab and screen and reused after, so a caller in a render pass can ask per
+     * frame. A measure is one children read and a box read per child - a single level, not a subtree
+     * walk - and only a measure that found a surface is kept, so an unanswerable frame is retried
+     * rather than remembered.
      *
      * @return the surface's box in UI coordinates, or null when there is no tab to read, the reach
      *         into the widget tree failed, or no child of the tab looks like a surface; a caller
@@ -74,13 +97,20 @@ public final class MapSurfaceBounds {
             if (!(currentTab instanceof UIComponentAPI tab)) {
                 return null;
             }
+            var screenWidth = Global.getSettings().getScreenWidth();
+            var screenHeight = Global.getSettings().getScreenHeight();
+            if (isMemoisedFor(currentTab, screenWidth, screenHeight)) {
+                return memoisedSurfaceBox;
+            }
             var surfaceBox = selectSurfaceBox(
                 DrawnWidgets.resolveBoxOf(tab),
-                collectDrawnChildBoxesOf(currentTab));
+                collectDrawnBoxesOf(CoreUiTree.readChildrenOf(currentTab)));
 
             if (surfaceBox == null) {
                 warnOnce("no child of the map tab covers enough of it to be the map surface", null);
+                return null;
             }
+            memoise(currentTab, screenWidth, screenHeight, surfaceBox);
             return surfaceBox;
         } catch (Throwable failure) {
             // Swallowed rather than raised: a caller is in the middle of a render pass, and a read
@@ -123,16 +153,20 @@ public final class MapSurfaceBounds {
         return largestArea >= tabArea * MIN_SURFACE_SHARE_OF_TAB ? largestChildBox : null;
     }
 
-    private static float computeAreaOf(Rectangle box) {
-        return box.width() * box.height();
-    }
-
-    // The drawn direct children of a component, as boxes. Children that are not components, are
-    // faded to nothing, or were never positioned are left out: none of them is something the player
-    // can see, so none can be the surface.
-    private static List<Rectangle> collectDrawnChildBoxesOf(Object component) {
+    /**
+     * The drawn ones among a component's children, as boxes.
+     *
+     * <p>Children that are not components, are faded to nothing, or were never positioned are left
+     * out: none of them is something the player can see, so none can be the surface. Shared with the
+     * widget trace so a diagnostic reporting which child this rule picks feeds it the same
+     * candidates the live read does.
+     *
+     * @param children the children to measure, as read off the tree
+     * @return their boxes, in the order given
+     */
+    static List<Rectangle> collectDrawnBoxesOf(List<?> children) {
         var childBoxes = new ArrayList<Rectangle>();
-        for (var child : CoreUiTree.readChildrenOf(component)) {
+        for (var child : children) {
             if (child instanceof UIComponentAPI widget && DrawnWidgets.isWidgetDrawn(widget)) {
                 var box = DrawnWidgets.resolveBoxOf(widget);
                 if (box != null) {
@@ -141,6 +175,34 @@ public final class MapSurfaceBounds {
             }
         }
         return childBoxes;
+    }
+
+    private static float computeAreaOf(Rectangle box) {
+        return box.width() * box.height();
+    }
+
+    // Whether the memo was measured from this very tab on this very screen. Identity rather than
+    // equality: two tabs are the same layout only by being the same object, and a widget's equals is
+    // the obfuscated class's business.
+    private static boolean isMemoisedFor(Object currentTab, float screenWidth, float screenHeight) {
+        return memoisedSurfaceBox != null
+            && measuredTab.get() == currentTab
+            && measuredScreenWidth == screenWidth
+            && measuredScreenHeight == screenHeight;
+    }
+
+    // Records a measure for reuse. Only ever called with a surface that was found, so a frame that
+    // could not answer is retried on the next one rather than pinning its own failure.
+    private static void memoise(
+            Object currentTab,
+            float screenWidth,
+            float screenHeight,
+            Rectangle surfaceBox) {
+
+        measuredTab = new WeakReference<>(currentTab);
+        measuredScreenWidth = screenWidth;
+        measuredScreenHeight = screenHeight;
+        memoisedSurfaceBox = surfaceBox;
     }
 
     // WARN rather than DEBUG, and on this library's own logger: a rule that stopped matching the
