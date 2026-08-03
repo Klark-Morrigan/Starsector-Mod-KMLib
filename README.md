@@ -136,8 +136,10 @@ src/main/java/kmlib/
       widgets/     - widget models and their geometry: one shared
                      labelled-row core - a label read as one sentence
                      with a slot to either side - and the rows and boxes
-                     built on it, with scroll/, segments/, and tabs/
-                     beneath
+                     built on it, with lists/, scroll/, segments/, and
+                     tabs/ beneath; lists/ is the sort-mode, direction
+                     and column-count model a picker list ranks by,
+                     holding no store of its own
   testfixtures/    - Fakes for KMLib's own ports (claims, fonts, intel
                      screen, modelview, console output). Ships in the
                      MAIN jar so consumer mods' tests can use them

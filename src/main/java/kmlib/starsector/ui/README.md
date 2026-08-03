@@ -18,6 +18,7 @@ content. Pairs that look like duplication across the tiers usually are not - see
 - [Ports across the boundary](#ports-across-the-boundary)
 - [Two span measurers](#two-span-measurers)
 - [Two hosts, one map widget](#two-hosts-one-map-widget)
+- [The list sort model holds no store](#the-list-sort-model-holds-no-store)
 - [Where each package sits](#where-each-package-sits)
 
 ## Two surfaces
@@ -171,13 +172,43 @@ reason the host-blind read is an OR over two sources rather than one flag consul
 
 All three fail closed, so an unreadable link answers "not showing" rather than guessing.
 
+## The list sort model holds no store
+
+A picker list that ranks by a chosen metric, flips direction when the lit metric is
+re-picked, and wraps across one or two columns is the same mechanism in every mod that
+draws one. [`widgets/lists`](widgets/lists/) is that mechanism, its own folder beside
+[`tabs`](widgets/tabs/) and [`segments`](widgets/segments/) because it is a family rather
+than a piece: [`ListSortMode`](widgets/lists/ListSortMode.java) is the seam a consumer's own
+vocabulary implements, [`ListSortModes`](widgets/lists/ListSortModes.java) bundles that
+vocabulary with the fallback an unrecognised key lands on,
+[`ListSort`](widgets/lists/ListSort.java) pairs the active mode with its
+[`SortDirection`](widgets/lists/SortDirection.java), and
+[`ListColumns`](widgets/lists/ListColumns.java) is the one-or-two column choice. The two
+selectors - [`SortSelectorControl`](widgets/lists/SortSelectorControl.java) and
+[`ColumnsSelectorControl`](widgets/lists/ColumnsSelectorControl.java) - draw and drive them.
+
+The division that makes it shareable is that **this package owns the model and the
+resolution rule; the consuming mod owns where the answer is kept**. Nothing here reads or
+writes a save. The stored mode and direction keys arrive as arguments to
+`ListSort.resolveStored`, and each selector reports the pick back through a callback for
+the consumer to persist. A mod's own thin binder is what ties the two ends to its
+sector-memory keys or settings fields, and that binder is the only place those keys appear.
+
+Labels follow the same rule for the same reason. A string id only means something against
+the category that registered it, and [`StarsectorStrings`](../strings/StarsectorStrings.java)
+takes `(category, key)` on every call precisely so nothing here has to know which mod is
+asking - so `ListSortMode.resolveLabelText()` and the columns selector's caption arrive as
+drawn text. `ListColumns` is the deliberate exception: its segment labels are the literals
+`1` and `2`, because the rule exists to keep player-visible *prose* translatable and a digit
+standing for a count is not prose.
+
 ## Where each package sits
 
 | Package | Tier | Holds |
 | --- | --- | --- |
 | [`text`](text/) | neutral | `TextSpan`, `TextStyle`, `TextAlignment`, `StyledSpanMeasurer` |
 | [`controls`](controls/) | neutral | the sealed `ControlSpec` set and its enums |
-| [`widgets`](widgets/) | neutral | the shared `LabelledRow` core, its `RowSlot` flanks, and the row and box content and geometry built on them ([`tabs`](widgets/tabs/), [`scroll`](widgets/scroll/), [`segments`](widgets/segments/)) |
+| [`widgets`](widgets/) | neutral | the shared `LabelledRow` core, its `RowSlot` flanks, and the row and box content and geometry built on them ([`tabs`](widgets/tabs/), [`scroll`](widgets/scroll/), [`segments`](widgets/segments/), [`lists`](widgets/lists/)) |
 | [`layout`](layout/) | neutral | box placement, strips, padding, screen anchors |
 | [`label`](label/) | neutral | label fitting, plus the length-estimator port |
 | [`colour`](colour/) | neutral | `StarsectorUiColour`, the checked wrapper over vanilla's colour getters |
