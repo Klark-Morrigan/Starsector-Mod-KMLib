@@ -74,22 +74,18 @@ public final class LabelBoxFitter {
     // when they buy a strictly bigger font by spending the chord's spare girth.
     public BoxFit fitLargestBox(RegionChord chord) {
 
-        // The keep-outs project onto the chord's line the same way whatever thickness a
-        // band is given - only the interior test reads the thickness - so the projection
-        // is invariant across every band this sizing measures. Computed once here, it
-        // turns an obstacle scan per band fit into one for the whole sizing.
-        var keepOutBlockers = computeKeepOutBlockers(chord);
+        var sizingChord = SizingChord.prepareFor(chord, keepOutClearance);
 
         // A line too short to define a direction has no interior to size along either,
         // so every band would fail; there is nothing to measure.
-        if (keepOutBlockers == null) {
+        if (sizingChord == null) {
             return null;
         }
         BoxFit best = null;
         for (var lineCount = 1; lineCount <= maxLines; lineCount++) {
             best = Picks.pickHigher(
                 best,
-                fitForLineCount(chord, lineCount, keepOutBlockers),
+                fitForLineCount(sizingChord, lineCount),
                 BoxFit::fontHeight);
         }
         return best;
@@ -101,10 +97,10 @@ public final class LabelBoxFitter {
     // reaches it through the line-count sizing below, which projects the keep-outs once
     // for its whole sweep rather than per band as this single measurement must.
     public BandSpan fitBand(RegionChord chord, double halfThickness) {
-        var keepOutBlockers = computeKeepOutBlockers(chord);
-        return keepOutBlockers == null
+        var sizingChord = SizingChord.prepareFor(chord, keepOutClearance);
+        return sizingChord == null
             ? new BandSpan(null, null)
-            : measureBand(chord, halfThickness, keepOutBlockers);
+            : measureBand(sizingChord, halfThickness);
     }
 
     /**
@@ -122,33 +118,23 @@ public final class LabelBoxFitter {
 
     // Sizes the box for one fixed line count by growing the font to the largest height
     // whose band still holds the text, then reading that band's clear span back. Null
-    // when even the minimum font cannot hold the text. The keep-out blockers are handed
-    // down rather than re-derived, since every band here shares one line.
-    private BoxFit fitForLineCount(
-            RegionChord chord,
-            int lineCount,
-            LineBlockers keepOutBlockers) {
+    // when even the minimum font cannot hold the text.
+    private BoxFit fitForLineCount(SizingChord sizingChord, int lineCount) {
 
-        var linesFactor = (lineCount - 1) * lineSpacing + 1.0;
-        if (!bandHoldsText(chord, minFontHeight, lineCount, linesFactor, keepOutBlockers)) {
+        if (!bandHoldsText(sizingChord, minFontHeight, lineCount)) {
             return null;
         }
         var fontHeight = Bisection.findLargestPassing(
             minFontHeight,
             maxFontHeight,
             FONT_HEIGHT_BISECTION_STEPS,
-            candidate -> bandHoldsText(
-                chord,
-                candidate,
-                lineCount,
-                linesFactor,
-                keepOutBlockers));
+            candidate -> bandHoldsText(sizingChord, candidate, lineCount));
 
-        var thickness = fontHeight * linesFactor;
-        var span = measureBand(chord, thickness / 2.0, keepOutBlockers).insetSpan();
+        var thickness = fontHeight * computeLinesFactor(lineCount);
+        var span = measureBand(sizingChord, thickness / 2.0).insetSpan();
 
         return new BoxFit(
-            chord.toSegment(span),
+            sizingChord.chord().toSegment(span),
             thickness,
             lineCount,
             fontHeight);
@@ -158,14 +144,12 @@ public final class LabelBoxFitter {
     // the chord for the text: the band those lines occupy must have a clear
     // (border-, keep-out-, and margin-trimmed) length at least the length the estimator
     // says the text needs at that line height.
-    private boolean bandHoldsText(
-            RegionChord chord,
-            double fontHeight,
-            int lineCount,
-            double linesFactor,
-            LineBlockers keepOutBlockers) {
+    private boolean bandHoldsText(SizingChord sizingChord, double fontHeight, int lineCount) {
 
-        var band = measureBand(chord, fontHeight * linesFactor / 2.0, keepOutBlockers);
+        var band = measureBand(
+            sizingChord,
+            fontHeight * computeLinesFactor(lineCount) / 2.0);
+
         if (band.insetSpan() == null) {
             return false;
         }
@@ -173,24 +157,23 @@ public final class LabelBoxFitter {
         return clearLength >= textLength.requiredLengthFor(fontHeight, lineCount);
     }
 
-    // One band's spans against pre-projected keep-outs: the border test reads the
-    // thickness, the keep-out trim does not, so only the former runs per band here.
-    private BandSpan measureBand(
-            RegionChord chord,
-            double halfThickness,
-            LineBlockers keepOutBlockers) {
+    // One band's spans against the chord's pre-projected keep-outs: the border test
+    // reads the thickness, the keep-out trim does not, so only the former runs here.
+    private BandSpan measureBand(SizingChord sizingChord, double halfThickness) {
 
         bandFitCount++;
 
         var interiorSpans = PolygonRegions.findBandInteriorSpans(
-            chord.rings(),
-            chord.line(),
+            sizingChord.chord().rings(),
+            sizingChord.chord().line(),
             halfThickness);
 
         if (interiorSpans.isEmpty()) {
             return new BandSpan(null, null);
         }
-        var clear = Spans.findLongestClearSubsegment(interiorSpans, keepOutBlockers);
+        var clear = Spans.findLongestClearSubsegment(
+            interiorSpans,
+            sizingChord.keepOutBlockers());
 
         if (clear == null) {
             return new BandSpan(null, null);
@@ -204,10 +187,11 @@ public final class LabelBoxFitter {
             : new BandSpan(clear, null);
     }
 
-    // The chord's keep-outs projected onto its line at this fitter's clearance - the
-    // subtraction every band along that line shares. Null when the line is degenerate.
-    private LineBlockers computeKeepOutBlockers(RegionChord chord) {
-        return Spans.computeLineBlockers(chord.line(), chord.keepOuts(), keepOutClearance);
+    // How much thicker than a single line's font a stack of lineCount lines is, as the
+    // multiplier a band's thickness takes: the gaps between the lines plus the one line
+    // every stack starts from.
+    private double computeLinesFactor(int lineCount) {
+        return (lineCount - 1) * lineSpacing + 1.0;
     }
 
     /**
@@ -234,5 +218,30 @@ public final class LabelBoxFitter {
         double thickness,
         int lineCount,
         double fontHeight) {
+    }
+
+    // A chord together with its keep-outs already projected onto its line. The
+    // projection depends on the line, the obstacles and the clearance alone - only the
+    // interior test reads a band's thickness - so it is invariant across every band a
+    // sizing measures, and pairing the two here is what lets it be taken once per chord
+    // rather than once per band. Blockers belonging to some other chord cannot reach a
+    // measurement, since the only way to hold a pair is to have minted it from one.
+    private record SizingChord(
+        RegionChord chord,
+        LineBlockers keepOutBlockers) {
+
+        // Null when the chord's line is too short to define a direction: there is no
+        // frame to measure parameters in, so nothing can be sized along it.
+        private static SizingChord prepareFor(RegionChord chord, double keepOutClearance) {
+
+            var keepOutBlockers = Spans.computeLineBlockers(
+                chord.line(),
+                chord.keepOuts(),
+                keepOutClearance);
+
+            return keepOutBlockers == null
+                ? null
+                : new SizingChord(chord, keepOutBlockers);
+        }
     }
 }

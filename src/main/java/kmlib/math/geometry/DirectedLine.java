@@ -24,4 +24,29 @@ public record DirectedLine(
         double originY,
         double directionX,
         double directionY) {
+
+    /**
+     * The same line with its direction normalised, so a parameter along it reads as a
+     * world distance - or {@code null} when the direction is too short to define a
+     * line at all.
+     *
+     * <p>The step every operation measuring parameters along a line takes before it can
+     * measure anything, kept here so the normalisation and the degenerate verdict that
+     * comes with it have one home: two operations asked to read the same line must agree
+     * on whether it is a line.
+     *
+     * @return this line with a unit direction and its origin unmoved, or {@code null}
+     *         when the direction is shorter than {@link Limits#MIN_EDGE_LENGTH}
+     */
+    public DirectedLine toUnitLine() {
+        var direction = Points.computeUnitVector(
+            directionX,
+            directionY,
+            Limits.MIN_EDGE_LENGTH);
+
+        if (direction == null) {
+            return null;
+        }
+        return new DirectedLine(originX, originY, direction[0], direction[1]);
+    }
 }

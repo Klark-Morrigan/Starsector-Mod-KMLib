@@ -190,20 +190,11 @@ public final class PolygonRegions {
             DirectedLine line) {
 
         var spans = new ArrayList<double[]>();
-        var direction = Points.computeUnitVector(
-            line.directionX(),
-            line.directionY(),
-            Limits.MIN_EDGE_LENGTH);
+        var unitLine = line.toUnitLine();
 
-        if (direction == null) {
+        if (unitLine == null) {
             return spans;
         }
-        var unitLine = new DirectedLine(
-            line.originX(),
-            line.originY(),
-            direction[0],
-            direction[1]);
-
         var crossings = collectLineCrossingParameters(rings, unitLine);
         crossings.sort(null);
 
@@ -277,18 +268,15 @@ public final class PolygonRegions {
             DirectedLine line,
             double halfThickness) {
 
-        var direction = Points.computeUnitVector(
-            line.directionX(),
-            line.directionY(),
-            Limits.MIN_EDGE_LENGTH);
+        var unitLine = line.toUnitLine();
 
-        if (direction == null) {
+        if (unitLine == null) {
             return new ArrayList<>();
         }
         // The perpendicular the rails step along; the along-direction origin is
         // invariant under this shift, so every rail's parameters share one frame.
-        var normalX = -direction[1];
-        var normalY = direction[0];
+        var normalX = -unitLine.directionY();
+        var normalY = unitLine.directionX();
         List<double[]> bandSpans = null;
 
         for (var rail = 0; rail < BAND_RAIL_COUNT; rail++) {
@@ -298,10 +286,10 @@ public final class PolygonRegions {
             var railSpans = findLineInteriorSpans(
                 rings,
                 new DirectedLine(
-                    line.originX() + offset * normalX,
-                    line.originY() + offset * normalY,
-                    direction[0],
-                    direction[1]));
+                    unitLine.originX() + offset * normalX,
+                    unitLine.originY() + offset * normalY,
+                    unitLine.directionX(),
+                    unitLine.directionY()));
 
             bandSpans = bandSpans == null
                 ? railSpans

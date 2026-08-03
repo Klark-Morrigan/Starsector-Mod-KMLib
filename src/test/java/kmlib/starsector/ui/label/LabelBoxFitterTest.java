@@ -6,7 +6,9 @@ import kmlib.math.geometry.RegionChord;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.AbstractCollection;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -151,6 +153,31 @@ final class LabelBoxFitterTest {
         }
 
         @Test
+        void fitLargestBoxProjectsTheKeepOutsOnceForTheWholeSizing() {
+            // The keep-out projection reads the chord's line and the clearance, never a
+            // band's thickness, so it is invariant across the many bands one sizing
+            // measures. Iterating the keep-outs once - while the band-fit count shows
+            // the sizing measured far more bands than that - is what says the
+            // projection sits outside the font search rather than inside it; an
+            // assertion on the fitted box cannot see the difference.
+            var keepOutsFake = new IterationCountingKeepOutsFake(
+                List.of(new double[] {1200, 350}));
+                
+            var fitter = fitterWithKeepOutClearance(1.0, 100.0, 2000.0, 1, 1.0, 400.0);
+
+            fitter.fitLargestBox(
+                new RegionChord(
+                    List.of(rectangle(0, 0, 2000, 700)),
+                    keepOutsFake,
+                    new DirectedLine(1000, 350, 1.0, 0.0)));
+
+            assertThat(keepOutsFake.getIterationCount())
+                .isEqualTo(1);
+            assertThat(fitter.getBandFitCount())
+                .isGreaterThan(20);
+        }
+
+        @Test
         void fitLargestBoxReturnsNullWhenTheMinimumBandCannotFit() {
             // A minimum font taller than the 1700 the square holds cannot sit anywhere,
             // so the fit finds no box at all.
@@ -160,6 +187,58 @@ final class LabelBoxFitterTest {
                         rectangle(0, 0, 1700, 1700), 850, 850));
 
             assertThat(box)
+                .isNull();
+        }
+    }
+
+    @Nested
+    class FitBand {
+        @Test
+        void fitBandReportsTheStretchOfTheLineTheBandKeepsInsideTheRegion() {
+            // A band 200 thick about y=350 clears the slab's 700 girth everywhere, so
+            // the whole crossing survives: the chord runs from the left edge at
+            // t=-1000 to the right edge at t=1000 about the through-point at x=1000.
+            var band = fitter(1.0, 100.0, 2000.0, 1, 1.0)
+                .fitBand(
+                    horizontalChord(rectangle(0, 0, 2000, 700), 1000, 350),
+                    100.0);
+
+            assertThat(band.clearSpan()[0])
+                .isCloseTo(-1000.0, within(1.0));
+            assertThat(band.clearSpan()[1])
+                .isCloseTo(1000.0, within(1.0));
+        }
+
+        @Test
+        void fitBandReportsNoSpanWhenTheBandIsFatterThanTheRegion() {
+            // An 800-thick band cannot sit inside the slab's 700 girth anywhere along
+            // the line, so not even the near-miss diagnostic has a span to show.
+            var band = fitter(1.0, 100.0, 2000.0, 1, 1.0)
+                .fitBand(
+                    horizontalChord(rectangle(0, 0, 2000, 700), 1000, 350),
+                    400.0);
+
+            assertThat(band.clearSpan())
+                .isNull();
+            assertThat(band.insetSpan())
+                .isNull();
+        }
+
+        @Test
+        void fitBandReportsNoSpanForALineWithNoDirection() {
+            // A degenerate line defines no frame to measure a span in, so the single
+            // measurement reports nothing rather than a span in an undefined frame.
+            var band = fitter(1.0, 100.0, 2000.0, 1, 1.0)
+                .fitBand(
+                    new RegionChord(
+                        List.of(rectangle(0, 0, 2000, 700)),
+                        List.of(),
+                        new DirectedLine(1000, 350, 0.0, 0.0)),
+                    100.0);
+
+            assertThat(band.clearSpan())
+                .isNull();
+            assertThat(band.insetSpan())
                 .isNull();
         }
     }
@@ -265,5 +344,34 @@ final class LabelBoxFitterTest {
             new double[] {minX + width, minY},
             new double[] {minX + width, minY + height},
             new double[] {minX, minY + height});
+    }
+
+    // A keep-out collection that records how often it was walked. Whether the fitter
+    // projects the obstacles once per chord or once per band is invisible in the fitted
+    // box - both give the same box - and shows only in how often the collection is
+    // asked for its contents, which is what this counts.
+    private static final class IterationCountingKeepOutsFake extends AbstractCollection<double[]> {
+
+        private final List<double[]> points;
+        private int iterationCount;
+
+        private IterationCountingKeepOutsFake(List<double[]> points) {
+            this.points = points;
+        }
+
+        int getIterationCount() {
+            return iterationCount;
+        }
+
+        @Override
+        public Iterator<double[]> iterator() {
+            iterationCount++;
+            return points.iterator();
+        }
+
+        @Override
+        public int size() {
+            return points.size();
+        }
     }
 }

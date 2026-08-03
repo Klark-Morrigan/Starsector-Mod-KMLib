@@ -52,20 +52,10 @@ public final class Spans {
             Collection<double[]> obstacles,
             double clearance) {
 
-        var direction = Points.computeUnitVector(
-            line.directionX(),
-            line.directionY(),
-            Limits.MIN_EDGE_LENGTH);
-
-        if (direction == null) {
+        var unitLine = line.toUnitLine();
+        if (unitLine == null) {
             return null;
         }
-        var unitLine = new DirectedLine(
-            line.originX(),
-            line.originY(),
-            direction[0],
-            direction[1]);
-
         var blocked = computeBlockedIntervals(unitLine, obstacles, clearance);
 
         // Sorted by start, the blockers can be walked once per span with a single
@@ -79,14 +69,10 @@ public final class Spans {
      * {@code clearance} away, as a {@code {tStart, tEnd}} pair - or {@code null}
      * when nothing clear survives.
      *
-     * <p>Each obstacle within {@code clearance} of the line blocks the interval the
-     * line spends inside its keep-out circle: centred on the obstacle's projection
-     * onto the line, with half-width {@code sqrt(clearance^2 - perp^2)} where
-     * {@code perp} is the obstacle's perpendicular distance - the chord the circle
-     * cuts from the line. An obstacle farther than {@code clearance} from the line
-     * misses it entirely and blocks nothing. The blocked intervals are subtracted
-     * from every span and the single longest surviving piece wins, so the result is
-     * the roomiest stretch of line that stays clear of every obstacle.
+     * <p>The obstacles carve their keep-out intervals from the line as
+     * {@link #computeLineBlockers} describes; those intervals are subtracted from every
+     * span and the single longest surviving piece wins, so the result is the roomiest
+     * stretch of line that stays clear of every obstacle.
      *
      * @param spans     the candidate intervals as {@code {tStart, tEnd}} pairs
      *                  (parameters along the line's direction), each internally ascending
