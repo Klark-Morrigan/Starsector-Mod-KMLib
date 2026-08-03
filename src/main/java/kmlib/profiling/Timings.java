@@ -14,10 +14,19 @@ import java.util.Locale;
  * dependency.
  */
 public final class Timings {
+    private static final double NANOS_PER_MICROSECOND = 1_000.0;
     private static final double NANOS_PER_MILLISECOND = 1_000_000.0;
     private static final double NANOS_PER_SECOND = 1_000_000_000.0;
 
     private Timings() {
+    }
+
+    /**
+     * Converts a nanosecond duration to microseconds - the one place the
+     * nanosecond-to-microsecond divisor lives.
+     */
+    public static double convertNanosToMicros(long nanos) {
+        return nanos / NANOS_PER_MICROSECOND;
     }
 
     /**
@@ -47,5 +56,19 @@ public final class Timings {
      */
     public static String formatMillis(long nanos) {
         return String.format(Locale.ROOT, "%.2fms", convertNanosToMillis(nanos));
+    }
+
+    /**
+     * Formats a nanosecond duration as microseconds with one decimal and a trailing
+     * unit, e.g. {@code "123.4us"}.
+     *
+     * <p>For a span short enough that milliseconds would round it away: at two decimals
+     * anything under five microseconds reports as {@code "0.00ms"}, which compares
+     * against nothing. Reported in plain {@code us} rather than the SI symbol, since a
+     * log line carries no encoding with it and a mangled prefix reads as a different
+     * unit rather than as a mangled one.
+     */
+    public static String formatMicros(long nanos) {
+        return String.format(Locale.ROOT, "%.1fus", convertNanosToMicros(nanos));
     }
 }
