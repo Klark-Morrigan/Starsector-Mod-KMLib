@@ -3,6 +3,7 @@ package kmlib.starsector.ui.layout;
 import kmlib.math.geometry.BoxEdge;
 import kmlib.starsector.ui.controls.ControlAction;
 import kmlib.starsector.ui.controls.ControlSpec;
+import kmlib.starsector.ui.controls.LabelledControlSpecs;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
@@ -69,7 +70,7 @@ final class TabPanelLayoutTest {
 
     // A one-checkbox body, so the body has a definite non-zero height beneath the header.
     private static final List<ControlSpec> BODY = List.of(
-        ControlSpec.Checkbox.lit("X", false, ControlAction.NONE));
+        LabelledControlSpecs.buildCheckbox("X", false, ControlAction.NONE));
 
     @Nested
     class ComputePlacement {

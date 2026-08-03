@@ -3,6 +3,8 @@ package kmlib.starsector.ui.widgets;
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.font.TextSpanMeasurer;
 import kmlib.starsector.ui.layout.TooltipBoxLayout;
+import kmlib.starsector.ui.text.LabelRuns;
+import kmlib.starsector.ui.text.LabelRuns.LabelRunOffsets;
 import kmlib.starsector.ui.text.TextSpan;
 
 import java.util.ArrayList;
@@ -57,13 +59,12 @@ import java.util.function.ToDoubleFunction;
  */
 public final class CursorTooltip {
 
-    // The gap between a row's crest and its label, between two runs of one label, and between the label
-    // and a right-aligned value, in UI units. The value gap is reserved on every row (a value-less row
-    // measures a zero-width value), so the value column stays clear of the widest label whether or not
-    // each row fills it. The run gap is a word space rather than a column, so it is charged only where
-    // one run actually follows another.
+    // The gap between a row's crest and its label and between the label and a right-aligned value, in UI
+    // units. Both are reserved on every row (a value-less row measures a zero-width value), so the value
+    // column stays clear of the widest label whether or not each row fills it. The gap between two runs
+    // of one label is not settled here: runs read as one sentence wherever they are laid, so LabelRuns
+    // owns that spacing for every surface at once.
     private static final float CREST_GAP = 6f;
-    private static final float LABEL_RUN_GAP = 6f;
     private static final float VALUE_GAP = 16f;
 
     // The crest column's width in a box that reserves none - either because no row carries a crest, or
@@ -316,34 +317,14 @@ public final class CursorTooltip {
     }
 
     // Where each of a row's label runs sits relative to the label's own left edge, and how wide the runs
-    // come to together. The one walk the width measurement, the centring, and the placement all read, so
-    // a centred row is placed against exactly the span the box was sized to hold and no anchor can drift
-    // from the width it was charged.
-    //
-    // The runs read as one sentence, so each starts a word gap past where the one before it ended. A run
-    // with nothing to draw is charged neither gap nor width and anchors where its predecessor ended: a
-    // caller assembling a run from parts and coming up blank gets the line it would have had without it,
-    // rather than a gap reserved in front of no glyphs.
+    // come to together, measured on this row's own face. The one walk the width measurement, the
+    // centring, and the placement all read, so a centred row is placed against exactly the span the box
+    // was sized to hold and no anchor can drift from the width it was charged. How runs compose into a
+    // line is LabelRuns' rule, shared with every other surface that lays a label.
     private static LabelRunOffsets measureLabelRunOffsets(StyledRow styledRow) {
-
-        var labelTextSpans = styledRow.row().labelTextSpans();
-        var runOffsetXs = new ArrayList<Float>(labelTextSpans.size());
-        var runsWidth = 0f;
-        var hasDrawnRun = false;
-
-        for (var labelTextSpan : labelTextSpans) {
-            if (!labelTextSpan.hasText()) {
-                runOffsetXs.add(runsWidth);
-                continue;
-            }
-            if (hasDrawnRun) {
-                runsWidth += LABEL_RUN_GAP;
-            }
-            runOffsetXs.add(runsWidth);
-            runsWidth += (float) styledRow.measureSpanWidth(labelTextSpan);
-            hasDrawnRun = true;
-        }
-        return new LabelRunOffsets(runOffsetXs, runsWidth);
+        return LabelRuns.measureRunOffsets(
+            styledRow.row().labelTextSpans(),
+            styledRow::measureSpanWidth);
     }
 
     // Where a centred row's label starts: its span set in the middle of the content region, the leftover
@@ -369,21 +350,6 @@ public final class CursorTooltip {
         return tableRow.labelPlacement() == TooltipLabelPlacement.ALIGNED_WITH_CRESTS
             ? crestColumnWidth
             : NO_CREST_COLUMN;
-    }
-
-    /**
-     * One row's label runs measured out from the label's own left edge: where each run starts, and how
-     * wide they come to together. The two halves of one walk, returned as a pair because a caller that
-     * re-derived either from the other would be re-deciding the gap rule - and a placement that
-     * disagreed with the width the box was sized to is exactly the drift the measurement exists to
-     * prevent.
-     *
-     * @param runOffsetXs each run's offset from the label's left edge, in run order
-     * @param runsWidth   the width the runs occupy together, gaps included
-     */
-    private record LabelRunOffsets(
-        List<Float> runOffsetXs,
-        float runsWidth) {
     }
 
     /**

@@ -6,6 +6,7 @@ import kmlib.starsector.ui.widgets.RowSlot;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -31,9 +32,9 @@ final class ControlSpecTest {
         @Test
         void checkboxAndRadiosAndTabsAreInteractive() {
             // The clickable, stateful controls implement Interactive, so the input listener acts on them.
-            assertThat(ControlSpec.Checkbox.lit("Muted", true, ControlAction.NONE))
+            assertThat(LabelledControlSpecs.buildCheckbox("Muted", true, ControlAction.NONE))
                 .isInstanceOf(ControlSpec.Interactive.class);
-            assertThat(ControlSpec.Toggle.lit("Muted", true, ControlAction.NONE))
+            assertThat(LabelledControlSpecs.buildToggle("Muted", true, ControlAction.NONE))
                 .isInstanceOf(ControlSpec.Interactive.class);
             assertThat(ControlSpec.HorizontalRadio.of(List.of("A"), 0, ControlAction.NONE))
                 .isInstanceOf(ControlSpec.Interactive.class);
@@ -53,7 +54,7 @@ final class ControlSpecTest {
         void labelAndDividerAreNotInteractive() {
             // A caption and a rule are drawn but never clicked, so they are chrome, not Interactive - the
             // one property the input listener reads to skip them.
-            assertThat(new ControlSpec.Label("Names"))
+            assertThat(LabelledControlSpecs.buildLabel("Names"))
                 .isNotInstanceOf(ControlSpec.Interactive.class);
             assertThat(new ControlSpec.Divider())
                 .isNotInstanceOf(ControlSpec.Interactive.class);
@@ -121,7 +122,8 @@ final class ControlSpecTest {
 
         @Test
         void litLightsCellZeroWhenOn() {
-            var checkbox = ControlSpec.Checkbox.lit("Muted", true, ControlAction.NONE);
+
+            var checkbox = LabelledControlSpecs.buildCheckbox("Muted", true, ControlAction.NONE);
 
             assertThat(checkbox.labels())
                 .containsExactly("Muted");
@@ -133,7 +135,8 @@ final class ControlSpecTest {
 
         @Test
         void litLeavesNoCellLitWhenOff() {
-            var checkbox = ControlSpec.Checkbox.lit("Muted", false, ControlAction.NONE);
+
+            var checkbox = LabelledControlSpecs.buildCheckbox("Muted", false, ControlAction.NONE);
 
             assertThat(checkbox.selectedIndex())
                 .isEqualTo(ControlSpec.NO_SELECTION);
@@ -146,12 +149,73 @@ final class ControlSpecTest {
             // The row's single cell (0) is the hit target, so a click fires the action for cell 0 -
             // pinned by capturing which cell the action was invoked with.
             var firedCell = new int[] {-99};
-            var checkbox = ControlSpec.Checkbox.lit("Muted", false, cell -> firedCell[0] = cell);
+            var checkbox = ControlSpec.Checkbox.lit(
+                LabelledControlSpecs.buildLabelSpan("Muted"),
+                false,
+                cell -> firedCell[0] = cell);
 
             checkbox.action().activateCell(0);
 
             assertThat(firedCell[0])
                 .isZero();
+        }
+
+        @Test
+        void litCarriesTheLabelAsOneRunInItsOwnColour() {
+            // A control that reads in one colour is the single run its factory builds - the bargain that
+            // keeps a plain label a plain call while the model still holds runs.
+            var checkbox = ControlSpec.Checkbox.lit(
+                new TextSpan("Muted", Color.CYAN),
+                true,
+                ControlAction.NONE);
+
+            assertThat(checkbox.labelTextSpans())
+                .containsExactly(new TextSpan("Muted", Color.CYAN));
+        }
+    }
+
+    @Nested
+    class CheckboxConstructor {
+
+        @Test
+        void constructorRejectsALabelWithNoRuns() {
+            // A control with nothing to say is not a control; the floor is held where the caller that
+            // built it is still on the stack rather than at the first measurement of an empty label.
+            assertThatThrownBy(() -> new ControlSpec.Checkbox(
+                    List.of(),
+                    ControlSpec.NO_SELECTION,
+                    ControlAction.NONE))
+                .isInstanceOf(IllegalArgumentException.class);
+        }
+    }
+
+    @Nested
+    class CheckboxContinuesWith {
+
+        @Test
+        void continuesWithAppendsTheRunAndKeepsTheRest() {
+
+            var checkbox = LabelledControlSpecs
+                .buildCheckbox("Muted", true, ControlAction.NONE)
+                .continuesWith(new TextSpan(" (recedes)", Color.YELLOW));
+
+            assertThat(checkbox.labelTextSpans())
+                .containsExactly(
+                    new TextSpan("Muted", LabelledControlSpecs.LABEL_TEXT_COLOUR),
+                    new TextSpan(" (recedes)", Color.YELLOW));
+            assertThat(checkbox.selectedIndex())
+                .isZero();
+        }
+
+        @Test
+        void labelsReadTheContinuedRunsAsOneLine() {
+            // A strip snaps a control to what its label says, not to how many colours it says it in.
+            var checkbox = LabelledControlSpecs
+                .buildCheckbox("Muted", true, ControlAction.NONE)
+                .continuesWith(new TextSpan(" (recedes)", Color.YELLOW));
+
+            assertThat(checkbox.labels())
+                .containsExactly("Muted (recedes)");
         }
     }
 
@@ -160,7 +224,8 @@ final class ControlSpecTest {
 
         @Test
         void litLightsCellZeroWhenOn() {
-            var toggle = ControlSpec.Toggle.lit("Factions", true, ControlAction.NONE);
+
+            var toggle = LabelledControlSpecs.buildToggle("Factions", true, ControlAction.NONE);
 
             assertThat(toggle.labels())
                 .containsExactly("Factions");
@@ -172,7 +237,8 @@ final class ControlSpecTest {
 
         @Test
         void litLeavesNoCellLitWhenOff() {
-            var toggle = ControlSpec.Toggle.lit("Factions", false, ControlAction.NONE);
+
+            var toggle = LabelledControlSpecs.buildToggle("Factions", false, ControlAction.NONE);
 
             assertThat(toggle.selectedIndex())
                 .isEqualTo(ControlSpec.NO_SELECTION);
@@ -180,16 +246,77 @@ final class ControlSpecTest {
     }
 
     @Nested
-    class Label {
+    class ToggleConstructor {
 
         @Test
-        void labelIsATextOnlyRowCarryingItsTextAsItsLabel() {
-            var label = new ControlSpec.Label("Non-allied factions are");
+        void constructorRejectsALabelWithNoRuns() {
+            assertThatThrownBy(() -> new ControlSpec.Toggle(
+                    List.of(),
+                    ControlSpec.NO_SELECTION,
+                    ControlAction.NONE))
+                .isInstanceOf(IllegalArgumentException.class);
+        }
+    }
 
-            assertThat(label.text())
-                .isEqualTo("Non-allied factions are");
+    @Nested
+    class ToggleContinuesWith {
+
+        @Test
+        void continuesWithAppendsTheRunAndKeepsTheRest() {
+
+            var toggle = LabelledControlSpecs
+                .buildToggle("Factions", true, ControlAction.NONE)
+                .continuesWith(new TextSpan(" 3", Color.YELLOW));
+
+            assertThat(toggle.labelTextSpans())
+                .containsExactly(
+                    new TextSpan("Factions", LabelledControlSpecs.LABEL_TEXT_COLOUR),
+                    new TextSpan(" 3", Color.YELLOW));
+            assertThat(toggle.selectedIndex())
+                .isZero();
+        }
+    }
+
+    @Nested
+    class LabelCreateLabel {
+
+        @Test
+        void createLabelIsATextOnlyRowCarryingItsRunAsItsLabel() {
+
+            var label = ControlSpec.Label.createLabel(
+                new TextSpan("Non-allied factions are", Color.CYAN));
+
+            assertThat(label.labelTextSpans())
+                .containsExactly(new TextSpan("Non-allied factions are", Color.CYAN));
             assertThat(label.labels())
                 .containsExactly("Non-allied factions are");
+        }
+    }
+
+    @Nested
+    class LabelConstructor {
+
+        @Test
+        void constructorRejectsALabelWithNoRuns() {
+            assertThatThrownBy(() -> new ControlSpec.Label(List.of()))
+                .isInstanceOf(IllegalArgumentException.class);
+        }
+    }
+
+    @Nested
+    class LabelContinuesWith {
+
+        @Test
+        void continuesWithAppendsTheRun() {
+
+            var label = LabelledControlSpecs
+                .buildLabel("Non-allied factions are")
+                .continuesWith(new TextSpan(" hidden", Color.YELLOW));
+
+            assertThat(label.labelTextSpans())
+                .containsExactly(
+                    new TextSpan("Non-allied factions are", LabelledControlSpecs.LABEL_TEXT_COLOUR),
+                    new TextSpan(" hidden", Color.YELLOW));
         }
     }
 
@@ -490,6 +617,7 @@ final class ControlSpecTest {
 
         @Test
         void shortcutAtIsTheTabsHintWhenItHasOne() {
+
             var tabs = new ControlSpec.Tabs(
                 List.of("No Layer", "Political Map"),
                 List.of("N", "P"),
@@ -611,6 +739,7 @@ final class ControlSpecTest {
 
         @Test
         void hasTrailingCaptionIsFalseOnAPlainRow() {
+
             var radio = ControlSpec.HorizontalRadio.of(List.of("Short", "Full"), 0, ControlAction.NONE);
 
             assertThat(radio.hasTrailingCaption())
@@ -619,6 +748,7 @@ final class ControlSpecTest {
 
         @Test
         void hasTrailingCaptionIsTrueOnACaptionedRow() {
+            
             var radio = ControlSpec.HorizontalRadio.of(List.of("Short", "Full"), 0, ControlAction.NONE)
                 .showsCaption("Names");
 

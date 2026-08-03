@@ -5,7 +5,9 @@ import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.SegmentSizing;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
+import kmlib.starsector.ui.text.LabelRuns;
 import kmlib.starsector.ui.text.StyledSpanMeasurer;
+import kmlib.starsector.ui.text.TextSpan;
 import kmlib.starsector.ui.widgets.IconLabelRow;
 import kmlib.starsector.ui.widgets.RadioRow;
 import kmlib.starsector.ui.widgets.segments.HorizontalSegments;
@@ -458,13 +460,13 @@ public final class ControlStripLayout {
         if (spec instanceof ControlSpec.Checkbox checkbox) {
             return CONTROL_ROW_HEIGHT
                 + CHECKBOX_LABEL_GAP
-                + measureWidth(measurer, checkbox.label());
+                + measureLabelWidth(checkbox.labelTextSpans(), measurer);
         }
         if (spec instanceof ControlSpec.Toggle toggle) {
-            return measureWidth(measurer, toggle.label()) + TOGGLE_TEXT_PADDING;
+            return measureLabelWidth(toggle.labelTextSpans(), measurer) + TOGGLE_TEXT_PADDING;
         }
         if (spec instanceof ControlSpec.Label label) {
-            return measureWidth(measurer, label.text());
+            return measureLabelWidth(label.labelTextSpans(), measurer);
         }
         if (spec instanceof ControlSpec.HorizontalRadio radio) {
             return HorizontalSegments.measureRowWidth(
@@ -576,13 +578,26 @@ public final class ControlStripLayout {
         for (var labelledRow : table.labelledRows()) {
             var rowWidth = IconLabelRow.measureRowWidth(
                 CONTROL_ROW_HEIGHT,
-                measureWidth(measurer, labelledRow.resolveLabelText()),
+                measureLabelWidth(labelledRow.labelTextSpans(), measurer),
                 labelledRow.leadingRowSlot().isFilled(),
                 labelledRow.trailingRowSlot().computeWidth(CONTROL_ROW_HEIGHT, spanMeasurer));
 
             widest = Math.max(widest, rowWidth);
         }
         return widest;
+    }
+
+    // The width a label occupies at the body face: its runs laid out as one sentence, so a label that
+    // picks a stretch of itself out in another colour is charged the gap between its runs as well as
+    // their glyphs. Every label a control carries is measured through this, so a control snapped to its
+    // text is snapped to exactly what the renderer will lay into it run by run.
+    private static float measureLabelWidth(
+            List<TextSpan> labelTextSpans,
+            LineWidthMeasurer measurer) {
+
+        return LabelRuns
+            .measureRunOffsets(labelTextSpans, bindBodySpanMeasurer(measurer))
+            .runsWidth();
     }
 
     // The body-line measurement bound to the face and size the strip paints its rows in, so a slot

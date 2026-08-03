@@ -1,8 +1,8 @@
 package kmlib.starsector.ui.widgets;
 
+import kmlib.starsector.ui.text.LabelRuns;
 import kmlib.starsector.ui.text.TextSpan;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -12,12 +12,12 @@ import java.util.Objects;
  * whichever row model happens to carry it. A widget composes it and adds only what is genuinely its
  * own, so the parts they share stay one shape rather than three that cannot be handed to each other.
  *
- * <p>A label is a list of {@link TextSpan} runs read as one sentence: each run starts where the one
- * before it measured out, so a line can pick one stretch of itself out in another colour without that
- * stretch becoming a column. It is required and never empty - a row with no label is not a row, and
- * that floor is what stops the model dissolving into a bag of optional parts with no centre. A
- * one-colour label is the list of one that {@link #createRow} builds, so a caller that never needs a
- * second colour never sees the list.
+ * <p>A label is a list of {@link TextSpan} runs read as one sentence, composed by {@link LabelRuns}:
+ * each run starts where the one before it measured out, so a line can pick one stretch of itself out in
+ * another colour without that stretch becoming a column. It is required and never empty - a row with no
+ * label is not a row, and that floor is what stops the model dissolving into a bag of optional parts
+ * with no centre. A one-colour label is the list of one that {@link #createRow} builds, so a caller that
+ * never needs a second colour never sees the list.
  *
  * <p>Each flank is a {@link RowSlot}, so what a row leads and trails with is one component either side
  * whatever kind of thing it turns out to be, and a flank it does not fill is a slot like any other.
@@ -52,7 +52,7 @@ public record LabelledRow(
     public LabelledRow {
         Objects.requireNonNull(leadingRowSlot, "leadingRowSlot");
         Objects.requireNonNull(trailingRowSlot, "trailingRowSlot");
-        labelTextSpans = copyLabelTextSpans(labelTextSpans);
+        labelTextSpans = LabelRuns.copyRuns(labelTextSpans);
     }
 
     /**
@@ -92,7 +92,7 @@ public record LabelledRow(
     public LabelledRow continuesWith(TextSpan runTextSpan) {
         return new LabelledRow(
             leadingRowSlot,
-            appendLabelTextSpan(labelTextSpans, runTextSpan),
+            LabelRuns.appendRun(labelTextSpans, runTextSpan),
             trailingRowSlot);
     }
 
@@ -108,57 +108,12 @@ public record LabelledRow(
     }
 
     /**
-     * The whole label as one line: its runs' text in reading order, joined. For a surface that lays a
-     * label in a single draw and charges it a single measurement, where each run's own anchor is never
-     * worked out and so the runs read as the one sentence they already are.
-     *
-     * <p>The colours do not survive the join, since one line drawn once draws in one colour. A surface
-     * that picks a run out in its own colour reads the runs themselves rather than this.
+     * The whole label as one line, its runs {@linkplain LabelRuns#resolveLineText joined} - for a
+     * surface that lays the label in a single draw and charges it a single measurement.
      *
      * @return the label's runs joined into one line
      */
     public String resolveLabelText() {
-        var labelText = new StringBuilder();
-        for (var textSpan : labelTextSpans) {
-            labelText.append(textSpan.text());
-        }
-        return labelText.toString();
-    }
-
-    /**
-     * Returns {@code labelTextSpans} with {@code runTextSpan} appended - the label's runs read as one
-     * sentence, so a run is added to what is already there rather than replacing it, and a second colour
-     * never costs a caller the first. Held here beside the floor so that everything carrying a label
-     * continues one the same way.
-     *
-     * @param labelTextSpans the label's runs so far, left as they are
-     * @param runTextSpan    the run continuing the label
-     * @return the runs with that one last, for the caller's own constructor to hold to the floor
-     */
-    static List<TextSpan> appendLabelTextSpan(List<TextSpan> labelTextSpans, TextSpan runTextSpan) {
-        var continuedTextSpans = new ArrayList<>(labelTextSpans);
-        continuedTextSpans.add(runTextSpan);
-        return continuedTextSpans;
-    }
-
-    /**
-     * Copies a label's runs and rejects an empty or null-bearing one, where the caller that built it is
-     * still on the stack. The floor a label is held to lives here rather than at each thing that carries
-     * one, so a line whose label is all it holds cannot be held to a looser rule than a line with slots
-     * around it.
-     *
-     * <p>A label with no runs at all is not a line, and a null run otherwise surfaces inside a
-     * measurement or a draw call, well past the point that could say which line was meant.
-     *
-     * @param labelTextSpans the label's runs in reading order
-     * @return an immutable copy of the runs
-     */
-    static List<TextSpan> copyLabelTextSpans(List<TextSpan> labelTextSpans) {
-        Objects.requireNonNull(labelTextSpans, "labelTextSpans");
-        var copiedTextSpans = List.copyOf(labelTextSpans);
-        if (copiedTextSpans.isEmpty()) {
-            throw new IllegalArgumentException("labelTextSpans must carry at least one run");
-        }
-        return copiedTextSpans;
+        return LabelRuns.resolveLineText(labelTextSpans);
     }
 }

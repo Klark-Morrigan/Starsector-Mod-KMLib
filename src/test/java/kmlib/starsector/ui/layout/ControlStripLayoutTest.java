@@ -3,6 +3,7 @@ package kmlib.starsector.ui.layout;
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.ControlAction;
 import kmlib.starsector.ui.controls.ControlSpec;
+import kmlib.starsector.ui.controls.LabelledControlSpecs;
 import kmlib.starsector.ui.controls.ReselectBehaviour;
 import kmlib.starsector.ui.controls.SegmentSizing;
 import kmlib.starsector.ui.controls.VerticalTableSpecs;
@@ -59,7 +60,8 @@ final class ControlStripLayoutTest {
             // "Muted" is 5 chars; a checkbox row is the tick box, a gap, then the label, and the body
             // adds the inset on each side.
             var measurement = ControlStripLayout.measureStrip(
-                List.<ControlSpec>of(ControlSpec.Checkbox.lit("Muted", false, ControlAction.NONE)),
+                List.<ControlSpec>of(
+                    LabelledControlSpecs.buildCheckbox("Muted", false, ControlAction.NONE)),
                 measurerFake);
 
             var expectedRow = ControlStripLayout.CONTROL_ROW_HEIGHT
@@ -72,12 +74,51 @@ final class ControlStripLayoutTest {
         }
 
         @Test
+        void measureStripChargesAContinuedLabelBothRunsAndTheGapBetweenThem() {
+            // A control that picks part of its label out in another colour is drawn run by run, so the
+            // row it is snapped into has to hold the runs and the word gap parting them - "Muted" (5) and
+            // "on" (2) at 10 per character, plus the 6-unit run gap.
+            var checkbox = LabelledControlSpecs
+                .buildCheckbox("Muted", false, ControlAction.NONE)
+                .continuesWith(LabelledControlSpecs.buildLabelSpan("on"));
+
+            var measurement = ControlStripLayout.measureStrip(
+                List.<ControlSpec>of(checkbox),
+                measurerFake);
+
+            var expectedRow = ControlStripLayout.CONTROL_ROW_HEIGHT
+                + ControlStripLayout.CHECKBOX_LABEL_GAP
+                + 5 * WIDTH_PER_CHAR
+                + 6f
+                + 2 * WIDTH_PER_CHAR;
+
+            assertThat(measurement.rowWidths().get(0))
+                .isCloseTo(expectedRow, within(TOLERANCE));
+        }
+
+        @Test
+        void measureStripChargesABlankRunNoGapAndNoWidth() {
+            // A host assembling a run from parts and coming up empty gets the row it would have had
+            // without that run, rather than one widened for glyphs that will never be painted.
+            var caption = LabelledControlSpecs
+                .buildLabel("Names")
+                .continuesWith(LabelledControlSpecs.buildLabelSpan(""));
+
+            var measurement = ControlStripLayout.measureStrip(
+                List.<ControlSpec>of(caption),
+                measurerFake);
+
+            assertThat(measurement.rowWidths().get(0))
+                .isCloseTo(5 * WIDTH_PER_CHAR, within(TOLERANCE));
+        }
+
+        @Test
         void measureStripSumsRowHeightsAndGapsPlusInset() {
             
             var measurement = ControlStripLayout.measureStrip(
                 List.<ControlSpec>of(
-                    ControlSpec.Checkbox.lit("A", false, ControlAction.NONE),
-                    ControlSpec.Checkbox.lit("B", false, ControlAction.NONE)),
+                    LabelledControlSpecs.buildCheckbox("A", false, ControlAction.NONE),
+                    LabelledControlSpecs.buildCheckbox("B", false, ControlAction.NONE)),
                 measurerFake);
 
             // Two rows: twice the row height, one gap between them, and the inset top and bottom.
@@ -163,7 +204,7 @@ final class ControlStripLayoutTest {
             // full framed body only at placement, once a host has framed the body rectangle.
             var specs = List.<ControlSpec>of(
                 new ControlSpec.Divider(),
-                ControlSpec.Checkbox.lit("Muted", false, ControlAction.NONE));
+                LabelledControlSpecs.buildCheckbox("Muted", false, ControlAction.NONE));
 
             var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
 
@@ -175,7 +216,7 @@ final class ControlStripLayoutTest {
         void measureStripDoesNotLetADividerDriveTheBodyWidth() {
             // The divider measures zero and is spanned only at placement, so a strip of only a
             // checkbox measures the same body width whether or not a divider heads it.
-            var checkbox = ControlSpec.Checkbox.lit("Muted", false, ControlAction.NONE);
+            var checkbox = LabelledControlSpecs.buildCheckbox("Muted", false, ControlAction.NONE);
             var withoutDivider = ControlStripLayout.measureStrip(List.<ControlSpec>of(checkbox), measurerFake);
             var withDivider = ControlStripLayout.measureStrip(
                 List.<ControlSpec>of(new ControlSpec.Divider(), checkbox),
@@ -340,8 +381,8 @@ final class ControlStripLayoutTest {
             // The group lays its two columns across one row, so it is as wide as the left column, the
             // gap parting them, and the right column - not one column's width.
             var pair = new ControlSpec.SideBySide(
-                List.of(ControlSpec.Checkbox.lit("L", false, ControlAction.NONE)),
-                List.of(ControlSpec.Checkbox.lit("RR", false, ControlAction.NONE)));
+                List.of(LabelledControlSpecs.buildCheckbox("L", false, ControlAction.NONE)),
+                List.of(LabelledControlSpecs.buildCheckbox("RR", false, ControlAction.NONE)));
 
             var measurement = ControlStripLayout.measureStrip(List.<ControlSpec>of(pair), measurerFake);
 
@@ -365,9 +406,9 @@ final class ControlStripLayoutTest {
             // as the two-row left column - its taller side - and the right column top-aligns within it.
             var pair = new ControlSpec.SideBySide(
                 List.of(
-                    ControlSpec.Checkbox.lit("A", false, ControlAction.NONE),
-                    ControlSpec.Checkbox.lit("B", false, ControlAction.NONE)),
-                List.of(ControlSpec.Checkbox.lit("C", false, ControlAction.NONE)));
+                    LabelledControlSpecs.buildCheckbox("A", false, ControlAction.NONE),
+                    LabelledControlSpecs.buildCheckbox("B", false, ControlAction.NONE)),
+                List.of(LabelledControlSpecs.buildCheckbox("C", false, ControlAction.NONE)));
 
             var measurement = ControlStripLayout.measureStrip(List.<ControlSpec>of(pair), measurerFake);
 
@@ -416,7 +457,8 @@ final class ControlStripLayoutTest {
 
         @Test
         void layoutControlsStacksTheFirstRowFromTheBodyTopLeftInset() {
-            var specs = List.<ControlSpec>of(ControlSpec.Checkbox.lit("Muted", false, ControlAction.NONE));
+            var specs = List.<ControlSpec>of(
+                LabelledControlSpecs.buildCheckbox("Muted", false, ControlAction.NONE));
             var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
 
             var controls = ControlStripLayout.layoutControls(
@@ -578,7 +620,8 @@ final class ControlStripLayoutTest {
         @Test
         void layoutControlsLeavesACheckboxWithoutSegments() {
 
-            var specs = List.<ControlSpec>of(ControlSpec.Checkbox.lit("Muted", false, ControlAction.NONE));
+            var specs = List.<ControlSpec>of(
+                LabelledControlSpecs.buildCheckbox("Muted", false, ControlAction.NONE));
             var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
             var controls = ControlStripLayout.layoutControls(
                 frameBody(measurement),
@@ -594,7 +637,7 @@ final class ControlStripLayoutTest {
         @Test
         void layoutControlsLeavesALabelWithoutSegments() {
 
-            var specs = List.<ControlSpec>of(new ControlSpec.Label("Non-allied factions are"));
+            var specs = List.<ControlSpec>of(LabelledControlSpecs.buildLabel("Non-allied factions are"));
             var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
             var controls = ControlStripLayout.layoutControls(
                 frameBody(measurement),
@@ -613,7 +656,7 @@ final class ControlStripLayoutTest {
             // segments like a caption does.
             var specs = List.<ControlSpec>of(
                 new ControlSpec.Divider(),
-                ControlSpec.Checkbox.lit("Muted", false, ControlAction.NONE));
+                LabelledControlSpecs.buildCheckbox("Muted", false, ControlAction.NONE));
 
             var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
             var controls = ControlStripLayout.layoutControls(
@@ -634,7 +677,7 @@ final class ControlStripLayoutTest {
             // than stopping at the padded content column.
             var specs = List.<ControlSpec>of(
                 new ControlSpec.Divider(),
-                ControlSpec.Checkbox.lit("Muted", false, ControlAction.NONE));
+                LabelledControlSpecs.buildCheckbox("Muted", false, ControlAction.NONE));
 
             var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
             var body = frameBody(measurement);
@@ -671,8 +714,8 @@ final class ControlStripLayoutTest {
             // The group is not laid out as one control: it expands into its two children, the left at
             // the body inset and the right one left-column-width plus the column gap to its right, both
             // hanging from the group's top.
-            var left = ControlSpec.Checkbox.lit("L", false, ControlAction.NONE);
-            var right = ControlSpec.Checkbox.lit("RR", false, ControlAction.NONE);
+            var left = LabelledControlSpecs.buildCheckbox("L", false, ControlAction.NONE);
+            var right = LabelledControlSpecs.buildCheckbox("RR", false, ControlAction.NONE);
             var specs = List.<ControlSpec>of(new ControlSpec.SideBySide(List.of(left), List.of(right)));
             var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
             var controls = ControlStripLayout.layoutControls(
@@ -713,11 +756,11 @@ final class ControlStripLayoutTest {
         void layoutControlsStacksASideBySideColumnTopToBottom() {
             // A column is a vertical run like the top-level strip: its two children stack (the first
             // above the second), abutting with one row gap between them.
-            var top = ControlSpec.Checkbox.lit("A", false, ControlAction.NONE);
-            var bottom = ControlSpec.Checkbox.lit("B", false, ControlAction.NONE);
+            var top = LabelledControlSpecs.buildCheckbox("A", false, ControlAction.NONE);
+            var bottom = LabelledControlSpecs.buildCheckbox("B", false, ControlAction.NONE);
             var specs = List.<ControlSpec>of(new ControlSpec.SideBySide(
                 List.of(top, bottom),
-                List.of(ControlSpec.Checkbox.lit("C", false, ControlAction.NONE))));
+                List.of(LabelledControlSpecs.buildCheckbox("C", false, ControlAction.NONE))));
 
             var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
             var controls = ControlStripLayout.layoutControls(

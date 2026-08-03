@@ -73,7 +73,7 @@ and would tie the value to a single surface, which is the first argument again.
 | --- | --- | --- | --- |
 | a run of text and its colour | [`TextSpan`](text/TextSpan.java) | [`Highlight`](highlight/Highlight.java) | [`LabelRenderer`](render/gl/LabelRenderer.java) |
 | where text sits at its draw point | [`TextAlignment`](text/TextAlignment.java) | `api.ui.Alignment` | `LazyFont.TextAnchor` |
-| a line with parts in other colours | a label's runs, on [`LabelledRow`](widgets/LabelledRow.java) or [`TooltipRow`](widgets/TooltipRow.java) | [`HighlightedParagraph`](highlight/HighlightedParagraph.java) | [`CursorTooltipRenderer`](render/gl/CursorTooltipRenderer.java) |
+| a line with parts in other colours | a label's runs ([`LabelRuns`](text/LabelRuns.java)), on [`LabelledRow`](widgets/LabelledRow.java), [`TooltipRow`](widgets/TooltipRow.java), or a labelled [`ControlSpec`](controls/ControlSpec.java) control | [`HighlightedParagraph`](highlight/HighlightedParagraph.java) | [`CursorTooltipRenderer`](render/gl/CursorTooltipRenderer.java) |
 | a hover tooltip | [`CursorTooltip`](widgets/CursorTooltip.java) | [`Tooltips`](tooltip/Tooltips.java) | [`CursorTooltipRenderer`](render/gl/CursorTooltipRenderer.java) |
 | the width of a run | [`TextSpanMeasurer`](font/TextSpanMeasurer.java) | - | [`LazyFontSpanMeasurer`](font/LazyFontSpanMeasurer.java) |
 
@@ -216,8 +216,8 @@ standing for a count is not prose.
 
 | Package | Tier | Holds |
 | --- | --- | --- |
-| [`text`](text/) | neutral | `TextSpan`, `TextStyle`, `TextAlignment`, `StyledSpanMeasurer` |
-| [`controls`](controls/) | neutral | the sealed `ControlSpec` set and its enums; a stacked table's rows are `widgets`' own [`LabelledRow`](widgets/LabelledRow.java), so a strip and a tooltip are laid out against one row model |
+| [`text`](text/) | neutral | `TextSpan`, `TextStyle`, `TextAlignment`, `StyledSpanMeasurer`, and [`LabelRuns`](text/LabelRuns.java) - how a label's runs compose into one line, read by every surface that lays one |
+| [`controls`](controls/) | neutral | the sealed `ControlSpec` set and its enums; a control's own label is runs like any other label, and a stacked table's rows are `widgets`' own [`LabelledRow`](widgets/LabelledRow.java), so a strip and a tooltip are laid out against one row model |
 | [`widgets`](widgets/) | neutral | the shared `LabelledRow` core, its `RowSlot` flanks, and the row and box content and geometry built on them ([`tabs`](widgets/tabs/), [`scroll`](widgets/scroll/), [`segments`](widgets/segments/), [`lists`](widgets/lists/)) |
 | [`layout`](layout/) | neutral | box placement, strips, padding, screen anchors |
 | [`label`](label/) | neutral | label fitting, plus the length-estimator port |

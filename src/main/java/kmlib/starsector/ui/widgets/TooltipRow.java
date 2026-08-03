@@ -1,5 +1,6 @@
 package kmlib.starsector.ui.widgets;
 
+import kmlib.starsector.ui.text.LabelRuns;
 import kmlib.starsector.ui.text.TextSpan;
 
 import java.util.List;
@@ -322,7 +323,7 @@ public sealed interface TooltipRow {
          * whichever way the box lays it.
          */
         public CentredRow {
-            labelTextSpans = LabelledRow.copyLabelTextSpans(labelTextSpans);
+            labelTextSpans = LabelRuns.copyRuns(labelTextSpans);
         }
 
         @Override
@@ -330,7 +331,7 @@ public sealed interface TooltipRow {
             return new CentredRow(
                 lineStyle,
                 hasSectionBreak,
-                LabelledRow.appendLabelTextSpan(labelTextSpans, runTextSpan));
+                LabelRuns.appendRun(labelTextSpans, runTextSpan));
         }
 
         @Override

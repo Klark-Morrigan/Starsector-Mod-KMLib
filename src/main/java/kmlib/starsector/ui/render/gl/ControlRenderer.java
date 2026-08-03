@@ -5,9 +5,13 @@ import kmlib.starsector.ui.colour.StarsectorUiColour;
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.RowGeometry;
+import kmlib.starsector.ui.font.LazyFontSpanMeasurer;
 import kmlib.starsector.ui.font.TextFace;
 import kmlib.starsector.ui.input.UiCursor;
 import kmlib.starsector.ui.layout.ControlStripLayout;
+import kmlib.starsector.ui.text.LabelRuns;
+import kmlib.starsector.ui.text.StyledSpanMeasurer;
+import kmlib.starsector.ui.text.TextSpan;
 import kmlib.starsector.ui.widgets.Checkbox;
 import kmlib.starsector.ui.widgets.IconLabelRow;
 import kmlib.starsector.ui.widgets.LabelledRow;
@@ -26,6 +30,11 @@ import java.util.List;
  * the widget; what the control means stays with whoever built the spec, so this draws a faction toggle or
  * a sort selector the same way without learning either.
  *
+ * <p>A label a control authored as several runs is drawn run by run, each in its own colour, so a
+ * caller picking a stretch of a label out gets it picked out here. Text that is not authored as spans -
+ * a radio's option labels, a trailing caption - is drawn in the vanilla text tone, the one place that
+ * default is decided.
+ *
  * <p>It composes the per-kind KMLib renderers ({@link CheckboxRenderer}, {@link RadioRowRenderer}, {@link
  * IconRadioListRenderer}, {@link ToggleButton}, {@link DividerRenderer}, {@link VanillaTabStripRenderer})
  * and the shared label paint, so a host renders a whole strip of controls by calling this per control. The
@@ -34,6 +43,11 @@ import java.util.List;
  * body does not leak a buffer per frame.
  */
 public final class ControlRenderer {
+
+    // The run count a label drawn from its left edge needs no offset walk for - the one-colour label
+    // most controls carry.
+    private static final int SINGLE_RUN = 1;
+
     private ControlRenderer() {
     }
 
@@ -112,12 +126,11 @@ public final class ControlRenderer {
             + box.width()
             + ControlStripLayout.CHECKBOX_LABEL_GAP;
 
-        drawBodyLabel(
+        drawBodyLabelRuns(
             paint,
-            spec.label(),
+            spec.labelTextSpans(),
             labelX,
-            bounds.computeCenterY(),
-            LazyFont.TextAnchor.CENTER_LEFT);
+            bounds.computeCenterY());
     }
 
     // A radio group: the segments framed and the active one washed, then its labels. A table lays each
@@ -213,12 +226,11 @@ public final class ControlRenderer {
                 segment,
                 labelledRow.leadingRowSlot().isFilled());
 
-            drawBodyLabel(
+            drawBodyLabelRuns(
                 paint,
-                labelledRow.resolveLabelText(),
+                labelledRow.labelTextSpans(),
                 labelX,
-                segment.computeCenterY(),
-                LazyFont.TextAnchor.CENTER_LEFT);
+                segment.computeCenterY());
 
             drawTrailingRowSlot(
                 labelledRow.trailingRowSlot(),
@@ -259,14 +271,14 @@ public final class ControlRenderer {
             return;
         }
         if (trailingRowSlot instanceof RowSlot.Text text && text.textSpan().hasText()) {
-            // Drawn at the body size - the same size the layout reserved the column at.
-            drawBodyLabel(
+            // Drawn at the body size - the same size the layout reserved the column at - and in the run's
+            // own colour, so a value the row picked out reads as picked out here too.
+            drawBodySpan(
                 paint,
-                text.textSpan().text(),
+                text.textSpan(),
                 IconLabelRow.computeTrailingAnchorX(segment),
                 segment.computeCenterY(),
-                LazyFont.TextAnchor.CENTER_RIGHT,
-                ControlStripLayout.BODY_FONT_SIZE);
+                LazyFont.TextAnchor.CENTER_RIGHT);
         }
     }
 
@@ -284,12 +296,11 @@ public final class ControlRenderer {
             accent,
             paint.opacity());
 
-        drawBodyLabel(
+        drawCentredBodyLabelRuns(
             paint,
-            spec.label(),
+            spec.labelTextSpans(),
             bounds.computeCenterX(),
-            bounds.computeCenterY(),
-            LazyFont.TextAnchor.CENTER);
+            bounds.computeCenterY());
     }
 
     // A divider row: a single hairline centred across the row in the accent, parting one run of controls
@@ -303,46 +314,135 @@ public final class ControlRenderer {
     private static void drawLabelRow(Control control, ControlPaint paint) {
         var spec = (ControlSpec.Label) control.spec();
         var bounds = control.bounds();
-        drawBodyLabel(
+        drawBodyLabelRuns(
             paint,
-            spec.text(),
+            spec.labelTextSpans(),
             bounds.x(),
-            bounds.computeCenterY(),
-            LazyFont.TextAnchor.CENTER_LEFT);
+            bounds.computeCenterY());
     }
 
-    // Draws one body label at the body font size (the common case), delegating to the explicit-size draw.
+    // Draws a label's runs from leftX rightwards, each at the offset the runs measured out to and in its
+    // own colour, so a control calling part of its label out reads that way here. Anchored run by run
+    // rather than laid as one string: a batched draw would flatten the runs to a single colour, which is
+    // the whole of what a second run buys a caller.
+    private static void drawBodyLabelRuns(
+            ControlPaint paint,
+            List<TextSpan> labelTextSpans,
+            float leftX,
+            float centreY) {
+
+        // A label of one run starts at leftX whatever it measures, so the walk that exists to find the
+        // next run's anchor is skipped - a list of rows is redrawn every frame, and each row would
+        // otherwise be measured a second time to learn an offset that is always zero.
+        if (labelTextSpans.size() == SINGLE_RUN) {
+            drawBodySpan(
+                paint,
+                labelTextSpans.get(0),
+                leftX,
+                centreY,
+                LazyFont.TextAnchor.CENTER_LEFT);
+            return;
+        }
+
+        drawLabelRunsFrom(
+            paint,
+            labelTextSpans,
+            leftX,
+            centreY,
+            measureBodyLabelRuns(paint, labelTextSpans));
+    }
+
+    // The same runs set about centreX: the label's whole measured span is centred as one, so the runs
+    // stay one sentence rather than each centring on its own. Measured once and handed on, so the width
+    // the placement is derived from and the offsets the runs are drawn at cannot disagree.
+    private static void drawCentredBodyLabelRuns(
+            ControlPaint paint,
+            List<TextSpan> labelTextSpans,
+            float centreX,
+            float centreY) {
+
+        var runOffsets = measureBodyLabelRuns(paint, labelTextSpans);
+        drawLabelRunsFrom(
+            paint,
+            labelTextSpans,
+            centreX - runOffsets.runsWidth() / 2f,
+            centreY,
+            runOffsets);
+    }
+
+    // Draws each run at its own measured offset from leftX, vertically centred on the row. A blank run
+    // paints nothing and was charged nothing, so it needs no branch of its own here.
+    private static void drawLabelRunsFrom(
+            ControlPaint paint,
+            List<TextSpan> labelTextSpans,
+            float leftX,
+            float centreY,
+            LabelRuns.LabelRunOffsets runOffsets) {
+
+        for (var index = 0; index < labelTextSpans.size(); index++) {
+            drawBodySpan(
+                paint,
+                labelTextSpans.get(index),
+                leftX + runOffsets.runOffsetXs().get(index),
+                centreY,
+                LazyFont.TextAnchor.CENTER_LEFT);
+        }
+    }
+
+    // Where a label's runs measure out to at the body face, through the same one-sentence rule the strip
+    // layout snapped the control to - so what is drawn fits the room that was reserved for it.
+    private static LabelRuns.LabelRunOffsets measureBodyLabelRuns(
+            ControlPaint paint,
+            List<TextSpan> labelTextSpans) {
+
+        return LabelRuns.measureRunOffsets(labelTextSpans, bindBodySpanMeasurer(paint));
+    }
+
+    // The body-line measurement bound to the face and size this pass paints in, so a run charges its own
+    // width without the walk above learning which face it will be drawn in.
+    private static StyledSpanMeasurer bindBodySpanMeasurer(ControlPaint paint) {
+        var bodyFace = new TextFace(
+            paint.style().bodyFont(),
+            ControlStripLayout.BODY_FONT_SIZE);
+
+        return textSpan -> LazyFontSpanMeasurer.measureSpanWidth(bodyFace, textSpan.text());
+    }
+
+    // Draws one plain label in the vanilla text colour - the tone a control's text reads in unless its
+    // own content named another, which is what a label authored as spans does. The one place that
+    // decision is made, so the segment labels, the trailing caption, and any other unspanned text agree.
     private static void drawBodyLabel(
             ControlPaint paint,
             String text,
             float x,
             float y,
             LazyFont.TextAnchor anchor) {
-        drawBodyLabel(
+
+        drawBodySpan(
             paint,
-            text,
+            new TextSpan(text, StarsectorUiColour.VANILLA_TEXT.resolve()),
             x,
             y,
-            anchor,
-            ControlStripLayout.BODY_FONT_SIZE);
+            anchor);
     }
 
-    // Draws one body label in the vanilla text colour, faded by opacity, at the given anchor and size,
-    // through the shared label primitive so the control text and any other KM UI text share one cache.
-    private static void drawBodyLabel(
+    // Draws one span at the body size in its own colour, faded by opacity, through the shared label
+    // primitive so the control text and any other KM UI text share one cache.
+    private static void drawBodySpan(
             ControlPaint paint,
-            String text,
+            TextSpan textSpan,
             float x,
             float y,
-            LazyFont.TextAnchor anchor,
-            double fontSize) {
+            LazyFont.TextAnchor anchor) {
+
         var labelStyle = new LabelStyle(
             new TextFace(
                 paint.style().bodyFont(),
-                fontSize),
-            StarsectorUiColour.VANILLA_TEXT.resolve(),
+                ControlStripLayout.BODY_FONT_SIZE),
+            textSpan.colour(),
             paint.opacity());
-        LabelRenderer.render(labelStyle, text, x, y, anchor);
+
+        LabelRenderer.render(labelStyle, textSpan.text(), x, y, anchor);
     }
 
     // The look bundle plus the frame's alpha, threaded together through every draw so a helper takes one

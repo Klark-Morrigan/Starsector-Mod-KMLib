@@ -3,6 +3,7 @@ package kmlib.starsector.ui.layout;
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.ControlAction;
 import kmlib.starsector.ui.controls.ControlSpec;
+import kmlib.starsector.ui.controls.LabelledControlSpecs;
 import kmlib.starsector.ui.controls.ReselectBehaviour;
 import kmlib.starsector.ui.controls.VerticalTableSpecs;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
@@ -47,13 +48,13 @@ final class PanelLayoutTest {
     // two-option radio with a trailing caption, and a toggle. The layout snaps and stacks by geometry
     // alone, so each control's lit state is left unset here.
     private static final List<ControlSpec> BODY = List.of(
-        ControlSpec.Checkbox.lit("Uninhabited systems", false, ControlAction.NONE),
+        LabelledControlSpecs.buildCheckbox("Uninhabited systems", false, ControlAction.NONE),
         ControlSpec.HorizontalRadio.of(
                 List.of("Short", "Full"),
                 ControlSpec.NO_SELECTION,
                 ControlAction.NONE)
             .showsCaption("Names"),
-        ControlSpec.Toggle.lit("Factions", false, ControlAction.NONE));
+        LabelledControlSpecs.buildToggle("Factions", false, ControlAction.NONE));
 
     // Content is inset from the box by the border on every edge; with no header the body hangs straight
     // from the inset content top.
@@ -190,7 +191,7 @@ final class PanelLayoutTest {
             var basePlacement = place(BODY);
             var appended = new ArrayList<>(BODY);
 
-            appended.add(ControlSpec.Checkbox.lit("Muted", false, ControlAction.NONE));
+            appended.add(LabelledControlSpecs.buildCheckbox("Muted", false, ControlAction.NONE));
 
             var grownPlacement = place(List.copyOf(appended));
 
@@ -261,7 +262,9 @@ final class PanelLayoutTest {
         void computePlacementSnapsALabelRowToItsMeasuredText() {
 
             var caption = "Non-allied factions are";
-            var label = place(List.<ControlSpec>of(new ControlSpec.Label(caption))).bodyControls().get(0);
+            var label = place(List.<ControlSpec>of(LabelledControlSpecs.buildLabel(caption)))
+                .bodyControls()
+                .get(0);
 
             // A caption has no widget chrome, so its row is exactly its text width and one row tall.
             assertThat(label.bounds().width())
@@ -384,8 +387,8 @@ final class PanelLayoutTest {
             ControlAction.NONE).asScrolling();
             
         return List.of(
-            ControlSpec.Checkbox.lit("Header", false, ControlAction.NONE),
+            LabelledControlSpecs.buildCheckbox("Header", false, ControlAction.NONE),
             list,
-            ControlSpec.Checkbox.lit("Footer", false, ControlAction.NONE));
+            LabelledControlSpecs.buildCheckbox("Footer", false, ControlAction.NONE));
     }
 }

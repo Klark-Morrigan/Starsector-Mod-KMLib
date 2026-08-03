@@ -1,5 +1,7 @@
 package kmlib.starsector.ui.controls;
 
+import kmlib.starsector.ui.text.LabelRuns;
+import kmlib.starsector.ui.text.TextSpan;
 import kmlib.starsector.ui.widgets.LabelledRow;
 import kmlib.text.KmlibStrings;
 
@@ -41,9 +43,10 @@ public sealed interface ControlSpec {
     String NO_TRAILING_CAPTION = "";
 
     /**
-     * The control's own label(s): one for a checkbox, toggle, or caption, one per option for a radio,
-     * table, or tab (in segment order), and none for a divider. The layout measures these to snap the
-     * control to its text.
+     * The control's own label(s) as the lines they read as: one for a checkbox, toggle, or caption, one
+     * per option for a radio, table, or tab (in segment order), and none for a divider. A label authored
+     * as several runs is charged one line here, so a control snapped to its text is snapped to what the
+     * label says rather than to how many colours it says it in.
      *
      * @return the control's labels, in draw order
      */
@@ -88,33 +91,56 @@ public sealed interface ControlSpec {
      * {@link #NO_SELECTION} when off, its whole row one hit target. The renderer draws the tick box at
      * the row's left and the label beside it.
      *
-     * @param label         the checkbox's trailing label
-     * @param selectedIndex {@link #SINGLE_CELL} when ticked, {@link #NO_SELECTION} when off
-     * @param action        what a click on the row does
+     * @param labelTextSpans the trailing label's runs in reading order, each in the colour it draws in
+     *                       before any opacity fade the host applies; never empty
+     * @param selectedIndex  {@link #SINGLE_CELL} when ticked, {@link #NO_SELECTION} when off
+     * @param action         what a click on the row does
      */
     record Checkbox(
-            String label,
+            List<TextSpan> labelTextSpans,
             int selectedIndex,
             ControlAction action) implements Interactive {
+
+        /** Holds the label to the floor {@link LabelRuns} holds every label to. */
+        public Checkbox {
+            labelTextSpans = LabelRuns.copyRuns(labelTextSpans);
+        }
+
         /**
          * Builds a checkbox in its current lit state, mapping on/off to the single-cell {@code
-         * selectedIndex} in one place so no host re-derives the "cell 0 lit or nothing" convention.
+         * selectedIndex} in one place so no host re-derives the "cell 0 lit or nothing" convention. Its
+         * label is the one run given; a host calling part of it out layers a second on with
+         * {@link #continuesWith}.
          *
-         * @param label  the checkbox's trailing label
-         * @param isOn   whether the box is ticked
-         * @param action what a click on the row does
+         * @param labelTextSpan the trailing label and the colour it draws in
+         * @param isOn          whether the box is ticked
+         * @param action        what a click on the row does
          * @return the checkbox spec
          */
-        public static Checkbox lit(String label, boolean isOn, ControlAction action) {
+        public static Checkbox lit(TextSpan labelTextSpan, boolean isOn, ControlAction action) {
             return new Checkbox(
-                label,
+                List.of(labelTextSpan),
                 isOn ? SINGLE_CELL : NO_SELECTION,
+                action);
+        }
+
+        /**
+         * Returns a copy whose label runs on into {@code runTextSpan} - the next stretch of the same
+         * sentence, picked out in its own colour while what came before it stays as it was.
+         *
+         * @param runTextSpan the text continuing the label and the colour it draws in
+         * @return an otherwise-identical checkbox whose label carries that run last
+         */
+        public Checkbox continuesWith(TextSpan runTextSpan) {
+            return new Checkbox(
+                LabelRuns.appendRun(labelTextSpans, runTextSpan),
+                selectedIndex,
                 action);
         }
 
         @Override
         public List<String> labels() {
-            return List.of(label);
+            return List.of(LabelRuns.resolveLineText(labelTextSpans));
         }
     }
 
@@ -124,33 +150,54 @@ public sealed interface ControlSpec {
      * on/off state as a {@link Checkbox} but draws as a lit push-button with its label centred inside,
      * rather than a tick box with an adjacent label.
      *
-     * @param label         the button's centred label
-     * @param selectedIndex {@link #SINGLE_CELL} when on, {@link #NO_SELECTION} when off
-     * @param action        what a click on the button does
+     * @param labelTextSpans the centred label's runs in reading order, each in the colour it draws in
+     *                       before any opacity fade the host applies; never empty
+     * @param selectedIndex  {@link #SINGLE_CELL} when on, {@link #NO_SELECTION} when off
+     * @param action         what a click on the button does
      */
     record Toggle(
-            String label,
+            List<TextSpan> labelTextSpans,
             int selectedIndex,
             ControlAction action) implements Interactive {
+
+        /** Holds the label to the floor {@link LabelRuns} holds every label to. */
+        public Toggle {
+            labelTextSpans = LabelRuns.copyRuns(labelTextSpans);
+        }
+
         /**
          * Builds a toggle in its current lit state, mapping on/off to the single-cell {@code
          * selectedIndex} as {@link Checkbox#lit} does for a tick box.
          *
-         * @param label  the button's centred label
-         * @param isOn   whether the button is lit
-         * @param action what a click on the button does
+         * @param labelTextSpan the centred label and the colour it draws in
+         * @param isOn          whether the button is lit
+         * @param action        what a click on the button does
          * @return the toggle spec
          */
-        public static Toggle lit(String label, boolean isOn, ControlAction action) {
+        public static Toggle lit(TextSpan labelTextSpan, boolean isOn, ControlAction action) {
             return new Toggle(
-                label,
+                List.of(labelTextSpan),
                 isOn ? SINGLE_CELL : NO_SELECTION,
+                action);
+        }
+
+        /**
+         * Returns a copy whose label runs on into {@code runTextSpan} - the next stretch of the same
+         * sentence, picked out in its own colour while what came before it stays as it was.
+         *
+         * @param runTextSpan the text continuing the label and the colour it draws in
+         * @return an otherwise-identical toggle whose label carries that run last
+         */
+        public Toggle continuesWith(TextSpan runTextSpan) {
+            return new Toggle(
+                LabelRuns.appendRun(labelTextSpans, runTextSpan),
+                selectedIndex,
                 action);
         }
 
         @Override
         public List<String> labels() {
-            return List.of(label);
+            return List.of(LabelRuns.resolveLineText(labelTextSpans));
         }
     }
 
@@ -158,14 +205,45 @@ public sealed interface ControlSpec {
      * A text-only caption row, drawn but never clicked - it heads a run of controls with a title. It
      * is not {@link Interactive}: a caption carries no lit cell and no action.
      *
-     * @param text the caption text
+     * <p>Its one component is named for what it holds, as the two controls above name theirs: a caption
+     * is a label like any other control's, and calling it {@code text} here and {@code label} there
+     * would make one concept read as two.
+     *
+     * @param labelTextSpans the caption's runs in reading order, each in the colour it draws in before
+     *                       any opacity fade the host applies; never empty
      */
     record Label(
-        String text) implements ControlSpec {
+        List<TextSpan> labelTextSpans) implements ControlSpec {
+
+        /** Holds the label to the floor {@link LabelRuns} holds every label to. */
+        public Label {
+            labelTextSpans = LabelRuns.copyRuns(labelTextSpans);
+        }
+
+        /**
+         * Builds a caption of one run - what a caption that reads in a single colour is.
+         *
+         * @param labelTextSpan the caption and the colour it draws in
+         * @return the caption spec
+         */
+        public static Label createLabel(TextSpan labelTextSpan) {
+            return new Label(List.of(labelTextSpan));
+        }
+
+        /**
+         * Returns a copy whose caption runs on into {@code runTextSpan} - the next stretch of the same
+         * sentence, picked out in its own colour while what came before it stays as it was.
+         *
+         * @param runTextSpan the text continuing the caption and the colour it draws in
+         * @return an otherwise-identical caption carrying that run last
+         */
+        public Label continuesWith(TextSpan runTextSpan) {
+            return new Label(LabelRuns.appendRun(labelTextSpans, runTextSpan));
+        }
 
         @Override
         public List<String> labels() {
-            return List.of(text);
+            return List.of(LabelRuns.resolveLineText(labelTextSpans));
         }
     }
 
