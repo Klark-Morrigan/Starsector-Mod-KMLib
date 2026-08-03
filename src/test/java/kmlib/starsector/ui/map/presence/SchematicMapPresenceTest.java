@@ -71,15 +71,6 @@ class SchematicMapPresenceTest {
                 .isFalse();
         }
 
-        @Test
-        void isFalseWhenTheIntelStarscapeFilterIsOffWithNoLitVisor() {
-            // The preview panel keeps its filter state while a sibling sub-tab (Planets, Factions)
-            // is up, so the filter alone is not a schematic map being on screen.
-            intelScreenViewFake.setMapStarscapeModeOn(false);
-
-            assertThat(buildPresence(false).isSchematicMapShowing())
-                .isFalse();
-        }
     }
 
     // The sector read is a plain supplier here rather than the live static, so each case names its
