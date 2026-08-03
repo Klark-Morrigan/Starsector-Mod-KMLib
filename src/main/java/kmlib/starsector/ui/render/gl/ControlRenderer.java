@@ -345,40 +345,11 @@ public final class ControlRenderer {
             return;
         }
 
-        drawLabelRunsFrom(
-            paint,
-            labelTextSpans,
-            leftX,
-            centreY,
-            measureBodyLabelRuns(paint, labelTextSpans));
-    }
-
-    // The same runs set about centreX: the label's whole measured span is centred as one, so the runs
-    // stay one sentence rather than each centring on its own. Measured once and handed on, so the width
-    // the placement is derived from and the offsets the runs are drawn at cannot disagree.
-    private static void drawCentredBodyLabelRuns(
-            ControlPaint paint,
-            List<TextSpan> labelTextSpans,
-            float centreX,
-            float centreY) {
-
+        // The runs and the offsets they measured out to are walked together here rather than measured in
+        // one method and drawn in another: they are aligned by index, so a boundary between them is a
+        // boundary a mismatched pair could cross - which is the parallel-list hazard the row model was
+        // built to retire, and it is no more welcome inside a draw than it was inside the content.
         var runOffsets = measureBodyLabelRuns(paint, labelTextSpans);
-        drawLabelRunsFrom(
-            paint,
-            labelTextSpans,
-            centreX - runOffsets.runsWidth() / 2f,
-            centreY,
-            runOffsets);
-    }
-
-    // Draws each run at its own measured offset from leftX, vertically centred on the row. A blank run
-    // paints nothing and was charged nothing, so it needs no branch of its own here.
-    private static void drawLabelRunsFrom(
-            ControlPaint paint,
-            List<TextSpan> labelTextSpans,
-            float leftX,
-            float centreY,
-            LabelRuns.LabelRunOffsets runOffsets) {
 
         for (var index = 0; index < labelTextSpans.size(); index++) {
             drawBodySpan(
@@ -390,6 +361,24 @@ public final class ControlRenderer {
         }
     }
 
+    // The same runs set about centreX: the label's whole measured span is centred as one, so the runs
+    // stay one sentence rather than each centring on its own. Only the width is needed to find where
+    // the label starts; where each run sits within it is the draw's own walk.
+    private static void drawCentredBodyLabelRuns(
+            ControlPaint paint,
+            List<TextSpan> labelTextSpans,
+            float centreX,
+            float centreY) {
+
+        var runsWidth = measureBodyLabelRuns(paint, labelTextSpans).runsWidth();
+
+        drawBodyLabelRuns(
+            paint,
+            labelTextSpans,
+            centreX - runsWidth / 2f,
+            centreY);
+    }
+
     // Where a label's runs measure out to at the body face, through the same one-sentence rule the strip
     // layout snapped the control to - so what is drawn fits the room that was reserved for it.
     private static LabelRuns.LabelRunOffsets measureBodyLabelRuns(
@@ -399,13 +388,10 @@ public final class ControlRenderer {
         return LabelRuns.measureRunOffsets(labelTextSpans, bindBodySpanMeasurer(paint));
     }
 
-    // The body-line measurement bound to the face and size this pass paints in, so a run charges its own
-    // width without the walk above learning which face it will be drawn in.
+    // The body-line measurement bound to the face this pass paints in, so a run charges its own width
+    // without the walk above learning which face it will be drawn in.
     private static StyledSpanMeasurer bindBodySpanMeasurer(ControlPaint paint) {
-        var bodyFace = new TextFace(
-            paint.style().bodyFont(),
-            ControlStripLayout.BODY_FONT_SIZE);
-
+        var bodyFace = paint.resolveBodyFace();
         return textSpan -> LazyFontSpanMeasurer.measureSpanWidth(bodyFace, textSpan.text());
     }
 
@@ -437,9 +423,7 @@ public final class ControlRenderer {
             LazyFont.TextAnchor anchor) {
 
         var labelStyle = new LabelStyle(
-            new TextFace(
-                paint.style().bodyFont(),
-                ControlStripLayout.BODY_FONT_SIZE),
+            paint.resolveBodyFace(),
             textSpan.colour(),
             paint.opacity());
 
@@ -449,5 +433,14 @@ public final class ControlRenderer {
     // The look bundle plus the frame's alpha, threaded together through every draw so a helper takes one
     // paint rather than unpacking the accents, body font, and opacity into loose arguments each time.
     private record ControlPaint(WidgetStyle style, float opacity) {
+
+        // The face every control's text is measured and drawn at. Asked of the paint rather than built
+        // where it is wanted, so the measurement and the draw cannot end up naming a different pair -
+        // text measured on one face and painted on another sizes a row it then overflows.
+        private TextFace resolveBodyFace() {
+            return new TextFace(
+                style.bodyFont(),
+                ControlStripLayout.BODY_FONT_SIZE);
+        }
     }
 }

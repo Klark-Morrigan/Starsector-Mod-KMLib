@@ -476,7 +476,7 @@ public final class ControlStripLayout {
         for (var labelledRow : table.labelledRows()) {
             var rowWidth = IconLabelRow.measureRowWidth(
                 CONTROL_ROW_HEIGHT,
-                measureLabelWidth(labelledRow.labelTextSpans(), measurer),
+                measureLabelWidth(labelledRow.labelTextSpans(), spanMeasurer),
                 labelledRow.leadingRowSlot().isFilled(),
                 labelledRow.trailingRowSlot().computeWidth(CONTROL_ROW_HEIGHT, spanMeasurer));
 
@@ -493,8 +493,17 @@ public final class ControlStripLayout {
             List<TextSpan> labelTextSpans,
             LineWidthMeasurer measurer) {
 
+        return measureLabelWidth(labelTextSpans, bindBodySpanMeasurer(measurer));
+    }
+
+    // The same width, for a caller that has already bound the body measurement and is charging a row
+    // several things through it - so a stack of rows binds once rather than once per row.
+    private static float measureLabelWidth(
+            List<TextSpan> labelTextSpans,
+            StyledSpanMeasurer spanMeasurer) {
+
         return LabelRuns
-            .measureRunOffsets(labelTextSpans, bindBodySpanMeasurer(measurer))
+            .measureRunOffsets(labelTextSpans, spanMeasurer)
             .runsWidth();
     }
 
