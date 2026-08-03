@@ -1,5 +1,6 @@
 package kmlib.starsector.ui.label;
 
+import kmlib.math.geometry.LineBlockers;
 import kmlib.math.geometry.PolygonRegions;
 import kmlib.math.geometry.RegionChord;
 import kmlib.math.geometry.Segment;
@@ -72,11 +73,23 @@ public final class LabelBoxFitter {
     // the line count whose box carries the tallest font, so more lines are chosen only
     // when they buy a strictly bigger font by spending the chord's spare girth.
     public BoxFit fitLargestBox(RegionChord chord) {
+
+        // The keep-outs project onto the chord's line the same way whatever thickness a
+        // band is given - only the interior test reads the thickness - so the projection
+        // is invariant across every band this sizing measures. Computed once here, it
+        // turns an obstacle scan per band fit into one for the whole sizing.
+        var keepOutBlockers = computeKeepOutBlockers(chord);
+
+        // A line too short to define a direction has no interior to size along either,
+        // so every band would fail; there is nothing to measure.
+        if (keepOutBlockers == null) {
+            return null;
+        }
         BoxFit best = null;
         for (var lineCount = 1; lineCount <= maxLines; lineCount++) {
             best = Picks.pickHigher(
                 best,
-                fitForLineCount(chord, lineCount),
+                fitForLineCount(chord, lineCount, keepOutBlockers),
                 BoxFit::fontHeight);
         }
         return best;
@@ -85,35 +98,13 @@ public final class LabelBoxFitter {
     // Fits one candidate band against the rings, the keep-out points, and the end inset,
     // widened to the given half thickness. Exposed for a search's near-miss diagnostic,
     // which reads the pre-margin clear span of a minimum-height band; the fit proper
-    // reaches it through the line-count sizing below.
+    // reaches it through the line-count sizing below, which projects the keep-outs once
+    // for its whole sweep rather than per band as this single measurement must.
     public BandSpan fitBand(RegionChord chord, double halfThickness) {
-
-        bandFitCount++;
-
-        var interiorSpans = PolygonRegions.findBandInteriorSpans(
-            chord.rings(),
-            chord.line(),
-            halfThickness);
-
-        if (interiorSpans.isEmpty()) {
-            return new BandSpan(null, null);
-        }
-        var clear = Spans.findLongestClearSubsegment(
-            interiorSpans,
-            chord.line(),
-            chord.keepOuts(),
-            keepOutClearance);
-
-        if (clear == null) {
-            return new BandSpan(null, null);
-        }
-        var start = clear[0] + endInsetDistance;
-        var end = clear[1] - endInsetDistance;
-        // An interval shorter than twice the end inset leaves no room for text between
-        // the margins; only the pre-margin clear span survives, for the red diagnostic.
-        return start < end
-            ? new BandSpan(clear, new double[] {start, end})
-            : new BandSpan(clear, null);
+        var keepOutBlockers = computeKeepOutBlockers(chord);
+        return keepOutBlockers == null
+            ? new BandSpan(null, null)
+            : measureBand(chord, halfThickness, keepOutBlockers);
     }
 
     /**
@@ -131,20 +122,30 @@ public final class LabelBoxFitter {
 
     // Sizes the box for one fixed line count by growing the font to the largest height
     // whose band still holds the text, then reading that band's clear span back. Null
-    // when even the minimum font cannot hold the text.
-    private BoxFit fitForLineCount(RegionChord chord, int lineCount) {
+    // when even the minimum font cannot hold the text. The keep-out blockers are handed
+    // down rather than re-derived, since every band here shares one line.
+    private BoxFit fitForLineCount(
+            RegionChord chord,
+            int lineCount,
+            LineBlockers keepOutBlockers) {
+
         var linesFactor = (lineCount - 1) * lineSpacing + 1.0;
-        if (!bandHoldsText(chord, minFontHeight, lineCount, linesFactor)) {
+        if (!bandHoldsText(chord, minFontHeight, lineCount, linesFactor, keepOutBlockers)) {
             return null;
         }
         var fontHeight = Bisection.findLargestPassing(
             minFontHeight,
             maxFontHeight,
             FONT_HEIGHT_BISECTION_STEPS,
-            candidate -> bandHoldsText(chord, candidate, lineCount, linesFactor));
+            candidate -> bandHoldsText(
+                chord,
+                candidate,
+                lineCount,
+                linesFactor,
+                keepOutBlockers));
 
         var thickness = fontHeight * linesFactor;
-        var span = fitBand(chord, thickness / 2.0).insetSpan();
+        var span = measureBand(chord, thickness / 2.0, keepOutBlockers).insetSpan();
 
         return new BoxFit(
             chord.toSegment(span),
@@ -161,13 +162,52 @@ public final class LabelBoxFitter {
             RegionChord chord,
             double fontHeight,
             int lineCount,
-            double linesFactor) {
-        var band = fitBand(chord, fontHeight * linesFactor / 2.0);
+            double linesFactor,
+            LineBlockers keepOutBlockers) {
+
+        var band = measureBand(chord, fontHeight * linesFactor / 2.0, keepOutBlockers);
         if (band.insetSpan() == null) {
             return false;
         }
         var clearLength = band.insetSpan()[1] - band.insetSpan()[0];
         return clearLength >= textLength.requiredLengthFor(fontHeight, lineCount);
+    }
+
+    // One band's spans against pre-projected keep-outs: the border test reads the
+    // thickness, the keep-out trim does not, so only the former runs per band here.
+    private BandSpan measureBand(
+            RegionChord chord,
+            double halfThickness,
+            LineBlockers keepOutBlockers) {
+
+        bandFitCount++;
+
+        var interiorSpans = PolygonRegions.findBandInteriorSpans(
+            chord.rings(),
+            chord.line(),
+            halfThickness);
+
+        if (interiorSpans.isEmpty()) {
+            return new BandSpan(null, null);
+        }
+        var clear = Spans.findLongestClearSubsegment(interiorSpans, keepOutBlockers);
+
+        if (clear == null) {
+            return new BandSpan(null, null);
+        }
+        var start = clear[0] + endInsetDistance;
+        var end = clear[1] - endInsetDistance;
+        // An interval shorter than twice the end inset leaves no room for text between
+        // the margins; only the pre-margin clear span survives, for the red diagnostic.
+        return start < end
+            ? new BandSpan(clear, new double[] {start, end})
+            : new BandSpan(clear, null);
+    }
+
+    // The chord's keep-outs projected onto its line at this fitter's clearance - the
+    // subtraction every band along that line shares. Null when the line is degenerate.
+    private LineBlockers computeKeepOutBlockers(RegionChord chord) {
+        return Spans.computeLineBlockers(chord.line(), chord.keepOuts(), keepOutClearance);
     }
 
     /**

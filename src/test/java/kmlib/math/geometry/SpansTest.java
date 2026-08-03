@@ -9,19 +9,98 @@ import static kmlib.math.geometry.GeometryTestSupport.within;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Pins the contract of {@link Spans#findLongestClearSubsegment}: an obstacle on
+ * Pins the contract of {@link Spans#computeLineBlockers}: an obstacle within clearance
+ * carves the chord its keep-out circle cuts, one beyond it carves nothing, a
+ * non-positive clearance blocks nothing at all, the intervals come back sorted whatever
+ * order the obstacles arrived in, parameters read as world distances even for a
+ * non-unit direction, and a degenerate direction yields null rather than an empty set.
+ *
+ * <p>And of {@link Spans#findLongestClearSubsegment}: an obstacle on
  * the line splits a span and the longer side wins, an obstacle off the line but
  * within clearance blocks the chord its keep-out circle cuts (half-width
  * {@code sqrt(clearance^2 - perp^2)}), an obstacle beyond clearance blocks nothing,
  * multiple obstacles each carve their own interval, the longest survivor is picked
  * across all input spans, and empty, fully blocked, or degenerate-direction input
- * yields null.
+ * yields null. Both the obstacle-taking form and the one taking blockers projected in
+ * advance are pinned, since they must reach the same answer.
  *
  * <p>And of {@link Spans#intersectSpans}: overlapping spans yield their shared
  * interval, a span meeting several yields one overlap per meeting, spans that only
  * touch or miss yield nothing, and an empty list on either side yields nothing.
  */
 final class SpansTest {
+
+    @Nested
+    class ComputeLineBlockers {
+        @Test
+        void line_blockers_carve_the_chord_each_obstacle_within_clearance_cuts() {
+            // Perpendicular distance 3 with clearance 5 cuts a chord of half-width
+            // sqrt(25 - 9) = 4 about the projection at t=0.
+            var blockers = Spans.computeLineBlockers(
+                new DirectedLine(0, 0, 1, 0), List.of(new double[] {0, 3}), 5);
+
+            assertThat(blockers.intervals()).hasSize(1);
+            assertThat(blockers.intervals().get(0)[0]).isCloseTo(-4.0, within());
+            assertThat(blockers.intervals().get(0)[1]).isCloseTo(4.0, within());
+        }
+
+        @Test
+        void line_blockers_arrive_sorted_by_start_whatever_order_the_obstacles_came_in() {
+            // Sorted intervals are what lets a span be walked with one advancing
+            // cursor, so the order the obstacles were handed over must not survive:
+            // the far obstacle listed first still yields the near interval first.
+            var blockers = Spans.computeLineBlockers(
+                new DirectedLine(0, 0, 1, 0),
+                List.of(new double[] {5, 0}, new double[] {-5, 0}),
+                2);
+
+            assertThat(blockers.intervals()).hasSize(2);
+            assertThat(blockers.intervals().get(0)[0]).isCloseTo(-7.0, within());
+            assertThat(blockers.intervals().get(0)[1]).isCloseTo(-3.0, within());
+            assertThat(blockers.intervals().get(1)[0]).isCloseTo(3.0, within());
+            assertThat(blockers.intervals().get(1)[1]).isCloseTo(7.0, within());
+        }
+
+        @Test
+        void line_blockers_measure_parameters_as_world_distances_for_a_non_unit_direction() {
+            // The direction is normalised here, so the obstacle 4 units along a
+            // doubled direction blocks about t=4, not about t=2.
+            var blockers = Spans.computeLineBlockers(
+                new DirectedLine(0, 0, 2, 0), List.of(new double[] {4, 0}), 1);
+
+            assertThat(blockers.intervals()).hasSize(1);
+            assertThat(blockers.intervals().get(0)[0]).isCloseTo(3.0, within());
+            assertThat(blockers.intervals().get(0)[1]).isCloseTo(5.0, within());
+        }
+
+        @Test
+        void line_blockers_skip_an_obstacle_farther_than_the_clearance_from_the_line() {
+            // Perpendicular distance 5 with clearance 3: the keep-out circle never
+            // reaches the line, so it carves nothing from it.
+            var blockers = Spans.computeLineBlockers(
+                new DirectedLine(0, 0, 1, 0), List.of(new double[] {0, 5}), 3);
+
+            assertThat(blockers.intervals()).isEmpty();
+        }
+
+        @Test
+        void line_blockers_are_empty_for_a_non_positive_clearance() {
+            // No clearance means no keep-out, so even an obstacle dead on the line
+            // blocks nothing.
+            var blockers = Spans.computeLineBlockers(
+                new DirectedLine(0, 0, 1, 0), List.of(new double[] {0, 0}), 0);
+
+            assertThat(blockers.intervals()).isEmpty();
+        }
+
+        @Test
+        void line_blockers_are_null_for_a_degenerate_direction() {
+            // A zero direction defines no line, so there is no frame to measure
+            // blocked parameters in - distinct from a line nothing blocks.
+            assertThat(Spans.computeLineBlockers(
+                new DirectedLine(0, 0, 0, 0), List.of(new double[] {0, 0}), 3)).isNull();
+        }
+    }
 
     @Nested
     class FindLongestClearSubsegment {
@@ -120,6 +199,51 @@ final class SpansTest {
             assertThat(Spans.findLongestClearSubsegment(
                 List.of(new double[] {-10, 10}), new DirectedLine(0, 0, 0, 0),
                 List.of(), 3)).isNull();
+        }
+
+        @Test
+        void clear_subsegment_trims_the_span_by_already_projected_blockers() {
+            // The same obstacle-on-the-line case as above, reached through blockers
+            // projected in advance: t=2 with clearance 3 blocks [-1, 5], so the left
+            // remainder [-10, -1] wins - a precomputed subtraction is the same
+            // subtraction.
+            var blockers = Spans.computeLineBlockers(
+                new DirectedLine(0, 0, 1, 0), List.of(new double[] {2, 0}), 3);
+
+            var clear = Spans.findLongestClearSubsegment(
+                List.of(new double[] {-10, 10}), blockers);
+
+            assertThat(clear[0]).isCloseTo(-10.0, within());
+            assertThat(clear[1]).isCloseTo(-1.0, within());
+        }
+
+        @Test
+        void clear_subsegment_answers_several_span_lists_from_one_blocker_set() {
+            // Blockers outlive any one query: the obstacle at t=0 with clearance 2
+            // blocks [-2, 2] for both spans asked about, trimming the first to its
+            // left remainder [-10, -2] and leaving the second, which starts past the
+            // blocker, whole.
+            var blockers = Spans.computeLineBlockers(
+                new DirectedLine(0, 0, 1, 0), List.of(new double[] {0, 0}), 2);
+
+            var first = Spans.findLongestClearSubsegment(
+                List.of(new double[] {-10, 1}), blockers);
+            var second = Spans.findLongestClearSubsegment(
+                List.of(new double[] {4, 9}), blockers);
+
+            assertThat(first[0]).isCloseTo(-10.0, within());
+            assertThat(first[1]).isCloseTo(-2.0, within());
+            assertThat(second[0]).isCloseTo(4.0, within());
+            assertThat(second[1]).isCloseTo(9.0, within());
+        }
+
+        @Test
+        void clear_subsegment_is_null_when_precomputed_blockers_swallow_the_span() {
+            var blockers = Spans.computeLineBlockers(
+                new DirectedLine(0, 0, 1, 0), List.of(new double[] {0, 0}), 5);
+
+            assertThat(Spans.findLongestClearSubsegment(
+                List.of(new double[] {-1, 1}), blockers)).isNull();
         }
     }
 

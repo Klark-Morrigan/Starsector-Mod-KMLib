@@ -15,10 +15,63 @@ import java.util.List;
  * intervals from it. Working in parameters rather than endpoints keeps the
  * subtraction one-dimensional; a caller maps the winning interval back to points
  * with {@code through + t * direction}.
+ *
+ * <p>The obstacle side of that subtraction is available on its own as
+ * {@link LineBlockers}, so a caller re-testing one line against many span lists
+ * projects the obstacles once instead of once per test.
  */
 public final class Spans {
 
     private Spans() {
+    }
+
+    /**
+     * The keep-out intervals the obstacles carve from the line, as the
+     * {@link LineBlockers} any span list measured along that line can be trimmed by -
+     * the obstacle-only half of {@link #findLongestClearSubsegment}, separated so it
+     * can be computed once for a line and reused across every span list tested
+     * against it.
+     *
+     * <p>For each obstacle within {@code clearance} of the line, the blocked interval
+     * is the chord its keep-out circle cuts: centred on the obstacle's projection onto
+     * the line, with half-width {@code sqrt(clearance^2 - perp^2)} where {@code perp}
+     * is the obstacle's perpendicular distance. An obstacle farther than
+     * {@code clearance} from the line misses it entirely and blocks nothing.
+     *
+     * @param line      the line the obstacles are projected onto - its origin is
+     *                  parameter zero, and its direction is normalised here so a
+     *                  parameter reads as a world distance
+     * @param obstacles the {x, y} points to keep clear of
+     * @param clearance the keep-out radius around each obstacle; non-positive blocks
+     *                  nothing, so the intervals come back empty
+     * @return the blocked intervals, ascending by start; {@code null} when the
+     *         direction is too short to define a line
+     */
+    public static LineBlockers computeLineBlockers(
+            DirectedLine line,
+            Collection<double[]> obstacles,
+            double clearance) {
+
+        var direction = Points.computeUnitVector(
+            line.directionX(),
+            line.directionY(),
+            Limits.MIN_EDGE_LENGTH);
+
+        if (direction == null) {
+            return null;
+        }
+        var unitLine = new DirectedLine(
+            line.originX(),
+            line.originY(),
+            direction[0],
+            direction[1]);
+
+        var blocked = computeBlockedIntervals(unitLine, obstacles, clearance);
+
+        // Sorted by start, the blockers can be walked once per span with a single
+        // advancing cursor instead of re-scanning the whole set per gap.
+        blocked.sort(Comparator.comparingDouble(interval -> interval[0]));
+        return new LineBlockers(blocked);
     }
 
     /**
@@ -52,28 +105,37 @@ public final class Spans {
             Collection<double[]> obstacles,
             double clearance) {
 
-        var direction = Points.computeUnitVector(
-            line.directionX(),
-            line.directionY(),
-            Limits.MIN_EDGE_LENGTH);
+        var blockers = computeLineBlockers(line, obstacles, clearance);
+        return blockers == null
+            ? null
+            : findLongestClearSubsegment(spans, blockers);
+    }
 
-        if (direction == null) {
-            return null;
-        }
-        var unitLine = new DirectedLine(
-            line.originX(),
-            line.originY(),
-            direction[0],
-            direction[1]);
+    /**
+     * The longest sub-interval of {@code spans} left clear by already-projected
+     * {@code blockers}, as a {@code {tStart, tEnd}} pair - or {@code null} when
+     * nothing clear survives.
+     *
+     * <p>The form to take when one line is tested repeatedly: the blockers depend on
+     * neither the spans nor how often they are asked for, so projecting them once and
+     * passing them here does the same subtraction without re-scanning the obstacles.
+     * The spans must be measured along the same line the blockers were computed for,
+     * since both are parameters in that line's frame.
+     *
+     * @param spans    the candidate intervals as {@code {tStart, tEnd}} pairs, each
+     *                 internally ascending
+     * @param blockers the keep-out intervals along the same line, from
+     *                 {@link #computeLineBlockers}
+     * @return the longest clear {@code {tStart, tEnd}} interval, or {@code null} when
+     *         the spans are empty or fully blocked
+     */
+    public static double[] findLongestClearSubsegment(
+            List<double[]> spans,
+            LineBlockers blockers) {
 
-        var blocked = computeBlockedIntervals(unitLine, obstacles, clearance);
-
-        // Sorted by start, the blockers can be walked once per span with a single
-        // advancing cursor instead of re-scanning the whole set per gap.
-        blocked.sort(Comparator.comparingDouble(interval -> interval[0]));
         double[] longest = null;
         for (var span : spans) {
-            longest = pickLonger(longest, findLongestGapWithinSpan(span, blocked));
+            longest = pickLonger(longest, findLongestGapWithinSpan(span, blockers.intervals()));
         }
         return longest;
     }

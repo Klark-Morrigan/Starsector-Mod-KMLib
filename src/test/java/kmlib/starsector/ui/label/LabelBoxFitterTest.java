@@ -16,8 +16,8 @@ import static org.assertj.core.api.Assertions.within;
  * Pins {@link LabelBoxFitter#fitLargestBox}: given one candidate chord against a
  * region, it caps the font so the whole band stays inside the boundary, stacks text
  * into more lines only when that renders a strictly taller font, honours the line cap
- * and the per-line font clamp, and returns null when even the minimum font cannot hold
- * the text. The fitter is tested apart from any candidate search so its sizing contract
+ * and the per-line font clamp, keeps the box out of a keep-out point's clearance, and
+ * returns null when even the minimum font cannot hold the text. The fitter is tested apart from any candidate search so its sizing contract
  * is pinned on rings and a text estimator directly, without the candidate generation a
  * caller wraps it in.
  */
@@ -130,6 +130,27 @@ final class LabelBoxFitterTest {
         }
 
         @Test
+        void fitLargestBoxKeepsTheBoxClearOfAKeepOutPoint() {
+            // The slab's chord runs from t=-1000 to t=1000 about the through-point at
+            // x=1000. A keep-out at x=1200 with clearance 400 blocks t in [-200, 600],
+            // so the roomier survivor is the left stretch [-1000, -200] - x 0 to 800 -
+            // and the fitted box must sit in it rather than across the point.
+            var box = fitterWithKeepOutClearance(1.0, 100.0, 2000.0, 1, 1.0, 400.0)
+                .fitLargestBox(
+                    new RegionChord(
+                        List.of(rectangle(0, 0, 2000, 700)),
+                        List.of(new double[] {1200, 350}),
+                        new DirectedLine(1000, 350, 1.0, 0.0)));
+
+            assertThat(box)
+                .isNotNull();
+            assertThat(box.segment().startX())
+                .isCloseTo(0.0, within(1.0));
+            assertThat(box.segment().endX())
+                .isCloseTo(800.0, within(1.0));
+        }
+
+        @Test
         void fitLargestBoxReturnsNullWhenTheMinimumBandCannotFit() {
             // A minimum font taller than the 1700 the square holds cannot sit anywhere,
             // so the fit finds no box at all.
@@ -196,9 +217,27 @@ final class LabelBoxFitterTest {
             double maxFontHeight,
             int maxLines,
             double lineSpacing) {
+        return fitterWithKeepOutClearance(
+            aspect,
+            minFontHeight,
+            maxFontHeight,
+            maxLines,
+            lineSpacing,
+            0.0);
+    }
+
+    // The same fitter with a keep-out radius, for the tests that place a point the box
+    // has to steer around rather than only a boundary it has to stay within.
+    private static LabelBoxFitter fitterWithKeepOutClearance(
+            double aspect,
+            double minFontHeight,
+            double maxFontHeight,
+            int maxLines,
+            double lineSpacing,
+            double keepOutClearance) {
         return new LabelBoxFitter(
             new NameFitSpecification(minFontHeight, maxFontHeight, maxLines, lineSpacing),
-            0.0,
+            keepOutClearance,
             0.0,
             new AspectLabelLengthEstimator(aspect));
     }
