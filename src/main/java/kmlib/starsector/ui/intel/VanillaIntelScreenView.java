@@ -18,11 +18,15 @@ import java.util.List;
 
 /**
  * {@link IntelScreenView} binding backed by the live campaign UI. The tab-open read is published
- * API; the map visor rectangle and its starscape state reach the game's concrete intel panel by
- * walking the live core-UI widget tree - the game's script classloader denies
- * {@code java.lang.reflect} to mod code, so the hops down to the tab that is up are taken by method
- * name through {@link CoreUiTree}, and the panel is picked out of that tab's subtree by its own
- * type.
+ * API; the map visor and its starscape state reach the game's concrete intel panel by walking the
+ * live core-UI widget tree - the game's script classloader denies {@code java.lang.reflect} to mod
+ * code, so the hops down to the tab that is up are taken by method name through {@link CoreUiTree},
+ * and the panel is picked out of that tab's subtree by its own type.
+ *
+ * <p>The visor's two reads are one walk: the rectangle is derived from the component, so a caller
+ * handed either is looking at the same widget under the same conditions. A widget the layout never
+ * positioned is reported as no visor rather than as a visor with no box, which is what lets the two
+ * answer null in exactly the same cases.
  *
  * <p>Nothing in the reach names a class the obfuscator chose. The intel tab's own class name is
  * single-letter obfuscator output and is reshuffled between game builds, so recognising the tab

@@ -7,10 +7,11 @@ import kmlib.math.geometry.Rectangle;
 /**
  * Reads the campaign intel screen (the {@code Intel} tab) from code that lives outside that screen.
  * What it exposes is not on the published UI API: whether the intel tab is the one showing, the
- * screen rectangle of the intel screen's embedded map preview (its "map visor") while that preview
- * is actually lit, and whether that preview is drawing the starscape rather than the ordinary map.
- * The reads name the map visor rather than a bare "visor" because the intel screen carries only this
- * one map, and the rectangle is that map's - not the screen's own bounds.
+ * intel screen's embedded map preview (its "map visor") while that preview is actually lit - as its
+ * screen rectangle for code that draws over it, and as the component itself for code that has to ask
+ * the widget tree about it - and whether that preview is drawing the starscape rather than the
+ * ordinary map. The reads name the map visor rather than a bare "visor" because the intel screen
+ * carries only this one map, and the rectangle is that map's - not the screen's own bounds.
  *
  * <p>The two are separate questions, not one: the intel core tab is a container for three sub-tabs -
  * Intel, Planets and Factions - and only the Intel one carries the visor, so the tab-open read stays

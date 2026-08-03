@@ -141,7 +141,7 @@ wants depends on what it is deciding.
 | Question | Read | Why |
 | --- | --- | --- |
 | about the sector map | [`CampaignMapView`](map/CampaignMapView.java) | the `M` screen's own tab, sub-view and filter |
-| about the intel screen | [`IntelScreenView`](intel/IntelScreenView.java) | the visor's own rectangle and filter |
+| about the intel screen | [`IntelScreenView`](intel/IntelScreenView.java) | the visor's own widget, rectangle and filter |
 | about whichever screen is up | [`StarscapeMapPresence`](map/StarscapeMapPresence.java) | either screen counts, and the asker cannot tell which it was called from |
 | which widget the map is | [`ShownMapTab`](map/ShownMapTab.java) | a rule about map-tab layout has to be rooted at the map tab, wherever it is |
 

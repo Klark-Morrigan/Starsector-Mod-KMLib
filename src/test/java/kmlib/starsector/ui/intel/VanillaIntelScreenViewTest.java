@@ -30,12 +30,13 @@ import static org.mockito.Mockito.when;
  * {@link VanillaIntelScreenView#warnOnceAboutUnreachableIntelPanel}, which decides when a panel
  * the walk did not reach is worth saying so about.
  *
- * <p>{@link VanillaIntelScreenView#getMapVisorRect} and
+ * <p>{@link VanillaIntelScreenView#getMapVisorWidget} and
  * {@link VanillaIntelScreenView#isMapStarscapeModeOn} are not unit-tested: both name the obfuscated
  * {@code EventsPanel}, whose dotted member names fail class-load under a verifying JVM (it only
  * loads under the game's non-verifying one), so not even their fail-closed branches can be entered
- * here and the walk itself is exercised in-game. Only that widget-fetching is out of reach, which is
- * why the rules applied around it are reachable on their own.
+ * here and the walk itself is exercised in-game. {@link VanillaIntelScreenView#getMapVisorRect} is
+ * out of reach with them, being derived from the widget read. Only that widget-fetching is out of
+ * reach, which is why the rules applied around it are reachable on their own.
  */
 class VanillaIntelScreenViewTest {
 
