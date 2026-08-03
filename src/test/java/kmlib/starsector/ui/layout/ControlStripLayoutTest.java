@@ -12,7 +12,6 @@ import kmlib.starsector.ui.layout.ControlStripLayout.StripMeasurement;
 import kmlib.starsector.ui.widgets.IconLabelRow;
 import kmlib.starsector.ui.widgets.TriangleDirection;
 import kmlib.starsector.ui.widgets.tabs.TabStyle;
-import kmlib.starsector.ui.widgets.tabs.TabStyles;
 import kmlib.testfixtures.starsector.ui.font.LineWidthMeasurerFake;
 
 import org.junit.jupiter.api.Nested;
@@ -431,7 +430,7 @@ final class ControlStripLayoutTest {
             var measurement = ControlStripLayout.measureStrip(List.<ControlSpec>of(tabs), measurerFake);
 
             assertThat(measurement.rowHeights().get(0))
-                .isCloseTo(ControlStripLayout.TAB_HEIGHT, within(TOLERANCE));
+                .isCloseTo(TabsControlLayout.TAB_HEIGHT, within(TOLERANCE));
         }
 
         @Test
@@ -444,8 +443,8 @@ final class ControlStripLayoutTest {
                 0, ControlAction.NONE);
 
             var measurement = ControlStripLayout.measureStrip(List.<ControlSpec>of(tabs), measurerFake);
-            var first = 13 * WIDTH_PER_CHAR + ControlStripLayout.TAB_TEXT_PADDING;
-            var second = 18 * WIDTH_PER_CHAR + ControlStripLayout.TAB_TEXT_PADDING;
+            var first = 13 * WIDTH_PER_CHAR + TabsControlLayout.TAB_TEXT_PADDING;
+            var second = 18 * WIDTH_PER_CHAR + TabsControlLayout.TAB_TEXT_PADDING;
 
             assertThat(measurement.rowWidths().get(0))
                 .isCloseTo(first + second, within(TOLERANCE));
@@ -457,6 +456,7 @@ final class ControlStripLayoutTest {
 
         @Test
         void layoutControlsStacksTheFirstRowFromTheBodyTopLeftInset() {
+
             var specs = List.<ControlSpec>of(
                 LabelledControlSpecs.buildCheckbox("Muted", false, ControlAction.NONE));
             var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
@@ -481,6 +481,7 @@ final class ControlStripLayoutTest {
 
         @Test
         void layoutControlsSplitsARadioIntoAbuttingEqualSegments() {
+
             var specs = List.<ControlSpec>of(ControlSpec.HorizontalRadio.of(
                     List.of("Short", "Full"),
                     ControlSpec.NO_SELECTION,
@@ -548,6 +549,7 @@ final class ControlStripLayoutTest {
 
         @Test
         void layoutControlsSplitsAnIconListIntoStackedVerticalSegments() {
+            
             var specs = List.<ControlSpec>of(VerticalTableSpecs.buildIconList(
                 List.of("Hegemony", "Tri-Tachyon"),
                 List.of("crest_heg", "crest_tt"),
@@ -811,7 +813,7 @@ final class ControlStripLayoutTest {
 
             var first = tabs.segments().get(0);
             var second = tabs.segments().get(1);
-            var firstWidth = 13 * WIDTH_PER_CHAR + ControlStripLayout.TAB_TEXT_PADDING;
+            var firstWidth = 13 * WIDTH_PER_CHAR + TabsControlLayout.TAB_TEXT_PADDING;
 
             assertThat(first.width())
                 .isCloseTo(firstWidth, within(TOLERANCE));
@@ -819,72 +821,20 @@ final class ControlStripLayoutTest {
                 .as("the second tab abuts the first")
                 .isCloseTo(first.x() + first.width(), within(TOLERANCE));
             assertThat(second.height())
-                .isCloseTo(ControlStripLayout.TAB_HEIGHT, within(TOLERANCE));
-        }
-    }
-
-    @Nested
-    class LayoutTabsHeader {
-
-        // A header anchor clear of the body origin, so an assertion cannot pass by landing on a stale value.
-        private static final float HEADER_X = 40f;
-        private static final float HEADER_TOP_Y = 500f;
-        private static final float BAND_HEIGHT = 17f;
-
-        private static final ControlSpec.Tabs TABS = new ControlSpec.Tabs(
-            List.of("No Layer", "Political Map"),
-            List.of("N", "P"),
-            0,
-            ControlAction.NONE);
-
-        @Test
-        void layoutTabsHeaderHangsTheBandFromTheContentTopAtTheStyledHeight() {
-            var header = ControlStripLayout.layoutTabsHeader(
-                TABS,
-                HEADER_X,
-                HEADER_TOP_Y,
-                TabStyles.buildAtBandHeight(BAND_HEIGHT),
-                measurerFake);
-
-            // Flush at the content top with no body inset - a header is framed directly under the border,
-            // unlike a body row, which pulls in by the body padding.
-            assertThat(header.bounds().y() + header.bounds().height())
-                .isCloseTo(HEADER_TOP_Y, within(TOLERANCE));
-            assertThat(header.bounds().x())
-                .isCloseTo(HEADER_X, within(TOLERANCE));
-            assertThat(header.bounds().height())
-                .isCloseTo(BAND_HEIGHT, within(TOLERANCE));
+                .isCloseTo(TabsControlLayout.TAB_HEIGHT, within(TOLERANCE));
         }
 
         @Test
-        void layoutTabsHeaderSplitsEveryTabToTheStyledBandHeight() {
-            // The segments are the hit rects the renderer paints; if they kept a fixed height while the band
-            // moved, a styled header would be clickable somewhere other than where it is drawn.
-            var header = ControlStripLayout.layoutTabsHeader(
-                TABS,
-                HEADER_X,
-                HEADER_TOP_Y,
-                TabStyles.buildAtBandHeight(BAND_HEIGHT),
-                measurerFake);
-
-            assertThat(header.segments())
-                .hasSize(2);
-
-            for (var segment : header.segments()) {
-
-                assertThat(segment.height())
-                    .isCloseTo(BAND_HEIGHT, within(TOLERANCE));
-                assertThat(segment.y())
-                    .isCloseTo(header.bounds().y(), within(TOLERANCE));
-            }
-        }
-
-        @Test
-        void layoutTabsHeaderLeavesABodyTabsRowOnTheUnstyledHeight() {
+        void layoutControlsLeavesABodyTabsRowOnTheUnstyledBandHeight() {
             // A tabs control placed in the BODY takes no style - it sizes itself through the strip's row
-            // measurement - so it stands at the baseline band while a styled header does not. The two paths
-            // are deliberately separate; this pins that the body one is unaffected by a header's style.
-            var specs = List.<ControlSpec>of(TABS);
+            // measurement - so it stands at the baseline band, where a styled header stands at its own.
+            // The two paths are deliberately separate; this pins that the body one takes the baseline.
+            var specs = List.<ControlSpec>of(new ControlSpec.Tabs(
+                List.of("No Layer", "Political Map"),
+                List.of("N", "P"),
+                0,
+                ControlAction.NONE));
+
             var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
             var bodyTabs = ControlStripLayout.layoutControls(
                     frameBody(measurement),

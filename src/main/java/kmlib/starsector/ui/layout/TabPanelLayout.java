@@ -19,13 +19,13 @@ import java.util.List;
  * width: a tab row wider than the body overhangs the frame rather than stretching it. Because {@code
  * framePlacement} frames a body rectangle, not a bordered box, reusing it frames one border, not two. It
  * also reuses {@link CappedStripLayout#layoutBodyStrip} for the body and
- * adds {@link ControlStripLayout#layoutTabsHeader} for the flush header, so the only thing unique here is
- * where the header sits. How tall that header stands is an injected {@link TabStyle} rather than a fixed
+ * adds {@link TabsControlLayout#layoutHeaderControl} for the flush header, so the only thing unique here
+ * is where the header sits. How tall that header stands is an injected {@link TabStyle} rather than a fixed
  * constant, so two panels composed through this one path can size their tab rows to their own surroundings.
  *
  * <p>The header is laid flush at the interior top (no body inset) through {@link
- * ControlStripLayout#layoutTabsHeader}, so a header tab measures, draws, and hit-tests through the same
- * generic control path a body {@link ControlSpec.Tabs} control uses. UI
+ * TabsControlLayout#layoutHeaderControl}, so a header tab measures, draws, and hit-tests through the same
+ * tabs-row geometry a body {@link ControlSpec.Tabs} control uses. UI
  * coordinates throughout (origin bottom-left, y grows up); text snapping runs through the injected
  * {@link LineWidthMeasurer}, so the layout is a pure computation. The panel hangs from the screen's
  * top-left by its paddings and caps its height to a bottom margin; that anchoring is the caller's to
@@ -98,9 +98,9 @@ public final class TabPanelLayout {
         // the header band.
         var origin = PanelLayout.computeContentOrigin(screenHeight, padding, border);
 
-        // Header: the tabs control laid flush at the content top, reusing the strip's tab measurement and
-        // segment split so it is not bespoke tab-strip framing.
-        var tabsHeader = ControlStripLayout.layoutTabsHeader(
+        // Header: the tabs control laid flush at the content top, reusing the same tab measurement and
+        // segment split a body tabs row uses so it is not bespoke tab-strip framing.
+        var tabsHeader = TabsControlLayout.layoutHeaderControl(
             tabsSpec,
             origin.contentX(),
             origin.contentTopY(),

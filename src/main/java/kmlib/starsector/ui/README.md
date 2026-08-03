@@ -219,7 +219,7 @@ standing for a count is not prose.
 | [`text`](text/) | neutral | `TextSpan`, `TextStyle`, `TextAlignment`, `StyledSpanMeasurer`, and [`LabelRuns`](text/LabelRuns.java) - how a label's runs compose into one line, read by every surface that lays one |
 | [`controls`](controls/) | neutral | the sealed `ControlSpec` set and its enums; a control's own label is runs like any other label, and a stacked table's rows are `widgets`' own [`LabelledRow`](widgets/LabelledRow.java), so a strip and a tooltip are laid out against one row model |
 | [`widgets`](widgets/) | neutral | the shared `LabelledRow` core, its `RowSlot` flanks, and the row and box content and geometry built on them ([`tabs`](widgets/tabs/), [`scroll`](widgets/scroll/), [`segments`](widgets/segments/), [`lists`](widgets/lists/)) |
-| [`layout`](layout/) | neutral | box placement, strips, padding, screen anchors |
+| [`layout`](layout/) | neutral | box placement, strips, padding, screen anchors, and the [tabs row](layout/TabsControlLayout.java) - the one control whose dimensions come from the vanilla tab strip rather than from a body-font label |
 | [`label`](label/) | neutral | label fitting, plus the length-estimator port |
 | [`colour`](colour/) | neutral | `StarsectorUiColour`, the checked wrapper over vanilla's colour getters |
 | [`font`](font/) | split | measurement ports, and their LazyFont-bound implementations and [caches](../../../../../../docs/dev/caching.md) |

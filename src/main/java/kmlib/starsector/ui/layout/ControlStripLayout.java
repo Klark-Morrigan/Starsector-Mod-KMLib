@@ -12,9 +12,6 @@ import kmlib.starsector.ui.widgets.IconLabelRow;
 import kmlib.starsector.ui.widgets.RadioRow;
 import kmlib.starsector.ui.widgets.segments.HorizontalSegments;
 import kmlib.starsector.ui.widgets.segments.SegmentSpec;
-import kmlib.starsector.ui.widgets.tabs.TabStyle;
-import kmlib.starsector.ui.widgets.tabs.VanillaTabContent;
-import kmlib.starsector.ui.widgets.tabs.VanillaTabStrip;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +23,10 @@ import java.util.List;
  * sidebar, a tab panel) measures the strip, sizes its own chrome around the returned footprint, and
  * hands back the framed body rectangle for placement. Splitting it out this way lets the strip serve
  * any frame while the frame math stays with the host.
+ *
+ * <p>Every control sizes to a body-font label inside a fixed-height row, save one: a {@link
+ * ControlSpec.Tabs} row snaps to a larger face and stands a tab band tall, so how a tabs row measures
+ * and splits is {@link TabsControlLayout}'s, and this stacks the result like any other row.
  *
  * <p>UI coordinates throughout (origin bottom-left, y grows up); text snapping runs through the
  * injected {@link LineWidthMeasurer}, so the layout depends on a width measurement rather than a
@@ -55,7 +56,7 @@ public final class ControlStripLayout {
     static final float RADIO_SEGMENT_PADDING = 12f;
 
     // A radio cell has no minimum width - it sizes purely to its widest label plus the padding - unlike
-    // a tab, which floors at MIN_TAB_WIDTH so a short tab still gives a clickable box.
+    // a tab, which floors at TabsControlLayout.MIN_TAB_WIDTH so a short tab still gives a clickable box.
     static final float RADIO_SEGMENT_MIN_WIDTH = 0f;
     public static final float TRAILING_LABEL_GAP = 6f;
     static final float TOGGLE_TEXT_PADDING = 16f;
@@ -63,17 +64,6 @@ public final class ControlStripLayout {
     // The body face size, measured here and drawn by the renderer at the one value, so a snapped row
     // width matches the text painted into it.
     public static final double BODY_FONT_SIZE = 13d;
-
-    // Tabs-control geometry: a TABS row stands one tab-height tall (taller than a body row, since the
-    // tab face is larger), each tab snapped to its label-plus-shortcut width with slack so text does not
-    // touch the edges and a floor so a short tab still gives a clickable box, and measured/drawn at the
-    // tab face size. Public so the panel frame and the renderer read the same values the layout snapped
-    // the tabs to. The height reads off the baseline dimension rather than repeating its literal, so a
-    // body TABS row - which sizes itself and takes no injected style - matches an unstyled header band.
-    public static final float TAB_HEIGHT = TabStyle.DEFAULT_HEADER_BAND_HEIGHT;
-    public static final float TAB_TEXT_PADDING = 16f;
-    public static final float MIN_TAB_WIDTH = 48f;
-    public static final double TAB_FONT_SIZE = 15d;
 
     private ControlStripLayout() {
     }
@@ -163,64 +153,6 @@ public final class ControlStripLayout {
     }
 
     /**
-     * Lays a tabs control flush as a panel header: the tabs snapped to their labels from
-     * {@code (originX, topY)} down the style's header band, split into per-tab segments. Unlike a
-     * body control it takes no {@link #BODY_PADDING} inset - a header sits flush at the interior top - so
-     * a tab panel frames it directly under the border. Reuses the same tab measurement and segment split
-     * a body {@link ControlSpec.Tabs} control uses, so a header tab is hit exactly where a body tab would
-     * be and the header is not bespoke tab-strip framing.
-     *
-     * <p>The band height arrives with the call rather than as a fixed constant, so two panels sharing this
-     * one layout can still stand their tab rows at different heights.
-     *
-     * @param tabsSpec the tabs control, its labels and per-tab shortcuts in row order
-     * @param originX  the header's left edge (the content inset), in UI coordinates
-     * @param topY     the header's top edge (the content top), in UI coordinates
-     * @param tabStyle the tab dimensions to lay to; its band height is the height every tab shares
-     * @param measurer measures each tab label's rendered width for snapping
-     * @return the laid-out tabs control, its bounds the header band and its segments split per tab
-     */
-    public static Control layoutTabsHeader(
-            ControlSpec.Tabs tabsSpec,
-            float originX,
-            float topY,
-            TabStyle tabStyle,
-            LineWidthMeasurer measurer) {
-
-        var bandHeight = tabStyle.headerBandHeight();
-        var rowWidth = measureTabsRowWidth(tabsSpec, measurer);
-        var bounds = new Rectangle(
-            originX,
-            topY - bandHeight,
-            rowWidth,
-            bandHeight);
-
-        return toControl(
-            tabsSpec,
-            bounds,
-            measurer);
-    }
-
-    /**
-     * Turns a tabs control's parallel label and shortcut lists into the tab contents the shared strip
-     * geometry measures and lays out; an empty shortcut reads as no hint (VanillaTabStrip drops a blank
-     * shortcut from the composed display). Public so the renderer pairs each laid-out tab segment with
-     * the same content this measured and split it under, keeping one source for the pairing.
-     *
-     * @param tabs the tabs control, its labels and per-tab shortcuts in row order
-     * @return one {@link VanillaTabContent} per tab, in row order
-     */
-    public static List<VanillaTabContent> buildTabContents(ControlSpec.Tabs tabs) {
-        var contents = new ArrayList<VanillaTabContent>(tabs.labels().size());
-        for (var index = 0; index < tabs.labels().size(); index++) {
-            contents.add(new VanillaTabContent(
-                tabs.labels().get(index),
-                tabs.shortcutAt(index)));
-        }
-        return contents;
-    }
-
-    /**
      * The height a run of rows occupies when stacked with a gap between each: the summed heights plus one
      * gap per seam. The SSOT for "how tall does this run of rows stand", read by {@link #measureStrip}
      * for the whole strip's body and by the capped strip layout for its pinned footer block, so the two
@@ -306,7 +238,7 @@ public final class ControlStripLayout {
                 table.labelledRows().size(),
                 table.columnCount());
         } else if (spec instanceof ControlSpec.Tabs tabs) {
-            segments = splitTabsIntoSegments(
+            segments = TabsControlLayout.splitIntoSegments(
                 tabs,
                 row,
                 measurer);
@@ -427,30 +359,6 @@ public final class ControlStripLayout {
             widths);
     }
 
-    // The per-tab hit segments of a tabs row, each snapped to its label-plus-shortcut width via the
-    // shared VanillaTabStrip geometry, so the tabs are hit exactly where they are drawn. The tabs fill the
-    // row they were laid into rather than a fixed height, so a header band standing at an injected height
-    // splits into tabs of that height instead of segments floating loose in a taller or shorter band.
-    private static List<Rectangle> splitTabsIntoSegments(
-            ControlSpec.Tabs tabs,
-            Rectangle row,
-            LineWidthMeasurer measurer) {
-
-        var laidOut = VanillaTabStrip.layoutTabs(
-            row.x(),
-            row.y() + row.height(),
-            row.height(),
-            tabsSegmentSpec(),
-            buildTabContents(tabs),
-            measurer);
-
-        var segments = new ArrayList<Rectangle>(laidOut.size());
-        for (var tab : laidOut) {
-            segments.add(tab.bounds());
-        }
-        return List.copyOf(segments);
-    }
-
     // The width of a control's row, snapped to its label(s): a checkbox is its tick box plus a gap
     // plus its label; a horizontal radio is its equal segments side by side, a vertical table is one
     // segment column wide; a toggle is its label plus padding; a label is just its measured text,
@@ -478,7 +386,7 @@ public final class ControlStripLayout {
             return measureVerticalTableRowWidth(table, measurer);
         }
         if (spec instanceof ControlSpec.Tabs tabs) {
-            return measureTabsRowWidth(tabs, measurer);
+            return TabsControlLayout.measureRowWidth(tabs, measurer);
         }
         if (spec instanceof ControlSpec.SideBySide pair) {
             // The two columns side by side: the left column, the gap parting them, then the right.
@@ -513,16 +421,6 @@ public final class ControlStripLayout {
         return measureStackedHeight(rowHeights);
     }
 
-    // The width a tabs row needs: its tabs laid side by side, each snapped to its label-plus-shortcut
-    // width through the shared VanillaTabStrip geometry - the same snap layoutTabs later applies - so the
-    // measured strip is exactly as wide as the drawn tabs.
-    private static float measureTabsRowWidth(ControlSpec.Tabs tabs, LineWidthMeasurer measurer) {
-        return VanillaTabStrip.measureRowWidth(
-            buildTabContents(tabs),
-            tabsSegmentSpec(),
-            measurer);
-    }
-
     // The width a vertical radio table needs: its column count wide. Each column sizes to the same
     // width - the width its widest row needs under the geometry the table lays its rows out in - and the
     // columns sit side by side, so a two-column table needs twice one column's width. One column is the
@@ -551,7 +449,7 @@ public final class ControlStripLayout {
             return rowCount * CONTROL_ROW_HEIGHT;
         }
         if (spec instanceof ControlSpec.Tabs) {
-            return TAB_HEIGHT;
+            return TabsControlLayout.TAB_HEIGHT;
         }
         if (spec instanceof ControlSpec.SideBySide pair) {
             // The group stands as tall as its taller column, so the shorter column top-aligns and
@@ -635,16 +533,6 @@ public final class ControlStripLayout {
             RADIO_SEGMENT_MIN_WIDTH,
             BODY_FONT_SIZE,
             sizing);
-    }
-
-    // The segment-sizing rule for a tabs row: the tab padding, minimum, and tab font. A tabs row always
-    // snaps each tab to its own label-plus-shortcut width, so this reads SNAPPED.
-    private static SegmentSpec tabsSegmentSpec() {
-        return new SegmentSpec(
-            TAB_TEXT_PADDING,
-            MIN_TAB_WIDTH,
-            TAB_FONT_SIZE,
-            SegmentSizing.SNAPPED);
     }
 
     // Extra footprint a trailing label adds past the control's own row, or none when it is blank. Only a

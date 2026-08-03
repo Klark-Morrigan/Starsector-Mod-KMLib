@@ -9,6 +9,7 @@ import kmlib.starsector.ui.font.LazyFontSpanMeasurer;
 import kmlib.starsector.ui.font.TextFace;
 import kmlib.starsector.ui.input.UiCursor;
 import kmlib.starsector.ui.layout.ControlStripLayout;
+import kmlib.starsector.ui.layout.TabsControlLayout;
 import kmlib.starsector.ui.text.LabelRuns;
 import kmlib.starsector.ui.text.StyledSpanMeasurer;
 import kmlib.starsector.ui.text.TextSpan;
@@ -90,7 +91,7 @@ public final class ControlRenderer {
     // Hover reads the cursor here so the tab under the pointer lights without an input event.
     private static void drawTabs(Control control, ControlPaint paint) {
         var spec = (ControlSpec.Tabs) control.spec();
-        var contents = ControlStripLayout.buildTabContents(spec);
+        var contents = TabsControlLayout.buildTabContents(spec);
         var tabs = VanillaTabStrip.zipTabs(contents, control.segments());
 
         var hoveredIndex = VanillaTabStrip.findTabIndexAt(
