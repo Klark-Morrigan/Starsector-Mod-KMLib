@@ -9,7 +9,9 @@ import kmlib.starsector.ui.controls.SegmentSizing;
 import kmlib.starsector.ui.controls.VerticalTableSpecs;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.layout.ControlStripLayout.StripMeasurement;
+import kmlib.starsector.ui.text.TextSpan;
 import kmlib.starsector.ui.widgets.IconLabelRow;
+import kmlib.starsector.ui.widgets.RowSlot;
 import kmlib.starsector.ui.widgets.TriangleDirection;
 import kmlib.starsector.ui.widgets.tabs.TabStyle;
 import kmlib.testfixtures.starsector.ui.font.LineWidthMeasurerFake;
@@ -90,6 +92,58 @@ final class ControlStripLayoutTest {
                 + 5 * WIDTH_PER_CHAR
                 + 6f
                 + 2 * WIDTH_PER_CHAR;
+
+            assertThat(measurement.rowWidths().get(0))
+                .isCloseTo(expectedRow, within(TOLERANCE));
+        }
+
+        @Test
+        void measureStripChargesAContinuedToggleLabelBothRunsAndTheGapBetweenThem() {
+            // A toggle sizes its button past its label, so the runs and their gap have to reach the
+            // padding rather than only the first run - "Factions" (8) and "3" (1) at 10 per character,
+            // plus the 6-unit run gap, plus the button's own padding.
+            var toggle = LabelledControlSpecs
+                .buildToggle("Factions", true, ControlAction.NONE)
+                .continuesWith(LabelledControlSpecs.buildLabelSpan("3"));
+
+            var measurement = ControlStripLayout.measureStrip(
+                List.<ControlSpec>of(toggle),
+                measurerFake);
+
+            var expectedRow = 8 * WIDTH_PER_CHAR
+                + 6f
+                + 1 * WIDTH_PER_CHAR
+                + ControlStripLayout.TOGGLE_TEXT_PADDING;
+
+            assertThat(measurement.rowWidths().get(0))
+                .isCloseTo(expectedRow, within(TOLERANCE));
+        }
+
+        @Test
+        void measureStripChargesAColumnTableRowBothRunsAndTheGapBetweenThem() {
+            // The shape a picker list actually draws: a crest, a name called out part-way through in
+            // another colour, and a right-aligned value. The row has to hold both runs and the gap
+            // parting them, or the column comes out narrower than the name painted into it - "AB" (2)
+            // and "12" (2) at 10 per character with the 6-unit run gap between them.
+            var table = ControlSpec.VerticalTable.createColumnTable(
+                List.of(VerticalTableSpecs
+                    .buildRow("AB")
+                    .continuesWith(new TextSpan("12", VerticalTableSpecs.ROW_TEXT_COLOUR))
+                    .leadsWith(new RowSlot.Image("crest_ab"))
+                    .trailsWith(new RowSlot.Text(
+                        new TextSpan("7", VerticalTableSpecs.ROW_TEXT_COLOUR)))),
+                ControlSpec.NO_SELECTION,
+                ControlAction.NONE);
+
+            var measurement = ControlStripLayout.measureStrip(
+                List.<ControlSpec>of(table),
+                measurerFake);
+
+            var expectedRow = IconLabelRow.measureRowWidth(
+                ControlStripLayout.CONTROL_ROW_HEIGHT,
+                2 * WIDTH_PER_CHAR + 6f + 2 * WIDTH_PER_CHAR,
+                true,
+                1 * WIDTH_PER_CHAR);
 
             assertThat(measurement.rowWidths().get(0))
                 .isCloseTo(expectedRow, within(TOLERANCE));
