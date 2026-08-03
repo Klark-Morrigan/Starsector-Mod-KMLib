@@ -1,9 +1,9 @@
 package kmlib.starsector.ui.map;
 
 import com.fs.starfarer.api.ui.PositionAPI;
-import com.fs.starfarer.api.ui.UIComponentAPI;
 
 import kmlib.math.geometry.Rectangle;
+import kmlib.testfixtures.starsector.ui.coreui.CoreUiWidgetFake;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -33,34 +33,40 @@ class MapSurfaceBoundsTest {
     private static final Rectangle TAB_STRIP_BOX = new Rectangle(10f, 1168f, 1900f, 15f);
     private static final Rectangle BAR_CONTROL_BOX = new Rectangle(141f, 1165f, 130f, 18f);
 
-    // The intel screen's map visor and the control bar it draws across its own bottom edge. One box
-    // serves as both the visor and its surface because that is the finding: the visor's surface
-    // fills it exactly, which is what makes the bar impossible to exclude by complement and is why
-    // the chrome half of the answer exists.
+    // The intel screen's map visor, the control bar it draws across its own bottom edge, and one of
+    // the buttons that bar holds. One box serves as both the visor and its surface because that is
+    // the finding: the visor's surface fills it exactly, which is what makes the bar impossible to
+    // exclude by complement and is why the chrome half of the answer exists.
     private static final Rectangle VISOR_BOX = new Rectangle(525f, 293f, 890f, 784f);
     private static final Rectangle VISOR_BAR_BOX = new Rectangle(524f, 1059f, 890f, 19f);
+    private static final Rectangle VISOR_BAR_BUTTON_BOX = new Rectangle(652f, 1059f, 125f, 19f);
+    private static final Rectangle SECOND_VISOR_BAR_BUTTON_BOX =
+        new Rectangle(783f, 1059f, 125f, 19f);
 
     private static final float DRAWN_OPACITY = 1f;
     private static final float FADED_TO_NOTHING_OPACITY = 0f;
 
-    // A component the layout placed and drew, so it is a candidate on both counts and any case
-    // below turns only on the one thing it changes.
-    private static UIComponentAPI createDrawnWidgetMock(Rectangle box) {
-        return createWidgetMock(box, DRAWN_OPACITY);
+    // A child that draws itself and holds nothing, which is every chrome piece on the M map's tab
+    // and the state the expansion rule has to leave alone.
+    private static DrawnChildBoxes createLeafChild(Rectangle box) {
+        return new DrawnChildBoxes(box, List.of());
     }
 
-    private static UIComponentAPI createWidgetMock(Rectangle box, float opacity) {
-        // Built before the stubbing below rather than inside it: creating a mock while another
-        // mock's stubbing is still open is what Mockito reports as unfinished stubbing.
-        var positionMock = box == null ? null : createPositionMock(box);
+    // A component the layout placed and drew, so it is a candidate on both counts and any case below
+    // turns only on the one thing it changes.
+    private static CoreUiWidgetFake createDrawnWidgetFake(Rectangle box, Object... children) {
+        return createWidgetFake(box, DRAWN_OPACITY, children);
+    }
 
-        var widgetMock = mock(UIComponentAPI.class);
-        when(widgetMock.getOpacity())
-            .thenReturn(opacity);
-        when(widgetMock.getPosition())
-            .thenReturn(positionMock);
+    private static CoreUiWidgetFake createWidgetFake(
+            Rectangle box,
+            float opacity,
+            Object... children) {
 
-        return widgetMock;
+        return new CoreUiWidgetFake(
+            box == null ? null : createPositionMock(box),
+            opacity,
+            children);
     }
 
     private static PositionAPI createPositionMock(Rectangle box) {
@@ -87,7 +93,10 @@ class MapSurfaceBoundsTest {
             // whichever child the tab happens to list first.
             assertThat(MapSurfaceBounds.selectSurfaceArea(
                     TAB_BOX,
-                    List.of(TAB_STRIP_BOX, SURFACE_BOX, BAR_CONTROL_BOX)))
+                    List.of(
+                        createLeafChild(TAB_STRIP_BOX),
+                        createLeafChild(SURFACE_BOX),
+                        createLeafChild(BAR_CONTROL_BOX))))
                 .isEqualTo(new MapSurfaceArea(
                     SURFACE_BOX,
                     List.of(TAB_STRIP_BOX, BAR_CONTROL_BOX)));
@@ -97,11 +106,59 @@ class MapSurfaceBoundsTest {
         void selectSurfaceAreaKeepsAChromePieceDrawnOverTheSurface() {
             // The intel screen's visor. Its surface is the whole tab, so the bar drawn across the
             // bottom of it is inside the surface rather than beside it - the case that a rule
-            // returning the surface alone could not express, and the reason the siblings come back.
+            // returning the surface alone could not express, and the reason the chrome comes back.
             assertThat(MapSurfaceBounds.selectSurfaceArea(
                     VISOR_BOX,
-                    List.of(VISOR_BOX, VISOR_BAR_BOX)))
+                    List.of(createLeafChild(VISOR_BOX), createLeafChild(VISOR_BAR_BOX))))
                 .isEqualTo(new MapSurfaceArea(VISOR_BOX, List.of(VISOR_BAR_BOX)));
+        }
+
+        @Test
+        void selectSurfaceAreaNarrowsAChromePieceOverTheSurfaceToWhatItDraws() {
+            // The visor's bar again, this time read one level deeper. The bar spans the map's whole
+            // width while all it draws is buttons, so excluding its own box parks the hover over map
+            // the player can plainly see between them. Two buttons rather than one, since the bar
+            // holds several and one would not tell a piece standing for all of its children apart
+            // from a piece standing for whichever came first.
+            assertThat(MapSurfaceBounds.selectSurfaceArea(
+                    VISOR_BOX,
+                    List.of(
+                        createLeafChild(VISOR_BOX),
+                        new DrawnChildBoxes(
+                            VISOR_BAR_BOX,
+                            List.of(VISOR_BAR_BUTTON_BOX, SECOND_VISOR_BAR_BUTTON_BOX)))))
+                .isEqualTo(new MapSurfaceArea(
+                    VISOR_BOX,
+                    List.of(VISOR_BAR_BUTTON_BOX, SECOND_VISOR_BAR_BUTTON_BOX)));
+        }
+
+        @Test
+        void selectSurfaceAreaKeepsTheWholeBoxOfAChromePieceMerelyAbuttingTheSurface() {
+            // A chrome piece sharing an edge with the surface and no area. Narrowing it would let
+            // the one line of pixels the two boxes share read as map, since a box contains its own
+            // edges; keeping its own box leaves that line chrome, which is the same side of the
+            // trade as every other case that cannot be read confidently.
+            var abuttingStripBox = new Rectangle(10f, 1164f, 1900f, 19f);
+
+            assertThat(MapSurfaceBounds.selectSurfaceArea(
+                    TAB_BOX,
+                    List.of(
+                        createLeafChild(SURFACE_BOX),
+                        new DrawnChildBoxes(abuttingStripBox, List.of(BAR_CONTROL_BOX)))))
+                .isEqualTo(new MapSurfaceArea(SURFACE_BOX, List.of(abuttingStripBox)));
+        }
+
+        @Test
+        void selectSurfaceAreaKeepsTheWholeBoxOfAChromePieceBesideTheSurface() {
+            // The M map's tab strip, which holds controls of its own but is laid out clear of the
+            // surface. Narrowing it there would be busywork at best and could only ever widen where
+            // the hover reaches, since every point in it is outside the surface already.
+            assertThat(MapSurfaceBounds.selectSurfaceArea(
+                    TAB_BOX,
+                    List.of(
+                        createLeafChild(SURFACE_BOX),
+                        new DrawnChildBoxes(TAB_STRIP_BOX, List.of(BAR_CONTROL_BOX)))))
+                .isEqualTo(new MapSurfaceArea(SURFACE_BOX, List.of(TAB_STRIP_BOX)));
         }
 
         @Test
@@ -110,7 +167,7 @@ class MapSurfaceBoundsTest {
             // surface, so the caller falls back rather than accepting a tab strip as the map.
             assertThat(MapSurfaceBounds.selectSurfaceArea(
                     TAB_BOX,
-                    List.of(TAB_STRIP_BOX, BAR_CONTROL_BOX)))
+                    List.of(createLeafChild(TAB_STRIP_BOX), createLeafChild(BAR_CONTROL_BOX))))
                 .isNull();
         }
 
@@ -122,7 +179,9 @@ class MapSurfaceBoundsTest {
 
         @Test
         void selectSurfaceAreaFindsNothingWhenTheTabWasNeverPositioned() {
-            assertThat(MapSurfaceBounds.selectSurfaceArea(null, List.of(SURFACE_BOX)))
+            assertThat(MapSurfaceBounds.selectSurfaceArea(
+                    null,
+                    List.of(createLeafChild(SURFACE_BOX))))
                 .isNull();
         }
 
@@ -134,7 +193,9 @@ class MapSurfaceBoundsTest {
             // suppression can then be too weak, never wider than the tab itself.
             var overflowingChildBox = new Rectangle(-595f, -109f, 3017f, 1950f);
 
-            assertThat(MapSurfaceBounds.selectSurfaceArea(TAB_BOX, List.of(overflowingChildBox)))
+            assertThat(MapSurfaceBounds.selectSurfaceArea(
+                    TAB_BOX,
+                    List.of(createLeafChild(overflowingChildBox))))
                 .isEqualTo(new MapSurfaceArea(TAB_BOX, List.of()));
         }
     }
@@ -144,12 +205,37 @@ class MapSurfaceBoundsTest {
 
         @Test
         void collectDrawnBoxesOfReturnsEveryDrawnChildBoxInTheOrderGiven() {
-            var surfaceWidgetMock = createDrawnWidgetMock(SURFACE_BOX);
-            var tabStripWidgetMock = createDrawnWidgetMock(TAB_STRIP_BOX);
+            var surfaceWidgetFake = createDrawnWidgetFake(SURFACE_BOX);
+            var tabStripWidgetFake = createDrawnWidgetFake(TAB_STRIP_BOX);
 
             assertThat(MapSurfaceBounds.collectDrawnBoxesOf(
-                    List.of(surfaceWidgetMock, tabStripWidgetMock)))
-                .containsExactly(SURFACE_BOX, TAB_STRIP_BOX);
+                    List.of(surfaceWidgetFake, tabStripWidgetFake)))
+                .containsExactly(
+                    new DrawnChildBoxes(SURFACE_BOX, List.of()),
+                    new DrawnChildBoxes(TAB_STRIP_BOX, List.of()));
+        }
+
+        @Test
+        void collectDrawnBoxesOfReturnsTheBoxesAChildDrawsIn() {
+            // The visor's band. Its own box is what a single-level read sees, and the button inside
+            // it is what the expansion rule needs handed to it alongside.
+            var buttonWidgetFake = createDrawnWidgetFake(VISOR_BAR_BUTTON_BOX);
+            var barWidgetFake = createDrawnWidgetFake(VISOR_BAR_BOX, buttonWidgetFake);
+
+            assertThat(MapSurfaceBounds.collectDrawnBoxesOf(List.of(barWidgetFake)))
+                .containsExactly(new DrawnChildBoxes(
+                    VISOR_BAR_BOX, List.of(VISOR_BAR_BUTTON_BOX)));
+        }
+
+        @Test
+        void collectDrawnBoxesOfLeavesOutAChildsChildFadedToNothing() {
+            // The same sifting one level down. A button faded out is one the player cannot aim at,
+            // so leaving it in would suppress the hover over map that is plainly visible.
+            var fadedButtonFake = createWidgetFake(VISOR_BAR_BUTTON_BOX, FADED_TO_NOTHING_OPACITY);
+            var barWidgetFake = createDrawnWidgetFake(VISOR_BAR_BOX, fadedButtonFake);
+
+            assertThat(MapSurfaceBounds.collectDrawnBoxesOf(List.of(barWidgetFake)))
+                .containsExactly(new DrawnChildBoxes(VISOR_BAR_BOX, List.of()));
         }
 
         @Test
@@ -157,34 +243,34 @@ class MapSurfaceBoundsTest {
             // A tab the player has switched away from keeps its box and its place in the tree while
             // it fades out. Were it still a candidate, it could out-cover the real surface and hand
             // the rule a box for a screen nobody is looking at.
-            var fadedWidgetMock = createWidgetMock(SURFACE_BOX, FADED_TO_NOTHING_OPACITY);
-            var tabStripWidgetMock = createDrawnWidgetMock(TAB_STRIP_BOX);
+            var fadedWidgetFake = createWidgetFake(SURFACE_BOX, FADED_TO_NOTHING_OPACITY);
+            var tabStripWidgetFake = createDrawnWidgetFake(TAB_STRIP_BOX);
 
             assertThat(MapSurfaceBounds.collectDrawnBoxesOf(
-                    List.of(fadedWidgetMock, tabStripWidgetMock)))
-                .containsExactly(TAB_STRIP_BOX);
+                    List.of(fadedWidgetFake, tabStripWidgetFake)))
+                .containsExactly(new DrawnChildBoxes(TAB_STRIP_BOX, List.of()));
         }
 
         @Test
         void collectDrawnBoxesOfLeavesOutAChildTheLayoutNeverPositioned() {
             // No position at all, so it occupies nothing and cannot be measured against the tab.
-            var unpositionedWidgetMock = createWidgetMock(null, DRAWN_OPACITY);
-            var surfaceWidgetMock = createDrawnWidgetMock(SURFACE_BOX);
+            var unpositionedWidgetFake = createWidgetFake(null, DRAWN_OPACITY);
+            var surfaceWidgetFake = createDrawnWidgetFake(SURFACE_BOX);
 
             assertThat(MapSurfaceBounds.collectDrawnBoxesOf(
-                    List.of(unpositionedWidgetMock, surfaceWidgetMock)))
-                .containsExactly(SURFACE_BOX);
+                    List.of(unpositionedWidgetFake, surfaceWidgetFake)))
+                .containsExactly(new DrawnChildBoxes(SURFACE_BOX, List.of()));
         }
 
         @Test
         void collectDrawnBoxesOfLeavesOutAChildThatIsNotAComponent() {
             // The children come back off an unpublished accessor as a bare list, so nothing
             // guarantees every entry is a component - and one that is not has no box to compare.
-            var surfaceWidgetMock = createDrawnWidgetMock(SURFACE_BOX);
+            var surfaceWidgetFake = createDrawnWidgetFake(SURFACE_BOX);
 
             assertThat(MapSurfaceBounds.collectDrawnBoxesOf(
-                    List.of(new Object(), surfaceWidgetMock)))
-                .containsExactly(SURFACE_BOX);
+                    List.of(new Object(), surfaceWidgetFake)))
+                .containsExactly(new DrawnChildBoxes(SURFACE_BOX, List.of()));
         }
 
         @Test

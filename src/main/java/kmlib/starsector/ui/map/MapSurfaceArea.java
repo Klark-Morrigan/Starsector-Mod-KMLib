@@ -13,23 +13,25 @@ import java.util.List;
  * <p>The chrome half is what a complement test alone cannot cover. On the {@code M} map the surface
  * is inset and every chrome piece sits beside it, so "outside the surface" catches all of it; on the
  * intel screen's map visor the surface fills the tab exactly and the control bar is drawn over it,
- * where no complement of the surface can exclude the bar. Carrying the siblings makes the same rule
+ * where no complement of the surface can exclude the bar. Carrying the chrome makes the same rule
  * fit both, and costs the map tab nothing because its added clause never fires there.
  *
- * @param box                the surface's own box in UI coordinates, confined to its tab
- * @param siblingChromeBoxes the boxes of the tab's other drawn direct children, whether they sit
- *                           beside the surface or over it
+ * @param box         the surface's own box in UI coordinates, confined to its tab
+ * @param chromeBoxes where the tab draws something other than the map, whether beside the surface
+ *                    or over it. Not one box per sibling: a chrome piece drawn over the surface
+ *                    contributes the boxes of what it draws rather than the strip it was laid out
+ *                    in, so a band spanning the map suppresses only where its buttons are
  */
 public record MapSurfaceArea(
     Rectangle box,
-    List<Rectangle> siblingChromeBoxes) {
+    List<Rectangle> chromeBoxes) {
 
     /**
      * Copied on the way in, because a caller holds this across frames while the list it was built
      * from is a scratch collection the measure walked the tree to fill.
      */
     public MapSurfaceArea {
-        siblingChromeBoxes = List.copyOf(siblingChromeBoxes);
+        chromeBoxes = List.copyOf(chromeBoxes);
     }
 
     /**
@@ -44,7 +46,7 @@ public record MapSurfaceArea(
         if (!box.containsPoint(pointX, pointY)) {
             return false;
         }
-        for (var chromeBox : siblingChromeBoxes) {
+        for (var chromeBox : chromeBoxes) {
             if (chromeBox.containsPoint(pointX, pointY)) {
                 return false;
             }

@@ -72,7 +72,7 @@ class MapSurfaceAreaTest {
             var surfaceArea = new MapSurfaceArea(SURFACE_BOX, mutableChromeBoxes);
             mutableChromeBoxes.clear();
 
-            assertThat(surfaceArea.siblingChromeBoxes())
+            assertThat(surfaceArea.chromeBoxes())
                 .containsExactly(BAR_BOX);
         }
     }

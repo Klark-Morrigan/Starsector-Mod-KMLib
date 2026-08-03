@@ -1,7 +1,6 @@
 package kmlib.starsector.ui.map;
 
 import com.fs.starfarer.api.Global;
-import com.fs.starfarer.api.ui.UIComponentAPI;
 
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.coreui.CoreUiTree;
@@ -39,6 +38,13 @@ import java.util.List;
  * surface does not cover every host. Where the surface is inset the chrome sits beside it and is
  * outside it anyway; where the surface fills its tab exactly the chrome is drawn over it, and only
  * naming the siblings excludes it. See {@link MapSurfaceArea}.
+ *
+ * <p>Chrome drawn over the surface is narrowed to what it actually draws, since there and only
+ * there does its box stand between the player and map they can see. A strip laid across the map to
+ * hold buttons spans the map's whole width while the player only ever aims at the buttons, so such
+ * a piece stands for the boxes of its own drawn children wherever it has any. Chrome laid beside
+ * the surface keeps its own box, whatever it holds: the surface's bounds already exclude it, so its
+ * exact footprint was never what suppressed there.
  *
  * <p>Reports nothing rather than guessing when no child fits, and says so once at WARN. A build that
  * reshapes the tab past this rule is exactly the case that would otherwise regress in silence, so
@@ -91,9 +97,9 @@ public final class MapSurfaceBounds {
      * Where the map tab on screen shows its map.
      *
      * <p>Measured once per tab and screen and reused after, so a caller in a render pass can ask per
-     * frame. A measure is one children read and a box read per child - a single level, not a subtree
-     * walk - and only a measure that found a surface is kept, so an unanswerable frame is retried
-     * rather than remembered.
+     * frame. A measure reads the tab's children and then the children of each drawn one - two
+     * levels, not a subtree walk - and only a measure that found a surface is kept, so an
+     * unanswerable frame is retried rather than remembered.
      *
      * @return the surface and the chrome drawn with it, or null when no map tab is on screen, the
      *         reach into the widget tree failed, or no child of the tab looks like a surface; a
@@ -139,12 +145,16 @@ public final class MapSurfaceBounds {
      * than the tab is - the surface box never reaches past the tab, so a cursor outside the tab is
      * never inside the surface.
      *
-     * @param tabBox          the tab's own box, or null when the tab was never positioned
-     * @param drawnChildBoxes the boxes of the tab's drawn direct children, in any order
-     * @return the surface and its sibling chrome, or null when the tab has no area or nothing
-     *         covers enough of it
+     * @param tabBox        the tab's own box, or null when the tab was never positioned
+     * @param drawnChildren the tab's drawn direct children, each with the boxes it draws in, in any
+     *                      order
+     * @return the surface and the chrome to exclude from it, or null when the tab has no area or
+     *         nothing covers enough of it
      */
-    static MapSurfaceArea selectSurfaceArea(Rectangle tabBox, List<Rectangle> drawnChildBoxes) {
+    static MapSurfaceArea selectSurfaceArea(
+            Rectangle tabBox,
+            List<DrawnChildBoxes> drawnChildren) {
+
         if (tabBox == null) {
             return null;
         }
@@ -155,8 +165,8 @@ public final class MapSurfaceBounds {
         var surfaceIndex = -1;
         var largestArea = 0f;
         Rectangle surfaceBox = null;
-        for (var index = 0; index < drawnChildBoxes.size(); index++) {
-            var boxWithinTab = drawnChildBoxes.get(index).intersectWith(tabBox);
+        for (var index = 0; index < drawnChildren.size(); index++) {
+            var boxWithinTab = drawnChildren.get(index).box().intersectWith(tabBox);
             var area = computeAreaOf(boxWithinTab);
             if (area > largestArea) {
                 largestArea = area;
@@ -169,48 +179,60 @@ public final class MapSurfaceBounds {
         }
         return new MapSurfaceArea(
             surfaceBox,
-            collectChromeBoxesAround(drawnChildBoxes, surfaceIndex));
+            collectChromeBoxesAround(drawnChildren, surfaceBox, surfaceIndex));
     }
 
     /**
-     * The drawn ones among a component's children, as boxes.
+     * The drawn ones among a component's children, each with the boxes of its own drawn children.
      *
      * <p>Children that are not components, are faded to nothing, or were never positioned are left
-     * out: none of them is something the player can see, so none can be the surface. Shared with the
-     * widget trace so a diagnostic reporting which child this rule picks feeds it the same
-     * candidates the live read does.
+     * out at both levels: none of them is something the player can see, so none can be the surface
+     * and none is drawn over it. Shared with the widget trace so a diagnostic reporting which child
+     * this rule picks feeds it the same candidates the live read does.
      *
      * @param children the children to measure, as read off the tree
-     * @return their boxes, in the order given
+     * @return each drawn child's boxes, in the order given
      */
-    static List<Rectangle> collectDrawnBoxesOf(List<?> children) {
-        var childBoxes = new ArrayList<Rectangle>();
+    static List<DrawnChildBoxes> collectDrawnBoxesOf(List<?> children) {
+        var drawnChildren = new ArrayList<DrawnChildBoxes>();
         for (var child : children) {
-            if (child instanceof UIComponentAPI widget && DrawnWidgets.isWidgetDrawn(widget)) {
-                var box = DrawnWidgets.resolveBoxOf(widget);
-                if (box != null) {
-                    childBoxes.add(box);
-                }
+            var box = DrawnWidgets.resolveDrawnBoxOf(child);
+            if (box != null) {
+                drawnChildren.add(new DrawnChildBoxes(box, collectDrawnChildBoxesOf(child)));
             }
         }
-        return childBoxes;
+        return drawnChildren;
     }
 
-    // Every drawn child but the one accepted as the surface. Taken as the tab listed them rather
-    // than confined to the tab the way the surface is: confining would change nothing a caller can
-    // observe, since the only points ever tested against chrome are ones already inside the surface,
-    // and the surface is inside the tab.
+    // Every drawn child but the one accepted as the surface, each narrowed to where it draws. Taken
+    // as the tab listed them rather than confined to the tab the way the surface is: confining would
+    // change nothing a caller can observe, since the only points ever tested against chrome are ones
+    // already inside the surface, and the surface is inside the tab.
     private static List<Rectangle> collectChromeBoxesAround(
-            List<Rectangle> drawnChildBoxes,
+            List<DrawnChildBoxes> drawnChildren,
+            Rectangle surfaceBox,
             int surfaceIndex) {
 
         var chromeBoxes = new ArrayList<Rectangle>();
-        for (var index = 0; index < drawnChildBoxes.size(); index++) {
+        for (var index = 0; index < drawnChildren.size(); index++) {
             if (index != surfaceIndex) {
-                chromeBoxes.add(drawnChildBoxes.get(index));
+                chromeBoxes.addAll(
+                    resolveChromeFootprintOf(drawnChildren.get(index), surfaceBox));
             }
         }
         return chromeBoxes;
+    }
+
+    // One level down from a component, sifted the same way its own level was.
+    private static List<Rectangle> collectDrawnChildBoxesOf(Object component) {
+        var childBoxes = new ArrayList<Rectangle>();
+        for (var child : CoreUiTree.readChildrenOf(component)) {
+            var box = DrawnWidgets.resolveDrawnBoxOf(child);
+            if (box != null) {
+                childBoxes.add(box);
+            }
+        }
+        return childBoxes;
     }
 
     private static float computeAreaOf(Rectangle box) {
@@ -227,6 +249,13 @@ public final class MapSurfaceBounds {
             && measuredScreenHeight == screenHeight;
     }
 
+    // Whether two boxes share any area at all. A shared edge alone does not count: an intersection
+    // of zero extent is what a non-overlap yields, and a chrome piece merely abutting the surface is
+    // beside it, which is the case that keeps its own box.
+    private static boolean isOverlapping(Rectangle box, Rectangle other) {
+        return computeAreaOf(box.intersectWith(other)) > 0f;
+    }
+
     // Records a measure for reuse. Only ever called with a surface that was found, so a frame that
     // could not answer is retried on the next one rather than pinning its own failure.
     private static void memoise(
@@ -239,6 +268,30 @@ public final class MapSurfaceBounds {
         measuredScreenWidth = screenWidth;
         measuredScreenHeight = screenHeight;
         memoisedSurfaceArea = surfaceArea;
+    }
+
+    // Where a chrome piece suppresses, which is not always the box it was laid out in.
+    //
+    // A piece drawn over the surface is the only kind whose box can hide map the player can see, and
+    // there what suppresses is what it draws - a strip laid out to hold buttons is as wide as the
+    // map, while the buttons are all there is to aim at. A piece beside the surface keeps its own
+    // box, since the surface's own bounds already exclude every point in it; that is also what makes
+    // this a no-op on a tab whose chrome is laid out beside its map, by construction rather than by
+    // inspection.
+    //
+    // What this gives up: a chrome piece that both holds children and paints its own backing is
+    // narrowed to the children, so a cell would light under the backing. Cosmetic and self-evident
+    // in play, against a leak that is neither - the same side of the trade as failing open.
+    private static List<Rectangle> resolveChromeFootprintOf(
+            DrawnChildBoxes chromePiece,
+            Rectangle surfaceBox) {
+
+        if (chromePiece.drawnChildBoxes().isEmpty()
+                || !isOverlapping(chromePiece.box(), surfaceBox)) {
+
+            return List.of(chromePiece.box());
+        }
+        return chromePiece.drawnChildBoxes();
     }
 
     // WARN rather than DEBUG, and on this library's own logger: a rule that stopped matching the

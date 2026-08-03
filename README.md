@@ -143,8 +143,10 @@ src/main/java/kmlib/
                      and column-count model a picker list ranks by,
                      holding no store of its own
   testfixtures/    - Fakes for KMLib's own ports (claims, fonts, intel
-                     screen, modelview, console output). Ships in the
-                     MAIN jar so consumer mods' tests can use them
+                     screen, modelview, console output) and for the core
+                     UI's widget tree, which a layout rule has to walk.
+                     Ships in the MAIN jar so consumer mods' tests can
+                     use them
 src/bridgestubs/java/ - compile-only mirrors of the Fast Rendering bridge
                         members KMLib reads, so an install without fr.jar
                         still compiles (see Build & Test); never shipped,

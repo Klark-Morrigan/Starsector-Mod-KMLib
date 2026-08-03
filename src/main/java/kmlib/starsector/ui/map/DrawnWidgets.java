@@ -46,4 +46,23 @@ final class DrawnWidgets {
         var position = widget.getPosition();
         return position == null ? null : VanillaPositions.toRectangle(position);
     }
+
+    /**
+     * A component's box, but only while it is something the player can see there.
+     *
+     * <p>The two questions above are always asked together wherever a walk sifts a raw children
+     * list, so they are answered together here. An entry that is not a component at all, one faded
+     * to nothing and one the layout never positioned all mean the same thing to a caller sizing up
+     * what is on screen - nothing to measure - and a caller that had to distinguish them would be
+     * writing the same three-way test at every level it descends.
+     *
+     * @param component an entry off a children list, which the list does not promise is a component
+     * @return its drawn box, or null when it is not a drawn, positioned component
+     */
+    static Rectangle resolveDrawnBoxOf(Object component) {
+        if (!(component instanceof UIComponentAPI widget) || !isWidgetDrawn(widget)) {
+            return null;
+        }
+        return resolveBoxOf(widget);
+    }
 }

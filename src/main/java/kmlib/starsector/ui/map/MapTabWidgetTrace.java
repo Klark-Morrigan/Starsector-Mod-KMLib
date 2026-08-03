@@ -11,6 +11,7 @@ import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 /**
  * Describes the vanilla widgets the cursor is currently inside on the map screen, so an overlay that
@@ -71,9 +72,10 @@ public final class MapTabWidgetTrace {
 
     /**
      * The current tab, the map tab on screen with the box each of its direct children occupies,
-     * which of them {@link MapSurfaceBounds} picks as the map surface, and the widgets whose drawn
-     * box contains the cursor - the last of those outermost first, so the innermost is named last,
-     * each with its depth, class, box, opacity and parent.
+     * what {@link MapSurfaceBounds} picks out of them as the map surface and as the chrome to
+     * exclude from it, and the widgets whose drawn box contains the cursor - the last of those
+     * outermost first, so the innermost is named last, each with its depth, class, box, opacity and
+     * parent.
      *
      * <p>Call from a map render path. Reads the cursor in UI coordinates, the space
      * {@code getPosition} reports in, so the boxes described are the boxes the player sees.
@@ -82,8 +84,10 @@ public final class MapTabWidgetTrace {
      * surface rule chooses from and a cursor-filtered view of it cannot show what the rule passed
      * over. A child the cursor never visits is invisible to the under-cursor walk while still being
      * a candidate, so a rule that picks by size can only be checked against the whole list. The
-     * chosen surface is reported beside it, off the same candidates the live read uses, so the line
-     * shows the choice rather than leaving it to be re-derived from the boxes by eye.
+     * chosen surface and the chrome boxes are reported beside it, off the same candidates the live
+     * read uses, so the line shows the choice rather than leaving it to be re-derived from the boxes
+     * by eye - and the chrome boxes are not always in the children list, since a chrome piece drawn
+     * over the surface stands for the boxes of what it draws a level further down.
      *
      * <p>Costs a tree walk and builds a string, so a caller in a render pass should ask only while
      * it intends to report the answer. The cursor position is deliberately left out: a caller
@@ -204,14 +208,7 @@ public final class MapTabWidgetTrace {
     // positioned is named too, since a rule that skipped it is only checkable against a list that
     // says it was there to skip.
     private static List<String> describeDirectChildren(List<?> children) {
-        var describedChildren = new ArrayList<String>();
-        for (var child : children) {
-            if (describedChildren.size() >= MAX_TRACE_WIDGETS) {
-                break;
-            }
-            describedChildren.add(describeDirectChild(child));
-        }
-        return describedChildren;
+        return describeUpToCap(children, MapTabWidgetTrace::describeDirectChild);
     }
 
     private static String describeDirectChild(Object child) {
@@ -232,9 +229,10 @@ public final class MapTabWidgetTrace {
     // from the live memo: the point of the line is what the rule says about the tree as it stands,
     // which a remembered answer could no longer be.
     //
-    // Reports the count of sibling chrome beside the surface box rather than every chrome box: the
-    // boxes themselves are already in the children list this sits next to, while the count is the
-    // one thing that list does not show - how many of them the rule is excluding the cursor from.
+    // Reports every chrome box rather than counting them, unlike the surface's own single box. The
+    // children list this sits next to no longer accounts for them: a chrome piece drawn over the
+    // surface stands for the boxes of what it draws, which are a level below anything that list
+    // names, so the boxes the cursor is actually excluded from appear nowhere else in the line.
     private static String describeSurfacePickedFrom(UIComponentAPI mapTab, List<?> children) {
         if (mapTab == null) {
             return "none";
@@ -246,7 +244,24 @@ public final class MapTabWidgetTrace {
         return surfaceArea == null
             ? "none"
             : "[" + describeBox(surfaceArea.box())
-                + " chrome=" + surfaceArea.siblingChromeBoxes().size() + "]";
+                + " chrome=" + describeUpToCap(
+                    surfaceArea.chromeBoxes(), MapTabWidgetTrace::describeBox) + "]";
+    }
+
+    // Every list in the line is capped the same way, so one pathological tab cannot push the rest of
+    // the description past where a log reader will follow it.
+    private static <T> List<String> describeUpToCap(
+            List<T> items,
+            Function<? super T, String> describeItem) {
+
+        var describedItems = new ArrayList<String>();
+        for (var item : items) {
+            if (describedItems.size() >= MAX_TRACE_WIDGETS) {
+                break;
+            }
+            describedItems.add(describeItem.apply(item));
+        }
+        return describedItems;
     }
 
     // Rounded to whole units: these are read off a log by eye against the game's own pixel grid, and
