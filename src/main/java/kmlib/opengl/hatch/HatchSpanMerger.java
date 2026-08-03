@@ -1,9 +1,6 @@
-package kmlib.opengl.hatch.segmentsinks;
+package kmlib.opengl.hatch;
 
-import kmlib.opengl.hatch.HatchJoinTally;
-import kmlib.opengl.hatch.HatchRun;
-import kmlib.opengl.hatch.HatchSegmentSink;
-import kmlib.opengl.hatch.HatchSegmentWriter;
+import kmlib.opengl.GlVertexRuns;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -12,30 +9,29 @@ import java.util.Map;
 import java.util.TreeMap;
 
 /**
- * Merges each hatch line's crossings into as few segments as the region allows, so a line spanning
- * several triangles comes back whole and breaks only where it genuinely leaves the region.
+ * Collects the spans a hatch clip walk finds and merges each line's into as few segments as the
+ * region allows, so a line spanning several triangles comes back whole and breaks only where it
+ * genuinely leaves the region.
  *
  * <p>Nothing can be emitted as the walk finds it: a crossing only turns out to continue an earlier
  * one once both are in hand, and the walk visits triangles in soup order rather than along any one
- * line. So the spans are held until the run is packed, gathered per line and merged then.
+ * line. So the spans are held until the run is packed, gathered per line and merged then. That is
+ * the whole reason this is a collaborator rather than a few locals in the clip - it outlives the
+ * walk that fills it.
  *
  * <p>Held in a {@link TreeMap} keyed by line index, so the packed run comes out in ascending line
  * order however the soup was ordered. A hash map would pack the same geometry in an order that
  * changed with the keys, which is the kind of difference that makes a run impossible to assert on
  * and a rendering impossible to compare frame to frame.
  *
- * <p>The whole merge runs in the (line, distance) terms the clip offers, and only the writer turns
- * those back into points - so the question of which of two coincident crossing points won a merge
- * never arises, since no point survives long enough to be picked.
+ * <p>Endpoints are rebuilt from the axes rather than carried through from the clip, so a merged
+ * segment lies exactly on its line - and so the question of which of two coincident crossing points
+ * won a merge never arises, since neither is kept. The merge itself runs entirely in the
+ * (line, distance) terms the clip offers, and only the packing crosses back into coordinates.
  */
-public final class CoalescedHatchSink implements HatchSegmentSink {
+final class HatchSpanMerger {
 
-    private final HatchSegmentWriter writer;
-
-    // The perpendicular gap between adjacent hatch lines, which the reported gaps are stated as a
-    // fraction of. Held rather than taken from the tolerance, since a zero tolerance still has to
-    // report the gaps it refused.
-    private final double spacing;
+    private final HatchAxes axes;
 
     // The widest gap between two of one line's spans that still counts as the same stroke, in the
     // soup's own units - the caller's fraction resolved against the spacing once here, so the
@@ -43,6 +39,7 @@ public final class CoalescedHatchSink implements HatchSegmentSink {
     private final double joinTolerance;
 
     private final Map<Integer, List<ClippedSpan>> spansByLineIndex = new TreeMap<>();
+    private final List<Float> segments = new ArrayList<>();
 
     // The running tally, accumulated as the merge runs; see HatchJoinTally for why the three kinds
     // of closed join are counted apart.
@@ -55,43 +52,40 @@ public final class CoalescedHatchSink implements HatchSegmentSink {
     // reports that there was no such gap rather than one of no width.
     private double narrowestOpenGap = Double.POSITIVE_INFINITY;
 
-    /**
-     * @param writer                 where the merged segments are packed
-     * @param spacing                the perpendicular gap between adjacent hatch lines, in the
-     *                               soup's own units
-     * @param joinToleranceFraction  how far apart two of one line's crossings may sit and still
-     *                               merge, as a fraction of that spacing
-     */
-    public CoalescedHatchSink(
-            HatchSegmentWriter writer,
-            double spacing,
-            double joinToleranceFraction) {
-
-        this.writer = writer;
-        this.spacing = spacing;
-        this.joinTolerance = joinToleranceFraction * spacing;
+    HatchSpanMerger(HatchAxes axes, double joinToleranceFraction) {
+        this.axes = axes;
+        this.joinTolerance = joinToleranceFraction * axes.spacing();
     }
 
-    @Override
-    public void acceptClippedSpan(int lineIndex, double minAlong, double maxAlong) {
+    /**
+     * Records one hatch line's crossing of one triangle.
+     *
+     * @param lineIndex which line of the family the span lies on
+     * @param minAlong  where the span starts, as a distance along the line direction
+     * @param maxAlong  where it ends, always at or past {@code minAlong}
+     */
+    void acceptClippedSpan(int lineIndex, double minAlong, double maxAlong) {
         spansByLineIndex
             .computeIfAbsent(lineIndex, line -> new ArrayList<>())
             .add(new ClippedSpan(minAlong, maxAlong));
     }
 
-    @Override
-    public HatchRun packHatchRun() {
+    /**
+     * @return everything accepted so far, merged, as a drawable run paired with how the merge
+     *         closed the joins it made
+     */
+    HatchRun packHatchRun() {
         for (var line : spansByLineIndex.entrySet()) {
             mergeSpansOfLine(line.getKey(), line.getValue());
         }
         return new HatchRun(
-            writer.packSegments(),
+            GlVertexRuns.packFloats(segments),
             new HatchJoinTally(
                 exactJoinCount,
                 toleranceJoinCount,
                 overlappingJoinCount,
-                widestToleranceGap / spacing,
-                narrowestOpenGap / spacing));
+                widestToleranceGap / axes.spacing(),
+                narrowestOpenGap / axes.spacing()));
     }
 
     // Emits one segment per point-to-point stretch of the numbered line. Sorting by start is what
@@ -114,7 +108,7 @@ public final class CoalescedHatchSink implements HatchSegmentSink {
                 // rather than guarded: how near the nearest refusal came is what says whether
                 // the tolerance is set below gaps it was meant to close.
                 narrowestOpenGap = Math.min(narrowestOpenGap, gap);
-                writer.addSegmentOnLine(lineIndex, stretchStart, stretchEnd);
+                addSegmentOnLine(lineIndex, stretchStart, stretchEnd);
                 stretchStart = span.start();
                 stretchEnd = span.end();
                 continue;
@@ -125,7 +119,7 @@ public final class CoalescedHatchSink implements HatchSegmentSink {
             // sorted sweep permits: spans are ordered by start, not by end.
             stretchEnd = Math.max(stretchEnd, span.end());
         }
-        writer.addSegmentOnLine(lineIndex, stretchStart, stretchEnd);
+        addSegmentOnLine(lineIndex, stretchStart, stretchEnd);
     }
 
     // Records what closed one join. Exact means the two crossings came out of their triangles
@@ -143,6 +137,18 @@ public final class CoalescedHatchSink implements HatchSegmentSink {
         }
         toleranceJoinCount++;
         widestToleranceGap = Math.max(widestToleranceGap, gap);
+    }
+
+    // Appends one merged stretch as its two endpoints, each packed x then y.
+    private void addSegmentOnLine(int lineIndex, double start, double end) {
+        addPointOnLine(lineIndex, start);
+        addPointOnLine(lineIndex, end);
+    }
+
+    // Appends one endpoint as its packed x then y.
+    private void addPointOnLine(int lineIndex, double distanceAlong) {
+        segments.add((float) axes.computeXOnLine(lineIndex, distanceAlong));
+        segments.add((float) axes.computeYOnLine(lineIndex, distanceAlong));
     }
 
     // One crossing of the region by one hatch line, as the two distances along that line it runs

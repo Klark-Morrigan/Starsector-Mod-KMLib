@@ -1,9 +1,9 @@
 package kmlib.opengl.hatch;
 
 /**
- * How a merging {@link HatchJoining} closed the joins it made, split by what closed each one: two
- * crossings that landed on the same point exactly, a gap the join tolerance reached across, or two
- * spans that overlapped and were never two strokes to begin with.
+ * How a hatch closed the joins it made, split by what closed each one: two crossings that landed
+ * on the same point exactly, a gap the join tolerance reached across, or two spans that overlapped
+ * and were never two strokes to begin with.
  *
  * <p>Evidence about the tolerance rather than an input to anything drawn. Two triangles sharing an
  * edge ought to cross a hatch line at the same point to the last bit, in which case the tolerance
@@ -44,7 +44,10 @@ public record HatchJoinTally(
     double widestToleranceGapFraction,
     double narrowestOpenGapFraction) {
 
-    /** What a joining that merges nothing reports: it closes and refuses no join at all. */
+    /**
+     * A hatch that closed and refused no join at all - what nothing hatched reports, and equally
+     * what a region every line crosses exactly once reports.
+     */
     public static final HatchJoinTally NO_JOINS =
         new HatchJoinTally(0, 0, 0, 0, Double.POSITIVE_INFINITY);
 }

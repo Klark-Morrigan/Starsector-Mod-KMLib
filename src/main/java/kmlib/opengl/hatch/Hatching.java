@@ -3,8 +3,6 @@ package kmlib.opengl.hatch;
 import kmlib.math.geometry.Limits;
 import kmlib.opengl.GlVertexRuns;
 import kmlib.opengl.PolygonTessellator;
-import kmlib.opengl.hatch.segmentsinks.CoalescedHatchSink;
-import kmlib.opengl.hatch.segmentsinks.PerTriangleHatchSink;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,9 +21,12 @@ import java.util.List;
  * means a concave or holed region hatches correctly with no stencil pass, since each
  * triangle already carries the region's shape.
  *
- * <p>Clipping per triangle is not the same decision as emitting per triangle, and the two are
- * split here: the clip walk visits every triangle whatever the caller asked for, and the
- * {@link HatchJoining} decides only how many primitives the crossings it finds are packed into.
+ * <p>Clipping per triangle is not the same as emitting per triangle. The walk here finds every
+ * crossing and hands each to a {@link HatchSpanMerger}, which puts a line's crossings back together
+ * so a stroke breaks only where the region does. The merge is a collaborator rather than more of
+ * this class because it outlives the walk - a crossing only turns out to continue an earlier one
+ * once both are in hand, and the walk visits triangles in soup order rather than along any one
+ * line.
  */
 public final class Hatching {
     // A triangle is three {x, y} vertices, so its packed width is three vertices - the
@@ -45,19 +46,16 @@ public final class Hatching {
      * apart measured perpendicular to that direction; line zero passes through the origin, so
      * the pattern is stable frame to frame rather than jittering with the region's position.
      *
-     * @param triangleSoup         the region to hatch, as {@code [x, y, x, y, ...]} with every
-     *                             six floats one triangle - exactly what {@link
-     *                             PolygonTessellator#tessellateToTriangles} emits
-     * @param angleRadians         the direction the hatch lines run in
-     * @param spacing              the perpendicular distance between adjacent hatch lines, in
-     *                             the soup's own (world) units; a non-positive value hatches
-     *                             nothing, since it defines no line family
-     * @param joining              how many segments one line's crossings of the soup are packed
-     *                             into
+     * @param triangleSoup          the region to hatch, as {@code [x, y, x, y, ...]} with every
+     *                              six floats one triangle - exactly what {@link
+     *                              PolygonTessellator#tessellateToTriangles} emits
+     * @param angleRadians          the direction the hatch lines run in
+     * @param spacing               the perpendicular distance between adjacent hatch lines, in
+     *                              the soup's own (world) units; a non-positive value hatches
+     *                              nothing, since it defines no line family
      * @param joinToleranceFraction how far apart two of one line's crossings may sit and still
-     *                             count as the same stroke, as a fraction of the spacing. Read
-     *                             only by a joining that merges; {@link HatchJoining#PER_TRIANGLE}
-     *                             joins nothing and so ignores it
+     *                              count as the same stroke, as a fraction of the spacing; zero
+     *                              merges only crossings that coincide exactly
      * @return the clipped hatch as a {@code GL_LINES} run and the tally of how its joins closed;
      *         nothing hatched when the spacing is non-positive or the soup encloses no area for a
      *         line to cross
@@ -66,55 +64,31 @@ public final class Hatching {
             float[] triangleSoup,
             double angleRadians,
             double spacing,
-            HatchJoining joining,
             double joinToleranceFraction) {
         if (spacing <= 0 || triangleSoup.length < FLOATS_PER_TRIANGLE) {
             return HatchRun.NOTHING_HATCHED;
         }
         var axes = HatchAxes.computeAxesFromAngle(angleRadians, spacing);
-        var sink = createSegmentSink(joining, axes, joinToleranceFraction);
+        var merger = new HatchSpanMerger(axes, joinToleranceFraction);
         for (var i = 0; i + FLOATS_PER_TRIANGLE <= triangleSoup.length; i += FLOATS_PER_TRIANGLE) {
-            hatchTriangle(readLevelledTriangle(triangleSoup, i, axes), axes, sink);
+            hatchTriangle(readLevelledTriangle(triangleSoup, i, axes), axes, merger);
         }
-        return sink.packHatchRun();
+        return merger.packHatchRun();
     }
 
-    // What collects the walk's crossings, which is the whole of what a joining decides - the walk
-    // below is the same either way, so the choice is resolved once here rather than tested inside
-    // the clip.
-    //
-    // Every sink emits through the same writer, and is given one rather than the axes it was built
-    // from: a sink decides what one primitive is, which it can do entirely in the numbers the clip
-    // offers it, so the projection back into coordinates stays on this side of the seam.
-    private static HatchSegmentSink createSegmentSink(
-            HatchJoining joining,
-            HatchAxes axes,
-            double joinToleranceFraction) {
-
-        var writer = new HatchSegmentWriter(axes);
-
-        return switch (joining) {
-            case PER_TRIANGLE -> new PerTriangleHatchSink(writer);
-            case COALESCED -> new CoalescedHatchSink(
-                writer,
-                axes.spacing(),
-                joinToleranceFraction);
-        };
-    }
-
-    // Offers every hatch line crossing the triangle to the sink. The lines that can touch a
+    // Offers every hatch line crossing the triangle to the merge. The lines that can touch a
     // triangle are those whose level falls within its own level span, so only that integer range
     // of lines is walked rather than the whole plane.
     private static void hatchTriangle(
             LevelledTriangle triangle,
             HatchAxes axes,
-            HatchSegmentSink sink) {
+            HatchSpanMerger merger) {
         // A multiple landing exactly on the min or max level touches only that extreme corner;
         // it collapses to a point and drops out in the length guard downstream.
         var firstLine = (int) Math.ceil(triangle.computeMinLevel() / axes.spacing());
         var lastLine = (int) Math.floor(triangle.computeMaxLevel() / axes.spacing());
         for (var line = firstLine; line <= lastLine; line++) {
-            clipLineToTriangle(line, triangle, axes, sink);
+            clipLineToTriangle(line, triangle, axes, merger);
         }
     }
 
@@ -124,13 +98,13 @@ public final class Hatching {
     // crossings (the line only touches a corner) offers nothing.
     //
     // The span is handed on as its two distances along the line rather than as the crossing
-    // points themselves: where those distances become points is the sink's, since that is what
-    // lets a sink merge two spans before either has been turned into geometry.
+    // points themselves: turning those distances into points is left to the merge, which is what
+    // lets two spans be joined before either has been made into geometry.
     private static void clipLineToTriangle(
             int lineIndex,
             LevelledTriangle triangle,
             HatchAxes axes,
-            HatchSegmentSink sink) {
+            HatchSpanMerger merger) {
         var level = axes.computeLevelOfLine(lineIndex);
         var crossings = new ArrayList<double[]>();
         addEdgeCrossing(crossings, level, triangle.vertexA(), triangle.vertexB());
@@ -152,7 +126,7 @@ public final class Hatching {
         if (maxAlong - minAlong < Limits.MIN_EDGE_LENGTH) {
             return;
         }
-        sink.acceptClippedSpan(lineIndex, minAlong, maxAlong);
+        merger.acceptClippedSpan(lineIndex, minAlong, maxAlong);
     }
 
     // Adds the point where the constant-level line crosses the edge from {@code start} to
