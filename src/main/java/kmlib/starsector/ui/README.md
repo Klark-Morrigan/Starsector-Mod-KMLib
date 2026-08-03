@@ -107,7 +107,7 @@ the surface supplies the implementation:
 | [`TextSpanMeasurer`](font/TextSpanMeasurer.java) | the width of a run in a face | [`LazyFontSpanMeasurer`](font/LazyFontSpanMeasurer.java) |
 | [`LineWidthMeasurer`](font/LineWidthMeasurer.java) | the width of a line | [`LazyFontMeasurer`](font/LazyFontMeasurer.java) |
 | [`LabelLengthEstimator`](label/LabelLengthEstimator.java) | how long a label will draw | [`FontLabelLengthEstimator`](label/FontLabelLengthEstimator.java), [`AspectLabelLengthEstimator`](label/AspectLabelLengthEstimator.java) |
-| [`ModelviewMatrixReader`](map/ModelviewMatrixReader.java) | the campaign map's transform | [`GlModelviewMatrixReader`](map/GlModelviewMatrixReader.java), [`FastRenderingModelviewMatrixReader`](map/FastRenderingModelviewMatrixReader.java) |
+| [`ModelviewMatrixReader`](map/transform/ModelviewMatrixReader.java) | the campaign map's transform | [`GlModelviewMatrixReader`](map/transform/GlModelviewMatrixReader.java), [`FastRenderingModelviewMatrixReader`](map/transform/FastRenderingModelviewMatrixReader.java) |
 | [`IntelScreenView`](intel/IntelScreenView.java) | what the intel screen is showing | [`VanillaIntelScreenView`](intel/VanillaIntelScreenView.java) |
 
 `ControlSpec` and `ControlAction` split the same way within `controls`: the sealed spec is
@@ -140,17 +140,18 @@ wants depends on what it is deciding.
 
 | Question | Read | Why |
 | --- | --- | --- |
-| about the sector map | [`CampaignMapView`](map/CampaignMapView.java) | the `M` screen's own tab, sub-view and filter |
+| about the sector map | [`CampaignMapView`](map/presence/CampaignMapView.java) | the `M` screen's own tab, sub-view and filter |
 | about the intel screen | [`IntelScreenView`](intel/IntelScreenView.java) | the visor's own widget, rectangle and filter |
-| about whichever screen is up | [`StarscapeMapPresence`](map/StarscapeMapPresence.java) | either screen counts, and the asker cannot tell which it was called from |
-| the same, for the ordinary map | [`SchematicMapPresence`](map/SchematicMapPresence.java) | the counterpart, not the negation - a screen with no map at all leaves both false |
-| which widget the map is | [`ShownMapTab`](map/ShownMapTab.java) | a rule about map-tab layout has to be rooted at the map tab, wherever it is |
+| about whichever screen is up | [`StarscapeMapPresence`](map/presence/StarscapeMapPresence.java) | either screen counts, and the asker cannot tell which it was called from |
+| the same, for the ordinary map | [`SchematicMapPresence`](map/presence/SchematicMapPresence.java) | the counterpart, not the negation - a screen with no map at all leaves both false |
+| which widget the map is | [`ShownMapTab`](map/probes/ShownMapTab.java) | a rule about map-tab layout has to be rooted at the map tab, wherever it is |
 
-The host-blind read exists for one situation: code reached through a hook that is not told
+The host-blind reads exist for one situation: code reached through a hook that is not told
 which host invoked it, so it cannot ask a host-specific question even though it would prefer
 to. Anything deciding **where** to draw, or whether to put controls over a particular
-surface, asks that surface instead - the blind read is true while a different host entirely
-is the one in starscape.
+surface, asks that surface instead - a blind read says only that some host is showing such a
+map, and is true while a different host entirely is the one showing it. Each class states
+that limit and leaves the reasoning below to this section, so the pair is described once.
 
 That is a disjunction rather than a switch, and the reason is worth knowing before trusting
 either read too far. One core tab shows at a time, so the two usually exclude each other -
@@ -229,7 +230,15 @@ standing for a count is not prose.
 | [`tooltip`](tooltip/) | vanilla | `Tooltips`, the `TooltipCreator` boilerplate wrapper |
 | [`intel`](intel/) | split | the screen-view port and its vanilla implementation |
 | [`coreui`](coreui/) | vanilla | [`CoreUiTree`](coreui/CoreUiTree.java), the by-name reach into the live widget tree that every screen's probes walk |
-| [`map`](map/) | split | the transform port, its two implementations, the [cursor read](map/MapCursor.java) over them, the campaign map's [view state](map/CampaignMapView.java) and the [starscape presence](map/StarscapeMapPresence.java) that folds it together with the intel screen's own map, and the core-UI probes over [`CoreUiTree`](coreui/CoreUiTree.java)'s by-name reach - [`VanillaMapTooltip`](map/VanillaMapTooltip.java), the [widget trace](map/MapTabWidgetTrace.java) that describes what the cursor is inside for a consumer to log as its own, the [shown map tab](map/ShownMapTab.java) that says which widget the map is on the screen that is up, and the [surface bounds](map/MapSurfaceBounds.java) that pick the map out of that tab by shape, as a [surface area](map/MapSurfaceArea.java) carrying the chrome drawn with it, so an overlay can stand aside for it |
+| [`map/transform`](map/transform/) | split | the modelview-matrix port, its GL and Fast Rendering implementations, the [selector](map/transform/ModelviewMatrixReaders.java) between them, and the [transform](map/transform/CampaignMapTransform.java) and [cursor read](map/transform/MapCursor.java) built over it |
+| [`map/presence`](map/presence/) | vanilla | what the game is showing: the sector map's own [view state](map/presence/CampaignMapView.java), plus the host-blind [starscape](map/presence/StarscapeMapPresence.java) and [schematic](map/presence/SchematicMapPresence.java) reads that fold it together with the intel screen's map |
+| [`map/probes`](map/probes/) | vanilla | the live reads into the map's widget tree over [`CoreUiTree`](coreui/CoreUiTree.java)'s by-name reach: [`ShownMapTab`](map/probes/ShownMapTab.java), the [surface bounds](map/probes/MapSurfaceBounds.java) that pick the map out of that tab by shape as a [surface area](map/probes/MapSurfaceArea.java) carrying the chrome drawn with it, [`VanillaMapTooltip`](map/probes/VanillaMapTooltip.java), and the [widget trace](map/probes/MapTabWidgetTrace.java) that describes what the cursor is inside for a consumer to log as its own |
+
+The map is three packages rather than one because the three read different things - GL state,
+the campaign's persisted UI data, the live widget tree - and **no class in any of them
+references another's**. That independence is the reason the split is worth keeping: a probe
+that started reaching for the transform, or a presence read that had to walk the tree, would
+be the signal that one of these has taken on a job belonging to another.
 
 `layout.VanillaPositions` is the one deliberate exception in a neutral package: it holds
 vanilla screen coordinates, which are a fact about the game's own layout rather than

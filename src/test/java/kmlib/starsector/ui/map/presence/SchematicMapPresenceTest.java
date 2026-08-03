@@ -11,10 +11,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Pins the disjunction over the two hosts that can be showing a schematic map: either alone is
- * enough, both together still read as one, and neither leaves it off. Also pins the two cases that
- * separate this from a negation of the starscape read - a screen with no map at all is not a
- * schematic map, and neither is an intel filter reading as off while no visor is on screen, which is
- * the state the panel's survival across the sibling sub-tabs produces.
+ * enough, both together still read as one, and neither leaves it off. Also pins the case that
+ * separates this from a negation of the starscape read - a screen with no map at all is not a
+ * schematic map, so the two reads are counterparts rather than opposites.
  */
 class SchematicMapPresenceTest {
 
