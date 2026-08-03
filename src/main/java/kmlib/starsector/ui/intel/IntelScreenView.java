@@ -1,5 +1,7 @@
 package kmlib.starsector.ui.intel;
 
+import com.fs.starfarer.api.ui.UIComponentAPI;
+
 import kmlib.math.geometry.Rectangle;
 
 /**
@@ -34,6 +36,19 @@ public interface IntelScreenView {
      *         visor is present.
      */
     Rectangle getMapVisorRect();
+
+    /**
+     * The same map preview as {@link #getMapVisorRect()}, handed back as the component itself so a
+     * caller can ask the widget tree about it - what it draws inside, what it lays over that - and
+     * not only where it sits. Published {@link UIComponentAPI} rather than the game's concrete map
+     * class, so a caller reads box and opacity off the interface and the concrete panel stays behind
+     * this seam.
+     *
+     * @return the map visor's component, or {@code null} in exactly the cases
+     *         {@link #getMapVisorRect()} answers {@code null} - the two are the same reading, so a
+     *         caller holding one never has to re-check the other
+     */
+    UIComponentAPI getMapVisorWidget();
 
     /**
      * Whether the map visor is in starscape mode: its Starscape filter checked while it shows

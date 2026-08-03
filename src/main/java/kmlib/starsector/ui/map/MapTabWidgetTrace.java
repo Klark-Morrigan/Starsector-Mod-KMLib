@@ -33,6 +33,13 @@ import java.util.List;
  * held to account against the siblings it chose from, and the under-cursor view never shows the ones
  * the cursor did not happen to visit.
  *
+ * <p>Those children are the <em>map</em> tab's, named separately from the tab that is up, because
+ * the two are not the same widget on every screen - the intel screen hosts its map below a tab that
+ * is not one. Rooting them where {@link ShownMapTab} roots the rule is what keeps the line an
+ * account of what the rule is doing; describing one screen's children beside another screen's
+ * suppression would be wrong in a way only visible in play. The under-cursor walk stays rooted at
+ * the tab that is up, since what the cursor is inside is the raw reading this exists to take.
+ *
  * <p>The walk is unpublished API and the hit-test is not. Reaching the tab's components needs
  * {@link CoreUiTree}'s by-name reach, but every component then answers {@code getPosition} and
  * {@code getOpacity} as {@link UIComponentAPI}, so what is reported is read through the published
@@ -63,10 +70,10 @@ public final class MapTabWidgetTrace {
     }
 
     /**
-     * The current tab, the box each of its direct children occupies, which of them
-     * {@link MapSurfaceBounds} picks as the map surface, and the widgets whose drawn box contains
-     * the cursor - the last of those outermost first, so the innermost is named last, each with its
-     * depth, class, box, opacity and parent.
+     * The current tab, the map tab on screen with the box each of its direct children occupies,
+     * which of them {@link MapSurfaceBounds} picks as the map surface, and the widgets whose drawn
+     * box contains the cursor - the last of those outermost first, so the innermost is named last,
+     * each with its depth, class, box, opacity and parent.
      *
      * <p>Call from a map render path. Reads the cursor in UI coordinates, the space
      * {@code getPosition} reports in, so the boxes described are the boxes the player sees.
@@ -101,10 +108,12 @@ public final class MapTabWidgetTrace {
                 UiCursor.getUiY(),
                 widgetsUnderCursor);
 
-            var children = CoreUiTree.readChildrenOf(currentTab);
+            var mapTab = ShownMapTab.resolveShownMapTab();
+            var mapTabChildren = mapTab == null ? List.of() : CoreUiTree.readChildrenOf(mapTab);
             return "tab=" + describeTab(currentTab)
-                + " surface=" + describeSurfacePickedFrom(currentTab, children)
-                + " children=" + describeDirectChildren(children)
+                + " mapTab=" + (mapTab == null ? "none" : describeTab(mapTab))
+                + " surface=" + describeSurfacePickedFrom(mapTab, mapTabChildren)
+                + " children=" + describeDirectChildren(mapTabChildren)
                 + " under=" + widgetsUnderCursor;
         } catch (Throwable failure) {
             // Swallowed rather than raised: this is a diagnostic, and one that cannot read the tree
@@ -219,18 +228,25 @@ public final class MapTabWidgetTrace {
             + "]";
     }
 
-    // What the surface rule makes of this tab's children. Re-derived here rather than read back from
-    // the live memo: the point of the line is what the rule says about the tree as it stands, which
-    // a remembered answer could no longer be.
-    private static String describeSurfacePickedFrom(Object currentTab, List<?> children) {
-        if (!(currentTab instanceof UIComponentAPI tab)) {
+    // What the surface rule makes of the map tab's children. Re-derived here rather than read back
+    // from the live memo: the point of the line is what the rule says about the tree as it stands,
+    // which a remembered answer could no longer be.
+    //
+    // Reports the count of sibling chrome beside the surface box rather than every chrome box: the
+    // boxes themselves are already in the children list this sits next to, while the count is the
+    // one thing that list does not show - how many of them the rule is excluding the cursor from.
+    private static String describeSurfacePickedFrom(UIComponentAPI mapTab, List<?> children) {
+        if (mapTab == null) {
             return "none";
         }
-        var surfaceBox = MapSurfaceBounds.selectSurfaceBox(
-            DrawnWidgets.resolveBoxOf(tab),
+        var surfaceArea = MapSurfaceBounds.selectSurfaceArea(
+            DrawnWidgets.resolveBoxOf(mapTab),
             MapSurfaceBounds.collectDrawnBoxesOf(children));
 
-        return surfaceBox == null ? "none" : "[" + describeBox(surfaceBox) + "]";
+        return surfaceArea == null
+            ? "none"
+            : "[" + describeBox(surfaceArea.box())
+                + " chrome=" + surfaceArea.siblingChromeBoxes().size() + "]";
     }
 
     // Rounded to whole units: these are read off a log by eye against the game's own pixel grid, and

@@ -143,6 +143,7 @@ wants depends on what it is deciding.
 | about the sector map | [`CampaignMapView`](map/CampaignMapView.java) | the `M` screen's own tab, sub-view and filter |
 | about the intel screen | [`IntelScreenView`](intel/IntelScreenView.java) | the visor's own rectangle and filter |
 | about whichever screen is up | [`StarscapeMapPresence`](map/StarscapeMapPresence.java) | either screen counts, and the asker cannot tell which it was called from |
+| which widget the map is | [`ShownMapTab`](map/ShownMapTab.java) | a rule about map-tab layout has to be rooted at the map tab, wherever it is |
 
 The host-blind read exists for one situation: code reached through a hook that is not told
 which host invoked it, so it cannot ask a host-specific question even though it would prefer
@@ -157,6 +158,13 @@ which answers for an **interaction dialog's own** core UI whenever such a dialog
 while the intel read always walks the **main** core UI. So the pair can be aimed at two
 different core UIs, and nothing in either read rules out both answering yes at once. Treat
 the exclusivity as the usual case rather than a guarantee.
+
+`ShownMapTab` sidesteps that pairing rather than living with it. It recognises the `M`
+screen's map by the tab being a `SectorMapAPI` - published API, so obfuscation-proof, and a
+test of what the widget **is** rather than of which tab the campaign UI reports. That keeps
+the reading and the widget it describes in the same tree, which the tab-id route cannot
+promise. The visor is asked second and only when the current tab is not itself a map, since
+that screen hosts its map below a tab that is not one.
 
 Filter state follows the same split, and it is per map rather than global. Each map widget
 binds to the filter its params carry, falling back to the campaign's persisted filter when
@@ -220,7 +228,7 @@ standing for a count is not prose.
 | [`tooltip`](tooltip/) | vanilla | `Tooltips`, the `TooltipCreator` boilerplate wrapper |
 | [`intel`](intel/) | split | the screen-view port and its vanilla implementation |
 | [`coreui`](coreui/) | vanilla | [`CoreUiTree`](coreui/CoreUiTree.java), the by-name reach into the live widget tree that every screen's probes walk |
-| [`map`](map/) | split | the transform port, its two implementations, the [cursor read](map/MapCursor.java) over them, the campaign map's [view state](map/CampaignMapView.java) and the [starscape presence](map/StarscapeMapPresence.java) that folds it together with the intel screen's own map, and the core-UI probes over [`CoreUiTree`](coreui/CoreUiTree.java)'s by-name reach - [`VanillaMapTooltip`](map/VanillaMapTooltip.java), the [widget trace](map/MapTabWidgetTrace.java) that describes what the cursor is inside for a consumer to log as its own, and the [surface bounds](map/MapSurfaceBounds.java) that pick the map out of its tab by shape so an overlay can stand aside for the chrome |
+| [`map`](map/) | split | the transform port, its two implementations, the [cursor read](map/MapCursor.java) over them, the campaign map's [view state](map/CampaignMapView.java) and the [starscape presence](map/StarscapeMapPresence.java) that folds it together with the intel screen's own map, and the core-UI probes over [`CoreUiTree`](coreui/CoreUiTree.java)'s by-name reach - [`VanillaMapTooltip`](map/VanillaMapTooltip.java), the [widget trace](map/MapTabWidgetTrace.java) that describes what the cursor is inside for a consumer to log as its own, the [shown map tab](map/ShownMapTab.java) that says which widget the map is on the screen that is up, and the [surface bounds](map/MapSurfaceBounds.java) that pick the map out of that tab by shape, as a [surface area](map/MapSurfaceArea.java) carrying the chrome drawn with it, so an overlay can stand aside for it |
 
 `layout.VanillaPositions` is the one deliberate exception in a neutral package: it holds
 vanilla screen coordinates, which are a fact about the game's own layout rather than

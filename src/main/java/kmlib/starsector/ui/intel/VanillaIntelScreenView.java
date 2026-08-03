@@ -4,6 +4,7 @@ import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.CampaignUIAPI;
 import com.fs.starfarer.api.campaign.CoreUITabId;
 import com.fs.starfarer.api.ui.PositionAPI;
+import com.fs.starfarer.api.ui.UIComponentAPI;
 import com.fs.starfarer.campaign.comms.v2.EventsPanel;
 
 import kmlib.math.geometry.Rectangle;
@@ -70,6 +71,15 @@ public final class VanillaIntelScreenView implements IntelScreenView {
 
     @Override
     public Rectangle getMapVisorRect() {
+        // Derived from the widget read rather than walking to the panel a second time, so the two
+        // cannot disagree about whether there is a visor: a caller handed a rectangle and a caller
+        // handed the component are looking at the same widget under the same conditions.
+        UIComponentAPI mapWidget = getMapVisorWidget();
+        return mapWidget == null ? null : VanillaPositions.toRectangle(mapWidget.getPosition());
+    }
+
+    @Override
+    public UIComponentAPI getMapVisorWidget() {
         EventsPanel intelPanel = resolveIntelPanel();
         if (intelPanel == null) {
             return null;
@@ -81,11 +91,11 @@ public final class VanillaIntelScreenView implements IntelScreenView {
         if (!isMapVisorLit(intelPanel.getFader().getBrightness(), mapWidget.getOpacity())) {
             return null;
         }
+        // A widget the layout never positioned is reported as no visor at all, not as a visor with
+        // no box. It occupies nothing on screen, so there is nothing to draw over or measure
+        // against - and answering the two reads the same way is what lets a caller take either.
         PositionAPI position = mapWidget.getPosition();
-        if (position == null) {
-            return null;
-        }
-        return VanillaPositions.toRectangle(position);
+        return position == null ? null : mapWidget;
     }
 
     @Override

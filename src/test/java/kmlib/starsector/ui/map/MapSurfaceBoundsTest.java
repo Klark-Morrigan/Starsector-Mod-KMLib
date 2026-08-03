@@ -16,13 +16,15 @@ import static org.mockito.Mockito.when;
 
 /**
  * Pins the two rules that tell the map surface from the tab's chrome: which children are candidates
- * at all, and which of the candidates wins. The walk that reaches them is unpublished-API reflection
- * and only observable in a running game, but both rules are plain reads over a box and an opacity -
- * and it is those, not the walk, that decide whether an overlay stands aside over chrome or lights a
- * cell underneath it.
+ * at all, and how the candidates split into the surface and the chrome drawn with it. The walk that
+ * reaches them is unpublished-API reflection and only observable in a running game, but both rules
+ * are plain reads over a box and an opacity - and it is those, not the walk, that decide whether an
+ * overlay stands aside over chrome or lights a cell underneath it.
  *
- * <p>The boxes are the ones a 1920x1200 session actually reported, so a rule that stops fitting the
- * game's own layout fails here rather than in play.
+ * <p>The boxes are the ones a 1920x1200 session actually reported, on both hosts the rule has to
+ * fit: the {@code M} screen's map tab, whose surface is inset and whose chrome sits beside it, and
+ * the intel screen's map visor, whose surface fills the tab and whose control bar is drawn over it.
+ * A rule that stops fitting either layout fails here rather than in play.
  */
 class MapSurfaceBoundsTest {
 
@@ -30,6 +32,13 @@ class MapSurfaceBoundsTest {
     private static final Rectangle SURFACE_BOX = new Rectangle(10f, 79f, 1900f, 1085f);
     private static final Rectangle TAB_STRIP_BOX = new Rectangle(10f, 1168f, 1900f, 15f);
     private static final Rectangle BAR_CONTROL_BOX = new Rectangle(141f, 1165f, 130f, 18f);
+
+    // The intel screen's map visor and the control bar it draws across its own bottom edge. The
+    // visor's surface is its whole box, which is what makes the bar impossible to exclude by
+    // complement and is why the chrome half of the answer exists.
+    private static final Rectangle VISOR_BOX = new Rectangle(525f, 293f, 890f, 784f);
+    private static final Rectangle VISOR_SURFACE_BOX = new Rectangle(525f, 293f, 890f, 784f);
+    private static final Rectangle VISOR_BAR_BOX = new Rectangle(524f, 1059f, 890f, 19f);
 
     private static final float DRAWN_OPACITY = 1f;
     private static final float FADED_TO_NOTHING_OPACITY = 0f;
@@ -70,50 +79,63 @@ class MapSurfaceBoundsTest {
     }
 
     @Nested
-    class SelectSurfaceBox {
+    class SelectSurfaceArea {
 
         @Test
-        void selectSurfaceBoxPicksTheSurfaceOverEveryChromePiece() {
+        void selectSurfaceAreaPicksTheSurfaceOverEveryChromePiece() {
             // The order is deliberately not surface-first: the rule has to hold on coverage, not on
             // whichever child the tab happens to list first.
-            assertThat(MapSurfaceBounds.selectSurfaceBox(
+            assertThat(MapSurfaceBounds.selectSurfaceArea(
                     TAB_BOX,
                     List.of(TAB_STRIP_BOX, SURFACE_BOX, BAR_CONTROL_BOX)))
-                .isEqualTo(SURFACE_BOX);
+                .isEqualTo(new MapSurfaceArea(
+                    SURFACE_BOX,
+                    List.of(TAB_STRIP_BOX, BAR_CONTROL_BOX)));
         }
 
         @Test
-        void selectSurfaceBoxFindsNothingWhenOnlyChromeIsPresent() {
+        void selectSurfaceAreaKeepsAChromePieceDrawnOverTheSurface() {
+            // The intel screen's visor. Its surface is the whole tab, so the bar drawn across the
+            // bottom of it is inside the surface rather than beside it - the case that a rule
+            // returning the surface alone could not express, and the reason the siblings come back.
+            assertThat(MapSurfaceBounds.selectSurfaceArea(
+                    VISOR_BOX,
+                    List.of(VISOR_SURFACE_BOX, VISOR_BAR_BOX)))
+                .isEqualTo(new MapSurfaceArea(VISOR_SURFACE_BOX, List.of(VISOR_BAR_BOX)));
+        }
+
+        @Test
+        void selectSurfaceAreaFindsNothingWhenOnlyChromeIsPresent() {
             // The loud-absence case. A build that reshapes the tab past this rule reports no
             // surface, so the caller falls back rather than accepting a tab strip as the map.
-            assertThat(MapSurfaceBounds.selectSurfaceBox(
+            assertThat(MapSurfaceBounds.selectSurfaceArea(
                     TAB_BOX,
                     List.of(TAB_STRIP_BOX, BAR_CONTROL_BOX)))
                 .isNull();
         }
 
         @Test
-        void selectSurfaceBoxFindsNothingWhenTheTabHasNoChildren() {
-            assertThat(MapSurfaceBounds.selectSurfaceBox(TAB_BOX, List.of()))
+        void selectSurfaceAreaFindsNothingWhenTheTabHasNoChildren() {
+            assertThat(MapSurfaceBounds.selectSurfaceArea(TAB_BOX, List.of()))
                 .isNull();
         }
 
         @Test
-        void selectSurfaceBoxFindsNothingWhenTheTabWasNeverPositioned() {
-            assertThat(MapSurfaceBounds.selectSurfaceBox(null, List.of(SURFACE_BOX)))
+        void selectSurfaceAreaFindsNothingWhenTheTabWasNeverPositioned() {
+            assertThat(MapSurfaceBounds.selectSurfaceArea(null, List.of(SURFACE_BOX)))
                 .isNull();
         }
 
         @Test
-        void selectSurfaceBoxConfinesAChildThatOverflowsTheTab() {
+        void selectSurfaceAreaConfinesAChildThatOverflowsTheTab() {
             // The map's panned content is larger than the screen and hangs below the surface, so a
             // single-level scan does not reach it. Should a later build promote something that
             // overflows to a direct child, the accepted surface still stops at the tab's edge -
             // suppression can then be too weak, never wider than the tab itself.
             var overflowingChildBox = new Rectangle(-595f, -109f, 3017f, 1950f);
 
-            assertThat(MapSurfaceBounds.selectSurfaceBox(TAB_BOX, List.of(overflowingChildBox)))
-                .isEqualTo(TAB_BOX);
+            assertThat(MapSurfaceBounds.selectSurfaceArea(TAB_BOX, List.of(overflowingChildBox)))
+                .isEqualTo(new MapSurfaceArea(TAB_BOX, List.of()));
         }
     }
 
