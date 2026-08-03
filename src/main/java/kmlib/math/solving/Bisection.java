@@ -12,10 +12,53 @@ import java.util.function.DoublePredicate;
  * available but its crossing point is not. Working on a {@link DoublePredicate} keeps
  * it blind to what the value means, so any monotone "does this still fit?" question
  * reuses the same halving.
+ *
+ * <p>The search is budgeted in steps, but a caller usually knows a precision rather
+ * than a count: {@link #countStepsForTolerance} converts the one into the other, so how
+ * fine a search runs can be stated where it means something and the step count follows
+ * from it.
  */
 public final class Bisection {
 
+    // Natural log of 2, the divisor that turns a natural log into a base-2 one. Named
+    // because a bare Math.log(2.0) in the step arithmetic reads as a magic operand.
+    private static final double LOG_OF_TWO = Math.log(2.0);
+
     private Bisection() {
+    }
+
+    /**
+     * How many halvings pin the crossing in {@code [low, high]} to within
+     * {@code tolerance} - the step count {@link #findLargestPassing} needs to reach a
+     * precision stated in the searched value's own units.
+     *
+     * <p>Each halving doubles the precision, so what is left after {@code n} steps is
+     * {@code (high - low) / 2^n} and the count is the smallest {@code n} that brings
+     * that under the tolerance. Stating a search by the precision it must reach rather
+     * than by a fixed step count is what keeps its cost honest as the interval moves: a
+     * fixed count over a narrower interval spends the same steps to buy resolution
+     * nobody asked for, and over a wider one silently stops short.
+     *
+     * @param low       the low end of the search
+     * @param high      the high end of the search
+     * @param tolerance how far from the true crossing the result may land, in the same
+     *                  units as the interval; must be positive
+     * @return the halving count, zero when the interval is already within tolerance
+     * @throws IllegalArgumentException when {@code tolerance} is not positive - a
+     *                                  tolerance of zero or less names no reachable
+     *                                  precision, since halving never closes an interval
+     */
+    public static int countStepsForTolerance(double low, double high, double tolerance) {
+
+        if (!(tolerance > 0.0)) {
+            throw new IllegalArgumentException(
+                "Cannot bisect to a tolerance of " + tolerance);
+        }
+        var range = high - low;
+        if (range <= tolerance) {
+            return 0;
+        }
+        return (int) Math.ceil(Math.log(range / tolerance) / LOG_OF_TWO);
     }
 
     /**

@@ -28,16 +28,19 @@ import kmlib.math.solving.Picks;
  * ({@link Picks} keeps the incumbent), so text goes multi-line only when stacking
  * buys a strictly larger font.
  *
+ * <p>How closely that growth must land on the largest passing height is the caller's to
+ * state, as a tolerance in the font's own units rather than a halving count fixed here.
+ * Every halving measures one more band against the rings and the keep-outs, which is
+ * where a sizing spends nearly all of its time, so the count is the fit's dominant cost
+ * knob - and a fixed one resolves the height to whatever fraction of the passed clamp it
+ * happens to work out as, paying full price for precision far below anything a caller
+ * can draw.
+ *
  * <p>The text estimator is injected, not baked in: the fitter never asks how long the
  * text actually is, only the estimator does, so the same fit serves the font-measured
  * text and the aspect stand-in alike.
  */
 public final class LabelBoxFitter {
-
-    // How many times the font-height search halves its interval - enough to land the
-    // fitted height within a fraction of a world unit, since each step doubles precision
-    // and the font clamp spans a few thousand units at most.
-    private static final int FONT_HEIGHT_BISECTION_STEPS = 20;
 
     private final double minFontHeight;
     private final double maxFontHeight;
@@ -45,6 +48,11 @@ public final class LabelBoxFitter {
     private final double lineSpacing;
     private final double keepOutClearance;
     private final double endInsetDistance;
+
+    // How many times the font-height search halves the clamp, derived once from the
+    // caller's tolerance: every halving is a band fit, so this is the sizing's dominant
+    // cost knob and it must not be recomputed per line count inside the search.
+    private final int fontHeightBisectionSteps;
     private final LabelLengthEstimator textLength;
 
     // How many bands this fitter has measured. A band fit walks the rings and every
@@ -56,15 +64,19 @@ public final class LabelBoxFitter {
 
     public LabelBoxFitter(
             NameFitSpecification fit,
-            double keepOutClearance,
-            double endInsetDistance,
+            BandFitSpecification bandFit,
             LabelLengthEstimator textLength) {
+
         this.minFontHeight = fit.minFontHeight();
         this.maxFontHeight = fit.maxFontHeight();
         this.maxLines = fit.maxLines();
         this.lineSpacing = fit.lineSpacing();
-        this.keepOutClearance = keepOutClearance;
-        this.endInsetDistance = endInsetDistance;
+        this.keepOutClearance = bandFit.keepOutClearance();
+        this.endInsetDistance = bandFit.endInsetDistance();
+        this.fontHeightBisectionSteps = Bisection.countStepsForTolerance(
+            fit.minFontHeight(),
+            fit.maxFontHeight(),
+            bandFit.fontHeightTolerance());
         this.textLength = textLength;
     }
 
@@ -97,6 +109,7 @@ public final class LabelBoxFitter {
     // reaches it through the line-count sizing below, which projects the keep-outs once
     // for its whole sweep rather than per band as this single measurement must.
     public BandSpan fitBand(RegionChord chord, double halfThickness) {
+        
         var sizingChord = SizingChord.prepareFor(chord, keepOutClearance);
         return sizingChord == null
             ? new BandSpan(null, null)
@@ -127,7 +140,7 @@ public final class LabelBoxFitter {
         var fontHeight = Bisection.findLargestPassing(
             minFontHeight,
             maxFontHeight,
-            FONT_HEIGHT_BISECTION_STEPS,
+            fontHeightBisectionSteps,
             candidate -> bandHoldsText(sizingChord, candidate, lineCount));
 
         var thickness = fontHeight * computeLinesFactor(lineCount);

@@ -18,12 +18,17 @@ import static org.assertj.core.api.Assertions.within;
  * Pins {@link LabelBoxFitter#fitLargestBox}: given one candidate chord against a
  * region, it caps the font so the whole band stays inside the boundary, stacks text
  * into more lines only when that renders a strictly taller font, honours the line cap
- * and the per-line font clamp, keeps the box out of a keep-out point's clearance, and
- * returns null when even the minimum font cannot hold the text. The fitter is tested
+ * and the per-line font clamp, keeps the box out of a keep-out point's clearance, stops
+ * the font growth at the tolerance it was given, and returns null when even the minimum
+ * font cannot hold the text. The fitter is tested
  * apart from any candidate search so its sizing contract is pinned on rings and a text
  * estimator directly, without the candidate generation a caller wraps it in.
  */
 final class LabelBoxFitterTest {
+
+    // A font-height tolerance far finer than any geometry these fixtures assert, so the
+    // sizing search is never what a failure is about except where a test names it.
+    private static final double FINE_FONT_TOLERANCE = 0.01;
 
     @Nested
     class FitLargestBox {
@@ -178,6 +183,44 @@ final class LabelBoxFitterTest {
         }
 
         @Test
+        void fitLargestBoxSpendsOneBandPerHalvingTheFontToleranceCallsFor() {
+            // The font clamp spans 1900, so landing within 1 takes 11 halvings and within
+            // 100 takes 5 - and every halving is a band measured against the rings and the
+            // keep-outs. On top of each sit the three bands the sizing spends regardless:
+            // the minimum-font probe, the test of the clamp's top end, and the accepted
+            // band's read-back. A coarser tolerance is therefore paid back one-for-one in
+            // measurements, which is the whole reason the precision is a caller's knob.
+            var chord = horizontalChord(rectangle(0, 0, 2000, 700), 1000, 350);
+            var fineFitter = fitterWithFontTolerance(1.0, 100.0, 2000.0, 1, 1.0, 0.0, 1.0);
+            var coarseFitter = fitterWithFontTolerance(1.0, 100.0, 2000.0, 1, 1.0, 0.0, 100.0);
+
+            fineFitter.fitLargestBox(chord);
+            coarseFitter.fitLargestBox(chord);
+
+            assertThat(fineFitter.getBandFitCount())
+                .isEqualTo(14);
+            assertThat(coarseFitter.getBandFitCount())
+                .isEqualTo(8);
+        }
+
+        @Test
+        void fitLargestBoxLandsWithinTheFontToleranceOfTheTallestFittingFont() {
+            // The slab's 700 girth is what caps this fit, so the tallest font that fits is
+            // 700 and a search stopped at a tolerance of 100 has to come back within that
+            // of it. Buying fewer measurements costs accepted font height and nothing else:
+            // the fit is still a fit, only less finely resolved.
+            var box = fitterWithFontTolerance(1.0, 100.0, 2000.0, 1, 1.0, 0.0, 100.0)
+                .fitLargestBox(
+                    horizontalChord(
+                        rectangle(0, 0, 2000, 700), 1000, 350));
+
+            assertThat(box)
+                .isNotNull();
+            assertThat(box.fontHeight())
+                .isCloseTo(700.0, within(100.0));
+        }
+
+        @Test
         void fitLargestBoxReturnsNullWhenTheMinimumBandCannotFit() {
             // A minimum font taller than the 1700 the square holds cannot sit anywhere,
             // so the fit finds no box at all.
@@ -314,10 +357,29 @@ final class LabelBoxFitterTest {
             int maxLines,
             double lineSpacing,
             double keepOutClearance) {
+        return fitterWithFontTolerance(
+            aspect,
+            minFontHeight,
+            maxFontHeight,
+            maxLines,
+            lineSpacing,
+            keepOutClearance,
+            FINE_FONT_TOLERANCE);
+    }
+
+    // The whole fitter surface, for the tests about how finely the font search runs:
+    // everything above fixes the tolerance, since only these read it back.
+    private static LabelBoxFitter fitterWithFontTolerance(
+            double aspect,
+            double minFontHeight,
+            double maxFontHeight,
+            int maxLines,
+            double lineSpacing,
+            double keepOutClearance,
+            double fontHeightTolerance) {
         return new LabelBoxFitter(
             new NameFitSpecification(minFontHeight, maxFontHeight, maxLines, lineSpacing),
-            keepOutClearance,
-            0.0,
+            new BandFitSpecification(keepOutClearance, 0.0, fontHeightTolerance),
             new AspectLabelLengthEstimator(aspect));
     }
 
