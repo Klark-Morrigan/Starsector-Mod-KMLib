@@ -1,6 +1,5 @@
 package kmlib.starsector.ui.widgets;
 
-import kmlib.starsector.ui.controls.TriangleDirection;
 import kmlib.starsector.ui.text.StyledSpanMeasurer;
 import kmlib.starsector.ui.text.TextSpan;
 
@@ -20,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * the two spellings of nothing-to-draw - an unfilled slot and a blank run - are charged alike.
  */
 class RowSlotTest {
+
     private static final float LINE_HEIGHT = 20f;
     private static final float TALLER_LINE_HEIGHT = 40f;
     private static final Color SLOT_COLOUR = new Color(200, 150, 50);
@@ -48,7 +48,8 @@ class RowSlotTest {
         void computeWidthSquaresAnImageOffTheLineHeight() {
             // An image hangs as tall as its line, so it sits level with the label beside it whatever
             // face that label draws in.
-            assertThat(computeWidth(new RowSlot.Image("crest_a"), LINE_HEIGHT)).isEqualTo(LINE_HEIGHT);
+            assertThat(computeWidth(new RowSlot.Image("crest_a"), LINE_HEIGHT))
+                .isEqualTo(LINE_HEIGHT);
         }
 
         @Test
@@ -108,7 +109,8 @@ class RowSlotTest {
 
         @Test
         void computeWidthChargesNothingForAnUnfilledSlot() {
-            assertThat(computeWidth(RowSlot.EMPTY, LINE_HEIGHT)).isEqualTo(RowSlot.NO_WIDTH);
+            assertThat(computeWidth(RowSlot.EMPTY, LINE_HEIGHT))
+                .isEqualTo(RowSlot.NO_WIDTH);
         }
 
         @Test
@@ -150,12 +152,65 @@ class RowSlotTest {
     }
 
     @Nested
+    class IsFilled {
+        @Test
+        void isFilledIsTrueForTheKindsThatAlwaysDrawSomething() {
+            // An image, a tick, and a triangle each draw whatever state they carry, so a row holding
+            // one fills that flank and the label beside it starts past the reserved column.
+            assertThat(new RowSlot.Image("crest_a").isFilled())
+                .isTrue();
+            assertThat(new RowSlot.Tick(false).isFilled())
+                .isTrue();
+            assertThat(new RowSlot.Triangle(TriangleDirection.DOWN).isFilled())
+                .isTrue();
+        }
+
+        @Test
+        void isFilledIsTrueForARunOfTextWithGlyphs() {
+            assertThat(new RowSlot.Text(new TextSpan("12", SLOT_COLOUR)).isFilled())
+                .isTrue();
+        }
+
+        @Test
+        void isFilledIsFalseForAnUnfilledSlot() {
+            assertThat(RowSlot.EMPTY.isFilled())
+                .isFalse();
+        }
+
+        @Test
+        void isFilledIsFalseForABlankRunOfText() {
+            // A caller that assembled a value from parts and came up empty said its row has a value;
+            // the row is charged the absence it actually draws rather than a gutter in front of no
+            // glyphs.
+            assertThat(new RowSlot.Text(TextSpan.createBlank(SLOT_COLOUR)).isFilled())
+                .isFalse();
+        }
+
+        @Test
+        void isFilledIsFalseForAWhitespaceOnlyRunOfText() {
+            assertThat(new RowSlot.Text(new TextSpan("   ", SLOT_COLOUR)).isFilled())
+                .isFalse();
+        }
+
+        @Test
+        void isFilledAgreesWithWhetherTheSlotIsChargedAWidth() {
+            // The two readings of "is anything here" must not part company: a slot a container skips
+            // laying out is exactly one it would have reserved nothing for.
+            assertThat(new RowSlot.Text(TextSpan.createBlank(SLOT_COLOUR)).isFilled())
+                .isFalse();
+            assertThat(computeWidth(new RowSlot.Text(TextSpan.createBlank(SLOT_COLOUR)), LINE_HEIGHT))
+                .isEqualTo(RowSlot.NO_WIDTH);
+        }
+    }
+
+    @Nested
     class Equals {
         @Test
         void equalsMatchesTheSharedEmptySlotWithOneBuiltByHand() {
             // The shared constant is a convenience, not an identity: a row holding a hand-built empty
             // slot must compare equal to one holding EMPTY, or two rows that carry nothing would differ.
-            assertThat(RowSlot.EMPTY).isEqualTo(new RowSlot.Empty());
+            assertThat(RowSlot.EMPTY)
+                .isEqualTo(new RowSlot.Empty());
         }
     }
 

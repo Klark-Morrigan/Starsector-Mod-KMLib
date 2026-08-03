@@ -1,10 +1,12 @@
 package kmlib.starsector.ui.controls;
 
+import kmlib.starsector.ui.widgets.LabelledRow;
 import kmlib.text.KmlibStrings;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * A host's description of one body control: which widget it is and the state that widget draws in.
@@ -13,7 +15,7 @@ import java.util.List;
  * control strip without the layout or renderer learning the control's meaning.
  *
  * <p>The shape is a sealed hierarchy rather than one flag-laden record: each variant carries only the
- * state its own widget draws, so a field that refines a stacked list ({@code iconPaths}, {@code
+ * state its own widget draws, so a component that refines a stacked list ({@code rowGeometry}, {@code
  * columnCount}) simply does not exist on a checkbox or a tabs row. That makes the illegal
  * combinations unrepresentable - there are no runtime guards rejecting, say, an icon list on a
  * divider, because a divider has no such component to set - and lets the layout, renderer, and input
@@ -39,9 +41,9 @@ public sealed interface ControlSpec {
     String NO_TRAILING_CAPTION = "";
 
     /**
-     * The control's own label(s): one for a checkbox, toggle, or caption, one per option for a radio
-     * or tab (in segment order), and none for a divider. The layout measures these to snap the control
-     * to its text.
+     * The control's own label(s): one for a checkbox, toggle, or caption, one per option for a radio,
+     * table, or tab (in segment order), and none for a divider. The layout measures these to snap the
+     * control to its text.
      *
      * @return the control's labels, in draw order
      */
@@ -259,13 +261,7 @@ public sealed interface ControlSpec {
          * @return an otherwise-identical radio carrying that caption
          */
         public HorizontalRadio showsCaption(String trailingLabel) {
-            return new HorizontalRadio(
-                labels,
-                selectedIndex,
-                action,
-                trailingLabel,
-                segmentSizing,
-                reselect);
+            return rebuildAsLaidOut(trailingLabel, segmentSizing, reselect);
         }
 
         /**
@@ -276,13 +272,7 @@ public sealed interface ControlSpec {
          * @return an otherwise-identical radio sized that way
          */
         public HorizontalRadio sizesSegments(SegmentSizing segmentSizing) {
-            return new HorizontalRadio(
-                labels,
-                selectedIndex,
-                action,
-                trailingLabel,
-                segmentSizing,
-                reselect);
+            return rebuildAsLaidOut(trailingLabel, segmentSizing, reselect);
         }
 
         /**
@@ -294,6 +284,17 @@ public sealed interface ControlSpec {
          * @return an otherwise-identical radio handling a re-pick that way
          */
         public HorizontalRadio handlesReselect(ReselectBehaviour reselect) {
+            return rebuildAsLaidOut(trailingLabel, segmentSizing, reselect);
+        }
+
+        // Rebuilds the row around how it is laid out and driven, carrying what it holds - its labels,
+        // the lit segment, and the click action - over untouched. The three refinements share it rather
+        // than each restating all six components, one of which would eventually be restated wrongly.
+        private HorizontalRadio rebuildAsLaidOut(
+                String trailingLabel,
+                SegmentSizing segmentSizing,
+                ReselectBehaviour reselect) {
+
             return new HorizontalRadio(
                 labels,
                 selectedIndex,
@@ -305,57 +306,54 @@ public sealed interface ControlSpec {
     }
 
     /**
-     * A vertical stack of option rows, exactly one lit, each row optionally carrying a leading icon
-     * and a right-aligned trailing value - so the list reads as a table (crest, name, value). It is
-     * the general stacked selector: a label-only list, an icon picker, and a direction list (a triangle
-     * per row) are all this variant with different columns filled.
+     * A vertical stack of option rows, exactly one lit, each row a {@link LabelledRow} - what it leads
+     * with, what its label says, and what it trails with. It is the general stacked selector: a
+     * label-only list, an icon picker whose rows show a crest and a ranking value, and a direction list
+     * whose rows trail a triangle are all this variant with different slots filled.
      *
-     * <p>The {@code iconPaths}, {@code trailingLabels}, and {@code trailingDirections} run parallel to
-     * {@code labels}: the entry at index {@code i} draws on the option labelled {@code labels.get(i)}. A
-     * shorter or empty list, or a null entry, leaves that option icon-less or value-less. The trailing
-     * slot holds a text value or a direction triangle, not both - a row with a triangle
-     * ({@code trailingDirections} entry) carries no trailing text. {@code reselect} refines what a click
-     * on the lit option does; {@code columnCount} spreads the options across columns (filling each top to
-     * bottom before the next); {@code scrolls} marks this as the capped strip's one flex region - the
-     * single source the capped layout, the clipping renderer, and the scrolling input listener all read
-     * so the three agree which control scrolls.
+     * <p>One list of rows rather than a list per column: a row is a thing that holds its own parts, so a
+     * host that fills three of them writes three rows and not three lists it must keep the same length
+     * and the same order. Which kinds of thing a flank can hold is {@link RowSlot}'s sealed set, so a
+     * new kind of leading or trailing element is a new member of that set rather than another list here.
      *
-     * @param labels             the option labels, top to bottom, in segment order
-     * @param iconPaths          one leading-icon path per option (a null entry is an icon-less option);
-     *                           empty for a list drawn without icons
-     * @param trailingLabels     one right-aligned value per option (a null or absent entry is a
-     *                           value-less option); empty for a list with no trailing column
-     * @param trailingDirections one trailing direction triangle per option (a null or absent entry is a
-     *                           triangle-less option); empty for a list with no direction column, so a
-     *                           text-valued table leaves this empty and a direction table leaves {@code
-     *                           trailingLabels} empty
-     * @param selectedIndex      the lit option's index, or {@link #NO_SELECTION} when nothing is picked
-     * @param action             what a click on an option does, keyed by the option index
-     * @param reselect           what a click on the lit option does (deselect, re-fire, or inert)
-     * @param columnCount        how many columns to spread the options across ({@link #SINGLE_COLUMN}
-     *                           for one column)
-     * @param scrolls            whether this control is the capped strip's scrolling flex region
+     * <p>{@code rowGeometry} states whether the rows lay out as a table of columns or as uniform cells;
+     * {@code reselect} refines what a click on the lit option does; {@code columnCount} spreads the rows
+     * across columns (filling each top to bottom before the next); {@code scrolls} marks this as the
+     * capped strip's one flex region - the single source the capped layout, the clipping renderer, and
+     * the scrolling input listener all read so the three agree which control scrolls.
+     *
+     * @param labelledRows  the option rows, top to bottom, in segment order
+     * @param rowGeometry   how each row lays its content out - a table of columns, or uniform cells
+     * @param selectedIndex the lit option's index, or {@link #NO_SELECTION} when nothing is picked
+     * @param action        what a click on an option does, keyed by the option index
+     * @param reselect      what a click on the lit option does (deselect, re-fire, or inert)
+     * @param columnCount   how many columns to spread the options across ({@link #SINGLE_COLUMN} for
+     *                      one column)
+     * @param scrolls       whether this control is the capped strip's scrolling flex region
      */
     record VerticalTable(
-            List<String> labels,
-            List<String> iconPaths,
-            List<String> trailingLabels,
-            List<TriangleDirection> trailingDirections,
+            List<LabelledRow> labelledRows,
+            RowGeometry rowGeometry,
             int selectedIndex,
             ControlAction action,
             ReselectBehaviour reselect,
             int columnCount,
             boolean scrolls) implements Interactive {
+
+        // What a table holds before a host refines it: every option inert on a re-pick (the standard
+        // always-one-lit list), stacked in a single column, and pinned rather than scrolling. Each is a
+        // refinement below, so a host states only the ones its list actually wants.
+        private static final ReselectBehaviour DEFAULT_RESELECT = ReselectBehaviour.INERT;
+        private static final boolean NOT_SCROLLING = false;
+
         /**
-         * Copies the option lists defensively - null-tolerantly, since a null entry is a real "no icon",
-         * "no value", or "no triangle" - and rejects a column count the layout cannot lay out, so a
-         * mis-built table fails at construction rather than at paint time.
+         * Copies the rows defensively and rejects a missing geometry or a column count the layout cannot
+         * lay out, so a mis-built table fails at construction rather than at paint time. What each row
+         * itself must hold is {@link LabelledRow}'s own rule, checked where that row is built.
          */
         public VerticalTable {
-            labels = List.copyOf(labels);
-            iconPaths = Collections.unmodifiableList(new ArrayList<>(iconPaths));
-            trailingLabels = Collections.unmodifiableList(new ArrayList<>(trailingLabels));
-            trailingDirections = Collections.unmodifiableList(new ArrayList<>(trailingDirections));
+            labelledRows = List.copyOf(labelledRows);
+            Objects.requireNonNull(rowGeometry, "rowGeometry");
             if (columnCount < SINGLE_COLUMN) {
                 throw new IllegalArgumentException("columnCount must be at least "
                     + SINGLE_COLUMN
@@ -365,118 +363,90 @@ public sealed interface ControlSpec {
         }
 
         /**
-         * Builds a deselectable icon list (crest, name, value) spread across {@code columnCount} columns:
-         * a vertical table where re-picking the lit option clears the list. The {@code iconPaths} and
-         * {@code trailingLabels} run parallel to {@code labels} - a null or absent entry leaves that
-         * option icon-less or value-less, and an all-null (but present) icon column reads as a table with
-         * no crests. A table whose trailing column is direction triangles rather than text uses {@link
-         * #directionTable} instead.
+         * Builds a table whose rows lay out as columns: what each row leads with at its left, the label
+         * past it, and what it trails with flush right, all lining up down the stack. The picker's
+         * crest-name-value list and the sort selector's name-and-triangle list are both this shape, since
+         * the shape is a fact about the layout rather than about which slots the rows happen to fill.
          *
-         * @param labels         the option labels, top to bottom
-         * @param iconPaths      the per-option icon paths, aligned to {@code labels} (a null draws none)
-         * @param trailingLabels the per-option values, aligned to {@code labels} (a null draws none)
-         * @param selectedIndex  the lit option's index, or {@link #NO_SELECTION}
-         * @param action         what a click on an option does, keyed by the option index
-         * @param columnCount    how many columns to spread the options across
-         * @return the icon-table spec
+         * @param labelledRows  the option rows, top to bottom
+         * @param selectedIndex the lit option's index, or {@link #NO_SELECTION}
+         * @param action        what a click on an option does, keyed by the option index
+         * @return the column table, in a single inert column
          */
-        public static VerticalTable iconList(
-                List<String> labels,
-                List<String> iconPaths,
-                List<String> trailingLabels,
+        public static VerticalTable createColumnTable(
+                List<LabelledRow> labelledRows,
                 int selectedIndex,
-                ControlAction action,
-                int columnCount) {
+                ControlAction action) {
 
             return new VerticalTable(
-                labels,
-                iconPaths,
-                trailingLabels,
-                List.of(),
+                labelledRows,
+                RowGeometry.COLUMNS,
                 selectedIndex,
                 action,
-                ReselectBehaviour.DESELECT,
-                columnCount,
-                false);
-        }
-
-        /**
-         * Builds a direction table: the {@link #iconList} shape - an all-null icon column (the
-         * three-column geometry, no crests) - but with a direction triangle per row in place of a
-         * trailing text value, for a trailing column that marks a direction a font has no up/down glyph
-         * for. The {@code trailingDirections} run parallel to {@code labels}: the entry at index {@code i}
-         * draws its triangle on option {@code i}, a null entry drawing none. {@code reselect} refines what
-         * a click on the lit option does, so a re-firing selector can flip the direction on a re-pick.
-         *
-         * @param labels             the option labels, top to bottom
-         * @param trailingDirections the per-option direction triangles, aligned to {@code labels} (a null
-         *                           draws none)
-         * @param selectedIndex      the lit option's index, or {@link #NO_SELECTION}
-         * @param action             what a click on an option does, keyed by the option index
-         * @param reselect           what a click on the lit option does (deselect, re-fire, or inert)
-         * @return the direction-table spec, in a single column
-         */
-        public static VerticalTable directionTable(
-                List<String> labels,
-                List<TriangleDirection> trailingDirections,
-                int selectedIndex,
-                ControlAction action,
-                ReselectBehaviour reselect) {
-
-            return new VerticalTable(
-                labels,
-                Collections.<String>nCopies(labels.size(), null),
-                List.of(),
-                trailingDirections,
-                selectedIndex,
-                action,
-                reselect,
+                DEFAULT_RESELECT,
                 SINGLE_COLUMN,
-                false);
+                NOT_SCROLLING);
         }
 
         /**
-         * Whether the option at {@code index} draws a leading icon - a non-null entry in the parallel
-         * icon-path list. A shorter or empty list, or an out-of-range index, reports no icon. One rule
-         * read by both the layout that sizes the row and the renderer that draws it, so the two cannot
-         * disagree on which options show an icon.
+         * Builds a table whose rows lay out as uniform cells, each label centred in a cell as wide as the
+         * widest of them - a horizontal radio's option row, stacked. For a set of choices that reads as
+         * buttons rather than as a table of entries; a row's flanking slots have no column to sit in
+         * here, so such a list carries labels alone.
          *
-         * @param index the option index
-         * @return true when the option at that index has a non-null icon path
+         * @param labelledRows  the option rows, top to bottom
+         * @param selectedIndex the lit option's index, or {@link #NO_SELECTION}
+         * @param action        what a click on an option does, keyed by the option index
+         * @return the uniform-cell list, in a single inert column
          */
-        public boolean hasIconAt(int index) {
-            return index < iconPaths.size() && iconPaths.get(index) != null;
+        public static VerticalTable createSegmentedList(
+                List<LabelledRow> labelledRows,
+                int selectedIndex,
+                ControlAction action) {
+
+            return new VerticalTable(
+                labelledRows,
+                RowGeometry.UNIFORM_SEGMENTS,
+                selectedIndex,
+                action,
+                DEFAULT_RESELECT,
+                SINGLE_COLUMN,
+                NOT_SCROLLING);
         }
 
-        /**
-         * The right-aligned value drawn at option {@code index}'s trailing edge, or "" when this option
-         * has none - a shorter or empty list, or a null entry. Returning "" rather than null lets the
-         * layout and renderer treat "no value" as a zero-width text without a null check at each site.
-         *
-         * @param index the option index
-         * @return the option's trailing value, or "" when it has none
-         */
-        public String trailingLabelAt(int index) {
-            if (index >= trailingLabels.size() || trailingLabels.get(index) == null) {
-                return "";
+        // Each row's label as the one line it reads as, so a strip that snaps a control to its text
+        // charges a row once for the whole label rather than once per run it was authored in.
+        @Override
+        public List<String> labels() {
+            var rowLabels = new ArrayList<String>(labelledRows.size());
+            for (var labelledRow : labelledRows) {
+                rowLabels.add(labelledRow.resolveLabelText());
             }
-            return trailingLabels.get(index);
+            return List.copyOf(rowLabels);
         }
 
         /**
-         * The direction triangle drawn in option {@code index}'s trailing slot, or null when this option
-         * has none - a shorter or empty list, or a null entry. A non-null direction draws a triangle in
-         * place of a text value, so the layout and renderer read this to tell a triangle row from a text
-         * row without a null check duplicated at each site.
+         * Returns a copy of this table handling a re-pick of its lit option the given way - {@link
+         * ReselectBehaviour#DESELECT} for a spotlight list that clears when its lit row is picked again,
+         * {@link ReselectBehaviour#REFIRE} for a selector that acts on every pick.
          *
-         * @param index the option index
-         * @return the option's trailing direction triangle, or null when it has none
+         * @param reselect what a click on the lit option does
+         * @return an otherwise-identical table handling a re-pick that way
          */
-        public TriangleDirection directionAt(int index) {
-            if (index >= trailingDirections.size()) {
-                return null;
-            }
-            return trailingDirections.get(index);
+        public VerticalTable handlesReselect(ReselectBehaviour reselect) {
+            return rebuildAsLaidOut(reselect, columnCount, scrolls);
+        }
+
+        /**
+         * Returns a copy of this table folded across {@code columnCount} columns, its rows filling each
+         * column top to bottom before the next - so a long list reads as a grid rather than running off
+         * the bottom of its strip.
+         *
+         * @param columnCount how many columns to spread the options across
+         * @return an otherwise-identical table folded across that many columns
+         */
+        public VerticalTable spreadsAcross(int columnCount) {
+            return rebuildAsLaidOut(reselect, columnCount, scrolls);
         }
 
         /**
@@ -488,16 +458,27 @@ public sealed interface ControlSpec {
          * @return an otherwise-identical table with {@link #scrolls()} set
          */
         public VerticalTable asScrolling() {
+            return rebuildAsLaidOut(reselect, columnCount, true);
+        }
+
+        // Rebuilds the table around how it is laid out and driven, carrying what it holds - its rows,
+        // their geometry, the lit row, and the click action - over untouched. The three refinements
+        // share it rather than each restating all seven components, one of which would eventually be
+        // restated wrongly: the lit row and the column count are both counts, so a rebuild that crossed
+        // them would compile clean and light the wrong row.
+        private VerticalTable rebuildAsLaidOut(
+                ReselectBehaviour reselect,
+                int columnCount,
+                boolean scrolls) {
+
             return new VerticalTable(
-                labels,
-                iconPaths,
-                trailingLabels,
-                trailingDirections,
+                labelledRows,
+                rowGeometry,
                 selectedIndex,
                 action,
                 reselect,
                 columnCount,
-                true);
+                scrolls);
         }
     }
 
@@ -528,8 +509,7 @@ public sealed interface ControlSpec {
         /**
          * The shortcut hint drawn at tab {@code index}, or "" when the tab has none - a shorter or empty
          * list, or a null entry. Returning "" rather than null lets the layout and renderer treat "no
-         * hint" as a zero-width text without a null check at each site, as {@link
-         * VerticalTable#trailingLabelAt} does for a missing value.
+         * hint" as a zero-width text without a null check at each site.
          *
          * @param index the tab index
          * @return the tab's shortcut hint, or "" when it has none

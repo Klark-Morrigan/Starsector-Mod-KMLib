@@ -108,17 +108,23 @@ public record LabelledRow(
     }
 
     /**
-     * Copies a label's runs and rejects an empty or null-bearing one, where the caller that built it is
-     * still on the stack. The floor a label is held to lives here rather than at each thing that carries
-     * one, so a line whose label is all it holds cannot be held to a looser rule than a line with slots
-     * around it.
+     * The whole label as one line: its runs' text in reading order, joined. For a surface that lays a
+     * label in a single draw and charges it a single measurement, where each run's own anchor is never
+     * worked out and so the runs read as the one sentence they already are.
      *
-     * <p>A label with no runs at all is not a line, and a null run otherwise surfaces inside a
-     * measurement or a draw call, well past the point that could say which line was meant.
+     * <p>The colours do not survive the join, since one line drawn once draws in one colour. A surface
+     * that picks a run out in its own colour reads the runs themselves rather than this.
      *
-     * @param labelTextSpans the label's runs in reading order
-     * @return an immutable copy of the runs
+     * @return the label's runs joined into one line
      */
+    public String resolveLabelText() {
+        var labelText = new StringBuilder();
+        for (var textSpan : labelTextSpans) {
+            labelText.append(textSpan.text());
+        }
+        return labelText.toString();
+    }
+
     /**
      * Returns {@code labelTextSpans} with {@code runTextSpan} appended - the label's runs read as one
      * sentence, so a run is added to what is already there rather than replacing it, and a second colour
@@ -135,6 +141,18 @@ public record LabelledRow(
         return continuedTextSpans;
     }
 
+    /**
+     * Copies a label's runs and rejects an empty or null-bearing one, where the caller that built it is
+     * still on the stack. The floor a label is held to lives here rather than at each thing that carries
+     * one, so a line whose label is all it holds cannot be held to a looser rule than a line with slots
+     * around it.
+     *
+     * <p>A label with no runs at all is not a line, and a null run otherwise surfaces inside a
+     * measurement or a draw call, well past the point that could say which line was meant.
+     *
+     * @param labelTextSpans the label's runs in reading order
+     * @return an immutable copy of the runs
+     */
     static List<TextSpan> copyLabelTextSpans(List<TextSpan> labelTextSpans) {
         Objects.requireNonNull(labelTextSpans, "labelTextSpans");
         var copiedTextSpans = List.copyOf(labelTextSpans);

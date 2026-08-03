@@ -1,7 +1,7 @@
 package kmlib.starsector.ui.render.gl;
 
 import kmlib.math.geometry.Rectangle;
-import kmlib.starsector.ui.controls.TriangleDirection;
+import kmlib.starsector.ui.widgets.TriangleDirection;
 
 /**
  * Raw-GL paint for a small filled triangle sized to a box: an up triangle (apex on the box's top edge)

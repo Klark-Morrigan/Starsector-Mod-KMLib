@@ -1,8 +1,12 @@
 package kmlib.starsector.ui.widgets.lists;
 
+import kmlib.starsector.ui.colour.StarsectorUiColour;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.ReselectBehaviour;
-import kmlib.starsector.ui.controls.TriangleDirection;
+import kmlib.starsector.ui.text.TextSpan;
+import kmlib.starsector.ui.widgets.LabelledRow;
+import kmlib.starsector.ui.widgets.RowSlot;
+import kmlib.starsector.ui.widgets.TriangleDirection;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,11 +27,10 @@ import java.util.function.Consumer;
  * ascending, down for descending) rather than a letter, since a sidebar body font renders no
  * up/down glyph.
  *
- * <p>The rows carry no icon - the direction table's icon column is all null - so the selector
- * reuses the picker list's three-column table geometry (a would-be icon column, the mode name, the
- * trailing direction triangle) and reads as a left-aligned list of modes with their directions
- * flush right. The rows are drawn in the caller's mode order, so the row index a click reports
- * maps straight back to a mode by position.
+ * <p>The rows lead with nothing, and the selector is laid out as a column table all the same, so it
+ * reads as a left-aligned list of mode names with their directions flush right - the picker list's own
+ * geometry, which is what makes the two blocks of a picker read as one. The rows are drawn in the
+ * caller's mode order, so the row index a click reports maps straight back to a mode by position.
  */
 public final class SortSelectorControl {
 
@@ -58,26 +61,26 @@ public final class SortSelectorControl {
             Consumer<ListSort<T>> onSortPicked) {
 
         var modes = sortModes.modes();
-        var labels = new ArrayList<String>(modes.size());
-        var directions = new ArrayList<TriangleDirection>(modes.size());
+        var labelledRows = new ArrayList<LabelledRow>(modes.size());
+        var labelColour = StarsectorUiColour.VANILLA_TEXT.resolve();
 
         for (var mode : modes) {
-            labels.add(mode.resolveLabelText());
-
             // The lit mode shows its live direction; every other row previews its own default, so a
             // row reads as "pick me and the list sorts this way".
             var rowDirection = mode.equals(activeSort.mode())
                 ? activeSort.direction()
                 : mode.defaultDirection();
 
-            directions.add(resolveTriangleDirection(rowDirection));
+            labelledRows.add(LabelledRow
+                .createRow(new TextSpan(mode.resolveLabelText(), labelColour))
+                .trailsWith(new RowSlot.Triangle(resolveTriangleDirection(rowDirection))));
         }
-        return ControlSpec.VerticalTable.directionTable(
-            labels,
-            directions,
-            modes.indexOf(activeSort.mode()),
-            cellIndex -> applySelection(activeSort, modes, onSortPicked, cellIndex),
-            ReselectBehaviour.REFIRE);
+        return ControlSpec.VerticalTable
+            .createColumnTable(
+                labelledRows,
+                modes.indexOf(activeSort.mode()),
+                cellIndex -> applySelection(activeSort, modes, onSortPicked, cellIndex))
+            .handlesReselect(ReselectBehaviour.REFIRE);
     }
 
     // The triangle that previews a sort direction: ascending points up, descending down. The

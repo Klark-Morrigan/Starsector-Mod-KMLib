@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * caller never states them, so the bare content has to be what every refinement builds on.
  */
 class LabelledRowTest {
+
     private static final String TEXT = "Hegemony";
     private static final String RUN_TEXT = "core territory";
     private static final String OTHER_RUN_TEXT = "contested";
@@ -82,9 +83,9 @@ class LabelledRowTest {
             // the blank and reached for the absence instead - caught while it is still on the stack
             // rather than inside the measurement that asks each run whether it has text.
             assertThatThrownBy(() -> new LabelledRow(
-                RowSlot.EMPTY,
-                Arrays.asList(BLANK_SPAN, null),
-                RowSlot.EMPTY))
+                    RowSlot.EMPTY,
+                    Arrays.asList(BLANK_SPAN, null),
+                    RowSlot.EMPTY))
                 .isInstanceOf(NullPointerException.class);
         }
 
@@ -111,11 +112,12 @@ class LabelledRowTest {
             // then draw another.
             var labelTextSpans = new ArrayList<TextSpan>();
             labelTextSpans.add(new TextSpan(TEXT, Color.WHITE));
-            var labelledRow = new LabelledRow(RowSlot.EMPTY, labelTextSpans, RowSlot.EMPTY);
 
+            var labelledRow = new LabelledRow(RowSlot.EMPTY, labelTextSpans, RowSlot.EMPTY);
             labelTextSpans.add(new TextSpan(RUN_TEXT, Color.YELLOW));
 
-            assertThat(labelledRow.labelTextSpans()).hasSize(1);
+            assertThat(labelledRow.labelTextSpans())
+                .hasSize(1);
         }
     }
 
@@ -123,11 +125,15 @@ class LabelledRowTest {
     class CreateRow {
         @Test
         void createRowCarriesTheLabelAsOneRun() {
+
             var labelledRow = buildBareRow();
 
-            assertThat(labelledRow.labelTextSpans()).hasSize(1);
-            assertThat(labelledRow.labelTextSpans().get(0).text()).isEqualTo(TEXT);
-            assertThat(labelledRow.labelTextSpans().get(0).colour()).isEqualTo(Color.WHITE);
+            assertThat(labelledRow.labelTextSpans())
+                .hasSize(1);
+            assertThat(labelledRow.labelTextSpans().get(0).text())
+                .isEqualTo(TEXT);
+            assertThat(labelledRow.labelTextSpans().get(0).colour())
+                .isEqualTo(Color.WHITE);
         }
 
         @Test
@@ -136,8 +142,10 @@ class LabelledRowTest {
             // the unfilled flanks are slots rather than nulls, so whatever measures them needs no branch.
             var labelledRow = buildBareRow();
 
-            assertThat(labelledRow.leadingRowSlot()).isEqualTo(RowSlot.EMPTY);
-            assertThat(labelledRow.trailingRowSlot()).isEqualTo(RowSlot.EMPTY);
+            assertThat(labelledRow.leadingRowSlot())
+                .isEqualTo(RowSlot.EMPTY);
+            assertThat(labelledRow.trailingRowSlot())
+                .isEqualTo(RowSlot.EMPTY);
         }
     }
 
@@ -145,7 +153,8 @@ class LabelledRowTest {
     class LeadsWith {
         @Test
         void leadsWithSetsTheLeadingSlot() {
-            assertThat(buildBareRow().leadsWith(CREST_SLOT).leadingRowSlot()).isEqualTo(CREST_SLOT);
+            assertThat(buildBareRow().leadsWith(CREST_SLOT).leadingRowSlot())
+                .isEqualTo(CREST_SLOT);
         }
 
         @Test
@@ -161,11 +170,15 @@ class LabelledRowTest {
     class ContinuesWith {
         @Test
         void continuesWithAppendsTheRunAndItsColour() {
+
             var labelledRow = buildBareRow().continuesWith(new TextSpan(RUN_TEXT, Color.YELLOW));
 
-            assertThat(labelledRow.labelTextSpans()).hasSize(2);
-            assertThat(labelledRow.labelTextSpans().get(1).text()).isEqualTo(RUN_TEXT);
-            assertThat(labelledRow.labelTextSpans().get(1).colour()).isEqualTo(Color.YELLOW);
+            assertThat(labelledRow.labelTextSpans())
+                .hasSize(2);
+            assertThat(labelledRow.labelTextSpans().get(1).text())
+                .isEqualTo(RUN_TEXT);
+            assertThat(labelledRow.labelTextSpans().get(1).colour())
+                .isEqualTo(Color.YELLOW);
         }
 
         @Test
@@ -174,8 +187,10 @@ class LabelledRowTest {
             // otherwise a second colour would cost the caller the first.
             var labelledRow = buildBareRow().continuesWith(new TextSpan(RUN_TEXT, Color.YELLOW));
 
-            assertThat(labelledRow.labelTextSpans().get(0).text()).isEqualTo(TEXT);
-            assertThat(labelledRow.labelTextSpans().get(0).colour()).isEqualTo(Color.WHITE);
+            assertThat(labelledRow.labelTextSpans().get(0).text())
+                .isEqualTo(TEXT);
+            assertThat(labelledRow.labelTextSpans().get(0).colour())
+                .isEqualTo(Color.WHITE);
         }
 
         @Test
@@ -204,7 +219,8 @@ class LabelledRowTest {
     class TrailsWith {
         @Test
         void trailsWithSetsTheTrailingSlot() {
-            assertThat(buildBareRow().trailsWith(VALUE_SLOT).trailingRowSlot()).isEqualTo(VALUE_SLOT);
+            assertThat(buildBareRow().trailsWith(VALUE_SLOT).trailingRowSlot())
+                .isEqualTo(VALUE_SLOT);
         }
 
         @Test
@@ -213,6 +229,37 @@ class LabelledRowTest {
                 buildRichRow().trailsWith(RowSlot.EMPTY),
                 buildRichRow(),
                 "trailingRowSlot");
+        }
+    }
+
+    @Nested
+    class ResolveLabelText {
+        @Test
+        void resolveLabelTextIsTheOneRunOfASingleRunLabel() {
+            assertThat(buildBareRow().resolveLabelText())
+                .isEqualTo("Hegemony");
+        }
+
+        @Test
+        void resolveLabelTextJoinsTheRunsInReadingOrder() {
+            // The runs are one sentence picked out in several colours, so a surface that lays the
+            // label in a single draw gets the sentence rather than its first stretch.
+            var row = buildBareRow()
+                .continuesWith(new TextSpan(RUN_TEXT, Color.YELLOW))
+                .continuesWith(new TextSpan(OTHER_RUN_TEXT, Color.RED));
+
+            assertThat(row.resolveLabelText())
+                .isEqualTo("Hegemonycore territorycontested");
+        }
+
+        @Test
+        void resolveLabelTextAddsNothingForABlankRun() {
+            // A run that came out blank contributes no glyphs, so the joined line reads as though the
+            // caller had never appended it - and the line it measures is the line that draws.
+            var row = buildBareRow().continuesWith(BLANK_SPAN);
+
+            assertThat(row.resolveLabelText())
+                .isEqualTo("Hegemony");
         }
     }
 }

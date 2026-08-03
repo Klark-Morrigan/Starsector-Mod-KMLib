@@ -5,11 +5,11 @@ import kmlib.starsector.ui.controls.ControlAction;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.ReselectBehaviour;
 import kmlib.starsector.ui.controls.SegmentSizing;
-import kmlib.starsector.ui.controls.TriangleDirection;
 import kmlib.starsector.ui.controls.VerticalTableSpecs;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.layout.ControlStripLayout.StripMeasurement;
 import kmlib.starsector.ui.widgets.IconLabelRow;
+import kmlib.starsector.ui.widgets.TriangleDirection;
 import kmlib.starsector.ui.widgets.tabs.TabStyle;
 import kmlib.starsector.ui.widgets.tabs.TabStyles;
 import kmlib.testfixtures.starsector.ui.font.LineWidthMeasurerFake;
@@ -31,6 +31,7 @@ import static org.assertj.core.api.Assertions.within;
  * rectangle a hand-checkable multiple.
  */
 final class ControlStripLayoutTest {
+
     private static final float WIDTH_PER_CHAR = 10f;
     private static final float TOLERANCE = 0.01f;
     private static final float BODY_ORIGIN_X = 100f;
@@ -43,9 +44,12 @@ final class ControlStripLayoutTest {
 
         @Test
         void measureStripReturnsZeroFootprintAndNoRowsForAnEmptyStrip() {
+
             var measurement = ControlStripLayout.measureStrip(List.<ControlSpec>of(), measurerFake);
+
             assertThat(measurement.bodyWidth()).isZero();
             assertThat(measurement.bodyHeight()).isZero();
+
             assertThat(measurement.rowWidths()).isEmpty();
             assertThat(measurement.rowHeights()).isEmpty();
         }
@@ -57,34 +61,51 @@ final class ControlStripLayoutTest {
             var measurement = ControlStripLayout.measureStrip(
                 List.<ControlSpec>of(ControlSpec.Checkbox.lit("Muted", false, ControlAction.NONE)),
                 measurerFake);
+
             var expectedRow = ControlStripLayout.CONTROL_ROW_HEIGHT
                 + ControlStripLayout.CHECKBOX_LABEL_GAP + 5 * WIDTH_PER_CHAR;
-            assertThat(measurement.rowWidths().get(0)).isCloseTo(expectedRow, within(TOLERANCE));
+
+            assertThat(measurement.rowWidths().get(0))
+                .isCloseTo(expectedRow, within(TOLERANCE));
             assertThat(measurement.bodyWidth())
                 .isCloseTo(expectedRow + 2f * ControlStripLayout.BODY_PADDING, within(TOLERANCE));
         }
 
         @Test
         void measureStripSumsRowHeightsAndGapsPlusInset() {
+            
             var measurement = ControlStripLayout.measureStrip(
-                List.<ControlSpec>of(ControlSpec.Checkbox.lit("A", false, ControlAction.NONE),
+                List.<ControlSpec>of(
+                    ControlSpec.Checkbox.lit("A", false, ControlAction.NONE),
                     ControlSpec.Checkbox.lit("B", false, ControlAction.NONE)),
                 measurerFake);
+
             // Two rows: twice the row height, one gap between them, and the inset top and bottom.
             var expectedHeight = 2f * ControlStripLayout.BODY_PADDING
-                + 2f * ControlStripLayout.CONTROL_ROW_HEIGHT + ControlStripLayout.ROW_GAP;
-            assertThat(measurement.bodyHeight()).isCloseTo(expectedHeight, within(TOLERANCE));
+                + 2f * ControlStripLayout.CONTROL_ROW_HEIGHT
+                + ControlStripLayout.ROW_GAP;
+
+            assertThat(measurement.bodyHeight())
+                .isCloseTo(expectedHeight, within(TOLERANCE));
         }
 
         @Test
         void measureStripSizesAHorizontalRadioRowToEqualSegments() {
-            var radio = ControlSpec.HorizontalRadio.of(List.of("Short", "Full"),
-                ControlSpec.NO_SELECTION, ControlAction.NONE).showsCaption("Names");
+
+            var radio = ControlSpec.HorizontalRadio.of(
+                    List.of("Short", "Full"),
+                    ControlSpec.NO_SELECTION,
+                    ControlAction.NONE)
+                .showsCaption("Names");
+
             var measurement = ControlStripLayout.measureStrip(List.<ControlSpec>of(radio), measurerFake);
+
             // Each segment is the widest option ("Short", 5 chars) plus the segment padding; the row
             // is the two equal segments side by side.
             var segmentWidth = 5 * WIDTH_PER_CHAR + ControlStripLayout.RADIO_SEGMENT_PADDING;
-            assertThat(measurement.rowWidths().get(0)).isCloseTo(2 * segmentWidth, within(TOLERANCE));
+
+            assertThat(measurement.rowWidths().get(0))
+                .isCloseTo(2 * segmentWidth, within(TOLERANCE));
         }
 
         @Test
@@ -92,18 +113,30 @@ final class ControlStripLayoutTest {
             // A snapped horizontal radio sizes each cell to its own label plus the padding, so "Short"
             // (5) and "Full" (4) span 9 characters plus two paddings - narrower than the uniform row's
             // two widest-label cells.
-            var radio = ControlSpec.HorizontalRadio.of(List.of("Short", "Full"),
-                ControlSpec.NO_SELECTION, ControlAction.NONE).sizesSegments(SegmentSizing.SNAPPED);
+            var radio = ControlSpec.HorizontalRadio.of(
+                    List.of("Short", "Full"),
+                    ControlSpec.NO_SELECTION,
+                    ControlAction.NONE)
+                .sizesSegments(SegmentSizing.SNAPPED);
+
             var measurement = ControlStripLayout.measureStrip(List.<ControlSpec>of(radio), measurerFake);
             var expected = 9 * WIDTH_PER_CHAR + 2 * ControlStripLayout.RADIO_SEGMENT_PADDING;
-            assertThat(measurement.rowWidths().get(0)).isCloseTo(expected, within(TOLERANCE));
+
+            assertThat(measurement.rowWidths().get(0))
+                .isCloseTo(expected, within(TOLERANCE));
         }
 
         @Test
         void measureStripStandsAVerticalRadioOneRowTallPerOption() {
-            var radio = VerticalTableSpecs.buildPlainTable(List.of("Factions", "Alliances"),
-                ControlSpec.NO_SELECTION, ControlAction.NONE, ReselectBehaviour.DESELECT);
+
+            var radio = VerticalTableSpecs.buildSegmentedList(
+                List.of("Factions", "Alliances"),
+                ControlSpec.NO_SELECTION,
+                ControlAction.NONE,
+                ReselectBehaviour.DESELECT);
+
             var measurement = ControlStripLayout.measureStrip(List.<ControlSpec>of(radio), measurerFake);
+
             assertThat(measurement.rowHeights().get(0))
                 .isCloseTo(2 * ControlStripLayout.CONTROL_ROW_HEIGHT, within(TOLERANCE));
         }
@@ -112,9 +145,14 @@ final class ControlStripLayoutTest {
         void measureStripStandsAnIconListOneRowTallPerOption() {
             // The icon list stacks like a vertical radio, so it stands one control-row tall per
             // option regardless of icons.
-            var picker = VerticalTableSpecs.buildIconList(List.of("Hegemony", "Tri-Tachyon"),
-                List.of("crest_heg", "crest_tt"), ControlSpec.NO_SELECTION, ControlAction.NONE);
+            var picker = VerticalTableSpecs.buildIconList(
+                List.of("Hegemony", "Tri-Tachyon"),
+                List.of("crest_heg", "crest_tt"),
+                ControlSpec.NO_SELECTION,
+                ControlAction.NONE);
+
             var measurement = ControlStripLayout.measureStrip(List.<ControlSpec>of(picker), measurerFake);
+
             assertThat(measurement.rowHeights().get(0))
                 .isCloseTo(2 * ControlStripLayout.CONTROL_ROW_HEIGHT, within(TOLERANCE));
         }
@@ -123,10 +161,14 @@ final class ControlStripLayoutTest {
         void measureStripLeavesADividerWithoutIntrinsicWidth() {
             // A divider has no text and no chrome, so it measures zero here - it is stretched to the
             // full framed body only at placement, once a host has framed the body rectangle.
-            var specs = List.<ControlSpec>of(new ControlSpec.Divider(),
+            var specs = List.<ControlSpec>of(
+                new ControlSpec.Divider(),
                 ControlSpec.Checkbox.lit("Muted", false, ControlAction.NONE));
+
             var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
-            assertThat(measurement.rowWidths().get(0)).isCloseTo(0f, within(TOLERANCE));
+
+            assertThat(measurement.rowWidths().get(0))
+                .isCloseTo(0f, within(TOLERANCE));
         }
 
         @Test
@@ -136,7 +178,9 @@ final class ControlStripLayoutTest {
             var checkbox = ControlSpec.Checkbox.lit("Muted", false, ControlAction.NONE);
             var withoutDivider = ControlStripLayout.measureStrip(List.<ControlSpec>of(checkbox), measurerFake);
             var withDivider = ControlStripLayout.measureStrip(
-                List.<ControlSpec>of(new ControlSpec.Divider(), checkbox), measurerFake);
+                List.<ControlSpec>of(new ControlSpec.Divider(), checkbox),
+                measurerFake);
+
             assertThat(withDivider.bodyWidth())
                 .isCloseTo(withoutDivider.bodyWidth(), within(TOLERANCE));
         }
@@ -146,13 +190,24 @@ final class ControlStripLayoutTest {
             // "AB" carries a crest, "CDE" does not; the row is the widest of the two, each sized
             // through the shared IconLabelRow geometry so the width tracks whether the option draws an
             // icon. The measurement reads that geometry rather than re-deriving the icon and gap sizes.
-            var picker = VerticalTableSpecs.buildIconList(List.of("AB", "CDE"),
-                Arrays.asList("crest_ab", null), ControlSpec.NO_SELECTION, ControlAction.NONE);
+            var picker = VerticalTableSpecs.buildIconList(
+                List.of("AB", "CDE"),
+                Arrays.asList("crest_ab", null),
+                ControlSpec.NO_SELECTION,
+                ControlAction.NONE);
+
             var measurement = ControlStripLayout.measureStrip(List.<ControlSpec>of(picker), measurerFake);
-            var withIcon = IconLabelRow.measureRowWidth(ControlStripLayout.CONTROL_ROW_HEIGHT,
-                2 * WIDTH_PER_CHAR, true);
-            var withoutIcon = IconLabelRow.measureRowWidth(ControlStripLayout.CONTROL_ROW_HEIGHT,
-                3 * WIDTH_PER_CHAR, false);
+
+            var withIcon = IconLabelRow.measureRowWidth(
+                ControlStripLayout.CONTROL_ROW_HEIGHT,
+                2 * WIDTH_PER_CHAR,
+                true);
+
+            var withoutIcon = IconLabelRow.measureRowWidth(
+                ControlStripLayout.CONTROL_ROW_HEIGHT,
+                3 * WIDTH_PER_CHAR,
+                false);
+
             assertThat(measurement.rowWidths().get(0))
                 .isCloseTo(Math.max(withIcon, withoutIcon), within(TOLERANCE));
         }
@@ -162,10 +217,15 @@ final class ControlStripLayoutTest {
             // Three options across two columns wrap into two rows (the first column holds two, the
             // second one), so the list is two rows tall, not three - it wraps rather than stacking one
             // row per option.
-            var picker = ControlSpec.VerticalTable.iconList(List.of("A", "B", "C"),
-                Arrays.asList(null, null, null), List.of(), ControlSpec.NO_SELECTION,
-                ControlAction.NONE, 2);
+            var picker = VerticalTableSpecs.buildIconList(List.of("A", "B", "C"),
+                Arrays.asList(null, null, null),
+                List.of(),
+                ControlSpec.NO_SELECTION,
+                ControlAction.NONE,
+                2);
+
             var measurement = ControlStripLayout.measureStrip(List.<ControlSpec>of(picker), measurerFake);
+
             assertThat(measurement.rowHeights().get(0))
                 .isCloseTo(2 * ControlStripLayout.CONTROL_ROW_HEIGHT, within(TOLERANCE));
         }
@@ -176,15 +236,33 @@ final class ControlStripLayoutTest {
             // a single column's width - the same width the one-column list of the same options measures.
             var labels = List.of("A", "B", "C");
             var icons = Arrays.asList((String) null, null, null);
-            var oneColumn = VerticalTableSpecs.buildIconList(labels, icons, List.of(),
-                ControlSpec.NO_SELECTION, ControlAction.NONE);
-            var twoColumn = ControlSpec.VerticalTable.iconList(labels, icons, List.of(),
-                ControlSpec.NO_SELECTION, ControlAction.NONE, 2);
-            var oneWidth = ControlStripLayout.measureStrip(List.<ControlSpec>of(oneColumn), measurerFake)
-                .rowWidths().get(0);
-            var twoWidth = ControlStripLayout.measureStrip(List.<ControlSpec>of(twoColumn), measurerFake)
-                .rowWidths().get(0);
-            assertThat(twoWidth).isCloseTo(2 * oneWidth, within(TOLERANCE));
+
+            var oneColumn = VerticalTableSpecs.buildIconList(
+                labels,
+                icons,
+                List.of(),
+                ControlSpec.NO_SELECTION,
+                ControlAction.NONE);
+
+            var twoColumn = VerticalTableSpecs.buildIconList(
+                labels,
+                icons,
+                List.of(),
+                ControlSpec.NO_SELECTION,
+                ControlAction.NONE,
+                2);
+
+            var oneWidth = ControlStripLayout
+                .measureStrip(List.<ControlSpec>of(oneColumn), measurerFake)
+                .rowWidths()
+                .get(0);
+            var twoWidth = ControlStripLayout
+                .measureStrip(List.<ControlSpec>of(twoColumn), measurerFake)
+                .rowWidths()
+                .get(0);
+
+            assertThat(twoWidth)
+                .isCloseTo(2 * oneWidth, within(TOLERANCE));
         }
 
         @Test
@@ -192,12 +270,46 @@ final class ControlStripLayoutTest {
             // A ranked table row must hold its crest, name, and value; the measurement reads the same
             // IconLabelRow geometry the renderer places the value with, so the column is wide enough
             // that "AB" clears its two-char value "12".
-            var picker = VerticalTableSpecs.buildIconList(List.of("AB"), List.of("crest_ab"),
-                List.of("12"), ControlSpec.NO_SELECTION, ControlAction.NONE);
+            var picker = VerticalTableSpecs.buildIconList(
+                List.of("AB"),
+                List.of("crest_ab"),
+                List.of("12"),
+                ControlSpec.NO_SELECTION,
+                ControlAction.NONE);
+
             var measurement = ControlStripLayout.measureStrip(List.<ControlSpec>of(picker), measurerFake);
-            var withValue = IconLabelRow.measureRowWidth(ControlStripLayout.CONTROL_ROW_HEIGHT,
-                2 * WIDTH_PER_CHAR, true, 2 * WIDTH_PER_CHAR);
-            assertThat(measurement.rowWidths().get(0)).isCloseTo(withValue, within(TOLERANCE));
+            var withValue = IconLabelRow.measureRowWidth(
+                ControlStripLayout.CONTROL_ROW_HEIGHT,
+                2 * WIDTH_PER_CHAR,
+                true,
+                2 * WIDTH_PER_CHAR);
+
+            assertThat(measurement.rowWidths().get(0))
+                .isCloseTo(withValue, within(TOLERANCE));
+        }
+
+        @Test
+        void measureStripReservesNoValueColumnForABlankTrailingRun() {
+            // A ranked list under a mode with no metric fills every row's value with a blank run
+            // rather than dropping the column, so the width must come out as though no row trailed
+            // anything - otherwise the list widens by a gap in front of glyphs it never draws.
+            var blankValued = VerticalTableSpecs.buildIconList(
+                List.of("AB"),
+                List.of("crest_ab"),
+                List.of(""),
+                ControlSpec.NO_SELECTION,
+                ControlAction.NONE);
+
+            var measurement = ControlStripLayout.measureStrip(
+                List.<ControlSpec>of(blankValued),
+                measurerFake);
+            var withoutValue = IconLabelRow.measureRowWidth(
+                ControlStripLayout.CONTROL_ROW_HEIGHT,
+                2 * WIDTH_PER_CHAR,
+                true);
+
+            assertThat(measurement.rowWidths().get(0))
+                .isCloseTo(withoutValue, within(TOLERANCE));
         }
 
         @Test
@@ -205,14 +317,22 @@ final class ControlStripLayoutTest {
             // A direction table's trailing column is a fixed triangle slot, not measured text, so the
             // row reserves the triangle slot width the renderer sizes the triangle to rather than a
             // letter width it no longer draws.
-            var selector = ControlSpec.VerticalTable.directionTable(List.of("AB"),
-                List.of(TriangleDirection.DOWN), ControlSpec.NO_SELECTION, ControlAction.NONE,
+            var selector = VerticalTableSpecs.buildDirectionTable(
+                List.of("AB"),
+                List.of(TriangleDirection.DOWN),
+                ControlSpec.NO_SELECTION,
+                ControlAction.NONE,
                 ReselectBehaviour.REFIRE);
+
             var measurement = ControlStripLayout.measureStrip(List.<ControlSpec>of(selector), measurerFake);
-            var withTriangle = IconLabelRow.measureRowWidth(ControlStripLayout.CONTROL_ROW_HEIGHT,
-                2 * WIDTH_PER_CHAR, false,
+            var withTriangle = IconLabelRow.measureRowWidth(
+                ControlStripLayout.CONTROL_ROW_HEIGHT,
+                2 * WIDTH_PER_CHAR,
+                false,
                 IconLabelRow.computeDirectionTriangleSlotWidth(ControlStripLayout.CONTROL_ROW_HEIGHT));
-            assertThat(measurement.rowWidths().get(0)).isCloseTo(withTriangle, within(TOLERANCE));
+
+            assertThat(measurement.rowWidths().get(0))
+                .isCloseTo(withTriangle, within(TOLERANCE));
         }
 
         @Test
@@ -222,13 +342,20 @@ final class ControlStripLayoutTest {
             var pair = new ControlSpec.SideBySide(
                 List.of(ControlSpec.Checkbox.lit("L", false, ControlAction.NONE)),
                 List.of(ControlSpec.Checkbox.lit("RR", false, ControlAction.NONE)));
+
             var measurement = ControlStripLayout.measureStrip(List.<ControlSpec>of(pair), measurerFake);
+
             var leftWidth = ControlStripLayout.CONTROL_ROW_HEIGHT
-                + ControlStripLayout.CHECKBOX_LABEL_GAP + 1 * WIDTH_PER_CHAR;
+                + ControlStripLayout.CHECKBOX_LABEL_GAP
+                + 1 * WIDTH_PER_CHAR;
+
             var rightWidth = ControlStripLayout.CONTROL_ROW_HEIGHT
-                + ControlStripLayout.CHECKBOX_LABEL_GAP + 2 * WIDTH_PER_CHAR;
+                + ControlStripLayout.CHECKBOX_LABEL_GAP
+                + 2 * WIDTH_PER_CHAR;
+
             assertThat(measurement.rowWidths().get(0))
-                .isCloseTo(leftWidth + ControlStripLayout.COLUMN_GAP + rightWidth,
+                .isCloseTo(
+                    leftWidth + ControlStripLayout.COLUMN_GAP + rightWidth,
                     within(TOLERANCE));
         }
 
@@ -237,12 +364,16 @@ final class ControlStripLayoutTest {
             // The left column holds two stacked controls and the right one, so the group stands as tall
             // as the two-row left column - its taller side - and the right column top-aligns within it.
             var pair = new ControlSpec.SideBySide(
-                List.of(ControlSpec.Checkbox.lit("A", false, ControlAction.NONE),
+                List.of(
+                    ControlSpec.Checkbox.lit("A", false, ControlAction.NONE),
                     ControlSpec.Checkbox.lit("B", false, ControlAction.NONE)),
                 List.of(ControlSpec.Checkbox.lit("C", false, ControlAction.NONE)));
+
             var measurement = ControlStripLayout.measureStrip(List.<ControlSpec>of(pair), measurerFake);
+
             assertThat(measurement.rowHeights().get(0))
-                .isCloseTo(2 * ControlStripLayout.CONTROL_ROW_HEIGHT + ControlStripLayout.ROW_GAP,
+                .isCloseTo(
+                    2 * ControlStripLayout.CONTROL_ROW_HEIGHT + ControlStripLayout.ROW_GAP,
                     within(TOLERANCE));
         }
 
@@ -250,9 +381,14 @@ final class ControlStripLayoutTest {
         void measureStripStandsATabsRowOneTabHeightTall() {
             // A tabs row is drawn in the larger tab face, so it stands one tab-height tall rather than a
             // body-row tall.
-            var tabs = new ControlSpec.Tabs(List.of("No Layer", "Political Map"), List.of("N", "P"),
-                0, ControlAction.NONE);
+            var tabs = new ControlSpec.Tabs(
+                List.of("No Layer", "Political Map"),
+                List.of("N", "P"),
+                0,
+                ControlAction.NONE);
+
             var measurement = ControlStripLayout.measureStrip(List.<ControlSpec>of(tabs), measurerFake);
+
             assertThat(measurement.rowHeights().get(0))
                 .isCloseTo(ControlStripLayout.TAB_HEIGHT, within(TOLERANCE));
         }
@@ -261,12 +397,17 @@ final class ControlStripLayoutTest {
         void measureStripSizesATabsRowToItsTabsSnappedWidths() {
             // "No Layer  [N]" is 13 chars and "Political Map  [P]" is 18; each snaps to its width plus
             // the tab padding (both clear the minimum), and the row is the two tabs side by side.
-            var tabs = new ControlSpec.Tabs(List.of("No Layer", "Political Map"), List.of("N", "P"),
+            var tabs = new ControlSpec.Tabs(
+                List.of("No Layer", "Political Map"),
+                List.of("N", "P"),
                 0, ControlAction.NONE);
+
             var measurement = ControlStripLayout.measureStrip(List.<ControlSpec>of(tabs), measurerFake);
             var first = 13 * WIDTH_PER_CHAR + ControlStripLayout.TAB_TEXT_PADDING;
             var second = 18 * WIDTH_PER_CHAR + ControlStripLayout.TAB_TEXT_PADDING;
-            assertThat(measurement.rowWidths().get(0)).isCloseTo(first + second, within(TOLERANCE));
+
+            assertThat(measurement.rowWidths().get(0))
+                .isCloseTo(first + second, within(TOLERANCE));
         }
     }
 
@@ -277,30 +418,49 @@ final class ControlStripLayoutTest {
         void layoutControlsStacksTheFirstRowFromTheBodyTopLeftInset() {
             var specs = List.<ControlSpec>of(ControlSpec.Checkbox.lit("Muted", false, ControlAction.NONE));
             var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
-            var controls = ControlStripLayout.layoutControls(frameBody(measurement), specs,
-                measurement.rowHeights(), measurement.rowWidths(), measurerFake);
+
+            var controls = ControlStripLayout.layoutControls(
+                frameBody(measurement),
+                specs,
+                measurement.rowHeights(),
+                measurement.rowWidths(),
+                measurerFake);
 
             var row = controls.get(0).bounds();
+
             assertThat(row.x())
                 .isCloseTo(BODY_ORIGIN_X + ControlStripLayout.BODY_PADDING, within(TOLERANCE));
             assertThat(row.y() + row.height())
                 .as("the first row hangs one inset below the body top")
-                .isCloseTo(BODY_ORIGIN_Y + measurement.bodyHeight() - ControlStripLayout.BODY_PADDING,
+                .isCloseTo(
+                    BODY_ORIGIN_Y + measurement.bodyHeight() - ControlStripLayout.BODY_PADDING,
                     within(TOLERANCE));
         }
 
         @Test
         void layoutControlsSplitsARadioIntoAbuttingEqualSegments() {
-            var specs = List.<ControlSpec>of(ControlSpec.HorizontalRadio.of(List.of("Short", "Full"),
-                ControlSpec.NO_SELECTION, ControlAction.NONE).showsCaption("Names"));
+            var specs = List.<ControlSpec>of(ControlSpec.HorizontalRadio.of(
+                    List.of("Short", "Full"),
+                    ControlSpec.NO_SELECTION,
+                    ControlAction.NONE)
+                .showsCaption("Names"));
+
             var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
-            var radio = ControlStripLayout.layoutControls(frameBody(measurement), specs,
-                measurement.rowHeights(), measurement.rowWidths(), measurerFake).get(0);
+            var radio = ControlStripLayout.layoutControls(
+                    frameBody(measurement),
+                    specs,
+                    measurement.rowHeights(),
+                    measurement.rowWidths(),
+                    measurerFake)
+                .get(0);
 
             assertThat(radio.segments()).hasSize(2);
+
             var shortSegment = radio.segments().get(0);
             var fullSegment = radio.segments().get(1);
-            assertThat(fullSegment.width()).isCloseTo(shortSegment.width(), within(TOLERANCE));
+
+            assertThat(fullSegment.width())
+                .isCloseTo(shortSegment.width(), within(TOLERANCE));
             assertThat(fullSegment.x())
                 .isCloseTo(shortSegment.x() + shortSegment.width(), within(TOLERANCE));
         }
@@ -310,40 +470,68 @@ final class ControlStripLayoutTest {
             // A snapped horizontal radio splits into cells sized to each label, so "Short" (5) is wider
             // than "Full" (4) rather than sharing one width - the ragged row the render chrome then rules
             // its seams on.
-            var specs = List.<ControlSpec>of(ControlSpec.HorizontalRadio.of(List.of("Short", "Full"),
-                ControlSpec.NO_SELECTION, ControlAction.NONE).sizesSegments(SegmentSizing.SNAPPED));
+            var specs = List.<ControlSpec>of(ControlSpec.HorizontalRadio.of(
+                    List.of("Short", "Full"),
+                    ControlSpec.NO_SELECTION,
+                    ControlAction.NONE)
+                .sizesSegments(SegmentSizing.SNAPPED));
+
             var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
-            var radio = ControlStripLayout.layoutControls(frameBody(measurement), specs,
-                measurement.rowHeights(), measurement.rowWidths(), measurerFake).get(0);
+            var radio = ControlStripLayout.layoutControls(
+                    frameBody(measurement),
+                    specs,
+                    measurement.rowHeights(),
+                    measurement.rowWidths(),
+                    measurerFake)
+                .get(0);
 
             assertThat(radio.segments()).hasSize(2);
+
             var shortSegment = radio.segments().get(0);
             var fullSegment = radio.segments().get(1);
+
             assertThat(shortSegment.width())
-                .isCloseTo(5 * WIDTH_PER_CHAR + ControlStripLayout.RADIO_SEGMENT_PADDING,
+                .isCloseTo(
+                    5 * WIDTH_PER_CHAR + ControlStripLayout.RADIO_SEGMENT_PADDING,
                     within(TOLERANCE));
+                    
             assertThat(fullSegment.width())
-                .isCloseTo(4 * WIDTH_PER_CHAR + ControlStripLayout.RADIO_SEGMENT_PADDING,
+                .isCloseTo(
+                    4 * WIDTH_PER_CHAR + ControlStripLayout.RADIO_SEGMENT_PADDING,
                     within(TOLERANCE));
+
             assertThat(fullSegment.x())
                 .isCloseTo(shortSegment.x() + shortSegment.width(), within(TOLERANCE));
         }
 
         @Test
         void layoutControlsSplitsAnIconListIntoStackedVerticalSegments() {
-            var specs = List.<ControlSpec>of(VerticalTableSpecs.buildIconList(List.of("Hegemony", "Tri-Tachyon"),
-                List.of("crest_heg", "crest_tt"), ControlSpec.NO_SELECTION, ControlAction.NONE));
+            var specs = List.<ControlSpec>of(VerticalTableSpecs.buildIconList(
+                List.of("Hegemony", "Tri-Tachyon"),
+                List.of("crest_heg", "crest_tt"),
+                ControlSpec.NO_SELECTION,
+                ControlAction.NONE));
+
             var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
-            var picker = ControlStripLayout.layoutControls(frameBody(measurement), specs,
-                measurement.rowHeights(), measurement.rowWidths(), measurerFake).get(0);
+            var picker = ControlStripLayout.layoutControls(
+                    frameBody(measurement),
+                    specs,
+                    measurement.rowHeights(),
+                    measurement.rowWidths(),
+                    measurerFake)
+                .get(0);
 
             assertThat(picker.segments()).hasSize(2);
+
             var topSegment = picker.segments().get(0);
             var bottomSegment = picker.segments().get(1);
+
             // The list stacks top to bottom (element 0 is topmost, UI y grows up), the segments are
             // equal height, and the lower one hangs directly beneath the upper.
-            assertThat(topSegment.y()).isGreaterThan(bottomSegment.y());
-            assertThat(bottomSegment.height()).isCloseTo(topSegment.height(), within(TOLERANCE));
+            assertThat(topSegment.y())
+                .isGreaterThan(bottomSegment.y());
+            assertThat(bottomSegment.height())
+                .isCloseTo(topSegment.height(), within(TOLERANCE));
             assertThat(topSegment.y())
                 .isCloseTo(bottomSegment.y() + bottomSegment.height(), within(TOLERANCE));
         }
@@ -352,53 +540,91 @@ final class ControlStripLayoutTest {
         void layoutControlsSplitsATwoColumnListColumnMajorIntoAGrid() {
             // Three options across two columns: options 0 and 1 fill the left column top to bottom, and
             // option 2 heads the right column - the same column-major wrap the renderer draws against.
-            var specs = List.<ControlSpec>of(ControlSpec.VerticalTable.iconList(List.of("A", "B", "C"),
-                Arrays.asList(null, null, null), List.of(), ControlSpec.NO_SELECTION,
-                ControlAction.NONE, 2));
+            var specs = List.<ControlSpec>of(VerticalTableSpecs.buildIconList(
+                List.of("A", "B", "C"),
+                Arrays.asList(null, null, null),
+                List.of(),
+                ControlSpec.NO_SELECTION,
+                ControlAction.NONE,
+                2));
+
             var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
-            var picker = ControlStripLayout.layoutControls(frameBody(measurement), specs,
-                measurement.rowHeights(), measurement.rowWidths(), measurerFake).get(0);
+            var picker = ControlStripLayout.layoutControls(
+                    frameBody(measurement),
+                    specs,
+                    measurement.rowHeights(),
+                    measurement.rowWidths(),
+                    measurerFake)
+                .get(0);
 
             assertThat(picker.segments()).hasSize(3);
+
             var topLeft = picker.segments().get(0);
             var bottomLeft = picker.segments().get(1);
             var topRight = picker.segments().get(2);
+
             // Options 0 and 1 share the left column and stack (0 above 1); option 2 sits in the right
             // column, level with option 0 and one column-width to its right.
-            assertThat(topLeft.x()).isCloseTo(bottomLeft.x(), within(TOLERANCE));
-            assertThat(topLeft.y()).isGreaterThan(bottomLeft.y());
-            assertThat(topRight.y()).isCloseTo(topLeft.y(), within(TOLERANCE));
-            assertThat(topRight.x()).isCloseTo(topLeft.x() + topLeft.width(), within(TOLERANCE));
+            assertThat(topLeft.x())
+                .isCloseTo(bottomLeft.x(), within(TOLERANCE));
+            assertThat(topLeft.y())
+                .isGreaterThan(bottomLeft.y());
+            assertThat(topRight.y())
+                .isCloseTo(topLeft.y(), within(TOLERANCE));
+            assertThat(topRight.x())
+                .isCloseTo(topLeft.x() + topLeft.width(), within(TOLERANCE));
         }
 
         @Test
         void layoutControlsLeavesACheckboxWithoutSegments() {
+
             var specs = List.<ControlSpec>of(ControlSpec.Checkbox.lit("Muted", false, ControlAction.NONE));
             var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
-            var controls = ControlStripLayout.layoutControls(frameBody(measurement), specs,
-                measurement.rowHeights(), measurement.rowWidths(), measurerFake);
-            assertThat(controls.get(0).segments()).isEmpty();
+            var controls = ControlStripLayout.layoutControls(
+                frameBody(measurement),
+                specs,
+                measurement.rowHeights(),
+                measurement.rowWidths(),
+                measurerFake);
+
+            assertThat(controls.get(0).segments())
+                .isEmpty();
         }
 
         @Test
         void layoutControlsLeavesALabelWithoutSegments() {
+
             var specs = List.<ControlSpec>of(new ControlSpec.Label("Non-allied factions are"));
             var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
-            var controls = ControlStripLayout.layoutControls(frameBody(measurement), specs,
-                measurement.rowHeights(), measurement.rowWidths(), measurerFake);
-            assertThat(controls.get(0).segments()).isEmpty();
+            var controls = ControlStripLayout.layoutControls(
+                frameBody(measurement),
+                specs,
+                measurement.rowHeights(),
+                measurement.rowWidths(),
+                measurerFake);
+
+            assertThat(controls.get(0).segments())
+                .isEmpty();
         }
 
         @Test
         void layoutControlsLeavesADividerWithoutSegments() {
             // A divider is a single non-hit row, not a segmented control, so it lays out with no
             // segments like a caption does.
-            var specs = List.<ControlSpec>of(new ControlSpec.Divider(),
+            var specs = List.<ControlSpec>of(
+                new ControlSpec.Divider(),
                 ControlSpec.Checkbox.lit("Muted", false, ControlAction.NONE));
+
             var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
-            var controls = ControlStripLayout.layoutControls(frameBody(measurement), specs,
-                measurement.rowHeights(), measurement.rowWidths(), measurerFake);
-            assertThat(controls.get(0).segments()).isEmpty();
+            var controls = ControlStripLayout.layoutControls(
+                frameBody(measurement),
+                specs,
+                measurement.rowHeights(),
+                measurement.rowWidths(),
+                measurerFake);
+
+            assertThat(controls.get(0).segments())
+                .isEmpty();
         }
 
         @Test
@@ -406,21 +632,38 @@ final class ControlStripLayoutTest {
             // The laid divider row spans the whole framed body - edge to edge inside the border inset,
             // across the padding the other controls sit within - so the rule reaches the frame rather
             // than stopping at the padded content column.
-            var specs = List.<ControlSpec>of(new ControlSpec.Divider(),
+            var specs = List.<ControlSpec>of(
+                new ControlSpec.Divider(),
                 ControlSpec.Checkbox.lit("Muted", false, ControlAction.NONE));
+
             var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
             var body = frameBody(measurement);
-            var divider = ControlStripLayout.layoutControls(body, specs,
-                measurement.rowHeights(), measurement.rowWidths(), measurerFake).get(0);
-            assertThat(divider.bounds().x()).isCloseTo(body.x(), within(TOLERANCE));
-            assertThat(divider.bounds().width()).isCloseTo(body.width(), within(TOLERANCE));
+            var divider = ControlStripLayout.layoutControls(
+                    body,
+                    specs,
+                    measurement.rowHeights(),
+                    measurement.rowWidths(),
+                    measurerFake)
+                .get(0);
+
+            assertThat(divider.bounds().x())
+                .isCloseTo(body.x(), within(TOLERANCE));
+            assertThat(divider.bounds().width())
+                .isCloseTo(body.width(), within(TOLERANCE));
         }
 
         @Test
         void layoutControlsReturnsNothingForAnEmptyStrip() {
+
             var body = new Rectangle(BODY_ORIGIN_X, BODY_ORIGIN_Y, 0f, 0f);
-            assertThat(ControlStripLayout.layoutControls(body, List.of(), List.of(), List.of(),
-                measurerFake)).isEmpty();
+
+            assertThat(ControlStripLayout.layoutControls(
+                    body,
+                    List.of(),
+                    List.of(),
+                    List.of(),
+                    measurerFake))
+                .isEmpty();
         }
 
         @Test
@@ -432,24 +675,37 @@ final class ControlStripLayoutTest {
             var right = ControlSpec.Checkbox.lit("RR", false, ControlAction.NONE);
             var specs = List.<ControlSpec>of(new ControlSpec.SideBySide(List.of(left), List.of(right)));
             var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
-            var controls = ControlStripLayout.layoutControls(frameBody(measurement), specs,
-                measurement.rowHeights(), measurement.rowWidths(), measurerFake);
+            var controls = ControlStripLayout.layoutControls(
+                frameBody(measurement),
+                specs,
+                measurement.rowHeights(),
+                measurement.rowWidths(),
+                measurerFake);
 
             assertThat(controls).hasSize(2);
+
             var leftControl = controls.get(0);
             var rightControl = controls.get(1);
             var leftWidth = ControlStripLayout.CONTROL_ROW_HEIGHT
-                + ControlStripLayout.CHECKBOX_LABEL_GAP + 1 * WIDTH_PER_CHAR;
-            assertThat(leftControl.spec()).isEqualTo(left);
-            assertThat(rightControl.spec()).isEqualTo(right);
+                + ControlStripLayout.CHECKBOX_LABEL_GAP
+                + 1 * WIDTH_PER_CHAR;
+                
+            assertThat(leftControl.spec())
+                .isEqualTo(left);
+            assertThat(rightControl.spec())
+                .isEqualTo(right);
             assertThat(leftControl.bounds().x())
                 .isCloseTo(BODY_ORIGIN_X + ControlStripLayout.BODY_PADDING, within(TOLERANCE));
+
             assertThat(rightControl.bounds().x())
-                .isCloseTo(leftControl.bounds().x() + leftWidth + ControlStripLayout.COLUMN_GAP,
+                .isCloseTo(
+                    leftControl.bounds().x() + leftWidth + ControlStripLayout.COLUMN_GAP,
                     within(TOLERANCE));
+
             assertThat(rightControl.bounds().y() + rightControl.bounds().height())
                 .as("both columns hang from the group's top")
-                .isCloseTo(leftControl.bounds().y() + leftControl.bounds().height(),
+                .isCloseTo(
+                    leftControl.bounds().y() + leftControl.bounds().height(),
                     within(TOLERANCE));
         }
 
@@ -459,20 +715,32 @@ final class ControlStripLayoutTest {
             // above the second), abutting with one row gap between them.
             var top = ControlSpec.Checkbox.lit("A", false, ControlAction.NONE);
             var bottom = ControlSpec.Checkbox.lit("B", false, ControlAction.NONE);
-            var specs = List.<ControlSpec>of(new ControlSpec.SideBySide(List.of(top, bottom),
+            var specs = List.<ControlSpec>of(new ControlSpec.SideBySide(
+                List.of(top, bottom),
                 List.of(ControlSpec.Checkbox.lit("C", false, ControlAction.NONE))));
+
             var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
-            var controls = ControlStripLayout.layoutControls(frameBody(measurement), specs,
-                measurement.rowHeights(), measurement.rowWidths(), measurerFake);
+            var controls = ControlStripLayout.layoutControls(
+                frameBody(measurement),
+                specs,
+                measurement.rowHeights(),
+                measurement.rowWidths(),
+                measurerFake);
 
             // The left column's two children come first (top then bottom), then the right column's one.
-            assertThat(controls).hasSize(3);
+            assertThat(controls)
+                .hasSize(3);
+
             var topControl = controls.get(0);
             var bottomControl = controls.get(1);
-            assertThat(topControl.bounds().y()).isGreaterThan(bottomControl.bounds().y());
+
             assertThat(topControl.bounds().y())
-                .isCloseTo(bottomControl.bounds().y() + bottomControl.bounds().height()
-                    + ControlStripLayout.ROW_GAP,
+                .isGreaterThan(bottomControl.bounds().y());
+            assertThat(topControl.bounds().y())
+                .isCloseTo(
+                    bottomControl.bounds().y()
+                        + bottomControl.bounds().height()
+                        + ControlStripLayout.ROW_GAP,
                     within(TOLERANCE));
         }
 
@@ -480,46 +748,69 @@ final class ControlStripLayoutTest {
         void layoutControlsSplitsATabsRowIntoLabelSnappedSegmentsSideBySide() {
             // A tabs row splits into one segment per tab, each snapped to its own label-plus-shortcut
             // width (unlike a radio's equal segments), abutting left to right.
-            var specs = List.<ControlSpec>of(new ControlSpec.Tabs(List.of("No Layer", "Political Map"),
-                List.of("N", "P"), 0, ControlAction.NONE));
-            var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
-            var tabs = ControlStripLayout.layoutControls(frameBody(measurement), specs,
-                measurement.rowHeights(), measurement.rowWidths(), measurerFake).get(0);
+            var specs = List.<ControlSpec>of(new ControlSpec.Tabs(
+                List.of("No Layer", "Political Map"),
+                List.of("N", "P"),
+                0,
+                ControlAction.NONE));
 
-            assertThat(tabs.segments()).hasSize(2);
+            var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
+            var tabs = ControlStripLayout.layoutControls(
+                    frameBody(measurement),
+                    specs,
+                    measurement.rowHeights(),
+                    measurement.rowWidths(),
+                    measurerFake)
+                .get(0);
+
+            assertThat(tabs.segments())
+                .hasSize(2);
+
             var first = tabs.segments().get(0);
             var second = tabs.segments().get(1);
             var firstWidth = 13 * WIDTH_PER_CHAR + ControlStripLayout.TAB_TEXT_PADDING;
-            assertThat(first.width()).isCloseTo(firstWidth, within(TOLERANCE));
+
+            assertThat(first.width())
+                .isCloseTo(firstWidth, within(TOLERANCE));
             assertThat(second.x())
                 .as("the second tab abuts the first")
                 .isCloseTo(first.x() + first.width(), within(TOLERANCE));
-            assertThat(second.height()).isCloseTo(ControlStripLayout.TAB_HEIGHT, within(TOLERANCE));
+            assertThat(second.height())
+                .isCloseTo(ControlStripLayout.TAB_HEIGHT, within(TOLERANCE));
         }
     }
 
     @Nested
     class LayoutTabsHeader {
+
         // A header anchor clear of the body origin, so an assertion cannot pass by landing on a stale value.
         private static final float HEADER_X = 40f;
         private static final float HEADER_TOP_Y = 500f;
         private static final float BAND_HEIGHT = 17f;
 
         private static final ControlSpec.Tabs TABS = new ControlSpec.Tabs(
-            List.of("No Layer", "Political Map"), List.of("N", "P"), 0, ControlAction.NONE);
+            List.of("No Layer", "Political Map"),
+            List.of("N", "P"),
+            0,
+            ControlAction.NONE);
 
         @Test
         void layoutTabsHeaderHangsTheBandFromTheContentTopAtTheStyledHeight() {
             var header = ControlStripLayout.layoutTabsHeader(
-                TABS, HEADER_X, HEADER_TOP_Y, TabStyles.buildAtBandHeight(BAND_HEIGHT),
+                TABS,
+                HEADER_X,
+                HEADER_TOP_Y,
+                TabStyles.buildAtBandHeight(BAND_HEIGHT),
                 measurerFake);
 
             // Flush at the content top with no body inset - a header is framed directly under the border,
             // unlike a body row, which pulls in by the body padding.
             assertThat(header.bounds().y() + header.bounds().height())
                 .isCloseTo(HEADER_TOP_Y, within(TOLERANCE));
-            assertThat(header.bounds().x()).isCloseTo(HEADER_X, within(TOLERANCE));
-            assertThat(header.bounds().height()).isCloseTo(BAND_HEIGHT, within(TOLERANCE));
+            assertThat(header.bounds().x())
+                .isCloseTo(HEADER_X, within(TOLERANCE));
+            assertThat(header.bounds().height())
+                .isCloseTo(BAND_HEIGHT, within(TOLERANCE));
         }
 
         @Test
@@ -527,13 +818,21 @@ final class ControlStripLayoutTest {
             // The segments are the hit rects the renderer paints; if they kept a fixed height while the band
             // moved, a styled header would be clickable somewhere other than where it is drawn.
             var header = ControlStripLayout.layoutTabsHeader(
-                TABS, HEADER_X, HEADER_TOP_Y, TabStyles.buildAtBandHeight(BAND_HEIGHT),
+                TABS,
+                HEADER_X,
+                HEADER_TOP_Y,
+                TabStyles.buildAtBandHeight(BAND_HEIGHT),
                 measurerFake);
 
-            assertThat(header.segments()).hasSize(2);
+            assertThat(header.segments())
+                .hasSize(2);
+
             for (var segment : header.segments()) {
-                assertThat(segment.height()).isCloseTo(BAND_HEIGHT, within(TOLERANCE));
-                assertThat(segment.y()).isCloseTo(header.bounds().y(), within(TOLERANCE));
+
+                assertThat(segment.height())
+                    .isCloseTo(BAND_HEIGHT, within(TOLERANCE));
+                assertThat(segment.y())
+                    .isCloseTo(header.bounds().y(), within(TOLERANCE));
             }
         }
 
@@ -544,8 +843,13 @@ final class ControlStripLayoutTest {
             // are deliberately separate; this pins that the body one is unaffected by a header's style.
             var specs = List.<ControlSpec>of(TABS);
             var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
-            var bodyTabs = ControlStripLayout.layoutControls(frameBody(measurement), specs,
-                measurement.rowHeights(), measurement.rowWidths(), measurerFake).get(0);
+            var bodyTabs = ControlStripLayout.layoutControls(
+                    frameBody(measurement),
+                    specs,
+                    measurement.rowHeights(),
+                    measurement.rowWidths(),
+                    measurerFake)
+                .get(0);
 
             assertThat(bodyTabs.bounds().height())
                 .isCloseTo(TabStyle.DEFAULT_HEADER_BAND_HEIGHT, within(TOLERANCE));
@@ -557,7 +861,10 @@ final class ControlStripLayoutTest {
     // Frames a body rectangle of the measured size at a fixed origin, the way a host sizes its chrome
     // around the strip footprint before handing the body back for placement.
     private static Rectangle frameBody(StripMeasurement measurement) {
-        return new Rectangle(BODY_ORIGIN_X, BODY_ORIGIN_Y, measurement.bodyWidth(),
+        return new Rectangle(
+            BODY_ORIGIN_X,
+            BODY_ORIGIN_Y,
+            measurement.bodyWidth(),
             measurement.bodyHeight());
     }
 }

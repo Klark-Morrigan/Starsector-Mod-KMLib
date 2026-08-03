@@ -5,6 +5,7 @@ import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.SegmentSizing;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
+import kmlib.starsector.ui.text.StyledSpanMeasurer;
 import kmlib.starsector.ui.widgets.IconLabelRow;
 import kmlib.starsector.ui.widgets.RadioRow;
 import kmlib.starsector.ui.widgets.segments.HorizontalSegments;
@@ -300,7 +301,7 @@ public final class ControlStripLayout {
         } else if (spec instanceof ControlSpec.VerticalTable table) {
             segments = RadioRow.splitIntoGrid(
                 row,
-                table.labels().size(),
+                table.labelledRows().size(),
                 table.columnCount());
         } else if (spec instanceof ControlSpec.Tabs tabs) {
             segments = splitTabsIntoSegments(
@@ -521,16 +522,17 @@ public final class ControlStripLayout {
     }
 
     // The width a vertical radio table needs: its column count wide. Each column sizes to the same
-    // width - a plain table to its widest label plus padding (the UNIFORM segment rule, one column
-    // being one segment wide), an icon table (non-empty icon paths) to its widest icon-and-label row -
-    // and the columns sit side by side, so a two-column table needs twice one column's width. One column
-    // is the plain single-column stack.
+    // width - the width its widest row needs under the geometry the table lays its rows out in - and the
+    // columns sit side by side, so a two-column table needs twice one column's width. One column is the
+    // plain single-column stack.
     private static float measureVerticalTableRowWidth(
             ControlSpec.VerticalTable table,
             LineWidthMeasurer measurer) {
-        var columnWidth = table.iconPaths().isEmpty()
-            ? measureTableColumnWidth(table, measurer)
-            : measureIconTableRowWidth(table, measurer);
+
+        var columnWidth = switch (table.rowGeometry()) {
+            case COLUMNS -> measureColumnTableRowWidth(table, measurer);
+            case UNIFORM_SEGMENTS -> measureSegmentedListColumnWidth(table, measurer);
+        };
         return table.columnCount() * columnWidth;
     }
 
@@ -542,7 +544,7 @@ public final class ControlStripLayout {
     private static float measureRowHeight(ControlSpec spec) {
         if (spec instanceof ControlSpec.VerticalTable table) {
             var rowCount = RadioRow.computeRowsPerColumn(
-                table.labels().size(),
+                table.labelledRows().size(),
                 table.columnCount());
             return rowCount * CONTROL_ROW_HEIGHT;
         }
@@ -559,43 +561,42 @@ public final class ControlStripLayout {
         return CONTROL_ROW_HEIGHT;
     }
 
-    // The width an icon table needs: its widest option row, each sized to hold its icon (present when
-    // the option carries a non-null path), its label, and its trailing value (present when the option
-    // carries one) without clipping. The option rows are one control-row tall, the height the icon
-    // square derives from, so every stacked row shows an equal icon and the column is wide enough that
-    // the longest name still clears its right-aligned value.
-    private static float measureIconTableRowWidth(
+    // The width a column table needs: its widest row, each sized to hold what it leads with, its label,
+    // and what it trails with without clipping. Each flank charges the width its own slot answers for,
+    // so a row trailing a triangle reserves the drawn triangle and one trailing a value reserves its
+    // glyphs, without this branching on which kind of thing sits there. The rows are one control-row
+    // tall, the height a slot sizes itself against, so every stacked row shows an equal leading square
+    // and the column is wide enough that the longest name still clears its right-aligned value.
+    private static float measureColumnTableRowWidth(
             ControlSpec.VerticalTable table,
             LineWidthMeasurer measurer) {
 
+        var spanMeasurer = bindBodySpanMeasurer(measurer);
         var widest = 0f;
-        for (var index = 0; index < table.labels().size(); index++) {
-            var labelWidth = measureWidth(measurer, table.labels().get(index));
-
-            // A direction row reserves the fixed triangle slot instead of a measured text width, so the
-            // column is sized to the drawn triangle rather than to letters it no longer draws.
-            var trailingWidth = table.directionAt(index) != null
-                ? IconLabelRow.computeDirectionTriangleSlotWidth(CONTROL_ROW_HEIGHT)
-                : (float) measurer.measureLineWidth(
-                    table.trailingLabelAt(index),
-                    BODY_FONT_SIZE);
-
+        for (var labelledRow : table.labelledRows()) {
             var rowWidth = IconLabelRow.measureRowWidth(
                 CONTROL_ROW_HEIGHT,
-                labelWidth,
-                table.hasIconAt(index),
-                trailingWidth);
+                measureWidth(measurer, labelledRow.resolveLabelText()),
+                labelledRow.leadingRowSlot().isFilled(),
+                labelledRow.trailingRowSlot().computeWidth(CONTROL_ROW_HEIGHT, spanMeasurer));
 
             widest = Math.max(widest, rowWidth);
         }
         return widest;
     }
 
-    // The width of one vertical table column: the uniform segment width its widest option needs, read
-    // through the shared segment rule so a stacked column sizes exactly as a horizontal cell would. A
-    // vertical table's columns are uniform by construction, so this reads UNIFORM. An option-less table
-    // has no widths, so it falls back to the bare segment padding.
-    private static float measureTableColumnWidth(
+    // The body-line measurement bound to the face and size the strip paints its rows in, so a slot
+    // charges its own width without learning which face it will be drawn in - the binding the styled
+    // measurement exists to hold.
+    private static StyledSpanMeasurer bindBodySpanMeasurer(LineWidthMeasurer measurer) {
+        return textSpan -> measurer.measureLineWidth(textSpan.text(), BODY_FONT_SIZE);
+    }
+
+    // The width of one uniform-cell list column: the uniform segment width its widest option needs, read
+    // through the shared segment rule so a stacked column sizes exactly as a horizontal cell would. Such
+    // a list's columns are uniform by construction, so this reads UNIFORM. An option-less list has no
+    // widths, so it falls back to the bare segment padding.
+    private static float measureSegmentedListColumnWidth(
             ControlSpec.VerticalTable table,
             LineWidthMeasurer measurer) {
 

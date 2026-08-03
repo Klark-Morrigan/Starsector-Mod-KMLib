@@ -104,8 +104,10 @@ src/main/java/kmlib/
                      Global before touching Misc (whose static
                      initialiser would otherwise NPE)
     time/          - campaign clock wrapper
-    ui/            - UI toolkit, tiered by render substrate:
-                     controls -> widgets -> layout -> render.gl
+    ui/            - UI toolkit, tiered by render substrate: a spec
+                     names content (controls, built out of widgets'
+                     shared rows), a layout places it, render.gl
+                     paints it
       colour/      - palette enum + Misc-backed resolver
       controls/    - declarative control specs and their actions:
                      what a control is, not how it paints

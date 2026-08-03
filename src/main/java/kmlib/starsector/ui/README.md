@@ -215,7 +215,7 @@ standing for a count is not prose.
 | Package | Tier | Holds |
 | --- | --- | --- |
 | [`text`](text/) | neutral | `TextSpan`, `TextStyle`, `TextAlignment`, `StyledSpanMeasurer` |
-| [`controls`](controls/) | neutral | the sealed `ControlSpec` set and its enums |
+| [`controls`](controls/) | neutral | the sealed `ControlSpec` set and its enums; a stacked table's rows are `widgets`' own [`LabelledRow`](widgets/LabelledRow.java), so a strip and a tooltip are laid out against one row model |
 | [`widgets`](widgets/) | neutral | the shared `LabelledRow` core, its `RowSlot` flanks, and the row and box content and geometry built on them ([`tabs`](widgets/tabs/), [`scroll`](widgets/scroll/), [`segments`](widgets/segments/), [`lists`](widgets/lists/)) |
 | [`layout`](layout/) | neutral | box placement, strips, padding, screen anchors |
 | [`label`](label/) | neutral | label fitting, plus the length-estimator port |

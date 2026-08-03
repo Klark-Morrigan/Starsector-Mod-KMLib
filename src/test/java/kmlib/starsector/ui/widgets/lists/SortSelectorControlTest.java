@@ -1,12 +1,22 @@
 package kmlib.starsector.ui.widgets.lists;
 
+import com.fs.starfarer.api.util.Misc;
+
+import kmlib.starsector.testing.StarsectorSettingsFake;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.ReselectBehaviour;
-import kmlib.starsector.ui.controls.TriangleDirection;
+import kmlib.starsector.ui.controls.RowGeometry;
+import kmlib.starsector.ui.widgets.RowSlot;
+import kmlib.starsector.ui.widgets.TriangleDirection;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,15 +39,40 @@ final class SortSelectorControlTest {
     private static final ListSortModes<Anomaly> SORT_MODES =
         new ListSortModes<>(MODES, DEFAULT_MODE);
 
+    // The engine tone the selector's rows carry, stood in for so the rows can be built without the
+    // live palette in reach.
+    private static final Color TEXT = Color.LIGHT_GRAY;
+
     // The sorts a click reported, in the order they were reported, so a test reads what the caller
     // would have been asked to persist.
     private final List<ListSort<Anomaly>> pickedSorts = new ArrayList<>();
+
+    private MockedStatic<Misc> miscMock;
+
+    @BeforeEach
+    void installColours() {
+        // Settings first, then the Misc statics: Misc's class initialiser reads the settings, so
+        // mocking it against an uninstalled settings proxy would fail on class load.
+        StarsectorSettingsFake.installSettings();
+
+        miscMock = Mockito.mockStatic(Misc.class);
+        miscMock
+            .when(Misc::getTextColor)
+            .thenReturn(TEXT);
+    }
+
+    @AfterEach
+    void clearColours() {
+        miscMock.close();
+        StarsectorSettingsFake.clearSettings();
+    }
 
     @Nested
     class BuildSelector {
 
         @Test
         void buildSelectorBuildsAVerticalReFiringRadio() {
+
             var selector = buildSelector(DEFAULT_MODE, DEFAULT_MODE.defaultDirection());
 
             // A vertical table by type; a sort is always active, so it never deselects - instead a
@@ -48,6 +83,7 @@ final class SortSelectorControlTest {
 
         @Test
         void buildSelectorLabelsARowPerModeInTheCallersOrder() {
+
             var selector = buildSelector(DEFAULT_MODE, DEFAULT_MODE.defaultDirection());
 
             assertThat(selector.labels())
@@ -56,6 +92,7 @@ final class SortSelectorControlTest {
 
         @Test
         void buildSelectorLightsTheActiveModesRow() {
+
             var selector = buildSelector(AnomalySortMode.RADIUS, SortDirection.DESCENDING);
 
             assertThat(selector.selectedIndex())
@@ -74,22 +111,32 @@ final class SortSelectorControlTest {
             var severityRow = MODES.indexOf(AnomalySortMode.SEVERITY);
             var radiusRow = MODES.indexOf(AnomalySortMode.RADIUS);
 
-            assertThat(selector.directionAt(severityRow))
-                .isEqualTo(TriangleDirection.UP);
-            assertThat(selector.directionAt(radiusRow))
-                .isEqualTo(TriangleDirection.DOWN);
-            assertThat(selector.directionAt(alphaRow))
-                .isEqualTo(TriangleDirection.UP);
+            assertThat(trailingRowSlotAt(selector, severityRow))
+                .isEqualTo(new RowSlot.Triangle(TriangleDirection.UP));
+            assertThat(trailingRowSlotAt(selector, radiusRow))
+                .isEqualTo(new RowSlot.Triangle(TriangleDirection.DOWN));
+            assertThat(trailingRowSlotAt(selector, alphaRow))
+                .isEqualTo(new RowSlot.Triangle(TriangleDirection.UP));
         }
 
         @Test
-        void buildSelectorDrawsNoRowIcons() {
-            // The selector reuses the picker list's table geometry with an all-null icon column, so
-            // no mode row draws an icon.
+        void buildSelectorLeavesEveryRowLeadingWithNothing() {
+            // The selector's rows carry no crest, so each leads with the empty slot rather than an
+            // image - and the mode names still start where a crested list's names would.
             var selector = buildSelector(DEFAULT_MODE, DEFAULT_MODE.defaultDirection());
 
-            assertThat(selector.hasIconAt(MODES.indexOf(AnomalySortMode.SEVERITY)))
-                .isFalse();
+            assertThat(selector.labelledRows())
+                .allMatch(labelledRow -> RowSlot.EMPTY.equals(labelledRow.leadingRowSlot()));
+        }
+
+        @Test
+        void buildSelectorLaysItsRowsInColumns() {
+            // The selector reads as the picker list's own table - names left, triangles flush right -
+            // which it states rather than leaves to be inferred from rows that lead with nothing.
+            var selector = buildSelector(DEFAULT_MODE, DEFAULT_MODE.defaultDirection());
+
+            assertThat(selector.rowGeometry())
+                .isEqualTo(RowGeometry.COLUMNS);
         }
     }
 
@@ -106,7 +153,8 @@ final class SortSelectorControlTest {
 
             assertThat(pickedSorts)
                 .containsExactly(new ListSort<>(
-                    AnomalySortMode.SEVERITY, SortDirection.DESCENDING));
+                    AnomalySortMode.SEVERITY,
+                    SortDirection.DESCENDING));
         }
 
         @Test
@@ -119,7 +167,8 @@ final class SortSelectorControlTest {
 
             assertThat(pickedSorts)
                 .containsExactly(new ListSort<>(
-                    AnomalySortMode.SEVERITY, SortDirection.DESCENDING));
+                    AnomalySortMode.SEVERITY,
+                    SortDirection.DESCENDING));
         }
 
         @Test
@@ -146,5 +195,11 @@ final class SortSelectorControlTest {
             new ListSort<>(mode, direction),
             SORT_MODES,
             pickedSorts::add);
+    }
+
+    // What the row at this index trails with - the slot a test reads to learn which direction that
+    // mode previews.
+    private static RowSlot trailingRowSlotAt(ControlSpec.VerticalTable selector, int rowIndex) {
+        return selector.labelledRows().get(rowIndex).trailingRowSlot();
     }
 }

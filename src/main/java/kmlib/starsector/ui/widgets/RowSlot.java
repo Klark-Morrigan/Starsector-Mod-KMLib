@@ -1,6 +1,5 @@
 package kmlib.starsector.ui.widgets;
 
-import kmlib.starsector.ui.controls.TriangleDirection;
 import kmlib.starsector.ui.text.StyledSpanMeasurer;
 import kmlib.starsector.ui.text.TextSpan;
 
@@ -57,6 +56,18 @@ public sealed interface RowSlot {
     float computeWidth(float lineHeight, StyledSpanMeasurer spanMeasurer);
 
     /**
+     * Whether the slot has anything to draw. One rule for both what reserves the slot's column and what
+     * paints into it, so the two cannot disagree over which rows fill a flank - the reserved gutter and
+     * the drawn content are the same decision read twice.
+     *
+     * <p>Asked of the slot rather than measured, because a caller deciding where a label starts holds no
+     * face to measure a run against and should not have to resolve one to learn that a slot is empty.
+     *
+     * @return true when the slot draws something
+     */
+    boolean isFilled();
+
+    /**
      * A small image drawn in the slot - a faction crest, an icon, whatever the host supplies. It hangs
      * as a square as tall as its line, so it sits level with the label beside it whatever face that
      * label draws in, and a stack of rows shows equally-sized images without any row stating a size.
@@ -78,6 +89,11 @@ public sealed interface RowSlot {
         @Override
         public float computeWidth(float lineHeight, StyledSpanMeasurer spanMeasurer) {
             return lineHeight;
+        }
+
+        @Override
+        public boolean isFilled() {
+            return true;
         }
     }
 
@@ -110,6 +126,13 @@ public sealed interface RowSlot {
             }
             return (float) spanMeasurer.measureSpanWidth(textSpan);
         }
+
+        // A run that came out blank fills nothing, so a slot holding one is charged and drawn as the
+        // absence it is - the same rule its width answers by, read here without a face to measure with.
+        @Override
+        public boolean isFilled() {
+            return textSpan.hasText();
+        }
     }
 
     /**
@@ -126,6 +149,11 @@ public sealed interface RowSlot {
         @Override
         public float computeWidth(float lineHeight, StyledSpanMeasurer spanMeasurer) {
             return lineHeight;
+        }
+
+        @Override
+        public boolean isFilled() {
+            return true;
         }
     }
 
@@ -153,6 +181,11 @@ public sealed interface RowSlot {
             // the width it is drawn at cannot disagree.
             return IconLabelRow.computeDirectionTriangleSlotWidth(lineHeight);
         }
+
+        @Override
+        public boolean isFilled() {
+            return true;
+        }
     }
 
     /**
@@ -167,6 +200,11 @@ public sealed interface RowSlot {
         @Override
         public float computeWidth(float lineHeight, StyledSpanMeasurer spanMeasurer) {
             return NO_WIDTH;
+        }
+
+        @Override
+        public boolean isFilled() {
+            return false;
         }
     }
 }

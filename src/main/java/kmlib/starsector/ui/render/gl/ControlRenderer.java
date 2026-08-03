@@ -4,15 +4,20 @@ import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.colour.StarsectorUiColour;
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlSpec;
+import kmlib.starsector.ui.controls.RowGeometry;
 import kmlib.starsector.ui.font.TextFace;
 import kmlib.starsector.ui.input.UiCursor;
 import kmlib.starsector.ui.layout.ControlStripLayout;
 import kmlib.starsector.ui.widgets.Checkbox;
 import kmlib.starsector.ui.widgets.IconLabelRow;
+import kmlib.starsector.ui.widgets.LabelledRow;
+import kmlib.starsector.ui.widgets.RowSlot;
 import kmlib.starsector.ui.widgets.tabs.VanillaTabStrip;
-import kmlib.text.KmlibStrings;
 
 import org.lazywizard.lazylib.ui.LazyFont;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Raw-GL paint for one laid-out {@link Control}: it draws the widget the control's {@link ControlSpec}
@@ -115,15 +120,17 @@ public final class ControlRenderer {
             LazyFont.TextAnchor.CENTER_LEFT);
     }
 
-    // A radio group: the segments framed and the active one washed, then its labels. An icon table
-    // (non-empty icon paths) draws the crests and left-anchors its names past them; a plain radio centres
-    // each name in its segment and appends its trailing caption. A vertical table re-derives its grid from
-    // the footprint; a horizontal radio draws its chrome over the laid segments, the same rects the labels
-    // below centre in, so the wash and dividers cannot part from the labels whether even or snapped.
+    // A radio group: the segments framed and the active one washed, then its labels. A table lays each
+    // row in columns - what it leads with, its name past that, its trailing slot flush right; a
+    // uniform-cell list and a horizontal radio centre each name in its segment, the radio appending its
+    // trailing caption. A vertical stack re-derives its grid from the footprint; a horizontal radio draws
+    // its chrome over the laid segments, the same rects the labels below centre in, so the wash and
+    // dividers cannot part from the labels whether even or snapped.
     private static void drawRadio(Control control, ControlPaint paint) {
         var spec = control.spec();
-        if (spec instanceof ControlSpec.VerticalTable table && !table.iconPaths().isEmpty()) {
-            drawIconRadio(control, table, paint);
+        if (spec instanceof ControlSpec.VerticalTable table
+                && table.rowGeometry() == RowGeometry.COLUMNS) {
+            drawColumnTable(control, table, paint);
             return;
         }
         var accent = paint.style().accent();
@@ -174,79 +181,88 @@ public final class ControlRenderer {
         }
     }
 
-    // An icon-radio table: a crest at the row's left, the name past it, and an optional ranking value
-    // flush at the right edge. The list chrome and the icons are the widget's; the name and value draw
-    // here at the same anchors the widget reserves, so an icon-less option reads as a plain name and a
-    // value-less option shows only its name.
-    private static void drawIconRadio(
+    // A table of rows laid in columns: what the row leads with at its left, the name past it, and its
+    // trailing slot flush at the right edge. The list chrome and the leading images are the widget's; the
+    // name and the trailing slot draw here at the same anchors the widget reserves, so a row leading with
+    // nothing reads as a plain name and a row trailing with nothing shows only its name.
+    private static void drawColumnTable(
             Control control,
             ControlSpec.VerticalTable spec,
             ControlPaint paint) {
 
         var accent = paint.style().accent();
         var bounds = control.bounds();
+        var labelledRows = spec.labelledRows();
 
         IconRadioListRenderer.render(
             bounds,
-            spec.iconPaths(),
+            resolveLeadingRowSlots(labelledRows),
             spec.selectedIndex(),
             spec.columnCount(),
             new RadioColours(accent, accent),
             paint.opacity());
 
         var segments = control.segments();
-        var labels = spec.labels();
 
-        for (var index = 0; index < segments.size() && index < labels.size(); index++) {
+        for (var index = 0; index < segments.size() && index < labelledRows.size(); index++) {
             var segment = segments.get(index);
-            // The label starts past the icon when the option carries one, or at the row's left inset when
-            // it does not - the same has-icon rule the layout sized the row with.
-            var labelX = IconLabelRow.computeLabelAnchorX(segment, spec.hasIconAt(index));
-            
+            var labelledRow = labelledRows.get(index);
+            // The label starts past the leading slot when the row fills one, or at the row's left inset
+            // when it does not - the same filled-slot rule the layout sized the row with.
+            var labelX = IconLabelRow.computeLabelAnchorX(
+                segment,
+                labelledRow.leadingRowSlot().isFilled());
+
             drawBodyLabel(
                 paint,
-                labels.get(index),
+                labelledRow.resolveLabelText(),
                 labelX,
                 segment.computeCenterY(),
                 LazyFont.TextAnchor.CENTER_LEFT);
 
-            drawTrailing(
-                spec,
-                index,
+            drawTrailingRowSlot(
+                labelledRow.trailingRowSlot(),
                 segment,
                 paint);
         }
     }
 
-    // The row's trailing slot: a filled direction triangle when the option carries one (the sort
-    // selector's ascending/descending marker, a shape the body font has no glyph for), otherwise the
-    // right-aligned text value the picker's ranked rows show. Both right-align to the same inset the
-    // layout sized, so a triangle column and a value column occupy the same right-hand strip. A row
-    // with neither draws nothing here.
-    private static void drawTrailing(
-            ControlSpec.VerticalTable spec,
-            int index,
+    // Each row's leading slot in row order, for the list widget that draws whatever image sits in one.
+    // The widget is handed the slots rather than the rows because the leading column is all it paints -
+    // the label and the trailing column are drawn here, against the anchors it reserves.
+    private static List<RowSlot> resolveLeadingRowSlots(List<LabelledRow> labelledRows) {
+        var leadingRowSlots = new ArrayList<RowSlot>(labelledRows.size());
+        for (var labelledRow : labelledRows) {
+            leadingRowSlots.add(labelledRow.leadingRowSlot());
+        }
+        return leadingRowSlots;
+    }
+
+    // The row's trailing slot: a filled direction triangle for a marker the body font has no glyph for
+    // (a sort selector's ascending/descending), or the right-aligned run of text a ranked row shows as
+    // its value. Both right-align to the same inset the layout reserved, so a triangle column and a value
+    // column occupy the same right-hand strip. A row trailing with nothing draws nothing here.
+    private static void drawTrailingRowSlot(
+            RowSlot trailingRowSlot,
             Rectangle segment,
             ControlPaint paint) {
 
-        var direction = spec.directionAt(index);
-        if (direction != null) {
+        if (trailingRowSlot instanceof RowSlot.Triangle triangle) {
             // In the row's body text tone so it reads as a quiet annotation like the value it replaces.
             var trianglePaint = new UiElementPaint(
                 StarsectorUiColour.VANILLA_TEXT.resolve(),
                 paint.opacity());
             TriangleRenderer.render(
                 IconLabelRow.computeDirectionTriangleBox(segment),
-                direction,
+                triangle.triangleDirection(),
                 trianglePaint);
             return;
         }
-        var trailing = spec.trailingLabelAt(index);
-        if (KmlibStrings.hasText(trailing)) {
+        if (trailingRowSlot instanceof RowSlot.Text text && text.textSpan().hasText()) {
             // Drawn at the body size - the same size the layout reserved the column at.
             drawBodyLabel(
                 paint,
-                trailing,
+                text.textSpan().text(),
                 IconLabelRow.computeTrailingAnchorX(segment),
                 segment.computeCenterY(),
                 LazyFont.TextAnchor.CENTER_RIGHT,
