@@ -1,4 +1,6 @@
-package kmlib.opengl;
+package kmlib.opengl.hatch;
+
+import kmlib.opengl.GlVertexRuns;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,15 +14,24 @@ import java.util.List;
  * here and the sinks hold one of these rather than a coordinate list each. What a sink is for is
  * the rule that produces the stretches, and this is what is left when that rule is taken away.
  *
- * <p>Endpoints are rebuilt from the axes rather than taken from whatever crossing produced them,
+ * <p>It is also the whole of what a sink needs in order to emit, which is why a sink is handed one
+ * of these rather than the axes behind it. Turning a distance along a numbered line back into a
+ * point is projection arithmetic a sink has no business knowing: deciding what one primitive is
+ * can be done entirely in the (line, distance) terms the clip offers. So only this class crosses
+ * back into coordinates, and only this class is built from what that takes - which is what lets
+ * the axes stay inside the package that works them out.
+ *
+ * <p>Endpoints are rebuilt from those axes rather than taken from whatever crossing produced them,
  * so every emitted point lies exactly on its own line and the two ends of a chain agree exactly
  * where they meet.
  */
-final class HatchSegmentWriter {
+public final class HatchSegmentWriter {
 
     private final HatchAxes axes;
     private final List<Float> segments = new ArrayList<>();
 
+    // Package-private, so a writer can only be raised where the line family was worked out. A sink
+    // is handed one already built.
     HatchSegmentWriter(HatchAxes axes) {
         this.axes = axes;
     }
@@ -32,7 +43,7 @@ final class HatchSegmentWriter {
      * @param start     where it starts, as a distance along the line direction
      * @param end       where it ends
      */
-    void addSegmentOnLine(int lineIndex, double start, double end) {
+    public void addSegmentOnLine(int lineIndex, double start, double end) {
         addPointOnLine(lineIndex, start);
         addPointOnLine(lineIndex, end);
     }
@@ -40,7 +51,7 @@ final class HatchSegmentWriter {
     /**
      * @return everything appended so far as a flat {@code [x1, y1, x2, y2, ...]} run
      */
-    float[] packSegments() {
+    public float[] packSegments() {
         return GlVertexRuns.packFloats(segments);
     }
 

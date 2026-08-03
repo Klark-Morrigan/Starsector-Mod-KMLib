@@ -1,4 +1,4 @@
-package kmlib.opengl;
+package kmlib.opengl.hatch;
 
 /**
  * Collects the spans a hatch clip walk finds and packs them into the {@code GL_LINES} run the
@@ -15,7 +15,7 @@ package kmlib.opengl;
  * leaves each emitted point to be rebuilt from the line family's own axes, where a point carried
  * through from an edge intersection would land only near its line.
  */
-interface HatchSegmentSink {
+public interface HatchSegmentSink {
 
     /**
      * Records one hatch line's crossing of one triangle.

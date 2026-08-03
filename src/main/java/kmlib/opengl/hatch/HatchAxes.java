@@ -1,4 +1,4 @@
-package kmlib.opengl;
+package kmlib.opengl.hatch;
 
 import kmlib.math.geometry.Points;
 

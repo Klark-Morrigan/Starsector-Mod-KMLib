@@ -1,4 +1,4 @@
-package kmlib.opengl;
+package kmlib.opengl.hatch;
 
 /**
  * How a merging {@link HatchJoining} closed the joins it made, split by what closed each one: two

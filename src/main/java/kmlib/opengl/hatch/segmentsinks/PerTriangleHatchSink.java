@@ -1,4 +1,9 @@
-package kmlib.opengl;
+package kmlib.opengl.hatch.segmentsinks;
+
+import kmlib.opengl.hatch.HatchJoinTally;
+import kmlib.opengl.hatch.HatchRun;
+import kmlib.opengl.hatch.HatchSegmentSink;
+import kmlib.opengl.hatch.HatchSegmentWriter;
 
 /**
  * Emits one segment per span it is offered, in the order the clip walk finds them, so a line
@@ -6,14 +11,17 @@ package kmlib.opengl;
  *
  * <p>The joining that decides nothing: it merges no span with any other, so it holds no state
  * beyond the run it is filling and costs the walk nothing over emitting inline. What is left once
- * the deciding is taken away is the writer below, which is why almost nothing remains here.
+ * the deciding is taken away is the writer it was handed, which is why almost nothing remains here.
  */
-final class PerTriangleHatchSink implements HatchSegmentSink {
+public final class PerTriangleHatchSink implements HatchSegmentSink {
 
     private final HatchSegmentWriter writer;
 
-    PerTriangleHatchSink(HatchAxes axes) {
-        this.writer = new HatchSegmentWriter(axes);
+    /**
+     * @param writer where the segments this sink emits are packed
+     */
+    public PerTriangleHatchSink(HatchSegmentWriter writer) {
+        this.writer = writer;
     }
 
     @Override

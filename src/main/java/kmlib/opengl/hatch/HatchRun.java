@@ -1,4 +1,6 @@
-package kmlib.opengl;
+package kmlib.opengl.hatch;
+
+import kmlib.opengl.GlVertexRuns;
 
 /**
  * One hatch as the clip hands it back: the {@code GL_LINES} run to draw, and how the joining that

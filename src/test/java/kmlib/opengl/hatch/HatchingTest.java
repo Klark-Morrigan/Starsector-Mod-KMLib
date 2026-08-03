@@ -1,4 +1,4 @@
-package kmlib.opengl;
+package kmlib.opengl.hatch;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

@@ -1,4 +1,9 @@
-package kmlib.opengl;
+package kmlib.opengl.hatch.segmentsinks;
+
+import kmlib.opengl.hatch.HatchJoinTally;
+import kmlib.opengl.hatch.HatchRun;
+import kmlib.opengl.hatch.HatchSegmentSink;
+import kmlib.opengl.hatch.HatchSegmentWriter;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -19,13 +24,18 @@ import java.util.TreeMap;
  * changed with the keys, which is the kind of difference that makes a run impossible to assert on
  * and a rendering impossible to compare frame to frame.
  *
- * <p>Endpoints are rebuilt from the axes rather than carried through from the clip, so a merged
- * segment lies exactly on its line - and so the question of which of two coincident crossing
- * points won the merge never arises, since neither is kept.
+ * <p>The whole merge runs in the (line, distance) terms the clip offers, and only the writer turns
+ * those back into points - so the question of which of two coincident crossing points won a merge
+ * never arises, since no point survives long enough to be picked.
  */
-final class CoalescedHatchSink implements HatchSegmentSink {
+public final class CoalescedHatchSink implements HatchSegmentSink {
 
-    private final HatchAxes axes;
+    private final HatchSegmentWriter writer;
+
+    // The perpendicular gap between adjacent hatch lines, which the reported gaps are stated as a
+    // fraction of. Held rather than taken from the tolerance, since a zero tolerance still has to
+    // report the gaps it refused.
+    private final double spacing;
 
     // The widest gap between two of one line's spans that still counts as the same stroke, in the
     // soup's own units - the caller's fraction resolved against the spacing once here, so the
@@ -33,7 +43,6 @@ final class CoalescedHatchSink implements HatchSegmentSink {
     private final double joinTolerance;
 
     private final Map<Integer, List<ClippedSpan>> spansByLineIndex = new TreeMap<>();
-    private final HatchSegmentWriter writer;
 
     // The running tally, accumulated as the merge runs; see HatchJoinTally for why the three kinds
     // of closed join are counted apart.
@@ -46,10 +55,21 @@ final class CoalescedHatchSink implements HatchSegmentSink {
     // reports that there was no such gap rather than one of no width.
     private double narrowestOpenGap = Double.POSITIVE_INFINITY;
 
-    CoalescedHatchSink(HatchAxes axes, double joinToleranceFraction) {
-        this.axes = axes;
-        this.joinTolerance = joinToleranceFraction * axes.spacing();
-        this.writer = new HatchSegmentWriter(axes);
+    /**
+     * @param writer                 where the merged segments are packed
+     * @param spacing                the perpendicular gap between adjacent hatch lines, in the
+     *                               soup's own units
+     * @param joinToleranceFraction  how far apart two of one line's crossings may sit and still
+     *                               merge, as a fraction of that spacing
+     */
+    public CoalescedHatchSink(
+            HatchSegmentWriter writer,
+            double spacing,
+            double joinToleranceFraction) {
+
+        this.writer = writer;
+        this.spacing = spacing;
+        this.joinTolerance = joinToleranceFraction * spacing;
     }
 
     @Override
@@ -70,8 +90,8 @@ final class CoalescedHatchSink implements HatchSegmentSink {
                 exactJoinCount,
                 toleranceJoinCount,
                 overlappingJoinCount,
-                widestToleranceGap / axes.spacing(),
-                narrowestOpenGap / axes.spacing()));
+                widestToleranceGap / spacing,
+                narrowestOpenGap / spacing));
     }
 
     // Emits one segment per point-to-point stretch of the numbered line. Sorting by start is what

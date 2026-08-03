@@ -1,6 +1,10 @@
-package kmlib.opengl;
+package kmlib.opengl.hatch;
 
 import kmlib.math.geometry.Limits;
+import kmlib.opengl.GlVertexRuns;
+import kmlib.opengl.PolygonTessellator;
+import kmlib.opengl.hatch.segmentsinks.CoalescedHatchSink;
+import kmlib.opengl.hatch.segmentsinks.PerTriangleHatchSink;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -78,13 +82,23 @@ public final class Hatching {
     // What collects the walk's crossings, which is the whole of what a joining decides - the walk
     // below is the same either way, so the choice is resolved once here rather than tested inside
     // the clip.
+    //
+    // Every sink emits through the same writer, and is given one rather than the axes it was built
+    // from: a sink decides what one primitive is, which it can do entirely in the numbers the clip
+    // offers it, so the projection back into coordinates stays on this side of the seam.
     private static HatchSegmentSink createSegmentSink(
             HatchJoining joining,
             HatchAxes axes,
             double joinToleranceFraction) {
+
+        var writer = new HatchSegmentWriter(axes);
+
         return switch (joining) {
-            case PER_TRIANGLE -> new PerTriangleHatchSink(axes);
-            case COALESCED -> new CoalescedHatchSink(axes, joinToleranceFraction);
+            case PER_TRIANGLE -> new PerTriangleHatchSink(writer);
+            case COALESCED -> new CoalescedHatchSink(
+                writer,
+                axes.spacing(),
+                joinToleranceFraction);
         };
     }
 

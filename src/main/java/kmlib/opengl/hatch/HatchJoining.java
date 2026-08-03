@@ -1,4 +1,4 @@
-package kmlib.opengl;
+package kmlib.opengl.hatch;
 
 /**
  * How a hatch reports the several places one of its lines crosses a tessellated region: what
