@@ -124,21 +124,17 @@ public final class TabPanelController {
      */
     public void handlePointer(InputEventAPI event, TabPanelPlacement placement) {
 
-        // A null notch marks a bodyless, non-collapsible panel: there is no handle to hover or press, so
-        // the hover latch clears and the toggle is skipped, and the event falls through to the header/body.
-        var notch = placement.notch();
-
         // Latch hover off every pointer event so the render pass can light the handle; the notch draws past
-        // the frame's right edge, so this is tested against the notch rect, not the body box.
-        isNotchHovered = notch != null
-            && notch.containsPoint(event.getX(), event.getY());
+        // the frame's right edge, so this is tested against the notch rect, not the body box. A bodyless,
+        // non-collapsible panel has no handle to be over, which the placement's own test absorbs, so the
+        // latch clears and the toggle below is skipped for one.
+        isNotchHovered = placement.containsPointInNotch(event.getX(), event.getY());
 
         // A left press on the notch flips the body between expanded and docked. Tested before the header and
         // body because the notch sits outside the box (and stays reachable when docked), so it can never
         // collide with a tab or a body control for the same press.
-        if (notch != null
-                && event.isLMBDownEvent()
-                && notch.containsPoint(event.getX(), event.getY())) {
+        if (event.isLMBDownEvent()
+                && placement.containsPointInNotch(event.getX(), event.getY())) {
             collapse.toggleCollapse();
             event.consume();
             return;

@@ -22,11 +22,11 @@ final class PanelPlacementTest {
 
         @Test
         void toScrollRegionMapsTheBodyViewportOffsetAndOverflow() {
+
             var box = new Rectangle(8f, 18f, 204f, 304f);
             var body = new Rectangle(10f, 20f, 200f, 300f);
             var viewport = new Rectangle(18f, 30f, 120f, 100f);
             var placement = new PanelPlacement(box, body, List.of(), viewport, 15f, 60f);
-
             var region = placement.toScrollRegion();
 
             // The body frames the track gutter, the flex viewport is the scroll viewport, and the offset

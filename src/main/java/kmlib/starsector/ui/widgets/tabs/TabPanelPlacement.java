@@ -45,4 +45,31 @@ public record TabPanelPlacement(
     PanelPlacement body,
     BoxBorder border,
     Rectangle notch) {
+
+    /**
+     * Whether the point lands anywhere on the laid-out panel. The footprint is the body's box
+     * <em>plus</em> the notch, because the handle is drawn past the box's right border edge and is all
+     * that remains on screen once the body is docked - so a box test alone would report a point on the
+     * handle as being off the panel entirely.
+     *
+     * @param pointX the point's x in UI coordinates, the coordinates the placement is laid out in
+     * @param pointY the point's y in UI coordinates
+     * @return whether the point is on the body or on the collapse handle
+     */
+    public boolean containsPoint(float pointX, float pointY) {
+        return body.box().containsPoint(pointX, pointY)
+            || containsPointInNotch(pointX, pointY);
+    }
+
+    /**
+     * Whether the point lands on the collapse handle. A bodyless panel has nothing to fold and so no
+     * handle, which is the null the test absorbs: with no rect to be over, no point is over it.
+     *
+     * @param pointX the point's x in UI coordinates
+     * @param pointY the point's y in UI coordinates
+     * @return whether the point is on the collapse handle
+     */
+    public boolean containsPointInNotch(float pointX, float pointY) {
+        return notch != null && notch.containsPoint(pointX, pointY);
+    }
 }
