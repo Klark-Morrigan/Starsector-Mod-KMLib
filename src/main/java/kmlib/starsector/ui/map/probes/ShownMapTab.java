@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.map;
+package kmlib.starsector.ui.map.probes;
 
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.CoreUITabId;

@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.map;
+package kmlib.starsector.ui.map.probes;
 
 import com.fs.starfarer.api.ui.UIComponentAPI;
 

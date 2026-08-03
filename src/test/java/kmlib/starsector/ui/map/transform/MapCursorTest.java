@@ -1,9 +1,9 @@
-package kmlib.starsector.ui.map;
+package kmlib.starsector.ui.map.transform;
 
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.SettingsAPI;
 
-import kmlib.testfixtures.starsector.ui.map.ModelviewMatrixReaderFake;
+import kmlib.testfixtures.starsector.ui.map.transform.ModelviewMatrixReaderFake;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

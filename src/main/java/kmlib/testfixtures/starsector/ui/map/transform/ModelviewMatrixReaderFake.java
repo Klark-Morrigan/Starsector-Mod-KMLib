@@ -1,6 +1,6 @@
-package kmlib.testfixtures.starsector.ui.map;
+package kmlib.testfixtures.starsector.ui.map.transform;
 
-import kmlib.starsector.ui.map.ModelviewMatrixReader;
+import kmlib.starsector.ui.map.transform.ModelviewMatrixReader;
 
 /**
  * A {@link ModelviewMatrixReader} that reports a matrix handed to it, so transform maths can be

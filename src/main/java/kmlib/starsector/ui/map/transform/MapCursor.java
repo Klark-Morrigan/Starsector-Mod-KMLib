@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.map;
+package kmlib.starsector.ui.map.transform;
 
 import org.lwjgl.input.Mouse;
 import org.lwjgl.util.vector.Vector2f;

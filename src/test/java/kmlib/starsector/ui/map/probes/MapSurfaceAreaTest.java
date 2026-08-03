@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.map;
+package kmlib.starsector.ui.map.probes;
 
 import kmlib.math.geometry.Rectangle;
 

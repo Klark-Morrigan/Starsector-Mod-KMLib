@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.map;
+package kmlib.starsector.ui.map.transform;
 
 /**
  * Source port for the modelview matrix a render pass is drawing under. Where that matrix lives is

@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.map;
+package kmlib.starsector.ui.map.transform;
 
 import com.fs.starfarer.api.Global;
 

@@ -1,7 +1,7 @@
-package kmlib.starsector.ui.map;
+package kmlib.starsector.ui.map.transform;
 
 import kmlib.opengl.FastRendering;
-import kmlib.testfixtures.starsector.ui.map.ModelviewMatrixReaderFake;
+import kmlib.testfixtures.starsector.ui.map.transform.ModelviewMatrixReaderFake;
 
 import org.assertj.core.data.Offset;
 import org.junit.jupiter.api.Nested;

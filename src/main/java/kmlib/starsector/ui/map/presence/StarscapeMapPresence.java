@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.map;
+package kmlib.starsector.ui.map.presence;
 
 import kmlib.starsector.ui.intel.IntelScreenView;
 import kmlib.starsector.ui.intel.VanillaIntelScreenView;
