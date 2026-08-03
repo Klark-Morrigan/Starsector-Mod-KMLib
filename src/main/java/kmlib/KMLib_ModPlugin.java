@@ -3,6 +3,7 @@ package kmlib;
 import com.fs.starfarer.api.BaseModPlugin;
 import com.fs.starfarer.api.Global;
 
+import kmlib.opengl.FastRendering;
 import kmlib.settings.KmlibLunaSettings;
 
 import org.apache.log4j.Logger;
@@ -31,5 +32,19 @@ public class KMLib_ModPlugin extends BaseModPlugin {
         } catch (RuntimeException exception) {
             LOG.error("Failed to install KMLib LunaLib settings bindings", exception);
         }
+        logActiveRenderer();
+    }
+
+    // Which GL implementation every KM draw call reaches, stated once at load. It changes what a
+    // GL hint does and what a state read answers, so it is the standing condition any rendering
+    // report is read under - and a report that does not say which stack produced it cannot be
+    // compared with one from the other.
+    //
+    // Logged here rather than left to the one binding that already reports it: that line is a
+    // side effect of the map transform being read for a hover, so it appears only in a session
+    // that hovered the map, and it names the reader it picked rather than the renderer underneath.
+    private static void logActiveRenderer() {
+        LOG.info("Active GL renderer resolved; fastRendering="
+            + FastRendering.isFastRenderingActive());
     }
 }

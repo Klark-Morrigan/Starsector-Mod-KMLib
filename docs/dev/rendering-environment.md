@@ -161,6 +161,16 @@ Two useful consequences:
   the worst of the three answers because it routes callers into GL reads the
   bridge cannot serve.
 
+`KMLib_ModPlugin.onApplicationLoad` runs that detection once and logs the answer
+at INFO as `Active GL renderer resolved; fastRendering=<true|false>`. Which stack
+is underneath is a standing condition on everything below - what a GL hint does,
+what a state read answers - so any rendering report gathered from a log is read
+under it, and two reports from different stacks are otherwise indistinguishable.
+Unconditional and at load, rather than left to the one binding that reports its
+own choice (`ModelviewMatrixReaders.selectForActiveRenderer`, at INFO): that line
+appears only in a session that read the map transform for a hover, and it names
+the reader it picked rather than the renderer it picked it for.
+
 ### It tracks the modelview on the CPU
 
 This is the fact that breaks naive GL code, and it is a design choice, not a bug.
