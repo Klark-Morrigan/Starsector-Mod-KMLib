@@ -33,11 +33,11 @@ class MapSurfaceBoundsTest {
     private static final Rectangle TAB_STRIP_BOX = new Rectangle(10f, 1168f, 1900f, 15f);
     private static final Rectangle BAR_CONTROL_BOX = new Rectangle(141f, 1165f, 130f, 18f);
 
-    // The intel screen's map visor and the control bar it draws across its own bottom edge. The
-    // visor's surface is its whole box, which is what makes the bar impossible to exclude by
-    // complement and is why the chrome half of the answer exists.
+    // The intel screen's map visor and the control bar it draws across its own bottom edge. One box
+    // serves as both the visor and its surface because that is the finding: the visor's surface
+    // fills it exactly, which is what makes the bar impossible to exclude by complement and is why
+    // the chrome half of the answer exists.
     private static final Rectangle VISOR_BOX = new Rectangle(525f, 293f, 890f, 784f);
-    private static final Rectangle VISOR_SURFACE_BOX = new Rectangle(525f, 293f, 890f, 784f);
     private static final Rectangle VISOR_BAR_BOX = new Rectangle(524f, 1059f, 890f, 19f);
 
     private static final float DRAWN_OPACITY = 1f;
@@ -100,8 +100,8 @@ class MapSurfaceBoundsTest {
             // returning the surface alone could not express, and the reason the siblings come back.
             assertThat(MapSurfaceBounds.selectSurfaceArea(
                     VISOR_BOX,
-                    List.of(VISOR_SURFACE_BOX, VISOR_BAR_BOX)))
-                .isEqualTo(new MapSurfaceArea(VISOR_SURFACE_BOX, List.of(VISOR_BAR_BOX)));
+                    List.of(VISOR_BOX, VISOR_BAR_BOX)))
+                .isEqualTo(new MapSurfaceArea(VISOR_BOX, List.of(VISOR_BAR_BOX)));
         }
 
         @Test

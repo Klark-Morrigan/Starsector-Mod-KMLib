@@ -43,6 +43,18 @@ class ShownMapTabTest {
         }
 
         @Test
+        void resolveShownMapTabPrefersTheCurrentTabOverALitVisor() {
+            // The two are not guaranteed to exclude each other - they read different core UIs, so
+            // an interaction dialog can have both answering at once. The current tab wins, because
+            // it is the map the player is looking at while the visor is one on a screen behind it.
+            var mapTabMock = createMapWidgetMock();
+            intelScreenFake.setMapVisorWidget(mock(UIComponentAPI.class));
+
+            assertThat(ShownMapTab.resolveShownMapTab(mapTabMock, intelScreenFake))
+                .isSameAs(mapTabMock);
+        }
+
+        @Test
         void resolveShownMapTabFallsBackToTheVisorWhenTheCurrentTabIsNotAMap() {
             // The intel screen, whose core tab holds the map several levels down. The tab itself is
             // an ordinary component, so the fallback is what finds the map at all.
