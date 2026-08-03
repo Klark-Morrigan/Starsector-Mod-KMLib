@@ -41,39 +41,50 @@ public final class Hatching {
      * apart measured perpendicular to that direction; line zero passes through the origin, so
      * the pattern is stable frame to frame rather than jittering with the region's position.
      *
-     * @param triangleSoup the region to hatch, as {@code [x, y, x, y, ...]} with every six
-     *                     floats one triangle - exactly what {@link
-     *                     PolygonTessellator#tessellateToTriangles} emits
-     * @param angleRadians the direction the hatch lines run in
-     * @param spacing      the perpendicular distance between adjacent hatch lines, in the
-     *                     soup's own (world) units; a non-positive value hatches nothing,
-     *                     since it defines no line family
-     * @param joining      how many segments one line's crossings of the soup are packed into
-     * @return the clipped hatch segments as a {@code GL_LINES} run; empty when the spacing is
-     *         non-positive or the soup encloses no area for a line to cross
+     * @param triangleSoup         the region to hatch, as {@code [x, y, x, y, ...]} with every
+     *                             six floats one triangle - exactly what {@link
+     *                             PolygonTessellator#tessellateToTriangles} emits
+     * @param angleRadians         the direction the hatch lines run in
+     * @param spacing              the perpendicular distance between adjacent hatch lines, in
+     *                             the soup's own (world) units; a non-positive value hatches
+     *                             nothing, since it defines no line family
+     * @param joining              how many segments one line's crossings of the soup are packed
+     *                             into
+     * @param joinToleranceFraction how far apart two of one line's crossings may sit and still
+     *                             count as the same stroke, as a fraction of the spacing. Read
+     *                             only by a joining that merges; {@link HatchJoining#PER_TRIANGLE}
+     *                             joins nothing and so ignores it
+     * @return the clipped hatch as a {@code GL_LINES} run and the tally of how its joins closed;
+     *         nothing hatched when the spacing is non-positive or the soup encloses no area for a
+     *         line to cross
      */
-    public static float[] computeHatchSegments(
+    public static HatchRun computeHatchRun(
             float[] triangleSoup,
             double angleRadians,
             double spacing,
-            HatchJoining joining) {
+            HatchJoining joining,
+            double joinToleranceFraction) {
         if (spacing <= 0 || triangleSoup.length < FLOATS_PER_TRIANGLE) {
-            return GlVertexRuns.NO_VERTICES;
+            return HatchRun.NOTHING_HATCHED;
         }
         var axes = HatchAxes.computeAxesFromAngle(angleRadians, spacing);
-        var sink = createSegmentSink(joining, axes);
+        var sink = createSegmentSink(joining, axes, joinToleranceFraction);
         for (var i = 0; i + FLOATS_PER_TRIANGLE <= triangleSoup.length; i += FLOATS_PER_TRIANGLE) {
             hatchTriangle(readLevelledTriangle(triangleSoup, i, axes), axes, sink);
         }
-        return sink.packSegments();
+        return sink.packHatchRun();
     }
 
     // What collects the walk's crossings, which is the whole of what a joining decides - the walk
     // below is the same either way, so the choice is resolved once here rather than tested inside
     // the clip.
-    private static HatchSegmentSink createSegmentSink(HatchJoining joining, HatchAxes axes) {
+    private static HatchSegmentSink createSegmentSink(
+            HatchJoining joining,
+            HatchAxes axes,
+            double joinToleranceFraction) {
         return switch (joining) {
             case PER_TRIANGLE -> new PerTriangleHatchSink(axes);
+            case COALESCED -> new CoalescedHatchSink(axes, joinToleranceFraction);
         };
     }
 

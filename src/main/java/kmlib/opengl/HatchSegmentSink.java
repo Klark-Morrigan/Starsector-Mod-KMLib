@@ -27,8 +27,8 @@ interface HatchSegmentSink {
     void acceptClippedSpan(int lineIndex, double minAlong, double maxAlong);
 
     /**
-     * @return everything accepted so far as a flat {@code [x1, y1, x2, y2, ...]}
-     *         {@code GL_LINES} run
+     * @return everything accepted so far as a drawable run, paired with how this sink's own rule
+     *         for what one primitive is closed the joins it made
      */
-    float[] packSegments();
+    HatchRun packHatchRun();
 }
