@@ -19,9 +19,9 @@ import static org.assertj.core.api.Assertions.within;
  * region, it caps the font so the whole band stays inside the boundary, stacks text
  * into more lines only when that renders a strictly taller font, honours the line cap
  * and the per-line font clamp, keeps the box out of a keep-out point's clearance, and
- * returns null when even the minimum font cannot hold the text. The fitter is tested apart from any candidate search so its sizing contract
- * is pinned on rings and a text estimator directly, without the candidate generation a
- * caller wraps it in.
+ * returns null when even the minimum font cannot hold the text. The fitter is tested
+ * apart from any candidate search so its sizing contract is pinned on rings and a text
+ * estimator directly, without the candidate generation a caller wraps it in.
  */
 final class LabelBoxFitterTest {
 
