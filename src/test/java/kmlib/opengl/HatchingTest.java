@@ -36,18 +36,21 @@ final class HatchingTest {
 
         @Test
         void compute_hatch_segments_yields_an_empty_run_for_zero_spacing() {
-            assertThat(hatch(RIGHT_TRIANGLE, 0, 0)).isEmpty();
+            assertThat(hatch(RIGHT_TRIANGLE, 0, 0))
+                .isEmpty();
         }
 
         @Test
         void compute_hatch_segments_yields_an_empty_run_for_negative_spacing() {
-            assertThat(hatch(RIGHT_TRIANGLE, 0, -1)).isEmpty();
+            assertThat(hatch(RIGHT_TRIANGLE, 0, -1))
+                .isEmpty();
         }
 
         @Test
         void compute_hatch_segments_yields_an_empty_run_for_a_soup_smaller_than_a_triangle() {
             // Two vertices cannot form a triangle, so there is no area to hatch.
-            assertThat(hatch(new float[] {0f, 0f, 1f, 0f}, 0, 1)).isEmpty();
+            assertThat(hatch(new float[] {0f, 0f, 1f, 0f}, 0, 1))
+                .isEmpty();
         }
 
         @Test
@@ -56,11 +59,12 @@ final class HatchingTest {
             // narrowing width, and the apex line at y = 4 dropped as a corner-only touch.
             var run = hatch(RIGHT_TRIANGLE, 0, 1);
 
-            assertThat(run).containsExactly(
-                0f, 0f, 4f, 0f,
-                0f, 1f, 3f, 1f,
-                0f, 2f, 2f, 2f,
-                0f, 3f, 1f, 3f);
+            assertThat(run)
+                .containsExactly(
+                    0f, 0f, 4f, 0f,
+                    0f, 1f, 3f, 1f,
+                    0f, 2f, 2f, 2f,
+                    0f, 3f, 1f, 3f);
         }
 
         @Test
@@ -72,15 +76,33 @@ final class HatchingTest {
             // come back whole.
             var run = hatch(SPLIT_SQUARE, 0, 1);
 
-            assertThat(run).containsExactly(
-                0f, 0f, 4f, 0f,
-                1f, 1f, 4f, 1f,
-                2f, 2f, 4f, 2f,
-                3f, 3f, 4f, 3f,
-                0f, 1f, 1f, 1f,
-                0f, 2f, 2f, 2f,
-                0f, 3f, 3f, 3f,
-                0f, 4f, 4f, 4f);
+            assertThat(run)
+                .containsExactly(
+                    0f, 0f, 4f, 0f,
+                    1f, 1f, 4f, 1f,
+                    2f, 2f, 4f, 2f,
+                    3f, 3f, 4f, 3f,
+                    0f, 1f, 1f, 1f,
+                    0f, 2f, 2f, 2f,
+                    0f, 3f, 3f, 3f,
+                    0f, 4f, 4f, 4f);
+        }
+
+        @Test
+        void compute_hatch_segments_clips_lines_below_the_origin_to_a_right_triangle() {
+            // The same right triangle reflected below the x axis, so every line it crosses is a
+            // negative multiple of the spacing. Emitted points are derived from the line's own
+            // offset rather than carried through from the clip, and that derivation is where a
+            // sign convention can invert without any positive-coordinate case noticing.
+            var belowOrigin = new float[] {
+                0f, -4f, 4f, -4f, 0f, 0f};
+
+            assertThat(hatch(belowOrigin, 0, 1))
+                .containsExactly(
+                    0f, -4f, 4f, -4f,
+                    0f, -3f, 3f, -3f,
+                    0f, -2f, 2f, -2f,
+                    0f, -1f, 1f, -1f);
         }
 
         @Test
@@ -100,12 +122,17 @@ final class HatchingTest {
             var angle = Math.PI / 4;
             var run = hatch(RIGHT_TRIANGLE, angle, 1);
 
-            assertThat(segmentCount(run)).isPositive();
+            assertThat(segmentCount(run))
+                .isPositive();
+
             for (var segment = 0; segment < run.length; segment += 4) {
+
                 var deltaX = run[segment + 2] - run[segment];
                 var deltaY = run[segment + 3] - run[segment + 1];
                 var cross = deltaX * Math.sin(angle) - deltaY * Math.cos(angle);
-                assertThat(cross).isCloseTo(0, within(1e-3));
+
+                assertThat(cross)
+                    .isCloseTo(0, within(1e-3));
             }
         }
 
@@ -114,7 +141,8 @@ final class HatchingTest {
             // Three collinear points enclose no area, so no line crosses them.
             var collinear = new float[] {0f, 0f, 2f, 0f, 4f, 0f};
 
-            assertThat(hatch(collinear, 0, 1)).isEmpty();
+            assertThat(hatch(collinear, 0, 1))
+                .isEmpty();
         }
 
         // The joining every case here reads against, named once so a case says only what it
