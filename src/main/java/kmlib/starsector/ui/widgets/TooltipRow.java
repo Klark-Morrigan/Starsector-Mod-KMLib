@@ -21,9 +21,11 @@ import java.util.Objects;
  * placement, the pairing is expressible and can be refused only once the row is built, which turns a
  * fault the compiler could decline into one a player finds by hovering.
  *
- * <p>What the two share is what every line of a box has: the kind of line it is, whether it opens a
- * section above itself, and a label of one or more runs read as one sentence. A stack of rows mixes them
- * freely, so a box is a title over a table without either kind knowing about the other.
+ * <p>What the two share is what every line of a box has: the kind of line it is, and a label of one or
+ * more runs read as one sentence. A stack of rows mixes them freely, so a box is a title over a table
+ * without either kind knowing about the other. How far a line stands from its neighbours is not among
+ * them: a line belongs to a {@link TooltipSection block}, and the parting between two blocks is a fact
+ * about the two of them meeting rather than something either line carries.
  *
  * <p>Everything past the label is a refinement, never a parameter: a caller states what its line
  * <em>has</em> and never spells out the absences. That matters because most lines carry only some of
@@ -53,7 +55,6 @@ public sealed interface TooltipRow {
             TableRow.DEFAULT_LINE_STYLE,
             TableRow.DEFAULT_LABEL_PLACEMENT,
             TableRow.NO_INDENT,
-            false,
             LabelledRow.createRow(labelRun));
     }
 
@@ -74,7 +75,6 @@ public sealed interface TooltipRow {
     static CentredRow createCentredRow(LabelRun labelRun) {
         return new CentredRow(
             TableRow.DEFAULT_LINE_STYLE,
-            false,
             List.of(labelRun));
     }
 
@@ -84,14 +84,6 @@ public sealed interface TooltipRow {
      * @return the kind of line
      */
     TooltipLineStyle lineStyle();
-
-    /**
-     * Whether the line opens a section, taking breathing room above it so it reads as starting a block
-     * rather than continuing the one above.
-     *
-     * @return true when the line opens a section
-     */
-    boolean hasSectionBreak();
 
     /**
      * The label's runs in reading order - text in the colour it draws in before any opacity fade, or an
@@ -112,15 +104,6 @@ public sealed interface TooltipRow {
      * @return an otherwise-identical line whose label carries that run last
      */
     TooltipRow continuesWith(LabelRun labelRun);
-
-    /**
-     * Returns a copy of this line opening a section: the layout takes breathing room above it, so it
-     * reads as starting a block rather than continuing the lines before it. Nothing is taken above the
-     * box's first line, which already has the box's own padding above it.
-     *
-     * @return an otherwise-identical line opening a section
-     */
-    TooltipRow opensSection();
 
     /**
      * Returns a copy of this line reading as {@code lineStyle} - a heading that names the box rather
@@ -156,26 +139,24 @@ public sealed interface TooltipRow {
      * choice: both placements keep it clear to the right, so a title carries a trailing value exactly as
      * an ordinary line does.
      *
-     * @param lineStyle       the kind of line this is, which the host tooltip turns into a look
-     * @param labelPlacement  where the label starts across the box - past the crest gutter or at the
-     *                        content edge
-     * @param indent          the label's inset from the box's left content edge, in UI units - zero for a
-     *                        top-tier line, a positive step for a nested one
-     * @param hasSectionBreak whether the line opens a section
-     * @param labelledRow     what the line carries: its crest, its label's runs, and its value
+     * @param lineStyle      the kind of line this is, which the host tooltip turns into a look
+     * @param labelPlacement where the label starts across the box - past the crest gutter or at the
+     *                       content edge
+     * @param indent         the label's inset from the box's left content edge, in UI units - zero for a
+     *                       top-tier line, a positive step for a nested one
+     * @param labelledRow    what the line carries: its crest, its label's runs, and its value
      */
     record TableRow(
         TooltipLineStyle lineStyle,
         TooltipLabelPlacement labelPlacement,
         float indent,
-        boolean hasSectionBreak,
         LabelledRow labelledRow) implements TooltipRow {
 
         // What a line that carries none of the optional parts holds: a line of the body, its label
-        // starting where the crested lines' labels start, continuing the line above it, and with no
-        // crest, second run, or value. Body text is the default kind because most lines of a tooltip are
-        // its body, and crest-aligned is the default placement because that is what an ordinary content
-        // line is - a heading and a title are each the exception a caller states.
+        // starting where the crested lines' labels start, and with no crest, second run, or value. Body
+        // text is the default kind because most lines of a tooltip are its body, and crest-aligned is
+        // the default placement because that is what an ordinary content line is - a heading and a title
+        // are each the exception a caller states.
         private static final TooltipLineStyle DEFAULT_LINE_STYLE = TooltipLineStyle.PARAGRAPH;
         private static final TooltipLabelPlacement DEFAULT_LABEL_PLACEMENT =
             TooltipLabelPlacement.ALIGNED_WITH_CRESTS;
@@ -248,7 +229,6 @@ public sealed interface TooltipRow {
                 lineStyle,
                 labelPlacement,
                 indent,
-                hasSectionBreak,
                 labelledRow);
         }
 
@@ -264,17 +244,6 @@ public sealed interface TooltipRow {
                 lineStyle,
                 TooltipLabelPlacement.AT_CONTENT_EDGE,
                 indent,
-                hasSectionBreak,
-                labelledRow);
-        }
-
-        @Override
-        public TableRow opensSection() {
-            return new TableRow(
-                lineStyle,
-                labelPlacement,
-                indent,
-                true,
                 labelledRow);
         }
 
@@ -284,19 +253,17 @@ public sealed interface TooltipRow {
                 lineStyle,
                 labelPlacement,
                 indent,
-                hasSectionBreak,
                 labelledRow);
         }
 
         // Rebuilds the line around new content, carrying every row-level fact over untouched. The three
         // refinements that change only what the line carries share it rather than each restating the
-        // four facts they leave alone - one of which would eventually be restated wrongly.
+        // three facts they leave alone - one of which would eventually be restated wrongly.
         private TableRow rebuildWithContent(LabelledRow labelledRow) {
             return new TableRow(
                 lineStyle,
                 labelPlacement,
                 indent,
-                hasSectionBreak,
                 labelledRow);
         }
     }
@@ -317,14 +284,12 @@ public sealed interface TooltipRow {
      * rather than sitting in a gutter to their left, which is what a line speaking for the whole box
      * wants. Being a run, it is charged to the span the box was sized to, so it cannot land past an edge.
      *
-     * @param lineStyle       the kind of line this is, which the host tooltip turns into a look
-     * @param hasSectionBreak whether the line opens a section
-     * @param labelRuns       the label's runs in reading order - text in the colour it draws in before
-     *                        the tooltip's opacity fade, or an image squared off the line; never empty
+     * @param lineStyle the kind of line this is, which the host tooltip turns into a look
+     * @param labelRuns the label's runs in reading order - text in the colour it draws in before the
+     *                  tooltip's opacity fade, or an image squared off the line; never empty
      */
     record CentredRow(
         TooltipLineStyle lineStyle,
-        boolean hasSectionBreak,
         List<LabelRun> labelRuns) implements TooltipRow {
 
         /**
@@ -340,18 +305,12 @@ public sealed interface TooltipRow {
         public CentredRow continuesWith(LabelRun labelRun) {
             return new CentredRow(
                 lineStyle,
-                hasSectionBreak,
                 LabelRuns.appendRun(labelRuns, labelRun));
         }
 
         @Override
-        public CentredRow opensSection() {
-            return new CentredRow(lineStyle, true, labelRuns);
-        }
-
-        @Override
         public CentredRow readsAs(TooltipLineStyle lineStyle) {
-            return new CentredRow(lineStyle, hasSectionBreak, labelRuns);
+            return new CentredRow(lineStyle, labelRuns);
         }
     }
 }

@@ -87,6 +87,14 @@ Sizing follows the kind rather than the box: each row is measured on the face it
 resolved to, or a heading in a wider face overflows the box that was sized for it. That is
 what [`TextSpanMeasurer`](font/TextSpanMeasurer.java) takes a face per call for.
 
+Spacing is settled the same way, and from structure rather than from any line's own request.
+A box's content reaches [`CursorTooltip`](widgets/CursorTooltip.java) as
+[`TooltipSection`](widgets/TooltipSection.java) blocks: lines within one block stand a line gap
+apart, and two blocks the box's own `sectionBreak`. A parting is a fact about two blocks
+meeting, so neither of them can own it - carried as a flag on the line that opens a block, it
+varies with whatever size that line happens to be, and the gap under a box's title then comes
+out different from the gaps between its body blocks for no reason a reader can see.
+
 ## Pairs that look like duplicates
 
 | What it expresses | Neutral | Vanilla-surface form | GL-surface form |

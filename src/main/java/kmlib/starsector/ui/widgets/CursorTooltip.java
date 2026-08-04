@@ -44,9 +44,11 @@ import java.util.function.ToDoubleFunction;
  * run and is charged to that same span, so a centred line showing a crest centres crest and words
  * together and still cannot reach past an edge.
  *
- * <p>Rows stack a line apart, and a row that opens a section takes half a line more above it. The
- * break is the widget's rather than the caller's arithmetic: a caller says which rows start a block,
- * and how far apart blocks stand is one decision made here for every tooltip.
+ * <p>The box is a stack of {@link TooltipSection blocks}, not of loose rows, and that is what settles the
+ * spacing: two rows of one block sit a line gap apart, and two blocks the box's own section break apart.
+ * Reading the parting off the structure is what keeps every parting in a box the same - a break spelled
+ * as a flag on the opening row would vary with whatever line happened to open each block, so the gap
+ * under a title would differ from the gap between two body blocks for no reason a reader could see.
  *
  * <p>Every row's own look is resolved up front from the box's {@link TooltipStyle}, because a box's rows
  * need not share a face: a heading drawn in the game's blockier title atlas is far wider than a body
@@ -73,43 +75,40 @@ public final class CursorTooltip {
     // for a row that steps out of the column to lay flush.
     private static final float NO_CREST_COLUMN = 0f;
 
-    // The breathing room above a row that opens a section, as a fraction of the line height, so the
-    // break scales with the text rather than being a fixed pixel step. Half a line reads as a parted
-    // block without looking like a dropped row.
-    private static final double SECTION_BREAK_FRACTION = 0.5;
+    // What the box's very first row takes above itself: nothing, since the box's own padding already
+    // sits there. A break spent there would pad the top edge unevenly against every other side.
+    private static final float NO_LEADING_GAP = 0f;
 
     private CursorTooltip() {
     }
 
     /**
-     * Lays {@code rows} into a cursor-following box: sizes it to the widest row across all tiers,
-     * places it up-and-right of the cursor clamped on screen, and resolves each row's line and column
-     * anchors within it. Each row stacks at - and hangs its leading slot as tall as - the line height
-     * its own kind of line draws at, so a heading takes the room its face needs. The crest column is
-     * reserved only when some table row fills its leading slot, and then at one width across the box: in
-     * a mixed box a crest-less row still reserves it so its label aligns under the crested rows, while an
-     * all-crest-less box reserves nothing and lays its labels flush.
+     * Lays {@code sections} into a cursor-following box: sizes it to the widest row across all tiers,
+     * places it up-and-right of the cursor clamped inside the given bound, and resolves each row's line
+     * and column anchors within it. Each row stacks at - and hangs its leading slot as tall as - the line
+     * height its own kind of line draws at, so a heading takes the room its face needs. The crest column
+     * is reserved only when some table row fills its leading slot, and then at one width across the box:
+     * in a mixed box a crest-less row still reserves it so its label aligns under the crested rows, while
+     * an all-crest-less box reserves nothing and lays its labels flush.
      *
-     * @param rows         the content rows, top to bottom; an empty list yields a padding-only box
-     * @param style        the look each kind of line draws in, from which every row's face, size, and
-     *                     casing is resolved
-     * @param measurer     the font-agnostic width measurement, asked per face
-     * @param cursorX      the cursor x, in UI coordinates (UI origin is bottom-left)
-     * @param cursorY      the cursor y, in UI coordinates
-     * @param screenWidth  the screen width in UI units, the right clamp bound
-     * @param screenHeight the screen height in UI units, the top clamp bound
-     * @return the placed box and the per-row anchors, in row order
+     * @param sections    the content blocks, top to bottom; an empty list yields a padding-only box
+     * @param style       the look each kind of line draws in and how far apart the blocks stand, from
+     *                    which every row's face, size, casing, and parting is resolved
+     * @param measurer    the font-agnostic width measurement, asked per face
+     * @param cursorX     the cursor x, in UI coordinates (UI origin is bottom-left)
+     * @param cursorY     the cursor y, in UI coordinates
+     * @param screenBound the region the box must stay within, in UI coordinates
+     * @return the placed box and the per-row anchors, in reading order
      */
     public static TooltipLayout layOut(
-            List<TooltipRow> rows,
+            List<TooltipSection> sections,
             TooltipStyle style,
             TextSpanMeasurer measurer,
             float cursorX,
             float cursorY,
-            float screenWidth,
-            float screenHeight) {
+            Rectangle screenBound) {
 
-        var styledRows = bindRowsToStyles(rows, style, measurer);
+        var styledRows = bindRowsToStyles(sections, style, measurer);
         var crestColumnWidth = measureCrestColumnWidth(styledRows);
 
         var box = TooltipBoxLayout.computeBox(
@@ -117,26 +116,52 @@ public final class CursorTooltip {
             measureContentHeight(styledRows),
             cursorX,
             cursorY,
-            screenWidth,
-            screenHeight);
+            screenBound);
         return new TooltipLayout(
             box,
             placeRows(styledRows, box, crestColumnWidth));
     }
 
-    // Resolves every row's look once, before anything is measured. Everything below then reads the
-    // resolved pair rather than the style and the measurer, which is what makes it impossible for one
-    // row to be measured on one face and then laid out at another's line height.
+    // Flattens the blocks into the run of rows they draw as, resolving each row's look and the room it
+    // takes above itself once, before anything is measured. Everything below then reads the resolved
+    // triple rather than the sections, the style, and the measurer - which is what makes it impossible
+    // for one row to be measured on one face and laid out at another's line height, and what leaves the
+    // grouping a fact spent here rather than one carried on into the placement.
     private static List<StyledRow> bindRowsToStyles(
-            List<TooltipRow> rows,
+            List<TooltipSection> sections,
             TooltipStyle style,
             TextSpanMeasurer measurer) {
 
-        var styledRows = new ArrayList<StyledRow>(rows.size());
-        for (var row : rows) {
-            styledRows.add(StyledRow.bindRowToStyle(row, style, measurer));
+        var styledRows = new ArrayList<StyledRow>();
+        for (var section : sections) {
+
+            var sectionRows = section.rows();
+            for (var index = 0; index < sectionRows.size(); index++) {
+
+                styledRows.add(StyledRow.bindRowToStyle(
+                    sectionRows.get(index),
+                    measureLeadingGap(styledRows.isEmpty(), index == 0, style.sectionBreak()),
+                    style,
+                    measurer));
+            }
         }
         return styledRows;
+    }
+
+    // What a row takes above itself before its own line: nothing for the box's first row, the style's
+    // break for the row that opens any block below it, and the plain inter-line gap for a row continuing
+    // the block it is in. The one rule that turns the grouping into spacing.
+    private static float measureLeadingGap(
+            boolean isFirstRowOfBox,
+            boolean isSectionOpener,
+            float sectionBreak) {
+
+        if (isFirstRowOfBox) {
+            return NO_LEADING_GAP;
+        }
+        return isSectionOpener
+            ? sectionBreak
+            : TooltipBoxLayout.LINE_GAP;
     }
 
     // The crest column's one width for the whole box: room for the widest leading slot any row fills,
@@ -173,30 +198,15 @@ public final class CursorTooltip {
             : NO_CREST_COLUMN;
     }
 
-    // How tall the rows stack: each row's own line height, the inter-line gap between them, and the extra
-    // break above every row that opens a section. The one place that rule lives - the placement below
-    // steps down by the same amounts, so the box is always exactly as tall as the rows drawn into it.
+    // How tall the rows stack: each row's own line height plus whatever it takes above itself. The
+    // placement below steps down by the same two amounts, so the box is always exactly as tall as the
+    // rows drawn into it.
     private static double measureContentHeight(List<StyledRow> rows) {
         var height = 0d;
-        for (var index = 0; index < rows.size(); index++) {
-            var styledRow = rows.get(index);
-            height += styledRow.lineHeight() + measureLeadingGap(styledRow, index);
+        for (var styledRow : rows) {
+            height += styledRow.lineHeight() + styledRow.leadingGap();
         }
         return height;
-    }
-
-    // What a row adds above itself before its own line: nothing for the first row, which already sits
-    // under the box's padding; otherwise the inter-line gap, plus the section break when the row opens
-    // one. A break on the first row is deliberately dropped rather than padding the box's top edge. The
-    // break is a fraction of the opening row's own line height, so a heading opens a section with the
-    // breathing room its own size asks for rather than the body's.
-    private static double measureLeadingGap(StyledRow styledRow, int index) {
-        if (index == 0) {
-            return 0d;
-        }
-        return styledRow.row().hasSectionBreak()
-            ? TooltipBoxLayout.LINE_GAP + styledRow.lineHeight() * SECTION_BREAK_FRACTION
-            : TooltipBoxLayout.LINE_GAP;
     }
 
     // Places each row's crest, label, and value within the box, stepping down its own line height plus
@@ -223,9 +233,8 @@ public final class CursorTooltip {
         // break parts the rows exactly where the height measurement said it would.
         var rowTopY = topY;
 
-        for (var index = 0; index < rows.size(); index++) {
-            var styledRow = rows.get(index);
-            rowTopY -= (float) measureLeadingGap(styledRow, index);
+        for (var styledRow : rows) {
+            rowTopY -= styledRow.leadingGap();
 
             placements.add(placeRow(
                 styledRow,
@@ -360,25 +369,28 @@ public final class CursorTooltip {
     }
 
     /**
-     * One row bound to the look its kind of line resolved to: the height it stacks at, and a width
-     * measurement already bound to its face and its casing. Bound once per layout so the height
-     * measurement, the width measurement, and the placement cannot read three different looks for one
-     * row - and so no step below has to carry the box's style and the measurer alongside the row it is
-     * working on.
+     * One row bound to the look its kind of line resolved to and to where the grouping put it: the
+     * height it stacks at, the room it takes above itself, and a width measurement already bound to its
+     * face and its casing. Bound once per layout so the height measurement, the width measurement, and
+     * the placement cannot read three different looks for one row - and so no step below has to carry
+     * the box's style, its blocks, and the measurer alongside the row it is working on.
      *
      * @param row          the content row as its caller authored it
      * @param lineHeight   the height the row stacks at, which is also its crest square's side
+     * @param leadingGap   the room taken above the row before its own line, in UI units
      * @param measureWidth the width of one of this row's span texts, in this row's own face
      */
     private record StyledRow(
         TooltipRow row,
         double lineHeight,
+        float leadingGap,
         ToDoubleFunction<String> measureWidth) {
 
         // Resolves the look for one row's kind of line and binds a measurement to it. The face doubles as
         // the line height, as a bitmap face's size is the room one line of it needs.
         private static StyledRow bindRowToStyle(
                 TooltipRow row,
+                float leadingGap,
                 TooltipStyle style,
                 TextSpanMeasurer measurer) {
 
@@ -390,6 +402,7 @@ public final class CursorTooltip {
             return new StyledRow(
                 row,
                 textStyle.face().size(),
+                leadingGap,
                 spanText -> measurer.measureSpanWidth(
                     textStyle.face(),
                     textStyle.resolveDisplayText(spanText)));

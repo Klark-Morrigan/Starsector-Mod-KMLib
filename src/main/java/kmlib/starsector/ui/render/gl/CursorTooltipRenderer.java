@@ -16,38 +16,44 @@ import kmlib.starsector.ui.widgets.LabelledRow;
 import kmlib.starsector.ui.widgets.RowSlot;
 import kmlib.starsector.ui.widgets.TooltipLayout;
 import kmlib.starsector.ui.widgets.TooltipRow;
+import kmlib.starsector.ui.widgets.TooltipSection;
 
 import org.lazywizard.lazylib.ui.LazyFont;
 
 import java.util.List;
 
 /**
- * Draws a {@link CursorTooltip}'s rows as a free-floating box at the cursor: it lays the rows out through
+ * Draws a {@link CursorTooltip}'s blocks as a free-floating box at the cursor: it lays them out through
  * the widget, resolves each row's look from the kind of line it is, and paints the box, each crest, and
  * each row's label - run by run, words and inline images alike - and its value in one bracketed GL pass.
  * The sanctioned way for a KM UI to show a tooltip
  * on a core screen that offers no panel to hang a vanilla {@code TooltipMakerAPI} on - the same rationale
  * that puts the panel renderers here beside it.
  *
- * <p>The pass reads the live cursor and screen size itself, so a caller supplies only the content rows
- * and the look: the placement that follows the pointer and clamps to the screen is the widget's job,
+ * <p>The pass reads the live cursor and screen size itself, so a caller supplies only the content and
+ * the look: the placement that follows the pointer and clamps to the screen is the widget's job,
  * not the caller's. When the body face cannot load the whole box is skipped - a frame of chrome with
  * no text would only mislead - while any other face failing costs only the lines drawn in it, since the
  * body still reads. Must run with a current GL context, from an above-UI render pass, since the box
  * composites over the core UI and its tooltips.
  */
 public final class CursorTooltipRenderer {
+
+    // The screen's own lower-left corner, which is where UI coordinates start: the box clamps inside the
+    // whole screen rather than inside a region of it, so the bound handed over is the screen itself.
+    private static final float SCREEN_ORIGIN = 0f;
+
     private CursorTooltipRenderer() {
     }
 
     /**
-     * Lays out {@code rows} at the live cursor and paints them in {@code style}. Skipped silently when
-     * the body face cannot load; an empty row list draws only the padded box.
+     * Lays out {@code sections} at the live cursor and paints them in {@code style}. Skipped silently
+     * when the body face cannot load; an empty list draws only the padded box.
      *
-     * @param rows  the content rows, top to bottom
-     * @param style the typography, opacity, and box chrome the whole tooltip draws in
+     * @param sections the content blocks, top to bottom
+     * @param style    the typography, opacity, and box chrome the whole tooltip draws in
      */
-    public static void render(List<TooltipRow> rows, CursorTooltipStyle style) {
+    public static void render(List<TooltipSection> sections, CursorTooltipStyle style) {
         // The body face carries all but a handful of a tooltip's lines, so a box that cannot load it has
         // effectively nothing to say and is dropped whole rather than framed empty. Every other face is
         // left to degrade per line: the measurement charges it no width and the draw skips it.
@@ -56,13 +62,20 @@ public final class CursorTooltipRenderer {
         }
         var settings = Global.getSettings();
         var layout = CursorTooltip.layOut(
-            rows,
+            sections,
             style.typography(),
             LazyFontSpanMeasurer::measureSpanWidth,
             UiCursor.getUiX(),
             UiCursor.getUiY(),
-            settings.getScreenWidth(),
-            settings.getScreenHeight());
+            new Rectangle(
+                SCREEN_ORIGIN,
+                SCREEN_ORIGIN,
+                settings.getScreenWidth(),
+                settings.getScreenHeight()));
+
+        // Painted off the flat run of lines the layout anchored, in the same order: how those lines were
+        // grouped was spent settling the spacing, and the draw has nothing left to do with it.
+        var rows = TooltipSection.readRowsInOrder(sections);
 
         // The core map and its tooltips draw after this pass, so the box, crests, and text run inside
         // the shared state save that restores the blend and colour the draw touched on the way out.

@@ -34,30 +34,34 @@ public final class TooltipBoxLayout {
      * section, a rule between blocks all stack differently. This adds the padding around whatever that
      * comes to and places the result, which is the whole of what a box knows.
      *
+     * <p>The region to stay inside travels as one rectangle rather than as a width and a height,
+     * because that is what it is: two loose floats can be handed over swapped, and a bound is a value
+     * the geometry package already has a name for.
+     *
      * @param contentWidth  the widest measured content line, in UI units
      * @param contentHeight the full height the content stacks to, in UI units
      * @param cursorX       the cursor x, in UI coordinates (UI origin is bottom-left)
      * @param cursorY       the cursor y, in UI coordinates
-     * @param screenWidth   the screen width in UI units, the right clamp bound
-     * @param screenHeight  the screen height in UI units, the top clamp bound
-     * @return the box footprint, lower-left origin, fully within the screen
+     * @param screenBound   the region the box must stay within, in UI coordinates
+     * @return the box footprint, lower-left origin, fully within the bound
      */
     public static Rectangle computeBox(
             double contentWidth,
             double contentHeight,
             float cursorX,
             float cursorY,
-            float screenWidth,
-            float screenHeight) {
+            Rectangle screenBound) {
 
         var width = (float) contentWidth + PADDING + PADDING;
         var height = (float) contentHeight + PADDING + PADDING;
-        var x = Math.min(cursorX + CURSOR_OFFSET, screenWidth - width);
-        var y = Math.min(cursorY + CURSOR_OFFSET, screenHeight - height);
+        var x = Math.min(cursorX + CURSOR_OFFSET, screenBound.x() + screenBound.width() - width);
+        var y = Math.min(cursorY + CURSOR_OFFSET, screenBound.y() + screenBound.height() - height);
 
+        // Floored at the bound's own near corner, so a box too large to fit stays anchored there rather
+        // than sliding off the far edge and taking its text with it.
         return new Rectangle(
-            Math.max(x, 0f),
-            Math.max(y, 0f),
+            Math.max(x, screenBound.x()),
+            Math.max(y, screenBound.y()),
             width,
             height);
     }

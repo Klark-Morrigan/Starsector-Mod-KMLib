@@ -1,5 +1,6 @@
 package kmlib.starsector.ui.widgets;
 
+import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.font.StarsectorFont;
 import kmlib.starsector.ui.font.TextFace;
 import kmlib.starsector.ui.font.TextSpanMeasurer;
@@ -21,8 +22,8 @@ import static org.assertj.core.api.Assertions.within;
  * Pins {@link CursorTooltip}'s row layout: the box sizes to the widest row across indent tiers and to
  * however tall the rows stack, each row's line and its three columns anchor within the placed box, a
  * crest-less row still reserves its column unless it steps out of it, a centred row lays as a
- * standalone span in the middle of the content region, and a row opening a section is parted from the
- * one above it. The flanking columns are reserved from what each row's slot reports, so what a row
+ * standalone span in the middle of the content region, and two blocks are parted where two lines of one
+ * block are not. The flanking columns are reserved from what each row's slot reports, so what a row
  * leads or trails with is pinned by width rather than by kind. On top of that, each row is measured and stacked in the look its own kind of line
  * resolves to, which is the whole reason a box can hold a heading and a body line at once. The box
  * padding and screen clamp themselves are {@link kmlib.starsector.ui.layout.TooltipBoxLayout}'s and
@@ -53,19 +54,22 @@ class CursorTooltipTest {
     private static final int SECOND_RUN = 1;
     private static final int THIRD_RUN = 2;
 
-    private static final float SCREEN_WIDTH = 1920f;
-    private static final float SCREEN_HEIGHT = 1080f;
+    private static final Rectangle SCREEN = new Rectangle(0f, 0f, 1920f, 1080f);
     private static final float CURSOR_X = 200f;
     private static final float CURSOR_Y = 300f;
     private static final float TOLERANCE = 0.001f;
 
+    // How far apart the styles below part two blocks. Restated rather than read off the style so the
+    // arithmetic in each case names the number it is actually spending.
+    private static final float SECTION_BREAK = 11.5f;
+
     // A box whose headings and body lines look alike, and one where they differ in both face and size.
     // The uniform style is what every case not about per-row looks lays out through, so those cases read
     // as the plain row-model arithmetic they are testing rather than as typography.
-    private static final TooltipStyle UNIFORM_STYLE = new TooltipStyle(
+    private static final TooltipStyle UNIFORM_STYLE = TooltipStyle.createStyle(
         createStyle(BODY_FONT, BODY_LINE_HEIGHT),
         createStyle(BODY_FONT, BODY_LINE_HEIGHT));
-    private static final TooltipStyle TWO_FACE_STYLE = new TooltipStyle(
+    private static final TooltipStyle TWO_FACE_STYLE = TooltipStyle.createStyle(
         createStyle(HEADING_FONT, HEADING_LINE_HEIGHT),
         createStyle(BODY_FONT, BODY_LINE_HEIGHT));
 
@@ -104,14 +108,26 @@ class CursorTooltipTest {
         return characterCost * widthPerCharacter;
     }
 
+    // Lays the rows out as one block, which is what every case not about the parting is testing: lines
+    // that belong together, so nothing is spent between them beyond the plain line gap.
     private static TooltipLayout layOut(List<TooltipRow> rows) {
         return layOut(rows, UNIFORM_STYLE);
     }
 
     private static TooltipLayout layOut(List<TooltipRow> rows, TooltipStyle style) {
+        return layOutSections(List.of(new TooltipSection(rows)), style);
+    }
+
+    private static TooltipLayout layOutSections(List<TooltipSection> sections, TooltipStyle style) {
         TextSpanMeasurer measurer = CursorTooltipTest::measureSpanWidth;
-        return CursorTooltip.layOut(rows, style, measurer, CURSOR_X, CURSOR_Y, SCREEN_WIDTH,
-            SCREEN_HEIGHT);
+        return CursorTooltip.layOut(sections, style, measurer, CURSOR_X, CURSOR_Y, SCREEN);
+    }
+
+    // Two lines put in blocks of their own, which is the only way to say they are parted.
+    private static List<TooltipSection> partIntoSections(TooltipRow firstRow, TooltipRow secondRow) {
+        return List.of(
+            new TooltipSection(List.of(firstRow)),
+            new TooltipSection(List.of(secondRow)));
     }
 
     private static TooltipRow.TableRow createCrestlessRow(String text) {
@@ -130,7 +146,6 @@ class CursorTooltipTest {
             TooltipLineStyle.PARAGRAPH,
             TooltipLabelPlacement.ALIGNED_WITH_CRESTS,
             0f,
-            false,
             LabelledRow.createRow(new TextSpan(text, Color.WHITE)).leadsWith(leadingRowSlot));
     }
 
@@ -149,7 +164,17 @@ class CursorTooltipTest {
     // How far the second row sits below the first, which is what a section break widens - unlike the
     // rows' absolute anchors, which a taller box shifts wholesale as it grows up from its cursor.
     private static float measureRowStep(List<TooltipRow> rows, TooltipStyle style) {
-        var laidOut = layOut(rows, style).rows();
+        return measureFirstStep(layOut(rows, style));
+    }
+
+    // The same step where the two lines sit in blocks of their own, so what is measured is the parting
+    // rather than the gap inside a block.
+    private static float measureSectionStep(List<TooltipSection> sections, TooltipStyle style) {
+        return measureFirstStep(layOutSections(sections, style));
+    }
+
+    private static float measureFirstStep(TooltipLayout layout) {
+        var laidOut = layout.rows();
         return laidOut.get(0).rowTopY() - laidOut.get(1).rowTopY();
     }
 
@@ -375,38 +400,105 @@ class CursorTooltipTest {
         }
 
         @Test
-        void partsARowThatOpensASectionFromTheOneAboveIt() {
+        void partsTwoBlocksByTheStylesBreakAndTwoLinesOfOneBlockByTheLineGap() {
             // Asserted as the step between the two rows, not their absolute anchors: the box is pinned
             // at its lower-left corner and grows upward, so a taller box lifts every row's y together
-            // while the parting between them is what the break actually changes.
-            var plainStep = measureRowStep(List.of(TOP_TIER, MEMBER), UNIFORM_STYLE);
-            var brokenStep = measureRowStep(List.of(TOP_TIER, MEMBER.opensSection()), UNIFORM_STYLE);
+            // while the parting between them is what the grouping actually changes.
+            var withinBlockStep = measureRowStep(List.of(TOP_TIER, MEMBER), UNIFORM_STYLE);
+            var acrossBlocksStep =
+                measureSectionStep(partIntoSections(TOP_TIER, MEMBER), UNIFORM_STYLE);
 
-            // A line 15 + the 4 line gap normally; the break adds half a line (7.5) on top.
-            assertThat(plainStep)
+            // A line 15 + the 4 line gap inside a block; the style's 11.5 break in place of that gap
+            // between two of them.
+            assertThat(withinBlockStep)
                 .isCloseTo(19f, within(TOLERANCE));
-            assertThat(brokenStep)
-                .isCloseTo(26.5f, within(TOLERANCE));
+            assertThat(acrossBlocksStep)
+                .isCloseTo(15f + SECTION_BREAK, within(TOLERANCE));
         }
 
         @Test
-        void sizesTheBoxForASectionBreak() {
+        void partsTwoBlocksByTheSameBreakWhateverLineHeightsTheyOpenOn() {
+            // The point of the parting living on the box rather than on the line that opens a block: a
+            // block opened by a 20-tall heading stands exactly as far from the one above it as a block
+            // opened by a 15-tall body line, so no box has partings of two different widths in it.
+            var headedStep = measureSectionStep(
+                partIntoSections(MEMBER, createHeadingRow("AA")),
+                TWO_FACE_STYLE);
 
-            var box = layOut(List.of(TOP_TIER, MEMBER.opensSection())).box();
+            var plainStep = measureSectionStep(
+                partIntoSections(MEMBER, createCrestlessRow("AA")),
+                TWO_FACE_STYLE);
 
-            // The two-row box (50) plus the half-line break it now holds = 57.5.
+            assertThat(headedStep)
+                .isCloseTo(15f + SECTION_BREAK, within(TOLERANCE));
+            assertThat(plainStep)
+                .isCloseTo(15f + SECTION_BREAK, within(TOLERANCE));
+        }
+
+        @Test
+        void partsATitleBlockFromTheBodyByTheSameBreakAsTwoBodyBlocks() {
+            // The question the box's shape turns on: a title over a body is two blocks like any other
+            // two, so the gap under the title cannot come out different from the gaps below it - which
+            // is exactly what a break scaled off each opening line used to do.
+            var underTheTitleStep = measureSectionStep(
+                partIntoSections(createHeadingRow("AA"), MEMBER),
+                TWO_FACE_STYLE);
+
+            var betweenBodyBlocksStep = measureSectionStep(
+                partIntoSections(MEMBER, MEMBER),
+                TWO_FACE_STYLE);
+
+            // The title's own 20-tall line against the body's 15, then the one break in both cases.
+            assertThat(underTheTitleStep)
+                .isCloseTo(20f + SECTION_BREAK, within(TOLERANCE));
+            assertThat(betweenBodyBlocksStep)
+                .isCloseTo(15f + SECTION_BREAK, within(TOLERANCE));
+        }
+
+        @Test
+        void sizesTheBoxForTheGapsItsBlocksImply() {
+
+            var box = layOutSections(partIntoSections(TOP_TIER, MEMBER), UNIFORM_STYLE).box();
+
+            // Two 15-tall lines + the 11.5 break between the blocks + 16 padding = 57.5, where the same
+            // two lines in one block come to 50.
             assertThat(box.height())
                 .isCloseTo(57.5f, within(TOLERANCE));
         }
 
         @Test
-        void ignoresASectionBreakOnTheFirstRow() {
+        void spendsNoBreakAboveTheBoxsFirstBlock() {
             // Nothing to part from - the box's own padding already sits above it - so the break is
             // dropped rather than padding the top edge unevenly.
-            var box = layOut(List.of(TOP_TIER.opensSection(), MEMBER)).box();
+            var box = layOutSections(
+                List.of(new TooltipSection(List.of(TOP_TIER, MEMBER))),
+                UNIFORM_STYLE)
+                .box();
 
             assertThat(box.height())
                 .isCloseTo(50f, within(TOLERANCE));
+        }
+
+        @Test
+        void clampsTheBoxInsideTheBoundItIsHanded() {
+            // The bound the widget is handed is the one the box is placed against, rather than a screen
+            // size it reads for itself: a cursor near the far corner of a small bound pulls the box back
+            // inside it (300 - 34 wide, 300 - 31 tall).
+            TextSpanMeasurer measurer = CursorTooltipTest::measureSpanWidth;
+
+            var box = CursorTooltip.layOut(
+                List.of(new TooltipSection(List.of(createCrestlessRow("AA")))),
+                UNIFORM_STYLE,
+                measurer,
+                290f,
+                290f,
+                new Rectangle(0f, 0f, 300f, 300f))
+                .box();
+
+            assertThat(box.x())
+                .isCloseTo(266f, within(TOLERANCE));
+            assertThat(box.y())
+                .isCloseTo(269f, within(TOLERANCE));
         }
 
         @Test
@@ -573,19 +665,6 @@ class CursorTooltipTest {
         }
 
         @Test
-        void partsASectionByTheOpeningRowsOwnLineHeight() {
-
-            var step = measureRowStep(
-                List.of(MEMBER, createHeadingRow("AA").opensSection()),
-                TWO_FACE_STYLE);
-
-            // The member's 15 + its 4 line gap + half of the heading's own 20-tall line = 29, so a
-            // heading opens a section with the breathing room its own size asks for.
-            assertThat(step)
-                .isCloseTo(29f, within(TOLERANCE));
-        }
-
-        @Test
         void reservesTheCrestColumnForTheTallestCrestInTheBox() {
 
             var heading = createCrestlessRow("AA")
@@ -636,7 +715,7 @@ class CursorTooltipTest {
         @Test
         void measuresARowAsItsStyleWillDrawIt() {
 
-            var shoutingStyle = new TooltipStyle(
+            var shoutingStyle = TooltipStyle.createStyle(
                 createStyle(BODY_FONT, BODY_LINE_HEIGHT),
                 createStyle(BODY_FONT, BODY_LINE_HEIGHT).inUpperCase());
 

@@ -78,12 +78,11 @@ class TooltipRowTest {
         return TooltipRow.createCentredRow(new TextSpan(TEXT, Color.WHITE));
     }
 
-    // A centred line carrying everything one can carry - a second run and a section break - so its own
+    // A centred line carrying everything one can carry - a label of more than one run - so its own
     // refinements have something to preserve.
     private static TooltipRow.CentredRow buildRichCentredRow() {
         return buildBareCentredRow()
-            .continuesWith(new TextSpan(RUN_TEXT, Color.YELLOW))
-            .opensSection();
+            .continuesWith(new TextSpan(RUN_TEXT, Color.YELLOW));
     }
 
     @Nested
@@ -97,7 +96,6 @@ class TooltipRowTest {
                 TooltipLineStyle.PARAGRAPH,
                 TooltipLabelPlacement.ALIGNED_WITH_CRESTS,
                 0f,
-                false,
                 null))
                 .isInstanceOf(NullPointerException.class)
                 .hasMessageContaining("labelledRow");
@@ -109,7 +107,6 @@ class TooltipRowTest {
             // that a line has a label has to hold here too - it is the same floor, not a second one.
             assertThatThrownBy(() -> new TooltipRow.CentredRow(
                 TooltipLineStyle.PARAGRAPH,
-                false,
                 List.of()))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("labelRuns");
@@ -123,7 +120,7 @@ class TooltipRowTest {
             var labelRuns = new ArrayList<LabelRun>();
             labelRuns.add(new TextSpan(TEXT, Color.WHITE));
 
-            var centredRow = new TooltipRow.CentredRow(TooltipLineStyle.PARAGRAPH, false, labelRuns);
+            var centredRow = new TooltipRow.CentredRow(TooltipLineStyle.PARAGRAPH, labelRuns);
 
             labelRuns.add(new TextSpan(RUN_TEXT, Color.YELLOW));
 
@@ -135,7 +132,6 @@ class TooltipRowTest {
         void constructorRejectsACentredRowWithANullLabel() {
             assertThatThrownBy(() -> new TooltipRow.CentredRow(
                 TooltipLineStyle.PARAGRAPH,
-                false,
                 null))
                 .isInstanceOf(NullPointerException.class)
                 .hasMessageContaining("labelRuns");
@@ -161,8 +157,6 @@ class TooltipRowTest {
                 .isEqualTo(RowSlot.EMPTY);
             assertThat(row.labelledRow().trailingRowSlot())
                 .isEqualTo(RowSlot.EMPTY);
-            assertThat(row.hasSectionBreak())
-                .isFalse();
         }
 
         @Test
@@ -192,14 +186,10 @@ class TooltipRowTest {
         }
 
         @Test
-        void createCentredRowOpensNoSectionAndReadsAsAParagraph() {
-            // The same bare state a table row starts from, for the two facts the two kinds share: a
-            // caller states a heading or a parting, and gets neither by saying nothing.
-            var centredRow = buildBareCentredRow();
-
-            assertThat(centredRow.hasSectionBreak())
-                .isFalse();
-            assertThat(centredRow.lineStyle())
+        void createCentredRowReadsAsAParagraph() {
+            // The same bare state a table row starts from, for the one look-facing fact the two kinds
+            // share: a caller states a heading, and gets a body line by saying nothing.
+            assertThat(buildBareCentredRow().lineStyle())
                 .isEqualTo(TooltipLineStyle.PARAGRAPH);
         }
     }
@@ -319,31 +309,6 @@ class TooltipRowTest {
                 buildRichRow().indentsBy(OTHER_INDENT),
                 buildRichRow(),
                 "indent");
-        }
-    }
-
-    @Nested
-    class OpensSection {
-        @Test
-        void opensSectionMarksTheRowAsStartingABlock() {
-            assertThat(buildBareRow().opensSection().hasSectionBreak())
-                .isTrue();
-        }
-
-        @Test
-        void opensSectionMarksACentredRowAsStartingABlock() {
-            // A title parts from what is above it the same way an entry does, so the break is shared
-            // rather than being a fact only a line in the columns can state.
-            assertThat(buildBareCentredRow().opensSection().hasSectionBreak())
-                .isTrue();
-        }
-
-        @Test
-        void opensSectionChangesNothingElse() {
-            assertRefinementChangesOnly(
-                buildRichRow().opensSection(),
-                buildRichRow(),
-                "hasSectionBreak");
         }
     }
 
