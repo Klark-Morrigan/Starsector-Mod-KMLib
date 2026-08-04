@@ -16,6 +16,7 @@ content. Pairs that look like duplication across the tiers usually are not - see
 - [A row states its kind, the box states the look](#a-row-states-its-kind-the-box-states-the-look)
 - [Pairs that look like duplicates](#pairs-that-look-like-duplicates)
   - [`Highlight` versus `TextSpan`](#highlight-versus-textspan)
+  - [`ImageSpan` versus `RowSlot.Image`](#imagespan-versus-rowslotimage)
 - [Ports across the boundary](#ports-across-the-boundary)
 - [Two span measurers](#two-span-measurers)
 - [Two hosts, one map widget](#two-hosts-one-map-widget)
@@ -92,7 +93,7 @@ what [`TextSpanMeasurer`](font/TextSpanMeasurer.java) takes a face per call for.
 | --- | --- | --- | --- |
 | a run of text and its colour | [`TextSpan`](text/TextSpan.java) | [`Highlight`](highlight/Highlight.java) | [`LabelRenderer`](render/gl/LabelRenderer.java) |
 | where text sits at its draw point | [`TextAlignment`](text/TextAlignment.java) | `api.ui.Alignment` | `LazyFont.TextAnchor` |
-| a line with parts in other colours | a label's runs ([`LabelRuns`](text/LabelRuns.java)), on [`LabelledRow`](widgets/LabelledRow.java), [`TooltipRow`](widgets/TooltipRow.java), or a labelled [`ControlSpec`](controls/ControlSpec.java) control | [`HighlightedParagraph`](highlight/HighlightedParagraph.java) | [`CursorTooltipRenderer`](render/gl/CursorTooltipRenderer.java) |
+| a line with parts in other colours, or a small image among its words | a label's runs ([`LabelRun`](text/LabelRun.java), composed by [`LabelRuns`](text/LabelRuns.java)), on [`LabelledRow`](widgets/LabelledRow.java), [`TooltipRow`](widgets/TooltipRow.java), or a labelled [`ControlSpec`](controls/ControlSpec.java) control | [`HighlightedParagraph`](highlight/HighlightedParagraph.java) | [`CursorTooltipRenderer`](render/gl/CursorTooltipRenderer.java) |
 | a hover tooltip | [`CursorTooltip`](widgets/CursorTooltip.java) | [`Tooltips`](tooltip/Tooltips.java) | [`CursorTooltipRenderer`](render/gl/CursorTooltipRenderer.java) |
 | the width of a run | [`TextSpanMeasurer`](font/TextSpanMeasurer.java) | - | [`LazyFontSpanMeasurer`](font/LazyFontSpanMeasurer.java) |
 
@@ -115,6 +116,24 @@ a substring search is exactly the ambiguity being avoided.
 
 `HighlightedParagraph` stays on the vanilla side for the same reason, and additionally
 carries its own `addTo` render methods - it is an adapter, not content.
+
+### `ImageSpan` versus `RowSlot.Image`
+
+Both name a small image sized off its line, and they must not be merged. The difference is
+what the image is attached to:
+
+- [`ImageSpan`](text/ImageSpan.java) is a **run**: part of a label's sentence, spaced by a
+  word gap and carried wherever that label goes. A centred line's crest is one, which is
+  what lets crest and words centre together as a unit.
+- [`RowSlot.Image`](widgets/RowSlot.java) is a **column**: reserved at one width across a
+  whole stack of rows, so the labels past it line up. A breakdown's per-faction crests are
+  these, which is why a crest-less row in that stack still indents to meet them.
+
+The same crest reads differently in each: as a run it sits where the sentence puts it, as a
+slot it anchors to a gutter every row shares. So the choice is a statement about whether the
+image belongs to the words or to the table - and the two sets stay separate because a tick
+box or a sort triangle is a column that has no reading mid-word, and so is spelled only in
+`RowSlot`.
 
 ## Ports across the boundary
 
@@ -235,7 +254,7 @@ standing for a count is not prose.
 
 | Package | Tier | Holds |
 | --- | --- | --- |
-| [`text`](text/) | neutral | `TextSpan`, `TextStyle`, `TextAlignment`, `StyledSpanMeasurer`, and [`LabelRuns`](text/LabelRuns.java) - how a label's runs compose into one line, read by every surface that lays one |
+| [`text`](text/) | neutral | `TextStyle`, `TextAlignment`, `StyledSpanMeasurer`, the sealed [`LabelRun`](text/LabelRun.java) set a label is made of (`TextSpan`, `ImageSpan`), and [`LabelRuns`](text/LabelRuns.java) - how those runs compose into one line, read by every surface that lays one |
 | [`controls`](controls/) | neutral | the sealed `ControlSpec` set and its enums; a control's own label is runs like any other label, and a stacked table's rows are `widgets`' own [`LabelledRow`](widgets/LabelledRow.java), so a strip and a tooltip are laid out against one row model |
 | [`widgets`](widgets/) | neutral | the shared `LabelledRow` core, its `RowSlot` flanks, and the row and box content and geometry built on them ([`tabs`](widgets/tabs/), [`scroll`](widgets/scroll/), [`segments`](widgets/segments/), [`lists`](widgets/lists/)) |
 | [`layout`](layout/) | neutral | box placement, strips, padding, screen anchors, and the [tabs row](layout/TabsControlLayout.java) - the one control whose dimensions come from the vanilla tab strip rather than from a body-font label |
