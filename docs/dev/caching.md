@@ -120,6 +120,15 @@ change, never a boolean "dirty" flag. A counter composes (many sources fold into
 one number), survives being read by several consumers at different cadences, and
 cannot be cleared by whichever consumer happens to look first.
 
+[`RevisionMemo`](../../src/main/java/kmlib/starsector/ui/widgets/lists/RevisionMemo.java)
+is the other half of that convention, and it is a primitive rather than a cache of
+this library's own for the same reason: the consumer supplies both the revision and
+the walk, so what is held and when it goes stale is entirely the consumer's
+declaration. It exists here because one part of the key is not the consumer's to
+get right by luck - the memo holds the sector it was built against, weakly, so a
+save reloaded in the same session recomputes rather than serving the previous save's
+value under a revision that happens to match.
+
 ## What is deliberately not cached
 
 The Starsector-facing wrappers - `Markets`, `StarSystems`, `FactionFlags`,

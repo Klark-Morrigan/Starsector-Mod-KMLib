@@ -20,7 +20,7 @@ content. Pairs that look like duplication across the tiers usually are not - see
 - [Ports across the boundary](#ports-across-the-boundary)
 - [Two span measurers](#two-span-measurers)
 - [Two hosts, one map widget](#two-hosts-one-map-widget)
-- [The list sort model holds no store](#the-list-sort-model-holds-no-store)
+- [The list picker holds no store](#the-list-picker-holds-no-store)
 - [Where each package sits](#where-each-package-sits)
 
 ## Two surfaces
@@ -220,13 +220,14 @@ reason the host-blind read is an OR over two sources rather than one flag consul
 
 All three fail closed, so an unreadable link answers "not showing" rather than guessing.
 
-## The list sort model holds no store
+## The list picker holds no store
 
 A picker list that ranks by a chosen metric, flips direction when the lit metric is
-re-picked, and wraps across one or two columns is the same mechanism in every mod that
-draws one. [`widgets/lists`](widgets/lists/) is that mechanism, its own folder beside
-[`tabs`](widgets/tabs/) and [`segments`](widgets/segments/) because it is a family rather
-than a piece: [`ListSortMode`](widgets/lists/ListSortMode.java) is the seam a consumer's own
+re-picked, wraps across one or two columns, and spotlights the row it is clicked on is the
+same mechanism in every mod that draws one. [`widgets/lists`](widgets/lists/) is that
+mechanism, its own folder beside [`tabs`](widgets/tabs/) and
+[`segments`](widgets/segments/) because it is a family rather than a piece:
+[`ListSortMode`](widgets/lists/ListSortMode.java) is the seam a consumer's own
 vocabulary implements, [`ListSortModes`](widgets/lists/ListSortModes.java) bundles that
 vocabulary with the fallback an unrecognised key lands on,
 [`ListSort`](widgets/lists/ListSort.java) pairs the active mode with its
@@ -235,12 +236,37 @@ vocabulary with the fallback an unrecognised key lands on,
 selectors - [`SortSelectorControl`](widgets/lists/SortSelectorControl.java) and
 [`ColumnsSelectorControl`](widgets/lists/ColumnsSelectorControl.java) - draw and drive them.
 
-The division that makes it shareable is that **this package owns the model and the
+[`ListPickerControl`](widgets/lists/ListPickerControl.java) is what they compose into: a
+rule, the columns selector, a row pairing the sort selector with whatever the consumer
+pairs beside it, then a deselectable icon-radio list of the items. The arrangement is not
+what makes it worth sharing - three rules that are only obvious after getting them wrong
+are. Re-picking the lit row clears the spotlight rather than re-selecting it, the lit index
+is resolved against the *ranked* order rather than the order the caller handed over, and an
+index outside the rows is ignored rather than trusted.
+[`SelectableListItem`](widgets/lists/SelectableListItem.java) is the seam its rows are drawn
+from - an id, a label, a crest, and nothing else - which a consumer implements on its own
+item type, so the list ranks through that consumer's own comparators and nothing is copied
+into a library value on the way in. The right half of the sort row is a parameter for the
+same reason: pairing something with the sort is a layout decision this package can hold,
+what sits there is not.
+
+[`RevisionMemo`](widgets/lists/RevisionMemo.java) is where a consumer holds the resolved
+list between frames, since a body is built twice a frame (render and hit-test) and a picker
+list is typically a full pass over whatever the consumer scores its items from. What belongs
+in the revision is the caller's judgement; the key also carries the sector identity, weakly
+held, which is the half worth having once rather than per mod - a save reloaded in the same
+session is a fresh sector whose revision may well match the last, so without it the picker
+serves the previous save's items.
+
+The division that makes all of it shareable is that **this package owns the model and the
 resolution rule; the consuming mod owns where the answer is kept**. Nothing here reads or
 writes a save. The stored mode and direction keys arrive as arguments to
-`ListSort.resolveStored`, and each selector reports the pick back through a callback for
-the consumer to persist. A mod's own thin binder is what ties the two ends to its
-sector-memory keys or settings fields, and that binder is the only place those keys appear.
+`ListSort.resolveStored`, each selector reports its pick back through a callback, and the
+picker's three picks report together through
+[`ListPickerStore`](widgets/lists/ListPickerStore.java) - write-only, because the live values
+arrive as the picker's own parameters and nothing here needs a read path into a save. A mod's
+own thin binder is what ties the two ends to its sector-memory keys or settings fields, and
+that binder is the only place those keys appear.
 
 Labels follow the same rule for the same reason. A string id only means something against
 the category that registered it, and [`StarsectorStrings`](../strings/StarsectorStrings.java)

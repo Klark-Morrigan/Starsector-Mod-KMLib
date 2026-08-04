@@ -1,0 +1,200 @@
+package kmlib.starsector.ui.widgets.lists;
+
+import kmlib.starsector.ui.colour.StarsectorUiColour;
+import kmlib.starsector.ui.controls.ControlSpec;
+import kmlib.starsector.ui.controls.ReselectBehaviour;
+import kmlib.starsector.ui.text.TextSpan;
+import kmlib.starsector.ui.widgets.LabelledRow;
+import kmlib.starsector.ui.widgets.RowSlot;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * A spotlight picker's controls, top to bottom: a rule heading the block, the columns selector, a
+ * row pairing the sort selector beside whatever the caller pairs with it, then the vertical
+ * icon-radio list of selectable items. It turns a consumer's {@link SelectableListItem} options
+ * into one clickable list where picking a row spotlights that item and re-picking the lit row
+ * clears the spotlight. Which items the list holds is decided before this is called, so it names
+ * nothing about what is being picked.
+ *
+ * <p>The composition is why this is a control rather than a note in a README: the pieces it
+ * arranges - a divider, two selectors, a scrolling table - are each reachable on their own, but the
+ * three rules that make the arrangement behave are only obvious after getting them wrong. Re-picking
+ * the lit row clears rather than re-selects, the lit index is resolved against the *ranked* order
+ * rather than the caller's, and an index outside the rows is ignored rather than trusted.
+ *
+ * <p>The rule parts whatever sits above from the picker below, marking the section a caption
+ * otherwise would. The columns selector rides directly under it, so how many columns the list wraps
+ * across is chosen for the block as a whole. Below it a paired row sets the sort beside the
+ * caller's own trailing controls: the sort selector on the left picks the metric the list ranks by
+ * (the picker sorts the items by that metric and labels each row with its value), while the right
+ * half is the caller's - a consumer with nothing to pair passes none and the row draws as the sort
+ * selector alone.
+ *
+ * <p>Nothing here reaches a save. The three live values arrive as parameters and the three picks
+ * are reported through {@link ListPickerStore}, which is the division the whole family rests on.
+ */
+public final class ListPickerControl {
+
+    private ListPickerControl() {
+    }
+
+    /**
+     * Builds the picker block for one list of selectable items, top to bottom: the section rule,
+     * the columns selector, a row pairing the sort selector beside the caller's trailing controls,
+     * then the icon-radio list ranked by the sort mode (its lit row the spotlighted item, or none
+     * when the selected id is not among these items). Returns an empty list when there are no
+     * selectable items, so a caller with nothing to spotlight contributes no picker rather than an
+     * empty list widget.
+     *
+     * @param <T>                 the caller's own item type, ranked by its own comparators
+     *                            throughout
+     * @param items               the selectable items; order here is immaterial since the sort mode
+     *                            reorders them for display
+     * @param selectedItemId      the currently spotlighted item's id, or null when nothing is
+     *                            spotlighted
+     * @param sort                the metric and direction the list is ranked by, which also picks
+     *                            each row's trailing value and what the sort selector previews
+     * @param sortModes           the caller's sort vocabulary the selector lays its rows out from
+     *                            and a click resolves against
+     * @param columns             how many columns the item list wraps its rows across, which the
+     *                            columns selector lights and the list lays out under
+     * @param columnsCaptionText  the caption drawn beside the columns segments, resolved by the
+     *                            caller against its own strings
+     * @param trailingControls    the controls filling the right half of the sort row; empty leaves
+     *                            the sort selector alone on the row
+     * @param pickerStore         told each of the three picks, for the caller to persist
+     * @return the picker controls, top to bottom; empty when {@code items} is empty
+     */
+    public static <T extends SelectableListItem> List<ControlSpec> buildPicker(
+            List<T> items,
+            String selectedItemId,
+            ListSort<T> sort,
+            ListSortModes<T> sortModes,
+            ListColumns columns,
+            String columnsCaptionText,
+            List<ControlSpec> trailingControls,
+            ListPickerStore pickerStore) {
+
+        if (items.isEmpty()) {
+            return List.of();
+        }
+
+        // Rank a copy under the active mode and direction, leaving the caller's (possibly cached)
+        // list untouched, so the rows draw in the chosen order and the lit index below is resolved
+        // against that same order.
+        var rankedItems = new ArrayList<>(items);
+        rankedItems.sort(sort.comparator());
+
+        var selectedIndex = resolveSelectedIndex(rankedItems, selectedItemId);
+        var controls = new ArrayList<ControlSpec>();
+
+        // A rule heads the block, parting whatever sits above from the picker below - the section
+        // break a caption would otherwise mark, now carrying no text.
+        controls.add(new ControlSpec.Divider());
+
+        // The columns selector rides directly under the rule, so the column count is chosen for the
+        // block as a whole; the list below then wraps its rows across that many columns.
+        controls.add(ColumnsSelectorControl.buildSelector(
+            columns,
+            columnsCaptionText,
+            pickerStore::storeColumnsPick));
+
+        // The sort selector and the caller's trailing controls share one row, the sort on the left
+        // picking the metric the list ranks by. Pairing them keeps the picker compact; what sits
+        // beside the sort is the caller's decision, so this composes the row and the caller fills
+        // its right half.
+        controls.add(new ControlSpec.SideBySide(
+            List.of(SortSelectorControl.buildSelector(
+                sort,
+                sortModes,
+                pickerStore::storeSortPick)),
+            trailingControls));
+
+        // The item list is the block's one scrolling cluster: when the picker plus the controls
+        // around it would run their box past its bottom margin, the list gives up the difference and
+        // scrolls while everything around it stays pinned. asScrolling marks the list; the capped
+        // layout, renderer, and input listener all read that one flag.
+        controls.add(
+            ControlSpec.VerticalTable
+                .createColumnTable(
+                    buildItemRows(rankedItems, sort.mode()),
+                    selectedIndex,
+                    cellIndex -> pickItem(pickerStore, rankedItems, selectedIndex, cellIndex))
+                .handlesReselect(ReselectBehaviour.DESELECT)
+                .spreadsAcross(columns.columnCount())
+                .asScrolling());
+
+        return List.copyOf(controls);
+    }
+
+    // One row per item, in ranked order: the item's crest leading it, its name, and the active sort
+    // metric's value for that item trailing it. Built as whole rows rather than as a column each, so
+    // an item's three parts are written together and cannot fall out of step with one another.
+    //
+    // An item with no resolved name draws as an unlabelled row rather than a null the width measurer
+    // would choke on; an item with no crest leads with nothing; and every row carries the metric's
+    // value (a zero metric shows "0" rather than dropping the column), which for a mode with no
+    // numeric metric is blank throughout and the rows read as a plain list.
+    private static <T extends SelectableListItem> List<LabelledRow> buildItemRows(
+            List<T> items,
+            ListSortMode<T> sortMode) {
+
+        var textColour = StarsectorUiColour.VANILLA_TEXT.resolve();
+        var itemRows = new ArrayList<LabelledRow>(items.size());
+
+        for (var item : items) {
+            var displayName = item.displayName() == null ? "" : item.displayName();
+            var crestSpritePath = item.crestSpritePath();
+
+            itemRows.add(LabelledRow
+                .createRow(new TextSpan(displayName, textColour))
+                .leadsWith(crestSpritePath == null
+                    ? RowSlot.EMPTY
+                    : new RowSlot.Image(crestSpritePath))
+                .trailsWith(new RowSlot.Text(
+                    new TextSpan(sortMode.resolveTrailingValue(item), textColour))));
+        }
+        return itemRows;
+    }
+
+    // Reports the clicked item as the spotlighted one, or reports a clear when the click landed on
+    // the already-lit row. The list is deselectable, so a press on the lit option reaches here with
+    // its own index; re-picking it means "stop spotlighting". Any index outside the item list is
+    // ignored, so a stray hit changes nothing.
+    private static void pickItem(
+            ListPickerStore pickerStore,
+            List<? extends SelectableListItem> items,
+            int selectedIndex,
+            int cellIndex) {
+
+        if (cellIndex < 0 || cellIndex >= items.size()) {
+            return;
+        }
+        if (cellIndex == selectedIndex) {
+            pickerStore.clearItemPick();
+        } else {
+            pickerStore.storeItemPick(items.get(cellIndex).itemId());
+        }
+    }
+
+    // The lit row: the index of the item whose id is selected, or no selection when that id is
+    // absent (nothing spotlighted) or names an item no longer in the list (a stale id the caller's
+    // own heal has not yet cleared). An unlit list still shows every option, so the player can pick
+    // one.
+    private static int resolveSelectedIndex(
+            List<? extends SelectableListItem> items,
+            String selectedItemId) {
+
+        if (selectedItemId == null) {
+            return ControlSpec.NO_SELECTION;
+        }
+        for (var index = 0; index < items.size(); index++) {
+            if (selectedItemId.equals(items.get(index).itemId())) {
+                return index;
+            }
+        }
+        return ControlSpec.NO_SELECTION;
+    }
+}
