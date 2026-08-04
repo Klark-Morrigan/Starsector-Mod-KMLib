@@ -80,6 +80,10 @@ public final class CursorTooltip {
     // sits there. A break spent there would pad the top edge unevenly against every other side.
     private static final float NO_LEADING_GAP = 0f;
 
+    // Where a block's opening row sits within it. Named because the position is what makes a row the
+    // one parted from the block above, which a bare zero in the walk below would not say.
+    private static final int FIRST_ROW_OF_SECTION = 0;
+
     private CursorTooltip() {
     }
 
@@ -139,9 +143,18 @@ public final class CursorTooltip {
             var sectionRows = section.rows();
             for (var index = 0; index < sectionRows.size(); index++) {
 
+                var isSectionOpener = index == FIRST_ROW_OF_SECTION;
+
+                // The box's very first row is not asked what parts it from what came before, since
+                // nothing did: the box's own padding already sits above it, and a break spent there
+                // would pad the top edge unevenly against every other side.
+                var leadingGap = styledRows.isEmpty()
+                    ? NO_LEADING_GAP
+                    : measureLeadingGap(isSectionOpener, style.sectionBreak());
+
                 styledRows.add(StyledRow.bindRowToStyle(
                     sectionRows.get(index),
-                    measureLeadingGap(styledRows.isEmpty(), index == 0, style.sectionBreak()),
+                    leadingGap,
                     style,
                     measurer));
             }
@@ -149,17 +162,10 @@ public final class CursorTooltip {
         return styledRows;
     }
 
-    // What a row takes above itself before its own line: nothing for the box's first row, the style's
-    // break for the row that opens any block below it, and the plain inter-line gap for a row continuing
-    // the block it is in. The one rule that turns the grouping into spacing.
-    private static float measureLeadingGap(
-            boolean isFirstRowOfBox,
-            boolean isSectionOpener,
-            float sectionBreak) {
-
-        if (isFirstRowOfBox) {
-            return NO_LEADING_GAP;
-        }
+    // What a row below the box's first takes above itself: the style's break where it opens a block,
+    // and the plain inter-line gap where it continues the one it is in. The one rule that turns the
+    // grouping into spacing.
+    private static float measureLeadingGap(boolean isSectionOpener, float sectionBreak) {
         return isSectionOpener
             ? sectionBreak
             : TooltipBoxLayout.LINE_GAP;

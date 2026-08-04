@@ -65,6 +65,10 @@ class CursorTooltipTest {
     // arithmetic in each case names the number it is actually spending.
     private static final float SECTION_BREAK = 11.5f;
 
+    // The row a step is ordinarily measured from - the top of the box, where nothing above the pair
+    // under test can shift what parts them.
+    private static final int FIRST_ROW = 0;
+
     // A box whose headings and body lines look alike, and one where they differ in both face and size.
     // The uniform style is what every case not about per-row looks lays out through, so those cases read
     // as the plain row-model arithmetic they are testing rather than as typography.
@@ -166,18 +170,21 @@ class CursorTooltipTest {
     // How far the second row sits below the first, which is what a section break widens - unlike the
     // rows' absolute anchors, which a taller box shifts wholesale as it grows up from its cursor.
     private static float measureRowStep(List<TooltipRow> rows, TooltipStyle style) {
-        return measureFirstStep(layOut(rows, style));
+        return measureStepBelow(layOut(rows, style), FIRST_ROW);
     }
 
     // The same step where the two lines sit in blocks of their own, so what is measured is the parting
     // rather than the gap inside a block.
     private static float measureSectionStep(List<TooltipSection> sections, TooltipStyle style) {
-        return measureFirstStep(layOutSections(sections, style));
+        return measureStepBelow(layOutSections(sections, style), FIRST_ROW);
     }
 
-    private static float measureFirstStep(TooltipLayout layout) {
+    // How far the row under {@code upperRowIndex} sits below it. Taken by position rather than always
+    // off the top, since a box with blocks above the pair under test is the only way to ask what a row
+    // deep in the stack is parted by.
+    private static float measureStepBelow(TooltipLayout layout, int upperRowIndex) {
         var laidOut = layout.rows();
-        return laidOut.get(0).rowTopY() - laidOut.get(1).rowTopY();
+        return laidOut.get(upperRowIndex).rowTopY() - laidOut.get(upperRowIndex + 1).rowTopY();
     }
 
     @Nested
@@ -416,6 +423,28 @@ class CursorTooltipTest {
                 .isCloseTo(19f, within(TOLERANCE));
             assertThat(acrossBlocksStep)
                 .isCloseTo(15f + SECTION_BREAK, within(TOLERANCE));
+        }
+
+        @Test
+        void partsTwoRowsOfABlockByTheLineGapHoweverManyBlocksStandAboveIt() {
+            // The remaining branch of the rule, and the one a box actually spends most: a row that is
+            // neither the box's first nor its own block's first takes the plain gap wherever it sits.
+            // A break reaching it would part a block from itself, which no test above could catch -
+            // every block past the first one they lay out holds a single line.
+            var layout = layOutSections(
+                List.of(
+                    new TooltipSection(List.of(TOP_TIER)),
+                    new TooltipSection(List.of(TOP_TIER, MEMBER))),
+                UNIFORM_STYLE);
+
+            var secondBlockOpener = 1;
+
+            // Into the second block by the style's break, then on to its own second line by the gap -
+            // both partings asserted in one box, which is where getting them the same would show.
+            assertThat(measureStepBelow(layout, FIRST_ROW))
+                .isCloseTo(26.5f, within(TOLERANCE));
+            assertThat(measureStepBelow(layout, secondBlockOpener))
+                .isCloseTo(19f, within(TOLERANCE));
         }
 
         @Test
