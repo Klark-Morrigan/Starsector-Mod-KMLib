@@ -3,7 +3,6 @@ package kmlib.starsector.ui.render.gl;
 import com.fs.starfarer.api.Global;
 
 import kmlib.math.geometry.Rectangle;
-import kmlib.starsector.graphics.StarsectorSprites;
 import kmlib.starsector.ui.font.LazyFontCache;
 import kmlib.starsector.ui.font.LazyFontSpanMeasurer;
 import kmlib.starsector.ui.input.UiCursor;
@@ -141,16 +140,11 @@ public final class CursorTooltipRenderer {
                 LazyFont.TextAnchor.TOP_LEFT);
             return;
         }
-        // A missing asset resolves to null and is skipped, so the words around the image still read -
-        // the same degradation a crest that will not load is allowed in its own column.
         if (labelRun instanceof ImageSpan imageSpan) {
-            var image = StarsectorSprites.loadSprite(imageSpan.spritePath());
-            if (image != null) {
-                UiSprite.renderQuad(
-                    image,
-                    computeImageBox(runX, placement),
-                    rowPaint.opacity());
-            }
+            UiSprite.renderImage(
+                imageSpan.spritePath(),
+                computeImageBox(runX, placement),
+                rowPaint.opacity());
         }
     }
 
@@ -165,18 +159,14 @@ public final class CursorTooltipRenderer {
             RowPaint rowPaint) {
 
         // What the leading column holds decides what is drawn in it: a slot holding something other than
-        // an image draws nothing here rather than resolving to a texture lookup never meant for it. A
-        // missing crest asset resolves to null and is skipped the same way, so the label still reads.
+        // an image draws nothing here rather than resolving to a texture lookup never meant for it.
+        // Faded through the paint the row's text draws with, so a crest and the label beside it cannot
+        // end up compositing at two different alphas.
         if (labelledRow.leadingRowSlot() instanceof RowSlot.Image crestRowSlot) {
-            var crest = StarsectorSprites.loadSprite(crestRowSlot.spritePath());
-            if (crest != null) {
-                // Faded through the paint the row's text draws with, so a crest and the label beside it
-                // cannot end up compositing at two different alphas.
-                UiSprite.renderQuad(
-                    crest,
-                    computeImageBox(placement.leadingRowSlotX(), placement),
-                    rowPaint.opacity());
-            }
+            UiSprite.renderImage(
+                crestRowSlot.spritePath(),
+                computeImageBox(placement.leadingRowSlotX(), placement),
+                rowPaint.opacity());
         }
         if (labelledRow.trailingRowSlot() instanceof RowSlot.Text valueRowSlot) {
             rowPaint.drawSpan(

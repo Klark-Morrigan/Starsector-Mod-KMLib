@@ -1,7 +1,6 @@
 package kmlib.starsector.ui.render.gl;
 
 import kmlib.math.geometry.Rectangle;
-import kmlib.starsector.graphics.StarsectorSprites;
 import kmlib.starsector.ui.colour.StarsectorUiColour;
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlSpec;
@@ -384,15 +383,11 @@ public final class ControlRenderer {
                 LazyFont.TextAnchor.CENTER_LEFT);
             return;
         }
-        // A missing asset resolves to null and is skipped, so the words around the image still read.
         if (labelRun instanceof ImageSpan imageSpan) {
-            var image = StarsectorSprites.loadSprite(imageSpan.spritePath());
-            if (image != null) {
-                UiSprite.renderQuad(
-                    image,
-                    computeLabelImageBox(runX, centreY),
-                    paint.opacity());
-            }
+            UiSprite.renderImage(
+                imageSpan.spritePath(),
+                computeLabelImageBox(runX, centreY),
+                paint.opacity());
         }
     }
 

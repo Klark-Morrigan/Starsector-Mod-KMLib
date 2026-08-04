@@ -1,7 +1,6 @@
 package kmlib.starsector.ui.render.gl;
 
 import kmlib.math.geometry.Rectangle;
-import kmlib.starsector.graphics.StarsectorSprites;
 import kmlib.starsector.ui.widgets.IconLabelRow;
 import kmlib.starsector.ui.widgets.RadioRow;
 import kmlib.starsector.ui.widgets.RowSlot;
@@ -18,8 +17,8 @@ import java.util.List;
  *
  * <p>Each option is described by the {@link RowSlot} its row leads with: a slot holding an image draws
  * that image, and every other kind of slot - a row leading with nothing, or with something this widget
- * does not paint - simply leaves the leading column clear. The widget loads the sprite itself through
- * {@link StarsectorSprites} so a missing or unknown texture routes to a skipped image rather than
+ * does not paint - simply leaves the leading column clear. The image is drawn from its path through
+ * {@link UiSprite#renderImage}, so a missing or unknown texture routes to a skipped image rather than
  * aborting the whole list. The number of options is the size of the slot list, so one slot stands for
  * each row.
  *
@@ -78,13 +77,10 @@ public final class IconRadioListRenderer {
                 continue;
             }
 
-            var sprite = StarsectorSprites.loadSprite(image.spritePath());
-            if (sprite == null) {
-                continue;
-            }
-
-            var iconBox = IconLabelRow.computeIconBox(segments.get(index));
-            UiSprite.renderQuad(sprite, iconBox, opacity);
+            UiSprite.renderImage(
+                image.spritePath(),
+                IconLabelRow.computeIconBox(segments.get(index)),
+                opacity);
         }
     }
 }
