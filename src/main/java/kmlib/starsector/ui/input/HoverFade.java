@@ -19,12 +19,19 @@ import kmlib.animation.EasedFraction;
  */
 public final class HoverFade {
     /**
-     * The pace one element's fade runs at, in seconds, when a consumer offers no control over it. Sized so a
-     * round trip onto the hovered look and back takes about as long as a click pulse, which is what keeps the
-     * two motions reading as one interaction vocabulary rather than two. The advance takes the duration per
-     * frame, so this is the recommended default rather than the holder's own pace.
+     * The pace an element's motion runs at, in seconds, when a consumer offers no control over it. Short
+     * enough that the element reads as answering the input rather than catching up with it - a pointer
+     * crossing a row must not leave a trail of half-lit elements behind it - and long enough that the travel
+     * is still visible as a travel rather than a switch. Dialled by eye against the vanilla chrome the panel
+     * sits among.
+     *
+     * <p>One pace for every motion a panel makes in answer to input, not the hover's alone: a fade onto a
+     * look and a lift over one are the same gesture answered at the same speed, and two durations written
+     * beside each other is how one panel ends up with two rhythms. A consumer adding a motion takes this
+     * rather than measuring its own. The advance takes the duration per frame, so this is the recommended
+     * default rather than the holder's own pace.
      */
-    public static final float DEFAULT_DURATION_SECONDS = 0.35f;
+    public static final float DEFAULT_DURATION_SECONDS = 0.3f;
 
     // The two ends the fade travels between, named so a target reads as a destination rather than a bare
     // bound.
