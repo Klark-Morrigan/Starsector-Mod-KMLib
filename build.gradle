@@ -14,6 +14,11 @@ group = 'kmlib'
 ext.formatterExcludedSourceSets = ['bridgeStubs']
 apply from: "${rootDir}/../Common-Java/gradle/spotless-java.gradle"
 
+enforcePackageVocabulary {
+    // To curb usage of non-fitting words in relation to fills.
+    forbidWords under: 'kmlib', words: ['ground']
+}
+
 // LunaLib backs KmLogging's in-game log-level binding. compileOnly, and
 // declared in mod_info.json so a consumer can call into kmlib.logging and
 // kmlib.settings unconditionally; the game classloader provides the jar at
