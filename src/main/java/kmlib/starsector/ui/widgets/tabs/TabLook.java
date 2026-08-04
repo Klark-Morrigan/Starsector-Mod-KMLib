@@ -1,5 +1,8 @@
 package kmlib.starsector.ui.widgets.tabs;
 
+import kmlib.colour.Colours;
+import kmlib.math.ranges.Ranges;
+
 import java.awt.Color;
 
 /**
@@ -16,6 +19,29 @@ import java.awt.Color;
 public record TabLook(
     Color fill,
     Color label) {
+
+    /**
+     * This look part of the way to another one - fill and label moved alike, so a tab travelling between two
+     * looks reads as one piece rather than as a fill sliding out from under its text. Both ends are absolute
+     * looks, so a fraction places the tab between two named shades rather than lifting it by a depth its own
+     * starting colour would scale differently.
+     *
+     * <p>Held here rather than at each consumer because the ends of a fade are looks whichever animation
+     * drives it, so a hover, a blink, and any later look-to-look travel move a tab the same way.
+     *
+     * @param targetLook the look being travelled toward
+     * @param fraction   how far along the way, 0 (this look) to 1 (the target); confined to that range so a
+     *                   composed value that overshoots settles on the target rather than blending past it
+     * @return the look at that point between the two
+     */
+    public TabLook computeBlendedLook(TabLook targetLook, float fraction) {
+
+        var travelled = Ranges.clampToUnit(fraction);
+
+        return new TabLook(
+            Colours.blendRgbTowards(fill, targetLook.fill(), travelled),
+            Colours.blendRgbTowards(label, targetLook.label(), travelled));
+    }
 
     /**
      * This look brightened by a momentary {@link TabWash} - fill and label moved alike, so a lifted tab

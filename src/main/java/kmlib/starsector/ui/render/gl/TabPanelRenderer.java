@@ -2,6 +2,7 @@ package kmlib.starsector.ui.render.gl;
 
 import kmlib.starsector.ui.widgets.BorderedBox;
 import kmlib.starsector.ui.widgets.BoxBorder;
+import kmlib.starsector.ui.widgets.tabs.TabInteractionSources;
 import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
 
 /**
@@ -49,18 +50,23 @@ public final class TabPanelRenderer {
      * stroke, so a panel flush against another's edge can drop the border there; the header, the notch,
      * and the collapse clip are unaffected.
      *
-     * @param placement  the laid-out tab panel to draw
-     * @param style      how the panel looks (fill, accents, body font, and the tab style for the header)
-     * @param border     the outer border width and which edges to stroke; a zero width draws no border
-     * @param notchState how far the body is collapsed (0 lays out full and unclipped, 1 docks to the rail,
-     *                   and it orients the notch's chevron) and whether the handle is hovered
-     * @param opacity    overall alpha, 0..1, fading the body and the collapse handle; the tabs header
-     *                   ignores it and paints opaque
+     * @param placement       the laid-out tab panel to draw
+     * @param style           how the panel looks (fill, accents, body font, and the tab style for the
+     *                        header)
+     * @param border          the outer border width and which edges to stroke; a zero width draws no border
+     * @param tabInteractions what each header tab is currently showing - how far onto the hovered shade it
+     *                        has faded and what pulse it carries - resolved by whoever owns the panel's live
+     *                        state, since this pass reads no cursor and holds no timing
+     * @param notchState      how far the body is collapsed (0 lays out full and unclipped, 1 docks to the
+     *                        rail, and it orients the notch's chevron) and whether the handle is hovered
+     * @param opacity         overall alpha, 0..1, fading the body and the collapse handle; the tabs header
+     *                        ignores it and paints opaque
      */
     public static void render(
             TabPanelPlacement placement,
             WidgetStyle style,
             BoxBorder border,
+            TabInteractionSources tabInteractions,
             NotchState notchState,
             float opacity) {
 
@@ -103,7 +109,8 @@ public final class TabPanelRenderer {
         GlStateGuard.bracket(() -> ControlRenderer.render(
             placement.tabsHeader(),
             style,
-            HEADER_OPACITY));
+            HEADER_OPACITY,
+            tabInteractions));
 
         if (isCollapsing) {
             UiScissor.pop();

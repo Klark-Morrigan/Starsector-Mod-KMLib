@@ -7,7 +7,6 @@ import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.RowGeometry;
 import kmlib.starsector.ui.font.LazyFontSpanMeasurer;
 import kmlib.starsector.ui.font.TextFace;
-import kmlib.starsector.ui.input.UiCursor;
 import kmlib.starsector.ui.layout.ControlStripLayout;
 import kmlib.starsector.ui.layout.TabsControlLayout;
 import kmlib.starsector.ui.text.ImageSpan;
@@ -19,7 +18,8 @@ import kmlib.starsector.ui.widgets.Checkbox;
 import kmlib.starsector.ui.widgets.IconLabelRow;
 import kmlib.starsector.ui.widgets.LabelledRow;
 import kmlib.starsector.ui.widgets.RowSlot;
-import kmlib.starsector.ui.widgets.tabs.TabWashSource;
+import kmlib.starsector.ui.widgets.tabs.TabInteractionSources;
+import kmlib.starsector.ui.widgets.tabs.TabLookSource;
 import kmlib.starsector.ui.widgets.tabs.VanillaTabStrip;
 
 import org.lazywizard.lazylib.ui.LazyFont;
@@ -56,19 +56,38 @@ public final class ControlRenderer {
     }
 
     /**
-     * Draws {@code control} in the lit state its spec carries, styled from {@code style} and faded by
-     * {@code opacity}. A tick box / toggle lights its accent when its cell is selected; a radio frames its
-     * segments in the accent and washes the active one; a checkbox uses the bright accent for its tick; a
-     * tabs row draws the vanilla-styled strip in the style's tab colours and face, lighting the selected
-     * tab and the one under the cursor. Must run with a current GL context, like any immediate-mode GL
-     * call.
+     * Draws a body control - one with no tabs to be interacting with, so it is drawn as
+     * {@link #render(Control, WidgetStyle, float, TabInteractionSources)} with nothing happening to any tab.
      *
      * @param control the laid-out control to draw
-     * @param style   the look bundle - accents and body font for every kind, tab colours and face for a
-     *                tabs row
+     * @param style   the look bundle - accents and body font for every kind
      * @param opacity overall alpha, 0..1
      */
     public static void render(Control control, WidgetStyle style, float opacity) {
+        render(control, style, opacity, TabInteractionSources.RESTING);
+    }
+
+    /**
+     * Draws {@code control} in the lit state its spec carries, styled from {@code style} and faded by
+     * {@code opacity}. A tick box / toggle lights its accent when its cell is selected; a radio frames its
+     * segments in the accent and washes the active one; a checkbox uses the bright accent for its tick; a
+     * tabs row draws the vanilla-styled strip in the style's tab colours and face, lighting the selected tab
+     * and painting each tab at whatever point of its hover fade and pulse {@code tabInteractions} reports.
+     * Must run with a current GL context, like any immediate-mode GL call.
+     *
+     * @param control         the laid-out control to draw
+     * @param style           the look bundle - accents and body font for every kind, tab colours and face
+     *                        for a tabs row
+     * @param opacity         overall alpha, 0..1
+     * @param tabInteractions what each tab of a tabs row is currently showing; unread by every other kind,
+     *                        since only a tabs row has tabs to interact with
+     */
+    public static void render(
+            Control control,
+            WidgetStyle style,
+            float opacity,
+            TabInteractionSources tabInteractions) {
+
         var paint = new ControlPaint(style, opacity);
         var spec = control.spec();
         if (spec instanceof ControlSpec.Checkbox) {
@@ -83,37 +102,38 @@ public final class ControlRenderer {
         } else if (spec instanceof ControlSpec.Divider) {
             drawDivider(control, paint);
         } else if (spec instanceof ControlSpec.Tabs) {
-            drawTabs(control, paint);
+            drawTabs(control, paint, tabInteractions);
         }
     }
 
-    // A tabs row: the vanilla Sector/System strip, each tab drawn in its snapped segment with the
-    // selected tab lit and the tab under the cursor washed. The segments were split to text by the
-    // layout; pairing each with its content (rebuilt from the spec through the same helper the layout
-    // measured with) yields the tabs the strip renderer paints, so the drawn tab matches the hit box.
-    // Hover reads the cursor here so the tab under the pointer lights without an input event.
-    private static void drawTabs(Control control, ControlPaint paint) {
+    // A tabs row: the vanilla Sector/System strip, each tab drawn in its snapped segment at whatever point
+    // of its hover fade and pulse the caller reports. The segments were split to text by the layout;
+    // pairing each with its content (rebuilt from the spec through the same helper the layout measured
+    // with) yields the tabs the strip renderer paints, so the drawn tab matches the hit box.
+    private static void drawTabs(
+            Control control,
+            ControlPaint paint,
+            TabInteractionSources tabInteractions) {
+
         var spec = (ControlSpec.Tabs) control.spec();
         var contents = TabsControlLayout.buildTabContents(spec);
         var tabs = VanillaTabStrip.zipTabs(contents, control.segments());
-
-        var hoveredIndex = VanillaTabStrip.findTabIndexAt(
-            tabs,
-            UiCursor.getUiX(),
-            UiCursor.getUiY());
 
         // The same value the layout measured the band against, so a strip is drawn in exactly the look
         // it was laid out under.
         var tabStyle = paint.style().tabStyle();
 
-        // No pulse can be resolved from cursor position alone: a click or a key press is an event, and
-        // nothing here holds the timing one would decay over. Hovering needs none, being a look the tab
-        // settles on rather than a lift that fades.
+        // Neither channel is resolved here: the cursor is not read (the panel's own state says which tab
+        // is hovered, tested against the placement it was drawn at) and no timing is held (a click or a
+        // key press is an event, and its decay belongs with whatever saw it).
         VanillaTabStripRenderer.render(
             tabs,
             spec.selectedIndex(),
-            hoveredIndex,
-            TabWashSource.createRestingWashSource(),
+            TabLookSource.createHoverFadedLookSource(
+                tabStyle.palette(),
+                spec.selectedIndex(),
+                tabInteractions.hoverSource()),
+            tabInteractions.washSource(),
             tabStyle,
             paint.opacity());
     }

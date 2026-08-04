@@ -39,6 +39,10 @@ final class TabPaletteTest {
     private static final TabWash CLICKED_WASH = new TabWash(new Color(80, 80, 80), 0.2f);
     private static final TabWash HOTKEYED_WASH = new TabWash(new Color(90, 90, 90), 0.3f);
 
+    // Named so a hover lookup reads as "the lit tab" / "a resting tab" rather than as a bare flag.
+    private static final boolean SELECTED = true;
+    private static final boolean UNSELECTED = false;
+
     private static final TabPalette PALETTE = new TabPalette(
         CHROME_ACCENT,
         UNSELECTED_LOOK,
@@ -100,6 +104,40 @@ final class TabPaletteTest {
             // answers off its own role rather than being derived from either of theirs.
             assertThat(PALETTE.resolveLook(TabLookState.HOVERED))
                 .isEqualTo(new TabLook(new Color(60, 60, 60), new Color(70, 70, 70)));
+        }
+    }
+
+    @Nested
+    class ResolveLookAtHoverFraction {
+
+        @Test
+        void resolveLookAtHoverFractionReturnsTheSettledLookWhenFullyOffTheHover() {
+            assertThat(PALETTE.resolveLookAtHoverFraction(UNSELECTED, 0f))
+                .isEqualTo(new TabLook(new Color(20, 20, 20), new Color(30, 30, 30)));
+            assertThat(PALETTE.resolveLookAtHoverFraction(SELECTED, 0f))
+                .isEqualTo(new TabLook(new Color(40, 40, 40), new Color(50, 50, 50)));
+        }
+
+        @Test
+        void resolveLookAtHoverFractionBringsBothTabsToTheHoveredShadeWhenFullyOnIt() {
+            // The resting and the lit tab meeting at one shade is what makes hovering a look rather than a
+            // lift, so the two must arrive at the same value rather than merely both brightening.
+            assertThat(PALETTE.resolveLookAtHoverFraction(UNSELECTED, 1f))
+                .isEqualTo(new TabLook(new Color(60, 60, 60), new Color(70, 70, 70)));
+            assertThat(PALETTE.resolveLookAtHoverFraction(SELECTED, 1f))
+                .isEqualTo(new TabLook(new Color(60, 60, 60), new Color(70, 70, 70)));
+        }
+
+        @Test
+        void resolveLookAtHoverFractionPlacesAPartWayTabBetweenItsOwnLookAndTheHoveredShade() {
+            // Part-way is where the two tabs are still apart, so each has to travel from its own end
+            // rather than from a shared one. A quarter of the way rather than half, so neither result
+            // coincides with another role's shade and a look read off the wrong end shows as a wrong
+            // number.
+            assertThat(PALETTE.resolveLookAtHoverFraction(UNSELECTED, 0.25f))
+                .isEqualTo(new TabLook(new Color(30, 30, 30), new Color(40, 40, 40)));
+            assertThat(PALETTE.resolveLookAtHoverFraction(SELECTED, 0.25f))
+                .isEqualTo(new TabLook(new Color(45, 45, 45), new Color(55, 55, 55)));
         }
     }
 

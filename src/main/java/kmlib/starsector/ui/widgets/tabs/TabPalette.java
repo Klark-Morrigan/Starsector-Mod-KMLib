@@ -103,6 +103,25 @@ public record TabPalette(
     }
 
     /**
+     * The look a tab wears part-way onto the hovered shade: the look its selection names, blended toward the
+     * hovered role by however far its fade has run. The whole of the hover channel's resolution, so a tab
+     * that has not moved reads exactly as its settled look and one fully hovered reads exactly as the hovered
+     * role, with no separate path for either end.
+     *
+     * <p>Selection is a flag rather than a {@link TabLookState} because the hovered state is the destination
+     * here rather than a state a tab could be asked for: a tab is resting or lit, and the hover is how far it
+     * has travelled away from that.
+     *
+     * @param isSelected    whether this is the tab whose content the panel is showing
+     * @param hoverFraction how far the tab has travelled onto the hovered shade, 0 fully off and 1 fully on
+     * @return the tab's look at that point
+     */
+    public TabLook resolveLookAtHoverFraction(boolean isSelected, float hoverFraction) {
+        return resolveLook(resolveSettledLookState(isSelected))
+            .computeBlendedLook(resolveLook(TabLookState.HOVERED), hoverFraction);
+    }
+
+    /**
      * The lift a tab takes from the given momentary state at its full depth. A caller animating the lift
      * scales it down as the pulse decays.
      *
@@ -114,5 +133,12 @@ public record TabPalette(
             case CLICKED -> clicked;
             case HOTKEYED -> hotkeyed;
         };
+    }
+
+    // The look a tab rests at with no pointer on it, which is the end every hover fade travels from.
+    private static TabLookState resolveSettledLookState(boolean isSelected) {
+        return isSelected
+            ? TabLookState.SELECTED
+            : TabLookState.UNSELECTED;
     }
 }

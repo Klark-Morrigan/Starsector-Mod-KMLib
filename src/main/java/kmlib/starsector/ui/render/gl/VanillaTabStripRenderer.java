@@ -6,7 +6,7 @@ import kmlib.starsector.ui.font.DrawableStringCache;
 import kmlib.starsector.ui.font.TextFace;
 import kmlib.starsector.ui.widgets.tabs.HotkeyStyle;
 import kmlib.starsector.ui.widgets.tabs.TabLook;
-import kmlib.starsector.ui.widgets.tabs.TabLookState;
+import kmlib.starsector.ui.widgets.tabs.TabLookSource;
 import kmlib.starsector.ui.widgets.tabs.TabPalette;
 import kmlib.starsector.ui.widgets.tabs.TabStyle;
 import kmlib.starsector.ui.widgets.tabs.TabWashSource;
@@ -24,8 +24,9 @@ import java.util.List;
 
 /**
  * Raw-GL paint for a {@link VanillaTabStrip}: the sector-map Sector/System tab look - each tab a solid
- * fill (dark at rest, bright when active, one shared shade under the pointer) lifted by whatever pulse its
- * wash source reports, a bright underline capping the active tab, hairline dividers, and each label drawn
+ * fill (dark at rest, bright when active, travelling toward one shared shade under the pointer) lifted by
+ * whatever pulse its wash source reports, a bright underline capping the active tab, hairline dividers, and
+ * each label drawn
  * beside its shortcut - the key alone in accent gold, its delimiters in the label colour, the way vanilla
  * highlights only the key, and a hairline under the key itself when the style's {@link HotkeyStyle} asks
  * for one - distinct from the underline capping the active tab, which spans the whole tab.
@@ -53,46 +54,44 @@ public final class VanillaTabStripRenderer {
     }
 
     /**
-     * Paints the whole strip: each tab's look, the dividers, and each label with its gold shortcut. The
-     * tab under the pointer wears the hovered shade whether or not it is the selected one, the selected
-     * tab keeps its underline either way, and every tab is lifted by the pulse its source reports for it;
-     * a {@code selectedIndex} or {@code hoveredIndex} outside the row simply lights none.
+     * Paints the whole strip: each tab's look, the dividers, and each label with its gold shortcut. Each
+     * tab's look arrives resolved - already blended however far onto the hovered shade its fade has run -
+     * and is lifted by the pulse its wash source reports for it; selection is read separately, so the tab
+     * the panel is showing keeps its underline even while it wears the hovered shade. A {@code
+     * selectedIndex} outside the row simply underlines none.
      *
      * @param tabs          the laid-out tabs, in row order
      * @param selectedIndex the active tab's index, or a value outside the row
-     * @param hoveredIndex  the index under the pointer, or a value outside the row
+     * @param looks         where each tab's settled look comes from - the hover fade is already blended
+     *                      into it here, so this pass only paints it
      * @param washes        where each tab's resolved lift comes from - the interaction is already
      *                      composed into a wash here, so this pass only paints it
-     * @param style         the strip's look; its palette (see {@link TabPalette#createMapTabPalette}),
-     *                      its hotkey presentation, and its face are read here, its band height having
-     *                      been spent laying the tabs out
+     * @param style         the strip's look; its palette's chrome accent (see
+     *                      {@link TabPalette#createMapTabPalette}), its hotkey presentation, and its face
+     *                      are read here, its band height having been spent laying the tabs out
      * @param opacity       overall alpha, 0..1, applied to every quad and both text colours
      */
     public static void render(
             List<VanillaTab> tabs,
             int selectedIndex,
-            int hoveredIndex,
+            TabLookSource looks,
             TabWashSource washes,
             TabStyle style,
             float opacity) {
 
-        var palette = style.palette();
+        var chromeAccent = style.palette().chromeAccent();
         var textFace = style.face();
         for (var index = 0; index < tabs.size(); index++) {
 
             var tab = tabs.get(index);
             var isSelected = index == selectedIndex;
 
-            // Hovering wins over selection, since the two meet at one shade under the pointer; the
-            // underline below is what still says which tab the panel is showing.
-            var lookState = resolveLookState(isSelected, index == hoveredIndex);
-
-            // The look as painted: the settled shade its state names, brightened by whatever pulse is
+            // The look as painted: the settled shade the tab has faded to, brightened by whatever pulse is
             // still running on it. A tab with none carries a wash that moves it nowhere, so no branch
             // here decides whether a lift applies.
-            var look = palette.resolveLook(lookState).computeWashedLook(washes.resolveWashAt(index));
+            var look = looks.resolveLookAt(index).computeWashedLook(washes.resolveWashAt(index));
 
-            renderChrome(tab.bounds(), isSelected, look, palette.chromeAccent(), opacity);
+            renderChrome(tab.bounds(), isSelected, look, chromeAccent, opacity);
             renderTabText(
                 tab.bounds(),
                 tab.content(),
@@ -107,19 +106,8 @@ public final class VanillaTabStripRenderer {
         // labels, so the single pass reads identically to a per-tab rule.
         HorizontalSegmentsRenderer.renderSeamDividers(
             collectBounds(tabs),
-            palette.chromeAccent(),
+            chromeAccent,
             opacity);
-    }
-
-    // Which settled shade a tab shows: the hovered one whenever the pointer is on it, since the resting
-    // and the selected tab meet there, and otherwise the one its selection names.
-    private static TabLookState resolveLookState(boolean isSelected, boolean isHovered) {
-        if (isHovered) {
-            return TabLookState.HOVERED;
-        }
-        return isSelected
-            ? TabLookState.SELECTED
-            : TabLookState.UNSELECTED;
     }
 
     // The laid tab boxes, in row order, for the shared seam-divider pass.

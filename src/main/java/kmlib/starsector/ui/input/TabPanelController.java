@@ -2,9 +2,12 @@ package kmlib.starsector.ui.input;
 
 import com.fs.starfarer.api.input.InputEventAPI;
 
+import kmlib.starsector.ui.widgets.RadioRow;
 import kmlib.starsector.ui.widgets.scroll.ScrollState;
+import kmlib.starsector.ui.widgets.tabs.TabInteractionSources;
 import kmlib.starsector.ui.widgets.tabs.TabPanelCollapse;
 import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
+import kmlib.starsector.ui.widgets.tabs.TabWashSource;
 
 /**
  * Drives one tab panel's pointer input: it routes a left press on a header tab to that tab's own action,
@@ -15,11 +18,13 @@ import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
  * agnostic to what selecting a tab does.
  *
  * <p>One controller per panel, since it holds that panel's runtime state across frames: the body's scroll
- * and drag state, and the collapse animation. A host creates it, reads its {@link #getScrollState()} and
- * {@link #getCollapseFraction()} when it lays the panel out, advances the collapse each frame it draws, and
- * feeds it pointer events. The collapse state lives here beside the scroll offset because both are the
- * panel's own transient per-session UI state, not the host's; a consumer that lays out a placement and
- * pumps this controller inherits the collapse handle without wiring the animation itself. The panel opens
+ * and drag state, the collapse animation, and the header tabs' hover fades. A host creates it, reads its
+ * {@link #getScrollState()} and {@link #getCollapseFraction()} when it lays the panel out, advances the
+ * collapse and the tab hovers each frame it draws, reads {@link #getTabInteractionSources()} to paint the
+ * header with, and feeds it pointer events. That state lives here beside the scroll offset because all of it
+ * is the panel's own transient per-session UI state, not the host's; a consumer that lays out a placement and
+ * pumps this controller inherits the collapse handle and the live tabs without wiring either animation
+ * itself. The panel opens
  * expanded by default, or collapsed to its docked rail via {@link #createStartingDocked()}, so a host picks
  * the initial fold at construction rather than driving the animation to reach it.
  */
@@ -31,6 +36,12 @@ public final class TabPanelController {
     // The collapse animation - how far the body is folded to its docked rail and which way it is heading.
     // Held beside the scroll offset so any tab-panel consumer inherits the handle by pumping this controller.
     private final TabPanelCollapse collapse;
+
+    // How far each header tab has travelled onto the hovered shade, keyed by its index in the row - stable
+    // for as long as the row is, which is all a key has to be. Held here with the panel's other transient
+    // state rather than on the placement, which is an immutable value the layout computes: a fade is where
+    // the panel currently stands, not where its parts sit.
+    private final HoverFades<Integer> tabHoverFades = new HoverFades<>();
 
     // Whether the pointer sat over the collapse notch as of the last pointer event, so the render pass can
     // light the handle. Only the input pass sees the pointer, so it is latched here; hover changes only when
@@ -93,6 +104,20 @@ public final class TabPanelController {
     }
 
     /**
+     * What the header's tabs are currently showing, for the render pass to paint them at: how far each has
+     * faded onto the hovered shade, and what momentary lift each carries. The paint pass therefore reads no
+     * cursor and holds no timing - it is handed both channels already resolved.
+     *
+     * @return the panel's live tab interaction channels
+     */
+    public TabInteractionSources getTabInteractionSources() {
+        // No pulse animator exists yet, so the lift channel rests; the hover channel is live.
+        return new TabInteractionSources(
+            tabHoverFades::resolveHoverFractionAt,
+            TabWashSource.createRestingWashSource());
+    }
+
+    /**
      * Steps the collapse animation toward its current direction's end by a frame's worth of time, for the
      * host to call each frame it draws so the fold accelerates and settles under the eased curve. The
      * duration is the host's to supply, so it can expose the pace as a setting; a settled panel is left
@@ -106,11 +131,47 @@ public final class TabPanelController {
     }
 
     /**
+     * Steps the header tabs' hover fades by a frame's worth of time, for the host to call each frame it draws
+     * - after it has resolved the placement, since the tab under the pointer is resolved against the very
+     * placement being drawn rather than latched from the last pointer event. That is what keeps a fade honest
+     * when the panel moves under a still cursor: a scroll, a fold, or a relayout leaves a latched tab lit
+     * that the pointer is no longer over.
+     *
+     * <p>A panel that is not fully expanded hovers nothing. Its header is being wiped toward the docked rail
+     * (or is already gone behind it), so a tab still laid out under the pointer is not a tab the player can
+     * see, let alone one they are pointing at.
+     *
+     * @param placement       the laid-out tab panel this frame is drawing
+     * @param elapsedSeconds  real time since the last frame the host drew
+     * @param durationSeconds how long a full fade onto the hovered shade should take; zero or less snaps
+     */
+    public void advanceTabHovers(
+            TabPanelPlacement placement,
+            float elapsedSeconds,
+            float durationSeconds) {
+
+        var hoveredTabIndex = isFullyExpanded()
+            ? resolveHoveredTabIndex(placement, UiCursor.getUiX(), UiCursor.getUiY())
+            : null;
+
+        tabHoverFades.advanceTowardHoveredKey(hoveredTabIndex, elapsedSeconds, durationSeconds);
+    }
+
+    /**
      * Ends any in-progress body scrollbar drag, for the host to call when the panel stops showing so a
      * drag left dangling cannot hijack the next session.
      */
     public void cancelDrag() {
         bodyController.cancelDrag();
+    }
+
+    /**
+     * Drops every tab's hover fade, for the host to call when the panel stops showing. A fade left part-way
+     * up would otherwise be the first thing the next session paints and then wind down, showing the player
+     * the tail of a hover they never saw begin - the same reason a host drops its frame clock there.
+     */
+    public void resetTabHovers() {
+        tabHoverFades.resetFades();
     }
 
     /**
@@ -150,5 +211,32 @@ public final class TabPanelController {
             return;
         }
         bodyController.handlePointer(event, placement.body());
+    }
+
+    /**
+     * Which header tab a point falls on, as the key a hover fade is held under. Resolved over the header
+     * control's laid segments - the same rectangles a press is hit-tested against - so the tab that lights
+     * and the tab that would fire are always the same one.
+     *
+     * @param placement the laid-out tab panel to test against
+     * @param pointX    the point's x in UI coordinates, the coordinates the placement is laid out in
+     * @param pointY    the point's y in UI coordinates
+     * @return the tab's index, or null when the point is on no tab
+     */
+    static Integer resolveHoveredTabIndex(
+            TabPanelPlacement placement,
+            float pointX,
+            float pointY) {
+
+        var segmentIndex = RadioRow.findSegmentIndexAt(
+            placement.tabsHeader().segments(),
+            pointX,
+            pointY);
+
+        // Null rather than the row-miss sentinel, because a keyed fade set is asked "which element, if any"
+        // and an out-of-row index would be a key like another - one fade per place the pointer has missed.
+        return segmentIndex == RadioRow.NO_SEGMENT
+            ? null
+            : segmentIndex;
     }
 }
