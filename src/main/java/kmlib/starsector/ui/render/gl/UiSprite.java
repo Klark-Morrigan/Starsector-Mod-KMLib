@@ -3,6 +3,7 @@ package kmlib.starsector.ui.render.gl;
 import com.fs.starfarer.api.graphics.SpriteAPI;
 
 import kmlib.math.geometry.Rectangle;
+import kmlib.starsector.graphics.StarsectorSprites;
 
 import org.lwjgl.opengl.GL11;
 
@@ -30,9 +31,34 @@ public final class UiSprite {
     }
 
     /**
+     * Loads the image at {@code spritePath} and draws it into {@code bounds}, or draws nothing when the
+     * asset does not resolve. The form a widget reaches for when it holds a path rather than a loaded
+     * sprite - which is every widget whose content model carries images, since a content model names an
+     * asset and never holds a texture.
+     *
+     * <p>A missing asset is skipped rather than reported, because the alternative is worse in the place
+     * this is called from: a draw pass runs every frame and cannot report anything a player would see
+     * only once, and a widget that abandoned its whole line over one bad crest would hide the text that
+     * still reads. The layout reserved the room from the content either way, so the words around the
+     * gap stay where they were laid.
+     *
+     * @param spritePath the image's {@code graphics} texture path
+     * @param bounds     the rectangle to draw into, in UI coordinates (UI origin is bottom-left)
+     * @param alpha      overall opacity, 0..1, composited over what is behind
+     */
+    public static void renderImage(String spritePath, Rectangle bounds, float alpha) {
+        var sprite = StarsectorSprites.loadSprite(spritePath);
+        if (sprite == null) {
+            return;
+        }
+        renderQuad(sprite, bounds, alpha);
+    }
+
+    /**
      * Draws {@code sprite} into {@code bounds}, sized to the rectangle and composited over the
-     * existing pixels by {@code alpha}. Must run with a current GL context, like any immediate-mode
-     * GL call.
+     * existing pixels by {@code alpha}. For a caller that already holds a loaded sprite; one holding a
+     * path reaches for {@link #renderImage}. Must run with a current GL context, like any
+     * immediate-mode GL call.
      *
      * @param sprite the image to draw; its size, tint, and alpha are set here before rendering
      * @param bounds the rectangle to draw into, in UI coordinates (UI origin is bottom-left)
