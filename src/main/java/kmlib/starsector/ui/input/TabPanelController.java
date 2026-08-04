@@ -150,11 +150,12 @@ public final class TabPanelController {
             float elapsedSeconds,
             float durationSeconds) {
 
-        var hoveredTabIndex = isFullyExpanded()
-            ? resolveHoveredTabIndex(placement, UiCursor.getUiX(), UiCursor.getUiY())
-            : null;
-
-        tabHoverFades.advanceTowardHoveredKey(hoveredTabIndex, elapsedSeconds, durationSeconds);
+        advanceTabHoversTowardTab(
+            isFullyExpanded()
+                ? resolveHoveredTabIndex(placement, UiCursor.getUiX(), UiCursor.getUiY())
+                : null,
+            elapsedSeconds,
+            durationSeconds);
     }
 
     /**
@@ -211,6 +212,24 @@ public final class TabPanelController {
             return;
         }
         bodyController.handlePointer(event, placement.body());
+    }
+
+    /**
+     * Steps the fades toward a named tab, once the cursor read and the expanded gate above have settled which
+     * one that is. Split off for the same reason {@link UiCursor} keeps its scaling separable from its LWJGL
+     * read: what is left here is the whole of what the hover channel does per frame, and it is verifiable
+     * without a display to point at.
+     *
+     * @param hoveredTabIndex the tab the pointer is on this frame, or null when it is on none
+     * @param elapsedSeconds  real time since the last frame the host drew
+     * @param durationSeconds how long a full fade onto the hovered shade should take; zero or less snaps
+     */
+    void advanceTabHoversTowardTab(
+            Integer hoveredTabIndex,
+            float elapsedSeconds,
+            float durationSeconds) {
+
+        tabHoverFades.advanceTowardHoveredKey(hoveredTabIndex, elapsedSeconds, durationSeconds);
     }
 
     /**
