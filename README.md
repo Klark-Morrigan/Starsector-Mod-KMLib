@@ -142,9 +142,11 @@ src/main/java/kmlib/
                      labelled-row core - a label read as one sentence
                      with a slot to either side - and the rows and boxes
                      built on it, with lists/, scroll/, segments/, and
-                     tabs/ beneath; lists/ is the sort-mode, direction
-                     and column-count model a picker list ranks by,
-                     holding no store of its own
+                     tabs/ beneath; lists/ is the spotlight picker - the
+                     sort-mode, direction and column-count model it ranks
+                     and wraps by, the item seam it draws rows from, and
+                     the memo a consumer holds its list in - holding no
+                     store of its own
   testfixtures/    - Fakes for KMLib's own ports (claims, fonts, intel
                      screen, modelview, console output) and for the core
                      UI's widget tree, which a layout rule has to walk.

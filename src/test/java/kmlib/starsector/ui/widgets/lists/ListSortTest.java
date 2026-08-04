@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Pins the sort resolution and ranking over modes declared outside this package: the stored mode key
@@ -23,6 +24,27 @@ final class ListSortTest {
         new ListSortModes<>(List.of(AnomalySortMode.values()), DEFAULT_MODE);
 
     @Nested
+    class Constructor {
+
+        @Test
+        void constructorRejectsAModeItsOwnVocabularyDoesNotOffer() {
+            // A narrowed set stands in for another consumer's vocabulary. A sort pairing a mode with
+            // a set that does not hold it would light no selector row and resolve no click, so it
+            // fails where it is built rather than drawing wrong.
+            var alphaOnly = new ListSortModes<Anomaly>(
+                List.of(AnomalySortMode.ALPHA),
+                AnomalySortMode.ALPHA);
+
+            assertThatThrownBy(() -> new ListSort<>(
+                    AnomalySortMode.SEVERITY,
+                    SortDirection.DESCENDING,
+                    alphaOnly))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(AnomalySortMode.SEVERITY.persistenceKey());
+        }
+    }
+
+    @Nested
     class ResolveStored {
 
         @Test
@@ -33,7 +55,7 @@ final class ListSortTest {
                 MODES);
 
             assertThat(stored)
-                .isEqualTo(new ListSort<>(AnomalySortMode.SEVERITY, SortDirection.ASCENDING));
+                .isEqualTo(new ListSort<>(AnomalySortMode.SEVERITY, SortDirection.ASCENDING, MODES));
         }
 
         @Test
@@ -43,7 +65,7 @@ final class ListSortTest {
             var stored = ListSort.resolveStored(null, null, MODES);
 
             assertThat(stored)
-                .isEqualTo(new ListSort<>(DEFAULT_MODE, DEFAULT_MODE.defaultDirection()));
+                .isEqualTo(new ListSort<>(DEFAULT_MODE, DEFAULT_MODE.defaultDirection(), MODES));
         }
 
         @Test
@@ -53,7 +75,7 @@ final class ListSortTest {
             var stored = ListSort.resolveStored("no_such_mode", null, MODES);
 
             assertThat(stored)
-                .isEqualTo(new ListSort<>(DEFAULT_MODE, DEFAULT_MODE.defaultDirection()));
+                .isEqualTo(new ListSort<>(DEFAULT_MODE, DEFAULT_MODE.defaultDirection(), MODES));
         }
 
         @Test
@@ -67,7 +89,7 @@ final class ListSortTest {
 
             assertThat(stored)
                 .isEqualTo(new ListSort<>(
-                    AnomalySortMode.SEVERITY, AnomalySortMode.SEVERITY.defaultDirection()));
+                    AnomalySortMode.SEVERITY, AnomalySortMode.SEVERITY.defaultDirection(), MODES));
         }
     }
 
@@ -81,8 +103,8 @@ final class ListSortTest {
             // the flipped sort reverses the pair.
             var mild = new Anomaly("Mild", 1, 5);
             var harsh = new Anomaly("Harsh", 9, 5);
-            var descending = new ListSort<>(AnomalySortMode.SEVERITY, SortDirection.DESCENDING);
-            var ascending = new ListSort<>(AnomalySortMode.SEVERITY, SortDirection.ASCENDING);
+            var descending = new ListSort<>(AnomalySortMode.SEVERITY, SortDirection.DESCENDING, MODES);
+            var ascending = new ListSort<>(AnomalySortMode.SEVERITY, SortDirection.ASCENDING, MODES);
 
             assertThat(rankedBy(descending, mild, harsh))
                 .containsExactly(harsh, mild);
@@ -96,7 +118,7 @@ final class ListSortTest {
             // ranking a list through the sort matches ranking it through the mode directly.
             var near = new Anomaly("Near", 3, 2);
             var far = new Anomaly("Far", 3, 8);
-            var sort = new ListSort<>(AnomalySortMode.RADIUS, SortDirection.DESCENDING);
+            var sort = new ListSort<>(AnomalySortMode.RADIUS, SortDirection.DESCENDING, MODES);
 
             var rankedByMode = new ArrayList<>(List.of(near, far));
             rankedByMode.sort(AnomalySortMode.RADIUS.comparator(SortDirection.DESCENDING));

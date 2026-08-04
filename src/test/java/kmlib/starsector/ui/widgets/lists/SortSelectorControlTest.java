@@ -154,7 +154,8 @@ final class SortSelectorControlTest {
             assertThat(pickedSorts)
                 .containsExactly(new ListSort<>(
                     AnomalySortMode.SEVERITY,
-                    SortDirection.DESCENDING));
+                    SortDirection.DESCENDING,
+                    SORT_MODES));
         }
 
         @Test
@@ -168,7 +169,8 @@ final class SortSelectorControlTest {
             assertThat(pickedSorts)
                 .containsExactly(new ListSort<>(
                     AnomalySortMode.SEVERITY,
-                    SortDirection.DESCENDING));
+                    SortDirection.DESCENDING,
+                    SORT_MODES));
         }
 
         @Test
@@ -192,8 +194,7 @@ final class SortSelectorControlTest {
             SortDirection direction) {
 
         return SortSelectorControl.buildSelector(
-            new ListSort<>(mode, direction),
-            SORT_MODES,
+            new ListSort<>(mode, direction, SORT_MODES),
             pickedSorts::add);
     }
 

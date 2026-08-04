@@ -96,6 +96,43 @@ final class RevisionMemoTest {
         }
 
         @Test
+        void resolveValueMemoisesUnderANullSectorLikeAnyOtherKey() {
+            // A consumer reading before a save is loaded passes null, so null is a key rather than a
+            // rejected argument. The case is worth its own test because the first call's recompute
+            // rests entirely on the scope compare: the memo starts holding an empty reference, so
+            // null == the held sector from the outset and that half of the key never forces it.
+            var supplierMock = supplierReturning(ANOMALIES);
+
+            var first = memo.resolveValue(null, SCOPE_ID, 0, supplierMock);
+            var second = memo.resolveValue(null, SCOPE_ID, 0, supplierMock);
+
+            assertThat(first)
+                .isEqualTo(ANOMALIES);
+            assertThat(second)
+                .isEqualTo(ANOMALIES);
+
+            verify(
+                supplierMock,
+                times(1)).get();
+        }
+
+        @Test
+        void resolveValueRecomputesWhenASectorLoadsUnderANullSectorMemo() {
+            // The other half of the same case: a value resolved before the save loaded must not
+            // outlive the load, or the first frame of a fresh sector serves what was memoised
+            // against no sector at all.
+            var sectorMock = mock(SectorAPI.class);
+            var supplierMock = supplierReturning(ANOMALIES);
+
+            memo.resolveValue(null, SCOPE_ID, 0, supplierMock);
+            memo.resolveValue(sectorMock, SCOPE_ID, 0, supplierMock);
+
+            verify(
+                supplierMock,
+                times(2)).get();
+        }
+
+        @Test
         void resolveValueRecomputesForADifferentSector() {
             // A save reloaded in the same session is a fresh sector under the same revision, so the
             // memo must recompute against it rather than serve the previous save's value.

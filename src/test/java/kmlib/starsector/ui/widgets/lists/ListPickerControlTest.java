@@ -233,7 +233,7 @@ final class ListPickerControlTest {
             var picker = pickerOf(buildPicker(
                 ANOMALIES,
                 null,
-                new ListSort<>(AnomalySortMode.RADIUS, SortDirection.ASCENDING),
+                new ListSort<>(AnomalySortMode.RADIUS, SortDirection.ASCENDING, SORT_MODES),
                 ListColumns.ONE,
                 TRAILING));
 
@@ -332,7 +332,8 @@ final class ListPickerControlTest {
             assertThat(pickerStoreFake.pickedSorts)
                 .containsExactly(new ListSort<>(
                     AnomalySortMode.SEVERITY,
-                    AnomalySortMode.SEVERITY.defaultDirection()));
+                    AnomalySortMode.SEVERITY.defaultDirection(),
+                    SORT_MODES));
         }
     }
 
@@ -396,7 +397,7 @@ final class ListPickerControlTest {
 
     // A mode in its own natural direction - the state a caller that has never flipped the sort reads.
     private static ListSort<Anomaly> sortOf(AnomalySortMode mode) {
-        return new ListSort<>(mode, mode.defaultDirection());
+        return new ListSort<>(mode, mode.defaultDirection(), SORT_MODES);
     }
 
     // The picker list is always the block's last row, so a test reads it from the tail. Read as the
@@ -446,7 +447,6 @@ final class ListPickerControlTest {
             anomalies,
             selectedItemId,
             sort,
-            SORT_MODES,
             columns,
             CAPTION,
             trailingControls,

@@ -48,19 +48,17 @@ public final class SortSelectorControl {
      * stale one would light the wrong row and flip away from a direction the store no longer holds.
      *
      * @param <T>          the list item type the modes rank
-     * @param activeSort   the sort the list is currently ranked by - the mode this lights and the
-     *                     direction that mode is ranking in
-     * @param sortModes    the calling mod's sort vocabulary: the modes in the order the rows stack
-     *                     top to bottom, and the fallback the rest of the pick resolves against
+     * @param activeSort   the sort the list is currently ranked by - the mode this lights, the
+     *                     direction that mode is ranking in, and the vocabulary whose modes the
+     *                     rows stack in order, top to bottom
      * @param onSortPicked told the sort a click lands on, for the caller to persist
      * @return the vertical, re-firing sort-selector radio table
      */
     public static <T> ControlSpec.VerticalTable buildSelector(
             ListSort<T> activeSort,
-            ListSortModes<T> sortModes,
             Consumer<ListSort<T>> onSortPicked) {
 
-        var modes = sortModes.modes();
+        var modes = activeSort.sortModes().modes();
         var labelledRows = new ArrayList<LabelledRow>(modes.size());
         var labelColour = StarsectorUiColour.VANILLA_TEXT.resolve();
 
@@ -111,6 +109,6 @@ public final class SortSelectorControl {
             ? activeSort.direction().opposite()
             : clickedMode.defaultDirection();
 
-        onSortPicked.accept(new ListSort<>(clickedMode, direction));
+        onSortPicked.accept(new ListSort<>(clickedMode, direction, activeSort.sortModes()));
     }
 }

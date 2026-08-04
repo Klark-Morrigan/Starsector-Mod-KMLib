@@ -54,10 +54,9 @@ public final class ListPickerControl {
      *                            reorders them for display
      * @param selectedItemId      the currently spotlighted item's id, or null when nothing is
      *                            spotlighted
-     * @param sort                the metric and direction the list is ranked by, which also picks
-     *                            each row's trailing value and what the sort selector previews
-     * @param sortModes           the caller's sort vocabulary the selector lays its rows out from
-     *                            and a click resolves against
+     * @param sort                how the list is ranked - the metric, its direction, and the
+     *                            vocabulary the sort selector draws its rows from; the metric also
+     *                            picks each row's trailing value
      * @param columns             how many columns the item list wraps its rows across, which the
      *                            columns selector lights and the list lays out under
      * @param columnsCaptionText  the caption drawn beside the columns segments, resolved by the
@@ -71,7 +70,6 @@ public final class ListPickerControl {
             List<T> items,
             String selectedItemId,
             ListSort<T> sort,
-            ListSortModes<T> sortModes,
             ListColumns columns,
             String columnsCaptionText,
             List<ControlSpec> trailingControls,
@@ -108,7 +106,6 @@ public final class ListPickerControl {
         controls.add(new ControlSpec.SideBySide(
             List.of(SortSelectorControl.buildSelector(
                 sort,
-                sortModes,
                 pickerStore::storeSortPick)),
             trailingControls));
 

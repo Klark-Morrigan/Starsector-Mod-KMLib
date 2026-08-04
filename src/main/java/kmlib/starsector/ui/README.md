@@ -230,11 +230,17 @@ mechanism, its own folder beside [`tabs`](widgets/tabs/) and
 [`ListSortMode`](widgets/lists/ListSortMode.java) is the seam a consumer's own
 vocabulary implements, [`ListSortModes`](widgets/lists/ListSortModes.java) bundles that
 vocabulary with the fallback an unrecognised key lands on,
-[`ListSort`](widgets/lists/ListSort.java) pairs the active mode with its
-[`SortDirection`](widgets/lists/SortDirection.java), and
-[`ListColumns`](widgets/lists/ListColumns.java) is the one-or-two column choice. The two
-selectors - [`SortSelectorControl`](widgets/lists/SortSelectorControl.java) and
+[`ListSort`](widgets/lists/ListSort.java) is how a list is ranked - the active mode, its
+[`SortDirection`](widgets/lists/SortDirection.java), and the vocabulary both were chosen
+from - and [`ListColumns`](widgets/lists/ListColumns.java) is the one-or-two column choice.
+The two selectors - [`SortSelectorControl`](widgets/lists/SortSelectorControl.java) and
 [`ColumnsSelectorControl`](widgets/lists/ColumnsSelectorControl.java) - draw and drive them.
+
+The vocabulary rides on the sort rather than beside it because nothing here reads one
+without the other: a mode with no set around it cannot say what clicking another row would
+select, and a set with no active mode cannot say which row is lit. Carrying them apart made
+every builder in the family take both and trust that the two matched, which is what
+`ListSort`'s constructor now checks instead.
 
 [`ListPickerControl`](widgets/lists/ListPickerControl.java) is what they compose into: a
 rule, the columns selector, a row pairing the sort selector with whatever the consumer
