@@ -99,7 +99,10 @@ src/main/java/kmlib/
                      shaping that fills their numeric slots
                      (StarsectorFormat's truncating percent)
     systems/       - star system queries and motion tracking;
-                     claims/ reads vanilla system claims behind a port
+                     claims/ reads vanilla system claims behind a port,
+                     with a second port for the scored contest behind
+                     one, for callers that must justify a claim rather
+                     than merely colour by it
     testing/       - the no-op SettingsAPI proxy KM tests install into
                      Global before touching Misc (whose static
                      initialiser would otherwise NPE)

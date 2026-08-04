@@ -13,6 +13,7 @@ content. Pairs that look like duplication across the tiers usually are not - see
 
 - [Two surfaces](#two-surfaces)
 - [The neutral middle](#the-neutral-middle)
+- [A row states its kind, the box states the look](#a-row-states-its-kind-the-box-states-the-look)
 - [Pairs that look like duplicates](#pairs-that-look-like-duplicates)
   - [`Highlight` versus `TextSpan`](#highlight-versus-textspan)
 - [Ports across the boundary](#ports-across-the-boundary)
@@ -66,6 +67,24 @@ Declaring it does not license the neutral tier to name it. A look value is carri
 every styled control, including in mods that draw no text and load no drawing class, so
 naming a LazyLib type in one would pull the library into paths that have no use for it -
 and would tie the value to a single surface, which is the first argument again.
+
+## A row states its kind, the box states the look
+
+The neutral middle's rule applied to typography: a row carries no face. It says which kind
+of line it is - [`TooltipLineStyle`](widgets/TooltipLineStyle.java) - and the box hosting it
+says what each kind draws in - [`TooltipStyle`](widgets/TooltipStyle.java), a
+[`TextStyle`](text/TextStyle.java) per kind.
+
+Splitting it there follows the owners. Whatever knows the subject matter knows a line is a
+heading; whatever knows the surface knows what a heading looks like on it. So a row builder
+holds no opinion about faces, two builders feeding one box cannot disagree about them, and one
+decision on the box restyles every line of a kind at once - on either surface, since a GL box
+reads those styles into its own draws while a vanilla-widget tooltip reads the same two into
+`setTitleFont` / `setParaFont`.
+
+Sizing follows the kind rather than the box: each row is measured on the face its own kind
+resolved to, or a heading in a wider face overflows the box that was sized for it. That is
+what [`TextSpanMeasurer`](font/TextSpanMeasurer.java) takes a face per call for.
 
 ## Pairs that look like duplicates
 
@@ -222,7 +241,7 @@ standing for a count is not prose.
 | [`layout`](layout/) | neutral | box placement, strips, padding, screen anchors, and the [tabs row](layout/TabsControlLayout.java) - the one control whose dimensions come from the vanilla tab strip rather than from a body-font label |
 | [`label`](label/) | neutral | label fitting, plus the length-estimator port |
 | [`colour`](colour/) | neutral | `StarsectorUiColour`, the checked wrapper over vanilla's colour getters |
-| [`font`](font/) | split | measurement ports, and their LazyFont-bound implementations and [caches](../../../../../../docs/dev/caching.md) |
+| [`font`](font/) | split | the [face enum](font/StarsectorFont.java) every atlas is named through, the measurement ports, and their LazyFont-bound implementations and [caches](../../../../../../docs/dev/caching.md) |
 | [`render/gl`](render/gl/) | GL | every raw-GL painter, its styles, and the [state guard](render/gl/GlStateGuard.java) |
 | [`debug`](debug/) | GL | the on-screen debug HUD |
 | [`input`](input/) | GL | `UiCursor` and the panel input controllers |
