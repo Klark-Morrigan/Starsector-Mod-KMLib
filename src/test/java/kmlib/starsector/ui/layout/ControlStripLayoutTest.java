@@ -9,6 +9,7 @@ import kmlib.starsector.ui.controls.SegmentSizing;
 import kmlib.starsector.ui.controls.VerticalTableSpecs;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.layout.ControlStripLayout.StripMeasurement;
+import kmlib.starsector.ui.text.ImageSpan;
 import kmlib.starsector.ui.text.TextSpan;
 import kmlib.starsector.ui.widgets.IconLabelRow;
 import kmlib.starsector.ui.widgets.RowColumnSpec;
@@ -93,6 +94,30 @@ final class ControlStripLayoutTest {
                 + 5 * WIDTH_PER_CHAR
                 + 6f
                 + 2 * WIDTH_PER_CHAR;
+
+            assertThat(measurement.rowWidths().get(0))
+                .isCloseTo(expectedRow, within(TOLERANCE));
+        }
+
+        @Test
+        void measureStripChargesAnImageRunTheControlRowHeight() {
+            // An image set among a label's words squares off the row it sits on, so the strip reserves
+            // that square and the word gap in front of it as it would any other run - "Muted" (5) at 10
+            // per character, the 6-unit run gap, then the 20-unit square. Measured from the runs rather
+            // than from the label's text, which holds no image and would size the row too narrow.
+            var checkbox = LabelledControlSpecs
+                .buildCheckbox("Muted", false, ControlAction.NONE)
+                .continuesWith(new ImageSpan("graphics/hegemony_crest.png"));
+
+            var measurement = ControlStripLayout.measureStrip(
+                List.<ControlSpec>of(checkbox),
+                measurerFake);
+
+            var expectedRow = ControlStripLayout.CONTROL_ROW_HEIGHT
+                + RowColumnSpec.CONTROL_ROW.leadingLabelGap()
+                + 5 * WIDTH_PER_CHAR
+                + 6f
+                + ControlStripLayout.CONTROL_ROW_HEIGHT;
 
             assertThat(measurement.rowWidths().get(0))
                 .isCloseTo(expectedRow, within(TOLERANCE));
