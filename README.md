@@ -50,6 +50,9 @@ mod_info.json
 build.gradle / settings.gradle / gradlew[.bat]
 src/main/java/kmlib/
   Game-agnostic helpers (no Starsector API on the signature):
+  animation/       - a position between two ends that time moves: a linear
+                     fraction advanced toward a target and eased on read,
+                     so a retarget mid-flight carries on from where it is
   collections/     - small Collection / Map helpers
   colour/          - AWT Color to normalised GL channels, folding in an
                      alpha multiplier so one factor fades a palette
