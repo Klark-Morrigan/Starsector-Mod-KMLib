@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.widgets;
+package kmlib.starsector.ui.widgets.tooltip;
 
 /**
  * Where a {@link TooltipRow.TableRow}'s label starts across the box, and so which of the box's columns it

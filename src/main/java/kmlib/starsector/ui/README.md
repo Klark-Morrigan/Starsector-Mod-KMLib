@@ -72,8 +72,8 @@ and would tie the value to a single surface, which is the first argument again.
 ## A row states its kind, the box states the look
 
 The neutral middle's rule applied to typography: a row carries no face. It says which kind
-of line it is - [`TooltipLineStyle`](widgets/TooltipLineStyle.java) - and the box hosting it
-says what each kind draws in - [`TooltipStyle`](widgets/TooltipStyle.java), a
+of line it is - [`TooltipLineStyle`](widgets/tooltip/TooltipLineStyle.java) - and the box hosting it
+says what each kind draws in - [`TooltipStyle`](widgets/tooltip/TooltipStyle.java), a
 [`TextStyle`](text/TextStyle.java) per kind.
 
 Splitting it there follows the owners. Whatever knows the subject matter knows a line is a
@@ -88,8 +88,8 @@ resolved to, or a heading in a wider face overflows the box that was sized for i
 what [`TextSpanMeasurer`](font/TextSpanMeasurer.java) takes a face per call for.
 
 Spacing is settled the same way, and from structure rather than from any line's own request.
-A box's content reaches [`CursorTooltip`](widgets/CursorTooltip.java) as
-[`TooltipSection`](widgets/TooltipSection.java) blocks: lines within one block stand a line gap
+A box's content reaches [`CursorTooltip`](widgets/tooltip/CursorTooltip.java) as
+[`TooltipSection`](widgets/tooltip/TooltipSection.java) blocks: lines within one block stand a line gap
 apart, and two blocks the box's own `sectionBreak`. A parting is a fact about two blocks
 meeting, so neither of them can own it - carried as a flag on the line that opens a block, it
 varies with whatever size that line happens to be, and the gap under a box's title then comes
@@ -101,8 +101,8 @@ out different from the gaps between its body blocks for no reason a reader can s
 | --- | --- | --- | --- |
 | a run of text and its colour | [`TextSpan`](text/TextSpan.java) | [`Highlight`](highlight/Highlight.java) | [`LabelRenderer`](render/gl/LabelRenderer.java) |
 | where text sits at its draw point | [`TextAlignment`](text/TextAlignment.java) | `api.ui.Alignment` | `LazyFont.TextAnchor` |
-| a line with parts in other colours, or a small image among its words | a label's runs ([`LabelRun`](text/LabelRun.java), composed by [`LabelRuns`](text/LabelRuns.java)), on [`LabelledRow`](widgets/LabelledRow.java), [`TooltipRow`](widgets/TooltipRow.java), or a labelled [`ControlSpec`](controls/ControlSpec.java) control | [`HighlightedParagraph`](highlight/HighlightedParagraph.java) | [`CursorTooltipRenderer`](render/gl/CursorTooltipRenderer.java) |
-| a hover tooltip | [`CursorTooltip`](widgets/CursorTooltip.java) | [`Tooltips`](tooltip/Tooltips.java) | [`CursorTooltipRenderer`](render/gl/CursorTooltipRenderer.java) |
+| a line with parts in other colours, or a small image among its words | a label's runs ([`LabelRun`](text/LabelRun.java), composed by [`LabelRuns`](text/LabelRuns.java)), on [`LabelledRow`](widgets/LabelledRow.java), [`TooltipRow`](widgets/tooltip/TooltipRow.java), or a labelled [`ControlSpec`](controls/ControlSpec.java) control | [`HighlightedParagraph`](highlight/HighlightedParagraph.java) | [`CursorTooltipRenderer`](render/gl/CursorTooltipRenderer.java) |
+| a hover tooltip | [`CursorTooltip`](widgets/tooltip/CursorTooltip.java) | [`Tooltips`](tooltip/Tooltips.java) | [`CursorTooltipRenderer`](render/gl/CursorTooltipRenderer.java) |
 | the width of a run | [`TextSpanMeasurer`](font/TextSpanMeasurer.java) | - | [`LazyFontSpanMeasurer`](font/LazyFontSpanMeasurer.java) |
 
 ### `Highlight` versus `TextSpan`
@@ -296,7 +296,8 @@ standing for a count is not prose.
 | --- | --- | --- |
 | [`text`](text/) | neutral | `TextStyle`, `TextAlignment`, `StyledSpanMeasurer`, the sealed [`LabelRun`](text/LabelRun.java) set a label is made of (`TextSpan`, `ImageSpan`), and [`LabelRuns`](text/LabelRuns.java) - how those runs compose into one line, read by every surface that lays one |
 | [`controls`](controls/) | neutral | the sealed `ControlSpec` set and its enums; a control's own label is runs like any other label, and a stacked table's rows are `widgets`' own [`LabelledRow`](widgets/LabelledRow.java), so a strip and a tooltip are laid out against one row model |
-| [`widgets`](widgets/) | neutral | the shared `LabelledRow` core, its `RowSlot` flanks, and the row and box content and geometry built on them ([`tabs`](widgets/tabs/), [`scroll`](widgets/scroll/), [`segments`](widgets/segments/), [`lists`](widgets/lists/)) |
+| [`widgets`](widgets/) | neutral | the shared `LabelledRow` core, its `RowSlot` flanks, and the row and box content and geometry built on them ([`tooltip`](widgets/tooltip/), [`tabs`](widgets/tabs/), [`scroll`](widgets/scroll/), [`segments`](widgets/segments/), [`lists`](widgets/lists/)) |
+| [`widgets/tooltip`](widgets/tooltip/) | neutral | the hover box's own content and geometry - [`TooltipRow`](widgets/tooltip/TooltipRow.java) and the [`TooltipSection`](widgets/tooltip/TooltipSection.java) blocks it stacks in, the [`TooltipStyle`](widgets/tooltip/TooltipStyle.java) those are laid against, and [`CursorTooltip`](widgets/tooltip/CursorTooltip.java) placing them |
 | [`layout`](layout/) | neutral | box placement, strips, padding, screen anchors, and the [tabs row](layout/TabsControlLayout.java) - the one control whose dimensions come from the vanilla tab strip rather than from a body-font label |
 | [`label`](label/) | neutral | label fitting, plus the length-estimator port |
 | [`colour`](colour/) | neutral | `StarsectorUiColour`, the checked wrapper over vanilla's colour getters |
@@ -305,7 +306,7 @@ standing for a count is not prose.
 | [`debug`](debug/) | GL | the on-screen debug HUD |
 | [`input`](input/) | GL | `UiCursor` and the panel input controllers |
 | [`highlight`](highlight/) | vanilla | `Highlight`, `HighlightedParagraph`, `HighlightedMessage` |
-| [`tooltip`](tooltip/) | vanilla | `Tooltips`, the `TooltipCreator` boilerplate wrapper |
+| [`tooltip`](tooltip/) | vanilla | [`Tooltips`](tooltip/Tooltips.java), the `TooltipCreator` boilerplate wrapper - the vanilla surface's answer to what [`widgets/tooltip`](widgets/tooltip/) holds neutrally |
 | [`intel`](intel/) | split | the screen-view port and its vanilla implementation |
 | [`coreui`](coreui/) | vanilla | [`CoreUiTree`](coreui/CoreUiTree.java), the by-name reach into the live widget tree that every screen's probes walk |
 | [`map/transform`](map/transform/) | split | the modelview-matrix port, its GL and Fast Rendering implementations, the [selector](map/transform/ModelviewMatrixReaders.java) between them, and the [transform](map/transform/CampaignMapTransform.java) and [cursor read](map/transform/MapCursor.java) built over it |
@@ -317,6 +318,13 @@ the campaign's persisted UI data, the live widget tree - and **no class in any o
 references another's**. That independence is the reason the split is worth keeping: a probe
 that started reaching for the transform, or a presence read that had to walk the tree, would
 be the signal that one of these has taken on a job belonging to another.
+
+Two packages are named `tooltip`, and the pair is the tier split rather than a collision to
+resolve. `widgets/tooltip` is what a hover box *is* - lines, blocks, and where they land, naming
+no drawing surface; `tooltip` is what the vanilla widget API needs to be handed one; and
+`render/gl` paints the neutral model itself. One subject, three homes, exactly as the table of
+[pairs](#pairs-that-look-like-duplicates) above sets out. An import naming the simple name alone
+is the thing to look twice at.
 
 `layout.VanillaPositions` is the one deliberate exception in a neutral package: it holds
 vanilla screen coordinates, which are a fact about the game's own layout rather than

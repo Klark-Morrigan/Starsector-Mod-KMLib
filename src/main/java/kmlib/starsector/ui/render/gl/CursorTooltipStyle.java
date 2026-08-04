@@ -1,6 +1,6 @@
 package kmlib.starsector.ui.render.gl;
 
-import kmlib.starsector.ui.widgets.TooltipStyle;
+import kmlib.starsector.ui.widgets.tooltip.TooltipStyle;
 
 import java.awt.Color;
 

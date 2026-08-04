@@ -11,12 +11,12 @@ import kmlib.starsector.ui.text.LabelRun;
 import kmlib.starsector.ui.text.TextSpan;
 import kmlib.starsector.ui.text.TextStyle;
 import kmlib.starsector.ui.widgets.BoxBorder;
-import kmlib.starsector.ui.widgets.CursorTooltip;
 import kmlib.starsector.ui.widgets.LabelledRow;
 import kmlib.starsector.ui.widgets.RowSlot;
-import kmlib.starsector.ui.widgets.TooltipLayout;
-import kmlib.starsector.ui.widgets.TooltipRow;
-import kmlib.starsector.ui.widgets.TooltipSection;
+import kmlib.starsector.ui.widgets.tooltip.CursorTooltip;
+import kmlib.starsector.ui.widgets.tooltip.TooltipLayout;
+import kmlib.starsector.ui.widgets.tooltip.TooltipRow;
+import kmlib.starsector.ui.widgets.tooltip.TooltipSection;
 
 import org.lazywizard.lazylib.ui.LazyFont;
 

@@ -1,8 +1,10 @@
-package kmlib.starsector.ui.widgets;
+package kmlib.starsector.ui.widgets.tooltip;
 
 import kmlib.starsector.ui.text.LabelRun;
 import kmlib.starsector.ui.text.LabelRuns;
 import kmlib.starsector.ui.text.TextSpan;
+import kmlib.starsector.ui.widgets.LabelledRow;
+import kmlib.starsector.ui.widgets.RowSlot;
 
 import java.util.List;
 import java.util.Objects;

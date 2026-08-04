@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.widgets;
+package kmlib.starsector.ui.widgets.tooltip;
 
 /**
  * What kind of line a tooltip row is - a heading that names the box, or a line of its body - rather

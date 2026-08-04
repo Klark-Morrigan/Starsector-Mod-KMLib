@@ -1,7 +1,9 @@
-package kmlib.starsector.ui.widgets;
+package kmlib.starsector.ui.widgets.tooltip;
 
 import kmlib.starsector.ui.text.LabelRun;
 import kmlib.starsector.ui.text.TextSpan;
+import kmlib.starsector.ui.widgets.LabelledRow;
+import kmlib.starsector.ui.widgets.RowSlot;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

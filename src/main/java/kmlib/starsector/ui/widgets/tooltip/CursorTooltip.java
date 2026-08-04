@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.widgets;
+package kmlib.starsector.ui.widgets.tooltip;
 
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.font.TextSpanMeasurer;
@@ -6,6 +6,7 @@ import kmlib.starsector.ui.layout.TooltipBoxLayout;
 import kmlib.starsector.ui.text.LabelRuns;
 import kmlib.starsector.ui.text.LabelRuns.LabelRunOffsets;
 import kmlib.starsector.ui.text.TextSpan;
+import kmlib.starsector.ui.widgets.RowSlot;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.widgets;
+package kmlib.starsector.ui.widgets.tooltip;
 
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.font.StarsectorFont;
@@ -8,6 +8,8 @@ import kmlib.starsector.ui.text.ImageSpan;
 import kmlib.starsector.ui.text.TextAlignment;
 import kmlib.starsector.ui.text.TextSpan;
 import kmlib.starsector.ui.text.TextStyle;
+import kmlib.starsector.ui.widgets.LabelledRow;
+import kmlib.starsector.ui.widgets.RowSlot;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
