@@ -9,8 +9,9 @@ import java.awt.Color;
  * Test-only builders for a {@link TabStyle} at a chosen band height. A style describes a strip end to
  * end, so even a test exercising nothing but the layout has to name a palette, a hotkey look, and a face;
  * these fill all three with fixed stand-ins, since no layout or geometry assertion reads a colour. They
- * are literal rather than {@link VanillaTabColours#mapTabs()} / {@link HotkeyStyle#createUnderlined()}
- * because those resolve through the live engine palette, which a unit test has no sector to supply.
+ * are literal rather than {@link TabPalette#createMapTabPalette()} /
+ * {@link HotkeyStyle#createUnderlined()} because those resolve through the live engine palette, which a
+ * unit test has no sector to supply.
  */
 public final class TabStyles {
     // One flat shade in every role: the tests here assert dimensions and geometry, so which colour sits
@@ -18,13 +19,15 @@ public final class TabStyles {
     // though the roles mattered.
     private static final Color STAND_IN_SHADE = Color.GRAY;
 
-    private static final VanillaTabColours STAND_IN_COLOURS = new VanillaTabColours(
+    // No interaction lift in any of the three momentary roles: these tests draw nothing, so a lift would
+    // only suggest the layout reserves something for one (it does not - a wash costs no room).
+    private static final TabPalette STAND_IN_PALETTE = new TabPalette(
         STAND_IN_SHADE,
-        STAND_IN_SHADE,
-        STAND_IN_SHADE,
-        STAND_IN_SHADE,
-        STAND_IN_SHADE,
-        STAND_IN_SHADE);
+        new TabBaseLook(STAND_IN_SHADE, STAND_IN_SHADE),
+        new TabBaseLook(STAND_IN_SHADE, STAND_IN_SHADE),
+        TabWash.NONE,
+        TabWash.NONE,
+        TabWash.NONE);
 
     // A plain key in the same stand-in shade: the tests here draw nothing, so how a bound key is
     // presented never reaches an assertion, and the un-emphasised look keeps the fixture from implying
@@ -55,7 +58,7 @@ public final class TabStyles {
     public static TabStyle buildAtBandHeight(float headerBandHeight) {
         return new TabStyle(
             headerBandHeight,
-            STAND_IN_COLOURS,
+            STAND_IN_PALETTE,
             STAND_IN_HOTKEY,
             STAND_IN_FACE);
     }

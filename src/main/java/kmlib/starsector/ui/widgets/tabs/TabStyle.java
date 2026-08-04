@@ -12,7 +12,7 @@ import kmlib.starsector.ui.font.TextFace;
  * <p>One value rather than a dimensions/paint pair split by which tier reads it, so a strip's geometry
  * and its paint cannot disagree. The cost is that a caller laying out without drawing still supplies the
  * paint, and one drawing pre-laid tabs still supplies the band height; that is the cheaper side of the
- * trade. Substrate-independent throughout - {@link VanillaTabColours} is a palette of AWT colours,
+ * trade. Substrate-independent throughout - {@link TabPalette} is AWT colours and unit fractions,
  * {@link HotkeyStyle} a colour and two dimensions, and {@link TextFace} a font and size - so the layout
  * may measure against this value and the renderer may paint from it.
  *
@@ -23,14 +23,14 @@ import kmlib.starsector.ui.font.TextFace;
  * @param headerBandHeight how tall the band carrying a panel's tabs stands, and so the height every tab
  *                         in it shares; a non-positive value collapses the band to nothing rather than
  *                         inverting it, leaving the panel its body alone
- * @param colours          the strip's selected / hovered / idle colour scheme
+ * @param palette          the strip's chrome accent, per-state resting looks, and interaction lifts
  * @param hotkey           how a tab presents the key it is bound to - the key's colour and whether it
  *                         is underlined
  * @param face             the font and size the tab labels are measured and drawn in
  */
 public record TabStyle(
     float headerBandHeight,
-    VanillaTabColours colours,
+    TabPalette palette,
     HotkeyStyle hotkey,
     TextFace face) {
         

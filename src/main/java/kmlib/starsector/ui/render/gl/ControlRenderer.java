@@ -20,6 +20,8 @@ import kmlib.starsector.ui.widgets.Checkbox;
 import kmlib.starsector.ui.widgets.IconLabelRow;
 import kmlib.starsector.ui.widgets.LabelledRow;
 import kmlib.starsector.ui.widgets.RowSlot;
+import kmlib.starsector.ui.widgets.tabs.TabWashSource;
+import kmlib.starsector.ui.widgets.tabs.TabWashState;
 import kmlib.starsector.ui.widgets.tabs.VanillaTabStrip;
 
 import org.lazywizard.lazylib.ui.LazyFont;
@@ -104,11 +106,19 @@ public final class ControlRenderer {
 
         // The same value the layout measured the band against, so a strip is drawn in exactly the look
         // it was laid out under.
+        var tabStyle = paint.style().tabStyle();
+
+        // Hover is the whole of the lift a strip drawn straight from cursor position can know about: a
+        // click or a key press is an event, and nothing here holds the timing one would decay over.
+        var washes = TabWashSource.createHoverWashSource(
+            hoveredIndex,
+            tabStyle.palette().resolveWash(TabWashState.HOVERED));
+
         VanillaTabStripRenderer.render(
             tabs,
             spec.selectedIndex(),
-            hoveredIndex,
-            paint.style().tabStyle(),
+            washes,
+            tabStyle,
             paint.opacity());
     }
 
