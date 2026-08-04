@@ -8,6 +8,7 @@ import kmlib.starsector.ui.controls.ReselectBehaviour;
 import kmlib.starsector.ui.controls.VerticalTableSpecs;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.widgets.PanelPlacement;
+import kmlib.starsector.ui.widgets.RowColumnSpec;
 import kmlib.testfixtures.starsector.ui.font.LineWidthMeasurerFake;
 
 import org.junit.jupiter.api.Nested;
@@ -105,7 +106,7 @@ final class PanelLayoutTest {
 
             // "Uninhabited systems" is 19 characters; the row is the tick box, a gap, then the label.
             var expectedCheckboxWidth = ControlStripLayout.CONTROL_ROW_HEIGHT
-                + ControlStripLayout.CHECKBOX_LABEL_GAP
+                + RowColumnSpec.CONTROL_ROW.leadingLabelGap()
                 + 19 * WIDTH_PER_CHAR;
 
             assertThat(checkbox.x())

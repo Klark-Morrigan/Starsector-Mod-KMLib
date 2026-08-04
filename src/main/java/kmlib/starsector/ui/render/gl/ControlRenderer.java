@@ -109,8 +109,9 @@ public final class ControlRenderer {
             paint.opacity());
     }
 
-    // A tick box lit when the spec's cell is selected, then its label to the right at the same gap the
-    // layout reserved, so the label sits exactly in the space snapped for it.
+    // A tick box lit when the spec's cell is selected, then its label at the anchor the widget places
+    // it at - the same anchor the row was sized around, so the label sits exactly in the space snapped
+    // for it.
     private static void drawCheckbox(Control control, ControlPaint paint) {
         var style = paint.style();
         var spec = (ControlSpec.Checkbox) control.spec();
@@ -122,15 +123,10 @@ public final class ControlRenderer {
             new UiElementPaint(style.accent(), paint.opacity()),
             new UiElementPaint(style.brightAccent(), paint.opacity()));
 
-        var box = Checkbox.computeTickBox(bounds);
-        var labelX = box.x()
-            + box.width()
-            + ControlStripLayout.CHECKBOX_LABEL_GAP;
-
         drawBodyLabelRuns(
             paint,
             spec.labelTextSpans(),
-            labelX,
+            Checkbox.computeLabelAnchorX(bounds),
             bounds.computeCenterY());
     }
 

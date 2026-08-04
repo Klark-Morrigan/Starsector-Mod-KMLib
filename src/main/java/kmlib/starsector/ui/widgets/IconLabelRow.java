@@ -32,26 +32,15 @@ import kmlib.math.geometry.Rectangle;
  */
 public final class IconLabelRow {
 
-    // The left inset both the icon and (icon-less) label start from, so content clears the row's
-    // frame and divider rather than touching it.
-    private static final float LEADING_PADDING = 4f;
+    // What the row's three columns are worth - the insets off either end and the gaps parting the
+    // label from each flank - taken from the one spec every three-column row reads, so a stack that
+    // mixes this row with another shape starts every label at the same offset.
+    private static final RowColumnSpec COLUMNS = RowColumnSpec.CONTROL_ROW;
 
     // How far the icon square is inset off the row's top and bottom edges, so the crest reads as a
-    // framed pip inside the row rather than filling its full height.
+    // framed pip inside the row rather than filling its full height. This one is the row's own: it
+    // sizes the icon within the row rather than parting one column from the next.
     private static final float ICON_VERTICAL_INSET = 2f;
-
-    // The gap between the icon's right edge and the label's left anchor, matching the checkbox's
-    // box-to-label gap so icon rows and checkbox rows space their text alike.
-    private static final float ICON_LABEL_GAP = 6f;
-
-    // The least gap kept between the label and a trailing value, so a snug row's name and value do
-    // not touch. The width measurement reserves it, so the label region always clears the value.
-    private static final float LABEL_TRAILING_GAP = 6f;
-
-    // The inset off the row's right edge the measurement reserves past the label (or past the
-    // trailing value when the row has one), so the widest name or value still clears the frame on the
-    // trailing side. A trailing value right-aligns to this inset.
-    private static final float TRAILING_PADDING = 4f;
 
     // A trailing direction triangle sized off the row height (as the icon is), so a stack of rows
     // shows even triangles. Kept narrower and shorter than a full row so it reads as a compact marker
@@ -73,7 +62,7 @@ public final class IconLabelRow {
     public static Rectangle computeIconBox(Rectangle row) {
         var side = computeIconSide(row.height());
         return new Rectangle(
-            row.x() + LEADING_PADDING,
+            row.x() + COLUMNS.leadingPadding(),
             row.y() + ICON_VERTICAL_INSET,
             side,
             side);
@@ -90,12 +79,12 @@ public final class IconLabelRow {
      */
     public static float computeLabelAnchorX(Rectangle row, boolean hasIcon) {
         if (!hasIcon) {
-            return row.x() + LEADING_PADDING;
+            return row.x() + COLUMNS.leadingPadding();
         }
         return row.x()
-            + LEADING_PADDING
+            + COLUMNS.leadingPadding()
             + computeIconSide(row.height())
-            + ICON_LABEL_GAP;
+            + COLUMNS.leadingLabelGap();
     }
 
     /**
@@ -110,7 +99,7 @@ public final class IconLabelRow {
     public static float computeTrailingAnchorX(Rectangle row) {
         return row.x()
             + row.width()
-            - TRAILING_PADDING;
+            - COLUMNS.trailingPadding();
     }
 
     /**
@@ -183,18 +172,18 @@ public final class IconLabelRow {
             float trailingWidth) {
 
         var iconExtent = hasIcon
-            ? computeIconSide(rowHeight) + ICON_LABEL_GAP
+            ? computeIconSide(rowHeight) + COLUMNS.leadingLabelGap()
             : 0f;
 
         var trailingExtent = trailingWidth > 0f
-            ? LABEL_TRAILING_GAP + trailingWidth
+            ? COLUMNS.labelTrailingGap() + trailingWidth
             : 0f;
 
-        return LEADING_PADDING
+        return COLUMNS.leadingPadding()
             + iconExtent
             + labelWidth
             + trailingExtent
-            + TRAILING_PADDING;
+            + COLUMNS.trailingPadding();
     }
 
     // The icon square's side for a given row height: the row height less the inset off each of the

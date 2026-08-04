@@ -11,6 +11,7 @@ import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.layout.ControlStripLayout.StripMeasurement;
 import kmlib.starsector.ui.text.TextSpan;
 import kmlib.starsector.ui.widgets.IconLabelRow;
+import kmlib.starsector.ui.widgets.RowColumnSpec;
 import kmlib.starsector.ui.widgets.RowSlot;
 import kmlib.starsector.ui.widgets.TriangleDirection;
 import kmlib.starsector.ui.widgets.tabs.TabStyle;
@@ -66,7 +67,7 @@ final class ControlStripLayoutTest {
                 measurerFake);
 
             var expectedRow = ControlStripLayout.CONTROL_ROW_HEIGHT
-                + ControlStripLayout.CHECKBOX_LABEL_GAP + 5 * WIDTH_PER_CHAR;
+                + RowColumnSpec.CONTROL_ROW.leadingLabelGap() + 5 * WIDTH_PER_CHAR;
 
             assertThat(measurement.rowWidths().get(0))
                 .isCloseTo(expectedRow, within(TOLERANCE));
@@ -88,7 +89,7 @@ final class ControlStripLayoutTest {
                 measurerFake);
 
             var expectedRow = ControlStripLayout.CONTROL_ROW_HEIGHT
-                + ControlStripLayout.CHECKBOX_LABEL_GAP
+                + RowColumnSpec.CONTROL_ROW.leadingLabelGap()
                 + 5 * WIDTH_PER_CHAR
                 + 6f
                 + 2 * WIDTH_PER_CHAR;
@@ -440,11 +441,11 @@ final class ControlStripLayoutTest {
             var measurement = ControlStripLayout.measureStrip(List.<ControlSpec>of(pair), measurerFake);
 
             var leftWidth = ControlStripLayout.CONTROL_ROW_HEIGHT
-                + ControlStripLayout.CHECKBOX_LABEL_GAP
+                + RowColumnSpec.CONTROL_ROW.leadingLabelGap()
                 + 1 * WIDTH_PER_CHAR;
 
             var rightWidth = ControlStripLayout.CONTROL_ROW_HEIGHT
-                + ControlStripLayout.CHECKBOX_LABEL_GAP
+                + RowColumnSpec.CONTROL_ROW.leadingLabelGap()
                 + 2 * WIDTH_PER_CHAR;
 
             assertThat(measurement.rowWidths().get(0))
@@ -786,7 +787,7 @@ final class ControlStripLayoutTest {
             var leftControl = controls.get(0);
             var rightControl = controls.get(1);
             var leftWidth = ControlStripLayout.CONTROL_ROW_HEIGHT
-                + ControlStripLayout.CHECKBOX_LABEL_GAP
+                + RowColumnSpec.CONTROL_ROW.leadingLabelGap()
                 + 1 * WIDTH_PER_CHAR;
                 
             assertThat(leftControl.spec())

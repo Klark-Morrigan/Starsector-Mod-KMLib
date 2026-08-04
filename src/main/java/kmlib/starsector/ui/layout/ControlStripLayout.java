@@ -8,6 +8,7 @@ import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.text.LabelRuns;
 import kmlib.starsector.ui.text.StyledSpanMeasurer;
 import kmlib.starsector.ui.text.TextSpan;
+import kmlib.starsector.ui.widgets.Checkbox;
 import kmlib.starsector.ui.widgets.IconLabelRow;
 import kmlib.starsector.ui.widgets.RadioRow;
 import kmlib.starsector.ui.widgets.segments.HorizontalSegments;
@@ -48,11 +49,11 @@ public final class ControlStripLayout {
     // the right column at the same offset the layout reserved for the gap.
     public static final float COLUMN_GAP = 8f;
 
-    // Per-control slack: the gap between a checkbox's box and its label, the padding sizing each
-    // radio segment past its option label, the gap before a control's trailing label, and the
-    // padding sizing a toggle button past its label. The checkbox and trailing gaps are public so
-    // the renderer places each label at the same offset this reserved for it.
-    public static final float CHECKBOX_LABEL_GAP = 6f;
+    // Per-control slack: the padding sizing each radio segment past its option label, the gap before
+    // a control's trailing label, and the padding sizing a toggle button past its label. The trailing
+    // gap is public so the renderer places that label at the same offset this reserved for it. A
+    // checkbox's own box-to-label gap is the widget's, taken from the shared column spec, so the row
+    // this sizes and the label the renderer places both read one value.
     static final float RADIO_SEGMENT_PADDING = 12f;
 
     // A radio cell has no minimum width - it sizes purely to its widest label plus the padding - unlike
@@ -366,9 +367,9 @@ public final class ControlStripLayout {
     // is stretched to the full framed body at placement - so it contributes nothing to the width here.
     private static float measureRowWidth(ControlSpec spec, LineWidthMeasurer measurer) {
         if (spec instanceof ControlSpec.Checkbox checkbox) {
-            return CONTROL_ROW_HEIGHT
-                + CHECKBOX_LABEL_GAP
-                + measureLabelWidth(checkbox.labelTextSpans(), measurer);
+            return Checkbox.measureRowWidth(
+                CONTROL_ROW_HEIGHT,
+                measureLabelWidth(checkbox.labelTextSpans(), measurer));
         }
         if (spec instanceof ControlSpec.Toggle toggle) {
             return measureLabelWidth(toggle.labelTextSpans(), measurer) + TOGGLE_TEXT_PADDING;
