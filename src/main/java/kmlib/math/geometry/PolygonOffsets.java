@@ -254,7 +254,7 @@ public final class PolygonOffsets {
      * reads as a stray loop. Such a corner is bevelled instead - the two shifted edge
      * ends are joined directly - which is the erosion's true corner. A convex corner
      * so sharp that its miter would spike past {@code miterSpikeLimit * distance} is
-     * bevelled on the same grounds.
+     * bevelled for the same reason.
      *
      * <p>The winding drives the direction: a counter-clockwise ring shrinks, and a
      * clockwise ring (a hole traced with the solid on its outside) grows away from

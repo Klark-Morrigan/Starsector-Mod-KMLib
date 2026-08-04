@@ -7,7 +7,7 @@ import kmlib.opengl.GlVertexRuns;
  * packed it closed its joins.
  *
  * <p>The tally rides with the run rather than being reported some other way because it describes
- * this one packing - the same ground hatched under another joining, or another tolerance, closes
+ * this one packing - the same region hatched under another joining, or another tolerance, closes
  * different joins - and numbers arriving apart from the run they came from cannot be tied back to
  * it.
  *

@@ -103,7 +103,7 @@ public final class PolygonRegions {
      *
      * <p>Which ring is which is read from its winding, the convention a boundary-only
      * tessellation under the positive rule already emits: a counter-clockwise ring bounds
-     * filled ground, a clockwise one cuts a hole in it. So a soup that came back from such a
+     * a filled area, a clockwise one cuts a hole in it. So a soup that came back from such a
      * tessellation needs nothing recorded alongside it to be sorted out again.
      *
      * <p>A hole is attributed to the <em>smallest</em> outer ring containing it, not the first

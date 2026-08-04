@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.within;
  *
  * <p>Clipping and packing are separate: a line crossing several triangles is clipped once per
  * triangle and then merged, so what comes back breaks only where the region does. The two-triangle
- * strip is where that shows - one unbroken stroke over ground the clip saw as two crossings - and
+ * strip is where that shows - one unbroken stroke over what the clip saw as two crossings - and
  * the join tolerance is what decides how near two crossings must be to count as one stroke.
  */
 final class HatchingTest {
@@ -35,7 +35,7 @@ final class HatchingTest {
             0f, 0f, 4f, 4f, 0f, 4f};
 
         // Two of those squares with clear space between them, so every line crossing the soup
-        // crosses two separated stretches of ground, each itself split into two triangles. What the
+        // crosses two separated stretches of the region, each itself split into two triangles. What the
         // merge has to get right on both counts at once: join inside a lobe, break between them. A
         // concave region presents the sink with exactly this.
         private static final float[] TWO_SPLIT_SQUARE_LOBES = {
@@ -139,7 +139,7 @@ final class HatchingTest {
         void compute_hatch_run_breaks_between_lobes_but_joins_inside_one() {
             // Each lobe's own diagonal join closes; the six units of empty space between the
             // lobes does not, so every line comes back as two strokes rather than one spanning
-            // ground the region does not cover.
+            // an area the region does not cover.
             var run = hatch(TWO_SPLIT_SQUARE_LOBES, 0, 1, GENEROUS_JOIN_TOLERANCE);
 
             assertThat(run.segments())
@@ -155,7 +155,7 @@ final class HatchingTest {
         void compute_hatch_run_keeps_the_longer_reach_when_two_spans_overlap() {
             // The overlaid triangle's spans all start after the square's and end before them, so a
             // merge that took the later span's end would cut every stroke short of the square's
-            // right edge. The run is the square's own five full-width strokes, unchanged by ground
+            // right edge. The run is the square's own five full-width strokes, unchanged by an area
             // that was already covered.
             var run = hatch(OVERLAPPING_TRIANGLE_SOUP, 0, 1, GENEROUS_JOIN_TOLERANCE);
 
@@ -222,7 +222,7 @@ final class HatchingTest {
             // The reading a zero-tolerance run exists to give. Nothing was tolerated - nothing
             // can be, at zero - so the count and the widest closed gap say only what every
             // zero-tolerance run says. The narrowest gap left open is the one number that
-            // distinguishes ground with nothing to join from ground whose joins the tolerance was
+            // distinguishes a region with nothing to join from one whose joins the tolerance was
             // simply set below, and it names what the tolerance would have to reach.
             var run = hatch(NEARLY_ABUTTING_LOBES, 0, 1, NO_JOIN_TOLERANCE);
 

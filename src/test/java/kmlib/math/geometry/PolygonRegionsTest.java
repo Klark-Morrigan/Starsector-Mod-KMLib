@@ -238,7 +238,7 @@ final class PolygonRegionsTest {
         @Test
         void a_hole_no_outer_ring_contains_is_dropped_rather_than_carried() {
             // It cuts nothing out of anything. Kept, it would be stroked as a stray loop
-            // over ground that is not the region's.
+            // over an area that is not the region's.
             var body = squareAt(0, 0, 10);
             var strayHole = clockwiseSquareAt(100, 100, 4);
             var regions = PolygonRegions.groupRingsIntoRegions(List.of(body, strayHole));
