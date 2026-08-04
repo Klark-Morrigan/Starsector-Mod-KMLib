@@ -139,4 +139,35 @@ final class HoverFadeTest {
                 .isTrue();
         }
     }
+
+    @Nested
+    class ResetFade {
+
+        @Test
+        void resetFadeDropsAFadeLeftPartWayUpWithoutWindingItDown() {
+            // The element has stopped showing, so there is no travel left to see: the fade has to be off
+            // the hovered look outright rather than falling from where it stood over the next frames.
+            var fade = new HoverFade();
+            fade.advanceTowardHover(HOVERED, HALF_STEP_SECONDS, DURATION_SECONDS);
+            fade.resetFade();
+
+            assertThat(fade.getHoverFraction())
+                .isCloseTo(0f, within(TOLERANCE));
+            assertThat(fade.hasSettledOffHover())
+                .isTrue();
+        }
+
+        @Test
+        void resetFadeRisesAgainFromRestWhenTheElementComesBack() {
+            // A reset must leave a reusable fade, not a spent one - the next session's hover has to travel
+            // from the bottom exactly as a fresh element's does.
+            var fade = new HoverFade();
+            fade.advanceTowardHover(HOVERED, FULL_STEP_SECONDS, DURATION_SECONDS);
+            fade.resetFade();
+            fade.advanceTowardHover(HOVERED, HALF_STEP_SECONDS, DURATION_SECONDS);
+
+            assertThat(fade.getHoverFraction())
+                .isCloseTo(0.5f, within(TOLERANCE));
+        }
+    }
 }

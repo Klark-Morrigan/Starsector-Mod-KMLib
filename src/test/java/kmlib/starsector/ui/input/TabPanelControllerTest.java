@@ -17,11 +17,12 @@ import static org.assertj.core.api.Assertions.within;
 /**
  * Pins {@link TabPanelController}'s construction seams - the default opens the panel expanded and the
  * docked-start factory opens it collapsed, so a host picks the initial fold through construction rather
- * than driving the animation to reach it - and the hover hit-test that decides which tab a fade is held
- * for, the fades it steps, and the docked gate that stops it stepping any. The pointer routing and the
- * scroll delegation run against live input events and are exercised in-engine, as is the cursor read the
- * expanded hover path opens with - which is why the advance is pinned through the tab it resolves to rather
- * than through a pointer position there is no display to supply.
+ * than driving the animation to reach it - and its hover channel: the hit-test that decides which tab a
+ * fade is held for, the fades it steps for the tabs and for the collapse handle, and the docked gate that
+ * silences the tabs while leaving the handle live. The pointer routing and the scroll delegation run
+ * against live input events and are exercised in-engine, as is the cursor read the per-frame advance opens
+ * with - which is why the advance is pinned through what it resolves to rather than through a pointer
+ * position there is no display to supply.
  */
 final class TabPanelControllerTest {
     
@@ -43,6 +44,12 @@ final class TabPanelControllerTest {
 
     private static final int FIRST_TAB_INDEX = 0;
     private static final int SECOND_TAB_INDEX = 1;
+
+    // What the two hit-tests report when the pointer is on neither element, named so an advance reads as a
+    // pointer position rather than as a null and a false.
+    private static final Integer NO_TAB_HOVERED = null;
+    private static final boolean NOTCH_HOVERED = true;
+    private static final boolean NOTCH_NOT_HOVERED = false;
 
     // A whole duration in one step, so an end state is reached without walking frames, and half of one for
     // the part-way reads.
@@ -114,30 +121,30 @@ final class TabPanelControllerTest {
     }
 
     @Nested
-    class AdvanceTabHovers {
+    class GetNotchHoverFraction {
 
         @Test
-        void advanceTabHoversHoversNothingWhileThePanelIsNotFullyExpanded() {
-            // A docked panel's header is behind the rail, so a tab still laid out under the pointer is not
-            // one the player can see. The gate short-circuits before the cursor is read, which is also what
-            // lets this run with no display to read one from.
-            var controller = TabPanelController.createStartingDocked();
-            controller.advanceTabHovers(buildTwoTabPlacement(), FULL_STEP_SECONDS, DURATION_SECONDS);
-
-            assertThat(hoverFractionAt(controller, FIRST_TAB_INDEX))
+        void getNotchHoverFractionStartsFullyOffTheLitLook() {
+            // A freshly built panel has been pointed at nothing, so its first painted frame must show a
+            // handle at rest rather than one already part-way lit.
+            assertThat(new TabPanelController().getNotchHoverFraction())
                 .isCloseTo(0f, within(TOLERANCE));
         }
     }
 
     @Nested
-    class AdvanceTabHoversTowardTab {
+    class AdvanceHoverFadesTowardHovered {
 
         @Test
-        void advanceTabHoversTowardTabRaisesTheNamedTabInTheSourceTheRendererReads() {
+        void advanceHoverFadesTowardHoveredRaisesTheNamedTabInTheSourceTheRendererReads() {
             // The seam the paint pass actually consumes: a fade stepped here has to surface through the
             // interaction sources, or the strip paints a row that never moves however long it is hovered.
             var controller = new TabPanelController();
-            controller.advanceTabHoversTowardTab(FIRST_TAB_INDEX, FULL_STEP_SECONDS, DURATION_SECONDS);
+            controller.advanceHoverFadesTowardHovered(
+                FIRST_TAB_INDEX,
+                NOTCH_NOT_HOVERED,
+                FULL_STEP_SECONDS,
+                DURATION_SECONDS);
 
             assertThat(hoverFractionAt(controller, FIRST_TAB_INDEX))
                 .isCloseTo(1f, within(TOLERANCE));
@@ -146,30 +153,121 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void advanceTabHoversTowardTabWindsTheDepartedTabBackDown() {
+        void advanceHoverFadesTowardHoveredWindsTheDepartedTabBackDown() {
 
             var controller = new TabPanelController();
-            controller.advanceTabHoversTowardTab(FIRST_TAB_INDEX, FULL_STEP_SECONDS, DURATION_SECONDS);
-            controller.advanceTabHoversTowardTab(SECOND_TAB_INDEX, FULL_STEP_SECONDS, DURATION_SECONDS);
+            controller.advanceHoverFadesTowardHovered(
+                FIRST_TAB_INDEX,
+                NOTCH_NOT_HOVERED,
+                FULL_STEP_SECONDS,
+                DURATION_SECONDS);
+            controller.advanceHoverFadesTowardHovered(
+                SECOND_TAB_INDEX,
+                NOTCH_NOT_HOVERED,
+                FULL_STEP_SECONDS,
+                DURATION_SECONDS);
 
             assertThat(hoverFractionAt(controller, FIRST_TAB_INDEX))
                 .isCloseTo(0f, within(TOLERANCE));
             assertThat(hoverFractionAt(controller, SECOND_TAB_INDEX))
+                .isCloseTo(1f, within(TOLERANCE));
+        }
+
+        @Test
+        void advanceHoverFadesTowardHoveredHoversNoTabWhileThePanelIsNotFullyExpanded() {
+            // A docked panel's header is behind the rail, so a tab still laid out under the pointer is not
+            // one the player can see - the gate drops it however plainly the hit-test named it.
+            var controller = TabPanelController.createStartingDocked();
+            controller.advanceHoverFadesTowardHovered(
+                FIRST_TAB_INDEX,
+                NOTCH_NOT_HOVERED,
+                FULL_STEP_SECONDS,
+                DURATION_SECONDS);
+
+            assertThat(hoverFractionAt(controller, FIRST_TAB_INDEX))
+                .isCloseTo(0f, within(TOLERANCE));
+        }
+
+        @Test
+        void advanceHoverFadesTowardHoveredLightsTheHandleWhileThePointerIsOnIt() {
+
+            var controller = new TabPanelController();
+            controller.advanceHoverFadesTowardHovered(
+                NO_TAB_HOVERED,
+                NOTCH_HOVERED,
+                FULL_STEP_SECONDS,
+                DURATION_SECONDS);
+
+            assertThat(controller.getNotchHoverFraction())
+                .isCloseTo(1f, within(TOLERANCE));
+        }
+
+        @Test
+        void advanceHoverFadesTowardHoveredDimsTheHandleOnceThePointerLeavesIt() {
+
+            var controller = new TabPanelController();
+            controller.advanceHoverFadesTowardHovered(
+                NO_TAB_HOVERED,
+                NOTCH_HOVERED,
+                FULL_STEP_SECONDS,
+                DURATION_SECONDS);
+            controller.advanceHoverFadesTowardHovered(
+                NO_TAB_HOVERED,
+                NOTCH_NOT_HOVERED,
+                FULL_STEP_SECONDS,
+                DURATION_SECONDS);
+
+            assertThat(controller.getNotchHoverFraction())
+                .isCloseTo(0f, within(TOLERANCE));
+        }
+
+        @Test
+        void advanceHoverFadesTowardHoveredLightsTheHandleWhileThePanelIsDocked() {
+            // The handle is the one part of a docked panel still on screen - it is what brings the body
+            // back - so the gate that silences the tabs must not reach it.
+            var controller = TabPanelController.createStartingDocked();
+            controller.advanceHoverFadesTowardHovered(
+                NO_TAB_HOVERED,
+                NOTCH_HOVERED,
+                FULL_STEP_SECONDS,
+                DURATION_SECONDS);
+
+            assertThat(controller.getNotchHoverFraction())
                 .isCloseTo(1f, within(TOLERANCE));
         }
     }
 
     @Nested
-    class ResetTabHovers {
+    class ResetHoverFades {
 
         @Test
-        void resetTabHoversDropsAFadeLeftPartWayUpWhenThePanelStopsShowing() {
+        void resetHoverFadesDropsATabFadeLeftPartWayUpWhenThePanelStopsShowing() {
             // Otherwise the next session opens painting the tail of a hover the player never saw begin.
             var controller = new TabPanelController();
-            controller.advanceTabHoversTowardTab(FIRST_TAB_INDEX, HALF_STEP_SECONDS, DURATION_SECONDS);
-            controller.resetTabHovers();
+            controller.advanceHoverFadesTowardHovered(
+                FIRST_TAB_INDEX,
+                NOTCH_NOT_HOVERED,
+                HALF_STEP_SECONDS,
+                DURATION_SECONDS);
+            controller.resetHoverFades();
 
             assertThat(hoverFractionAt(controller, FIRST_TAB_INDEX))
+                .isCloseTo(0f, within(TOLERANCE));
+        }
+
+        @Test
+        void resetHoverFadesDropsTheHandlesFadeLeftPartWayUpWhenThePanelStopsShowing() {
+            // The handle is dropped for the same reason and in the same call, so a panel re-opened under a
+            // still pointer cannot paint one part lit and the other at rest.
+            var controller = new TabPanelController();
+            controller.advanceHoverFadesTowardHovered(
+                NO_TAB_HOVERED,
+                NOTCH_HOVERED,
+                HALF_STEP_SECONDS,
+                DURATION_SECONDS);
+            controller.resetHoverFades();
+
+            assertThat(controller.getNotchHoverFraction())
                 .isCloseTo(0f, within(TOLERANCE));
         }
     }

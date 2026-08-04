@@ -58,7 +58,8 @@ public final class TabPanelRenderer {
      *                        has faded and what pulse it carries - resolved by whoever owns the panel's live
      *                        state, since this pass reads no cursor and holds no timing
      * @param notchState      how far the body is collapsed (0 lays out full and unclipped, 1 docks to the
-     *                        rail, and it orients the notch's chevron) and whether the handle is hovered
+     *                        rail, and it orients the notch's chevron) and how far the handle has lit under
+     *                        the pointer, resolved by the same owner for the same reason
      * @param opacity         overall alpha, 0..1, fading the body and the collapse handle; the tabs header
      *                        ignores it and paints opaque
      */

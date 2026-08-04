@@ -15,15 +15,23 @@ import kmlib.math.ranges.Ranges;
  * collapse cue), straightening to a plain vertical line at the midpoint, and flipped to point right once
  * docked (the expand cue). Its outline is stroked one pixel thinner than the frame ({@code max(1,
  * borderWidth - 1)}) so the handle reads as a lighter appendage of the border rather than a second frame.
- * Its two shades - resting and hovered - come from the style's {@link NotchColours} rather than the panel
+ * Its two shades - resting and lit - come from the style's {@link NotchColours} rather than the panel
  * accents, so how far the direction cue stands out from the chrome carrying it is the consumer's call.
+ *
+ * <p>Hover arrives as a fraction the consumer has already resolved, and both pieces of the lighting - the
+ * wash over the face and the chevron's own shade - scale by it together, so the handle lights and dims as
+ * one unit at whatever pace its owner animates.
  */
 public final class NotchRenderer {
 
-    // Hover wash: a translucent accent overlay lighting the whole notch face when the pointer is over
-    // it, so the handle answers the hover as one lit unit rather than by the chevron alone - which
-    // leaves a look free to hold a single chevron shade across both states.
+    // Hover wash: a translucent accent overlay lighting the whole notch face at full hover, so the handle
+    // answers the pointer as one lit unit rather than by the chevron alone - which leaves a look free to
+    // hold a single chevron shade across both states. The peak the hover fraction scales, not a constant.
     private static final float HOVER_WASH_ALPHA = 0.35f;
+
+    // Below this the wash would tint nothing a player could see, so a resting handle skips the draw
+    // entirely rather than blending a fully transparent quad over its own face every frame.
+    private static final float MIN_VISIBLE_ALPHA = 0f;
 
     // The chevron's footprint inside the notch: how far the arms inset from the notch's top and bottom
     // edges, and how far the apex swings off centre at each end of the collapse.
@@ -46,7 +54,8 @@ public final class NotchRenderer {
      * @param style       the panel look (the fill and accent the handle's backdrop and frame draw in,
      *                    plus the {@link NotchColours} shades its chevron takes)
      * @param borderWidth the frame's border thickness; the notch strokes one pixel thinner, floored at 1
-     * @param state       how far the body is collapsed (orienting the chevron) and whether the handle is hovered
+     * @param state       how far the body is collapsed (orienting the chevron) and how far the handle has
+     *                    lit under the pointer
      * @param opacity     overall alpha, 0..1, fading the handle with the panel
      */
     public static void render(
@@ -60,12 +69,11 @@ public final class NotchRenderer {
         var notchPaint = new UiElementPaint(style.panelFill(), opacity);
         UiFill.renderQuad(notch, notchPaint);
 
-        if (state.isHovered()) {
-            // Light the whole notch face on hover, so the handle answers the pointer as one lit unit.
-            var hoverPaint = new UiElementPaint(
-                style.accent(),
-                opacity * HOVER_WASH_ALPHA);
-            UiFill.renderQuad(notch, hoverPaint);
+        // Light the whole notch face as the hover fades in, so the handle answers the pointer as one lit
+        // unit; a handle nothing is pointing at washes at nothing and skips the draw.
+        var hoverWashAlpha = computeHoverWashAlpha(opacity, state.hoverFraction());
+        if (hoverWashAlpha > MIN_VISIBLE_ALPHA) {
+            UiFill.renderQuad(notch, new UiElementPaint(style.accent(), hoverWashAlpha));
         }
 
         var notchBorder = computeNotchBorder(borderWidth);
@@ -80,7 +88,7 @@ public final class NotchRenderer {
             computeChevronArms(notch, state.collapseFraction()),
             notchBorder,
             new UiElementPaint(
-                style.notchColours().resolveChevronColour(state.isHovered()),
+                style.notchColours().computeChevronColour(state.hoverFraction()),
                 opacity));
     }
 
@@ -91,6 +99,20 @@ public final class NotchRenderer {
      */
     static float computeNotchBorder(float borderWidth) {
         return Math.max(MIN_NOTCH_BORDER, borderWidth - 1f);
+    }
+
+    /**
+     * How strongly the hover wash paints this frame: its own peak scaled by how far the handle has lit and
+     * again by the panel's opacity, so a half-faded handle on a half-faded panel washes at a quarter rather
+     * than at either alone. The fraction is clamped, so an overshooting animation value cannot drive the
+     * wash past its peak.
+     *
+     * @param opacity       the panel's overall alpha, which the handle fades with
+     * @param hoverFraction how far the handle has faded onto its lit look, 0 to 1
+     * @return the alpha the accent wash over the notch face draws at
+     */
+    static float computeHoverWashAlpha(float opacity, float hoverFraction) {
+        return opacity * HOVER_WASH_ALPHA * Ranges.clampToUnit(hoverFraction);
     }
 
     /**

@@ -1,5 +1,8 @@
 package kmlib.starsector.ui.render.gl;
 
+import kmlib.colour.Colours;
+import kmlib.math.ranges.Ranges;
+
 import java.awt.Color;
 
 /**
@@ -16,23 +19,28 @@ import java.awt.Color;
  * brighter second shade.
  *
  * @param chevron        the chevron's colour at rest
- * @param chevronHovered the chevron's colour while the handle is hovered
+ * @param chevronHovered the chevron's colour once the handle is fully lit
  */
 public record NotchColours(
     Color chevron,
     Color chevronHovered) {
 
     /**
-     * Picks which of the two shades the chevron draws in: the hovered shade while the pointer is over
-     * the handle, the resting one otherwise. A look that does not distinguish the two supplies the same
-     * colour for both, so the pick stays one rule rather than a flag the caller also has to set.
+     * The chevron's colour part of the way between its two shades, so the glyph travels onto its lit
+     * colour with the rest of the handle rather than switching to it on the frame the pointer arrives.
+     * A look that does not distinguish the two supplies the same colour for both, which makes every
+     * point of the blend that colour - so the travel stays one rule rather than a flag the caller also
+     * has to set.
      *
-     * @param isHovered true while the pointer is over the handle
+     * @param hoverFraction how far the handle has faded onto its lit look, 0 (resting) to 1 (fully lit);
+     *                      confined to that range so an overshooting animation value settles on a shade
+     *                      rather than blending past it
      * @return the colour to stroke the chevron with
      */
-    public Color resolveChevronColour(boolean isHovered) {
-        return isHovered
-            ? chevronHovered
-            : chevron;
+    public Color computeChevronColour(float hoverFraction) {
+        return Colours.blendRgbTowards(
+            chevron,
+            chevronHovered,
+            Ranges.clampToUnit(hoverFraction));
     }
 }

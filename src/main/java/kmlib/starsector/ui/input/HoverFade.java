@@ -31,6 +31,15 @@ public final class HoverFade {
     private static final float HOVERED_PROGRESS = 1f;
     private static final float UNHOVERED_PROGRESS = 0f;
 
+    // A reset skips the travel: a non-positive duration is how the advance is told to cover the whole way in
+    // one step, and with no travel left to scale, the elapsed time it is charged is immaterial.
+    private static final float SNAP_DURATION_SECONDS = 0f;
+    private static final float NO_ELAPSED_SECONDS = 0f;
+
+    // Whether the element is pointed at, named so the reset below reads as "aimed off the hovered look"
+    // rather than as a bare false.
+    private static final boolean NOT_HOVERED = false;
+
     // Where the element currently stands between those two ends.
     private final EasedFraction hoverProgress = new EasedFraction();
 
@@ -66,6 +75,17 @@ public final class HoverFade {
      */
     public boolean hasSettledOffHover() {
         return hoverProgress.hasReachedTarget(UNHOVERED_PROGRESS);
+    }
+
+    /**
+     * Drops the fade all the way back off the hovered look in one step, for an owner whose element stops
+     * showing. A fade left part-way up would otherwise be the first thing the next session paints and then
+     * wind down, showing the player the tail of a hover they never saw begin.
+     */
+    public void resetFade() {
+        // Routed through the ordinary advance rather than a second write to the fraction, so there is one
+        // rule for where "off the hovered look" is and the reset cannot land somewhere the fade never does.
+        advanceTowardHover(NOT_HOVERED, NO_ELAPSED_SECONDS, SNAP_DURATION_SECONDS);
     }
 
     // The end the fade is heading for this frame. One rule for what being hovered means, so the advance and

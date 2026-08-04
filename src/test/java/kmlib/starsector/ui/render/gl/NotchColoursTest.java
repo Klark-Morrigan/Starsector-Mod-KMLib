@@ -8,26 +8,60 @@ import java.awt.Color;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Pins {@link NotchColours}' one rule: which of the handle's two shades the chevron takes for a given
- * hover state.
+ * Pins {@link NotchColours}' one rule: the shade the chevron takes at each end of the handle's hover travel
+ * and between them, and that a look holding one colour across both states never moves.
  */
 final class NotchColoursTest {
-    // Two distinguishable shades, so which one the pick returned is unambiguous.
-    private static final Color RESTING = Color.BLUE;
-    private static final Color HOVERED = Color.YELLOW;
+
+    // Two shades a channel apart in both directions, so a midpoint is a value neither end could produce.
+    private static final Color RESTING = new Color(0, 0, 100);
+    private static final Color HOVERED = new Color(200, 0, 0);
     private static final NotchColours COLOURS = new NotchColours(RESTING, HOVERED);
 
+    // The blend's own ends, and the point midway between them.
+    private static final float FULLY_RESTING = 0f;
+    private static final float HALF_LIT = 0.5f;
+    private static final float FULLY_LIT = 1f;
+
     @Nested
-    class ResolveChevronColour {
+    class ComputeChevronColour {
 
         @Test
-        void resolveChevronColourTakesTheRestingShadeWhenTheHandleIsNotHovered() {
-            assertThat(COLOURS.resolveChevronColour(false)).isEqualTo(RESTING);
+        void computeChevronColourTakesTheRestingShadeWhileTheHandleIsUnlit() {
+            assertThat(COLOURS.computeChevronColour(FULLY_RESTING))
+                .isEqualTo(RESTING);
         }
 
         @Test
-        void resolveChevronColourTakesTheHoveredShadeWhenTheHandleIsHovered() {
-            assertThat(COLOURS.resolveChevronColour(true)).isEqualTo(HOVERED);
+        void computeChevronColourTakesTheHoveredShadeOnceTheHandleIsFullyLit() {
+            assertThat(COLOURS.computeChevronColour(FULLY_LIT))
+                .isEqualTo(HOVERED);
+        }
+
+        @Test
+        void computeChevronColourSitsBetweenTheTwoShadesPartWayThroughTheTravel() {
+            // The whole reason the pick became a blend: a half-faded handle draws a colour neither state
+            // holds, rather than jumping between them at some threshold.
+            assertThat(COLOURS.computeChevronColour(HALF_LIT))
+                .isEqualTo(new Color(100, 0, 50));
+        }
+
+        @Test
+        void computeChevronColourClampsAnOvershootingFractionToTheHoveredShade() {
+            // An animation value past the end settles on the lit shade rather than blending beyond it into
+            // a colour the palette never named.
+            assertThat(COLOURS.computeChevronColour(2f))
+                .isEqualTo(HOVERED);
+        }
+
+        @Test
+        void computeChevronColourHoldsOneShadeThroughoutForALookThatDoesNotDistinguishTheStates() {
+            // The gold choice passes the same colour twice; every point of its travel must be that colour,
+            // so the handle answers a hover by its wash alone rather than by a drifting glyph.
+            var singleShade = new NotchColours(RESTING, RESTING);
+
+            assertThat(singleShade.computeChevronColour(HALF_LIT))
+                .isEqualTo(RESTING);
         }
     }
 }
