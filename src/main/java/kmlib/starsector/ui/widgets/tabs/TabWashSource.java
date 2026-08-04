@@ -14,15 +14,14 @@ package kmlib.starsector.ui.widgets.tabs;
 public interface TabWashSource {
 
     /**
-     * Builds a source lifting only the tab under the pointer, by the given hover wash, with every other
-     * tab left at rest - the whole of what a strip drawn straight from cursor position needs.
+     * Builds a source lifting no tab at all - what a strip drawn without an animator behind it reports,
+     * every tab painting the settled look its state names. Named rather than left to each caller's own
+     * empty lambda, so a strip with no pulses running says so in one recognisable way.
      *
-     * @param hoveredIndex the index the pointer is over, or any value outside the row to lift none
-     * @param hoverWash    the lift the hovered tab holds
-     * @return a source answering {@code hoverWash} at that index and {@link TabWash#NONE} elsewhere
+     * @return a source answering {@link TabWash#NONE} for every index
      */
-    static TabWashSource createHoverWashSource(int hoveredIndex, TabWash hoverWash) {
-        return tabIndex -> tabIndex == hoveredIndex ? hoverWash : TabWash.NONE;
+    static TabWashSource createRestingWashSource() {
+        return tabIndex -> TabWash.NONE;
     }
 
     /**

@@ -5,10 +5,10 @@ import kmlib.colour.Colours;
 import java.awt.Color;
 
 /**
- * A lift over whatever a tab already wears: a colour to move toward and how far to move. Relative rather
- * than absolute, so one wash serves every {@link TabBaseState} - a hovered selected tab and a hovered
- * unselected tab are each their own base brightened, which is what a single "hovered" fill could not
- * express.
+ * A momentary lift over whatever a tab already wears: a colour to move toward and how far to move.
+ * Relative rather than absolute, so one wash serves every {@link TabLookState} - a click on a resting tab
+ * and a click on the one under the pointer each brighten from where that tab already was, which is what a
+ * single pulse colour could not express.
  *
  * <p>A wash lifts the tab's whole look, fill and label alike, so a lifted tab brightens as one piece
  * rather than as a fill sliding out from under its text. The bound key is the exception: its colour is

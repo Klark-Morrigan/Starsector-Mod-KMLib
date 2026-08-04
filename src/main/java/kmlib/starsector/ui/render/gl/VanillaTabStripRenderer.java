@@ -5,11 +5,10 @@ import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.font.DrawableStringCache;
 import kmlib.starsector.ui.font.TextFace;
 import kmlib.starsector.ui.widgets.tabs.HotkeyStyle;
-import kmlib.starsector.ui.widgets.tabs.TabBaseLook;
-import kmlib.starsector.ui.widgets.tabs.TabBaseState;
+import kmlib.starsector.ui.widgets.tabs.TabLook;
+import kmlib.starsector.ui.widgets.tabs.TabLookState;
 import kmlib.starsector.ui.widgets.tabs.TabPalette;
 import kmlib.starsector.ui.widgets.tabs.TabStyle;
-import kmlib.starsector.ui.widgets.tabs.TabWash;
 import kmlib.starsector.ui.widgets.tabs.TabWashSource;
 import kmlib.starsector.ui.widgets.tabs.VanillaTab;
 import kmlib.starsector.ui.widgets.tabs.VanillaTabContent;
@@ -25,9 +24,9 @@ import java.util.List;
 
 /**
  * Raw-GL paint for a {@link VanillaTabStrip}: the sector-map Sector/System tab look - each tab a solid
- * state fill (a dark fill at rest, a bright fill when active), lifted by whatever wash its source reports
- * for it, a bright underline capping the active tab, hairline dividers, and each label drawn beside its
- * shortcut - the key alone in accent gold, its delimiters in the label colour, the way vanilla
+ * fill (dark at rest, bright when active, one shared shade under the pointer) lifted by whatever pulse its
+ * wash source reports, a bright underline capping the active tab, hairline dividers, and each label drawn
+ * beside its shortcut - the key alone in accent gold, its delimiters in the label colour, the way vanilla
  * highlights only the key, and a hairline under the key itself when the style's {@link HotkeyStyle} asks
  * for one - distinct from the underline capping the active tab, which spans the whole tab.
  * The tab geometry lives on the substrate-independent widget; this draws it. The seams between tabs are
@@ -54,12 +53,14 @@ public final class VanillaTabStripRenderer {
     }
 
     /**
-     * Paints the whole strip: each tab's state fill and accents, the dividers, and each label with
-     * its gold shortcut. The selected tab draws its bright fill and underline, and every tab is lifted by
-     * the wash its source reports for it; a {@code selectedIndex} outside the row simply lights none.
+     * Paints the whole strip: each tab's look, the dividers, and each label with its gold shortcut. The
+     * tab under the pointer wears the hovered shade whether or not it is the selected one, the selected
+     * tab keeps its underline either way, and every tab is lifted by the pulse its source reports for it;
+     * a {@code selectedIndex} or {@code hoveredIndex} outside the row simply lights none.
      *
      * @param tabs          the laid-out tabs, in row order
      * @param selectedIndex the active tab's index, or a value outside the row
+     * @param hoveredIndex  the index under the pointer, or a value outside the row
      * @param washes        where each tab's resolved lift comes from - the interaction is already
      *                      composed into a wash here, so this pass only paints it
      * @param style         the strip's look; its palette (see {@link TabPalette#createMapTabPalette}),
@@ -70,6 +71,7 @@ public final class VanillaTabStripRenderer {
     public static void render(
             List<VanillaTab> tabs,
             int selectedIndex,
+            int hoveredIndex,
             TabWashSource washes,
             TabStyle style,
             float opacity) {
@@ -77,21 +79,24 @@ public final class VanillaTabStripRenderer {
         var palette = style.palette();
         var textFace = style.face();
         for (var index = 0; index < tabs.size(); index++) {
-            
+
             var tab = tabs.get(index);
-            var baseState = index == selectedIndex
-                ? TabBaseState.SELECTED
-                : TabBaseState.UNSELECTED;
+            var isSelected = index == selectedIndex;
 
-            var baseLook = palette.resolveBaseLook(baseState);
-            var wash = washes.resolveWashAt(index);
+            // Hovering wins over selection, since the two meet at one shade under the pointer; the
+            // underline below is what still says which tab the panel is showing.
+            var lookState = resolveLookState(isSelected, index == hoveredIndex);
 
-            renderChrome(tab.bounds(), baseState, baseLook, wash, palette.chromeAccent(), opacity);
+            // The look as painted: the settled shade its state names, brightened by whatever pulse is
+            // still running on it. A tab with none carries a wash that moves it nowhere, so no branch
+            // here decides whether a lift applies.
+            var look = palette.resolveLook(lookState).computeWashedLook(washes.resolveWashAt(index));
+
+            renderChrome(tab.bounds(), isSelected, look, palette.chromeAccent(), opacity);
             renderTabText(
                 tab.bounds(),
                 tab.content(),
-                baseLook,
-                wash,
+                look,
                 style.hotkey(),
                 textFace,
                 opacity);
@@ -106,6 +111,17 @@ public final class VanillaTabStripRenderer {
             opacity);
     }
 
+    // Which settled shade a tab shows: the hovered one whenever the pointer is on it, since the resting
+    // and the selected tab meet there, and otherwise the one its selection names.
+    private static TabLookState resolveLookState(boolean isSelected, boolean isHovered) {
+        if (isHovered) {
+            return TabLookState.HOVERED;
+        }
+        return isSelected
+            ? TabLookState.SELECTED
+            : TabLookState.UNSELECTED;
+    }
+
     // The laid tab boxes, in row order, for the shared seam-divider pass.
     private static List<Rectangle> collectBounds(List<VanillaTab> tabs) {
         var bounds = new ArrayList<Rectangle>(tabs.size());
@@ -115,24 +131,20 @@ public final class VanillaTabStripRenderer {
         return bounds;
     }
 
-    // The tab's solid state fill - the selected tab's bright fill or a resting tab's dark fill, lifted by
-    // the wash the tab currently carries - a faint baseline grounding the row, and a bright underline
-    // capping the active tab. The fill IS the tab's surface: there is no black backdrop underneath, so
-    // an unselected tab reads as its solid colour rather than that colour bled over black. The
-    // inter-tab seams are drawn once by the caller through the shared primitive, not here.
+    // The tab's solid fill as its look gives it, a faint baseline grounding the row, and a bright
+    // underline capping the active tab. The fill IS the tab's surface: there is no black backdrop
+    // underneath, so an unselected tab reads as its solid colour rather than that colour bled over black.
+    // Selection is read here rather than off the look, because a hovered selected tab wears the hovered
+    // shade and its underline is then the only thing marking it. The inter-tab seams are drawn once by
+    // the caller through the shared primitive, not here.
     private static void renderChrome(
             Rectangle bounds,
-            TabBaseState baseState,
-            TabBaseLook baseLook,
-            TabWash wash,
+            boolean isSelected,
+            TabLook look,
             Color chromeAccent,
             float opacity) {
 
-        // The lift is already resolved, so a tab at rest simply carries a wash that moves its fill
-        // nowhere - no branch here decides whether one applies.
-        var fill = wash.computeWashedColour(baseLook.fill());
-
-        UiFill.renderQuad(bounds, new UiElementPaint(fill, opacity));
+        UiFill.renderQuad(bounds, new UiElementPaint(look.fill(), opacity));
         UiFill.renderQuad(
             new Rectangle(
                 bounds.x(),
@@ -143,7 +155,7 @@ public final class VanillaTabStripRenderer {
                 chromeAccent,
                 opacity * HorizontalSegmentsRenderer.DIVIDER_ALPHA_MULT));
 
-        if (baseState == TabBaseState.SELECTED) {
+        if (isSelected) {
             UiFill.renderQuad(
                 new Rectangle(
                     bounds.x(),
@@ -164,8 +176,7 @@ public final class VanillaTabStripRenderer {
     private static void renderTabText(
             Rectangle bounds,
             VanillaTabContent content,
-            TabBaseLook baseLook,
-            TabWash wash,
+            TabLook look,
             HotkeyStyle hotkeyStyle,
             TextFace textFace,
             float opacity) {
@@ -174,11 +185,7 @@ public final class VanillaTabStripRenderer {
         if (label == null) {
             return;
         }
-        // The label lifts with the fill it sits on, so a washed tab brightens as one piece rather than
-        // as a fill sliding out from under its text.
-        var labelColour = wash.computeWashedColour(baseLook.label());
-
-        var fadedLabelColour = Colours.scaleAlpha(labelColour, opacity);
+        var fadedLabelColour = Colours.scaleAlpha(look.label(), opacity);
         label.setBaseColor(fadedLabelColour);
 
         // The delimiters take the label's state colour; only the key takes the styled hotkey colour.

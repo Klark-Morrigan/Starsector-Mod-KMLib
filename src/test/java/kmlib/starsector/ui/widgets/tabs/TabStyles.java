@@ -19,13 +19,13 @@ public final class TabStyles {
     // though the roles mattered.
     private static final Color STAND_IN_SHADE = Color.GRAY;
 
-    // No interaction lift in any of the three momentary roles: these tests draw nothing, so a lift would
-    // only suggest the layout reserves something for one (it does not - a wash costs no room).
+    // No pulse lift in either momentary role: these tests draw nothing, so a lift would only suggest the
+    // layout reserves something for one (it does not - a wash costs no room).
     private static final TabPalette STAND_IN_PALETTE = new TabPalette(
         STAND_IN_SHADE,
-        new TabBaseLook(STAND_IN_SHADE, STAND_IN_SHADE),
-        new TabBaseLook(STAND_IN_SHADE, STAND_IN_SHADE),
-        TabWash.NONE,
+        new TabLook(STAND_IN_SHADE, STAND_IN_SHADE),
+        new TabLook(STAND_IN_SHADE, STAND_IN_SHADE),
+        new TabLook(STAND_IN_SHADE, STAND_IN_SHADE),
         TabWash.NONE,
         TabWash.NONE);
 
