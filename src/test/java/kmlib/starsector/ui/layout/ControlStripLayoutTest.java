@@ -296,12 +296,14 @@ final class ControlStripLayoutTest {
             var withIcon = IconLabelRow.measureRowWidth(
                 ControlStripLayout.CONTROL_ROW_HEIGHT,
                 2 * WIDTH_PER_CHAR,
-                true);
+                true,
+                RowSlot.NO_WIDTH);
 
             var withoutIcon = IconLabelRow.measureRowWidth(
                 ControlStripLayout.CONTROL_ROW_HEIGHT,
                 3 * WIDTH_PER_CHAR,
-                false);
+                false,
+                RowSlot.NO_WIDTH);
 
             assertThat(measurement.rowWidths().get(0))
                 .isCloseTo(Math.max(withIcon, withoutIcon), within(TOLERANCE));
@@ -401,7 +403,8 @@ final class ControlStripLayoutTest {
             var withoutValue = IconLabelRow.measureRowWidth(
                 ControlStripLayout.CONTROL_ROW_HEIGHT,
                 2 * WIDTH_PER_CHAR,
-                true);
+                true,
+                RowSlot.NO_WIDTH);
 
             assertThat(measurement.rowWidths().get(0))
                 .isCloseTo(withoutValue, within(TOLERANCE));

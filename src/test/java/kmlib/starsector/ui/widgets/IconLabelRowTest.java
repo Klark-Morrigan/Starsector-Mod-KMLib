@@ -34,12 +34,14 @@ class IconLabelRowTest {
         @Test
         void anchorsPastTheIconAndItsGapWhenTheOptionHasAnIcon() {
             // Left padding 4 + icon side 20 + gap 6 = 30 past the row's left edge (x=10) -> 40.
-            assertThat(IconLabelRow.computeLabelAnchorX(row, true)).isEqualTo(40f);
+            assertThat(IconLabelRow.computeLabelAnchorX(row, true))
+                .isEqualTo(40f);
         }
 
         @Test
         void anchorsAtTheLeftPaddingWhenTheOptionHasNoIcon() {
-            assertThat(IconLabelRow.computeLabelAnchorX(row, false)).isEqualTo(14f);
+            assertThat(IconLabelRow.computeLabelAnchorX(row, false))
+                .isEqualTo(14f);
         }
     }
 
@@ -49,7 +51,8 @@ class IconLabelRowTest {
         void anchorsAtTheRightEdgeLessTheTrailingInset() {
             // Row right edge 10 + 100 = 110, less trailing padding 4 -> 106; the value right-aligns
             // here so a stack of equal-width rows lines its values up.
-            assertThat(IconLabelRow.computeTrailingAnchorX(row)).isEqualTo(106f);
+            assertThat(IconLabelRow.computeTrailingAnchorX(row))
+                .isEqualTo(106f);
         }
     }
 
@@ -57,19 +60,23 @@ class IconLabelRowTest {
     class ComputeDirectionTriangleBox {
         @Test
         void rightAlignsToTheTrailingInsetAndCentresVerticallyInTheRow() {
+
             var box = IconLabelRow.computeDirectionTriangleBox(row);
             // Its width is the slot width, its right edge the same trailing inset a value anchors to,
             // and its centre the row's centre, so a triangle column lines up where a value column would.
             assertThat(box.width())
                 .isEqualTo(IconLabelRow.computeDirectionTriangleSlotWidth(row.height()));
-            assertThat(box.x() + box.width()).isEqualTo(IconLabelRow.computeTrailingAnchorX(row));
-            assertThat(box.computeCenterY()).isEqualTo(row.computeCenterY());
+            assertThat(box.x() + box.width())
+                .isEqualTo(IconLabelRow.computeTrailingAnchorX(row));
+            assertThat(box.computeCenterY())
+                .isEqualTo(row.computeCenterY());
         }
 
         @Test
         void sizesTheTriangleOffTheRowHeightSoAStackReadsEven() {
             // A taller row yields a wider slot, so a stack of equal-height rows shows even triangles.
             var tallerRow = new Rectangle(10f, 20f, 100f, 40f);
+
             assertThat(IconLabelRow.computeDirectionTriangleSlotWidth(tallerRow.height()))
                 .isGreaterThan(IconLabelRow.computeDirectionTriangleSlotWidth(row.height()));
         }
@@ -79,29 +86,25 @@ class IconLabelRowTest {
     class MeasureRowWidth {
         @Test
         void reservesTheIconAndItsGapAheadOfTheLabelWhenTheOptionHasAnIcon() {
-            // Left padding 4 + (icon side 20 + gap 6) + label 50 + trailing padding 4 = 84.
-            assertThat(IconLabelRow.measureRowWidth(24f, 50f, true)).isEqualTo(84f);
+            // Left padding 4 + (icon side 20 + gap 6) + label 50 + trailing padding 4 = 84. A row with
+            // no value is charged neither the value nor the gap that would part it from the label.
+            assertThat(IconLabelRow.measureRowWidth(24f, 50f, true, RowSlot.NO_WIDTH))
+                .isEqualTo(84f);
         }
 
         @Test
         void reservesOnlyTheLabelAndPaddingWhenTheOptionHasNoIcon() {
             // Left padding 4 + label 50 + trailing padding 4 = 58, no icon extent.
-            assertThat(IconLabelRow.measureRowWidth(24f, 50f, false)).isEqualTo(58f);
+            assertThat(IconLabelRow.measureRowWidth(24f, 50f, false, RowSlot.NO_WIDTH))
+                .isEqualTo(58f);
         }
 
         @Test
         void reservesTheTrailingValueAndItsGapWhenTheOptionHasAValue() {
             // Left padding 4 + (icon 20 + gap 6) + label 50 + (value gap 6 + value 15) + trailing
             // padding 4 = 105, the icon-and-value case the picker's ranked rows take.
-            assertThat(IconLabelRow.measureRowWidth(24f, 50f, true, 15f)).isEqualTo(105f);
-        }
-
-        @Test
-        void reservesNoTrailingRoomWhenTheValueWidthIsZero() {
-            // A zero-width value is "no value", so the four-arg width matches the three-arg one and a
-            // value-less row is sized exactly as before.
-            assertThat(IconLabelRow.measureRowWidth(24f, 50f, true, 0f))
-                .isEqualTo(IconLabelRow.measureRowWidth(24f, 50f, true));
+            assertThat(IconLabelRow.measureRowWidth(24f, 50f, true, 15f))
+                .isEqualTo(105f);
         }
     }
 }

@@ -138,31 +138,18 @@ public final class IconLabelRow {
     }
 
     /**
-     * How wide the row must be to hold its icon and label without clipping, with no trailing value:
-     * the leading inset, the icon and its gap when present, the label, and the trailing inset. A host
-     * sizes the list to the widest row this reports, so the widest name (with or without a crest)
-     * still clears the frame.
-     *
-     * @param rowHeight  the option row's height (the icon side derives from it)
-     * @param labelWidth the label's measured rendered width
-     * @param hasIcon    whether this option contributes an icon and its gap
-     * @return the row's required width, in UI coordinates
-     */
-    public static float measureRowWidth(float rowHeight, float labelWidth, boolean hasIcon) {
-        return measureRowWidth(rowHeight, labelWidth, hasIcon, 0f);
-    }
-
-    /**
      * How wide the row must be to hold its icon, label, and trailing value without clipping: the
      * leading inset, the icon and its gap when present, the label, the value and its gap when present,
-     * and the trailing inset. Sizing every row to hold its own value and taking the widest gives a
+     * and the trailing inset. A host sizes the list to the widest row this reports, so the widest name
+     * still clears the frame. Sizing every row to hold its own value and taking the widest gives a
      * column wide enough that each row's label clears its right-aligned value, since the widest row's
      * width bounds every row's label region.
      *
      * @param rowHeight     the option row's height (the icon side derives from it)
      * @param labelWidth    the label's measured rendered width
      * @param hasIcon       whether this option contributes an icon and its gap
-     * @param trailingWidth the trailing value's measured rendered width, or 0 for a row with no value
+     * @param trailingWidth the trailing value's measured rendered width, or {@link RowSlot#NO_WIDTH}
+     *                      for a row with no value, which is charged neither the value nor its gap
      * @return the row's required width, in UI coordinates
      */
     public static float measureRowWidth(
@@ -175,7 +162,7 @@ public final class IconLabelRow {
             ? computeIconSide(rowHeight) + COLUMNS.leadingLabelGap()
             : 0f;
 
-        var trailingExtent = trailingWidth > 0f
+        var trailingExtent = trailingWidth > RowSlot.NO_WIDTH
             ? COLUMNS.labelTrailingGap() + trailingWidth
             : 0f;
 
