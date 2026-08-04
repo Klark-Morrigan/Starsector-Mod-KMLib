@@ -44,12 +44,12 @@ final class ListSystemEntitiesCommandTest {
     class BuildReport {
         @Test
         void buildsOrbitTreeWithTrailingUnorbitedAndFleets() {
-            var star = entity("star", "Star", 0f, 0f, null, 0f, false);
-            var planet = entity("planet", "Planet", 1000f, 0f, star, 360f, false);
-            var gate = entity("gate1", "Gate", 1100f, 0f, planet, 180f, true);
-            var drifting = entity("probe", "Probe", 500f, 0f, null, 0f, false);
-            var fleet = fleet("Patrol", 2000f, 0f);
-            var system = system(star, List.of(star, planet, gate, drifting), List.of(fleet));
+            var star = buildEntity("star", "Star", 0f, 0f, null, 0f, false);
+            var planet = buildEntity("planet", "Planet", 1000f, 0f, star, 360f, false);
+            var gate = buildEntity("gate1", "Gate", 1100f, 0f, planet, 180f, true);
+            var drifting = buildEntity("probe", "Probe", 500f, 0f, null, 0f, false);
+            var fleet = buildFleet("Patrol", 2000f, 0f);
+            var system = buildSystem(star, List.of(star, planet, gate, drifting), List.of(fleet));
 
             var report = ListSystemEntitiesCommand.buildReport(system, false);
 
@@ -64,13 +64,13 @@ final class ListSystemEntitiesCommandTest {
 
         @Test
         void gatesFilterKeepsGatesAndTheirOrbitChainOnly() {
-            var star = entity("star", "Star", 0f, 0f, null, 0f, false);
-            var planet = entity("planet", "Planet", 1000f, 0f, star, 360f, false);
-            var gate = entity("gate1", "Gate", 1100f, 0f, planet, 180f, true);
-            var otherPlanet = entity("planet2", "Other", -1000f, 0f, star, 360f, false);
-            var drifting = entity("probe", "Probe", 500f, 0f, null, 0f, false);
-            var fleet = fleet("Patrol", 2000f, 0f);
-            var system = system(star,
+            var star = buildEntity("star", "Star", 0f, 0f, null, 0f, false);
+            var planet = buildEntity("planet", "Planet", 1000f, 0f, star, 360f, false);
+            var gate = buildEntity("gate1", "Gate", 1100f, 0f, planet, 180f, true);
+            var otherPlanet = buildEntity("planet2", "Other", -1000f, 0f, star, 360f, false);
+            var drifting = buildEntity("probe", "Probe", 500f, 0f, null, 0f, false);
+            var fleet = buildFleet("Patrol", 2000f, 0f);
+            var system = buildSystem(star,
                 List.of(star, planet, gate, otherPlanet, drifting), List.of(fleet));
 
             var report = ListSystemEntitiesCommand.buildReport(system, true);
@@ -95,9 +95,9 @@ final class ListSystemEntitiesCommandTest {
 
         @BeforeEach
         void setUp() {
-            var star = entity("star", "Star", 0f, 0f, null, 0f, false);
-            var gate = entity("gate1", "Gate", 100f, 0f, star, 180f, true);
-            var systemMock = system(star, List.of(star, gate), List.of());
+            var star = buildEntity("star", "Star", 0f, 0f, null, 0f, false);
+            var gate = buildEntity("gate1", "Gate", 100f, 0f, star, 180f, true);
+            var systemMock = buildSystem(star, List.of(star, gate), List.of());
 
             globalMock = mockStatic(Global.class);
             globalMock.when(Global::getSector).thenReturn(mock(SectorAPI.class));
@@ -154,7 +154,7 @@ final class ListSystemEntitiesCommandTest {
         }
     }
 
-    private static StarSystemAPI system(SectorEntityToken center,
+    private static StarSystemAPI buildSystem(SectorEntityToken center,
             List<SectorEntityToken> allEntities, List<CampaignFleetAPI> fleets) {
         var systemMock = mock(StarSystemAPI.class);
         when(systemMock.getName()).thenReturn("Test System");
@@ -164,7 +164,7 @@ final class ListSystemEntitiesCommandTest {
         return systemMock;
     }
 
-    private static SectorEntityToken entity(String id, String name, float x, float y,
+    private static SectorEntityToken buildEntity(String id, String name, float x, float y,
             SectorEntityToken focus, float orbitalPeriodDays, boolean isGate) {
         var entityMock = mock(SectorEntityToken.class);
         when(entityMock.getId()).thenReturn(id);
@@ -180,7 +180,7 @@ final class ListSystemEntitiesCommandTest {
         return entityMock;
     }
 
-    private static CampaignFleetAPI fleet(String name, float x, float y) {
+    private static CampaignFleetAPI buildFleet(String name, float x, float y) {
         var fleetMock = mock(CampaignFleetAPI.class);
         when(fleetMock.getId()).thenReturn(name);
         when(fleetMock.getName()).thenReturn(name);

@@ -545,7 +545,7 @@ final class ControlStripLayoutTest {
             var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
 
             var controls = ControlStripLayout.layoutControls(
-                frameBody(measurement),
+                buildFrameBody(measurement),
                 specs,
                 measurement.rowHeights(),
                 measurement.rowWidths(),
@@ -573,7 +573,7 @@ final class ControlStripLayoutTest {
 
             var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
             var radio = ControlStripLayout.layoutControls(
-                    frameBody(measurement),
+                    buildFrameBody(measurement),
                     specs,
                     measurement.rowHeights(),
                     measurement.rowWidths(),
@@ -604,7 +604,7 @@ final class ControlStripLayoutTest {
 
             var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
             var radio = ControlStripLayout.layoutControls(
-                    frameBody(measurement),
+                    buildFrameBody(measurement),
                     specs,
                     measurement.rowHeights(),
                     measurement.rowWidths(),
@@ -641,7 +641,7 @@ final class ControlStripLayoutTest {
 
             var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
             var picker = ControlStripLayout.layoutControls(
-                    frameBody(measurement),
+                    buildFrameBody(measurement),
                     specs,
                     measurement.rowHeights(),
                     measurement.rowWidths(),
@@ -677,7 +677,7 @@ final class ControlStripLayoutTest {
 
             var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
             var picker = ControlStripLayout.layoutControls(
-                    frameBody(measurement),
+                    buildFrameBody(measurement),
                     specs,
                     measurement.rowHeights(),
                     measurement.rowWidths(),
@@ -709,7 +709,7 @@ final class ControlStripLayoutTest {
                 LabelledControlSpecs.buildCheckbox("Muted", false, ControlAction.NONE));
             var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
             var controls = ControlStripLayout.layoutControls(
-                frameBody(measurement),
+                buildFrameBody(measurement),
                 specs,
                 measurement.rowHeights(),
                 measurement.rowWidths(),
@@ -725,7 +725,7 @@ final class ControlStripLayoutTest {
             var specs = List.<ControlSpec>of(LabelledControlSpecs.buildLabel("Non-allied factions are"));
             var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
             var controls = ControlStripLayout.layoutControls(
-                frameBody(measurement),
+                buildFrameBody(measurement),
                 specs,
                 measurement.rowHeights(),
                 measurement.rowWidths(),
@@ -745,7 +745,7 @@ final class ControlStripLayoutTest {
 
             var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
             var controls = ControlStripLayout.layoutControls(
-                frameBody(measurement),
+                buildFrameBody(measurement),
                 specs,
                 measurement.rowHeights(),
                 measurement.rowWidths(),
@@ -765,7 +765,7 @@ final class ControlStripLayoutTest {
                 LabelledControlSpecs.buildCheckbox("Muted", false, ControlAction.NONE));
 
             var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
-            var body = frameBody(measurement);
+            var body = buildFrameBody(measurement);
             var divider = ControlStripLayout.layoutControls(
                     body,
                     specs,
@@ -804,7 +804,7 @@ final class ControlStripLayoutTest {
             var specs = List.<ControlSpec>of(new ControlSpec.SideBySide(List.of(left), List.of(right)));
             var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
             var controls = ControlStripLayout.layoutControls(
-                frameBody(measurement),
+                buildFrameBody(measurement),
                 specs,
                 measurement.rowHeights(),
                 measurement.rowWidths(),
@@ -849,7 +849,7 @@ final class ControlStripLayoutTest {
 
             var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
             var controls = ControlStripLayout.layoutControls(
-                frameBody(measurement),
+                buildFrameBody(measurement),
                 specs,
                 measurement.rowHeights(),
                 measurement.rowWidths(),
@@ -884,7 +884,7 @@ final class ControlStripLayoutTest {
 
             var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
             var tabs = ControlStripLayout.layoutControls(
-                    frameBody(measurement),
+                    buildFrameBody(measurement),
                     specs,
                     measurement.rowHeights(),
                     measurement.rowWidths(),
@@ -920,7 +920,7 @@ final class ControlStripLayoutTest {
 
             var measurement = ControlStripLayout.measureStrip(specs, measurerFake);
             var bodyTabs = ControlStripLayout.layoutControls(
-                    frameBody(measurement),
+                    buildFrameBody(measurement),
                     specs,
                     measurement.rowHeights(),
                     measurement.rowWidths(),
@@ -936,7 +936,7 @@ final class ControlStripLayoutTest {
 
     // Frames a body rectangle of the measured size at a fixed origin, the way a host sizes its chrome
     // around the strip footprint before handing the body back for placement.
-    private static Rectangle frameBody(StripMeasurement measurement) {
+    private static Rectangle buildFrameBody(StripMeasurement measurement) {
         return new Rectangle(
             BODY_ORIGIN_X,
             BODY_ORIGIN_Y,

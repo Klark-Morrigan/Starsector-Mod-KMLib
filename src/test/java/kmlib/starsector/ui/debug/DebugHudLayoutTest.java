@@ -30,7 +30,7 @@ class DebugHudLayoutTest {
 
         @Test
         void layOutAtCornerMakesAKeyLineAboveABodyLinePerEntryStackingDown() {
-            var lines = corner(DebugQuadrant.TOP_LEFT);
+            var lines = listCornerLines(DebugQuadrant.TOP_LEFT);
 
             assertThat(lines).extracting(DebugHudLine::text)
                 .containsExactly("first-key", "first-body", "second-key", "second-body");
@@ -43,7 +43,7 @@ class DebugHudLayoutTest {
 
         @Test
         void layOutAtCornerGrowsALeftCornerInFromTheLeftEdge() {
-            assertThat(corner(DebugQuadrant.BOTTOM_LEFT)).allSatisfy(line -> {
+            assertThat(listCornerLines(DebugQuadrant.BOTTOM_LEFT)).allSatisfy(line -> {
                 assertThat(line.isRightAligned()).isFalse();
                 assertThat(line.x()).isEqualTo(EDGE_PADDING);
             });
@@ -51,7 +51,7 @@ class DebugHudLayoutTest {
 
         @Test
         void layOutAtCornerGrowsARightCornerInFromTheRightEdge() {
-            assertThat(corner(DebugQuadrant.TOP_RIGHT)).allSatisfy(line -> {
+            assertThat(listCornerLines(DebugQuadrant.TOP_RIGHT)).allSatisfy(line -> {
                 assertThat(line.isRightAligned()).isTrue();
                 assertThat(line.x()).isEqualTo(SCREEN_WIDTH - EDGE_PADDING);
             });
@@ -59,13 +59,13 @@ class DebugHudLayoutTest {
 
         @Test
         void layOutAtCornerStartsATopCornerNearTheTopEdge() {
-            assertThat(corner(DebugQuadrant.TOP_RIGHT).get(0).y())
+            assertThat(listCornerLines(DebugQuadrant.TOP_RIGHT).get(0).y())
                 .isEqualTo(SCREEN_HEIGHT - EDGE_PADDING);
         }
 
         @Test
         void layOutAtCornerPinsABottomCornerBlockAboveTheBottomEdge() {
-            var lines = corner(DebugQuadrant.BOTTOM_RIGHT);
+            var lines = listCornerLines(DebugQuadrant.BOTTOM_RIGHT);
             var lastLine = lines.get(lines.size() - 1);
 
             assertThat(lastLine.y()).isGreaterThanOrEqualTo(EDGE_PADDING);
@@ -91,7 +91,7 @@ class DebugHudLayoutTest {
                 .isEmpty();
         }
 
-        private static List<DebugHudLine> corner(DebugQuadrant quadrant) {
+        private static List<DebugHudLine> listCornerLines(DebugQuadrant quadrant) {
             return DebugHudLayout.layOutAtCorner(
                 quadrant, TWO_ENTRIES, SCREEN_WIDTH, SCREEN_HEIGHT, EDGE_PADDING);
         }
@@ -102,7 +102,7 @@ class DebugHudLayoutTest {
 
         @Test
         void layOutAroundCursorRightAlignsALeftQuadrantToTheCursorsLeft() {
-            assertThat(cursor(DebugQuadrant.TOP_LEFT)).allSatisfy(line -> {
+            assertThat(listCursorLines(DebugQuadrant.TOP_LEFT)).allSatisfy(line -> {
                 assertThat(line.isRightAligned()).isTrue();
                 assertThat(line.x()).isLessThan(CURSOR_X);
             });
@@ -110,7 +110,7 @@ class DebugHudLayoutTest {
 
         @Test
         void layOutAroundCursorLeftAlignsARightQuadrantToTheCursorsRight() {
-            assertThat(cursor(DebugQuadrant.BOTTOM_RIGHT)).allSatisfy(line -> {
+            assertThat(listCursorLines(DebugQuadrant.BOTTOM_RIGHT)).allSatisfy(line -> {
                 assertThat(line.isRightAligned()).isFalse();
                 assertThat(line.x()).isGreaterThan(CURSOR_X);
             });
@@ -118,17 +118,17 @@ class DebugHudLayoutTest {
 
         @Test
         void layOutAroundCursorStacksATopQuadrantAboveTheCursor() {
-            assertThat(cursor(DebugQuadrant.TOP_RIGHT)).allSatisfy(
+            assertThat(listCursorLines(DebugQuadrant.TOP_RIGHT)).allSatisfy(
                 line -> assertThat(line.y()).isGreaterThan(CURSOR_Y));
         }
 
         @Test
         void layOutAroundCursorStacksABottomQuadrantBelowTheCursor() {
-            assertThat(cursor(DebugQuadrant.BOTTOM_LEFT)).allSatisfy(
+            assertThat(listCursorLines(DebugQuadrant.BOTTOM_LEFT)).allSatisfy(
                 line -> assertThat(line.y()).isLessThan(CURSOR_Y));
         }
 
-        private static List<DebugHudLine> cursor(DebugQuadrant quadrant) {
+        private static List<DebugHudLine> listCursorLines(DebugQuadrant quadrant) {
             return DebugHudLayout.layOutAroundCursor(quadrant, TWO_ENTRIES, CURSOR_X, CURSOR_Y);
         }
     }

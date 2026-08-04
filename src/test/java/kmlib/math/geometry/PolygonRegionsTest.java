@@ -97,7 +97,7 @@ final class PolygonRegionsTest {
         // A U shape: the side-10 square with a notch cut down from the top between
         // x=4 and x=6, so a point in the notch sits within the ring's bounds but
         // outside the ring itself.
-        private List<double[]> notchedSquare() {
+        private List<double[]> buildNotchedSquare() {
             return Arrays.asList(
                 new double[] {0, 0},
                 new double[] {10, 0},
@@ -136,14 +136,14 @@ final class PolygonRegionsTest {
         void a_point_in_a_concave_rings_notch_is_outside() {
             // (5, 7) is inside the bounding box and between the U's two arms, but the
             // ray crosses two edges on its way out - even, so outside.
-            assertThat(PolygonRegions.isPointInsideRing(notchedSquare(), 5, 7))
+            assertThat(PolygonRegions.isPointInsideRing(buildNotchedSquare(), 5, 7))
                 .isFalse();
         }
 
         @Test
         void a_point_in_a_concave_rings_arm_is_inside() {
             // (2, 7) sits in the U's left arm: one crossing, so inside.
-            assertThat(PolygonRegions.isPointInsideRing(notchedSquare(), 2, 7))
+            assertThat(PolygonRegions.isPointInsideRing(buildNotchedSquare(), 2, 7))
                 .isTrue();
         }
 
@@ -183,10 +183,10 @@ final class PolygonRegionsTest {
         void two_disjoint_bodies_keep_the_hole_each_was_given() {
             // The failure this rules out is silent: swap the two holes and every ring
             // still draws, in the right place, with only the filled area wrong.
-            var leftBody = squareAt(0, 0, 10);
-            var rightBody = squareAt(100, 0, 10);
-            var leftHole = clockwiseSquareAt(3, 3, 4);
-            var rightHole = clockwiseSquareAt(103, 3, 4);
+            var leftBody = buildSquareAt(0, 0, 10);
+            var rightBody = buildSquareAt(100, 0, 10);
+            var leftHole = buildClockwiseSquareAt(3, 3, 4);
+            var rightHole = buildClockwiseSquareAt(103, 3, 4);
 
             var regions = PolygonRegions.groupRingsIntoRegions(
                 List.of(leftBody, rightBody, leftHole, rightHole));
@@ -203,9 +203,9 @@ final class PolygonRegionsTest {
         void a_hole_lands_in_its_container_and_not_in_whichever_outer_ring_came_first() {
             // The second body owns the hole, so a rule that took the first outer ring it
             // walked - or simply the first in the list - would put it in the first.
-            var firstBody = squareAt(0, 0, 10);
-            var containingBody = squareAt(100, 0, 10);
-            var hole = clockwiseSquareAt(103, 3, 4);
+            var firstBody = buildSquareAt(0, 0, 10);
+            var containingBody = buildSquareAt(100, 0, 10);
+            var hole = buildClockwiseSquareAt(103, 3, 4);
 
             var regions = PolygonRegions.groupRingsIntoRegions(
                 List.of(firstBody, containingBody, hole));
@@ -220,10 +220,10 @@ final class PolygonRegionsTest {
             // and a pond on the island. Both the landmass and the island contain the pond,
             // and only the island is the body it is actually cut from - which is what
             // smallest-container decides and first-container would get backwards.
-            var landmass = squareAt(0, 0, 100);
-            var lake = clockwiseSquareAt(10, 10, 80);
-            var island = squareAt(20, 20, 60);
-            var pond = clockwiseSquareAt(30, 30, 40);
+            var landmass = buildSquareAt(0, 0, 100);
+            var lake = buildClockwiseSquareAt(10, 10, 80);
+            var island = buildSquareAt(20, 20, 60);
+            var pond = buildClockwiseSquareAt(30, 30, 40);
 
             var regions = PolygonRegions.groupRingsIntoRegions(
                 List.of(landmass, island, lake, pond));
@@ -239,8 +239,8 @@ final class PolygonRegionsTest {
         void a_hole_no_outer_ring_contains_is_dropped_rather_than_carried() {
             // It cuts nothing out of anything. Kept, it would be stroked as a stray loop
             // over an area that is not the region's.
-            var body = squareAt(0, 0, 10);
-            var strayHole = clockwiseSquareAt(100, 100, 4);
+            var body = buildSquareAt(0, 0, 10);
+            var strayHole = buildClockwiseSquareAt(100, 100, 4);
             var regions = PolygonRegions.groupRingsIntoRegions(List.of(body, strayHole));
 
             assertThat(regions)
@@ -263,7 +263,7 @@ final class PolygonRegionsTest {
 
         // A CCW square of the given side, anchored where asked - the outer-ring shape, placed
         // so containment rather than winding is what a case turns on.
-        private List<double[]> squareAt(double x, double y, double side) {
+        private List<double[]> buildSquareAt(double x, double y, double side) {
             return List.of(
                 new double[] {x, y},
                 new double[] {x + side, y},
@@ -272,8 +272,8 @@ final class PolygonRegionsTest {
         }
 
         // The same square wound clockwise, which is what marks a ring as a hole.
-        private List<double[]> clockwiseSquareAt(double x, double y, double side) {
-            var ring = new ArrayList<>(squareAt(x, y, side));
+        private List<double[]> buildClockwiseSquareAt(double x, double y, double side) {
+            var ring = new ArrayList<>(buildSquareAt(x, y, side));
             Collections.reverse(ring);
             return ring;
         }

@@ -42,7 +42,7 @@ final class PolygonTessellatorTest {
 
             var triangles = PolygonTessellator.tessellateToTriangles(List.of(lShape));
 
-            assertThat(totalTriangleArea(triangles)).isCloseTo(500.0, within(AREA_TOLERANCE));
+            assertThat(computeTotalTriangleArea(triangles)).isCloseTo(500.0, within(AREA_TOLERANCE));
         }
 
         @Test
@@ -58,7 +58,7 @@ final class PolygonTessellatorTest {
 
             var triangles = PolygonTessellator.tessellateToTriangles(List.of(outer, hole));
 
-            assertThat(totalTriangleArea(triangles)).isCloseTo(1200.0, within(AREA_TOLERANCE));
+            assertThat(computeTotalTriangleArea(triangles)).isCloseTo(1200.0, within(AREA_TOLERANCE));
         }
 
         @Test
@@ -90,7 +90,7 @@ final class PolygonTessellatorTest {
             var triangles = PolygonTessellator.tessellateIntersectionToTriangles(
                 List.of(lower), List.of(upper));
 
-            assertThat(totalTriangleArea(triangles)).isCloseTo(100.0, within(AREA_TOLERANCE));
+            assertThat(computeTotalTriangleArea(triangles)).isCloseTo(100.0, within(AREA_TOLERANCE));
         }
 
         @Test
@@ -107,7 +107,7 @@ final class PolygonTessellatorTest {
             var triangles = PolygonTessellator.tessellateIntersectionToTriangles(
                 List.of(outer), List.of(inner));
 
-            assertThat(totalTriangleArea(triangles)).isCloseTo(400.0, within(AREA_TOLERANCE));
+            assertThat(computeTotalTriangleArea(triangles)).isCloseTo(400.0, within(AREA_TOLERANCE));
         }
 
         @Test
@@ -141,7 +141,7 @@ final class PolygonTessellatorTest {
             var triangles = PolygonTessellator.tessellateIntersectionToTriangles(
                 Arrays.asList(holedOuter, hole), List.of(probe));
 
-            assertThat(totalTriangleArea(triangles)).isCloseTo(300.0, within(AREA_TOLERANCE));
+            assertThat(computeTotalTriangleArea(triangles)).isCloseTo(300.0, within(AREA_TOLERANCE));
         }
 
         @Test
@@ -165,7 +165,7 @@ final class PolygonTessellatorTest {
             var triangles = PolygonTessellator.tessellateIntersectionToTriangles(
                 doubledSquare, List.of(offset));
 
-            assertThat(totalTriangleArea(triangles)).isCloseTo(100.0, within(AREA_TOLERANCE));
+            assertThat(computeTotalTriangleArea(triangles)).isCloseTo(100.0, within(AREA_TOLERANCE));
         }
 
         @Test
@@ -195,7 +195,7 @@ final class PolygonTessellatorTest {
             var loops = PolygonTessellator.tessellateIntersectionToBoundaryLoops(
                 List.of(lower), List.of(upper));
 
-            var total = loops.stream().mapToDouble(PolygonTessellatorTest::loopArea).sum();
+            var total = loops.stream().mapToDouble(PolygonTessellatorTest::computeLoopArea).sum();
             assertThat(total).isCloseTo(100.0, within(AREA_TOLERANCE));
         }
 
@@ -213,7 +213,7 @@ final class PolygonTessellatorTest {
             var loops = PolygonTessellator.tessellateIntersectionToBoundaryLoops(
                 List.of(outer), List.of(inner));
 
-            var total = loops.stream().mapToDouble(PolygonTessellatorTest::loopArea).sum();
+            var total = loops.stream().mapToDouble(PolygonTessellatorTest::computeLoopArea).sum();
             assertThat(total).isCloseTo(400.0, within(AREA_TOLERANCE));
         }
 
@@ -236,7 +236,7 @@ final class PolygonTessellatorTest {
                 List.of(bar), Arrays.asList(leftPillar, rightPillar));
 
             assertThat(loops).hasSize(2);
-            var total = loops.stream().mapToDouble(PolygonTessellatorTest::loopArea).sum();
+            var total = loops.stream().mapToDouble(PolygonTessellatorTest::computeLoopArea).sum();
             assertThat(total).isCloseTo(800.0, within(AREA_TOLERANCE));
         }
 
@@ -258,7 +258,7 @@ final class PolygonTessellatorTest {
             var loops = PolygonTessellator.tessellateIntersectionToBoundaryLoops(
                 Arrays.asList(holedOuter, hole), List.of(probe));
 
-            var net = loops.stream().mapToDouble(PolygonTessellatorTest::signedLoopArea).sum();
+            var net = loops.stream().mapToDouble(PolygonTessellatorTest::computeSignedLoopArea).sum();
             assertThat(Math.abs(net)).isCloseTo(300.0, within(AREA_TOLERANCE));
         }
 
@@ -297,7 +297,7 @@ final class PolygonTessellatorTest {
             var loops = PolygonTessellator.tessellateToBoundaryLoops(List.of(square));
 
             assertThat(loops).hasSize(1);
-            assertThat(loopArea(loops.get(0))).isCloseTo(100.0, within(AREA_TOLERANCE));
+            assertThat(computeLoopArea(loops.get(0))).isCloseTo(100.0, within(AREA_TOLERANCE));
         }
 
         @Test
@@ -314,7 +314,7 @@ final class PolygonTessellatorTest {
             var loops = PolygonTessellator.tessellateToBoundaryLoops(List.of(bowtie));
 
             assertThat(loops).isNotEmpty();
-            var total = loops.stream().mapToDouble(PolygonTessellatorTest::loopArea).sum();
+            var total = loops.stream().mapToDouble(PolygonTessellatorTest::computeLoopArea).sum();
             assertThat(total).isCloseTo(25.0, within(AREA_TOLERANCE));
         }
 
@@ -327,19 +327,19 @@ final class PolygonTessellatorTest {
     // The unsigned area a single closed loop encloses, for asserting a resolved
     // boundary covers the region the fill would. Uses the production shoelace so the
     // test does not restate it.
-    private static double loopArea(List<double[]> loop) {
+    private static double computeLoopArea(List<double[]> loop) {
         return Math.abs(PolygonRegions.computeSignedArea(loop));
     }
 
     // The signed area a loop encloses, sign carrying its winding, so a hole loop (wound against
     // its outer) subtracts and the net over a resolved region's loops is the area it truly covers.
-    private static double signedLoopArea(List<double[]> loop) {
+    private static double computeSignedLoopArea(List<double[]> loop) {
         return PolygonRegions.computeSignedArea(loop);
     }
 
     // Sums the unsigned area of every triangle in a flat [x, y, x, y, ...] soup, six
     // floats per triangle - the area the fill actually covers.
-    private static double totalTriangleArea(float[] triangles) {
+    private static double computeTotalTriangleArea(float[] triangles) {
         var floatsPerTriangle = 6;
         var total = 0.0;
         for (var i = 0; i + floatsPerTriangle <= triangles.length; i += floatsPerTriangle) {

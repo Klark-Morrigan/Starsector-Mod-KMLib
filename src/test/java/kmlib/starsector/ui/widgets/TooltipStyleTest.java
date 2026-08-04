@@ -36,7 +36,7 @@ class TooltipStyleTest {
             false);
     }
 
-    private static TooltipStyle twoFacedStyle() {
+    private static TooltipStyle buildTwoFacedStyle() {
         return new TooltipStyle(HEADER_STYLE, PARAGRAPH_STYLE);
     }
 
@@ -44,12 +44,12 @@ class TooltipStyleTest {
     class ResolveStyleFor {
         @Test
         void resolveStyleForReturnsTheHeaderLookForAHeaderLine() {
-            assertThat(twoFacedStyle().resolveStyleFor(TooltipLineStyle.HEADER)).isEqualTo(HEADER_STYLE);
+            assertThat(buildTwoFacedStyle().resolveStyleFor(TooltipLineStyle.HEADER)).isEqualTo(HEADER_STYLE);
         }
 
         @Test
         void resolveStyleForReturnsTheParagraphLookForAParagraphLine() {
-            assertThat(twoFacedStyle().resolveStyleFor(TooltipLineStyle.PARAGRAPH))
+            assertThat(buildTwoFacedStyle().resolveStyleFor(TooltipLineStyle.PARAGRAPH))
                 .isEqualTo(PARAGRAPH_STYLE);
         }
 
@@ -59,7 +59,7 @@ class TooltipStyleTest {
             // Swept over the enum rather than asserted per value: a renderer resolves whatever kind the
             // row it is drawing carries, so a kind with no answer would fail at paint time on the one
             // box that happened to use it.
-            assertThat(twoFacedStyle().resolveStyleFor(lineStyle)).isNotNull();
+            assertThat(buildTwoFacedStyle().resolveStyleFor(lineStyle)).isNotNull();
         }
 
         @Test

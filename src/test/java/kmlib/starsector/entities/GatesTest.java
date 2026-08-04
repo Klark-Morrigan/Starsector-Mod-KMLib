@@ -75,7 +75,7 @@ final class GatesTest {
 
         @Test
         void powers_the_network_so_no_gate_is_left_unusable() {
-            var gate = gateWithMemory(mock(MemoryAPI.class));
+            var gate = buildGateWithMemory(mock(MemoryAPI.class));
 
             Gates.activateGate(gate);
 
@@ -88,7 +88,7 @@ final class GatesTest {
         @Test
         void scans_only_the_target_gate() {
             var gateMemoryMock = mock(MemoryAPI.class);
-            var gate = gateWithMemory(gateMemoryMock);
+            var gate = buildGateWithMemory(gateMemoryMock);
 
             Gates.activateGate(gate);
 
@@ -99,7 +99,7 @@ final class GatesTest {
 
         @Test
         void registers_the_gate_as_a_transit_destination() {
-            var gate = gateWithMemory(mock(MemoryAPI.class));
+            var gate = buildGateWithMemory(mock(MemoryAPI.class));
 
             Gates.activateGate(gate);
 
@@ -109,7 +109,7 @@ final class GatesTest {
         }
     }
 
-    private static SectorEntityToken gateWithMemory(MemoryAPI memory) {
+    private static SectorEntityToken buildGateWithMemory(MemoryAPI memory) {
         var gateMock = mock(SectorEntityToken.class);
         when(gateMock.getMemoryWithoutUpdate()).thenReturn(memory);
         return gateMock;

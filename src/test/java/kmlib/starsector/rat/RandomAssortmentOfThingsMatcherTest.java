@@ -40,7 +40,7 @@ final class RandomAssortmentOfThingsMatcherTest {
 
         @Test
         void returns_false_when_rat_disabled() {
-            var entityMock = entityWithPlugin(mock(AbyssalFracture.class));
+            var entityMock = buildEntityWithPlugin(mock(AbyssalFracture.class));
             try (MockedStatic<Global> globalMock = mockStatic(Global.class)) {
                 stubModEnabled(globalMock, false);
 
@@ -51,7 +51,7 @@ final class RandomAssortmentOfThingsMatcherTest {
 
         @Test
         void returns_false_when_the_plugin_is_not_a_fracture() {
-            var entityMock = entityWithPlugin(mock(CustomCampaignEntityPlugin.class));
+            var entityMock = buildEntityWithPlugin(mock(CustomCampaignEntityPlugin.class));
             try (MockedStatic<Global> globalMock = mockStatic(Global.class)) {
                 stubModEnabled(globalMock, true);
 
@@ -62,7 +62,7 @@ final class RandomAssortmentOfThingsMatcherTest {
 
         @Test
         void returns_true_for_a_fracture_plugin_when_rat_enabled() {
-            var entityMock = entityWithPlugin(mock(AbyssalFracture.class));
+            var entityMock = buildEntityWithPlugin(mock(AbyssalFracture.class));
             try (MockedStatic<Global> globalMock = mockStatic(Global.class)) {
                 stubModEnabled(globalMock, true);
 
@@ -72,7 +72,7 @@ final class RandomAssortmentOfThingsMatcherTest {
         }
     }
 
-    private static SectorEntityToken entityWithPlugin(CustomCampaignEntityPlugin plugin) {
+    private static SectorEntityToken buildEntityWithPlugin(CustomCampaignEntityPlugin plugin) {
         var entityMock = mock(SectorEntityToken.class);
         when(entityMock.getCustomPlugin()).thenReturn(plugin);
         return entityMock;

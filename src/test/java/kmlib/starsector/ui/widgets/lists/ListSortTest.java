@@ -106,9 +106,9 @@ final class ListSortTest {
             var descending = new ListSort<>(AnomalySortMode.SEVERITY, SortDirection.DESCENDING, MODES);
             var ascending = new ListSort<>(AnomalySortMode.SEVERITY, SortDirection.ASCENDING, MODES);
 
-            assertThat(rankedBy(descending, mild, harsh))
+            assertThat(buildRankedBy(descending, mild, harsh))
                 .containsExactly(harsh, mild);
-            assertThat(rankedBy(ascending, mild, harsh))
+            assertThat(buildRankedBy(ascending, mild, harsh))
                 .containsExactly(mild, harsh);
         }
 
@@ -123,14 +123,14 @@ final class ListSortTest {
             var rankedByMode = new ArrayList<>(List.of(near, far));
             rankedByMode.sort(AnomalySortMode.RADIUS.comparator(SortDirection.DESCENDING));
 
-            assertThat(rankedBy(sort, near, far))
+            assertThat(buildRankedBy(sort, near, far))
                 .isEqualTo(rankedByMode);
         }
     }
 
     // The anomalies ranked under the sort's own comparator, so an assertion reads the resulting
     // arrangement without repeating the copy-and-sort plumbing.
-    private static List<Anomaly> rankedBy(ListSort<Anomaly> sort, Anomaly... anomalies) {
+    private static List<Anomaly> buildRankedBy(ListSort<Anomaly> sort, Anomaly... anomalies) {
         var ranked = new ArrayList<>(List.of(anomalies));
         ranked.sort(sort.comparator());
         return ranked;

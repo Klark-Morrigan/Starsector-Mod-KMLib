@@ -315,7 +315,7 @@ final class SpawnEntityCommandTest {
         void refuses_a_multi_star_system_without_a_focus_id() {
             // Build the star list before opening the static stub: constructing
             // the mocks mid-stub would trip Mockito's unfinished-stubbing guard.
-            var stars = List.of(star("alpha"), star("beta"));
+            var stars = List.of(buildStar("alpha"), buildStar("beta"));
             starSystemsMock.when(() -> StarSystems.getStars(systemMock)).thenReturn(stars);
 
             var result = command.runCommand("jump_point", CommandContext.CAMPAIGN_MAP);
@@ -372,7 +372,7 @@ final class SpawnEntityCommandTest {
         }
     }
 
-    private static PlanetAPI star(String id) {
+    private static PlanetAPI buildStar(String id) {
         var starMock = mock(PlanetAPI.class);
         when(starMock.getId()).thenReturn(id);
         return starMock;

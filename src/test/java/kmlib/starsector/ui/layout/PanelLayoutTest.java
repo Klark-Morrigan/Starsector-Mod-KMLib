@@ -222,7 +222,7 @@ final class PanelLayoutTest {
         @Test
         void computePlacementStandsAVerticalRadioOneRowTallPerOption() {
 
-            var radio = place(verticalRadioBody()).bodyControls().get(0);
+            var radio = place(buildVerticalRadioBody()).bodyControls().get(0);
 
             // One option-row of height per segment, so a two-option radio is twice a control row. The
             // exact row width is the control strip's concern, pinned in ControlStripLayoutTest.
@@ -233,7 +233,7 @@ final class PanelLayoutTest {
         @Test
         void computePlacementStacksAVerticalRadiosSegmentsTopToBottomInOneColumn() {
 
-            var radio = place(verticalRadioBody()).bodyControls().get(0);
+            var radio = place(buildVerticalRadioBody()).bodyControls().get(0);
 
             assertThat(radio.segments())
                 .hasSize(2);
@@ -354,7 +354,7 @@ final class PanelLayoutTest {
                 SCREEN_HEIGHT,
                 new Padding(PADDING_TOP, 0, TIGHT_PADDING_BOTTOM, PADDING_LEFT),
                 BORDER_WIDTH,
-                scrollingBody(),
+                buildScrollingBody(),
                 measurerFake,
                 rawScrollOffset);
         }
@@ -362,7 +362,7 @@ final class PanelLayoutTest {
 
     // A two-option vertical selector radio, on its own so the stacked geometry is checked without the
     // other controls' rows in the way. "Alliances" (9 chars) is the wider option.
-    private static List<ControlSpec> verticalRadioBody() {
+    private static List<ControlSpec> buildVerticalRadioBody() {
         return List.of(VerticalTableSpecs.buildSegmentedList(
             List.of("Factions", "Alliances"),
             ControlSpec.NO_SELECTION,
@@ -375,7 +375,7 @@ final class PanelLayoutTest {
     private static final int TIGHT_PADDING_BOTTOM = 900;
 
     // A body carrying a scrolling list (a header checkbox, the marked list, a footer checkbox).
-    private static List<ControlSpec> scrollingBody() {
+    private static List<ControlSpec> buildScrollingBody() {
 
         var labels = new ArrayList<String>();
         var icons = new ArrayList<String>();

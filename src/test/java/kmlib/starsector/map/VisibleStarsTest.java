@@ -30,27 +30,27 @@ final class VisibleStarsTest {
     class IsStarVisibleForSystem {
         @Test
         void is_true_when_a_visible_star_anchor_leads_into_it() {
-            var system = systemWithId("alpha");
+            var system = buildSystemWithId("alpha");
             var visibleStars = VisibleStars.scan(
-                sectorWithHyperEntities(starAnchorLeadingTo(system, false)));
+                buildSectorWithHyperEntities(buildStarAnchorLeadingTo(system, false)));
 
             assertThat(visibleStars.isStarVisibleForSystem(system)).isTrue();
         }
 
         @Test
         void is_false_when_its_star_anchor_is_hidden_on_map() {
-            var system = systemWithId("alpha");
+            var system = buildSystemWithId("alpha");
             var visibleStars = VisibleStars.scan(
-                sectorWithHyperEntities(starAnchorLeadingTo(system, true)));
+                buildSectorWithHyperEntities(buildStarAnchorLeadingTo(system, true)));
 
             assertThat(visibleStars.isStarVisibleForSystem(system)).isFalse();
         }
 
         @Test
         void is_false_when_the_jump_point_is_not_a_star_anchor() {
-            var visibleStars = VisibleStars.scan(sectorWithHyperEntities(nonAnchor()));
+            var visibleStars = VisibleStars.scan(buildSectorWithHyperEntities(buildNonAnchor()));
 
-            assertThat(visibleStars.isStarVisibleForSystem(systemWithId("alpha"))).isFalse();
+            assertThat(visibleStars.isStarVisibleForSystem(buildSystemWithId("alpha"))).isFalse();
         }
 
         @Test
@@ -58,9 +58,9 @@ final class VisibleStarsTest {
             // Resolution is by the destination system's identity, so an anchor for
             // "alpha" cannot make "beta" read as visible.
             var visibleStars = VisibleStars.scan(
-                sectorWithHyperEntities(starAnchorLeadingTo(systemWithId("alpha"), false)));
+                buildSectorWithHyperEntities(buildStarAnchorLeadingTo(buildSystemWithId("alpha"), false)));
 
-            assertThat(visibleStars.isStarVisibleForSystem(systemWithId("beta"))).isFalse();
+            assertThat(visibleStars.isStarVisibleForSystem(buildSystemWithId("beta"))).isFalse();
         }
 
         @Test
@@ -68,9 +68,9 @@ final class VisibleStarsTest {
             // A malformed anchor with no destination must drop out of the scan
             // rather than crash it or admit a phantom system.
             var visibleStars = VisibleStars.scan(
-                sectorWithHyperEntities(starAnchorLeadingTo(null, false)));
+                buildSectorWithHyperEntities(buildStarAnchorLeadingTo(null, false)));
 
-            assertThat(visibleStars.isStarVisibleForSystem(systemWithId("alpha"))).isFalse();
+            assertThat(visibleStars.isStarVisibleForSystem(buildSystemWithId("alpha"))).isFalse();
         }
 
         @Test
@@ -78,18 +78,18 @@ final class VisibleStarsTest {
             // getHyperspace() defaults to null on the mock - the empty-index path.
             var visibleStars = VisibleStars.scan(mock(SectorAPI.class));
 
-            assertThat(visibleStars.isStarVisibleForSystem(systemWithId("alpha"))).isFalse();
+            assertThat(visibleStars.isStarVisibleForSystem(buildSystemWithId("alpha"))).isFalse();
         }
 
         @Test
         void is_false_for_a_null_sector() {
             var visibleStars = VisibleStars.scan(null);
 
-            assertThat(visibleStars.isStarVisibleForSystem(systemWithId("alpha"))).isFalse();
+            assertThat(visibleStars.isStarVisibleForSystem(buildSystemWithId("alpha"))).isFalse();
         }
     }
 
-    private static SectorAPI sectorWithHyperEntities(JumpPointAPI... entities) {
+    private static SectorAPI buildSectorWithHyperEntities(JumpPointAPI... entities) {
         var hyperspaceMock = mock(LocationAPI.class);
         when(hyperspaceMock.getEntities(JumpPointAPI.class)).thenReturn(List.of(entities));
         var sectorMock = mock(SectorAPI.class);
@@ -97,7 +97,7 @@ final class VisibleStarsTest {
         return sectorMock;
     }
 
-    private static JumpPointAPI starAnchorLeadingTo(StarSystemAPI destination, boolean isHiddenOnMap) {
+    private static JumpPointAPI buildStarAnchorLeadingTo(StarSystemAPI destination, boolean isHiddenOnMap) {
         var jumpPointMock = mock(JumpPointAPI.class);
         when(jumpPointMock.isStarAnchor()).thenReturn(true);
         when(jumpPointMock.hasTag(Tags.STAR_HIDDEN_ON_MAP)).thenReturn(isHiddenOnMap);
@@ -105,13 +105,13 @@ final class VisibleStarsTest {
         return jumpPointMock;
     }
 
-    private static JumpPointAPI nonAnchor() {
+    private static JumpPointAPI buildNonAnchor() {
         var jumpPointMock = mock(JumpPointAPI.class);
         when(jumpPointMock.isStarAnchor()).thenReturn(false);
         return jumpPointMock;
     }
 
-    private static StarSystemAPI systemWithId(String id) {
+    private static StarSystemAPI buildSystemWithId(String id) {
         var systemMock = mock(StarSystemAPI.class);
         when(systemMock.getId()).thenReturn(id);
         return systemMock;

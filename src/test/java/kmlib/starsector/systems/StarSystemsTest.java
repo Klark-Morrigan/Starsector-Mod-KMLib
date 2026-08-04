@@ -82,8 +82,8 @@ final class StarSystemsTest {
     class CollectPositionsById {
         @Test
         void keys_each_selected_system_by_id_with_its_position() {
-            var a = systemAt("a", 10, 20);
-            var b = systemAt("b", -5, 7);
+            var a = buildSystemAt("a", 10, 20);
+            var b = buildSystemAt("b", -5, 7);
             var sectorMock = mock(SectorAPI.class);
             when(sectorMock.getStarSystems()).thenReturn(List.of(a, b));
 
@@ -95,8 +95,8 @@ final class StarSystemsTest {
 
         @Test
         void excludes_systems_the_predicate_rejects() {
-            var kept = systemAt("kept", 1, 1);
-            var rejected = systemAt("rejected", 2, 2);
+            var kept = buildSystemAt("kept", 1, 1);
+            var rejected = buildSystemAt("rejected", 2, 2);
             var sectorMock = mock(SectorAPI.class);
             when(sectorMock.getStarSystems()).thenReturn(List.of(kept, rejected));
 
@@ -108,7 +108,7 @@ final class StarSystemsTest {
 
         @Test
         void skips_a_selected_system_without_a_location() {
-            var located = systemAt("located", 1, 1);
+            var located = buildSystemAt("located", 1, 1);
             var unlocatedMock = mock(StarSystemAPI.class);
             when(unlocatedMock.getLocation()).thenReturn(null);
             var sectorMock = mock(SectorAPI.class);
@@ -121,8 +121,8 @@ final class StarSystemsTest {
 
         @Test
         void a_null_predicate_keeps_every_located_system() {
-            var a = systemAt("a", 1, 1);
-            var b = systemAt("b", 2, 2);
+            var a = buildSystemAt("a", 1, 1);
+            var b = buildSystemAt("b", 2, 2);
             var sectorMock = mock(SectorAPI.class);
             when(sectorMock.getStarSystems()).thenReturn(List.of(a, b));
 
@@ -178,8 +178,8 @@ final class StarSystemsTest {
     class FindById {
         @Test
         void returns_the_system_whose_id_matches() {
-            var wanted = systemAt("corvus", 1, 1);
-            var other = systemAt("yma", 2, 2);
+            var wanted = buildSystemAt("corvus", 1, 1);
+            var other = buildSystemAt("yma", 2, 2);
             var sectorMock = mock(SectorAPI.class);
             when(sectorMock.getStarSystems()).thenReturn(List.of(other, wanted));
 
@@ -188,7 +188,7 @@ final class StarSystemsTest {
 
         @Test
         void returns_null_when_no_system_has_that_id() {
-            var only = systemAt("corvus", 1, 1);
+            var only = buildSystemAt("corvus", 1, 1);
             var sectorMock = mock(SectorAPI.class);
             when(sectorMock.getStarSystems()).thenReturn(List.of(only));
 
@@ -231,8 +231,8 @@ final class StarSystemsTest {
     class GetCentremostStar {
         @Test
         void returns_the_only_star_in_a_single_star_system() {
-            var star = starWithLocation(0, 0);
-            var system = systemWithCentreAndStars(star, star);
+            var star = buildStarWithLocation(0, 0);
+            var system = buildSystemWithCentreAndStars(star, star);
 
             assertThat(StarSystems.getCentremostStar(system)).isSameAs(star);
         }
@@ -241,10 +241,10 @@ final class StarSystemsTest {
         void returns_the_star_nearest_the_centre_in_a_multi_star_system() {
             var centreMock = mock(SectorEntityToken.class);
             when(centreMock.getLocation()).thenReturn(new Vector2f(0, 0));
-            var nearStar = starWithLocation(0, 0);
-            var farStar = starWithLocation(5000, 0);
+            var nearStar = buildStarWithLocation(0, 0);
+            var farStar = buildStarWithLocation(5000, 0);
             // Listed far-first so the pick is shown to come from distance, not list order.
-            var system = systemWithCentreAndStars(centreMock, farStar, nearStar);
+            var system = buildSystemWithCentreAndStars(centreMock, farStar, nearStar);
 
             assertThat(StarSystems.getCentremostStar(system)).isSameAs(nearStar);
         }
@@ -253,11 +253,11 @@ final class StarSystemsTest {
         void breaks_an_equal_distance_tie_by_lowest_star_id() {
             var centreMock = mock(SectorEntityToken.class);
             when(centreMock.getLocation()).thenReturn(new Vector2f(0, 0));
-            var starBeta = starWithIdAt("beta", 0, 100);
-            var starAlpha = starWithIdAt("alpha", 0, -100);
+            var starBeta = buildStarWithIdAt("beta", 0, 100);
+            var starAlpha = buildStarWithIdAt("alpha", 0, -100);
             // Both stars sit the same distance from the centre; listed high-id first so the
             // lower id is shown to be the deterministic pick rather than the planet-list order.
-            var system = systemWithCentreAndStars(centreMock, starBeta, starAlpha);
+            var system = buildSystemWithCentreAndStars(centreMock, starBeta, starAlpha);
 
             assertThat(StarSystems.getCentremostStar(system)).isSameAs(starAlpha);
         }
@@ -265,7 +265,7 @@ final class StarSystemsTest {
         @Test
         void falls_back_to_the_centre_token_when_the_system_has_no_star() {
             var centreMock = mock(SectorEntityToken.class);
-            var system = systemWithCentreAndStars(centreMock);
+            var system = buildSystemWithCentreAndStars(centreMock);
 
             assertThat(StarSystems.getCentremostStar(system)).isSameAs(centreMock);
         }
@@ -281,7 +281,7 @@ final class StarSystemsTest {
         @Test
         void sums_a_planets_own_orbit_to_its_star() {
             var starMock = mock(SectorEntityToken.class);
-            var planet = orbiting(300, starMock);
+            var planet = buildOrbiting(300, starMock);
 
             assertThat(StarSystems.getOrbitalDistanceTo(planet, starMock)).isEqualTo(300.0);
         }
@@ -289,16 +289,16 @@ final class StarSystemsTest {
         @Test
         void sums_the_whole_orbit_chain_for_a_moon() {
             var starMock = mock(SectorEntityToken.class);
-            var planet = orbiting(300, starMock);
-            var moon = orbiting(50, planet);
+            var planet = buildOrbiting(300, starMock);
+            var moon = buildOrbiting(50, planet);
 
             assertThat(StarSystems.getOrbitalDistanceTo(moon, starMock)).isEqualTo(350.0);
         }
 
         @Test
         void does_not_add_the_references_own_orbit() {
-            var starMock = orbiting(9999, mock(SectorEntityToken.class));
-            var planet = orbiting(300, starMock);
+            var starMock = buildOrbiting(9999, mock(SectorEntityToken.class));
+            var planet = buildOrbiting(300, starMock);
 
             assertThat(StarSystems.getOrbitalDistanceTo(planet, starMock)).isEqualTo(300.0);
         }
@@ -314,44 +314,44 @@ final class StarSystemsTest {
     class HasKnownOwnedMarket {
         @Test
         void returns_true_for_a_visible_owned_market() {
-            var sector = sectorWithMarkets(visibleColony());
+            var sector = buildSectorWithMarkets(buildVisibleColony());
 
-            assertThat(StarSystems.hasKnownOwnedMarket(sector, onlySystem(sector))).isTrue();
+            assertThat(StarSystems.hasKnownOwnedMarket(sector, buildOnlySystem(sector))).isTrue();
         }
 
         @Test
         void returns_true_when_one_of_several_markets_qualifies() {
-            var sector = sectorWithMarkets(conditionOnlyMarket(), visibleColony());
+            var sector = buildSectorWithMarkets(buildConditionOnlyMarket(), buildVisibleColony());
 
-            assertThat(StarSystems.hasKnownOwnedMarket(sector, onlySystem(sector))).isTrue();
+            assertThat(StarSystems.hasKnownOwnedMarket(sector, buildOnlySystem(sector))).isTrue();
         }
 
         @Test
         void returns_false_for_a_condition_only_market() {
-            var sector = sectorWithMarkets(conditionOnlyMarket());
+            var sector = buildSectorWithMarkets(buildConditionOnlyMarket());
 
-            assertThat(StarSystems.hasKnownOwnedMarket(sector, onlySystem(sector))).isFalse();
+            assertThat(StarSystems.hasKnownOwnedMarket(sector, buildOnlySystem(sector))).isFalse();
         }
 
         @Test
         void returns_false_for_an_undiscovered_concealed_station() {
-            var sector = sectorWithMarkets(concealedStation());
+            var sector = buildSectorWithMarkets(buildConcealedStation());
 
-            assertThat(StarSystems.hasKnownOwnedMarket(sector, onlySystem(sector))).isFalse();
+            assertThat(StarSystems.hasKnownOwnedMarket(sector, buildOnlySystem(sector))).isFalse();
         }
 
         @Test
         void returns_true_for_a_concealed_station_when_including_undiscovered_markets() {
-            var sector = sectorWithMarkets(concealedStation());
+            var sector = buildSectorWithMarkets(buildConcealedStation());
 
-            assertThat(StarSystems.hasKnownOwnedMarket(sector, onlySystem(sector), true)).isTrue();
+            assertThat(StarSystems.hasKnownOwnedMarket(sector, buildOnlySystem(sector), true)).isTrue();
         }
 
         @Test
         void returns_false_for_a_system_with_no_markets() {
-            var sector = sectorWithMarkets();
+            var sector = buildSectorWithMarkets();
 
-            assertThat(StarSystems.hasKnownOwnedMarket(sector, onlySystem(sector))).isFalse();
+            assertThat(StarSystems.hasKnownOwnedMarket(sector, buildOnlySystem(sector))).isFalse();
         }
 
         @Test
@@ -378,21 +378,21 @@ final class StarSystemsTest {
     class ReadMarkets {
         @Test
         void returns_the_systems_markets_in_economy_order() {
-            var first = visibleColony();
-            var second = conditionOnlyMarket();
-            var sector = sectorWithMarkets(first, second);
+            var first = buildVisibleColony();
+            var second = buildConditionOnlyMarket();
+            var sector = buildSectorWithMarkets(first, second);
 
             // Order is the economy's, unfiltered: a caller mirroring vanilla's tie rule
             // resolves on which market comes first, so the traversal must not reorder.
-            assertThat(StarSystems.readMarkets(sector, onlySystem(sector)))
+            assertThat(StarSystems.readMarkets(sector, buildOnlySystem(sector)))
                 .containsExactly(first, second);
         }
 
         @Test
         void returns_empty_for_a_system_with_no_markets() {
-            var sector = sectorWithMarkets();
+            var sector = buildSectorWithMarkets();
 
-            assertThat(StarSystems.readMarkets(sector, onlySystem(sector))).isEmpty();
+            assertThat(StarSystems.readMarkets(sector, buildOnlySystem(sector))).isEmpty();
         }
 
         @Test
@@ -429,7 +429,7 @@ final class StarSystemsTest {
     class ReadFactionClaimOverride {
         @Test
         void returns_the_decreed_faction_id() {
-            assertThat(StarSystems.readFactionClaimOverride(systemClaimedBy("luddic_church")))
+            assertThat(StarSystems.readFactionClaimOverride(buildSystemClaimedBy("luddic_church")))
                 .isEqualTo("luddic_church");
         }
 
@@ -437,7 +437,7 @@ final class StarSystemsTest {
         void returns_null_when_no_claim_is_imposed() {
             // The ordinary case: vanilla scores markets for an unflagged system, so most
             // claimed systems carry no flag at all.
-            assertThat(StarSystems.readFactionClaimOverride(systemClaimedBy(null))).isNull();
+            assertThat(StarSystems.readFactionClaimOverride(buildSystemClaimedBy(null))).isNull();
         }
 
         @Test
@@ -458,14 +458,14 @@ final class StarSystemsTest {
     class IsReachable {
         @Test
         void returns_true_for_a_system_with_a_jump_point() {
-            assertThat(StarSystems.isReachable(systemNotCutOff("a"))).isTrue();
+            assertThat(StarSystems.isReachable(buildSystemNotCutOff("a"))).isTrue();
         }
 
         @Test
         void returns_false_for_a_transverse_only_system_with_an_inactive_gate() {
             // The hidden-system case: not cut off (the engine never tags a
             // nascent-well system), no jump point, only an unlit gate.
-            var system = transverseOnlySystem("a", gateWithPlugin(gatePlugin(false)));
+            var system = buildTransverseOnlySystem("a", buildGateWithPlugin(buildGatePlugin(false)));
 
             assertThat(StarSystems.isReachable(system)).isFalse();
         }
@@ -477,14 +477,14 @@ final class StarSystemsTest {
 
         @Test
         void returns_false_for_a_cut_off_system_with_only_an_inactive_gate() {
-            var system = cutOffSystem("a", gateWithPlugin(gatePlugin(false)));
+            var system = cutOffSystem("a", buildGateWithPlugin(buildGatePlugin(false)));
 
             assertThat(StarSystems.isReachable(system)).isFalse();
         }
 
         @Test
         void returns_true_for_a_cut_off_system_with_an_active_gate() {
-            var system = cutOffSystem("a", gateWithPlugin(gatePlugin(true)));
+            var system = cutOffSystem("a", buildGateWithPlugin(buildGatePlugin(true)));
 
             assertThat(StarSystems.isReachable(system)).isTrue();
         }
@@ -493,7 +493,7 @@ final class StarSystemsTest {
         void returns_true_for_a_cut_off_system_with_a_fracture_when_rat_enabled() {
             // A fracture ferries fleets in past the disabled jump points, so it
             // overrides the cut-off flag the way an active gate does.
-            var system = cutOffSystemWithEntities("a", fractureEntity());
+            var system = cutOffSystemWithEntities("a", buildFractureEntity());
             try (MockedStatic<Global> globalMock = mockStatic(Global.class)) {
                 stubRatEnabled(globalMock, true);
 
@@ -505,7 +505,7 @@ final class StarSystemsTest {
         void returns_false_for_a_cut_off_system_with_a_fracture_when_rat_disabled() {
             // The optional dependency is off, so the matcher cannot see the
             // fracture and the system reads as the cut-off system it is.
-            var system = cutOffSystemWithEntities("a", fractureEntity());
+            var system = cutOffSystemWithEntities("a", buildFractureEntity());
             try (MockedStatic<Global> globalMock = mockStatic(Global.class)) {
                 stubRatEnabled(globalMock, false);
 
@@ -555,13 +555,13 @@ final class StarSystemsTest {
         }
     }
 
-    private static StarSystemAPI onlySystem(SectorAPI sector) {
+    private static StarSystemAPI buildOnlySystem(SectorAPI sector) {
         return sector.getStarSystems().get(0);
     }
 
     // A star fixed at a location, so a central-star search can rank stars by nearness to the
     // system centre.
-    private static PlanetAPI starWithLocation(float x, float y) {
+    private static PlanetAPI buildStarWithLocation(float x, float y) {
         var starMock = mock(PlanetAPI.class);
         when(starMock.isStar()).thenReturn(true);
         when(starMock.getLocation()).thenReturn(new Vector2f(x, y));
@@ -570,15 +570,15 @@ final class StarSystemsTest {
 
     // A star fixed at a location and carrying an id, so a central-star search's distance-tie
     // resolution by id can be pinned.
-    private static PlanetAPI starWithIdAt(String id, float x, float y) {
-        var starMock = starWithLocation(x, y);
+    private static PlanetAPI buildStarWithIdAt(String id, float x, float y) {
+        var starMock = buildStarWithLocation(x, y);
         when(starMock.getId()).thenReturn(id);
         return starMock;
     }
 
     // A body on a circular orbit of the given radius around a focus, the unit an orbit-chain
     // distance sums.
-    private static SectorEntityToken orbiting(float radius, SectorEntityToken focus) {
+    private static SectorEntityToken buildOrbiting(float radius, SectorEntityToken focus) {
         var bodyMock = mock(SectorEntityToken.class);
         when(bodyMock.getCircularOrbitRadius()).thenReturn(radius);
         when(bodyMock.getOrbitFocus()).thenReturn(focus);
@@ -586,7 +586,7 @@ final class StarSystemsTest {
     }
 
     // A system with a centre token and its stars, the two a central-star search reads.
-    private static StarSystemAPI systemWithCentreAndStars(SectorEntityToken centre,
+    private static StarSystemAPI buildSystemWithCentreAndStars(SectorEntityToken centre,
             PlanetAPI... stars) {
         var systemMock = mock(StarSystemAPI.class);
         when(systemMock.getCenter()).thenReturn(centre);
@@ -596,7 +596,7 @@ final class StarSystemsTest {
 
     // Wires a sector with one system whose economy holds the given markets, so a
     // hasKnownOwnedMarket read resolves through getEconomy().getMarkets(system).
-    private static SectorAPI sectorWithMarkets(MarketAPI... markets) {
+    private static SectorAPI buildSectorWithMarkets(MarketAPI... markets) {
         var systemMock = mock(StarSystemAPI.class);
         var economyMock = mock(EconomyAPI.class);
         when(economyMock.getMarkets(systemMock)).thenReturn(List.of(markets));
@@ -608,19 +608,19 @@ final class StarSystemsTest {
 
     // A visible owned colony: a faction owns it, it is not condition-only, and its
     // discovered entity passes the known-to-player gate.
-    private static MarketAPI visibleColony() {
+    private static MarketAPI buildVisibleColony() {
         return buildColony(false, false, false);
     }
 
     // A bare planet's condition-only placeholder: owned but not a colony, so it is
     // filtered out by the ownership arm.
-    private static MarketAPI conditionOnlyMarket() {
+    private static MarketAPI buildConditionOnlyMarket() {
         return buildColony(true, false, false);
     }
 
     // A concealed station: a hidden market on a still-discoverable entity, failing
     // the known-to-player gate until the player finds it.
-    private static MarketAPI concealedStation() {
+    private static MarketAPI buildConcealedStation() {
         return buildColony(false, true, true);
     }
 
@@ -642,7 +642,7 @@ final class StarSystemsTest {
         return entityMock;
     }
 
-    private static StarSystemAPI systemNotCutOff(String id) {
+    private static StarSystemAPI buildSystemNotCutOff(String id) {
         // Not cut off (hasTag defaults to false) and wired into hyperspace by a
         // jump point - a normally reachable system.
         var systemMock = mock(StarSystemAPI.class);
@@ -651,7 +651,7 @@ final class StarSystemsTest {
         return systemMock;
     }
 
-    private static StarSystemAPI transverseOnlySystem(String id, SectorEntityToken... gates) {
+    private static StarSystemAPI buildTransverseOnlySystem(String id, SectorEntityToken... gates) {
         // Not cut off and holds no jump point - reachable only by transverse jump
         // to a nascent gravity well. Any passed gates stand in for present-but-
         // inactive gates that must not confer access.
@@ -680,19 +680,19 @@ final class StarSystemsTest {
         return systemMock;
     }
 
-    private static SectorEntityToken gateWithPlugin(GateEntityPlugin plugin) {
+    private static SectorEntityToken buildGateWithPlugin(GateEntityPlugin plugin) {
         var gateMock = mock(SectorEntityToken.class);
         when(gateMock.getCustomPlugin()).thenReturn(plugin);
         return gateMock;
     }
 
-    private static GateEntityPlugin gatePlugin(boolean isActive) {
+    private static GateEntityPlugin buildGatePlugin(boolean isActive) {
         var pluginMock = mock(GateEntityPlugin.class);
         when(pluginMock.isActive()).thenReturn(isActive);
         return pluginMock;
     }
 
-    private static SectorEntityToken fractureEntity() {
+    private static SectorEntityToken buildFractureEntity() {
         var entityMock = mock(SectorEntityToken.class);
         when(entityMock.getCustomPlugin()).thenReturn(mock(AbyssalFracture.class));
         return entityMock;
@@ -714,7 +714,7 @@ final class StarSystemsTest {
 
     // A system whose memory carries the claiming-faction flag at the given value; a null id
     // stands for the flag never having been set.
-    private static StarSystemAPI systemClaimedBy(String factionId) {
+    private static StarSystemAPI buildSystemClaimedBy(String factionId) {
         var memoryMock = mock(MemoryAPI.class);
         when(memoryMock.getString(CLAIMING_FACTION_FLAG)).thenReturn(factionId);
         var systemMock = mock(StarSystemAPI.class);
@@ -722,7 +722,7 @@ final class StarSystemsTest {
         return systemMock;
     }
 
-    private static StarSystemAPI systemAt(String id, float x, float y) {
+    private static StarSystemAPI buildSystemAt(String id, float x, float y) {
         var systemMock = mock(StarSystemAPI.class);
         when(systemMock.getId()).thenReturn(id);
         when(systemMock.getLocation()).thenReturn(new Vector2f(x, y));

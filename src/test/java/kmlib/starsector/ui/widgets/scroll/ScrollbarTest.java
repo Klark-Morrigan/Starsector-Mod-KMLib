@@ -24,14 +24,14 @@ final class ScrollbarTest {
     private static final Rectangle VIEWPORT = new Rectangle(108f, 250f, 120f, 100f);
     private static final float OVERFLOW = 100f;
 
-    private static ScrollRegion region(float offset) {
+    private static ScrollRegion buildRegion(float offset) {
         return new ScrollRegion(CONTAINER, VIEWPORT, offset, OVERFLOW);
     }
 
     // The track is offset-independent (it comes from the container and viewport), so one track serves
     // every thumb and pointer case.
     private static Rectangle track() {
-        return Scrollbar.computeTrack(region(0f));
+        return Scrollbar.computeTrack(buildRegion(0f));
     }
 
     @Nested
@@ -60,7 +60,7 @@ final class ScrollbarTest {
 
         @Test
         void computeThumbSizesTheThumbToTheVisibleFractionOfTheContent() {
-            var thumb = Scrollbar.computeThumb(region(0f), track());
+            var thumb = Scrollbar.computeThumb(buildRegion(0f), track());
             // Half the content is visible, so the thumb is half the track height.
             assertThat(thumb.height()).isCloseTo(track().height() / 2f, within(TOLERANCE));
             assertThat(thumb.width()).isCloseTo(track().width(), within(TOLERANCE));
@@ -69,7 +69,7 @@ final class ScrollbarTest {
 
         @Test
         void computeThumbHangsTheThumbFromTheTrackTopWhenScrolledToTheStart() {
-            var thumb = Scrollbar.computeThumb(region(0f), track());
+            var thumb = Scrollbar.computeThumb(buildRegion(0f), track());
             // At offset 0 the thumb's top edge meets the track's top edge (UI y grows up).
             assertThat(thumb.y() + thumb.height())
                 .isCloseTo(track().y() + track().height(), within(TOLERANCE));
@@ -77,14 +77,14 @@ final class ScrollbarTest {
 
         @Test
         void computeThumbDropsTheThumbToTheTrackBottomWhenFullyScrolled() {
-            var thumb = Scrollbar.computeThumb(region(OVERFLOW), track());
+            var thumb = Scrollbar.computeThumb(buildRegion(OVERFLOW), track());
             // At the full overflow the thumb's bottom edge meets the track's bottom edge.
             assertThat(thumb.y()).isCloseTo(track().y(), within(TOLERANCE));
         }
 
         @Test
         void computeThumbPlacesTheThumbMidTravelAtHalfTheOverflow() {
-            var thumb = Scrollbar.computeThumb(region(OVERFLOW / 2f), track());
+            var thumb = Scrollbar.computeThumb(buildRegion(OVERFLOW / 2f), track());
             // Half-scrolled, the 50-tall thumb sits centred in the 100 track: its bottom is a quarter of
             // the track up from the bottom (25px of the 50px travel).
             assertThat(thumb.y()).isCloseTo(track().y() + 25f, within(TOLERANCE));
@@ -115,7 +115,7 @@ final class ScrollbarTest {
 
         @Test
         void computeGrabColumnRunsTheGutterRightOfTheContentAtTheViewportHeight() {
-            var grab = Scrollbar.computeGrabColumn(region(0f));
+            var grab = Scrollbar.computeGrabColumn(buildRegion(0f));
             // The grab column starts at the viewport's right edge (228) and runs to the container's right
             // edge (300), at the viewport's height - wider than the thin track so the thumb need not be
             // hit exactly, and right of the content so it never competes with a content click.
@@ -134,7 +134,7 @@ final class ScrollbarTest {
         @Test
         void resolveOffsetForPointerIsZeroAtTheTrackTop() {
             // A pointer at the very top scrolls the content to its first row (offset 0).
-            var offset = Scrollbar.resolveOffsetForPointer(region(0f), track(),
+            var offset = Scrollbar.resolveOffsetForPointer(buildRegion(0f), track(),
                 track().y() + track().height());
             assertThat(offset).isCloseTo(0f, within(TOLERANCE));
         }
@@ -142,21 +142,21 @@ final class ScrollbarTest {
         @Test
         void resolveOffsetForPointerIsTheOverflowAtTheTrackBottom() {
             // A pointer at the very bottom scrolls the content to its last row (the full overflow).
-            var offset = Scrollbar.resolveOffsetForPointer(region(0f), track(), track().y());
+            var offset = Scrollbar.resolveOffsetForPointer(buildRegion(0f), track(), track().y());
             assertThat(offset).isCloseTo(OVERFLOW, within(TOLERANCE));
         }
 
         @Test
         void resolveOffsetForPointerClampsAPointerAboveTheTrack() {
             // A pointer past the top stays at 0 rather than a negative offset.
-            var offset = Scrollbar.resolveOffsetForPointer(region(0f), track(),
+            var offset = Scrollbar.resolveOffsetForPointer(buildRegion(0f), track(),
                 track().y() + track().height() + 500f);
             assertThat(offset).isCloseTo(0f, within(TOLERANCE));
         }
 
         @Test
         void resolveOffsetForPointerClampsAPointerBelowTheTrack() {
-            var offset = Scrollbar.resolveOffsetForPointer(region(0f), track(), track().y() - 500f);
+            var offset = Scrollbar.resolveOffsetForPointer(buildRegion(0f), track(), track().y() - 500f);
             assertThat(offset).isCloseTo(OVERFLOW, within(TOLERANCE));
         }
 

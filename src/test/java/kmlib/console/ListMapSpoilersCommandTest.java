@@ -45,36 +45,49 @@ final class ListMapSpoilersCommandTest {
     class BuildReport {
         @Test
         void omitsOrdinaryFullyVisibleSystems() {
-            var sector = sectorWith(system("Corvus", false,
-                ownedMarket("Jangala", "Hegemony", Visibility.SHOWN)));
+            
+            var sector = buildSectorWith(buildSystem(
+                "Corvus",
+                false,
+                buildOwnedMarket("Jangala", "Hegemony", Visibility.SHOWN)));
 
             var report = ListMapSpoilersCommand.buildReport(sector);
 
-            assertThat(report).doesNotContain("Corvus");
-            assertThat(report).contains("(none)");
+            assertThat(report)
+                .doesNotContain("Corvus");
+            assertThat(report)
+                .contains("(none)");
         }
 
         @Test
         void listsCutOffSystemAndFlagsIt() {
-            var sector = sectorWith(system("Black Site", true,
-                ownedMarket("Station", "Tri-Tachyon", Visibility.SHOWN)));
+
+            var sector = buildSectorWith(buildSystem(
+                "Black Site",
+                true,
+                buildOwnedMarket("Station", "Tri-Tachyon", Visibility.SHOWN)));
 
             var report = ListMapSpoilersCommand.buildReport(sector);
 
-            assertThat(report).contains("Black Site  [cut off]");
-            assertThat(report).contains("Station  (Tri-Tachyon)");
+            assertThat(report)
+                .contains("Black Site  [cut off]");
+            assertThat(report)
+                .contains("Station  (Tri-Tachyon)");
         }
 
         @Test
         void listsUndiscoveredHiddenBaseAsUndiscovered() {
             // A concealed pirate base sets its entity discoverable, so before the
             // player finds it the entity-discoverability signal surfaces it.
-            var sector = sectorWith(system("Hideout", false,
-                ownedMarket("Pirate Base", "Pirates", Visibility.UNDISCOVERED)));
+            var sector = buildSectorWith(buildSystem(
+                "Hideout",
+                false,
+                buildOwnedMarket("Pirate Base", "Pirates", Visibility.UNDISCOVERED)));
 
             var report = ListMapSpoilersCommand.buildReport(sector);
 
-            assertThat(report).contains("Pirate Base  (Pirates)  [undiscovered]");
+            assertThat(report)
+                .contains("Pirate Base  (Pirates)  [undiscovered]");
         }
 
         @Test
@@ -82,23 +95,31 @@ final class ListMapSpoilersCommandTest {
             // The $core_hiddenBase flag never clears, so a found pirate base must
             // not linger in the list: once its entity is no longer discoverable
             // it drops out, exactly like any other discovered colony.
-            var sector = sectorWith(system("Hideout", false,
-                ownedMarket("Pirate Base", "Pirates", Visibility.SHOWN)));
+            var sector = buildSectorWith(buildSystem(
+                "Hideout",
+                false,
+                buildOwnedMarket("Pirate Base", "Pirates", Visibility.SHOWN)));
 
             var report = ListMapSpoilersCommand.buildReport(sector);
 
-            assertThat(report).doesNotContain("Pirate Base");
-            assertThat(report).contains("(none)");
+            assertThat(report)
+                .doesNotContain("Pirate Base");
+            assertThat(report)
+                .contains("(none)");
         }
 
         @Test
         void listsSystemWithUndiscoveredMarketAndFlagsTheMarket() {
-            var sector = sectorWith(system("Libra System", false,
-                ownedMarket("Battlestar Libra", "Knights", Visibility.UNDISCOVERED)));
+
+            var sector = buildSectorWith(buildSystem(
+                "Libra System",
+                false,
+                buildOwnedMarket("Battlestar Libra", "Knights", Visibility.UNDISCOVERED)));
 
             var report = ListMapSpoilersCommand.buildReport(sector);
 
-            assertThat(report).contains("Battlestar Libra  (Knights)  [undiscovered]");
+            assertThat(report)
+                .contains("Battlestar Libra  (Knights)  [undiscovered]");
         }
 
         @Test
@@ -107,14 +128,18 @@ final class ListMapSpoilersCommandTest {
             // known and dockable: discovery, not the econ flag, decides what is
             // spoiler-worthy, so a known econ-hidden market must not be flagged
             // and its ordinary system is omitted.
-            var academy = ownedMarket("Galatia Academy", "Independent", Visibility.SHOWN);
-            when(academy.isHidden()).thenReturn(true);
-            var sector = sectorWith(system("Galatia", false, academy));
+            var academy = buildOwnedMarket("Galatia Academy", "Independent", Visibility.SHOWN);
 
+            when(academy.isHidden())
+                .thenReturn(true);
+
+            var sector = buildSectorWith(buildSystem("Galatia", false, academy));
             var report = ListMapSpoilersCommand.buildReport(sector);
 
-            assertThat(report).doesNotContain("Galatia Academy");
-            assertThat(report).contains("(none)");
+            assertThat(report)
+                .doesNotContain("Galatia Academy");
+            assertThat(report)
+                .contains("(none)");
         }
 
         @Test
@@ -123,13 +148,17 @@ final class ListMapSpoilersCommandTest {
             // clears its discoverable flag on discovery, so it must drop out of
             // the spoiler list rather than linger - the entity is no longer
             // discoverable and is not a hidden base.
-            var sector = sectorWith(system("Mia's Star", false,
-                ownedMarket("Forgeship", "holdout", Visibility.SHOWN)));
+            var sector = buildSectorWith(buildSystem(
+                "Mia's Star",
+                false,
+                buildOwnedMarket("Forgeship", "holdout", Visibility.SHOWN)));
 
             var report = ListMapSpoilersCommand.buildReport(sector);
 
-            assertThat(report).doesNotContain("Forgeship");
-            assertThat(report).contains("(none)");
+            assertThat(report)
+                .doesNotContain("Forgeship");
+            assertThat(report)
+                .contains("(none)");
         }
 
         @Test
@@ -137,11 +166,11 @@ final class ListMapSpoilersCommandTest {
             // A void or story system holds no owned market, so requiring one
             // would hide it; being cut off from hyperspace is enough to surface
             // it on its own.
-            var sector = sectorWith(system("Limbo", true));
-
+            var sector = buildSectorWith(buildSystem("Limbo", true));
             var report = ListMapSpoilersCommand.buildReport(sector);
 
-            assertThat(report).contains("Limbo  [cut off]");
+            assertThat(report)
+                .contains("Limbo  [cut off]");
         }
 
         @Test
@@ -149,18 +178,24 @@ final class ListMapSpoilersCommandTest {
             // The system lists (a real owned market plus being cut off), but the
             // neutral and condition-only markets are not counted as owned, so they
             // do not appear.
-            var real = ownedMarket("Colony", "Hegemony", Visibility.SHOWN);
-            var neutral = ownedMarket("Rock", "neutral", Visibility.SHOWN);
-            var conditionOnly = ownedMarket("Gas Giant", "Hegemony", Visibility.SHOWN);
-            when(conditionOnly.isPlanetConditionMarketOnly()).thenReturn(true);
-            var sector = sectorWith(system("Bare", true, real, neutral, conditionOnly));
+            var real = buildOwnedMarket("Colony", "Hegemony", Visibility.SHOWN);
+            var neutral = buildOwnedMarket("Rock", "neutral", Visibility.SHOWN);
+            var conditionOnly = buildOwnedMarket("Gas Giant", "Hegemony", Visibility.SHOWN);
 
+            when(conditionOnly.isPlanetConditionMarketOnly())
+                .thenReturn(true);
+
+            var sector = buildSectorWith(buildSystem("Bare", true, real, neutral, conditionOnly));
             var report = ListMapSpoilersCommand.buildReport(sector);
 
-            assertThat(report).contains("Bare  [cut off]");
-            assertThat(report).contains("Colony  (Hegemony)");
-            assertThat(report).doesNotContain("Rock");
-            assertThat(report).doesNotContain("Gas Giant");
+            assertThat(report)
+                .contains("Bare  [cut off]");
+            assertThat(report)
+                .contains("Colony  (Hegemony)");
+            assertThat(report)
+                .doesNotContain("Rock");
+            assertThat(report)
+                .doesNotContain("Gas Giant");
         }
     }
 
@@ -172,10 +207,16 @@ final class ListMapSpoilersCommandTest {
 
         @BeforeEach
         void setUp() {
+
             var sectorMock = mock(SectorAPI.class);
-            when(sectorMock.getStarSystems()).thenReturn(new ArrayList<>());
+
+            when(sectorMock.getStarSystems())
+                .thenReturn(new ArrayList<>());
+
             globalMock = mockStatic(Global.class);
-            globalMock.when(Global::getSector).thenReturn(sectorMock);
+            globalMock
+                .when(Global::getSector)
+                .thenReturn(sectorMock);
 
             outputFake = new CommandOutputFake();
             command = new ListMapSpoilersCommand(outputFake);
@@ -188,27 +229,33 @@ final class ListMapSpoilersCommandTest {
 
         @Test
         void prints_the_report_for_a_bare_invocation() {
+
             var result = command.runCommand("", CommandContext.CAMPAIGN_MAP);
 
-            assertThat(result).isEqualTo(CommandResult.SUCCESS);
+            assertThat(result)
+                .isEqualTo(CommandResult.SUCCESS);
             assertThat(outputFake.getMessages())
                 .anyMatch(message -> message.contains("Map spoilers"));
         }
 
         @Test
         void reports_a_surplus_argument_as_bad_syntax() {
+
             var result = command.runCommand("bogus", CommandContext.CAMPAIGN_MAP);
 
-            assertThat(result).isEqualTo(CommandResult.BAD_SYNTAX);
+            assertThat(result)
+                .isEqualTo(CommandResult.BAD_SYNTAX);
             assertThat(outputFake.getMessages())
                 .anyMatch(message -> message.contains("Too many arguments"));
         }
 
         @Test
         void returns_the_validation_result_outside_a_campaign() {
+
             var result = command.runCommand("", CommandContext.COMBAT_MISSION);
 
-            assertThat(result).isEqualTo(CommandResult.WRONG_CONTEXT);
+            assertThat(result)
+                .isEqualTo(CommandResult.WRONG_CONTEXT);
             assertThat(outputFake.getMessages())
                 .anyMatch(message -> message.contains("can only run in a campaign"));
         }
@@ -218,40 +265,66 @@ final class ListMapSpoilersCommandTest {
         SHOWN, UNDISCOVERED
     }
 
-    private static SectorAPI sectorWith(SystemWithMarkets... systems) {
+    private static SectorAPI buildSectorWith(SystemWithMarkets... systems) {
+
         var economyMock = mock(EconomyAPI.class);
         var starSystems = new ArrayList<StarSystemAPI>();
+
         for (var entry : systems) {
+
             starSystems.add(entry.system);
-            when(economyMock.getMarkets(entry.system)).thenReturn(entry.markets);
+
+            when(economyMock.getMarkets(entry.system))
+                .thenReturn(entry.markets);
         }
+
         var sectorMock = mock(SectorAPI.class);
-        when(sectorMock.getStarSystems()).thenReturn(starSystems);
-        when(sectorMock.getEconomy()).thenReturn(economyMock);
+
+        when(sectorMock.getStarSystems())
+            .thenReturn(starSystems);
+        when(sectorMock.getEconomy())
+            .thenReturn(economyMock);
+
         return sectorMock;
     }
 
-    private static SystemWithMarkets system(String name, boolean isCutOff, MarketAPI... markets) {
+    private static SystemWithMarkets buildSystem(String name, boolean isCutOff, MarketAPI... markets) {
+
         var systemMock = mock(StarSystemAPI.class);
-        when(systemMock.getName()).thenReturn(name);
-        when(systemMock.hasTag(Tags.SYSTEM_CUT_OFF_FROM_HYPER)).thenReturn(isCutOff);
+
+        when(systemMock.getName())
+            .thenReturn(name);
+        when(systemMock.hasTag(Tags.SYSTEM_CUT_OFF_FROM_HYPER))
+            .thenReturn(isCutOff);
+
         return new SystemWithMarkets(systemMock, List.of(markets));
     }
 
-    private static MarketAPI ownedMarket(String name, String factionId, Visibility visibility) {
+    private static MarketAPI buildOwnedMarket(String name, String factionId, Visibility visibility) {
+
         var factionMock = mock(FactionAPI.class);
-        when(factionMock.getId()).thenReturn(factionId);
-        when(factionMock.getDisplayName()).thenReturn(factionId);
+
+        when(factionMock.getId())
+            .thenReturn(factionId);
+        when(factionMock.getDisplayName())
+            .thenReturn(factionId);
 
         var entityMock = mock(SectorEntityToken.class);
-        when(entityMock.isDiscoverable()).thenReturn(visibility == Visibility.UNDISCOVERED);
+
+        when(entityMock.isDiscoverable())
+            .thenReturn(visibility == Visibility.UNDISCOVERED);
 
         // A market is a hidden base only when a test stubs Misc.isHiddenBase for
         // it; left unstubbed, the static mock returns false here.
         var marketMock = mock(MarketAPI.class);
-        when(marketMock.getName()).thenReturn(name);
-        when(marketMock.getFaction()).thenReturn(factionMock);
-        when(marketMock.getPrimaryEntity()).thenReturn(entityMock);
+
+        when(marketMock.getName())
+            .thenReturn(name);
+        when(marketMock.getFaction())
+            .thenReturn(factionMock);
+        when(marketMock.getPrimaryEntity())
+            .thenReturn(entityMock);
+
         return marketMock;
     }
 

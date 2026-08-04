@@ -29,8 +29,8 @@ final class SystemMotionTrackerTest {
         @Test
         void reports_a_selected_system_that_moved_between_polls() {
             var tracker = new SystemMotionTracker();
-            var systemMock = systemAt("mover", 0, 0);
-            var sectorMock = sectorOf(systemMock);
+            var systemMock = buildSystemAt("mover", 0, 0);
+            var sectorMock = buildSectorOf(systemMock);
 
             tracker.updateMovingSystems(sectorMock, acceptAll());
             when(systemMock.getLocation()).thenReturn(new Vector2f(500, 0));
@@ -43,8 +43,8 @@ final class SystemMotionTrackerTest {
         @Test
         void never_tracks_a_system_the_predicate_rejects() {
             var tracker = new SystemMotionTracker();
-            var systemMock = systemAt("excluded", 0, 0);
-            var sectorMock = sectorOf(systemMock);
+            var systemMock = buildSystemAt("excluded", 0, 0);
+            var sectorMock = buildSectorOf(systemMock);
 
             tracker.updateMovingSystems(sectorMock, acceptNone());
             when(systemMock.getLocation()).thenReturn(new Vector2f(500, 0));
@@ -62,13 +62,13 @@ final class SystemMotionTrackerTest {
         }
     }
 
-    private static SectorAPI sectorOf(StarSystemAPI system) {
+    private static SectorAPI buildSectorOf(StarSystemAPI system) {
         var sectorMock = mock(SectorAPI.class);
         when(sectorMock.getStarSystems()).thenReturn(List.of(system));
         return sectorMock;
     }
 
-    private static StarSystemAPI systemAt(String id, float x, float y) {
+    private static StarSystemAPI buildSystemAt(String id, float x, float y) {
         var systemMock = mock(StarSystemAPI.class);
         when(systemMock.getId()).thenReturn(id);
         when(systemMock.getLocation()).thenReturn(new Vector2f(x, y));

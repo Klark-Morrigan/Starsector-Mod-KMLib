@@ -26,7 +26,7 @@ final class FontLabelLengthEstimatorTest {
         void requiredLengthForScalesTheMeasuredWidthByTheLineHeight() {
             // One char is one unit wide per unit of line height, so "Hegemony" (8 chars)
             // at line height 200 needs 8 * 200.
-            var estimator = new FontLabelLengthEstimator(characterWideMeasurer(), "Hegemony");
+            var estimator = new FontLabelLengthEstimator(buildCharacterWideMeasurer(), "Hegemony");
 
             assertThat(estimator.requiredLengthFor(200.0, 1)).isCloseTo(1600.0, within(1e-3));
         }
@@ -35,7 +35,7 @@ final class FontLabelLengthEstimatorTest {
         void requiredLengthForUsesTheWidestLineOfTheBalancedTwoLineWrap() {
             // Splitting after "Persean" leaves a 15-char second line; after "League" a
             // 14-char first line - the balanced pick - so the widest line is 14 chars.
-            var estimator = new FontLabelLengthEstimator(characterWideMeasurer(),
+            var estimator = new FontLabelLengthEstimator(buildCharacterWideMeasurer(),
                 "Persean League Alliance");
 
             assertThat(estimator.requiredLengthFor(100.0, 2)).isCloseTo(1400.0, within(1e-3));
@@ -45,7 +45,7 @@ final class FontLabelLengthEstimatorTest {
         void requiredLengthForReturnsInfinityWhenTheTextHasFewerWordsThanLines() {
             // A one-word label cannot fill two lines, so the count reports unfillable and
             // the fit skips it (the one-line trial already covers the text).
-            var estimator = new FontLabelLengthEstimator(characterWideMeasurer(), "Hegemony");
+            var estimator = new FontLabelLengthEstimator(buildCharacterWideMeasurer(), "Hegemony");
 
             assertThat(estimator.requiredLengthFor(100.0, 2)).isInfinite();
         }
@@ -56,7 +56,7 @@ final class FontLabelLengthEstimatorTest {
 
         @Test
         void wrapIntoLinesReturnsTheWholeTextForOneLine() {
-            var estimator = new FontLabelLengthEstimator(characterWideMeasurer(),
+            var estimator = new FontLabelLengthEstimator(buildCharacterWideMeasurer(),
                 "Persean League Alliance");
 
             assertThat(estimator.wrapIntoLines(1)).containsExactly("Persean League Alliance");
@@ -67,7 +67,7 @@ final class FontLabelLengthEstimatorTest {
             // The same balanced split requiredLengthFor measured: breaking after "League"
             // (widest line 14 chars) beats breaking after "Persean" (15 chars), so the
             // drawn block matches the measured fit.
-            var estimator = new FontLabelLengthEstimator(characterWideMeasurer(),
+            var estimator = new FontLabelLengthEstimator(buildCharacterWideMeasurer(),
                 "Persean League Alliance");
 
             assertThat(estimator.wrapIntoLines(2))
@@ -76,7 +76,7 @@ final class FontLabelLengthEstimatorTest {
 
         @Test
         void wrapIntoLinesReturnsExactlyTheRequestedLineCount() {
-            var estimator = new FontLabelLengthEstimator(characterWideMeasurer(),
+            var estimator = new FontLabelLengthEstimator(buildCharacterWideMeasurer(),
                 "Persean League Alliance");
 
             assertThat(estimator.wrapIntoLines(3))
@@ -85,7 +85,7 @@ final class FontLabelLengthEstimatorTest {
 
         @Test
         void wrapIntoLinesReturnsEmptyWhenTheTextHasFewerWordsThanLines() {
-            var estimator = new FontLabelLengthEstimator(characterWideMeasurer(), "Hegemony");
+            var estimator = new FontLabelLengthEstimator(buildCharacterWideMeasurer(), "Hegemony");
 
             assertThat(estimator.wrapIntoLines(2)).isEmpty();
         }
@@ -94,7 +94,7 @@ final class FontLabelLengthEstimatorTest {
         void wrapIntoLinesCollapsesSurroundingAndRepeatedWhitespace() {
             // Label strings are not guaranteed tidy; the wrap works on the words, so
             // stray spacing never produces empty lines or padded widths.
-            var estimator = new FontLabelLengthEstimator(characterWideMeasurer(), "  Luddic   Church ");
+            var estimator = new FontLabelLengthEstimator(buildCharacterWideMeasurer(), "  Luddic   Church ");
 
             assertThat(estimator.wrapIntoLines(2)).containsExactly("Luddic", "Church");
         }
@@ -102,7 +102,7 @@ final class FontLabelLengthEstimatorTest {
 
     // A measurer whose width is one font-size unit per character - width proportional
     // to both inputs, like a real face, but with arithmetic a test can predict exactly.
-    private static LineWidthMeasurer characterWideMeasurer() {
+    private static LineWidthMeasurer buildCharacterWideMeasurer() {
         return (line, fontSize) -> line.length() * fontSize;
     }
 }

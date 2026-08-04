@@ -53,7 +53,7 @@ final class VoronoiCellBuilderTest {
 
             assertThat(cells).hasSize(1);
             assertThat(cells.get(0).size()).isGreaterThan(4);
-            assertThat(cells.get(0)).allMatch(vertex -> distance(vertex, site) <= MAX_CELL_RADIUS + 1e-6);
+            assertThat(cells.get(0)).allMatch(vertex -> computeDistance(vertex, site) <= MAX_CELL_RADIUS + 1e-6);
         }
 
         @Test
@@ -70,7 +70,7 @@ final class VoronoiCellBuilderTest {
                 var site = sites.get(i);
                 assertThat(cells.get(i))
                     .as("cell %d stays within the bound radius of its site", i)
-                    .allMatch(vertex -> distance(vertex, site) <= MAX_CELL_RADIUS + 1e-6);
+                    .allMatch(vertex -> computeDistance(vertex, site) <= MAX_CELL_RADIUS + 1e-6);
             }
         }
 
@@ -173,9 +173,9 @@ final class VoronoiCellBuilderTest {
 
             // The only non-bound edge of each cell is the shared bisector, tagged
             // with the other site - the adjacency between them.
-            assertThat(neighboursOf(VoronoiCellBuilder.buildLabelledCell(0, sites, MAX_CELL_RADIUS)))
+            assertThat(listNeighboursOf(VoronoiCellBuilder.buildLabelledCell(0, sites, MAX_CELL_RADIUS)))
                 .containsExactly(1);
-            assertThat(neighboursOf(VoronoiCellBuilder.buildLabelledCell(1, sites, MAX_CELL_RADIUS)))
+            assertThat(listNeighboursOf(VoronoiCellBuilder.buildLabelledCell(1, sites, MAX_CELL_RADIUS)))
                 .containsExactly(0);
         }
 
@@ -188,9 +188,9 @@ final class VoronoiCellBuilderTest {
 
             // The distant third site never clips either near cell, so neither
             // names it; the two near sites remain each other's only neighbour.
-            assertThat(neighboursOf(VoronoiCellBuilder.buildLabelledCell(0, sites, MAX_CELL_RADIUS)))
+            assertThat(listNeighboursOf(VoronoiCellBuilder.buildLabelledCell(0, sites, MAX_CELL_RADIUS)))
                 .containsExactly(1);
-            assertThat(neighboursOf(VoronoiCellBuilder.buildLabelledCell(1, sites, MAX_CELL_RADIUS)))
+            assertThat(listNeighboursOf(VoronoiCellBuilder.buildLabelledCell(1, sites, MAX_CELL_RADIUS)))
                 .containsExactly(0);
         }
 
@@ -205,7 +205,7 @@ final class VoronoiCellBuilderTest {
             var neighboursBySite = new ArrayList<Set<Integer>>();
             for (var i = 0; i < sites.size(); i++) {
                 neighboursBySite.add(
-                    neighboursOf(VoronoiCellBuilder.buildLabelledCell(i, sites, MAX_CELL_RADIUS)));
+                    listNeighboursOf(VoronoiCellBuilder.buildLabelledCell(i, sites, MAX_CELL_RADIUS)));
             }
 
             // A shared Voronoi edge belongs to both cells, so adjacency must read
@@ -221,7 +221,7 @@ final class VoronoiCellBuilderTest {
 
         // The set of distinct neighbour site indices a cell names across its
         // edges, dropping the bound-edge sentinel (a frontier, not a neighbour).
-        private static Set<Integer> neighboursOf(VoronoiCellBuilder.LabelledCell cell) {
+        private static Set<Integer> listNeighboursOf(VoronoiCellBuilder.LabelledCell cell) {
             var neighbours = new LinkedHashSet<Integer>();
             for (var label : cell.edgeNeighbourSiteIndices()) {
                 if (label != VoronoiCellBuilder.BOUND_EDGE) {
@@ -256,7 +256,7 @@ final class VoronoiCellBuilderTest {
 
         @Test
         void buildLabelledCellMatchesBareDoubleArrayBuildAndReportsCost() {
-            var sites = randomSites();
+            var sites = buildRandomSites();
 
             // Correctness gate: labelling must not move a single vertex, so the
             // labelled cell must equal the bare double[] control exactly. Only then
@@ -283,10 +283,10 @@ final class VoronoiCellBuilderTest {
                 }
             });
 
-            reportCost(labelledCost, bareCost);
+            computeReportCost(labelledCost, bareCost);
         }
 
-        private List<double[]> randomSites() {
+        private List<double[]> buildRandomSites() {
             var random = new java.util.Random(RANDOM_SEED);
             var sites = new ArrayList<double[]>(SITE_COUNT);
             for (var i = 0; i < SITE_COUNT; i++) {
@@ -301,13 +301,13 @@ final class VoronoiCellBuilderTest {
         // per-edge labels.
         private List<double[]> buildBareCell(int siteIndex, List<double[]> sites) {
             var site = sites.get(siteIndex);
-            var cell = bareRegularPolygon(site);
+            var cell = buildBareRegularPolygon(site);
             for (var other = 0; other < sites.size(); other++) {
                 if (other == siteIndex) {
                     continue;
                 }
                 var neighbour = sites.get(other);
-                cell = bareClipToHalfPlane(cell, new HalfPlane(
+                cell = buildBareClipToHalfPlane(cell, new HalfPlane(
                     (site[0] + neighbour[0]) * 0.5, (site[1] + neighbour[1]) * 0.5,
                     site[0] - neighbour[0], site[1] - neighbour[1]));
                 if (cell.isEmpty()) {
@@ -324,7 +324,7 @@ final class VoronoiCellBuilderTest {
         // the labelled walk against an independent baseline rather than against
         // itself. Shares only the point math via Points, so any vertex mismatch is
         // labelling, not a different crossing formula.
-        private static List<double[]> bareClipToHalfPlane(List<double[]> polygon,
+        private static List<double[]> buildBareClipToHalfPlane(List<double[]> polygon,
                 HalfPlane boundary) {
             var result = new ArrayList<double[]>();
             var count = polygon.size();
@@ -344,7 +344,7 @@ final class VoronoiCellBuilderTest {
             return result;
         }
 
-        private List<double[]> bareRegularPolygon(double[] center) {
+        private List<double[]> buildBareRegularPolygon(double[] center) {
             var polygon = new ArrayList<double[]>(BOUND_SEGMENTS);
             for (var i = 0; i < BOUND_SEGMENTS; i++) {
                 var angle = 2.0 * Math.PI * i / BOUND_SEGMENTS;
@@ -363,7 +363,7 @@ final class VoronoiCellBuilderTest {
             for (var i = 0; i < WARMUP_BUILDS; i++) {
                 buildPartition.run();
             }
-            var bean = allocationBean();
+            var bean = buildAllocationBean();
             var allocBefore = bean == null ? 0 : bean.getCurrentThreadAllocatedBytes();
             var start = System.nanoTime();
             for (var i = 0; i < TIMED_BUILDS; i++) {
@@ -376,35 +376,35 @@ final class VoronoiCellBuilderTest {
             return new long[] {nanosPerBuild, bytesPerBuild};
         }
 
-        private void reportCost(long[] labelled, long[] bare) {
+        private void computeReportCost(long[] labelled, long[] bare) {
             System.out.printf("%nVoronoiCellBuilder partition (%d sites):%n", SITE_COUNT);
             System.out.printf("  labelled: %,d ns/build (%,d ns/cell)  %s%n",
-                labelled[0], labelled[0] / SITE_COUNT, allocText(labelled[1]));
+                labelled[0], labelled[0] / SITE_COUNT, readAllocationText(labelled[1]));
             System.out.printf("  bare:     %,d ns/build (%,d ns/cell)  %s%n",
-                bare[0], bare[0] / SITE_COUNT, allocText(bare[1]));
+                bare[0], bare[0] / SITE_COUNT, readAllocationText(bare[1]));
             System.out.printf("  labelled/bare: %.2fx time%s%n",
-                ratio(labelled[0], bare[0]), allocRatioText(labelled[1], bare[1]));
+                computeRatio(labelled[0], bare[0]), readAllocationRatioText(labelled[1], bare[1]));
         }
 
-        private String allocText(long bytesPerBuild) {
+        private String readAllocationText(long bytesPerBuild) {
             return bytesPerBuild < 0
                 ? "(alloc n/a)"
                 : String.format("%,d bytes/build", bytesPerBuild);
         }
 
-        private String allocRatioText(long labelledBytes, long bareBytes) {
+        private String readAllocationRatioText(long labelledBytes, long bareBytes) {
             return labelledBytes < 0 || bareBytes <= 0
                 ? ""
-                : String.format(", %.2fx alloc", ratio(labelledBytes, bareBytes));
+                : String.format(", %.2fx alloc", computeRatio(labelledBytes, bareBytes));
         }
 
-        private double ratio(long numerator, long denominator) {
+        private double computeRatio(long numerator, long denominator) {
             return denominator == 0 ? Double.NaN : (double) numerator / denominator;
         }
 
         // HotSpot's per-thread allocation counter, or null when the running JVM
         // does not expose it (the harness then reports time only).
-        private com.sun.management.ThreadMXBean allocationBean() {
+        private com.sun.management.ThreadMXBean buildAllocationBean() {
             var bean = java.lang.management.ManagementFactory.getThreadMXBean();
             if (bean instanceof com.sun.management.ThreadMXBean hotspotBean
                     && hotspotBean.isThreadAllocatedMemorySupported()) {
@@ -534,7 +534,7 @@ final class VoronoiCellBuilderTest {
         }
     }
 
-    private static double distance(double[] a, double[] b) {
+    private static double computeDistance(double[] a, double[] b) {
         var dx = a[0] - b[0];
         var dy = a[1] - b[1];
         return Math.sqrt(dx * dx + dy * dy);

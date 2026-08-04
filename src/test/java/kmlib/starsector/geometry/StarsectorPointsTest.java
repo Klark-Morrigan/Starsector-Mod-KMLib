@@ -23,16 +23,16 @@ class StarsectorPointsTest {
     class ComputeDistanceBetween {
         @Test
         void computeDistanceBetweenIsEuclidean() {
-            var a = entityAt(0f, 0f);
-            var b = entityAt(3f, 4f);
+            var a = buildEntityAt(0f, 0f);
+            var b = buildEntityAt(3f, 4f);
 
             assertThat(StarsectorPoints.computeDistanceBetween(a, b)).isEqualTo(5.0);
         }
 
         @Test
         void computeDistanceBetweenIsZeroForCoincidentEntities() {
-            var a = entityAt(2f, 7f);
-            var b = entityAt(2f, 7f);
+            var a = buildEntityAt(2f, 7f);
+            var b = buildEntityAt(2f, 7f);
 
             assertThat(StarsectorPoints.computeDistanceBetween(a, b)).isZero();
         }
@@ -42,23 +42,23 @@ class StarsectorPointsTest {
     class ComputeAngleDegreesBetween {
         @Test
         void computeAngleDegreesBetweenIsCounterClockwiseFromPositiveX() {
-            var from = entityAt(0f, 0f);
-            var to = entityAt(1f, 1f);
+            var from = buildEntityAt(0f, 0f);
+            var to = buildEntityAt(1f, 1f);
 
             assertThat(StarsectorPoints.computeAngleDegreesBetween(from, to)).isEqualTo(45.0);
         }
 
         @Test
         void computeAngleDegreesBetweenIsRelativeToTheFromEntity() {
-            var from = entityAt(2f, 2f);
-            var to = entityAt(5f, 6f);
+            var from = buildEntityAt(2f, 2f);
+            var to = buildEntityAt(5f, 6f);
 
             assertThat(StarsectorPoints.computeAngleDegreesBetween(from, to))
                 .isCloseTo(53.13, within(0.01));
         }
     }
 
-    private SectorEntityToken entityAt(float x, float y) {
+    private SectorEntityToken buildEntityAt(float x, float y) {
         var entityMock = mock(SectorEntityToken.class);
         Mockito.when(entityMock.getLocation()).thenReturn(new Vector2f(x, y));
         return entityMock;

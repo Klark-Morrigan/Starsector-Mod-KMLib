@@ -83,7 +83,7 @@ class CampaignMapViewTest {
 
         @Test
         void isTrueWithTheStarscapeFilterOff() {
-            stubUiDataWithStarscape(false, hyperspaceLocation());
+            stubUiDataWithStarscape(false, buildHyperspaceLocation());
 
             assertThat(CampaignMapView.isSectorMapShowing()).isTrue();
         }
@@ -92,7 +92,7 @@ class CampaignMapViewTest {
         void isTrueWithTheStarscapeFilterOn() {
             // The read deliberately ignores the filter: the map is on screen either way, which is
             // what separates this from the mode reads.
-            stubUiDataWithStarscape(true, hyperspaceLocation());
+            stubUiDataWithStarscape(true, buildHyperspaceLocation());
 
             assertThat(CampaignMapView.isSectorMapShowing()).isTrue();
         }
@@ -106,7 +106,7 @@ class CampaignMapViewTest {
 
         @Test
         void isFalseWhenTheSubViewIsAStarSystem() {
-            stubUiDataWithStarscape(false, systemLocation());
+            stubUiDataWithStarscape(false, buildSystemLocation());
 
             assertThat(CampaignMapView.isSectorMapShowing()).isFalse();
         }
@@ -137,14 +137,14 @@ class CampaignMapViewTest {
 
         @Test
         void isTrueOnTheSectorSubViewWithStarscapeOn() {
-            stubUiDataWithStarscape(true, hyperspaceLocation());
+            stubUiDataWithStarscape(true, buildHyperspaceLocation());
 
             assertThat(CampaignMapView.isSectorMapInStarscapeMode()).isTrue();
         }
 
         @Test
         void isFalseWhenTheStarscapeFilterIsOff() {
-            stubUiDataWithStarscape(false, hyperspaceLocation());
+            stubUiDataWithStarscape(false, buildHyperspaceLocation());
 
             assertThat(CampaignMapView.isSectorMapInStarscapeMode()).isFalse();
         }
@@ -160,7 +160,7 @@ class CampaignMapViewTest {
         void isFalseWhenTheSubViewIsAStarSystem() {
             // A star system drawn with the filter on is not the sector map, so the mode read
             // declines it exactly as the showing read does.
-            stubUiDataWithStarscape(true, systemLocation());
+            stubUiDataWithStarscape(true, buildSystemLocation());
 
             assertThat(CampaignMapView.isSectorMapInStarscapeMode()).isFalse();
         }
@@ -199,14 +199,14 @@ class CampaignMapViewTest {
 
         @Test
         void isFalseWhenTheStarscapeFilterIsOn() {
-            stubUiDataWithStarscape(true, hyperspaceLocation());
+            stubUiDataWithStarscape(true, buildHyperspaceLocation());
 
             assertThat(CampaignMapView.isSectorMapWithStarscapeOff()).isFalse();
         }
 
         @Test
         void isTrueOnTheSectorSubViewWithStarscapeOff() {
-            stubUiDataWithStarscape(false, hyperspaceLocation());
+            stubUiDataWithStarscape(false, buildHyperspaceLocation());
 
             assertThat(CampaignMapView.isSectorMapWithStarscapeOff()).isTrue();
         }
@@ -220,7 +220,7 @@ class CampaignMapViewTest {
 
         @Test
         void isFalseWhenTheSubViewIsAStarSystem() {
-            stubUiDataWithStarscape(false, systemLocation());
+            stubUiDataWithStarscape(false, buildSystemLocation());
 
             assertThat(CampaignMapView.isSectorMapWithStarscapeOff()).isFalse();
         }
@@ -253,7 +253,7 @@ class CampaignMapViewTest {
 
         @Test
         void composesTheSignalsAndTheStateTheyClassifyTo() {
-            stubUiDataWithStarscape(true, hyperspaceLocation());
+            stubUiDataWithStarscape(true, buildHyperspaceLocation());
 
             assertThat(CampaignMapView.describeViewState()).isEqualTo(
                 "tab=MAP starscape=true mapLocation=hyperspace"
@@ -295,13 +295,13 @@ class CampaignMapViewTest {
         when(sectorMock.getUIData()).thenReturn(uiData);
     }
 
-    private LocationAPI hyperspaceLocation() {
+    private LocationAPI buildHyperspaceLocation() {
         var locationMock = mock(LocationAPI.class);
         when(locationMock.isHyperspace()).thenReturn(true);
         return locationMock;
     }
 
-    private LocationAPI systemLocation() {
+    private LocationAPI buildSystemLocation() {
         var locationMock = mock(LocationAPI.class);
         when(locationMock.isHyperspace()).thenReturn(false);
         return locationMock;

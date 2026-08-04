@@ -111,11 +111,11 @@ final class SortSelectorControlTest {
             var severityRow = MODES.indexOf(AnomalySortMode.SEVERITY);
             var radiusRow = MODES.indexOf(AnomalySortMode.RADIUS);
 
-            assertThat(trailingRowSlotAt(selector, severityRow))
+            assertThat(readTrailingRowSlotAt(selector, severityRow))
                 .isEqualTo(new RowSlot.Triangle(TriangleDirection.UP));
-            assertThat(trailingRowSlotAt(selector, radiusRow))
+            assertThat(readTrailingRowSlotAt(selector, radiusRow))
                 .isEqualTo(new RowSlot.Triangle(TriangleDirection.DOWN));
-            assertThat(trailingRowSlotAt(selector, alphaRow))
+            assertThat(readTrailingRowSlotAt(selector, alphaRow))
                 .isEqualTo(new RowSlot.Triangle(TriangleDirection.UP));
         }
 
@@ -200,7 +200,7 @@ final class SortSelectorControlTest {
 
     // What the row at this index trails with - the slot a test reads to learn which direction that
     // mode previews.
-    private static RowSlot trailingRowSlotAt(ControlSpec.VerticalTable selector, int rowIndex) {
+    private static RowSlot readTrailingRowSlotAt(ControlSpec.VerticalTable selector, int rowIndex) {
         return selector.labelledRows().get(rowIndex).trailingRowSlot();
     }
 }

@@ -21,7 +21,7 @@ class RegionChordTest {
         @Test
         void toSegmentPlacesTheEndsAtTheParametersMeasuredFromTheOrigin() {
             // Origin (10, 20) running along +x: t=2 and t=5 are 2 and 5 units past it.
-            var segment = chordAlong(new DirectedLine(10, 20, 1, 0))
+            var segment = computeChordAlong(new DirectedLine(10, 20, 1, 0))
                 .toSegment(new double[] {2, 5});
 
             assertThat(segment.startX())
@@ -38,7 +38,7 @@ class RegionChordTest {
         void toSegmentPlacesANegativeParameterBehindTheOrigin() {
             // The origin is parameter zero, not the span's start, so a span straddling
             // it reaches back along the direction rather than clamping at it.
-            var segment = chordAlong(new DirectedLine(0, 0, 1, 0))
+            var segment = computeChordAlong(new DirectedLine(0, 0, 1, 0))
                 .toSegment(new double[] {-4, 4});
 
             assertThat(segment.startX())
@@ -50,7 +50,7 @@ class RegionChordTest {
         @Test
         void toSegmentCarriesBothCoordinatesForADiagonalDirection() {
             // Ten units along the 3-4-5 unit direction lands at (6, 8).
-            var segment = chordAlong(new DirectedLine(0, 0, 0.6, 0.8))
+            var segment = computeChordAlong(new DirectedLine(0, 0, 0.6, 0.8))
                 .toSegment(new double[] {0, 10});
 
             assertThat(segment.startX())
@@ -66,7 +66,7 @@ class RegionChordTest {
 
     // A chord along the given line against no region at all: the projection reads only
     // the line, so the rings and keep-outs a chord also carries play no part in it.
-    private static RegionChord chordAlong(DirectedLine line) {
+    private static RegionChord computeChordAlong(DirectedLine line) {
         return new RegionChord(List.of(), List.of(), line);
     }
 }

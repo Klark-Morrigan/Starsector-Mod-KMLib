@@ -71,13 +71,13 @@ final class HatchingTest {
 
         @Test
         void compute_hatch_run_yields_an_empty_run_for_zero_spacing() {
-            assertThat(hatch(RIGHT_TRIANGLE, 0, 0, GENEROUS_JOIN_TOLERANCE).segments())
+            assertThat(buildHatchRun(RIGHT_TRIANGLE, 0, 0, GENEROUS_JOIN_TOLERANCE).segments())
                 .isEmpty();
         }
 
         @Test
         void compute_hatch_run_yields_an_empty_run_for_negative_spacing() {
-            assertThat(hatch(RIGHT_TRIANGLE, 0, -1, GENEROUS_JOIN_TOLERANCE).segments())
+            assertThat(buildHatchRun(RIGHT_TRIANGLE, 0, -1, GENEROUS_JOIN_TOLERANCE).segments())
                 .isEmpty();
         }
 
@@ -86,7 +86,7 @@ final class HatchingTest {
             // Two vertices cannot form a triangle, so there is no area to hatch.
             var tooSmall = new float[] {0f, 0f, 1f, 0f};
 
-            assertThat(hatch(tooSmall, 0, 1, GENEROUS_JOIN_TOLERANCE).segments())
+            assertThat(buildHatchRun(tooSmall, 0, 1, GENEROUS_JOIN_TOLERANCE).segments())
                 .isEmpty();
         }
 
@@ -95,7 +95,7 @@ final class HatchingTest {
             // Horizontal lines (angle 0) at y = 0, 1, 2, 3; each clipped to the triangle's
             // narrowing width, and the apex line at y = 4 dropped as a corner-only touch. One
             // triangle, so every line crosses once and the merge has nothing to join.
-            var run = hatch(RIGHT_TRIANGLE, 0, 1, GENEROUS_JOIN_TOLERANCE);
+            var run = buildHatchRun(RIGHT_TRIANGLE, 0, 1, GENEROUS_JOIN_TOLERANCE);
 
             assertThat(run.segments())
                 .containsExactly(
@@ -112,7 +112,7 @@ final class HatchingTest {
             // so five segments come back where the clip found eight crossings. The merged
             // endpoints are the outer ends of the clip, not anything the diagonal contributed, and
             // lines come out in ascending order whatever order the soup presented the triangles in.
-            var run = hatch(SPLIT_SQUARE, 0, 1, GENEROUS_JOIN_TOLERANCE);
+            var run = buildHatchRun(SPLIT_SQUARE, 0, 1, GENEROUS_JOIN_TOLERANCE);
 
             assertThat(run.segments())
                 .containsExactly(
@@ -129,7 +129,7 @@ final class HatchingTest {
             // them closes on crossings that came out of their two triangles identical - so on
             // this soup the tolerance is doing nothing at all. That is the reading the tolerance
             // has to earn, and it earns it only where this count is non-zero.
-            var run = hatch(SPLIT_SQUARE, 0, 1, GENEROUS_JOIN_TOLERANCE);
+            var run = buildHatchRun(SPLIT_SQUARE, 0, 1, GENEROUS_JOIN_TOLERANCE);
 
             assertThat(run.joins())
                 .isEqualTo(new HatchJoinTally(3, 0, 0, 0, Double.POSITIVE_INFINITY));
@@ -140,7 +140,7 @@ final class HatchingTest {
             // Each lobe's own diagonal join closes; the six units of empty space between the
             // lobes does not, so every line comes back as two strokes rather than one spanning
             // an area the region does not cover.
-            var run = hatch(TWO_SPLIT_SQUARE_LOBES, 0, 1, GENEROUS_JOIN_TOLERANCE);
+            var run = buildHatchRun(TWO_SPLIT_SQUARE_LOBES, 0, 1, GENEROUS_JOIN_TOLERANCE);
 
             assertThat(run.segments())
                 .containsExactly(
@@ -157,7 +157,7 @@ final class HatchingTest {
             // merge that took the later span's end would cut every stroke short of the square's
             // right edge. The run is the square's own five full-width strokes, unchanged by an area
             // that was already covered.
-            var run = hatch(OVERLAPPING_TRIANGLE_SOUP, 0, 1, GENEROUS_JOIN_TOLERANCE);
+            var run = buildHatchRun(OVERLAPPING_TRIANGLE_SOUP, 0, 1, GENEROUS_JOIN_TOLERANCE);
 
             assertThat(run.segments())
                 .containsExactly(
@@ -174,7 +174,7 @@ final class HatchingTest {
             // - three hundred times the tolerance. They are counted as overlaps and leave the
             // widest tolerated gap at zero, because reading that magnitude back as the reach the
             // tolerance needed is what would set it from a gap it never had to close.
-            var run = hatch(OVERLAPPING_TRIANGLE_SOUP, 0, 1, GENEROUS_JOIN_TOLERANCE);
+            var run = buildHatchRun(OVERLAPPING_TRIANGLE_SOUP, 0, 1, GENEROUS_JOIN_TOLERANCE);
 
             assertThat(run.joins())
                 .isEqualTo(new HatchJoinTally(3, 0, 4, 0, Double.POSITIVE_INFINITY));
@@ -186,7 +186,7 @@ final class HatchingTest {
             // thousandth-unit gap to the lone triangle land only because the tolerance reaches
             // that far, and the widest of them is reported as the fraction of the spacing it
             // spanned - which is what sets the tolerance rather than a guess at it.
-            var run = hatch(NEARLY_ABUTTING_LOBES, 0, 1, GENEROUS_JOIN_TOLERANCE);
+            var run = buildHatchRun(NEARLY_ABUTTING_LOBES, 0, 1, GENEROUS_JOIN_TOLERANCE);
 
             assertThat(run.joins().exactJoinCount())
                 .isEqualTo(3);
@@ -207,9 +207,9 @@ final class HatchingTest {
             // The same soup with the tolerance taken away: the exact joins still close - they
             // need no tolerance to - and the four the tolerance was closing reopen, so every
             // line the gap crosses breaks in two.
-            var run = hatch(NEARLY_ABUTTING_LOBES, 0, 1, NO_JOIN_TOLERANCE);
+            var run = buildHatchRun(NEARLY_ABUTTING_LOBES, 0, 1, NO_JOIN_TOLERANCE);
 
-            assertThat(segmentCount(run.segments()))
+            assertThat(countSegments(run.segments()))
                 .isEqualTo(9);
             assertThat(run.joins().exactJoinCount())
                 .isEqualTo(3);
@@ -224,7 +224,7 @@ final class HatchingTest {
             // zero-tolerance run says. The narrowest gap left open is the one number that
             // distinguishes a region with nothing to join from one whose joins the tolerance was
             // simply set below, and it names what the tolerance would have to reach.
-            var run = hatch(NEARLY_ABUTTING_LOBES, 0, 1, NO_JOIN_TOLERANCE);
+            var run = buildHatchRun(NEARLY_ABUTTING_LOBES, 0, 1, NO_JOIN_TOLERANCE);
 
             assertThat(run.joins().widestToleranceGapFraction())
                 .isZero();
@@ -241,7 +241,7 @@ final class HatchingTest {
             var belowOrigin = new float[] {
                 0f, -4f, 4f, -4f, 0f, 0f};
 
-            assertThat(hatch(belowOrigin, 0, 1, GENEROUS_JOIN_TOLERANCE).segments())
+            assertThat(buildHatchRun(belowOrigin, 0, 1, GENEROUS_JOIN_TOLERANCE).segments())
                 .containsExactly(
                     0f, -4f, 4f, -4f,
                     0f, -3f, 3f, -3f,
@@ -252,11 +252,11 @@ final class HatchingTest {
         @Test
         void compute_hatch_run_lays_fewer_lines_as_the_spacing_widens() {
             // Doubling the spacing halves how many lines fall within the triangle's y span.
-            var tight = hatch(RIGHT_TRIANGLE, 0, 1, GENEROUS_JOIN_TOLERANCE);
-            var loose = hatch(RIGHT_TRIANGLE, 0, 2, GENEROUS_JOIN_TOLERANCE);
+            var tight = buildHatchRun(RIGHT_TRIANGLE, 0, 1, GENEROUS_JOIN_TOLERANCE);
+            var loose = buildHatchRun(RIGHT_TRIANGLE, 0, 2, GENEROUS_JOIN_TOLERANCE);
 
-            assertThat(segmentCount(tight.segments())).isEqualTo(4);
-            assertThat(segmentCount(loose.segments())).isEqualTo(2);
+            assertThat(countSegments(tight.segments())).isEqualTo(4);
+            assertThat(countSegments(loose.segments())).isEqualTo(2);
         }
 
         @Test
@@ -264,9 +264,9 @@ final class HatchingTest {
             // A 45-degree hatch: every clipped segment must lie parallel to that direction,
             // so its direction vector's cross product with (cos, sin) is zero.
             var angle = Math.PI / 4;
-            var run = hatch(RIGHT_TRIANGLE, angle, 1, GENEROUS_JOIN_TOLERANCE).segments();
+            var run = buildHatchRun(RIGHT_TRIANGLE, angle, 1, GENEROUS_JOIN_TOLERANCE).segments();
 
-            assertThat(segmentCount(run))
+            assertThat(countSegments(run))
                 .isPositive();
 
             for (var segment = 0; segment < run.length; segment += 4) {
@@ -285,7 +285,7 @@ final class HatchingTest {
             // Three collinear points enclose no area, so no line crosses them.
             var collinear = new float[] {0f, 0f, 2f, 0f, 4f, 0f};
 
-            assertThat(hatch(collinear, 0, 1, GENEROUS_JOIN_TOLERANCE).segments())
+            assertThat(buildHatchRun(collinear, 0, 1, GENEROUS_JOIN_TOLERANCE).segments())
                 .isEmpty();
         }
 
@@ -293,7 +293,7 @@ final class HatchingTest {
         // tolerance is named at every call rather than defaulted: it decides what comes back on
         // half the soups here, so a case that did not state it would be reading an expectation
         // against a number it never chose.
-        private static HatchRun hatch(
+        private static HatchRun buildHatchRun(
                 float[] triangleSoup,
                 double angleRadians,
                 double spacing,
@@ -307,7 +307,7 @@ final class HatchingTest {
         }
 
         // A GL_LINES run packs four floats per segment (two endpoints).
-        private static int segmentCount(float[] run) {
+        private static int countSegments(float[] run) {
             return run.length / 4;
         }
     }

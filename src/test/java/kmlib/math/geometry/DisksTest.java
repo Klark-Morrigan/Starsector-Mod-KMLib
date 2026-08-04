@@ -64,7 +64,7 @@ final class DisksTest {
 
     // The slack an assertion about a disk's own area allows. Scaled to the disk rather
     // than fixed, since the chord error the approximation carries grows with it.
-    private static Offset<Double> withinDiskArea(double radius) {
+    private static Offset<Double> computeWithinDiskArea(double radius) {
         return Offset.offset(Math.PI * radius * radius * AREA_TOLERANCE_FRACTION);
     }
 
@@ -141,7 +141,7 @@ final class DisksTest {
                 bigSquare(100), new double[] {50, 50}, 20, SEGMENTS);
 
             assertThat(signedArea(bounded))
-                .isCloseTo(Math.PI * 20 * 20, withinDiskArea(20));
+                .isCloseTo(Math.PI * 20 * 20, computeWithinDiskArea(20));
         }
 
         @Test
@@ -205,7 +205,7 @@ final class DisksTest {
             // together that is a hole: the pieces surround the withheld disk rather
             // than one of them merely being notched.
             assertThat(sumAreas(remainder))
-                .isCloseTo(100 * 100 - Math.PI * 20 * 20, withinDiskArea(20));
+                .isCloseTo(100 * 100 - Math.PI * 20 * 20, computeWithinDiskArea(20));
             for (var piece : remainder) {
                 // A line through the centre reports the piece's interior as parameter
                 // spans measured from that centre, so a span with ends of opposite sign
@@ -226,7 +226,7 @@ final class DisksTest {
                 bigSquare(100), new double[] {0, 0}, 20, SEGMENTS);
 
             assertThat(sumAreas(remainder))
-                .isCloseTo(100 * 100 - Math.PI * 20 * 20 / 4, withinDiskArea(20));
+                .isCloseTo(100 * 100 - Math.PI * 20 * 20 / 4, computeWithinDiskArea(20));
         }
 
         @Test

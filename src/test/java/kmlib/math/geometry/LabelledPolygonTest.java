@@ -7,6 +7,7 @@ import java.util.Arrays;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.within;
 
 /**
  * Pins {@link LabelledPolygon}: a seed labels every edge alike; an arbitrary ring
@@ -121,10 +122,6 @@ final class LabelledPolygonTest {
             assertThat(clipped.getVertices()).isEmpty();
             assertThat(clipped.getEdgeLabels()).isEmpty();
         }
-    }
-
-    private static org.assertj.core.data.Offset<Double> within(double offset) {
-        return org.assertj.core.data.Offset.offset(offset);
     }
 
     private static long count(int[] values, int target) {

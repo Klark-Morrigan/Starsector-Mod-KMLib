@@ -26,7 +26,7 @@ final class PanelScrollbarsTest {
     private static final Rectangle VIEWPORT = new Rectangle(108f, 250f, 120f, 100f);
     private static final float OVERFLOW = 100f;
 
-    private static PanelPlacement placement(float scrollOffset) {
+    private static PanelPlacement buildPlacement(float scrollOffset) {
         // The box is unused by PanelScrollbars (it projects the body's gutter), so the body doubles as it.
         return new PanelPlacement(BODY, BODY, List.of(), VIEWPORT, scrollOffset, OVERFLOW);
     }
@@ -36,7 +36,7 @@ final class PanelScrollbarsTest {
 
         @Test
         void computeTrackLandsInTheBodyRightGutterSpanningTheViewport() {
-            var track = PanelScrollbars.computeTrack(placement(0f));
+            var track = PanelScrollbars.computeTrack(buildPlacement(0f));
             // Right of the list column (228), within the body's right edge (300), and as tall as the
             // viewport - so it sits in the gutter, projected from the placement's scroll region.
             assertThat(track.x()).isGreaterThan(VIEWPORT.x() + VIEWPORT.width());
@@ -52,15 +52,15 @@ final class PanelScrollbarsTest {
 
         @Test
         void computeThumbSizesTheThumbToTheVisibleFractionOfTheContent() {
-            var thumb = PanelScrollbars.computeThumb(placement(0f));
+            var thumb = PanelScrollbars.computeThumb(buildPlacement(0f));
             // Half the content is visible, so the thumb is half the track (and the viewport) height.
             assertThat(thumb.height()).isCloseTo(VIEWPORT.height() / 2f, within(TOLERANCE));
         }
 
         @Test
         void computeThumbDropsTheThumbAsTheListScrolls() {
-            var atTop = PanelScrollbars.computeThumb(placement(0f));
-            var scrolled = PanelScrollbars.computeThumb(placement(OVERFLOW));
+            var atTop = PanelScrollbars.computeThumb(buildPlacement(0f));
+            var scrolled = PanelScrollbars.computeThumb(buildPlacement(OVERFLOW));
             assertThat(scrolled.y()).isLessThan(atTop.y());
         }
     }
@@ -70,7 +70,7 @@ final class PanelScrollbarsTest {
 
         @Test
         void computeGrabColumnRunsTheGutterRightOfTheList() {
-            var grab = PanelScrollbars.computeGrabColumn(placement(0f));
+            var grab = PanelScrollbars.computeGrabColumn(buildPlacement(0f));
             // From the viewport's right edge (228) to the body's right edge (300), at the viewport height.
             assertThat(grab.x()).isCloseTo(VIEWPORT.x() + VIEWPORT.width(), within(TOLERANCE));
             assertThat(grab.x() + grab.width())
@@ -84,16 +84,16 @@ final class PanelScrollbarsTest {
 
         @Test
         void resolveOffsetForPointerIsZeroAtTheTrackTop() {
-            var track = PanelScrollbars.computeTrack(placement(0f));
-            var offset = PanelScrollbars.resolveOffsetForPointer(placement(0f),
+            var track = PanelScrollbars.computeTrack(buildPlacement(0f));
+            var offset = PanelScrollbars.resolveOffsetForPointer(buildPlacement(0f),
                 track.y() + track.height());
             assertThat(offset).isCloseTo(0f, within(TOLERANCE));
         }
 
         @Test
         void resolveOffsetForPointerIsTheOverflowAtTheTrackBottom() {
-            var track = PanelScrollbars.computeTrack(placement(0f));
-            var offset = PanelScrollbars.resolveOffsetForPointer(placement(0f), track.y());
+            var track = PanelScrollbars.computeTrack(buildPlacement(0f));
+            var offset = PanelScrollbars.resolveOffsetForPointer(buildPlacement(0f), track.y());
             assertThat(offset).isCloseTo(OVERFLOW, within(TOLERANCE));
         }
     }

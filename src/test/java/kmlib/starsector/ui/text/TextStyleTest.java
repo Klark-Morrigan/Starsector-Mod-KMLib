@@ -35,7 +35,7 @@ class TextStyleTest {
     // every refinement is measured against, so no group can build its subject without it.
     private MockedStatic<Misc> miscMock;
 
-    private static TextStyle baselineStyle() {
+    private static TextStyle buildBaselineStyle() {
         return TextStyle.createStyle(FACE);
     }
 
@@ -60,7 +60,7 @@ class TextStyleTest {
         void createStyleDrawsTheFaceAtItsNativeSize() {
             // A bitmap atlas is crisp at exactly one size, so naming a face alone has to land on that
             // size rather than on some style-local default the atlas would be scaled to.
-            var style = baselineStyle();
+            var style = buildBaselineStyle();
 
             assertThat(style.face().font()).isEqualTo(FACE);
             assertThat(style.face().size()).isCloseTo(FACE.getNativeSize(), within(TOLERANCE));
@@ -68,7 +68,7 @@ class TextStyleTest {
 
         @Test
         void createStyleTakesTheBaselineForEveryPartTheCallerDidNotState() {
-            var style = baselineStyle();
+            var style = buildBaselineStyle();
 
             assertThat(style.colour()).isEqualTo(BODY_TEXT_COLOUR);
             assertThat(style.alignment()).isEqualTo(TextAlignment.TOP_LEFT);
@@ -79,11 +79,11 @@ class TextStyleTest {
         void createStyleResolvesTheColourFromTheLivePalette() {
             // Styles are built per paint precisely so a palette change - a player faction's recolour, a
             // theme swap - reaches the next style built rather than being frozen at class-load.
-            var beforeRecolour = baselineStyle();
+            var beforeRecolour = buildBaselineStyle();
             miscMock.when(Misc::getTextColor).thenReturn(OVERRIDE_COLOUR);
 
             assertThat(beforeRecolour.colour()).isEqualTo(BODY_TEXT_COLOUR);
-            assertThat(baselineStyle().colour()).isEqualTo(OVERRIDE_COLOUR);
+            assertThat(buildBaselineStyle().colour()).isEqualTo(OVERRIDE_COLOUR);
         }
     }
 
@@ -91,7 +91,7 @@ class TextStyleTest {
     class SizedAt {
         @Test
         void sizedAtChangesOnlyTheSize() {
-            var style = baselineStyle().sizedAt(OVERRIDE_SIZE);
+            var style = buildBaselineStyle().sizedAt(OVERRIDE_SIZE);
 
             assertThat(style.face().size()).isCloseTo(OVERRIDE_SIZE, within(TOLERANCE));
             assertThat(style.face().font()).isEqualTo(FACE);
@@ -105,10 +105,10 @@ class TextStyleTest {
     class InColour {
         @Test
         void inColourChangesOnlyTheColour() {
-            var style = baselineStyle().inColour(OVERRIDE_COLOUR);
+            var style = buildBaselineStyle().inColour(OVERRIDE_COLOUR);
 
             assertThat(style.colour()).isEqualTo(OVERRIDE_COLOUR);
-            assertThat(style.face()).isEqualTo(baselineStyle().face());
+            assertThat(style.face()).isEqualTo(buildBaselineStyle().face());
             assertThat(style.alignment()).isEqualTo(TextAlignment.TOP_LEFT);
             assertThat(style.isUpperCased()).isFalse();
         }
@@ -118,10 +118,10 @@ class TextStyleTest {
     class AlignedTo {
         @Test
         void alignedToChangesOnlyTheAlignment() {
-            var style = baselineStyle().alignedTo(TextAlignment.CENTER_RIGHT);
+            var style = buildBaselineStyle().alignedTo(TextAlignment.CENTER_RIGHT);
 
             assertThat(style.alignment()).isEqualTo(TextAlignment.CENTER_RIGHT);
-            assertThat(style.face()).isEqualTo(baselineStyle().face());
+            assertThat(style.face()).isEqualTo(buildBaselineStyle().face());
             assertThat(style.colour()).isEqualTo(BODY_TEXT_COLOUR);
             assertThat(style.isUpperCased()).isFalse();
         }
@@ -131,10 +131,10 @@ class TextStyleTest {
     class InUpperCase {
         @Test
         void inUpperCaseChangesOnlyTheCasing() {
-            var style = baselineStyle().inUpperCase();
+            var style = buildBaselineStyle().inUpperCase();
 
             assertThat(style.isUpperCased()).isTrue();
-            assertThat(style.face()).isEqualTo(baselineStyle().face());
+            assertThat(style.face()).isEqualTo(buildBaselineStyle().face());
             assertThat(style.colour()).isEqualTo(BODY_TEXT_COLOUR);
             assertThat(style.alignment()).isEqualTo(TextAlignment.TOP_LEFT);
         }
@@ -143,7 +143,7 @@ class TextStyleTest {
         void inUpperCaseKeepsTheRefinementsMadeBeforeIt() {
             // The point of composing refinements: a heading built face-first cannot lose the size,
             // colour, and anchor it was already given by the one that shouts it.
-            var style = baselineStyle()
+            var style = buildBaselineStyle()
                 .sizedAt(OVERRIDE_SIZE)
                 .inColour(OVERRIDE_COLOUR)
                 .alignedTo(TextAlignment.CENTER)
@@ -159,7 +159,7 @@ class TextStyleTest {
         void inUpperCaseLeavesTheStyleItWasDerivedFromUnchanged() {
             // Role baselines are shared and derived from per call, so a caller that shouts one heading
             // must not have quietly shouted every other run built off the same baseline.
-            var baseline = baselineStyle();
+            var baseline = buildBaselineStyle();
 
             baseline.inUpperCase();
 
@@ -171,12 +171,12 @@ class TextStyleTest {
     class ResolveDisplayText {
         @Test
         void resolveDisplayTextReturnsTheTextAsAuthoredWhenNotUpperCased() {
-            assertThat(baselineStyle().resolveDisplayText("Contested by")).isEqualTo("Contested by");
+            assertThat(buildBaselineStyle().resolveDisplayText("Contested by")).isEqualTo("Contested by");
         }
 
         @Test
         void resolveDisplayTextShoutsWhenUpperCased() {
-            assertThat(baselineStyle().inUpperCase().resolveDisplayText("Contested by"))
+            assertThat(buildBaselineStyle().inUpperCase().resolveDisplayText("Contested by"))
                 .isEqualTo("CONTESTED BY");
         }
     }

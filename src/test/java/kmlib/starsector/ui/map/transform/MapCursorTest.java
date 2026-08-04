@@ -118,7 +118,7 @@ class MapCursorTest {
         void resolvesTheWorldPointTheCursorSitsOver() {
             var worldPoint = MapCursor.resolveWorldPointDuringMapPass(
                 MAP_ZOOM,
-                readerOnALiveMap());
+                buildReaderOnALiveMap());
 
             assertThat(worldPoint.x).isCloseTo(EXPECTED_WORLD_X, within(TOLERANCE));
             assertThat(worldPoint.y).isCloseTo(EXPECTED_WORLD_Y, within(TOLERANCE));
@@ -132,7 +132,7 @@ class MapCursorTest {
                 .when(Mouse::isInsideWindow)
                 .thenReturn(false);
 
-            assertThat(MapCursor.resolveWorldPointDuringMapPass(MAP_ZOOM, readerOnALiveMap()))
+            assertThat(MapCursor.resolveWorldPointDuringMapPass(MAP_ZOOM, buildReaderOnALiveMap()))
                 .isNull();
         }
 
@@ -160,14 +160,14 @@ class MapCursorTest {
 
             assertThat(MapCursor.resolveWorldPointDuringMapPass(
                     UNUSABLE_ZOOM,
-                    readerOnALiveMap()))
+                    buildReaderOnALiveMap()))
                 .isNull();
         }
     }
 
     // A reader serving back exactly what the map's pass would have left bound, so a test that is
     // not about a degraded binding gets one that captures.
-    private static ModelviewMatrixReaderFake readerOnALiveMap() {
+    private static ModelviewMatrixReaderFake buildReaderOnALiveMap() {
         // Column-major, the layout gluUnProject expects, carrying the pass's pan in the last
         // column. Identity is refused by the capture as a reading that cannot be the map's.
         var matrix = new float[] {

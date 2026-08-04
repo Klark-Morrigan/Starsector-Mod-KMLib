@@ -164,7 +164,7 @@ final class PolygonOffsetsTest {
             // it no longer reaches the raw corners (y = 0 and y = 10): both its ends
             // sit within the 2..8 inset band, so the kept edge stays inside the
             // padding rather than poking out to the corner.
-            var kept = keptEdgesOf(result);
+            var kept = listKeptEdgesOf(result);
             assertThat(kept).hasSize(1);
             assertThat(kept.get(0)[0][0]).isCloseTo(10.0, within());
             assertThat(kept.get(0)[1][0]).isCloseTo(10.0, within());
@@ -245,7 +245,7 @@ final class PolygonOffsetsTest {
             assertThat(result.vertices()).allMatch(v -> v[0] >= 1 - 1e-6 && v[0] <= 10 + 1e-6
                     && v[1] >= 2 - 1e-6 && v[1] <= 7 + 1e-6);
             // The kept right edge is the only non-inset edge and sits at x = 10.
-            var kept = keptEdgesOf(result);
+            var kept = listKeptEdgesOf(result);
             assertThat(kept).hasSize(1);
             assertThat(kept.get(0)[0][0]).isCloseTo(10.0, within());
             assertThat(kept.get(0)[1][0]).isCloseTo(10.0, within());
@@ -284,7 +284,7 @@ final class PolygonOffsetsTest {
         // The edges a selective inset left un-inset (kept seams), each as its two
         // endpoints - what a caller strokes as an interior line rather than a
         // border.
-        private static List<double[][]> keptEdgesOf(PolygonOffsets.SelectiveInset result) {
+        private static List<double[][]> listKeptEdgesOf(PolygonOffsets.SelectiveInset result) {
             var kept = new java.util.ArrayList<double[][]>();
             var vertices = result.vertices();
             var flags = result.edgeIsInset();
