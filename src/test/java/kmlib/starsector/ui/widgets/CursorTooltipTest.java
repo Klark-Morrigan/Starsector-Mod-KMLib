@@ -3,6 +3,7 @@ package kmlib.starsector.ui.widgets;
 import kmlib.starsector.ui.font.StarsectorFont;
 import kmlib.starsector.ui.font.TextFace;
 import kmlib.starsector.ui.font.TextSpanMeasurer;
+import kmlib.starsector.ui.text.ImageSpan;
 import kmlib.starsector.ui.text.TextAlignment;
 import kmlib.starsector.ui.text.TextSpan;
 import kmlib.starsector.ui.text.TextStyle;
@@ -29,6 +30,7 @@ import static org.assertj.core.api.Assertions.within;
  * perturbs the anchors under test.
  */
 class CursorTooltipTest {
+
     private static final StarsectorFont BODY_FONT = StarsectorFont.VANILLA_INSIGNIA_15;
     private static final StarsectorFont HEADING_FONT = StarsectorFont.VANILLA_ORBITRON_20AA;
     private static final double BODY_LINE_HEIGHT = 15d;
@@ -73,6 +75,7 @@ class CursorTooltipTest {
     // built without stating a placement or a kind of line is.
     private static final TooltipRow TOP_TIER = TooltipRow.createRow(new TextSpan("AA", Color.WHITE))
         .carriesCrest("crest_a");
+
     private static final TooltipRow MEMBER = TooltipRow.createRow(new TextSpan("BBBB", Color.LIGHT_GRAY))
         .carriesCrest("crest_b")
         .carriesValue(new TextSpan("9", Color.GRAY))
@@ -154,69 +157,87 @@ class CursorTooltipTest {
     class LayOut {
         @Test
         void sizesTheBoxToTheWidestRowAcrossIndentTiers() {
+
             var box = layOut(List.of(TOP_TIER, MEMBER)).box();
 
             // Member row: indent 14 + crest 15 + crest gap 6 + label 4 + value gap 16 + value 1 = 56,
             // wider than the top-tier row's 39; + 8 padding on each side = 72.
-            assertThat(box.width()).isCloseTo(72f, within(TOLERANCE));
+            assertThat(box.width())
+                .isCloseTo(72f, within(TOLERANCE));
         }
 
         @Test
         void sizesTheBoxHeightForEachLinePlusTheGapAndPadding() {
+
             var box = layOut(List.of(TOP_TIER, MEMBER)).box();
 
             // Two 15-tall lines + one 4 line gap + 8 padding top and bottom = 50.
-            assertThat(box.height()).isCloseTo(50f, within(TOLERANCE));
+            assertThat(box.height())
+                .isCloseTo(50f, within(TOLERANCE));
         }
 
         @Test
         void anchorsTheTopTierRowsColumnsOnOneLine() {
+
             var layout = layOut(List.of(TOP_TIER, MEMBER));
             var topTier = layout.rows().get(0);
 
             // Box at (218, 318): left content edge 226, right 282, top content edge 360. The row sits at
             // zero indent, so its leading column starts at the left content edge and its trailing column
             // is anchored to the right one - both on the row's one line, which is stated once.
-            assertThat(topTier.rowTopY()).isCloseTo(360f, within(TOLERANCE));
-            assertThat(topTier.lineHeight()).isCloseTo(15f, within(TOLERANCE));
-            assertThat(topTier.leadingRowSlotX()).isCloseTo(226f, within(TOLERANCE));
-            assertThat(readRunX(topTier, FIRST_RUN)).isCloseTo(247f, within(TOLERANCE));
-            assertThat(topTier.trailingRowSlotX()).isCloseTo(282f, within(TOLERANCE));
+            assertThat(topTier.rowTopY())
+                .isCloseTo(360f, within(TOLERANCE));
+            assertThat(topTier.lineHeight())
+                .isCloseTo(15f, within(TOLERANCE));
+            assertThat(topTier.leadingRowSlotX())
+                .isCloseTo(226f, within(TOLERANCE));
+            assertThat(readRunX(topTier, FIRST_RUN))
+                .isCloseTo(247f, within(TOLERANCE));
+            assertThat(topTier.trailingRowSlotX())
+                .isCloseTo(282f, within(TOLERANCE));
         }
 
         @Test
         void indentsTheMemberRowAndStepsItDownOneLine() {
+
             var layout = layOut(List.of(TOP_TIER, MEMBER));
             var member = layout.rows().get(1);
 
             // One line height 15 + gap 4 below the row above's 360 -> 341; the leading column and the
             // label shift right by the 14 indent, while the trailing column stays pinned to the box's
             // right content edge.
-            assertThat(member.rowTopY()).isCloseTo(341f, within(TOLERANCE));
-            assertThat(member.leadingRowSlotX()).isCloseTo(240f, within(TOLERANCE));
-            assertThat(readRunX(member, FIRST_RUN)).isCloseTo(261f, within(TOLERANCE));
-            assertThat(member.trailingRowSlotX()).isCloseTo(282f, within(TOLERANCE));
+            assertThat(member.rowTopY())
+                .isCloseTo(341f, within(TOLERANCE));
+            assertThat(member.leadingRowSlotX())
+                .isCloseTo(240f, within(TOLERANCE));
+            assertThat(readRunX(member, FIRST_RUN))
+                .isCloseTo(261f, within(TOLERANCE));
+            assertThat(member.trailingRowSlotX())
+                .isCloseTo(282f, within(TOLERANCE));
         }
 
         @Test
         void reservesTheCrestColumnForACrestLessRowWhenAnotherRowCarriesACrest() {
+
             var crestless = createCrestlessRow("AA");
             var crested = createCrestlessRow("BB").carriesCrest("crest");
-
             var crestlessRow = layOut(List.of(crestless, crested)).rows().get(0);
 
             // The box carries a crest, so the crest-less row still reserves the column - its label is
             // anchored past the reserved 15 + 6 gutter and lines up under the crested row.
-            assertThat(readRunX(crestlessRow, FIRST_RUN)).isCloseTo(247f, within(TOLERANCE));
+            assertThat(readRunX(crestlessRow, FIRST_RUN))
+                .isCloseTo(247f, within(TOLERANCE));
         }
 
         @Test
         void collapsesTheCrestColumnWhenNoRowCarriesACrest() {
+
             var only = layOut(List.of(createCrestlessRow("AA"))).rows().get(0);
 
             // No row carries a crest, so the gutter collapses and the label lays flush at the left
             // content edge (226) rather than past a phantom crest column - the empty-state box case.
-            assertThat(readRunX(only, FIRST_RUN)).isCloseTo(226f, within(TOLERANCE));
+            assertThat(readRunX(only, FIRST_RUN))
+                .isCloseTo(226f, within(TOLERANCE));
         }
 
         @Test
@@ -225,10 +246,10 @@ class CursorTooltipTest {
             // has a crest: a tick squares off its line as a crest does, so it opens the same 15 + 6
             // gutter and the crest-less row beside it lines up under it.
             var ticked = createRowLeadingWith("BB", new RowSlot.Tick(true));
-
             var crestlessRow = layOut(List.of(createCrestlessRow("AA"), ticked)).rows().get(0);
 
-            assertThat(readRunX(crestlessRow, FIRST_RUN)).isCloseTo(247f, within(TOLERANCE));
+            assertThat(readRunX(crestlessRow, FIRST_RUN))
+                .isCloseTo(247f, within(TOLERANCE));
         }
 
         @Test
@@ -242,7 +263,8 @@ class CursorTooltipTest {
 
             var blankLedRow = layOut(List.of(blankLed)).rows().get(0);
 
-            assertThat(readRunX(blankLedRow, FIRST_RUN)).isCloseTo(226f, within(TOLERANCE));
+            assertThat(readRunX(blankLedRow, FIRST_RUN))
+                .isCloseTo(226f, within(TOLERANCE));
         }
 
         @Test
@@ -250,10 +272,10 @@ class CursorTooltipTest {
             // A title over a crested list: it names the box rather than sitting in the list, so it
             // ignores the gutter the rows below reserve and starts at the content edge (226).
             var title = createCrestlessRow("AA").clearsCrestColumn();
-
             var titleRow = layOut(List.of(title, MEMBER)).rows().get(0);
 
-            assertThat(readRunX(titleRow, FIRST_RUN)).isCloseTo(226f, within(TOLERANCE));
+            assertThat(readRunX(titleRow, FIRST_RUN))
+                .isCloseTo(226f, within(TOLERANCE));
         }
 
         @Test
@@ -261,12 +283,12 @@ class CursorTooltipTest {
             // The width measurement drops the gutter for that row too, so a long title does not push
             // the box wider by a column it never occupies.
             var title = createCrestlessRow("AAAAAAAAAA").clearsCrestColumn();
-
             var box = layOut(List.of(title, MEMBER)).box();
 
             // Title: label 10 + value gap 16 = 26, under the member's 56, so the member still sizes the
             // box at 56 + 16 padding = 72 - which it would not if the title were charged the gutter.
-            assertThat(box.width()).isCloseTo(72f, within(TOLERANCE));
+            assertThat(box.width())
+                .isCloseTo(72f, within(TOLERANCE));
         }
 
         @Test
@@ -275,10 +297,10 @@ class CursorTooltipTest {
             // and the short centred line sits in the middle of that 26-wide region - 226 + (26 - 2) / 2.
             var title = createCrestlessRow("AAAAAAAAAA").clearsCrestColumn();
             var centred = createCentredRow("BB");
-
             var centredRow = layOut(List.of(title, centred)).rows().get(1);
 
-            assertThat(readRunX(centredRow, FIRST_RUN)).isCloseTo(238f, within(TOLERANCE));
+            assertThat(readRunX(centredRow, FIRST_RUN))
+                .isCloseTo(238f, within(TOLERANCE));
         }
 
         @Test
@@ -288,7 +310,8 @@ class CursorTooltipTest {
             // region at 226 + (39 - 2) / 2, where a line laid in the columns would start at 226 + 21.
             var centredRow = layOut(List.of(TOP_TIER, createCentredRow("BB"))).rows().get(1);
 
-            assertThat(readRunX(centredRow, FIRST_RUN)).isCloseTo(244.5f, within(TOLERANCE));
+            assertThat(readRunX(centredRow, FIRST_RUN))
+                .isCloseTo(244.5f, within(TOLERANCE));
         }
 
         @Test
@@ -298,7 +321,8 @@ class CursorTooltipTest {
             // would then centre the line against space nothing fills.
             var box = layOut(List.of(createCentredRow("AA"))).box();
 
-            assertThat(box.width()).isCloseTo(18f, within(TOLERANCE));
+            assertThat(box.width())
+                .isCloseTo(18f, within(TOLERANCE));
         }
 
         @Test
@@ -312,8 +336,42 @@ class CursorTooltipTest {
 
             var centredRow = layOut(List.of(title, centred)).rows().get(1);
 
-            assertThat(readRunX(centredRow, FIRST_RUN)).isCloseTo(233.5f, within(TOLERANCE));
-            assertThat(readRunX(centredRow, SECOND_RUN)).isCloseTo(241.5f, within(TOLERANCE));
+            assertThat(readRunX(centredRow, FIRST_RUN))
+                .isCloseTo(233.5f, within(TOLERANCE));
+            assertThat(readRunX(centredRow, SECOND_RUN))
+                .isCloseTo(241.5f, within(TOLERANCE));
+        }
+
+        @Test
+        void sizesACentredRowToItsImageRunAndWordsTogether() {
+            // A crest set among the words is charged the line it squares off, so the span is image 15 +
+            // run gap 6 + label 2 = 23, and the box is that plus 8 padding each side. Charged to the
+            // span rather than to a column is what keeps the line centred: a box widened for a gutter
+            // would push the crest and its words off the middle.
+            var box = layOut(List.of(createCentredRow("BB")
+                .continuesWith(new ImageSpan("crest_a"))))
+                .box();
+
+            assertThat(box.width())
+                .isCloseTo(39f, within(TOLERANCE));
+        }
+
+        @Test
+        void centresACentredRowsImageRunWithItsWords() {
+            // The crest leads the sentence rather than a column: the 23-wide span (15 + 6 + 2) centres
+            // in the title's 26-wide region at 226 + (26 - 23) / 2, and the words follow one run gap
+            // past the image's own square at 227.5 + 15 + 6.
+            var title = createCrestlessRow("AAAAAAAAAA").clearsCrestColumn();
+            var centred = TooltipRow
+                .createCentredRow(new ImageSpan("crest_a"))
+                .continuesWith(new TextSpan("BB", Color.WHITE));
+
+            var centredRow = layOut(List.of(title, centred)).rows().get(1);
+
+            assertThat(readRunX(centredRow, FIRST_RUN))
+                .isCloseTo(227.5f, within(TOLERANCE));
+            assertThat(readRunX(centredRow, SECOND_RUN))
+                .isCloseTo(248.5f, within(TOLERANCE));
         }
 
         @Test
@@ -322,20 +380,23 @@ class CursorTooltipTest {
             // at its lower-left corner and grows upward, so a taller box lifts every row's y together
             // while the parting between them is what the break actually changes.
             var plainStep = measureRowStep(List.of(TOP_TIER, MEMBER), UNIFORM_STYLE);
-
             var brokenStep = measureRowStep(List.of(TOP_TIER, MEMBER.opensSection()), UNIFORM_STYLE);
 
             // A line 15 + the 4 line gap normally; the break adds half a line (7.5) on top.
-            assertThat(plainStep).isCloseTo(19f, within(TOLERANCE));
-            assertThat(brokenStep).isCloseTo(26.5f, within(TOLERANCE));
+            assertThat(plainStep)
+                .isCloseTo(19f, within(TOLERANCE));
+            assertThat(brokenStep)
+                .isCloseTo(26.5f, within(TOLERANCE));
         }
 
         @Test
         void sizesTheBoxForASectionBreak() {
+
             var box = layOut(List.of(TOP_TIER, MEMBER.opensSection())).box();
 
             // The two-row box (50) plus the half-line break it now holds = 57.5.
-            assertThat(box.height()).isCloseTo(57.5f, within(TOLERANCE));
+            assertThat(box.height())
+                .isCloseTo(57.5f, within(TOLERANCE));
         }
 
         @Test
@@ -344,19 +405,22 @@ class CursorTooltipTest {
             // dropped rather than padding the top edge unevenly.
             var box = layOut(List.of(TOP_TIER.opensSection(), MEMBER)).box();
 
-            assertThat(box.height()).isCloseTo(50f, within(TOLERANCE));
+            assertThat(box.height())
+                .isCloseTo(50f, within(TOLERANCE));
         }
 
         @Test
         void anchorsASecondRunOneGapPastTheFirst() {
-            var continued = createCrestlessRow("AA").continuesWith(new TextSpan("MMM", Color.YELLOW));
 
+            var continued = createCrestlessRow("AA").continuesWith(new TextSpan("MMM", Color.YELLOW));
             var only = layOut(List.of(continued)).rows().get(0);
 
             // The run carries on from where the one before it ended rather than sitting in a shared
             // column: label left edge 226 + its measured 2 + the 6 run gap = 234.
-            assertThat(readRunX(only, FIRST_RUN)).isCloseTo(226f, within(TOLERANCE));
-            assertThat(readRunX(only, SECOND_RUN)).isCloseTo(234f, within(TOLERANCE));
+            assertThat(readRunX(only, FIRST_RUN))
+                .isCloseTo(226f, within(TOLERANCE));
+            assertThat(readRunX(only, SECOND_RUN))
+                .isCloseTo(234f, within(TOLERANCE));
         }
 
         @Test
@@ -369,17 +433,19 @@ class CursorTooltipTest {
 
             var only = layOut(List.of(continued)).rows().get(0);
 
-            assertThat(readRunX(only, THIRD_RUN)).isCloseTo(243f, within(TOLERANCE));
+            assertThat(readRunX(only, THIRD_RUN))
+                .isCloseTo(243f, within(TOLERANCE));
         }
 
         @Test
         void sizesTheBoxForASecondRunsGapAndWidth() {
-            var continued = createCrestlessRow("AA").continuesWith(new TextSpan("MMM", Color.YELLOW));
 
+            var continued = createCrestlessRow("AA").continuesWith(new TextSpan("MMM", Color.YELLOW));
             var box = layOut(List.of(continued)).box();
 
             // Label 2 + run gap 6 + second run 3 + value gap 16 = 27; + 8 padding each side = 43.
-            assertThat(box.width()).isCloseTo(43f, within(TOLERANCE));
+            assertThat(box.width())
+                .isCloseTo(43f, within(TOLERANCE));
         }
 
         @Test
@@ -388,10 +454,10 @@ class CursorTooltipTest {
             // reserved rather than being measured from the row's left edge: 226 + crest 15 + gap 6 +
             // label 2 + run gap 6 = 255.
             var continued = createCrestlessRow("AA").continuesWith(new TextSpan("MMM", Color.YELLOW));
-
             var continuedRow = layOut(List.of(continued, TOP_TIER)).rows().get(0);
 
-            assertThat(readRunX(continuedRow, SECOND_RUN)).isCloseTo(255f, within(TOLERANCE));
+            assertThat(readRunX(continuedRow, SECOND_RUN))
+                .isCloseTo(255f, within(TOLERANCE));
         }
 
         @Test
@@ -401,8 +467,10 @@ class CursorTooltipTest {
             // has, rather than paying for a column no row fills.
             var layout = layOut(List.of(createCrestlessRow("AA")));
 
-            assertThat(layout.box().width()).isCloseTo(34f, within(TOLERANCE));
-            assertThat(layout.rows().get(0).labelRunXs()).hasSize(1);
+            assertThat(layout.box().width())
+                .isCloseTo(34f, within(TOLERANCE));
+            assertThat(layout.rows().get(0).labelRunXs())
+                .hasSize(1);
         }
 
         @Test
@@ -411,11 +479,12 @@ class CursorTooltipTest {
             // would have had without it: the box measures as the one-run box does (34), and the blank
             // run anchors where the run before it ended (226 + 2) with no gap opened in front of it.
             var continued = createCrestlessRow("AA").continuesWith(new TextSpan(" ", Color.YELLOW));
-
             var layout = layOut(List.of(continued));
 
-            assertThat(layout.box().width()).isCloseTo(34f, within(TOLERANCE));
-            assertThat(readRunX(layout.rows().get(0), SECOND_RUN)).isCloseTo(228f, within(TOLERANCE));
+            assertThat(layout.box().width())
+                .isCloseTo(34f, within(TOLERANCE));
+            assertThat(readRunX(layout.rows().get(0), SECOND_RUN))
+                .isCloseTo(228f, within(TOLERANCE));
         }
 
         @Test
@@ -425,7 +494,8 @@ class CursorTooltipTest {
             // would have had without one (34), where charging the space would have widened it to 35.
             var blankValued = createCrestlessRow("AA").carriesValue(new TextSpan(" ", Color.GRAY));
 
-            assertThat(layOut(List.of(blankValued)).box().width()).isCloseTo(34f, within(TOLERANCE));
+            assertThat(layOut(List.of(blankValued)).box().width())
+                .isCloseTo(34f, within(TOLERANCE));
         }
 
         @Test
@@ -434,76 +504,90 @@ class CursorTooltipTest {
             // label whose opening run came out blank starts flush at the content edge (226) and is
             // measured as though the blank were never written (3 + value gap 16 + padding 16 = 35).
             var continued = createCrestlessRow("").continuesWith(new TextSpan("MMM", Color.YELLOW));
-
             var layout = layOut(List.of(continued));
 
-            assertThat(layout.box().width()).isCloseTo(35f, within(TOLERANCE));
-            assertThat(readRunX(layout.rows().get(0), SECOND_RUN)).isCloseTo(226f, within(TOLERANCE));
+            assertThat(layout.box().width())
+                .isCloseTo(35f, within(TOLERANCE));
+            assertThat(readRunX(layout.rows().get(0), SECOND_RUN))
+                .isCloseTo(226f, within(TOLERANCE));
         }
 
         @Test
         void stacksAHeadingRowAtItsOwnLineHeight() {
+
             var box = layOut(List.of(createHeadingRow("AA"), MEMBER), TWO_FACE_STYLE).box();
 
             // The heading's own 20-tall line + the member's 15 + one 4 line gap + 16 padding = 55,
             // rather than the 50 a box that stacked every row at the body's height would come to.
-            assertThat(box.height()).isCloseTo(55f, within(TOLERANCE));
+            assertThat(box.height())
+                .isCloseTo(55f, within(TOLERANCE));
         }
 
         @Test
         void stepsTheRowBelowAHeadingDownTheHeadingsOwnLineHeight() {
+
             var step = measureRowStep(List.of(createHeadingRow("AA"), MEMBER), TWO_FACE_STYLE);
 
             // The heading's 20 + the member's 4 line gap: a row follows the line above it by that line's
             // height, so a taller heading does not overlap the row under it.
-            assertThat(step).isCloseTo(24f, within(TOLERANCE));
+            assertThat(step)
+                .isCloseTo(24f, within(TOLERANCE));
         }
 
         @Test
         void measuresAHeadingRowOnItsOwnFace() {
+
             var box = layOut(List.of(createHeadingRow("AA")), TWO_FACE_STYLE).box();
 
             // Label 2 characters at the heading face's 3 units each = 6, + value gap 16 + 16 padding =
             // 38. Measured on the body face it would come to 34, and the wider glyphs it paints in would
             // then overflow the box that sized itself for them.
-            assertThat(box.width()).isCloseTo(38f, within(TOLERANCE));
+            assertThat(box.width())
+                .isCloseTo(38f, within(TOLERANCE));
         }
 
         @Test
         void sizesTheBoxToTheWidestRowMeasuredOnItsOwnFace() {
-            var rows = List.<TooltipRow>of(createHeadingRow("AAA"), createCrestlessRow("AAAAA"));
 
+            var rows = List.<TooltipRow>of(createHeadingRow("AAA"), createCrestlessRow("AAAAA"));
             var box = layOut(rows, TWO_FACE_STYLE).box();
 
             // Heading: 3 characters at 3 = 9 + value gap 16 = 25, against the longer body row's 5 + 16 =
             // 21. The shorter heading is the wider row, so it sizes the box: 25 + 16 padding = 41.
-            assertThat(box.width()).isCloseTo(41f, within(TOLERANCE));
+            assertThat(box.width())
+                .isCloseTo(41f, within(TOLERANCE));
         }
 
         @Test
         void laysARowWithNoKindStatedAsABodyLine() {
+
             var box = layOut(List.of(createCrestlessRow("AA")), TWO_FACE_STYLE).box();
 
             // A row authored without naming a kind takes the body look, so it measures on the body face
             // (2 + value gap 16 + 16 padding = 34) and stacks at the body's height (15 + 16 = 31) even in
             // a box whose headings look nothing like that.
-            assertThat(box.width()).isCloseTo(34f, within(TOLERANCE));
-            assertThat(box.height()).isCloseTo(31f, within(TOLERANCE));
+            assertThat(box.width())
+                .isCloseTo(34f, within(TOLERANCE));
+            assertThat(box.height())
+                .isCloseTo(31f, within(TOLERANCE));
         }
 
         @Test
         void partsASectionByTheOpeningRowsOwnLineHeight() {
+
             var step = measureRowStep(
                 List.of(MEMBER, createHeadingRow("AA").opensSection()),
                 TWO_FACE_STYLE);
 
             // The member's 15 + its 4 line gap + half of the heading's own 20-tall line = 29, so a
             // heading opens a section with the breathing room its own size asks for.
-            assertThat(step).isCloseTo(29f, within(TOLERANCE));
+            assertThat(step)
+                .isCloseTo(29f, within(TOLERANCE));
         }
 
         @Test
         void reservesTheCrestColumnForTheTallestCrestInTheBox() {
+
             var heading = createCrestlessRow("AA")
                 .carriesCrest("crest_heading")
                 .readsAs(TooltipLineStyle.HEADER);
@@ -514,9 +598,12 @@ class CursorTooltipTest {
             // and both labels clear it - the heading's at 226 + 26, the member's at 226 + 14 + 26. One
             // column width, or the labels the column exists to line up would each sit at their own
             // offset.
-            assertThat(layout.rows().get(0).lineHeight()).isCloseTo(20f, within(TOLERANCE));
-            assertThat(readRunX(layout.rows().get(0), FIRST_RUN)).isCloseTo(252f, within(TOLERANCE));
-            assertThat(readRunX(layout.rows().get(1), FIRST_RUN)).isCloseTo(266f, within(TOLERANCE));
+            assertThat(layout.rows().get(0).lineHeight())
+                .isCloseTo(20f, within(TOLERANCE));
+            assertThat(readRunX(layout.rows().get(0), FIRST_RUN))
+                .isCloseTo(252f, within(TOLERANCE));
+            assertThat(readRunX(layout.rows().get(1), FIRST_RUN))
+                .isCloseTo(266f, within(TOLERANCE));
         }
 
         @Test
@@ -530,7 +617,8 @@ class CursorTooltipTest {
 
             var columnRow = layOut(List.of(flushCrested, createCrestlessRow("BB"))).rows().get(1);
 
-            assertThat(readRunX(columnRow, FIRST_RUN)).isCloseTo(226f, within(TOLERANCE));
+            assertThat(readRunX(columnRow, FIRST_RUN))
+                .isCloseTo(226f, within(TOLERANCE));
         }
 
         @Test
@@ -539,14 +627,15 @@ class CursorTooltipTest {
             // clear the first as the heading face measures it: 226 + label 2 * 3 + run gap 6 = 238, where
             // the body face's measurement would have set it at 234 and let the wider label run under it.
             var continued = createHeadingRow("AA").continuesWith(new TextSpan("MMM", Color.YELLOW));
-
             var continuedRow = layOut(List.of(continued), TWO_FACE_STYLE).rows().get(0);
 
-            assertThat(readRunX(continuedRow, SECOND_RUN)).isCloseTo(238f, within(TOLERANCE));
+            assertThat(readRunX(continuedRow, SECOND_RUN))
+                .isCloseTo(238f, within(TOLERANCE));
         }
 
         @Test
         void measuresARowAsItsStyleWillDrawIt() {
+
             var shoutingStyle = new TooltipStyle(
                 createStyle(BODY_FONT, BODY_LINE_HEIGHT),
                 createStyle(BODY_FONT, BODY_LINE_HEIGHT).inUpperCase());
@@ -556,7 +645,8 @@ class CursorTooltipTest {
             // Shouted, the label's four narrow i glyphs become four wide ones: 4 * 4 = 16 + value gap 16
             // + 16 padding = 48, where measuring the text as authored would size the box at 36 and clip
             // the wider line it then painted.
-            assertThat(box.width()).isCloseTo(48f, within(TOLERANCE));
+            assertThat(box.width())
+                .isCloseTo(48f, within(TOLERANCE));
         }
     }
 }

@@ -1,5 +1,6 @@
 package kmlib.starsector.ui.widgets;
 
+import kmlib.starsector.ui.text.LabelRun;
 import kmlib.starsector.ui.text.TextSpan;
 
 import org.junit.jupiter.api.Nested;
@@ -32,6 +33,7 @@ import static org.assertj.core.api.Assertions.within;
  * honour - the crest, value, indent, and gutter refinements live on {@link TooltipRow.TableRow} alone.
  */
 class TooltipRowTest {
+
     private static final String CREST = "crest_a";
     private static final String OTHER_CREST = "crest_b";
     private static final String TEXT = "Hegemony";
@@ -110,7 +112,7 @@ class TooltipRowTest {
                 false,
                 List.of()))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("labelTextSpans");
+                .hasMessageContaining("labelRuns");
         }
 
         @Test
@@ -118,13 +120,15 @@ class TooltipRowTest {
             // The line is a value, so a caller still holding the list it built must not be able to add a
             // run to a line already handed to a layout - which would size a box for runs and then draw
             // another. A centred line holds its runs directly, so it needs the copy a labelled row makes.
-            var labelTextSpans = new ArrayList<TextSpan>();
-            labelTextSpans.add(new TextSpan(TEXT, Color.WHITE));
-            var centredRow = new TooltipRow.CentredRow(TooltipLineStyle.PARAGRAPH, false, labelTextSpans);
+            var labelRuns = new ArrayList<LabelRun>();
+            labelRuns.add(new TextSpan(TEXT, Color.WHITE));
 
-            labelTextSpans.add(new TextSpan(RUN_TEXT, Color.YELLOW));
+            var centredRow = new TooltipRow.CentredRow(TooltipLineStyle.PARAGRAPH, false, labelRuns);
 
-            assertThat(centredRow.labelTextSpans()).hasSize(1);
+            labelRuns.add(new TextSpan(RUN_TEXT, Color.YELLOW));
+
+            assertThat(centredRow.labelRuns())
+                .hasSize(1);
         }
 
         @Test
@@ -134,7 +138,7 @@ class TooltipRowTest {
                 false,
                 null))
                 .isInstanceOf(NullPointerException.class)
-                .hasMessageContaining("labelTextSpans");
+                .hasMessageContaining("labelRuns");
         }
     }
 
@@ -142,21 +146,23 @@ class TooltipRowTest {
     class CreateRow {
         @Test
         void createRowCarriesTheLabelAsOneRun() {
-            var labelTextSpans = buildBareRow().labelTextSpans();
-
-            assertThat(labelTextSpans).hasSize(1);
-            assertThat(labelTextSpans.get(0).text()).isEqualTo(TEXT);
-            assertThat(labelTextSpans.get(0).colour()).isEqualTo(Color.WHITE);
+            assertThat(buildBareRow().labelRuns())
+                .containsExactly(new TextSpan(TEXT, Color.WHITE));
         }
 
         @Test
         void createRowCarriesNoneOfTheOptionalParts() {
+            
             var row = buildBareRow();
 
-            assertThat(row.indent()).isCloseTo(0f, within(TOLERANCE));
-            assertThat(row.labelledRow().leadingRowSlot()).isEqualTo(RowSlot.EMPTY);
-            assertThat(row.labelledRow().trailingRowSlot()).isEqualTo(RowSlot.EMPTY);
-            assertThat(row.hasSectionBreak()).isFalse();
+            assertThat(row.indent())
+                .isCloseTo(0f, within(TOLERANCE));
+            assertThat(row.labelledRow().leadingRowSlot())
+                .isEqualTo(RowSlot.EMPTY);
+            assertThat(row.labelledRow().trailingRowSlot())
+                .isEqualTo(RowSlot.EMPTY);
+            assertThat(row.hasSectionBreak())
+                .isFalse();
         }
 
         @Test
@@ -172,7 +178,8 @@ class TooltipRowTest {
             // Most of a tooltip is its body, so a caller that says nothing about the kind of line it is
             // authoring gets a body line - which is what lets a whole existing body be built without
             // naming a kind at all.
-            assertThat(buildBareRow().lineStyle()).isEqualTo(TooltipLineStyle.PARAGRAPH);
+            assertThat(buildBareRow().lineStyle())
+                .isEqualTo(TooltipLineStyle.PARAGRAPH);
         }
     }
 
@@ -180,11 +187,8 @@ class TooltipRowTest {
     class CreateCentredRow {
         @Test
         void createCentredRowCarriesTheLabelAsOneRun() {
-            var labelTextSpans = buildBareCentredRow().labelTextSpans();
-
-            assertThat(labelTextSpans).hasSize(1);
-            assertThat(labelTextSpans.get(0).text()).isEqualTo(TEXT);
-            assertThat(labelTextSpans.get(0).colour()).isEqualTo(Color.WHITE);
+            assertThat(buildBareCentredRow().labelRuns())
+                .containsExactly(new TextSpan(TEXT, Color.WHITE));
         }
 
         @Test
@@ -193,8 +197,10 @@ class TooltipRowTest {
             // caller states a heading or a parting, and gets neither by saying nothing.
             var centredRow = buildBareCentredRow();
 
-            assertThat(centredRow.hasSectionBreak()).isFalse();
-            assertThat(centredRow.lineStyle()).isEqualTo(TooltipLineStyle.PARAGRAPH);
+            assertThat(centredRow.hasSectionBreak())
+                .isFalse();
+            assertThat(centredRow.lineStyle())
+                .isEqualTo(TooltipLineStyle.PARAGRAPH);
         }
     }
 
@@ -227,6 +233,7 @@ class TooltipRowTest {
     class CarriesValue {
         @Test
         void carriesValueTrailsTheRowWithThatRun() {
+
             var valueTextSpan = new TextSpan(VALUE, Color.GRAY);
 
             assertThat(buildBareRow().carriesValue(valueTextSpan).labelledRow().trailingRowSlot())
@@ -257,23 +264,24 @@ class TooltipRowTest {
     class ContinuesWith {
         @Test
         void continuesWithAppendsTheRun() {
-            var labelTextSpans = buildBareRow()
-                .continuesWith(new TextSpan(RUN_TEXT, Color.YELLOW))
-                .labelTextSpans();
-
-            assertThat(labelTextSpans).extracting(TextSpan::text).containsExactly(TEXT, RUN_TEXT);
-            assertThat(labelTextSpans.get(1).colour()).isEqualTo(Color.YELLOW);
+            assertThat(buildBareRow()
+                    .continuesWith(new TextSpan(RUN_TEXT, Color.YELLOW))
+                    .labelRuns())
+                .containsExactly(
+                    new TextSpan(TEXT, Color.WHITE),
+                    new TextSpan(RUN_TEXT, Color.YELLOW));
         }
 
         @Test
         void continuesWithAppendsTheRunOnACentredRow() {
             // A centred line reads in more than one colour exactly as a table row does: the runs are the
             // label, and the label is the one thing the two kinds carry alike.
-            var labelTextSpans = buildBareCentredRow()
-                .continuesWith(new TextSpan(RUN_TEXT, Color.YELLOW))
-                .labelTextSpans();
-
-            assertThat(labelTextSpans).extracting(TextSpan::text).containsExactly(TEXT, RUN_TEXT);
+            assertThat(buildBareCentredRow()
+                    .continuesWith(new TextSpan(RUN_TEXT, Color.YELLOW))
+                    .labelRuns())
+                .containsExactly(
+                    new TextSpan(TEXT, Color.WHITE),
+                    new TextSpan(RUN_TEXT, Color.YELLOW));
         }
 
         @Test
@@ -283,7 +291,7 @@ class TooltipRowTest {
             assertRefinementChangesOnly(
                 buildRichRow().continuesWith(new TextSpan(OTHER_RUN_TEXT, Color.CYAN)),
                 buildRichRow(),
-                "labelledRow.labelTextSpans");
+                "labelledRow.labelRuns");
         }
 
         @Test
@@ -291,7 +299,7 @@ class TooltipRowTest {
             assertRefinementChangesOnly(
                 buildRichCentredRow().continuesWith(new TextSpan(OTHER_RUN_TEXT, Color.CYAN)),
                 buildRichCentredRow(),
-                "labelTextSpans");
+                "labelRuns");
         }
     }
 
@@ -301,7 +309,8 @@ class TooltipRowTest {
         void indentsBySetsTheInset() {
             var row = buildBareRow().indentsBy(INDENT);
 
-            assertThat(row.indent()).isCloseTo(INDENT, within(TOLERANCE));
+            assertThat(row.indent())
+                .isCloseTo(INDENT, within(TOLERANCE));
         }
 
         @Test
@@ -317,14 +326,16 @@ class TooltipRowTest {
     class OpensSection {
         @Test
         void opensSectionMarksTheRowAsStartingABlock() {
-            assertThat(buildBareRow().opensSection().hasSectionBreak()).isTrue();
+            assertThat(buildBareRow().opensSection().hasSectionBreak())
+                .isTrue();
         }
 
         @Test
         void opensSectionMarksACentredRowAsStartingABlock() {
             // A title parts from what is above it the same way an entry does, so the break is shared
             // rather than being a fact only a line in the columns can state.
-            assertThat(buildBareCentredRow().opensSection().hasSectionBreak()).isTrue();
+            assertThat(buildBareCentredRow().opensSection().hasSectionBreak())
+                .isTrue();
         }
 
         @Test
@@ -340,9 +351,11 @@ class TooltipRowTest {
     class ClearsCrestColumn {
         @Test
         void clearsCrestColumnStartsTheLabelAtTheContentEdge() {
+
             var row = buildBareRow().clearsCrestColumn();
 
-            assertThat(row.labelPlacement()).isEqualTo(TooltipLabelPlacement.AT_CONTENT_EDGE);
+            assertThat(row.labelPlacement())
+                .isEqualTo(TooltipLabelPlacement.AT_CONTENT_EDGE);
         }
 
         @Test
@@ -360,16 +373,20 @@ class TooltipRowTest {
     class ReadsAs {
         @Test
         void readsAsSetsTheKindOfLine() {
+
             var row = buildBareRow().readsAs(TooltipLineStyle.HEADER);
 
-            assertThat(row.lineStyle()).isEqualTo(TooltipLineStyle.HEADER);
+            assertThat(row.lineStyle())
+                .isEqualTo(TooltipLineStyle.HEADER);
         }
 
         @Test
         void readsAsSetsTheKindOfLineOnACentredRow() {
+            
             var centredRow = buildBareCentredRow().readsAs(TooltipLineStyle.HEADER);
 
-            assertThat(centredRow.lineStyle()).isEqualTo(TooltipLineStyle.HEADER);
+            assertThat(centredRow.lineStyle())
+                .isEqualTo(TooltipLineStyle.HEADER);
         }
 
         @Test

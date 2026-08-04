@@ -121,7 +121,7 @@ public sealed interface RowSlot {
             // A run that came out blank reserves nothing, so a caller that assembled one from parts and
             // came up empty gets the column it would have had without it rather than a gap held open in
             // front of no glyphs. Which runs read as blank is TextSpan's rule, not a second one here.
-            if (!textSpan.hasText()) {
+            if (!textSpan.hasContent()) {
                 return NO_WIDTH;
             }
             return (float) spanMeasurer.measureSpanWidth(textSpan);
@@ -131,7 +131,7 @@ public sealed interface RowSlot {
         // absence it is - the same rule its width answers by, read here without a face to measure with.
         @Override
         public boolean isFilled() {
-            return textSpan.hasText();
+            return textSpan.hasContent();
         }
     }
 

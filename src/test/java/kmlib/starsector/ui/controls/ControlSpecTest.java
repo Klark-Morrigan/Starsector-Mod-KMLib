@@ -169,7 +169,7 @@ final class ControlSpecTest {
                 true,
                 ControlAction.NONE);
 
-            assertThat(checkbox.labelTextSpans())
+            assertThat(checkbox.labelRuns())
                 .containsExactly(new TextSpan("Muted", Color.CYAN));
         }
     }
@@ -199,7 +199,7 @@ final class ControlSpecTest {
                 .buildCheckbox("Muted", true, ControlAction.NONE)
                 .continuesWith(new TextSpan(" (recedes)", Color.YELLOW));
 
-            assertThat(checkbox.labelTextSpans())
+            assertThat(checkbox.labelRuns())
                 .containsExactly(
                     new TextSpan("Muted", LabelledControlSpecs.LABEL_TEXT_COLOUR),
                     new TextSpan(" (recedes)", Color.YELLOW));
@@ -268,7 +268,7 @@ final class ControlSpecTest {
                 .buildToggle("Factions", true, ControlAction.NONE)
                 .continuesWith(new TextSpan(" 3", Color.YELLOW));
 
-            assertThat(toggle.labelTextSpans())
+            assertThat(toggle.labelRuns())
                 .containsExactly(
                     new TextSpan("Factions", LabelledControlSpecs.LABEL_TEXT_COLOUR),
                     new TextSpan(" 3", Color.YELLOW));
@@ -286,7 +286,7 @@ final class ControlSpecTest {
             var label = ControlSpec.Label.createLabel(
                 new TextSpan("Non-allied factions are", Color.CYAN));
 
-            assertThat(label.labelTextSpans())
+            assertThat(label.labelRuns())
                 .containsExactly(new TextSpan("Non-allied factions are", Color.CYAN));
             assertThat(label.labels())
                 .containsExactly("Non-allied factions are");
@@ -313,7 +313,7 @@ final class ControlSpecTest {
                 .buildLabel("Non-allied factions are")
                 .continuesWith(new TextSpan(" hidden", Color.YELLOW));
 
-            assertThat(label.labelTextSpans())
+            assertThat(label.labelRuns())
                 .containsExactly(
                     new TextSpan("Non-allied factions are", LabelledControlSpecs.LABEL_TEXT_COLOUR),
                     new TextSpan(" hidden", Color.YELLOW));

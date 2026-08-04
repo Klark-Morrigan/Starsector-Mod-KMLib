@@ -16,6 +16,10 @@ import java.util.Objects;
  * as columns would align the second colour of every line, which is not what picking a stretch of a
  * sentence out means.
  *
+ * <p>What a run is - a stretch of text or a small image - is {@link LabelRun}'s sealed set, and nothing
+ * here reads it: a run is asked its own width and whether it draws at all, so a label composed of words
+ * and one composed of words around a crest are laid by the same walk.
+ *
  * <p>A label carries at least one run and no null one, checked where the label is built rather than where
  * it is drawn: content with no runs at all is not a line, and a null run otherwise surfaces inside a
  * measurement or a draw call, well past the point that could say which line was meant.
@@ -31,18 +35,18 @@ public final class LabelRuns {
     }
 
     /**
-     * Returns {@code labelTextSpans} with {@code runTextSpan} appended - the runs read as one sentence,
-     * so a run is added to what is already there rather than replacing it, and a second colour never
-     * costs a caller the first.
+     * Returns {@code labelRuns} with {@code labelRun} appended - the runs read as one sentence, so a run
+     * is added to what is already there rather than replacing it, and a second colour (or a crest set
+     * among the words) never costs a caller the first.
      *
-     * @param labelTextSpans the label's runs so far, left as they are
-     * @param runTextSpan    the run continuing the label
+     * @param labelRuns the label's runs so far, left as they are
+     * @param labelRun  the run continuing the label
      * @return the runs with that one last, for the caller's own constructor to hold to the floor
      */
-    public static List<TextSpan> appendRun(List<TextSpan> labelTextSpans, TextSpan runTextSpan) {
-        var continuedTextSpans = new ArrayList<>(labelTextSpans);
-        continuedTextSpans.add(runTextSpan);
-        return continuedTextSpans;
+    public static List<LabelRun> appendRun(List<LabelRun> labelRuns, LabelRun labelRun) {
+        var continuedRuns = new ArrayList<>(labelRuns);
+        continuedRuns.add(labelRun);
+        return continuedRuns;
     }
 
     /**
@@ -50,16 +54,16 @@ public final class LabelRuns {
      * label is still on the stack. The floor lives here rather than at each thing that carries a label,
      * so a control's own label cannot be held to a looser rule than a row's.
      *
-     * @param labelTextSpans the label's runs in reading order
+     * @param labelRuns the label's runs in reading order
      * @return an immutable copy of the runs
      */
-    public static List<TextSpan> copyRuns(List<TextSpan> labelTextSpans) {
-        Objects.requireNonNull(labelTextSpans, "labelTextSpans");
-        var copiedTextSpans = List.copyOf(labelTextSpans);
-        if (copiedTextSpans.isEmpty()) {
-            throw new IllegalArgumentException("labelTextSpans must carry at least one run");
+    public static List<LabelRun> copyRuns(List<LabelRun> labelRuns) {
+        Objects.requireNonNull(labelRuns, "labelRuns");
+        var copiedRuns = List.<LabelRun>copyOf(labelRuns);
+        if (copiedRuns.isEmpty()) {
+            throw new IllegalArgumentException("labelRuns must carry at least one run");
         }
-        return copiedTextSpans;
+        return copiedRuns;
     }
 
     /**
@@ -72,20 +76,23 @@ public final class LabelRuns {
      * ended, so a caller assembling a run from parts and coming up blank gets the line it would have had
      * without it rather than a gap reserved in front of no glyphs.
      *
-     * @param labelTextSpans the label's runs in reading order
-     * @param measurer       the width measurement already bound to the face the label draws in
+     * @param labelRuns  the label's runs in reading order
+     * @param lineHeight the height of the line the runs sit on, in UI units - what an image run squares
+     *                   itself off, and ignored by a run of text
+     * @param measurer   the width measurement already bound to the face the label draws in
      * @return each run's offset from the label's left edge, and the width the runs occupy together
      */
     public static LabelRunOffsets measureRunOffsets(
-            List<TextSpan> labelTextSpans,
+            List<LabelRun> labelRuns,
+            float lineHeight,
             StyledSpanMeasurer measurer) {
 
-        var runOffsetXs = new ArrayList<Float>(labelTextSpans.size());
+        var runOffsetXs = new ArrayList<Float>(labelRuns.size());
         var runsWidth = 0f;
         var hasDrawnRun = false;
 
-        for (var labelTextSpan : labelTextSpans) {
-            if (!labelTextSpan.hasText()) {
+        for (var labelRun : labelRuns) {
+            if (!labelRun.hasContent()) {
                 runOffsetXs.add(runsWidth);
                 continue;
             }
@@ -93,27 +100,31 @@ public final class LabelRuns {
                 runsWidth += RUN_GAP;
             }
             runOffsetXs.add(runsWidth);
-            runsWidth += (float) measurer.measureSpanWidth(labelTextSpan);
+            runsWidth += labelRun.computeWidth(lineHeight, measurer);
             hasDrawnRun = true;
         }
         return new LabelRunOffsets(List.copyOf(runOffsetXs), runsWidth);
     }
 
     /**
-     * The whole label as one line: its runs' text in reading order, joined. For a surface that lays a
-     * label in a single draw and charges it a single measurement, where each run's own anchor is never
+     * The whole label as one line: the text of its runs in reading order, joined. For a surface that lays
+     * a label in a single draw and charges it a single measurement, where each run's own anchor is never
      * worked out and so the runs read as the one sentence they already are.
      *
-     * <p>The colours do not survive the join, since one line drawn once draws in one colour. A surface
-     * that picks a run out in its own colour reads the runs themselves rather than this.
+     * <p>Neither the colours nor any image runs survive the join, since one line drawn once draws in one
+     * colour and holds only glyphs. A surface sizing itself from this alone therefore reserves nothing
+     * for a label's images; one that shows them reads the runs themselves and measures through
+     * {@link #measureRunOffsets}.
      *
-     * @param labelTextSpans the label's runs in reading order
-     * @return the runs joined into one line
+     * @param labelRuns the label's runs in reading order
+     * @return the text of the runs joined into one line
      */
-    public static String resolveLineText(List<TextSpan> labelTextSpans) {
+    public static String resolveLineText(List<LabelRun> labelRuns) {
         var lineText = new StringBuilder();
-        for (var textSpan : labelTextSpans) {
-            lineText.append(textSpan.text());
+        for (var labelRun : labelRuns) {
+            if (labelRun instanceof TextSpan textSpan) {
+                lineText.append(textSpan.text());
+            }
         }
         return lineText.toString();
     }

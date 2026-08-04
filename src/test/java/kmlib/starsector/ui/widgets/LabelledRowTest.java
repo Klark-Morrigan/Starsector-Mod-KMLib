@@ -1,5 +1,6 @@
 package kmlib.starsector.ui.widgets;
 
+import kmlib.starsector.ui.text.LabelRun;
 import kmlib.starsector.ui.text.TextSpan;
 
 import org.junit.jupiter.api.Nested;
@@ -65,7 +66,7 @@ class LabelledRowTest {
         void constructorRejectsANullLabelRunList() {
             assertThatThrownBy(() -> new LabelledRow(RowSlot.EMPTY, null, RowSlot.EMPTY))
                 .isInstanceOf(NullPointerException.class)
-                .hasMessageContaining("labelTextSpans");
+                .hasMessageContaining("labelRuns");
         }
 
         @Test
@@ -74,7 +75,7 @@ class LabelledRowTest {
             // floor that stops the model dissolving into a bag of optional parts with no centre.
             assertThatThrownBy(() -> new LabelledRow(RowSlot.EMPTY, List.of(), RowSlot.EMPTY))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("labelTextSpans");
+                .hasMessageContaining("labelRuns");
         }
 
         @Test
@@ -110,13 +111,13 @@ class LabelledRowTest {
             // The content is a value, so a caller still holding the list it built must not be able to
             // add a run to content already handed to a layout - which would size a box for runs and
             // then draw another.
-            var labelTextSpans = new ArrayList<TextSpan>();
-            labelTextSpans.add(new TextSpan(TEXT, Color.WHITE));
+            var labelRuns = new ArrayList<LabelRun>();
+            labelRuns.add(new TextSpan(TEXT, Color.WHITE));
 
-            var labelledRow = new LabelledRow(RowSlot.EMPTY, labelTextSpans, RowSlot.EMPTY);
-            labelTextSpans.add(new TextSpan(RUN_TEXT, Color.YELLOW));
+            var labelledRow = new LabelledRow(RowSlot.EMPTY, labelRuns, RowSlot.EMPTY);
+            labelRuns.add(new TextSpan(RUN_TEXT, Color.YELLOW));
 
-            assertThat(labelledRow.labelTextSpans())
+            assertThat(labelledRow.labelRuns())
                 .hasSize(1);
         }
     }
@@ -128,12 +129,8 @@ class LabelledRowTest {
 
             var labelledRow = buildBareRow();
 
-            assertThat(labelledRow.labelTextSpans())
-                .hasSize(1);
-            assertThat(labelledRow.labelTextSpans().get(0).text())
-                .isEqualTo(TEXT);
-            assertThat(labelledRow.labelTextSpans().get(0).colour())
-                .isEqualTo(Color.WHITE);
+            assertThat(labelledRow.labelRuns())
+                .containsExactly(new TextSpan(TEXT, Color.WHITE));
         }
 
         @Test
@@ -173,12 +170,10 @@ class LabelledRowTest {
 
             var labelledRow = buildBareRow().continuesWith(new TextSpan(RUN_TEXT, Color.YELLOW));
 
-            assertThat(labelledRow.labelTextSpans())
-                .hasSize(2);
-            assertThat(labelledRow.labelTextSpans().get(1).text())
-                .isEqualTo(RUN_TEXT);
-            assertThat(labelledRow.labelTextSpans().get(1).colour())
-                .isEqualTo(Color.YELLOW);
+            assertThat(labelledRow.labelRuns())
+                .containsExactly(
+                    new TextSpan(TEXT, Color.WHITE),
+                    new TextSpan(RUN_TEXT, Color.YELLOW));
         }
 
         @Test
@@ -187,10 +182,9 @@ class LabelledRowTest {
             // otherwise a second colour would cost the caller the first.
             var labelledRow = buildBareRow().continuesWith(new TextSpan(RUN_TEXT, Color.YELLOW));
 
-            assertThat(labelledRow.labelTextSpans().get(0).text())
-                .isEqualTo(TEXT);
-            assertThat(labelledRow.labelTextSpans().get(0).colour())
-                .isEqualTo(Color.WHITE);
+            assertThat(labelledRow.labelRuns())
+                .first()
+                .isEqualTo(new TextSpan(TEXT, Color.WHITE));
         }
 
         @Test
@@ -201,9 +195,11 @@ class LabelledRowTest {
                 .continuesWith(new TextSpan(RUN_TEXT, Color.YELLOW))
                 .continuesWith(new TextSpan(OTHER_RUN_TEXT, Color.CYAN));
 
-            assertThat(labelledRow.labelTextSpans())
-                .extracting(TextSpan::text)
-                .containsExactly(TEXT, RUN_TEXT, OTHER_RUN_TEXT);
+            assertThat(labelledRow.labelRuns())
+                .containsExactly(
+                    new TextSpan(TEXT, Color.WHITE),
+                    new TextSpan(RUN_TEXT, Color.YELLOW),
+                    new TextSpan(OTHER_RUN_TEXT, Color.CYAN));
         }
 
         @Test
@@ -211,7 +207,7 @@ class LabelledRowTest {
             assertRefinementChangesOnly(
                 buildRichRow().continuesWith(new TextSpan(OTHER_RUN_TEXT, Color.CYAN)),
                 buildRichRow(),
-                "labelTextSpans");
+                "labelRuns");
         }
     }
 

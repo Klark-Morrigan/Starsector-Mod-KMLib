@@ -40,7 +40,9 @@ import java.util.function.ToDoubleFunction;
  * together as one span in the content region, and it is sized to that span alone, so a title or a lone
  * statement centres over whatever the box holds rather than aligning as an entry of it. Such a row holds
  * no slots at all, which is what lets the box be sized to the span alone: there is nothing of it that
- * could land in a column the box was not widened for.
+ * could land in a column the box was not widened for. An image it shows travels inside its label as a
+ * run and is charged to that same span, so a centred line showing a crest centres crest and words
+ * together and still cannot reach past an edge.
  *
  * <p>Rows stack a line apart, and a row that opens a section takes half a line more above it. The
  * break is the widget's rather than the caller's arithmetic: a caller says which rows start a block,
@@ -321,9 +323,14 @@ public final class CursorTooltip {
     // centring, and the placement all read, so a centred row is placed against exactly the span the box
     // was sized to hold and no anchor can drift from the width it was charged. How runs compose into a
     // line is LabelRuns' rule, shared with every other surface that lays a label.
+    //
+    // The row's own line height goes along because an image run squares itself off it, the same size the
+    // crest column reserves for a leading image - so a crest set among a line's words and one set in its
+    // gutter come out the same size whichever the caller reached for.
     private static LabelRunOffsets measureLabelRunOffsets(StyledRow styledRow) {
         return LabelRuns.measureRunOffsets(
-            styledRow.row().labelTextSpans(),
+            styledRow.row().labelRuns(),
+            (float) styledRow.lineHeight(),
             styledRow::measureSpanWidth);
     }
 

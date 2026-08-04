@@ -1,5 +1,6 @@
 package kmlib.starsector.ui.widgets;
 
+import kmlib.starsector.ui.text.LabelRun;
 import kmlib.starsector.ui.text.LabelRuns;
 import kmlib.starsector.ui.text.TextSpan;
 
@@ -43,16 +44,17 @@ public sealed interface TooltipRow {
      * indent and with neither flank filled. Every other part is layered on with a refinement, so what a
      * caller writes is exactly what the row carries.
      *
-     * @param labelTextSpan the label and the colour it draws in before the tooltip's opacity fade
+     * @param labelRun the label's one run - ordinarily a {@link TextSpan}, the text and the colour it
+     *                 draws in before the tooltip's opacity fade
      * @return the bare table row
      */
-    static TableRow createRow(TextSpan labelTextSpan) {
+    static TableRow createRow(LabelRun labelRun) {
         return new TableRow(
             TableRow.DEFAULT_LINE_STYLE,
             TableRow.DEFAULT_LABEL_PLACEMENT,
             TableRow.NO_INDENT,
             false,
-            LabelledRow.createRow(labelTextSpan));
+            LabelledRow.createRow(labelRun));
     }
 
     /**
@@ -65,14 +67,15 @@ public sealed interface TooltipRow {
      * the other knowing which it is authoring, and no chain of refinements can arrive at a centred line
      * carrying a crest.
      *
-     * @param labelTextSpan the label and the colour it draws in before the tooltip's opacity fade
+     * @param labelRun the label's one run - ordinarily a {@link TextSpan}, the text and the colour it
+     *                 draws in before the tooltip's opacity fade
      * @return the bare centred row
      */
-    static CentredRow createCentredRow(TextSpan labelTextSpan) {
+    static CentredRow createCentredRow(LabelRun labelRun) {
         return new CentredRow(
             TableRow.DEFAULT_LINE_STYLE,
             false,
-            List.of(labelTextSpan));
+            List.of(labelRun));
     }
 
     /**
@@ -91,22 +94,24 @@ public sealed interface TooltipRow {
     boolean hasSectionBreak();
 
     /**
-     * The label's runs in reading order, each in the colour it draws in before any opacity fade; never
-     * empty. What both kinds of line are measured and drawn from, whatever else flanks them.
+     * The label's runs in reading order - text in the colour it draws in before any opacity fade, or an
+     * image squared off the line; never empty. What both kinds of line are measured and drawn from,
+     * whatever else flanks them.
      *
      * @return the label's runs
      */
-    List<TextSpan> labelTextSpans();
+    List<LabelRun> labelRuns();
 
     /**
-     * Returns a copy of this line whose label runs on into {@code runTextSpan} - the next stretch of the
-     * same sentence, picked out in its own colour while what came before it stays as it was. Applied
-     * twice, a line reads in three colours at no extra cost to the model.
+     * Returns a copy of this line whose label runs on into {@code labelRun} - the next stretch of the
+     * same sentence, a stretch of text picked out in its own colour or an image set among the words,
+     * while what came before it stays as it was. Applied twice, a line reads in three runs at no extra
+     * cost to the model.
      *
-     * @param runTextSpan the text continuing the label and the colour it draws in
+     * @param labelRun the run continuing the label
      * @return an otherwise-identical line whose label carries that run last
      */
-    TooltipRow continuesWith(TextSpan runTextSpan);
+    TooltipRow continuesWith(LabelRun labelRun);
 
     /**
      * Returns a copy of this line opening a section: the layout takes breathing room above it, so it
@@ -186,8 +191,8 @@ public sealed interface TooltipRow {
         }
 
         @Override
-        public List<TextSpan> labelTextSpans() {
-            return labelledRow.labelTextSpans();
+        public List<LabelRun> labelRuns() {
+            return labelledRow.labelRuns();
         }
 
         /**
@@ -226,8 +231,8 @@ public sealed interface TooltipRow {
         }
 
         @Override
-        public TableRow continuesWith(TextSpan runTextSpan) {
-            return rebuildWithContent(labelledRow.continuesWith(runTextSpan));
+        public TableRow continuesWith(LabelRun labelRun) {
+            return rebuildWithContent(labelledRow.continuesWith(labelRun));
         }
 
         /**
@@ -307,15 +312,20 @@ public sealed interface TooltipRow {
      * centred span alone, which is exactly why: anything charged to a column would be drawn past an edge
      * the box was never widened for.
      *
+     * <p>A crest is not lost by leaving the table, only re-read: set as an {@link
+     * kmlib.starsector.ui.text.ImageSpan} run it travels inside the label and centres with the words
+     * rather than sitting in a gutter to their left, which is what a line speaking for the whole box
+     * wants. Being a run, it is charged to the span the box was sized to, so it cannot land past an edge.
+     *
      * @param lineStyle       the kind of line this is, which the host tooltip turns into a look
      * @param hasSectionBreak whether the line opens a section
-     * @param labelTextSpans  the label's runs in reading order, each in the colour it draws in before the
-     *                        tooltip's opacity fade; never empty
+     * @param labelRuns       the label's runs in reading order - text in the colour it draws in before
+     *                        the tooltip's opacity fade, or an image squared off the line; never empty
      */
     record CentredRow(
         TooltipLineStyle lineStyle,
         boolean hasSectionBreak,
-        List<TextSpan> labelTextSpans) implements TooltipRow {
+        List<LabelRun> labelRuns) implements TooltipRow {
 
         /**
          * Copies the label's runs and rejects an empty or null-bearing label at construction, through
@@ -323,25 +333,25 @@ public sealed interface TooltipRow {
          * whichever way the box lays it.
          */
         public CentredRow {
-            labelTextSpans = LabelRuns.copyRuns(labelTextSpans);
+            labelRuns = LabelRuns.copyRuns(labelRuns);
         }
 
         @Override
-        public CentredRow continuesWith(TextSpan runTextSpan) {
+        public CentredRow continuesWith(LabelRun labelRun) {
             return new CentredRow(
                 lineStyle,
                 hasSectionBreak,
-                LabelRuns.appendRun(labelTextSpans, runTextSpan));
+                LabelRuns.appendRun(labelRuns, labelRun));
         }
 
         @Override
         public CentredRow opensSection() {
-            return new CentredRow(lineStyle, true, labelTextSpans);
+            return new CentredRow(lineStyle, true, labelRuns);
         }
 
         @Override
         public CentredRow readsAs(TooltipLineStyle lineStyle) {
-            return new CentredRow(lineStyle, hasSectionBreak, labelTextSpans);
+            return new CentredRow(lineStyle, hasSectionBreak, labelRuns);
         }
     }
 }

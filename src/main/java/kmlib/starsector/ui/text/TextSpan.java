@@ -18,13 +18,20 @@ import java.util.Objects;
  *
  * <p>Nothing-to-draw is spelled as blank text rather than as a null span or a null string, so a place
  * that draws nothing still holds a span with a colour and is measured, styled, and drawn by the same
- * path as one that draws something. {@link #hasText} is the single rule deciding which of the two a
+ * path as one that draws something. {@link #hasContent} is the single rule deciding which of the two a
  * span is, so no caller has to invent its own reading of an empty run.
+ *
+ * <p>It is one of the two things a label's line can be made of ({@link LabelRun}), the other being an
+ * image set among the words. Being a member of that set rather than the whole of it is what lets a
+ * caller write a crest into the middle of a sentence without the surfaces that lay labels out learning
+ * a second way to compose one.
  *
  * @param text   the run as its author wrote it, before any casing the host's style applies to it
  * @param colour the colour the run draws in, before any opacity fade the host applies
  */
-public record TextSpan(String text, Color colour) {
+public record TextSpan(
+    String text,
+    Color colour) implements LabelRun {
 
     // How a span with nothing to draw spells its text. Held here so the blank spelling has one home
     // rather than being open-coded wherever an absent run is built.
@@ -54,13 +61,30 @@ public record TextSpan(String text, Color colour) {
     }
 
     /**
+     * The width the span's glyphs measure in the look the measurement is bound to. A span that came out
+     * blank is charged nothing, so a caller assembling a run from parts and coming up empty gets the
+     * line it would have had without it rather than a gap held open in front of no glyphs.
+     *
+     * <p>The line height is not read: a run of text is as tall as the face it draws in, so what sizes
+     * an image run against its line has no bearing on this one.
+     */
+    @Override
+    public float computeWidth(float lineHeight, StyledSpanMeasurer spanMeasurer) {
+        if (!hasContent()) {
+            return LabelRun.NO_WIDTH;
+        }
+        return (float) spanMeasurer.measureSpanWidth(this);
+    }
+
+    /**
      * Whether the span has anything worth drawing. Whitespace-only text reads as nothing, so a caller
      * assembling a run from parts and coming up empty gets the absence it should rather than a gap
      * reserved in front of no glyphs.
      *
      * @return true when the span carries text to draw
      */
-    public boolean hasText() {
+    @Override
+    public boolean hasContent() {
         return KmlibStrings.hasText(text);
     }
 }

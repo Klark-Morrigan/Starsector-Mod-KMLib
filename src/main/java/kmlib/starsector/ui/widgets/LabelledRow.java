@@ -1,5 +1,6 @@
 package kmlib.starsector.ui.widgets;
 
+import kmlib.starsector.ui.text.LabelRun;
 import kmlib.starsector.ui.text.LabelRuns;
 import kmlib.starsector.ui.text.TextSpan;
 
@@ -12,12 +13,12 @@ import java.util.Objects;
  * whichever row model happens to carry it. A widget composes it and adds only what is genuinely its
  * own, so the parts they share stay one shape rather than three that cannot be handed to each other.
  *
- * <p>A label is a list of {@link TextSpan} runs read as one sentence, composed by {@link LabelRuns}:
- * each run starts where the one before it measured out, so a line can pick one stretch of itself out in
- * another colour without that stretch becoming a column. It is required and never empty - a row with no
- * label is not a row, and that floor is what stops the model dissolving into a bag of optional parts
- * with no centre. A one-colour label is the list of one that {@link #createRow} builds, so a caller that
- * never needs a second colour never sees the list.
+ * <p>A label is a list of {@link LabelRun}s read as one sentence, composed by {@link LabelRuns}: each
+ * run starts where the one before it measured out, so a line can pick one stretch of itself out in
+ * another colour - or set a crest among its words - without that stretch becoming a column. It is
+ * required and never empty - a row with no label is not a row, and that floor is what stops the model
+ * dissolving into a bag of optional parts with no centre. A plain one-colour label is the list of one
+ * that {@link #createRow} builds, so a caller that never needs a second run never sees the list.
  *
  * <p>Each flank is a {@link RowSlot}, so what a row leads and trails with is one component either side
  * whatever kind of thing it turns out to be, and a flank it does not fill is a slot like any other.
@@ -33,17 +34,18 @@ import java.util.Objects;
  * out. A row states what it carries and nothing about where it goes.
  *
  * @param leadingRowSlot  what the row leads with, or {@link RowSlot#EMPTY} when it leads with nothing
- * @param labelTextSpans  the label's runs in reading order, each in the colour it draws in before any
- *                        opacity fade the host applies; never empty
+ * @param labelRuns       the label's runs in reading order, each drawn as the run it is - text in its
+ *                        own colour, or an image squared off the line - before any opacity fade the
+ *                        host applies; never empty
  * @param trailingRowSlot what the row trails with, or {@link RowSlot#EMPTY} when it trails with nothing
  */
 public record LabelledRow(
         RowSlot leadingRowSlot,
-        List<TextSpan> labelTextSpans,
+        List<LabelRun> labelRuns,
         RowSlot trailingRowSlot) {
 
     /**
-     * Holds the label to the floor every label is held to ({@link #copyLabelTextSpans}) and rejects a
+     * Holds the label to the floor every label is held to ({@link LabelRuns#copyRuns}) and rejects a
      * null slot, at construction, where the caller that built the row is still on the stack. An unfilled
      * slot is {@link RowSlot#EMPTY} rather than null, so nothing below has to read a missing slot and an
      * empty one as the same thing - and a null would otherwise surface inside a measurement or a draw
@@ -52,7 +54,7 @@ public record LabelledRow(
     public LabelledRow {
         Objects.requireNonNull(leadingRowSlot, "leadingRowSlot");
         Objects.requireNonNull(trailingRowSlot, "trailingRowSlot");
-        labelTextSpans = LabelRuns.copyRuns(labelTextSpans);
+        labelRuns = LabelRuns.copyRuns(labelRuns);
     }
 
     /**
@@ -60,13 +62,14 @@ public record LabelledRow(
      * the label and what else the label says are each layered on with a refinement below, so a caller
      * states what its row <em>has</em> and never spells out the absences.
      *
-     * @param labelTextSpan the label's one run and the colour it draws in
+     * @param labelRun the label's one run - ordinarily a {@link TextSpan}, the text and the colour it
+     *                 draws in
      * @return the bare content
      */
-    public static LabelledRow createRow(TextSpan labelTextSpan) {
+    public static LabelledRow createRow(LabelRun labelRun) {
         return new LabelledRow(
             RowSlot.EMPTY,
-            List.of(labelTextSpan),
+            List.of(labelRun),
             RowSlot.EMPTY);
     }
 
@@ -78,21 +81,22 @@ public record LabelledRow(
      * @return otherwise-identical content leading with that slot
      */
     public LabelledRow leadsWith(RowSlot leadingRowSlot) {
-        return new LabelledRow(leadingRowSlot, labelTextSpans, trailingRowSlot);
+        return new LabelledRow(leadingRowSlot, labelRuns, trailingRowSlot);
     }
 
     /**
-     * Returns a copy whose label runs on into {@code runTextSpan} - the next stretch of the same
-     * sentence, picked out in its own colour while what came before it stays as it was. Applied twice,
-     * a line reads in three colours at no extra cost to the model.
+     * Returns a copy whose label runs on into {@code labelRun} - the next stretch of the same sentence,
+     * a stretch of text picked out in its own colour or an image set among the words, while what came
+     * before it stays as it was. Applied twice, a line reads in three runs at no extra cost to the
+     * model.
      *
-     * @param runTextSpan the text continuing the label and the colour it draws in
+     * @param labelRun the run continuing the label
      * @return otherwise-identical content whose label carries that run last
      */
-    public LabelledRow continuesWith(TextSpan runTextSpan) {
+    public LabelledRow continuesWith(LabelRun labelRun) {
         return new LabelledRow(
             leadingRowSlot,
-            LabelRuns.appendRun(labelTextSpans, runTextSpan),
+            LabelRuns.appendRun(labelRuns, labelRun),
             trailingRowSlot);
     }
 
@@ -104,7 +108,7 @@ public record LabelledRow(
      * @return otherwise-identical content trailing with that slot
      */
     public LabelledRow trailsWith(RowSlot trailingRowSlot) {
-        return new LabelledRow(leadingRowSlot, labelTextSpans, trailingRowSlot);
+        return new LabelledRow(leadingRowSlot, labelRuns, trailingRowSlot);
     }
 
     /**
@@ -114,6 +118,6 @@ public record LabelledRow(
      * @return the label's runs joined into one line
      */
     public String resolveLabelText() {
-        return LabelRuns.resolveLineText(labelTextSpans);
+        return LabelRuns.resolveLineText(labelRuns);
     }
 }

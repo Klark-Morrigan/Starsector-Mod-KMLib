@@ -50,7 +50,7 @@ class TextSpanTest {
             var span = TextSpan.createBlank(SPAN_COLOUR);
 
             assertThat(span.text()).isEmpty();
-            assertThat(span.hasText()).isFalse();
+            assertThat(span.hasContent()).isFalse();
         }
 
         @Test
@@ -62,22 +62,49 @@ class TextSpanTest {
     }
 
     @Nested
-    class HasText {
+    class HasContent {
         @Test
-        void hasTextIsTrueForARunWithGlyphs() {
-            assertThat(new TextSpan("Contested by", SPAN_COLOUR).hasText()).isTrue();
+        void hasContentIsTrueForARunWithGlyphs() {
+            assertThat(new TextSpan("Contested by", SPAN_COLOUR).hasContent()).isTrue();
         }
 
         @Test
-        void hasTextIsFalseForAnEmptyRun() {
-            assertThat(new TextSpan("", SPAN_COLOUR).hasText()).isFalse();
+        void hasContentIsFalseForAnEmptyRun() {
+            assertThat(new TextSpan("", SPAN_COLOUR).hasContent()).isFalse();
         }
 
         @Test
-        void hasTextIsFalseForAWhitespaceOnlyRun() {
+        void hasContentIsFalseForAWhitespaceOnlyRun() {
             // A run assembled from parts that all came up empty is still nothing to draw, however many
             // separators were joined between them.
-            assertThat(new TextSpan("   ", SPAN_COLOUR).hasText()).isFalse();
+            assertThat(new TextSpan("   ", SPAN_COLOUR).hasContent()).isFalse();
+        }
+    }
+
+    @Nested
+    class ComputeWidth {
+        // Each glyph one unit wide, so an expected width is the character count written as a literal.
+        private static final StyledSpanMeasurer ONE_UNIT_PER_CHARACTER =
+            textSpan -> textSpan.text().length();
+
+        // Deliberately unlike any character count below, so a width taken from the line rather than the
+        // glyphs would be visible in the assertion.
+        private static final float LINE_HEIGHT = 20f;
+
+        @Test
+        void computeWidthChargesTheRunsGlyphs() {
+            assertThat(new TextSpan("Hegemony", SPAN_COLOUR)
+                    .computeWidth(LINE_HEIGHT, ONE_UNIT_PER_CHARACTER))
+                .isEqualTo(8f);
+        }
+
+        @Test
+        void computeWidthChargesABlankRunNothing() {
+            // The measurement is skipped rather than returning whatever a blank string measures, so a
+            // run that came out empty holds no room open in the line it sits on.
+            assertThat(TextSpan.createBlank(SPAN_COLOUR)
+                    .computeWidth(LINE_HEIGHT, ONE_UNIT_PER_CHARACTER))
+                .isEqualTo(0f);
         }
     }
 }

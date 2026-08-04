@@ -7,6 +7,8 @@ import kmlib.starsector.graphics.StarsectorSprites;
 import kmlib.starsector.ui.font.LazyFontCache;
 import kmlib.starsector.ui.font.LazyFontSpanMeasurer;
 import kmlib.starsector.ui.input.UiCursor;
+import kmlib.starsector.ui.text.ImageSpan;
+import kmlib.starsector.ui.text.LabelRun;
 import kmlib.starsector.ui.text.TextSpan;
 import kmlib.starsector.ui.text.TextStyle;
 import kmlib.starsector.ui.widgets.BoxBorder;
@@ -23,7 +25,8 @@ import java.util.List;
 /**
  * Draws a {@link CursorTooltip}'s rows as a free-floating box at the cursor: it lays the rows out through
  * the widget, resolves each row's look from the kind of line it is, and paints the box, each crest, and
- * each row's label and value in one bracketed GL pass. The sanctioned way for a KM UI to show a tooltip
+ * each row's label - run by run, words and inline images alike - and its value in one bracketed GL pass.
+ * The sanctioned way for a KM UI to show a tooltip
  * on a core screen that offers no panel to hang a vanilla {@code TooltipMakerAPI} on - the same rationale
  * that puts the panel renderers here beside it.
  *
@@ -110,13 +113,44 @@ public final class CursorTooltipRenderer {
         // layout's decision, so a style's default anchor has no say in a box that resolved its own. The
         // runs walk in step with the anchors the same rows produced, so run and anchor cannot slip. Every
         // run is drawn unconditionally - a blank span paints nothing.
-        var labelTextSpans = row.labelTextSpans();
-        for (var index = 0; index < labelTextSpans.size(); index++) {
-            rowPaint.drawSpan(
-                labelTextSpans.get(index),
+        var labelRuns = row.labelRuns();
+        for (var index = 0; index < labelRuns.size(); index++) {
+            drawLabelRun(
+                labelRuns.get(index),
                 placement.labelRunXs().get(index),
+                placement,
+                rowPaint);
+        }
+    }
+
+    // Draws one run of a label at the anchor the layout resolved for it: a stretch of text in its own
+    // colour, or a small image hung square on the line. The branch is over what the run is rather than
+    // over which kind of line it sits on, so a crest set among a centred line's words and one set among a
+    // table row's are painted by the same step.
+    private static void drawLabelRun(
+            LabelRun labelRun,
+            float runX,
+            TooltipLayout.TooltipRowLayout placement,
+            RowPaint rowPaint) {
+
+        if (labelRun instanceof TextSpan textSpan) {
+            rowPaint.drawSpan(
+                textSpan,
+                runX,
                 placement.rowTopY(),
                 LazyFont.TextAnchor.TOP_LEFT);
+            return;
+        }
+        // A missing asset resolves to null and is skipped, so the words around the image still read -
+        // the same degradation a crest that will not load is allowed in its own column.
+        if (labelRun instanceof ImageSpan imageSpan) {
+            var image = StarsectorSprites.loadSprite(imageSpan.spritePath());
+            if (image != null) {
+                UiSprite.renderQuad(
+                    image,
+                    computeImageBox(runX, placement),
+                    rowPaint.opacity());
+            }
         }
     }
 
@@ -140,7 +174,7 @@ public final class CursorTooltipRenderer {
                 // cannot end up compositing at two different alphas.
                 UiSprite.renderQuad(
                     crest,
-                    computeCrestBox(placement),
+                    computeImageBox(placement.leadingRowSlotX(), placement),
                     rowPaint.opacity());
             }
         }
@@ -153,13 +187,17 @@ public final class CursorTooltipRenderer {
         }
     }
 
-    // The square a crest hangs in: the leading column's left edge, the row's own line on each side. The
-    // image slot reports exactly that width to the layout, so the column reserved for the crest and the
-    // square painted into it are the same size, and the crest sits level with the label beside it
-    // whatever face that label draws in.
-    private static Rectangle computeCrestBox(TooltipLayout.TooltipRowLayout placement) {
+    // The square any small image hangs in on this row: from the given left edge, the row's own line on
+    // each side. Shared by the crest in the leading column and by an image run set among the words,
+    // because both report exactly that width to the layout - so the room reserved and the square painted
+    // are the same size wherever the image sits, and it stands level with the text beside it whatever
+    // face that text draws in.
+    private static Rectangle computeImageBox(
+            float imageX,
+            TooltipLayout.TooltipRowLayout placement) {
+
         return new Rectangle(
-            placement.leadingRowSlotX(),
+            imageX,
             placement.rowTopY() - placement.lineHeight(),
             placement.lineHeight(),
             placement.lineHeight());
