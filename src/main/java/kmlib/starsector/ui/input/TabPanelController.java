@@ -198,10 +198,11 @@ public final class TabPanelController {
 
     /**
      * Handles one pointer event over the tab panel: a left press on the collapse notch flips the fold and a
-     * left press on a header tab fires that tab's own action and pulses it (each consumed); every other event
-     * - body control hits, the scrollbar drag, the wheel - is the body's, delegated to its {@link
-     * PanelController}. Hover is none of its business: the fades are resolved per frame against the drawn
-     * placement by {@link #advanceInputMotions}, so nothing here has to be latched for the render pass.
+     * left press on a fully expanded panel's header tab fires that tab's own action and pulses it (each
+     * consumed); every other event - body control hits, the scrollbar drag, the wheel - is the body's,
+     * delegated to its {@link PanelController}. Hover is none of its business: the fades are resolved per
+     * frame against the drawn placement by {@link #advanceInputMotions}, so nothing here has to be latched
+     * for the render pass.
      *
      * @param event     the pointer event
      * @param placement the laid-out tab panel the renderer drew this frame
@@ -236,13 +237,26 @@ public final class TabPanelController {
      * fires nothing (a tabs row is inert on its lit tab, as a vanilla strip is), so it lifts nothing either:
      * the pulse confirms a switch, and a tab that did not switch has nothing to confirm.
      *
+     * <p>A panel that is not fully expanded offers no tab to press, on the same rule its hover fades answer
+     * to. This is a gate rather than a consequence of the fold, because folding is a paint-time clip over a
+     * header that stays laid out at the panel's full width: the tabs a docked panel wipes off the screen keep
+     * their hit boxes exactly where they were, so without this a press on bare screen where a tab used to be
+     * would fire that tab and swallow the click, with nothing drawn there to explain why.
+     *
      * @param placement the laid-out tab panel the renderer drew this frame
      * @param pointX    the press x in UI coordinates, the coordinates the placement is laid out in
      * @param pointY    the press y in UI coordinates
-     * @return whether the press landed on a tab that acted
+     * @return whether the press landed on a tab that acted; false leaves the press to the body, and through
+     *         it to whatever lies behind the panel
      */
     boolean activateTabAtPoint(TabPanelPlacement placement, float pointX, float pointY) {
 
+        // Docked, docking, or undocking, the header is behind the rail or on its way there, so none of its
+        // tabs is one the player can see to aim at. The handle takes no such gate - it is what brings a
+        // docked panel back - and it is tested before this, so gating here cannot reach it.
+        if (!isFullyExpanded()) {
+            return false;
+        }
         // The header never scrolls, so it hit-tests unclipped, unlike a body control in the flex list. The
         // fired tab comes back from the activation itself rather than from a second walk of the same
         // segments, so the tab that lifts is the tab that fired by construction and not by two hit-tests

@@ -199,6 +199,30 @@ final class TabPanelControllerTest {
         }
 
         @Test
+        void activateTabAtPointActsOnNothingWhileThePanelIsNotFullyExpanded() {
+            // The gate that keeps a docked panel from acting on bare screen. Folding only clips the header
+            // at paint time - its tabs keep the hit boxes they were laid at - so without this a press where
+            // a tab used to be would fire that tab and swallow the click with nothing drawn to explain it.
+            var firedTabs = new ArrayList<Integer>();
+            var controller = TabPanelController.createStartingDocked();
+            var hasActed = controller.activateTabAtPoint(
+                buildTwoTabPlacementShowing(FIRST_TAB_INDEX, firedTabs::add),
+                INSIDE_SECOND_TAB_X,
+                ON_TAB_ROW_Y);
+
+            advanceAWholeTraverse(controller);
+
+            // Reporting that it did not act is what leaves the press to the body, and through it to the
+            // screen behind - so the click reaches the map rather than being consumed by an unseen tab.
+            assertThat(hasActed)
+                .isFalse();
+            assertThat(firedTabs)
+                .isEmpty();
+            assertThat(pulseFractionAt(controller, SECOND_TAB_INDEX))
+                .isCloseTo(0f, within(TOLERANCE));
+        }
+
+        @Test
         void activateTabAtPointActsOnNothingForAPressOffTheHeader() {
             // A press on the body falls through to the body controller, so this has to report that it did
             // not act rather than swallowing the press on a tab it never hit.
