@@ -53,8 +53,10 @@ src/main/java/kmlib/
   animation/       - positions between two ends that time moves: a linear
                      fraction advanced toward a target and eased on read,
                      so a retarget mid-flight carries on from where it is,
-                     and the pulse envelope that rides one out and back
-                     again on a single trigger
+                     the pulse envelope that rides one out and back again
+                     on a single trigger, and the pair of durations that
+                     pace the two directions apart, a motion answering
+                     input arriving quicker than it lets go
   collections/     - small Collection / Map helpers
   colour/          - AWT Color to normalised GL channels, folding in an
                      alpha multiplier so one factor fades a palette

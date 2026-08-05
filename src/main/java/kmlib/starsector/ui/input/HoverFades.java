@@ -1,5 +1,7 @@
 package kmlib.starsector.ui.input;
 
+import kmlib.animation.TraverseDurations;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -37,11 +39,15 @@ public final class HoverFades<K> {
      * key's back off theirs. A key hovered for the first time gains a fade here, and a key whose fade has
      * settled fully off loses it, so the set tracks what is actually in motion.
      *
-     * @param hoveredKey      the element the pointer is on this frame, or null when it is on none of them
-     * @param elapsedSeconds  real time since the last frame the consumer drew
-     * @param durationSeconds how long a full traverse should take; zero or less snaps instantly
+     * @param hoveredKey     the element the pointer is on this frame, or null when it is on none of them
+     * @param elapsedSeconds real time since the last frame the consumer drew
+     * @param durations      how long travelling onto a hovered look and back off it each take; a
+     *                       non-positive one snaps that way
      */
-    public void advanceTowardHoveredKey(K hoveredKey, float elapsedSeconds, float durationSeconds) {
+    public void advanceTowardHoveredKey(
+            K hoveredKey,
+            float elapsedSeconds,
+            TraverseDurations durations) {
 
         // Minted before the walk rather than beside it, so a newly hovered key is stepped by this same frame
         // and starts rising immediately instead of standing still for one frame at zero.
@@ -55,7 +61,7 @@ public final class HoverFades<K> {
             var entry = entries.next();
             var isHovered = entry.getKey().equals(hoveredKey);
 
-            entry.getValue().advanceTowardHover(isHovered, elapsedSeconds, durationSeconds);
+            entry.getValue().advanceTowardHover(isHovered, elapsedSeconds, durations);
 
             if (!isHovered && entry.getValue().hasSettledOffHover()) {
                 entries.remove();

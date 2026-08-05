@@ -3,6 +3,7 @@ package kmlib.starsector.ui.input;
 import com.fs.starfarer.api.input.InputEventAPI;
 
 import kmlib.animation.PulseEnvelopes;
+import kmlib.animation.TraverseDurations;
 import kmlib.starsector.ui.widgets.RadioRow;
 import kmlib.starsector.ui.widgets.scroll.ScrollState;
 import kmlib.starsector.ui.widgets.tabs.TabInteractionSources;
@@ -150,9 +151,8 @@ public final class TabPanelController {
      * Steps every motion the panel makes in answer to input - its header tabs' and its collapse handle's
      * hover fades, and the click pulses and hotkey blinks running on its tabs - by a frame's worth of time,
      * for the host to call each frame it draws, after it has resolved the placement. One call rather than one
-     * per motion, so
-     * the panel's parts cannot be advanced against different placements or charged different slices of the
-     * same frame.
+     * per motion, so the panel's parts cannot be advanced against different placements or charged different
+     * slices of the same frame.
      *
      * <p>What is under the pointer is resolved against the very placement being drawn rather than latched
      * from the last pointer event. That is what keeps a fade honest when the panel moves under a still
@@ -164,17 +164,17 @@ public final class TabPanelController {
      * see, let alone one they are pointing at. The handle is not gated that way - it draws past the frame and
      * outlives the fold, being what brings a docked panel back.
      *
-     * @param placement       the laid-out tab panel this frame is drawing
-     * @param elapsedSeconds  real time since the last frame the host drew
-     * @param durationSeconds how long one traverse should take - a fade onto a hovered look, or the rise or
-     *                        the fall of a pulse; zero or less snaps. One pace for every motion the panel
-     *                        makes in answer to input, since two written beside each other is how one panel
-     *                        ends up with two rhythms
+     * @param placement      the laid-out tab panel this frame is drawing
+     * @param elapsedSeconds real time since the last frame the host drew
+     * @param durations      how long a traverse takes each way - onto a hovered look or up to a pulse's
+     *                       peak, and back off either; a non-positive one snaps that way. One pace for every
+     *                       motion the panel makes in answer to input, since two written beside each other
+     *                       is how one panel ends up with two rhythms
      */
     public void advanceInputMotions(
             TabPanelPlacement placement,
             float elapsedSeconds,
-            float durationSeconds) {
+            TraverseDurations durations) {
 
         // One cursor read spent on both hit-tests, so the tab and the handle answer the same pointer.
         advanceInputMotionsAtPoint(
@@ -182,7 +182,7 @@ public final class TabPanelController {
             UiCursor.getUiX(),
             UiCursor.getUiY(),
             elapsedSeconds,
-            durationSeconds);
+            durations);
     }
 
     /**
@@ -311,24 +311,24 @@ public final class TabPanelController {
      * hit-test that decides it - a pairing crossed over would light the handle for a tab - and the split is
      * what lets that pairing be checked without a display to point at.
      *
-     * @param placement       the laid-out tab panel this frame is drawing
-     * @param pointX          the pointer's x in UI coordinates, the coordinates the placement is laid out in
-     * @param pointY          the pointer's y in UI coordinates
-     * @param elapsedSeconds  real time since the last frame the host drew
-     * @param durationSeconds how long one traverse should take; zero or less snaps
+     * @param placement      the laid-out tab panel this frame is drawing
+     * @param pointX         the pointer's x in UI coordinates, the coordinates the placement is laid out in
+     * @param pointY         the pointer's y in UI coordinates
+     * @param elapsedSeconds real time since the last frame the host drew
+     * @param durations      how long a traverse takes each way; a non-positive one snaps that way
      */
     void advanceInputMotionsAtPoint(
             TabPanelPlacement placement,
             float pointX,
             float pointY,
             float elapsedSeconds,
-            float durationSeconds) {
+            TraverseDurations durations) {
 
         advanceInputMotionsForFrame(
             resolveTabIndexAtPoint(placement, pointX, pointY),
             placement.containsPointInNotch(pointX, pointY),
             elapsedSeconds,
-            durationSeconds);
+            durations);
     }
 
     /**
@@ -341,13 +341,13 @@ public final class TabPanelController {
      * @param hoveredTabIndex the tab the pointer is on this frame, or null when it is on none
      * @param isNotchHovered  whether the pointer is on the collapse handle this frame
      * @param elapsedSeconds  real time since the last frame the host drew
-     * @param durationSeconds how long one traverse should take; zero or less snaps
+     * @param durations       how long a traverse takes each way; a non-positive one snaps that way
      */
     void advanceInputMotionsForFrame(
             Integer hoveredTabIndex,
             boolean isNotchHovered,
             float elapsedSeconds,
-            float durationSeconds) {
+            TraverseDurations durations) {
 
         // A panel that is not fully expanded hovers no tab, whatever is laid out under the pointer: its
         // header is being wiped toward the docked rail, or is already gone behind it. The handle takes no
@@ -357,14 +357,14 @@ public final class TabPanelController {
                 ? hoveredTabIndex
                 : null,
             elapsedSeconds,
-            durationSeconds);
+            durations);
 
-        notchHoverFade.advanceTowardHover(isNotchHovered, elapsedSeconds, durationSeconds);
-        tabClickPulses.advanceByElapsedTime(elapsedSeconds, durationSeconds);
+        notchHoverFade.advanceTowardHover(isNotchHovered, elapsedSeconds, durations);
+        tabClickPulses.advanceByElapsedTime(elapsedSeconds, durations);
 
         // Ungated, like the clicks and unlike the fades: a blink is an event already seen, so its cycle runs
         // out wherever the panel goes afterwards rather than being cut short by a fold it did not ask for.
-        tabHotkeyBlinks.advanceByElapsedTime(elapsedSeconds, durationSeconds);
+        tabHotkeyBlinks.advanceByElapsedTime(elapsedSeconds, durations);
     }
 
     /**

@@ -22,8 +22,9 @@ final class PulseEnvelopeTest {
     private static final float HALF_DURATION = DURATION / 2f;
     private static final float QUARTER_DURATION = DURATION / 4f;
 
-    // A duration of zero is the "no animation" setting: one step covers a whole traverse.
-    private static final float SNAP_DURATION = 0f;
+    // The same pace each way, so a step reads as a fraction of one duration whichever half of the cycle it
+    // lands in. The case that pins the two halves being timed apart names its own pair.
+    private static final TraverseDurations DURATIONS = TraverseDurations.createSymmetric(DURATION);
 
     @Nested
     class AdvanceByElapsedTime {
@@ -33,7 +34,7 @@ final class PulseEnvelopeTest {
             // A render loop pumps every envelope it holds unconditionally, so one nothing has triggered must
             // sit still rather than drift up on its own.
             var envelope = new PulseEnvelope();
-            envelope.advanceByElapsedTime(FULL_DURATION, DURATION);
+            envelope.advanceByElapsedTime(FULL_DURATION, DURATIONS);
 
             assertThat(envelope.getPulseFraction())
                 .isCloseTo(0f, within(TOLERANCE));
@@ -45,7 +46,7 @@ final class PulseEnvelopeTest {
             var envelope = new PulseEnvelope();
 
             envelope.startPulse();
-            envelope.advanceByElapsedTime(FULL_DURATION, DURATION);
+            envelope.advanceByElapsedTime(FULL_DURATION, DURATIONS);
 
             assertThat(envelope.getPulseFraction())
                 .isCloseTo(1f, within(TOLERANCE));
@@ -58,8 +59,8 @@ final class PulseEnvelopeTest {
             var envelope = new PulseEnvelope();
 
             envelope.startPulse();
-            envelope.advanceByElapsedTime(FULL_DURATION, DURATION);
-            envelope.advanceByElapsedTime(FULL_DURATION, DURATION);
+            envelope.advanceByElapsedTime(FULL_DURATION, DURATIONS);
+            envelope.advanceByElapsedTime(FULL_DURATION, DURATIONS);
 
             assertThat(envelope.getPulseFraction())
                 .isCloseTo(0f, within(TOLERANCE));
@@ -71,7 +72,7 @@ final class PulseEnvelopeTest {
             var envelope = new PulseEnvelope();
 
             envelope.startPulse();
-            envelope.advanceByElapsedTime(HALF_DURATION, DURATION);
+            envelope.advanceByElapsedTime(HALF_DURATION, DURATIONS);
 
             // The halfway position eases to the smoothstep midpoint, which happens to sit on the linear
             // line - so a lift caught mid-rise reads as a real position rather than as either end.
@@ -87,10 +88,30 @@ final class PulseEnvelopeTest {
 
             // A frame long enough for both halves of the cycle spends its remainder at the peak rather than
             // carrying it into the fall, so a stalled frame cannot swallow a whole pulse unseen.
-            envelope.advanceByElapsedTime(FULL_DURATION * 2f, DURATION);
+            envelope.advanceByElapsedTime(FULL_DURATION * 2f, DURATIONS);
 
             assertThat(envelope.getPulseFraction())
                 .isCloseTo(1f, within(TOLERANCE));
+        }
+
+        @Test
+        void advanceByElapsedTimeTimesTheFallApartFromTheRise() {
+            // What the pair buys a lift: it can strike quickly and release slowly. The rise here takes half
+            // a duration, so one half-step reaches the peak; the same step then spends only half of the
+            // longer fall, leaving the lift at the curve's midpoint rather than back at rest.
+            var envelope = new PulseEnvelope();
+            var durations = new TraverseDurations(HALF_DURATION, DURATION);
+
+            envelope.startPulse();
+            envelope.advanceByElapsedTime(HALF_DURATION, durations);
+
+            assertThat(envelope.getPulseFraction())
+                .isCloseTo(1f, within(TOLERANCE));
+
+            envelope.advanceByElapsedTime(HALF_DURATION, durations);
+
+            assertThat(envelope.getPulseFraction())
+                .isCloseTo(0.5f, within(TOLERANCE));
         }
 
         @Test
@@ -99,7 +120,7 @@ final class PulseEnvelopeTest {
             var envelope = new PulseEnvelope();
 
             envelope.startPulse();
-            envelope.advanceByElapsedTime(QUARTER_DURATION, SNAP_DURATION);
+            envelope.advanceByElapsedTime(QUARTER_DURATION, TraverseDurations.SNAP);
 
             assertThat(envelope.getPulseFraction())
                 .isCloseTo(1f, within(TOLERANCE));
@@ -144,7 +165,7 @@ final class PulseEnvelopeTest {
             var envelope = new PulseEnvelope();
 
             envelope.startPulse();
-            envelope.advanceByElapsedTime(FULL_DURATION, DURATION);
+            envelope.advanceByElapsedTime(FULL_DURATION, DURATIONS);
 
             assertThat(envelope.hasSettled())
                 .isFalse();
@@ -156,8 +177,8 @@ final class PulseEnvelopeTest {
             var envelope = new PulseEnvelope();
 
             envelope.startPulse();
-            envelope.advanceByElapsedTime(FULL_DURATION, DURATION);
-            envelope.advanceByElapsedTime(FULL_DURATION, DURATION);
+            envelope.advanceByElapsedTime(FULL_DURATION, DURATIONS);
+            envelope.advanceByElapsedTime(FULL_DURATION, DURATIONS);
 
             assertThat(envelope.hasSettled())
                 .isTrue();
@@ -173,7 +194,7 @@ final class PulseEnvelopeTest {
             var envelope = new PulseEnvelope();
 
             envelope.startPulse();
-            envelope.advanceByElapsedTime(QUARTER_DURATION, DURATION);
+            envelope.advanceByElapsedTime(QUARTER_DURATION, DURATIONS);
 
             // A quarter of the way up, the eased value trails the linear 0.25 - the slow, accelerating start
             // a lift shares with every other motion on the surface.
@@ -187,14 +208,14 @@ final class PulseEnvelopeTest {
             var envelope = new PulseEnvelope();
             
             envelope.startPulse();
-            envelope.advanceByElapsedTime(FULL_DURATION, DURATION);
-            envelope.advanceByElapsedTime(HALF_DURATION, DURATION);
+            envelope.advanceByElapsedTime(FULL_DURATION, DURATIONS);
+            envelope.advanceByElapsedTime(HALF_DURATION, DURATIONS);
 
             // Retriggered halfway down and stepped a quarter, the lift stands three quarters up: it climbed
             // on from where it was rather than dropping to nothing and rebuilding, which the player would
             // see as a dip in answer to a second click.
             envelope.startPulse();
-            envelope.advanceByElapsedTime(QUARTER_DURATION, DURATION);
+            envelope.advanceByElapsedTime(QUARTER_DURATION, DURATIONS);
 
             assertThat(envelope.getPulseFraction())
                 .isCloseTo(0.84375f, within(TOLERANCE));
@@ -208,7 +229,7 @@ final class PulseEnvelopeTest {
             
             envelope.startPulse();
             envelope.startPulse();
-            envelope.advanceByElapsedTime(FULL_DURATION, DURATION);
+            envelope.advanceByElapsedTime(FULL_DURATION, DURATIONS);
 
             assertThat(envelope.getPulseFraction())
                 .isCloseTo(1f, within(TOLERANCE));

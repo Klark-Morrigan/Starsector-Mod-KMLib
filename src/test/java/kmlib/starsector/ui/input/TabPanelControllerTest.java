@@ -1,5 +1,6 @@
 package kmlib.starsector.ui.input;
 
+import kmlib.animation.TraverseDurations;
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlAction;
@@ -75,6 +76,12 @@ final class TabPanelControllerTest {
     private static final float HALF_STEP_SECONDS = 0.5f;
     private static final float QUARTER_STEP_SECONDS = 0.25f;
     private static final float DURATION_SECONDS = 1f;
+
+    // The same pace each way, so a step reads as a fraction of one duration whichever direction the motion
+    // it charges is heading. Which way a motion travels at which pace is pinned where the pair is read -
+    // on the fade and the envelope - and the panel's own job is only to hand every motion the same pair.
+    private static final TraverseDurations DURATIONS =
+        TraverseDurations.createSymmetric(DURATION_SECONDS);
 
     @Nested
     class Constructor {
@@ -290,7 +297,7 @@ final class TabPanelControllerTest {
                 FIRST_TAB_INDEX,
                 NOTCH_NOT_HOVERED,
                 HALF_STEP_SECONDS,
-                DURATION_SECONDS);
+                DURATIONS);
 
             assertThat(hoverFractionAt(controller, FIRST_TAB_INDEX))
                 .isCloseTo(0.5f, within(TOLERANCE));
@@ -311,7 +318,7 @@ final class TabPanelControllerTest {
                 FIRST_TAB_INDEX,
                 NOTCH_NOT_HOVERED,
                 QUARTER_STEP_SECONDS,
-                DURATION_SECONDS);
+                DURATIONS);
 
             assertThat(hoverFractionAt(controller, FIRST_TAB_INDEX))
                 .isCloseTo(0.84375f, within(TOLERANCE));
@@ -357,7 +364,7 @@ final class TabPanelControllerTest {
                 FIRST_TAB_INDEX,
                 NOTCH_NOT_HOVERED,
                 FULL_STEP_SECONDS,
-                DURATION_SECONDS);
+                DURATIONS);
 
             assertThat(hoverFractionAt(controller, FIRST_TAB_INDEX))
                 .isCloseTo(1f, within(TOLERANCE));
@@ -374,13 +381,13 @@ final class TabPanelControllerTest {
                 FIRST_TAB_INDEX,
                 NOTCH_NOT_HOVERED,
                 FULL_STEP_SECONDS,
-                DURATION_SECONDS);
+                DURATIONS);
 
             controller.advanceInputMotionsForFrame(
                 SECOND_TAB_INDEX,
                 NOTCH_NOT_HOVERED,
                 FULL_STEP_SECONDS,
-                DURATION_SECONDS);
+                DURATIONS);
 
             assertThat(hoverFractionAt(controller, FIRST_TAB_INDEX))
                 .isCloseTo(0f, within(TOLERANCE));
@@ -397,7 +404,7 @@ final class TabPanelControllerTest {
                 FIRST_TAB_INDEX,
                 NOTCH_NOT_HOVERED,
                 FULL_STEP_SECONDS,
-                DURATION_SECONDS);
+                DURATIONS);
 
             assertThat(hoverFractionAt(controller, FIRST_TAB_INDEX))
                 .isCloseTo(0f, within(TOLERANCE));
@@ -411,7 +418,7 @@ final class TabPanelControllerTest {
                 NO_TAB_HOVERED,
                 NOTCH_HOVERED,
                 FULL_STEP_SECONDS,
-                DURATION_SECONDS);
+                DURATIONS);
 
             assertThat(controller.getNotchHoverFraction())
                 .isCloseTo(1f, within(TOLERANCE));
@@ -426,13 +433,13 @@ final class TabPanelControllerTest {
                 NO_TAB_HOVERED,
                 NOTCH_HOVERED,
                 FULL_STEP_SECONDS,
-                DURATION_SECONDS);
+                DURATIONS);
 
             controller.advanceInputMotionsForFrame(
                 NO_TAB_HOVERED,
                 NOTCH_NOT_HOVERED,
                 FULL_STEP_SECONDS,
-                DURATION_SECONDS);
+                DURATIONS);
 
             assertThat(controller.getNotchHoverFraction())
                 .isCloseTo(0f, within(TOLERANCE));
@@ -447,7 +454,7 @@ final class TabPanelControllerTest {
                 NO_TAB_HOVERED,
                 NOTCH_HOVERED,
                 FULL_STEP_SECONDS,
-                DURATION_SECONDS);
+                DURATIONS);
 
             assertThat(controller.getNotchHoverFraction())
                 .isCloseTo(1f, within(TOLERANCE));
@@ -468,13 +475,13 @@ final class TabPanelControllerTest {
                 NO_TAB_HOVERED,
                 NOTCH_NOT_HOVERED,
                 FULL_STEP_SECONDS,
-                DURATION_SECONDS);
+                DURATIONS);
 
             controller.advanceInputMotionsForFrame(
                 NO_TAB_HOVERED,
                 NOTCH_NOT_HOVERED,
                 FULL_STEP_SECONDS,
-                DURATION_SECONDS);
+                DURATIONS);
 
             assertThat(pulseFractionAt(controller, SECOND_TAB_INDEX))
                 .isCloseTo(0f, within(TOLERANCE));
@@ -494,7 +501,7 @@ final class TabPanelControllerTest {
                 INSIDE_FIRST_TAB_X,
                 ON_TAB_ROW_Y,
                 FULL_STEP_SECONDS,
-                DURATION_SECONDS);
+                DURATIONS);
 
             assertThat(hoverFractionAt(controller, FIRST_TAB_INDEX))
                 .isCloseTo(1f, within(TOLERANCE));
@@ -512,7 +519,7 @@ final class TabPanelControllerTest {
                 INSIDE_NOTCH_X,
                 INSIDE_NOTCH_Y,
                 FULL_STEP_SECONDS,
-                DURATION_SECONDS);
+                DURATIONS);
 
             assertThat(controller.getNotchHoverFraction())
                 .isCloseTo(1f, within(TOLERANCE));
@@ -531,7 +538,7 @@ final class TabPanelControllerTest {
                 OFF_PANEL_X,
                 OFF_PANEL_Y,
                 FULL_STEP_SECONDS,
-                DURATION_SECONDS);
+                DURATIONS);
 
             assertThat(hoverFractionAt(controller, FIRST_TAB_INDEX))
                 .isCloseTo(0f, within(TOLERANCE));
@@ -549,7 +556,7 @@ final class TabPanelControllerTest {
                 INSIDE_NOTCH_X,
                 INSIDE_NOTCH_Y,
                 FULL_STEP_SECONDS,
-                DURATION_SECONDS);
+                DURATIONS);
 
             assertThat(controller.getNotchHoverFraction())
                 .isCloseTo(0f, within(TOLERANCE));
@@ -568,7 +575,7 @@ final class TabPanelControllerTest {
                 FIRST_TAB_INDEX,
                 NOTCH_NOT_HOVERED,
                 HALF_STEP_SECONDS,
-                DURATION_SECONDS);
+                DURATIONS);
 
             controller.resetInputMotions();
 
@@ -586,7 +593,7 @@ final class TabPanelControllerTest {
                 NO_TAB_HOVERED,
                 NOTCH_HOVERED,
                 HALF_STEP_SECONDS,
-                DURATION_SECONDS);
+                DURATIONS);
 
             controller.resetInputMotions();
 
@@ -609,7 +616,7 @@ final class TabPanelControllerTest {
                 NO_TAB_HOVERED,
                 NOTCH_NOT_HOVERED,
                 HALF_STEP_SECONDS,
-                DURATION_SECONDS);
+                DURATIONS);
                 
             controller.resetInputMotions();
 
@@ -628,7 +635,7 @@ final class TabPanelControllerTest {
                 NO_TAB_HOVERED,
                 NOTCH_NOT_HOVERED,
                 HALF_STEP_SECONDS,
-                DURATION_SECONDS);
+                DURATIONS);
 
             controller.resetInputMotions();
 
@@ -702,7 +709,7 @@ final class TabPanelControllerTest {
             NO_TAB_HOVERED,
             NOTCH_NOT_HOVERED,
             FULL_STEP_SECONDS,
-            DURATION_SECONDS);
+            DURATIONS);
     }
 
     // A placement with no collapse handle - the bodyless panel's shape, and all the tab hit-test needs.

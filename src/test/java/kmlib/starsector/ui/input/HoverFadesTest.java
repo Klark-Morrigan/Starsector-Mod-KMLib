@@ -1,5 +1,7 @@
 package kmlib.starsector.ui.input;
 
+import kmlib.animation.TraverseDurations;
+
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -22,6 +24,11 @@ final class HoverFadesTest {
 
     private static final float HALF_STEP_SECONDS = 0.5f;
 
+    // The same pace each way: what a set does with the pair is hand it to each fade unchanged, so which
+    // direction a key is travelling is the lone fade's own case rather than the set's.
+    private static final TraverseDurations DURATIONS =
+        TraverseDurations.createSymmetric(DURATION_SECONDS);
+
     private static final Integer FIRST_KEY = 0;
     private static final Integer SECOND_KEY = 1;
     private static final Integer UNTOUCHED_KEY = 2;
@@ -34,7 +41,7 @@ final class HoverFadesTest {
         void resolveHoverFractionAtAnswersFullyOffForAKeyNothingHasHovered() {
 
             var fades = new HoverFades<Integer>();
-            fades.advanceTowardHoveredKey(FIRST_KEY, FULL_STEP_SECONDS, DURATION_SECONDS);
+            fades.advanceTowardHoveredKey(FIRST_KEY, FULL_STEP_SECONDS, DURATIONS);
 
             assertThat(fades.resolveHoverFractionAt(UNTOUCHED_KEY))
                 .isCloseTo(0f, within(TOLERANCE));
@@ -48,7 +55,7 @@ final class HoverFadesTest {
         void advanceTowardHoveredKeyMovesTheHoveredKeyOntoItsHoveredLook() {
 
             var fades = new HoverFades<Integer>();
-            fades.advanceTowardHoveredKey(FIRST_KEY, FULL_STEP_SECONDS, DURATION_SECONDS);
+            fades.advanceTowardHoveredKey(FIRST_KEY, FULL_STEP_SECONDS, DURATIONS);
 
             assertThat(fades.resolveHoverFractionAt(FIRST_KEY))
                 .isCloseTo(1f, within(TOLERANCE));
@@ -59,7 +66,7 @@ final class HoverFadesTest {
             // A key minted this frame is stepped this frame; standing still for one frame at zero would be
             // a visible stutter at the moment the pointer lands.
             var fades = new HoverFades<Integer>();
-            fades.advanceTowardHoveredKey(FIRST_KEY, HALF_STEP_SECONDS, DURATION_SECONDS);
+            fades.advanceTowardHoveredKey(FIRST_KEY, HALF_STEP_SECONDS, DURATIONS);
 
             assertThat(fades.resolveHoverFractionAt(FIRST_KEY))
                 .isCloseTo(0.5f, within(TOLERANCE));
@@ -70,8 +77,8 @@ final class HoverFadesTest {
             // The whole point of a keyed set: the pointer moving from one element to the next winds the
             // first one down without the caller naming it.
             var fades = new HoverFades<Integer>();
-            fades.advanceTowardHoveredKey(FIRST_KEY, FULL_STEP_SECONDS, DURATION_SECONDS);
-            fades.advanceTowardHoveredKey(SECOND_KEY, FULL_STEP_SECONDS, DURATION_SECONDS);
+            fades.advanceTowardHoveredKey(FIRST_KEY, FULL_STEP_SECONDS, DURATIONS);
+            fades.advanceTowardHoveredKey(SECOND_KEY, FULL_STEP_SECONDS, DURATIONS);
 
             assertThat(fades.resolveHoverFractionAt(FIRST_KEY))
                 .isCloseTo(0f, within(TOLERANCE));
@@ -83,8 +90,8 @@ final class HoverFadesTest {
         void advanceTowardHoveredKeyWindsEveryKeyDownWhenThePointerIsOnNone() {
 
             var fades = new HoverFades<Integer>();
-            fades.advanceTowardHoveredKey(FIRST_KEY, FULL_STEP_SECONDS, DURATION_SECONDS);
-            fades.advanceTowardHoveredKey(NO_KEY, FULL_STEP_SECONDS, DURATION_SECONDS);
+            fades.advanceTowardHoveredKey(FIRST_KEY, FULL_STEP_SECONDS, DURATIONS);
+            fades.advanceTowardHoveredKey(NO_KEY, FULL_STEP_SECONDS, DURATIONS);
 
             assertThat(fades.resolveHoverFractionAt(FIRST_KEY))
                 .isCloseTo(0f, within(TOLERANCE));
@@ -95,8 +102,8 @@ final class HoverFadesTest {
             // A key the pointer has left is still on screen while it falls, so it must read as part-way
             // rather than as either end.
             var fades = new HoverFades<Integer>();
-            fades.advanceTowardHoveredKey(FIRST_KEY, FULL_STEP_SECONDS, DURATION_SECONDS);
-            fades.advanceTowardHoveredKey(SECOND_KEY, HALF_STEP_SECONDS, DURATION_SECONDS);
+            fades.advanceTowardHoveredKey(FIRST_KEY, FULL_STEP_SECONDS, DURATIONS);
+            fades.advanceTowardHoveredKey(SECOND_KEY, HALF_STEP_SECONDS, DURATIONS);
 
             assertThat(fades.resolveHoverFractionAt(FIRST_KEY))
                 .isCloseTo(0.5f, within(TOLERANCE));
@@ -107,9 +114,9 @@ final class HoverFadesTest {
             // A settled fade is dropped from the set; asking for it must still answer, since a consumer
             // walking a row cannot know which of its keys are still held.
             var fades = new HoverFades<Integer>();
-            fades.advanceTowardHoveredKey(FIRST_KEY, FULL_STEP_SECONDS, DURATION_SECONDS);
-            fades.advanceTowardHoveredKey(NO_KEY, FULL_STEP_SECONDS, DURATION_SECONDS);
-            fades.advanceTowardHoveredKey(NO_KEY, FULL_STEP_SECONDS, DURATION_SECONDS);
+            fades.advanceTowardHoveredKey(FIRST_KEY, FULL_STEP_SECONDS, DURATIONS);
+            fades.advanceTowardHoveredKey(NO_KEY, FULL_STEP_SECONDS, DURATIONS);
+            fades.advanceTowardHoveredKey(NO_KEY, FULL_STEP_SECONDS, DURATIONS);
 
             assertThat(fades.resolveHoverFractionAt(FIRST_KEY))
                 .isCloseTo(0f, within(TOLERANCE));
@@ -120,9 +127,9 @@ final class HoverFadesTest {
             // The pruned key must be able to come back: a pointer returning to an element it left is the
             // ordinary case, not an edge one.
             var fades = new HoverFades<Integer>();
-            fades.advanceTowardHoveredKey(FIRST_KEY, FULL_STEP_SECONDS, DURATION_SECONDS);
-            fades.advanceTowardHoveredKey(NO_KEY, FULL_STEP_SECONDS, DURATION_SECONDS);
-            fades.advanceTowardHoveredKey(FIRST_KEY, FULL_STEP_SECONDS, DURATION_SECONDS);
+            fades.advanceTowardHoveredKey(FIRST_KEY, FULL_STEP_SECONDS, DURATIONS);
+            fades.advanceTowardHoveredKey(NO_KEY, FULL_STEP_SECONDS, DURATIONS);
+            fades.advanceTowardHoveredKey(FIRST_KEY, FULL_STEP_SECONDS, DURATIONS);
 
             assertThat(fades.resolveHoverFractionAt(FIRST_KEY))
                 .isCloseTo(1f, within(TOLERANCE));
@@ -136,7 +143,7 @@ final class HoverFadesTest {
         void resetFadesDropsAFadeLeftPartWayUp() {
 
             var fades = new HoverFades<Integer>();
-            fades.advanceTowardHoveredKey(FIRST_KEY, HALF_STEP_SECONDS, DURATION_SECONDS);
+            fades.advanceTowardHoveredKey(FIRST_KEY, HALF_STEP_SECONDS, DURATIONS);
             fades.resetFades();
 
             assertThat(fades.resolveHoverFractionAt(FIRST_KEY))

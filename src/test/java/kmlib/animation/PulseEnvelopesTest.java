@@ -19,6 +19,10 @@ final class PulseEnvelopesTest {
     private static final float FULL_DURATION = DURATION;
     private static final float HALF_DURATION = DURATION / 2f;
 
+    // The same pace each way: what a set does with the pair is hand it to each envelope unchanged, so the
+    // two halves being timed apart is the lone envelope's own case rather than the set's.
+    private static final TraverseDurations DURATIONS = TraverseDurations.createSymmetric(DURATION);
+
     private static final int FIRST_KEY = 0;
     private static final int SECOND_KEY = 1;
 
@@ -37,7 +41,7 @@ final class PulseEnvelopesTest {
 
             pulses.startPulseAt(FIRST_KEY);
             pulses.startPulseAt(SECOND_KEY);
-            pulses.advanceByElapsedTime(HALF_DURATION, DURATION);
+            pulses.advanceByElapsedTime(HALF_DURATION, DURATIONS);
 
             assertThat(pulses.resolvePulseFractionAt(FIRST_KEY))
                 .isCloseTo(0.5f, within(TOLERANCE));
@@ -51,8 +55,8 @@ final class PulseEnvelopesTest {
             var pulses = new PulseEnvelopes<Integer>();
 
             pulses.startPulseAt(FIRST_KEY);
-            pulses.advanceByElapsedTime(FULL_DURATION, DURATION);
-            pulses.advanceByElapsedTime(FULL_DURATION, DURATION);
+            pulses.advanceByElapsedTime(FULL_DURATION, DURATIONS);
+            pulses.advanceByElapsedTime(FULL_DURATION, DURATIONS);
 
             assertThat(pulses.resolvePulseFractionAt(FIRST_KEY))
                 .isCloseTo(0f, within(TOLERANCE));
@@ -65,11 +69,11 @@ final class PulseEnvelopesTest {
             var pulses = new PulseEnvelopes<Integer>();
 
             pulses.startPulseAt(FIRST_KEY);
-            pulses.advanceByElapsedTime(FULL_DURATION, DURATION);
-            pulses.advanceByElapsedTime(FULL_DURATION, DURATION);
+            pulses.advanceByElapsedTime(FULL_DURATION, DURATIONS);
+            pulses.advanceByElapsedTime(FULL_DURATION, DURATIONS);
 
             pulses.startPulseAt(FIRST_KEY);
-            pulses.advanceByElapsedTime(HALF_DURATION, DURATION);
+            pulses.advanceByElapsedTime(HALF_DURATION, DURATIONS);
 
             assertThat(pulses.resolvePulseFractionAt(FIRST_KEY))
                 .isCloseTo(0.5f, within(TOLERANCE));
@@ -79,7 +83,7 @@ final class PulseEnvelopesTest {
         void advanceByElapsedTimeOnAnEmptySetLeavesEveryKeyAtRest() {
             // A render loop pumps the set every frame whether anything is running or not.
             var pulses = new PulseEnvelopes<Integer>();
-            pulses.advanceByElapsedTime(FULL_DURATION, DURATION);
+            pulses.advanceByElapsedTime(FULL_DURATION, DURATIONS);
 
             assertThat(pulses.resolvePulseFractionAt(FIRST_KEY))
                 .isCloseTo(0f, within(TOLERANCE));
@@ -95,7 +99,7 @@ final class PulseEnvelopesTest {
             var pulses = new PulseEnvelopes<Integer>();
 
             pulses.startPulseAt(FIRST_KEY);
-            pulses.advanceByElapsedTime(HALF_DURATION, DURATION);
+            pulses.advanceByElapsedTime(HALF_DURATION, DURATIONS);
             pulses.resetPulses();
 
             assertThat(pulses.resolvePulseFractionAt(FIRST_KEY))
@@ -122,7 +126,7 @@ final class PulseEnvelopesTest {
             var pulses = new PulseEnvelopes<Integer>();
 
             pulses.startPulseAt(FIRST_KEY);
-            pulses.advanceByElapsedTime(FULL_DURATION, DURATION);
+            pulses.advanceByElapsedTime(FULL_DURATION, DURATIONS);
 
             assertThat(pulses.resolvePulseFractionAt(FIRST_KEY))
                 .isCloseTo(1f, within(TOLERANCE));
@@ -137,11 +141,11 @@ final class PulseEnvelopesTest {
             var pulses = new PulseEnvelopes<Integer>();
             
             pulses.startPulseAt(FIRST_KEY);
-            pulses.advanceByElapsedTime(FULL_DURATION, DURATION);
-            pulses.advanceByElapsedTime(HALF_DURATION, DURATION);
+            pulses.advanceByElapsedTime(FULL_DURATION, DURATIONS);
+            pulses.advanceByElapsedTime(HALF_DURATION, DURATIONS);
 
             pulses.startPulseAt(FIRST_KEY);
-            pulses.advanceByElapsedTime(DURATION / 4f, DURATION);
+            pulses.advanceByElapsedTime(DURATION / 4f, DURATIONS);
 
             assertThat(pulses.resolvePulseFractionAt(FIRST_KEY))
                 .isCloseTo(0.84375f, within(TOLERANCE));

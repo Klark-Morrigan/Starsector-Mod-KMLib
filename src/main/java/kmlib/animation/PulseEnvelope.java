@@ -39,15 +39,18 @@ public final class PulseEnvelope {
      * once it reaches the peak. A frame spent already settled leaves it unchanged, so a render loop can call
      * this every frame unconditionally.
      *
-     * <p>The duration is one traverse of the range, the same thing it means to every other animation stepped
-     * this way, so a whole in-and-out cycle takes two of them. Taking it per frame rather than storing it is
-     * what lets one caller pace every motion its surface makes from a single value.
+     * <p>The two halves of the cycle are timed separately, so a lift can snap to its peak and ease back down
+     * over longer - which is what makes it read as a strike rather than a swell. Taking the pair per frame
+     * rather than storing it is what lets one caller pace every motion its surface makes from a single value.
      *
-     * @param elapsedSeconds  real time since the last frame the consumer drew
-     * @param durationSeconds how long one traverse - the rise, or the fall - should take; zero or less snaps
+     * @param elapsedSeconds real time since the last frame the consumer drew
+     * @param durations      how long the rise and the fall each take; a non-positive one snaps that way
      */
-    public void advanceByElapsedTime(float elapsedSeconds, float durationSeconds) {
-        pulseProgress.advanceTowardTarget(resolveTargetProgress(), elapsedSeconds, durationSeconds);
+    public void advanceByElapsedTime(float elapsedSeconds, TraverseDurations durations) {
+        pulseProgress.advanceTowardTarget(
+            resolveTargetProgress(),
+            elapsedSeconds,
+            durations.resolveDurationSeconds(isRising));
 
         // The peak is a turning point rather than an end: reaching it is what sends the lift back down, so
         // one trigger produces the whole cycle and nothing outside has to time the fall. A frame long enough

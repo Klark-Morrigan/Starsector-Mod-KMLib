@@ -36,16 +36,16 @@ public final class PulseEnvelopes<K> {
     /**
      * Steps every running pulse by a frame's worth of time and drops the ones that have run out.
      *
-     * @param elapsedSeconds  real time since the last frame the consumer drew
-     * @param durationSeconds how long one traverse - a rise, or a fall - should take; zero or less snaps
+     * @param elapsedSeconds real time since the last frame the consumer drew
+     * @param durations      how long the rise and the fall each take; a non-positive one snaps that way
      */
-    public void advanceByElapsedTime(float elapsedSeconds, float durationSeconds) {
+    public void advanceByElapsedTime(float elapsedSeconds, TraverseDurations durations) {
 
         var entries = envelopesByKey.entrySet().iterator();
         while (entries.hasNext()) {
 
             var envelope = entries.next().getValue();
-            envelope.advanceByElapsedTime(elapsedSeconds, durationSeconds);
+            envelope.advanceByElapsedTime(elapsedSeconds, durations);
 
             if (envelope.hasSettled()) {
                 entries.remove();
