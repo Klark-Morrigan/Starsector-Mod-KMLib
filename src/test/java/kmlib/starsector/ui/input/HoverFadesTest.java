@@ -24,8 +24,8 @@ final class HoverFadesTest {
 
     private static final float HALF_STEP_SECONDS = 0.5f;
 
-    // The same pace each way: what a set does with the pair is hand it to each fade unchanged, so which
-    // direction a key is travelling is the lone fade's own case rather than the set's.
+    // The same pace each way, so a step reads as a fraction of one duration whichever way a key is
+    // travelling. The case that spends both paces in one frame names its own pair.
     private static final TraverseDurations DURATIONS =
         TraverseDurations.createSymmetric(DURATION_SECONDS);
 
@@ -105,6 +105,28 @@ final class HoverFadesTest {
             fades.advanceTowardHoveredKey(FIRST_KEY, FULL_STEP_SECONDS, DURATIONS);
             fades.advanceTowardHoveredKey(SECOND_KEY, HALF_STEP_SECONDS, DURATIONS);
 
+            assertThat(fades.resolveHoverFractionAt(FIRST_KEY))
+                .isCloseTo(0.5f, within(TOLERANCE));
+        }
+
+        @Test
+        void advanceTowardHoveredKeyChargesTheArrivingKeyTheRiseAndTheDepartedKeyTheFall() {
+            // The one frame where both paces are spent at once, which is what a row is for: the pointer
+            // moves from one element to the next, so the arriving key travels at the rise pace and the
+            // departing key at the fall pace in the same call. A set resolving the direction once - from
+            // whether any key is hovered at all - would charge both keys the same one, and only a pair far
+            // enough apart tells that apart from the correct reading.
+            var fades = new HoverFades<Integer>();
+            var durations = new TraverseDurations(HALF_STEP_SECONDS, DURATION_SECONDS);
+
+            fades.advanceTowardHoveredKey(FIRST_KEY, FULL_STEP_SECONDS, durations);
+            fades.advanceTowardHoveredKey(SECOND_KEY, HALF_STEP_SECONDS, durations);
+
+            // The arriving key spends a whole rise and lands on its hovered look; the departing key spends
+            // half of the longer fall and stands at the curve's midpoint. One shared duration would have
+            // left them at the same reading.
+            assertThat(fades.resolveHoverFractionAt(SECOND_KEY))
+                .isCloseTo(1f, within(TOLERANCE));
             assertThat(fades.resolveHoverFractionAt(FIRST_KEY))
                 .isCloseTo(0.5f, within(TOLERANCE));
         }

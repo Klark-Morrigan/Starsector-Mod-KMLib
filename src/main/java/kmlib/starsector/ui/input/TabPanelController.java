@@ -167,9 +167,9 @@ public final class TabPanelController {
      * @param placement      the laid-out tab panel this frame is drawing
      * @param elapsedSeconds real time since the last frame the host drew
      * @param durations      how long a traverse takes each way - onto a hovered look or up to a pulse's
-     *                       peak, and back off either; a non-positive one snaps that way. One pace for every
-     *                       motion the panel makes in answer to input, since two written beside each other
-     *                       is how one panel ends up with two rhythms
+     *                       peak, and back off either; a non-positive one snaps that way. One pair for every
+     *                       motion the panel makes in answer to input, since two pairs written beside each
+     *                       other is how one panel ends up with two rhythms
      */
     public void advanceInputMotions(
             TabPanelPlacement placement,
@@ -336,7 +336,7 @@ public final class TabPanelController {
      * and applies the docked gate the tabs answer to. Named for the frame rather than for the hover because
      * only some of what it steps answers to a pointer: the fades do, and the pulses do not - a click is an
      * event already seen, and its cycle runs on wherever the pointer went afterwards. They travel together
-     * so one frame's time is charged to every motion the panel makes, at one pace.
+     * so one frame's time is charged to every motion the panel makes, off one pair of paces.
      *
      * @param hoveredTabIndex the tab the pointer is on this frame, or null when it is on none
      * @param isNotchHovered  whether the pointer is on the collapse handle this frame

@@ -35,8 +35,8 @@ public final class HoverFade {
      * The pace an element's motion runs at when a consumer offers no control over it: onto the look it is
      * heading for at twice the speed it comes back off it.
      *
-     * <p>One pace for every motion a panel makes in answer to input, not the hover's alone: a fade onto a
-     * look and a lift over one are the same gesture answered at the same speed, and two paces written beside
+     * <p>One pair for every motion a panel makes in answer to input, not the hover's alone: a fade onto a
+     * look and a lift over one are the same gesture answered at the same speed, and two pairs written beside
      * each other is how one panel ends up with two rhythms. A consumer adding a motion takes this rather
      * than measuring its own. The advance takes the pair per frame, so this is the recommended default
      * rather than the holder's own pace.

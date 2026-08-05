@@ -19,8 +19,9 @@ final class PulseEnvelopesTest {
     private static final float FULL_DURATION = DURATION;
     private static final float HALF_DURATION = DURATION / 2f;
 
-    // The same pace each way: what a set does with the pair is hand it to each envelope unchanged, so the
-    // two halves being timed apart is the lone envelope's own case rather than the set's.
+    // The same pace each way, so a step reads as a fraction of one duration. A set hands the pair to each
+    // envelope unchanged and every envelope keeps its own direction, so the two halves being timed apart is
+    // the lone envelope's case rather than the set's.
     private static final TraverseDurations DURATIONS = TraverseDurations.createSymmetric(DURATION);
 
     private static final int FIRST_KEY = 0;
