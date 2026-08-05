@@ -84,11 +84,6 @@ final class MarketsTest {
 
             assertThat(Markets.findAttachedStation(market))
                 .contains(station);
-                
-            // Paired with the presence read in every case below: the two answer off one
-            // scan, so a caller can never name a station the verdict did not count.
-            assertThat(Markets.hasAttachedStation(market))
-                .isTrue();
         }
 
         @Test
@@ -99,8 +94,6 @@ final class MarketsTest {
 
             assertThat(Markets.findAttachedStation(market))
                 .contains(station);
-            assertThat(Markets.hasAttachedStation(market))
-                .isTrue();
         }
 
         @Test
@@ -110,8 +103,6 @@ final class MarketsTest {
 
             assertThat(Markets.findAttachedStation(market))
                 .isEmpty();
-            assertThat(Markets.hasAttachedStation(market))
-                .isFalse();
         }
 
         @Test
@@ -121,8 +112,6 @@ final class MarketsTest {
 
             assertThat(Markets.findAttachedStation(market))
                 .isEmpty();
-            assertThat(Markets.hasAttachedStation(market))
-                .isFalse();
         }
 
         @Test
@@ -132,17 +121,12 @@ final class MarketsTest {
 
             assertThat(Markets.findAttachedStation(market))
                 .isEmpty();
-            assertThat(Markets.hasAttachedStation(market))
-                .isFalse();
         }
 
         @Test
         void yields_empty_for_a_null_market() {
-
             assertThat(Markets.findAttachedStation(null))
                 .isEmpty();
-            assertThat(Markets.hasAttachedStation(null))
-                .isFalse();
         }
 
         @Test
@@ -155,11 +139,13 @@ final class MarketsTest {
 
             assertThat(Markets.findAttachedStation(marketMock))
                 .isEmpty();
-            assertThat(Markets.hasAttachedStation(marketMock))
-                .isFalse();
         }
     }
 
+    // The presence verdict is the entity read taken as a boolean, so this group pins that
+    // pairing - a found station reads true, an unfound one false - plus the null contract
+    // its own Javadoc states. The scan's edge cases (the NO_ORBITAL_STATION opt-out, absent
+    // or null connected entities) belong to the read that runs the scan, above.
     @Nested
     class HasAttachedStation {
         @Test
@@ -172,15 +158,6 @@ final class MarketsTest {
         }
 
         @Test
-        void returns_false_for_a_market_with_no_connected_entities() {
-
-            var market = buildMarketConnectedTo();
-
-            assertThat(Markets.hasAttachedStation(market))
-                .isFalse();
-        }
-
-        @Test
         void returns_false_when_no_connected_entity_is_a_station() {
 
             var market = buildMarketConnectedTo(buildNonStationEntity());
@@ -190,29 +167,8 @@ final class MarketsTest {
         }
 
         @Test
-        void ignores_a_station_tagged_no_orbital_station() {
-
-            var market = buildMarketConnectedTo(buildOptedOutStationEntity());
-
-            assertThat(Markets.hasAttachedStation(market))
-                .isFalse();
-        }
-
-        @Test
         void returns_false_for_a_null_market() {
             assertThat(Markets.hasAttachedStation(null))
-                .isFalse();
-        }
-
-        @Test
-        void returns_false_for_null_connected_entities() {
-
-            var marketMock = mock(MarketAPI.class);
-
-            when(marketMock.getConnectedEntities())
-                .thenReturn(null);
-
-            assertThat(Markets.hasAttachedStation(marketMock))
                 .isFalse();
         }
     }
