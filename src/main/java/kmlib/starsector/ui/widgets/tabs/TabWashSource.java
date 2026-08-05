@@ -39,7 +39,8 @@ public interface TabWashSource {
      * The lift the tab at {@code tabIndex} currently carries, composed from whatever is happening to it.
      *
      * @param tabIndex the tab's index in row order
-     * @return its resolved wash; {@link TabWash#NONE} when nothing is happening to it
+     * @return its resolved wash, of no strength when nothing is happening to it - which target a resting
+     *         wash names is immaterial, since a strength of zero blends nowhere
      */
     TabWash resolveWashAt(int tabIndex);
 }
