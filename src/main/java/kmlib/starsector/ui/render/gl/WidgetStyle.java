@@ -22,7 +22,8 @@ import java.awt.Color;
  * passes its accent for both.
  *
  * @param panelFill    the box backdrop, filled behind the chrome and controls
- * @param borderColour the colour the panel's outer frame strokes in, independent of the accent
+ * @param borderColour the colour the panel's outer frame strokes in - and with it the collapse handle's
+ *                     outer edges, which continue that frame past the box - independent of the accent
  * @param accent       the wash / label-chrome colour every control strokes with
  * @param brightAccent the brighter colour a checkbox ticks with
  * @param bodyFont     the atlas the body-control labels draw in

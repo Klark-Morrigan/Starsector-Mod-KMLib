@@ -46,13 +46,15 @@ public final class NotchRenderer {
     }
 
     /**
-     * Draws the notch: a panel-fill backdrop (accent-washed on hover), the three outer edges stroked one
-     * pixel thinner than the frame, and the fraction-oriented chevron in the style's handle shades, all
-     * faded by {@code opacity}. Must run with a current GL context, like any immediate-mode GL call.
+     * Draws the notch: a panel-fill backdrop (accent-washed on hover), the three outer edges stroked in
+     * the frame's colour one pixel thinner than the frame, and the fraction-oriented chevron in the
+     * style's handle shades, all faded by {@code opacity}. Must run with a current GL context, like any
+     * immediate-mode GL call.
      *
      * @param notch       the collapse-handle rect on the box's right border edge, in UI coordinates
-     * @param style       the panel look (the fill and accent the handle's backdrop and frame draw in,
-     *                    plus the {@link NotchColours} shades its chevron takes)
+     * @param style       the panel look (the fill the handle's backdrop takes, the frame colour its outer
+     *                    edges continue, the accent its hover wash lights with, plus the {@link
+     *                    NotchColours} shades its chevron takes)
      * @param borderWidth the frame's border thickness; the notch strokes one pixel thinner, floored at 1
      * @param state       how far the body is collapsed (orienting the chevron) and how far the handle has
      *                    lit under the pointer
@@ -76,12 +78,15 @@ public final class NotchRenderer {
             UiFill.renderQuad(notch, new UiElementPaint(style.accent(), hoverWashAlpha));
         }
 
+        // The outer edges are the panel's frame continued past its right edge, so they take the frame's
+        // own colour rather than the accent: a host whose frame diverges from its accent would otherwise
+        // grow a handle outlined in a colour the border it protrudes from never uses.
         var notchBorder = computeNotchBorder(borderWidth);
         strokeOuterEdges(
             notch,
             notchBorder,
             new UiElementPaint(
-                style.accent(),
+                style.borderColour(),
                 opacity));
 
         drawChevron(
