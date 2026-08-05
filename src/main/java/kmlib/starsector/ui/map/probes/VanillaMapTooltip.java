@@ -64,20 +64,14 @@ public final class VanillaMapTooltip {
     private static final String GET_FADER_METHOD = "getFader";
     private static final String IS_FADED_OUT_METHOD = "isFadedOut";
 
-    // How deep to search the current tab's subtree for a tooltip-showing host. The map's tooltip host
-    // sits several panels down inside the map tab; a bound keeps a pathological tree from a runaway walk.
-    private static final int MAX_SEARCH_DEPTH = 12;
+    // Says once per session that this read broke, rather than every frame. Per instance rather than
+    // per class, since each consumer holds its own probe and a shared flag would let one consumer's
+    // broken read silence the news of another's.
+    private final SessionWarning warning = new SessionWarning(LOG);
 
-    // Cap on the tooltips named in one diagnostic line, so a tree with many shown tooltips logs a
-    // readable sample rather than a wall of text.
-    private static final int MAX_TRACE_TOOLTIPS = 24;
-
-    // The last diagnostic line logged, so the probe narrates only when its outcome changes rather than
-    // every frame the map is up.
+    // The last diagnostic line logged, so the probe narrates only when its outcome changes rather
+    // than every frame the map is up.
     private String lastLoggedOutcome;
-
-    // One warning per session, so a build where the read breaks says so once rather than every frame.
-    private boolean hasWarnedThisSession;
 
     /**
      * @return whether the vanilla map screen is currently drawing a tooltip; {@code false} on any
@@ -92,7 +86,7 @@ public final class VanillaMapTooltip {
             // Build the diagnostic trace only when DEBUG is on, so a normal frame is a bare tree walk
             // with no per-node string work.
             var trace = LOG.isDebugEnabled() ? new WalkTrace(currentTab.getClass().getName()) : null;
-            var tooltip = findShownTooltip(currentTab, MAX_SEARCH_DEPTH, trace);
+            var tooltip = findShownTooltip(currentTab, ProbeLimits.MAX_SEARCH_DEPTH, trace);
             return reportOutcome(tooltip != null, null, trace);
         } catch (Throwable failure) {
             warnOnce(failure);
@@ -193,11 +187,7 @@ public final class VanillaMapTooltip {
     }
 
     private void warnOnce(Throwable failure) {
-        if (hasWarnedThisSession) {
-            return;
-        }
-        hasWarnedThisSession = true;
-        LOG.warn(
+        warning.warnOnce(
             "Could not read the vanilla map tooltip state by reflection; "
                 + "the overlay tooltip will not suppress for it. "
                 + "This is safe but means both may show over a star icon.",
@@ -220,7 +210,7 @@ public final class VanillaMapTooltip {
         // tree logs a readable sample. The visibility is what separates "found a tooltip but it was
         // faded out" from "found a shown one", the distinction a wrong suppression is diagnosed against.
         private void recordShownTooltip(Object tooltip, boolean visible) {
-            if (shownTooltips.size() < MAX_TRACE_TOOLTIPS) {
+            if (shownTooltips.size() < ProbeLimits.MAX_DESCRIBED_ITEMS) {
                 shownTooltips.add(tooltip.getClass().getName() + "(visible=" + visible + ")");
             }
         }

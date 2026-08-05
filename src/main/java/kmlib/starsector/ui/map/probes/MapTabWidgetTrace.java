@@ -11,7 +11,6 @@ import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
 
 /**
  * Describes the vanilla widgets the cursor is currently inside on the map screen, so an overlay that
@@ -57,15 +56,9 @@ public final class MapTabWidgetTrace {
 
     private static final Logger LOG = Global.getLogger(MapTabWidgetTrace.class);
 
-    // How deep to walk the tab's subtree. The chrome sits a few panels down inside the tab; a bound
-    // keeps a pathological tree from a runaway walk.
-    private static final int MAX_SEARCH_DEPTH = 12;
-
-    // Cap on the widgets named in one description, so a deeply nested hit stays readable.
-    private static final int MAX_TRACE_WIDGETS = 24;
-
-    // One warning per session, so a build where the reach breaks says so once rather than per frame.
-    private static boolean hasWarnedThisSession;
+    // Says once per session that this stopped working, since a caller handed null cannot tell a
+    // screen with no tab from a reach that broke.
+    private static final SessionWarning WARNING = new SessionWarning(LOG);
 
     private MapTabWidgetTrace() {
     }
@@ -165,13 +158,13 @@ public final class MapTabWidgetTrace {
             float cursorY,
             List<String> widgetsUnderCursor) {
 
-        if (component == null || depth > MAX_SEARCH_DEPTH) {
+        if (component == null || depth > ProbeLimits.MAX_SEARCH_DEPTH) {
             return;
         }
         if (component instanceof UIComponentAPI widget) {
             var box = DrawnWidgets.resolveBoxOf(widget);
             if (isWidgetUnderCursor(box, widget.getOpacity(), cursorX, cursorY)
-                    && widgetsUnderCursor.size() < MAX_TRACE_WIDGETS) {
+                    && widgetsUnderCursor.size() < ProbeLimits.MAX_DESCRIBED_ITEMS) {
 
                 widgetsUnderCursor.add(describeWidget(widget, box, depth, parent));
             }
@@ -208,7 +201,7 @@ public final class MapTabWidgetTrace {
     // positioned is named too, since a rule that skipped it is only checkable against a list that
     // says it was there to skip.
     private static List<String> describeDirectChildren(List<?> children) {
-        return describeUpToCap(children, MapTabWidgetTrace::describeDirectChild);
+        return ProbeDescriptions.describeUpToCap(children, MapTabWidgetTrace::describeDirectChild);
     }
 
     private static String describeDirectChild(Object child) {
@@ -244,24 +237,8 @@ public final class MapTabWidgetTrace {
         return surfaceArea == null
             ? "none"
             : "[" + describeBox(surfaceArea.box())
-                + " chrome=" + describeUpToCap(
+                + " chrome=" + ProbeDescriptions.describeUpToCap(
                     surfaceArea.chromeBoxes(), MapTabWidgetTrace::describeBox) + "]";
-    }
-
-    // Every list in the line is capped the same way, so one pathological tab cannot push the rest of
-    // the description past where a log reader will follow it.
-    private static <T> List<String> describeUpToCap(
-            List<T> items,
-            Function<? super T, String> describeItem) {
-
-        var describedItems = new ArrayList<String>();
-        for (var item : items) {
-            if (describedItems.size() >= MAX_TRACE_WIDGETS) {
-                break;
-            }
-            describedItems.add(describeItem.apply(item));
-        }
-        return describedItems;
     }
 
     // Rounded to whole units: these are read off a log by eye against the game's own pixel grid, and
@@ -274,14 +251,9 @@ public final class MapTabWidgetTrace {
     }
 
     // Warns on this library's own logger rather than the caller's, since a reach that broke is the
-    // library's news to report. WARN survives the default level, so unlike a DEBUG line it is
-    // actually seen.
+    // library's news to report.
     private static void warnOnce(Throwable failure) {
-        if (hasWarnedThisSession) {
-            return;
-        }
-        hasWarnedThisSession = true;
-        LOG.warn("Could not walk the map tab's widget tree by reflection; "
+        WARNING.warnOnce("Could not walk the map tab's widget tree by reflection; "
             + "the widget trace will describe nothing this session.", failure);
     }
 }

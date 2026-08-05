@@ -65,10 +65,10 @@ public final class MapSurfaceBounds {
     // would be a rule tuned to one build's pixel sizes rather than to the shape of the tree.
     private static final float MIN_SURFACE_SHARE_OF_TAB = 0.5f;
 
-    // One warning per session, so a build this rule no longer fits says so once rather than per
-    // frame. The first failure to warn wins; a session that hits both kinds has the second silenced,
-    // which costs nothing since either one means the same thing - the surface is unidentifiable.
-    private static boolean hasWarnedThisSession;
+    // Says once per session that this rule no longer fits. One warning covers both ways it can
+    // fail, so the first of them silences the other - which costs nothing since either one means
+    // the same thing, that the surface is unidentifiable.
+    private static final SessionWarning WARNING = new SessionWarning(LOG);
 
     // The last surface measured, and what it was measured against. Kept because a caller in a render
     // pass asks per frame while the answer moves only when the layout does, and re-reading it is not
@@ -294,20 +294,12 @@ public final class MapSurfaceBounds {
         return chromePiece.drawnChildBoxes();
     }
 
-    // WARN rather than DEBUG, and on this library's own logger: a rule that stopped matching the
-    // game is the library's news, and it has to survive the default log level to be the warning it
-    // was meant to be.
+    // On this library's own logger rather than the caller's: a rule that stopped matching the game
+    // is the library's news to report.
     private static void warnOnce(String reason, Throwable failure) {
-        if (hasWarnedThisSession) {
-            return;
-        }
-        hasWarnedThisSession = true;
-        var message = "Could not identify the map surface: " + reason
-            + ". Overlays that stand aside for the map's chrome cannot do so this session.";
-        if (failure == null) {
-            LOG.warn(message);
-        } else {
-            LOG.warn(message, failure);
-        }
+        WARNING.warnOnce(
+            "Could not identify the map surface: " + reason
+                + ". Overlays that stand aside for the map's chrome cannot do so this session.",
+            failure);
     }
 }

@@ -52,23 +52,15 @@ public final class MapIconOrderTrace {
     // obfuscation where the fields leading down to the widget do not.
     private static final String GET_ICONS_METHOD = "getIcons";
 
-    // How deep to descend from the map tab before giving up. The widget sits a few panels down; a
-    // bound keeps a pathological tree from a runaway walk.
-    private static final int MAX_SEARCH_DEPTH = 12;
-
-    // Cap on the icons named in one description, so a sector full of nebulae stays readable. The
-    // count is reported alongside, so a description that named fewer says so rather than reading
-    // as the whole map.
-    private static final int MAX_TRACE_ICONS = 24;
-
     // What a terrain-tagged icon reports when its entity is not a terrain after all, or holds no
     // plugin. Neither is expected; both are described rather than dropped, since an unexpected icon
     // still occupies a slot and moving every position after it is exactly what would mislead.
     private static final String UNTYPED_TERRAIN = "untyped";
     private static final String NO_PLUGIN = "none";
 
-    // One warning per session, so a build where the reach breaks says so once rather than per call.
-    private static boolean hasWarnedThisSession;
+    // Says once per session that this stopped working, since a caller handed null cannot tell a
+    // screen with no map from a reach that broke.
+    private static final SessionWarning WARNING = new SessionWarning(LOG);
 
     private MapIconOrderTrace() {
     }
@@ -112,24 +104,29 @@ public final class MapIconOrderTrace {
      * head of the order rather than the whole of it.
      *
      * @param terrainIcons the terrain icons in the order the widget holds them
-     * @return a one-line description, naming at most the first {@code MAX_TRACE_ICONS} of them
+     * @return a one-line description, naming at most the shared cap of them
      */
     static String describeTerrainIcons(List<TerrainIconReading> terrainIcons) {
-        var describedIcons = new ArrayList<String>();
-        for (var icon : terrainIcons) {
-            if (describedIcons.size() >= MAX_TRACE_ICONS) {
-                break;
-            }
-            describedIcons.add("[" + icon.position() + "] "
-                + icon.terrainType() + " " + icon.pluginTypeName());
-        }
-        return "terrainIcons=" + terrainIcons.size() + " order=" + describedIcons;
+        return "terrainIcons=" + terrainIcons.size()
+            + " order=" + ProbeDescriptions.describeUpToCap(
+                terrainIcons, MapIconOrderTrace::describeTerrainIcon);
     }
 
-    // Every terrain-tagged icon, keyed by where it sits among all of them. The position counts
-    // non-terrain icons too: they hold slots between the terrain ones, and a position that skipped
-    // them would not be the one a later reading could be compared against.
-    private static List<TerrainIconReading> readTerrainIcons(Map<?, ?> icons) {
+    /**
+     * Every terrain-tagged icon in a widget's icon map, in the order the map holds them.
+     *
+     * <p>Positions count the non-terrain icons too. Those hold slots between the terrain ones, so a
+     * position that skipped them would be an index into this list rather than into the widget's
+     * map - and the whole use of the reading is comparing one map open's positions against
+     * another's.
+     *
+     * <p>Reads the map without touching it, and keeps nothing that outlives the call: the map is
+     * the widget's own, and it rebuilds it whenever a map is opened.
+     *
+     * @param icons the widget's icon map, keyed by the entity each icon draws
+     * @return one reading per terrain-tagged key, in the map's own order
+     */
+    static List<TerrainIconReading> readTerrainIcons(Map<?, ?> icons) {
         var terrainIcons = new ArrayList<TerrainIconReading>();
         var position = 0;
         for (var iconKey : icons.keySet()) {
@@ -139,6 +136,10 @@ public final class MapIconOrderTrace {
             position++;
         }
         return terrainIcons;
+    }
+
+    private static String describeTerrainIcon(TerrainIconReading icon) {
+        return "[" + icon.position() + "] " + icon.terrainType() + " " + icon.pluginTypeName();
     }
 
     // The tag is what the widget itself sorts on, so an entity carrying it is reported whether or
@@ -158,7 +159,7 @@ public final class MapIconOrderTrace {
     // Depth-first from the tab, first component that answers the accessor wins. Only the map widget
     // defines it, so there is nothing else the walk could find first.
     private static Map<?, ?> resolveIconMapUnder(Object component, int depth) {
-        if (component == null || depth > MAX_SEARCH_DEPTH) {
+        if (component == null || depth > ProbeLimits.MAX_SEARCH_DEPTH) {
             return null;
         }
         var icons = readIconMapOf(component);
@@ -186,19 +187,13 @@ public final class MapIconOrderTrace {
         }
     }
 
-    // WARN rather than DEBUG, and on this library's own logger: a reach that stopped fitting the
-    // game is the library's news, and it has to survive the default log level to be seen at all.
+    // On this library's own logger, since a reach that stopped fitting the game is the library's
+    // news rather than the consuming mod's. Both failures word the same consequence, so both go
+    // through one warning and the first of them silences the rest.
     private static void warnOnce(String reason, Throwable failure) {
-        if (hasWarnedThisSession) {
-            return;
-        }
-        hasWarnedThisSession = true;
-        var message = "Could not read the map widget's icon order: " + reason
-            + ". Nothing will be described about map layering this session.";
-        if (failure == null) {
-            LOG.warn(message);
-        } else {
-            LOG.warn(message, failure);
-        }
+        WARNING.warnOnce(
+            "Could not read the map widget's icon order: " + reason
+                + ". Nothing will be described about map layering this session.",
+            failure);
     }
 }

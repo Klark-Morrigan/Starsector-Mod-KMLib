@@ -46,9 +46,9 @@ public final class ShownMapTab {
     // package-private read below is the seam a test drives instead.
     private static final IntelScreenView INTEL_SCREEN = new VanillaIntelScreenView();
 
-    // One warning per session, so a build this recognition no longer fits says so once rather than
-    // on every frame a caller asks.
-    private static boolean hasWarnedThisSession;
+    // Says once per session that this recognition no longer fits, rather than on every frame a
+    // caller asks.
+    private static final SessionWarning WARNING = new SessionWarning(LOG);
 
     private ShownMapTab() {
     }
@@ -98,7 +98,7 @@ public final class ShownMapTab {
     private static void warnOnceIfTheMapScreenIsUpAnyway() {
         // Tested before anything is read, so a session that has already said this costs a caller in
         // a render pass one field read per frame rather than a walk into the campaign UI.
-        if (hasWarnedThisSession) {
+        if (WARNING.hasWarnedThisSession()) {
             return;
         }
         var sector = Global.getSector();
@@ -106,8 +106,8 @@ public final class ShownMapTab {
         if (campaignUi == null || campaignUi.getCurrentCoreTab() != CoreUITabId.MAP) {
             return;
         }
-        hasWarnedThisSession = true;
-        LOG.warn("The map screen is up but the main core UI's current tab is not a SectorMapAPI; "
-            + "rules about map-tab layout have no tab to root at while that is so.");
+        WARNING.warnOnce(
+            "The map screen is up but the main core UI's current tab is not a SectorMapAPI; "
+                + "rules about map-tab layout have no tab to root at while that is so.");
     }
 }
