@@ -49,7 +49,7 @@ public final class CampaignMapView {
      *         is showing, whichever way the Starscape filter is set
      */
     public static boolean isSectorMapShowing() {
-        return resolveSectorMapState() != SectorMapState.NOT_SHOWING;
+        return resolveSectorMapState().isShowing();
     }
 
     /**
@@ -105,11 +105,21 @@ public final class CampaignMapView {
             + resolveSectorMapState();
     }
 
-    // Classifies the three signals the public gates decide from - active tab, map sub-view, and
-    // the Starscape filter - in one pass, so the gates differ only in which state they accept
-    // and cannot disagree about whether the map is showing. Resolving them once per gate is what
-    // would let the tab and sub-view halves drift as the reads are edited.
-    private static SectorMapState resolveSectorMapState() {
+    /**
+     * Classifies the three signals the reads above decide from - active tab, map sub-view, and the
+     * Starscape filter - in one pass, so those reads differ only in which state they accept and
+     * cannot disagree about whether the map is showing. Resolving the signals once per read is what
+     * would let the tab and sub-view halves drift as the reads are edited.
+     *
+     * <p>Published alongside the reads it backs, for a caller that has to hold the answer rather
+     * than ask a question of it - one enumerated value carries the whole of the map's state, where
+     * keeping the same answer as booleans would take three of them and admit combinations no map is
+     * ever in.
+     *
+     * @return the state the live signals classify to, or {@link SectorMapState#NOT_SHOWING} when
+     *         any of them cannot be read
+     */
+    public static SectorMapState resolveSectorMapState() {
         var sector = Global.getSector();
         if (sector == null) {
             return SectorMapState.NOT_SHOWING;
@@ -167,40 +177,5 @@ public final class CampaignMapView {
             return "null";
         }
         return location.isHyperspace() ? "hyperspace" : location.getId();
-    }
-
-    /**
-     * One frame's worth of map state: whether the sector map is the view on screen and, when it
-     * is, how its Starscape filter is set. One enumerated answer rather than a flag per signal
-     * because the signals are not independent axes - a map that is not showing has no filter
-     * state at all - so a flag pair could hold combinations that mean nothing while this cannot.
-     */
-    private enum SectorMapState {
-
-        /**
-         * The sector map is not the view on screen: another core tab, a star-system sub-view, or
-         * UI data this port cannot read at all - which fails closed to the same answer, since an
-         * unreadable sub-view is no evidence the sector map is up.
-         */
-        NOT_SHOWING,
-
-        /**
-         * The sector map is showing but its filter object is missing, so the mode is unknown.
-         * Neither Starscape on nor off, which is why it is a state and not folded into either:
-         * both mode reads decline it instead of one answering true by default.
-         *
-         * <p>The game field-initialises that object and exposes no setter, so this arises only
-         * from save data written before the field existed being rehydrated without it - which is
-         * also why no test drives this state: reaching it means nulling a private field the game
-         * never nulls itself. The guard earns its place regardless, since the alternative is
-         * dereferencing that null on the frame an old save first opens its map.
-         */
-        SHOWING_WITH_UNREADABLE_FILTER,
-
-        /** The sector map is showing and painting the stylised starfield. */
-        SHOWING_IN_STARSCAPE_MODE,
-
-        /** The sector map is showing and painting the ordinary schematic. */
-        SHOWING_WITH_STARSCAPE_OFF
     }
 }
