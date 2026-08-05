@@ -45,19 +45,27 @@ final class ClaimContestFixture implements AutoCloseable {
     private final StarSystemAPI systemMock;
 
     ClaimContestFixture() {
+
         systemMemoryMock = mock(MemoryAPI.class);
         systemMock = mock(StarSystemAPI.class);
-        when(systemMock.getMemoryWithoutUpdate()).thenReturn(systemMemoryMock);
+
+        when(systemMock.getMemoryWithoutUpdate())
+            .thenReturn(systemMemoryMock);
 
         economyMock = mock(EconomyAPI.class);
         var sectorMock = mock(SectorAPI.class);
-        when(sectorMock.getEconomy()).thenReturn(economyMock);
+
+        when(sectorMock.getEconomy())
+            .thenReturn(economyMock);
 
         // Misc's static initialiser reads Global.getSettings(), so the no-op proxy is installed
         // before Global is stood in for and before any read loads the class.
         StarsectorSettingsFake.installSettings();
+
         globalMock = mockStatic(Global.class);
-        globalMock.when(Global::getSector).thenReturn(sectorMock);
+        globalMock
+            .when(Global::getSector)
+            .thenReturn(sectorMock);
     }
 
     /** The system every read in a suite is posed against. */
@@ -67,17 +75,28 @@ final class ClaimContestFixture implements AutoCloseable {
 
     /** Hands the economy the markets present in the system, in the order it will list them. */
     void placeMarketsInSystem(MarketAPI... markets) {
-        when(economyMock.getMarkets(systemMock)).thenReturn(List.of(markets));
+        when(economyMock.getMarkets(systemMock))
+            .thenReturn(List.of(markets));
     }
 
     /** Sets the system's claiming-faction memory flag, the override that settles a claim. */
     void overrideClaimingFaction(String factionId) {
-        when(systemMemoryMock.getString(MemFlags.CLAIMING_FACTION)).thenReturn(factionId);
+        when(systemMemoryMock.getString(MemFlags.CLAIMING_FACTION))
+            .thenReturn(factionId);
     }
 
     /** Raises a market's military flag, the condition behind vanilla's flat garrison bonus. */
     void markMarketAsMilitary(MarketAPI market) {
         when(market.getMemoryWithoutUpdate().getBoolean(MemFlags.MARKET_MILITARY))
+            .thenReturn(true);
+    }
+
+    /**
+     * Makes a faction the player's own - the one presence the mechanic scores but never lets
+     * claim, whatever its configured territoriality says.
+     */
+    void markFactionAsPlayer(FactionAPI faction) {
+        when(faction.isPlayerFaction())
             .thenReturn(true);
     }
 
@@ -87,29 +106,43 @@ final class ClaimContestFixture implements AutoCloseable {
     }
 
     /**
-     * A market the player cannot see. It is present for its faction's sibling count but is
-     * never scored on its own account, which is the asymmetry worth stating at a call site.
+     * A market the economy does not surface publicly - a base, not an undiscovered colony;
+     * hiddenness and the entity's discovery are independent, and the mechanic reads only this.
+     * It is present for its faction's sibling count but is never scored on its own account,
+     * which is the asymmetry worth stating at a call site.
      */
     MarketAPI buildHiddenMarket(FactionAPI faction, int size) {
         return createMarket(faction, size, true);
     }
 
     FactionAPI buildFaction(String id, boolean isTerritorial) {
+
         var factionMock = mock(FactionAPI.class);
-        when(factionMock.getId()).thenReturn(id);
+
+        when(factionMock.getId())
+            .thenReturn(id);
         when(factionMock.getCustom())
             .thenReturn(FactionCustomFixture.buildPunitiveExpeditionCustom(isTerritorial));
+
         return factionMock;
     }
 
     private MarketAPI createMarket(FactionAPI faction, int size, boolean isHidden) {
+
         var marketMock = mock(MarketAPI.class);
-        when(marketMock.getFaction()).thenReturn(faction);
-        when(marketMock.getSize()).thenReturn(size);
-        when(marketMock.isHidden()).thenReturn(isHidden);
+
+        when(marketMock.getFaction())
+            .thenReturn(faction);
+        when(marketMock.getSize())
+            .thenReturn(size);
+        when(marketMock.isHidden())
+            .thenReturn(isHidden);
+
         // Every market carries memory, so the military read runs for real against it and a
         // market is a garrison only once its flag is actually raised.
-        when(marketMock.getMemoryWithoutUpdate()).thenReturn(mock(MemoryAPI.class));
+        when(marketMock.getMemoryWithoutUpdate())
+            .thenReturn(mock(MemoryAPI.class));
+
         return marketMock;
     }
 

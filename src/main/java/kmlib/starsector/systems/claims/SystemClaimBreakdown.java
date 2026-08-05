@@ -21,7 +21,10 @@ import java.util.List;
  *                          nobody claims it
  * @param scores            every faction whose presence can be scored, ordered by score
  *                          descending. Ties keep economy iteration order, which is the order
- *                          the mechanic itself settles a tied contest on.
+ *                          the mechanic itself settles a tied contest on. A standing is not a
+ *                          candidacy: a faction barred from claiming is scored like any other
+ *                          and marked non-territorial, so a caller reading this as a shortlist
+ *                          of contenders has to filter on that flag.
  */
 public record SystemClaimBreakdown(
         String overrideFactionId,
