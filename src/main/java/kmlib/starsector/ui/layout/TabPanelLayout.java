@@ -5,6 +5,7 @@ import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.widgets.BoxBorder;
+import kmlib.starsector.ui.widgets.PanelPlacement;
 import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
 import kmlib.starsector.ui.widgets.tabs.TabPanelViewState;
 import kmlib.starsector.ui.widgets.tabs.TabStyle;
@@ -12,20 +13,24 @@ import kmlib.starsector.ui.widgets.tabs.TabStyle;
 import java.util.List;
 
 /**
- * Composes a tab panel: a tabs-control header over the shared body composition, wrapped in one bordered
- * box. It REUSES {@link PanelLayout}'s framing - the same {@link PanelLayout#computeContentOrigin} anchor
- * and {@link PanelLayout#framePlacement} that frame a plain panel - passing the framed body rectangle and
- * the header band height, so the one border wraps the header band while the tab row never drives the box
- * width: a tab row wider than the body overhangs the frame rather than stretching it. Because {@code
- * framePlacement} frames a body rectangle, not a bordered box, reusing it frames one border, not two. It
+ * Composes a tab panel: a tabs-control header standing ON a bordered body box, the way a tab strip sits on
+ * the panel it selects rather than inside it. The row hangs from the panel's own anchor with no border
+ * above or beside it, and the framed body starts where the row ends, so nothing of the body reaches behind
+ * the tabs - the row is opaque chrome in its own right. It REUSES {@link PanelLayout}'s framing - the same
+ * {@link PanelLayout#computeContentOrigin} anchor and {@link PanelLayout#framePlacement} that frame a plain
+ * panel - so the body beneath the row is framed exactly as a headerless panel is, and the tab row never
+ * drives the box width: a tab row wider than the body overhangs the frame rather than stretching it. It
  * also reuses {@link CappedStripLayout#layoutBodyStrip} for the body and
- * adds {@link TabsControlLayout#layoutHeaderControl} for the flush header, so the only thing unique here
+ * adds {@link TabsControlLayout#layoutHeaderControl} for the header, so the only thing unique here
  * is where the header sits. How tall that header stands is an injected {@link TabStyle} rather than a fixed
  * constant, so two panels composed through this one path can size their tab rows to their own surroundings.
  *
- * <p>The header is laid flush at the interior top (no body inset) through {@link
- * TabsControlLayout#layoutHeaderControl}, so a header tab measures, draws, and hit-tests through the same
- * tabs-row geometry a body {@link ControlSpec.Tabs} control uses. UI
+ * <p>A tab whose body is empty is its tab row and nothing else: no frame is laid out beneath it, so the
+ * panel claims no footprint under a row it does not fill, and the row alone is what the passes draw and
+ * hit-test.
+ *
+ * <p>The header is laid through {@link TabsControlLayout#layoutHeaderControl}, so a header tab measures,
+ * draws, and hit-tests through the same tabs-row geometry a body {@link ControlSpec.Tabs} control uses. UI
  * coordinates throughout (origin bottom-left, y grows up); text snapping runs through the injected
  * {@link LineWidthMeasurer}, so the layout is a pure computation. The panel hangs from the screen's
  * top-left by its paddings and caps its height to a bottom margin; that anchoring is the caller's to
@@ -50,16 +55,20 @@ public final class TabPanelLayout {
     public static final float NOTCH_HEIGHT = 24f;
     public static final float NOTCH_CENTRE_OFFSET = 0f;
 
+    // The fraction a panel resting fully expanded reports. Anything above it means the fold is under way,
+    // which is what decides whether the tab row is being wiped with the body.
+    private static final float NO_COLLAPSE_FRACTION = 0f;
+
     private TabPanelLayout() {
     }
 
     /**
      * Lays the tab panel out for the given screen height, padding, border, tab style, tabs, and body
-     * controls: a header band flush under the top border carrying the tabs control at the style's height,
+     * controls: a header band hung from the panel's anchor carrying the tabs control at the style's height,
      * and the body strip framed beneath it (capped to the bottom margin). The returned body's
-     * {@link PanelPlacement#box()} sizes its width to the body alone and its height to the header band plus
-     * the body, so the one border wraps the header band while a tab row wider than the body overhangs it.
-     * An empty {@code bodyControls} leaves the bordered tab row with no body beneath, and, with nothing to
+     * {@link PanelPlacement#box()} frames the body alone - its width the body's and its height the body's -
+     * so the frame sits under the tab row rather than around it, and a tab row wider than the body overhangs
+     * it. An empty {@code bodyControls} leaves the tab row standing alone: no box, and, with nothing to
      * collapse, no notch either - the placement's collapse handle is absent.
      *
      * @param screenHeight the UI-coordinate screen height, giving the top edge to hang from
@@ -75,9 +84,10 @@ public final class TabPanelLayout {
      * @param bodyControls the active tab's body controls, top to bottom (empty for no body)
      * @param measurer     measures each label's rendered width for text snapping
      * @param viewState    how far the panel is scrolled and folded
-     * @return the laid-out tabs header, the body placement carrying the whole-footprint box, the border it
-     *         was framed around, and the collapse-handle notch on the box's right border edge - null when
-     *         {@code bodyControls} is empty, since a bodyless panel has nothing to collapse
+     * @return the laid-out tabs header, how much of that header the fold leaves on screen, the body
+     *         placement carrying the framed box, the border it was framed around, and the collapse-handle
+     *         notch on the box's right border edge - null when {@code bodyControls} is empty, since a
+     *         bodyless panel has nothing to collapse
      */
     public static TabPanelPlacement computePlacement(
             float screenHeight,
@@ -89,28 +99,31 @@ public final class TabPanelLayout {
             LineWidthMeasurer measurer,
             TabPanelViewState viewState) {
 
-        // The one band height every step below frames against - the header's own bounds, the body's top,
-        // the vertical budget, and the box - so a styled band cannot move one of them and not the rest.
+        // The one band height every step below frames against - the header's own bounds, the body box's
+        // top, and the vertical budget - so a styled band cannot move one of them and not the rest.
         var headerBandHeight = tabStyle.headerBandHeight();
 
-        // The box hangs from the screen's top-left, same anchor a plain panel uses; the header sits flush
-        // under the top border (or flush with the top edge when it is dropped) and the body hangs beneath
-        // the header band.
-        var origin = PanelLayout.computeContentOrigin(screenHeight, padding, border);
-
-        // Header: the tabs control laid flush at the content top, reusing the same tab measurement and
-        // segment split a body tabs row uses so it is not bespoke tab-strip framing.
+        // Header: the tabs control hung from the panel's own anchor, taking no border inset above or beside
+        // it - the row is the panel's chrome rather than content inside its frame, so the frame starts below
+        // it. Reuses the same tab measurement and segment split a body tabs row uses, so it is not bespoke
+        // tab-strip framing.
         var tabsHeader = TabsControlLayout.layoutHeaderControl(
             tabsSpec,
-            origin.contentX(),
-            origin.contentTopY(),
+            padding.left(),
+            screenHeight - padding.top(),
             tabStyle,
             measurer);
 
-        var bodyTopY = origin.contentTopY() - headerBandHeight;
+        // The body is framed as a plain headerless panel would be against a screen ending where the tab row
+        // does: its box hangs from the row's bottom edge, and every inset a plain panel spends is spent
+        // below the row rather than around it.
+        var origin = PanelLayout.computeContentOrigin(
+            screenHeight - headerBandHeight,
+            padding,
+            border);
 
-        // Body: the same shared composition a plain panel frames, hung beneath the header band and capped
-        // so the box (header included) clears the bottom margin - the header height counted against the
+        // Body: the same shared composition a plain panel frames, hung beneath the header band and capped so
+        // the row and the box together clear the bottom margin - the band height counted against the
         // vertical budget the same way a plain panel counts only its own border. The vertical budget spends
         // the border only on the edges that are stroked, so an open top or bottom returns that width to the
         // body.
@@ -123,7 +136,7 @@ public final class TabPanelLayout {
 
         var bodyStrip = CappedStripLayout.layoutBodyStrip(
             origin.contentX(),
-            bodyTopY,
+            origin.contentTopY(),
             maxBodyHeight,
             bodyControls,
             measurer,
@@ -140,29 +153,79 @@ public final class TabPanelLayout {
             fullBody.width() * (1f - viewState.collapseFraction()),
             fullBody.height());
 
+        var isBodyless = bodyControls.isEmpty();
+
         // Reuse the plain panel's framing, sizing the box to the interpolated body's width so the tab row
-        // never widens it and a collapse narrows the box with the interior, and adding the header band so
-        // the one border wraps it. A tab row wider than the body overhangs the frame. The body placement
-        // carries that box; the tab panel pairs it with the header and the collapse-handle notch.
-        var bodyPlacement = PanelLayout.framePlacement(
-            padding.left(),
-            origin.boxTopY(),
-            border,
-            framedBody,
-            headerBandHeight,
-            bodyStrip);
+        // never widens it and a collapse narrows the box with the interior. A tab row wider than the body
+        // overhangs the frame. The body placement carries that box; the tab panel pairs it with the header
+        // and the collapse-handle notch.
+        var bodyPlacement = isBodyless
+            ? buildBodylessPlacement(padding.left(), origin.boxTopY())
+            : PanelLayout.framePlacement(
+                padding.left(),
+                origin.boxTopY(),
+                border,
+                framedBody,
+                bodyStrip);
 
         // No body controls means nothing to collapse, so the panel is not collapsible and exposes no
-        // handle: the notch is left absent. An empty-body panel is just its bordered tab row, and a
-        // collapse handle protruding off it would fold a body that is not there.
-        var notch = bodyControls.isEmpty()
+        // handle: the notch is left absent. An empty-body panel is just its tab row, and a collapse handle
+        // protruding off it would fold a body that is not there.
+        var notch = isBodyless
             ? null
             : computeNotchRect(bodyPlacement.box());
 
         // The border travels on the placement so the pass that strokes it uses the width this layout
         // just spent on insets, rather than reading the same source a second time and hoping the two
         // agree.
-        return new TabPanelPlacement(tabsHeader, bodyPlacement, border, notch);
+        return new TabPanelPlacement(
+            tabsHeader,
+            computeDrawnHeaderBand(
+                tabsHeader.bounds(),
+                bodyPlacement.box(),
+                // A panel with no body never folds - there is nothing to fold and no handle to ask for it -
+                // so a fraction another tab's body left standing in the animation cannot wipe this row.
+                !isBodyless && viewState.collapseFraction() > NO_COLLAPSE_FRACTION),
+            bodyPlacement,
+            border,
+            notch);
+    }
+
+    // What the fold leaves of the tab row on screen. While the body is folding, the row is wiped with it -
+    // clipped to the box's own span, so the panel narrows as one piece down to the docked rail; at rest the
+    // whole row stands, so a row wider than its body overhangs the frame rather than being cut off at it.
+    // One rect for both passes: the row is drawn to it and the pointer is tested against it, so a panel can
+    // never claim a strip of screen where its tabs are no longer painted.
+    private static Rectangle computeDrawnHeaderBand(
+            Rectangle headerBand,
+            Rectangle box,
+            boolean isFolding) {
+
+        if (!isFolding) {
+            return headerBand;
+        }
+        return headerBand.intersectWith(new Rectangle(
+            box.x(),
+            headerBand.y(),
+            box.width(),
+            headerBand.height()));
+    }
+
+    // The body placement of a panel that has no body: an empty box at the anchor, carrying no controls. A
+    // tab row with nothing beneath it is the whole panel, so there is no frame to stroke and no footprint to
+    // claim under the row - framing a zero body would instead leave a border-sized square hanging off the
+    // row's left end, drawn and clickable with nothing in it.
+    private static PanelPlacement buildBodylessPlacement(int leftX, float boxTopY) {
+
+        var emptyBox = new Rectangle(leftX, boxTopY, 0f, 0f);
+
+        return new PanelPlacement(
+            emptyBox,
+            emptyBox,
+            List.of(),
+            emptyBox,
+            0f,
+            0f);
     }
 
     // The collapse-handle notch: a rect protruding past the box's right border edge, vertically centred on

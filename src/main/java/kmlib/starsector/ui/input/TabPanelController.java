@@ -214,6 +214,11 @@ public final class TabPanelController {
      * frame against the drawn placement by {@link #advanceInputMotions}, so nothing here has to be latched
      * for the render pass.
      *
+     * <p>Whatever is left over the drawn tab row is swallowed there, exactly as the body swallows what lands
+     * on its own chrome. The row is drawn outside the body's box, so without this the surface behind the
+     * panel would go on reading a pointer the player has parked on the tabs - and a tab row with no body
+     * under it would block nothing at all.
+     *
      * @param event     the pointer event
      * @param placement the laid-out tab panel the renderer drew this frame
      */
@@ -236,6 +241,13 @@ public final class TabPanelController {
             return;
         }
         bodyController.handlePointer(event, placement.body());
+
+        // Last, so an in-progress scrollbar drag - which the body owns wherever the pointer has wandered,
+        // the tab row included - keeps the event it is following.
+        if (!event.isConsumed()
+                && placement.drawnHeaderBand().containsPoint(event.getX(), event.getY())) {
+            event.consume();
+        }
     }
 
     /**

@@ -14,10 +14,9 @@ import java.util.List;
  * a host reaches the frame through {@link #box()} and the controls through {@link #bodyControls()}. An
  * empty {@code bodyControls} and a zero-size {@code body} reserve no dead click zone.
  *
- * <p>A {@link kmlib.starsector.ui.widgets.tabs.TabPanelPlacement} builds on this: it overlays a tabs
- * header on the top band of the same
- * box, so its nested {@code box} spans the whole footprint (header band included) while its {@code body}
- * is the strip region beneath the header. The record stays neutral to that - it only carries rectangles.
+ * <p>A {@link kmlib.starsector.ui.widgets.tabs.TabPanelPlacement} builds on this: it stands a tabs header
+ * on top of the same box, so this box frames the body the row selects and the row's own footprint is the
+ * tab panel's to carry. The record stays neutral to that - it only carries rectangles.
  *
  * <p>When the body is capped (its natural height would run past a bottom limit), its one scrolling
  * control gives up the difference and scrolls within {@link #flexViewport()}: a renderer clips that

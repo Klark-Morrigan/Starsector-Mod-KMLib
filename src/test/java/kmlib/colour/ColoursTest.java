@@ -25,8 +25,10 @@ final class ColoursTest {
 
     @Nested
     class GetGlComponents {
+
         @Test
         void normalizes_channels_to_unit_range() {
+
             var rgba = Colours.getGlComponents(Color.YELLOW, 1f);
 
             assertThat(rgba[0]).isCloseTo(1f, within(1e-6f));
@@ -37,6 +39,7 @@ final class ColoursTest {
 
         @Test
         void scales_only_alpha_by_the_multiplier() {
+
             var rgba = Colours.getGlComponents(Color.YELLOW, 0.5f);
 
             assertThat(rgba[0]).isCloseTo(1f, within(1e-6f));
@@ -47,6 +50,7 @@ final class ColoursTest {
 
         @Test
         void folds_the_colours_own_alpha_into_the_multiplier() {
+
             var rgba = Colours.getGlComponents(new Color(0, 0, 0, 128), 0.5f);
 
             // 128/255 * 0.5
@@ -58,17 +62,20 @@ final class ColoursTest {
     class ScaleAlpha {
         @Test
         void keeps_the_rgb_channels_and_scales_a_full_alpha() {
+
             var faded = Colours.scaleAlpha(new Color(10, 20, 30, 255), 0.5f);
 
             assertThat(faded.getRed()).isEqualTo(10);
             assertThat(faded.getGreen()).isEqualTo(20);
             assertThat(faded.getBlue()).isEqualTo(30);
+
             // 255 * 0.5 = 127.5, rounded to 128.
             assertThat(faded.getAlpha()).isEqualTo(128);
         }
 
         @Test
         void folds_the_colours_own_alpha_into_the_multiplier() {
+
             var faded = Colours.scaleAlpha(new Color(0, 0, 0, 128), 0.5f);
 
             // 128 * 0.5 = 64.
@@ -86,6 +93,7 @@ final class ColoursTest {
 
         @Test
         void reaches_zero_alpha_at_a_zero_multiplier() {
+
             var faded = Colours.scaleAlpha(new Color(0, 0, 0, 255), 0f);
 
             assertThat(faded.getAlpha()).isEqualTo(0);
@@ -96,10 +104,12 @@ final class ColoursTest {
     class Darken {
         @Test
         void scales_each_rgb_channel_by_the_factor_and_keeps_the_alpha() {
+
             var darker = Colours.darken(new Color(200, 100, 40, 255), 0.5f);
 
             assertThat(darker.getRed()).isEqualTo(100);
             assertThat(darker.getGreen()).isEqualTo(50);
+
             // 40 * 0.5 = 20.
             assertThat(darker.getBlue()).isEqualTo(20);
             assertThat(darker.getAlpha()).isEqualTo(255);
@@ -107,6 +117,7 @@ final class ColoursTest {
 
         @Test
         void leaves_the_colour_unchanged_at_a_factor_of_one() {
+
             var same = Colours.darken(new Color(10, 20, 30, 128), 1f);
 
             assertThat(same.getRed()).isEqualTo(10);
@@ -117,11 +128,13 @@ final class ColoursTest {
 
         @Test
         void returns_black_at_a_factor_of_zero() {
+
             var black = Colours.darken(new Color(200, 150, 100, 200), 0f);
 
             assertThat(black.getRed()).isEqualTo(0);
             assertThat(black.getGreen()).isEqualTo(0);
             assertThat(black.getBlue()).isEqualTo(0);
+
             // The alpha is untouched by darkening.
             assertThat(black.getAlpha()).isEqualTo(200);
         }
@@ -139,6 +152,7 @@ final class ColoursTest {
     class BlendRgbTowards {
         @Test
         void lerps_each_rgb_channel_toward_the_target_and_keeps_base_alpha() {
+
             var washed = Colours.blendRgbTowards(
                 new Color(40, 80, 120, 200),
                 new Color(240, 80, 20, 255),
@@ -148,12 +162,14 @@ final class ColoursTest {
             assertThat(washed.getRed()).isEqualTo(140);
             assertThat(washed.getGreen()).isEqualTo(80);
             assertThat(washed.getBlue()).isEqualTo(70);
+
             // Base's own alpha is kept; the target's 255 is ignored.
             assertThat(washed.getAlpha()).isEqualTo(200);
         }
 
         @Test
         void returns_the_base_rgb_at_a_zero_amount() {
+
             var washed = Colours.blendRgbTowards(
                 new Color(10, 20, 30, 128),
                 new Color(200, 200, 200, 255),
@@ -167,6 +183,7 @@ final class ColoursTest {
 
         @Test
         void reaches_the_target_rgb_at_an_amount_of_one_but_keeps_base_alpha() {
+
             var washed = Colours.blendRgbTowards(
                 new Color(10, 20, 30, 128),
                 new Color(200, 150, 100, 255),
@@ -175,6 +192,7 @@ final class ColoursTest {
             assertThat(washed.getRed()).isEqualTo(200);
             assertThat(washed.getGreen()).isEqualTo(150);
             assertThat(washed.getBlue()).isEqualTo(100);
+            
             // The target's alpha (255) is ignored - base's 128 survives the full wash.
             assertThat(washed.getAlpha()).isEqualTo(128);
         }

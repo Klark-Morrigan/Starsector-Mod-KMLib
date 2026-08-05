@@ -23,18 +23,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 
 /**
- * Pins {@link TabPanelLayout#computePlacement}: a tabs-control header laid flush under the top border and
- * a body strip framed beneath it, wrapped in one bordered box whose footprint the body placement carries.
- * The fake measurer reports four width units per character, so every expected rectangle is a hand-checkable
- * multiplication rather than a font-dependent value.
+ * Pins {@link TabPanelLayout#computePlacement}: a tabs-control header hung from the panel's anchor with a
+ * body strip framed beneath it, the box wrapping that body alone. The fake measurer reports four width
+ * units per character, so every expected rectangle is a hand-checkable multiplication rather than a
+ * font-dependent value.
  */
 final class TabPanelLayoutTest {
 
     // Four width units per character, so a label's measured width is its length times four.
     private static final float WIDTH_PER_CHAR = 4f;
 
-    // A screen and placement chosen so every derived edge is an integer: box top at 950, content inset by
-    // a 2px border, tabs one TAB_HEIGHT tall snapped past the text padding with the minimum-width floor.
+    // A screen and placement chosen so every derived edge is an integer: the row hangs from 950, the box
+    // from the row's bottom edge, content inset by a 2px border, tabs one TAB_HEIGHT tall snapped past the
+    // text padding with the minimum-width floor.
     private static final float SCREEN_HEIGHT = 1000f;
     private static final int PADDING_TOP = 50;
     private static final int PADDING_LEFT = 20;
@@ -42,16 +43,21 @@ final class TabPanelLayoutTest {
     private static final int BORDER_WIDTH = 2;
     private static final float TOLERANCE = 0.01f;
 
-    private static final float BOX_TOP_Y = SCREEN_HEIGHT - PADDING_TOP;
-    private static final float CONTENT_X = PADDING_LEFT + BORDER_WIDTH;
-    private static final float CONTENT_TOP_Y = BOX_TOP_Y - BORDER_WIDTH;
+    // The tab row hangs from the panel's own anchor, taking no border inset above or beside it.
+    private static final float HEADER_TOP_Y = SCREEN_HEIGHT - PADDING_TOP;
+    private static final float HEADER_X = PADDING_LEFT;
 
     // The band the baseline style stands, so the expected header edges track whatever style is injected
     // rather than a constant the layout no longer reads.
     private static final float DEFAULT_BAND_HEIGHT = TabStyle.DEFAULT_HEADER_BAND_HEIGHT;
     private static final TabStyle DEFAULT_TAB_STYLE =
         TabStyles.buildAtBandHeight(TabStyle.DEFAULT_HEADER_BAND_HEIGHT);
-    private static final float HEADER_BOTTOM_Y = CONTENT_TOP_Y - DEFAULT_BAND_HEIGHT;
+
+    // The box starts where the row ends, and its content insets from there by the border.
+    private static final float HEADER_BOTTOM_Y = HEADER_TOP_Y - DEFAULT_BAND_HEIGHT;
+    private static final float BOX_TOP_Y = HEADER_BOTTOM_Y;
+    private static final float CONTENT_X = PADDING_LEFT + BORDER_WIDTH;
+    private static final float CONTENT_TOP_Y = BOX_TOP_Y - BORDER_WIDTH;
 
     // A band deliberately unlike the default, so an assertion that the injected height is honoured cannot
     // pass by coincidence against the baseline.
@@ -85,7 +91,7 @@ final class TabPanelLayoutTest {
     class ComputePlacement {
 
         @Test
-        void computePlacementSnapsTheHeaderTabsFlushAtTheContentTop() {
+        void computePlacementSnapsTheHeaderTabsAtThePanelAnchor() {
 
             var header = place(List.of()).tabsHeader();
 
@@ -97,19 +103,20 @@ final class TabPanelLayoutTest {
             var first = header.segments().get(0);
 
             assertThat(first.x())
-                .isCloseTo(CONTENT_X, within(TOLERANCE));
+                .as("the row stands on the panel, so it starts at the anchor rather than inside the frame")
+                .isCloseTo(HEADER_X, within(TOLERANCE));
             assertThat(first.width())
                 .isCloseTo(FIRST_TAB_WIDTH, within(TOLERANCE));
             assertThat(first.y() + first.height())
-                .as("the header sits flush under the top border, not inset like a body row")
-                .isCloseTo(CONTENT_TOP_Y, within(TOLERANCE));
+                .as("the row hangs from the anchor, with no border reserved above it")
+                .isCloseTo(HEADER_TOP_Y, within(TOLERANCE));
             assertThat(first.height())
                 .isCloseTo(DEFAULT_BAND_HEIGHT, within(TOLERANCE));
 
             var second = header.segments().get(1);
 
             assertThat(second.x())
-                .isCloseTo(CONTENT_X + FIRST_TAB_WIDTH, within(TOLERANCE));
+                .isCloseTo(HEADER_X + FIRST_TAB_WIDTH, within(TOLERANCE));
             assertThat(second.width())
                 .isCloseTo(SECOND_TAB_WIDTH, within(TOLERANCE));
         }
@@ -143,7 +150,7 @@ final class TabPanelLayoutTest {
             var box = droppedLeft.body().box();
 
             // With no left border to reserve, the content sits flush at the box's left edge (the anchor)
-            // rather than inset by the border, and the header's first tab starts there too.
+            // rather than inset by the border - where the tab row above it already stands.
             assertThat(body.x())
                 .isCloseTo(PADDING_LEFT, within(TOLERANCE));
             assertThat(droppedLeft.tabsHeader().segments().get(0).x())
@@ -189,17 +196,23 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementLeavesAZeroBodyBeneathTheHeaderWhenBodyIsEmpty() {
+        void computePlacementLeavesNoBoxBeneathTheHeaderWhenBodyIsEmpty() {
 
-            var body = place(List.of()).body().body();
+            var placement = place(List.of());
+            var box = placement.body().box();
 
-            assertThat(body.width())
+            // A tab row with nothing under it is the whole panel: there is no frame to stroke and no
+            // footprint to claim below the row, so the box is empty rather than a border-sized square
+            // hanging off the row's left end.
+            assertThat(placement.hasBody())
+                .isFalse();
+            assertThat(box.width())
                 .isCloseTo(0f, within(TOLERANCE));
-            assertThat(body.height())
+            assertThat(box.height())
                 .isCloseTo(0f, within(TOLERANCE));
 
-            // The zero body still sits at the header's bottom edge, so nothing is reserved beneath.
-            assertThat(body.y())
+            // The empty box still sits at the row's bottom edge, so nothing is reserved beneath it.
+            assertThat(box.y())
                 .isCloseTo(HEADER_BOTTOM_Y, within(TOLERANCE));
         }
 
@@ -211,37 +224,33 @@ final class TabPanelLayoutTest {
             assertThat(body.x()).
                 isCloseTo(CONTENT_X, within(TOLERANCE));
             assertThat(body.y() + body.height())
-                .as("the body's top edge abuts the header band's bottom")
-                .isCloseTo(HEADER_BOTTOM_Y, within(TOLERANCE));
+                .as("the body insets from the box top, which is the header band's bottom")
+                .isCloseTo(CONTENT_TOP_Y, within(TOLERANCE));
             assertThat(body.height())
                 .isGreaterThan(0f);
         }
 
         @Test
-        void computePlacementCarriesTheWholeFootprintInTheBodyBox() {
+        void computePlacementFramesTheBodyAloneWithTheRowStandingOnIt() {
 
             var placement = place(BODY);
             var box = placement.body().box();
             var body = placement.body().body();
 
-            // The body placement's box spans the whole panel - header band plus body plus the border on
-            // every edge - so the single frame a renderer draws around it wraps the header too.
+            // The box wraps the body and its border and nothing else, so the frame it describes sits under
+            // the tab row rather than around it - the row is chrome on the panel, not content inside it.
             assertThat(box.x())
                 .isCloseTo(PADDING_LEFT, within(TOLERANCE));
             assertThat(box.y() + box.height())
                 .isCloseTo(BOX_TOP_Y, within(TOLERANCE));
             assertThat(box.height())
-                .isCloseTo(
-                    TabsControlLayout.TAB_HEIGHT + body.height() + 2f * BORDER_WIDTH,
-                    within(TOLERANCE));
+                .isCloseTo(body.height() + 2f * BORDER_WIDTH, within(TOLERANCE));
 
-            // And it encloses both the header segments and the body.
+            // The row stands entirely above it, meeting the box's top edge.
             var header = placement.tabsHeader();
 
-            assertThat(box.y())
-                .isLessThanOrEqualTo(body.y() + TOLERANCE);
-            assertThat(header.bounds().y() + header.bounds().height())
-                .isLessThanOrEqualTo(box.y() + box.height() + TOLERANCE);
+            assertThat(header.bounds().y())
+                .isCloseTo(box.y() + box.height(), within(TOLERANCE));
         }
 
         @Test
@@ -408,13 +417,17 @@ final class TabPanelLayoutTest {
             assertThat(styledTab.height())
                 .isCloseTo(CUSTOM_BAND_HEIGHT, within(TOLERANCE));
             assertThat(styledTab.y() + styledTab.height())
-                .isCloseTo(CONTENT_TOP_Y, within(TOLERANCE));
+                .isCloseTo(HEADER_TOP_Y, within(TOLERANCE));
 
-            // The band is content the box wraps, so the whole footprint shortens by exactly what the band
-            // gave up - the body keeps its own height rather than stretching to absorb the difference.
+            // The box hangs from the row's bottom edge, so a shorter band lifts the whole frame by exactly
+            // what the band gave up - the body keeps its own height rather than stretching to absorb it.
             assertThat(styled.body().body().height())
                 .isCloseTo(placement.body().body().height(), within(TOLERANCE));
-            assertThat(placement.body().box().height() - styled.body().box().height())
+
+            var boxTopY = placement.body().box().y() + placement.body().box().height();
+            var styledBoxTopY = styled.body().box().y() + styled.body().box().height();
+
+            assertThat(styledBoxTopY - boxTopY)
                 .isCloseTo(DEFAULT_BAND_HEIGHT - CUSTOM_BAND_HEIGHT, within(TOLERANCE));
         }
 
@@ -427,7 +440,53 @@ final class TabPanelLayoutTest {
             assertThat(styled.tabsHeader().bounds().height())
                 .isCloseTo(0f, within(TOLERANCE));
             assertThat(styled.tabsHeader().bounds().y())
-                .isCloseTo(CONTENT_TOP_Y, within(TOLERANCE));
+                .isCloseTo(HEADER_TOP_Y, within(TOLERANCE));
+        }
+
+        @Test
+        void computePlacementDrawsTheWholeTabRowWhileThePanelRests() {
+
+            var placement = place(BODY, 0f);
+
+            // At rest the drawn band is the row as laid out, overhang and all: a row wider than its body
+            // is not cut off at the frame, it stands past it.
+            assertThat(placement.drawnHeaderBand())
+                .isEqualTo(placement.tabsHeader().bounds());
+        }
+
+        @Test
+        void computePlacementWipesTheTabRowWithTheFoldedBox() {
+
+            var placement = place(BODY, 0.5f);
+            var box = placement.body().box();
+            var drawn = placement.drawnHeaderBand();
+
+            // Mid-fold the row narrows to the box's own span, so the panel wipes toward its anchored edge
+            // as one piece rather than leaving a full-width row above a half-folded frame.
+            assertThat(drawn.x())
+                .isCloseTo(box.x(), within(TOLERANCE));
+            assertThat(drawn.width())
+                .isCloseTo(box.width(), within(TOLERANCE));
+            assertThat(drawn.width())
+                .isLessThan(placement.tabsHeader().bounds().width());
+
+            // The wipe is horizontal only: the band keeps its full height throughout.
+            assertThat(drawn.height())
+                .isCloseTo(DEFAULT_BAND_HEIGHT, within(TOLERANCE));
+        }
+
+        @Test
+        void computePlacementLeavesABodylessRowUnwipedByAStaleFold() {
+
+            // The fold state outlives a tab switch, so a bodyless tab can be laid out at a fraction another
+            // tab's body left standing. It has nothing to fold and no handle to unfold it, so its row must
+            // stand whole - wiped, it would vanish with nothing on screen to bring it back.
+            var placement = place(List.of(), 1f);
+
+            assertThat(placement.drawnHeaderBand())
+                .isEqualTo(placement.tabsHeader().bounds());
+            assertThat(placement.drawnHeaderBand().width())
+                .isCloseTo(HEADER_WIDTH, within(TOLERANCE));
         }
 
         @Test

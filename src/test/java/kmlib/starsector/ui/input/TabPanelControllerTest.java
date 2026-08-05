@@ -748,6 +748,7 @@ final class TabPanelControllerTest {
 
         return new TabPanelPlacement(
             new Control(spec, headerBand, List.of(FIRST_TAB, SECOND_TAB)),
+            headerBand,
             new PanelPlacement(headerBand, headerBand, List.of(), headerBand, 0f, 0f),
             new BoxBorder(BORDER_WIDTH),
             notch);

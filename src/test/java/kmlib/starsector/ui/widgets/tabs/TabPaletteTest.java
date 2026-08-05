@@ -42,6 +42,9 @@ final class TabPaletteTest {
     private static final boolean SELECTED = true;
     private static final boolean UNSELECTED = false;
 
+    // A fully opaque alpha channel, so a fill assertion reads as "a surface" rather than as a bare 255.
+    private static final int OPAQUE_ALPHA = 255;
+
     private static final TabPalette PALETTE = new TabPalette(
         CHROME_ACCENT,
         UNSELECTED_LOOK,
@@ -155,11 +158,22 @@ final class TabPaletteTest {
     class CreateMapTabPalette {
 
         @Test
-        void createMapTabPaletteKeepsTheSampledSteelBlueAsTheSelectedFill() {
-            // The shade measured off the real map tabs, and the one the hovered fill below is lifted
-            // from - so a change to it is a deliberate retune of the vanilla match, not a side effect.
+        void createMapTabPaletteTakesTheSampledSteelBlueAsTheSelectedFill() {
+            // The shade measured off the real map tabs, taken as the opaque surface it reads as. It is also
+            // the shade the hovered fill below is lifted from, so a change here is a deliberate retune of
+            // the vanilla match, not a side effect.
             assertThat(buildMapTabPaletteUnderStubbedEngine().selected().fill())
-                .isEqualTo(new Color(105, 179, 206, 175));
+                .isEqualTo(new Color(72, 123, 141, 255));
+        }
+
+        @Test
+        void createMapTabPaletteTakesTheSampledDarkTealAsTheRestingFill() {
+            // The other half of the sampled pair, frozen beside the lit fill rather than read off the
+            // engine's buttonBgDark - so a restyled install cannot move one tab of the strip and not the
+            // other. Written as a literal here for the same reason it is one in the palette: this is the
+            // shade the strip is meant to show, not a value derived from something the test also stubs.
+            assertThat(buildMapTabPaletteUnderStubbedEngine().unselected().fill())
+                .isEqualTo(new Color(21, 64, 77, 255));
         }
 
         @Test
@@ -167,7 +181,23 @@ final class TabPaletteTest {
             // The selected fill moved a small way toward white, which is what lets the resting tab travel
             // the whole way up to meet it: writing this shade by hand instead would let the two drift.
             assertThat(buildMapTabPaletteUnderStubbedEngine().hovered().fill())
-                .isEqualTo(new Color(128, 190, 213, 175));
+                .isEqualTo(new Color(99, 143, 158, 255));
+        }
+
+        @Test
+        void createMapTabPaletteLeavesEveryFillOpaque() {
+            // A tab is a surface, not a tint over one: a see-through fill would read as whatever the strip
+            // happens to be drawn over, so the row would change shade with its surroundings and show the
+            // map through itself wherever no panel sits beneath it.
+            var palette = buildMapTabPaletteUnderStubbedEngine();
+
+            assertThat(palette.unselected().fill().getAlpha())
+                .isEqualTo(OPAQUE_ALPHA);
+            assertThat(palette.selected().fill().getAlpha())
+                .isEqualTo(OPAQUE_ALPHA);
+            assertThat(palette.hovered().fill().getAlpha())
+                .as("the hovered shade is derived from the selected one, so it inherits its opacity")
+                .isEqualTo(OPAQUE_ALPHA);
         }
 
         @Test

@@ -67,14 +67,27 @@ public enum StarsectorUiColour {
      */
     DARK_BLUE(new Color(31, 94, 112, 175)),
     /**
-     * Literal of the vanilla SELECTED map-tab fill, measured in-game. The engine composes it inside the
-     * tab widget rather than exposing it as a named settings colour, so it is captured here as a literal:
-     * over the near-black tab backing its baked alpha composites to about {@code #487b8d}, the lit
-     * companion to {@code buttonBgDark}'s resting fill (which composites to about {@code #17424e}).
-     * Frozen like {@link #LIGHT_BLUE} / {@link #DARK_BLUE} - a sampled vanilla value that does not track
-     * the player faction.
+     * Literal of the vanilla SELECTED map-tab fill, measured in-game ({@code #487b8d}). Frozen like
+     * {@link #LIGHT_BLUE} / {@link #DARK_BLUE} - a sampled vanilla value that does not track the player
+     * faction - because the engine composes this shade inside its own tab widget and exposes no settings
+     * colour naming it, so there is nothing live to read it from.
+     *
+     * <p>Opaque, as a sample taken off the screen is: a tab fill is a surface, and left translucent it
+     * would be the colour of whatever the strip happens to be drawn over. Pairs with {@link #DARK_TEAL},
+     * its resting companion.
      */
-    STEEL_BLUE(new Color(105, 179, 206, 175));
+    STEEL_BLUE(new Color(72, 123, 141)),
+    /**
+     * Literal of the vanilla RESTING map-tab fill ({@code #15404d}) - {@code buttonBgDark} as it composes
+     * over the near-black backing behind it, taken opaque for the reason {@link #STEEL_BLUE} is.
+     *
+     * <p>Frozen rather than read live off {@code buttonBgDark}, so the two fills of one strip move
+     * together. The lit fill above has no settings colour to track, so a resting fill that followed a
+     * restyled install would leave that install a strip whose tabs disagree - recoloured at rest, sampled
+     * vanilla when lit, and a hovered shade derived from the latter that neither meets. A pair sampled at
+     * one moment is one design; half of it tracking is not a better match, it is a mismatch.
+     */
+    DARK_TEAL(new Color(21, 64, 77));
 
     private final Supplier<Color> source;
 

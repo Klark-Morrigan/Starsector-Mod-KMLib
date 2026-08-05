@@ -16,8 +16,8 @@ import java.util.List;
  * owns only the framing - hang that body from the inset content top and wrap it with the border on every
  * edge - so a host's concrete content is just a column of controls and the frame math stays here. Its
  * framing primitives ({@link #computeContentOrigin}, {@link #framePlacement}) are shared: {@link
- * TabPanelLayout} reuses them, framing its body rectangle beneath a header band, so a tab panel is this
- * panel's framing plus a header - one border and all.
+ * TabPanelLayout} reuses them to frame the body it hangs beneath its tab row, so a tab panel is this
+ * panel's framing with a row standing on top of it - one border, around the body alone.
  *
  * <p>The one shared {@link PanelPlacement} a renderer draws and an input listener hit-tests is what keeps
  * the drawn box and the clickable box in step. UI coordinates throughout (origin bottom-left, y grows up);
@@ -72,13 +72,11 @@ public final class PanelLayout {
             measurer,
             rawScrollOffset);
 
-        // A plain panel's framed content is just the body, with no header band above it.
         return framePlacement(
             padding.left(),
             origin.boxTopY(),
             border,
             bodyStrip.bounds(),
-            0f,
             bodyStrip);
     }
 
@@ -108,12 +106,11 @@ public final class PanelLayout {
 
     /**
      * Frames a body rectangle in a bordered box and assembles the panel placement: the box wraps that body
-     * plus any header band above it with the border on every edge, hung from {@code boxTopY} at {@code
-     * leftX}, and the placement carries the box with the same body rectangle and the strip's controls and
-     * scroll geometry. The shared framing both a plain panel and a tab panel use - they differ only in the
-     * header band (a plain panel passes none) - so {@link TabPanelLayout} reuses it rather than re-framing.
-     * It frames the passed body rectangle rather than a bordered box, so a tab panel reusing it frames one
-     * border, not two.
+     * with the border on every edge, hung from {@code boxTopY} at {@code leftX}, and the placement carries
+     * the box with the same body rectangle and the strip's controls and scroll geometry. The shared framing
+     * both a plain panel and a tab panel use - a tab panel hangs the same framed body under its tab row -
+     * so {@link TabPanelLayout} reuses it rather than re-framing. It frames the passed body rectangle rather
+     * than a bordered box, so a tab panel reusing it frames one border, not two.
      *
      * <p>The box reports the passed {@code framedBody} as its interior, so {@code box == body + border on
      * each edge} holds even when a collapsing tab panel hands in a body narrower than the strip it laid its
@@ -126,7 +123,6 @@ public final class PanelLayout {
      *                         edge and by nothing on an open one, so it shrinks to sit flush where it drops
      *                         a border
      * @param framedBody       the body rectangle the box frames and reports as its interior
-     * @param headerBandHeight the height of the header band above the body (0 for a plain panel)
      * @param bodyStrip        the laid-out body strip whose controls and scroll geometry the placement
      *                         carries
      * @return the panel placement: the bordered box plus the framed body, controls, and scroll geometry
@@ -136,7 +132,6 @@ public final class PanelLayout {
             float boxTopY,
             BoxBorder border,
             Rectangle framedBody,
-            float headerBandHeight,
             CappedStripLayout.BodyStrip bodyStrip) {
 
         // Each side contributes the border to the box only where it is stroked; an open edge reserves
@@ -147,13 +142,13 @@ public final class PanelLayout {
         var rightInset = border.computeEdgeInset(BoxEdge.RIGHT);
         var topInset = border.computeEdgeInset(BoxEdge.TOP);
         var bottomInset = border.computeEdgeInset(BoxEdge.BOTTOM);
-        var contentHeight = headerBandHeight + framedBody.height();
+        var boxHeight = framedBody.height() + topInset + bottomInset;
 
         var box = new Rectangle(
             leftX,
-            boxTopY - (contentHeight + topInset + bottomInset),
+            boxTopY - boxHeight,
             framedBody.width() + leftInset + rightInset,
-            contentHeight + topInset + bottomInset);
+            boxHeight);
 
         var capped = bodyStrip.placement();
 

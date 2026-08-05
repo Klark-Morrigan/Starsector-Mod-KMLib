@@ -1,34 +1,36 @@
 package kmlib.starsector.ui.render.gl;
 
-import kmlib.starsector.ui.widgets.BorderedBox;
 import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.tabs.TabInteractionSources;
 import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
 
 /**
  * Raw-GL paint for a whole {@link TabPanelPlacement}: it delegates the body - the one bordered frame, the
- * body controls, and the scrollbar - to {@link PanelRenderer} verbatim, then overlays the tabs header
- * control (via {@link ControlRenderer}) on the frame's top band, and paints the collapse handle (via {@link
- * NotchRenderer}) protruding past the frame's right edge. A tab panel is a panel plus a header plus a
- * handle, so its paint is the panel's paint plus one control drawn on top plus the notch; the single frame
- * is the body placement's whole-footprint box, so there is one border, drawn once by the delegate. A
- * bodyless panel carries no notch (nothing to collapse), so the handle and the collapse clip are both
- * skipped and it paints as its bordered tab row alone.
+ * body controls, and the scrollbar - to {@link PanelRenderer} verbatim, then paints the tabs header
+ * control (via {@link ControlRenderer}) on its own backdrop above that frame, and paints the collapse
+ * handle (via {@link NotchRenderer}) protruding past the frame's right edge. A tab panel is a panel with a
+ * tab row standing on it plus a handle, so its paint is the panel's paint plus the row plus the notch; the
+ * single frame is the body placement's box, so there is one border, drawn once by the delegate. A bodyless
+ * panel has no box and no notch (nothing to frame, nothing to collapse), so the frame and the handle are
+ * both skipped and it paints as its tab row alone.
  *
- * <p>While collapsing, the body is clipped to the shrinking box and the header to that box's INTERIOR
- * (inset past the border), so the panel reads as a horizontal wipe toward its anchored edge and, fully
- * docked, reduces to the border-only rail the collapsed box already draws - the rail is the clipped box,
- * not a second draw. The header clips to the interior rather than the whole box because it lays out at the
- * panel's full width; clipped to the box its opaque tab fill would wipe right up onto the right border and
- * paint over it across the header band, leaving the border showing over the body but covered over the
- * header - a step at the header/body seam. Fully expanded there is no clip, so a tab row wider than the
- * body still overhangs the frame. The notch draws last and unclipped, past the frame's right edge, so the
- * handle stays reachable even once the body has wiped away to the rail.
+ * <p>Nothing is laid under the row: its tabs are opaque surfaces of their own (see {@link
+ * kmlib.starsector.ui.widgets.tabs.TabPalette#createMapTabPalette}), so the row reads the same wherever it
+ * stands - over the panel, over a bodyless tab's bare screen, or over whatever the panel floats on. A
+ * backdrop drawn here instead would make the row's look a property of the panel rather than of the tabs,
+ * and every other consumer of the strip would have to supply one to get the same tabs.
+ *
+ * <p>While collapsing, the body is clipped to the shrinking box and the row to the {@code
+ * drawnHeaderBand} the layout narrowed with it, so the panel reads as a horizontal wipe toward its anchored
+ * edge and, fully docked, reduces to the border-only rail the collapsed box already draws - the rail is the
+ * clipped box, not a second draw. At rest that band is the whole row, so a tab row wider than the body still
+ * overhangs the frame. The notch draws last and unclipped, past the frame's right edge, so the handle stays
+ * reachable even once the body has wiped away to the rail.
  *
  * <p>The header control draws its own immediate-mode GL, so it is bracketed in a {@link
  * GlStateGuard#bracket} state save like {@link PanelRenderer} brackets its own draw. Drawn after the body
- * so the header sits over the frame fill of the top band. GL passthrough exercised in-engine like the
- * other draw helpers.
+ * so the row sits over the frame's top border rather than under it. GL passthrough exercised in-engine like
+ * the other draw helpers.
  */
 public final class TabPanelRenderer {
     // The tabs header is opaque chrome, not part of the translucent body: it paints at full alpha
@@ -39,13 +41,17 @@ public final class TabPanelRenderer {
     // is handed, it is simply handed full alpha here.
     private static final float HEADER_OPACITY = 1f;
 
+    // The fraction a panel resting fully expanded reports; above it the fold is under way, which is the
+    // only time the body's draw is clipped to its own shrinking box.
+    private static final float NO_COLLAPSE_FRACTION = 0f;
+
     private TabPanelRenderer() {
     }
 
     /**
      * Draws the tab panel: the bordered frame, body controls, and scrollbar via {@link PanelRenderer},
-     * then the tabs header on top, then the collapse handle past the right edge. The body and handle fade
-     * by {@code opacity}; the header is opaque chrome and paints at full alpha regardless (see {@code
+     * then the tabs header above them, then the collapse handle past the right edge. The body and handle
+     * fade by {@code opacity}; the header is opaque chrome and paints at full alpha regardless (see {@code
      * HEADER_OPACITY}). Must run with a current GL context. The {@code border} names which frame edges to
      * stroke, so a panel flush against another's edge can drop the border there; the header, the notch,
      * and the collapse clip are unaffected.
@@ -71,62 +77,63 @@ public final class TabPanelRenderer {
             NotchState notchState,
             float opacity) {
 
-        var box = placement.body().box();
-
-        // A null notch marks a bodyless, non-collapsible panel (nothing to fold): it draws no handle and
-        // never clips, so a stale docked fraction left in the controller by another tab cannot scissor its
-        // tab row down to the border box and hide it with no handle to bring it back.
-        var notch = placement.notch();
-
-        // Any collapse narrows the visible content so the docked state shows only the rail; fully expanded
-        // there is no clip, leaving a wide tab row free to overhang the frame.
-        var isCollapsing = notch != null && notchState.collapseFraction() > 0f;
-
-        // The body carries the whole-footprint box, so this draws the one frame, the body controls, and
-        // the scrollbar - self-bracketed in its own GL-state save. Only the border's edges are stroked, so
-        // a panel flush against another's edge drops the border there. Clipped to the box during collapse,
-        // border included, so the frame narrows with the fold and rides its shrinking right edge.
-        if (isCollapsing) {
-            UiScissor.push(box);
+        // A bodyless panel frames nothing: it lays out no box, so there is no frame, no fill, and no fold -
+        // the row above is the whole panel. Asked of the placement rather than inferred from the absent
+        // handle, so what is skipped here is skipped for the reason it is skipped.
+        if (placement.hasBody()) {
+            drawFramedBody(placement, style, border, notchState, opacity);
         }
-        PanelRenderer.render(placement.body(), style, border, opacity);
-        if (isCollapsing) {
-            UiScissor.pop();
-        }
-
-        // The header control's raw GL needs the same state save; bracket it here. Drawn after the body so
-        // it sits over the frame FILL of the top band. During collapse it is clipped to the box INTERIOR
-        // (past the border), not the whole box: the header lays out at the panel's full width, so a
-        // full-box clip would wipe its fill onto the right border and cover it across the header band while
-        // the body keeps it - the step at the header/body seam. Interior-clipped, its wipe stops at the
-        // border's inner edge and the right border reads continuously past the header. The interior insets
-        // only the STROKED edges, so a dropped edge (the intel panel's left) keeps the header flush there
-        // rather than clipping a border-width strip off a side that has no border to protect.
-        if (isCollapsing) {
-            UiScissor.push(BorderedBox.computeContentBounds(box, border));
-        }
-
-        // Tab headers:
-        GlStateGuard.bracket(() -> ControlRenderer.render(
-            placement.tabsHeader(),
-            style,
-            HEADER_OPACITY,
-            tabInteractions));
-
-        if (isCollapsing) {
-            UiScissor.pop();
-        }
+        drawHeaderBand(placement, style, tabInteractions);
 
         // The handle draws last and unclipped, over the map beyond the frame's right edge, so it stays
         // reachable to expand the panel even when the body has wiped away to the docked rail. A bodyless
         // panel has no handle, so there is nothing to draw here.
-        if (notch != null) {
+        if (placement.notch() != null) {
             NotchRenderer.render(
-                notch,
+                placement.notch(),
                 style,
                 border.width(),
                 notchState,
                 opacity);
         }
+    }
+
+    // The framed body: the one border, the body controls, and the scrollbar, self-bracketed in their own
+    // GL-state save. Only the border's edges are stroked, so a panel flush against another's edge drops the
+    // border there. Clipped to the box while the fold runs, border included, so the frame narrows with the
+    // fold and rides its shrinking right edge down to the docked rail.
+    private static void drawFramedBody(
+            TabPanelPlacement placement,
+            WidgetStyle style,
+            BoxBorder border,
+            NotchState notchState,
+            float opacity) {
+
+        var isCollapsing = notchState.collapseFraction() > NO_COLLAPSE_FRACTION;
+        if (isCollapsing) {
+            UiScissor.push(placement.body().box());
+        }
+        PanelRenderer.render(placement.body(), style, border, opacity);
+        if (isCollapsing) {
+            UiScissor.pop();
+        }
+    }
+
+    // The tab row, drawn after the body so it stands over the frame rather than under it, and clipped to
+    // the band the layout says is on screen: at rest that is the whole row, and while the fold runs it is
+    // what the fold has not yet wiped, so the row narrows with the frame beneath it. The row's raw GL needs
+    // the same state save the body's draw takes.
+    private static void drawHeaderBand(
+            TabPanelPlacement placement,
+            WidgetStyle style,
+            TabInteractionSources tabInteractions) {
+
+        UiScissor.push(placement.drawnHeaderBand());
+        GlStateGuard.bracket(() -> ControlRenderer.render(
+            placement.tabsHeader(),
+            style,
+            HEADER_OPACITY,
+            tabInteractions));
+        UiScissor.pop();
     }
 }
