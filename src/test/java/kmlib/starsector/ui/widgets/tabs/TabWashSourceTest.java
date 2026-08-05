@@ -21,10 +21,9 @@ final class TabWashSourceTest {
 
     private static final float TOLERANCE = 0.001f;
 
-    // A distinct target and depth per momentary role, so a source reaching for the wrong one names a
+    // A target no look in the palette names, so a source reaching for a look instead of the lift shows as a
     // different colour rather than the same colour at a different depth.
     private static final Color CLICK_TARGET = new Color(80, 80, 80);
-    private static final Color HOTKEY_TARGET = new Color(90, 90, 90);
     private static final float CLICK_DEPTH = 0.4f;
 
     private static final Color STAND_IN_SHADE = Color.GRAY;
@@ -35,8 +34,7 @@ final class TabWashSourceTest {
         STAND_IN_LOOK,
         STAND_IN_LOOK,
         STAND_IN_LOOK,
-        new TabWash(CLICK_TARGET, CLICK_DEPTH),
-        new TabWash(HOTKEY_TARGET, 0.9f));
+        new TabWash(CLICK_TARGET, CLICK_DEPTH));
 
     // Indices past either end of a row, since a source is asked per tab and must not assume the row it is
     // being walked over.

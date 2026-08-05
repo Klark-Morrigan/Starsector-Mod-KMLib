@@ -22,8 +22,9 @@ import static org.assertj.core.api.Assertions.within;
  * docked-start factory opens it collapsed, so a host picks the initial fold through construction rather
  * than driving the animation to reach it - and the two channels the panel's tabs are painted from: the
  * hit-test that decides which tab a fade is held for, the fades it steps for the tabs and for the collapse
- * handle, the docked gate that silences the tabs while leaving the handle live, and the click pulse a press
- * on a tab starts. The pointer routing and the scroll delegation run against live input events and are
+ * handle, the docked gate that silences the tabs while leaving the handle live, the click pulse a press on a
+ * tab starts, and the blink a bound key's press runs on the look channel beside the hover it shares that
+ * channel with. The pointer routing and the scroll delegation run against live input events and are
  * exercised in-engine, as is the cursor read the per-frame advance opens with - which is why the advance and
  * the press are pinned through the point that read would have returned rather than through a display there
  * is none of to point at.
@@ -241,6 +242,83 @@ final class TabPanelControllerTest {
                 .isEmpty();
             assertThat(pulseFractionAt(controller, FIRST_TAB_INDEX))
                 .isCloseTo(0f, within(TOLERANCE));
+        }
+    }
+
+    @Nested
+    class StartHotkeyBlinkAt {
+
+        @Test
+        void startHotkeyBlinkAtCarriesTheNamedTabOntoTheHoveredShade() {
+            // The blink is read on the look channel, so a key's press shows on the tab it is bound to with
+            // the pointer nowhere near it - which is the whole point of marking a keyboard switch.
+            var controller = new TabPanelController();
+            controller.startHotkeyBlinkAt(SECOND_TAB_INDEX);
+
+            advanceAWholeTraverse(controller);
+
+            assertThat(hoverFractionAt(controller, SECOND_TAB_INDEX))
+                .isCloseTo(1f, within(TOLERANCE));
+            assertThat(hoverFractionAt(controller, FIRST_TAB_INDEX))
+                .isCloseTo(0f, within(TOLERANCE));
+        }
+
+        @Test
+        void startHotkeyBlinkAtLiftsNothingOnTheWashChannel() {
+            // A blink travels onto the hovered shade rather than past it, so it must leave the lift channel
+            // alone - read there as well, it would brighten the tab twice and outshine a click.
+            var controller = new TabPanelController();
+            controller.startHotkeyBlinkAt(SECOND_TAB_INDEX);
+
+            advanceAWholeTraverse(controller);
+
+            assertThat(pulseFractionAt(controller, SECOND_TAB_INDEX))
+                .isCloseTo(0f, within(TOLERANCE));
+        }
+
+        @Test
+        void startHotkeyBlinkAtAddsNothingToAHoverStandingAtTheSamePointOnTheSameTab() {
+            // The composition rule: the greater of the two, not their sum. Both are stepped half a traverse
+            // here, so a summed channel would read a fully hovered tab and only the greater reads the half
+            // the pointer alone had reached - which is what makes a key pressed for the hovered tab a no-op.
+            var controller = new TabPanelController();
+
+            controller.startHotkeyBlinkAt(FIRST_TAB_INDEX);
+            controller.advanceInputMotionsForFrame(
+                FIRST_TAB_INDEX,
+                NOTCH_NOT_HOVERED,
+                HALF_STEP_SECONDS,
+                DURATION_SECONDS);
+
+            assertThat(hoverFractionAt(controller, FIRST_TAB_INDEX))
+                .isCloseTo(0.5f, within(TOLERANCE));
+        }
+
+        @Test
+        void startHotkeyBlinkAtRunsItsBlinkBackOutWithNoFurtherPress() {
+            // A blink is one in-and-out cycle from a single trigger, so the tab has to fall back to its own
+            // look on its own - left held, a key press would light a tab until something else moved it.
+            var controller = new TabPanelController();
+            controller.startHotkeyBlinkAt(SECOND_TAB_INDEX);
+
+            advanceAWholeTraverse(controller);
+            advanceAWholeTraverse(controller);
+
+            assertThat(hoverFractionAt(controller, SECOND_TAB_INDEX))
+                .isCloseTo(0f, within(TOLERANCE));
+        }
+
+        @Test
+        void startHotkeyBlinkAtRunsItsCycleOutWhileThePanelIsDocked() {
+            // Unlike a hover, a blink takes no docked gate: it is an event already seen, so a fold arriving
+            // mid-cycle must let it finish rather than cutting it off part-way lit.
+            var controller = TabPanelController.createStartingDocked();
+            controller.startHotkeyBlinkAt(SECOND_TAB_INDEX);
+
+            advanceAWholeTraverse(controller);
+
+            assertThat(hoverFractionAt(controller, SECOND_TAB_INDEX))
+                .isCloseTo(1f, within(TOLERANCE));
         }
     }
 
@@ -515,6 +593,25 @@ final class TabPanelControllerTest {
             assertThat(pulseFractionAt(controller, SECOND_TAB_INDEX))
                 .isCloseTo(0f, within(TOLERANCE));
         }
+
+        @Test
+        void resetInputMotionsDropsAHotkeyBlinkLeftPartWayThroughItsCycle() {
+            // The blink is dropped with the rest: it runs on the look channel, so one left part-way would
+            // open the next session with a tab lit as though the pointer were on it.
+            var controller = new TabPanelController();
+
+            controller.startHotkeyBlinkAt(SECOND_TAB_INDEX);
+            controller.advanceInputMotionsForFrame(
+                NO_TAB_HOVERED,
+                NOTCH_NOT_HOVERED,
+                HALF_STEP_SECONDS,
+                DURATION_SECONDS);
+
+            controller.resetInputMotions();
+
+            assertThat(hoverFractionAt(controller, SECOND_TAB_INDEX))
+                .isCloseTo(0f, within(TOLERANCE));
+        }
     }
 
     @Nested
@@ -555,8 +652,9 @@ final class TabPanelControllerTest {
         }
     }
 
-    // How far a tab has faded, read the way the render pass reads it - through the interaction sources
-    // rather than off the fades directly, so these pin the value that actually reaches a strip.
+    // How far onto the hovered shade a tab stands, read the way the render pass reads it - through the
+    // interaction sources rather than off the fades directly, so these pin the composed value that actually
+    // reaches a strip rather than either motion feeding it.
     private static float hoverFractionAt(TabPanelController controller, int tabIndex) {
         return controller
             .getTabInteractionSources()

@@ -19,7 +19,8 @@ import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
  *
  * <p>One controller per panel, since it holds that panel's runtime state across frames: the body's scroll
  * and drag state, the collapse animation, the hover fades of the parts that light under the pointer - the
- * header tabs and the collapse handle - and the click pulses its tabs are carrying. A host creates it, reads
+ * header tabs and the collapse handle - and the two triggered motions its tabs carry, a click's pulse and a
+ * bound key's blink. A host creates it, reads
  * its {@link #getScrollState()} and {@link #getCollapseFraction()} when it lays the panel out, advances the
  * collapse and the input motions each frame it draws, reads {@link #getTabInteractionSources()} and {@link
  * #getNotchHoverFraction()} to paint with, and feeds it pointer events. That state lives here beside the
@@ -51,6 +52,13 @@ public final class TabPanelController {
     // than a second reading off the fades because the two motions differ in kind: a hover is a position the
     // pointer holds a tab at, a click is an event that runs its own course after the press that started it.
     private final PulseEnvelopes<Integer> tabClickPulses = new PulseEnvelopes<>();
+
+    // The blink a bound key's press runs on its tab, keyed the same way again. An envelope like the clicks -
+    // it is triggered and runs its own course - but read on the look channel with the fades rather than on
+    // the lift channel with the clicks, because it carries its tab onto the hovered shade rather than past
+    // it. That is what makes a key pressed for the tab already under the pointer show nothing: the blink
+    // reaches only where the hover already stands.
+    private final PulseEnvelopes<Integer> tabHotkeyBlinks = new PulseEnvelopes<>();
 
     // How far the collapse handle has travelled onto its lit look. A lone fade rather than a keyed set,
     // there being one handle per panel, and a fraction rather than a flag so the notch lights and dims at
@@ -114,14 +122,14 @@ public final class TabPanelController {
 
     /**
      * What the header's tabs are currently showing, for the render pass to paint them at: how far each has
-     * faded onto the hovered shade, and what momentary lift each carries. The paint pass therefore reads no
-     * cursor and holds no timing - it is handed both channels already resolved.
+     * travelled onto the hovered shade, and what momentary lift each carries. The paint pass therefore reads
+     * no cursor and holds no timing - it is handed both channels already resolved.
      *
      * @return the panel's live tab interaction channels
      */
     public TabInteractionSources getTabInteractionSources() {
         return new TabInteractionSources(
-            tabHoverFades::resolveHoverFractionAt,
+            this::resolveHoverFractionAt,
             tabClickPulses::resolvePulseFractionAt);
     }
 
@@ -140,8 +148,9 @@ public final class TabPanelController {
 
     /**
      * Steps every motion the panel makes in answer to input - its header tabs' and its collapse handle's
-     * hover fades, and the click pulses running on its tabs - by a frame's worth of time, for the host to
-     * call each frame it draws, after it has resolved the placement. One call rather than one per motion, so
+     * hover fades, and the click pulses and hotkey blinks running on its tabs - by a frame's worth of time,
+     * for the host to call each frame it draws, after it has resolved the placement. One call rather than one
+     * per motion, so
      * the panel's parts cannot be advanced against different placements or charged different slices of the
      * same frame.
      *
@@ -194,6 +203,7 @@ public final class TabPanelController {
         tabHoverFades.resetFades();
         notchHoverFade.resetFade();
         tabClickPulses.resetPulses();
+        tabHotkeyBlinks.resetPulses();
     }
 
     /**
@@ -226,6 +236,25 @@ public final class TabPanelController {
             return;
         }
         bodyController.handlePointer(event, placement.body());
+    }
+
+    /**
+     * Blinks one header tab onto the hovered shade and back, for whatever routed a bound key's press to that
+     * tab to call as it selects it. The key is the consumer's - which keycodes reach which tabs is its own
+     * business - so all that arrives here is which tab was reached; the blink then runs its course without a
+     * second call.
+     *
+     * <p>It confirms the press rather than the switch, so a key pressed for the tab the panel is already
+     * showing still blinks. That is the opposite of the click pulse, which follows the action: a press has an
+     * inert tab under it to explain why nothing happened, and a keypress has nothing on screen at all.
+     *
+     * <p>The blink shows nothing while the pointer is on that same tab, the two sharing one channel and
+     * composing by the greater of them - a tab already at the hovered shade has nowhere to travel.
+     *
+     * @param tabIndex the tab the pressed key is bound to, in row order
+     */
+    public void startHotkeyBlinkAt(int tabIndex) {
+        tabHotkeyBlinks.startPulseAt(tabIndex);
     }
 
     /**
@@ -331,6 +360,10 @@ public final class TabPanelController {
 
         notchHoverFade.advanceTowardHover(isNotchHovered, elapsedSeconds, durationSeconds);
         tabClickPulses.advanceByElapsedTime(elapsedSeconds, durationSeconds);
+
+        // Ungated, like the clicks and unlike the fades: a blink is an event already seen, so its cycle runs
+        // out wherever the panel goes afterwards rather than being cut short by a fold it did not ask for.
+        tabHotkeyBlinks.advanceByElapsedTime(elapsedSeconds, durationSeconds);
     }
 
     /**
@@ -358,5 +391,21 @@ public final class TabPanelController {
         return segmentIndex == RadioRow.NO_SEGMENT
             ? null
             : segmentIndex;
+    }
+
+    /**
+     * How far onto the hovered shade a tab currently stands, from either motion that can put it there: the
+     * pointer holding it there, or a bound key's blink passing through. The greater of the two rather than
+     * their sum, because both aim at the one shade - so a blink on the tab under the pointer shows nothing,
+     * and a pointer arriving mid-blink takes the tab over from wherever the blink had carried it rather than
+     * pushing it past a shade neither names.
+     *
+     * @param tabIndex the tab being asked about, in row order
+     * @return its look-channel fraction, 0 fully off the hovered shade and 1 fully on it
+     */
+    private float resolveHoverFractionAt(int tabIndex) {
+        return Math.max(
+            tabHoverFades.resolveHoverFractionAt(tabIndex),
+            tabHotkeyBlinks.resolvePulseFractionAt(tabIndex));
     }
 }

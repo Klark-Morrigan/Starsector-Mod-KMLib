@@ -19,7 +19,7 @@ public final class TabStyles {
     // though the roles mattered.
     private static final Color STAND_IN_SHADE = Color.GRAY;
 
-    // No pulse lift in either momentary role: these tests draw nothing, so a lift would only suggest the
+    // No pulse lift in the momentary role: these tests draw nothing, so a lift would only suggest the
     // layout reserves something for one (it does not - a wash costs no room). A zero strength blends
     // nowhere, so which colour the lift names never shows.
     private static final TabWash STAND_IN_NO_LIFT = new TabWash(STAND_IN_SHADE, 0f);
@@ -29,7 +29,6 @@ public final class TabStyles {
         new TabLook(STAND_IN_SHADE, STAND_IN_SHADE),
         new TabLook(STAND_IN_SHADE, STAND_IN_SHADE),
         new TabLook(STAND_IN_SHADE, STAND_IN_SHADE),
-        STAND_IN_NO_LIFT,
         STAND_IN_NO_LIFT);
 
     // A plain key in the same stand-in shade: the tests here draw nothing, so how a bound key is

@@ -9,7 +9,9 @@ package kmlib.starsector.ui.widgets.tabs;
  *
  * <p>A fraction rather than a boolean because a tab eases onto the hovered shade and back off it; the
  * boolean is what the fraction was advanced toward, and it has already been spent by the time a strip is
- * painted.
+ * painted. It is also what lets a pointer and a bound key's blink share this one channel: both carry a tab
+ * toward the same shade, so whatever owns them composes them into the single fraction answered here rather
+ * than a renderer learning that either exists.
  *
  * <p>Asked per index rather than handed as a list running alongside the tabs, so a row and its fractions
  * cannot fall out of step, matching how {@link TabWashSource} answers for the other channel.

@@ -23,20 +23,22 @@ import java.awt.Color;
  * sits with the rest of a key's presentation on {@link HotkeyStyle} rather than among values that answer
  * to a tab's state.
  *
+ * <p>Nor is a lift of its own for a bound key's press. That blink travels onto the {@link #hovered} shade
+ * rather than past it, so it is spent on the look channel and needs no wash to name.
+ *
  * @param chromeAccent the colour of the dividers, the baseline, and the selected tab's underline
  * @param unselected   the resting look of a tab the panel is not showing
  * @param selected     the look of the tab whose content the panel is showing
- * @param hovered      the look the tab under the pointer wears, selected or not
+ * @param hovered      the look the tab under the pointer wears, selected or not - and the shade a bound
+ *                     key's blink carries its tab to
  * @param clicked      the peak lift a click raises its tab by
- * @param hotkeyed     the peak lift a bound key's press raises its tab by
  */
 public record TabPalette(
     Color chromeAccent,
     TabLook unselected,
     TabLook selected,
     TabLook hovered,
-    TabWash clicked,
-    TabWash hotkeyed) {
+    TabWash clicked) {
 
     // How far the selected tab travels toward white when the pointer lands on it. The hovered shade is
     // measured from the selected look because that is the brighter of the two the strip has to reconcile;
@@ -47,19 +49,11 @@ public record TabPalette(
     // stronger would be invisible on the tab the pointer is necessarily already over.
     private static final float CLICK_WHITE_WASH = 0.5f;
 
-    // A bound key's blink is the quieter of the two pulses - it confirms a keypress rather than marking a
-    // pointer landing on the tab.
-    private static final float HOTKEY_WHITE_WASH = 0.15f;
-
-    // TODO: no animator drives the hotkey lift yet - a bound key's press selects its tab without marking
-    // it, until the blink lands. Its "no louder than a hover" rule needs restating against the hovered
-    // look then, since the hovered shade is no longer a wash depth two pulses can be compared with.
-
     /**
      * The live vanilla map-tab paint: the player base colour for the chrome accent, the fixed map-tab
      * fills (the dark teal {@code buttonBgDark} at rest, the sampled steel-blue when active) matching the
      * map's own Sector/System tabs, the button-text colour for a resting label and the bright player
-     * colour for the active one, the hovered shade both of them meet at, and the two pulse lifts toward
+     * colour for the active one, the hovered shade both of them meet at, and the click lift toward
      * white. The fills are fixed UI shades rather than player-faction ones so they match the vanilla tabs
      * even under a modded player faction; the labels and the accent stay player-tinted. Resolves through
      * {@link StarsectorUiColour} on each call, so it tracks a live palette change.
@@ -83,8 +77,7 @@ public record TabPalette(
             // Derived from the selected look rather than written down beside it, so the one hovered shade
             // cannot drift from the look it is measured off when either is retuned.
             selected.computeWashedLook(new TabWash(white, SELECTED_HOVER_WHITE_WASH)),
-            new TabWash(white, CLICK_WHITE_WASH),
-            new TabWash(white, HOTKEY_WHITE_WASH));
+            new TabWash(white, CLICK_WHITE_WASH));
     }
 
     /**
@@ -130,7 +123,6 @@ public record TabPalette(
     public TabWash resolveWash(TabWashState washState) {
         return switch (washState) {
             case CLICKED -> clicked;
-            case HOTKEYED -> hotkeyed;
         };
     }
 

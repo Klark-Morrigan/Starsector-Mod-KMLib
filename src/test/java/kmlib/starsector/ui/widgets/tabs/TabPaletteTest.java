@@ -14,9 +14,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Pins {@link TabPalette}'s two lookups - every state reaches its own value and no other - and the map-tab
- * factory's one derived shade. A palette is five roles of the same two shapes, so a pair swapped in either
- * switch would still compile and still paint - a selected tab wearing the resting shade, or a click
- * lifting by the hotkey blink's depth - which is exactly the confusion these assertions rule out.
+ * factory's one derived shade. A palette is four roles of the same two shapes, so a pair swapped in either
+ * switch would still compile and still paint - a selected tab wearing the resting shade, or a click lifting
+ * toward the hovered fill - which is exactly the confusion these assertions rule out.
  *
  * <p>The lookups are exercised against literal shades; the factory is exercised against a stubbed engine
  * palette, since it resolves through a live one a unit test has no sector to supply.
@@ -34,10 +34,9 @@ final class TabPaletteTest {
         new Color(60, 60, 60),
         new Color(70, 70, 70));
 
-    // One distinct target per pulse role, so a lookup returning the wrong wash names the wrong colour
-    // rather than the same colour at a different depth.
+    // A target no look names, so a lift lookup answering off a look's fill shows as a wrong colour rather
+    // than as the right colour at a different depth.
     private static final TabWash CLICKED_WASH = new TabWash(new Color(80, 80, 80), 0.2f);
-    private static final TabWash HOTKEYED_WASH = new TabWash(new Color(90, 90, 90), 0.3f);
 
     // Named so a hover lookup reads as "the lit tab" / "a resting tab" rather than as a bare flag.
     private static final boolean SELECTED = true;
@@ -48,8 +47,7 @@ final class TabPaletteTest {
         UNSELECTED_LOOK,
         SELECTED_LOOK,
         HOVERED_LOOK,
-        CLICKED_WASH,
-        HOTKEYED_WASH);
+        CLICKED_WASH);
 
     // The player-tinted roles the map-tab factory reads, stubbed to flat shades: only the bright player
     // colour reaches an assertion (it is the selected label the hovered one is lifted from), and the
@@ -146,14 +144,10 @@ final class TabPaletteTest {
 
         @Test
         void resolveWashReturnsTheClickLiftWhenClicked() {
-            assertThat(PALETTE.resolveWash(TabWashState.CLICKED).target())
-                .isEqualTo(new Color(80, 80, 80));
-        }
-
-        @Test
-        void resolveWashReturnsTheHotkeyLiftWhenHotkeyed() {
-            assertThat(PALETTE.resolveWash(TabWashState.HOTKEYED).target())
-                .isEqualTo(new Color(90, 90, 90));
+            // The lift channel's only role, so this pins that it answers off the wash rather than off one of
+            // the looks the same palette carries - both being colours a lift could plausibly be built from.
+            assertThat(PALETTE.resolveWash(TabWashState.CLICKED))
+                .isEqualTo(new TabWash(new Color(80, 80, 80), 0.2f));
         }
     }
 
