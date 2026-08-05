@@ -32,7 +32,7 @@ public final class PanelRenderer {
      * controls and scrollbar are unaffected.
      *
      * @param placement the laid-out panel to draw
-     * @param style     how the panel looks (fill, accents, fonts)
+     * @param style     how the panel looks (fill, frame colour, accents, fonts)
      * @param border    the outer border width and which edges to stroke; a zero width draws no border
      * @param opacity   overall alpha, 0..1, fading the whole panel
      */
@@ -44,11 +44,13 @@ public final class PanelRenderer {
         // Belt-and-suspenders around the raw GL: the map chrome and tooltips draw after a UI-overlay
         // pass, so any state the panel touches must be restored. The whole draw shares this one save.
         GlStateGuard.bracket(() -> {
+            // The frame strokes in the style's own border colour rather than its accent, so a host whose
+            // surrounding chrome is a different colour can match it without dragging its controls along.
             BorderedBoxRenderer.render(
                 placement.box(),
                 border,
                 new UiElementPaint(style.panelFill(), opacity),
-                new UiElementPaint(style.accent(), opacity));
+                new UiElementPaint(style.borderColour(), opacity));
             drawBodyControls(placement, style, opacity);
         });
     }

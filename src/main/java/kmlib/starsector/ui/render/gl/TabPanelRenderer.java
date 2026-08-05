@@ -51,8 +51,8 @@ public final class TabPanelRenderer {
      * and the collapse clip are unaffected.
      *
      * @param placement       the laid-out tab panel to draw
-     * @param style           how the panel looks (fill, accents, body font, and the tab style for the
-     *                        header)
+     * @param style           how the panel looks (fill, frame colour, accents, body font, and the tab
+     *                        style for the header)
      * @param border          the outer border width and which edges to stroke; a zero width draws no border
      * @param tabInteractions what each header tab is currently showing - how far onto the hovered shade it
      *                        has faded and what pulse it carries - resolved by whoever owns the panel's live
