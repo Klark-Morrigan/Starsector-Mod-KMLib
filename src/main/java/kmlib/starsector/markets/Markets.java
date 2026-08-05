@@ -126,9 +126,32 @@ public final class Markets {
         if (market == null) {
             return false;
         }
+        return isDiscoveredByPlayer(market) || !market.isHidden();
+    }
+
+    /**
+     * Whether the player has physically found this market's entity - the narrower of the two
+     * arms {@link #isKnownToPlayer} accepts, on its own.
+     *
+     * <p>Separate because hiddenness and discovery are independent axes, and a caller asking
+     * "has the player been here" must not be answered by the hiddenness arm. A concealed base
+     * the player has raided is discovered and permanently hidden; a colony surfaced by a story
+     * reveal is un-hidden and still undiscovered. Reading the pair as one boolean conflates
+     * them, and a caller that only ever wanted the discovery half silently gets both.
+     *
+     * <p>Discovery lives on the entity, not the market: an entity stops being
+     * {@code discoverable} once found. A market with no entity reads discovered - there is
+     * nothing left to find, so nothing to withhold.
+     *
+     * @param market the market to test; null yields false
+     * @return true when the market's entity has been found, or it has no entity
+     */
+    public static boolean isDiscoveredByPlayer(MarketAPI market) {
+        if (market == null) {
+            return false;
+        }
         var entity = market.getPrimaryEntity();
-        var isEntityDiscovered = entity == null || !entity.isDiscoverable();
-        return isEntityDiscovered || !market.isHidden();
+        return entity == null || !entity.isDiscoverable();
     }
 
     /**
@@ -154,6 +177,33 @@ public final class Markets {
             return false;
         }
         return shouldIncludeUndiscoveredMarkets || isKnownToPlayer(market);
+    }
+
+    /**
+     * Whether a market counts as a colony the player has actually found - the filter behind
+     * "does anyone live here", as opposed to {@link #isCountedAsColony}'s "does anyone hold
+     * this".
+     *
+     * <p>Gated on discovery alone. Whether a colony is publicly listed says nothing about
+     * whether the system is inhabited: a raided pirate base is a permanently hidden market in a
+     * system that plainly holds people. Admitting it on {@link #isKnownToPlayer} instead would
+     * also answer the question for an unfound base - reporting a system as inhabited is itself
+     * the tell that something is hiding in it, which is a leak a fog-of-war read cannot make.
+     *
+     * @param market                           the market to test; null yields false
+     * @param shouldIncludeUndiscoveredMarkets whether an unfound colony still counts (the "show
+     *                                         all factions" dev reveal); false applies the
+     *                                         normal discovery filter
+     * @return true when a faction owns the market and it is either found or the reveal is on
+     */
+    public static boolean isFoundColony(
+            MarketAPI market,
+            boolean shouldIncludeUndiscoveredMarkets) {
+
+        if (!isOwnedColony(market)) {
+            return false;
+        }
+        return shouldIncludeUndiscoveredMarkets || isDiscoveredByPlayer(market);
     }
 
     /**

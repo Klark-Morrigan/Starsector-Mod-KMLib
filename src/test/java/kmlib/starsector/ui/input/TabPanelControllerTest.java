@@ -68,10 +68,12 @@ final class TabPanelControllerTest {
     private static final boolean NOTCH_HOVERED = true;
     private static final boolean NOTCH_NOT_HOVERED = false;
 
-    // A whole duration in one step, so an end state is reached without walking frames, and half of one for
-    // the part-way reads.
+    // A whole duration in one step, so an end state is reached without walking frames, and fractions of one
+    // for the part-way reads. The quarter step is where two motions running against each other stand at
+    // different points, so which of them a reading follows shows in the number.
     private static final float FULL_STEP_SECONDS = 1f;
     private static final float HALF_STEP_SECONDS = 0.5f;
+    private static final float QUARTER_STEP_SECONDS = 0.25f;
     private static final float DURATION_SECONDS = 1f;
 
     @Nested
@@ -292,6 +294,27 @@ final class TabPanelControllerTest {
 
             assertThat(hoverFractionAt(controller, FIRST_TAB_INDEX))
                 .isCloseTo(0.5f, within(TOLERANCE));
+        }
+
+        @Test
+        void startHotkeyBlinkAtKeepsTheTabOnTheBlinkUntilAnArrivingHoverOvertakesIt() {
+            // The other side of the same rule, and the one that says which motion the greater picks: neither
+            // is aware of the other, so a pointer arriving at the blink's peak reads the blink's decay - not
+            // its own fade starting from rest - until the two cross. Read at a quarter step, where the blink
+            // stands at three quarters of its fall and the fade at a quarter of its rise.
+            var controller = new TabPanelController();
+            controller.startHotkeyBlinkAt(FIRST_TAB_INDEX);
+
+            advanceAWholeTraverse(controller);
+
+            controller.advanceInputMotionsForFrame(
+                FIRST_TAB_INDEX,
+                NOTCH_NOT_HOVERED,
+                QUARTER_STEP_SECONDS,
+                DURATION_SECONDS);
+
+            assertThat(hoverFractionAt(controller, FIRST_TAB_INDEX))
+                .isCloseTo(0.84375f, within(TOLERANCE));
         }
 
         @Test

@@ -258,6 +258,33 @@ public final class StarSystems {
     }
 
     /**
+     * Whether the player has found anyone living in {@code system} - the inhabited read, as
+     * opposed to {@link #hasKnownOwnedMarket}'s "does a colony count on the map". Composes
+     * {@link Markets#isFoundColony}, so a colony the player has physically found counts however
+     * concealed it remains. Short-circuits on the first qualifying market.
+     *
+     * @param sector                           the sector whose economy is read; null (or a null
+     *                                         economy) yields false
+     * @param system                           the system to test; null yields false
+     * @param shouldIncludeUndiscoveredMarkets whether an unfound colony still counts (the "show
+     *                                         all factions" dev reveal); false applies the
+     *                                         normal discovery filter, true drops it so an
+     *                                         unfound colony counts too
+     * @return true when a colony the player has found exists in the system
+     */
+    public static boolean hasFoundOwnedMarket(
+            SectorAPI sector,
+            StarSystemAPI system,
+            boolean shouldIncludeUndiscoveredMarkets) {
+        for (var market : readMarkets(sector, system)) {
+            if (Markets.isFoundColony(market, shouldIncludeUndiscoveredMarkets)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * The star closest to the system centre - the reference a distance-from-centre read measures
      * from. This is the star nearest the centre, not one presumed to sit at it: a single-star
      * system yields its one star, which does sit at the centre, but a binary or trinary system
