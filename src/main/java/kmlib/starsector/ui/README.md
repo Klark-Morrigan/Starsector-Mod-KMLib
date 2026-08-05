@@ -315,13 +315,21 @@ standing for a count is not prose.
 | [`coreui`](coreui/) | vanilla | [`CoreUiTree`](coreui/CoreUiTree.java), the by-name reach into the live widget tree that every screen's probes walk |
 | [`map/transform`](map/transform/) | split | the modelview-matrix port, its GL and Fast Rendering implementations, the [selector](map/transform/ModelviewMatrixReaders.java) between them, and the [transform](map/transform/CampaignMapTransform.java) and [cursor read](map/transform/MapCursor.java) built over it |
 | [`map/presence`](map/presence/) | vanilla | what the game is showing: the sector map's own [view state](map/presence/CampaignMapView.java) as one [classified answer](map/presence/SectorMapState.java), plus the host-blind [reads](map/presence/MapPresence.java) that fold it together with the intel screen's map |
+| [`map/icons`](map/icons/) | vanilla | the one write into the map widget's draw order: [`MapIconReseater`](map/icons/MapIconReseater.java), the script that takes a caller's entity out of its location for a single advance so its icon re-enters at the tail, over the [latch](map/icons/MapIconReseatDecision.java) that says when one is owed. Which entity and which map matters are ports - a rule about either would be a guess about somebody's content |
 | [`map/probes`](map/probes/) | vanilla | the live reads into the map's widget tree over [`CoreUiTree`](coreui/CoreUiTree.java)'s by-name reach: [`ShownMapTab`](map/probes/ShownMapTab.java), the [surface bounds](map/probes/MapSurfaceBounds.java) that pick the map out of that tab by shape as a [surface area](map/probes/MapSurfaceArea.java) carrying the chrome drawn with it, [`VanillaMapTooltip`](map/probes/VanillaMapTooltip.java), the [widget trace](map/probes/MapTabWidgetTrace.java) that describes what the cursor is inside, and the [icon-order trace](map/probes/MapIconOrderTrace.java) that describes which terrain the widget paints over which - both handing the line back for a consumer to log as its own |
 
-The map is three packages rather than one because the three read different things - GL state,
-the campaign's persisted UI data, the live widget tree - and **no class in any of them
-references another's**. That independence is the reason the split is worth keeping: a probe
-that started reaching for the transform, or a presence read that had to walk the tree, would
-be the signal that one of these has taken on a job belonging to another.
+The map is four packages rather than one. Three of them read different things - GL state, the
+campaign's persisted UI data, the live widget tree - and the fourth reads nothing at all: it
+acts, moving an entity so the widget seeds its icon later. **No class in any of them references
+another's.** That independence is the reason the split is worth keeping: a probe that started
+reaching for the transform, or a presence read that had to walk the tree, would be the signal
+that one of these has taken on a job belonging to another.
+
+`map/icons` and the icon-order trace in `map/probes` are the write and the read of one subject,
+and they are apart on the tier the rest of this table splits on: a probe describes the live tree
+and never touches it, which is a contract worth keeping literal. The trace is also the only way
+to check the reseat landed, since where an icon sits is an insertion-order artefact the engine
+promises nothing about.
 
 Two packages are named `tooltip`, and the pair is the tier split rather than a collision to
 resolve. `widgets/tooltip` is what a hover box *is* - lines, blocks, and where they land, naming
