@@ -20,6 +20,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Pins the panel controller's click-to-control resolution: a press maps to the control under it and fires
  * that control's action, while a caption label - drawn but not clickable - is passed over so it never
  * swallows a click as if it acted, and a scrolling control only counts inside its viewport.
+ *
+ * <p>Each case asserts the cell the hit-test reports alongside the cell the action was actually called
+ * with. They are the same number by design - a caller marking what it just fired reads the reported one -
+ * so pinning only one would let a press fire one cell and report another.
  */
 final class PanelControllerTest {
 
@@ -39,14 +43,14 @@ final class PanelControllerTest {
             // A caption row is drawn but never clickable - a Label is not Interactive - so a press over
             // it hits nothing and falls through rather than being swallowed as if it acted.
             var label = new Control(LabelledControlSpecs.buildLabel("Caption"), ROW, List.of());
-            var acted = PanelController.activateControlIfHit(
+            var activatedCell = PanelController.activateControlIfHit(
                 label,
                 FULL_VIEWPORT,
                 ROW.x() + ROW.width() / 2f,
                 ROW.y() + ROW.height() / 2f);
 
-            assertThat(acted).as("a caption is not a hit target")
-                .isFalse();
+            assertThat(activatedCell).as("a caption is not a hit target")
+                .isNull();
         }
 
         @Test
@@ -54,16 +58,17 @@ final class PanelControllerTest {
 
             var firedCell = new int[] {-1};
             var checkbox = buildCheckboxControl("Muted", cell -> firedCell[0] = cell);
-            var acted = PanelController.activateControlIfHit(
+            var activatedCell = PanelController.activateControlIfHit(
                 checkbox,
                 FULL_VIEWPORT,
                 ROW.x() + ROW.width() / 2f,
                 ROW.y() + ROW.height() / 2f);
 
-            assertThat(acted)
-                .isTrue();
-            assertThat(firedCell[0])
+            assertThat(activatedCell)
                 .as("a single-cell control reports cell 0")
+                .isZero();
+            assertThat(firedCell[0])
+                .as("the cell reported is the cell the action fired for")
                 .isZero();
         }
 
@@ -71,14 +76,14 @@ final class PanelControllerTest {
         void activateControlIfHitReportsNoHitForAPressOutsideACheckboxRow() {
 
             var checkbox = buildCheckboxControl("Muted", ControlAction.NONE);
-            var acted = PanelController.activateControlIfHit(
+            var activatedCell = PanelController.activateControlIfHit(
                 checkbox,
                 FULL_VIEWPORT,
                 ROW.x() - 10f,
                 ROW.y() + ROW.height() / 2f);
 
-            assertThat(acted)
-                .isFalse();
+            assertThat(activatedCell)
+                .isNull();
         }
 
         @Test
@@ -89,14 +94,14 @@ final class PanelControllerTest {
 
             // The press lands on the list's one option and inside a viewport that covers the row, so the
             // option fires as a normal radio hit.
-            var acted = PanelController.activateControlIfHit(
+            var activatedCell = PanelController.activateControlIfHit(
                 list,
                 ROW,
                 ROW.x() + ROW.width() / 2f,
                 ROW.y() + ROW.height() / 2f);
 
-            assertThat(acted)
-                .isTrue();
+            assertThat(activatedCell)
+                .isZero();
             assertThat(firedCell[0])
                 .isZero();
         }
@@ -110,15 +115,15 @@ final class PanelControllerTest {
             // The option's segment sits at ROW, but the viewport is a strip well above it - as if the row
             // scrolled up under the header - so the press over the clipped-out row must not fire it.
             var viewportAbove = new Rectangle(ROW.x(), ROW.y() + 100f, ROW.width(), 40f);
-            var acted = PanelController.activateControlIfHit(
+            var activatedCell = PanelController.activateControlIfHit(
                 list,
                 viewportAbove,
                 ROW.x() + ROW.width() / 2f,
                 ROW.y() + ROW.height() / 2f);
 
-            assertThat(acted)
+            assertThat(activatedCell)
                 .as("a row clipped from the viewport is not clickable")
-                .isFalse();
+                .isNull();
             assertThat(fired[0])
                 .as("the clipped-out option's action must not fire")
                 .isFalse();
@@ -131,16 +136,17 @@ final class PanelControllerTest {
 
             // The lit tab is the left one, so a press on the right (non-lit) tab fires it by its index.
             var tabs = buildTwoTabRowAtRow(0, cell -> firedCell[0] = cell);
-            var acted = PanelController.activateControlIfHit(
+            var activatedCell = PanelController.activateControlIfHit(
                 tabs,
                 FULL_VIEWPORT,
                 ROW.x() + 3f * ROW.width() / 4f,
                 ROW.y() + ROW.height() / 2f);
 
-            assertThat(acted)
-                .isTrue();
-            assertThat(firedCell[0])
+            assertThat(activatedCell)
                 .as("a tab reports its own index")
+                .isEqualTo(1);
+            assertThat(firedCell[0])
+                .as("the index reported is the index the action fired for")
                 .isEqualTo(1);
         }
 
@@ -152,15 +158,15 @@ final class PanelControllerTest {
             // A tabs row is always inert on its lit tab (INERT reselect), so a press on the left, lit tab
             // reaches no action - matching a vanilla tab strip, where clicking the active tab does nothing.
             var tabs = buildTwoTabRowAtRow(0, cell -> fired[0] = true);
-            var acted = PanelController.activateControlIfHit(
+            var activatedCell = PanelController.activateControlIfHit(
                 tabs,
                 FULL_VIEWPORT,
                 ROW.x() + ROW.width() / 4f,
                 ROW.y() + ROW.height() / 2f);
 
-            assertThat(acted)
+            assertThat(activatedCell)
                 .as("re-clicking the active tab is inert")
-                .isFalse();
+                .isNull();
             assertThat(fired[0])
                 .as("the lit tab's action must not fire")
                 .isFalse();
@@ -170,14 +176,14 @@ final class PanelControllerTest {
         void activateControlIfHitReportsNoHitForAPressOutsideEveryTab() {
 
             var tabs = buildTwoTabRowAtRow(0, ControlAction.NONE);
-            var acted = PanelController.activateControlIfHit(
+            var activatedCell = PanelController.activateControlIfHit(
                 tabs,
                 FULL_VIEWPORT,
                 ROW.x() - 10f,
                 ROW.y() + ROW.height() / 2f);
 
-            assertThat(acted)
-                .isFalse();
+            assertThat(activatedCell)
+                .isNull();
         }
 
         @Test
@@ -188,16 +194,17 @@ final class PanelControllerTest {
             // The viewport-less core is the path a tab panel's header takes - the header never scrolls, so
             // it is never clipped. A press on the right (non-lit) tab fires it by its index, no viewport.
             var tabs = buildTwoTabRowAtRow(0, cell -> firedCell[0] = cell);
-            var acted = PanelController.activateControlIfHit(
+            var activatedCell = PanelController.activateControlIfHit(
                 tabs,
                 FULL_VIEWPORT,
                 ROW.x() + 3f * ROW.width() / 4f,
                 ROW.y() + ROW.height() / 2f);
 
-            assertThat(acted)
-                .isTrue();
-            assertThat(firedCell[0])
+            assertThat(activatedCell)
                 .as("a tab reports its own index")
+                .isEqualTo(1);
+            assertThat(firedCell[0])
+                .as("the index reported is the index the action fired for")
                 .isEqualTo(1);
         }
 
@@ -214,16 +221,17 @@ final class PanelControllerTest {
                     cell -> firedCell[0] = cell)
                 .handlesReselect(ReselectBehaviour.DESELECT));
 
-            var acted = PanelController.activateControlIfHit(
+            var activatedCell = PanelController.activateControlIfHit(
                 radio,
                 FULL_VIEWPORT,
                 ROW.x() + ROW.width() / 4f,
                 ROW.y() + ROW.height() / 2f);
 
-            assertThat(acted)
-                .isTrue();
-            assertThat(firedCell[0])
+            assertThat(activatedCell)
                 .as("the lit segment reports its own index")
+                .isZero();
+            assertThat(firedCell[0])
+                .as("the index reported is the index the action fired for")
                 .isZero();
         }
 
@@ -239,15 +247,15 @@ final class PanelControllerTest {
                 0,
                 cell -> fired[0] = true));
 
-            var acted = PanelController.activateControlIfHit(
+            var activatedCell = PanelController.activateControlIfHit(
                 radio,
                 FULL_VIEWPORT,
                 ROW.x() + ROW.width() / 4f,
                 ROW.y() + ROW.height() / 2f);
 
-            assertThat(acted)
+            assertThat(activatedCell)
                 .as("re-clicking the lit option pair segment is inert")
-                .isFalse();
+                .isNull();
             assertThat(fired[0])
                 .as("the lit segment's action must not fire")
                 .isFalse();

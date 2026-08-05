@@ -26,13 +26,17 @@ final class TabLookSourceTest {
         new Color(200, 200, 200),
         new Color(210, 210, 210));
 
+    // The look channel is what these pin, so neither momentary role lifts anything: a zero strength blends
+    // nowhere, and a lift here would colour a look assertion with something the look channel never chose.
+    private static final TabWash NO_LIFT = new TabWash(new Color(255, 255, 255), 0f);
+
     private static final TabPalette PALETTE = new TabPalette(
         new Color(5, 5, 5),
         UNSELECTED_LOOK,
         SELECTED_LOOK,
         HOVERED_LOOK,
-        TabWash.NONE,
-        TabWash.NONE);
+        NO_LIFT,
+        NO_LIFT);
 
     private static final int SELECTED_INDEX = 1;
     private static final int UNSELECTED_INDEX = 0;

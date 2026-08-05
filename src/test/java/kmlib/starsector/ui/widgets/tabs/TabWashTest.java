@@ -121,11 +121,5 @@ final class TabWashTest {
             assertThat(new TabWash(opaqueTarget, 1f).computeWashedColour(BASE_COLOUR).getAlpha())
                 .isEqualTo(128);
         }
-
-        @Test
-        void computeWashedColourLeavesTheColourUntouchedForARestingTab() {
-            assertThat(TabWash.NONE.computeWashedColour(BASE_COLOUR))
-                .isEqualTo(new Color(0, 100, 200, 128));
-        }
     }
 }

@@ -243,14 +243,19 @@ public final class TabPanelController {
      */
     boolean activateTabAtPoint(TabPanelPlacement placement, float pointX, float pointY) {
 
-        // The header never scrolls, so it hit-tests unclipped, unlike a body control in the flex list.
-        if (!PanelController.activateControlIfHit(placement.tabsHeader(), pointX, pointY)) {
+        // The header never scrolls, so it hit-tests unclipped, unlike a body control in the flex list. The
+        // fired tab comes back from the activation itself rather than from a second walk of the same
+        // segments, so the tab that lifts is the tab that fired by construction and not by two hit-tests
+        // agreeing.
+        var firedTabIndex = PanelController.activateControlIfHit(
+            placement.tabsHeader(),
+            pointX,
+            pointY);
+
+        if (firedTabIndex == null) {
             return false;
         }
-        // Resolved through the same segment hit-test the hover fades use, so the tab that lifts is the tab
-        // that fired. A tab that fired is a tab a segment was found for, which is why nothing here has to
-        // answer for a press that acted on no segment.
-        tabClickPulses.startPulseAt(resolveTabIndexAtPoint(placement, pointX, pointY));
+        tabClickPulses.startPulseAt(firedTabIndex);
 
         return true;
     }
@@ -275,7 +280,7 @@ public final class TabPanelController {
             float elapsedSeconds,
             float durationSeconds) {
 
-        advanceInputMotionsForHovered(
+        advanceInputMotionsForFrame(
             resolveTabIndexAtPoint(placement, pointX, pointY),
             placement.containsPointInNotch(pointX, pointY),
             elapsedSeconds,
@@ -283,19 +288,18 @@ public final class TabPanelController {
     }
 
     /**
-     * Steps every motion toward where it is heading, once the hit-tests above have settled what the pointer
-     * is on, and applies the docked gate the tabs answer to.
-     *
-     * <p>The pulses take no pointer at all: a click is an event already seen, and its cycle runs on wherever
-     * the pointer went afterwards. They are stepped here rather than on a call of their own so one frame's
-     * time is charged to every motion the panel makes, at one pace.
+     * Steps every motion the panel holds by one frame, told what the hit-tests above found the pointer on,
+     * and applies the docked gate the tabs answer to. Named for the frame rather than for the hover because
+     * only some of what it steps answers to a pointer: the fades do, and the pulses do not - a click is an
+     * event already seen, and its cycle runs on wherever the pointer went afterwards. They travel together
+     * so one frame's time is charged to every motion the panel makes, at one pace.
      *
      * @param hoveredTabIndex the tab the pointer is on this frame, or null when it is on none
      * @param isNotchHovered  whether the pointer is on the collapse handle this frame
      * @param elapsedSeconds  real time since the last frame the host drew
      * @param durationSeconds how long one traverse should take; zero or less snaps
      */
-    void advanceInputMotionsForHovered(
+    void advanceInputMotionsForFrame(
             Integer hoveredTabIndex,
             boolean isNotchHovered,
             float elapsedSeconds,
@@ -316,9 +320,9 @@ public final class TabPanelController {
     }
 
     /**
-     * Which header tab a point falls on, as the key a fade or a pulse is held under. Resolved over the header
-     * control's laid segments - the same rectangles a press is hit-tested against - so the tab that lights,
-     * the tab that lifts, and the tab that fires are always the same one.
+     * Which header tab a point falls on, as the key a hover fade is held under. Resolved over the header
+     * control's laid segments - the same rectangles a press is hit-tested against - so the tab that lights
+     * and the tab that would fire are always the same one.
      *
      * @param placement the laid-out tab panel to test against
      * @param pointX    the point's x in UI coordinates, the coordinates the placement is laid out in

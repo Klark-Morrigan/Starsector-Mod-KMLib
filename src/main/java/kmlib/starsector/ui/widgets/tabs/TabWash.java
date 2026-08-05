@@ -27,13 +27,6 @@ public record TabWash(
     float strength) {
 
     /**
-     * A tab with nothing happening to it: no movement toward anything, so the base look stands as it is.
-     * The target is arbitrary and never read, since a strength of zero blends nowhere - a plain white
-     * stands in rather than a live palette colour, so the constant costs no engine call to hold.
-     */
-    public static final TabWash NONE = new TabWash(Color.WHITE, 0f);
-
-    /**
      * Clamps the strength into the unit range, so a composited value that overshoots settles at the
      * target rather than blending past it into a colour neither side named.
      */

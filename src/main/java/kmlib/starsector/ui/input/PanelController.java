@@ -31,6 +31,12 @@ public final class PanelController {
     // list rows, a comfortable step without overshooting a short list.
     private static final float SCROLL_STEP_PX = 40f;
 
+    // What a hit-test reports when the press acted on nothing - it missed every cell, landed on chrome that
+    // is not a hit target, or fell on a segment the control treats as inert. Null rather than an index
+    // sentinel, because the answer is "which cell, if any": an out-of-range index reads as a cell like any
+    // other to a caller keying anything by it, while a null cannot be keyed by at all.
+    private static final Integer NO_CELL_ACTIVATED = null;
+
     // This panel's scroll position, read by the layout and written by the wheel and by a drag.
     private final ScrollState scrollState = new ScrollState();
 
@@ -106,9 +112,9 @@ public final class PanelController {
      * @param flexViewport the scrolling control's viewport; a scrolling control only counts inside it
      * @param pointX       the press x, in UI coordinates
      * @param pointY       the press y, in UI coordinates
-     * @return whether the press landed on an actionable cell and fired its action
+     * @return the cell that fired, or {@code null} when the press acted on nothing
      */
-    static boolean activateControlIfHit(
+    static Integer activateControlIfHit(
             Control control,
             Rectangle flexViewport,
             float pointX,
@@ -116,18 +122,22 @@ public final class PanelController {
         if (control.spec() instanceof ControlSpec.VerticalTable table
                 && table.scrolls()
                 && !flexViewport.containsPoint(pointX, pointY)) {
-            return false;
+            return NO_CELL_ACTIVATED;
         }
         return activateControlIfHit(control, pointX, pointY);
     }
 
     /**
-     * Fires the control's action if the press lands on an actionable cell, and reports whether it did, for
-     * a control not subject to scroll-clipping (a panel header, or any control that never scrolls). A radio
+     * Fires the control's action if the press lands on an actionable cell, and reports which cell that was,
+     * for a control not subject to scroll-clipping (a panel header, or any control that never scrolls). The
+     * cell comes back rather than a bare yes/no because the hit-test is the only thing that resolved it: a
+     * caller wanting to mark the cell it just fired would otherwise walk the same segments a second time to
+     * recover a number this already had. A radio
      * or a tabs row hits by segment over the segments the layout laid; a radio whose reselect swallows a
      * re-pick - and a tabs row, always inert on its lit tab - treats a press on the lit segment as inert,
      * while a re-firing radio reads the raw hit so a press on the lit segment reaches its action. A
-     * single-cell checkbox or toggle hits anywhere on its row, reported as cell 0. A caption label or a
+     * single-cell checkbox or toggle hits anywhere on its row, reported as {@link
+     * ControlSpec#SINGLE_CELL}. A caption label or a
      * divider is not a hit target and is skipped, so the press falls through to a control below rather than
      * being swallowed on an inert action. The action's meaning stays with whoever supplied the spec - this
      * only maps the click to a cell. A control in a scrollable strip uses {@link
@@ -138,14 +148,14 @@ public final class PanelController {
      * @param control the laid-out control to hit-test
      * @param pointX  the press x, in UI coordinates
      * @param pointY  the press y, in UI coordinates
-     * @return whether the press landed on an actionable cell and fired its action
+     * @return the cell that fired, or {@code null} when the press acted on nothing
      */
-    static boolean activateControlIfHit(Control control, float pointX, float pointY) {
+    static Integer activateControlIfHit(Control control, float pointX, float pointY) {
         // A caption row and a divider are drawn but not clickable - they are not Interactive - so a press
         // over either hits nothing and falls through to let the loop try the controls below, never
         // consuming a click as if it acted. The divider matters here because it spans the whole body width.
         if (!(control.spec() instanceof ControlSpec.Interactive interactive)) {
-            return false;
+            return NO_CELL_ACTIVATED;
         }
         // A radio or a tabs row hits by segment over the segments the layout laid - a radio's equal cells
         // or a tabs row's per-tab boxes. The reselect behaviour then selects raw-hit (a re-pick fires) vs
@@ -165,16 +175,16 @@ public final class PanelController {
                     pointX,
                     pointY);
             if (segmentIndex == RadioRow.NO_SEGMENT) {
-                return false;
+                return NO_CELL_ACTIVATED;
             }
             interactive.action().activateCell(segmentIndex);
-            return true;
+            return segmentIndex;
         }
         if (!control.bounds().containsPoint(pointX, pointY)) {
-            return false;
+            return NO_CELL_ACTIVATED;
         }
-        interactive.action().activateCell(0);
-        return true;
+        interactive.action().activateCell(ControlSpec.SINGLE_CELL);
+        return ControlSpec.SINGLE_CELL;
     }
 
     // Starts a scrollbar drag when a left press lands on the grab column, reporting whether it did. The
@@ -236,10 +246,11 @@ public final class PanelController {
 
     // Routes a left press inside the box to the body control under it: a control fires its action. A press
     // on the border or blank body falls through to no control and only consumes (handled by the caller),
-    // so empty chrome swallows the click without acting.
+    // so empty chrome swallows the click without acting. Which cell fired is immaterial here - the action
+    // carries it - so only "did one" is read; a header tab is what needs the cell itself.
     private static void actOnLeftPress(PanelPlacement placement, float pointX, float pointY) {
         for (var control : placement.bodyControls()) {
-            if (activateControlIfHit(control, placement.flexViewport(), pointX, pointY)) {
+            if (activateControlIfHit(control, placement.flexViewport(), pointX, pointY) != null) {
                 return;
             }
         }

@@ -20,14 +20,17 @@ public final class TabStyles {
     private static final Color STAND_IN_SHADE = Color.GRAY;
 
     // No pulse lift in either momentary role: these tests draw nothing, so a lift would only suggest the
-    // layout reserves something for one (it does not - a wash costs no room).
+    // layout reserves something for one (it does not - a wash costs no room). A zero strength blends
+    // nowhere, so which colour the lift names never shows.
+    private static final TabWash STAND_IN_NO_LIFT = new TabWash(STAND_IN_SHADE, 0f);
+
     private static final TabPalette STAND_IN_PALETTE = new TabPalette(
         STAND_IN_SHADE,
         new TabLook(STAND_IN_SHADE, STAND_IN_SHADE),
         new TabLook(STAND_IN_SHADE, STAND_IN_SHADE),
         new TabLook(STAND_IN_SHADE, STAND_IN_SHADE),
-        TabWash.NONE,
-        TabWash.NONE);
+        STAND_IN_NO_LIFT,
+        STAND_IN_NO_LIFT);
 
     // A plain key in the same stand-in shade: the tests here draw nothing, so how a bound key is
     // presented never reaches an assertion, and the un-emphasised look keeps the fixture from implying

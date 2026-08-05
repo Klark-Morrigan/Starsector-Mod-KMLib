@@ -221,14 +221,14 @@ final class TabPanelControllerTest {
     }
 
     @Nested
-    class AdvanceInputMotionsForHovered {
+    class AdvanceInputMotionsForFrame {
 
         @Test
-        void advanceInputMotionsForHoveredRaisesTheNamedTabInTheSourceTheRendererReads() {
+        void advanceInputMotionsForFrameRaisesTheNamedTabInTheSourceTheRendererReads() {
             // The seam the paint pass actually consumes: a fade stepped here has to surface through the
             // interaction sources, or the strip paints a row that never moves however long it is hovered.
             var controller = new TabPanelController();
-            controller.advanceInputMotionsForHovered(
+            controller.advanceInputMotionsForFrame(
                 FIRST_TAB_INDEX,
                 NOTCH_NOT_HOVERED,
                 FULL_STEP_SECONDS,
@@ -241,17 +241,17 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void advanceInputMotionsForHoveredWindsTheDepartedTabBackDown() {
+        void advanceInputMotionsForFrameWindsTheDepartedTabBackDown() {
 
             var controller = new TabPanelController();
 
-            controller.advanceInputMotionsForHovered(
+            controller.advanceInputMotionsForFrame(
                 FIRST_TAB_INDEX,
                 NOTCH_NOT_HOVERED,
                 FULL_STEP_SECONDS,
                 DURATION_SECONDS);
 
-            controller.advanceInputMotionsForHovered(
+            controller.advanceInputMotionsForFrame(
                 SECOND_TAB_INDEX,
                 NOTCH_NOT_HOVERED,
                 FULL_STEP_SECONDS,
@@ -264,11 +264,11 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void advanceInputMotionsForHoveredHoversNoTabWhileThePanelIsNotFullyExpanded() {
+        void advanceInputMotionsForFrameHoversNoTabWhileThePanelIsNotFullyExpanded() {
             // A docked panel's header is behind the rail, so a tab still laid out under the pointer is not
             // one the player can see - the gate drops it however plainly the hit-test named it.
             var controller = TabPanelController.createStartingDocked();
-            controller.advanceInputMotionsForHovered(
+            controller.advanceInputMotionsForFrame(
                 FIRST_TAB_INDEX,
                 NOTCH_NOT_HOVERED,
                 FULL_STEP_SECONDS,
@@ -279,10 +279,10 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void advanceInputMotionsForHoveredLightsTheHandleWhileThePointerIsOnIt() {
+        void advanceInputMotionsForFrameLightsTheHandleWhileThePointerIsOnIt() {
 
             var controller = new TabPanelController();
-            controller.advanceInputMotionsForHovered(
+            controller.advanceInputMotionsForFrame(
                 NO_TAB_HOVERED,
                 NOTCH_HOVERED,
                 FULL_STEP_SECONDS,
@@ -293,17 +293,17 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void advanceInputMotionsForHoveredDimsTheHandleOnceThePointerLeavesIt() {
+        void advanceInputMotionsForFrameDimsTheHandleOnceThePointerLeavesIt() {
 
             var controller = new TabPanelController();
 
-            controller.advanceInputMotionsForHovered(
+            controller.advanceInputMotionsForFrame(
                 NO_TAB_HOVERED,
                 NOTCH_HOVERED,
                 FULL_STEP_SECONDS,
                 DURATION_SECONDS);
 
-            controller.advanceInputMotionsForHovered(
+            controller.advanceInputMotionsForFrame(
                 NO_TAB_HOVERED,
                 NOTCH_NOT_HOVERED,
                 FULL_STEP_SECONDS,
@@ -314,11 +314,11 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void advanceInputMotionsForHoveredLightsTheHandleWhileThePanelIsDocked() {
+        void advanceInputMotionsForFrameLightsTheHandleWhileThePanelIsDocked() {
             // The handle is the one part of a docked panel still on screen - it is what brings the body
             // back - so the gate that silences the tabs must not reach it.
             var controller = TabPanelController.createStartingDocked();
-            controller.advanceInputMotionsForHovered(
+            controller.advanceInputMotionsForFrame(
                 NO_TAB_HOVERED,
                 NOTCH_HOVERED,
                 FULL_STEP_SECONDS,
@@ -329,7 +329,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void advanceInputMotionsForHoveredRunsAClickPulseBackOutWithNoPointerOnTheTab() {
+        void advanceInputMotionsForFrameRunsAClickPulseBackOutWithNoPointerOnTheTab() {
             // A pulse takes no pointer: the press that started it has been and gone, so its cycle has to
             // run its course with the cursor anywhere at all, and finish without a second event.
             var controller = new TabPanelController();
@@ -339,13 +339,13 @@ final class TabPanelControllerTest {
                 INSIDE_SECOND_TAB_X,
                 ON_TAB_ROW_Y);
 
-            controller.advanceInputMotionsForHovered(
+            controller.advanceInputMotionsForFrame(
                 NO_TAB_HOVERED,
                 NOTCH_NOT_HOVERED,
                 FULL_STEP_SECONDS,
                 DURATION_SECONDS);
 
-            controller.advanceInputMotionsForHovered(
+            controller.advanceInputMotionsForFrame(
                 NO_TAB_HOVERED,
                 NOTCH_NOT_HOVERED,
                 FULL_STEP_SECONDS,
@@ -439,7 +439,7 @@ final class TabPanelControllerTest {
             // Otherwise the next session opens painting the tail of a hover the player never saw begin.
             var controller = new TabPanelController();
 
-            controller.advanceInputMotionsForHovered(
+            controller.advanceInputMotionsForFrame(
                 FIRST_TAB_INDEX,
                 NOTCH_NOT_HOVERED,
                 HALF_STEP_SECONDS,
@@ -457,7 +457,7 @@ final class TabPanelControllerTest {
             // still pointer cannot paint one part lit and the other at rest.
             var controller = new TabPanelController();
 
-            controller.advanceInputMotionsForHovered(
+            controller.advanceInputMotionsForFrame(
                 NO_TAB_HOVERED,
                 NOTCH_HOVERED,
                 HALF_STEP_SECONDS,
@@ -480,7 +480,7 @@ final class TabPanelControllerTest {
                 INSIDE_SECOND_TAB_X,
                 ON_TAB_ROW_Y);
 
-            controller.advanceInputMotionsForHovered(
+            controller.advanceInputMotionsForFrame(
                 NO_TAB_HOVERED,
                 NOTCH_NOT_HOVERED,
                 HALF_STEP_SECONDS,
@@ -553,7 +553,7 @@ final class TabPanelControllerTest {
     // an unstarted one at rest, telling the two apart in one number. The pointer is on nothing, so a fade
     // cannot be mistaken for the lift being asked about.
     private static void advanceAWholeTraverse(TabPanelController controller) {
-        controller.advanceInputMotionsForHovered(
+        controller.advanceInputMotionsForFrame(
             NO_TAB_HOVERED,
             NOTCH_NOT_HOVERED,
             FULL_STEP_SECONDS,
