@@ -2,12 +2,12 @@ package kmlib.starsector.ui.input;
 
 import com.fs.starfarer.api.input.InputEventAPI;
 
+import kmlib.animation.PulseEnvelopes;
 import kmlib.starsector.ui.widgets.RadioRow;
 import kmlib.starsector.ui.widgets.scroll.ScrollState;
 import kmlib.starsector.ui.widgets.tabs.TabInteractionSources;
 import kmlib.starsector.ui.widgets.tabs.TabPanelCollapse;
 import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
-import kmlib.starsector.ui.widgets.tabs.TabWashSource;
 
 /**
  * Drives one tab panel's pointer input: it routes a left press on a header tab to that tab's own action,
@@ -18,16 +18,19 @@ import kmlib.starsector.ui.widgets.tabs.TabWashSource;
  * agnostic to what selecting a tab does.
  *
  * <p>One controller per panel, since it holds that panel's runtime state across frames: the body's scroll
- * and drag state, the collapse animation, and the hover fades of the parts that light under the pointer -
- * the header tabs and the collapse handle. A host creates it, reads its {@link #getScrollState()} and
- * {@link #getCollapseFraction()} when it lays the panel out, advances the collapse and the hover fades each
- * frame it draws, reads {@link #getTabInteractionSources()} and {@link #getNotchHoverFraction()} to paint
- * with, and feeds it pointer events. That state lives here beside the scroll offset because all of it
- * is the panel's own transient per-session UI state, not the host's; a consumer that lays out a placement and
- * pumps this controller inherits the collapse handle and the live tabs without wiring either animation
- * itself. The panel opens
+ * and drag state, the collapse animation, the hover fades of the parts that light under the pointer - the
+ * header tabs and the collapse handle - and the click pulses its tabs are carrying. A host creates it, reads
+ * its {@link #getScrollState()} and {@link #getCollapseFraction()} when it lays the panel out, advances the
+ * collapse and the input motions each frame it draws, reads {@link #getTabInteractionSources()} and {@link
+ * #getNotchHoverFraction()} to paint with, and feeds it pointer events. That state lives here beside the
+ * scroll offset because all of it is the panel's own transient per-session UI state, not the host's; a
+ * consumer that lays out a placement and pumps this controller inherits the collapse handle and the live
+ * tabs without wiring any of those animations itself. The panel opens
  * expanded by default, or collapsed to its docked rail via {@link #createStartingDocked()}, so a host picks
  * the initial fold at construction rather than driving the animation to reach it.
+ *
+ * <p>Every animation here is timed and nothing here is coloured. What a fraction lifts a tab toward is the
+ * strip's paint, resolved where the palette is; this end knows only how far each has run.
  */
 public final class TabPanelController {
     // The body's controller, owning the scroll and drag state; this routes everything but a header-tab or
@@ -43,6 +46,11 @@ public final class TabPanelController {
     // state rather than on the placement, which is an immutable value the layout computes: a fade is where
     // the panel currently stands, not where its parts sit.
     private final HoverFades<Integer> tabHoverFades = new HoverFades<>();
+
+    // The click lift each header tab is carrying, keyed the same way the fades are. A separate holder rather
+    // than a second reading off the fades because the two motions differ in kind: a hover is a position the
+    // pointer holds a tab at, a click is an event that runs its own course after the press that started it.
+    private final PulseEnvelopes<Integer> tabClickPulses = new PulseEnvelopes<>();
 
     // How far the collapse handle has travelled onto its lit look. A lone fade rather than a keyed set,
     // there being one handle per panel, and a fraction rather than a flag so the notch lights and dims at
@@ -112,10 +120,9 @@ public final class TabPanelController {
      * @return the panel's live tab interaction channels
      */
     public TabInteractionSources getTabInteractionSources() {
-        // No pulse animator exists yet, so the lift channel rests; the hover channel is live.
         return new TabInteractionSources(
             tabHoverFades::resolveHoverFractionAt,
-            TabWashSource.createRestingWashSource());
+            tabClickPulses::resolvePulseFractionAt);
     }
 
     /**
@@ -132,10 +139,11 @@ public final class TabPanelController {
     }
 
     /**
-     * Steps every hover fade the panel holds - its header tabs' and its collapse handle's - by a frame's
-     * worth of time, for the host to call each frame it draws, after it has resolved the placement. One call
-     * rather than one per hovered part, so the panel's elements cannot be advanced against different
-     * placements or charged different slices of the same frame.
+     * Steps every motion the panel makes in answer to input - its header tabs' and its collapse handle's
+     * hover fades, and the click pulses running on its tabs - by a frame's worth of time, for the host to
+     * call each frame it draws, after it has resolved the placement. One call rather than one per motion, so
+     * the panel's parts cannot be advanced against different placements or charged different slices of the
+     * same frame.
      *
      * <p>What is under the pointer is resolved against the very placement being drawn rather than latched
      * from the last pointer event. That is what keeps a fade honest when the panel moves under a still
@@ -149,15 +157,18 @@ public final class TabPanelController {
      *
      * @param placement       the laid-out tab panel this frame is drawing
      * @param elapsedSeconds  real time since the last frame the host drew
-     * @param durationSeconds how long a full fade onto a hovered look should take; zero or less snaps
+     * @param durationSeconds how long one traverse should take - a fade onto a hovered look, or the rise or
+     *                        the fall of a pulse; zero or less snaps. One pace for every motion the panel
+     *                        makes in answer to input, since two written beside each other is how one panel
+     *                        ends up with two rhythms
      */
-    public void advanceHoverFades(
+    public void advanceInputMotions(
             TabPanelPlacement placement,
             float elapsedSeconds,
             float durationSeconds) {
 
         // One cursor read spent on both hit-tests, so the tab and the handle answer the same pointer.
-        advanceHoverFadesAtPoint(
+        advanceInputMotionsAtPoint(
             placement,
             UiCursor.getUiX(),
             UiCursor.getUiY(),
@@ -174,21 +185,23 @@ public final class TabPanelController {
     }
 
     /**
-     * Drops every hover fade the panel holds, for the host to call when the panel stops showing. A fade left
-     * part-way up would otherwise be the first thing the next session paints and then wind down, showing the
-     * player the tail of a hover they never saw begin - the same reason a host drops its frame clock there.
+     * Drops every input motion the panel holds, for the host to call when the panel stops showing. A fade
+     * left part-way up, or a pulse left part-way through its cycle, would otherwise be the first thing the
+     * next session paints and then wind down, showing the player the tail of an interaction they never saw
+     * begin - the same reason a host drops its frame clock there.
      */
-    public void resetHoverFades() {
+    public void resetInputMotions() {
         tabHoverFades.resetFades();
         notchHoverFade.resetFade();
+        tabClickPulses.resetPulses();
     }
 
     /**
      * Handles one pointer event over the tab panel: a left press on the collapse notch flips the fold and a
-     * left press on a header tab fires that tab's own action (each consumed); every other event - body
-     * control hits, the scrollbar drag, the wheel - is the body's, delegated to its {@link PanelController}.
-     * Hover is none of its business: the fades are resolved per frame against the drawn placement by {@link
-     * #advanceHoverFades}, so nothing here has to be latched for the render pass.
+     * left press on a header tab fires that tab's own action and pulses it (each consumed); every other event
+     * - body control hits, the scrollbar drag, the wheel - is the body's, delegated to its {@link
+     * PanelController}. Hover is none of its business: the fades are resolved per frame against the drawn
+     * placement by {@link #advanceInputMotions}, so nothing here has to be latched for the render pass.
      *
      * @param event     the pointer event
      * @param placement the laid-out tab panel the renderer drew this frame
@@ -204,13 +217,10 @@ public final class TabPanelController {
             event.consume();
             return;
         }
-        // A left press on a header tab fires that tab's action; the header never scrolls, so it is not
-        // clipped. Only a left press hits a tab - a wheel or an in-progress drag over the header falls
-        // through to the body, which simply finds nothing there and consumes it, the same as any chrome.
-        if (event.isLMBDownEvent() && PanelController.activateControlIfHit(
-                placement.tabsHeader(),
-                event.getX(),
-                event.getY())) {
+        // A left press on a header tab fires that tab's action and pulses it. Only a left press hits a tab -
+        // a wheel or an in-progress drag over the header falls through to the body, which simply finds
+        // nothing there and consumes it, the same as any chrome.
+        if (event.isLMBDownEvent() && activateTabAtPoint(placement, event.getX(), event.getY())) {
             event.consume();
             return;
         }
@@ -218,42 +228,74 @@ public final class TabPanelController {
     }
 
     /**
-     * Steps the fades for a pointer at a given point, hit-testing the panel's two hoverable parts against
-     * the placement being drawn. Split from the cursor read above for the same reason {@link UiCursor} keeps
-     * its scaling separable from its LWJGL read: this is where each part is paired with the hit-test that
-     * decides it - a pairing crossed over would light the handle for a tab - and the split is what lets that
-     * pairing be checked without a display to point at.
+     * Fires the header tab a press landed on and starts that tab's click pulse, reporting whether it acted.
+     * Split from the event above so the pairing this seam exists for - the tab that fires is the tab that
+     * pulses - can be checked without an engine input event to raise.
+     *
+     * <p>The pulse follows the action rather than the press. A press on the tab the panel is already showing
+     * fires nothing (a tabs row is inert on its lit tab, as a vanilla strip is), so it lifts nothing either:
+     * the pulse confirms a switch, and a tab that did not switch has nothing to confirm.
+     *
+     * @param placement the laid-out tab panel the renderer drew this frame
+     * @param pointX    the press x in UI coordinates, the coordinates the placement is laid out in
+     * @param pointY    the press y in UI coordinates
+     * @return whether the press landed on a tab that acted
+     */
+    boolean activateTabAtPoint(TabPanelPlacement placement, float pointX, float pointY) {
+
+        // The header never scrolls, so it hit-tests unclipped, unlike a body control in the flex list.
+        if (!PanelController.activateControlIfHit(placement.tabsHeader(), pointX, pointY)) {
+            return false;
+        }
+        // Resolved through the same segment hit-test the hover fades use, so the tab that lifts is the tab
+        // that fired. A tab that fired is a tab a segment was found for, which is why nothing here has to
+        // answer for a press that acted on no segment.
+        tabClickPulses.startPulseAt(resolveTabIndexAtPoint(placement, pointX, pointY));
+
+        return true;
+    }
+
+    /**
+     * Steps the input motions for a pointer at a given point, hit-testing the panel's two hoverable parts
+     * against the placement being drawn. Split from the cursor read above for the same reason {@link
+     * UiCursor} keeps its scaling separable from its LWJGL read: this is where each part is paired with the
+     * hit-test that decides it - a pairing crossed over would light the handle for a tab - and the split is
+     * what lets that pairing be checked without a display to point at.
      *
      * @param placement       the laid-out tab panel this frame is drawing
      * @param pointX          the pointer's x in UI coordinates, the coordinates the placement is laid out in
      * @param pointY          the pointer's y in UI coordinates
      * @param elapsedSeconds  real time since the last frame the host drew
-     * @param durationSeconds how long a full fade onto a hovered look should take; zero or less snaps
+     * @param durationSeconds how long one traverse should take; zero or less snaps
      */
-    void advanceHoverFadesAtPoint(
+    void advanceInputMotionsAtPoint(
             TabPanelPlacement placement,
             float pointX,
             float pointY,
             float elapsedSeconds,
             float durationSeconds) {
 
-        advanceHoverFadesTowardHovered(
-            resolveHoveredTabIndex(placement, pointX, pointY),
+        advanceInputMotionsForHovered(
+            resolveTabIndexAtPoint(placement, pointX, pointY),
             placement.containsPointInNotch(pointX, pointY),
             elapsedSeconds,
             durationSeconds);
     }
 
     /**
-     * Steps the fades toward the named elements, once the hit-tests above have settled which those are, and
-     * applies the docked gate the tabs answer to.
+     * Steps every motion toward where it is heading, once the hit-tests above have settled what the pointer
+     * is on, and applies the docked gate the tabs answer to.
+     *
+     * <p>The pulses take no pointer at all: a click is an event already seen, and its cycle runs on wherever
+     * the pointer went afterwards. They are stepped here rather than on a call of their own so one frame's
+     * time is charged to every motion the panel makes, at one pace.
      *
      * @param hoveredTabIndex the tab the pointer is on this frame, or null when it is on none
      * @param isNotchHovered  whether the pointer is on the collapse handle this frame
      * @param elapsedSeconds  real time since the last frame the host drew
-     * @param durationSeconds how long a full fade onto a hovered look should take; zero or less snaps
+     * @param durationSeconds how long one traverse should take; zero or less snaps
      */
-    void advanceHoverFadesTowardHovered(
+    void advanceInputMotionsForHovered(
             Integer hoveredTabIndex,
             boolean isNotchHovered,
             float elapsedSeconds,
@@ -270,19 +312,20 @@ public final class TabPanelController {
             durationSeconds);
 
         notchHoverFade.advanceTowardHover(isNotchHovered, elapsedSeconds, durationSeconds);
+        tabClickPulses.advanceByElapsedTime(elapsedSeconds, durationSeconds);
     }
 
     /**
-     * Which header tab a point falls on, as the key a hover fade is held under. Resolved over the header
-     * control's laid segments - the same rectangles a press is hit-tested against - so the tab that lights
-     * and the tab that would fire are always the same one.
+     * Which header tab a point falls on, as the key a fade or a pulse is held under. Resolved over the header
+     * control's laid segments - the same rectangles a press is hit-tested against - so the tab that lights,
+     * the tab that lifts, and the tab that fires are always the same one.
      *
      * @param placement the laid-out tab panel to test against
      * @param pointX    the point's x in UI coordinates, the coordinates the placement is laid out in
      * @param pointY    the point's y in UI coordinates
      * @return the tab's index, or null when the point is on no tab
      */
-    static Integer resolveHoveredTabIndex(
+    static Integer resolveTabIndexAtPoint(
             TabPanelPlacement placement,
             float pointX,
             float pointY) {
@@ -292,8 +335,8 @@ public final class TabPanelController {
             pointX,
             pointY);
 
-        // Null rather than the row-miss sentinel, because a keyed fade set is asked "which element, if any"
-        // and an out-of-row index would be a key like another - one fade per place the pointer has missed.
+        // Null rather than the row-miss sentinel, because a keyed animation set is asked "which element, if
+        // any" and an out-of-row index would be a key like another - one entry per place the pointer missed.
         return segmentIndex == RadioRow.NO_SEGMENT
             ? null
             : segmentIndex;

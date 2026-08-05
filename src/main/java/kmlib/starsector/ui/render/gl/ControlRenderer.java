@@ -20,6 +20,7 @@ import kmlib.starsector.ui.widgets.LabelledRow;
 import kmlib.starsector.ui.widgets.RowSlot;
 import kmlib.starsector.ui.widgets.tabs.TabInteractionSources;
 import kmlib.starsector.ui.widgets.tabs.TabLookSource;
+import kmlib.starsector.ui.widgets.tabs.TabWashSource;
 import kmlib.starsector.ui.widgets.tabs.VanillaTabStrip;
 
 import org.lazywizard.lazylib.ui.LazyFont;
@@ -123,9 +124,10 @@ public final class ControlRenderer {
         // it was laid out under.
         var tabStyle = paint.style().tabStyle();
 
-        // Neither channel is resolved here: the cursor is not read (the panel's own state says which tab
-        // is hovered, tested against the placement it was drawn at) and no timing is held (a click or a
-        // key press is an event, and its decay belongs with whatever saw it).
+        // Both channels arrive as bare fractions and are bound to the palette here, the one place holding
+        // both. Neither is resolved from scratch: the cursor is not read (the panel's own state says which
+        // tab is hovered, tested against the placement it was drawn at) and no timing is held (a click is an
+        // event, and its decay belongs with whatever saw it).
         VanillaTabStripRenderer.render(
             tabs,
             spec.selectedIndex(),
@@ -133,7 +135,9 @@ public final class ControlRenderer {
                 tabStyle.palette(),
                 spec.selectedIndex(),
                 tabInteractions.hoverSource()),
-            tabInteractions.washSource(),
+            TabWashSource.createClickPulsedWashSource(
+                tabStyle.palette(),
+                tabInteractions.pulseSource()),
             tabStyle,
             paint.opacity());
     }

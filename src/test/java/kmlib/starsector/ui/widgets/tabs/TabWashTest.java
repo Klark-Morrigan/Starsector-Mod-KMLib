@@ -9,10 +9,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 
 /**
- * Pins {@link TabWash}: a lift is clamped into the unit range whatever composes it, and moves a colour
- * toward its target by exactly that fraction while leaving the colour's own transparency alone - the rule
- * a tab's fill and its label are both lifted by, so a drift here would part a washed fill from the text
- * standing on it.
+ * Pins {@link TabWash}: a lift is clamped into the unit range whatever composes it, scales to a fraction of
+ * its own depth without changing the colour it lifts toward, and moves a colour toward its target by exactly
+ * that fraction while leaving the colour's own transparency alone - the rule a tab's fill and its label are
+ * both lifted by, so a drift here would part a washed fill from the text standing on it.
  */
 final class TabWashTest {
     
@@ -46,6 +46,48 @@ final class TabWashTest {
             // blending past it and back out the far side.
             assertThat(new TabWash(TARGET_COLOUR, 1.6f).strength())
                 .isCloseTo(1f, within(TOLERANCE));
+        }
+    }
+
+    @Nested
+    class ComputeScaledWash {
+
+        @Test
+        void computeScaledWashKeepsTheTargetAndScalesTheDepth() {
+            // A decaying lift fades back along the one colour it lifted toward, so only the depth moves.
+            var scaled = new TabWash(TARGET_COLOUR, 0.4f).computeScaledWash(0.5f);
+
+            assertThat(scaled.target())
+                .isEqualTo(TARGET_COLOUR);
+            assertThat(scaled.strength())
+                .isCloseTo(0.2f, within(TOLERANCE));
+        }
+
+        @Test
+        void computeScaledWashReachesTheFullDepthAtTheTopOfTheRange() {
+            assertThat(new TabWash(TARGET_COLOUR, 0.4f).computeScaledWash(1f).strength())
+                .isCloseTo(0.4f, within(TOLERANCE));
+        }
+
+        @Test
+        void computeScaledWashLiftsNothingAtTheBottomOfTheRange() {
+            // What a tab with no pulse running on it carries, so nothing at rest needs a path of its own.
+            assertThat(new TabWash(TARGET_COLOUR, 0.4f).computeScaledWash(0f).strength())
+                .isCloseTo(0f, within(TOLERANCE));
+        }
+
+        @Test
+        void computeScaledWashCannotBeDrivenPastTheFullDepth() {
+            // The strength clamp catches an out-of-range fraction, so an overshooting animator settles the
+            // tab at its peak rather than blending past the target.
+            assertThat(new TabWash(TARGET_COLOUR, 0.4f).computeScaledWash(4f).strength())
+                .isCloseTo(1f, within(TOLERANCE));
+        }
+
+        @Test
+        void computeScaledWashFloorsANegativeFractionAtNoLift() {
+            assertThat(new TabWash(TARGET_COLOUR, 0.4f).computeScaledWash(-1f).strength())
+                .isCloseTo(0f, within(TOLERANCE));
         }
     }
 

@@ -51,10 +51,9 @@ public record TabPalette(
     // pointer landing on the tab.
     private static final float HOTKEY_WHITE_WASH = 0.15f;
 
-    // TODO: no animator drives the click and hotkey lifts yet - a strip paints its looks and nothing
-    // more until per-tab pulse timing lands, at which point these peaks are what it decays from. The
-    // hotkey blink's "no louder than a hover" rule needs restating against the hovered look then, since
-    // the hovered shade is no longer a wash depth two pulses can be compared with.
+    // TODO: no animator drives the hotkey lift yet - a bound key's press selects its tab without marking
+    // it, until the blink lands. Its "no louder than a hover" rule needs restating against the hovered
+    // look then, since the hovered shade is no longer a wash depth two pulses can be compared with.
 
     /**
      * The live vanilla map-tab paint: the player base colour for the chrome accent, the fixed map-tab

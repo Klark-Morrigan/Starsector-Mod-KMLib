@@ -14,14 +14,25 @@ package kmlib.starsector.ui.widgets.tabs;
 public interface TabWashSource {
 
     /**
-     * Builds a source lifting no tab at all - what a strip drawn without an animator behind it reports,
-     * every tab painting the settled look its state names. Named rather than left to each caller's own
-     * empty lambda, so a strip with no pulses running says so in one recognisable way.
+     * Binds a palette's click lift to a row's live pulses: each tab carries that lift scaled to however far
+     * through its click cycle it currently is, so a tab with none carries a wash that moves it nowhere. Held
+     * here rather than at each caller so the map strip and the raised-button chrome lift a tab identically.
      *
-     * @return a source answering {@link TabWash#NONE} for every index
+     * <p>This is where the panel's animator and the strip's paint meet, and the split either side of it is
+     * the point: the animator counts frames and knows no colour, the palette names a colour and knows no
+     * time, and only this binding needs both.
+     *
+     * @param palette the strip's paint - the peak depth a click lifts a tab by
+     * @param pulses  how far through its lift each tab currently is
+     * @return a source answering the resolved wash for any index in the row
      */
-    static TabWashSource createRestingWashSource() {
-        return tabIndex -> TabWash.NONE;
+    static TabWashSource createClickPulsedWashSource(TabPalette palette, TabPulseSource pulses) {
+
+        // Resolved once for the row rather than per tab: the peak is the palette's, so asking it per index
+        // would answer the same wash as many times as the row is long.
+        var clickPeak = palette.resolveWash(TabWashState.CLICKED);
+
+        return tabIndex -> clickPeak.computeScaledWash(pulses.resolvePulseFractionAt(tabIndex));
     }
 
     /**

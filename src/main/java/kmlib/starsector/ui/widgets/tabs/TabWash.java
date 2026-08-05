@@ -42,6 +42,23 @@ public record TabWash(
     }
 
     /**
+     * This wash part of the way to its full depth - the same target, reached by that fraction of the
+     * strength. It is what turns a palette's peak lift into the lift a tab is carrying right now: the peak
+     * says how bright a click reads at its brightest, the fraction says how far through the click's cycle
+     * the tab has got, and only the two together describe a frame.
+     *
+     * <p>The target is untouched, so a decaying pulse fades back along the one colour it lifted toward
+     * rather than sliding through shades no palette named.
+     *
+     * @param fraction how far up the wash's own depth to go, 0 (no lift) to 1 (the full depth); an
+     *                 out-of-range value is confined by the strength clamp above
+     * @return the wash at that depth
+     */
+    public TabWash computeScaledWash(float fraction) {
+        return new TabWash(target, strength * fraction);
+    }
+
+    /**
      * Moves one of the tab's colours toward this wash's target by its strength, keeping the colour's own
      * alpha - the rule the fill and the label are both lifted by, held here so every renderer drawing a
      * washed tab lifts them the same way.

@@ -28,7 +28,7 @@ final class TabInteractionSourcesTest {
 
         @Test
         void restingLiftsNoTab() {
-            assertThat(TabInteractionSources.RESTING.washSource().resolveWashAt(ANY_INDEX).strength())
+            assertThat(TabInteractionSources.RESTING.pulseSource().resolvePulseFractionAt(ANY_INDEX))
                 .isCloseTo(0f, within(TOLERANCE));
         }
     }

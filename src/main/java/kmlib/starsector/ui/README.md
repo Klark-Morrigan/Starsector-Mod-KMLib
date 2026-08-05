@@ -304,7 +304,7 @@ standing for a count is not prose.
 | [`font`](font/) | split | the [face enum](font/StarsectorFont.java) every atlas is named through, the measurement ports, and their LazyFont-bound implementations and [caches](../../../../../../docs/dev/caching.md) |
 | [`render/gl`](render/gl/) | GL | every raw-GL painter, its styles, and the [state guard](render/gl/GlStateGuard.java) |
 | [`debug`](debug/) | GL | the on-screen debug HUD |
-| [`input`](input/) | GL | `UiCursor`, the panel input controllers, and the [hover fades](input/HoverFades.java) they hold - how far each element has travelled onto its hovered look, over [`EasedFraction`](../../animation/EasedFraction.java) so every animation on a panel eases alike |
+| [`input`](input/) | GL | `UiCursor`, the panel input controllers, and the motions they hold in answer to input: the [hover fades](input/HoverFades.java) saying how far each element has travelled onto its hovered look, and the [click pulses](../../animation/PulseEnvelopes.java) saying how far through its lift each tab is. Both run on [`EasedFraction`](../../animation/EasedFraction.java) at one duration, so every animation on a panel eases and paces alike |
 | [`highlight`](highlight/) | vanilla | `Highlight`, `HighlightedParagraph`, `HighlightedMessage` |
 | [`tooltip`](tooltip/) | vanilla | [`Tooltips`](tooltip/Tooltips.java), the `TooltipCreator` boilerplate wrapper - the vanilla surface's answer to what [`widgets/tooltip`](widgets/tooltip/) holds neutrally |
 | [`intel`](intel/) | split | the screen-view port and its vanilla implementation |
