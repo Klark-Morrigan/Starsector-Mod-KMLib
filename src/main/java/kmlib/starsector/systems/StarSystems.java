@@ -249,12 +249,10 @@ public final class StarSystems {
             SectorAPI sector,
             StarSystemAPI system,
             boolean shouldIncludeUndiscoveredMarkets) {
-        for (var market : readMarkets(sector, system)) {
-            if (Markets.isCountedAsColony(market, shouldIncludeUndiscoveredMarkets)) {
-                return true;
-            }
-        }
-        return false;
+        return hasMarketMatching(
+            sector,
+            system,
+            market -> Markets.isCountedAsColony(market, shouldIncludeUndiscoveredMarkets));
     }
 
     /**
@@ -276,12 +274,10 @@ public final class StarSystems {
             SectorAPI sector,
             StarSystemAPI system,
             boolean shouldIncludeUndiscoveredMarkets) {
-        for (var market : readMarkets(sector, system)) {
-            if (Markets.isFoundColony(market, shouldIncludeUndiscoveredMarkets)) {
-                return true;
-            }
-        }
-        return false;
+        return hasMarketMatching(
+            sector,
+            system,
+            market -> Markets.isFoundColony(market, shouldIncludeUndiscoveredMarkets));
     }
 
     /**
@@ -412,6 +408,22 @@ public final class StarSystems {
             }
         }
         return null;
+    }
+
+    // The shape every "is there a market like this here" read shares: walk the system's economy
+    // and stop at the first match. Shared so those reads differ only in the filter they name,
+    // which is the whole of what separates them, and so an unreachable economy is handled once.
+    private static boolean hasMarketMatching(
+            SectorAPI sector,
+            StarSystemAPI system,
+            Predicate<MarketAPI> isWantedMarket) {
+
+        for (var market : readMarkets(sector, system)) {
+            if (isWantedMarket.test(market)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // Whether a candidate star is a better centre reference than the current nearest: strictly
