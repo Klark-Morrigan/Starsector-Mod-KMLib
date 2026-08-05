@@ -190,6 +190,7 @@ wants depends on what it is deciding.
 | about the intel screen | [`IntelScreenView`](intel/IntelScreenView.java) | the visor's own widget, rectangle and filter |
 | about whichever screen is up | [`StarscapeMapPresence`](map/presence/StarscapeMapPresence.java) | either screen counts, and the asker cannot tell which it was called from |
 | the same, for the ordinary map | [`SchematicMapPresence`](map/presence/SchematicMapPresence.java) | the counterpart, not the negation - a screen with no map at all leaves both false |
+| the same, for a map in any look | [`AnyMapPresence`](map/presence/AnyMapPresence.java) | resolves before the filter is read, so it asks each host once where the pair above ask twice |
 | which widget the map is | [`ShownMapTab`](map/probes/ShownMapTab.java) | a rule about map-tab layout has to be rooted at the map tab, wherever it is |
 
 The host-blind reads exist for one situation: code reached through a hook that is not told
@@ -310,7 +311,7 @@ standing for a count is not prose.
 | [`intel`](intel/) | split | the screen-view port and its vanilla implementation |
 | [`coreui`](coreui/) | vanilla | [`CoreUiTree`](coreui/CoreUiTree.java), the by-name reach into the live widget tree that every screen's probes walk |
 | [`map/transform`](map/transform/) | split | the modelview-matrix port, its GL and Fast Rendering implementations, the [selector](map/transform/ModelviewMatrixReaders.java) between them, and the [transform](map/transform/CampaignMapTransform.java) and [cursor read](map/transform/MapCursor.java) built over it |
-| [`map/presence`](map/presence/) | vanilla | what the game is showing: the sector map's own [view state](map/presence/CampaignMapView.java), plus the host-blind [starscape](map/presence/StarscapeMapPresence.java) and [schematic](map/presence/SchematicMapPresence.java) reads that fold it together with the intel screen's map |
+| [`map/presence`](map/presence/) | vanilla | what the game is showing: the sector map's own [view state](map/presence/CampaignMapView.java), plus the host-blind [starscape](map/presence/StarscapeMapPresence.java), [schematic](map/presence/SchematicMapPresence.java) and [any-look](map/presence/AnyMapPresence.java) reads that fold it together with the intel screen's map |
 | [`map/probes`](map/probes/) | vanilla | the live reads into the map's widget tree over [`CoreUiTree`](coreui/CoreUiTree.java)'s by-name reach: [`ShownMapTab`](map/probes/ShownMapTab.java), the [surface bounds](map/probes/MapSurfaceBounds.java) that pick the map out of that tab by shape as a [surface area](map/probes/MapSurfaceArea.java) carrying the chrome drawn with it, [`VanillaMapTooltip`](map/probes/VanillaMapTooltip.java), and the [widget trace](map/probes/MapTabWidgetTrace.java) that describes what the cursor is inside for a consumer to log as its own |
 
 The map is three packages rather than one because the three read different things - GL state,
