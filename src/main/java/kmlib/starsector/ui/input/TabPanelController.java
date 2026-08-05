@@ -248,8 +248,9 @@ public final class TabPanelController {
      * showing still blinks. That is the opposite of the click pulse, which follows the action: a press has an
      * inert tab under it to explain why nothing happened, and a keypress has nothing on screen at all.
      *
-     * <p>The blink shows nothing while the pointer is on that same tab, the two sharing one channel and
-     * composing by the greater of them - a tab already at the hovered shade has nowhere to travel.
+     * <p>The blink shows nothing on a tab the pointer already holds fully on the hovered shade, the two
+     * sharing one channel and composing by the greater of them - a tab already there has nowhere to travel.
+     * On a tab only part-way onto it, the blink carries it the rest of the way and back.
      *
      * @param tabIndex the tab the pressed key is bound to, in row order
      */
@@ -396,9 +397,13 @@ public final class TabPanelController {
     /**
      * How far onto the hovered shade a tab currently stands, from either motion that can put it there: the
      * pointer holding it there, or a bound key's blink passing through. The greater of the two rather than
-     * their sum, because both aim at the one shade - so a blink on the tab under the pointer shows nothing,
-     * and a pointer arriving mid-blink takes the tab over from wherever the blink had carried it rather than
-     * pushing it past a shade neither names.
+     * their sum, because both aim at the one shade: summed, a blink on a tab already part-way hovered would
+     * drive it past a shade neither names.
+     *
+     * <p>Neither motion is aware of the other - each runs its own course and this reads whichever is further
+     * along - so a pointer arriving on a tab mid-blink watches the blink decay until its own fade overtakes
+     * it. Continuous, since the greater of two continuous fractions is one, but not a handover: the fade
+     * starts from rest rather than from where the blink stood.
      *
      * @param tabIndex the tab being asked about, in row order
      * @return its look-channel fraction, 0 fully off the hovered shade and 1 fully on it
