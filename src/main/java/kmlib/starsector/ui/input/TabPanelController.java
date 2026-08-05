@@ -157,12 +157,10 @@ public final class TabPanelController {
             float durationSeconds) {
 
         // One cursor read spent on both hit-tests, so the tab and the handle answer the same pointer.
-        var cursorX = UiCursor.getUiX();
-        var cursorY = UiCursor.getUiY();
-
-        advanceHoverFadesTowardHovered(
-            resolveHoveredTabIndex(placement, cursorX, cursorY),
-            placement.containsPointInNotch(cursorX, cursorY),
+        advanceHoverFadesAtPoint(
+            placement,
+            UiCursor.getUiX(),
+            UiCursor.getUiY(),
             elapsedSeconds,
             durationSeconds);
     }
@@ -220,10 +218,35 @@ public final class TabPanelController {
     }
 
     /**
-     * Steps the fades toward the named elements, once the cursor read and the hit-tests above have settled
-     * which those are, and applies the docked gate the tabs answer to. Split off for the same reason {@link
-     * UiCursor} keeps its scaling separable from its LWJGL read: what is left here is the whole of what the
-     * hover channel does per frame, and it is verifiable without a display to point at.
+     * Steps the fades for a pointer at a given point, hit-testing the panel's two hoverable parts against
+     * the placement being drawn. Split from the cursor read above for the same reason {@link UiCursor} keeps
+     * its scaling separable from its LWJGL read: this is where each part is paired with the hit-test that
+     * decides it - a pairing crossed over would light the handle for a tab - and the split is what lets that
+     * pairing be checked without a display to point at.
+     *
+     * @param placement       the laid-out tab panel this frame is drawing
+     * @param pointX          the pointer's x in UI coordinates, the coordinates the placement is laid out in
+     * @param pointY          the pointer's y in UI coordinates
+     * @param elapsedSeconds  real time since the last frame the host drew
+     * @param durationSeconds how long a full fade onto a hovered look should take; zero or less snaps
+     */
+    void advanceHoverFadesAtPoint(
+            TabPanelPlacement placement,
+            float pointX,
+            float pointY,
+            float elapsedSeconds,
+            float durationSeconds) {
+
+        advanceHoverFadesTowardHovered(
+            resolveHoveredTabIndex(placement, pointX, pointY),
+            placement.containsPointInNotch(pointX, pointY),
+            elapsedSeconds,
+            durationSeconds);
+    }
+
+    /**
+     * Steps the fades toward the named elements, once the hit-tests above have settled which those are, and
+     * applies the docked gate the tabs answer to.
      *
      * @param hoveredTabIndex the tab the pointer is on this frame, or null when it is on none
      * @param isNotchHovered  whether the pointer is on the collapse handle this frame

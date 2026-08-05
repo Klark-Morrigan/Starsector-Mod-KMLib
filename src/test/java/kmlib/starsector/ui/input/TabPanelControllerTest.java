@@ -21,8 +21,8 @@ import static org.assertj.core.api.Assertions.within;
  * fade is held for, the fades it steps for the tabs and for the collapse handle, and the docked gate that
  * silences the tabs while leaving the handle live. The pointer routing and the scroll delegation run
  * against live input events and are exercised in-engine, as is the cursor read the per-frame advance opens
- * with - which is why the advance is pinned through what it resolves to rather than through a pointer
- * position there is no display to supply.
+ * with - which is why the advance is pinned through the point that read would have returned rather than
+ * through a display there is none of to point at.
  */
 final class TabPanelControllerTest {
     
@@ -39,6 +39,18 @@ final class TabPanelControllerTest {
 
     // Below the header band, where the body sits - a point on the panel but on no tab.
     private static final float BELOW_TABS_Y = 400f;
+
+    // The collapse handle, laid past the header's right edge as the real one is laid past the frame's, and
+    // a point inside it. Clear of every tab on both axes, so a point on the handle cannot also read as a
+    // point on a tab - which is what makes a crossed-over pairing show as a wrong fade rather than as two
+    // fades that happen to agree.
+    private static final Rectangle NOTCH = new Rectangle(300f, 440f, 12f, 40f);
+    private static final float INSIDE_NOTCH_X = 306f;
+    private static final float INSIDE_NOTCH_Y = 460f;
+
+    // Off the header, off the body, and off the handle - the pointer resting on none of the panel's parts.
+    private static final float OFF_PANEL_X = 900f;
+    private static final float OFF_PANEL_Y = 900f;
 
     private static final float BORDER_WIDTH = 1f;
 
@@ -238,6 +250,81 @@ final class TabPanelControllerTest {
     }
 
     @Nested
+    class AdvanceHoverFadesAtPoint {
+
+        @Test
+        void advanceHoverFadesAtPointLightsTheTabUnderThePointerAndNotTheHandle() {
+            // The pairing this seam exists to pin: the header hit-test feeds the tab fades. Crossed over,
+            // a pointer on a tab would light the handle and every assertion below would still pass.
+            var controller = new TabPanelController();
+            controller.advanceHoverFadesAtPoint(
+                buildTwoTabPlacementWithNotch(),
+                INSIDE_FIRST_TAB_X,
+                ON_TAB_ROW_Y,
+                FULL_STEP_SECONDS,
+                DURATION_SECONDS);
+
+            assertThat(hoverFractionAt(controller, FIRST_TAB_INDEX))
+                .isCloseTo(1f, within(TOLERANCE));
+            assertThat(controller.getNotchHoverFraction())
+                .isCloseTo(0f, within(TOLERANCE));
+        }
+
+        @Test
+        void advanceHoverFadesAtPointLightsTheHandleUnderThePointerAndNoTab() {
+            // The other half of the pairing: the notch hit-test feeds the lone fade. The handle's rect is
+            // clear of every tab, so a tab lighting here could only come from the wrong hit-test.
+            var controller = new TabPanelController();
+            controller.advanceHoverFadesAtPoint(
+                buildTwoTabPlacementWithNotch(),
+                INSIDE_NOTCH_X,
+                INSIDE_NOTCH_Y,
+                FULL_STEP_SECONDS,
+                DURATION_SECONDS);
+
+            assertThat(controller.getNotchHoverFraction())
+                .isCloseTo(1f, within(TOLERANCE));
+            assertThat(hoverFractionAt(controller, FIRST_TAB_INDEX))
+                .isCloseTo(0f, within(TOLERANCE));
+            assertThat(hoverFractionAt(controller, SECOND_TAB_INDEX))
+                .isCloseTo(0f, within(TOLERANCE));
+        }
+
+        @Test
+        void advanceHoverFadesAtPointLightsNothingForAPointerOffThePanel() {
+
+            var controller = new TabPanelController();
+            controller.advanceHoverFadesAtPoint(
+                buildTwoTabPlacementWithNotch(),
+                OFF_PANEL_X,
+                OFF_PANEL_Y,
+                FULL_STEP_SECONDS,
+                DURATION_SECONDS);
+
+            assertThat(hoverFractionAt(controller, FIRST_TAB_INDEX))
+                .isCloseTo(0f, within(TOLERANCE));
+            assertThat(controller.getNotchHoverFraction())
+                .isCloseTo(0f, within(TOLERANCE));
+        }
+
+        @Test
+        void advanceHoverFadesAtPointLightsNoHandleOnABodylessPanelThatHasNone() {
+            // A panel with nothing to fold carries no handle rect; the placement's own test absorbs that,
+            // so a pointer anywhere over such a panel must leave the fade at rest rather than throwing.
+            var controller = new TabPanelController();
+            controller.advanceHoverFadesAtPoint(
+                buildTwoTabPlacement(),
+                INSIDE_NOTCH_X,
+                INSIDE_NOTCH_Y,
+                FULL_STEP_SECONDS,
+                DURATION_SECONDS);
+
+            assertThat(controller.getNotchHoverFraction())
+                .isCloseTo(0f, within(TOLERANCE));
+        }
+    }
+
+    @Nested
     class ResetHoverFades {
 
         @Test
@@ -304,8 +391,8 @@ final class TabPanelControllerTest {
         void resolveHoveredTabIndexReturnsNoTabForAPointOffThePanel() {
             assertThat(TabPanelController.resolveHoveredTabIndex(
                     buildTwoTabPlacement(),
-                    900f,
-                    900f))
+                    OFF_PANEL_X,
+                    OFF_PANEL_Y))
                 .isNull();
         }
     }
@@ -319,9 +406,21 @@ final class TabPanelControllerTest {
             .resolveHoverFractionAt(tabIndex);
     }
 
-    // A placement carrying only what the hover hit-test reads: a two-tab header control and its per-tab
-    // segments. Two tabs rather than one, so an index answered off the row's start reads as a wrong number.
+    // A placement with no collapse handle - the bodyless panel's shape, and all the tab hit-test needs.
     private static TabPanelPlacement buildTwoTabPlacement() {
+        return buildPlacement(null);
+    }
+
+    // The same panel carrying a handle, for the hit-tests that have to tell the panel's two parts apart.
+    private static TabPanelPlacement buildTwoTabPlacementWithNotch() {
+        return buildPlacement(NOTCH);
+    }
+
+    // A placement carrying what the hover hit-tests read: a two-tab header control with its per-tab segments,
+    // and whichever handle the caller wants it to have. Two tabs rather than one, so an index answered off
+    // the row's start reads as a wrong number; one builder for both handle cases, so the two placements
+    // cannot drift apart in any other respect.
+    private static TabPanelPlacement buildPlacement(Rectangle notch) {
 
         var headerBand = new Rectangle(100f, 500f, 160f, 20f);
 
@@ -329,6 +428,6 @@ final class TabPanelControllerTest {
             new Control(null, headerBand, List.of(FIRST_TAB, SECOND_TAB)),
             new PanelPlacement(headerBand, headerBand, List.of(), headerBand, 0f, 0f),
             new BoxBorder(BORDER_WIDTH),
-            null);
+            notch);
     }
 }

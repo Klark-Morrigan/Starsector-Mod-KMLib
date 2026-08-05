@@ -104,15 +104,15 @@ public final class NotchRenderer {
     /**
      * How strongly the hover wash paints this frame: its own peak scaled by how far the handle has lit and
      * again by the panel's opacity, so a half-faded handle on a half-faded panel washes at a quarter rather
-     * than at either alone. The fraction is clamped, so an overshooting animation value cannot drive the
-     * wash past its peak.
+     * than at either alone.
      *
      * @param opacity       the panel's overall alpha, which the handle fades with
-     * @param hoverFraction how far the handle has faded onto its lit look, 0 to 1
+     * @param hoverFraction how far the handle has faded onto its lit look, 0 to 1, taken as given -
+     *                      {@link NotchState} confines it once for both pieces of the lighting
      * @return the alpha the accent wash over the notch face draws at
      */
     static float computeHoverWashAlpha(float opacity, float hoverFraction) {
-        return opacity * HOVER_WASH_ALPHA * Ranges.clampToUnit(hoverFraction);
+        return opacity * HOVER_WASH_ALPHA * hoverFraction;
     }
 
     /**

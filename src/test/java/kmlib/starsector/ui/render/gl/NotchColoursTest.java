@@ -9,7 +9,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Pins {@link NotchColours}' one rule: the shade the chevron takes at each end of the handle's hover travel
- * and between them, and that a look holding one colour across both states never moves.
+ * and between them, and that a look holding one colour across both states never moves. The travel's range is
+ * {@link NotchState}'s to confine, so nothing here feeds it a fraction from outside one.
  */
 final class NotchColoursTest {
 
@@ -44,14 +45,6 @@ final class NotchColoursTest {
             // holds, rather than jumping between them at some threshold.
             assertThat(COLOURS.computeChevronColour(HALF_LIT))
                 .isEqualTo(new Color(100, 0, 50));
-        }
-
-        @Test
-        void computeChevronColourClampsAnOvershootingFractionToTheHoveredShade() {
-            // An animation value past the end settles on the lit shade rather than blending beyond it into
-            // a colour the palette never named.
-            assertThat(COLOURS.computeChevronColour(2f))
-                .isEqualTo(HOVERED);
         }
 
         @Test

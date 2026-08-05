@@ -13,7 +13,8 @@ import static org.assertj.core.api.Assertions.within;
  * just emit GL. {@link NotchRenderer#computeChevronArms} owns the rotating-glyph contract: the chevron
  * points the way that cues the action at each end of the collapse and straightens to a vertical line
  * between them. {@link NotchRenderer#computeNotchBorder} owns the one-pixel-thinner floor, and {@link
- * NotchRenderer#computeHoverWashAlpha} how far the hover has lit the handle's face.
+ * NotchRenderer#computeHoverWashAlpha} how far the hover has lit the handle's face - its fraction arriving
+ * already confined by {@link NotchState}, so nothing here feeds it one from outside the range.
  */
 final class NotchRendererTest {
 
@@ -155,10 +156,5 @@ final class NotchRendererTest {
                 .isCloseTo(0.175f, within(TOLERANCE));
         }
 
-        @Test
-        void computeHoverWashAlphaClampsAnOvershootingFractionToTheWashPeak() {
-            assertThat(NotchRenderer.computeHoverWashAlpha(FULL_OPACITY, 2f))
-                .isCloseTo(0.35f, within(TOLERANCE));
-        }
     }
 }

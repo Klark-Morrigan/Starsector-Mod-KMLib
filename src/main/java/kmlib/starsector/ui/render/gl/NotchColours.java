@@ -1,7 +1,6 @@
 package kmlib.starsector.ui.render.gl;
 
 import kmlib.colour.Colours;
-import kmlib.math.ranges.Ranges;
 
 import java.awt.Color;
 
@@ -32,15 +31,13 @@ public record NotchColours(
      * point of the blend that colour - so the travel stays one rule rather than a flag the caller also
      * has to set.
      *
-     * @param hoverFraction how far the handle has faded onto its lit look, 0 (resting) to 1 (fully lit);
-     *                      confined to that range so an overshooting animation value settles on a shade
-     *                      rather than blending past it
+     * @param hoverFraction how far the handle has faded onto its lit look, 0 (resting) to 1 (fully lit).
+     *                      Taken as given: {@link NotchState} confines it once for every piece of the
+     *                      handle that reads it, so a value from outside that range blends past an end
+     *                      rather than settling on it
      * @return the colour to stroke the chevron with
      */
     public Color computeChevronColour(float hoverFraction) {
-        return Colours.blendRgbTowards(
-            chevron,
-            chevronHovered,
-            Ranges.clampToUnit(hoverFraction));
+        return Colours.blendRgbTowards(chevron, chevronHovered, hoverFraction);
     }
 }
