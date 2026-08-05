@@ -26,7 +26,8 @@ import static org.mockito.Mockito.when;
 
 /**
  * Pins the contracts of {@link Markets#isOwnedColony},
- * {@link Markets#hasAttachedStation}, {@link Markets#getStabilityFraction},
+ * {@link Markets#findAttachedStation}, {@link Markets#hasAttachedStation},
+ * {@link Markets#getStabilityFraction},
  * {@link Markets#isKnownToPlayer}, {@link Markets#isCountedAsColony},
  * {@link Markets#isDiscoveredByPlayer}, {@link Markets#isFoundColony},
  * {@link Markets#fieldsPatrols}, {@link Markets#readPatrolCounts} and
@@ -68,6 +69,93 @@ final class MarketsTest {
         @Test
         void returns_false_for_a_null_market() {
             assertThat(Markets.isOwnedColony(null))
+                .isFalse();
+        }
+    }
+
+    @Nested
+    class FindAttachedStation {
+        
+        @Test
+        void yields_the_station_a_market_owns() {
+
+            var station = buildStationEntity();
+            var market = buildMarketConnectedTo(station);
+
+            assertThat(Markets.findAttachedStation(market))
+                .contains(station);
+                
+            // Paired with the presence read in every case below: the two answer off one
+            // scan, so a caller can never name a station the verdict did not count.
+            assertThat(Markets.hasAttachedStation(market))
+                .isTrue();
+        }
+
+        @Test
+        void picks_the_station_out_of_the_market_s_other_connected_entities() {
+
+            var station = buildStationEntity();
+            var market = buildMarketConnectedTo(buildNonStationEntity(), station);
+
+            assertThat(Markets.findAttachedStation(market))
+                .contains(station);
+            assertThat(Markets.hasAttachedStation(market))
+                .isTrue();
+        }
+
+        @Test
+        void yields_empty_for_a_market_with_no_connected_entities() {
+
+            var market = buildMarketConnectedTo();
+
+            assertThat(Markets.findAttachedStation(market))
+                .isEmpty();
+            assertThat(Markets.hasAttachedStation(market))
+                .isFalse();
+        }
+
+        @Test
+        void yields_empty_when_no_connected_entity_is_a_station() {
+
+            var market = buildMarketConnectedTo(buildNonStationEntity());
+
+            assertThat(Markets.findAttachedStation(market))
+                .isEmpty();
+            assertThat(Markets.hasAttachedStation(market))
+                .isFalse();
+        }
+
+        @Test
+        void ignores_a_station_tagged_no_orbital_station() {
+
+            var market = buildMarketConnectedTo(buildOptedOutStationEntity());
+
+            assertThat(Markets.findAttachedStation(market))
+                .isEmpty();
+            assertThat(Markets.hasAttachedStation(market))
+                .isFalse();
+        }
+
+        @Test
+        void yields_empty_for_a_null_market() {
+
+            assertThat(Markets.findAttachedStation(null))
+                .isEmpty();
+            assertThat(Markets.hasAttachedStation(null))
+                .isFalse();
+        }
+
+        @Test
+        void yields_empty_for_null_connected_entities() {
+
+            var marketMock = mock(MarketAPI.class);
+
+            when(marketMock.getConnectedEntities())
+                .thenReturn(null);
+
+            assertThat(Markets.findAttachedStation(marketMock))
+                .isEmpty();
+            assertThat(Markets.hasAttachedStation(marketMock))
                 .isFalse();
         }
     }

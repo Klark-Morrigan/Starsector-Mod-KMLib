@@ -1,11 +1,14 @@
 package kmlib.starsector.markets;
 
+import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.impl.campaign.ids.MemFlags;
 import com.fs.starfarer.api.impl.campaign.ids.Stats;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
 import com.fs.starfarer.api.util.DynamicStatsAPI;
 import com.fs.starfarer.api.util.Misc;
+
+import java.util.Optional;
 
 /**
  * Queries over a single market's state.
@@ -57,7 +60,7 @@ public final class Markets {
     }
 
     /**
-     * Whether a market owns an attached defensive station.
+     * A market's attached defensive station, as the entity itself.
      *
      * <p>Reads the market's connected entities - the ownership link the game
      * maintains, so a station found here is this market's own rather than a rival's
@@ -66,20 +69,48 @@ public final class Markets {
      * opted out via {@code NO_ORBITAL_STATION}. Keying on the entity tag captures
      * vanilla and modded stations alike, so no industry ids are read.
      *
+     * <p>Yields the entity rather than a verdict, so a caller that has to name the
+     * station - or read its faction, orbit, or own market - can, while one that only
+     * asks whether there is one reads {@link #hasAttachedStation} over this same
+     * scan. A second scan for the entity would be free to disagree with the verdict;
+     * folding both onto one read makes that impossible.
+     *
+     * <p>The first qualifying entity wins. A market with two of them is not a shape
+     * vanilla builds, and there is no ordering among connected entities that would
+     * make one of the pair the "real" station, so picking a winner is arbitrary
+     * either way.
+     *
+     * @param market the market to inspect; null (or one with no connected entities)
+     *               yields empty
+     * @return the market's orbital station, or empty when it owns none
+     */
+    public static Optional<SectorEntityToken> findAttachedStation(MarketAPI market) {
+        if (market == null || market.getConnectedEntities() == null) {
+            return Optional.empty();
+        }
+        for (var entity : market.getConnectedEntities()) {
+            if (entity.hasTag(Tags.STATION) && !entity.hasTag(NO_ORBITAL_STATION_TAG)) {
+                return Optional.of(entity);
+            }
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Whether a market owns an attached defensive station.
+     *
+     * <p>The verdict half of {@link #findAttachedStation}, which owns the scan and
+     * documents what counts as a station. Kept as its own read because most callers
+     * weigh only the station's presence - a defence score, a fill rule - and reading
+     * that as an {@code isPresent()} at every such site says less than the question
+     * being asked.
+     *
      * @param market the market to inspect; null (or one with no connected entities)
      *               yields false
      * @return true when one of the market's connected entities is its orbital station
      */
     public static boolean hasAttachedStation(MarketAPI market) {
-        if (market == null || market.getConnectedEntities() == null) {
-            return false;
-        }
-        for (var entity : market.getConnectedEntities()) {
-            if (entity.hasTag(Tags.STATION) && !entity.hasTag(NO_ORBITAL_STATION_TAG)) {
-                return true;
-            }
-        }
-        return false;
+        return findAttachedStation(market).isPresent();
     }
 
     /**
