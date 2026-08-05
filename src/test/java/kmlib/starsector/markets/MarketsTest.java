@@ -218,7 +218,7 @@ final class MarketsTest {
         @Test
         void returns_true_for_a_known_owned_colony() {
 
-            var market = buildColonyMarket(false, false, false);
+            var market = buildVisibleColony();
 
             assertThat(Markets.isCountedAsColony(market, false))
                 .isTrue();
@@ -227,7 +227,7 @@ final class MarketsTest {
         @Test
         void returns_false_for_a_condition_only_market() {
 
-            var market = buildColonyMarket(true, false, false);
+            var market = buildConditionOnlyColony();
 
             assertThat(Markets.isCountedAsColony(market, false))
                 .isFalse();
@@ -236,7 +236,7 @@ final class MarketsTest {
         @Test
         void returns_false_for_an_undiscovered_concealed_colony() {
 
-            var market = buildColonyMarket(false, true, true);
+            var market = buildConcealedStation();
 
             assertThat(Markets.isCountedAsColony(market, false))
                 .isFalse();
@@ -245,7 +245,7 @@ final class MarketsTest {
         @Test
         void returns_true_for_an_undiscovered_concealed_colony_when_including_undiscovered() {
 
-            var market = buildColonyMarket(false, true, true);
+            var market = buildConcealedStation();
 
             assertThat(Markets.isCountedAsColony(market, true))
                 .isTrue();
@@ -301,7 +301,7 @@ final class MarketsTest {
         @Test
         void returns_true_for_a_found_colony_that_stays_concealed() {
 
-            var market = buildColonyMarket(false, true, false);
+            var market = buildFoundConcealedStation();
 
             // A raided base is hidden forever and its system plainly holds people.
             assertThat(Markets.isFoundColony(market, false))
@@ -311,7 +311,7 @@ final class MarketsTest {
         @Test
         void returns_false_for_an_un_hidden_colony_whose_entity_is_undiscovered() {
 
-            var market = buildColonyMarket(false, false, true);
+            var market = buildUnfoundListedColony();
 
             // The one case parting this filter from isCountedAsColony, which admits the market
             // on its un-hidden arm.
@@ -324,7 +324,7 @@ final class MarketsTest {
         @Test
         void returns_false_for_an_undiscovered_concealed_colony() {
 
-            var market = buildColonyMarket(false, true, true);
+            var market = buildConcealedStation();
 
             assertThat(Markets.isFoundColony(market, false))
                 .isFalse();
@@ -333,7 +333,7 @@ final class MarketsTest {
         @Test
         void returns_true_for_an_undiscovered_colony_when_including_undiscovered() {
 
-            var market = buildColonyMarket(false, true, true);
+            var market = buildConcealedStation();
 
             assertThat(Markets.isFoundColony(market, true))
                 .isTrue();
@@ -342,7 +342,7 @@ final class MarketsTest {
         @Test
         void returns_false_for_a_condition_only_market() {
 
-            var market = buildColonyMarket(true, false, false);
+            var market = buildConditionOnlyColony();
 
             assertThat(Markets.isFoundColony(market, false))
                 .isFalse();
@@ -608,8 +608,37 @@ final class MarketsTest {
         return modMock;
     }
 
+    // An ordinary colony: publicly listed on an entity the player has found. The plain case both
+    // colony filters admit.
+    private static MarketAPI buildVisibleColony() {
+        return buildColonyMarket(false, false, false);
+    }
+
+    // A bare planet's condition-only placeholder: owned, but not a colony, so it fails the
+    // ownership arm before either visibility rule is consulted.
+    private static MarketAPI buildConditionOnlyColony() {
+        return buildColonyMarket(true, false, false);
+    }
+
+    // A base still to be found: hidden and on a discoverable entity, so it fails both rules.
+    private static MarketAPI buildConcealedStation() {
+        return buildColonyMarket(false, true, true);
+    }
+
+    // The same base once raided: the entity is discovered, the market stays hidden for good.
+    private static MarketAPI buildFoundConcealedStation() {
+        return buildColonyMarket(false, true, false);
+    }
+
+    // A colony surfaced into the open ahead of being reached: publicly listed, entity still
+    // undiscovered. Paired with the raided base above, this is where the two rules disagree.
+    private static MarketAPI buildUnfoundListedColony() {
+        return buildColonyMarket(false, false, true);
+    }
+
     // An owned colony wired for both filter arms: ownership (a faction owns it, not
-    // condition-only) and visibility (its entity's discoverability and the hidden flag).
+    // condition-only) and visibility (its entity's discoverability and the hidden flag). Reached
+    // through the named builders above - three positional booleans say nothing at a call site.
     private static MarketAPI buildColonyMarket(
             boolean isConditionOnly,
             boolean isHidden,
