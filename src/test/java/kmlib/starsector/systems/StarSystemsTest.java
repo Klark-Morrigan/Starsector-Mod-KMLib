@@ -554,6 +554,18 @@ final class StarSystemsTest {
             assertThat(StarSystems.hasFoundOwnedMarket(mock(SectorAPI.class), null, false))
                 .isFalse();
         }
+
+        @Test
+        void returns_false_when_the_sector_has_no_economy() {
+
+            var sectorMock = mock(SectorAPI.class);
+
+            when(sectorMock.getEconomy())
+                .thenReturn(null);
+
+            assertThat(StarSystems.hasFoundOwnedMarket(sectorMock, mock(StarSystemAPI.class), false))
+                .isFalse();
+        }
     }
 
     @Nested
