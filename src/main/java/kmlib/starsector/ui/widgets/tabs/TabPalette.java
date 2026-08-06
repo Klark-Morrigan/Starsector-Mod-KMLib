@@ -1,5 +1,6 @@
 package kmlib.starsector.ui.widgets.tabs;
 
+import kmlib.colour.Colours;
 import kmlib.starsector.ui.colour.StarsectorUiColour;
 
 import java.awt.Color;
@@ -26,7 +27,7 @@ import java.awt.Color;
  * <p>Nor is a lift of its own for a bound key's press. That blink travels onto the {@link #hovered} shade
  * rather than past it, so it is spent on the look channel and needs no wash to name.
  *
- * @param chromeAccent the colour of the dividers, the baseline, and the selected tab's underline
+ * @param chromeAccent the colour of the dividers and the baseline grounding the row
  * @param unselected   the resting look of a tab the panel is not showing
  * @param selected     the look of the tab whose content the panel is showing
  * @param hovered      the look the tab under the pointer wears, selected or not - and the shade a bound
@@ -40,21 +41,21 @@ public record TabPalette(
     TabLook hovered,
     TabWash clicked) {
 
-    // How far the selected tab travels toward white when the pointer lands on it. The hovered shade is
-    // measured from the selected look because that is the brighter of the two the strip has to reconcile;
-    // the resting tab then travels the whole way up to meet it rather than lifting by its own fraction.
-    private static final float SELECTED_HOVER_WHITE_WASH = 0.15f;
+    // How far a lit tab's label travels toward white under the pointer. The fills part by the engine's own
+    // two glow amounts, but the labels here are ours - player-tinted rather than whitened the way vanilla
+    // takes its own - so the hovered label is lifted by this instead, enough that the text moves with the
+    // tab it sits on rather than staying put while the fill brightens under it.
+    private static final float POINTED_LABEL_WHITE_LIFT = 0.15f;
 
     // A click reads as a flash rather than a hold, so it peaks well past the hovered shade; a lift no
     // stronger would be invisible on the tab the pointer is necessarily already over.
     private static final float CLICK_WHITE_WASH = 0.5f;
 
     /**
-     * The live vanilla map-tab paint: the player base colour for the chrome accent, the two map-tab fills
-     * the engine's own tabs settle on, the button-text colour for a resting label and the bright player
-     * colour for the active one, the hovered shade both of them meet at, and the click lift toward white.
-     * Everything here resolves through {@link StarsectorUiColour} on each call, so it tracks a live
-     * palette change.
+     * The live vanilla map-tab paint: the player base colour for the chrome accent, the three map-tab
+     * fills the engine's own tabs settle on, the button-text colour for a resting label and the bright
+     * player colour for the active one, and the click lift toward white. Everything here resolves through
+     * {@link StarsectorUiColour} on each call, so it tracks a live palette change.
      *
      * <p>The fills come from {@link VanillaTabFills}, worked out from the same two settings colours a
      * vanilla tab is painted with rather than sampled off one - so a restyled install moves this strip
@@ -62,7 +63,13 @@ public record TabPalette(
      * because the engine's own tabs do not take a faction colour; the accent and the active label around
      * them do, being ours rather than vanilla's.
      *
-     * <p>The lifts over these looks blend RGB alone, so a look that starts opaque - as both fills do -
+     * <p>The three fills are one shade at the engine's three glow amounts, not three shades: resting
+     * unlit, the shown tab at {@link VanillaTabFills#SELECTED_GLOW}, and the tab under the pointer at the
+     * full {@link VanillaTabFills#POINTED_GLOW}. The pointer's being the brighter of the two lit amounts
+     * is what lets a strip mark the shown tab by fill alone - a pointed-at tab outshines it rather than
+     * matching it, so the two never read alike.
+     *
+     * <p>The lifts over these looks blend RGB alone, so a look that starts opaque - as all three fills do -
      * stays opaque through every hover, blink, and click.
      *
      * @return the vanilla map-tab palette
@@ -72,25 +79,32 @@ public record TabPalette(
         var white = StarsectorUiColour.WHITE.resolve();
         var fill = StarsectorUiColour.VANILLA_BUTTON_BG_DARK.resolve();
         var restingLabel = StarsectorUiColour.VANILLA_BUTTON_TEXT.resolve();
+        var selectedLabel = StarsectorUiColour.VANILLA_PLAYER_BRIGHT.resolve();
 
         // The surface the fills are laid over. Black rather than the host's own panel fill, because a tab
         // row stands wherever its panel does - over a body, over the map where a tab has no body at all -
         // and a fill measured against one of those would be wrong in the others.
         var backdrop = StarsectorUiColour.BLACK.resolve();
 
-        var selected = new TabLook(
-            VanillaTabFills.resolveLitFill(fill, restingLabel, backdrop),
-            StarsectorUiColour.VANILLA_PLAYER_BRIGHT.resolve());
-
         return new TabPalette(
             StarsectorUiColour.VANILLA_PLAYER_BASE.resolve(),
             new TabLook(
                 VanillaTabFills.resolveRestingFill(fill, backdrop),
                 restingLabel),
-            selected,
-            // Derived from the selected look rather than written down beside it, so the one hovered shade
-            // cannot drift from the look it is measured off when either is retuned.
-            selected.computeWashedLook(new TabWash(white, SELECTED_HOVER_WHITE_WASH)),
+            new TabLook(
+                VanillaTabFills.resolveFillAtGlow(
+                    fill,
+                    restingLabel,
+                    backdrop,
+                    VanillaTabFills.SELECTED_GLOW),
+                selectedLabel),
+            new TabLook(
+                VanillaTabFills.resolveFillAtGlow(
+                    fill,
+                    restingLabel,
+                    backdrop,
+                    VanillaTabFills.POINTED_GLOW),
+                Colours.blendRgbTowards(selectedLabel, white, POINTED_LABEL_WHITE_LIFT)),
             new TabWash(white, CLICK_WHITE_WASH));
     }
 

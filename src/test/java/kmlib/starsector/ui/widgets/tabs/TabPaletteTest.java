@@ -177,21 +177,25 @@ final class TabPaletteTest {
         }
 
         @Test
-        void createMapTabPaletteAddsTheGlowIntoTheSelectedFill() {
-            // The resting shade with the lit tab's glow on top: the label colour (180, 180, 180 here) half
-            // way to white is (218, 218, 218), added at 0.5 * (175 + 50) / 255 = 0.441 - so (21, 65, 77)
-            // gains 96 on every channel. A selected tab that merely re-tinted its resting fill could not
-            // land here; the glow is added light, not a blend.
+        void createMapTabPaletteLightsTheSelectedFillAtTheShownTabsGlow() {
+            // The resting shade with the shown tab's glow on top: the label colour (180, 180, 180 here)
+            // half way to white is (218, 218, 218), added at 0.85 * 0.5 * (175 + 50) / 255 = 0.375 - so
+            // (21, 65, 77) gains 82 on every channel. A selected tab that merely re-tinted its resting
+            // fill could not land here; the glow is added light, not a blend.
             assertThat(buildMapTabPaletteUnderStubbedEngine().selected().fill())
-                .isEqualTo(new Color(117, 161, 173, OPAQUE_ALPHA));
+                .isEqualTo(new Color(103, 147, 159, OPAQUE_ALPHA));
         }
 
         @Test
-        void createMapTabPaletteLiftsTheSelectedFillIntoTheHoveredFill() {
-            // The selected fill moved a small way toward white, which is what lets the resting tab travel
-            // the whole way up to meet it: writing this shade by hand instead would let the two drift.
-            assertThat(buildMapTabPaletteUnderStubbedEngine().hovered().fill())
-                .isEqualTo(new Color(138, 175, 185, OPAQUE_ALPHA));
+        void createMapTabPaletteLightsTheHoveredFillAtTheFullGlow() {
+            // The same shade at the whole glow (0.441), which stands above the shown tab's - the ordering
+            // a strip marking selection by fill alone rests on.
+            var palette = buildMapTabPaletteUnderStubbedEngine();
+
+            assertThat(palette.hovered().fill())
+                .isEqualTo(new Color(117, 161, 173, OPAQUE_ALPHA));
+            assertThat(palette.hovered().fill().getBlue())
+                .isGreaterThan(palette.selected().fill().getBlue());
         }
 
         @Test

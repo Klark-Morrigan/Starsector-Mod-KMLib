@@ -26,15 +26,18 @@ import java.util.List;
 /**
  * Raw-GL paint for a {@link VanillaTabStrip}: the sector-map Sector/System tab look - each tab a solid
  * fill (dark at rest, bright when active, travelling toward one shared shade under the pointer) lifted by
- * whatever pulse its wash source reports, a bright underline capping the active tab, hairline dividers,
- * and the tab's text with its bound key lit in the hotkey colour, carrying a hairline beneath it when the
- * style's {@link HotkeyStyle} asks for one - distinct from the underline capping the active tab, which
- * spans the whole tab. The tab geometry lives on the substrate-independent widget; this draws it. The
- * seams between tabs are the chrome every horizontal segmented control shares, so they come from
- * {@link HorizontalSegmentsRenderer} (as a radio row's do); the per-state fill, the wash, the
- * baseline, the underline, and the multi-colour text are this strip's own. Unlike the plain renderers it
- * draws the text itself (off {@link DrawableStringCache}), since a line carrying a lit key inside it is
- * the whole point of the style.
+ * whatever pulse its wash source reports, hairline dividers, and the tab's text with its bound key lit in
+ * the hotkey colour, carrying a hairline beneath it when the style's {@link HotkeyStyle} asks for one.
+ * The tab geometry lives on the substrate-independent widget; this draws it. The seams between tabs are
+ * the chrome every horizontal segmented control shares, so they come from
+ * {@link HorizontalSegmentsRenderer} (as a radio row's do); the per-state fill, the wash, the baseline,
+ * and the multi-colour text are this strip's own. Unlike the plain renderers it draws the text itself
+ * (off {@link DrawableStringCache}), since a line carrying a lit key inside it is the whole point of the
+ * style.
+ *
+ * <p>The lit tab is marked by its fill and nothing else - no bar caps it. So the one mark of selection is
+ * a shade, and the shade a tab wears under the pointer is what a reader has to keep clear of it: the two
+ * meeting would leave a hovered tab and the shown tab looking alike.
  *
  * <p>Where the key falls is not decided here. A tab lights a letter of its own label where the key has
  * one to land on and spells the key out after it otherwise, and that is
@@ -49,32 +52,31 @@ import java.util.List;
 public final class VanillaTabStripRenderer {
 
     private static final float BASELINE_THICKNESS = 1f;
-    private static final float UNDERLINE_THICKNESS = 2f;
 
     private VanillaTabStripRenderer() {
     }
 
     /**
-     * Paints the whole strip: each tab's look, the dividers, and each label with its gold shortcut. Each
+     * Paints the whole strip: each tab's look, the dividers, and each tab's text with its key lit. Each
      * tab's look arrives resolved - already blended however far onto the hovered shade its fade has run -
-     * and is lifted by the pulse its wash source reports for it; selection is read separately, so the tab
-     * the panel is showing keeps its underline even while it wears the hovered shade. A {@code
-     * selectedIndex} outside the row simply underlines none.
+     * and is lifted by the pulse its wash source reports for it.
      *
-     * @param tabs          the laid-out tabs, in row order
-     * @param selectedIndex the active tab's index, or a value outside the row
-     * @param looks         where each tab's settled look comes from - the hover fade is already blended
-     *                      into it here, so this pass only paints it
-     * @param washes        where each tab's resolved lift comes from - the interaction is already
-     *                      composed into a wash here, so this pass only paints it
-     * @param style         the strip's look; its palette's chrome accent (see
-     *                      {@link TabPalette#createMapTabPalette}), its hotkey presentation, and its face
-     *                      are read here, its band height having been spent laying the tabs out
-     * @param opacity       overall alpha, 0..1, applied to every quad and both text colours
+     * <p>Which tab is selected is not asked for. It reaches this pass inside the looks, the lit tab
+     * arriving on its own shade, and a strip that marks selection by fill alone needs nothing else: a
+     * second reading of the same fact would be a second chance to disagree with it.
+     *
+     * @param tabs    the laid-out tabs, in row order
+     * @param looks   where each tab's settled look comes from - selection and the hover fade are already
+     *                blended into it here, so this pass only paints it
+     * @param washes  where each tab's resolved lift comes from - the interaction is already composed into
+     *                a wash here, so this pass only paints it
+     * @param style   the strip's look; its palette's chrome accent (see
+     *                {@link TabPalette#createMapTabPalette}), its hotkey presentation, and its face are
+     *                read here, its band height having been spent laying the tabs out
+     * @param opacity overall alpha, 0..1, applied to every quad and every text colour
      */
     public static void render(
             List<VanillaTab> tabs,
-            int selectedIndex,
             TabLookSource looks,
             TabWashSource washes,
             TabStyle style,
@@ -85,14 +87,13 @@ public final class VanillaTabStripRenderer {
         for (var index = 0; index < tabs.size(); index++) {
 
             var tab = tabs.get(index);
-            var isSelected = index == selectedIndex;
 
             // The look as painted: the settled shade the tab has faded to, brightened by whatever pulse is
             // still running on it. A tab with none carries a wash that moves it nowhere, so no branch
             // here decides whether a lift applies.
             var look = looks.resolveLookAt(index).computeWashedLook(washes.resolveWashAt(index));
 
-            renderChrome(tab.bounds(), isSelected, look, chromeAccent, opacity);
+            renderChrome(tab.bounds(), look, chromeAccent, opacity);
             renderTabText(
                 tab.bounds(),
                 tab.content(),
@@ -120,15 +121,13 @@ public final class VanillaTabStripRenderer {
         return bounds;
     }
 
-    // The tab's solid fill as its look gives it, a faint baseline grounding the row, and a bright
-    // underline capping the active tab. The fill IS the tab's surface: there is no black backdrop
-    // underneath, so an unselected tab reads as its solid colour rather than that colour bled over black.
-    // Selection is read here rather than off the look, because a hovered selected tab wears the hovered
-    // shade and its underline is then the only thing marking it. The inter-tab seams are drawn once by
-    // the caller through the shared primitive, not here.
+    // The tab's solid fill as its look gives it, over a faint baseline grounding the row. The fill IS the
+    // tab's surface: there is no black backdrop underneath, so an unselected tab reads as its solid colour
+    // rather than that colour bled over black - and it is the whole of what marks the lit tab, which is
+    // why nothing here asks which tab that is. The inter-tab seams are drawn once by the caller through
+    // the shared primitive, not here.
     private static void renderChrome(
             Rectangle bounds,
-            boolean isSelected,
             TabLook look,
             Color chromeAccent,
             float opacity) {
@@ -143,18 +142,6 @@ public final class VanillaTabStripRenderer {
             new UiElementPaint(
                 chromeAccent,
                 opacity * HorizontalSegmentsRenderer.DIVIDER_ALPHA_MULT));
-
-        if (isSelected) {
-            UiFill.renderQuad(
-                new Rectangle(
-                    bounds.x(),
-                    bounds.y(),
-                    bounds.width(),
-                    UNDERLINE_THICKNESS),
-                new UiElementPaint(
-                    chromeAccent,
-                    opacity));
-        }
     }
 
     // Draws the tab's text - the label with its bound key lit inside it, or spelt out after it - centred

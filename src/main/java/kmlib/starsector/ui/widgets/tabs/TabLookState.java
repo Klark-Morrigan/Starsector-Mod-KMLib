@@ -10,8 +10,11 @@ package kmlib.starsector.ui.widgets.tabs;
  * to each tab's own fill could not do that - two different starting colours lifted by one fraction stay
  * two different colours - so the hovered shade is named outright.
  *
- * <p>Hovering therefore wins over selection while the pointer is on a tab, and the tab's underline is what
- * still marks which one the panel is showing.
+ * <p>Hovering therefore wins over selection while the pointer is on a tab: a tab under the pointer wears
+ * the hovered shade whether or not it is the one being shown. Nothing else marks the shown tab - a strip
+ * states selection by fill alone - so how far the hovered shade stands from the selected one is what
+ * decides whether a pointed-at tab can be told from the shown one. Derived too close to it, the two read
+ * alike while the pointer rests on the row.
  */
 public enum TabLookState {
 

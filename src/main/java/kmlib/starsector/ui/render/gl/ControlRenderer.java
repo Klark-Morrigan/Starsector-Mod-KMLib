@@ -130,7 +130,6 @@ public final class ControlRenderer {
         // event, and its decay belongs with whatever saw it).
         VanillaTabStripRenderer.render(
             tabs,
-            spec.selectedIndex(),
             TabLookSource.createHoverFadedLookSource(
                 tabStyle.palette(),
                 spec.selectedIndex(),

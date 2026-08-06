@@ -5,25 +5,43 @@ import kmlib.colour.Colours;
 import java.awt.Color;
 
 /**
- * The two shades a vanilla tab settles on, worked out from the engine's own colours by the engine's own
- * rule: a tab at rest is its dark button fill laid over what is behind it, and a lit tab is that same
- * fill with a glow added on top - the glow being the tab's label colour half-way to white, at half
- * strength, tempered by how solid the fill under it is.
+ * The shades a vanilla tab settles on, worked out from the engine's own colours by the engine's own
+ * rule: a tab is its dark button fill laid over what is behind it, with a glow added on top - the glow
+ * being the tab's label colour half-way to white, at half strength, tempered by how solid the fill under
+ * it is, and scaled by how brightly the tab is currently lit.
  *
- * <p>Vanilla arrives at the lit shade by drawing two passes, the second additively, with the glow
- * animated between them; a strip that paints one fill per tab cannot do that, so the same arithmetic is
- * run once here and the result handed over as a settled colour. The lit shade is therefore the glow at
- * full, which is where a lit tab rests.
+ * <p>How brightly is the whole of what parts a tab's states. Vanilla has no separate shade for a shown
+ * tab and a pointed-at one: it has one glow amount, driven up to {@code SELECTED_GLOW} while a tab is the
+ * one being shown and to {@code POINTED_GLOW} while the pointer is on it, whichever is greater. That the
+ * pointer's amount is the higher of the two is what keeps a pointed-at tab from being mistaken for the
+ * shown one when nothing but the fill marks the shown one.
+ *
+ * <p>Vanilla arrives at each shade by drawing two passes, the second additively, with the glow animated
+ * between them; a strip that paints one fill per tab cannot do that, so the same arithmetic is run once
+ * here and each state's result handed over as a settled colour for the fade between them to travel
+ * across.
  *
  * <p>Computed rather than sampled, so a restyled install reaches these tabs exactly as it reaches the
- * engine's own: both shades are functions of two settings colours, and nothing here is a measurement
+ * engine's own: every shade is a function of two settings colours, and nothing here is a measurement
  * that would go stale the moment either changed. That the fills answer to settings and not to the player
  * faction is the engine's choice, not a simplification - a vanilla tab takes no faction colour at all.
  *
- * <p>Both come back opaque. A tab fill is a surface: left translucent it would be the colour of whatever
+ * <p>All come back opaque. A tab fill is a surface: left translucent it would be the colour of whatever
  * the strip happens to be drawn over, so a row would change shade with its surroundings.
  */
 public final class VanillaTabFills {
+
+    /**
+     * How brightly the engine lights the tab it is showing - short of the full glow, so the tab under the
+     * pointer still stands above it.
+     */
+    public static final float SELECTED_GLOW = 0.85f;
+
+    /** How brightly the engine lights the tab under the pointer: the full glow. */
+    public static final float POINTED_GLOW = 1f;
+
+    /** No glow at all, which is where an untouched tab rests. */
+    public static final float NO_GLOW = 0f;
 
     // How far the glow's colour stands from the tab's label colour toward white.
     private static final float GLOW_WHITE_MIX = 0.5f;
@@ -39,14 +57,11 @@ public final class VanillaTabFills {
     // The full alpha channel the headroom is measured against.
     private static final float OPAQUE_ALPHA = 255f;
 
-    // The glow at full, which is where a lit tab settles once its fade-in has run.
-    private static final float FULL_GLOW = 1f;
-
     private VanillaTabFills() {
     }
 
     /**
-     * The shade a resting tab settles on: its fill laid over the backdrop behind it.
+     * The shade a resting tab settles on: its fill laid over the backdrop behind it, with no glow.
      *
      * @param fill     the engine's dark button fill, alpha and all
      * @param backdrop the surface the tab is drawn over
@@ -57,19 +72,28 @@ public final class VanillaTabFills {
     }
 
     /**
-     * The shade a lit tab settles on: the resting shade with the glow added on top at full strength.
+     * The shade a tab settles on at a given glow: the resting shade with that much of the glow added on
+     * top. One method for every lit state, since the states differ in nothing but the amount - a second
+     * shade named beside this one would be a second thing to keep in step with the engine's.
      *
      * @param fill        the engine's dark button fill, alpha and all - it sets both the shade beneath the
      *                    glow and, through its alpha, how much glow lands on it
      * @param labelColour the tab's label colour, which the glow is a whitened form of
      * @param backdrop    the surface the tab is drawn over
-     * @return the opaque lit shade
+     * @param glowAmount  how brightly the tab is lit: {@link #NO_GLOW}, {@link #SELECTED_GLOW}, or
+     *                    {@link #POINTED_GLOW}
+     * @return the opaque shade at that glow
      */
-    public static Color resolveLitFill(Color fill, Color labelColour, Color backdrop) {
+    public static Color resolveFillAtGlow(
+            Color fill,
+            Color labelColour,
+            Color backdrop,
+            float glowAmount) {
+
         return Colours.addOverlay(
             resolveRestingFill(fill, backdrop),
             resolveGlowColour(labelColour),
-            resolveGlowWeight(fill));
+            resolveGlowWeight(fill, glowAmount));
     }
 
     // The glow's own colour: the label colour part-way to white, so a lit tab brightens toward its own
@@ -78,10 +102,10 @@ public final class VanillaTabFills {
         return Colours.blendRgbTowards(labelColour, Color.WHITE, GLOW_WHITE_MIX);
     }
 
-    // How much glow a fully lit tab takes: half strength, scaled down when the fill beneath it is
-    // see-through enough to show through the light.
-    private static float resolveGlowWeight(Color fill) {
-        return FULL_GLOW
+    // How much glow a tab takes at that amount: half strength scaled by it, and scaled down again when
+    // the fill beneath is see-through enough to show through the light.
+    private static float resolveGlowWeight(Color fill, float glowAmount) {
+        return glowAmount
             * GLOW_STRENGTH
             * Math.min(1f, (fill.getAlpha() + GLOW_ALPHA_HEADROOM) / OPAQUE_ALPHA);
     }
