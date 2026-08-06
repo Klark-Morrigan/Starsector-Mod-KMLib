@@ -128,9 +128,67 @@ final class VanillaTabFillsTest {
         }
     }
 
+    @Nested
+    class ResolveLabelAtGlow {
+
+        @Test
+        void resolveLabelAtGlowLeavesAnUnlitLabelAtItsOwnColour() {
+            // The unlit end of the one colour every state shares, and the reason a resting tab is the only
+            // one reading as plain blue: nothing is added, so the engine's button text comes back as it is.
+            assertThat(resolveLabelAt(VanillaTabFills.NO_GLOW))
+                .isEqualTo(BUTTON_TEXT);
+        }
+
+        @Test
+        void resolveLabelAtGlowLightsTheShownTabsLabelPartWayToWhite() {
+            // (170, 222, 255) gains the glow (213, 239, 255) at 0.45 * 0.5 * (175 + 50) / 255 = 0.1985. Red
+            // has the furthest to climb and is the only channel still short of the top, which is what makes
+            // a shown tab's text read as a pale blue-white rather than as either end.
+            assertThat(resolveLabelAt(VanillaTabFills.SELECTED_GLOW))
+                .isEqualTo(new Color(212, 255, 255, OPAQUE_ALPHA));
+        }
+
+        @Test
+        void resolveLabelAtGlowWhitensThePointedTabsLabelWhereTheGlowOverrunsIt() {
+            // At the full glow every channel overruns and clips, so the text under the pointer goes white.
+            // That is the additive pass doing it, not a whitening of ours - which is what a label given a
+            // colour of its own per state could never reproduce at exactly these amounts.
+            assertThat(resolveLabelAt(VanillaTabFills.POINTED_GLOW))
+                .isEqualTo(new Color(255, 255, 255, OPAQUE_ALPHA));
+        }
+
+        @Test
+        void resolveLabelAtGlowDimsTheGlowOnASeeThroughFill() {
+            // The label borrows the temper from the fill beneath it rather than carrying one of its own, so
+            // a barely-there tab lights its text as weakly as it lights itself: (213, 239, 255) at
+            // 0.5 * (25 + 50) / 255 = 0.147, leaving red well short of the clip the full glow reaches.
+            assertThat(VanillaTabFills.resolveLabelAtGlow(
+                    paintWithFill(new Color(0, 0, 0, 25)),
+                    VanillaTabFills.POINTED_GLOW))
+                .isEqualTo(new Color(201, 255, 255, OPAQUE_ALPHA));
+        }
+    }
+
+    @Nested
+    class ResolveGlowColour {
+
+        @Test
+        void resolveGlowColourStandsHalfWayFromTheLabelToWhite() {
+            // The one axis every brightening of a tab travels along - the fills, the labels, and the lift a
+            // press raises - so it is pinned here rather than only through the shades built on it.
+            assertThat(VanillaTabFills.resolveGlowColour(BUTTON_TEXT))
+                .isEqualTo(new Color(213, 239, 255, OPAQUE_ALPHA));
+        }
+    }
+
     // The engine's own paint at the given glow, the pairing every case above varies only the glow of.
     private static Color resolveFillAt(float glowAmount) {
         return VanillaTabFills.resolveFillAtGlow(VANILLA_PAINT, glowAmount);
+    }
+
+    // The engine's own label at the given glow, the label-side twin of the pairing above.
+    private static Color resolveLabelAt(float glowAmount) {
+        return VanillaTabFills.resolveLabelAtGlow(VANILLA_PAINT, glowAmount);
     }
 
     // A black fill at the given alpha, for the cases about how solid the fill is: with nothing under the
