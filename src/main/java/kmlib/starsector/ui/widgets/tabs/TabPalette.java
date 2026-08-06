@@ -8,8 +8,12 @@ import java.awt.Color;
  * The paint a {@link VanillaTabStrip} wears: the accent its chrome is ruled in, the settled look of each
  * {@link TabLookState}, and the lift each {@link TabWashState} raises a tab by. Kept as a record so a
  * consumer can override any one of them, with {@link #createMapTabPalette()} supplying the live vanilla
- * map-tab values through the {@link StarsectorUiColour} palette, so a strip recolours with the current
- * player faction and never receives a null shade from an early-boot accessor.
+ * map-tab values through the {@link StarsectorUiColour} palette, so a strip follows a restyled install
+ * and never receives a null shade from an early-boot accessor.
+ *
+ * <p>What it follows is the install's settings, not the player's faction. Every fill and every label is
+ * worked out from the two colours the engine paints its own tabs with, which take no faction tint at all;
+ * only the chrome accent ruling the row is ours, and that one does.
  *
  * <p>Two flavours sit here for the reason they are separate types: a look is a shade a tab settles on, a
  * momentary state a brief lift over whichever look it has settled on. Naming the hovered shade outright

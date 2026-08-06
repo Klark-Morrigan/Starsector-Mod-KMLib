@@ -83,10 +83,7 @@ public final class VanillaTabFills {
      * @return the opaque shade at that glow
      */
     public static Color resolveFillAtGlow(VanillaTabPaint paint, float glowAmount) {
-        return Colours.addOverlay(
-            resolveRestingFill(paint),
-            resolveGlowColour(paint.labelColour()),
-            resolveGlowWeight(paint.fill(), glowAmount));
+        return addGlowOnto(resolveRestingFill(paint), paint, glowAmount);
     }
 
     /**
@@ -102,10 +99,7 @@ public final class VanillaTabFills {
      * @return the label shade at that glow, clipped to white where the glow overruns it
      */
     public static Color resolveLabelAtGlow(VanillaTabPaint paint, float glowAmount) {
-        return Colours.addOverlay(
-            paint.labelColour(),
-            resolveGlowColour(paint.labelColour()),
-            resolveGlowWeight(paint.fill(), glowAmount));
+        return addGlowOnto(paint.labelColour(), paint, glowAmount);
     }
 
     /**
@@ -119,6 +113,19 @@ public final class VanillaTabFills {
      */
     public static Color resolveGlowColour(Color labelColour) {
         return Colours.blendRgbTowards(labelColour, Color.WHITE, GLOW_WHITE_MIX);
+    }
+
+    // One colour of a tab with the glow added over it. The whole of what the engine's single glow pass
+    // does, held once rather than spelt out per surface it lands on: the fill and the label take the same
+    // light at the same amount, so a caller choosing which of them to light picks the base and nothing
+    // else. Two call sites each naming the colour and the weight themselves would be two places for that
+    // pass to drift apart, which is exactly the drift that had labels answering to a state instead of to
+    // the glow.
+    private static Color addGlowOnto(Color base, VanillaTabPaint paint, float glowAmount) {
+        return Colours.addOverlay(
+            base,
+            resolveGlowColour(paint.labelColour()),
+            resolveGlowWeight(paint.fill(), glowAmount));
     }
 
     // How much glow a tab takes at that amount: half strength scaled by it, and scaled down again when
