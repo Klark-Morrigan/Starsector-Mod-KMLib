@@ -90,6 +90,36 @@ final class VanillaClaimBreakdownReaderTest {
         }
 
         @Test
+        void listsAFactionsOtherMarketsInTheOrderTheEconomyDoes() {
+
+            var hegemony = claimContest.buildFaction("hegemony", true);
+            var relay = claimContest.buildMarket(hegemony, 1);
+            var capital = claimContest.buildMarket(hegemony, 5);
+            var outpost = claimContest.buildMarket(hegemony, 3);
+
+            claimContest.nameMarket(relay, "Sindria");
+            claimContest.nameMarket(capital, "Chicomoztoc");
+            claimContest.nameMarket(outpost, "Kazeron");
+            claimContest.placeMarketsInSystem(relay, capital, outpost);
+
+            var standing = new VanillaClaimBreakdownReader()
+                .readBreakdown(claimContest.getSystem())
+                .scores()
+                .get(0);
+
+            // Economy order, not score order: the weakest colony leads because that is where
+            // the economy put it. A caller wanting them ranked sorts them itself, and one that
+            // read them as already ranked would be quietly wrong on every multi-colony system.
+            assertThat(standing.standingMarket().marketName())
+                .isEqualTo("Chicomoztoc");
+            assertThat(standing.standingMarket().siblingMarketCount())
+                .isEqualTo(2);
+            assertThat(standing.otherMarkets())
+                .extracting(MarketClaimBreakdown::marketName)
+                .containsExactly("Sindria", "Kazeron");
+        }
+
+        @Test
         void carriesTheGarrisonBonusOnlyForAMilitaryMarket() {
 
             var hegemony = claimContest.buildFaction("hegemony", true);
@@ -295,6 +325,32 @@ final class VanillaClaimBreakdownReaderTest {
             assertThat(hegemonyFirst.claimantFactionId())
                 .isEqualTo("hegemony");
             assertThat(tritachyonFirst.claimantFactionId())
+                .isEqualTo("tritachyon");
+        }
+
+        @Test
+        void settlesATieOnMarketOrderRatherThanOnEachFactionsBestMarket() {
+
+            var hegemony = claimContest.buildFaction("hegemony", true);
+            var tritachyon = claimContest.buildFaction("tritachyon", true);
+
+            claimContest.placeMarketsInSystem(
+                claimContest.buildMarket(hegemony, 3),
+                claimContest.buildMarket(tritachyon, 6),
+                claimContest.buildMarket(hegemony, 5));
+
+            var breakdown =
+                new VanillaClaimBreakdownReader().readBreakdown(claimContest.getSystem());
+
+            // Both factions stand at 6 - Tri-Tachyon on its size-6 colony, the Hegemony on its
+            // size-5 one plus a sibling - and the mechanic walks market by market, so the tie
+            // goes to whichever market reached the score first. Settling it over the finished
+            // standings instead would hand the system to the Hegemony, whose first market comes
+            // earlier in the listing but scores lower: the same ranking, the wrong claimant.
+            assertThat(breakdown.scores())
+                .extracting(FactionClaimScore::factionId, FactionClaimScore::score)
+                .containsExactly(tuple("hegemony", 6), tuple("tritachyon", 6));
+            assertThat(breakdown.claimantFactionId())
                 .isEqualTo("tritachyon");
         }
 
