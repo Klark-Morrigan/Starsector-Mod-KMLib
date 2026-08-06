@@ -5,8 +5,6 @@ import com.fs.starfarer.api.campaign.CampaignTerrainAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
 
-import kmlib.starsector.ui.coreui.CoreUiTree;
-
 import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
@@ -30,11 +28,9 @@ import java.util.Map;
  * as, so the type alone cannot say whose icon a row is; the plugin names the code that draws it and
  * always identifies it.
  *
- * <p>Finds the widget by descending from the map tab until a component answers the icon accessor.
- * The widget is neither the tab nor the surface picked out of it - the tab holds a scrolling panel,
- * whose content container holds the map - so a fixed path would be a fact about one build's layout.
- * By method name rather than by field type for the same reason: the accessor is public and its name
- * survives obfuscation, while the fields down to it do not.
+ * <p>Describes the whole order where {@link MapIconLayeringProbe} answers one entity's place in it.
+ * The two read the same collection through {@link MapWidgetIcons} and differ in what they are for: a
+ * line to read when the picture is wrong, and an answer to act on while it still can be.
  *
  * <p>Read-only throughout. It walks the live icon map without touching it, and hands back a
  * description rather than the map, since the collection it read is the widget's own and outlives
@@ -47,10 +43,6 @@ import java.util.Map;
 public final class MapIconOrderTrace {
 
     private static final Logger LOG = Global.getLogger(MapIconOrderTrace.class);
-
-    // The map widget's own icon accessor. Public and part of its contract, so the name survives
-    // obfuscation where the fields leading down to the widget do not.
-    private static final String GET_ICONS_METHOD = "getIcons";
 
     // What a terrain-tagged icon reports when its entity is not a terrain after all, or holds no
     // plugin. Neither is expected; both are described rather than dropped, since an unexpected icon
@@ -83,9 +75,9 @@ public final class MapIconOrderTrace {
             if (mapTab == null) {
                 return null;
             }
-            var icons = resolveIconMapUnder(mapTab, 0);
+            var icons = MapWidgetIcons.readIconMapUnder(mapTab);
             if (icons == null) {
-                warnOnce("no component under the map tab answers " + GET_ICONS_METHOD, null);
+                warnOnce("no component under the map tab answers its icon accessor", null);
                 return null;
             }
             return describeTerrainIcons(readTerrainIcons(icons));
@@ -154,37 +146,6 @@ public final class MapIconOrderTrace {
             position,
             terrain.getType(),
             plugin == null ? NO_PLUGIN : plugin.getClass().getSimpleName());
-    }
-
-    // Depth-first from the tab, first component that answers the accessor wins. Only the map widget
-    // defines it, so there is nothing else the walk could find first.
-    private static Map<?, ?> resolveIconMapUnder(Object component, int depth) {
-        if (component == null || depth > ProbeLimits.MAX_SEARCH_DEPTH) {
-            return null;
-        }
-        var icons = readIconMapOf(component);
-        if (icons != null) {
-            return icons;
-        }
-        for (var child : CoreUiTree.readChildrenOf(component)) {
-            var childIcons = resolveIconMapUnder(child, depth + 1);
-            if (childIcons != null) {
-                return childIcons;
-            }
-        }
-        return null;
-    }
-
-    private static Map<?, ?> readIconMapOf(Object component) {
-        try {
-            return CoreUiTree.invokeNoArg(component, GET_ICONS_METHOD) instanceof Map<?, ?> icons
-                ? icons
-                : null;
-        } catch (Throwable notTheMapWidget) {
-            // Every component but one is expected to fail this, so an absent accessor is how the
-            // walk moves on rather than something to report.
-            return null;
-        }
     }
 
     // On this library's own logger, since a reach that stopped fitting the game is the library's

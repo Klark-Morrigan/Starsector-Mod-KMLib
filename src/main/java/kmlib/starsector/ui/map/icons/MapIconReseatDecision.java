@@ -1,13 +1,16 @@
 package kmlib.starsector.ui.map.icons;
 
+import kmlib.starsector.ui.map.probes.MapIconLayeringProbe.Layering;
+
 import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 
 /**
  * Decides when an entity has to leave its location and come straight back, which is what moves its
  * icon to the end of the map widget's draw order.
  *
  * <p>The widget keeps one icon per entity in an insertion-ordered map, and seeds that map afresh
- * each time a map is opened - from the location's own entities first, and the starfield's synthetic
+ * each time a map is opened - from the location's own entities first, and the map's synthetic
  * nebulae appended after all of them. So an entity that was in its location when the map opened is
  * drawn beneath the fog, and there is no published call that says otherwise or moves it.
  *
@@ -17,40 +20,62 @@ import java.util.function.BooleanSupplier;
  * the widget walking terrain-tagged icons and the rest in separate passes that no insertion order
  * crosses.
  *
- * <p>The map is seeded per open, so the move is owed per open rather than per frame a map is up.
- * That is what makes this a latch over two readings rather than a rule about the current one: the
- * edge into "a map is showing" is the trigger, and the advance after it is the put-back.
+ * <p>It acts on where the icon <em>is</em> rather than on an event that would have moved it. The
+ * obvious trigger is the edge into "a map is showing", the map being seeded per open - but that is a
+ * proxy, and a proxy is only as good as its every occurrence being observed. One missed edge leaves
+ * the icon buried for the rest of the session with nothing able to notice, which is exactly what a
+ * layering that comes and goes looks like from the outside. Reading the placement instead makes this
+ * self-correcting: whatever re-seeded the map, and whatever was missed, the next advance sees a
+ * buried icon and lifts it.
  *
- * <p>Only the decision is here. Reaching the entity, removing and adding are
+ * <p>The map read stays as a scope rather than a trigger. It says which map's ordering the caller
+ * cares about, so nothing is moved for a screen the caller has no interest in.
+ *
+ * <p>Reading the state does mean the move can be attempted against a build where it no longer works,
+ * where an event-keyed rule would simply have fired once and stopped. {@link #MAX_ATTEMPTS} is what
+ * bounds that: a lift that does not clear the fog is retried a few times and then abandoned for the
+ * session, leaving the icon where the widget seeded it. That is the same graceful direction the
+ * whole lever fails in, rather than an entity flickering out of its location for as long as the game
+ * is running.
+ *
+ * <p>Only the decision is here. Reaching the entity, reading its placement, removing and adding are
  * {@link MapIconReseater}'s, which leaves the state machine - the part with something to get wrong -
  * answerable without a running game.
- *
- * <p>The lever is an artefact of how the widget seeds itself, not something the engine promises. A
- * game build that seeds differently simply leaves the icon where it is drawn today, with nothing
- * else disturbed; {@code MapIconOrderTrace} is what says so from a running game.
  */
 final class MapIconReseatDecision {
 
-    // The previous advance's reading, which is what turns a steady "a map is showing" into the edge
-    // this arms on.
-    private boolean wasMapShowing;
+    // How many lifts that fail to clear the nebulae are attempted before this stands down for the
+    // session. Above one, because the first read after a put-back can legitimately still see the old
+    // placement - the icon is re-seeded by a render, not by the add. Low, because a lift that has
+    // not taken by then is a build this no longer fits rather than a slow frame.
+    static final int MAX_ATTEMPTS = 4;
 
     // Whether the previous advance took the entity out and is owed the put-back. One advance is the
     // entire window, and deliberately so: it exists only so that exactly one frame renders without
     // the icon, which is what drops it from the widget's map.
     private boolean isEntityDetached;
 
+    // Lifts attempted since the icon was last seen clear. Reset by that sighting rather than by a
+    // put-back, so what is counted is attempts that achieved nothing.
+    private int attemptsSinceLastClear;
+
+    // Set once the attempts run out, so a build this no longer fits costs a handful of moves rather
+    // than two per frame forever.
+    private boolean hasStoodDown;
+
     /**
      * @param isMapShowing whether a map whose icon order matters is on screen this advance
-     * @param isEntityPresent whether the entity is currently in a location, as a supplier because
-     *        answering it can cost a walk over everything the location holds - a cost worth paying
-     *        on the few advances that act and not on every frame of a campaign
+     * @param readIconLayering where the entity's icon currently sits, as a supplier because
+     *        answering it costs a walk into the live widget tree - a cost worth paying on the
+     *        advances that might act and not on every frame of a campaign
+     * @param isEntityPresent whether the entity is currently in a location, a supplier for the same
+     *        reason: answering it can cost a walk over everything the location holds
      * @return what this advance owes the location holding the entity
      */
-    ReseatAction decideReseatAction(boolean isMapShowing, BooleanSupplier isEntityPresent) {
-
-        var hasMapJustOpened = isMapShowing && !wasMapShowing;
-        wasMapShowing = isMapShowing;
+    ReseatAction decideReseatAction(
+            boolean isMapShowing,
+            Supplier<Layering> readIconLayering,
+            BooleanSupplier isEntityPresent) {
 
         if (isEntityDetached) {
             isEntityDetached = false;
@@ -62,15 +87,34 @@ final class MapIconReseatDecision {
                 : ReseatAction.ADD;
         }
 
-        // Nothing to move unless a map has just been opened and there is an entity to move. Absent
-        // is the ordinary case before whatever puts the entity there has run, and adding one from
-        // here would be seeding an entity this has never been told how to build.
-        if (!hasMapJustOpened || !isEntityPresent.getAsBoolean()) {
+        if (hasStoodDown || !isMapShowing) {
             return ReseatAction.NONE;
         }
 
+        var layering = readIconLayering.get();
+        if (layering == Layering.CLEAR_OF_NEBULAE) {
+            // The one reading that says a lift worked. Everything else - no map, no icon yet, a
+            // tree that cannot be read - leaves the count alone rather than forgiving attempts on
+            // the strength of an answer nobody got.
+            attemptsSinceLastClear = 0;
+            return ReseatAction.NONE;
+        }
+        if (layering != Layering.BURIED_UNDER_NEBULAE || !isEntityPresent.getAsBoolean()) {
+            return ReseatAction.NONE;
+        }
+
+        attemptsSinceLastClear++;
+        if (attemptsSinceLastClear > MAX_ATTEMPTS) {
+            hasStoodDown = true;
+            return ReseatAction.NONE;
+        }
         isEntityDetached = true;
         return ReseatAction.REMOVE;
+    }
+
+    /** @return whether this has abandoned the move for the session, for the caller to report once */
+    boolean hasStoodDown() {
+        return hasStoodDown;
     }
 
     /**
