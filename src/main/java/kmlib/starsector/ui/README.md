@@ -83,6 +83,11 @@ decision on the box restyles every line of a kind at once - on either surface, s
 reads those styles into its own draws while a vanilla-widget tooltip reads the same two into
 `setTitleFont` / `setParaFont`.
 
+The kinds are a heading, a line of the body, and a footnote - a line about the box rather than
+about its subject, which the game's own boxes end their key hints in and set in a smaller,
+narrower face than the content above. Most boxes note nothing, so the footnote look defaults to
+the body's and a box that does note something layers its own on with `footnotedIn`.
+
 Sizing follows the kind rather than the box: each row is measured on the face its own kind
 resolved to, or a heading in a wider face overflows the box that was sized for it. That is
 what [`TextSpanMeasurer`](font/TextSpanMeasurer.java) takes a face per call for.

@@ -27,6 +27,13 @@ public enum StarsectorFont {
     VANILLA_ORBITRON_20AA("orbitron20aa", 20),
 
     /**
+     * The narrow, small Orbitron the game sets its tooltip key hints in - the "Press F1 for more
+     * info" line at the foot of a vanilla box. Condensed rather than merely small, so a line of it
+     * stays under the width of the content it sits beneath.
+     */
+    VANILLA_ORBITRON_12_CONDENSED("orbitron12condensed", 12),
+
+    /**
      * The highest-resolution antialiased atlas the game ships, and so the only one that stays clean
      * when text is magnified far past its native size.
      */

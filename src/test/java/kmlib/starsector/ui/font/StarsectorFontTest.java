@@ -22,6 +22,7 @@ class StarsectorFontTest {
             var expected = switch (font) {
             case VANILLA_INSIGNIA_15 -> "graphics/fonts/insignia15LTaa.fnt";
             case VANILLA_ORBITRON_20AA -> "graphics/fonts/orbitron20aa.fnt";
+            case VANILLA_ORBITRON_12_CONDENSED -> "graphics/fonts/orbitron12condensed.fnt";
             case VANILLA_INSIGNIA_42 -> "graphics/fonts/insignia42LTaa.fnt";
             };
 
@@ -52,6 +53,7 @@ class StarsectorFontTest {
             var expected = switch (font) {
             case VANILLA_INSIGNIA_15 -> 15;
             case VANILLA_ORBITRON_20AA -> 20;
+            case VANILLA_ORBITRON_12_CONDENSED -> 12;
             case VANILLA_INSIGNIA_42 -> 42;
             };
 

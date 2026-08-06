@@ -36,6 +36,8 @@ class TooltipStyleTest {
     // nothing. The two differ in face so a mixed-up lookup cannot pass by coincidence.
     private static final TextStyle HEADER_STYLE = createStyleIn(StarsectorFont.VANILLA_ORBITRON_20AA);
     private static final TextStyle PARAGRAPH_STYLE = createStyleIn(StarsectorFont.VANILLA_INSIGNIA_15);
+    private static final TextStyle FOOTNOTE_STYLE =
+        createStyleIn(StarsectorFont.VANILLA_ORBITRON_12_CONDENSED);
 
     private static TextStyle createStyleIn(StarsectorFont font) {
         return new TextStyle(
@@ -51,6 +53,7 @@ class TooltipStyleTest {
 
     @Nested
     class CreateStyle {
+
         @Test
         void createStyleCarriesTheTwoLooksAtTheStandardParting() {
 
@@ -63,10 +66,39 @@ class TooltipStyleTest {
             assertThat(style.sectionBreak())
                 .isCloseTo(DEFAULT_SECTION_BREAK, within(TOLERANCE));
         }
+
+        @Test
+        void createStyleSetsANoteInTheBodyLookUntilOneIsAskedFor() {
+            // Most boxes note nothing and so never resolve the look; demanding a third face up front
+            // would have every caller name one for a line it will not draw.
+            assertThat(buildTwoFacedStyle().footnoteStyle())
+                .isEqualTo(PARAGRAPH_STYLE);
+        }
+    }
+
+    @Nested
+    class FootnotedIn {
+
+        @Test
+        void footnotedInSetsTheLookANoteAtTheFootIsDrawnIn() {
+            assertThat(buildTwoFacedStyle().footnotedIn(FOOTNOTE_STYLE).footnoteStyle())
+                .isEqualTo(FOOTNOTE_STYLE);
+        }
+
+        @Test
+        void footnotedInChangesNothingElse() {
+            // A box setting its notes apart says nothing about how its headings or its body are drawn,
+            // nor about how far apart its blocks stand.
+            assertThat(buildTwoFacedStyle().footnotedIn(FOOTNOTE_STYLE))
+                .usingRecursiveComparison()
+                .ignoringFields("footnoteStyle")
+                .isEqualTo(buildTwoFacedStyle());
+        }
     }
 
     @Nested
     class PartedBy {
+
         @Test
         void partedBySetsHowFarApartTheBlocksStand() {
             assertThat(buildTwoFacedStyle().partedBy(WIDER_SECTION_BREAK).sectionBreak())
@@ -86,6 +118,7 @@ class TooltipStyleTest {
 
     @Nested
     class ResolveStyleFor {
+        
         @Test
         void resolveStyleForReturnsTheHeaderLookForAHeaderLine() {
             assertThat(buildTwoFacedStyle().resolveStyleFor(TooltipLineStyle.HEADER))
@@ -106,6 +139,14 @@ class TooltipStyleTest {
             // box that happened to use it.
             assertThat(buildTwoFacedStyle().resolveStyleFor(lineStyle))
                 .isNotNull();
+        }
+
+        @Test
+        void resolveStyleForReturnsTheFootnoteLookForANoteAtTheFoot() {
+            assertThat(buildTwoFacedStyle()
+                    .footnotedIn(FOOTNOTE_STYLE)
+                    .resolveStyleFor(TooltipLineStyle.FOOTNOTE))
+                .isEqualTo(FOOTNOTE_STYLE);
         }
 
         @Test
