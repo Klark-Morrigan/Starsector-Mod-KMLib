@@ -16,6 +16,23 @@ public final class KmlibNumbers {
     // only when it is warranted.
     private static final String GROUPED_INTEGER = "%,d";
 
+    // The widest a compact decimal ever renders: grouped like the
+    // integer form above, with two decimal places the trim below
+    // takes back whenever they say nothing. Two is the resolution a
+    // hand-tuned rating is authored at - a quarter, a half - so it is
+    // the point past which further digits are float noise rather than
+    // the value the author set.
+    private static final String GROUPED_DECIMAL = "%,.2f";
+
+    private static final String DECIMAL_POINT = ".";
+    private static final String TRAILING_ZERO = "0";
+
+    // What a negative value too small to survive the trim collapses
+    // to. "-0" reads as a distinct (and impossible) quantity rather
+    // than as the zero it is, so it is stated as plain zero.
+    private static final String NEGATIVE_ZERO = "-0";
+    private static final String ZERO = "0";
+
     private KmlibNumbers() {
     }
 
@@ -79,5 +96,48 @@ public final class KmlibNumbers {
      */
     public static String formatGroupedInteger(int value) {
         return String.format(Locale.ROOT, GROUPED_INTEGER, value);
+    }
+
+    /**
+     * Formats {@code value} as a number that carries a fraction only
+     * where it has one, e.g. {@code 5.0 -> "5"}, {@code 0.25 ->
+     * "0.25"}, {@code 1234.5 -> "1,234.5"}. Thousands are grouped as
+     * in {@link #formatGroupedInteger}, so a whole value renders
+     * identically either way.
+     *
+     * <p>For values a player set rather than a machine computed - a
+     * weight, a rating, a multiplier - where a fixed decimal count
+     * would show a whole number as "5.00" and a quarter as "0.25" in
+     * the same column, making the whole one look like a measurement
+     * it is not. Anything past two decimals is dropped, that being the
+     * resolution such values are authored at.
+     *
+     * <p>{@link Locale#ROOT} is forced for the same reason as the
+     * grouped integer above: the separators are a fixed presentation
+     * style, not locale-sensitive prose.
+     */
+    public static String formatCompactDecimal(double value) {
+        var formatted = String.format(Locale.ROOT, GROUPED_DECIMAL, value);
+
+        // A value that rendered without a point has no tail to take
+        // back, and trimming zeros off one would eat its own digits.
+        if (formatted.contains(DECIMAL_POINT)) {
+            formatted = trimDecimalTail(formatted);
+        }
+        return NEGATIVE_ZERO.equals(formatted) ? ZERO : formatted;
+    }
+
+    // Drops the zeros a fixed decimal count padded the value out to,
+    // and then the point they were hanging off once nothing is left
+    // after it - so the value states exactly the digits it has.
+    private static String trimDecimalTail(String formatted) {
+        var end = formatted.length();
+        while (formatted.startsWith(TRAILING_ZERO, end - 1)) {
+            end--;
+        }
+        if (formatted.startsWith(DECIMAL_POINT, end - 1)) {
+            end--;
+        }
+        return formatted.substring(0, end);
     }
 }

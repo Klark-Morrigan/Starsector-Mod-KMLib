@@ -9,6 +9,7 @@ class KmlibNumbersTest {
 
     @Nested
     class FormatDelta {
+
         @Test
         void formatDeltaIntPositive() {
             assertThat(KmlibNumbers.formatDelta(3))
@@ -44,6 +45,7 @@ class KmlibNumbersTest {
 
     @Nested
     class FormatGroupedInteger {
+
         @Test
         void formatGroupedIntegerZero() {
             assertThat(KmlibNumbers.formatGroupedInteger(0))
@@ -81,7 +83,64 @@ class KmlibNumbersTest {
     }
 
     @Nested
+    class FormatCompactDecimal {
+
+        @Test
+        void formatCompactDecimalDropsTheTailOfAWholeValue() {
+            // A whole value padded to "5.00" reads as a measurement rather
+            // than as the round number the author set.
+            assertThat(KmlibNumbers.formatCompactDecimal(5.0))
+                .isEqualTo("5");
+        }
+
+        @Test
+        void formatCompactDecimalKeepsAFractionItHas() {
+            assertThat(KmlibNumbers.formatCompactDecimal(0.25))
+                .isEqualTo("0.25");
+        }
+
+        @Test
+        void formatCompactDecimalDropsOnlyThePaddingOfAOneDecimalValue() {
+            assertThat(KmlibNumbers.formatCompactDecimal(2.5))
+                .isEqualTo("2.5");
+        }
+
+        @Test
+        void formatCompactDecimalGroupsThousandsLikeTheIntegerForm() {
+            assertThat(KmlibNumbers.formatCompactDecimal(1234.5))
+                .isEqualTo("1,234.5");
+        }
+
+        @Test
+        void formatCompactDecimalRoundsPastTwoDecimals() {
+            // Past two decimals is float noise rather than an authored value.
+            assertThat(KmlibNumbers.formatCompactDecimal(0.129))
+                .isEqualTo("0.13");
+        }
+
+        @Test
+        void formatCompactDecimalZero() {
+            assertThat(KmlibNumbers.formatCompactDecimal(0.0))
+                .isEqualTo("0");
+        }
+
+        @Test
+        void formatCompactDecimalKeepsANegativeSignOnAValueThatSurvivesTheTrim() {
+            assertThat(KmlibNumbers.formatCompactDecimal(-2.5))
+                .isEqualTo("-2.5");
+        }
+
+        @Test
+        void formatCompactDecimalStatesANegligibleNegativeAsPlainZero() {
+            // "-0" reads as a distinct quantity rather than as the zero it is.
+            assertThat(KmlibNumbers.formatCompactDecimal(-0.001))
+                .isEqualTo("0");
+        }
+    }
+
+    @Nested
     class FormatScientific {
+        
         @Test
         void formatScientificStripsExponentSignAndPadding() {
             assertThat(KmlibNumbers.formatScientific(1523.4))
