@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * width it snaps to accounts for a spelt-out shortcut, so a tab carrying one is wider than the same
  * label without. Also pins {@link VanillaTabStrip#zipTabs}, the pairing both the strip's own layout and
  * a consumer holding the boxes separately build their tabs through, and that
- * {@link VanillaTabStrip#composeDisplay} measures whatever {@link TabShortcutText} decided the tab
+ * {@link VanillaTabStrip#composeDisplays} measures whatever {@link TabShortcutText} decided each tab
  * shows - the presentation itself being pinned there.
  */
 class VanillaTabStripTest {
@@ -128,19 +128,20 @@ class VanillaTabStripTest {
     }
 
     @Nested
-    class ComposeDisplay {
+    class ComposeDisplays {
 
         @Test
-        void measuresTheTextTheTabActuallyShows() {
-            // The string the row is snapped to is whatever the shortcut rule settled on, read end to end -
-            // not a second composition that could disagree with the runs the paint pass draws.
-            var speltOut = new VanillaTabContent("Political Map", "Z");
-            var litInPlace = new VanillaTabContent("Political Map", "P");
+        void measuresTheTextEachTabActuallyShows() {
+            // The strings the row is snapped to are whatever the shortcut rule settled on, in order - a
+            // lit-in-place key costing its tab nothing while a spelt-out one is carried in full. A second
+            // composition here could disagree with the runs the paint pass draws off the same rule.
+            var contents = List.of(
+                new VanillaTabContent("Political Map", "P"),
+                new VanillaTabContent("Political Map", "Z"),
+                new VanillaTabContent("Alliances", null));
 
-            assertThat(VanillaTabStrip.composeDisplay(speltOut))
-                .isEqualTo(TabShortcutText.composeDisplayText(speltOut));
-            assertThat(VanillaTabStrip.composeDisplay(litInPlace))
-                .isEqualTo(TabShortcutText.composeDisplayText(litInPlace));
+            assertThat(VanillaTabStrip.composeDisplays(contents))
+                .containsExactly("Political Map", "Political Map  [Z]", "Alliances");
         }
     }
 

@@ -115,7 +115,7 @@ public final class VanillaTabStrip {
     public static List<String> composeDisplays(List<VanillaTabContent> contents) {
         var displays = new ArrayList<String>(contents.size());
         for (var content : contents) {
-            displays.add(composeDisplay(content));
+            displays.add(TabShortcutText.composeDisplayText(content));
         }
         return List.copyOf(displays);
     }
@@ -141,16 +141,4 @@ public final class VanillaTabStrip {
             pointY);
     }
 
-    /**
-     * A tab's display string - the whole of the text it shows, its bound key lit inside the label or
-     * spelt out after it as {@link TabShortcutText} decides - so the layout measures exactly what the
-     * paint draws. It is the runs of that decision read end to end, and the paint pass draws those same
-     * runs, so neither pass can size or draw a tab for a presentation the other did not choose.
-     *
-     * @param content the tab's label and optional shortcut
-     * @return the composed display string
-     */
-    public static String composeDisplay(VanillaTabContent content) {
-        return TabShortcutText.composeDisplayText(content);
-    }
 }

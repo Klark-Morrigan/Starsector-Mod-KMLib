@@ -41,10 +41,6 @@ public final class TabPanelRenderer {
     // is handed, it is simply handed full alpha here.
     private static final float HEADER_OPACITY = 1f;
 
-    // The fraction a panel resting fully expanded reports; above it the fold is under way, which is the
-    // only time the body's draw is clipped to its own shrinking box.
-    private static final float NO_COLLAPSE_FRACTION = 0f;
-
     private TabPanelRenderer() {
     }
 
@@ -109,7 +105,7 @@ public final class TabPanelRenderer {
             NotchState notchState,
             float opacity) {
 
-        var isCollapsing = notchState.collapseFraction() > NO_COLLAPSE_FRACTION;
+        var isCollapsing = notchState.isFolding();
         if (isCollapsing) {
             UiScissor.push(placement.body().box());
         }

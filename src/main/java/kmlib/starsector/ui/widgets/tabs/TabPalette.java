@@ -77,33 +77,27 @@ public record TabPalette(
     public static TabPalette createMapTabPalette() {
 
         var white = StarsectorUiColour.WHITE.resolve();
-        var fill = StarsectorUiColour.VANILLA_BUTTON_BG_DARK.resolve();
         var restingLabel = StarsectorUiColour.VANILLA_BUTTON_TEXT.resolve();
         var selectedLabel = StarsectorUiColour.VANILLA_PLAYER_BRIGHT.resolve();
 
-        // The surface the fills are laid over. Black rather than the host's own panel fill, because a tab
-        // row stands wherever its panel does - over a body, over the map where a tab has no body at all -
-        // and a fill measured against one of those would be wrong in the others.
-        var backdrop = StarsectorUiColour.BLACK.resolve();
+        // The engine's own tab paint. The backdrop is black rather than the host's own panel fill, because
+        // a tab row stands wherever its panel does - over a body, over the map where a tab has no body at
+        // all - and a fill measured against one of those would be wrong in the others.
+        var tabPaint = new VanillaTabPaint(
+            StarsectorUiColour.VANILLA_BUTTON_BG_DARK.resolve(),
+            restingLabel,
+            StarsectorUiColour.BLACK.resolve());
 
         return new TabPalette(
             StarsectorUiColour.VANILLA_PLAYER_BASE.resolve(),
             new TabLook(
-                VanillaTabFills.resolveRestingFill(fill, backdrop),
+                VanillaTabFills.resolveRestingFill(tabPaint),
                 restingLabel),
             new TabLook(
-                VanillaTabFills.resolveFillAtGlow(
-                    fill,
-                    restingLabel,
-                    backdrop,
-                    VanillaTabFills.SELECTED_GLOW),
+                VanillaTabFills.resolveFillAtGlow(tabPaint, VanillaTabFills.SELECTED_GLOW),
                 selectedLabel),
             new TabLook(
-                VanillaTabFills.resolveFillAtGlow(
-                    fill,
-                    restingLabel,
-                    backdrop,
-                    VanillaTabFills.POINTED_GLOW),
+                VanillaTabFills.resolveFillAtGlow(tabPaint, VanillaTabFills.POINTED_GLOW),
                 Colours.blendRgbTowards(selectedLabel, white, POINTED_LABEL_WHITE_LIFT)),
             new TabWash(white, CLICK_WHITE_WASH));
     }

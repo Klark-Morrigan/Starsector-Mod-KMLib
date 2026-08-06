@@ -24,11 +24,25 @@ public record TabPanelViewState(float rawScrollOffset, float collapseFraction) {
      */
     public static final TabPanelViewState RESTING = new TabPanelViewState(0f, 0f);
 
+    // The fraction a panel resting fully expanded reports; above it the fold is under way.
+    private static final float NO_COLLAPSE_FRACTION = 0f;
+
     /**
      * Clamps the collapse fraction to the unit range, so a fraction past either end behaves as the nearest
      * end rather than inverting the fold.
      */
     public TabPanelViewState {
         collapseFraction = Ranges.clampToUnit(collapseFraction);
+    }
+
+    /**
+     * Whether the fold is under way at all - the panel part-way to its docked rail, or all the way there.
+     * Asked rather than compared, so what counts as folding is stated once beside the fraction it is read
+     * from rather than at each place that acts on it.
+     *
+     * @return whether the body is anywhere but fully expanded
+     */
+    public boolean isFolding() {
+        return collapseFraction > NO_COLLAPSE_FRACTION;
     }
 }

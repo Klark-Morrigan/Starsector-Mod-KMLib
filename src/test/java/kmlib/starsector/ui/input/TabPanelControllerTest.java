@@ -1,5 +1,7 @@
 package kmlib.starsector.ui.input;
 
+import com.fs.starfarer.api.input.InputEventAPI;
+
 import kmlib.animation.TraverseDurations;
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.Control;
@@ -11,6 +13,7 @@ import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,9 +38,10 @@ final class TabPanelControllerTest {
     private static final float TOLERANCE = 0.0001f;
 
     // A two-tab header laid away from the origin, so a point outside a tab is outside on both axes rather
-    // than by a coordinate that happens to be zero.
+    // than by a coordinate that happens to be zero. The band spans both tabs, as a drawn row does.
     private static final Rectangle FIRST_TAB = new Rectangle(100f, 500f, 80f, 20f);
     private static final Rectangle SECOND_TAB = new Rectangle(180f, 500f, 80f, 20f);
+    private static final Rectangle HEADER_BAND = new Rectangle(100f, 500f, 160f, 20f);
 
     private static final float INSIDE_FIRST_TAB_X = 140f;
     private static final float INSIDE_SECOND_TAB_X = 220f;
@@ -156,6 +160,50 @@ final class TabPanelControllerTest {
             // handle at rest rather than one already part-way lit.
             assertThat(new TabPanelController().getNotchHoverFraction())
                 .isCloseTo(0f, within(TOLERANCE));
+        }
+    }
+
+    @Nested
+    class HandlePointer {
+
+        @Test
+        void handlePointerSwallowsAnEventOverTheDrawnTabRow() {
+            // The row is drawn outside the body's box, so without this the surface behind the panel would
+            // go on reading a pointer the player has parked on the tabs - and a tab row with no body under
+            // it, which is the whole of such a panel, would block nothing at all.
+            var event = buildMouseEventAt(INSIDE_FIRST_TAB_X, ON_TAB_ROW_Y);
+
+            new TabPanelController().handlePointer(event, buildTwoTabPlacement());
+
+            Mockito
+                .verify(event)
+                .consume();
+        }
+
+        @Test
+        void handlePointerLeavesAnEventOffThePanelAlone() {
+            // Off every part of it the panel claims nothing, so the map underneath keeps answering the
+            // pointer as it did before the panel was there.
+            var event = buildMouseEventAt(OFF_PANEL_X, OFF_PANEL_Y);
+
+            new TabPanelController().handlePointer(event, buildTwoTabPlacement());
+
+            Mockito
+                .verify(event, Mockito.never())
+                .consume();
+        }
+
+        @Test
+        void handlePointerLeavesAnEventOverAWipedTabRowAlone() {
+            // Mid-fold the drawn band is narrower than the row was laid out; the panel claims only what it
+            // still paints, so the screen its tabs have wiped off goes back to whatever is behind.
+            var event = buildMouseEventAt(INSIDE_SECOND_TAB_X, ON_TAB_ROW_Y);
+
+            new TabPanelController().handlePointer(event, buildPlacementWithDrawnBand(FIRST_TAB));
+
+            Mockito
+                .verify(event, Mockito.never())
+                .consume();
         }
     }
 
@@ -743,14 +791,41 @@ final class TabPanelControllerTest {
     // off the row's start reads as a wrong number; one builder for every case, so the placements cannot
     // drift apart in any other respect.
     private static TabPanelPlacement buildPlacement(Rectangle notch, ControlSpec spec) {
+        return buildPlacement(notch, spec, HEADER_BAND);
+    }
 
-        var headerBand = new Rectangle(100f, 500f, 160f, 20f);
+    // The same panel with only part of its row still drawn, for the cases about what a folding panel
+    // claims: the row is laid out whole either way, and the drawn band is what the fold has left of it.
+    private static TabPanelPlacement buildPlacementWithDrawnBand(Rectangle drawnHeaderBand) {
+        return buildPlacement(null, null, drawnHeaderBand);
+    }
+
+    private static TabPanelPlacement buildPlacement(
+            Rectangle notch,
+            ControlSpec spec,
+            Rectangle drawnHeaderBand) {
 
         return new TabPanelPlacement(
-            new Control(spec, headerBand, List.of(FIRST_TAB, SECOND_TAB)),
-            headerBand,
-            new PanelPlacement(headerBand, headerBand, List.of(), headerBand, 0f, 0f),
+            new Control(spec, HEADER_BAND, List.of(FIRST_TAB, SECOND_TAB)),
+            drawnHeaderBand,
+            new PanelPlacement(HEADER_BAND, HEADER_BAND, List.of(), HEADER_BAND, 0f, 0f),
             new BoxBorder(BORDER_WIDTH),
             notch);
+    }
+
+    // A mouse event at a point, carrying nothing else: the cases here are about what the panel claims, not
+    // about what it does with a press, so nothing is stubbed that would make it act.
+    private static InputEventAPI buildMouseEventAt(float pointX, float pointY) {
+
+        var event = Mockito.mock(InputEventAPI.class);
+
+        Mockito
+            .when(event.getX())
+            .thenReturn(pointX);
+        Mockito
+            .when(event.getY())
+            .thenReturn(pointY);
+
+        return event;
     }
 }

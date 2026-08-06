@@ -55,10 +55,6 @@ public final class TabPanelLayout {
     public static final float NOTCH_HEIGHT = 24f;
     public static final float NOTCH_CENTRE_OFFSET = 0f;
 
-    // The fraction a panel resting fully expanded reports. Anything above it means the fold is under way,
-    // which is what decides whether the tab row is being wiped with the body.
-    private static final float NO_COLLAPSE_FRACTION = 0f;
-
     private TabPanelLayout() {
     }
 
@@ -185,7 +181,7 @@ public final class TabPanelLayout {
                 bodyPlacement.box(),
                 // A panel with no body never folds - there is nothing to fold and no handle to ask for it -
                 // so a fraction another tab's body left standing in the animation cannot wipe this row.
-                !isBodyless && viewState.collapseFraction() > NO_COLLAPSE_FRACTION),
+                !isBodyless && viewState.isFolding()),
             bodyPlacement,
             border,
             notch);

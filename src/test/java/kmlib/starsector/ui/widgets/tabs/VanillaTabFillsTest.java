@@ -20,11 +20,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 final class VanillaTabFillsTest {
 
     // The engine's own values, from settings.json: the dark button fill a tab rests at, and the button
-    // text colour its glow is a whitened form of.
+    // text colour its glow is a whitened form of, over the dark backing its tabs stand on.
     private static final Color BUTTON_BG_DARK = new Color(31, 94, 112, 175);
     private static final Color BUTTON_TEXT = new Color(170, 222, 255, 255);
-
     private static final Color BACKDROP = Color.BLACK;
+
+    private static final VanillaTabPaint VANILLA_PAINT =
+        new VanillaTabPaint(BUTTON_BG_DARK, BUTTON_TEXT, BACKDROP);
 
     private static final int OPAQUE_ALPHA = 255;
 
@@ -34,7 +36,7 @@ final class VanillaTabFillsTest {
         @Test
         void resolveRestingFillCompositesTheButtonFillOntoTheBackdrop() {
             // buttonBgDark at alpha 175 over black.
-            assertThat(VanillaTabFills.resolveRestingFill(BUTTON_BG_DARK, BACKDROP))
+            assertThat(VanillaTabFills.resolveRestingFill(VANILLA_PAINT))
                 .isEqualTo(new Color(21, 65, 77, OPAQUE_ALPHA));
         }
 
@@ -42,14 +44,15 @@ final class VanillaTabFillsTest {
         void resolveRestingFillTakesTheBackdropWhereTheFillIsAbsent() {
             // A fully transparent fill leaves the tab the colour of what it stands on - the degenerate end
             // of the same composite, not a special case.
-            assertThat(VanillaTabFills.resolveRestingFill(new Color(31, 94, 112, 0), BACKDROP))
+            assertThat(VanillaTabFills.resolveRestingFill(paintWithFill(new Color(31, 94, 112, 0))))
                 .isEqualTo(new Color(0, 0, 0, OPAQUE_ALPHA));
         }
 
         @Test
         void resolveRestingFillFollowsARestyledButtonFill() {
             // The whole point of computing rather than sampling: a restyled install moves this tab.
-            assertThat(VanillaTabFills.resolveRestingFill(new Color(200, 40, 40, OPAQUE_ALPHA), BACKDROP))
+            assertThat(VanillaTabFills.resolveRestingFill(
+                    paintWithFill(new Color(200, 40, 40, OPAQUE_ALPHA))))
                 .isEqualTo(new Color(200, 40, 40, OPAQUE_ALPHA));
         }
     }
@@ -78,7 +81,7 @@ final class VanillaTabFillsTest {
         void resolveFillAtGlowLeavesAnUnlitTabAtItsRestingShade() {
             // No glow is the same statement as no glow pass at all, so the two ways of asking agree.
             assertThat(resolveFillAt(VanillaTabFills.NO_GLOW))
-                .isEqualTo(VanillaTabFills.resolveRestingFill(BUTTON_BG_DARK, BACKDROP));
+                .isEqualTo(VanillaTabFills.resolveRestingFill(VANILLA_PAINT));
         }
 
         @Test
@@ -125,19 +128,21 @@ final class VanillaTabFillsTest {
         }
     }
 
-    // The engine's own fill and label at the given glow, the pairing every case above varies only the
-    // glow of.
+    // The engine's own paint at the given glow, the pairing every case above varies only the glow of.
     private static Color resolveFillAt(float glowAmount) {
-        return VanillaTabFills.resolveFillAtGlow(BUTTON_BG_DARK, BUTTON_TEXT, BACKDROP, glowAmount);
+        return VanillaTabFills.resolveFillAtGlow(VANILLA_PAINT, glowAmount);
     }
 
     // A black fill at the given alpha, for the cases about how solid the fill is: with nothing under the
     // glow, what comes back is the glow alone.
     private static Color resolveBlackFillAt(int fillAlpha, float glowAmount) {
         return VanillaTabFills.resolveFillAtGlow(
-            new Color(0, 0, 0, fillAlpha),
-            BUTTON_TEXT,
-            BACKDROP,
+            paintWithFill(new Color(0, 0, 0, fillAlpha)),
             glowAmount);
+    }
+
+    // The engine's paint with one fill swapped, for the cases about what the fill itself does.
+    private static VanillaTabPaint paintWithFill(Color fill) {
+        return new VanillaTabPaint(fill, BUTTON_TEXT, BACKDROP);
     }
 }

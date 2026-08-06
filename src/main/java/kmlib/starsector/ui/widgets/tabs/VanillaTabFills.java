@@ -63,12 +63,11 @@ public final class VanillaTabFills {
     /**
      * The shade a resting tab settles on: its fill laid over the backdrop behind it, with no glow.
      *
-     * @param fill     the engine's dark button fill, alpha and all
-     * @param backdrop the surface the tab is drawn over
+     * @param paint the three colours a vanilla tab is painted from
      * @return the opaque resting shade
      */
-    public static Color resolveRestingFill(Color fill, Color backdrop) {
-        return Colours.flattenOnto(fill, backdrop);
+    public static Color resolveRestingFill(VanillaTabPaint paint) {
+        return Colours.flattenOnto(paint.fill(), paint.backdrop());
     }
 
     /**
@@ -76,24 +75,16 @@ public final class VanillaTabFills {
      * top. One method for every lit state, since the states differ in nothing but the amount - a second
      * shade named beside this one would be a second thing to keep in step with the engine's.
      *
-     * @param fill        the engine's dark button fill, alpha and all - it sets both the shade beneath the
-     *                    glow and, through its alpha, how much glow lands on it
-     * @param labelColour the tab's label colour, which the glow is a whitened form of
-     * @param backdrop    the surface the tab is drawn over
-     * @param glowAmount  how brightly the tab is lit: {@link #NO_GLOW}, {@link #SELECTED_GLOW}, or
-     *                    {@link #POINTED_GLOW}
+     * @param paint      the three colours a vanilla tab is painted from
+     * @param glowAmount how brightly the tab is lit: {@link #NO_GLOW}, {@link #SELECTED_GLOW}, or
+     *                   {@link #POINTED_GLOW}
      * @return the opaque shade at that glow
      */
-    public static Color resolveFillAtGlow(
-            Color fill,
-            Color labelColour,
-            Color backdrop,
-            float glowAmount) {
-
+    public static Color resolveFillAtGlow(VanillaTabPaint paint, float glowAmount) {
         return Colours.addOverlay(
-            resolveRestingFill(fill, backdrop),
-            resolveGlowColour(labelColour),
-            resolveGlowWeight(fill, glowAmount));
+            resolveRestingFill(paint),
+            resolveGlowColour(paint.labelColour()),
+            resolveGlowWeight(paint.fill(), glowAmount));
     }
 
     // The glow's own colour: the label colour part-way to white, so a lit tab brightens toward its own

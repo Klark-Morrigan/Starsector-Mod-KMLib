@@ -28,7 +28,21 @@ public record NotchState(
     float collapseFraction,
     float hoverFraction) {
 
+    // The fraction a panel resting fully expanded reports; above it the fold is under way.
+    private static final float NO_COLLAPSE_FRACTION = 0f;
+
     public NotchState {
         hoverFraction = Ranges.clampToUnit(hoverFraction);
+    }
+
+    /**
+     * Whether the fold is under way at all, which is the only time the body's draw is clipped to its own
+     * shrinking box. Asked rather than compared, so the draw pass names the condition instead of testing a
+     * loose float against a bound it would have to keep in step by hand.
+     *
+     * @return whether the body is anywhere but fully expanded
+     */
+    public boolean isFolding() {
+        return collapseFraction > NO_COLLAPSE_FRACTION;
     }
 }
