@@ -1,5 +1,7 @@
 package kmlib.starsector.systems.claims;
 
+import kmlib.testfixtures.starsector.systems.claims.ClaimStandingFixture;
+
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -21,7 +23,7 @@ final class SystemClaimBreakdownTest {
         @Test
         void keepsTheStandingsItWasBuiltWithWhenTheSourceListChangesLater() {
             var scores = new ArrayList<FactionClaimScore>();
-            scores.add(new FactionClaimScore("hegemony", 6, true));
+            scores.add(ClaimStandingFixture.buildStandingOnOneMarket("hegemony", 6, true));
             var breakdown = new SystemClaimBreakdown(null, "hegemony", scores);
 
             scores.clear();
@@ -34,7 +36,9 @@ final class SystemClaimBreakdownTest {
         @Test
         void rejectsAnAttemptToChangeTheStandings() {
             var breakdown = new SystemClaimBreakdown(
-                null, "hegemony", List.of(new FactionClaimScore("hegemony", 6, true)));
+                null,
+                "hegemony",
+                List.of(ClaimStandingFixture.buildStandingOnOneMarket("hegemony", 6, true)));
 
             assertThatThrownBy(() -> breakdown.scores().clear())
                 .isInstanceOf(UnsupportedOperationException.class);

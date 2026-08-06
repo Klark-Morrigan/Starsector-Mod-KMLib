@@ -108,8 +108,9 @@ src/main/java/kmlib/
     systems/       - star system queries and motion tracking;
                      claims/ reads vanilla system claims behind a port,
                      with a second port for the scored contest behind
-                     one, for callers that must justify a claim rather
-                     than merely colour by it
+                     one - down to the terms each market's score is the
+                     sum of - for callers that must justify a claim
+                     rather than merely colour by it
     testing/       - the no-op SettingsAPI proxy KM tests install into
                      Global before touching Misc (whose static
                      initialiser would otherwise NPE)
@@ -156,7 +157,8 @@ src/main/java/kmlib/
                      store of its own
   testfixtures/    - Fakes for KMLib's own ports (claims, fonts, intel
                      screen, modelview, console output) and for the core
-                     UI's widget tree, which a layout rule has to walk.
+                     UI's widget tree, which a layout rule has to walk,
+                     plus builders for the values those ports report.
                      Ships in the MAIN jar so consumer mods' tests can
                      use them
 src/bridgestubs/java/ - compile-only mirrors of the Fast Rendering bridge

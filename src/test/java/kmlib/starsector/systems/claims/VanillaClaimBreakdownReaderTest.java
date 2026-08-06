@@ -60,6 +60,60 @@ final class VanillaClaimBreakdownReaderTest {
         }
 
         @Test
+        void namesTheMarketAStandingRestsOnAndListsTheFactionsOthers() {
+
+            var hegemony = claimContest.buildFaction("hegemony", true);
+            var capital = claimContest.buildMarket(hegemony, 5);
+            var outpost = claimContest.buildMarket(hegemony, 3);
+
+            claimContest.nameMarket(capital, "Chicomoztoc");
+            claimContest.nameMarket(outpost, "Kazeron");
+            claimContest.placeMarketsInSystem(capital, outpost);
+
+            var standing = new VanillaClaimBreakdownReader()
+                .readBreakdown(claimContest.getSystem())
+                .scores()
+                .get(0);
+
+            // The standing rests on the one strongest market, and the rest are carried beside
+            // it: the sibling point inside its score is exactly the one market listed under it,
+            // which is what lets a reader check the number rather than take it on trust.
+            assertThat(standing.standingMarket().marketName())
+                .isEqualTo("Chicomoztoc");
+            assertThat(standing.standingMarket().marketSize())
+                .isEqualTo(5);
+            assertThat(standing.standingMarket().siblingMarketCount())
+                .isEqualTo(1);
+            assertThat(standing.otherMarkets())
+                .extracting(MarketClaimBreakdown::marketName)
+                .containsExactly("Kazeron");
+        }
+
+        @Test
+        void carriesTheGarrisonBonusOnlyForAMilitaryMarket() {
+
+            var hegemony = claimContest.buildFaction("hegemony", true);
+            var garrison = claimContest.buildMarket(hegemony, 3);
+            var tritachyon = claimContest.buildFaction("tritachyon", true);
+
+            claimContest.markMarketAsMilitary(garrison);
+            claimContest.placeMarketsInSystem(
+                garrison,
+                claimContest.buildMarket(tritachyon, 3));
+
+            var breakdown =
+                new VanillaClaimBreakdownReader().readBreakdown(claimContest.getSystem());
+
+            // The bonus is what turns a small garrison into a claimant, so the box explaining a
+            // border has to be able to name it as the term that did it - and an ordinary colony
+            // must carry no bonus at all rather than one worth nothing.
+            assertThat(breakdown.scores().get(0).standingMarket().militaryBonus())
+                .hasValue(10);
+            assertThat(breakdown.scores().get(1).standingMarket().militaryBonus())
+                .isEmpty();
+        }
+
+        @Test
         void countsHiddenSiblingMarketsTowardsAScore() {
 
             var hegemony = claimContest.buildFaction("hegemony", true);
@@ -76,6 +130,34 @@ final class VanillaClaimBreakdownReaderTest {
             assertThat(breakdown.scores())
                 .extracting(FactionClaimScore::factionId, FactionClaimScore::score)
                 .containsExactly(tuple("hegemony", 4));
+        }
+
+        @Test
+        void listsAHiddenMarketAmongAFactionsOthersWithoutLettingItStandForIt() {
+
+            var pirates = claimContest.buildFaction("pirates", true);
+            var haven = claimContest.buildMarket(pirates, 3);
+            var base = claimContest.buildHiddenMarket(pirates, 6);
+
+            claimContest.nameMarket(haven, "Kanta's Den");
+            claimContest.nameMarket(base, "Tigra City");
+            claimContest.placeMarketsInSystem(haven, base);
+
+            var standing = new VanillaClaimBreakdownReader()
+                .readBreakdown(claimContest.getSystem())
+                .scores()
+                .get(0);
+
+            // The larger base never stands for the faction, yet it is what the sibling point is
+            // made of, so it is listed with the rest: dropping it would leave a count with
+            // nothing beneath it to account for.
+            assertThat(standing.standingMarket().marketName())
+                .isEqualTo("Kanta's Den");
+            assertThat(standing.standingMarket().siblingMarketCount())
+                .isEqualTo(1);
+            assertThat(standing.otherMarkets())
+                .extracting(MarketClaimBreakdown::marketName)
+                .containsExactly("Tigra City");
         }
 
         @Test

@@ -1,6 +1,7 @@
 package kmlib.starsector.systems.claims;
 
 import com.fs.starfarer.api.Global;
+import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.util.Misc;
@@ -14,6 +15,8 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.OptionalInt;
 
 /**
  * {@link ClaimBreakdownReader} binding that recomputes vanilla's claim mechanic
@@ -49,6 +52,10 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
     // how a garrison world claims a system its neighbours out-populate. Vanilla's flat bonus.
     private static final int MILITARY_MARKET_BONUS = 10;
 
+    // A contest nobody has yet led. The running maximum starts here and only ever rises on a
+    // strictly greater score, so a score of zero can never take a system.
+    private static final int NO_LEADING_SCORE = 0;
+
     @Override
     public SystemClaimBreakdown readBreakdown(StarSystemAPI system) {
 
@@ -56,55 +63,19 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
             return SystemClaimBreakdown.NONE;
         }
         var overrideFactionId = readCoreFactionId(system);
-        var markets = StarSystems.readMarkets(Global.getSector(), system);
-        var bestScoreByFactionId = new LinkedHashMap<String, FactionClaimScore>();
+        var claimedMarkets = readClaimedMarkets(system);
 
-        String topTerritorialFactionId = null;
-
-        // The running maximum starts at 0 and only ever rises on a strictly greater
-        // territorial score. Two consequences are load-bearing and mirrored on purpose: a tie
-        // leaves the market the economy listed first in front, and a score of zero can never
-        // take a system.
-        var topScore = 0;
-
-        for (var market : markets) {
-            var faction = market == null ? null : market.getFaction();
-
-            // A hidden market is counted through its siblings rather than on its own account,
-            // so scoring it here would count it a second time.
-            if (faction == null || market.isHidden()) {
-                continue;
-            }
-            // The player is present but ineligible: the mechanic never lets a player colony
-            // claim a system, so its standing is territorial by neither configuration nor
-            // accident. Read off the faction rather than its .faction file, which is free to
-            // declare a territoriality the mechanic will not honour.
-            var isTerritorial =
-                !faction.isPlayerFaction() && FactionFlags.isTerritorial(faction);
-
-            var standing = new FactionClaimScore(
-                faction.getId(),
-                computeMarketScore(market, markets),
-                isTerritorial);
-
-            recordBestScore(bestScoreByFactionId, standing);
-
-            if (standing.isTerritorial() && standing.score() > topScore) {
-                topScore = standing.score();
-                topTerritorialFactionId = standing.factionId();
-            }
-        }
         // An override answers the question before any market is weighed, so it stands as the
         // claimant even where the scores point elsewhere; those scores stay on as context.
         var claimantFactionId =
             overrideFactionId != null
                 ? overrideFactionId
-                : topTerritorialFactionId;
+                : resolveTopTerritorialFactionId(claimedMarkets);
 
         return new SystemClaimBreakdown(
             overrideFactionId,
             claimantFactionId,
-            rankScores(bestScoreByFactionId.values()));
+            rankStandings(collectStandings(claimedMarkets)));
     }
 
     @Override
@@ -112,28 +83,131 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
         return StarSystems.readFactionClaimOverride(system);
     }
 
+    // Every market in the system that belongs to somebody, scored, in the order the economy
+    // lists them - the order a tied contest is settled in, so it is the order kept throughout.
+    // An unowned market belongs to nobody's standing and the mechanic would throw on one, so it
+    // is dropped here rather than guarded against at each later read.
+    private static List<ClaimedMarket> readClaimedMarkets(StarSystemAPI system) {
+
+        var markets = StarSystems.readMarkets(Global.getSector(), system);
+        var claimedMarkets = new ArrayList<ClaimedMarket>(markets.size());
+
+        for (var market : markets) {
+            var faction = market == null ? null : market.getFaction();
+
+            if (faction == null) {
+                continue;
+            }
+            claimedMarkets.add(new ClaimedMarket(
+                faction,
+                market.isHidden(),
+                computeMarketClaim(market, markets)));
+        }
+        return claimedMarkets;
+    }
+
+    // Vanilla's own pass, market by market in economy order: the running maximum only ever
+    // rises on a strictly greater territorial score, which leaves a tie with whichever market
+    // the economy listed first.
+    //
+    // Walked per market rather than over the factions' finished standings, because the two part
+    // company - a faction whose strongest market comes late in the listing loses a tie to one
+    // that reached the same score earlier, and the mechanic settles it that way round.
+    private static String resolveTopTerritorialFactionId(List<ClaimedMarket> claimedMarkets) {
+
+        String topFactionId = null;
+        var topScore = NO_LEADING_SCORE;
+
+        for (var claimedMarket : claimedMarkets) {
+            if (!isScoredOnItsOwnAccount(claimedMarket)
+                    || !isEligibleToClaim(claimedMarket.faction())) {
+                continue;
+            }
+            var score = claimedMarket.claim().computeTotalScore();
+
+            if (score > topScore) {
+                topScore = score;
+                topFactionId = claimedMarket.faction().getId();
+            }
+        }
+        return topFactionId;
+    }
+
+    // One standing per faction holding a market scored on its own account, in the order those
+    // markets first appear - which is the order a tie between two equal standings is settled
+    // in, so the ranking agrees with the claimant resolved above it.
+    private static List<FactionClaimScore> collectStandings(List<ClaimedMarket> claimedMarkets) {
+
+        var standingIndexByFactionId = new LinkedHashMap<String, Integer>();
+
+        for (var index = 0; index < claimedMarkets.size(); index++) {
+            if (isScoredOnItsOwnAccount(claimedMarkets.get(index))) {
+                recordBestStanding(standingIndexByFactionId, claimedMarkets, index);
+            }
+        }
+        var standings = new ArrayList<FactionClaimScore>(standingIndexByFactionId.size());
+
+        for (var standingIndex : standingIndexByFactionId.values()) {
+            var standing = claimedMarkets.get(standingIndex);
+
+            standings.add(new FactionClaimScore(
+                standing.faction().getId(),
+                isEligibleToClaim(standing.faction()),
+                standing.claim(),
+                selectOtherMarketClaims(claimedMarkets, standing.faction(), standingIndex)));
+        }
+        return standings;
+    }
+
     // A faction stands on its strongest market alone: the mechanic never sums a faction's
     // holdings, it picks a single winning market, so the best score is the faction's standing.
-    // Keeping the first entry's position means the map preserves first-appearance order, which
-    // is the order ties have to resolve in.
-    private static void recordBestScore(
-            LinkedHashMap<String, FactionClaimScore> bestByFactionId,
-            FactionClaimScore standing) {
+    // Replaced only on a strictly greater score, so a tie among a faction's own markets keeps
+    // the one the economy listed first - the rule the contest between factions turns on too.
+    private static void recordBestStanding(
+            Map<String, Integer> standingIndexByFactionId,
+            List<ClaimedMarket> claimedMarkets,
+            int marketIndex) {
 
-        var best = bestByFactionId.get(standing.factionId());
-        if (best == null || standing.score() > best.score()) {
-            bestByFactionId.put(
-                standing.factionId(),
-                standing);
+        var factionId = claimedMarkets.get(marketIndex).faction().getId();
+        var bestIndex = standingIndexByFactionId.get(factionId);
+
+        var isBestSoFar =
+            bestIndex == null
+                || claimedMarkets.get(marketIndex).claim().computeTotalScore()
+                    > claimedMarkets.get(bestIndex).claim().computeTotalScore();
+
+        if (isBestSoFar) {
+            standingIndexByFactionId.put(factionId, marketIndex);
         }
+    }
+
+    // The rest of what the faction holds in the system, its standing market aside - hidden
+    // markets included, since they are present for the sibling count. Matched on the same
+    // faction identity the sibling count runs on, so the count a standing carries is exactly
+    // how many markets are listed under it and a reader can check one against the other.
+    private static List<MarketClaimBreakdown> selectOtherMarketClaims(
+            List<ClaimedMarket> claimedMarkets,
+            FactionAPI faction,
+            int standingIndex) {
+
+        var otherClaims = new ArrayList<MarketClaimBreakdown>();
+
+        for (var index = 0; index < claimedMarkets.size(); index++) {
+            var claimedMarket = claimedMarkets.get(index);
+
+            if (index != standingIndex && claimedMarket.faction() == faction) {
+                otherClaims.add(claimedMarket.claim());
+            }
+        }
+        return otherClaims;
     }
 
     // Strongest first, which is the order any reader wants to see a contest in. The sort is
     // stable, so equally-scored factions stay in economy order and the ranking agrees with the
     // tie rule that picked the winner.
-    private static List<FactionClaimScore> rankScores(Collection<FactionClaimScore> scores) {
+    private static List<FactionClaimScore> rankStandings(Collection<FactionClaimScore> standings) {
 
-        var ranked = new ArrayList<>(scores);
+        var ranked = new ArrayList<>(standings);
 
         ranked.sort(Comparator
             .comparingInt(FactionClaimScore::score)
@@ -147,17 +221,51 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
     // market present - hidden and player-owned ones included - because sheer presence is what
     // it measures, not who is eligible to claim. Faction identity is compared by reference,
     // as the mechanic compares it; the game holds one instance per faction.
-    private static int computeMarketScore(MarketAPI market, List<MarketAPI> systemMarkets) {
+    private static MarketClaimBreakdown computeMarketClaim(
+            MarketAPI market,
+            List<MarketAPI> systemMarkets) {
 
-        var score = market.getSize();
-        
+        var siblingMarketCount = 0;
+
         for (var other : systemMarkets) {
             if (other != null && other != market && other.getFaction() == market.getFaction()) {
-                score++;
+                siblingMarketCount++;
             }
         }
-        return Markets.isMilitary(market)
-            ? score + MILITARY_MARKET_BONUS
-            : score;
+        return new MarketClaimBreakdown(
+            market.getName(),
+            market.getSize(),
+            siblingMarketCount,
+            Markets.isMilitary(market)
+                ? OptionalInt.of(MILITARY_MARKET_BONUS)
+                : OptionalInt.empty());
+    }
+
+    // A hidden market is counted through its siblings rather than on its own account, so
+    // scoring it separately would count it twice - and, since a faction stands on its strongest
+    // market alone, a large hidden base would displace the visible colony actually contesting
+    // the system.
+    private static boolean isScoredOnItsOwnAccount(ClaimedMarket claimedMarket) {
+        return !claimedMarket.isHiddenMarket();
+    }
+
+    // The player is present but ineligible: the mechanic never lets a player colony claim a
+    // system, so its standing is territorial by neither configuration nor accident. Read off
+    // the faction rather than its .faction file, which is free to declare a territoriality the
+    // mechanic will not honour.
+    private static boolean isEligibleToClaim(FactionAPI faction) {
+        return !faction.isPlayerFaction() && FactionFlags.isTerritorial(faction);
+    }
+
+    /**
+     * One scored market of the system's economy, kept beside the faction that owns it and the
+     * hiddenness that decides whether it can stand for that faction. Holding the whole walk as
+     * these lets the claimant and the standings be resolved from one pass of the economy under
+     * their two different rules, without scoring any market twice.
+     */
+    private record ClaimedMarket(
+        FactionAPI faction,
+        boolean isHiddenMarket,
+        MarketClaimBreakdown claim) {
     }
 }

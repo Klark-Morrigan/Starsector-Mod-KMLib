@@ -85,6 +85,12 @@ final class ClaimContestFixture implements AutoCloseable {
             .thenReturn(factionId);
     }
 
+    /** Names a market, the label a standing carries for the colonies it is made up of. */
+    void nameMarket(MarketAPI market, String name) {
+        when(market.getName())
+            .thenReturn(name);
+    }
+
     /** Raises a market's military flag, the condition behind vanilla's flat garrison bonus. */
     void markMarketAsMilitary(MarketAPI market) {
         when(market.getMemoryWithoutUpdate().getBoolean(MemFlags.MARKET_MILITARY))
