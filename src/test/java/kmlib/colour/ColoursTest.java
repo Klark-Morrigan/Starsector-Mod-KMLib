@@ -22,6 +22,9 @@ import static org.assertj.core.api.Assertions.within;
  *    out-of-range amount saturates rather than throwing;
  *  - {@link Colours#flattenOnto} - the colour's alpha is spent compositing it over the
  *    backdrop and the result comes back opaque, whatever either carried;
+ *  - {@link Colours#addOverlay} - the overlay's channels are added onto the base scaled
+ *    by its own alpha and the weight, the base keeps its alpha, and the sum saturates
+ *    at white rather than wrapping.
  */
 final class ColoursTest {
 
@@ -258,6 +261,59 @@ final class ColoursTest {
                 new Color(100, 100, 100, 10));
 
             assertThat(flattened).isEqualTo(new Color(100, 100, 100, 255));
+        }
+    }
+
+    @Nested
+    class AddOverlay {
+        
+        @Test
+        void adds_the_overlay_channels_scaled_by_its_alpha_and_the_weight() {
+
+            var lit = Colours.addOverlay(
+                new Color(20, 30, 40, 255),
+                new Color(200, 100, 60, 128),
+                0.5f);
+
+            // Added weight 128/255 * 0.5 = 0.25098: 20 + 200*0.25098 = 70.2, 30 + 100*0.25098 = 55.1,
+            // 40 + 60*0.25098 = 55.1.
+            assertThat(lit.getRed()).isEqualTo(70);
+            assertThat(lit.getGreen()).isEqualTo(55);
+            assertThat(lit.getBlue()).isEqualTo(55);
+        }
+
+        @Test
+        void keeps_the_bases_own_alpha() {
+            // The base is the surface the light lands on, so what the light carried is spent on how much
+            // of it lands rather than on how solid the result is.
+            var lit = Colours.addOverlay(
+                new Color(20, 30, 40, 128),
+                new Color(200, 200, 200, 255),
+                1f);
+
+            assertThat(lit.getAlpha()).isEqualTo(128);
+        }
+
+        @Test
+        void leaves_the_base_unchanged_at_a_zero_weight() {
+
+            var lit = Colours.addOverlay(
+                new Color(20, 30, 40, 255),
+                new Color(200, 200, 200, 255),
+                0f);
+
+            assertThat(lit).isEqualTo(new Color(20, 30, 40, 255));
+        }
+
+        @Test
+        void saturates_at_the_max_channel_rather_than_wrapping() {
+            // 200 + 200 = 400 would overflow Color's 0-255 range; light piles up to white and stops.
+            var lit = Colours.addOverlay(
+                new Color(200, 200, 200, 255),
+                new Color(200, 200, 200, 255),
+                1f);
+
+            assertThat(lit.getRed()).isEqualTo(255);
         }
     }
 }

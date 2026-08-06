@@ -135,6 +135,37 @@ public final class Colours {
             MAX_CHANNEL_VALUE);
     }
 
+    /**
+     * {@code base} with {@code overlay} added onto it - the additive blend, where light is piled on rather
+     * than replaced, so the result is at least as bright as the base on every channel and saturates at
+     * white. For reproducing a shade another renderer arrives at by drawing a glow pass over a fill, which
+     * no amount of interpolating between the two colours can produce.
+     *
+     * <p>The overlay's own alpha scales what it contributes, exactly as it does in the blend this
+     * mirrors, and {@code overlayWeight} scales it again for a caller fading the pass in and out.
+     * {@code base} keeps its alpha, being the surface the light lands on.
+     *
+     * @param base          the colour the light is added to; its alpha is kept
+     * @param overlay       the light being added; its own alpha scales its contribution
+     * @param overlayWeight how much of the overlay to add, 0 adding nothing and 1 adding it in full
+     * @return the base brightened by the overlay, clamped at white
+     */
+    public static Color addOverlay(Color base, Color overlay, float overlayWeight) {
+
+        var addedWeight = overlay.getAlpha() / MAX_CHANNEL * overlayWeight;
+
+        return new Color(
+            addChannel(base.getRed(), overlay.getRed(), addedWeight),
+            addChannel(base.getGreen(), overlay.getGreen(), addedWeight),
+            addChannel(base.getBlue(), overlay.getBlue(), addedWeight),
+            base.getAlpha());
+    }
+
+    // Adds a weighted share of one 0-255 channel onto another, saturating rather than wrapping.
+    private static int addChannel(int base, int added, float addedWeight) {
+        return roundToChannel(base + added * addedWeight);
+    }
+
     // Scales one 0-255 channel by the factor.
     private static int scaleChannel(int channel, float factor) {
         return roundToChannel(channel * factor);
