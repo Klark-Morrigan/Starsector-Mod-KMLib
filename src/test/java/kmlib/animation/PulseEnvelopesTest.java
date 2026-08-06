@@ -8,8 +8,9 @@ import static org.assertj.core.api.Assertions.within;
 
 /**
  * Pins {@link PulseEnvelopes}: a trigger reaches one key and leaves the rest alone, several keys can be
- * running at once, and a key whose cycle has run out reads at rest and can be triggered again. The set is
- * keyed by row index here, the identity a row that keeps its order has.
+ * running at once, and a key whose cycle has run out reads at rest and can be triggered again. A held
+ * trigger is aimed the same way and the release is not, that asymmetry being the whole of why the two are
+ * shaped differently. The set is keyed by row index here, the identity a row that keeps its order has.
  */
 final class PulseEnvelopesTest {
 
@@ -150,6 +151,64 @@ final class PulseEnvelopesTest {
 
             assertThat(pulses.resolvePulseFractionAt(FIRST_KEY))
                 .isCloseTo(0.84375f, within(TOLERANCE));
+        }
+    }
+
+    @Nested
+    class StartHeldPulseAt {
+
+        @Test
+        void startHeldPulseAtHoldsOnlyTheNamedKeyAtItsPeak() {
+            // Aimed exactly as a plain trigger is - one element's act says nothing about the others - and
+            // the hold is what parts them: the named key waits at the top while a neighbour's self-timed
+            // lift has already run its course.
+            var pulses = new PulseEnvelopes<Integer>();
+
+            pulses.startHeldPulseAt(FIRST_KEY);
+            pulses.startPulseAt(SECOND_KEY);
+            pulses.advanceByElapsedTime(FULL_DURATION, DURATIONS);
+            pulses.advanceByElapsedTime(FULL_DURATION, DURATIONS);
+
+            assertThat(pulses.resolvePulseFractionAt(FIRST_KEY))
+                .isCloseTo(1f, within(TOLERANCE));
+            assertThat(pulses.resolvePulseFractionAt(SECOND_KEY))
+                .isCloseTo(0f, within(TOLERANCE));
+        }
+    }
+
+    @Nested
+    class ReleaseHeldPulses {
+
+        @Test
+        void releaseHeldPulsesEndsAHoldWhicheverKeyItIsOn() {
+            // Unaimed, unlike the trigger: a pointer put down on one element is routinely lifted somewhere
+            // else entirely, and the act it ends is still that element's. Released by where the pointer
+            // finished, a lift the player dragged away from would stand at its peak indefinitely.
+            var pulses = new PulseEnvelopes<Integer>();
+
+            pulses.startHeldPulseAt(FIRST_KEY);
+            pulses.advanceByElapsedTime(FULL_DURATION, DURATIONS);
+
+            pulses.releaseHeldPulses();
+            pulses.advanceByElapsedTime(FULL_DURATION, DURATIONS);
+            pulses.advanceByElapsedTime(FULL_DURATION, DURATIONS);
+
+            assertThat(pulses.resolvePulseFractionAt(FIRST_KEY))
+                .isCloseTo(0f, within(TOLERANCE));
+        }
+
+        @Test
+        void releaseHeldPulsesLeavesASetWithNoHoldsAlone() {
+            // Every release is reported, most of them owed to nothing, so one arriving over a set of
+            // self-timed lifts must not disturb their cycles.
+            var pulses = new PulseEnvelopes<Integer>();
+
+            pulses.startPulseAt(FIRST_KEY);
+            pulses.releaseHeldPulses();
+            pulses.advanceByElapsedTime(FULL_DURATION, DURATIONS);
+
+            assertThat(pulses.resolvePulseFractionAt(FIRST_KEY))
+                .isCloseTo(1f, within(TOLERANCE));
         }
     }
 }

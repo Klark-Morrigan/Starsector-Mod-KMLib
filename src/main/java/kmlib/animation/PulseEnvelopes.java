@@ -80,8 +80,40 @@ public final class PulseEnvelopes<K> {
      * @param key the element the event landed on
      */
     public void startPulseAt(K key) {
-        envelopesByKey
-            .computeIfAbsent(key, envelopeKey -> new PulseEnvelope())
-            .startPulse();
+        resolveEnvelopeAt(key).startPulse();
+    }
+
+    /**
+     * Starts (or restarts) a held lift on one element, which climbs to its peak and waits there until
+     * {@link #releaseHeldPulses()}. For an act with a duration of its own - a pointer held down on that
+     * element - as against the self-timed {@link #startPulseAt} above.
+     *
+     * @param key the element the act landed on
+     */
+    public void startHeldPulseAt(K key) {
+        resolveEnvelopeAt(key).startHeldPulse();
+    }
+
+    /**
+     * Lets go of every held lift in the set, whichever element each is on.
+     *
+     * <p>Wholesale rather than per key because a release is not aimed the way a press is: a pointer put down
+     * on one element is routinely lifted somewhere else entirely - over a neighbour, off the panel, off the
+     * screen - and the act it ends is still that element's. Releasing by where the pointer happens to be
+     * would strand the lift of anything the player dragged away from, holding it at its peak until the
+     * surface itself was dropped. Nothing is lost by the breadth, since only one pointer can be down at
+     * once, and a lift no release was owed simply carries on falling.
+     */
+    public void releaseHeldPulses() {
+        for (var envelope : envelopesByKey.values()) {
+            envelope.releaseHeldPulse();
+        }
+    }
+
+    // The element's envelope, minted on first use. Shared by both triggers so a key's lift is one envelope
+    // however it was started, and a held trigger over a running plain pulse takes over that same lift
+    // instead of running a second one beside it.
+    private PulseEnvelope resolveEnvelopeAt(K key) {
+        return envelopesByKey.computeIfAbsent(key, envelopeKey -> new PulseEnvelope());
     }
 }

@@ -4,6 +4,7 @@ import com.fs.starfarer.api.input.InputEventAPI;
 
 import kmlib.animation.PulseEnvelopes;
 import kmlib.animation.TraverseDurations;
+import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.widgets.RadioRow;
 import kmlib.starsector.ui.widgets.scroll.ScrollState;
 import kmlib.starsector.ui.widgets.tabs.TabInteractionSources;
@@ -261,6 +262,16 @@ public final class TabPanelController {
      */
     public void handlePointer(InputEventAPI event, TabPanelPlacement placement) {
 
+        // A left release lets go of whatever press the tabs are holding, wherever the pointer has got to by
+        // then: a press begun on a tab and released over a neighbour, over the map, or off the panel
+        // entirely still ends that tab's lift, because the act it reported was the press and the press is
+        // over. First and unconditional, so no branch below can swallow the release before the tabs hear
+        // it; neither consumed nor returned on, a release being a report rather than a claim, and every
+        // branch below tests for a press so it falls through them untouched.
+        if (event.isLMBUpEvent()) {
+            tabClickPulses.releaseHeldPulses();
+        }
+
         // A left press on the notch flips the body between expanded and docked. Tested before the header and
         // body because the notch sits outside the box (and stays reachable when docked), so it can never
         // collide with a tab or a body control for the same press.
@@ -316,9 +327,10 @@ public final class TabPanelController {
      * Split from the event above so the pairing this seam exists for - the tab that fires is the tab that
      * pulses - can be checked without an engine input event to raise.
      *
-     * <p>The pulse follows the action rather than the press. A press on the tab the panel is already showing
-     * fires nothing (a tabs row is inert on its lit tab, as a vanilla strip is), so it lifts nothing either:
-     * the pulse confirms a switch, and a tab that did not switch has nothing to confirm.
+     * <p>The lift follows the press and the action follows the switch, so the two part on the tab the panel
+     * is already showing: it lifts like any other, and fires nothing. A press is an act the player made
+     * whether or not anything came of it, and a tab that answered it with nothing at all would read as a
+     * panel that missed the click rather than as one with nothing to do.
      *
      * <p>A panel not presenting its tabs offers none to press, on the same rule its hover fades answer to.
      * This is a gate rather than a consequence of the fold, because folding is a paint-time clip over a
@@ -329,8 +341,8 @@ public final class TabPanelController {
      * @param placement the laid-out tab panel the renderer drew this frame
      * @param pointX    the press x in UI coordinates, the coordinates the placement is laid out in
      * @param pointY    the press y in UI coordinates
-     * @return whether the press landed on a tab that acted; false leaves the press to the body, and through
-     *         it to whatever lies behind the panel
+     * @return whether the press landed on a tab; false leaves the press to the body, and through it to
+     *         whatever lies behind the panel
      */
     boolean activateTabAtPoint(TabPanelPlacement placement, float pointX, float pointY) {
 
@@ -339,20 +351,27 @@ public final class TabPanelController {
         if (!isPresentingTabsOf(placement)) {
             return false;
         }
-        // The header never scrolls, so it hit-tests unclipped, unlike a body control in the flex list. The
-        // fired tab comes back from the activation itself rather than from a second walk of the same
-        // segments, so the tab that lifts is the tab that fired by construction and not by two hit-tests
-        // agreeing.
-        var firedTabIndex = PanelController.activateControlIfHit(
-            placement.tabsHeader(),
-            pointX,
-            pointY);
+        // The segment under the press, the header never scrolling and so hit-testing unclipped, unlike a
+        // body control in the flex list. The raw segment rather than the actionable one a body radio
+        // resolves: what lifts is what the player pressed, and the lit tab fires nothing yet still has to
+        // answer, or pressing it reads as a panel that missed the click.
+        var tabsHeader = placement.tabsHeader();
+        var pressedTabIndex = RadioRow.findSegmentIndexAt(tabsHeader.segments(), pointX, pointY);
 
-        if (firedTabIndex == null) {
+        if (pressedTabIndex == RadioRow.NO_SEGMENT) {
             return false;
         }
-        tabClickPulses.startPulseAt(firedTabIndex);
+        // Held rather than self-timed: the lift reports a press the player is still making, so it waits at
+        // its peak until the release above rather than timing its own fall.
+        tabClickPulses.startHeldPulseAt(pressedTabIndex);
 
+        // The action answers the switch, not the press, so the tab already being shown fires nothing - a
+        // tabs row is inert on its lit tab, as a vanilla strip is. Split from the lift because the two
+        // report different things, and only this one has a reason to do nothing.
+        if (tabsHeader.spec() instanceof ControlSpec.Interactive interactive
+                && pressedTabIndex != interactive.selectedIndex()) {
+            interactive.action().activateCell(pressedTabIndex);
+        }
         return true;
     }
 

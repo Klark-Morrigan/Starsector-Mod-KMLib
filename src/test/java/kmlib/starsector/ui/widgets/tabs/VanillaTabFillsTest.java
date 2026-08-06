@@ -62,11 +62,11 @@ final class VanillaTabFillsTest {
 
         @Test
         void resolveFillAtGlowLightsTheShownTabShortOfTheFullGlow() {
-            // The resting shade (21, 65, 77) plus 0.85 of the glow: buttonText half-way to white,
-            // (213, 239, 255), at half strength tempered by the fill's alpha - 0.85 * 0.5 * (175 + 50) /
-            // 255 = 0.375.
+            // The resting shade (21, 65, 77) plus 0.45 of the glow: buttonText half-way to white,
+            // (213, 239, 255), at half strength tempered by the fill's alpha - 0.45 * 0.5 * (175 + 50) /
+            // 255 = 0.1985.
             assertThat(resolveFillAt(VanillaTabFills.SELECTED_GLOW))
-                .isEqualTo(new Color(101, 155, 173, OPAQUE_ALPHA));
+                .isEqualTo(new Color(63, 112, 128, OPAQUE_ALPHA));
         }
 
         @Test

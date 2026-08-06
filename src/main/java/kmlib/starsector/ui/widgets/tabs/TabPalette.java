@@ -47,9 +47,11 @@ public record TabPalette(
     // tab it sits on rather than staying put while the fill brightens under it.
     private static final float POINTED_LABEL_WHITE_LIFT = 0.15f;
 
-    // A click reads as a flash rather than a hold, so it peaks well past the hovered shade; a lift no
-    // stronger would be invisible on the tab the pointer is necessarily already over.
-    private static final float CLICK_WHITE_WASH = 0.5f;
+    // How far a pressed tab lifts past the shade it was already wearing. Modest, because it is measured
+    // along the same glow axis the fills are and so reads against them rather than across them: the press
+    // has only to stand above the pointed-at tab it is necessarily already showing, not to reach a shade
+    // the strip has no other use for.
+    private static final float PRESS_GLOW_LIFT = 0.25f;
 
     /**
      * The live vanilla map-tab paint: the player base colour for the chrome accent, the three map-tab
@@ -99,7 +101,10 @@ public record TabPalette(
             new TabLook(
                 VanillaTabFills.resolveFillAtGlow(tabPaint, VanillaTabFills.POINTED_GLOW),
                 Colours.blendRgbTowards(selectedLabel, white, POINTED_LABEL_WHITE_LIFT)),
-            new TabWash(white, CLICK_WHITE_WASH));
+            // The press lifts along the glow rather than toward white: the engine brightens a tab by adding
+            // its own glow colour, so a press aimed at white would be the one shade on the strip travelling
+            // in a direction none of the fills do - most visible exactly when the player is looking at it.
+            new TabWash(VanillaTabFills.resolveGlowColour(restingLabel), PRESS_GLOW_LIFT));
     }
 
     /**

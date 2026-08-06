@@ -179,11 +179,11 @@ final class TabPaletteTest {
         @Test
         void createMapTabPaletteLightsTheSelectedFillAtTheShownTabsGlow() {
             // The resting shade with the shown tab's glow on top: the label colour (180, 180, 180 here)
-            // half way to white is (218, 218, 218), added at 0.85 * 0.5 * (175 + 50) / 255 = 0.375 - so
-            // (21, 65, 77) gains 82 on every channel. A selected tab that merely re-tinted its resting
+            // half way to white is (218, 218, 218), added at 0.45 * 0.5 * (175 + 50) / 255 = 0.1985 - so
+            // (21, 65, 77) gains 43 on every channel. A selected tab that merely re-tinted its resting
             // fill could not land here; the glow is added light, not a blend.
             assertThat(buildMapTabPaletteUnderStubbedEngine().selected().fill())
-                .isEqualTo(new Color(103, 147, 159, OPAQUE_ALPHA));
+                .isEqualTo(new Color(64, 108, 120, OPAQUE_ALPHA));
         }
 
         @Test

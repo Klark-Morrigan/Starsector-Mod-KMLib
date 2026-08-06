@@ -53,8 +53,10 @@ src/main/java/kmlib/
   animation/       - positions between two ends that time moves: a linear
                      fraction advanced toward a target and eased on read,
                      so a retarget mid-flight carries on from where it is,
-                     the pulse envelope that rides one out and back again
-                     on a single trigger, and the pair of durations that
+                     the pulse envelope that rides one out and back again -
+                     on a single trigger for an act already over, or held
+                     at its peak until released for one still being made -
+                     and the pair of durations that
                      pace the two directions apart, a motion answering
                      input arriving quicker than it lets go
   collections/     - small Collection / Map helpers

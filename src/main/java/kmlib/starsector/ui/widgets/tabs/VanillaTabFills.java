@@ -32,10 +32,12 @@ import java.awt.Color;
 public final class VanillaTabFills {
 
     /**
-     * How brightly the engine lights the tab it is showing - short of the full glow, so the tab under the
-     * pointer still stands above it.
+     * How brightly the engine lights the tab it is showing - well short of the full glow, so the tab under
+     * the pointer stands clearly above it and a press above that again. Measured against the engine's own
+     * Sector/System tabs, where a shown tab reads as a moderate lift off the resting fill rather than as
+     * the near-full one it takes under a held press.
      */
-    public static final float SELECTED_GLOW = 0.85f;
+    public static final float SELECTED_GLOW = 0.45f;
 
     /** How brightly the engine lights the tab under the pointer: the full glow. */
     public static final float POINTED_GLOW = 1f;
@@ -87,9 +89,16 @@ public final class VanillaTabFills {
             resolveGlowWeight(paint.fill(), glowAmount));
     }
 
-    // The glow's own colour: the label colour part-way to white, so a lit tab brightens toward its own
-    // text rather than toward a shade named nowhere.
-    private static Color resolveGlowColour(Color labelColour) {
+    /**
+     * The glow's own colour: the label colour part-way to white, so a lit tab brightens toward its own text
+     * rather than toward a shade named nowhere. Exposed because it is the axis every brightening of a
+     * vanilla tab travels along, a momentary lift over a settled fill included - a lift aimed anywhere else
+     * parts from the fills at the moment it is most visible, whatever depth it is given.
+     *
+     * @param labelColour the tab's own label colour, the shade its glow is measured off
+     * @return the colour a lit tab brightens toward
+     */
+    public static Color resolveGlowColour(Color labelColour) {
         return Colours.blendRgbTowards(labelColour, Color.WHITE, GLOW_WHITE_MIX);
     }
 

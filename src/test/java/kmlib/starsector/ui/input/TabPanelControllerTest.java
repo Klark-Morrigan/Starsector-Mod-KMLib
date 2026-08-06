@@ -274,9 +274,10 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void activateTabAtPointPulsesNothingForAPressOnTheTabAlreadyShowing() {
-            // A tabs row is inert on its lit tab, as a vanilla strip is, so that press fires nothing - and a
-            // pulse marks a switch, so a tab that did not switch has nothing to confirm.
+        void activateTabAtPointLiftsTheTabAlreadyShowingWithoutFiringIt() {
+            // Where the lift and the action part. A tabs row is inert on its lit tab, as a vanilla strip is,
+            // so the press fires nothing; but the press was still an act the player made, and a tab that
+            // answered it with nothing at all would read as a panel that missed the click.
             var firedTabs = new ArrayList<Integer>();
             var controller = new TabPanelController();
             var hasActed = controller.activateTabAtPoint(
@@ -287,11 +288,11 @@ final class TabPanelControllerTest {
             advanceAWholeTraverse(controller);
 
             assertThat(hasActed)
-                .isFalse();
+                .isTrue();
             assertThat(firedTabs)
                 .isEmpty();
             assertThat(pulseFractionAt(controller, FIRST_TAB_INDEX))
-                .isCloseTo(0f, within(TOLERANCE));
+                .isCloseTo(1f, within(TOLERANCE));
         }
 
         @Test
@@ -605,9 +606,10 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void advanceInputMotionsForFrameRunsAClickPulseBackOutWithNoPointerOnTheTab() {
-            // A pulse takes no pointer: the press that started it has been and gone, so its cycle has to
-            // run its course with the cursor anywhere at all, and finish without a second event.
+        void advanceInputMotionsForFrameHoldsAPressLiftAtItsPeakWhileTheButtonIsDown() {
+            // The whole of what a held lift is: the press has not ended, so the lift may not either, however
+            // many frames pass with the cursor anywhere at all. A lift that timed its own fall would drop
+            // out from under a button the player is still holding.
             var controller = new TabPanelController();
 
             controller.activateTabAtPoint(
@@ -615,17 +617,52 @@ final class TabPanelControllerTest {
                 INSIDE_SECOND_TAB_X,
                 ON_TAB_ROW_Y);
 
-            controller.advanceInputMotionsForFrame(
-                NO_TAB_HOVERED,
-                NOTCH_NOT_HOVERED,
-                FULL_STEP_SECONDS,
-                DURATIONS);
+            advanceAWholeTraverse(controller);
+            advanceAWholeTraverse(controller);
 
-            controller.advanceInputMotionsForFrame(
-                NO_TAB_HOVERED,
-                NOTCH_NOT_HOVERED,
-                FULL_STEP_SECONDS,
-                DURATIONS);
+            assertThat(pulseFractionAt(controller, SECOND_TAB_INDEX))
+                .isCloseTo(1f, within(TOLERANCE));
+        }
+
+        @Test
+        void advanceInputMotionsForFrameRunsAPressLiftBackOutOnceTheButtonIsReleased() {
+            // The release is what ends it, and it takes no pointer of its own: the lift falls with the
+            // cursor anywhere at all, and finishes without a third event.
+            var controller = new TabPanelController();
+            var placement = buildTwoTabPlacementShowing(FIRST_TAB_INDEX, tabIndex -> { });
+
+            controller.activateTabAtPoint(placement, INSIDE_SECOND_TAB_X, ON_TAB_ROW_Y);
+            advanceAWholeTraverse(controller);
+
+            controller.handlePointer(buildLeftReleaseAt(OFF_PANEL_X, OFF_PANEL_Y), placement);
+
+            // Two frames, because the release only lets go: the frame after it turns the lift at the peak
+            // and the frame after that runs it down. The turn stays in the advance rather than moving into
+            // the release, so a lift changes direction in one place whatever ended it.
+            advanceAWholeTraverse(controller);
+            advanceAWholeTraverse(controller);
+
+            assertThat(pulseFractionAt(controller, SECOND_TAB_INDEX))
+                .isCloseTo(0f, within(TOLERANCE));
+        }
+
+        @Test
+        void advanceInputMotionsForFrameEndsAPressLiftReleasedAwayFromItsOwnTab() {
+            // A press begun on a tab and let go somewhere else entirely - over a neighbour, off the panel -
+            // still ends that tab's lift, the act it reported being the press rather than where the pointer
+            // finished up. Released by where the cursor landed, this lift would stand at its peak until the
+            // panel itself was dropped.
+            var controller = new TabPanelController();
+            var placement = buildTwoTabPlacementShowing(FIRST_TAB_INDEX, tabIndex -> { });
+
+            controller.activateTabAtPoint(placement, INSIDE_SECOND_TAB_X, ON_TAB_ROW_Y);
+            
+            advanceAWholeTraverse(controller);
+
+            controller.handlePointer(buildLeftReleaseAt(INSIDE_FIRST_TAB_X, ON_TAB_ROW_Y), placement);
+
+            advanceAWholeTraverse(controller);
+            advanceAWholeTraverse(controller);
 
             assertThat(pulseFractionAt(controller, SECOND_TAB_INDEX))
                 .isCloseTo(0f, within(TOLERANCE));
@@ -998,6 +1035,19 @@ final class TabPanelControllerTest {
         Mockito
             .when(eventMock.getY())
             .thenReturn(Math.round(pointY));
+
+        return eventMock;
+    }
+
+    // A left-button release at a point. The point is carried because the panel is handed one - a release
+    // reports where the button came up - even though what the tabs do with it is deliberately blind to it.
+    private static InputEventAPI buildLeftReleaseAt(float pointX, float pointY) {
+
+        var eventMock = buildMouseEventAt(pointX, pointY);
+
+        Mockito
+            .when(eventMock.isLMBUpEvent())
+            .thenReturn(true);
 
         return eventMock;
     }
