@@ -34,14 +34,18 @@ against anything else.
 | What | Version | Identity |
 | --- | --- | --- |
 | Starsector | `0.98a-RC8` | - |
-| Fast Rendering | `v0.7.7` | `fr.jar` SHA-256 `3162638435a2538e3b3a8457a010c1abac370f1477a256fbdc4beeffdf71f021`, 632640 bytes |
+| Fast Rendering | `v0.8.2` | `fr.jar` SHA-256 `55c8cc3b9a1da7c257edfa822b772a3b6db06aadb82a0d110f6a256f503eaa4a`, 635887 bytes; `fr.agent.jar` 14762 bytes |
 
-Fast Rendering names itself only coarsely. `fr.jar` carries no manifest,
-`com.genir` holds no version constant, and the `fr.readme.txt` beside it names no
-release. What it does carry is a display string in its shadowed copy of the
-game's own version class - `"Starsector 0.98a-RC8 FR7.7"`
-(`starsector-core/fr/com/fs/starfarer/Version.java:27`, `:42`), which is what
-puts `FR7.7` on the launcher and main menu. That is a two-component release
+Fast Rendering names itself only coarsely. `fr.jar` carries no manifest and the
+`fr.readme.txt` beside it names no release. From `v0.8.2` it does carry a version
+constant, `com.genir.renderer.Version.getVersion()` returning `"v0.8.2"`
+(`starsector-core/fr/com/genir/renderer/Version.java:7`) - but nothing in either
+jar calls it, so it identifies the artifact rather than anything a running game
+reports, and it is absent from every earlier release. The older signal is a
+display string in its shadowed copy of the game's own version class -
+`"Starsector 0.98a-RC8 FR8.2"`
+(`starsector-core/fr/com/fs/starfarer/Version.java:36`, `:51`), which is what
+puts `FR8.2` on the launcher and main menu. That is a two-component release
 number baked into a string literal, so it identifies a minor line and not a
 build: it cannot separate `v0.7.1` from `v0.7.1b`, and it changes only when
 genir bumps the literal. So the version above was established by hashing
@@ -50,32 +54,44 @@ the bytes these citations were read from.
 
 Releases are published at
 [Halke1986/starsector-render](https://github.com/Halke1986/starsector-render/releases),
-which ships `fast-rendering-<version>.zip` with `fr.jar` inside. To identify an
-arbitrary install, hash its jar and compare:
+which ships `fast-rendering-<version>.zip`. To identify an arbitrary install, hash
+its jar and compare:
 
 ```
 sha256sum "<starsector>/starsector-core/fr.jar"
 ```
 
-Sizes still separate neighbouring releases (`v0.7.4` is 555210 bytes, `v0.7.5` is
-617776, `v0.7.6` is 632557, `v0.7.7` is 632640), so a size mismatch is a fast
-first check before hashing. Treat only the mismatch as informative: `v0.7.6` and
-`v0.7.7` are 83 bytes apart, close enough that a size *match* is weak evidence
-and hashing is what settles it.
+Sizes still separate neighbouring releases (`v0.7.6` is 632557 bytes, `v0.7.7` is
+632640, `v0.8.0` is 617425, `v0.8.1` is 631624, `v0.8.2` is 635887), so a size
+mismatch is a fast first check before hashing. Treat only the mismatch as
+informative: `v0.7.6` and `v0.7.7` are 83 bytes apart, close enough that a size
+*match* is weak evidence and hashing is what settles it.
 
-Names below are release-specific, and a rename is not announced. `v0.7.4` moved
-the whole GL bridge from `com.genir.renderer.bridge` to
+Names below are release-specific, and a rename is not announced. Two moves so far
+have invalidated citations wholesale, neither mentioned in its release notes.
+`v0.7.4` moved the whole GL bridge from `com.genir.renderer.bridge` to
 `com.genir.renderer.bridge.commands`, and the command interfaces to
-`com.genir.renderer.bridge.interfaces`, with nothing in that release's notes to
-say so. Every KM fact that names a bridge type - the detection string, the
-compile-only stubs - is therefore a fact about one range of releases, and the
-hash is what says which.
+`com.genir.renderer.bridge.interfaces`. `v0.8.0` moved the bytecode-rewriting
+machinery out of `fr.jar` entirely: the package `com.genir.renderer.loaders` no
+longer exists, and its transformation tables now sit in a second jar,
+`fr.agent.jar`, under `com.genir.renderer.agent`. Every KM fact that names a bridge
+type - the detection string, the compile-only stubs - is therefore a fact about one
+range of releases, and the hash is what says which.
+
+The GL bridge itself has been stable across that upheaval. Every
+`com.genir.renderer.bridge.**` source KM reads is byte-identical between `v0.7.7`
+and `v0.8.2`; the sole exception is `context/BufferPool.java`, an internal
+per-buffer-type pooling rewrite that no KM code names.
 
 ## How to re-verify
 
 Every claim below carries a `file:line` into the decompiled sources cache at
 `<starsector>\.sources-cache\`, whose layout mirrors the relative JAR path under
 the game install. Regenerate it with the `/jar-search` command.
+
+Fast Rendering occupies two cache roots, not one: `starsector-core\fr\` for the
+bridge and the shadowed game classes, and `starsector-core\fr.agent\` for the
+bytecode rewriting. A glob of `fr.jar` alone misses half of it; use `fr*.jar`.
 
 Re-verify rather than trust this page. Line numbers drift on any re-decompile
 even when nothing changed, so the surrounding symbol names are the durable part
@@ -100,44 +116,60 @@ has to work under it and under stock LWJGL both.
 
 ### It is an install patch, not a mod
 
-It lives at `starsector-core\fr.jar` beside its own launcher, `fr.bat`, and its
-own JVM argument file, `fr.vmparams`. There is no folder under `mods\`, so
-searching `mods\` for it finds nothing and its presence is not declared in any
-`mod_info.json`.
+It lives at `starsector-core\fr.jar` beside a second jar, `fr.agent.jar`, its own
+launchers `fr.bat` and `fr.noterminal.bat`, and its own JVM argument file,
+`fr.vmparams`. There is no folder under `mods\`, so searching `mods\` for it finds
+nothing and its presence is not declared in any `mod_info.json`.
 
-Nothing on disk is rewritten. `fr.vmparams` sets
-`-Djava.system.class.loader=com.genir.renderer.loaders.AppClassLoader`, so the
-patch is the system classloader, applied to bytes on their way into the JVM; the
-game's own jars are read unmodified. Two consequences worth holding onto: the
+Nothing on disk is rewritten. `fr.vmparams` sets `-javaagent:fr.agent.jar`, so the
+patch is a JVM instrumentation agent, applied to bytes on their way into the JVM;
+the game's own jars are read unmodified. Two consequences worth holding onto: the
 install is only patched when the player launches `fr.bat` rather than
 `starsector.exe`, so the same install runs stock or patched depending on which
 one was double-clicked, and a `starfarer.api.vanilla.jar` sitting in a core
 directory is somebody else's doing, not Fast Rendering's.
 
-`fr.bat` also passes `-javaagent:PatchLibAgent.jar` when that file is present, and
-`AppClassLoader` routes an agent's classes back through its own transformer
-(`.../loaders/AppClassLoader.java:112-124`, `:126-148`), which is how a
-PatchLib-based mod and Fast Rendering coexist.
+The two jars split the work, and which one a fact lives in matters when reading a
+stack trace. `fr.agent.jar` is small and holds only the rewriting: an agent
+entry point (`.../agent/Agent.java:10-12`), the `ClassFileTransformer` that picks a
+rewrite table per class, and the tables themselves. `fr.jar` holds everything the
+rewritten code then resolves to - the GL bridge, the shadowed game classes - and is
+what a KM build binds against.
+
+`fr.bat` also passes `-javaagent:PatchLibAgent.jar` when that file is present, so a
+PatchLib-based mod and Fast Rendering coexist as two ordinary agents on the same
+JVM. Fast Rendering's transformer sees every class either agent's loaders pull in,
+so PatchLib's view of the game classes is the rewritten one.
+
+This arrangement is new in `v0.8.0`. Through `v0.7.7` the patch was instead the
+system classloader (`-Djava.system.class.loader=com.genir.renderer.loaders.AppClassLoader`),
+which loaded and rewrote classes itself and had a bespoke path to route an agent's
+classes back through its own transformer. `com.genir.renderer.loaders` no longer
+exists, so a stack frame naming it is from `v0.7.7` or earlier.
 
 ### It rewrites GL class references in every jar
 
-Its classloader rewrites constant-pool class entries, so a reference compiled
-against LWJGL resolves to the bridge at runtime. `org/lwjgl/opengl/GL11` becomes
+Its agent rewrites constant-pool class entries, so a reference compiled against
+LWJGL resolves to the bridge at runtime. `org/lwjgl/opengl/GL11` becomes
 `com/genir/renderer/bridge/commands/GL11`, and the same holds for `GL13`, `GL14`,
-`GL15`, `GL20`, `GL30`-`GL33`, `GL40`-`GL44`, `Display`, `GLContext`, `GLSync`,
-`SharedDrawable`, and `java/net/URLClassLoader`
-(`ScriptTransformations.transformations`,
-`starsector-core/fr/com/genir/renderer/loaders/ScriptTransformations.java:9`).
+`GL15`, `GL20`, `GL30`-`GL33`, `GL40`-`GL44`, `Display`, `GLContext`, `GLSync`, and
+`SharedDrawable` (`ScriptTransformations.transformations`,
+`starsector-core/fr.agent/com/genir/renderer/agent/ScriptTransformations.java:9`).
 
-That list is the one applied to mod jars. The game's own classes get a narrower
-but deeper rewrite, selected by package prefix - `com.fs.`, `sound.`,
-`zzz.com.fs.` take the game transformer, `org.lwjgl.util.glu.` and
-`com.thoughtworks.xstream.` take their own
-(`.../loaders/AppClassLoader.java:95-110`) - which redirects `GL11`, `GL14`,
+That list is the one applied to mod jars, and it is selected by *classloader*, not
+by package: anything loaded by a loader that is neither the system loader nor the
+agent's own gets it (`.../agent/ClassTransformer.java:60-62`). The game's own
+classes get a narrower but deeper rewrite, selected by package prefix and checked
+first - `com.fs.`, `sound.`, `zzz.com.fs.` take the game transformer,
+`org.lwjgl.util.glu.` and `com.thoughtworks.xstream.` take their own
+(`.../agent/ClassTransformer.java:44-59`) - which redirects `GL11`, `GL14`,
 `Display`, `GLContext`, and `org/lwjgl/util/Display`, swaps janino's
-`JavaSourceClassLoader` for a plain `ClassLoader`, and renames the display-list
+`JavaSourceClassLoader` for a plain `ClassLoader`, renames the display-list
 calls `glGenLists` / `glNewList` / `glEndList` / `glCallList` to `*_restricted`
-variants (`.../loaders/AppClassLoader.java:23`).
+variants, and rewrites obfuscated names that collide with Java keywords - `class.do`
+to `class_do` and so on, which is why a decompile shows types like
+`com/fs/starfarer/util/return` (`.../agent/ClassTransformer.java:20`,
+`.../agent/IllegalTransformations.java:12-23`).
 
 This applies to KM jars. It is blunt and total: there is no opt-out, no
 annotation, and no per-mod exclusion. A KM jar compiles against real LWJGL and
@@ -273,11 +305,14 @@ bridge actively punishes stalling. `Executor.wait` calls `StallDetector.detectSt
 synchronous read on the open map hits 60 of 60 and takes the game down within about
 a second. So a synchronous read is not an option for anything drawn every frame.
 
-Counting only starts once the game is up: the detector is armed on the first
-`CombatEngine` construction, which is also what Fast Rendering treats as "game
-initialised" (`.../overrides/CombatEngine.java:37-39`). Stalls during loading and
-in the launcher are therefore free, and a stalling read can survive a session that
-never reaches combat. That is a reason to distrust a clean test, not a licence.
+Counting only starts once the game is up: the detector is armed on the **first
+combat frame rendered**, which is also what Fast Rendering treats as "game
+initialised" (`.../overrides/CombatEngine.java:41-43`, reached from the shadowed
+`com/fs/starfarer/combat/CombatEngine.render`). Stalls in the launcher, during
+loading, and anywhere in the campaign layer are therefore free, and a stalling read
+can survive a session that never enters a battle. That is a reason to distrust a
+clean test, not a licence: a map overlay is exactly the code that can be exercised
+for hours before the arming point is ever reached.
 
 The viewport read escapes this only because it never stalls: the bridge answers
 `GL_VIEWPORT` inline from `attribTracker` and returns before reaching `exec.wait`
@@ -351,21 +386,25 @@ thread](#it-defers-every-gl-call-to-a-render-thread)).
 
 `fr.jar` also ships patched copies of core game classes under `com.fs.*` (and
 `sound.*`), not just the GL bridge, and they shadow the game's own copies in
-`starfarer_obf.jar` / `fs.common_obf.jar`. There are 20 on `v0.7.7`, reaching well
+`starfarer_obf.jar` / `fs.common_obf.jar`. There are 21 on `v0.8.2`, reaching well
 past rendering: `Version`, `BaseGameState`, `combat/CombatEngine`,
 `combat/CombatState`, `combat/entities/Ship`, `combat/ai/admiral/G`,
 `graphics/TextureLoader`, `graphics/LayeredRenderer`, `loading/SpecStore`,
-`loading/ScriptStore`, `loading/ResourceLoaderState`, `campaign/save/B`,
-`campaign/rules/oOOO`, and `api/impl/combat/threat/RoilingSwarmEffect` among them.
-The set grows: `combat/entities/Ship` and the `combat/E/o0OO` bounds class arrived
-in `v0.7.5`, `sound/C` in `v0.7.6`.
+`loading/ScriptStore`, `loading/LoadingUtils`, `loading/ResourceLoaderState`,
+`campaign/save/B`, `campaign/rules/oOOO`, and
+`api/impl/combat/threat/RoilingSwarmEffect` among them. The set grows:
+`combat/entities/Ship` and the `combat/E/o0OO` bounds class arrived in `v0.7.5`,
+`sound/C` in `v0.7.6`, `loading/LoadingUtils` in `v0.8.1`.
 
 These are compiled against readable aliases - `proxy.com.fs.graphics.Sprite`,
 `proxy.com.fs.starfarer.combat.collision.Bounds` and the like - which
 `ObfTransformations` maps onto the game's obfuscated names as each class loads
-(`.../loaders/ObfTransformations.java:9`). So a name that looks like a public game
-type in a decompile of `fr.jar` may be an alias for an obfuscated one, and that
-table is where to resolve it.
+(`starsector-core/fr.agent/com/genir/renderer/agent/ObfTransformations.java:9`).
+So a name that looks like a public game type in a decompile of `fr.jar` may be an
+alias for an obfuscated one, and that table is where to resolve it. The table is
+not stable either: `v0.8.1` renamed the `com.fs.util.ResourceLoader` alias family to
+`com.fs.util.FileLoader`, so an alias that resolves on one release may not exist on
+the next.
 
 So when behaviour differs under Fast Rendering, the bridge is not the only place
 to look, and a decompile of the game's own jar is not necessarily what is

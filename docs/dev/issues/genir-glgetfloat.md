@@ -7,23 +7,26 @@ Bridge GL11 has no buffer-taking `glGetFloat`: reading `GL_MODELVIEW_MATRIX` / `
 ## Summary
 
 `com.genir.renderer.bridge.commands.GL11` implements no `glGetFloat(int, FloatBuffer)` overload.
-Since the classloader rewrites `org/lwjgl/opengl/GL11` to the bridge in every jar, a mod that
+Since the agent rewrites `org/lwjgl/opengl/GL11` to the bridge in every jar, a mod that
 compiled fine against real LWJGL binds to the bridge at runtime and dies with a
 `NoSuchMethodError` the first time it reads a matrix back - from inside its render pass, so it
 takes the screen down with it rather than failing at load.
 
-Verified against **v0.7.7** (`fr.jar`, SHA-256
-`3162638435a2538e3b3a8457a010c1abac370f1477a256fbdc4beeffdf71f021`, 632640 bytes) on Starsector
+Verified against **v0.8.2** (`fr.jar`, SHA-256
+`55c8cc3b9a1da7c257edfa822b772a3b6db06aadb82a0d110f6a256f503eaa4a`, 635887 bytes) on Starsector
 0.98a-RC8. It was first written against v0.7.2 and re-read on every release since: the `glGet*`
-surface has not changed across them, though the bridge package has (v0.7.4 moved it from
-`com.genir.renderer.bridge` to `com.genir.renderer.bridge.commands`, and the command interfaces
-to `com.genir.renderer.bridge.interfaces`).
+surface has not changed across any of them, and `bridge/commands/GL11.java` is byte-identical
+between v0.7.7 and v0.8.2. What has moved around it is everything else - v0.7.4 moved the bridge
+from `com.genir.renderer.bridge` to `com.genir.renderer.bridge.commands` and the command
+interfaces to `com.genir.renderer.bridge.interfaces`, and v0.8.0 replaced the system classloader
+with a Java agent, moving the rewriting itself into a second jar (`fr.agent.jar`,
+`com.genir.renderer.agent`).
 
 ## Details
 
 The bridge's entire `glGet*` surface is `glGetInteger(int)`, `glGetInteger(int, IntBuffer)`,
 `glGetString(int)`, `glGetFloat(int)`, `glGetError()`, `glGetTexLevelParameteri`, and two
-`glGetTexImage` overloads (`GL11.java`, the `glGet*` block; in the shipped v0.7.7 jar it
+`glGetTexImage` overloads (`GL11.java`, the `glGet*` block; in the shipped v0.8.2 jar it
 decompiles to L1264-L1462). `glGetFloat` exists only in its scalar form, which cannot take a
 matrix - and it answers `GL_LINE_WIDTH` inline, so the shape for serving a value from tracked
 state without a stall is already there.
@@ -84,7 +87,7 @@ fatal. `Executor.wait` calls `StallDetector.detectStall`
 open map runs every frame, so a synchronous read there stalls 60 of 60 and brings the game down
 within about a second. A mod cannot read the modelview synchronously every frame at all.
 
-Detection is armed on the first `CombatEngine` construction (`overrides/CombatEngine.java`), so a
+Detection is armed on the first combat frame rendered (`overrides/CombatEngine.render`), so a
 stalling read is silently tolerated until then. That makes the failure look intermittent to mod
 authors: the same code can survive a menu-and-map session and die on the first battle.
 
