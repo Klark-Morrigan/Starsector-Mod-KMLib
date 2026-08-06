@@ -43,6 +43,11 @@ final class TabPanelControllerTest {
     private static final Rectangle SECOND_TAB = new Rectangle(180f, 500f, 80f, 20f);
     private static final Rectangle HEADER_BAND = new Rectangle(100f, 500f, 160f, 20f);
 
+    // The framed body, standing beneath the row and meeting its bottom edge, as the layout lays it. Apart
+    // from the row on the y axis, so a point on the tabs is a point the body does not also claim - which is
+    // what tells the row's own answer apart from the body's.
+    private static final Rectangle BODY_BOX = new Rectangle(100f, 380f, 160f, 120f);
+
     private static final float INSIDE_FIRST_TAB_X = 140f;
     private static final float INSIDE_SECOND_TAB_X = 220f;
     private static final float ON_TAB_ROW_Y = 510f;
@@ -808,7 +813,7 @@ final class TabPanelControllerTest {
         return new TabPanelPlacement(
             new Control(spec, HEADER_BAND, List.of(FIRST_TAB, SECOND_TAB)),
             drawnHeaderBand,
-            new PanelPlacement(HEADER_BAND, HEADER_BAND, List.of(), HEADER_BAND, 0f, 0f),
+            new PanelPlacement(BODY_BOX, BODY_BOX, List.of(), BODY_BOX, 0f, 0f),
             new BoxBorder(BORDER_WIDTH),
             notch);
     }
