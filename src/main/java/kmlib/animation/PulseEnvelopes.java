@@ -103,11 +103,21 @@ public final class PulseEnvelopes<K> {
      * would strand the lift of anything the player dragged away from, holding it at its peak until the
      * surface itself was dropped. Nothing is lost by the breadth, since only one pointer can be down at
      * once, and a lift no release was owed simply carries on falling.
+     *
+     * @return true when this set was holding at least one lift and has now let go, so a caller answering a
+     *         release with more than the lift itself can tell one that ended something from one that found
+     *         nothing to end
      */
-    public void releaseHeldPulses() {
+    public boolean releaseHeldPulses() {
+
+        var wasAnyHeld = false;
         for (var envelope : envelopesByKey.values()) {
-            envelope.releaseHeldPulse();
+
+            // Every envelope is released rather than stopping at the first that was holding, so the answer
+            // is "something was let go" over a set left wholly unheld.
+            wasAnyHeld |= envelope.releaseHeldPulse();
         }
+        return wasAnyHeld;
     }
 
     // The element's envelope, minted on first use. Shared by both triggers so a key's lift is one envelope

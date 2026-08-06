@@ -131,9 +131,19 @@ public final class PulseEnvelope {
      * Lets go of a held lift, so it turns at the peak the way an unheld pulse would. Releasing one that is
      * still climbing lets it finish the climb first, and releasing one that was never held does nothing, so
      * a caller reporting every release need not track which lifts it started.
+     *
+     * <p>Whether it was holding one is reported back, because a caller that answers a release with anything
+     * beyond the lift itself - a sound, a log line - must answer only for a release that ended something. A
+     * caller reporting every release it sees would otherwise fire on every one of them, most of which are
+     * owed to nothing at all.
+     *
+     * @return true when this was holding a lift and has now let it go
      */
-    public void releaseHeldPulse() {
+    public boolean releaseHeldPulse() {
+
+        var wasHeld = isHeld;
         isHeld = false;
+        return wasHeld;
     }
 
     // The end the lift is heading for this frame. One rule for which end that is, so the advance and the

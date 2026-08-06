@@ -8,9 +8,11 @@ import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlAction;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.LabelledControlSpecs;
+import kmlib.starsector.ui.sound.StarsectorUiSound;
 import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.PanelPlacement;
 import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
+import kmlib.testfixtures.starsector.ui.sound.UiSoundPlayerFake;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -919,6 +921,143 @@ final class TabPanelControllerTest {
                     OFF_PANEL_X,
                     OFF_PANEL_Y))
                 .isNull();
+        }
+    }
+
+    @Nested
+    class InterfaceSounds {
+
+        private final UiSoundPlayerFake soundPlayerFake = new UiSoundPlayerFake();
+
+        @Test
+        void interfaceSoundsPlayThePressOnTheReleaseRatherThanOnTheWayDown() {
+            // The engine's own tabs sound as the button comes up, so the sound and the wash fading out are
+            // one answer. Pinned as two assertions either side of the release, since a press that sounded on
+            // the way down would still leave the right sound recorded by the end.
+            var controller = new TabPanelController(soundPlayerFake);
+            var placement = buildTwoTabPlacementShowing(FIRST_TAB_INDEX, tabIndex -> { });
+
+            controller.activateTabAtPoint(placement, INSIDE_SECOND_TAB_X, ON_TAB_ROW_Y);
+
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .as("the button is still down, so nothing has been answered yet")
+                .isEmpty();
+
+            controller.handlePointer(buildLeftReleaseAt(INSIDE_SECOND_TAB_X, ON_TAB_ROW_Y), placement);
+
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .containsExactly(StarsectorUiSound.BUTTON_PRESSED);
+        }
+
+        @Test
+        void interfaceSoundsPlayThePressForTheTabAlreadyShowing() {
+            // The lit tab fires no action and still answers the press, so it must sound like every other
+            // tab - a press that lifted but stayed silent would read as a half-registered click.
+            var controller = new TabPanelController(soundPlayerFake);
+            var placement = buildTwoTabPlacementShowing(FIRST_TAB_INDEX, tabIndex -> { });
+
+            controller.activateTabAtPoint(placement, INSIDE_FIRST_TAB_X, ON_TAB_ROW_Y);
+            controller.handlePointer(buildLeftReleaseAt(INSIDE_FIRST_TAB_X, ON_TAB_ROW_Y), placement);
+
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .containsExactly(StarsectorUiSound.BUTTON_PRESSED);
+        }
+
+        @Test
+        void interfaceSoundsStaySilentForAReleaseThatEndedNoPress() {
+            // Every release on the screen reaches the panel, so one that let go of nothing must not click at
+            // the player - otherwise clicking the map behind the sidebar would sound like pressing it.
+            var controller = new TabPanelController(soundPlayerFake);
+
+            controller.handlePointer(
+                buildLeftReleaseAt(OFF_PANEL_X, OFF_PANEL_Y),
+                buildTwoTabPlacementShowing(FIRST_TAB_INDEX, tabIndex -> { }));
+
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .isEmpty();
+        }
+
+        @Test
+        void interfaceSoundsPlayThePressForABoundKey() {
+            // A keypress puts nothing under the pointer to explain itself, so it takes both answers the
+            // engine gives a press rather than the flash alone.
+            var controller = new TabPanelController(soundPlayerFake);
+
+            controller.startHotkeyBlinkAt(SECOND_TAB_INDEX);
+
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .containsExactly(StarsectorUiSound.BUTTON_PRESSED);
+        }
+
+        @Test
+        void interfaceSoundsPlayTheMouseoverOnceAsThePointerArrives() {
+            // A moment, not a position: the pointer resting on a tab holds its fade at the top for as long
+            // as it stays, and a sound read off that would be a tone rather than a tick.
+            var controller = new TabPanelController(soundPlayerFake);
+
+            advanceWithPointerOn(controller, FIRST_TAB_INDEX);
+            advanceWithPointerOn(controller, FIRST_TAB_INDEX);
+            advanceWithPointerOn(controller, FIRST_TAB_INDEX);
+
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .containsExactly(StarsectorUiSound.BUTTON_MOUSEOVER);
+        }
+
+        @Test
+        void interfaceSoundsPlayTheMouseoverAgainCrossingStraightToTheNextTab() {
+            // The common move on a row of abutting tabs: the pointer never leaves the row, so an arrival
+            // detected only from "off the row" would announce the first tab and then nothing else.
+            var controller = new TabPanelController(soundPlayerFake);
+
+            advanceWithPointerOn(controller, FIRST_TAB_INDEX);
+            advanceWithPointerOn(controller, SECOND_TAB_INDEX);
+
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .containsExactly(
+                    StarsectorUiSound.BUTTON_MOUSEOVER,
+                    StarsectorUiSound.BUTTON_MOUSEOVER);
+        }
+
+        @Test
+        void interfaceSoundsStaySilentAsThePointerLeavesTheRow() {
+            // Leaving reaches nothing, so it answers nothing; only arriving does.
+            var controller = new TabPanelController(soundPlayerFake);
+
+            advanceWithPointerOn(controller, FIRST_TAB_INDEX);
+
+            soundPlayerFake.clearPlayedSounds();
+
+            advanceWithPointerOn(controller, NO_TAB_HOVERED);
+
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .isEmpty();
+        }
+
+        @Test
+        void interfaceSoundsAnnounceTheTabAfreshWhenThePanelReopensUnderThePointer() {
+            // The panel came to the cursor rather than the other way about, which is an arrival to the
+            // player even though the pointer never moved. Without the reset the row would light in silence.
+            var controller = new TabPanelController(soundPlayerFake);
+
+            advanceWithPointerOn(controller, FIRST_TAB_INDEX);
+
+            controller.resetInputMotions();
+            soundPlayerFake.clearPlayedSounds();
+
+            advanceWithPointerOn(controller, FIRST_TAB_INDEX);
+
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .containsExactly(StarsectorUiSound.BUTTON_MOUSEOVER);
+        }
+
+        // One frame with the pointer on the given tab, or on none for a null - the reading the panel's own
+        // hit-test would have produced, handed in so these cases need no display to point at.
+        private void advanceWithPointerOn(TabPanelController controller, Integer hoveredTabIndex) {
+            controller.advanceInputMotionsForFrame(
+                hoveredTabIndex,
+                NOTCH_NOT_HOVERED,
+                FULL_STEP_SECONDS,
+                DURATIONS);
         }
     }
 
