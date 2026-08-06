@@ -18,6 +18,20 @@ import java.util.function.Supplier;
  * {@link Color} behind the same supplier shape, which keeps the
  * resolution path uniform.
  *
+ * <p>Entries are grouped by where their value comes from, and the two
+ * groups answer differently to a restyled install: a live read follows
+ * it, a frozen literal does not. Which behaviour a callsite wants is the
+ * whole of the choice between them, so the bands are kept apart rather
+ * than interleaved by colour name.
+ *
+ * <p>A third kind is deliberately absent: a shade worked out from a live
+ * read by some renderer's own rule - a fill composited over its backdrop,
+ * a glow added onto it - is not an entry here. Its rule is a fact about
+ * how one thing is painted rather than about the palette, and an entry
+ * here would carry that paint's constants into a catalogue every other
+ * widget reads. Such a shade belongs beside the paint that defines it,
+ * built from the entries below.
+ *
  * <p>Call {@link #resolve()} to obtain the live {@link Color}. The
  * resolver null-checks the supplier output and tags the failure with the
  * enum name, because {@code Misc} accessors can return {@code null}
@@ -25,12 +39,17 @@ import java.util.function.Supplier;
  * produces a much less actionable error.
  */
 public enum StarsectorUiColour {
+
+    // -- Live engine reads ----------------------------------------------------------------------------
+    // Whatever the running install says the colour is, asked afresh every time. A settings restyle or a
+    // player-faction recolour reaches a consumer of these without it doing anything.
+
     VANILLA_GRAY(Misc::getGrayColor),
     VANILLA_TEXT(Misc::getTextColor),
     VANILLA_BUTTON_TEXT(Misc::getButtonTextColor),
     // The engine's dark button fill from settings.json ("buttonBgDark") - the dark teal a resting
-    // button/tab fills with. The fixed UI palette, NOT the player-faction shades, so it matches the
-    // map's own Sector/System tabs even when a modded player faction recolours VANILLA_PLAYER_*.
+    // button/tab fills with, and the shade the engine's own map tabs are painted from. The fixed UI
+    // palette, NOT the player-faction shades: a vanilla tab takes no faction colour.
     VANILLA_BUTTON_BG_DARK(() -> Global.getSettings().getColor("buttonBgDark")),
     VANILLA_PLAYER_BASE(Misc::getBasePlayerColor),
     VANILLA_PLAYER_BRIGHT(Misc::getBrightPlayerColor),
@@ -38,6 +57,11 @@ public enum StarsectorUiColour {
     VANILLA_HIGHLIGHT_GOLD(Misc::getHighlightColor),
     VANILLA_HIGHLIGHT_RED(Misc::getNegativeHighlightColor),
     VANILLA_HIGHLIGHT_GREEN(Misc::getPositiveHighlightColor),
+
+    // -- Frozen literals ------------------------------------------------------------------------------
+    // Shades that stay put whatever the install does, either because they are our own or because a
+    // consumer needs the vanilla baseline to hold still while the live palette moves around it.
+
     BLACK(Color.BLACK),
     WHITE(Color.WHITE),
     DIM_GRAY(new Color(130, 130, 130)),
