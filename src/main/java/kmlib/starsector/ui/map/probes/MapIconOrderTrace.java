@@ -1,11 +1,8 @@
 package kmlib.starsector.ui.map.probes;
 
-import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.CampaignTerrainAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
-
-import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,11 +10,11 @@ import java.util.Map;
 
 /**
  * Describes the order the map widget will draw its terrain icons in, so an overlay that rides on a
- * terrain can be told where in the starfield it lands rather than left to infer it.
+ * terrain can be told where among the map's own icons it lands rather than left to infer it.
  *
  * <p>The widget keeps one icon per entity in an insertion-ordered map and walks the terrain-tagged
  * ones in that order, so where an overlay's own icon was seeded decides what is painted over it -
- * and the map's own starfield fog is seeded last, after every real entity. No published call
+ * and the map's own nebula icons are seeded last, after every real entity. No published call
  * answers where anything sits in that order, and the map is reseeded each time one is opened, so
  * the position is neither derivable nor stable enough to be assumed. Reading it is what makes a
  * layering claim checkable in play instead of inferred from a decompile, and what says - one line,
@@ -42,17 +39,11 @@ import java.util.Map;
  */
 public final class MapIconOrderTrace {
 
-    private static final Logger LOG = Global.getLogger(MapIconOrderTrace.class);
-
     // What a terrain-tagged icon reports when its entity is not a terrain after all, or holds no
     // plugin. Neither is expected; both are described rather than dropped, since an unexpected icon
     // still occupies a slot and moving every position after it is exactly what would mislead.
     private static final String UNTYPED_TERRAIN = "untyped";
     private static final String NO_PLUGIN = "none";
-
-    // Says once per session that this stopped working, since a caller handed null cannot tell a
-    // screen with no map from a reach that broke.
-    private static final SessionWarning WARNING = new SessionWarning(LOG);
 
     private MapIconOrderTrace() {
     }
@@ -68,25 +59,11 @@ public final class MapIconOrderTrace {
      *         the widget tree failed - neither of which the caller can act on differently
      */
     public static String describeTerrainIconOrder() {
-        try {
-            // Null off the map screens, and quietly so: a screen showing no map is the ordinary
-            // state rather than a reach that stopped working.
-            var mapTab = ShownMapTab.resolveShownMapTab();
-            if (mapTab == null) {
-                return null;
-            }
-            var icons = MapWidgetIcons.readIconMapUnder(mapTab);
-            if (icons == null) {
-                warnOnce("no component under the map tab answers its icon accessor", null);
-                return null;
-            }
-            return describeTerrainIcons(readTerrainIcons(icons));
-        } catch (Throwable failure) {
-            // Swallowed rather than raised: this is a diagnostic, and one that cannot read the tree
-            // must not take down the render pass its caller is in the middle of.
-            warnOnce("the map widget's icon map could not be read by reflection", failure);
-            return null;
-        }
+        // The guard, and the one warning when the reach stops working, belong to the read rather
+        // than to either of the things that ask for it - so all this does with a failure is have
+        // nothing to describe.
+        var icons = MapWidgetIcons.readIconMapOfShownMap();
+        return icons == null ? null : describeTerrainIcons(readTerrainIcons(icons));
     }
 
     /**
@@ -148,13 +125,4 @@ public final class MapIconOrderTrace {
             plugin == null ? NO_PLUGIN : plugin.getClass().getSimpleName());
     }
 
-    // On this library's own logger, since a reach that stopped fitting the game is the library's
-    // news rather than the consuming mod's. Both failures word the same consequence, so both go
-    // through one warning and the first of them silences the rest.
-    private static void warnOnce(String reason, Throwable failure) {
-        WARNING.warnOnce(
-            "Could not read the map widget's icon order: " + reason
-                + ". Nothing will be described about map layering this session.",
-            failure);
-    }
 }

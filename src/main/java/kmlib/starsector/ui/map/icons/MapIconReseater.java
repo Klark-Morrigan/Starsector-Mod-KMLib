@@ -5,8 +5,7 @@ import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.LocationAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 
-import kmlib.starsector.ui.map.probes.MapIconLayeringProbe;
-import kmlib.starsector.ui.map.probes.MapIconLayeringProbe.Layering;
+import kmlib.starsector.ui.map.MapIconLayering;
 
 import org.apache.log4j.Logger;
 
@@ -14,19 +13,19 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 /**
- * Moves one entity's icon to the end of the map widget's draw order each time a map opens, so what
- * the widget seeds on open no longer paints over it. When that is owed is
- * {@link MapIconReseatDecision}'s, which states why the move works at all; this is the two engine
- * calls that carry it out and the guard that keeps a fault in either out of the campaign's frame.
+ * Moves one entity's icon to the end of the map widget's draw order whenever the widget has seeded
+ * it under the nebulae, so the map's own fog no longer paints over it. When that is owed is
+ * {@link MapIconReseatDecision}'s, which states why the move works at all and why it is keyed on the
+ * icon's placement rather than on a map having opened; this is the two engine calls that carry it
+ * out and the guard that keeps a fault in either out of the campaign's frame.
  *
- * <p>Which entity is a port rather than a search: the caller is the only one that can say which of a
- * location's entities is its own, and a rule stated here would be a guess about somebody's content.
- * It is asked again at each step rather than cached at construction, so an entity a save load
- * replaced is the one moved rather than a stale instance nothing draws.
- *
- * <p>Its placement, by contrast, is read here rather than supplied: where an icon sits in the
- * widget's order is a fact about the map, which is this library's own subject, and a caller asked
- * for it would be holding a second copy of how the widget seeds itself.
+ * <p>Everything it decides from is a port: which entity, which maps matter, and where that entity's
+ * icon currently sits. The first two only a caller can answer. The third has an answer in this
+ * library - {@code MapIconLayeringProbe} reads it off the live widget - but it is wired in rather
+ * than reached for, because this package writes to the map's draw order and reads nothing, which is
+ * what keeps it independent of the packages that only read. Each is asked again at every step rather
+ * than cached at construction, so an entity a save load replaced is the one moved rather than a
+ * stale instance nothing draws.
  *
  * <p>Every move it makes is logged at DEBUG on this library's own logger, not the calling mod's, so
  * following a layering problem means turning KMLib's verbosity up rather than the mod's. A move is
@@ -46,7 +45,7 @@ public final class MapIconReseater implements EveryFrameScript {
 
     private final BooleanSupplier isMapShowing;
     private final Supplier<SectorEntityToken> findEntityToReseat;
-    private final Supplier<Layering> readIconLayering;
+    private final Supplier<MapIconLayering> readIconLayering;
     private final MapIconReseatDecision reseatDecision = new MapIconReseatDecision();
 
     // The entity taken out, with the location it came from, held for the single advance it spends
@@ -66,29 +65,19 @@ public final class MapIconReseater implements EveryFrameScript {
      * @param isMapShowing whether a map whose icon order matters is on screen; it scopes the move to
      *        the maps the caller cares about rather than triggering it
      * @param findEntityToReseat the entity to move, or null when its location holds none
+     * @param readIconLayering where that entity's icon currently sits; {@code MapIconLayeringProbe}
+     *        answers it from the live widget, and a caller wires that in rather than this reaching
+     *        for it - this package writes to the map's draw order and reads nothing, which is what
+     *        keeps it independent of the probes that only read
      */
     public MapIconReseater(
             BooleanSupplier isMapShowing,
-            Supplier<SectorEntityToken> findEntityToReseat) {
-
-        this(isMapShowing, findEntityToReseat, null);
-    }
-
-    // Takes the placement read as well, which only a test does: the live one walks the widget tree
-    // and answers nothing outside a running game, which would leave the move itself - the pair of
-    // engine calls this class is - with no way to be driven at all. Kept off the published
-    // constructor deliberately, since a caller supplying it would be holding a second copy of how
-    // the widget seeds itself, which is the thing this library owns.
-    MapIconReseater(
-            BooleanSupplier isMapShowing,
             Supplier<SectorEntityToken> findEntityToReseat,
-            Supplier<Layering> readIconLayering) {
+            Supplier<MapIconLayering> readIconLayering) {
 
         this.isMapShowing = isMapShowing;
         this.findEntityToReseat = findEntityToReseat;
-        this.readIconLayering = readIconLayering != null
-            ? readIconLayering
-            : () -> MapIconLayeringProbe.readLayeringOf(findEntityToReseat.get());
+        this.readIconLayering = readIconLayering;
     }
 
     @Override

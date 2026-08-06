@@ -1,7 +1,7 @@
 package kmlib.starsector.ui.map.icons;
 
 import kmlib.starsector.ui.map.icons.MapIconReseatDecision.ReseatAction;
-import kmlib.starsector.ui.map.probes.MapIconLayeringProbe.Layering;
+import kmlib.starsector.ui.map.MapIconLayering;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -29,9 +29,9 @@ class MapIconReseatDecisionTest {
     private static final BooleanSupplier ENTITY_ABSENT = () -> false;
 
     // The three placements, likewise.
-    private static final Supplier<Layering> ICON_BURIED = () -> Layering.BURIED_UNDER_NEBULAE;
-    private static final Supplier<Layering> ICON_CLEAR = () -> Layering.CLEAR_OF_NEBULAE;
-    private static final Supplier<Layering> ICON_UNPLACEABLE = () -> Layering.UNREADABLE;
+    private static final Supplier<MapIconLayering> ICON_BURIED = () -> MapIconLayering.BURIED_UNDER_NEBULAE;
+    private static final Supplier<MapIconLayering> ICON_CLEAR = () -> MapIconLayering.CLEAR_OF_NEBULAE;
+    private static final Supplier<MapIconLayering> ICON_UNPLACEABLE = () -> MapIconLayering.UNREADABLE;
 
     private static final boolean MAP_SHOWING = true;
     private static final boolean NO_MAP_SHOWING = false;
@@ -198,9 +198,9 @@ class MapIconReseatDecisionTest {
             // supplier: this runs on every campaign frame and only the frames with a map up can act.
             var layeringReadCount = new int[1];
 
-            Supplier<Layering> countingLayeringRead = () -> {
+            Supplier<MapIconLayering> countingLayeringRead = () -> {
                 layeringReadCount[0]++;
-                return Layering.BURIED_UNDER_NEBULAE;
+                return MapIconLayering.BURIED_UNDER_NEBULAE;
             };
 
             var reseatDecision = new MapIconReseatDecision();

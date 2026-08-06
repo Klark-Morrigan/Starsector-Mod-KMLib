@@ -1,6 +1,10 @@
 package kmlib.starsector.ui.map.probes;
 
+import com.fs.starfarer.api.Global;
+
 import kmlib.starsector.ui.coreui.CoreUiTree;
+
+import org.apache.log4j.Logger;
 
 import java.util.Map;
 
@@ -25,23 +29,59 @@ import java.util.Map;
  */
 final class MapWidgetIcons {
 
+    private static final Logger LOG = Global.getLogger(MapWidgetIcons.class);
+
     // The map widget's own icon accessor. Public and part of its contract, so the name survives
     // obfuscation where the fields leading down to the widget do not.
     private static final String GET_ICONS_METHOD = "getIcons";
+
+    // One latch for one reach. Each caller wording its own consequence would put two near-identical
+    // lines in the log for a single tree that stopped being readable, and each would have to be
+    // silenced separately.
+    private static final SessionWarning WARNING = new SessionWarning(LOG);
 
     private MapWidgetIcons() {
     }
 
     /**
-     * Takes the tab rather than resolving it, so a caller that has to tell "no map is on screen"
-     * from "the map is there and the reach into it failed" can, those being an ordinary state and a
-     * reportable one. Resolving it here would collapse the two into one null.
+     * The live icon map of the map widget on screen, guarded: no map tab is answered quietly, and a
+     * tab that is there with nothing under it answering is reported once.
      *
-     * @param mapTab the map tab on screen, from {@link ShownMapTab}
-     * @return the widget's live icon map, or null when nothing under the tab answers the accessor
+     * <p>Every caller wants the same thing from a failure - to stop and do nothing - so the guard
+     * lives here rather than in each of them. It also means the walk and the reporting of the walk
+     * are one thing to keep working, not one plus a copy per caller.
+     *
+     * @return the widget's live icon map, or null when no map is on screen or the reach failed
      */
-    static Map<?, ?> readIconMapUnder(Object mapTab) {
-        return resolveIconMapUnder(mapTab, 0);
+    static Map<?, ?> readIconMapOfShownMap() {
+        try {
+            // Null off the map screens, and quietly so: a screen showing no map is the ordinary
+            // state rather than a reach that stopped working.
+            var mapTab = ShownMapTab.resolveShownMapTab();
+            if (mapTab == null) {
+                return null;
+            }
+            var icons = resolveIconMapUnder(mapTab, 0);
+            if (icons == null) {
+                warnOnce("no component under the map tab answers " + GET_ICONS_METHOD, null);
+            }
+            return icons;
+        } catch (Throwable failure) {
+            // Swallowed rather than raised: callers ask this from inside a render pass or a
+            // campaign frame, and a reach that cannot read the tree must not take either down.
+            warnOnce("the map widget's icon map could not be read by reflection", failure);
+            return null;
+        }
+    }
+
+    // On this library's own logger, since a reach that stopped fitting the game is the library's
+    // news rather than the consuming mod's. The consequence is worded for the reach rather than for
+    // any one caller's use of it, both callers losing the same thing.
+    private static void warnOnce(String reason, Throwable failure) {
+        WARNING.warnOnce(
+            "Could not read the map widget's icon order: " + reason
+                + ". Nothing that depends on where an icon sits will work this session.",
+            failure);
     }
 
     // Depth-first from the tab, first component that answers the accessor wins. Only the map widget

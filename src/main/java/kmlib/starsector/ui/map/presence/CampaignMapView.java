@@ -11,7 +11,7 @@ import org.apache.log4j.Logger;
 /**
  * Reads the live state of the vanilla campaign map (the {@code M} screen) so a mod can gate on
  * it: is the player looking at the sector (hyperspace) map, and is that map drawing the
- * stylised Starscape starfield or the ordinary schematic? The two halves are asked separately
+ * stylised Starscape look or the ordinary schematic? The two halves are asked separately
  * because they gate different things - whether a companion overlay belongs on screen at all,
  * and which of two draw paths the game will honour while it is.
  *
@@ -54,7 +54,7 @@ public final class CampaignMapView {
 
     /**
      * @return whether the sector map is showing with the Starscape filter on, the state in which
-     *         the game paints the stylised starfield in place of the ordinary map
+     *         the game paints the stylised Starscape look in place of the ordinary map
      */
     public static boolean isSectorMapInStarscapeMode() {
         return resolveSectorMapState() == SectorMapState.SHOWING_IN_STARSCAPE_MODE;

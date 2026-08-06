@@ -74,7 +74,7 @@ public final class MapPresence {
     }
 
     /**
-     * @return whether either host is showing a map drawing the Starscape starfield - the sector map
+     * @return whether either host is showing a map in Starscape mode - the sector map
      *         with its own filter on, or a lit map visor with the intel screen's filter on
      */
     public boolean isStarscapeMapShowing() {

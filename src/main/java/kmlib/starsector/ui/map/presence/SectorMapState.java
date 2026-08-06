@@ -27,7 +27,7 @@ public enum SectorMapState {
      */
     SHOWING_WITH_UNREADABLE_FILTER,
 
-    /** The sector map is showing and painting the stylised starfield. */
+    /** The sector map is showing and painting the stylised Starscape look. */
     SHOWING_IN_STARSCAPE_MODE,
 
     /** The sector map is showing and painting the ordinary schematic. */

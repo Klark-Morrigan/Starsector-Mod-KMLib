@@ -3,7 +3,7 @@ package kmlib.starsector.ui.map.icons;
 import com.fs.starfarer.api.campaign.LocationAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 
-import kmlib.starsector.ui.map.probes.MapIconLayeringProbe.Layering;
+import kmlib.starsector.ui.map.MapIconLayering;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -34,10 +34,18 @@ class MapIconReseaterTest {
     private static final BooleanSupplier MAP_SHOWING = () -> true;
     private static final BooleanSupplier NO_MAP_SHOWING = () -> false;
 
-    // The placement that owes a move. Supplied rather than read, because the live read walks the
-    // widget tree and answers nothing outside a running game - which would leave every case below
-    // asserting that a script standing down does nothing.
-    private static final Supplier<Layering> ICON_BURIED = () -> Layering.BURIED_UNDER_NEBULAE;
+    // The placement that owes a move. A port on the script rather than something it reads, so the
+    // cases below can drive the move at all - the live read walks the widget tree and answers
+    // nothing outside a running game.
+    private static final Supplier<MapIconLayering> ICON_BURIED =
+        () -> MapIconLayering.BURIED_UNDER_NEBULAE;
+
+    // Faults if it is asked, so a case that must not reach the widget says so by construction rather
+    // than in a comment. The read costs a walk into the live tree, and the ordinary campaign frame -
+    // which is nearly every frame - must not pay for one.
+    private static final Supplier<MapIconLayering> ICON_PLACEMENT_NOT_TO_BE_READ = () -> {
+        throw new AssertionError("the icon's placement must not be read while no map is showing");
+    };
 
     @Nested
     class Advance {
@@ -101,7 +109,10 @@ class MapIconReseaterTest {
             // The ordinary campaign frame, which is nearly all of them.
             var locationMock = mock(LocationAPI.class);
             var entityMock = buildEntityIn(locationMock);
-            var reseater = new MapIconReseater(NO_MAP_SHOWING, () -> entityMock);
+            var reseater = new MapIconReseater(
+                NO_MAP_SHOWING,
+                () -> entityMock,
+                ICON_PLACEMENT_NOT_TO_BE_READ);
 
             reseater.advance(ONE_FRAME);
             reseater.advance(ONE_FRAME);
@@ -158,7 +169,7 @@ class MapIconReseaterTest {
         void advancesWhilePausedBecauseAnOpenMapHoldsTheCampaignPaused() {
             // The whole window this works in is a map being open, and opening one pauses the
             // campaign. Answering false would leave the script never advancing at all.
-            var reseater = new MapIconReseater(NO_MAP_SHOWING, () -> null);
+            var reseater = new MapIconReseater(NO_MAP_SHOWING, () -> null, ICON_PLACEMENT_NOT_TO_BE_READ);
 
             assertThat(reseater.runWhilePaused())
                 .isTrue();
@@ -172,7 +183,7 @@ class MapIconReseaterTest {
         void neverFinishesSoEveryLaterMapOpenIsStillReseated() {
             // The engine drops a script that reports itself done. A reseat is owed once per map
             // open for as long as the save is loaded, so there is no point at which this is over.
-            var reseater = new MapIconReseater(NO_MAP_SHOWING, () -> null);
+            var reseater = new MapIconReseater(NO_MAP_SHOWING, () -> null, ICON_PLACEMENT_NOT_TO_BE_READ);
 
             assertThat(reseater.isDone())
                 .isFalse();

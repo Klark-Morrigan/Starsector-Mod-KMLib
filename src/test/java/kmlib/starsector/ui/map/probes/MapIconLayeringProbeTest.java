@@ -5,7 +5,7 @@ import com.fs.starfarer.api.campaign.CampaignTerrainPlugin;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.impl.campaign.terrain.NebulaTerrainPlugin;
 
-import kmlib.starsector.ui.map.probes.MapIconLayeringProbe.Layering;
+import kmlib.starsector.ui.map.MapIconLayering;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -37,7 +37,7 @@ class MapIconLayeringProbeTest {
             var icons = buildIconMapOf(buildNebulaIcon(), buildNebulaIcon(), entityMock);
 
             assertThat(MapIconLayeringProbe.readLayeringIn(icons, entityMock))
-                .isEqualTo(Layering.CLEAR_OF_NEBULAE);
+                .isEqualTo(MapIconLayering.CLEAR_OF_NEBULAE);
         }
 
         @Test
@@ -47,7 +47,7 @@ class MapIconLayeringProbeTest {
             var icons = buildIconMapOf(entityMock, buildNebulaIcon(), buildNebulaIcon());
 
             assertThat(MapIconLayeringProbe.readLayeringIn(icons, entityMock))
-                .isEqualTo(Layering.BURIED_UNDER_NEBULAE);
+                .isEqualTo(MapIconLayering.BURIED_UNDER_NEBULAE);
         }
 
         @Test
@@ -58,7 +58,7 @@ class MapIconLayeringProbeTest {
             var icons = buildIconMapOf(buildNebulaIcon(), entityMock, buildNebulaIcon());
 
             assertThat(MapIconLayeringProbe.readLayeringIn(icons, entityMock))
-                .isEqualTo(Layering.BURIED_UNDER_NEBULAE);
+                .isEqualTo(MapIconLayering.BURIED_UNDER_NEBULAE);
         }
 
         @Test
@@ -69,7 +69,7 @@ class MapIconLayeringProbeTest {
             var icons = buildIconMapOf(mock(SectorEntityToken.class), entityMock);
 
             assertThat(MapIconLayeringProbe.readLayeringIn(icons, entityMock))
-                .isEqualTo(Layering.CLEAR_OF_NEBULAE);
+                .isEqualTo(MapIconLayering.CLEAR_OF_NEBULAE);
         }
 
         @Test
@@ -79,7 +79,7 @@ class MapIconLayeringProbeTest {
             var icons = buildIconMapOf(buildNebulaIcon());
 
             assertThat(MapIconLayeringProbe.readLayeringIn(icons, mock(SectorEntityToken.class)))
-                .isEqualTo(Layering.UNREADABLE);
+                .isEqualTo(MapIconLayering.UNREADABLE);
         }
 
         @Test
@@ -92,7 +92,7 @@ class MapIconLayeringProbeTest {
                 buildTerrainIconWith(mock(CampaignTerrainPlugin.class)));
 
             assertThat(MapIconLayeringProbe.readLayeringIn(icons, entityMock))
-                .isEqualTo(Layering.CLEAR_OF_NEBULAE);
+                .isEqualTo(MapIconLayering.CLEAR_OF_NEBULAE);
         }
     }
 

@@ -1,6 +1,6 @@
 package kmlib.starsector.ui.map.icons;
 
-import kmlib.starsector.ui.map.probes.MapIconLayeringProbe.Layering;
+import kmlib.starsector.ui.map.MapIconLayering;
 
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
@@ -74,7 +74,7 @@ final class MapIconReseatDecision {
      */
     ReseatAction decideReseatAction(
             boolean isMapShowing,
-            Supplier<Layering> readIconLayering,
+            Supplier<MapIconLayering> readIconLayering,
             BooleanSupplier isEntityPresent) {
 
         if (isEntityDetached) {
@@ -92,14 +92,14 @@ final class MapIconReseatDecision {
         }
 
         var layering = readIconLayering.get();
-        if (layering == Layering.CLEAR_OF_NEBULAE) {
+        if (layering == MapIconLayering.CLEAR_OF_NEBULAE) {
             // The one reading that says a lift worked. Everything else - no map, no icon yet, a
             // tree that cannot be read - leaves the count alone rather than forgiving attempts on
             // the strength of an answer nobody got.
             attemptsSinceLastClear = 0;
             return ReseatAction.NONE;
         }
-        if (layering != Layering.BURIED_UNDER_NEBULAE || !isEntityPresent.getAsBoolean()) {
+        if (layering != MapIconLayering.BURIED_UNDER_NEBULAE || !isEntityPresent.getAsBoolean()) {
             return ReseatAction.NONE;
         }
 
