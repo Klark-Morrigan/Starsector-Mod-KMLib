@@ -56,7 +56,7 @@ final class MapIconReseatDecision {
             isEntityDetached = false;
             // Put back regardless of what the map is doing now. The removal is a means, never a
             // state to leave standing: a map closed mid-sequence would otherwise strand the entity
-            // out of its location until the next load, and a save written then would not hold it.
+            // out of its location until whatever put it there runs again.
             return isEntityPresent.getAsBoolean()
                 ? ReseatAction.NONE
                 : ReseatAction.ADD;
