@@ -138,23 +138,21 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
     // in, so the ranking agrees with the claimant resolved above it.
     private static List<FactionClaimScore> collectStandings(List<ClaimedMarket> claimedMarkets) {
 
-        var standingIndexByFactionId = new LinkedHashMap<String, Integer>();
+        var standingByFactionId = new LinkedHashMap<String, ClaimedMarket>();
 
-        for (var index = 0; index < claimedMarkets.size(); index++) {
-            if (isScoredOnItsOwnAccount(claimedMarkets.get(index))) {
-                recordBestStanding(standingIndexByFactionId, claimedMarkets, index);
+        for (var claimedMarket : claimedMarkets) {
+            if (isScoredOnItsOwnAccount(claimedMarket)) {
+                recordBestStanding(standingByFactionId, claimedMarket);
             }
         }
-        var standings = new ArrayList<FactionClaimScore>(standingIndexByFactionId.size());
+        var standings = new ArrayList<FactionClaimScore>(standingByFactionId.size());
 
-        for (var standingIndex : standingIndexByFactionId.values()) {
-            var standing = claimedMarkets.get(standingIndex);
-
+        for (var standing : standingByFactionId.values()) {
             standings.add(new FactionClaimScore(
                 standing.faction().getId(),
                 isEligibleToClaim(standing.faction()),
                 standing.claim(),
-                selectOtherMarketClaims(claimedMarkets, standing.faction(), standingIndex)));
+                selectOtherMarketClaims(claimedMarkets, standing)));
         }
         return standings;
     }
@@ -164,20 +162,16 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
     // Replaced only on a strictly greater score, so a tie among a faction's own markets keeps
     // the one the economy listed first - the rule the contest between factions turns on too.
     private static void recordBestStanding(
-            Map<String, Integer> standingIndexByFactionId,
-            List<ClaimedMarket> claimedMarkets,
-            int marketIndex) {
+            Map<String, ClaimedMarket> standingByFactionId,
+            ClaimedMarket claimedMarket) {
 
-        var factionId = claimedMarkets.get(marketIndex).faction().getId();
-        var bestIndex = standingIndexByFactionId.get(factionId);
+        var factionId = claimedMarket.faction().getId();
+        var best = standingByFactionId.get(factionId);
 
-        var isBestSoFar =
-            bestIndex == null
-                || claimedMarkets.get(marketIndex).claim().computeTotalScore()
-                    > claimedMarkets.get(bestIndex).claim().computeTotalScore();
+        if (best == null
+                || claimedMarket.claim().computeTotalScore() > best.claim().computeTotalScore()) {
 
-        if (isBestSoFar) {
-            standingIndexByFactionId.put(factionId, marketIndex);
+            standingByFactionId.put(factionId, claimedMarket);
         }
     }
 
@@ -185,17 +179,18 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
     // markets included, since they are present for the sibling count. Matched on the same
     // faction identity the sibling count runs on, so the count a standing carries is exactly
     // how many markets are listed under it and a reader can check one against the other.
+    //
+    // The standing itself is told apart by identity rather than by value, since the walk holds
+    // one of these per market: two indistinguishable twin colonies are then each other's
+    // sibling, where an equality test would drop both and leave the count unaccounted for.
     private static List<MarketClaimBreakdown> selectOtherMarketClaims(
             List<ClaimedMarket> claimedMarkets,
-            FactionAPI faction,
-            int standingIndex) {
+            ClaimedMarket standing) {
 
         var otherClaims = new ArrayList<MarketClaimBreakdown>();
 
-        for (var index = 0; index < claimedMarkets.size(); index++) {
-            var claimedMarket = claimedMarkets.get(index);
-
-            if (index != standingIndex && claimedMarket.faction() == faction) {
+        for (var claimedMarket : claimedMarkets) {
+            if (claimedMarket != standing && claimedMarket.faction() == standing.faction()) {
                 otherClaims.add(claimedMarket.claim());
             }
         }
