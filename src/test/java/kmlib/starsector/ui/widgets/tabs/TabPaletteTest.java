@@ -52,11 +52,10 @@ final class TabPaletteTest {
         HOVERED_LOOK,
         CLICKED_WASH);
 
-    // The player-tinted roles the map-tab factory reads, stubbed to flat shades: only the bright player
-    // colour reaches an assertion (it is the selected label the hovered one is lifted from), and the
-    // other two are stubbed because an unstubbed static returns null, which the palette rejects outright.
+    // The engine roles the map-tab factory reads, stubbed to flat shades. The button text is the one every
+    // fill and every label is worked out from; the player base is the chrome accent alone, and is stubbed
+    // only because an unstubbed static returns null, which the palette rejects outright.
     private static final Color STUBBED_PLAYER_BASE = new Color(20, 40, 60);
-    private static final Color STUBBED_PLAYER_BRIGHT = new Color(100, 100, 100);
     private static final Color STUBBED_BUTTON_TEXT = new Color(180, 180, 180);
 
     // The engine's dark button fill, stubbed at the settings key the fills are built from. A shade unlike
@@ -81,11 +80,14 @@ final class TabPaletteTest {
                 .when(Misc::getBasePlayerColor)
                 .thenReturn(STUBBED_PLAYER_BASE);
             miscMock
-                .when(Misc::getBrightPlayerColor)
-                .thenReturn(STUBBED_PLAYER_BRIGHT);
-            miscMock
                 .when(Misc::getButtonTextColor)
                 .thenReturn(STUBBED_BUTTON_TEXT);
+
+            // The bright player colour is deliberately left unstubbed. A tab's label is the engine's own
+            // button text lit by the glow, never a faction shade, so nothing here may read that role - and
+            // an unstubbed static returns null, which the palette rejects outright. Reaching for it again
+            // therefore fails loudly here rather than shipping a strip that recolours with the player's
+            // faction.
 
             return TabPalette.createMapTabPalette();
 
@@ -215,11 +217,29 @@ final class TabPaletteTest {
         }
 
         @Test
-        void createMapTabPaletteLiftsTheSelectedLabelByTheSameAmount() {
-            // The label travels with its fill, so a hovered tab brightens as one piece; the bright player
-            // colour stands in for the live palette here, lifted by the same fraction as the fill above.
+        void createMapTabPaletteLeavesARestingLabelAtTheRawButtonTextColour() {
+            // The unlit end of the one colour every state shares: a resting tab shows the engine's button
+            // text as it comes, which is what makes it the only state reading as plain blue in game.
+            assertThat(buildMapTabPaletteUnderStubbedEngine().unselected().label())
+                .isEqualTo(STUBBED_BUTTON_TEXT);
+        }
+
+        @Test
+        void createMapTabPaletteLightsTheSelectedLabelAtTheSameGlowAsItsFill() {
+            // The label takes the glow its fill takes, at the same amount: (180, 180, 180) gains the glow
+            // colour (218, 218, 218) at 0.45 * 0.5 * (175 + 50) / 255 = 0.1985, so 43 on every channel. A
+            // state given a label colour of its own would part the text from the fill beneath it.
+            assertThat(buildMapTabPaletteUnderStubbedEngine().selected().label())
+                .isEqualTo(new Color(223, 223, 223, OPAQUE_ALPHA));
+        }
+
+        @Test
+        void createMapTabPaletteWhitensTheHoveredLabelWhereTheFullGlowOverrunsIt() {
+            // At the full glow the added light overruns the channel and clips, which is why a pointed-at
+            // tab's text reads white rather than blue - the same additive pass the engine draws, not a
+            // separate whitening of ours.
             assertThat(buildMapTabPaletteUnderStubbedEngine().hovered().label())
-                .isEqualTo(new Color(123, 123, 123, 255));
+                .isEqualTo(new Color(255, 255, 255, OPAQUE_ALPHA));
         }
 
         @Test

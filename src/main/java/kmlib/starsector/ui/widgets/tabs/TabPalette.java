@@ -1,6 +1,5 @@
 package kmlib.starsector.ui.widgets.tabs;
 
-import kmlib.colour.Colours;
 import kmlib.starsector.ui.colour.StarsectorUiColour;
 
 import java.awt.Color;
@@ -41,12 +40,6 @@ public record TabPalette(
     TabLook hovered,
     TabWash clicked) {
 
-    // How far a lit tab's label travels toward white under the pointer. The fills part by the engine's own
-    // two glow amounts, but the labels here are ours - player-tinted rather than whitened the way vanilla
-    // takes its own - so the hovered label is lifted by this instead, enough that the text moves with the
-    // tab it sits on rather than staying put while the fill brightens under it.
-    private static final float POINTED_LABEL_WHITE_LIFT = 0.15f;
-
     // How far a pressed tab lifts past the shade it was already wearing. Modest, because it is measured
     // along the same glow axis the fills are and so reads against them rather than across them: the press
     // has only to stand above the pointed-at tab it is necessarily already showing, not to reach a shade
@@ -55,21 +48,27 @@ public record TabPalette(
 
     /**
      * The live vanilla map-tab paint: the player base colour for the chrome accent, the three map-tab
-     * fills the engine's own tabs settle on, the button-text colour for a resting label and the bright
-     * player colour for the active one, and the click lift toward white. Everything here resolves through
-     * {@link StarsectorUiColour} on each call, so it tracks a live palette change.
+     * fills and labels the engine's own tabs settle on, and the lift a press raises one by. Everything
+     * here resolves through {@link StarsectorUiColour} on each call, so it tracks a live palette change.
      *
-     * <p>The fills come from {@link VanillaTabFills}, worked out from the same two settings colours a
-     * vanilla tab is painted with rather than sampled off one - so a restyled install moves this strip
-     * exactly as it moves the tabs above it. They answer to settings and not to the player faction
-     * because the engine's own tabs do not take a faction colour; the accent and the active label around
-     * them do, being ours rather than vanilla's.
+     * <p>Both come from {@link VanillaTabFills}, worked out from the same two settings colours a vanilla
+     * tab is painted with rather than sampled off one - so a restyled install moves this strip exactly as
+     * it moves the tabs above it. They answer to settings and not to the player faction because the
+     * engine's own tabs take no faction colour at all; the chrome accent around them still does, being
+     * ours rather than vanilla's.
      *
      * <p>The three fills are one shade at the engine's three glow amounts, not three shades: resting
      * unlit, the shown tab at {@link VanillaTabFills#SELECTED_GLOW}, and the tab under the pointer at the
      * full {@link VanillaTabFills#POINTED_GLOW}. The pointer's being the brighter of the two lit amounts
      * is what lets a strip mark the shown tab by fill alone - a pointed-at tab outshines it rather than
      * matching it, so the two never read alike.
+     *
+     * <p>The labels are one shade at those same three amounts, for the same reason and by the same rule:
+     * the engine lights a tab with one glow pass over the whole of it, so a label is never a colour a
+     * state picks but the {@code buttonText} blue lit by however brightly that state stands. That is what
+     * makes a resting tab's text read as the raw blue while a shown or pointed-at tab's whitens out - and
+     * a state given a colour of its own instead would part the text from the fill under it at exactly the
+     * amounts vanilla keeps them together.
      *
      * <p>The lifts over these looks blend RGB alone, so a look that starts opaque - as all three fills do -
      * stays opaque through every hover, blink, and click.
@@ -78,9 +77,7 @@ public record TabPalette(
      */
     public static TabPalette createMapTabPalette() {
 
-        var white = StarsectorUiColour.WHITE.resolve();
         var restingLabel = StarsectorUiColour.VANILLA_BUTTON_TEXT.resolve();
-        var selectedLabel = StarsectorUiColour.VANILLA_PLAYER_BRIGHT.resolve();
 
         // The engine's own tab paint. The backdrop is black rather than the host's own panel fill, because
         // a tab row stands wherever its panel does - over a body, over the map where a tab has no body at
@@ -97,10 +94,10 @@ public record TabPalette(
                 restingLabel),
             new TabLook(
                 VanillaTabFills.resolveFillAtGlow(tabPaint, VanillaTabFills.SELECTED_GLOW),
-                selectedLabel),
+                VanillaTabFills.resolveLabelAtGlow(tabPaint, VanillaTabFills.SELECTED_GLOW)),
             new TabLook(
                 VanillaTabFills.resolveFillAtGlow(tabPaint, VanillaTabFills.POINTED_GLOW),
-                Colours.blendRgbTowards(selectedLabel, white, POINTED_LABEL_WHITE_LIFT)),
+                VanillaTabFills.resolveLabelAtGlow(tabPaint, VanillaTabFills.POINTED_GLOW)),
             // The press lifts along the glow rather than toward white: the engine brightens a tab by adding
             // its own glow colour, so a press aimed at white would be the one shade on the strip travelling
             // in a direction none of the fills do - most visible exactly when the player is looking at it.

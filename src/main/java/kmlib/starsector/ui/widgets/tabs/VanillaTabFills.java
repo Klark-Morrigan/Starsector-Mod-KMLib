@@ -90,6 +90,25 @@ public final class VanillaTabFills {
     }
 
     /**
+     * The shade a tab's label reads at a given glow: the label colour with that much of the glow added over
+     * it, at the same amount the fill beneath takes. The engine lights a tab with one glow pass over the
+     * whole of it rather than two aimed separately, so a label is not a colour a state picks but the one
+     * colour lit by however brightly that state stands - which is why a shown or pointed-at tab's text
+     * whitens out while a resting one reads as the raw label colour.
+     *
+     * @param paint      the three colours a vanilla tab is painted from
+     * @param glowAmount how brightly the tab is lit: {@link #NO_GLOW}, {@link #SELECTED_GLOW}, or
+     *                   {@link #POINTED_GLOW}
+     * @return the label shade at that glow, clipped to white where the glow overruns it
+     */
+    public static Color resolveLabelAtGlow(VanillaTabPaint paint, float glowAmount) {
+        return Colours.addOverlay(
+            paint.labelColour(),
+            resolveGlowColour(paint.labelColour()),
+            resolveGlowWeight(paint.fill(), glowAmount));
+    }
+
+    /**
      * The glow's own colour: the label colour part-way to white, so a lit tab brightens toward its own text
      * rather than toward a shade named nowhere. Exposed because it is the axis every brightening of a
      * vanilla tab travels along, a momentary lift over a settled fill included - a lift aimed anywhere else
