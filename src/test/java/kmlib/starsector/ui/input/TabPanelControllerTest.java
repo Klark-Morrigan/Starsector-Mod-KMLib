@@ -79,19 +79,22 @@ final class TabPanelControllerTest {
     private static final boolean NOTCH_HOVERED = true;
     private static final boolean NOTCH_NOT_HOVERED = false;
 
-    // A whole duration in one step, so an end state is reached without walking frames, and fractions of one
-    // for the part-way reads. The quarter step is where two motions running against each other stand at
-    // different points, so which of them a reading follows shows in the number.
+    // A whole duration in one step, so an end state is reached without walking frames, and half of one for
+    // the part-way reads.
     private static final float FULL_STEP_SECONDS = 1f;
     private static final float HALF_STEP_SECONDS = 0.5f;
-    private static final float QUARTER_STEP_SECONDS = 0.25f;
     private static final float DURATION_SECONDS = 1f;
 
     // The same pace each way, so a step reads as a fraction of one duration whichever direction the motion
     // it charges is heading. Which way a motion travels at which pace is pinned where the pair is read -
-    // on the fade and the envelope - and the panel's own job is only to hand every motion the same pair.
+    // on the fade and the envelope - and the panel's own job is only to hand every travel the same pair.
     private static final TraverseDurations DURATIONS =
         TraverseDurations.createSymmetric(DURATION_SECONDS);
+
+    // Half way down the blink's own fall, which is where a decaying strike is read against a fade rising
+    // under it. Off the panel's own pace, since the blink does not answer to the pair above.
+    private static final float HALF_OF_THE_BLINKS_FALL_SECONDS =
+        TabPanelController.HOTKEY_BLINK_DURATIONS.fallSeconds() / 2f;
 
     @Nested
     class Constructor {
@@ -387,17 +390,67 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void startHotkeyBlinkAtAddsNothingToAHoverStandingAtTheSamePointOnTheSameTab() {
-            // The composition rule: the greater of the two, not their sum. Both are stepped half a traverse
-            // here, so a summed channel would read a fully hovered tab and only the greater reads the half
-            // the pointer alone had reached - which is what makes a key pressed for the hovered tab a no-op.
+        void startHotkeyBlinkAtStrikesAtItsOwnPaceRatherThanThePanelsTravelPace() {
+            // The whole of this pace: a strike confirms a key pressed away from the panel, so it lands and
+            // is gone however leisurely the host is stepping the panel's travels. Stepped by the blink's own
+            // rise while the travel pair says a traverse takes a whole second - on the travel pair this same
+            // step would leave the tab barely off its resting shade.
             var controller = new TabPanelController();
+            controller.startHotkeyBlinkAt(FIRST_TAB_INDEX);
+
+            controller.advanceInputMotionsForFrame(
+                NO_TAB_HOVERED,
+                NOTCH_NOT_HOVERED,
+                TabPanelController.HOTKEY_BLINK_DURATIONS.riseSeconds(),
+                DURATIONS);
+
+            assertThat(hoverFractionAt(controller, FIRST_TAB_INDEX))
+                .isCloseTo(1f, within(TOLERANCE));
+        }
+
+        @Test
+        void startHotkeyBlinkAtAddsNothingToATabTheHoverAlreadyHoldsFullyLit() {
+            // The composition rule: the greater of the two, not their sum. Both stand fully on the shade
+            // here, so a summed channel would read twice over and only the greater reads the one shade
+            // either motion aims at - which is what makes a key pressed for the hovered tab a no-op.
+            var controller = new TabPanelController();
+
+            controller.advanceInputMotionsForFrame(
+                FIRST_TAB_INDEX,
+                NOTCH_NOT_HOVERED,
+                FULL_STEP_SECONDS,
+                DURATIONS);
 
             controller.startHotkeyBlinkAt(FIRST_TAB_INDEX);
             controller.advanceInputMotionsForFrame(
                 FIRST_TAB_INDEX,
                 NOTCH_NOT_HOVERED,
-                HALF_STEP_SECONDS,
+                TabPanelController.HOTKEY_BLINK_DURATIONS.riseSeconds(),
+                DURATIONS);
+
+            assertThat(hoverFractionAt(controller, FIRST_TAB_INDEX))
+                .isCloseTo(1f, within(TOLERANCE));
+        }
+
+        @Test
+        void startHotkeyBlinkAtKeepsTheTabOnTheBlinkUntilAnArrivingHoverOvertakesIt() {
+            // The other side of the same rule, and the one that says which motion the greater picks: neither
+            // is aware of the other, so a pointer arriving at the blink's peak reads the blink's decay - not
+            // its own fade starting from rest - until the two cross. Read half way down the blink's fall,
+            // where the fade it is being read over stands at 0.028 of its own rise.
+            var controller = new TabPanelController();
+            controller.startHotkeyBlinkAt(FIRST_TAB_INDEX);
+
+            controller.advanceInputMotionsForFrame(
+                NO_TAB_HOVERED,
+                NOTCH_NOT_HOVERED,
+                TabPanelController.HOTKEY_BLINK_DURATIONS.riseSeconds(),
+                DURATIONS);
+
+            controller.advanceInputMotionsForFrame(
+                FIRST_TAB_INDEX,
+                NOTCH_NOT_HOVERED,
+                HALF_OF_THE_BLINKS_FALL_SECONDS,
                 DURATIONS);
 
             assertThat(hoverFractionAt(controller, FIRST_TAB_INDEX))
@@ -405,35 +458,24 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void startHotkeyBlinkAtKeepsTheTabOnTheBlinkUntilAnArrivingHoverOvertakesIt() {
-            // The other side of the same rule, and the one that says which motion the greater picks: neither
-            // is aware of the other, so a pointer arriving at the blink's peak reads the blink's decay - not
-            // its own fade starting from rest - until the two cross. Read at a quarter step, where the blink
-            // stands at three quarters of its fall and the fade at a quarter of its rise.
-            var controller = new TabPanelController();
-            controller.startHotkeyBlinkAt(FIRST_TAB_INDEX);
-
-            advanceAWholeTraverse(controller);
-
-            controller.advanceInputMotionsForFrame(
-                FIRST_TAB_INDEX,
-                NOTCH_NOT_HOVERED,
-                QUARTER_STEP_SECONDS,
-                DURATIONS);
-
-            assertThat(hoverFractionAt(controller, FIRST_TAB_INDEX))
-                .isCloseTo(0.84375f, within(TOLERANCE));
-        }
-
-        @Test
         void startHotkeyBlinkAtRunsItsBlinkBackOutWithNoFurtherPress() {
             // A blink is one in-and-out cycle from a single trigger, so the tab has to fall back to its own
-            // look on its own - left held, a key press would light a tab until something else moved it.
+            // look on its own - left held, a key press would light a tab until something else moved it. Its
+            // own rise and fall are the whole of what that takes.
             var controller = new TabPanelController();
             controller.startHotkeyBlinkAt(SECOND_TAB_INDEX);
 
-            advanceAWholeTraverse(controller);
-            advanceAWholeTraverse(controller);
+            controller.advanceInputMotionsForFrame(
+                NO_TAB_HOVERED,
+                NOTCH_NOT_HOVERED,
+                TabPanelController.HOTKEY_BLINK_DURATIONS.riseSeconds(),
+                DURATIONS);
+
+            controller.advanceInputMotionsForFrame(
+                NO_TAB_HOVERED,
+                NOTCH_NOT_HOVERED,
+                TabPanelController.HOTKEY_BLINK_DURATIONS.fallSeconds(),
+                DURATIONS);
 
             assertThat(hoverFractionAt(controller, SECOND_TAB_INDEX))
                 .isCloseTo(0f, within(TOLERANCE));

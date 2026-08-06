@@ -35,6 +35,18 @@ import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
  * strip's paint, resolved where the palette is; this end knows only how far each has run.
  */
 public final class TabPanelController {
+    /**
+     * How long a bound key's blink takes to strike and let go, which is the panel's one motion that does
+     * not run at the pace its host sets. Everything else the panel does in answer to input is a travel -
+     * an element moving to where the pointer is holding it, or a lift over the look it has settled on -
+     * and travels are paced together so the panel answers at one rhythm. A blink is not a travel: it
+     * confirms a key pressed away from the panel, so it has to read as a strike and be gone, and at a
+     * travel's pace it reads as one more thing moving at the speed everything else moves at.
+     *
+     * <p>Public so a consumer stepping this panel by hand can name the pace rather than measure it.
+     */
+    public static final TraverseDurations HOTKEY_BLINK_DURATIONS = new TraverseDurations(0.05f, 0.2f);
+
     // What the tab hit-test reports when the pointer is on no tab of the row - and what a panel not
     // presenting its tabs reports whatever the pointer is over. Null rather than an index sentinel,
     // because a keyed set of fades is asked "which tab, if any" and an out-of-row index would key an
@@ -190,10 +202,11 @@ public final class TabPanelController {
      *
      * @param placement      the laid-out tab panel this frame is drawing
      * @param elapsedSeconds real time since the last frame the host drew
-     * @param durations      how long a traverse takes each way - onto a hovered look or up to a pulse's
+     * @param durations      how long a traverse takes each way - onto a hovered look or up to a click's
      *                       peak, and back off either; a non-positive one snaps that way. One pair for every
-     *                       motion the panel makes in answer to input, since two pairs written beside each
-     *                       other is how one panel ends up with two rhythms
+     *                       travel the panel makes, since two paces written beside each other is how one
+     *                       panel ends up with two rhythms. The hotkey blink is not among them: it is a
+     *                       strike rather than a travel and keeps {@link #HOTKEY_BLINK_DURATIONS}
      */
     public void advanceInputMotions(
             TabPanelPlacement placement,
@@ -287,6 +300,10 @@ public final class TabPanelController {
      * <p>The blink shows nothing on a tab the pointer already holds fully on the hovered shade, the two
      * sharing one channel and composing by the greater of them - a tab already there has nowhere to travel.
      * On a tab only part-way onto it, the blink carries it the rest of the way and back.
+     *
+     * <p>It runs at {@link #HOTKEY_BLINK_DURATIONS} rather than at whatever pace the host is stepping the
+     * panel's travels by, so the strike is over about as fast as the eye can catch it however leisurely the
+     * rest of the panel moves.
      *
      * @param tabIndex the tab the pressed key is bound to, in row order
      */
@@ -402,7 +419,10 @@ public final class TabPanelController {
 
         // Ungated, like the clicks and unlike the fades: a blink is an event already seen, so its cycle runs
         // out wherever the panel goes afterwards rather than being cut short by a fold it did not ask for.
-        tabHotkeyBlinks.advanceByElapsedTime(elapsedSeconds, durations);
+        // Paced by the strike rather than by the panel's travels - the one motion here that answers to its
+        // own clock, since it confirms something that happened away from the panel and has to be gone by
+        // the time the player looks for it.
+        tabHotkeyBlinks.advanceByElapsedTime(elapsedSeconds, HOTKEY_BLINK_DURATIONS);
     }
 
     /**
