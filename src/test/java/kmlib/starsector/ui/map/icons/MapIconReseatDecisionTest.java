@@ -1,7 +1,7 @@
 package kmlib.starsector.ui.map.icons;
 
-import kmlib.starsector.ui.map.icons.MapIconReseatDecision.ReseatAction;
 import kmlib.starsector.ui.map.MapIconLayering;
+import kmlib.starsector.ui.map.icons.MapIconReseatDecision.ReseatAction;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
