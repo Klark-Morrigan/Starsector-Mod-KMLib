@@ -35,6 +35,12 @@ import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
  * strip's paint, resolved where the palette is; this end knows only how far each has run.
  */
 public final class TabPanelController {
+    // What the tab hit-test reports when the pointer is on no tab of the row - and what a panel not
+    // presenting its tabs reports whatever the pointer is over. Null rather than an index sentinel,
+    // because a keyed set of fades is asked "which tab, if any" and an out-of-row index would key an
+    // entry like any other.
+    private static final Integer NO_TAB_HOVERED = null;
+
     // The body's controller, owning the scroll and drag state; this routes everything but a header-tab or
     // notch press to it, so the panel's scroll and drag behaviour is the plain panel's, unchanged.
     private final PanelController bodyController = new PanelController();
@@ -113,12 +119,31 @@ public final class TabPanelController {
     }
 
     /**
-     * @return true only when the panel is fully expanded and idle - not docked, docking, or undocking - so
-     *         a host can gate expanded-only input such as tab hotkeys, which should not switch tabs while
-     *         the body is folded or in motion
+     * @return true only when the panel is fully expanded and idle - not docked, docking, or undocking -
+     *         which is a fact about the fold alone. What a caller gating input on the tabs wants is
+     *         {@link #isPresentingTabsOf}, since a panel with no body to fold is presenting its tabs
+     *         whatever this says
      */
     public boolean isFullyExpanded() {
         return collapse.isFullyExpanded();
+    }
+
+    /**
+     * Whether the panel is offering the tabs of this placement to the player at all - the one question
+     * every gate on tab input asks, whether it is a press, a fade, or a bound key.
+     *
+     * <p>A panel with a body answers by its fold: docked, docking, or undocking, its header is behind the
+     * rail or on its way there, so a tab still laid out under the pointer is not one the player can see,
+     * let alone aim at. A panel with no body answers yes always. It has nothing to fold and no handle to
+     * unfold it, so the fold left standing in the controller by some other tab says nothing about it - and
+     * acting on that fold would leave a row drawn in full whose tabs refuse every press, light under no
+     * pointer, and ignore their own keys, with nothing on screen to explain why or any way to undo it.
+     *
+     * @param placement the laid-out tab panel being drawn and hit-tested this frame
+     * @return whether this placement's tabs are live
+     */
+    public boolean isPresentingTabsOf(TabPanelPlacement placement) {
+        return !placement.hasBody() || isFullyExpanded();
     }
 
     /**
@@ -159,10 +184,9 @@ public final class TabPanelController {
      * cursor: a scroll, a fold, or a relayout otherwise leaves an element lit that the pointer is no longer
      * over.
      *
-     * <p>A panel that is not fully expanded hovers no tab. Its header is being wiped toward the docked rail
-     * (or is already gone behind it), so a tab still laid out under the pointer is not a tab the player can
-     * see, let alone one they are pointing at. The handle is not gated that way - it draws past the frame and
-     * outlives the fold, being what brings a docked panel back.
+     * <p>A panel not presenting its tabs (see {@link #isPresentingTabsOf}) hovers none of them, whatever is
+     * laid out under the pointer. The handle is not gated that way - it draws past the frame and outlives
+     * the fold, being what brings a docked panel back.
      *
      * @param placement      the laid-out tab panel this frame is drawing
      * @param elapsedSeconds real time since the last frame the host drew
@@ -279,8 +303,8 @@ public final class TabPanelController {
      * fires nothing (a tabs row is inert on its lit tab, as a vanilla strip is), so it lifts nothing either:
      * the pulse confirms a switch, and a tab that did not switch has nothing to confirm.
      *
-     * <p>A panel that is not fully expanded offers no tab to press, on the same rule its hover fades answer
-     * to. This is a gate rather than a consequence of the fold, because folding is a paint-time clip over a
+     * <p>A panel not presenting its tabs offers none to press, on the same rule its hover fades answer to.
+     * This is a gate rather than a consequence of the fold, because folding is a paint-time clip over a
      * header that stays laid out at the panel's full width: the tabs a docked panel wipes off the screen keep
      * their hit boxes exactly where they were, so without this a press on bare screen where a tab used to be
      * would fire that tab and swallow the click, with nothing drawn there to explain why.
@@ -293,10 +317,9 @@ public final class TabPanelController {
      */
     boolean activateTabAtPoint(TabPanelPlacement placement, float pointX, float pointY) {
 
-        // Docked, docking, or undocking, the header is behind the rail or on its way there, so none of its
-        // tabs is one the player can see to aim at. The handle takes no such gate - it is what brings a
-        // docked panel back - and it is tested before this, so gating here cannot reach it.
-        if (!isFullyExpanded()) {
+        // Nothing to aim at, nothing to fire - see isPresentingTabsOf. The handle takes no such gate, being
+        // what brings a docked panel back, and it is tested before this, so gating here cannot reach it.
+        if (!isPresentingTabsOf(placement)) {
             return false;
         }
         // The header never scrolls, so it hit-tests unclipped, unlike a body control in the flex list. The
@@ -336,19 +359,28 @@ public final class TabPanelController {
             float elapsedSeconds,
             TraverseDurations durations) {
 
+        // The gate is spent here, where the placement says whether this panel has tabs to present at all,
+        // rather than inside the advance below: a panel not presenting them is pointing at none of them,
+        // which is the same statement as a pointer that is on no tab.
         advanceInputMotionsForFrame(
-            resolveTabIndexAtPoint(placement, pointX, pointY),
+            isPresentingTabsOf(placement)
+                ? resolveTabIndexAtPoint(placement, pointX, pointY)
+                : NO_TAB_HOVERED,
             placement.containsPointInNotch(pointX, pointY),
             elapsedSeconds,
             durations);
     }
 
     /**
-     * Steps every motion the panel holds by one frame, told what the hit-tests above found the pointer on,
-     * and applies the docked gate the tabs answer to. Named for the frame rather than for the hover because
-     * only some of what it steps answers to a pointer: the fades do, and the pulses do not - a click is an
-     * event already seen, and its cycle runs on wherever the pointer went afterwards. They travel together
-     * so one frame's time is charged to every motion the panel makes, off one pair of paces.
+     * Steps every motion the panel holds by one frame, told what the hit-tests above found the pointer on.
+     * Named for the frame rather than for the hover because only some of what it steps answers to a pointer:
+     * the fades do, and the pulses do not - a click is an event already seen, and its cycle runs on wherever
+     * the pointer went afterwards. They travel together so one frame's time is charged to every motion the
+     * panel makes, off one pair of paces.
+     *
+     * <p>Whether the panel is presenting its tabs at all is settled before this, by the caller that holds
+     * the placement: a panel presenting none is a pointer on none, and stating it twice would be two places
+     * to keep in step. What arrives here is only where the pointer is.
      *
      * @param hoveredTabIndex the tab the pointer is on this frame, or null when it is on none
      * @param isNotchHovered  whether the pointer is on the collapse handle this frame
@@ -361,15 +393,9 @@ public final class TabPanelController {
             float elapsedSeconds,
             TraverseDurations durations) {
 
-        // A panel that is not fully expanded hovers no tab, whatever is laid out under the pointer: its
-        // header is being wiped toward the docked rail, or is already gone behind it. The handle takes no
-        // such gate - it draws past the frame and outlives the fold, being what brings a docked panel back.
-        tabHoverFades.advanceTowardHoveredKey(
-            isFullyExpanded()
-                ? hoveredTabIndex
-                : null,
-            elapsedSeconds,
-            durations);
+        // The handle is never gated with the tabs - it draws past the frame and outlives the fold, being
+        // what brings a docked panel back.
+        tabHoverFades.advanceTowardHoveredKey(hoveredTabIndex, elapsedSeconds, durations);
 
         notchHoverFade.advanceTowardHover(isNotchHovered, elapsedSeconds, durations);
         tabClickPulses.advanceByElapsedTime(elapsedSeconds, durations);

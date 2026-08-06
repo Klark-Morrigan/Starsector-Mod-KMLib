@@ -7,6 +7,7 @@ import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlAction;
 import kmlib.starsector.ui.controls.ControlSpec;
+import kmlib.starsector.ui.controls.LabelledControlSpecs;
 import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.PanelPlacement;
 import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
@@ -169,6 +170,35 @@ final class TabPanelControllerTest {
     }
 
     @Nested
+    class IsPresentingTabsOf {
+
+        @Test
+        void isPresentingTabsOfAnswersYesForAnExpandedPanel() {
+            assertThat(new TabPanelController().isPresentingTabsOf(buildTwoTabPlacement()))
+                .isTrue();
+        }
+
+        @Test
+        void isPresentingTabsOfAnswersNoForADockedPanelWithABody() {
+            // Its header is behind the rail, so its tabs are not there to be pressed, lit, or keyed to.
+            assertThat(TabPanelController.createStartingDocked()
+                    .isPresentingTabsOf(buildTwoTabPlacement()))
+                .isFalse();
+        }
+
+        @Test
+        void isPresentingTabsOfAnswersYesForABodylessPanelWhateverTheFoldSays() {
+            // The fold outlives a tab switch, so a bodyless tab can be laid out under a fraction another
+            // tab's body left standing. It has nothing to fold and no handle to unfold it, so acting on
+            // that fraction would leave its row drawn in full but dead to every press, pointer and key -
+            // with nothing on screen to explain it and no way back.
+            assertThat(TabPanelController.createStartingDocked()
+                    .isPresentingTabsOf(buildBodylessTwoTabPlacement()))
+                .isTrue();
+        }
+    }
+
+    @Nested
     class HandlePointer {
 
         @Test
@@ -262,7 +292,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void activateTabAtPointActsOnNothingWhileThePanelIsNotFullyExpanded() {
+        void activateTabAtPointActsOnNothingWhileTheTabsAreNotPresented() {
             // The gate that keeps a docked panel from acting on bare screen. Folding only clips the header
             // at paint time - its tabs keep the hit boxes they were laid at - so without this a press where
             // a tab used to be would fire that tab and swallow the click with nothing drawn to explain it.
@@ -283,6 +313,24 @@ final class TabPanelControllerTest {
                 .isEmpty();
             assertThat(pulseFractionAt(controller, SECOND_TAB_INDEX))
                 .isCloseTo(0f, within(TOLERANCE));
+        }
+
+        @Test
+        void activateTabAtPointFiresABodylessPanelsTabWhateverTheFoldSays() {
+            // The same docked controller, now laying out a tab with nothing under it: the row is drawn in
+            // full, so a press on it has to act. Gated on the fold alone this tab would be unpressable for
+            // the rest of the session, with no handle to expand a body it does not have.
+            var firedTabs = new ArrayList<Integer>();
+            var controller = TabPanelController.createStartingDocked();
+            var hasActed = controller.activateTabAtPoint(
+                buildBodylessTwoTabPlacementShowing(FIRST_TAB_INDEX, firedTabs::add),
+                INSIDE_SECOND_TAB_X,
+                ON_TAB_ROW_Y);
+
+            assertThat(hasActed)
+                .isTrue();
+            assertThat(firedTabs)
+                .containsExactly(SECOND_TAB_INDEX);
         }
 
         @Test
@@ -449,9 +497,10 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void advanceInputMotionsForFrameHoversNoTabWhileThePanelIsNotFullyExpanded() {
-            // A docked panel's header is behind the rail, so a tab still laid out under the pointer is not
-            // one the player can see - the gate drops it however plainly the hit-test named it.
+        void advanceInputMotionsForFrameLightsWhateverTabItIsHandedEvenWhileDocked() {
+            // The frame advance takes the pointer's position as settled: whether the panel is presenting
+            // its tabs is decided where the placement is known, so a tab named here is a tab to light. The
+            // fold is asked once, not twice.
             var controller = TabPanelController.createStartingDocked();
             controller.advanceInputMotionsForFrame(
                 FIRST_TAB_INDEX,
@@ -460,7 +509,7 @@ final class TabPanelControllerTest {
                 DURATIONS);
 
             assertThat(hoverFractionAt(controller, FIRST_TAB_INDEX))
-                .isCloseTo(0f, within(TOLERANCE));
+                .isCloseTo(1f, within(TOLERANCE));
         }
 
         @Test
@@ -560,6 +609,38 @@ final class TabPanelControllerTest {
                 .isCloseTo(1f, within(TOLERANCE));
             assertThat(controller.getNotchHoverFraction())
                 .isCloseTo(0f, within(TOLERANCE));
+        }
+
+        @Test
+        void advanceInputMotionsAtPointLightsNoTabOfADockedPanel() {
+            // Where the gate now lives: the placement says the panel has a body, the fold says that body is
+            // behind the rail, so the tab under the pointer is not one the player can see to point at.
+            var controller = TabPanelController.createStartingDocked();
+            controller.advanceInputMotionsAtPoint(
+                buildTwoTabPlacement(),
+                INSIDE_FIRST_TAB_X,
+                ON_TAB_ROW_Y,
+                FULL_STEP_SECONDS,
+                DURATIONS);
+
+            assertThat(hoverFractionAt(controller, FIRST_TAB_INDEX))
+                .isCloseTo(0f, within(TOLERANCE));
+        }
+
+        @Test
+        void advanceInputMotionsAtPointLightsABodylessPanelsTabWhateverTheFoldSays() {
+            // The row of a bodyless tab is drawn in full, so it lights under the pointer like any other -
+            // a fold another tab left standing says nothing about a panel that has none.
+            var controller = TabPanelController.createStartingDocked();
+            controller.advanceInputMotionsAtPoint(
+                buildBodylessTwoTabPlacement(),
+                INSIDE_FIRST_TAB_X,
+                ON_TAB_ROW_Y,
+                FULL_STEP_SECONDS,
+                DURATIONS);
+
+            assertThat(hoverFractionAt(controller, FIRST_TAB_INDEX))
+                .isCloseTo(1f, within(TOLERANCE));
         }
 
         @Test
@@ -765,7 +846,8 @@ final class TabPanelControllerTest {
             DURATIONS);
     }
 
-    // A placement with no collapse handle - the bodyless panel's shape, and all the tab hit-test needs.
+    // A panel with a body but no handle laid for it - all the tab hit-test needs, and the shape every case
+    // that is not about the handle reads.
     private static TabPanelPlacement buildTwoTabPlacement() {
         return buildPlacement(null, null);
     }
@@ -805,17 +887,59 @@ final class TabPanelControllerTest {
         return buildPlacement(null, null, drawnHeaderBand);
     }
 
+    // The same panel with nothing beneath its row - what a tab whose body is empty lays out: no controls,
+    // and with nothing to fold, no handle either. Every other builder here carries a body, since a panel
+    // that has one is what the fold gate is about.
+    private static TabPanelPlacement buildBodylessTwoTabPlacement() {
+        return buildPlacement(null, null, HEADER_BAND, List.of());
+    }
+
+    // The bodyless panel whose header carries a real tabs spec, for the press path - which needs a spec to
+    // fire an action from.
+    private static TabPanelPlacement buildBodylessTwoTabPlacementShowing(
+            int selectedIndex,
+            ControlAction onTabFired) {
+
+        return buildPlacement(
+            null,
+            new ControlSpec.Tabs(
+                List.of("First", "Second"),
+                List.of(),
+                selectedIndex,
+                onTabFired),
+            HEADER_BAND,
+            List.of());
+    }
+
     private static TabPanelPlacement buildPlacement(
             Rectangle notch,
             ControlSpec spec,
             Rectangle drawnHeaderBand) {
 
+        return buildPlacement(notch, spec, drawnHeaderBand, List.of(buildBodyControl()));
+    }
+
+    private static TabPanelPlacement buildPlacement(
+            Rectangle notch,
+            ControlSpec spec,
+            Rectangle drawnHeaderBand,
+            List<Control> bodyControls) {
+
         return new TabPanelPlacement(
             new Control(spec, HEADER_BAND, List.of(FIRST_TAB, SECOND_TAB)),
             drawnHeaderBand,
-            new PanelPlacement(BODY_BOX, BODY_BOX, List.of(), BODY_BOX, 0f, 0f),
+            new PanelPlacement(BODY_BOX, BODY_BOX, bodyControls, BODY_BOX, 0f, 0f),
             new BoxBorder(BORDER_WIDTH),
             notch);
+    }
+
+    // A body control, so the placement reads as having a body at all; what it is never matters here, only
+    // that the panel has something under its row that a fold could take away.
+    private static Control buildBodyControl() {
+        return new Control(
+            LabelledControlSpecs.buildCheckbox("X", false, ControlAction.NONE),
+            BODY_BOX,
+            List.of());
     }
 
     // A mouse event at a point, carrying nothing else: the cases here are about what the panel claims, not
