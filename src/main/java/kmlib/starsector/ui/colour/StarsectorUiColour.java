@@ -51,6 +51,11 @@ public enum StarsectorUiColour {
     // button/tab fills with, and the shade the engine's own map tabs are painted from. The fixed UI
     // palette, NOT the player-faction shades: a vanilla tab takes no faction colour.
     VANILLA_BUTTON_BG_DARK(() -> Global.getSettings().getColor("buttonBgDark")),
+    // The gold a bound key reads in from settings.json ("buttonShortcut") - the role the engine's own
+    // buttons and tabs highlight their shortcut with. Distinct from VANILLA_HIGHLIGHT_GOLD ("hColor"),
+    // which the same install happens to give the same value today: one is what a key looks like, the
+    // other what an emphasised word in a paragraph looks like, and a restyle may part them.
+    VANILLA_BUTTON_SHORTCUT(() -> Global.getSettings().getColor("buttonShortcut")),
     VANILLA_PLAYER_BASE(Misc::getBasePlayerColor),
     VANILLA_PLAYER_BRIGHT(Misc::getBrightPlayerColor),
     VANILLA_PLAYER_DARK(Misc::getDarkPlayerColor),

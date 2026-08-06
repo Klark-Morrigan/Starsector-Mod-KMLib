@@ -53,30 +53,33 @@ public record HotkeyStyle(
     }
 
     /**
-     * The plain-key vanilla convention: the key lit in the highlight gold and left bare, the way the
-     * intel screen's raised buttons present theirs. Resolves the gold through {@link
-     * StarsectorUiColour} on each call, so it tracks a live palette change.
+     * The plain-key vanilla convention: the key lit in the engine's shortcut gold and left bare, the way
+     * the intel screen's raised buttons present theirs. Resolves the gold through {@link
+     * StarsectorUiColour} on each call, so it tracks a live palette change - and reads the role the
+     * engine's own buttons light their keys with rather than the one it highlights prose with, which the
+     * stock install happens to give the same value.
      *
      * @return a hotkey look with no underline
      */
     public static HotkeyStyle createPlain() {
         return new HotkeyStyle(
-            StarsectorUiColour.VANILLA_HIGHLIGHT_GOLD.resolve(),
+            StarsectorUiColour.VANILLA_BUTTON_SHORTCUT.resolve(),
             false,
             0f,
             0f);
     }
 
     /**
-     * The underlined-key vanilla convention: the key lit in the highlight gold and underlined, the way the
-     * sector map's own Sector/System tabs present theirs. Resolves the gold through {@link
-     * StarsectorUiColour} on each call, so it tracks a live palette change.
+     * The underlined-key vanilla convention: the key lit in the engine's shortcut gold and underlined, the
+     * way the sector map's own Sector/System tabs present theirs. Resolves the gold through {@link
+     * StarsectorUiColour} on each call, so it tracks a live palette change - see {@link #createPlain} on
+     * why it is the shortcut role rather than the prose-highlight one.
      *
      * @return a hotkey look drawing a hairline under the key
      */
     public static HotkeyStyle createUnderlined() {
         return new HotkeyStyle(
-            StarsectorUiColour.VANILLA_HIGHLIGHT_GOLD.resolve(),
+            StarsectorUiColour.VANILLA_BUTTON_SHORTCUT.resolve(),
             true,
             VANILLA_UNDERLINE_THICKNESS,
             VANILLA_UNDERLINE_GAP);

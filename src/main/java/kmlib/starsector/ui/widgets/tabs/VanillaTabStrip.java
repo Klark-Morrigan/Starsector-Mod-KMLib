@@ -4,7 +4,6 @@ import kmlib.math.geometry.Rectangle;
 import kmlib.math.geometry.Rectangles;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.widgets.segments.SegmentSpec;
-import kmlib.text.KmlibStrings;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,28 +12,11 @@ import java.util.List;
  * The geometry of a vanilla-styled tab row: lays each tab out snapped to its label-plus-shortcut
  * width and resolves which tab a point falls in. Substrate-independent - it produces {@link
  * VanillaTab} models and renders nothing - so a GL or a UI-API renderer can paint the row against it.
- * Derived from the base {@link TabStrip} for the snapping math; it composes each tab's display string
- * ("Label  (K)") so the layout measures exactly the text the paint draws. The raw-GL paint lives in
- * {@link kmlib.starsector.ui.render.gl.VanillaTabStripRenderer}.
+ * Derived from the base {@link TabStrip} for the snapping math; each tab's display string comes from
+ * {@link TabShortcutText}, so the layout measures exactly the text the paint draws. The raw-GL paint
+ * lives in {@link kmlib.starsector.ui.render.gl.VanillaTabStripRenderer}.
  */
 public final class VanillaTabStrip {
-    /**
-     * The opening delimiter wrapped around a shortcut key in the display string - a square bracket, the
-     * way vanilla brackets a hotkey (the map's own {@code Sector [O]} / {@code System [W]} tabs). Public
-     * so the paint pass draws the delimiter as its own text segment - in the label colour, apart from the
-     * gold key - off the same literal the display string is measured with.
-     */
-    public static final String SHORTCUT_OPEN_DELIMITER = "[";
-
-    /**
-     * The closing delimiter wrapped around a shortcut key in the display string, the pair to
-     * {@link #SHORTCUT_OPEN_DELIMITER}.
-     */
-    public static final String SHORTCUT_CLOSE_DELIMITER = "]";
-
-    // The layout approximates the label-to-shortcut gap with two spaces in the measured display
-    // string; the tab padding absorbs the small difference against the paint pass, so it never clips.
-    private static final String SHORTCUT_GAP_TEXT = "  ";
 
     private VanillaTabStrip() {
     }
@@ -160,33 +142,15 @@ public final class VanillaTabStrip {
     }
 
     /**
-     * A tab's display string - "Label  (K)" when it has a shortcut, else just the label - so the
-     * layout pass measures the same text the paint pass draws. Public so the renderer composes the
-     * identical string rather than re-deriving the spacing convention.
+     * A tab's display string - the whole of the text it shows, its bound key lit inside the label or
+     * spelt out after it as {@link TabShortcutText} decides - so the layout measures exactly what the
+     * paint draws. It is the runs of that decision read end to end, and the paint pass draws those same
+     * runs, so neither pass can size or draw a tab for a presentation the other did not choose.
      *
      * @param content the tab's label and optional shortcut
      * @return the composed display string
      */
     public static String composeDisplay(VanillaTabContent content) {
-        if (!KmlibStrings.hasText(content.shortcut())) {
-            return content.label();
-        }
-        return content.label()
-            + SHORTCUT_GAP_TEXT
-            + wrapShortcut(content.shortcut());
-    }
-
-    /**
-     * A shortcut wrapped in its delimiters - "[K]" - the form the layout measures, kept here as the
-     * single source so the measured display string and the paint pass never drift on the delimiter
-     * convention. The paint pass draws the same three pieces ({@link #SHORTCUT_OPEN_DELIMITER}, the
-     * key, {@link #SHORTCUT_CLOSE_DELIMITER}) as separate coloured segments rather than this one
-     * string, so it builds off the same delimiters this composes from.
-     *
-     * @param shortcut the raw shortcut key name
-     * @return the delimited shortcut
-     */
-    public static String wrapShortcut(String shortcut) {
-        return SHORTCUT_OPEN_DELIMITER + shortcut + SHORTCUT_CLOSE_DELIMITER;
+        return TabShortcutText.composeDisplayText(content);
     }
 }

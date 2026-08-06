@@ -8,12 +8,13 @@ import kmlib.starsector.ui.widgets.tabs.HotkeyStyle;
 import kmlib.starsector.ui.widgets.tabs.TabLook;
 import kmlib.starsector.ui.widgets.tabs.TabLookSource;
 import kmlib.starsector.ui.widgets.tabs.TabPalette;
+import kmlib.starsector.ui.widgets.tabs.TabShortcutText;
 import kmlib.starsector.ui.widgets.tabs.TabStyle;
+import kmlib.starsector.ui.widgets.tabs.TabTextRun;
 import kmlib.starsector.ui.widgets.tabs.TabWashSource;
 import kmlib.starsector.ui.widgets.tabs.VanillaTab;
 import kmlib.starsector.ui.widgets.tabs.VanillaTabContent;
 import kmlib.starsector.ui.widgets.tabs.VanillaTabStrip;
-import kmlib.text.KmlibStrings;
 
 import org.lazywizard.lazylib.ui.LazyFont;
 import org.lazywizard.lazylib.ui.LazyFont.DrawableString;
@@ -25,30 +26,30 @@ import java.util.List;
 /**
  * Raw-GL paint for a {@link VanillaTabStrip}: the sector-map Sector/System tab look - each tab a solid
  * fill (dark at rest, bright when active, travelling toward one shared shade under the pointer) lifted by
- * whatever pulse its wash source reports, a bright underline capping the active tab, hairline dividers, and
- * each label drawn
- * beside its shortcut - the key alone in accent gold, its delimiters in the label colour, the way vanilla
- * highlights only the key, and a hairline under the key itself when the style's {@link HotkeyStyle} asks
- * for one - distinct from the underline capping the active tab, which spans the whole tab.
- * The tab geometry lives on the substrate-independent widget; this draws it. The seams between tabs are
- * the chrome every horizontal segmented control shares, so they come from
+ * whatever pulse its wash source reports, a bright underline capping the active tab, hairline dividers,
+ * and the tab's text with its bound key lit in the hotkey colour, carrying a hairline beneath it when the
+ * style's {@link HotkeyStyle} asks for one - distinct from the underline capping the active tab, which
+ * spans the whole tab. The tab geometry lives on the substrate-independent widget; this draws it. The
+ * seams between tabs are the chrome every horizontal segmented control shares, so they come from
  * {@link HorizontalSegmentsRenderer} (as a radio row's do); the per-state fill, the wash, the
- * baseline, the underline, and the multi-colour label are this strip's own. Unlike the plain renderers it
- * draws the label text itself (off {@link DrawableStringCache}), since the
- * label-with-a-gold-key-shortcut is the whole point of the style.
+ * baseline, the underline, and the multi-colour text are this strip's own. Unlike the plain renderers it
+ * draws the text itself (off {@link DrawableStringCache}), since a line carrying a lit key inside it is
+ * the whole point of the style.
+ *
+ * <p>Where the key falls is not decided here. A tab lights a letter of its own label where the key has
+ * one to land on and spells the key out after it otherwise, and that is
+ * {@link kmlib.starsector.ui.widgets.tabs.TabShortcutText}'s call - the same one the layout measured the
+ * tab against. This pass walks the runs it produced, colours each by its role, and advances by what it
+ * drew, so it cannot draw a tab wider or narrower than the box it was given.
  *
  * <p>Opacity scales every quad and every text colour by one value, so the whole strip fades as a
- * unit. The shortcut is drawn as separate delimiter and key drawables re-coloured per frame (rather
- * than one baked multi-colour run) precisely so they fade with the rest instead of staying opaque.
+ * unit. The text is drawn as separate per-run drawables re-coloured per frame (rather than one baked
+ * multi-colour run) precisely so they fade with the rest instead of staying opaque.
  */
 public final class VanillaTabStripRenderer {
-    
+
     private static final float BASELINE_THICKNESS = 1f;
     private static final float UNDERLINE_THICKNESS = 2f;
-
-    // Pixel gap drawn between the label and its delimited shortcut, matching the two-space gap the
-    // layout measured with.
-    private static final float SHORTCUT_GAP = 6f;
 
     private VanillaTabStripRenderer() {
     }
@@ -156,11 +157,12 @@ public final class VanillaTabStripRenderer {
         }
     }
 
-    // Draws the label in its state colour and, when present, the shortcut - centred as one group
-    // inside the tab. The shortcut paints as three segments so only the key carries the hotkey colour
-    // and the style's emphasis while its delimiters share the label colour, matching how vanilla
-    // highlights the key alone inside its brackets. Every colour fades by opacity so the text tracks the
-    // strip. Skipped silently when the font cannot load.
+    // Draws the tab's text - the label with its bound key lit inside it, or spelt out after it - centred
+    // as one group inside the tab. The runs and where the key falls among them are TabShortcutText's
+    // decision, the same one the layout measured the tab against; this pass only colours each run and
+    // advances the cursor by what it drew. Every colour fades by opacity so the text tracks the strip.
+    // Skipped silently when any run's font cannot load, so a tab falls back to nothing rather than to a
+    // half-drawn line.
     private static void renderTabText(
             Rectangle bounds,
             VanillaTabContent content,
@@ -169,94 +171,74 @@ public final class VanillaTabStripRenderer {
             TextFace textFace,
             float opacity) {
 
-        var label = DrawableStringCache.resolveRun(textFace, content.label());
-        if (label == null) {
+        var runs = resolveDrawnRuns(
+            TabShortcutText.resolveRuns(content),
+            textFace,
+            Colours.scaleAlpha(look.label(), opacity),
+            Colours.scaleAlpha(hotkeyStyle.keyColour(), opacity));
+
+        if (runs == null) {
             return;
         }
-        var fadedLabelColour = Colours.scaleAlpha(look.label(), opacity);
-        label.setBaseColor(fadedLabelColour);
-
-        // The delimiters take the label's state colour; only the key takes the styled hotkey colour.
-        var shortcut = KmlibStrings.hasText(content.shortcut())
-            ? resolveShortcutSegments(
-                textFace,
-                content.shortcut(),
-                fadedLabelColour,
-                Colours.scaleAlpha(hotkeyStyle.keyColour(), opacity))
-            : null;
-
-        var labelWidth = label.getWidth();
-        var gap = shortcut == null ? 0f : SHORTCUT_GAP;
-        var shortcutWidth = shortcut == null ? 0f : shortcut.computeTotalWidth();
-        var startX = bounds.x() + (bounds.width() - (labelWidth + gap + shortcutWidth)) / 2f;
         var centerY = bounds.computeCenterY();
+        var runX = bounds.x() + (bounds.width() - computeRunsWidth(runs)) / 2f;
 
-        label.setAnchor(LazyFont.TextAnchor.CENTER_LEFT);
-        label.draw(startX, centerY);
+        for (var run : runs) {
+            run.drawable().draw(runX, centerY);
 
-        if (shortcut != null) {
-            drawShortcut(
-                shortcut,
-                startX + labelWidth + gap,
-                centerY,
-                hotkeyStyle,
-                opacity);
+            if (run.isKey() && hotkeyStyle.isKeyUnderlined()) {
+                drawKeyUnderline(run.drawable(), runX, centerY, hotkeyStyle, opacity);
+            }
+            runX += run.drawable().getWidth();
         }
     }
 
-    // Resolves the shortcut's three drawables - open delimiter, key, close delimiter - each set to
-    // its colour so the key alone lights gold while its delimiters read as label text. The delimiters
-    // come from VanillaTabStrip, the same source the measured display string delimits with, so the
-    // paint pass and the layout snap cannot drift. Null when any segment's font cannot load, so the
-    // tab falls back to a bare label rather than a half-drawn shortcut.
-    private static ShortcutSegments resolveShortcutSegments(
+    // Resolves each run to a drawable set to its role's colour and anchored for the left-to-right walk
+    // above. Null when any run's font cannot load: the runs are one line of text broken up, so drawing
+    // the pieces that did resolve would leave a tab reading as a fragment of its own name.
+    private static List<DrawnRun> resolveDrawnRuns(
+            List<TabTextRun> runs,
             TextFace textFace,
-            String shortcut,
-            Color delimiterColour,
+            Color labelColour,
             Color keyColour) {
 
-        var open = DrawableStringCache.resolveRun(textFace, VanillaTabStrip.SHORTCUT_OPEN_DELIMITER);
-        var key = DrawableStringCache.resolveRun(textFace, shortcut);
-        var close = DrawableStringCache.resolveRun(textFace, VanillaTabStrip.SHORTCUT_CLOSE_DELIMITER);
+        var drawn = new ArrayList<DrawnRun>(runs.size());
+        for (var run : runs) {
 
-        if (open == null || key == null || close == null) {
-            return null;
+            var drawable = DrawableStringCache.resolveRun(textFace, run.text());
+            if (drawable == null) {
+                return null;
+            }
+            var isKey = run.role() == TabTextRun.Role.KEY;
+
+            drawable.setBaseColor(isKey ? keyColour : labelColour);
+            drawable.setAnchor(LazyFont.TextAnchor.CENTER_LEFT);
+            drawn.add(new DrawnRun(drawable, isKey));
         }
-
-        open.setBaseColor(delimiterColour);
-        key.setBaseColor(keyColour);
-        close.setBaseColor(delimiterColour);
-
-        for (var segment : List.of(open, key, close)) {
-            segment.setAnchor(LazyFont.TextAnchor.CENTER_LEFT);
-        }
-        return new ShortcutSegments(open, key, close);
+        return drawn;
     }
 
-    // Draws the delimited shortcut left to right from startX, each piece advancing the cursor by its
-    // own width so the three read as one continuous "[K]" run despite carrying two colours, and draws
-    // the styled emphasis under the key alone - the piece vanilla underlines, which is why the segments
-    // are named rather than walked as a list.
-    private static void drawShortcut(
-            ShortcutSegments segments,
-            float startX,
+    // The whole line's rendered width, so the group centres in the tab as the one string the layout
+    // measured rather than as pieces each centred on their own.
+    private static float computeRunsWidth(List<DrawnRun> runs) {
+
+        var width = 0f;
+        for (var run : runs) {
+            width += run.drawable().getWidth();
+        }
+        return width;
+    }
+
+    // The styled emphasis under the key alone. The run is anchored centre-left, so it stands its own
+    // height about the draw y; the style places the line against that box, so every renderer drawing this
+    // look puts it in the same spot. Faded by the strip's opacity like every other quad here.
+    private static void drawKeyUnderline(
+            DrawableString key,
+            float keyX,
             float centerY,
             HotkeyStyle hotkeyStyle,
             float opacity) {
 
-        var key = segments.key();
-        var keyX = startX + segments.open().getWidth();
-
-        segments.open().draw(startX, centerY);
-        key.draw(keyX, centerY);
-        segments.close().draw(keyX + key.getWidth(), centerY);
-
-        if (!hotkeyStyle.isKeyUnderlined()) {
-            return;
-        }
-        // The key's drawn box: the run is anchored centre-left, so it stands its own height about the
-        // draw y. The style places the underline against that box, so every renderer drawing this look
-        // puts it in the same spot. Faded by the strip's opacity like every other quad here.
         var keyBox = new Rectangle(
             keyX,
             centerY - key.getHeight() / 2f,
@@ -268,18 +250,10 @@ public final class VanillaTabStripRenderer {
             new UiElementPaint(hotkeyStyle.keyColour(), opacity));
     }
 
-    // The shortcut's three drawn pieces, named rather than positional so the paint pass can single the
-    // key out - it alone takes the hotkey colour and carries the underline, while its delimiters are
-    // label text.
-    private record ShortcutSegments(
-            DrawableString open,
-            DrawableString key,
-            DrawableString close) {
-
-        // The run's full rendered width, so the shortcut centres against the label as if it were the one
-        // delimited string the layout measured.
-        private float computeTotalWidth() {
-            return open.getWidth() + key.getWidth() + close.getWidth();
-        }
+    // One resolved run: the drawable to paint and whether it is the bound key, which is all the draw
+    // loop above still has to know once the colour has been set.
+    private record DrawnRun(
+        DrawableString drawable,
+        boolean isKey) {
     }
 }

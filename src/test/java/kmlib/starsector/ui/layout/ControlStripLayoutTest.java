@@ -518,11 +518,12 @@ final class ControlStripLayoutTest {
 
         @Test
         void measureStripSizesATabsRowToItsTabsSnappedWidths() {
-            // "No Layer  [N]" is 13 chars and "Political Map  [P]" is 18; each snaps to its width plus
-            // the tab padding (both clear the minimum), and the row is the two tabs side by side.
+            // Neither key stands in its label, so both are spelt out: "No Layer  [Z]" is 13 chars and
+            // "Political Map  [Q]" is 18. Each snaps to its width plus the tab padding (both clear the
+            // minimum), and the row is the two tabs side by side.
             var tabs = new ControlSpec.Tabs(
                 List.of("No Layer", "Political Map"),
-                List.of("N", "P"),
+                List.of("Z", "Q"),
                 0, ControlAction.NONE);
 
             var measurement = ControlStripLayout.measureStrip(List.<ControlSpec>of(tabs), measurerFake);
@@ -874,11 +875,12 @@ final class ControlStripLayoutTest {
 
         @Test
         void layoutControlsSplitsATabsRowIntoLabelSnappedSegmentsSideBySide() {
-            // A tabs row splits into one segment per tab, each snapped to its own label-plus-shortcut
-            // width (unlike a radio's equal segments), abutting left to right.
+            // A tabs row splits into one segment per tab, each snapped to the text that tab shows (unlike
+            // a radio's equal segments), abutting left to right. Both keys here are spelt out after their
+            // label - neither letter stands in it - so each tab carries its bracketed key.
             var specs = List.<ControlSpec>of(new ControlSpec.Tabs(
                 List.of("No Layer", "Political Map"),
-                List.of("N", "P"),
+                List.of("Z", "Q"),
                 0,
                 ControlAction.NONE));
 

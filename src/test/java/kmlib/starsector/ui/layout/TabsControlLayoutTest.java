@@ -101,8 +101,10 @@ final class TabsControlLayoutTest {
 
         @Test
         void layoutHeaderControlSnapsTheBandToItsTabsSideBySide() {
-            // "No Layer  [N]" is 13 chars and "Political Map  [P]" is 18; each snaps to its width plus the
-            // tab padding (both clear the minimum), and the band is the two tabs side by side.
+            // Both keys light a letter of their own label - the N of "No Layer", the P of "Political Map" -
+            // so each tab shows its label and nothing more: 8 and 13 chars, each snapped to its width plus
+            // the tab padding (both clear the minimum), and the band is the two side by side. A binding
+            // that lights in place costs its tab no width, which is the half of the rule the layout owns.
             var header = TabsControlLayout.layoutHeaderControl(
                 TABS,
                 HEADER_X,
@@ -110,8 +112,8 @@ final class TabsControlLayoutTest {
                 TabStyles.buildAtBandHeight(BAND_HEIGHT),
                 measurerFake);
 
-            var first = 13 * WIDTH_PER_CHAR + TabsControlLayout.TAB_TEXT_PADDING;
-            var second = 18 * WIDTH_PER_CHAR + TabsControlLayout.TAB_TEXT_PADDING;
+            var first = 8 * WIDTH_PER_CHAR + TabsControlLayout.TAB_TEXT_PADDING;
+            var second = 13 * WIDTH_PER_CHAR + TabsControlLayout.TAB_TEXT_PADDING;
 
             assertThat(header.bounds().width())
                 .isCloseTo(first + second, within(TOLERANCE));

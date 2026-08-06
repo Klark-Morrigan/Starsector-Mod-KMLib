@@ -14,13 +14,12 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Pins {@link VanillaTabStrip#layoutTabs}: it keeps each tab's content beside its geometry, and
- * the width it snaps to accounts for the delimited shortcut, so a tab that carries one is wider
- * than the same label without. Also pins {@link VanillaTabStrip#zipTabs}, the pairing both the
- * strip's own layout and a consumer holding the boxes separately build their tabs through, and the
- * display-string SSOT ({@link VanillaTabStrip#wrapShortcut}, {@link VanillaTabStrip#composeDisplay})
- * the layout measures and the paint pass draws off - so the vanilla-parity "[K]" delimiter cannot
- * silently drift back to round parentheses.
+ * Pins {@link VanillaTabStrip#layoutTabs}: it keeps each tab's content beside its geometry, and the
+ * width it snaps to accounts for a spelt-out shortcut, so a tab carrying one is wider than the same
+ * label without. Also pins {@link VanillaTabStrip#zipTabs}, the pairing both the strip's own layout and
+ * a consumer holding the boxes separately build their tabs through, and that
+ * {@link VanillaTabStrip#composeDisplay} measures whatever {@link TabShortcutText} decided the tab
+ * shows - the presentation itself being pinned there.
  */
 class VanillaTabStripTest {
     // Each character measures 10 wide, so a display string's width is a plain multiple of length.
@@ -33,20 +32,65 @@ class VanillaTabStripTest {
 
         @Test
         void keepsEachContentBesideItsGeometry() {
+
             var factions = new VanillaTabContent("Political Map", "P");
-            var tabs = VanillaTabStrip.layoutTabs(0f, 100f, 24f, TABS, List.of(factions),
+            var tabs = VanillaTabStrip.layoutTabs(
+                0f,
+                100f,
+                24f,
+                TABS,
+                List.of(factions),
                 measurerFake);
-            assertThat(tabs.get(0).content()).isEqualTo(factions);
+                
+            assertThat(tabs.get(0).content())
+                .isEqualTo(factions);
         }
 
         @Test
-        void snapsAWiderTabForATabThatCarriesAShortcut() {
-            var withShortcut = VanillaTabStrip.layoutTabs(0f, 100f, 24f, TABS,
-                List.of(new VanillaTabContent("Political Map", "P")), measurerFake);
-            var withoutShortcut = VanillaTabStrip.layoutTabs(0f, 100f, 24f, TABS,
-                List.of(new VanillaTabContent("Political Map", null)), measurerFake);
+        void snapsAWiderTabForATabThatSpellsItsShortcutOut() {
+            // Z is nowhere in the label, so the key is spelt out after it and the tab has to carry it.
+            var withShortcut = VanillaTabStrip.layoutTabs(
+                0f,
+                100f,
+                24f,
+                TABS,
+                List.of(new VanillaTabContent("Political Map", "Z")),
+                measurerFake);
+
+            var withoutShortcut = VanillaTabStrip.layoutTabs(
+                0f,
+                100f,
+                24f,
+                TABS,
+                List.of(new VanillaTabContent("Political Map", null)),
+                measurerFake);
+
             assertThat(withShortcut.get(0).bounds().width())
                 .isGreaterThan(withoutShortcut.get(0).bounds().width());
+        }
+
+        @Test
+        void snapsTheSameWidthForATabWhoseShortcutLightsInPlace() {
+            // P already stands in "Political Map", so the binding costs the tab no width at all - the
+            // layout has to agree with the paint pass about that or the row would carry a phantom gap.
+            var withShortcut = VanillaTabStrip.layoutTabs(
+                0f,
+                100f,
+                24f,
+                TABS,
+                List.of(new VanillaTabContent("Political Map", "P")),
+                measurerFake);
+
+            var withoutShortcut = VanillaTabStrip.layoutTabs(
+                0f,
+                100f,
+                24f,
+                TABS,
+                List.of(new VanillaTabContent("Political Map", null)),
+                measurerFake);
+
+            assertThat(withShortcut.get(0).bounds().width())
+                .isEqualTo(withoutShortcut.get(0).bounds().width());
         }
     }
 
@@ -54,9 +98,11 @@ class VanillaTabStripTest {
     class MeasureRowWidth {
 
         @Test
-        void countsTheDelimitedShortcutInTheWidth() {
-            var withShortcut = List.of(new VanillaTabContent("Political Map", "P"));
+        void countsASpeltOutShortcutInTheWidth() {
+
+            var withShortcut = List.of(new VanillaTabContent("Political Map", "Z"));
             var withoutShortcut = List.of(new VanillaTabContent("Political Map", null));
+
             assertThat(VanillaTabStrip.measureRowWidth(withShortcut, TABS, measurerFake))
                 .isGreaterThan(VanillaTabStrip.measureRowWidth(withoutShortcut, TABS, measurerFake));
         }
@@ -65,27 +111,19 @@ class VanillaTabStripTest {
         void matchesTheWidthTheLaidOutTabsSpan() {
             // The measured row must equal the summed widths layoutTabs places the same contents at, so the
             // panel sizing its box off the measure lands exactly where the tabs are drawn.
-            var contents = List.of(new VanillaTabContent("Political Map", "P"),
+            var contents = List.of(
+                new VanillaTabContent("Political Map", "P"),
                 new VanillaTabContent("Alliances", null));
+
             var tabs = VanillaTabStrip.layoutTabs(0f, 100f, 24f, TABS, contents, measurerFake);
             var laidOutTotal = 0f;
+
             for (var tab : tabs) {
                 laidOutTotal += tab.bounds().width();
             }
+
             assertThat(VanillaTabStrip.measureRowWidth(contents, TABS, measurerFake))
                 .isEqualTo(laidOutTotal);
-        }
-    }
-
-    @Nested
-    class WrapShortcut {
-
-        @Test
-        void wrapsTheKeyInSquareBrackets() {
-            // The delimiter is the vanilla-parity contract - a hotkey reads "[P]", not "(P)", matching
-            // the map's own Sector [O] / System [W] tabs - and the renderer paints these exact
-            // delimiters, so pin the string lest it silently regress.
-            assertThat(VanillaTabStrip.wrapShortcut("P")).isEqualTo("[P]");
         }
     }
 
@@ -93,18 +131,16 @@ class VanillaTabStripTest {
     class ComposeDisplay {
 
         @Test
-        void returnsTheBareLabelWhenTheTabHasNoShortcut() {
-            assertThat(VanillaTabStrip.composeDisplay(new VanillaTabContent("Political Map", null)))
-                .isEqualTo("Political Map");
-        }
+        void measuresTheTextTheTabActuallyShows() {
+            // The string the row is snapped to is whatever the shortcut rule settled on, read end to end -
+            // not a second composition that could disagree with the runs the paint pass draws.
+            var speltOut = new VanillaTabContent("Political Map", "Z");
+            var litInPlace = new VanillaTabContent("Political Map", "P");
 
-        @Test
-        void appendsTheWrappedShortcutAfterTheLabel() {
-            // Pins the composition - label then the wrapped shortcut - without re-pinning the gap
-            // width or the delimiter, which WrapShortcut owns.
-            assertThat(VanillaTabStrip.composeDisplay(new VanillaTabContent("Political Map", "P")))
-                .startsWith("Political Map")
-                .endsWith(VanillaTabStrip.wrapShortcut("P"));
+            assertThat(VanillaTabStrip.composeDisplay(speltOut))
+                .isEqualTo(TabShortcutText.composeDisplayText(speltOut));
+            assertThat(VanillaTabStrip.composeDisplay(litInPlace))
+                .isEqualTo(TabShortcutText.composeDisplayText(litInPlace));
         }
     }
 
@@ -113,30 +149,42 @@ class VanillaTabStripTest {
 
         @Test
         void pairsEachContentWithTheBoxAtItsIndex() {
+
             var political = new VanillaTabContent("Political Map", "P");
             var alliances = new VanillaTabContent("Alliances", "A");
             var politicalBox = new Rectangle(0f, 0f, 40f, 24f);
             var alliancesBox = new Rectangle(40f, 0f, 30f, 24f);
-            var tabs = VanillaTabStrip.zipTabs(List.of(political, alliances),
+            var tabs = VanillaTabStrip.zipTabs(
+                List.of(political, alliances),
                 List.of(politicalBox, alliancesBox));
-            assertThat(tabs).containsExactly(new VanillaTab(political, politicalBox),
-                new VanillaTab(alliances, alliancesBox));
+
+            assertThat(tabs)
+                .containsExactly(
+                    new VanillaTab(political, politicalBox),
+                    new VanillaTab(alliances, alliancesBox));
         }
 
         @Test
         void zipsOnlyAsFarAsTheShorterOfContentsAndBoxes() {
+
             var political = new VanillaTabContent("Political Map", "P");
             var alliances = new VanillaTabContent("Alliances", "A");
             var onlyBox = new Rectangle(0f, 0f, 40f, 24f);
             var tabs = VanillaTabStrip.zipTabs(List.of(political, alliances), List.of(onlyBox));
-            assertThat(tabs).containsExactly(new VanillaTab(political, onlyBox));
+
+            assertThat(tabs)
+                .containsExactly(new VanillaTab(political, onlyBox));
         }
 
         @Test
         void pairsNothingWhenEitherSideIsEmpty() {
-            var tabs = VanillaTabStrip.zipTabs(List.of(),
+
+            var tabs = VanillaTabStrip.zipTabs(
+                List.of(),
                 List.of(new Rectangle(0f, 0f, 40f, 24f)));
-            assertThat(tabs).isEmpty();
+                
+            assertThat(tabs)
+                .isEmpty();
         }
     }
 }
