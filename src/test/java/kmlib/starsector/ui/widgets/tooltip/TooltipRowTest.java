@@ -98,6 +98,7 @@ class TooltipRowTest {
                 TooltipLineStyle.PARAGRAPH,
                 TooltipLabelPlacement.ALIGNED_WITH_CRESTS,
                 0f,
+                0,
                 null))
                 .isInstanceOf(NullPointerException.class)
                 .hasMessageContaining("labelledRow");

@@ -57,6 +57,7 @@ public sealed interface TooltipRow {
             TableRow.DEFAULT_LINE_STYLE,
             TableRow.DEFAULT_LABEL_PLACEMENT,
             TableRow.NO_INDENT,
+            TableRow.NO_SUBORDINATION,
             LabelledRow.createRow(labelRun));
     }
 
@@ -141,17 +142,36 @@ public sealed interface TooltipRow {
      * choice: both placements keep it clear to the right, so a title carries a trailing value exactly as
      * an ordinary line does.
      *
-     * @param lineStyle      the kind of line this is, which the host tooltip turns into a look
-     * @param labelPlacement where the label starts across the box - past the crest gutter or at the
-     *                       content edge
-     * @param indent         the label's inset from the box's left content edge, in UI units - zero for a
-     *                       top-tier line, a positive step for a nested one
-     * @param labelledRow    what the line carries: its crest, its label's runs, and its value
+     * <p>Where a line sits and how far it stands under the box's own voice are two facts, not one, and a
+     * stack of rows needs both. A line may step in without being subordinated at all - the members of a
+     * group are inset beneath it while remaining the same kind of statement it is - so the indent and the
+     * demotion move independently and neither can stand for the other. Nor is subordination tree depth:
+     * those members are children of the line above them without being subordinate to it.
+     *
+     * <p>It says nothing about <em>why</em> a line stands under another. A stack of rows may be a
+     * breakdown, a hierarchy, a list with sub-items, or an aside beneath a finding; all this carries is
+     * that the line is one further step under the voice the box speaks in, which is the only part every
+     * one of those has in common - and the only part a widget that knows none of them could name.
+     *
+     * <p>It is likewise a fact about the content rather than a request about the look: the host decides
+     * what a step under looks like ({@link TooltipStyle#shrunkPerLevel}), exactly as it decides what a
+     * heading looks like. A row naming its own size would be the row choosing its typography, which is
+     * the one thing this model keeps it out of.
+     *
+     * @param lineStyle          the kind of line this is, which the host tooltip turns into a look
+     * @param labelPlacement     where the label starts across the box - past the crest gutter or at the
+     *                           content edge
+     * @param indent             the label's inset from the box's left content edge, in UI units - zero
+     *                           for a top-tier line, a positive step for a nested one
+     * @param subordinationLevel how many steps this line stands under the box's own voice - zero for a
+     *                           line speaking in it; never negative
+     * @param labelledRow        what the line carries: its crest, its label's runs, and its value
      */
     record TableRow(
         TooltipLineStyle lineStyle,
         TooltipLabelPlacement labelPlacement,
         float indent,
+        int subordinationLevel,
         LabelledRow labelledRow) implements TooltipRow {
 
         // What a line that carries none of the optional parts holds: a line of the body, its label
@@ -164,13 +184,19 @@ public sealed interface TooltipRow {
             TooltipLabelPlacement.ALIGNED_WITH_CRESTS;
         private static final float NO_INDENT = 0f;
 
+        // A line speaking in the box's own voice - what a row is until a caller puts it under something.
+        private static final int NO_SUBORDINATION = 0;
+
         /**
          * Rejects a null content at construction, where the caller that built the line is still on the
-         * stack. What the content itself must hold - a label of at least one run, a slot rather than a
-         * null on each flank - is {@link LabelledRow}'s own rule, checked where that content is built.
+         * stack, and floors the subordination level at the box's own voice: a negative one would have the host
+         * resolve a size larger than the body's for a line that is meant to be quieter than it. What the
+         * content itself must hold - a label of at least one run, a slot rather than a null on each
+         * flank - is {@link LabelledRow}'s own rule, checked where that content is built.
          */
         public TableRow {
             Objects.requireNonNull(labelledRow, "labelledRow");
+            subordinationLevel = Math.max(NO_SUBORDINATION, subordinationLevel);
         }
 
         @Override
@@ -227,11 +253,7 @@ public sealed interface TooltipRow {
          * @return an otherwise-identical line at that indent
          */
         public TableRow indentsBy(float indent) {
-            return new TableRow(
-                lineStyle,
-                labelPlacement,
-                indent,
-                labelledRow);
+            return rebuild(lineStyle, labelPlacement, indent, subordinationLevel, labelledRow);
         }
 
         /**
@@ -242,31 +264,53 @@ public sealed interface TooltipRow {
          * @return an otherwise-identical line clear of the crest column
          */
         public TableRow clearsCrestColumn() {
-            return new TableRow(
+            return rebuild(
                 lineStyle,
                 TooltipLabelPlacement.AT_CONTENT_EDGE,
                 indent,
+                subordinationLevel,
                 labelledRow);
+        }
+
+        /**
+         * Returns a copy of this line standing {@code subordinationLevel} steps under the box's own
+         * voice, which the host draws progressively quieter.
+         *
+         * <p>Stated apart from the indent because the two do not move together: a group's members are
+         * inset beneath it while remaining the same kind of statement it is, and would be demoted along
+         * with a genuinely subordinate line if one number stood for both.
+         *
+         * @param subordinationLevel how many steps the line stands under the box's own voice; floored at
+         *                           that voice
+         * @return an otherwise-identical line at that subordination level
+         */
+        public TableRow subordinatedAt(int subordinationLevel) {
+            return rebuild(lineStyle, labelPlacement, indent, subordinationLevel, labelledRow);
         }
 
         @Override
         public TableRow readsAs(TooltipLineStyle lineStyle) {
-            return new TableRow(
-                lineStyle,
-                labelPlacement,
-                indent,
-                labelledRow);
+            return rebuild(lineStyle, labelPlacement, indent, subordinationLevel, labelledRow);
         }
 
         // Rebuilds the line around new content, carrying every row-level fact over untouched. The three
         // refinements that change only what the line carries share it rather than each restating the
-        // three facts they leave alone - one of which would eventually be restated wrongly.
+        // facts they leave alone - one of which would eventually be restated wrongly.
         private TableRow rebuildWithContent(LabelledRow labelledRow) {
-            return new TableRow(
-                lineStyle,
-                labelPlacement,
-                indent,
-                labelledRow);
+            return rebuild(lineStyle, labelPlacement, indent, subordinationLevel, labelledRow);
+        }
+
+        // The one place a refined line is constructed. Every refinement passes the whole of what the new
+        // line is, so a part added to the record is added here and at the factory rather than at each
+        // refinement that merely carries it over.
+        private static TableRow rebuild(
+                TooltipLineStyle lineStyle,
+                TooltipLabelPlacement labelPlacement,
+                float indent,
+                int subordinationLevel,
+                LabelledRow labelledRow) {
+
+            return new TableRow(lineStyle, labelPlacement, indent, subordinationLevel, labelledRow);
         }
     }
 

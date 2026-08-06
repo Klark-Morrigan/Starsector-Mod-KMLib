@@ -24,6 +24,8 @@ import kmlib.starsector.ui.text.TextStyle;
  * @param paragraphStyle the look of a line of the box's body
  * @param footnoteStyle  the look of a note at the box's foot; a box with nothing to note never resolves
  *                       it, so it defaults to the body look rather than being stated by every caller
+ * @param levelShrink    how much smaller each step under the box's own voice draws than the step above
+ *                       it, in UI units; zero draws every level at its kind's own size
  * @param sectionBreak   the room taken above a block for the one above it, in UI units - what parts two
  *                       blocks, where two lines of one block sit a plain line gap apart
  */
@@ -31,6 +33,7 @@ public record TooltipStyle(
     TextStyle headerStyle,
     TextStyle paragraphStyle,
     TextStyle footnoteStyle,
+    float levelShrink,
     float sectionBreak) {
 
     // How far apart blocks stand unless a box says otherwise: half a line of body text past the gap two
@@ -38,6 +41,18 @@ public record TooltipStyle(
     // line. Stated as one measurement rather than derived from whichever line happens to open a block,
     // so every parting in a box is the same width whatever sizes its blocks begin at.
     private static final float DEFAULT_SECTION_BREAK = 11.5f;
+
+    // What a box demotes a subordinate line by unless it asks for something: nothing at all, so a stack
+    // of rows reads at one size until a box states that its levels should read as levels.
+    private static final float NO_LEVEL_SHRINK = 0f;
+
+    // A line speaking in the box's own voice, which stands under nothing and so is shrunk by nothing.
+    private static final int NO_SUBORDINATION = 0;
+
+    // The smallest a demoted line is allowed to reach. A deep enough stack would otherwise arrive at a
+    // size no atlas can render legibly, and then at zero and below - so the shrink stops here and the
+    // deepest levels share a size rather than vanishing.
+    private static final double SMALLEST_SUBORDINATE_SIZE = 8d;
 
     /**
      * Builds the plainest typography there is: the two looks a box always has, with blocks parted by the
@@ -58,6 +73,7 @@ public record TooltipStyle(
             headerStyle,
             paragraphStyle,
             paragraphStyle,
+            NO_LEVEL_SHRINK,
             DEFAULT_SECTION_BREAK);
     }
 
@@ -69,7 +85,25 @@ public record TooltipStyle(
      * @return an otherwise-identical typography setting its footnotes in that look
      */
     public TooltipStyle footnotedIn(TextStyle footnoteStyle) {
-        return rebuildOnTheSameFaces(footnoteStyle, sectionBreak);
+        return rebuildOnTheSameFaces(footnoteStyle, levelShrink, sectionBreak);
+    }
+
+    /**
+     * Returns a copy of this typography drawing each step under its own voice {@code levelShrink}
+     * smaller than the step above it, so how far a line stands under the box is legible from its size as
+     * well as from its indent.
+     *
+     * <p>One step rather than a look per level, because that is what the rule actually is: a stack of
+     * rows goes as deep as its subject matter, and a style naming a look per level would run out at
+     * whichever depth its author happened to imagine. How far a line stands under the box is its own
+     * ({@code TooltipRow.TableRow}), and it is not the same as its indent - a group's members are inset
+     * without being demoted, and read at their group's size.
+     *
+     * @param levelShrink how much smaller each step draws than the one above it, in UI units
+     * @return an otherwise-identical typography shrinking its levels by that much
+     */
+    public TooltipStyle shrunkPerLevel(float levelShrink) {
+        return rebuildOnTheSameFaces(footnoteStyle, levelShrink, sectionBreak);
     }
 
     /**
@@ -80,7 +114,7 @@ public record TooltipStyle(
      * @return an otherwise-identical typography parting its blocks by that much
      */
     public TooltipStyle partedBy(float sectionBreak) {
-        return rebuildOnTheSameFaces(footnoteStyle, sectionBreak);
+        return rebuildOnTheSameFaces(footnoteStyle, levelShrink, sectionBreak);
     }
 
     /**
@@ -102,10 +136,45 @@ public record TooltipStyle(
         };
     }
 
+    /**
+     * Answers what a line of {@code lineStyle} standing {@code subordinationLevel} steps under the box's
+     * own voice draws in - its kind's look, shrunk once per step by whatever the box asked for.
+     *
+     * <p>The lookup a renderer actually makes, since a row carries both facts. Resolved here rather than
+     * by the renderer so the size a row is measured at and the size it is painted at come from one
+     * answer, and so a box that asked for no shrink resolves exactly the look its kind names.
+     *
+     * @param lineStyle          the kind of line being laid out or drawn
+     * @param subordinationLevel how many steps that line stands under the box's own voice; zero for a
+     *                           line speaking in it
+     * @return the look that line draws in
+     */
+    public TextStyle resolveStyleFor(TooltipLineStyle lineStyle, int subordinationLevel) {
+        var lineStyleLook = resolveStyleFor(lineStyle);
+        if (subordinationLevel <= NO_SUBORDINATION || levelShrink <= NO_LEVEL_SHRINK) {
+            return lineStyleLook;
+        }
+        // Floored rather than allowed to run down: a stack deep enough would otherwise resolve a size no
+        // atlas renders, and then a negative one - so the deepest levels share the smallest size instead
+        // of disappearing.
+        return lineStyleLook.sizedAt(Math.max(
+            SMALLEST_SUBORDINATE_SIZE,
+            lineStyleLook.face().size() - subordinationLevel * levelShrink));
+    }
+
     // Rebuilds the typography around whatever a refinement changed, carrying the two looks a box always
     // has over untouched. Shared rather than each refinement restating the parts it leaves alone - which
     // is where a fourth part, and then a fifth, eventually gets restated wrongly in one of them.
-    private TooltipStyle rebuildOnTheSameFaces(TextStyle footnoteStyle, float sectionBreak) {
-        return new TooltipStyle(headerStyle, paragraphStyle, footnoteStyle, sectionBreak);
+    private TooltipStyle rebuildOnTheSameFaces(
+            TextStyle footnoteStyle,
+            float levelShrink,
+            float sectionBreak) {
+
+        return new TooltipStyle(
+            headerStyle,
+            paragraphStyle,
+            footnoteStyle,
+            levelShrink,
+            sectionBreak);
     }
 }

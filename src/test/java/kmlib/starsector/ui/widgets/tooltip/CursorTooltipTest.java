@@ -152,6 +152,7 @@ class CursorTooltipTest {
             TooltipLineStyle.PARAGRAPH,
             TooltipLabelPlacement.ALIGNED_WITH_CRESTS,
             0f,
+            0,
             LabelledRow.createRow(new TextSpan(text, Color.WHITE)).leadsWith(leadingRowSlot));
     }
 
