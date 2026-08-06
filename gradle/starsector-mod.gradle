@@ -90,16 +90,14 @@ ext.findModJars = { String jarName ->
             .findAll { candidateJar -> candidateJar.isFile() })
 }
 
-// A mod applying these conventions usually compiles against KMLib, so where
-// KMLib sits is resolved once here rather than in each build that wants it.
-// Located by jar name, not by a fixed <mods>/KMLib path: the folder a player
-// ends up with is theirs to name, and a build that hardcodes one silently
-// reads the wrong thing on a case-insensitive filesystem while failing
-// outright on a case-sensitive one. Empty when KMLib is absent, so a build can
-// hand it straight to a dependency declaration and still fail with its own
-// install message. Computed for KMLib's own build too, which does not use it.
-def kmlibJarName = 'KMLib.jar'
-ext.kmlibJars = findModJars(kmlibJarName)
+// Deliberately no KMLib lookup here, though this is where a consumer's other
+// mod jars are resolved from. Every mod applying this script also applies it
+// BY PATH from a KMLib checkout, so that checkout is already a hard
+// prerequisite; a consumer includes it as a build (settings.gradle) and names
+// KMLib by its coordinates instead. Locating an installed jar as well would
+// offer a second, weaker answer to a question the checkout already settles -
+// and let a build compile against a release that no longer matches the
+// conventions it is being built with.
 
 dependencies {
     // Starsector ships the API in starsector-core. compileOnly because the
