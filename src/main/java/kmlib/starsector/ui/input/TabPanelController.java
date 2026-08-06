@@ -427,9 +427,12 @@ public final class TabPanelController {
 
         // Null rather than the row-miss sentinel, because a keyed animation set is asked "which element, if
         // any" and an out-of-row index would be a key like another - one entry per place the pointer missed.
-        return segmentIndex == RadioRow.NO_SEGMENT
-            ? null
-            : segmentIndex;
+        // Returned from a branch rather than a conditional: the miss is an Integer and the hit a primitive
+        // int, and a conditional over the two unboxes, which would turn this answer into a thrown NPE.
+        if (segmentIndex == RadioRow.NO_SEGMENT) {
+            return NO_TAB_HOVERED;
+        }
+        return segmentIndex;
     }
 
     /**
