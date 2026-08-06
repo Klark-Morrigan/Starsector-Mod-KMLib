@@ -184,8 +184,16 @@ public sealed interface TooltipRow {
             TooltipLabelPlacement.ALIGNED_WITH_CRESTS;
         private static final float NO_INDENT = 0f;
 
-        // A line speaking in the box's own voice - what a row is until a caller puts it under something.
-        private static final int NO_SUBORDINATION = 0;
+        /**
+         * A line speaking in the box's own voice - what a row is until a caller puts it under
+         * something, and the floor every deeper level is measured from.
+         *
+         * <p>Offered to the package rather than kept private because the same zero is the answer in
+         * three places: the floor a row is held to here, the level at which a host resolves no shrink
+         * at all ({@link TooltipStyle}), and what a line holding no table position of its own reads at
+         * ({@link CursorTooltip}). Three copies would agree until one of them was edited.
+         */
+        static final int NO_SUBORDINATION = 0;
 
         /**
          * Rejects a null content at construction, where the caller that built the line is still on the

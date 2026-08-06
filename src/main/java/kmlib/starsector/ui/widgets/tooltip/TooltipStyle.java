@@ -46,9 +46,6 @@ public record TooltipStyle(
     // of rows reads at one size until a box states that its levels should read as levels.
     private static final float NO_LEVEL_SHRINK = 0f;
 
-    // A line speaking in the box's own voice, which stands under nothing and so is shrunk by nothing.
-    private static final int NO_SUBORDINATION = 0;
-
     // The smallest a demoted line is allowed to reach. A deep enough stack would otherwise arrive at a
     // size no atlas can render legibly, and then at zero and below - so the shrink stops here and the
     // deepest levels share a size rather than vanishing.
@@ -151,7 +148,8 @@ public record TooltipStyle(
      */
     public TextStyle resolveStyleFor(TooltipLineStyle lineStyle, int subordinationLevel) {
         var lineStyleLook = resolveStyleFor(lineStyle);
-        if (subordinationLevel <= NO_SUBORDINATION || levelShrink <= NO_LEVEL_SHRINK) {
+        if (subordinationLevel <= TooltipRow.TableRow.NO_SUBORDINATION
+                || levelShrink <= NO_LEVEL_SHRINK) {
             return lineStyleLook;
         }
         // Floored rather than allowed to run down: a stack deep enough would otherwise resolve a size no

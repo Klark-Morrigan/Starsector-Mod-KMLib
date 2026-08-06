@@ -84,10 +84,6 @@ public final class CursorTooltip {
     // one parted from the block above, which a bare zero in the walk below would not say.
     private static final int FIRST_ROW_OF_SECTION = 0;
 
-    // The level a line standing under nothing reads at - the box's own voice, which is where a line
-    // holding no table position of its own is resolved.
-    private static final int NO_SUBORDINATION = 0;
-
     private CursorTooltip() {
     }
 
@@ -409,7 +405,7 @@ public final class CursorTooltip {
             // box, which is the box's own voice however deep the table beside it goes.
             var subordinationLevel = row instanceof TooltipRow.TableRow tableRow
                 ? tableRow.subordinationLevel()
-                : NO_SUBORDINATION;
+                : TooltipRow.TableRow.NO_SUBORDINATION;
                 
             var textStyle = style.resolveStyleFor(row.lineStyle(), subordinationLevel);
 
