@@ -838,6 +838,33 @@ final class TabPanelControllerTest {
         }
 
         @Test
+        void resetInputMotionsDropsALiftStillHeldAtItsPeakByAPressedButton() {
+            // The one hold with no release owed to it. A press outlives the panel when the overlay closes
+            // under a button still down - the release then lands on a screen that is no longer routing to
+            // this controller - so without the reset that lift would stand at its peak for the rest of the
+            // session and greet the next opening fully lit.
+            var controller = new TabPanelController();
+
+            controller.activateTabAtPoint(
+                buildTwoTabPlacementShowing(FIRST_TAB_INDEX, tabIndex -> { }),
+                INSIDE_SECOND_TAB_X,
+                ON_TAB_ROW_Y);
+
+            advanceAWholeTraverse(controller);
+
+            assertThat(pulseFractionAt(controller, SECOND_TAB_INDEX))
+                .as("the lift is held at its peak, which is what makes the drop below worth pinning")
+                .isCloseTo(1f, within(TOLERANCE));
+
+            controller.resetInputMotions();
+            
+            advanceAWholeTraverse(controller);
+
+            assertThat(pulseFractionAt(controller, SECOND_TAB_INDEX))
+                .isCloseTo(0f, within(TOLERANCE));
+        }
+
+        @Test
         void resetInputMotionsDropsAHotkeyBlinkLeftPartWayThroughItsCycle() {
             // The blink is dropped with the rest: it runs on the look channel, so one left part-way would
             // open the next session with a tab lit as though the pointer were on it.

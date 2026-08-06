@@ -221,5 +221,25 @@ final class TabPaletteTest {
             assertThat(buildMapTabPaletteUnderStubbedEngine().hovered().label())
                 .isEqualTo(new Color(123, 123, 123, 255));
         }
+
+        @Test
+        void createMapTabPaletteAimsThePressLiftAlongTheGlowRatherThanAtWhite() {
+            // The direction a press travels, which is the whole of why it reads as one of the engine's own
+            // states rather than as ours: the engine brightens a tab by adding its glow - the label colour
+            // (180, 180, 180 here) half way to white - so a lift aimed at white would be the one shade on
+            // the strip moving somewhere none of the fills do, and it would show exactly when the player is
+            // looking at it. A depth alone could not correct that, so the target is pinned and not just the
+            // strength.
+            assertThat(buildMapTabPaletteUnderStubbedEngine().clicked().target())
+                .isEqualTo(new Color(218, 218, 218));
+        }
+
+        @Test
+        void createMapTabPaletteLiftsAPressOnlyPartWayAlongThatGlow() {
+            // Modest because it is measured along the same axis the fills are: a press has only to stand
+            // above the pointed-at tab it is necessarily already showing.
+            assertThat(buildMapTabPaletteUnderStubbedEngine().clicked().strength())
+                .isEqualTo(0.25f);
+        }
     }
 }
