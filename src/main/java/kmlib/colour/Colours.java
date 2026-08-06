@@ -110,6 +110,31 @@ public final class Colours {
             base.getAlpha());
     }
 
+    /**
+     * The opaque colour a translucent {@code colour} composites to over {@code backdrop} - what the eye
+     * already sees where that colour is drawn over that backdrop, stated as one shade that needs neither.
+     * For a caller whose element must carry its own surface rather than borrow one, and for reproducing
+     * a shade some other renderer arrives at by drawing one colour over another.
+     *
+     * <p>The backdrop is taken as opaque, since the result is: compositing over a see-through backdrop
+     * yields something still see-through, which is not a surface. A fully opaque {@code colour} returns
+     * itself, and a fully transparent one returns the backdrop.
+     *
+     * @param colour   the source colour; its alpha is what it is composited by, and is spent here
+     * @param backdrop the surface it is composited over; read as opaque, its own alpha ignored
+     * @return the opaque colour of the two composited, one over the other
+     */
+    public static Color flattenOnto(Color colour, Color backdrop) {
+
+        var sourceWeight = colour.getAlpha() / MAX_CHANNEL;
+
+        return new Color(
+            lerpChannel(backdrop.getRed(), colour.getRed(), sourceWeight),
+            lerpChannel(backdrop.getGreen(), colour.getGreen(), sourceWeight),
+            lerpChannel(backdrop.getBlue(), colour.getBlue(), sourceWeight),
+            MAX_CHANNEL_VALUE);
+    }
+
     // Scales one 0-255 channel by the factor.
     private static int scaleChannel(int channel, float factor) {
         return roundToChannel(channel * factor);

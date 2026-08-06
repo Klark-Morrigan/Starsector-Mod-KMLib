@@ -19,7 +19,9 @@ import static org.assertj.core.api.Assertions.within;
  *    alpha is kept, and an over-1 factor saturates at white rather than throwing;
  *  - {@link Colours#blendRgbTowards} - each RGB channel lerps from base toward target
  *    by the amount, base's own alpha is kept (the target's is ignored), and an
- *    out-of-range amount saturates rather than throwing.
+ *    out-of-range amount saturates rather than throwing;
+ *  - {@link Colours#flattenOnto} - the colour's alpha is spent compositing it over the
+ *    backdrop and the result comes back opaque, whatever either carried;
  */
 final class ColoursTest {
 
@@ -206,6 +208,56 @@ final class ColoursTest {
                 2f);
 
             assertThat(washed.getRed()).isEqualTo(255);
+        }
+    }
+
+    @Nested
+    class FlattenOnto {
+
+        @Test
+        void composites_each_channel_by_the_source_alpha_and_returns_it_opaque() {
+
+            var flattened = Colours.flattenOnto(
+                new Color(200, 100, 50, 128),
+                new Color(0, 20, 40, 255));
+
+            // Weight 128/255 = 0.50196: 0 + (200-0)*0.50196 = 100.4, 20 + (100-20)*0.50196 = 60.2,
+            // 40 + (50-40)*0.50196 = 45.0.
+            assertThat(flattened.getRed()).isEqualTo(100);
+            assertThat(flattened.getGreen()).isEqualTo(60);
+            assertThat(flattened.getBlue()).isEqualTo(45);
+            assertThat(flattened.getAlpha()).isEqualTo(255);
+        }
+
+        @Test
+        void returns_the_source_shade_when_it_is_already_opaque() {
+            // An opaque colour hides whatever it is over, so flattening it is the identity on its RGB.
+            var flattened = Colours.flattenOnto(
+                new Color(10, 20, 30, 255),
+                new Color(200, 200, 200, 255));
+
+            assertThat(flattened).isEqualTo(new Color(10, 20, 30, 255));
+        }
+
+        @Test
+        void returns_the_backdrop_shade_when_the_source_is_fully_transparent() {
+
+            var flattened = Colours.flattenOnto(
+                new Color(10, 20, 30, 0),
+                new Color(200, 150, 100, 255));
+
+            assertThat(flattened).isEqualTo(new Color(200, 150, 100, 255));
+        }
+
+        @Test
+        void spends_the_backdrop_alpha_and_answers_opaque_whatever_it_carried() {
+            // The backdrop is read as the surface it stands for, so a caller handing in a see-through one
+            // still gets a surface back rather than a colour that is somehow half of one.
+            var flattened = Colours.flattenOnto(
+                new Color(0, 0, 0, 0),
+                new Color(100, 100, 100, 10));
+
+            assertThat(flattened).isEqualTo(new Color(100, 100, 100, 255));
         }
     }
 }
