@@ -50,40 +50,43 @@ public record TabPalette(
     private static final float CLICK_WHITE_WASH = 0.5f;
 
     /**
-     * The live vanilla map-tab paint: the player base colour for the chrome accent, the two sampled
-     * map-tab fills (dark teal at rest, steel blue when active) matching the map's own Sector/System tabs,
-     * the button-text colour for a resting label and the bright player colour for the active one, the
-     * hovered shade both of them meet at, and the click lift toward white. The labels and the accent
-     * resolve through {@link StarsectorUiColour} on each call, so they track a live palette change.
+     * The live vanilla map-tab paint: the player base colour for the chrome accent, the two map-tab fills
+     * the engine's own tabs settle on, the button-text colour for a resting label and the bright player
+     * colour for the active one, the hovered shade both of them meet at, and the click lift toward white.
+     * Everything here resolves through {@link StarsectorUiColour} on each call, so it tracks a live
+     * palette change.
      *
-     * <p>The fills do not, and that is the point: they are one pair sampled at one moment, frozen
-     * together. They are fixed UI shades rather than player-faction ones so a modded player faction cannot
-     * pull the strip away from the vanilla tabs it sits beside, and the lit one has no settings colour to
-     * read even if it were wanted - the engine composes it inside its own tab widget. A resting fill that
-     * followed a restyled install while the lit one stayed put would not be a closer match; it would be a
-     * strip whose own tabs disagree.
+     * <p>The fills come from {@link VanillaTabFills}, worked out from the same two settings colours a
+     * vanilla tab is painted with rather than sampled off one - so a restyled install moves this strip
+     * exactly as it moves the tabs above it. They answer to settings and not to the player faction
+     * because the engine's own tabs do not take a faction colour; the accent and the active label around
+     * them do, being ours rather than vanilla's.
      *
-     * <p>Both are opaque surfaces of the shade vanilla shows, since a strip whose fills are see-through is
-     * only ever the colour of whatever it is drawn over - a tab row that changes shade with its
-     * surroundings, and shows the map through itself where no panel sits under it. The lifts over these
-     * looks blend RGB alone, so a look that starts opaque stays opaque through every hover, blink, and
-     * click.
+     * <p>The lifts over these looks blend RGB alone, so a look that starts opaque - as both fills do -
+     * stays opaque through every hover, blink, and click.
      *
      * @return the vanilla map-tab palette
      */
     public static TabPalette createMapTabPalette() {
 
         var white = StarsectorUiColour.WHITE.resolve();
+        var fill = StarsectorUiColour.VANILLA_BUTTON_BG_DARK.resolve();
+        var restingLabel = StarsectorUiColour.VANILLA_BUTTON_TEXT.resolve();
+
+        // The surface the fills are laid over. Black rather than the host's own panel fill, because a tab
+        // row stands wherever its panel does - over a body, over the map where a tab has no body at all -
+        // and a fill measured against one of those would be wrong in the others.
+        var backdrop = StarsectorUiColour.BLACK.resolve();
 
         var selected = new TabLook(
-            StarsectorUiColour.STEEL_BLUE.resolve(),
+            VanillaTabFills.resolveLitFill(fill, restingLabel, backdrop),
             StarsectorUiColour.VANILLA_PLAYER_BRIGHT.resolve());
 
         return new TabPalette(
             StarsectorUiColour.VANILLA_PLAYER_BASE.resolve(),
             new TabLook(
-                StarsectorUiColour.DARK_TEAL.resolve(),
-                StarsectorUiColour.VANILLA_BUTTON_TEXT.resolve()),
+                VanillaTabFills.resolveRestingFill(fill, backdrop),
+                restingLabel),
             selected,
             // Derived from the selected look rather than written down beside it, so the one hovered shade
             // cannot drift from the look it is measured off when either is retuned.

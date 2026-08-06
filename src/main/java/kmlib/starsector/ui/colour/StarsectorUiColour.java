@@ -91,26 +91,19 @@ public enum StarsectorUiColour {
      */
     DARK_BLUE(new Color(31, 94, 112, 175)),
     /**
-     * Literal of the vanilla SELECTED map-tab fill, measured in-game ({@code #487b8d}). Frozen like
-     * {@link #LIGHT_BLUE} / {@link #DARK_BLUE} - a sampled vanilla value that does not track the player
-     * faction - because the engine composes this shade inside its own tab widget and exposes no settings
-     * colour naming it, so there is nothing live to read it from.
+     * The shade the vanilla SELECTED map tab reads as, sampled in-game
+     * ({@code #487b8d}), and {@link #DARK_TEAL} its resting companion
+     * ({@code #15404d}). Kept as the measured record of what those tabs
+     * looked like on one install at one moment.
      *
-     * <p>Opaque, as a sample taken off the screen is: a tab fill is a surface, and left translucent it
-     * would be the colour of whatever the strip happens to be drawn over. Pairs with {@link #DARK_TEAL},
-     * its resting companion.
+     * <p>Nothing paints from these: a tab strip works its fills out from
+     * the engine's own colours by the engine's own rule, so it follows a
+     * restyled install instead of holding a sample of an unstyled one. A
+     * callsite wanting the shade of that particular pair - to match it
+     * deliberately rather than to track it - can still name them.
      */
     STEEL_BLUE(new Color(72, 123, 141)),
-    /**
-     * Literal of the vanilla RESTING map-tab fill ({@code #15404d}) - {@code buttonBgDark} as it composes
-     * over the near-black backing behind it, taken opaque for the reason {@link #STEEL_BLUE} is.
-     *
-     * <p>Frozen rather than read live off {@code buttonBgDark}, so the two fills of one strip move
-     * together. The lit fill above has no settings colour to track, so a resting fill that followed a
-     * restyled install would leave that install a strip whose tabs disagree - recoloured at rest, sampled
-     * vanilla when lit, and a hovered shade derived from the latter that neither meets. A pair sampled at
-     * one moment is one design; half of it tracking is not a better match, it is a mismatch.
-     */
+    /** The resting companion to {@link #STEEL_BLUE}; see there. */
     DARK_TEAL(new Color(21, 64, 77));
 
     private final Supplier<Color> source;

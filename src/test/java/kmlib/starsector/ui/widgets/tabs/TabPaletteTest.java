@@ -59,12 +59,22 @@ final class TabPaletteTest {
     private static final Color STUBBED_PLAYER_BRIGHT = new Color(100, 100, 100);
     private static final Color STUBBED_BUTTON_TEXT = new Color(180, 180, 180);
 
+    // The engine's dark button fill, stubbed at the settings key the fills are built from. A shade unlike
+    // every other stub here and unlike white, so a fill that reached for the wrong source - or that
+    // skipped the composite and took the raw value - comes out a number this test does not expect.
+    private static final String BUTTON_BG_DARK_KEY = "buttonBgDark";
+    private static final Color STUBBED_BUTTON_BG_DARK = new Color(31, 94, 112, 175);
+
     // The map-tab palette built with the engine's player-tinted roles stubbed out. The settings proxy goes
     // in before Mockito touches Misc, whose static initialiser reads it; the palette is resolved inside the
     // stub's scope, since every role is read as the record is built.
     private static TabPalette buildMapTabPaletteUnderStubbedEngine() {
-        
-        StarsectorSettingsFake.installSettings();
+
+        StarsectorSettingsFake.installSettings(
+            StarsectorSettingsFake.EMPTY_STRINGS,
+            key -> BUTTON_BG_DARK_KEY.equals(key)
+                ? STUBBED_BUTTON_BG_DARK
+                : null);
         try (var miscMock = Mockito.mockStatic(Misc.class)) {
 
             miscMock
@@ -158,22 +168,22 @@ final class TabPaletteTest {
     class CreateMapTabPalette {
 
         @Test
-        void createMapTabPaletteTakesTheSampledSteelBlueAsTheSelectedFill() {
-            // The shade measured off the real map tabs, taken as the opaque surface it reads as. It is also
-            // the shade the hovered fill below is lifted from, so a change here is a deliberate retune of
-            // the vanilla match, not a side effect.
-            assertThat(buildMapTabPaletteUnderStubbedEngine().selected().fill())
-                .isEqualTo(new Color(72, 123, 141, 255));
+        void createMapTabPaletteCompositesTheRestingFillFromTheEnginesButtonFill() {
+            // The dark button fill (31, 94, 112 at alpha 175) laid over black - the shade a vanilla tab
+            // rests at, taken from the engine's own colour rather than named here, so a restyled install
+            // moves this strip exactly as it moves the tabs beside it.
+            assertThat(buildMapTabPaletteUnderStubbedEngine().unselected().fill())
+                .isEqualTo(new Color(21, 65, 77, OPAQUE_ALPHA));
         }
 
         @Test
-        void createMapTabPaletteTakesTheSampledDarkTealAsTheRestingFill() {
-            // The other half of the sampled pair, frozen beside the lit fill rather than read off the
-            // engine's buttonBgDark - so a restyled install cannot move one tab of the strip and not the
-            // other. Written as a literal here for the same reason it is one in the palette: this is the
-            // shade the strip is meant to show, not a value derived from something the test also stubs.
-            assertThat(buildMapTabPaletteUnderStubbedEngine().unselected().fill())
-                .isEqualTo(new Color(21, 64, 77, 255));
+        void createMapTabPaletteAddsTheGlowIntoTheSelectedFill() {
+            // The resting shade with the lit tab's glow on top: the label colour (180, 180, 180 here) half
+            // way to white is (218, 218, 218), added at 0.5 * (175 + 50) / 255 = 0.441 - so (21, 65, 77)
+            // gains 96 on every channel. A selected tab that merely re-tinted its resting fill could not
+            // land here; the glow is added light, not a blend.
+            assertThat(buildMapTabPaletteUnderStubbedEngine().selected().fill())
+                .isEqualTo(new Color(117, 161, 173, OPAQUE_ALPHA));
         }
 
         @Test
@@ -181,7 +191,7 @@ final class TabPaletteTest {
             // The selected fill moved a small way toward white, which is what lets the resting tab travel
             // the whole way up to meet it: writing this shade by hand instead would let the two drift.
             assertThat(buildMapTabPaletteUnderStubbedEngine().hovered().fill())
-                .isEqualTo(new Color(99, 143, 158, 255));
+                .isEqualTo(new Color(138, 175, 185, OPAQUE_ALPHA));
         }
 
         @Test

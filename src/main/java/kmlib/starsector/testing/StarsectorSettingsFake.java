@@ -44,6 +44,26 @@ public final class StarsectorSettingsFake {
     public static final SettingsStringSource EMPTY_STRINGS = (category, key) -> null;
 
     /**
+     * Pluggable adapter for {@link SettingsAPI#getColor(String)}, for a test
+     * whose subject reads a named engine colour and asserts on what it
+     * builds from it. Implementations return the stored value or
+     * {@code null} when the key is unknown, in which case the proxy falls
+     * back to its default shade - so a test names only the keys it cares
+     * about and every other lookup stays answerable.
+     */
+    @FunctionalInterface
+    public interface SettingsColourSource {
+        Color get(String key);
+    }
+
+    /** {@link SettingsColourSource} that leaves every key to the default shade. */
+    public static final SettingsColourSource DEFAULT_COLOURS = key -> null;
+
+    // What an unnamed colour key answers with. Opaque and unmistakable: a test that did not mean to read
+    // a colour sees white rather than a plausible shade it might have asserted against by accident.
+    private static final Color DEFAULT_COLOUR = Color.WHITE;
+
+    /**
      * Installs a no-op {@link SettingsAPI} proxy whose {@code getString}
      * always returns {@code null}. Sufficient for tests that only need
      * Misc to load without inspecting localised text.
@@ -58,14 +78,30 @@ public final class StarsectorSettingsFake {
      * that the resolver is expected to surface.
      */
     public static void installSettings(SettingsStringSource stringSource) {
-        Global.setSettings(settings(stringSource));
+        installSettings(stringSource, DEFAULT_COLOURS);
+    }
+
+    /**
+     * Installs the proxy with caller-supplied {@code getString} and
+     * {@code getColor} resolvers. Use this overload when the subject
+     * builds a shade out of a named engine colour: with every key
+     * answering the same default, a derived colour and the value it was
+     * derived from are indistinguishable, and the assertion pins nothing.
+     */
+    public static void installSettings(
+            SettingsStringSource stringSource,
+            SettingsColourSource colourSource) {
+        Global.setSettings(settings(stringSource, colourSource));
     }
 
     public static void clearSettings() {
         Global.setSettings(null);
     }
 
-    private static SettingsAPI settings(SettingsStringSource stringSource) {
+    private static SettingsAPI settings(
+            SettingsStringSource stringSource,
+            SettingsColourSource colourSource) {
+
         return proxy(SettingsAPI.class, (proxy, method, args) -> {
             // Misc.<clinit> reads several floats and a colour before any
             // test code runs; returning safe defaults keeps it quiet.
@@ -73,7 +109,7 @@ public final class StarsectorSettingsFake {
                 return 1f;
             }
             if ("getColor".equals(method.getName())) {
-                return Color.WHITE;
+                return resolveColour(colourSource, args);
             }
             if ("getString".equals(method.getName())) {
                 if (args != null && args.length == 2) {
@@ -83,6 +119,21 @@ public final class StarsectorSettingsFake {
             }
             return defaultValue(method.getReturnType());
         });
+    }
+
+    // The colour a getColor call answers with: the caller's, where it named one for that key, and the
+    // default shade otherwise - including for the key-less call shapes, since a source keyed by name has
+    // nothing to say about those.
+    private static Color resolveColour(SettingsColourSource colourSource, Object[] args) {
+
+        if (args == null || args.length != 1 || !(args[0] instanceof String key)) {
+            return DEFAULT_COLOUR;
+        }
+        var named = colourSource.get(key);
+
+        return named == null
+            ? DEFAULT_COLOUR
+            : named;
     }
 
     private static Object defaultValue(Class<?> returnType) {
