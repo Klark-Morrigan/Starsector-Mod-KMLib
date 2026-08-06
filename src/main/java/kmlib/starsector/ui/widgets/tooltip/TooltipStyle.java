@@ -69,7 +69,7 @@ public record TooltipStyle(
      * @return an otherwise-identical typography setting its footnotes in that look
      */
     public TooltipStyle footnotedIn(TextStyle footnoteStyle) {
-        return new TooltipStyle(headerStyle, paragraphStyle, footnoteStyle, sectionBreak);
+        return rebuildOnTheSameFaces(footnoteStyle, sectionBreak);
     }
 
     /**
@@ -80,7 +80,7 @@ public record TooltipStyle(
      * @return an otherwise-identical typography parting its blocks by that much
      */
     public TooltipStyle partedBy(float sectionBreak) {
-        return new TooltipStyle(headerStyle, paragraphStyle, footnoteStyle, sectionBreak);
+        return rebuildOnTheSameFaces(footnoteStyle, sectionBreak);
     }
 
     /**
@@ -100,5 +100,12 @@ public record TooltipStyle(
             case PARAGRAPH -> paragraphStyle;
             case FOOTNOTE -> footnoteStyle;
         };
+    }
+
+    // Rebuilds the typography around whatever a refinement changed, carrying the two looks a box always
+    // has over untouched. Shared rather than each refinement restating the parts it leaves alone - which
+    // is where a fourth part, and then a fifth, eventually gets restated wrongly in one of them.
+    private TooltipStyle rebuildOnTheSameFaces(TextStyle footnoteStyle, float sectionBreak) {
+        return new TooltipStyle(headerStyle, paragraphStyle, footnoteStyle, sectionBreak);
     }
 }
