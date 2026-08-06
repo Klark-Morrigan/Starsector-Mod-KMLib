@@ -171,12 +171,12 @@ final class TabPanelControllerTest {
             // The row is drawn outside the body's box, so without this the surface behind the panel would
             // go on reading a pointer the player has parked on the tabs - and a tab row with no body under
             // it, which is the whole of such a panel, would block nothing at all.
-            var event = buildMouseEventAt(INSIDE_FIRST_TAB_X, ON_TAB_ROW_Y);
+            var eventMock = buildMouseEventAt(INSIDE_FIRST_TAB_X, ON_TAB_ROW_Y);
 
-            new TabPanelController().handlePointer(event, buildTwoTabPlacement());
+            new TabPanelController().handlePointer(eventMock, buildTwoTabPlacement());
 
             Mockito
-                .verify(event)
+                .verify(eventMock)
                 .consume();
         }
 
@@ -184,12 +184,12 @@ final class TabPanelControllerTest {
         void handlePointerLeavesAnEventOffThePanelAlone() {
             // Off every part of it the panel claims nothing, so the map underneath keeps answering the
             // pointer as it did before the panel was there.
-            var event = buildMouseEventAt(OFF_PANEL_X, OFF_PANEL_Y);
+            var eventMock = buildMouseEventAt(OFF_PANEL_X, OFF_PANEL_Y);
 
-            new TabPanelController().handlePointer(event, buildTwoTabPlacement());
+            new TabPanelController().handlePointer(eventMock, buildTwoTabPlacement());
 
             Mockito
-                .verify(event, Mockito.never())
+                .verify(eventMock, Mockito.never())
                 .consume();
         }
 
@@ -197,12 +197,12 @@ final class TabPanelControllerTest {
         void handlePointerLeavesAnEventOverAWipedTabRowAlone() {
             // Mid-fold the drawn band is narrower than the row was laid out; the panel claims only what it
             // still paints, so the screen its tabs have wiped off goes back to whatever is behind.
-            var event = buildMouseEventAt(INSIDE_SECOND_TAB_X, ON_TAB_ROW_Y);
+            var eventMock = buildMouseEventAt(INSIDE_SECOND_TAB_X, ON_TAB_ROW_Y);
 
-            new TabPanelController().handlePointer(event, buildPlacementWithDrawnBand(FIRST_TAB));
+            new TabPanelController().handlePointer(eventMock, buildPlacementWithDrawnBand(FIRST_TAB));
 
             Mockito
-                .verify(event, Mockito.never())
+                .verify(eventMock, Mockito.never())
                 .consume();
         }
     }
@@ -814,18 +814,20 @@ final class TabPanelControllerTest {
     }
 
     // A mouse event at a point, carrying nothing else: the cases here are about what the panel claims, not
-    // about what it does with a press, so nothing is stubbed that would make it act.
+    // about what it does with a press, so nothing is stubbed that would make it act. The point is named in
+    // the coordinates every other case here uses and rounded on the way in - an engine event reports whole
+    // pixels, where the placement it is tested against is laid out in floats.
     private static InputEventAPI buildMouseEventAt(float pointX, float pointY) {
 
-        var event = Mockito.mock(InputEventAPI.class);
+        var eventMock = Mockito.mock(InputEventAPI.class);
 
         Mockito
-            .when(event.getX())
-            .thenReturn(pointX);
+            .when(eventMock.getX())
+            .thenReturn(Math.round(pointX));
         Mockito
-            .when(event.getY())
-            .thenReturn(pointY);
+            .when(eventMock.getY())
+            .thenReturn(Math.round(pointY));
 
-        return event;
+        return eventMock;
     }
 }
