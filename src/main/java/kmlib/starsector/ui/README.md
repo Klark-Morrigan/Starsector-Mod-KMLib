@@ -110,6 +110,13 @@ meeting, so neither of them can own it - carried as a flag on the line that open
 varies with whatever size that line happens to be, and the gap under a box's title then comes
 out different from the gaps between its body blocks for no reason a reader can see.
 
+Blocks nest, so the same reading spaces a listing at every depth: a block holds its own opening
+lines over member blocks, and a member takes the narrower `groupBreak` above itself where the
+member before it came to more than one line. That parting is spent by the member that follows
+and never above a block's first, which is what stops it piling up where several groups close on
+the one row - a colony's last term, the colony, and the faction holding it all end together, and
+the next faction is set off by one gap rather than three.
+
 ## Pairs that look like duplicates
 
 | What it expresses | Neutral | Vanilla-surface form | GL-surface form |

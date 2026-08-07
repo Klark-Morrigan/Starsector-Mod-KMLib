@@ -90,10 +90,11 @@ public final class CursorTooltip {
     // one parted from the block above, which a bare zero in the walk below would not say.
     private static final int FIRST_ROW_OF_SECTION = 0;
 
-    // Where a block's first nested block sits within it. The one member never parted from what opens it:
-    // a block's own lines are its voice rather than a sibling of the groups beneath them, so the first
-    // group hugs the lines that introduce it.
-    private static final int FIRST_MEMBER_OF_SECTION = 0;
+    // What stands above a block's first nested block: nothing, since a block's own lines are its voice
+    // rather than a sibling of the groups beneath them, so the first group hugs the lines that
+    // introduce it. Named rather than passed as a bare null, so the walk below reads as "no group
+    // closed here" instead of as an unexplained absence.
+    private static final TooltipSection NO_PRECEDING_MEMBER = null;
 
     // The most a nested block can come to and still read as one item of a list. Past it the block broke
     // down into an account of its own, which is what the next member is set clear of.
@@ -190,15 +191,19 @@ public final class CursorTooltip {
                 style,
                 measurer));
         }
-        var members = section.members();
-        for (var index = 0; index < members.size(); index++) {
+        // Carried forward rather than read back out of the list by index, since the rule is about what
+        // just ended: the block that closed above a member is the whole of what decides its gap.
+        var precedingMember = NO_PRECEDING_MEMBER;
+        for (var member : section.members()) {
 
             bindSectionRowsToStyles(
                 styledRows,
-                members.get(index),
-                measureMemberGap(members, index, style.groupBreak()),
+                member,
+                measureMemberGap(precedingMember, style.groupBreak()),
                 style,
                 measurer);
+
+            precedingMember = member;
         }
     }
 
@@ -206,13 +211,9 @@ public final class CursorTooltip {
     // it is decided, so a parting cannot pile up where several groups end on the same line: it is spent
     // by the member that follows, never above the first, and only where the member before it broke down
     // into more than a line - a run of one-line members reads as the plain list it is.
-    private static float measureMemberGap(
-            List<TooltipSection> members,
-            int index,
-            float groupBreak) {
-
-        if (index == FIRST_MEMBER_OF_SECTION
-                || members.get(index - 1).countLines() <= ONE_LINE) {
+    private static float measureMemberGap(TooltipSection precedingMember, float groupBreak) {
+        if (precedingMember == NO_PRECEDING_MEMBER
+                || precedingMember.countLines() <= ONE_LINE) {
             return TooltipBoxLayout.LINE_GAP;
         }
         return groupBreak;

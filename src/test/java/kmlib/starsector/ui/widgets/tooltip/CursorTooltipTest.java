@@ -139,6 +139,14 @@ class CursorTooltipTest {
             TooltipSection.createSection(List.of(secondRow)));
     }
 
+    // The grouped block above, laid out on its own - the box every case about a nested parting reads its
+    // steps off, so none of them restates the setup the assertion is not about.
+    private static TooltipLayout layOutGroupedSection() {
+        return layOutSections(
+            List.of(buildGroupedSection(createCrestlessRow("AA"))),
+            UNIFORM_STYLE);
+    }
+
     // One block holding a heading over two groups: the first breaking down into an account of its own,
     // the second a line on its own. The shape every parting case below is read off, since it holds all
     // three boundaries at once - a block's lines to its first group, a group to its own account, and one
@@ -486,8 +494,7 @@ class CursorTooltipTest {
             // What a nested block is for: an entry that broke down into an account of its own is one
             // thing, and the entry after it stands clear of the whole of it rather than of its last
             // line. Narrower than the section break, so a run inside a block never reads as a block.
-            var layout = layOutSections(List.of(buildGroupedSection(createCrestlessRow("AA"))),
-                UNIFORM_STYLE);
+            var layout = layOutGroupedSection();
 
             var lastLineOfTheFirstGroup = 2;
 
@@ -500,8 +507,7 @@ class CursorTooltipTest {
             // A block's own lines are its voice rather than a sibling of the groups beneath them, so the
             // first group hugs the lines that introduce it. A break spent here would put a gap under
             // every heading in the box that the heading's own block boundary already paid for.
-            var layout = layOutSections(List.of(buildGroupedSection(createCrestlessRow("AA"))),
-                UNIFORM_STYLE);
+            var layout = layOutGroupedSection();
 
             assertThat(measureStepBelow(layout, FIRST_ROW))
                 .isCloseTo(19f, within(TOLERANCE));
@@ -511,8 +517,7 @@ class CursorTooltipTest {
         void partsANestedBlockFromItsOwnAccountByTheLineGap() {
             // The same rule one level down: what a group breaks into opens flush beneath it, so a parting
             // never lands between an entry and the first term explaining it.
-            var layout = layOutSections(List.of(buildGroupedSection(createCrestlessRow("AA"))),
-                UNIFORM_STYLE);
+            var layout = layOutGroupedSection();
 
             var firstGroupOpener = 1;
 

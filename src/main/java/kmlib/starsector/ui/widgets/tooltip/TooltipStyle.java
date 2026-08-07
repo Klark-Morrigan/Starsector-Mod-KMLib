@@ -61,10 +61,10 @@ public record TooltipStyle(
     private static final double SMALLEST_SUBORDINATE_SIZE = 7d;
 
     /**
-     * Builds the plainest typography there is: the two looks a box always has, with blocks parted by the
-     * standard break and a note at the foot set in the body look. What a box wants beyond that it layers
-     * on with {@link #partedBy} or {@link #footnotedIn}, so a caller states only what differs from the
-     * baseline.
+     * Builds the plainest typography there is: the two looks a box always has, with blocks and the
+     * groups nested in them parted by the standard breaks and a note at the foot set in the body look.
+     * What a box wants beyond that it layers on with {@link #partedBy}, {@link #groupedBy}, or
+     * {@link #footnotedIn}, so a caller states only what differs from the baseline.
      *
      * <p>The footnote defaults rather than being asked for because most boxes note nothing at all, and
      * one that does not never resolves the look - so demanding a third face here would have every caller

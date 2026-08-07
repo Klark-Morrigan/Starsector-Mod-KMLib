@@ -29,6 +29,11 @@ class TooltipStyleTest {
     // today's spacing exactly: the 4 line gap plus half a 15pt line.
     private static final float DEFAULT_SECTION_BREAK = 11.5f;
     private static final float WIDER_SECTION_BREAK = 24f;
+
+    // The same for the parting inside a block, restated for the same reason. Narrower than the block
+    // parting above, which is the whole point of it having a measurement of its own.
+    private static final float DEFAULT_GROUP_BREAK = 5.75f;
+    private static final float WIDER_GROUP_BREAK = 9f;
     private static final float TOLERANCE = 0.001f;
 
     // What a box demotes a step by when it asks, and what it demotes by when it does not - restated here
@@ -180,6 +185,34 @@ class TooltipStyleTest {
                 .usingRecursiveComparison()
                 .ignoringFields("sectionBreak")
                 .isEqualTo(buildTwoFacedStyle());
+        }
+    }
+
+    @Nested
+    class GroupedBy {
+
+        @Test
+        void groupedBySetsHowFarApartTheNestedBlocksStand() {
+            assertThat(buildTwoFacedStyle().groupedBy(WIDER_GROUP_BREAK).groupBreak())
+                .isCloseTo(WIDER_GROUP_BREAK, within(TOLERANCE));
+        }
+
+        @Test
+        void groupedByChangesNothingElse() {
+            assertThat(buildTwoFacedStyle().groupedBy(WIDER_GROUP_BREAK))
+                .usingRecursiveComparison()
+                .ignoringFields("groupBreak")
+                .isEqualTo(buildTwoFacedStyle());
+        }
+
+        @Test
+        void groupedByLeavesABlockPartingWiderThanAGroupParting() {
+            // The two are held apart so a run inside a block never reads as a block of its own, which
+            // only holds while the baseline keeps them in that order.
+            assertThat(buildTwoFacedStyle().groupBreak())
+                .isCloseTo(DEFAULT_GROUP_BREAK, within(TOLERANCE));
+            assertThat(buildTwoFacedStyle().groupBreak())
+                .isLessThan(buildTwoFacedStyle().sectionBreak());
         }
     }
 
