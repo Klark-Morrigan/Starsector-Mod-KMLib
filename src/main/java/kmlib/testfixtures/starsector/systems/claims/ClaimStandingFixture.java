@@ -29,6 +29,11 @@ public final class ClaimStandingFixture {
     // not posing a tie, so every standing built here takes the head of the list.
     private static final int FIRST_LISTED = 1;
 
+    // The market is one the player has found. A test posing standings by score alone is not
+    // posing a fog-of-war case, and a box withholding an unfound colony would leave such a test
+    // asserting on lines that were never drawn.
+    private static final boolean IS_KNOWN_TO_PLAYER = true;
+
     private ClaimStandingFixture() {
     }
 
@@ -52,6 +57,7 @@ public final class ClaimStandingFixture {
             new MarketClaimBreakdown(
                 STANDING_MARKET_NAME,
                 FIRST_LISTED,
+                IS_KNOWN_TO_PLAYER,
                 score,
                 NO_SIBLING_MARKETS,
                 OptionalInt.empty()),

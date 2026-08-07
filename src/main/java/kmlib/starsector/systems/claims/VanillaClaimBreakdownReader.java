@@ -225,6 +225,11 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
     // market present - hidden and player-owned ones included - because sheer presence is what
     // it measures, not who is eligible to claim. Faction identity is compared by reference,
     // as the mechanic compares it; the game holds one instance per faction.
+    //
+    // Whether the player knows the market exists is recorded beside all that and applied to
+    // none of it. The mechanic scores what is there rather than what has been found, so a
+    // fog-of-war filter here would resolve a different claimant from the one the game reports;
+    // a box that would rather not name an unfound colony reads the flag instead.
     private static MarketClaimBreakdown computeMarketClaim(
             MarketAPI market,
             List<MarketAPI> systemMarkets,
@@ -240,6 +245,7 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
         return new MarketClaimBreakdown(
             market.getName(),
             listingPosition,
+            Markets.isKnownToPlayer(market),
             market.getSize(),
             siblingMarketCount,
             Markets.isMilitary(market)

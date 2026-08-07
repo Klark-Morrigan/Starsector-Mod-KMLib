@@ -24,6 +24,11 @@ import java.util.OptionalInt;
  *                           score, so two markets that tie are separated by nothing but this - the
  *                           earlier-listed one wins - and an explanation with no way to state it
  *                           can only report a tied outcome as arbitrary
+ * @param isKnownToPlayer    whether the player knows this colony exists at all. The mechanic
+ *                           itself never asks - it settles a contest over colonies nobody has
+ *                           found - so the answer is carried rather than applied, leaving an
+ *                           explanation free to withhold what the map has no business naming
+ *                           while the claim it explains stays vanilla's
  * @param marketSize         the colony's own size rating, the term the score starts from
  * @param siblingMarketCount how many other markets the same faction holds in the system, each
  *                           worth a point - so the count is the term. Taken over every market
@@ -34,6 +39,7 @@ import java.util.OptionalInt;
 public record MarketClaimBreakdown(
     String marketName,
     int listingPosition,
+    boolean isKnownToPlayer,
     int marketSize,
     int siblingMarketCount,
     OptionalInt militaryBonus) {

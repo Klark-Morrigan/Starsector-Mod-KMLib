@@ -25,6 +25,12 @@ final class FactionClaimScoreTest {
     private static final int FIRST_LISTED = 1;
     private static final int SECOND_LISTED = 2;
 
+    // Both markets are ones the player has found. Nothing here is about what a box may name, and
+    // a standing carries the same score either way - the mechanic never asks.
+    private static final boolean IS_KNOWN_TO_PLAYER = true;
+
+    private static final boolean IS_TERRITORIAL = true;
+
     @Nested
     class Score {
 
@@ -33,8 +39,8 @@ final class FactionClaimScoreTest {
 
             var standing = new FactionClaimScore(
                 HEGEMONY,
-                true,
-                new MarketClaimBreakdown("Chicomoztoc", FIRST_LISTED, 5, 2, OptionalInt.of(10)),
+                IS_TERRITORIAL,
+                buildMarket("Chicomoztoc", FIRST_LISTED, 5, 2, OptionalInt.of(10)),
                 List.of());
 
             assertThat(standing.score())
@@ -46,9 +52,9 @@ final class FactionClaimScoreTest {
 
             var standing = new FactionClaimScore(
                 HEGEMONY,
-                true,
-                new MarketClaimBreakdown("Chicomoztoc", FIRST_LISTED, 5, 1, OptionalInt.empty()),
-                List.of(new MarketClaimBreakdown("Kazeron", SECOND_LISTED, 3, 1, OptionalInt.empty())));
+                IS_TERRITORIAL,
+                buildMarket("Chicomoztoc", FIRST_LISTED, 5, 1, OptionalInt.empty()),
+                List.of(buildMarket("Kazeron", SECOND_LISTED, 3, 1, OptionalInt.empty())));
 
             // Holdings are never summed: the second colony reaches the contest as the sibling
             // point already inside the standing market's score, not as a score of its own.
@@ -64,12 +70,12 @@ final class FactionClaimScoreTest {
         void keepsTheMarketsItWasBuiltWithWhenTheSourceListChangesLater() {
 
             var otherMarkets = new ArrayList<MarketClaimBreakdown>();
-            otherMarkets.add(new MarketClaimBreakdown("Kazeron", SECOND_LISTED, 3, 1, OptionalInt.empty()));
+            otherMarkets.add(buildMarket("Kazeron", SECOND_LISTED, 3, 1, OptionalInt.empty()));
 
             var standing = new FactionClaimScore(
                 HEGEMONY,
-                true,
-                new MarketClaimBreakdown("Chicomoztoc", FIRST_LISTED, 5, 1, OptionalInt.empty()),
+                IS_TERRITORIAL,
+                buildMarket("Chicomoztoc", FIRST_LISTED, 5, 1, OptionalInt.empty()),
                 otherMarkets);
 
             otherMarkets.clear();
@@ -84,9 +90,9 @@ final class FactionClaimScoreTest {
 
             var standing = new FactionClaimScore(
                 HEGEMONY,
-                true,
-                new MarketClaimBreakdown("Chicomoztoc", FIRST_LISTED, 5, 0, OptionalInt.empty()),
-                List.of(new MarketClaimBreakdown("Kazeron", SECOND_LISTED, 3, 1, OptionalInt.empty())));
+                IS_TERRITORIAL,
+                buildMarket("Chicomoztoc", FIRST_LISTED, 5, 0, OptionalInt.empty()),
+                List.of(buildMarket("Kazeron", SECOND_LISTED, 3, 1, OptionalInt.empty())));
 
             assertThatThrownBy(() -> standing.otherMarkets().clear())
                 .isInstanceOf(UnsupportedOperationException.class);
@@ -97,12 +103,30 @@ final class FactionClaimScoreTest {
 
             var standing = new FactionClaimScore(
                 HEGEMONY,
-                true,
-                new MarketClaimBreakdown("Chicomoztoc", FIRST_LISTED, 5, 0, OptionalInt.empty()),
+                IS_TERRITORIAL,
+                buildMarket("Chicomoztoc", FIRST_LISTED, 5, 0, OptionalInt.empty()),
                 null);
 
             assertThat(standing.otherMarkets())
                 .isEmpty();
         }
+    }
+
+    // One of the faction's markets, stated by what a case here varies. Whether the player has found
+    // it is the same throughout, and spelled at each call it would bury the terms that matter.
+    private static MarketClaimBreakdown buildMarket(
+            String marketName,
+            int listingPosition,
+            int marketSize,
+            int siblingMarketCount,
+            OptionalInt militaryBonus) {
+
+        return new MarketClaimBreakdown(
+            marketName,
+            listingPosition,
+            IS_KNOWN_TO_PLAYER,
+            marketSize,
+            siblingMarketCount,
+            militaryBonus);
     }
 }

@@ -20,13 +20,17 @@ final class MarketClaimBreakdownTest {
     // built below takes the head of the list.
     private static final int FIRST_LISTED = 1;
 
+    // The market is one the player has found. Nothing here is about what a box may name, and the
+    // sum the whole suite is about is the same either way - the mechanic never asks.
+    private static final boolean IS_KNOWN_TO_PLAYER = true;
+
     @Nested
     class ComputeTotalScore {
 
         @Test
         void scoresAColonyStandingAloneOnItsSizeAlone() {
 
-            var claim = new MarketClaimBreakdown(MARKET_NAME, FIRST_LISTED, 5, 0, OptionalInt.empty());
+            var claim = buildClaim(5, 0, OptionalInt.empty());
 
             assertThat(claim.computeTotalScore())
                 .isEqualTo(5);
@@ -35,7 +39,7 @@ final class MarketClaimBreakdownTest {
         @Test
         void addsOnePointForEverySiblingMarket() {
 
-            var claim = new MarketClaimBreakdown(MARKET_NAME, FIRST_LISTED, 5, 2, OptionalInt.empty());
+            var claim = buildClaim(5, 2, OptionalInt.empty());
 
             // A faction's other holdings never join its score directly - they are worth a point
             // apiece to the market that stands for it, which is the whole sibling term.
@@ -46,7 +50,7 @@ final class MarketClaimBreakdownTest {
         @Test
         void addsTheFlatBonusAGarrisonEarns() {
 
-            var claim = new MarketClaimBreakdown(MARKET_NAME, FIRST_LISTED, 5, 0, OptionalInt.of(10));
+            var claim = buildClaim(5, 0, OptionalInt.of(10));
 
             assertThat(claim.computeTotalScore())
                 .isEqualTo(15);
@@ -55,7 +59,7 @@ final class MarketClaimBreakdownTest {
         @Test
         void addsTheSizeSiblingAndGarrisonTermsTogether() {
 
-            var claim = new MarketClaimBreakdown(MARKET_NAME, FIRST_LISTED, 5, 2, OptionalInt.of(10));
+            var claim = buildClaim(5, 2, OptionalInt.of(10));
 
             // The case the three terms can hide each other in: a rule that dropped one would
             // still add up in each of the cases above, where two of them are nought.
@@ -70,7 +74,7 @@ final class MarketClaimBreakdownTest {
         @Test
         void readsAnAbsentBonusGivenAsNullAsNoBonus() {
 
-            var claim = new MarketClaimBreakdown(MARKET_NAME, FIRST_LISTED, 5, 0, null);
+            var claim = buildClaim(5, 0, null);
 
             assertThat(claim.militaryBonus())
                 .isEmpty();
@@ -81,7 +85,7 @@ final class MarketClaimBreakdownTest {
         @Test
         void carriesTheColonyItWasBuiltFrom() {
 
-            var claim = new MarketClaimBreakdown(MARKET_NAME, FIRST_LISTED, 5, 2, OptionalInt.of(10));
+            var claim = buildClaim(5, 2, OptionalInt.of(10));
 
             // Every term survives the sum, since the box explaining a claim prints them rather
             // than the total the map paints its fill by.
@@ -94,5 +98,22 @@ final class MarketClaimBreakdownTest {
             assertThat(claim.militaryBonus())
                 .hasValue(10);
         }
+    }
+
+    // One market's claim arithmetic, stated by the three terms every case here varies and nothing
+    // else: which market it is and whether the player has found it are the same throughout, and
+    // spelled at each call they would bury the terms the suite is actually about.
+    private static MarketClaimBreakdown buildClaim(
+            int marketSize,
+            int siblingMarketCount,
+            OptionalInt militaryBonus) {
+
+        return new MarketClaimBreakdown(
+            MARKET_NAME,
+            FIRST_LISTED,
+            IS_KNOWN_TO_PLAYER,
+            marketSize,
+            siblingMarketCount,
+            militaryBonus);
     }
 }
