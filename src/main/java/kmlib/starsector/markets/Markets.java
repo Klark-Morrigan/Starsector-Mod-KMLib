@@ -3,9 +3,7 @@ package kmlib.starsector.markets;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.impl.campaign.ids.MemFlags;
-import com.fs.starfarer.api.impl.campaign.ids.Stats;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
-import com.fs.starfarer.api.util.DynamicStatsAPI;
 import com.fs.starfarer.api.util.Misc;
 
 import java.util.ArrayList;
@@ -289,29 +287,6 @@ public final class Markets {
     }
 
     /**
-     * Whether a functional patrol HQ garrisons this market - the "does a patrol
-     * industry actually field patrols here" gate.
-     *
-     * <p>Reads vanilla's {@link MemFlags#MARKET_PATROL} (the {@code $patrol} flag) a
-     * functional patrol industry - a Patrol HQ, Military Base, or High Command, or a
-     * Lion's Guard HQ - sets on its market and clears when it stops, the same flag
-     * vanilla's patrol-spawn AI gates on. This is deliberately narrower than a
-     * non-zero {@link #readPatrolCounts}: the patrol-count stats are also written by
-     * hidden pirate and Luddic Path bases that never set the flag, so a caller
-     * asking "does a patrol HQ field patrols here" must read the flag, not the counts.
-     *
-     * @param market the market to test; null (or one with no memory) yields false
-     * @return true when a functional patrol industry fields patrols at this market
-     */
-    public static boolean fieldsPatrols(MarketAPI market) {
-        if (market == null) {
-            return false;
-        }
-        var memory = market.getMemoryWithoutUpdate();
-        return memory != null && memory.getBoolean(MemFlags.MARKET_PATROL);
-    }
-
-    /**
      * Whether a market is a military one - a garrison rather than a plain colony.
      *
      * <p>Delegates to {@link Misc#isMilitary}, which reads the
@@ -320,11 +295,11 @@ public final class Markets {
      * the conditions that raise it are vanilla's to change, and a second
      * implementation of the same rule would be free to drift from it.
      *
-     * <p>Broader than {@link #fieldsPatrols}, and the two answer different questions.
-     * A market is military by virtue of what it <em>is</em>; it fields patrols by
-     * virtue of a patrol industry currently running there. A caller weighing military
-     * standing - claim scoring, threat estimates - wants this one; a caller asking
-     * whether fleets actually launch from here wants the patrol flag.
+     * <p>Broader than {@link MarketPatrols#fieldsPatrols}, and the two answer different
+     * questions. A market is military by virtue of what it <em>is</em>; it fields
+     * patrols by virtue of a patrol industry currently running there. A caller weighing
+     * military standing - claim scoring, threat estimates - wants this one; a caller
+     * asking whether fleets actually launch from here wants the patrol flag.
      *
      * @param market the market to test; null (or one with no memory) yields false
      * @return true when the market counts as military
@@ -340,38 +315,6 @@ public final class Markets {
         return Misc.isMilitary(market);
     }
 
-    /**
-     * A market's configured patrol strength, read from the economy as the three
-     * vanilla size-tier counts.
-     *
-     * <p>The reusable half of any "how much military does this colony field" read:
-     * the light, medium, and heavy patrol counts vanilla's military industries
-     * write onto the market's dynamic stats. This reads that static configuration -
-     * what the colony is set up to field - rather than the fleets currently in
-     * flight, so it is stable across a pass. The read mirrors vanilla's own
-     * {@code MilitaryBase.getMaxPatrols}: each tier's effective mod truncated to an
-     * integer count, so this reads the same numbers the game would spawn against.
-     *
-     * <p>Non-zero counts do not imply a patrol HQ: hidden pirate and Luddic Path
-     * bases write these stats too. Gate on {@link #fieldsPatrols} first when the
-     * question is whether a functional patrol industry garrisons the market.
-     *
-     * @param market the market to read; null (or one with no stats) yields
-     *               {@link PatrolCounts#NONE}
-     * @return the market's small, medium, and large patrol counts
-     */
-    public static PatrolCounts readPatrolCounts(MarketAPI market) {
-        if (market == null || market.getStats() == null
-                || market.getStats().getDynamic() == null) {
-            return PatrolCounts.NONE;
-        }
-        var dynamic = market.getStats().getDynamic();
-        return new PatrolCounts(
-            readPatrolTierCount(dynamic, Stats.PATROL_NUM_LIGHT_MOD),
-            readPatrolTierCount(dynamic, Stats.PATROL_NUM_MEDIUM_MOD),
-            readPatrolTierCount(dynamic, Stats.PATROL_NUM_HEAVY_MOD));
-    }
-
     // What makes two markets the same place under the same owner. Typed as Object so a
     // market missing either half can be handed a bare instance no other market can equal:
     // it then falls out of the grouping on its own rather than pooling with every other
@@ -383,17 +326,6 @@ public final class Markets {
             return new Object();
         }
         return new PlaceAndOwner(entity, faction.getId());
-    }
-
-    // One patrol tier's count off the dynamic stats, mirroring vanilla's truncation
-    // of the effective mod to an int. A missing mod (no military industry) or a
-    // negative reading floors to zero, so a count is never negative.
-    private static int readPatrolTierCount(DynamicStatsAPI dynamic, String modKey) {
-        var mod = dynamic.getMod(modKey);
-        if (mod == null) {
-            return 0;
-        }
-        return Math.max(0, (int) mod.computeEffective(0.0f));
     }
 
     // The identity two market objects must share before the larger can stand for both.
