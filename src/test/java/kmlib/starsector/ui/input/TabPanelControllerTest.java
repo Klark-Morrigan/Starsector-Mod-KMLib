@@ -405,8 +405,7 @@ final class TabPanelControllerTest {
             controller.startHotkeyBlinkAt(FIRST_TAB_INDEX);
 
             controller.advanceInputMotionsForFrame(
-                NO_TAB_HOVERED,
-                NOTCH_NOT_HOVERED,
+                new TabPanelHover(NO_TAB_HOVERED, NOTCH_NOT_HOVERED),
                 TabPanelController.HOTKEY_BLINK_DURATIONS.riseSeconds(),
                 DURATIONS);
 
@@ -422,15 +421,13 @@ final class TabPanelControllerTest {
             var controller = new TabPanelController();
 
             controller.advanceInputMotionsForFrame(
-                FIRST_TAB_INDEX,
-                NOTCH_NOT_HOVERED,
+                new TabPanelHover(FIRST_TAB_INDEX, NOTCH_NOT_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
 
             controller.startHotkeyBlinkAt(FIRST_TAB_INDEX);
             controller.advanceInputMotionsForFrame(
-                FIRST_TAB_INDEX,
-                NOTCH_NOT_HOVERED,
+                new TabPanelHover(FIRST_TAB_INDEX, NOTCH_NOT_HOVERED),
                 TabPanelController.HOTKEY_BLINK_DURATIONS.riseSeconds(),
                 DURATIONS);
 
@@ -448,14 +445,12 @@ final class TabPanelControllerTest {
             controller.startHotkeyBlinkAt(FIRST_TAB_INDEX);
 
             controller.advanceInputMotionsForFrame(
-                NO_TAB_HOVERED,
-                NOTCH_NOT_HOVERED,
+                new TabPanelHover(NO_TAB_HOVERED, NOTCH_NOT_HOVERED),
                 TabPanelController.HOTKEY_BLINK_DURATIONS.riseSeconds(),
                 DURATIONS);
 
             controller.advanceInputMotionsForFrame(
-                FIRST_TAB_INDEX,
-                NOTCH_NOT_HOVERED,
+                new TabPanelHover(FIRST_TAB_INDEX, NOTCH_NOT_HOVERED),
                 HALF_OF_THE_BLINKS_FALL_SECONDS,
                 DURATIONS);
 
@@ -472,14 +467,12 @@ final class TabPanelControllerTest {
             controller.startHotkeyBlinkAt(SECOND_TAB_INDEX);
 
             controller.advanceInputMotionsForFrame(
-                NO_TAB_HOVERED,
-                NOTCH_NOT_HOVERED,
+                new TabPanelHover(NO_TAB_HOVERED, NOTCH_NOT_HOVERED),
                 TabPanelController.HOTKEY_BLINK_DURATIONS.riseSeconds(),
                 DURATIONS);
 
             controller.advanceInputMotionsForFrame(
-                NO_TAB_HOVERED,
-                NOTCH_NOT_HOVERED,
+                new TabPanelHover(NO_TAB_HOVERED, NOTCH_NOT_HOVERED),
                 TabPanelController.HOTKEY_BLINK_DURATIONS.fallSeconds(),
                 DURATIONS);
 
@@ -510,8 +503,7 @@ final class TabPanelControllerTest {
             // interaction sources, or the strip paints a row that never moves however long it is hovered.
             var controller = new TabPanelController();
             controller.advanceInputMotionsForFrame(
-                FIRST_TAB_INDEX,
-                NOTCH_NOT_HOVERED,
+                new TabPanelHover(FIRST_TAB_INDEX, NOTCH_NOT_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
 
@@ -527,14 +519,12 @@ final class TabPanelControllerTest {
             var controller = new TabPanelController();
 
             controller.advanceInputMotionsForFrame(
-                FIRST_TAB_INDEX,
-                NOTCH_NOT_HOVERED,
+                new TabPanelHover(FIRST_TAB_INDEX, NOTCH_NOT_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
 
             controller.advanceInputMotionsForFrame(
-                SECOND_TAB_INDEX,
-                NOTCH_NOT_HOVERED,
+                new TabPanelHover(SECOND_TAB_INDEX, NOTCH_NOT_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
 
@@ -551,8 +541,7 @@ final class TabPanelControllerTest {
             // fold is asked once, not twice.
             var controller = TabPanelController.createStartingDocked();
             controller.advanceInputMotionsForFrame(
-                FIRST_TAB_INDEX,
-                NOTCH_NOT_HOVERED,
+                new TabPanelHover(FIRST_TAB_INDEX, NOTCH_NOT_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
 
@@ -565,8 +554,7 @@ final class TabPanelControllerTest {
 
             var controller = new TabPanelController();
             controller.advanceInputMotionsForFrame(
-                NO_TAB_HOVERED,
-                NOTCH_HOVERED,
+                new TabPanelHover(NO_TAB_HOVERED, NOTCH_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
 
@@ -580,14 +568,12 @@ final class TabPanelControllerTest {
             var controller = new TabPanelController();
 
             controller.advanceInputMotionsForFrame(
-                NO_TAB_HOVERED,
-                NOTCH_HOVERED,
+                new TabPanelHover(NO_TAB_HOVERED, NOTCH_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
 
             controller.advanceInputMotionsForFrame(
-                NO_TAB_HOVERED,
-                NOTCH_NOT_HOVERED,
+                new TabPanelHover(NO_TAB_HOVERED, NOTCH_NOT_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
 
@@ -601,8 +587,7 @@ final class TabPanelControllerTest {
             // back - so the gate that silences the tabs must not reach it.
             var controller = TabPanelController.createStartingDocked();
             controller.advanceInputMotionsForFrame(
-                NO_TAB_HOVERED,
-                NOTCH_HOVERED,
+                new TabPanelHover(NO_TAB_HOVERED, NOTCH_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
 
@@ -790,8 +775,7 @@ final class TabPanelControllerTest {
             var controller = new TabPanelController();
 
             controller.advanceInputMotionsForFrame(
-                FIRST_TAB_INDEX,
-                NOTCH_NOT_HOVERED,
+                new TabPanelHover(FIRST_TAB_INDEX, NOTCH_NOT_HOVERED),
                 HALF_STEP_SECONDS,
                 DURATIONS);
 
@@ -808,8 +792,7 @@ final class TabPanelControllerTest {
             var controller = new TabPanelController();
 
             controller.advanceInputMotionsForFrame(
-                NO_TAB_HOVERED,
-                NOTCH_HOVERED,
+                new TabPanelHover(NO_TAB_HOVERED, NOTCH_HOVERED),
                 HALF_STEP_SECONDS,
                 DURATIONS);
 
@@ -831,8 +814,7 @@ final class TabPanelControllerTest {
                 ON_TAB_ROW_Y);
 
             controller.advanceInputMotionsForFrame(
-                NO_TAB_HOVERED,
-                NOTCH_NOT_HOVERED,
+                new TabPanelHover(NO_TAB_HOVERED, NOTCH_NOT_HOVERED),
                 HALF_STEP_SECONDS,
                 DURATIONS);
                 
@@ -877,8 +859,7 @@ final class TabPanelControllerTest {
 
             controller.startHotkeyBlinkAt(SECOND_TAB_INDEX);
             controller.advanceInputMotionsForFrame(
-                NO_TAB_HOVERED,
-                NOTCH_NOT_HOVERED,
+                new TabPanelHover(NO_TAB_HOVERED, NOTCH_NOT_HOVERED),
                 HALF_STEP_SECONDS,
                 DURATIONS);
 
@@ -1005,56 +986,28 @@ final class TabPanelControllerTest {
             // as it stays, and a sound read off that would be a tone rather than a tick.
             var controller = buildVanillaSoundingController();
 
-            advanceWithPointerOn(controller, FIRST_TAB_INDEX);
-            advanceWithPointerOn(controller, FIRST_TAB_INDEX);
-            advanceWithPointerOn(controller, FIRST_TAB_INDEX);
+            advanceWithPointerOn(controller, buildHoverOnTab(FIRST_TAB_INDEX));
+            advanceWithPointerOn(controller, buildHoverOnTab(FIRST_TAB_INDEX));
+            advanceWithPointerOn(controller, buildHoverOnTab(FIRST_TAB_INDEX));
 
             assertThat(soundPlayerFake.getPlayedSounds())
                 .containsExactly(StarsectorUiSound.BUTTON_MOUSEOVER);
         }
 
         @Test
-        void interfaceSoundsPlayTheMouseoverAgainCrossingStraightToTheNextTab() {
-            // The common move on a row of abutting tabs: the pointer never leaves the row, so an arrival
-            // detected only from "off the row" would announce the first tab and then nothing else.
+        void interfaceSoundsAnnounceTheHandleAgainOnceThePointerHasBeenBackOnTheTabs() {
+            // Both parts' arrivals are stepped every frame, not only whichever one answers. Read through a
+            // short-circuit, the part left unstepped keeps a stale latch saying it never left - and then
+            // stays silent on the frame the pointer actually does come back to it.
             var controller = buildVanillaSoundingController();
 
-            advanceWithPointerOn(controller, FIRST_TAB_INDEX);
-            advanceWithPointerOn(controller, SECOND_TAB_INDEX);
-
-            assertThat(soundPlayerFake.getPlayedSounds())
-                .containsExactly(
-                    StarsectorUiSound.BUTTON_MOUSEOVER,
-                    StarsectorUiSound.BUTTON_MOUSEOVER);
-        }
-
-        @Test
-        void interfaceSoundsStaySilentAsThePointerLeavesTheRow() {
-            // Leaving reaches nothing, so it answers nothing; only arriving does.
-            var controller = buildVanillaSoundingController();
-
-            advanceWithPointerOn(controller, FIRST_TAB_INDEX);
+            advanceWithPointerOn(controller, buildHoverOnTab(FIRST_TAB_INDEX));
+            advanceWithPointerOn(controller, buildHoverOnNotch());
+            advanceWithPointerOn(controller, buildHoverOnTab(FIRST_TAB_INDEX));
 
             soundPlayerFake.clearPlayedSounds();
 
-            advanceWithPointerOn(controller, NO_TAB_HOVERED);
-
-            assertThat(soundPlayerFake.getPlayedSounds())
-                .isEmpty();
-        }
-
-        @Test
-        void interfaceSoundsAnnounceTheTabAfreshWhenThePanelReopensUnderThePointer() {
-            // The panel came to the cursor rather than the other way about, which is an arrival to the
-            // player even though the pointer never moved. Without the reset the row would light in silence.
-            var controller = buildVanillaSoundingController();
-
-            advanceWithPointerOn(controller, FIRST_TAB_INDEX);
-
-            controller.resetInputMotions();
-            soundPlayerFake.clearPlayedSounds();
-
-            advanceWithPointerOn(controller, FIRST_TAB_INDEX);
+            advanceWithPointerOn(controller, buildHoverOnNotch());
 
             assertThat(soundPlayerFake.getPlayedSounds())
                 .containsExactly(StarsectorUiSound.BUTTON_MOUSEOVER);
@@ -1078,7 +1031,7 @@ final class TabPanelControllerTest {
             // The arrival half of the same rule, crossed the other way.
             var controller = buildControllerSounding(SWAPPED_SOUNDS);
 
-            advanceWithPointerOn(controller, FIRST_TAB_INDEX);
+            advanceWithPointerOn(controller, buildHoverOnTab(FIRST_TAB_INDEX));
 
             assertThat(soundPlayerFake.getPlayedSounds())
                 .containsExactly(StarsectorUiSound.BUTTON_PRESSED);
@@ -1091,7 +1044,7 @@ final class TabPanelControllerTest {
             // since a scheme that silenced only one of them would be the fault worth catching.
             var controller = buildControllerSounding(UiSoundScheme.createSilentSoundScheme());
 
-            advanceWithPointerOn(controller, FIRST_TAB_INDEX);
+            advanceWithPointerOn(controller, buildHoverOnTab(FIRST_TAB_INDEX));
             
             controller.startHotkeyBlinkAt(FIRST_TAB_INDEX);
 
@@ -1120,64 +1073,27 @@ final class TabPanelControllerTest {
             // reason: the pointer parked on the handle holds its fade at the top for as long as it stays.
             var controller = buildVanillaSoundingController();
 
-            advanceWithNotchHovered(controller, NOTCH_HOVERED);
-            advanceWithNotchHovered(controller, NOTCH_HOVERED);
+            advanceWithPointerOn(controller, buildHoverOnNotch());
+            advanceWithPointerOn(controller, buildHoverOnNotch());
 
             assertThat(soundPlayerFake.getPlayedSounds())
                 .containsExactly(StarsectorUiSound.BUTTON_MOUSEOVER);
         }
 
-        @Test
-        void interfaceSoundsStaySilentAsThePointerLeavesTheCollapseHandle() {
-            // Leaving reaches nothing, so it answers nothing - the handle on the rule the tabs follow.
-            var controller = buildVanillaSoundingController();
-
-            advanceWithNotchHovered(controller, NOTCH_HOVERED);
-
-            soundPlayerFake.clearPlayedSounds();
-
-            advanceWithNotchHovered(controller, NOTCH_NOT_HOVERED);
-
-            assertThat(soundPlayerFake.getPlayedSounds())
-                .isEmpty();
+        // One frame with the pointer where the given reading puts it - what the panel's own hit-tests
+        // would have produced, handed in so these cases need no display to point at.
+        private void advanceWithPointerOn(TabPanelController controller, TabPanelHover hover) {
+            controller.advanceInputMotionsForFrame(hover, FULL_STEP_SECONDS, DURATIONS);
         }
 
-        @Test
-        void interfaceSoundsAnnounceTheCollapseHandleAfreshWhenThePanelReopensUnderThePointer() {
-            // The handle's half of the reset: a panel re-opening with the pointer parked on it came to the
-            // cursor, which is an arrival however still the pointer was. Without clearing the handle's own
-            // flag beside the tab's, the handle would light in silence for exactly that case.
-            var controller = buildVanillaSoundingController();
-
-            advanceWithNotchHovered(controller, NOTCH_HOVERED);
-
-            controller.resetInputMotions();
-            soundPlayerFake.clearPlayedSounds();
-
-            advanceWithNotchHovered(controller, NOTCH_HOVERED);
-
-            assertThat(soundPlayerFake.getPlayedSounds())
-                .containsExactly(StarsectorUiSound.BUTTON_MOUSEOVER);
+        // The pointer on one tab and off the handle.
+        private static TabPanelHover buildHoverOnTab(Integer tabIndex) {
+            return new TabPanelHover(tabIndex, NOTCH_NOT_HOVERED);
         }
 
-        // One frame with the pointer on the given tab, or on none for a null - the reading the panel's own
-        // hit-test would have produced, handed in so these cases need no display to point at.
-        private void advanceWithPointerOn(TabPanelController controller, Integer hoveredTabIndex) {
-            controller.advanceInputMotionsForFrame(
-                hoveredTabIndex,
-                NOTCH_NOT_HOVERED,
-                FULL_STEP_SECONDS,
-                DURATIONS);
-        }
-
-        // One frame with the pointer on the collapse handle or off it, and on no tab either way - so what
-        // sounds can only have come from the handle.
-        private void advanceWithNotchHovered(TabPanelController controller, boolean isNotchHovered) {
-            controller.advanceInputMotionsForFrame(
-                NO_TAB_HOVERED,
-                isNotchHovered,
-                FULL_STEP_SECONDS,
-                DURATIONS);
+        // The pointer on the handle and off every tab, so what sounds can only have come from the handle.
+        private static TabPanelHover buildHoverOnNotch() {
+            return new TabPanelHover(NO_TAB_HOVERED, NOTCH_HOVERED);
         }
 
         // A controller recording into this case's fake and answering by the engine's own scheme - the look
@@ -1216,8 +1132,7 @@ final class TabPanelControllerTest {
     // cannot be mistaken for the lift being asked about.
     private static void advanceAWholeTraverse(TabPanelController controller) {
         controller.advanceInputMotionsForFrame(
-            NO_TAB_HOVERED,
-            NOTCH_NOT_HOVERED,
+            new TabPanelHover(NO_TAB_HOVERED, NOTCH_NOT_HOVERED),
             FULL_STEP_SECONDS,
             DURATIONS);
     }

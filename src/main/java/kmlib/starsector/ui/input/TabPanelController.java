@@ -491,10 +491,11 @@ public final class TabPanelController {
         // rather than inside the advance below: a panel not presenting them is pointing at none of them,
         // which is the same statement as a pointer that is on no tab.
         advanceInputMotionsForFrame(
-            isPresentingTabsOf(placement)
-                ? resolveTabIndexAtPoint(placement, pointX, pointY)
-                : NO_TAB_HOVERED,
-            placement.containsPointInNotch(pointX, pointY),
+            new TabPanelHover(
+                isPresentingTabsOf(placement)
+                    ? resolveTabIndexAtPoint(placement, pointX, pointY)
+                    : NO_TAB_HOVERED,
+                placement.containsPointInNotch(pointX, pointY)),
             elapsedSeconds,
             durations);
     }
@@ -510,24 +511,22 @@ public final class TabPanelController {
      * the placement: a panel presenting none is a pointer on none, and stating it twice would be two places
      * to keep in step. What arrives here is only where the pointer is.
      *
-     * @param hoveredTabIndex the tab the pointer is on this frame, or null when it is on none
-     * @param isNotchHovered  whether the pointer is on the collapse handle this frame
-     * @param elapsedSeconds  real time since the last frame the host drew
-     * @param durations       how long a traverse takes each way; a non-positive one snaps that way
+     * @param hover          what the pointer is on this frame, over both of the panel's hoverable parts
+     * @param elapsedSeconds real time since the last frame the host drew
+     * @param durations      how long a traverse takes each way; a non-positive one snaps that way
      */
     void advanceInputMotionsForFrame(
-            Integer hoveredTabIndex,
-            boolean isNotchHovered,
+            TabPanelHover hover,
             float elapsedSeconds,
             TraverseDurations durations) {
 
-        soundArrivalsAt(hoveredTabIndex, isNotchHovered);
+        soundArrivalsAt(hover);
 
         // The handle is never gated with the tabs - it draws past the frame and outlives the fold, being
         // what brings a docked panel back.
-        tabHoverFades.advanceTowardHoveredKey(hoveredTabIndex, elapsedSeconds, durations);
+        tabHoverFades.advanceTowardHoveredKey(hover.tabIndex(), elapsedSeconds, durations);
 
-        notchHoverFade.advanceTowardHover(isNotchHovered, elapsedSeconds, durations);
+        notchHoverFade.advanceTowardHover(hover.isNotchHovered(), elapsedSeconds, durations);
         tabClickPulses.advanceByElapsedTime(elapsedSeconds, durations);
 
         // Ungated, like the clicks and unlike the fades: a blink is an event already seen, so its cycle runs
@@ -595,13 +594,13 @@ public final class TabPanelController {
     // A moment rather than a position, which is why neither is read off a fade: the pointer resting on a
     // part holds its fade at the top for as long as it stays, and a sound taken from that would be a tone
     // rather than a tick.
-    private void soundArrivalsAt(Integer hoveredTabIndex, boolean isNotchHovered) {
+    private void soundArrivalsAt(TabPanelHover hover) {
 
         // Both stepped before either is read. Each latches what the pointer is on this frame, so a
-        // short-circuit would leave the unread one holding a stale reading - and then announce a stale
-        // arrival on the frame the pointer got back to it.
-        var hasReachedTab = tabHoverArrival.detectArrivalAt(hoveredTabIndex);
-        var hasReachedNotch = notchHoverArrival.detectArrival(isNotchHovered);
+        // short-circuit would leave the unread one holding a stale reading - and then stay silent on the
+        // frame the pointer did come back to it, that stale latch saying it never left.
+        var hasReachedTab = tabHoverArrival.detectArrivalAt(hover.tabIndex());
+        var hasReachedNotch = notchHoverArrival.detectArrival(hover.isNotchHovered());
 
         if (hasReachedTab || hasReachedNotch) {
             soundPlayer.playSoundIfPresent(soundScheme.pointerArrivalSound());
