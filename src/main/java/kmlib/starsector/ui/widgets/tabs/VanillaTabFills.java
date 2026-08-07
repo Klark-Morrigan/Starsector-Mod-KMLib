@@ -39,8 +39,16 @@ public final class VanillaTabFills {
      */
     public static final float SELECTED_GLOW = 0.45f;
 
-    /** How brightly the engine lights the tab under the pointer: the full glow. */
-    public static final float POINTED_GLOW = 1f;
+    /**
+     * How brightly the engine lights the tab under the pointer - above the shown tab, so the two never read
+     * alike, and below the lift a press adds on top.
+     *
+     * <p>Short of the full glow rather than at it. The two-pass additive draw this is worked out from is an
+     * approximation of the engine's, so the amounts are measured against its own tabs rather than asserted:
+     * at the full glow a pointed-at tab came out plainly brighter than the Sector/System tabs beside it,
+     * which is the comparison that decides this number.
+     */
+    public static final float POINTED_GLOW = 0.65f;
 
     /** No glow at all, which is where an untouched tab rests. */
     public static final float NO_GLOW = 0f;

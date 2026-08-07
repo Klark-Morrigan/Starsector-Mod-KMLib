@@ -189,13 +189,13 @@ final class TabPaletteTest {
         }
 
         @Test
-        void createMapTabPaletteLightsTheHoveredFillAtTheFullGlow() {
-            // The same shade at the whole glow (0.441), which stands above the shown tab's - the ordering
-            // a strip marking selection by fill alone rests on.
+        void createMapTabPaletteLightsTheHoveredFillAboveTheShownTabs() {
+            // The same shade at the pointer's amount (0.2868), which stands above the shown tab's - the
+            // ordering a strip marking selection by fill alone rests on.
             var palette = buildMapTabPaletteUnderStubbedEngine();
 
             assertThat(palette.hovered().fill())
-                .isEqualTo(new Color(117, 161, 173, OPAQUE_ALPHA));
+                .isEqualTo(new Color(84, 128, 140, OPAQUE_ALPHA));
             assertThat(palette.hovered().fill().getBlue())
                 .isGreaterThan(palette.selected().fill().getBlue());
         }
@@ -234,12 +234,12 @@ final class TabPaletteTest {
         }
 
         @Test
-        void createMapTabPaletteWhitensTheHoveredLabelWhereTheFullGlowOverrunsIt() {
-            // At the full glow the added light overruns the channel and clips, which is why a pointed-at
-            // tab's text reads white rather than blue - the same additive pass the engine draws, not a
-            // separate whitening of ours.
+        void createMapTabPaletteLightsTheHoveredLabelAboveTheShownTabs() {
+            // The label climbs with its fill and by the same amount, so the text under the pointer stands
+            // above the shown tab's text exactly as their fills do. A flat grey stands in for the engine's
+            // blue here, which is why this one does not clip where the live palette's green and blue do.
             assertThat(buildMapTabPaletteUnderStubbedEngine().hovered().label())
-                .isEqualTo(new Color(255, 255, 255, OPAQUE_ALPHA));
+                .isEqualTo(new Color(243, 243, 243, OPAQUE_ALPHA));
         }
 
         @Test

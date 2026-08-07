@@ -70,11 +70,12 @@ final class VanillaTabFillsTest {
         }
 
         @Test
-        void resolveFillAtGlowLightsThePointedTabAtTheFullGlow() {
-            // The same shade at the whole glow - 0.5 * (175 + 50) / 255 = 0.441 - which is where the tab
-            // under the pointer stands.
+        void resolveFillAtGlowLightsThePointedTabAboveTheShownOne() {
+            // The same shade at the pointer's amount - 0.65 * 0.5 * (175 + 50) / 255 = 0.2868 - which is
+            // where the tab under the pointer stands: above the shown tab and short of the full glow, the
+            // whole of it having read brighter than the engine's own tabs beside it.
             assertThat(resolveFillAt(VanillaTabFills.POINTED_GLOW))
-                .isEqualTo(new Color(115, 170, 190, OPAQUE_ALPHA));
+                .isEqualTo(new Color(82, 134, 150, OPAQUE_ALPHA));
         }
 
         @Test
@@ -114,9 +115,9 @@ final class VanillaTabFillsTest {
         void resolveFillAtGlowDimsTheGlowOnASeeThroughFill() {
             // Below the headroom the glow is scaled down with the fill, so a barely-there fill does not
             // light up as strongly as a solid one. Black again, for the reason above: (213, 239, 255) at
-            // 0.5 * (25 + 50) / 255 = 0.147 rather than at the full half.
+            // 0.65 * 0.5 * (25 + 50) / 255 = 0.0956 rather than at the pointer's full amount.
             assertThat(resolveBlackFillAt(25, VanillaTabFills.POINTED_GLOW))
-                .isEqualTo(new Color(31, 35, 38, OPAQUE_ALPHA));
+                .isEqualTo(new Color(20, 23, 24, OPAQUE_ALPHA));
         }
 
         @Test
@@ -150,22 +151,24 @@ final class VanillaTabFillsTest {
 
         @Test
         void resolveLabelAtGlowWhitensThePointedTabsLabelWhereTheGlowOverrunsIt() {
-            // At the full glow every channel overruns and clips, so the text under the pointer goes white.
-            // That is the additive pass doing it, not a whitening of ours - which is what a label given a
-            // colour of its own per state could never reproduce at exactly these amounts.
+            // Green and blue overrun and clip while red, having the furthest to climb, does not - so the
+            // text under the pointer reads as a near-white with the blue still in it rather than as flat
+            // white. That is the additive pass doing it, not a whitening of ours, and it is why the amount
+            // the glow is driven to shows in the label as well as in the fill.
             assertThat(resolveLabelAt(VanillaTabFills.POINTED_GLOW))
-                .isEqualTo(new Color(255, 255, 255, OPAQUE_ALPHA));
+                .isEqualTo(new Color(231, 255, 255, OPAQUE_ALPHA));
         }
 
         @Test
         void resolveLabelAtGlowDimsTheGlowOnASeeThroughFill() {
             // The label borrows the temper from the fill beneath it rather than carrying one of its own, so
             // a barely-there tab lights its text as weakly as it lights itself: (213, 239, 255) at
-            // 0.5 * (25 + 50) / 255 = 0.147, leaving red well short of the clip the full glow reaches.
+            // 0.65 * 0.5 * (25 + 50) / 255 = 0.0956, leaving red further short of the clip than a solid
+            // fill leaves it.
             assertThat(VanillaTabFills.resolveLabelAtGlow(
                     paintWithFill(new Color(0, 0, 0, 25)),
                     VanillaTabFills.POINTED_GLOW))
-                .isEqualTo(new Color(201, 255, 255, OPAQUE_ALPHA));
+                .isEqualTo(new Color(190, 245, 255, OPAQUE_ALPHA));
         }
     }
 
