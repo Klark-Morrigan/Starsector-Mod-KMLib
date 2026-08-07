@@ -18,4 +18,23 @@ public interface UiSoundPlayer {
      * @param sound the role that sounded
      */
     void playSound(StarsectorUiSound sound);
+
+    /**
+     * Plays a sound there may not be: the given role if there is one, and nothing at all otherwise. The
+     * form a caller wants wherever the role it holds was resolved rather than written down - a lookup
+     * that can come back empty, such as a {@link UiSoundScheme}'s answer for a moment it leaves quiet.
+     *
+     * <p>Here rather than at each caller so an absent sound means the same thing everywhere, and beside
+     * {@link #playSound} rather than inside it so no implementation has to think about it. A null
+     * crossing the seam would make every implementation responsible for the same guard - and a recording
+     * one would either log a sound nothing played or need a guard of its own to avoid it.
+     *
+     * @param sound the role that sounded, or null for a moment with no sound to it
+     */
+    default void playSoundIfPresent(StarsectorUiSound sound) {
+
+        if (sound != null) {
+            playSound(sound);
+        }
+    }
 }

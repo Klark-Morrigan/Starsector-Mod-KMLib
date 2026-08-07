@@ -160,6 +160,7 @@ the surface supplies the implementation:
 | [`LabelLengthEstimator`](label/LabelLengthEstimator.java) | how long a label will draw | [`FontLabelLengthEstimator`](label/FontLabelLengthEstimator.java), [`AspectLabelLengthEstimator`](label/AspectLabelLengthEstimator.java) |
 | [`ModelviewMatrixReader`](map/transform/ModelviewMatrixReader.java) | the campaign map's transform | [`GlModelviewMatrixReader`](map/transform/GlModelviewMatrixReader.java), [`FastRenderingModelviewMatrixReader`](map/transform/FastRenderingModelviewMatrixReader.java) |
 | [`IntelScreenView`](intel/IntelScreenView.java) | what the intel screen is showing | [`VanillaIntelScreenView`](intel/VanillaIntelScreenView.java) |
+| [`UiSoundPlayer`](sound/UiSoundPlayer.java) | where a widget's interface sounds go | [`VanillaUiSoundPlayer`](sound/VanillaUiSoundPlayer.java), [`UiSoundPlayerFake`](../../testfixtures/starsector/ui/sound/UiSoundPlayerFake.java) |
 
 `ControlSpec` and `ControlAction` split the same way within `controls`: the sealed spec is
 content, the action is behaviour the container owns. A content model that held its own
@@ -310,6 +311,7 @@ standing for a count is not prose.
 | [`layout`](layout/) | neutral | box placement, strips, padding, screen anchors, and the [tabs row](layout/TabsControlLayout.java) - the one control whose dimensions come from the vanilla tab strip rather than from a body-font label |
 | [`label`](label/) | neutral | label fitting, plus the length-estimator port |
 | [`colour`](colour/) | neutral | `StarsectorUiColour`, the checked wrapper over vanilla's colour getters |
+| [`sound`](sound/) | split | the [roles](sound/StarsectorUiSound.java) a KM control answers with, the [scheme](sound/UiSoundScheme.java) saying which role each moment makes - carried in the panel's [`WidgetStyle`](render/gl/WidgetStyle.java), a sound being a property of a look exactly as a fill is - and the player port with its live binding. The choice belongs to the look and the moment to whatever detects it, so no controller names a sound of its own and a panel is silenced by the one value it was built from |
 | [`font`](font/) | split | the [face enum](font/StarsectorFont.java) every atlas is named through, the measurement ports, and their LazyFont-bound implementations and [caches](../../../../../../docs/dev/caching.md) |
 | [`render/gl`](render/gl/) | GL | every raw-GL painter, its styles, and the [state guard](render/gl/GlStateGuard.java) |
 | [`debug`](debug/) | GL | the on-screen debug HUD |

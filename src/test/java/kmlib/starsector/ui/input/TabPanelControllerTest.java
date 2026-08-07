@@ -9,6 +9,7 @@ import kmlib.starsector.ui.controls.ControlAction;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.LabelledControlSpecs;
 import kmlib.starsector.ui.sound.StarsectorUiSound;
+import kmlib.starsector.ui.sound.UiSoundScheme;
 import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.PanelPlacement;
 import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
@@ -31,7 +32,9 @@ import static org.assertj.core.api.Assertions.within;
  * hit-test that decides which tab a fade is held for, the fades it steps for the tabs and for the collapse
  * handle, the docked gate that silences the tabs while leaving the handle live, the click pulse a press on a
  * tab starts, and the blink a bound key's press runs on the look channel beside the hover it shares that
- * channel with. The pointer routing and the scroll delegation run against live input events and are
+ * channel with. It also pins what the panel answers those moments with: which sounds, at which moments,
+ * and - the point of that seam - taken from the look the panel wears rather than named in its own code.
+ * The pointer routing and the scroll delegation run against live input events and are
  * exercised in-engine, as is the cursor read the per-frame advance opens with - which is why the advance and
  * the press are pinned through the point that read would have returned rather than through a display there
  * is none of to point at.
@@ -927,6 +930,13 @@ final class TabPanelControllerTest {
     @Nested
     class InterfaceSounds {
 
+        // The two roles crossed over, so a moment answered from the controller's own code rather than from
+        // the look it was handed records the sound the other moment would have made. The vanilla pair could
+        // not tell the two apart - it names exactly what the controller used to name for itself.
+        private static final UiSoundScheme SWAPPED_SOUNDS = new UiSoundScheme(
+            StarsectorUiSound.BUTTON_MOUSEOVER,
+            StarsectorUiSound.BUTTON_PRESSED);
+
         private final UiSoundPlayerFake soundPlayerFake = new UiSoundPlayerFake();
 
         @Test
@@ -934,7 +944,7 @@ final class TabPanelControllerTest {
             // The engine's own tabs sound as the button comes up, so the sound and the wash fading out are
             // one answer. Pinned as two assertions either side of the release, since a press that sounded on
             // the way down would still leave the right sound recorded by the end.
-            var controller = new TabPanelController(soundPlayerFake);
+            var controller = buildVanillaSoundingController();
             var placement = buildTwoTabPlacementShowing(FIRST_TAB_INDEX, tabIndex -> { });
 
             controller.activateTabAtPoint(placement, INSIDE_SECOND_TAB_X, ON_TAB_ROW_Y);
@@ -953,7 +963,7 @@ final class TabPanelControllerTest {
         void interfaceSoundsPlayThePressForTheTabAlreadyShowing() {
             // The lit tab fires no action and still answers the press, so it must sound like every other
             // tab - a press that lifted but stayed silent would read as a half-registered click.
-            var controller = new TabPanelController(soundPlayerFake);
+            var controller = buildVanillaSoundingController();
             var placement = buildTwoTabPlacementShowing(FIRST_TAB_INDEX, tabIndex -> { });
 
             controller.activateTabAtPoint(placement, INSIDE_FIRST_TAB_X, ON_TAB_ROW_Y);
@@ -967,7 +977,7 @@ final class TabPanelControllerTest {
         void interfaceSoundsStaySilentForAReleaseThatEndedNoPress() {
             // Every release on the screen reaches the panel, so one that let go of nothing must not click at
             // the player - otherwise clicking the map behind the sidebar would sound like pressing it.
-            var controller = new TabPanelController(soundPlayerFake);
+            var controller = buildVanillaSoundingController();
 
             controller.handlePointer(
                 buildLeftReleaseAt(OFF_PANEL_X, OFF_PANEL_Y),
@@ -981,7 +991,7 @@ final class TabPanelControllerTest {
         void interfaceSoundsPlayThePressForABoundKey() {
             // A keypress puts nothing under the pointer to explain itself, so it takes both answers the
             // engine gives a press rather than the flash alone.
-            var controller = new TabPanelController(soundPlayerFake);
+            var controller = buildVanillaSoundingController();
 
             controller.startHotkeyBlinkAt(SECOND_TAB_INDEX);
 
@@ -993,7 +1003,7 @@ final class TabPanelControllerTest {
         void interfaceSoundsPlayTheMouseoverOnceAsThePointerArrives() {
             // A moment, not a position: the pointer resting on a tab holds its fade at the top for as long
             // as it stays, and a sound read off that would be a tone rather than a tick.
-            var controller = new TabPanelController(soundPlayerFake);
+            var controller = buildVanillaSoundingController();
 
             advanceWithPointerOn(controller, FIRST_TAB_INDEX);
             advanceWithPointerOn(controller, FIRST_TAB_INDEX);
@@ -1007,7 +1017,7 @@ final class TabPanelControllerTest {
         void interfaceSoundsPlayTheMouseoverAgainCrossingStraightToTheNextTab() {
             // The common move on a row of abutting tabs: the pointer never leaves the row, so an arrival
             // detected only from "off the row" would announce the first tab and then nothing else.
-            var controller = new TabPanelController(soundPlayerFake);
+            var controller = buildVanillaSoundingController();
 
             advanceWithPointerOn(controller, FIRST_TAB_INDEX);
             advanceWithPointerOn(controller, SECOND_TAB_INDEX);
@@ -1021,7 +1031,7 @@ final class TabPanelControllerTest {
         @Test
         void interfaceSoundsStaySilentAsThePointerLeavesTheRow() {
             // Leaving reaches nothing, so it answers nothing; only arriving does.
-            var controller = new TabPanelController(soundPlayerFake);
+            var controller = buildVanillaSoundingController();
 
             advanceWithPointerOn(controller, FIRST_TAB_INDEX);
 
@@ -1037,7 +1047,7 @@ final class TabPanelControllerTest {
         void interfaceSoundsAnnounceTheTabAfreshWhenThePanelReopensUnderThePointer() {
             // The panel came to the cursor rather than the other way about, which is an arrival to the
             // player even though the pointer never moved. Without the reset the row would light in silence.
-            var controller = new TabPanelController(soundPlayerFake);
+            var controller = buildVanillaSoundingController();
 
             advanceWithPointerOn(controller, FIRST_TAB_INDEX);
 
@@ -1045,6 +1055,106 @@ final class TabPanelControllerTest {
             soundPlayerFake.clearPlayedSounds();
 
             advanceWithPointerOn(controller, FIRST_TAB_INDEX);
+
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .containsExactly(StarsectorUiSound.BUTTON_MOUSEOVER);
+        }
+
+        @Test
+        void interfaceSoundsTakeThePressRoleFromTheLookRatherThanNamingOne() {
+            // The point of the whole seam: which sound a press makes is the panel's look talking, so a look
+            // naming something else must be what sounds. A scheme agreeing with the old hardcoded role
+            // would pass whether or not it was ever read.
+            var controller = buildControllerSounding(SWAPPED_SOUNDS);
+
+            controller.startHotkeyBlinkAt(FIRST_TAB_INDEX);
+
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .containsExactly(StarsectorUiSound.BUTTON_MOUSEOVER);
+        }
+
+        @Test
+        void interfaceSoundsTakeThePointerArrivalRoleFromTheLookRatherThanNamingOne() {
+            // The arrival half of the same rule, crossed the other way.
+            var controller = buildControllerSounding(SWAPPED_SOUNDS);
+
+            advanceWithPointerOn(controller, FIRST_TAB_INDEX);
+
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .containsExactly(StarsectorUiSound.BUTTON_PRESSED);
+        }
+
+        @Test
+        void interfaceSoundsStaySilentThroughoutForALookThatNamesNone() {
+            // Silence is something a look states, so a panel is quietened by the value it is built from
+            // rather than by visiting every moment that ever asked for a sound. Both moments in one case,
+            // since a scheme that silenced only one of them would be the fault worth catching.
+            var controller = buildControllerSounding(UiSoundScheme.createSilentSoundScheme());
+
+            advanceWithPointerOn(controller, FIRST_TAB_INDEX);
+            
+            controller.startHotkeyBlinkAt(FIRST_TAB_INDEX);
+
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .isEmpty();
+        }
+
+        @Test
+        void interfaceSoundsPlayThePressAsTheCollapseHandleIsPressed() {
+            // The handle is a control the player aims at and presses, so it answers like one. On the way
+            // down rather than on the release the tabs wait for: the fold is already moving, so the moment
+            // it acts is the moment there is something to confirm.
+            var controller = buildVanillaSoundingController();
+
+            controller.handlePointer(
+                buildLeftPressAt(INSIDE_NOTCH_X, INSIDE_NOTCH_Y),
+                buildTwoTabPlacementWithNotch());
+
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .containsExactly(StarsectorUiSound.BUTTON_PRESSED);
+        }
+
+        @Test
+        void interfaceSoundsPlayTheMouseoverOnceAsThePointerArrivesOnTheCollapseHandle() {
+            // The handle's half of the arrival rule, and a moment rather than a position for the same
+            // reason: the pointer parked on the handle holds its fade at the top for as long as it stays.
+            var controller = buildVanillaSoundingController();
+
+            advanceWithNotchHovered(controller, NOTCH_HOVERED);
+            advanceWithNotchHovered(controller, NOTCH_HOVERED);
+
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .containsExactly(StarsectorUiSound.BUTTON_MOUSEOVER);
+        }
+
+        @Test
+        void interfaceSoundsStaySilentAsThePointerLeavesTheCollapseHandle() {
+            // Leaving reaches nothing, so it answers nothing - the handle on the rule the tabs follow.
+            var controller = buildVanillaSoundingController();
+
+            advanceWithNotchHovered(controller, NOTCH_HOVERED);
+
+            soundPlayerFake.clearPlayedSounds();
+
+            advanceWithNotchHovered(controller, NOTCH_NOT_HOVERED);
+
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .isEmpty();
+        }
+
+        @Test
+        void interfaceSoundsAnnounceTheCollapseHandleAfreshWhenThePanelReopensUnderThePointer() {
+            // The handle's half of the reset: a panel re-opening with the pointer parked on it came to the
+            // cursor, which is an arrival however still the pointer was. Without clearing the handle's own
+            // flag beside the tab's, the handle would light in silence for exactly that case.
+            var controller = buildVanillaSoundingController();
+
+            advanceWithNotchHovered(controller, NOTCH_HOVERED);
+
+            controller.resetInputMotions();
+            soundPlayerFake.clearPlayedSounds();
+
+            advanceWithNotchHovered(controller, NOTCH_HOVERED);
 
             assertThat(soundPlayerFake.getPlayedSounds())
                 .containsExactly(StarsectorUiSound.BUTTON_MOUSEOVER);
@@ -1058,6 +1168,27 @@ final class TabPanelControllerTest {
                 NOTCH_NOT_HOVERED,
                 FULL_STEP_SECONDS,
                 DURATIONS);
+        }
+
+        // One frame with the pointer on the collapse handle or off it, and on no tab either way - so what
+        // sounds can only have come from the handle.
+        private void advanceWithNotchHovered(TabPanelController controller, boolean isNotchHovered) {
+            controller.advanceInputMotionsForFrame(
+                NO_TAB_HOVERED,
+                isNotchHovered,
+                FULL_STEP_SECONDS,
+                DURATIONS);
+        }
+
+        // A controller recording into this case's fake and answering by the engine's own scheme - the look
+        // every case not about the scheme itself is written against.
+        private TabPanelController buildVanillaSoundingController() {
+            return buildControllerSounding(UiSoundScheme.createVanillaSoundScheme());
+        }
+
+        // The same, by whichever scheme the case is about.
+        private TabPanelController buildControllerSounding(UiSoundScheme soundScheme) {
+            return new TabPanelController(soundPlayerFake, soundScheme);
         }
     }
 
@@ -1201,6 +1332,19 @@ final class TabPanelControllerTest {
         Mockito
             .when(eventMock.getY())
             .thenReturn(Math.round(pointY));
+
+        return eventMock;
+    }
+
+    // A left-button press at a point, for the one part of the panel that acts on the way down: the collapse
+    // handle, which starts folding under the press rather than waiting for the button to come up.
+    private static InputEventAPI buildLeftPressAt(float pointX, float pointY) {
+
+        var eventMock = buildMouseEventAt(pointX, pointY);
+
+        Mockito
+            .when(eventMock.isLMBDownEvent())
+            .thenReturn(true);
 
         return eventMock;
     }

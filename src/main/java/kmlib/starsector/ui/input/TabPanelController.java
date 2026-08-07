@@ -5,8 +5,8 @@ import com.fs.starfarer.api.input.InputEventAPI;
 import kmlib.animation.PulseEnvelopes;
 import kmlib.animation.TraverseDurations;
 import kmlib.starsector.ui.controls.ControlSpec;
-import kmlib.starsector.ui.sound.StarsectorUiSound;
 import kmlib.starsector.ui.sound.UiSoundPlayer;
+import kmlib.starsector.ui.sound.UiSoundScheme;
 import kmlib.starsector.ui.sound.VanillaUiSoundPlayer;
 import kmlib.starsector.ui.widgets.RadioRow;
 import kmlib.starsector.ui.widgets.scroll.ScrollState;
@@ -35,7 +35,9 @@ import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
  * expanded by default, or collapsed to its docked rail via {@link #createStartingDocked()}, so a host picks
  * the initial fold at construction rather than driving the animation to reach it.
  *
- * <p>Every animation here is timed and nothing here is coloured. What a fraction lifts a tab toward is the
+ * <p>Every animation here is timed and nothing here is coloured, and the same line runs through what the
+ * panel sounds: this end knows when a control was pressed and when the pointer reached one, and the look
+ * it was handed says which sound each of those moments makes. What a fraction lifts a tab toward is the
  * strip's paint, resolved where the palette is; this end knows only how far each has run.
  */
 public final class TabPanelController {
@@ -94,33 +96,56 @@ public final class TabPanelController {
     // asserted by recording that it was asked for.
     private final UiSoundPlayer soundPlayer;
 
-    // Which tab the pointer was last announced as arriving on, so the mouseover sounds once per arrival
-    // rather than once per frame the pointer spends there. Null for "on no tab", which is also where it is
-    // put when the panel stops showing, so a panel re-opening under a still pointer announces that tab
-    // afresh rather than staying silent because the pointer never technically moved.
-    private Integer soundedHoverTabIndex;
+    // Which sound each moment this panel's controls answer makes. Taken from the host with the rest of the
+    // panel's look rather than named here, because which role a press makes is a property of how the panel
+    // presents itself: this end owns the moments - it is what detects them - and owns none of the choices.
+    // One value for the whole panel, so its notch and its tabs answer alike and a panel is silenced in one
+    // place rather than by visiting every control that ever named a sound.
+    private final UiSoundScheme soundScheme;
 
-    /** A controller whose panel opens expanded - the fold a tab panel starts at unless a host asks otherwise. */
+    // When the pointer reaches a header tab, so an arrival is answered once rather than every frame the
+    // pointer spends there. Keyed by tab index like the fades, and one latch rather than one per tab: only
+    // one tab of a row is under the pointer at a time.
+    private final KeyedHoverArrival<Integer> tabHoverArrival = new KeyedHoverArrival<>();
+
+    // The same moment for the collapse handle - a lone one, there being one handle per panel. Held beside
+    // the tabs' rather than as a flag of this class's own so the two answer to one rule, and so a reset
+    // cannot clear one and leave the other latched.
+    private final HoverArrival notchHoverArrival = new HoverArrival();
+
+    /**
+     * A controller whose panel opens expanded and answers like a vanilla control - the fold and the scheme
+     * a tab panel starts at unless a host asks otherwise.
+     */
     public TabPanelController() {
-        this(new TabPanelCollapse(), new VanillaUiSoundPlayer());
+        this(
+            new TabPanelCollapse(),
+            new VanillaUiSoundPlayer(),
+            UiSoundScheme.createVanillaSoundScheme());
     }
 
     /**
-     * A controller whose panel opens expanded and sounds through the given player, for a caller that wants
-     * the sounds somewhere other than the running game - a test asserting which moments sound, or a host
-     * that silences them.
+     * A controller whose panel opens expanded, sounds through the given player, and answers by the given
+     * scheme - for a host wearing a look of its own, or a test asserting which moments sound.
      *
      * @param soundPlayer where this panel's interface sounds go
+     * @param soundScheme which sound each moment this panel's controls answer makes, the audible half of
+     *                    the look the host paints the panel from
      */
-    public TabPanelController(UiSoundPlayer soundPlayer) {
-        this(new TabPanelCollapse(), soundPlayer);
+    public TabPanelController(UiSoundPlayer soundPlayer, UiSoundScheme soundScheme) {
+        this(new TabPanelCollapse(), soundPlayer, soundScheme);
     }
 
     // Shared construction taking the collapse seed, so the expanded default and the docked start differ only
     // in that seed and neither construction path learns a second one.
-    private TabPanelController(TabPanelCollapse collapse, UiSoundPlayer soundPlayer) {
+    private TabPanelController(
+            TabPanelCollapse collapse,
+            UiSoundPlayer soundPlayer,
+            UiSoundScheme soundScheme) {
+
         this.collapse = collapse;
         this.soundPlayer = soundPlayer;
+        this.soundScheme = soundScheme;
     }
 
     /**
@@ -131,17 +156,23 @@ public final class TabPanelController {
      * @return a controller seeded at the docked end
      */
     public static TabPanelController createStartingDocked() {
-        return createStartingDocked(new VanillaUiSoundPlayer());
+        return createStartingDocked(
+            new VanillaUiSoundPlayer(),
+            UiSoundScheme.createVanillaSoundScheme());
     }
 
     /**
-     * A controller seeded at the docked end that sounds through the given player.
+     * A controller seeded at the docked end that sounds through the given player and by the given scheme.
      *
      * @param soundPlayer where this panel's interface sounds go
+     * @param soundScheme which sound each moment this panel's controls answer makes
      * @return a controller seeded at the docked end
      */
-    public static TabPanelController createStartingDocked(UiSoundPlayer soundPlayer) {
-        return new TabPanelController(TabPanelCollapse.createDocked(), soundPlayer);
+    public static TabPanelController createStartingDocked(
+            UiSoundPlayer soundPlayer,
+            UiSoundScheme soundScheme) {
+
+        return new TabPanelController(TabPanelCollapse.createDocked(), soundPlayer, soundScheme);
     }
 
     /**
@@ -280,11 +311,12 @@ public final class TabPanelController {
         tabClickPulses.resetPulses();
         tabHotkeyBlinks.resetPulses();
 
-        // Forgetting which tab was announced, so a panel re-opening under a still pointer sounds that tab's
-        // arrival afresh. It is an arrival to the player - the row was not there a moment ago - even though
-        // the pointer never moved, and the alternative is a tab that lights in silence for the one case
-        // where the panel came to the cursor rather than the other way about.
-        soundedHoverTabIndex = null;
+        // Forgetting what was announced, so a panel re-opening under a still pointer sounds that tab's - or
+        // that handle's - arrival afresh. It is an arrival to the player - the row was not there a moment
+        // ago - even though the pointer never moved, and the alternative is a control that lights in silence
+        // for the one case where the panel came to the cursor rather than the other way about.
+        tabHoverArrival.resetArrival();
+        notchHoverArrival.resetArrival();
     }
 
     /**
@@ -318,7 +350,7 @@ public final class TabPanelController {
             // actually ended, since every release on the screen reaches here and only the ones that let go
             // of a tab were owed anything - a click on the map behind the panel must not click at the
             // player.
-            soundPlayer.playSound(StarsectorUiSound.BUTTON_PRESSED);
+            soundPlayer.playSoundIfPresent(soundScheme.pressSound());
         }
 
         // A left press on the notch flips the body between expanded and docked. Tested before the header and
@@ -327,6 +359,12 @@ public final class TabPanelController {
         if (event.isLMBDownEvent()
                 && placement.containsPointInNotch(event.getX(), event.getY())) {
             collapse.toggleCollapse();
+
+            // Answered here on the way down rather than on the release the tabs wait for, because the
+            // sound follows the moment the control acts and the handle acts immediately: the fold is
+            // already moving. A tab's lift is held until the button comes up, so its press is not over
+            // until then; the handle holds nothing and has nothing left to report by the release.
+            soundPlayer.playSoundIfPresent(soundScheme.pressSound());
             event.consume();
             return;
         }
@@ -373,7 +411,7 @@ public final class TabPanelController {
         // Sounded as well as flashed, and for the same reason the flash exists: a keypress puts nothing
         // under the pointer to explain itself, so it needs both answers the engine gives a press rather
         // than half of one. Immediately rather than on any release, a key having no held moment to end.
-        soundPlayer.playSound(StarsectorUiSound.BUTTON_PRESSED);
+        soundPlayer.playSoundIfPresent(soundScheme.pressSound());
     }
 
     /**
@@ -483,7 +521,7 @@ public final class TabPanelController {
             float elapsedSeconds,
             TraverseDurations durations) {
 
-        soundHoverArrivalAt(hoveredTabIndex);
+        soundArrivalsAt(hoveredTabIndex, isNotchHovered);
 
         // The handle is never gated with the tabs - it draws past the frame and outlives the fold, being
         // what brings a docked panel back.
@@ -550,19 +588,23 @@ public final class TabPanelController {
             tabHotkeyBlinks.resolvePulseFractionAt(tabIndex));
     }
 
-    // Sounds the pointer arriving on a tab, once per arrival. An arrival is the tab under the pointer
-    // changing to a tab, which covers coming onto the row from outside it and crossing straight from one tab
-    // to its neighbour alike - both are a tab the player has just reached, and the second is the common one
-    // on a row of abutting tabs. Leaving the row is silent: nothing was reached.
+    // Answers the pointer reaching either of the panel's two hoverable parts, once per arrival. Both parts
+    // sound alike because both are controls the player aims at, and the handle needed no new detection -
+    // its hover was already being found for its fade.
     //
-    // Edge-detected rather than read off the fade, because a fade is a position and this is a moment: the
-    // pointer resting on a tab holds that fade at 1 for as long as it stays, which as a sound would be a
-    // tone rather than a tick.
-    private void soundHoverArrivalAt(Integer hoveredTabIndex) {
+    // A moment rather than a position, which is why neither is read off a fade: the pointer resting on a
+    // part holds its fade at the top for as long as it stays, and a sound taken from that would be a tone
+    // rather than a tick.
+    private void soundArrivalsAt(Integer hoveredTabIndex, boolean isNotchHovered) {
 
-        if (hoveredTabIndex != null && !hoveredTabIndex.equals(soundedHoverTabIndex)) {
-            soundPlayer.playSound(StarsectorUiSound.BUTTON_MOUSEOVER);
+        // Both stepped before either is read. Each latches what the pointer is on this frame, so a
+        // short-circuit would leave the unread one holding a stale reading - and then announce a stale
+        // arrival on the frame the pointer got back to it.
+        var hasReachedTab = tabHoverArrival.detectArrivalAt(hoveredTabIndex);
+        var hasReachedNotch = notchHoverArrival.detectArrival(isNotchHovered);
+
+        if (hasReachedTab || hasReachedNotch) {
+            soundPlayer.playSoundIfPresent(soundScheme.pointerArrivalSound());
         }
-        soundedHoverTabIndex = hoveredTabIndex;
     }
 }

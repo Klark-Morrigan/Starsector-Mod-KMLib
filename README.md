@@ -130,7 +130,10 @@ src/main/java/kmlib/
       highlight/   - highlight + paragraph + message types (renders to
                      text panel, tooltip, label, and MessageIntel)
       input/       - pointer / key controllers driving panel and
-                     tab-panel state (scroll, drag, collapse)
+                     tab-panel state (scroll, drag, collapse), the hover
+                     fades and press lifts its parts animate by, and the
+                     moments it answers audibly - detected here, with
+                     which sound each makes left to the look
       intel/       - obf-cast seam onto the intel screen: tab open,
                      map visor rect, that map's starscape flag
       label/       - label length estimation and box fitting
@@ -143,6 +146,11 @@ src/main/java/kmlib/
       render/gl/   - the GL paint layer: panel, tabs, controls,
                      scrollbar, collapse notch, cursor tooltips, fills,
                      scissor
+      sound/       - the engine's interface sounds a KM control answers
+                     with, the scheme naming which role each moment
+                     makes - carried in the panel's look, so a control
+                     inherits its sound as it inherits its accent - and
+                     the player port behind them
       text/        - substrate-neutral text look: the face, colour,
                      casing, and anchoring a run of text draws with,
                      with each render substrate owning the adapter into
