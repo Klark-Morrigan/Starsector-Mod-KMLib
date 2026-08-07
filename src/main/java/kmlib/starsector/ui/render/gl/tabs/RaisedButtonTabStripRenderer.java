@@ -63,15 +63,7 @@ public final class RaisedButtonTabStripRenderer {
             TabStyle style,
             float opacity) {
 
-        var textFace = style.face();
-        for (var index = 0; index < tabs.size(); index++) {
-
-            var tab = tabs.get(index);
-
-            // The look as painted: the settled shade the tab has faded to, brightened by whatever pulse is
-            // still running on it. A tab with none carries a wash that moves it nowhere, so no branch here
-            // decides whether a lift applies.
-            var look = looks.resolveLookAt(index).computeWashedLook(washes.resolveWashAt(index));
+        TabChromeRenderer.paintEachTab(tabs, looks, washes, (tab, look) -> {
 
             // The button inside the laid tab, its gap to either neighbour taken out of the tab rather than
             // added to the row - the hit box the panel tests stays the whole tab, so the channel between
@@ -84,13 +76,7 @@ public final class RaisedButtonTabStripRenderer {
                 new BoxBorder(FRAME_THICKNESS),
                 new UiElementPaint(look.label(), opacity));
 
-            TabLabelRenderer.renderCentredLabel(
-                buttonBox,
-                tab.content(),
-                look,
-                style.hotkey(),
-                textFace,
-                opacity);
-        }
+            TabLabelRenderer.renderCentredLabel(buttonBox, tab.content(), look, style, opacity);
+        });
     }
 }

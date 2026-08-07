@@ -11,6 +11,7 @@ import kmlib.starsector.ui.widgets.tabs.TabTextRun;
 import kmlib.starsector.ui.widgets.tabs.VanillaTabContent;
 import kmlib.starsector.ui.widgets.tabs.style.HotkeyStyle;
 import kmlib.starsector.ui.widgets.tabs.style.TabLook;
+import kmlib.starsector.ui.widgets.tabs.style.TabStyle;
 
 import org.lazywizard.lazylib.ui.LazyFont;
 import org.lazywizard.lazylib.ui.LazyFont.DrawableString;
@@ -47,25 +48,27 @@ public final class TabLabelRenderer {
      * one. Skipped silently when any run's font cannot load, so a tab falls back to nothing rather than to
      * a half-drawn line.
      *
-     * @param bounds       the box to centre the text in, in UI coordinates
-     * @param content      the tab's label and its optional bound key
-     * @param look         the tab's settled look; only its label colour is read, the fill being the
-     *                     calling chrome's to paint
-     * @param hotkeyStyle  how the bound key is presented - its colour, and the emphasis under it
-     * @param textFace     the font and size the runs are measured and drawn at
-     * @param opacity      overall alpha, 0..1, applied to every glyph colour and to the underline
+     * <p>Takes the whole row style rather than the two fields it reads from it, so a caller cannot hand
+     * this the hotkey convention of one style and the face of another.
+     *
+     * @param bounds  the box to centre the text in, in UI coordinates
+     * @param content the tab's label and its optional bound key
+     * @param look    the tab's settled look; only its label colour is read, the fill being the calling
+     *                chrome's to paint
+     * @param style   the row's look; its hotkey presentation and its face are what this pass reads
+     * @param opacity overall alpha, 0..1, applied to every glyph colour and to the underline
      */
     public static void renderCentredLabel(
             Rectangle bounds,
             VanillaTabContent content,
             TabLook look,
-            HotkeyStyle hotkeyStyle,
-            TextFace textFace,
+            TabStyle style,
             float opacity) {
 
+        var hotkeyStyle = style.hotkey();
         var runs = resolveDrawnRuns(
             TabShortcutText.resolveRuns(content),
-            textFace,
+            style.face(),
             Colours.scaleAlpha(look.label(), opacity),
             Colours.scaleAlpha(hotkeyStyle.keyColour(), opacity));
 

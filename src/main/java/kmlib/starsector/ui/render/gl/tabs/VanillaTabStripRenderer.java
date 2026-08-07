@@ -65,25 +65,11 @@ public final class VanillaTabStripRenderer {
             float opacity) {
 
         var chromeAccent = style.palette().chromeAccent();
-        var textFace = style.face();
-        for (var index = 0; index < tabs.size(); index++) {
 
-            var tab = tabs.get(index);
-
-            // The look as painted: the settled shade the tab has faded to, brightened by whatever pulse is
-            // still running on it. A tab with none carries a wash that moves it nowhere, so no branch
-            // here decides whether a lift applies.
-            var look = looks.resolveLookAt(index).computeWashedLook(washes.resolveWashAt(index));
-
+        TabChromeRenderer.paintEachTab(tabs, looks, washes, (tab, look) -> {
             renderChrome(tab.bounds(), look, chromeAccent, opacity);
-            TabLabelRenderer.renderCentredLabel(
-                tab.bounds(),
-                tab.content(),
-                look,
-                style.hotkey(),
-                textFace,
-                opacity);
-        }
+            TabLabelRenderer.renderCentredLabel(tab.bounds(), tab.content(), look, style, opacity);
+        });
         // The seams between tabs, ruled once over the laid boxes through the shared segmented-row
         // primitive so this strip and a radio row divide their segments the same way. Drawn after the
         // per-tab chrome (a divider must sit over the backdrops it parts) and clear of the centred
