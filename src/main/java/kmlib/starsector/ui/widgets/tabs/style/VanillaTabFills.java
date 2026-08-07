@@ -10,6 +10,11 @@ import java.awt.Color;
  * being the tab's label colour half-way to white, at half strength, tempered by how solid the fill under
  * it is, and scaled by how brightly the tab is currently lit.
  *
+ * <p>Fills only. A tab's label is not a lit form of one colour but one of two roles the engine picks
+ * between - the button blue while untouched, the standard text grey once lit - so it is named by the
+ * palette rather than computed here. The glow is still measured off the resting label colour, that being
+ * what the engine tints its light with whatever the text above it is doing.
+ *
  * <p>How brightly is the whole of what parts a tab's states. Vanilla has no separate shade for a shown
  * tab and a pointed-at one: it has one glow amount, driven up to {@code SELECTED_GLOW} while a tab is the
  * one being shown and to {@code POINTED_GLOW} while the pointer is on it, whichever is greater. That the
@@ -92,32 +97,6 @@ public final class VanillaTabFills {
      */
     public static Color resolveFillAtGlow(VanillaTabPaint paint, float glowAmount) {
         return addGlowOnto(resolveRestingFill(paint), paint, glowAmount);
-    }
-
-    /**
-     * The shade a tab's label reads at a given glow: the label colour carried that far toward white. A
-     * label is not a colour a state picks but the one colour lit by however brightly that state stands, so
-     * a resting tab reads as the raw label colour and a shown or pointed-at one reads as a paler form of
-     * it.
-     *
-     * <p>Carried toward white rather than lit by the added glow the fill takes, because text has nowhere
-     * to put added light. The label colour is already at the top of its blue channel, so an additive pass
-     * saturates blue immediately, green shortly after, and leaves red climbing alone - which is a lit tab's
-     * text drifting to cyan as it brightens rather than paling. A fill starts dark and has the headroom
-     * that makes the additive form right for it; this one does not, and the two rules part exactly where
-     * the headroom does.
-     *
-     * <p>It takes no temper from the fill's alpha either, for the same physical reason: that temper is
-     * light showing through a see-through fill, and text drawn on top of one is not dimmed by what is
-     * behind it.
-     *
-     * @param paint      the three colours a vanilla tab is painted from; only the label colour is read
-     * @param glowAmount how brightly the tab is lit: {@link #NO_GLOW}, {@link #SELECTED_GLOW}, or
-     *                   {@link #POINTED_GLOW}
-     * @return the label shade at that glow, never clipped and never off its own hue
-     */
-    public static Color resolveLabelAtGlow(VanillaTabPaint paint, float glowAmount) {
-        return Colours.blendRgbTowards(paint.labelColour(), Color.WHITE, glowAmount);
     }
 
     /**

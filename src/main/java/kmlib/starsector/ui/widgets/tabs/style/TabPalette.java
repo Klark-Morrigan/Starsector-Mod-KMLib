@@ -87,9 +87,18 @@ public record TabPalette(
 
         var restingLabel = StarsectorUiColour.VANILLA_BUTTON_TEXT.resolve();
 
+        // What a lit tab reads its label in. A second role rather than the resting one brightened: the
+        // engine parts them by colour, not by amount - an untouched tab wears the blue every button's text
+        // is, and one it is showing wears the grey the rest of the interface reads in. Measured off the
+        // engine's own Sector/System tabs, whose lit label samples as this grey through the glyph's
+        // coverage and cannot be reconciled with any lifted form of the blue.
+        var litLabel = StarsectorUiColour.VANILLA_TEXT.resolve();
+
         // The engine's own tab paint. The backdrop is black rather than the host's own panel fill, because
         // a tab row stands wherever its panel does - over a body, over the map where a tab has no body at
-        // all - and a fill measured against one of those would be wrong in the others.
+        // all - and a fill measured against one of those would be wrong in the others. Its label colour is
+        // the resting one throughout, that being what the fills' glow is measured off whatever the text
+        // above them is doing.
         var tabPaint = new VanillaTabPaint(
             StarsectorUiColour.VANILLA_BUTTON_BG_DARK.resolve(),
             restingLabel,
@@ -102,10 +111,13 @@ public record TabPalette(
                 restingLabel),
             new TabLook(
                 VanillaTabFills.resolveFillAtGlow(tabPaint, VanillaTabFills.SELECTED_GLOW),
-                VanillaTabFills.resolveLabelAtGlow(tabPaint, VanillaTabFills.SELECTED_GLOW)),
+                litLabel),
+            // The two lit states share the label and are told apart by their fills, which already stand at
+            // different glows. Only the shown tab's label has been measured; the pointed-at one taking the
+            // same grey is the smaller claim, and the fill is what marks the difference in either case.
             new TabLook(
                 VanillaTabFills.resolveFillAtGlow(tabPaint, VanillaTabFills.POINTED_GLOW),
-                VanillaTabFills.resolveLabelAtGlow(tabPaint, VanillaTabFills.POINTED_GLOW)),
+                litLabel),
             // The press lifts along the glow rather than toward white: the engine brightens a tab by adding
             // its own glow colour, so a press aimed at white would be the one shade on the strip travelling
             // in a direction none of the fills do - most visible exactly when the player is looking at it.

@@ -130,54 +130,6 @@ final class VanillaTabFillsTest {
     }
 
     @Nested
-    class ResolveLabelAtGlow {
-
-        @Test
-        void resolveLabelAtGlowLeavesAnUnlitLabelAtItsOwnColour() {
-            // The unlit end of the one colour every state shares, and the reason a resting tab is the only
-            // one reading as plain blue: nothing is added, so the engine's button text comes back as it is.
-            assertThat(resolveLabelAt(VanillaTabFills.NO_GLOW))
-                .isEqualTo(BUTTON_TEXT);
-        }
-
-        @Test
-        void resolveLabelAtGlowLightsTheShownTabsLabelPartWayToWhite() {
-            // (170, 222, 255) carried 0.45 of the way to white. Red climbs furthest because it starts
-            // lowest, and the channels keep their order - a paler form of the same blue rather than a
-            // different colour.
-            assertThat(resolveLabelAt(VanillaTabFills.SELECTED_GLOW))
-                .isEqualTo(new Color(208, 237, 255, OPAQUE_ALPHA));
-        }
-
-        @Test
-        void resolveLabelAtGlowKeepsThePointedTabsLabelOnItsOwnHue() {
-            // The pointed-at label is paler than the shown one and still a blue: red under green under
-            // blue, the order the raw colour has. The additive form this replaced drove green onto blue at
-            // 255 and left red climbing alone, which is a lit tab's text reading cyan - the one fault a
-            // brighter or dimmer amount could never have fixed.
-            var pointedLabel = resolveLabelAt(VanillaTabFills.POINTED_GLOW);
-
-            assertThat(pointedLabel)
-                .isEqualTo(new Color(225, 243, 255, OPAQUE_ALPHA));
-            assertThat(pointedLabel.getRed())
-                .isLessThan(pointedLabel.getGreen());
-            assertThat(pointedLabel.getGreen())
-                .isLessThan(pointedLabel.getBlue());
-        }
-
-        @Test
-        void resolveLabelAtGlowIgnoresHowSolidTheFillBeneathIs() {
-            // The fill's alpha tempers its own glow because light shows through a see-through fill; text
-            // drawn on top of one is not dimmed by what is behind it. So a barely-there fill lights its
-            // label exactly as a solid one does, unlike the fills either side of it.
-            assertThat(VanillaTabFills.resolveLabelAtGlow(
-                    paintWithFill(new Color(0, 0, 0, 25)),
-                    VanillaTabFills.POINTED_GLOW))
-                .isEqualTo(resolveLabelAt(VanillaTabFills.POINTED_GLOW));
-        }
-    }
-
-    @Nested
     class ResolveGlowColour {
 
         @Test
@@ -192,11 +144,6 @@ final class VanillaTabFillsTest {
     // The engine's own paint at the given glow, the pairing every case above varies only the glow of.
     private static Color resolveFillAt(float glowAmount) {
         return VanillaTabFills.resolveFillAtGlow(VANILLA_PAINT, glowAmount);
-    }
-
-    // The engine's own label at the given glow, the label-side twin of the pairing above.
-    private static Color resolveLabelAt(float glowAmount) {
-        return VanillaTabFills.resolveLabelAtGlow(VANILLA_PAINT, glowAmount);
     }
 
     // A black fill at the given alpha, for the cases about how solid the fill is: with nothing under the

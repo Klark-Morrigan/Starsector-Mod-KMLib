@@ -52,10 +52,14 @@ final class TabPaletteTest {
         HOVERED_LOOK,
         CLICKED_WASH);
 
-    // The one engine role the map-tab factory reads: the button text every fill and every label is worked
-    // out from. Its chrome accent arrives as an argument instead, so nothing else about the engine's
-    // palette reaches this factory.
+    // The two engine roles the map-tab factory reads: the button text every fill is worked out from and an
+    // untouched tab reads its label in, and the standard text a lit one switches to. Its chrome accent
+    // arrives as an argument instead, so nothing else about the engine's palette reaches this factory.
     private static final Color STUBBED_BUTTON_TEXT = new Color(180, 180, 180);
+
+    // Unlike the button text on every channel, so a label taking the wrong role of the two comes out a
+    // number these cases do not expect rather than a shade near the one they do.
+    private static final Color STUBBED_STANDARD_TEXT = new Color(220, 210, 200);
 
     // The accent handed to the factory. Unlike every stubbed engine shade here, so an accent read off the
     // engine rather than off the argument comes out a number these cases do not expect.
@@ -82,12 +86,15 @@ final class TabPaletteTest {
             miscMock
                 .when(Misc::getButtonTextColor)
                 .thenReturn(STUBBED_BUTTON_TEXT);
+            miscMock
+                .when(Misc::getTextColor)
+                .thenReturn(STUBBED_STANDARD_TEXT);
 
             // Both player colours are deliberately left unstubbed. Nothing in this palette answers to the
-            // player's faction any more - a tab's label is the engine's own button text lit by the glow,
-            // and the chrome accent arrives as an argument - and an unstubbed static returns null, which
-            // the palette rejects outright. Reaching for either again therefore fails loudly here rather
-            // than shipping a strip that recolours with whichever faction the player flies.
+            // player's faction any more - a tab's label is one of the engine's own two text roles, and the
+            // chrome accent arrives as an argument - and an unstubbed static returns null, which the
+            // palette rejects outright. Reaching for either again therefore fails loudly here rather than
+            // shipping a strip that recolours with whichever faction the player flies.
 
             return TabPalette.createMapTabPalette(SUPPLIED_CHROME_ACCENT);
 
@@ -227,48 +234,32 @@ final class TabPaletteTest {
         }
 
         @Test
-        void createMapTabPaletteLeavesARestingLabelAtTheRawButtonTextColour() {
-            // The unlit end of the one colour every state shares: a resting tab shows the engine's button
-            // text as it comes, which is what makes it the only state reading as plain blue in game.
+        void createMapTabPaletteReadsAnUntouchedTabsLabelInTheButtonText() {
+            // The blue every button's text is, which an untouched tab wears as it comes - and the reason a
+            // deselected tab is the only state reading as plain blue in game.
             assertThat(buildMapTabPaletteUnderStubbedEngine().unselected().label())
                 .isEqualTo(STUBBED_BUTTON_TEXT);
         }
 
         @Test
-        void createMapTabPaletteLightsTheSelectedLabelAtTheSameGlowAsItsFill() {
-            // The label climbs at the amount its fill does, though not by the same rule: (180, 180, 180)
-            // carried 0.45 of the way to white. A state given a label colour of its own would part the text
-            // from the fill beneath it.
+        void createMapTabPaletteSwitchesALitTabsLabelToTheStandardText() {
+            // The engine parts a lit tab's label from a resting one by colour, not by amount: the shown tab
+            // reads in the grey the rest of the interface reads in. Measured off its own Sector/System
+            // tabs, whose lit label cannot be reconciled with any lifted form of the button blue - which is
+            // exactly what a rule computing one from the other produced, and why there is no such rule now.
             assertThat(buildMapTabPaletteUnderStubbedEngine().selected().label())
-                .isEqualTo(new Color(214, 214, 214, OPAQUE_ALPHA));
+                .isEqualTo(STUBBED_STANDARD_TEXT);
         }
 
         @Test
-        void createMapTabPaletteLightsTheHoveredLabelAboveTheShownTabs() {
-            // The label climbs at the amount its fill does, so the text under the pointer stands above the
-            // shown tab's text exactly as their fills do - (180, 180, 180) carried 0.65 of the way.
-            assertThat(buildMapTabPaletteUnderStubbedEngine().hovered().label())
-                .isEqualTo(new Color(229, 229, 229, OPAQUE_ALPHA));
-        }
+        void createMapTabPaletteReadsBothLitTabsLabelsAlike() {
+            // The two lit states are told apart by their fills, which stand at different glows, rather than
+            // by their text. Only the shown tab's label was measured, so the pointed-at one matching it is
+            // the smaller claim - and pinning them equal is what makes a future divergence deliberate.
+            var palette = buildMapTabPaletteUnderStubbedEngine();
 
-        @Test
-        void createMapTabPaletteAimsThePressLiftAlongTheGlowRatherThanAtWhite() {
-            // The direction a press travels, which is the whole of why it reads as one of the engine's own
-            // states rather than as ours: the engine brightens a tab by adding its glow - the label colour
-            // (180, 180, 180 here) half way to white - so a lift aimed at white would be the one shade on
-            // the strip moving somewhere none of the fills do, and it would show exactly when the player is
-            // looking at it. A depth alone could not correct that, so the target is pinned and not just the
-            // strength.
-            assertThat(buildMapTabPaletteUnderStubbedEngine().clicked().target())
-                .isEqualTo(new Color(218, 218, 218));
-        }
-
-        @Test
-        void createMapTabPaletteLiftsAPressOnlyPartWayAlongThatGlow() {
-            // Modest because it is measured along the same axis the fills are: a press has only to stand
-            // above the pointed-at tab it is necessarily already showing.
-            assertThat(buildMapTabPaletteUnderStubbedEngine().clicked().strength())
-                .isEqualTo(0.25f);
+            assertThat(palette.hovered().label())
+                .isEqualTo(palette.selected().label());
         }
     }
 }
