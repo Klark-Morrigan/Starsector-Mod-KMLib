@@ -152,8 +152,8 @@ public final class ControlRenderer {
         CheckboxRenderer.render(
             bounds,
             spec.isLit(),
-            new UiElementPaint(style.accent(), paint.opacity()),
-            new UiElementPaint(style.brightAccent(), paint.opacity()));
+            new UiElementPaint(style.accentColours().base(), paint.opacity()),
+            new UiElementPaint(style.accentColours().bright(), paint.opacity()));
 
         drawBodyLabelRuns(
             paint,
@@ -175,7 +175,7 @@ public final class ControlRenderer {
             drawColumnTable(control, table, paint);
             return;
         }
-        var accent = paint.style().accent();
+        var accent = paint.style().accentColours().base();
         var bounds = control.bounds();
         var labels = spec.labels();
         var segments = control.segments();
@@ -232,7 +232,7 @@ public final class ControlRenderer {
             ControlSpec.VerticalTable spec,
             ControlPaint paint) {
 
-        var accent = paint.style().accent();
+        var accent = paint.style().accentColours().base();
         var bounds = control.bounds();
         var labelledRows = spec.labelledRows();
 
@@ -314,7 +314,7 @@ public final class ControlRenderer {
     // A single button washed when the spec's cell is lit, its label centred in it - the lit state is the
     // on/off signal, so the label carries no On/Off word.
     private static void drawToggle(Control control, ControlPaint paint) {
-        var accent = paint.style().accent();
+        var accent = paint.style().accentColours().base();
         var spec = (ControlSpec.Toggle) control.spec();
         var bounds = control.bounds();
 
@@ -335,7 +335,7 @@ public final class ControlRenderer {
     // A divider row: a single hairline centred across the row in the accent, parting one run of controls
     // from the next - it heads a section like a caption but carries no text and no hit target.
     private static void drawDivider(Control control, ControlPaint paint) {
-        DividerRenderer.render(control.bounds(), paint.style().accent(), paint.opacity());
+        DividerRenderer.render(control.bounds(), paint.style().accentColours().base(), paint.opacity());
     }
 
     // A caption row: only its text, left-aligned at the row's left edge and vertically centred, with no

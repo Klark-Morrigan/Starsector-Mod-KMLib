@@ -49,8 +49,8 @@ public final class PanelRenderer {
             BorderedBoxRenderer.render(
                 placement.box(),
                 border,
-                new UiElementPaint(style.panelFill(), opacity),
-                new UiElementPaint(style.borderColour(), opacity));
+                new UiElementPaint(style.boxColours().fill(), opacity),
+                new UiElementPaint(style.boxColours().border(), opacity));
             drawBodyControls(placement, style, opacity);
         });
     }
@@ -98,7 +98,7 @@ public final class PanelRenderer {
         ScrollbarRenderer.render(
             track,
             thumb,
-            style.accent(),
+            style.accentColours().base(),
             opacity);
     }
 }

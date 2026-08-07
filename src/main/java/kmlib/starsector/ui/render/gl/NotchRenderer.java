@@ -68,14 +68,14 @@ public final class NotchRenderer {
             float opacity) {
 
         // Solid backdrop so the handle reads as panel chrome protruding over the map, not a floating glyph.
-        var notchPaint = new UiElementPaint(style.panelFill(), opacity);
+        var notchPaint = new UiElementPaint(style.boxColours().fill(), opacity);
         UiFill.renderQuad(notch, notchPaint);
 
         // Light the whole notch face as the hover fades in, so the handle answers the pointer as one lit
         // unit; a handle nothing is pointing at washes at nothing and skips the draw.
         var hoverWashAlpha = computeHoverWashAlpha(opacity, state.hoverFraction());
         if (hoverWashAlpha > MIN_VISIBLE_ALPHA) {
-            UiFill.renderQuad(notch, new UiElementPaint(style.accent(), hoverWashAlpha));
+            UiFill.renderQuad(notch, new UiElementPaint(style.accentColours().base(), hoverWashAlpha));
         }
 
         // The outer edges are the panel's frame continued past its right edge, so they take the frame's
@@ -86,7 +86,7 @@ public final class NotchRenderer {
             notch,
             notchBorder,
             new UiElementPaint(
-                style.borderColour(),
+                style.boxColours().border(),
                 opacity));
 
         drawChevron(
