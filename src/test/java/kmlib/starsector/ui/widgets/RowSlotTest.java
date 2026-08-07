@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.awt.Color;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -315,6 +316,23 @@ class RowSlotTest {
             assertThatThrownBy(() -> new RowSlot.TextRuns(List.of()))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("textSpans");
+        }
+
+        @Test
+        void constructorCopiesAMultiRunValuesRuns() {
+            // The slot is a value, so a caller still holding the list it built must not be able to add
+            // a run to a slot already handed to a layout - which would reserve a column for the runs it
+            // measured and then draw another one past its edge.
+            var textSpans = new ArrayList<TextSpan>();
+            
+            textSpans.add(new TextSpan("12", SLOT_COLOUR));
+
+            var rowSlot = new RowSlot.TextRuns(textSpans);
+
+            textSpans.add(new TextSpan("34", OTHER_SLOT_COLOUR));
+
+            assertThat(rowSlot.textSpans())
+                .hasSize(1);
         }
 
         @Test

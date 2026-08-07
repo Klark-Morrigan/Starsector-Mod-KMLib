@@ -303,6 +303,22 @@ class CursorTooltipTest {
         }
 
         @Test
+        void sizesTheBoxForEveryRunOfAValueDrawnInSeveral() {
+            // The value column is reserved from what the slot reports, and a value picked out in two
+            // colours reports all of its runs and the gap between them - measured as one run, the box
+            // would be too narrow by the rest and the value would be drawn past its own edge.
+            var row = createCrestlessRow("AA")
+                .carriesValueRuns(List.of(
+                    new TextSpan("BB", Color.GRAY),
+                    new TextSpan("C", Color.WHITE)));
+
+            // No crest column; label 2 + value gap 16 + value (2 + run gap 6 + 1) = 27; + 8 padding
+            // each side = 43.
+            assertThat(layOut(List.of(row)).box().width())
+                .isCloseTo(43f, within(TOLERANCE));
+        }
+
+        @Test
         void laysARowThatClearsTheCrestColumnFlushWithTheContentEdge() {
             // A title over a crested list: it names the box rather than sitting in the list, so it
             // ignores the gutter the rows below reserve and starts at the content edge (226).

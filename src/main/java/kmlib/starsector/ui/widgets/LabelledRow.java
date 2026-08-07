@@ -27,7 +27,10 @@ import java.util.Objects;
  * <p>The two rules a row lays its content by are kept apart deliberately. The label's runs <em>flow</em>
  * - they are charged to no column and read as one line. The slots are <em>columns</em> - each reserved
  * at one width across a whole stack, so the labels between them line up. Flattened into a single list
- * of elements, a label's run and a value would become the same kind of thing, and they are not.
+ * of elements, a label's run and a value would become the same kind of thing, and they are not. A slot
+ * may itself be made of runs ({@link RowSlot.TextRuns}), which changes nothing about that: those runs
+ * are laid inside the one column reserved for the slot rather than flowing on into the line, so what
+ * they pick out in another colour is part of the value and never a second column.
  *
  * <p>How wide those columns come out, how far each sits from the label, and where any of it lands are
  * facts about a stack of rows rather than about any one row, so they stay with whatever lays the stack
