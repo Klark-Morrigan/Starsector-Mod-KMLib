@@ -8,13 +8,15 @@ import java.awt.Color;
 /**
  * The paint a {@link VanillaTabStrip} wears: the accent its chrome is ruled in, the settled look of each
  * {@link TabLookState}, and the lift each {@link TabWashState} raises a tab by. Kept as a record so a
- * consumer can override any one of them, with {@link #createMapTabPalette()} supplying the live vanilla
+ * consumer can override any one of them, with {@link #createMapTabPalette} supplying the live vanilla
  * map-tab values through the {@link StarsectorUiColour} palette, so a strip follows a restyled install
  * and never receives a null shade from an early-boot accessor.
  *
  * <p>What it follows is the install's settings, not the player's faction. Every fill and every label is
- * worked out from the two colours the engine paints its own tabs with, which take no faction tint at all;
- * only the chrome accent ruling the row is ours, and that one does.
+ * worked out from the two colours the engine paints its own tabs with, which take no faction tint at all.
+ * The chrome accent ruling the row is the one value with no vanilla counterpart to copy - a vanilla tab
+ * strip has no such rule - so the factory takes it from its caller rather than picking one: which shade a
+ * row is ruled in is a question about the panel the row belongs to, and only that panel can answer it.
  *
  * <p>Two flavours sit here for the reason they are separate types: a look is a shade a tab settles on, a
  * momentary state a brief lift over whichever look it has settled on. Naming the hovered shade outright
@@ -52,15 +54,14 @@ public record TabPalette(
     private static final float PRESS_GLOW_LIFT = 0.25f;
 
     /**
-     * The live vanilla map-tab paint: the player base colour for the chrome accent, the three map-tab
-     * fills and labels the engine's own tabs settle on, and the lift a press raises one by. Everything
+     * The live vanilla map-tab paint: the caller's accent for the chrome, the three map-tab fills and
+     * labels the engine's own tabs settle on, and the lift a press raises one by. Everything vanilla
      * here resolves through {@link StarsectorUiColour} on each call, so it tracks a live palette change.
      *
      * <p>Both come from {@link VanillaTabFills}, worked out from the same two settings colours a vanilla
      * tab is painted with rather than sampled off one - so a restyled install moves this strip exactly as
      * it moves the tabs above it. They answer to settings and not to the player faction because the
-     * engine's own tabs take no faction colour at all; the chrome accent around them still does, being
-     * ours rather than vanilla's.
+     * engine's own tabs take no faction colour at all.
      *
      * <p>The three fills are one shade at the engine's three glow amounts, not three shades: resting
      * unlit, the shown tab at {@link VanillaTabFills#SELECTED_GLOW}, and the tab under the pointer at the
@@ -78,9 +79,11 @@ public record TabPalette(
      * <p>The lifts over these looks blend RGB alone, so a look that starts opaque - as all three fills do -
      * stays opaque through every hover, blink, and click.
      *
+     * @param chromeAccent the shade the row's dividers and baseline are ruled in, the panel's own to
+     *                     choose - see the note on this type
      * @return the vanilla map-tab palette
      */
-    public static TabPalette createMapTabPalette() {
+    public static TabPalette createMapTabPalette(Color chromeAccent) {
 
         var restingLabel = StarsectorUiColour.VANILLA_BUTTON_TEXT.resolve();
 
@@ -93,7 +96,7 @@ public record TabPalette(
             StarsectorUiColour.BLACK.resolve());
 
         return new TabPalette(
-            StarsectorUiColour.VANILLA_PLAYER_BASE.resolve(),
+            chromeAccent,
             new TabLook(
                 VanillaTabFills.resolveRestingFill(tabPaint),
                 restingLabel),

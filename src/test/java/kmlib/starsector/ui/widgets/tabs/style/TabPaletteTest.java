@@ -52,11 +52,14 @@ final class TabPaletteTest {
         HOVERED_LOOK,
         CLICKED_WASH);
 
-    // The engine roles the map-tab factory reads, stubbed to flat shades. The button text is the one every
-    // fill and every label is worked out from; the player base is the chrome accent alone, and is stubbed
-    // only because an unstubbed static returns null, which the palette rejects outright.
-    private static final Color STUBBED_PLAYER_BASE = new Color(20, 40, 60);
+    // The one engine role the map-tab factory reads: the button text every fill and every label is worked
+    // out from. Its chrome accent arrives as an argument instead, so nothing else about the engine's
+    // palette reaches this factory.
     private static final Color STUBBED_BUTTON_TEXT = new Color(180, 180, 180);
+
+    // The accent handed to the factory. Unlike every stubbed engine shade here, so an accent read off the
+    // engine rather than off the argument comes out a number these cases do not expect.
+    private static final Color SUPPLIED_CHROME_ACCENT = new Color(20, 40, 60);
 
     // The engine's dark button fill, stubbed at the settings key the fills are built from. A shade unlike
     // every other stub here and unlike white, so a fill that reached for the wrong source - or that
@@ -64,9 +67,9 @@ final class TabPaletteTest {
     private static final String BUTTON_BG_DARK_KEY = "buttonBgDark";
     private static final Color STUBBED_BUTTON_BG_DARK = new Color(31, 94, 112, 175);
 
-    // The map-tab palette built with the engine's player-tinted roles stubbed out. The settings proxy goes
-    // in before Mockito touches Misc, whose static initialiser reads it; the palette is resolved inside the
-    // stub's scope, since every role is read as the record is built.
+    // The map-tab palette built with the engine's own roles stubbed out. The settings proxy goes in before
+    // Mockito touches Misc, whose static initialiser reads it; the palette is resolved inside the stub's
+    // scope, since every role is read as the record is built.
     private static TabPalette buildMapTabPaletteUnderStubbedEngine() {
 
         StarsectorSettingsFake.installSettings(
@@ -77,19 +80,16 @@ final class TabPaletteTest {
         try (var miscMock = Mockito.mockStatic(Misc.class)) {
 
             miscMock
-                .when(Misc::getBasePlayerColor)
-                .thenReturn(STUBBED_PLAYER_BASE);
-            miscMock
                 .when(Misc::getButtonTextColor)
                 .thenReturn(STUBBED_BUTTON_TEXT);
 
-            // The bright player colour is deliberately left unstubbed. A tab's label is the engine's own
-            // button text lit by the glow, never a faction shade, so nothing here may read that role - and
-            // an unstubbed static returns null, which the palette rejects outright. Reaching for it again
-            // therefore fails loudly here rather than shipping a strip that recolours with the player's
-            // faction.
+            // Both player colours are deliberately left unstubbed. Nothing in this palette answers to the
+            // player's faction any more - a tab's label is the engine's own button text lit by the glow,
+            // and the chrome accent arrives as an argument - and an unstubbed static returns null, which
+            // the palette rejects outright. Reaching for either again therefore fails loudly here rather
+            // than shipping a strip that recolours with whichever faction the player flies.
 
-            return TabPalette.createMapTabPalette();
+            return TabPalette.createMapTabPalette(SUPPLIED_CHROME_ACCENT);
 
         } finally {
             StarsectorSettingsFake.clearSettings();
@@ -168,6 +168,16 @@ final class TabPaletteTest {
 
     @Nested
     class CreateMapTabPalette {
+
+        @Test
+        void createMapTabPaletteRulesTheRowInTheAccentItIsHanded() {
+            // The one value with no vanilla counterpart to copy, so it comes from the panel the row
+            // belongs to. Pinned because the factory reads the engine for everything else, and an accent
+            // that quietly went back to reading it would look right on a stock install and wrong on any
+            // other.
+            assertThat(buildMapTabPaletteUnderStubbedEngine().chromeAccent())
+                .isEqualTo(SUPPLIED_CHROME_ACCENT);
+        }
 
         @Test
         void createMapTabPaletteCompositesTheRestingFillFromTheEnginesButtonFill() {

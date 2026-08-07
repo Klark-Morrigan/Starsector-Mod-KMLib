@@ -9,7 +9,7 @@ import java.awt.Color;
  * Test-only builders for a {@link TabStyle} at a chosen band height. A style describes a strip end to
  * end, so even a test exercising nothing but the layout has to name a palette, a hotkey look, and a face;
  * these fill all three with fixed stand-ins, since no layout or geometry assertion reads a colour. They
- * are literal rather than {@link TabPalette#createMapTabPalette()} /
+ * are literal rather than {@link TabPalette#createMapTabPalette} /
  * {@link HotkeyStyle#createUnderlined()} because those resolve through the live engine palette, which a
  * unit test has no sector to supply.
  */

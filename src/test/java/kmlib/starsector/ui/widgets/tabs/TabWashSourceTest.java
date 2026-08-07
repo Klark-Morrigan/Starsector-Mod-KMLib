@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.within;
  * to the wrong depth, in the wrong colour, or at the wrong moment - and the per-index reading is what keeps
  * a row and its lifts from falling out of step.
  *
- * <p>The palette is literal rather than {@link TabPalette#createMapTabPalette()}, which resolves through a
+ * <p>The palette is literal rather than {@link TabPalette#createMapTabPalette}, which resolves through a
  * live engine palette a unit test has no sector to supply.
  */
 final class TabWashSourceTest {

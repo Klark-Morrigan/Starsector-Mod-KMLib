@@ -56,6 +56,12 @@ public enum StarsectorUiColour {
     // which the same install happens to give the same value today: one is what a key looks like, the
     // other what an emphasised word in a paragraph looks like, and a restyle may part them.
     VANILLA_BUTTON_SHORTCUT(() -> Global.getSettings().getColor("buttonShortcut")),
+    // The near-white cyan the engine titles its tooltips in from settings.json
+    // ("tooltipTitleAndLightHighlightColor"). The fixed palette's twin of the player faction's
+    // bright shade - the stock file gives the two the same value and says so in a comment beside
+    // this key - so a look wanting a bright step above VANILLA_BUTTON_TEXT that no player faction
+    // moves takes this rather than VANILLA_PLAYER_BRIGHT.
+    VANILLA_LIGHT_HIGHLIGHT(() -> Global.getSettings().getColor("tooltipTitleAndLightHighlightColor")),
     VANILLA_PLAYER_BASE(Misc::getBasePlayerColor),
     VANILLA_PLAYER_BRIGHT(Misc::getBrightPlayerColor),
     VANILLA_PLAYER_DARK(Misc::getDarkPlayerColor),
