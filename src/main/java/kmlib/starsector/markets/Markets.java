@@ -272,7 +272,7 @@ public final class Markets {
         // Insertion-ordered rather than hashed: re-putting a winner on a key it already
         // holds leaves that key in its original slot, so a place stays where the caller
         // first named it however late its largest market arrives.
-        var winnersByPlace = new LinkedHashMap<Object, MarketAPI>();
+        var winnersByPlace = new LinkedHashMap<PlaceKey, MarketAPI>();
         for (var market : markets) {
             if (market == null) {
                 continue;
@@ -315,22 +315,34 @@ public final class Markets {
         return Misc.isMilitary(market);
     }
 
-    // What makes two markets the same place under the same owner. Typed as Object so a
-    // market missing either half can be handed a bare instance no other market can equal:
-    // it then falls out of the grouping on its own rather than pooling with every other
-    // market missing the same half. The key never leaves the loop that builds it.
-    private static Object buildPlaceKey(MarketAPI market) {
+    // What makes two markets the same place under the same owner, or - for a market
+    // missing either half - what makes it answer for nothing but itself.
+    private static PlaceKey buildPlaceKey(MarketAPI market) {
         var entity = market.getPrimaryEntity();
         var faction = market.getFaction();
         if (entity == null || faction == null || faction.getId() == null) {
-            return new Object();
+            return new UnkeyablePlace();
         }
         return new PlaceAndOwner(entity, faction.getId());
+    }
+
+    // What may key the per-place resolution: a place under an owner, or a market with
+    // neither to read. Sealed so the map's key type states those two cases rather than
+    // admitting anything, and so a third case cannot be added without being handled.
+    private sealed interface PlaceKey permits PlaceAndOwner, UnkeyablePlace {
     }
 
     // The identity two market objects must share before the larger can stand for both.
     // The entity compares by whatever equality it defines, which for vanilla's entities
     // is identity, so two distinct stations never merge however alike they read.
-    private record PlaceAndOwner(SectorEntityToken entity, String factionId) {
+    private record PlaceAndOwner(SectorEntityToken entity, String factionId)
+        implements PlaceKey {
+    }
+
+    // A market with no entity, or no owner whose id can be read. A class rather than a
+    // record because identity equality is the whole point: every instance equals only
+    // itself, so such a market forms its own group and passes through. A record here
+    // would make all instances equal and pool every unkeyable market into one.
+    private static final class UnkeyablePlace implements PlaceKey {
     }
 }
