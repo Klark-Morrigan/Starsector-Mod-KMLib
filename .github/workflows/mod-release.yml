@@ -158,6 +158,14 @@ jobs:
     if: needs.config.outputs.version-updated == 'true'
     runs-on: ${{ fromJSON(needs.config.outputs.runner-json) }}
     steps:
+      # Ahead of the checkout, for the same reason _ci-gradle cleans first:
+      # this job runs on the mod's own persistent runner and checks out one
+      # level down, so the sibling clones from the previous release attempt
+      # are still sitting beside it and would fail the clone step below.
+      - name: Clean the runner workspace
+        if: runner.environment == 'self-hosted'
+        uses: Klark-Morrigan/Common-Automation/.github/actions/clean-workspace@master
+
       - name: Check out consumer repo
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
@@ -165,9 +173,10 @@ jobs:
 
       # Mirrors the clone step inside Common-Java's _ci-gradle and consumes the
       # identical { repo, path } shape, so both build jobs see one workspace
-      # layout. Kept as its own copy rather than a shared action because an
-      # action in a sibling repo is only reachable by checking that repo out
-      # first (see the config job), which costs more than the loop it saves.
+      # layout. It is a second copy of that loop, so a change to the clone
+      # contract has to land in both places.
+      # TODO: extract into a shared composite - a registry-form `uses:` needs
+      # no checkout to resolve, as the cleanup step above demonstrates.
       - name: Check out sibling repos
         env:
           # Assigned to env (not interpolated into the script body) so the
