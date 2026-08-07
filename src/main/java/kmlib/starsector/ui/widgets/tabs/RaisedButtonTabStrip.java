@@ -1,11 +1,12 @@
 package kmlib.starsector.ui.widgets.tabs;
 
 import kmlib.math.geometry.Rectangle;
+import kmlib.starsector.ui.widgets.tabs.style.TabChrome;
 
 /**
  * The geometry of a raised-button tab row: where each button stands inside the tab box the row was laid
  * out with. Substrate-independent - it computes boxes and renders nothing - so the raw-GL paint in
- * {@link kmlib.starsector.ui.render.gl.RaisedButtonTabStripRenderer} and any other surface place a button
+ * {@link kmlib.starsector.ui.render.gl.tabs.RaisedButtonTabStripRenderer} and any other surface place a button
  * the same way.
  *
  * <p>It lays no tabs of its own. A row is laid out once, by {@link VanillaTabStrip}, and that layout is

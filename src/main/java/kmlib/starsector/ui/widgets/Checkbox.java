@@ -7,7 +7,7 @@ import kmlib.math.geometry.Rectangle;
  * height, and the label that follows it in the remaining width. Substrate-independent - it computes
  * the box and the label's anchor and renders nothing - so a GL or a UI-API renderer can place a
  * checkbox against it. The whole row is the hit target (label included); the raw-GL paint lives in
- * {@link kmlib.starsector.ui.render.gl.CheckboxRenderer}.
+ * {@link kmlib.starsector.ui.render.gl.controls.CheckboxRenderer}.
  *
  * <p>The row is a three-column row with its trailing column unfilled and its leading element flush
  * with the row's own left edge, so the one thing it takes from {@link RowColumnSpec} is the gap

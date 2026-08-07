@@ -28,7 +28,7 @@ import kmlib.math.geometry.Rectangle;
  * <p>The icon square is sized to the row height (less a small inset off the top and bottom edges) so
  * it scales with the row rather than a fixed pixel size, keeping a stack of rows visually even. The
  * raw-GL paint of the whole vertical list - chrome plus each row's icon - lives in
- * {@link kmlib.starsector.ui.render.gl.IconRadioListRenderer}.
+ * {@link kmlib.starsector.ui.render.gl.controls.IconRadioListRenderer}.
  */
 public final class IconLabelRow {
 

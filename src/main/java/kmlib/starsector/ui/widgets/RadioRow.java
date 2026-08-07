@@ -14,7 +14,7 @@ import java.util.List;
  * built from single-selection over adjacent cells. Substrate-independent: it splits a footprint into
  * segments and resolves which one a point falls in, rendering nothing, so a GL or a UI-API renderer
  * can paint against it. The raw-GL paint lives in
- * {@link kmlib.starsector.ui.render.gl.RadioRowRenderer}.
+ * {@link kmlib.starsector.ui.render.gl.controls.RadioRowRenderer}.
  *
  * <p>Segments flow either way ({@link RadioAlignment}): a horizontal group splits into equal columns
  * left to right, a vertical group into equal rows top to bottom, so a compact option pair reads as a

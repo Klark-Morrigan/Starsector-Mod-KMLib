@@ -6,9 +6,9 @@ import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.SegmentSizing;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.widgets.segments.SegmentSpec;
-import kmlib.starsector.ui.widgets.tabs.TabStyle;
 import kmlib.starsector.ui.widgets.tabs.VanillaTabContent;
 import kmlib.starsector.ui.widgets.tabs.VanillaTabStrip;
+import kmlib.starsector.ui.widgets.tabs.style.TabStyle;
 
 import java.util.ArrayList;
 import java.util.List;

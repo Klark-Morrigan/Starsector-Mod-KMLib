@@ -15,7 +15,7 @@ import kmlib.starsector.ui.widgets.IconLabelRow;
 import kmlib.starsector.ui.widgets.RowColumnSpec;
 import kmlib.starsector.ui.widgets.RowSlot;
 import kmlib.starsector.ui.widgets.TriangleDirection;
-import kmlib.starsector.ui.widgets.tabs.TabStyle;
+import kmlib.starsector.ui.widgets.tabs.style.TabStyle;
 import kmlib.testfixtures.starsector.ui.font.LineWidthMeasurerFake;
 
 import org.junit.jupiter.api.Nested;

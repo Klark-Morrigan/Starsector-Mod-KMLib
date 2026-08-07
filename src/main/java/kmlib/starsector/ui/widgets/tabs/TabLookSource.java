@@ -1,5 +1,8 @@
 package kmlib.starsector.ui.widgets.tabs;
 
+import kmlib.starsector.ui.widgets.tabs.style.TabLook;
+import kmlib.starsector.ui.widgets.tabs.style.TabPalette;
+
 /**
  * Where a tab strip's paint pass gets each tab's settled look from: asked per tab index, one already resolved
  * {@link TabLook} per answer. The seam exists so a renderer stays a chrome pass - it paints a finished fill

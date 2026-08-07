@@ -19,7 +19,7 @@ import java.util.function.ToDoubleFunction;
  * the pointer. Substrate-independent: it measures text through a {@link TextSpanMeasurer} port and
  * returns rectangles and anchors, rendering nothing, so a GL or a UI-API renderer paints against the same
  * geometry. The raw-GL paint lives in
- * {@link kmlib.starsector.ui.render.gl.CursorTooltipRenderer}.
+ * {@link kmlib.starsector.ui.render.gl.tooltip.CursorTooltipRenderer}.
  *
  * <p>The padding and the screen clamp are {@link TooltipBoxLayout}'s; this widget adds the row model
  * on top - it measures how wide and how tall the rows stack, and lays each row's line and its three

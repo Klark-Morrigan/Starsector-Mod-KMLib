@@ -1,5 +1,7 @@
 package kmlib.starsector.ui.widgets.tabs;
 
+import kmlib.starsector.ui.widgets.tabs.style.TabWash;
+
 /**
  * Where a tab strip's lift channel gets its progress from: asked per tab index, one fraction per answer
  * saying how far through its momentary lift that tab currently is. The seam exists so a renderer holds no

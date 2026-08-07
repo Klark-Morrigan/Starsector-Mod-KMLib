@@ -1,5 +1,9 @@
 package kmlib.starsector.ui.widgets.tabs;
 
+import kmlib.starsector.ui.widgets.tabs.style.TabPalette;
+import kmlib.starsector.ui.widgets.tabs.style.TabWash;
+import kmlib.starsector.ui.widgets.tabs.style.TabWashState;
+
 /**
  * Where a tab strip's paint pass gets each tab's resolved lift from: asked per tab index, one already
  * composed {@link TabWash} per answer. The seam exists so a renderer stays a chrome pass - it reads a

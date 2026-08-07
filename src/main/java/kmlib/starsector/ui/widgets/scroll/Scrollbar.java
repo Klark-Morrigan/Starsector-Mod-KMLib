@@ -8,7 +8,7 @@ import kmlib.math.ranges.Ranges;
  * gutter, the thumb sized and positioned within it for how far the content is scrolled, the grab column a
  * drag reads, and the scroll offset a pointer on the track maps to. Substrate-independent - it computes
  * rectangles and offsets, rendering nothing - so a GL or a UI-API renderer paints against it and an input
- * listener hit-tests it. The raw-GL paint lives in {@link kmlib.starsector.ui.render.gl.ScrollbarRenderer}.
+ * listener hit-tests it. The raw-GL paint lives in {@link kmlib.starsector.ui.render.gl.panel.ScrollbarRenderer}.
  *
  * <p>The scrollbar is scoped to the scrollable region, not to any host: everything it needs rides on the
  * {@link ScrollRegion} (the container for the track's gutter, the viewport for its extent, the

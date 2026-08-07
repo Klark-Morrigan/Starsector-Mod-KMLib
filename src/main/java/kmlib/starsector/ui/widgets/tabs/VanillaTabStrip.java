@@ -14,7 +14,7 @@ import java.util.List;
  * VanillaTab} models and renders nothing - so a GL or a UI-API renderer can paint the row against it.
  * Derived from the base {@link TabStrip} for the snapping math; each tab's display string comes from
  * {@link TabShortcutText}, so the layout measures exactly the text the paint draws. The raw-GL paint
- * lives in {@link kmlib.starsector.ui.render.gl.VanillaTabStripRenderer}.
+ * lives in {@link kmlib.starsector.ui.render.gl.tabs.VanillaTabStripRenderer}.
  */
 public final class VanillaTabStrip {
 

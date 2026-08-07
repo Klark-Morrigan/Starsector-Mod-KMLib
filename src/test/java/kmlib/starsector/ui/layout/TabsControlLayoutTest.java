@@ -3,7 +3,7 @@ package kmlib.starsector.ui.layout;
 import kmlib.starsector.ui.controls.ControlAction;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
-import kmlib.starsector.ui.widgets.tabs.TabStyles;
+import kmlib.starsector.ui.widgets.tabs.style.TabStyles;
 import kmlib.testfixtures.starsector.ui.font.LineWidthMeasurerFake;
 
 import org.junit.jupiter.api.Nested;

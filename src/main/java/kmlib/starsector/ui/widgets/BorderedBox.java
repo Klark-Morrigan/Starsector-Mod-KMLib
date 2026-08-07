@@ -8,7 +8,7 @@ import kmlib.math.geometry.Rectangle;
  * so they never overlap the border. Only a stroked edge insets - an edge left open frames nothing there,
  * so the content runs flush to that side. Substrate-independent - it computes rectangles and renders
  * nothing - so either a GL or a UI-API renderer can size a panel's contents against it. The raw-GL paint
- * lives in {@link kmlib.starsector.ui.render.gl.BorderedBoxRenderer}.
+ * lives in {@link kmlib.starsector.ui.render.gl.panel.BorderedBoxRenderer}.
  */
 public final class BorderedBox {
     private BorderedBox() {

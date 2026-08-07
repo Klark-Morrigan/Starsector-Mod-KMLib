@@ -1,5 +1,9 @@
 package kmlib.starsector.ui.widgets.tabs;
 
+import kmlib.starsector.ui.widgets.tabs.style.TabLook;
+import kmlib.starsector.ui.widgets.tabs.style.TabPalette;
+import kmlib.starsector.ui.widgets.tabs.style.TabWash;
+
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 

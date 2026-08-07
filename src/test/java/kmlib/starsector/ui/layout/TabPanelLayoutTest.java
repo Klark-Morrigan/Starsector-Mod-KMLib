@@ -8,8 +8,8 @@ import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
 import kmlib.starsector.ui.widgets.tabs.TabPanelViewState;
-import kmlib.starsector.ui.widgets.tabs.TabStyle;
-import kmlib.starsector.ui.widgets.tabs.TabStyles;
+import kmlib.starsector.ui.widgets.tabs.style.TabStyle;
+import kmlib.starsector.ui.widgets.tabs.style.TabStyles;
 import kmlib.testfixtures.starsector.ui.font.LineWidthMeasurerFake;
 
 import org.junit.jupiter.api.Nested;

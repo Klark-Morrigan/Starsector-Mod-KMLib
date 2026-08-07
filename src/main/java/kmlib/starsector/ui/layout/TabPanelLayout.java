@@ -8,7 +8,7 @@ import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.PanelPlacement;
 import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
 import kmlib.starsector.ui.widgets.tabs.TabPanelViewState;
-import kmlib.starsector.ui.widgets.tabs.TabStyle;
+import kmlib.starsector.ui.widgets.tabs.style.TabStyle;
 
 import java.util.List;
 
