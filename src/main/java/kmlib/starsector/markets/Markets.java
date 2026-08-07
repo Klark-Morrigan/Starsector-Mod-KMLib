@@ -66,10 +66,18 @@ public final class Markets {
      *
      * <p>Reads the market's connected entities - the ownership link the game
      * maintains, so a station found here is this market's own rather than a rival's
-     * or an abandoned hulk sharing the orbit - and mirrors the scan
-     * {@code OrbitalStation} itself runs: a {@code "station"}-tagged entity not
-     * opted out via {@code NO_ORBITAL_STATION}. Keying on the entity tag captures
-     * vanilla and modded stations alike, so no industry ids are read.
+     * or an abandoned hulk sharing the orbit - and qualifies each on the two halves
+     * vanilla's own station reads test: a {@code "station"}-tagged entity not opted
+     * out via {@code NO_ORBITAL_STATION}, which additionally has a station fleet.
+     * Keying on the tag and the fleet captures vanilla and modded stations alike,
+     * so no industry ids are read.
+     *
+     * <p>The fleet half is what makes the answer a defensive station rather than a
+     * place built on one. A market sited on a station is connected to its own
+     * primary entity, which carries the {@code "station"} tag for what it is, so the
+     * tag alone would have every such market defended by itself. The station fleet
+     * is raised by an actual orbital-station industry, so requiring it is what tells
+     * a colony with a battlestation apart from a colony that is a hab ring.
      *
      * <p>Yields the entity rather than a verdict, so a caller that has to name the
      * station - or read its faction, orbit, or own market - can, while one that only
@@ -91,7 +99,12 @@ public final class Markets {
             return Optional.empty();
         }
         for (var entity : market.getConnectedEntities()) {
-            if (entity.hasTag(Tags.STATION) && !entity.hasTag(NO_ORBITAL_STATION_TAG)) {
+            // The opt-out is tested before the fleet read: it is the cheaper answer, and
+            // vanilla's fleet lookup dereferences the entity's memory, which an opted-out
+            // decoration has no reason to carry.
+            if (entity.hasTag(Tags.STATION)
+                    && !entity.hasTag(NO_ORBITAL_STATION_TAG)
+                    && Misc.getStationFleet(entity) != null) {
                 return Optional.of(entity);
             }
         }

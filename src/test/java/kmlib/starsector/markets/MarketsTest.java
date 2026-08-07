@@ -1,5 +1,6 @@
 package kmlib.starsector.markets;
 
+import com.fs.starfarer.api.campaign.CampaignFleetAPI;
 import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
@@ -107,6 +108,27 @@ final class MarketsTest {
         void yields_empty_when_no_connected_entity_is_a_station() {
 
             var market = buildMarketConnectedTo(buildNonStationEntity());
+
+            assertThat(Markets.findAttachedStation(market))
+                .isEmpty();
+        }
+
+        @Test
+        void yields_empty_for_a_station_tagged_entity_raising_no_station_fleet() {
+            // The tag alone says "this is a station", not "this defends the market". The
+            // fleet an orbital-station industry raises is what says the second.
+            var market = buildMarketConnectedTo(buildFleetlessStationEntity());
+
+            assertThat(Markets.findAttachedStation(market))
+                .isEmpty();
+        }
+
+        @Test
+        void yields_empty_for_a_market_sited_on_a_station_of_its_own() {
+            // A market built on a station is connected to its own primary entity, which
+            // carries the tag for what the place is. It must not come back as the place's
+            // own defensive station.
+            var market = buildStationSitedMarket();
 
             assertThat(Markets.findAttachedStation(market))
                 .isEmpty();
@@ -743,15 +765,30 @@ final class MarketsTest {
         return marketMock;
     }
 
-    // A station entity: carries the "station" tag and no opt-out.
+    // A market that is itself a station: its own primary entity sits among its connected
+    // entities and carries the "station" tag for what the place is, while raising no
+    // station fleet of its own.
+    private static MarketAPI buildStationSitedMarket() {
+
+        var entityMock = buildFleetlessStationEntity();
+        var marketMock = buildMarketConnectedTo(entityMock);
+
+        when(marketMock.getPrimaryEntity())
+            .thenReturn(entityMock);
+
+        return marketMock;
+    }
+
+    // A station entity: carries the "station" tag, no opt-out, and the station fleet an
+    // orbital-station industry raises - the shape the scan admits.
     private static SectorEntityToken buildStationEntity() {
+        return buildStationTaggedEntity(mock(CampaignFleetAPI.class));
+    }
 
-        var entityMock = mock(SectorEntityToken.class);
-
-        when(entityMock.hasTag(Tags.STATION))
-            .thenReturn(true);
-
-        return entityMock;
+    // A "station"-tagged entity with no station fleet in memory: a place built on a station
+    // rather than a colony defended by one. Its own primary entity looks like this.
+    private static SectorEntityToken buildFleetlessStationEntity() {
+        return buildStationTaggedEntity(null);
     }
 
     // A "station"-tagged entity flagged NO_ORBITAL_STATION, vanilla's own opt-out.
@@ -761,6 +798,26 @@ final class MarketsTest {
 
         when(entityMock.hasTag("NO_ORBITAL_STATION"))
             .thenReturn(true);
+
+        return entityMock;
+    }
+
+    // The shared wiring behind the two station shapes: the tag, plus whatever the entity's
+    // memory answers for the station-fleet key. Vanilla's fleet read dereferences that memory
+    // unconditionally, so it is always stubbed even where the fleet itself is absent.
+    private static SectorEntityToken buildStationTaggedEntity(CampaignFleetAPI stationFleet) {
+
+        var memoryMock = mock(MemoryAPI.class);
+
+        when(memoryMock.get(MemFlags.STATION_FLEET))
+            .thenReturn(stationFleet);
+
+        var entityMock = mock(SectorEntityToken.class);
+
+        when(entityMock.hasTag(Tags.STATION))
+            .thenReturn(true);
+        when(entityMock.getMemoryWithoutUpdate())
+            .thenReturn(memoryMock);
 
         return entityMock;
     }
