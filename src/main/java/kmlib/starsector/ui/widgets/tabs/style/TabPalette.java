@@ -58,10 +58,11 @@ public record TabPalette(
      * labels the engine's own tabs settle on, and the lift a press raises one by. Everything vanilla
      * here resolves through {@link StarsectorUiColour} on each call, so it tracks a live palette change.
      *
-     * <p>Both come from {@link VanillaTabFills}, worked out from the same two settings colours a vanilla
+     * <p>The fills come from {@link VanillaTabFills}, worked out from the two settings colours a vanilla
      * tab is painted with rather than sampled off one - so a restyled install moves this strip exactly as
-     * it moves the tabs above it. They answer to settings and not to the player faction because the
-     * engine's own tabs take no faction colour at all.
+     * it moves the tabs above it. Every shade here answers to settings and not to the player faction,
+     * because the engine's own tabs take no faction colour at all; only the chrome accent the caller hands
+     * in is free to.
      *
      * <p>The three fills are one shade at the engine's three glow amounts, not three shades: resting
      * unlit, the shown tab at {@link VanillaTabFills#SELECTED_GLOW}, and the tab under the pointer at the
@@ -69,12 +70,17 @@ public record TabPalette(
      * is what lets a strip mark the shown tab by fill alone - a pointed-at tab outshines it rather than
      * matching it, so the two never read alike.
      *
-     * <p>The labels are one shade at those same three amounts, for the same reason and by the same rule:
-     * the engine lights a tab with one glow pass over the whole of it, so a label is never a colour a
-     * state picks but the {@code buttonText} blue lit by however brightly that state stands. That is what
-     * makes a resting tab's text read as the raw blue while a shown or pointed-at tab's whitens out - and
-     * a state given a colour of its own instead would part the text from the fill under it at exactly the
-     * amounts vanilla keeps them together.
+     * <p>The labels do not follow those amounts at all. The engine parts a resting tab's text from a lit
+     * one's by naming a second colour rather than by brightening the first: the {@code buttonText} blue
+     * every button's text is while the tab is untouched, and the {@code standardTextColor} grey the rest
+     * of the interface reads in once it is shown or pointed at. Both lit states take that grey, their
+     * fills already standing at different glows, so the fill is what tells them apart.
+     *
+     * <p>That is a measurement rather than a derivation, and it replaced two rules that computed the label
+     * off the fill's glow. Brightening a colour already at full blue can only push it sideways into cyan,
+     * which no amount tuned into such a rule escapes; solving a lit vanilla tab's sampled label for the
+     * glyph's coverage gives irreconcilable answers against the blue and one consistent answer against the
+     * grey.
      *
      * <p>The lifts over these looks blend RGB alone, so a look that starts opaque - as all three fills do -
      * stays opaque through every hover, blink, and click.
