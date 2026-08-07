@@ -143,9 +143,12 @@ src/main/java/kmlib/
                      the cross-host "is a starscape map up" fold-in,
                      screen/world transform, modelview matrix readers,
                      vanilla map tooltip
-      render/gl/   - the GL paint layer: panel, tabs, controls,
-                     scrollbar, collapse notch, cursor tooltips, fills,
-                     scissor
+      render/gl/   - the GL paint layer. The root is the drawing surface
+                     itself - fills, borders, sprites, scissor, labels -
+                     with a package per subject composed over it:
+                     style/ (the look a host hands in), controls/,
+                     tabs/ (both tab chromes), panel/ (box, scrollbar,
+                     collapse notch), tooltip/
       sound/       - the engine's interface sounds a KM control answers
                      with, the scheme naming which role each moment
                      makes - carried in the panel's look, so a control
@@ -160,7 +163,9 @@ src/main/java/kmlib/
                      labelled-row core - a label read as one sentence
                      with a slot to either side - and the rows and boxes
                      built on it, with lists/, scroll/, segments/, and
-                     tabs/ beneath; lists/ is the spotlight picker - the
+                     tabs/ beneath - the last splitting its geometry from
+                     the tabs/style/ a host varies; lists/ is the
+                     spotlight picker - the
                      sort-mode, direction and column-count model it ranks
                      and wraps by, the item seam it draws rows from, and
                      the memo a consumer holds its list in - holding no
