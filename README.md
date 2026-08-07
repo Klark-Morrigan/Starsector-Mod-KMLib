@@ -172,10 +172,10 @@ src/main/java/kmlib/
                      store of its own
   testfixtures/    - Fakes for KMLib's own ports (claims, fonts, intel
                      screen, modelview, console output) and for the core
-                     UI's widget tree, which a layout rule has to walk,
-                     plus builders for the values those ports report.
-                     Ships in the MAIN jar so consumer mods' tests can
-                     use them
+                     UI - the hops down to the screen that is up, and the
+                     widget tree a layout rule walks once there - plus
+                     builders for the values those ports report. Ships in
+                     the MAIN jar so consumer mods' tests can use them
 src/bridgestubs/java/ - compile-only mirrors of the Fast Rendering bridge
                         members KMLib reads, so an install without fr.jar
                         still compiles (see Build & Test); never shipped,

@@ -25,8 +25,10 @@ import java.util.List;
  * <p>Deliberately policy-free. Every hop either answers or throws, and what a failed read *means*
  * is the caller's to decide: a probe that suppresses an overlay wants a failure to read one way, a
  * probe that draws one wants the opposite, and baking either here would force both to live with
- * one. The only judgement made is that a component exposing no children is a leaf rather than a
- * failure, since most components are leaves and that would otherwise abort a walk at its first one.
+ * one. The one judgement made is that an object not answering a name is a different shape rather
+ * than a broken one: most components are leaves with no children to offer, and most dialogs host no
+ * core UI, so reading either absence as a failure would abort a walk at its first leaf and take
+ * down every read attempted while a scripted dialog is up.
  */
 public final class CoreUiTree {
 
@@ -55,14 +57,10 @@ public final class CoreUiTree {
      * @return its children, or an empty list when it is a leaf
      */
     public static List<?> readChildrenOf(Object component) {
-        try {
-            if (invokeNoArg(component, GET_CHILDREN_METHOD) instanceof List<?> children) {
-                return children;
-            }
-        } catch (Throwable notAParent) {
-            // No getChildrenCopy: a leaf. Descend no further down this branch.
-        }
-        return List.of();
+        // A component offering no such name is a leaf. Descend no further down this branch.
+        return readHopIfOffered(component, GET_CHILDREN_METHOD) instanceof List<?> children
+            ? children
+            : List.of();
     }
 
     /**
@@ -93,15 +91,8 @@ public final class CoreUiTree {
      * @return the core UI it hosts, or null
      */
     public static Object readCoreUiOf(Object dialog) {
-        if (dialog == null) {
-            return null;
-        }
-        try {
-            return invokeNoArg(dialog, GET_CORE_UI_METHOD);
-        } catch (Throwable hostsNoCoreUi) {
-            // A scripted dialog: not one of the game's core-hosting ones. Nothing to read here.
-            return null;
-        }
+        // A dialog offering no such name is a scripted one, hosting no core UI of its own.
+        return dialog == null ? null : readHopIfOffered(dialog, GET_CORE_UI_METHOD);
     }
 
     /**
@@ -133,5 +124,16 @@ public final class CoreUiTree {
     private static Object resolveActiveCore(CampaignUIAPI campaignUi) {
         var dialogCore = readCoreUiOf(campaignUi.getCurrentInteractionDialog());
         return dialogCore != null ? dialogCore : invokeNoArg(campaignUi, GET_CORE_METHOD);
+    }
+
+    // A hop where not answering the name is a shape rather than a failure, so the absence comes
+    // back as null. Both such reads differ in what they do with that null, not in how they read it,
+    // which is why the swallow is stated here once instead of at each of them.
+    private static Object readHopIfOffered(Object instance, String methodName) {
+        try {
+            return invokeNoArg(instance, methodName);
+        } catch (Throwable offersNoSuchName) {
+            return null;
+        }
     }
 }
