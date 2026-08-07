@@ -8,10 +8,14 @@ import com.fs.starfarer.api.impl.campaign.ids.Tags;
 import com.fs.starfarer.api.util.DynamicStatsAPI;
 import com.fs.starfarer.api.util.Misc;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Optional;
 
 /**
- * Queries over a single market's state.
+ * Queries over a market's state, and over which of several markets speaks for a place.
  *
  * <p>Centralises reads a market only answers indirectly - walking its connected
  * entities, or normalising a raw stat against its vanilla band - so KM* mods (and
@@ -238,6 +242,53 @@ public final class Markets {
     }
 
     /**
+     * The markets that speak for their places once several share one entity: the
+     * largest per owning faction, in the order the input first names each place.
+     *
+     * <p>A colony is one place however many market objects the game has hung on its
+     * entity, and mods supersede a market by adding rather than replacing - IndEvo
+     * attaches its own Galatia Academy market to the station entity that already
+     * carries vanilla's, both owned by the same faction. A caller that sums per market
+     * banks that colony twice and reads its owner as holding twice what it holds.
+     *
+     * <p>Resolved per faction rather than per entity outright: an entity carrying
+     * markets of two owners is not a shape vanilla builds, but collapsing to one winner
+     * would silently drop a faction's only foothold there if a mod ever built it.
+     *
+     * <p>Largest wins, because size is the reading the weights above are built on. The
+     * first of an equal-sized pair wins, so a caller passing the economy's own order
+     * resolves the same way on every pass rather than alternating between them.
+     *
+     * <p>A market with no entity, or no owner to read, cannot collide with anything and
+     * passes through untouched. Grouping those together would merge places whose only
+     * shared trait is the missing key.
+     *
+     * @param markets the markets to resolve; null yields an empty list, and null
+     *                elements are dropped
+     * @return one market per place-and-owner, in first-appearance order
+     */
+    public static List<MarketAPI> readLargestMarketsPerFaction(Collection<MarketAPI> markets) {
+        if (markets == null) {
+            return List.of();
+        }
+        // Insertion-ordered rather than hashed: re-putting a winner on a key it already
+        // holds leaves that key in its original slot, so a place stays where the caller
+        // first named it however late its largest market arrives.
+        var winnersByPlace = new LinkedHashMap<Object, MarketAPI>();
+        for (var market : markets) {
+            if (market == null) {
+                continue;
+            }
+            var place = buildPlaceKey(market);
+            var incumbent = winnersByPlace.get(place);
+            if (incumbent == null || market.getSize() > incumbent.getSize()) {
+                winnersByPlace.put(place, market);
+            }
+        }
+        return new ArrayList<>(winnersByPlace.values());
+    }
+
+    /**
      * Whether a functional patrol HQ garrisons this market - the "does a patrol
      * industry actually field patrols here" gate.
      *
@@ -321,6 +372,19 @@ public final class Markets {
             readPatrolTierCount(dynamic, Stats.PATROL_NUM_HEAVY_MOD));
     }
 
+    // What makes two markets the same place under the same owner. Typed as Object so a
+    // market missing either half can be handed a bare instance no other market can equal:
+    // it then falls out of the grouping on its own rather than pooling with every other
+    // market missing the same half. The key never leaves the loop that builds it.
+    private static Object buildPlaceKey(MarketAPI market) {
+        var entity = market.getPrimaryEntity();
+        var faction = market.getFaction();
+        if (entity == null || faction == null || faction.getId() == null) {
+            return new Object();
+        }
+        return new PlaceAndOwner(entity, faction.getId());
+    }
+
     // One patrol tier's count off the dynamic stats, mirroring vanilla's truncation
     // of the effective mod to an int. A missing mod (no military industry) or a
     // negative reading floors to zero, so a count is never negative.
@@ -330,5 +394,11 @@ public final class Markets {
             return 0;
         }
         return Math.max(0, (int) mod.computeEffective(0.0f));
+    }
+
+    // The identity two market objects must share before the larger can stand for both.
+    // The entity compares by whatever equality it defines, which for vanilla's entities
+    // is identity, so two distinct stations never merge however alike they read.
+    private record PlaceAndOwner(SectorEntityToken entity, String factionId) {
     }
 }

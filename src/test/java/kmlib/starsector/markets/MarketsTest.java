@@ -18,6 +18,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,7 +32,8 @@ import static org.mockito.Mockito.when;
  * {@link Markets#getStabilityFraction},
  * {@link Markets#isKnownToPlayer}, {@link Markets#isCountedAsColony},
  * {@link Markets#isDiscoveredByPlayer}, {@link Markets#isFoundColony},
- * {@link Markets#fieldsPatrols}, {@link Markets#readPatrolCounts} and
+ * {@link Markets#readLargestMarketsPerFaction}, {@link Markets#fieldsPatrols},
+ * {@link Markets#readPatrolCounts} and
  * {@link Markets#isMilitary}. The cases live in a {@link Nested} group per method so
  * the suite reports as a per-method tree; the shared mock builders stay on the outer
  * class.
@@ -400,6 +403,115 @@ final class MarketsTest {
     }
 
     @Nested
+    class ReadLargestMarketsPerFaction {
+
+        @Test
+        void keeps_only_the_larger_of_two_markets_sharing_an_entity_and_owner() {
+
+            var station = buildDiscoveredEntity();
+            var independent = buildFaction("independent");
+            var vanillaAcademy = buildMarketAtPlace(station, independent, 3);
+            var moddedAcademy = buildMarketAtPlace(station, independent, 5);
+
+            assertThat(Markets.readLargestMarketsPerFaction(
+                    List.of(vanillaAcademy, moddedAcademy)))
+                .containsExactly(moddedAcademy);
+        }
+
+        @Test
+        void keeps_a_market_of_each_owner_when_one_entity_carries_two() {
+
+            var station = buildDiscoveredEntity();
+            var hegemony = buildMarketAtPlace(station, buildFaction("hegemony"), 3);
+            var pirates = buildMarketAtPlace(station, buildFaction("pirates"), 5);
+
+            assertThat(Markets.readLargestMarketsPerFaction(List.of(hegemony, pirates)))
+                .containsExactly(hegemony, pirates);
+        }
+
+        @Test
+        void keeps_both_markets_of_one_owner_on_separate_entities() {
+
+            var independent = buildFaction("independent");
+            var academy = buildMarketAtPlace(buildDiscoveredEntity(), independent, 3);
+            var ancyra = buildMarketAtPlace(buildDiscoveredEntity(), independent, 5);
+
+            assertThat(Markets.readLargestMarketsPerFaction(List.of(academy, ancyra)))
+                .containsExactly(academy, ancyra);
+        }
+
+        @Test
+        void keeps_the_first_of_two_equal_sized_markets_sharing_a_place() {
+
+            var station = buildDiscoveredEntity();
+            var independent = buildFaction("independent");
+            var first = buildMarketAtPlace(station, independent, 3);
+            var second = buildMarketAtPlace(station, independent, 3);
+
+            assertThat(Markets.readLargestMarketsPerFaction(List.of(first, second)))
+                .containsExactly(first);
+        }
+
+        @Test
+        void yields_a_place_where_it_was_first_named_though_its_winner_arrives_later() {
+
+            var station = buildDiscoveredEntity();
+            var independent = buildFaction("independent");
+            var small = buildMarketAtPlace(station, independent, 3);
+            var elsewhere = buildMarketAtPlace(buildDiscoveredEntity(), independent, 4);
+            var large = buildMarketAtPlace(station, independent, 6);
+
+            assertThat(Markets.readLargestMarketsPerFaction(List.of(small, elsewhere, large)))
+                .containsExactly(large, elsewhere);
+        }
+
+        @Test
+        void passes_through_markets_of_one_owner_that_have_no_entity() {
+
+            var independent = buildFaction("independent");
+            var first = buildMarketAtPlace(null, independent, 3);
+            var second = buildMarketAtPlace(null, independent, 5);
+
+            assertThat(Markets.readLargestMarketsPerFaction(List.of(first, second)))
+                .containsExactly(first, second);
+        }
+
+        @Test
+        void passes_through_markets_on_one_entity_that_have_no_owner() {
+
+            var station = buildDiscoveredEntity();
+            var first = buildMarketAtPlace(station, null, 3);
+            var second = buildMarketAtPlace(station, null, 5);
+
+            assertThat(Markets.readLargestMarketsPerFaction(List.of(first, second)))
+                .containsExactly(first, second);
+        }
+
+        @Test
+        void drops_null_markets() {
+
+            var market = buildMarketAtPlace(
+                buildDiscoveredEntity(), buildFaction("hegemony"), 4);
+
+            assertThat(Markets.readLargestMarketsPerFaction(
+                    Arrays.asList(null, market, null)))
+                .containsExactly(market);
+        }
+
+        @Test
+        void yields_an_empty_list_for_no_markets() {
+            assertThat(Markets.readLargestMarketsPerFaction(List.of()))
+                .isEmpty();
+        }
+
+        @Test
+        void yields_an_empty_list_for_a_null_collection() {
+            assertThat(Markets.readLargestMarketsPerFaction(null))
+                .isEmpty();
+        }
+    }
+
+    @Nested
     class ReadPatrolCounts {
         @Test
         void reads_the_three_tier_counts_from_the_dynamic_stats() {
@@ -718,6 +830,26 @@ final class MarketsTest {
             .thenReturn(faction);
         when(marketMock.isPlanetConditionMarketOnly())
             .thenReturn(isConditionOnly);
+
+        return marketMock;
+    }
+
+    // A market sited on an entity, owned by a faction, at a size - the three reads the
+    // per-place resolution groups and picks winners by. Either half may be null to build
+    // a market the resolution cannot key.
+    private static MarketAPI buildMarketAtPlace(
+            SectorEntityToken entity,
+            FactionAPI faction,
+            int size) {
+
+        var marketMock = mock(MarketAPI.class);
+
+        when(marketMock.getPrimaryEntity())
+            .thenReturn(entity);
+        when(marketMock.getFaction())
+            .thenReturn(faction);
+        when(marketMock.getSize())
+            .thenReturn(size);
 
         return marketMock;
     }
