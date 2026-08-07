@@ -1,6 +1,7 @@
 package kmlib.starsector.ui.coreui;
 
 import com.fs.starfarer.api.Global;
+import com.fs.starfarer.api.campaign.CampaignUIAPI;
 
 import org.magiclib.ReflectionUtils;
 
@@ -32,6 +33,7 @@ public final class CoreUiTree {
     // The core UI's own accessors, driven by name. All are part of its contract, so they survive
     // obfuscation.
     private static final String GET_CORE_METHOD = "getCore";
+    private static final String GET_CORE_UI_METHOD = "getCoreUI";
     private static final String GET_CURRENT_TAB_METHOD = "getCurrentTab";
     private static final String GET_CHILDREN_METHOD = "getChildrenCopy";
 
@@ -79,7 +81,31 @@ public final class CoreUiTree {
     }
 
     /**
-     * Walks campaign UI -> core -> current tab.
+     * A dialog's own core UI, or null when there is no dialog or it hosts none.
+     *
+     * <p>Answering null for a dialog that exposes no such accessor is the same judgement made about
+     * a component with no children: the absence names a different shape, not a failed read. The
+     * game builds one dialog class that hosts a core UI and any number of scripted ones that do
+     * not, so a caller falling through to the campaign's own core is reading the screen correctly
+     * rather than papering over a broken hop.
+     *
+     * @param dialog the interaction dialog to look inside, or null when none is up
+     * @return the core UI it hosts, or null
+     */
+    public static Object readCoreUiOf(Object dialog) {
+        if (dialog == null) {
+            return null;
+        }
+        try {
+            return invokeNoArg(dialog, GET_CORE_UI_METHOD);
+        } catch (Throwable hostsNoCoreUi) {
+            // A scripted dialog: not one of the game's core-hosting ones. Nothing to read here.
+            return null;
+        }
+    }
+
+    /**
+     * Walks campaign UI -> the core UI that is up -> current tab.
      *
      * @return the tab currently up, or null when there is no campaign UI yet or a hop answered
      *         null; the reason is not distinguished because no caller can act on it differently
@@ -91,7 +117,21 @@ public final class CoreUiTree {
         if (sector == null || sector.getCampaignUI() == null) {
             return null;
         }
-        var core = invokeNoArg(sector.getCampaignUI(), GET_CORE_METHOD);
+        var core = resolveActiveCore(sector.getCampaignUI());
         return core == null ? null : invokeNoArg(core, GET_CURRENT_TAB_METHOD);
+    }
+
+    // The core UI the screens are actually being drawn from. An interaction dialog stands up its
+    // own, and every core screen opened while one is up - map, intel, refit - is hosted by that one
+    // rather than the campaign's, which goes on holding whatever tab it was left on. Walking the
+    // campaign's core regardless therefore searches the wrong tree for as long as a dialog is up,
+    // which is a whole docked visit rather than a moment.
+    //
+    // Same precedence the published tab read applies, so the two cannot disagree about which screen
+    // is up: a caller that gates on the tab id and then walks to its widgets is answered about one
+    // core UI, not two.
+    private static Object resolveActiveCore(CampaignUIAPI campaignUi) {
+        var dialogCore = readCoreUiOf(campaignUi.getCurrentInteractionDialog());
+        return dialogCore != null ? dialogCore : invokeNoArg(campaignUi, GET_CORE_METHOD);
     }
 }

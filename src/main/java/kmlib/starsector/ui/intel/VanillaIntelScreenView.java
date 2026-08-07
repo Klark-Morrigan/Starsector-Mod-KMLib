@@ -142,18 +142,17 @@ public final class VanillaIntelScreenView implements IntelScreenView {
     // Kept apart from the walk for the same reason the visor rule is: the walk needs a live widget
     // tree, while which of its failures counts as news is a rule that stands on its own.
     //
-    // The two reads are not aimed at the same core UI, which is the one benign way this can fire:
-    // the tab read answers for an interaction dialog's own core UI while such a dialog is up,
-    // whereas the walk always goes through the main one. So an intel screen hosted by a dialog
-    // reads as open and is not where the walk is looking - hence the message names the tree that
-    // was actually searched rather than declaring the reach broken.
+    // Both reads are aimed at the same core UI - an interaction dialog's own while such a dialog is
+    // up, the campaign's otherwise - so there is no benign way for them to disagree. A tab that
+    // reads as open and yields no panel is a build this reach no longer fits, and the message says
+    // so plainly.
     void warnOnceAboutUnreachableIntelPanel() {
         if (hasLoggedUnreachableIntelPanel || !isIntelTabOpen()) {
             return;
         }
         hasLoggedUnreachableIntelPanel = true;
-        LOG.warn("The intel tab is open but no EventsPanel was found in the main core UI's widget "
-            + "tree; intel-screen visor reads answer 'no visor' while that is so.");
+        LOG.warn("The intel tab is open but no EventsPanel was found below the core UI's current "
+            + "tab; intel-screen visor reads answer 'no visor' while that is so.");
     }
 
     // Walks the live core UI to the intel screen's events panel: campaign UI -> core -> current tab,

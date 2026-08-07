@@ -2,9 +2,12 @@ package kmlib.starsector.ui.coreui;
 
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.CampaignUIAPI;
+import com.fs.starfarer.api.campaign.InteractionDialogAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
 
 import kmlib.testfixtures.starsector.ui.coreui.CoreUiComponentFake;
+import kmlib.testfixtures.starsector.ui.coreui.CoreUiFake;
+import kmlib.testfixtures.starsector.ui.coreui.CoreUiHostFake;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,6 +15,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
+import java.lang.reflect.Proxy;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,8 +41,10 @@ class CoreUiTreeTest {
 
     @Nested
     class ReadChildrenOf {
+
         @Test
         void readChildrenOfReturnsWhatAParentHolds() {
+
             var childFake = new CoreUiComponentFake();
             var parentFake = new CoreUiComponentFake(childFake);
 
@@ -57,8 +63,10 @@ class CoreUiTreeTest {
 
     @Nested
     class InvokeNoArg {
+
         @Test
         void invokeNoArgReturnsWhatTheNamedMethodAnswers() {
+
             var childFake = new CoreUiComponentFake();
 
             assertThat(CoreUiTree.invokeNoArg(new CoreUiComponentFake(childFake), "getChildrenCopy"))
@@ -75,7 +83,36 @@ class CoreUiTreeTest {
     }
 
     @Nested
+    class ReadCoreUiOf {
+
+        @Test
+        void readCoreUiOfReturnsWhatAHostingDialogStandsUp() {
+
+            var coreFake = new CoreUiComponentFake();
+
+            assertThat(CoreUiTree.readCoreUiOf(new CoreUiHostFake(coreFake)))
+                .isSameAs(coreFake);
+        }
+
+        @Test
+        void readCoreUiOfIsNullForADialogThatHostsNoCoreUi() {
+            // A scripted dialog exposes no such method at all. Reading that as a failure would take
+            // down the walk for every screen opened while one is up, rather than sending it to the
+            // campaign's own core, which is where those screens then live.
+            assertThat(CoreUiTree.readCoreUiOf(new Object()))
+                .isNull();
+        }
+
+        @Test
+        void readCoreUiOfIsNullWhenNoDialogIsUp() {
+            assertThat(CoreUiTree.readCoreUiOf(null))
+                .isNull();
+        }
+    }
+
+    @Nested
     class ResolveCurrentTab {
+
         private MockedStatic<Global> globalMock;
         private SectorAPI sectorMock;
 
@@ -95,6 +132,7 @@ class CoreUiTreeTest {
 
         @Test
         void resolveCurrentTabIsNullBeforeThereIsASector() {
+
             globalMock
                 .when(Global::getSector)
                 .thenReturn(null);
@@ -105,6 +143,7 @@ class CoreUiTreeTest {
 
         @Test
         void resolveCurrentTabIsNullBeforeThereIsACampaignUi() {
+
             when(sectorMock.getCampaignUI())
                 .thenReturn(null);
 
@@ -122,5 +161,59 @@ class CoreUiTreeTest {
             assertThatThrownBy(CoreUiTree::resolveCurrentTab)
                 .isInstanceOf(Exception.class);
         }
+
+        @Test
+        void resolveCurrentTabReadsTheDialogsCoreWhileADialogIsUp() {
+            // The screens a dialog opens are drawn from the core it stands up, while the campaign's
+            // own goes on holding whatever tab it was left on. Reading the campaign's regardless
+            // searches the wrong tree for the whole of a docked visit.
+            var tabFake = new CoreUiComponentFake();
+            var campaignUiMock = mock(CampaignUIAPI.class);
+
+            when(campaignUiMock.getCurrentInteractionDialog())
+                .thenReturn(asCoreHostingDialog(new CoreUiFake(tabFake)));
+            when(sectorMock.getCampaignUI())
+                .thenReturn(campaignUiMock);
+
+            assertThat(CoreUiTree.resolveCurrentTab())
+                .isSameAs(tabFake);
+        }
+
+        @Test
+        void resolveCurrentTabFallsThroughToTheCampaignsCoreForADialogHostingNone() {
+            // A scripted dialog hosts no core UI, so the screens are still the campaign's. Reaching
+            // the core hop is what proves the walk carried on rather than stopping at the dialog -
+            // the bare campaign UI mock does not expose it, which is the exception raised here.
+            var campaignUiMock = mock(CampaignUIAPI.class);
+
+            when(campaignUiMock.getCurrentInteractionDialog())
+                .thenReturn(mock(InteractionDialogAPI.class));
+            when(sectorMock.getCampaignUI())
+                .thenReturn(campaignUiMock);
+
+            assertThatThrownBy(CoreUiTree::resolveCurrentTab)
+                .isInstanceOf(Exception.class);
+        }
+    }
+
+    // Stands for the game's one core-hosting dialog class: an interaction dialog that also answers
+    // the accessor the reach takes by name. Public because a proxy is only as visible as the least
+    // visible interface it implements, and the reach invokes from its own package.
+    public interface CoreHostingDialog {
+        Object getCoreUI();
+    }
+
+    // The reach receives the dialog as the published type and then hops by name, so exercising it
+    // needs an object that is both at once - which no fixture class and no mock can be here, the
+    // dialog API being too wide to implement and beyond what the mock maker will extend. A proxy
+    // over the two interfaces is the one shape that satisfies both halves.
+    private static InteractionDialogAPI asCoreHostingDialog(Object coreUi) {
+        return (InteractionDialogAPI) Proxy.newProxyInstance(
+            CoreUiTreeTest.class.getClassLoader(),
+            new Class<?>[] { InteractionDialogAPI.class, CoreHostingDialog.class },
+            (proxy, method, args) ->
+                "getCoreUI".equals(method.getName())
+                    ? coreUi
+                    : null);
     }
 }
