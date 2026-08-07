@@ -41,7 +41,8 @@ import java.util.List;
  * default is decided.
  *
  * <p>It composes the per-kind KMLib renderers ({@link CheckboxRenderer}, {@link RadioRowRenderer}, {@link
- * IconRadioListRenderer}, {@link ToggleButton}, {@link DividerRenderer}, {@link VanillaTabStripRenderer})
+ * IconRadioListRenderer}, {@link ToggleButton}, {@link DividerRenderer}, and whichever
+ * {@link TabChromeRenderer} the style names)
  * and the shared label paint, so a host renders a whole strip of controls by calling this per control. The
  * GL passthrough is exercised in-engine like the other draw helpers; the caller wraps it in the GL-state
  * save its panel already holds. A small cache mints one GL text buffer per (font, size, text) so a steady
@@ -72,9 +73,9 @@ public final class ControlRenderer {
      * Draws {@code control} in the lit state its spec carries, styled from {@code style} and faded by
      * {@code opacity}. A tick box / toggle lights its accent when its cell is selected; a radio frames its
      * segments in the accent and washes the active one; a checkbox uses the bright accent for its tick; a
-     * tabs row draws the vanilla-styled strip in the style's tab colours and face, lighting the selected tab
-     * and painting each tab at whatever point of its hover fade and pulse {@code tabInteractions} reports.
-     * Must run with a current GL context, like any immediate-mode GL call.
+     * tabs row draws in the tab chrome the style names, in its tab colours and face, lighting the selected
+     * tab and painting each tab at whatever point of its hover fade and pulse {@code tabInteractions}
+     * reports. Must run with a current GL context, like any immediate-mode GL call.
      *
      * @param control         the laid-out control to draw
      * @param style           the look bundle - accents and body font for every kind, tab colours and face
@@ -107,10 +108,15 @@ public final class ControlRenderer {
         }
     }
 
-    // A tabs row: the vanilla Sector/System strip, each tab drawn in its snapped segment at whatever point
-    // of its hover fade and pulse the caller reports. The segments were split to text by the layout;
-    // pairing each with its content (rebuilt from the spec through the same helper the layout measured
-    // with) yields the tabs the strip renderer paints, so the drawn tab matches the hit box.
+    // A tabs row, each tab drawn in its snapped segment at whatever point of its hover fade and pulse the
+    // caller reports. The segments were split to text by the layout; pairing each with its content (rebuilt
+    // from the spec through the same helper the layout measured with) yields the tabs the chrome renderer
+    // paints, so the drawn tab matches the hit box.
+    //
+    // Which chrome it wears is the style's call, so a host matches the tab convention of whatever screen it
+    // sits on. The choice is resolved to a painter through the chrome's own seam rather than branched on
+    // here: this pass branches over what a control IS, and a second branch over how one of them looks would
+    // grow a case every time a chrome is added to a control it does not otherwise know about.
     private static void drawTabs(
             Control control,
             ControlPaint paint,
@@ -120,7 +126,7 @@ public final class ControlRenderer {
         var contents = TabsControlLayout.buildTabContents(spec);
         var tabs = VanillaTabStrip.zipTabs(contents, control.segments());
 
-        // The same value the layout measured the band against, so a strip is drawn in exactly the look
+        // The same value the layout measured the band against, so a row is drawn in exactly the look
         // it was laid out under.
         var tabStyle = paint.style().tabStyle();
 
@@ -128,17 +134,22 @@ public final class ControlRenderer {
         // both. Neither is resolved from scratch: the cursor is not read (the panel's own state says which
         // tab is hovered, tested against the placement it was drawn at) and no timing is held (a click is an
         // event, and its decay belongs with whatever saw it).
-        VanillaTabStripRenderer.render(
-            tabs,
-            TabLookSource.createHoverFadedLookSource(
-                tabStyle.palette(),
-                spec.selectedIndex(),
-                tabInteractions.hoverSource()),
-            TabWashSource.createClickPulsedWashSource(
-                tabStyle.palette(),
-                tabInteractions.pulseSource()),
-            tabStyle,
-            paint.opacity());
+        var looks = TabLookSource.createHoverFadedLookSource(
+            tabStyle.palette(),
+            spec.selectedIndex(),
+            tabInteractions.hoverSource());
+
+        var washes = TabWashSource.createClickPulsedWashSource(
+            tabStyle.palette(),
+            tabInteractions.pulseSource());
+
+        TabChromeRenderer.resolveRendererFor(tabStyle.chrome())
+            .renderTabs(
+                tabs,
+                looks,
+                washes,
+                tabStyle,
+                paint.opacity());
     }
 
     // A tick box lit when the spec's cell is selected, then its label at the anchor the widget places

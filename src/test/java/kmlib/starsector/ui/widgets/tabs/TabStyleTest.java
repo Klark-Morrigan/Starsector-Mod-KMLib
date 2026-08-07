@@ -9,8 +9,8 @@ import static org.assertj.core.api.Assertions.within;
 /**
  * Pins {@link TabStyle}: the dimensions carry through as given, and a height that would invert the band
  * floors instead, so a caller computing a style from live settings cannot hand the layout a shape it would
- * lay out upside down. The paint the style also carries is not clamped and has no rule to pin; it is
- * supplied here through {@link TabStyles} so the height under test is the only value in play.
+ * lay out upside down. The chrome and the paint the style also carries are not clamped and have no rule to
+ * pin; they are supplied here through {@link TabStyles} so the height under test is the only value in play.
  */
 final class TabStyleTest {
     private static final float TOLERANCE = 0.01f;

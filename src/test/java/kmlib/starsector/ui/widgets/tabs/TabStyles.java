@@ -59,6 +59,9 @@ public final class TabStyles {
      */
     public static TabStyle buildAtBandHeight(float headerBandHeight) {
         return new TabStyle(
+            // The map's own chrome, which no test here draws: these assert dimensions and geometry, and a
+            // chrome is read only at paint time.
+            TabChrome.STRIP,
             headerBandHeight,
             STAND_IN_PALETTE,
             STAND_IN_HOTKEY,

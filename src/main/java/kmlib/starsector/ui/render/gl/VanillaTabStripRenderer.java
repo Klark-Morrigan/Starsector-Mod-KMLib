@@ -1,23 +1,13 @@
 package kmlib.starsector.ui.render.gl;
 
-import kmlib.colour.Colours;
 import kmlib.math.geometry.Rectangle;
-import kmlib.starsector.ui.font.DrawableStringCache;
-import kmlib.starsector.ui.font.TextFace;
-import kmlib.starsector.ui.widgets.tabs.HotkeyStyle;
 import kmlib.starsector.ui.widgets.tabs.TabLook;
 import kmlib.starsector.ui.widgets.tabs.TabLookSource;
 import kmlib.starsector.ui.widgets.tabs.TabPalette;
-import kmlib.starsector.ui.widgets.tabs.TabShortcutText;
 import kmlib.starsector.ui.widgets.tabs.TabStyle;
-import kmlib.starsector.ui.widgets.tabs.TabTextRun;
 import kmlib.starsector.ui.widgets.tabs.TabWashSource;
 import kmlib.starsector.ui.widgets.tabs.VanillaTab;
-import kmlib.starsector.ui.widgets.tabs.VanillaTabContent;
 import kmlib.starsector.ui.widgets.tabs.VanillaTabStrip;
-
-import org.lazywizard.lazylib.ui.LazyFont;
-import org.lazywizard.lazylib.ui.LazyFont.DrawableString;
 
 import java.awt.Color;
 import java.util.ArrayList;
@@ -26,28 +16,17 @@ import java.util.List;
 /**
  * Raw-GL paint for a {@link VanillaTabStrip}: the sector-map Sector/System tab look - each tab a solid
  * fill (dark at rest, bright when active, travelling toward one shared shade under the pointer) lifted by
- * whatever pulse its wash source reports, hairline dividers, and the tab's text with its bound key lit in
- * the hotkey colour, carrying a hairline beneath it when the style's {@link HotkeyStyle} asks for one.
- * The tab geometry lives on the substrate-independent widget; this draws it. The seams between tabs are
- * the chrome every horizontal segmented control shares, so they come from
- * {@link HorizontalSegmentsRenderer} (as a radio row's do); the per-state fill, the wash, the baseline,
- * and the multi-colour text are this strip's own. Unlike the plain renderers it draws the text itself
- * (off {@link DrawableStringCache}), since a line carrying a lit key inside it is the whole point of the
- * style.
+ * whatever pulse its wash source reports, with hairline dividers on the seams between them. The tab
+ * geometry lives on the substrate-independent widget; this draws it. The seams are the chrome every
+ * horizontal segmented control shares, so they come from {@link HorizontalSegmentsRenderer} (as a radio
+ * row's do); the per-state fill, the wash, and the baseline are this strip's own, and what each tab says
+ * is {@link TabLabelRenderer}'s, shared with the raised-button chrome that spells a tab out the same way.
  *
  * <p>The lit tab is marked by its fill and nothing else - no bar caps it. So the one mark of selection is
  * a shade, and the shade a tab wears under the pointer is what a reader has to keep clear of it: the two
  * meeting would leave a hovered tab and the shown tab looking alike.
  *
- * <p>Where the key falls is not decided here. A tab lights a letter of its own label where the key has
- * one to land on and spells the key out after it otherwise, and that is
- * {@link kmlib.starsector.ui.widgets.tabs.TabShortcutText}'s call - the same one the layout measured the
- * tab against. This pass walks the runs it produced, colours each by its role, and advances by what it
- * drew, so it cannot draw a tab wider or narrower than the box it was given.
- *
- * <p>Opacity scales every quad and every text colour by one value, so the whole strip fades as a
- * unit. The text is drawn as separate per-run drawables re-coloured per frame (rather than one baked
- * multi-colour run) precisely so they fade with the rest instead of staying opaque.
+ * <p>Opacity scales every quad and every text colour by one value, so the whole strip fades as a unit.
  */
 public final class VanillaTabStripRenderer {
 
@@ -94,7 +73,7 @@ public final class VanillaTabStripRenderer {
             var look = looks.resolveLookAt(index).computeWashedLook(washes.resolveWashAt(index));
 
             renderChrome(tab.bounds(), look, chromeAccent, opacity);
-            renderTabText(
+            TabLabelRenderer.renderCentredLabel(
                 tab.bounds(),
                 tab.content(),
                 look,
@@ -142,105 +121,5 @@ public final class VanillaTabStripRenderer {
             new UiElementPaint(
                 chromeAccent,
                 opacity * HorizontalSegmentsRenderer.DIVIDER_ALPHA_MULT));
-    }
-
-    // Draws the tab's text - the label with its bound key lit inside it, or spelt out after it - centred
-    // as one group inside the tab. The runs and where the key falls among them are TabShortcutText's
-    // decision, the same one the layout measured the tab against; this pass only colours each run and
-    // advances the cursor by what it drew. Every colour fades by opacity so the text tracks the strip.
-    // Skipped silently when any run's font cannot load, so a tab falls back to nothing rather than to a
-    // half-drawn line.
-    private static void renderTabText(
-            Rectangle bounds,
-            VanillaTabContent content,
-            TabLook look,
-            HotkeyStyle hotkeyStyle,
-            TextFace textFace,
-            float opacity) {
-
-        var runs = resolveDrawnRuns(
-            TabShortcutText.resolveRuns(content),
-            textFace,
-            Colours.scaleAlpha(look.label(), opacity),
-            Colours.scaleAlpha(hotkeyStyle.keyColour(), opacity));
-
-        if (runs == null) {
-            return;
-        }
-        var centerY = bounds.computeCenterY();
-        var runX = bounds.x() + (bounds.width() - computeRunsWidth(runs)) / 2f;
-
-        for (var run : runs) {
-            run.drawable().draw(runX, centerY);
-
-            if (run.isKey() && hotkeyStyle.isKeyUnderlined()) {
-                drawKeyUnderline(run.drawable(), runX, centerY, hotkeyStyle, opacity);
-            }
-            runX += run.drawable().getWidth();
-        }
-    }
-
-    // Resolves each run to a drawable set to its role's colour and anchored for the left-to-right walk
-    // above. Null when any run's font cannot load: the runs are one line of text broken up, so drawing
-    // the pieces that did resolve would leave a tab reading as a fragment of its own name.
-    private static List<DrawnRun> resolveDrawnRuns(
-            List<TabTextRun> runs,
-            TextFace textFace,
-            Color labelColour,
-            Color keyColour) {
-
-        var drawn = new ArrayList<DrawnRun>(runs.size());
-        for (var run : runs) {
-
-            var drawable = DrawableStringCache.resolveRun(textFace, run.text());
-            if (drawable == null) {
-                return null;
-            }
-            var isKey = run.role() == TabTextRun.Role.KEY;
-
-            drawable.setBaseColor(isKey ? keyColour : labelColour);
-            drawable.setAnchor(LazyFont.TextAnchor.CENTER_LEFT);
-            drawn.add(new DrawnRun(drawable, isKey));
-        }
-        return drawn;
-    }
-
-    // The whole line's rendered width, so the group centres in the tab as the one string the layout
-    // measured rather than as pieces each centred on their own.
-    private static float computeRunsWidth(List<DrawnRun> runs) {
-
-        var width = 0f;
-        for (var run : runs) {
-            width += run.drawable().getWidth();
-        }
-        return width;
-    }
-
-    // The styled emphasis under the key alone. The run is anchored centre-left, so it stands its own
-    // height about the draw y; the style places the line against that box, so every renderer drawing this
-    // look puts it in the same spot. Faded by the strip's opacity like every other quad here.
-    private static void drawKeyUnderline(
-            DrawableString key,
-            float keyX,
-            float centerY,
-            HotkeyStyle hotkeyStyle,
-            float opacity) {
-
-        var keyBox = new Rectangle(
-            keyX,
-            centerY - key.getHeight() / 2f,
-            key.getWidth(),
-            key.getHeight());
-
-        UiFill.renderQuad(
-            hotkeyStyle.computeUnderlineBox(keyBox),
-            new UiElementPaint(hotkeyStyle.keyColour(), opacity));
-    }
-
-    // One resolved run: the drawable to paint and whether it is the bound key, which is all the draw
-    // loop above still has to know once the colour has been set.
-    private record DrawnRun(
-        DrawableString drawable,
-        boolean isKey) {
     }
 }
