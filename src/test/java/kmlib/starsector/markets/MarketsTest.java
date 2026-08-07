@@ -124,14 +124,16 @@ final class MarketsTest {
         }
 
         @Test
-        void yields_empty_for_a_market_sited_on_a_station_of_its_own() {
-            // A market built on a station is connected to its own primary entity, which
-            // carries the tag for what the place is. It must not come back as the place's
-            // own defensive station.
-            var market = buildStationSitedMarket();
+        void picks_the_fleeted_station_over_a_fleetless_station_tagged_entity() {
+            // The shape a station-sited market with a real orbital station has: it is
+            // connected to the station it is built on and to the one defending it, both
+            // tagged. The scan has to qualify every tagged entity rather than settling on
+            // the first one it meets.
+            var station = buildStationEntity();
+            var market = buildMarketConnectedTo(buildFleetlessStationEntity(), station);
 
             assertThat(Markets.findAttachedStation(market))
-                .isEmpty();
+                .contains(station);
         }
 
         @Test
@@ -765,28 +767,15 @@ final class MarketsTest {
         return marketMock;
     }
 
-    // A market that is itself a station: its own primary entity sits among its connected
-    // entities and carries the "station" tag for what the place is, while raising no
-    // station fleet of its own.
-    private static MarketAPI buildStationSitedMarket() {
-
-        var entityMock = buildFleetlessStationEntity();
-        var marketMock = buildMarketConnectedTo(entityMock);
-
-        when(marketMock.getPrimaryEntity())
-            .thenReturn(entityMock);
-
-        return marketMock;
-    }
-
     // A station entity: carries the "station" tag, no opt-out, and the station fleet an
     // orbital-station industry raises - the shape the scan admits.
     private static SectorEntityToken buildStationEntity() {
         return buildStationTaggedEntity(mock(CampaignFleetAPI.class));
     }
 
-    // A "station"-tagged entity with no station fleet in memory: a place built on a station
-    // rather than a colony defended by one. Its own primary entity looks like this.
+    // A "station"-tagged entity with no station fleet in memory - the shape a market's own
+    // primary entity takes when the place is itself a station. It says what the entity is,
+    // not that it defends anything, so the scan must pass over it.
     private static SectorEntityToken buildFleetlessStationEntity() {
         return buildStationTaggedEntity(null);
     }
