@@ -54,7 +54,7 @@ class TooltipStyleTest {
     // A stack deeper than the step can carry, and the size the shrink stops at: below it no atlas renders
     // legibly, and the step would go on to zero and past it.
     private static final int DEEPER_THAN_THE_FLOOR = 9;
-    private static final double SMALLEST_SUBORDINATE_SIZE = 8d;
+    private static final double SMALLEST_SUBORDINATE_SIZE = 7d;
 
     // Built without the live palette: these styles stand in for "a look" and are only ever compared by
     // identity, so resolving colours through the running game's palette would add a static stub for

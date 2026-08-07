@@ -58,7 +58,7 @@ public record TooltipStyle(
     // The smallest a demoted line is allowed to reach. A deep enough stack would otherwise arrive at a
     // size no atlas can render legibly, and then at zero and below - so the shrink stops here and the
     // deepest levels share a size rather than vanishing.
-    private static final double SMALLEST_SUBORDINATE_SIZE = 8d;
+    private static final double SMALLEST_SUBORDINATE_SIZE = 7d;
 
     /**
      * Builds the plainest typography there is: the two looks a box always has, with blocks parted by the
