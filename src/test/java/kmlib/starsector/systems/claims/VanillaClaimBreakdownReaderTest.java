@@ -120,6 +120,54 @@ final class VanillaClaimBreakdownReaderTest {
         }
 
         @Test
+        void numbersEveryOwnedMarketByItsPlaceInTheEconomysListing() {
+            // The one thing that separates two markets on the same score: the contest is settled on
+            // a strictly greater score, so the earlier-listed of a tied pair wins and nothing else
+            // about either of them says why. Numbered across factions rather than within one,
+            // because a tie between two factions' best markets is settled the same way.
+            var hegemony = claimContest.buildFaction("hegemony", true);
+            var tritachyon = claimContest.buildFaction("tritachyon", true);
+            var relay = claimContest.buildMarket(hegemony, 1);
+            var rival = claimContest.buildMarket(tritachyon, 4);
+            var capital = claimContest.buildMarket(hegemony, 5);
+
+            claimContest.nameMarket(relay, "Sindria");
+            claimContest.nameMarket(rival, "Eventide");
+            claimContest.nameMarket(capital, "Chicomoztoc");
+            claimContest.placeMarketsInSystem(relay, rival, capital);
+
+            var breakdown = new VanillaClaimBreakdownReader()
+                .readBreakdown(claimContest.getSystem());
+
+            assertThat(readStanding(breakdown, "hegemony").standingMarket().listingPosition())
+                .isEqualTo(3);
+            assertThat(readStanding(breakdown, "hegemony").otherMarkets())
+                .extracting(MarketClaimBreakdown::listingPosition)
+                .containsExactly(1);
+            assertThat(readStanding(breakdown, "tritachyon").standingMarket().listingPosition())
+                .isEqualTo(2);
+        }
+
+        @Test
+        void numbersTheOwnedMarketsWithoutAGapWhereAnUnownedOneSits() {
+            // An unowned market takes no part in the contest and so takes no place in the numbering.
+            // Left in, it would open a gap the player could not account for by looking at the box,
+            // since nothing in it would ever carry that number.
+            var hegemony = claimContest.buildFaction("hegemony", true);
+            var unowned = claimContest.buildMarket(null, 4);
+            var capital = claimContest.buildMarket(hegemony, 5);
+
+            claimContest.nameMarket(capital, "Chicomoztoc");
+            claimContest.placeMarketsInSystem(unowned, capital);
+
+            var breakdown = new VanillaClaimBreakdownReader()
+                .readBreakdown(claimContest.getSystem());
+
+            assertThat(readStanding(breakdown, "hegemony").standingMarket().listingPosition())
+                .isEqualTo(1);
+        }
+
+        @Test
         void carriesTheGarrisonBonusOnlyForAMilitaryMarket() {
 
             var hegemony = claimContest.buildFaction("hegemony", true);
@@ -470,5 +518,19 @@ final class VanillaClaimBreakdownReaderTest {
             assertThat(new VanillaClaimBreakdownReader().readCoreFactionId(null))
                 .isNull();
         }
+    }
+
+    // One faction's place in a resolved contest, for a case posing several factions at once and
+    // asserting on each - reaching by rank would tie the case to an ordering it is not about.
+    private static FactionClaimScore readStanding(
+            SystemClaimBreakdown breakdown,
+            String factionId) {
+
+        return breakdown
+            .scores()
+            .stream()
+            .filter(score -> score.factionId().equals(factionId))
+            .findFirst()
+            .orElseThrow();
     }
 }

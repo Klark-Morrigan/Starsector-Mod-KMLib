@@ -20,6 +20,11 @@ final class FactionClaimScoreTest {
 
     private static final String HEGEMONY = "hegemony";
 
+    // Where each market falls in the system's listing. No case here poses a tie, so the two are
+    // simply told apart - the standing market ahead of the one beside it.
+    private static final int FIRST_LISTED = 1;
+    private static final int SECOND_LISTED = 2;
+
     @Nested
     class Score {
 
@@ -29,7 +34,7 @@ final class FactionClaimScoreTest {
             var standing = new FactionClaimScore(
                 HEGEMONY,
                 true,
-                new MarketClaimBreakdown("Chicomoztoc", 5, 2, OptionalInt.of(10)),
+                new MarketClaimBreakdown("Chicomoztoc", FIRST_LISTED, 5, 2, OptionalInt.of(10)),
                 List.of());
 
             assertThat(standing.score())
@@ -42,8 +47,8 @@ final class FactionClaimScoreTest {
             var standing = new FactionClaimScore(
                 HEGEMONY,
                 true,
-                new MarketClaimBreakdown("Chicomoztoc", 5, 1, OptionalInt.empty()),
-                List.of(new MarketClaimBreakdown("Kazeron", 3, 1, OptionalInt.empty())));
+                new MarketClaimBreakdown("Chicomoztoc", FIRST_LISTED, 5, 1, OptionalInt.empty()),
+                List.of(new MarketClaimBreakdown("Kazeron", SECOND_LISTED, 3, 1, OptionalInt.empty())));
 
             // Holdings are never summed: the second colony reaches the contest as the sibling
             // point already inside the standing market's score, not as a score of its own.
@@ -59,12 +64,12 @@ final class FactionClaimScoreTest {
         void keepsTheMarketsItWasBuiltWithWhenTheSourceListChangesLater() {
 
             var otherMarkets = new ArrayList<MarketClaimBreakdown>();
-            otherMarkets.add(new MarketClaimBreakdown("Kazeron", 3, 1, OptionalInt.empty()));
+            otherMarkets.add(new MarketClaimBreakdown("Kazeron", SECOND_LISTED, 3, 1, OptionalInt.empty()));
 
             var standing = new FactionClaimScore(
                 HEGEMONY,
                 true,
-                new MarketClaimBreakdown("Chicomoztoc", 5, 1, OptionalInt.empty()),
+                new MarketClaimBreakdown("Chicomoztoc", FIRST_LISTED, 5, 1, OptionalInt.empty()),
                 otherMarkets);
 
             otherMarkets.clear();
@@ -80,8 +85,8 @@ final class FactionClaimScoreTest {
             var standing = new FactionClaimScore(
                 HEGEMONY,
                 true,
-                new MarketClaimBreakdown("Chicomoztoc", 5, 0, OptionalInt.empty()),
-                List.of(new MarketClaimBreakdown("Kazeron", 3, 1, OptionalInt.empty())));
+                new MarketClaimBreakdown("Chicomoztoc", FIRST_LISTED, 5, 0, OptionalInt.empty()),
+                List.of(new MarketClaimBreakdown("Kazeron", SECOND_LISTED, 3, 1, OptionalInt.empty())));
 
             assertThatThrownBy(() -> standing.otherMarkets().clear())
                 .isInstanceOf(UnsupportedOperationException.class);
@@ -93,7 +98,7 @@ final class FactionClaimScoreTest {
             var standing = new FactionClaimScore(
                 HEGEMONY,
                 true,
-                new MarketClaimBreakdown("Chicomoztoc", 5, 0, OptionalInt.empty()),
+                new MarketClaimBreakdown("Chicomoztoc", FIRST_LISTED, 5, 0, OptionalInt.empty()),
                 null);
 
             assertThat(standing.otherMarkets())

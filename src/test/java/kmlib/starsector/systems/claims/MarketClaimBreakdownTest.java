@@ -16,13 +16,17 @@ final class MarketClaimBreakdownTest {
 
     private static final String MARKET_NAME = "Chicomoztoc";
 
+    // Where the market falls in the system's listing. No case here poses a tie, so every market
+    // built below takes the head of the list.
+    private static final int FIRST_LISTED = 1;
+
     @Nested
     class ComputeTotalScore {
 
         @Test
         void scoresAColonyStandingAloneOnItsSizeAlone() {
 
-            var claim = new MarketClaimBreakdown(MARKET_NAME, 5, 0, OptionalInt.empty());
+            var claim = new MarketClaimBreakdown(MARKET_NAME, FIRST_LISTED, 5, 0, OptionalInt.empty());
 
             assertThat(claim.computeTotalScore())
                 .isEqualTo(5);
@@ -31,7 +35,7 @@ final class MarketClaimBreakdownTest {
         @Test
         void addsOnePointForEverySiblingMarket() {
 
-            var claim = new MarketClaimBreakdown(MARKET_NAME, 5, 2, OptionalInt.empty());
+            var claim = new MarketClaimBreakdown(MARKET_NAME, FIRST_LISTED, 5, 2, OptionalInt.empty());
 
             // A faction's other holdings never join its score directly - they are worth a point
             // apiece to the market that stands for it, which is the whole sibling term.
@@ -42,7 +46,7 @@ final class MarketClaimBreakdownTest {
         @Test
         void addsTheFlatBonusAGarrisonEarns() {
 
-            var claim = new MarketClaimBreakdown(MARKET_NAME, 5, 0, OptionalInt.of(10));
+            var claim = new MarketClaimBreakdown(MARKET_NAME, FIRST_LISTED, 5, 0, OptionalInt.of(10));
 
             assertThat(claim.computeTotalScore())
                 .isEqualTo(15);
@@ -51,7 +55,7 @@ final class MarketClaimBreakdownTest {
         @Test
         void addsTheSizeSiblingAndGarrisonTermsTogether() {
 
-            var claim = new MarketClaimBreakdown(MARKET_NAME, 5, 2, OptionalInt.of(10));
+            var claim = new MarketClaimBreakdown(MARKET_NAME, FIRST_LISTED, 5, 2, OptionalInt.of(10));
 
             // The case the three terms can hide each other in: a rule that dropped one would
             // still add up in each of the cases above, where two of them are nought.
@@ -66,7 +70,7 @@ final class MarketClaimBreakdownTest {
         @Test
         void readsAnAbsentBonusGivenAsNullAsNoBonus() {
 
-            var claim = new MarketClaimBreakdown(MARKET_NAME, 5, 0, null);
+            var claim = new MarketClaimBreakdown(MARKET_NAME, FIRST_LISTED, 5, 0, null);
 
             assertThat(claim.militaryBonus())
                 .isEmpty();
@@ -77,7 +81,7 @@ final class MarketClaimBreakdownTest {
         @Test
         void carriesTheColonyItWasBuiltFrom() {
 
-            var claim = new MarketClaimBreakdown(MARKET_NAME, 5, 2, OptionalInt.of(10));
+            var claim = new MarketClaimBreakdown(MARKET_NAME, FIRST_LISTED, 5, 2, OptionalInt.of(10));
 
             // Every term survives the sum, since the box explaining a claim prints them rather
             // than the total the map paints its fill by.

@@ -56,6 +56,10 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
     // strictly greater score, so a score of zero can never take a system.
     private static final int NO_LEADING_SCORE = 0;
 
+    // The place the first market in a system's listing takes. Counted from one because the number
+    // is stated to the player, who reads a list of markets as first, second, third.
+    private static final int FIRST_LISTED = 1;
+
     @Override
     public SystemClaimBreakdown readBreakdown(StarSystemAPI system) {
 
@@ -98,10 +102,15 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
             if (faction == null) {
                 continue;
             }
+            // The place a market takes is its place among the owned ones, counting from one, rather
+            // than its raw index in the economy's list. The two order every market identically -
+            // dropping the unowned ones takes nothing out of order - and the contest is settled on
+            // relative order alone, so numbering the markets that take part leaves a run with no
+            // gaps in it for a reader to wonder about.
             claimedMarkets.add(new ClaimedMarket(
                 faction,
                 market.isHidden(),
-                computeMarketClaim(market, markets)));
+                computeMarketClaim(market, markets, claimedMarkets.size() + FIRST_LISTED)));
         }
         return claimedMarkets;
     }
@@ -218,7 +227,8 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
     // as the mechanic compares it; the game holds one instance per faction.
     private static MarketClaimBreakdown computeMarketClaim(
             MarketAPI market,
-            List<MarketAPI> systemMarkets) {
+            List<MarketAPI> systemMarkets,
+            int listingPosition) {
 
         var siblingMarketCount = 0;
 
@@ -229,6 +239,7 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
         }
         return new MarketClaimBreakdown(
             market.getName(),
+            listingPosition,
             market.getSize(),
             siblingMarketCount,
             Markets.isMilitary(market)

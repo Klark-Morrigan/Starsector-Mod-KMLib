@@ -19,15 +19,21 @@ import java.util.OptionalInt;
  * inputs.
  *
  * @param marketName         the colony's display name
+ * @param listingPosition    where the market falls in the system's economy listing, counting from
+ *                           one. Carried because the contest is settled on a strictly greater
+ *                           score, so two markets that tie are separated by nothing but this - the
+ *                           earlier-listed one wins - and an explanation with no way to state it
+ *                           can only report a tied outcome as arbitrary
  * @param marketSize         the colony's own size rating, the term the score starts from
  * @param siblingMarketCount how many other markets the same faction holds in the system, each
- *                           worth one point. Counted over every market present - hidden and
- *                           player-owned alike - because sheer presence is what it measures,
- *                           not who is eligible to claim
+ *                           worth a point - so the count is the term. Taken over every market
+ *                           present - hidden and player-owned alike - because sheer presence is
+ *                           what it measures, not who is eligible to claim
  * @param militaryBonus      the flat bonus a garrison earns, present only for a military market
  */
 public record MarketClaimBreakdown(
     String marketName,
+    int listingPosition,
     int marketSize,
     int siblingMarketCount,
     OptionalInt militaryBonus) {

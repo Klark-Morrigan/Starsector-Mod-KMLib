@@ -25,6 +25,10 @@ public final class ClaimStandingFixture {
     // parts: no siblings beside it and no garrison bonus folded into it.
     private static final int NO_SIBLING_MARKETS = 0;
 
+    // Where the market falls in the system's listing. A test posing standings by score alone is
+    // not posing a tie, so every standing built here takes the head of the list.
+    private static final int FIRST_LISTED = 1;
+
     private ClaimStandingFixture() {
     }
 
@@ -47,6 +51,7 @@ public final class ClaimStandingFixture {
             isTerritorial,
             new MarketClaimBreakdown(
                 STANDING_MARKET_NAME,
+                FIRST_LISTED,
                 score,
                 NO_SIBLING_MARKETS,
                 OptionalInt.empty()),
