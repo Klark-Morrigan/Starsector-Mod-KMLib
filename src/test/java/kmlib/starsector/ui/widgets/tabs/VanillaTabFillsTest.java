@@ -142,33 +142,38 @@ final class VanillaTabFillsTest {
 
         @Test
         void resolveLabelAtGlowLightsTheShownTabsLabelPartWayToWhite() {
-            // (170, 222, 255) gains the glow (213, 239, 255) at 0.45 * 0.5 * (175 + 50) / 255 = 0.1985. Red
-            // has the furthest to climb and is the only channel still short of the top, which is what makes
-            // a shown tab's text read as a pale blue-white rather than as either end.
+            // (170, 222, 255) carried 0.45 of the way to white. Red climbs furthest because it starts
+            // lowest, and the channels keep their order - a paler form of the same blue rather than a
+            // different colour.
             assertThat(resolveLabelAt(VanillaTabFills.SELECTED_GLOW))
-                .isEqualTo(new Color(212, 255, 255, OPAQUE_ALPHA));
+                .isEqualTo(new Color(208, 237, 255, OPAQUE_ALPHA));
         }
 
         @Test
-        void resolveLabelAtGlowWhitensThePointedTabsLabelWhereTheGlowOverrunsIt() {
-            // Green and blue overrun and clip while red, having the furthest to climb, does not - so the
-            // text under the pointer reads as a near-white with the blue still in it rather than as flat
-            // white. That is the additive pass doing it, not a whitening of ours, and it is why the amount
-            // the glow is driven to shows in the label as well as in the fill.
-            assertThat(resolveLabelAt(VanillaTabFills.POINTED_GLOW))
-                .isEqualTo(new Color(231, 255, 255, OPAQUE_ALPHA));
+        void resolveLabelAtGlowKeepsThePointedTabsLabelOnItsOwnHue() {
+            // The pointed-at label is paler than the shown one and still a blue: red under green under
+            // blue, the order the raw colour has. The additive form this replaced drove green onto blue at
+            // 255 and left red climbing alone, which is a lit tab's text reading cyan - the one fault a
+            // brighter or dimmer amount could never have fixed.
+            var pointedLabel = resolveLabelAt(VanillaTabFills.POINTED_GLOW);
+
+            assertThat(pointedLabel)
+                .isEqualTo(new Color(225, 243, 255, OPAQUE_ALPHA));
+            assertThat(pointedLabel.getRed())
+                .isLessThan(pointedLabel.getGreen());
+            assertThat(pointedLabel.getGreen())
+                .isLessThan(pointedLabel.getBlue());
         }
 
         @Test
-        void resolveLabelAtGlowDimsTheGlowOnASeeThroughFill() {
-            // The label borrows the temper from the fill beneath it rather than carrying one of its own, so
-            // a barely-there tab lights its text as weakly as it lights itself: (213, 239, 255) at
-            // 0.65 * 0.5 * (25 + 50) / 255 = 0.0956, leaving red further short of the clip than a solid
-            // fill leaves it.
+        void resolveLabelAtGlowIgnoresHowSolidTheFillBeneathIs() {
+            // The fill's alpha tempers its own glow because light shows through a see-through fill; text
+            // drawn on top of one is not dimmed by what is behind it. So a barely-there fill lights its
+            // label exactly as a solid one does, unlike the fills either side of it.
             assertThat(VanillaTabFills.resolveLabelAtGlow(
                     paintWithFill(new Color(0, 0, 0, 25)),
                     VanillaTabFills.POINTED_GLOW))
-                .isEqualTo(new Color(190, 245, 255, OPAQUE_ALPHA));
+                .isEqualTo(resolveLabelAt(VanillaTabFills.POINTED_GLOW));
         }
     }
 

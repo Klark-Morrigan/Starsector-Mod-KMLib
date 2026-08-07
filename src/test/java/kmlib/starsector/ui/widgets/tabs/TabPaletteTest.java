@@ -226,20 +226,19 @@ final class TabPaletteTest {
 
         @Test
         void createMapTabPaletteLightsTheSelectedLabelAtTheSameGlowAsItsFill() {
-            // The label takes the glow its fill takes, at the same amount: (180, 180, 180) gains the glow
-            // colour (218, 218, 218) at 0.45 * 0.5 * (175 + 50) / 255 = 0.1985, so 43 on every channel. A
-            // state given a label colour of its own would part the text from the fill beneath it.
+            // The label climbs at the amount its fill does, though not by the same rule: (180, 180, 180)
+            // carried 0.45 of the way to white. A state given a label colour of its own would part the text
+            // from the fill beneath it.
             assertThat(buildMapTabPaletteUnderStubbedEngine().selected().label())
-                .isEqualTo(new Color(223, 223, 223, OPAQUE_ALPHA));
+                .isEqualTo(new Color(214, 214, 214, OPAQUE_ALPHA));
         }
 
         @Test
         void createMapTabPaletteLightsTheHoveredLabelAboveTheShownTabs() {
-            // The label climbs with its fill and by the same amount, so the text under the pointer stands
-            // above the shown tab's text exactly as their fills do. A flat grey stands in for the engine's
-            // blue here, which is why this one does not clip where the live palette's green and blue do.
+            // The label climbs at the amount its fill does, so the text under the pointer stands above the
+            // shown tab's text exactly as their fills do - (180, 180, 180) carried 0.65 of the way.
             assertThat(buildMapTabPaletteUnderStubbedEngine().hovered().label())
-                .isEqualTo(new Color(243, 243, 243, OPAQUE_ALPHA));
+                .isEqualTo(new Color(229, 229, 229, OPAQUE_ALPHA));
         }
 
         @Test

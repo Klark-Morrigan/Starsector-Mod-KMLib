@@ -95,19 +95,29 @@ public final class VanillaTabFills {
     }
 
     /**
-     * The shade a tab's label reads at a given glow: the label colour with that much of the glow added over
-     * it, at the same amount the fill beneath takes. The engine lights a tab with one glow pass over the
-     * whole of it rather than two aimed separately, so a label is not a colour a state picks but the one
-     * colour lit by however brightly that state stands - which is why a shown or pointed-at tab's text
-     * whitens out while a resting one reads as the raw label colour.
+     * The shade a tab's label reads at a given glow: the label colour carried that far toward white. A
+     * label is not a colour a state picks but the one colour lit by however brightly that state stands, so
+     * a resting tab reads as the raw label colour and a shown or pointed-at one reads as a paler form of
+     * it.
      *
-     * @param paint      the three colours a vanilla tab is painted from
+     * <p>Carried toward white rather than lit by the added glow the fill takes, because text has nowhere
+     * to put added light. The label colour is already at the top of its blue channel, so an additive pass
+     * saturates blue immediately, green shortly after, and leaves red climbing alone - which is a lit tab's
+     * text drifting to cyan as it brightens rather than paling. A fill starts dark and has the headroom
+     * that makes the additive form right for it; this one does not, and the two rules part exactly where
+     * the headroom does.
+     *
+     * <p>It takes no temper from the fill's alpha either, for the same physical reason: that temper is
+     * light showing through a see-through fill, and text drawn on top of one is not dimmed by what is
+     * behind it.
+     *
+     * @param paint      the three colours a vanilla tab is painted from; only the label colour is read
      * @param glowAmount how brightly the tab is lit: {@link #NO_GLOW}, {@link #SELECTED_GLOW}, or
      *                   {@link #POINTED_GLOW}
-     * @return the label shade at that glow, clipped to white where the glow overruns it
+     * @return the label shade at that glow, never clipped and never off its own hue
      */
     public static Color resolveLabelAtGlow(VanillaTabPaint paint, float glowAmount) {
-        return addGlowOnto(paint.labelColour(), paint, glowAmount);
+        return Colours.blendRgbTowards(paint.labelColour(), Color.WHITE, glowAmount);
     }
 
     /**
