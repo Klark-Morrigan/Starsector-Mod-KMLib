@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.awt.Color;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -15,14 +16,21 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Pins how wide each kind of {@link RowSlot} draws, because that width is what a stack of rows reserves
  * its shared columns from: a slot that under-reports leaves the label it flanks drawn over it, and one
  * that over-reports opens a gutter no content fills. The square kinds scale with the line so a stack
- * drawn at any size stays even, a run of text is worth whatever the line's own face measures it at, and
- * the two spellings of nothing-to-draw - an unfilled slot and a blank run - are charged alike.
+ * drawn at any size stays even, a run of text is worth whatever the line's own face measures it at, a
+ * value drawn in several runs is worth those runs and the gaps they stand apart by, and the two
+ * spellings of nothing-to-draw - an unfilled slot and a blank run - are charged alike.
  */
 class RowSlotTest {
 
     private static final float LINE_HEIGHT = 20f;
     private static final float TALLER_LINE_HEIGHT = 40f;
     private static final Color SLOT_COLOUR = new Color(200, 150, 50);
+    private static final Color OTHER_SLOT_COLOUR = new Color(140, 140, 140);
+
+    // The word gap two drawn runs of one value stand apart by, restated here rather than read from the
+    // rule that applies it: read from the subject the expectation would follow a change to the spacing
+    // rather than catching it.
+    private static final float RUN_GAP = 6f;
 
     // A measurement no slot under test is allowed to spend. Handed to the kinds whose width is geometry
     // rather than glyphs, so "it never asks" is pinned as a contract rather than left as something that
@@ -108,6 +116,54 @@ class RowSlotTest {
         }
 
         @Test
+        void computeWidthSumsTheRunsOfAValueDrawnInSeveral() {
+            // Four characters, the word gap, then two more: the column reserves room for the gap the
+            // runs are drawn apart by, or the second run would be painted past the edge it was sized to.
+            assertThat(computeWidth(
+                    new RowSlot.TextRuns(List.of(
+                        new TextSpan("9999", SLOT_COLOUR),
+                        new TextSpan("12", OTHER_SLOT_COLOUR))),
+                    LINE_HEIGHT))
+                .isEqualTo(4f + RUN_GAP + 2f);
+        }
+
+        @Test
+        void computeWidthChargesAValueOfOneRunWhatTheSingleRunKindIsCharged() {
+            // A value picked out in two colours and a plain one must be priced by one rule, or a stack
+            // mixing them would reserve two different columns for the same glyphs.
+            assertThat(computeWidth(
+                    new RowSlot.TextRuns(List.of(new TextSpan("9999", SLOT_COLOUR))),
+                    LINE_HEIGHT))
+                .isEqualTo(computeWidth(
+                    new RowSlot.Text(new TextSpan("9999", SLOT_COLOUR)),
+                    LINE_HEIGHT));
+        }
+
+        @Test
+        void computeWidthChargesNothingForAValueWhoseRunsAreAllBlank() {
+            // Neither the glyphs nor the gap between them: a caller that assembled every run from parts
+            // and came up empty gets the column collapsed, exactly as the single-run kind does.
+            assertThat(computeWidth(
+                    new RowSlot.TextRuns(List.of(
+                        TextSpan.createBlank(SLOT_COLOUR),
+                        new TextSpan("   ", OTHER_SLOT_COLOUR))),
+                    LINE_HEIGHT))
+                .isEqualTo(RowSlot.NO_WIDTH);
+        }
+
+        @Test
+        void computeWidthChargesNoGapInFrontOfABlankRunOfAValue() {
+            // A value whose working came out empty measures as the finding alone, rather than as the
+            // finding held one gap in from the column it is aligned to.
+            assertThat(computeWidth(
+                    new RowSlot.TextRuns(List.of(
+                        TextSpan.createBlank(OTHER_SLOT_COLOUR),
+                        new TextSpan("12", SLOT_COLOUR))),
+                    LINE_HEIGHT))
+                .isEqualTo(2f);
+        }
+
+        @Test
         void computeWidthChargesNothingForAnUnfilledSlot() {
             assertThat(computeWidth(RowSlot.EMPTY, LINE_HEIGHT))
                 .isEqualTo(RowSlot.NO_WIDTH);
@@ -122,7 +178,7 @@ class RowSlotTest {
             assertThat(new RowSlot.Tick(true).computeWidth(LINE_HEIGHT, UNSPENDABLE_MEASURER))
                 .isEqualTo(LINE_HEIGHT);
             assertThat(new RowSlot.Triangle(TriangleDirection.UP)
-                .computeWidth(LINE_HEIGHT, UNSPENDABLE_MEASURER))
+                    .computeWidth(LINE_HEIGHT, UNSPENDABLE_MEASURER))
                 .isEqualTo(IconLabelRow.computeDirectionTriangleSlotWidth(LINE_HEIGHT));
             assertThat(RowSlot.EMPTY.computeWidth(LINE_HEIGHT, UNSPENDABLE_MEASURER))
                 .isEqualTo(RowSlot.NO_WIDTH);
@@ -169,6 +225,26 @@ class RowSlotTest {
         void isFilledIsTrueForARunOfTextWithGlyphs() {
             assertThat(new RowSlot.Text(new TextSpan("12", SLOT_COLOUR)).isFilled())
                 .isTrue();
+        }
+
+        @Test
+        void isFilledIsTrueForAValueWhereAnyRunHasGlyphs() {
+            // A value stating only its finding, its working having come out empty, still fills its
+            // column - the row draws something there and the label must stay clear of it.
+            assertThat(new RowSlot.TextRuns(List.of(
+                        TextSpan.createBlank(OTHER_SLOT_COLOUR),
+                        new TextSpan("12", SLOT_COLOUR)))
+                    .isFilled())
+                .isTrue();
+        }
+
+        @Test
+        void isFilledIsFalseForAValueWhoseRunsAreAllBlank() {
+            assertThat(new RowSlot.TextRuns(List.of(
+                        TextSpan.createBlank(SLOT_COLOUR),
+                        new TextSpan("   ", OTHER_SLOT_COLOUR)))
+                    .isFilled())
+                .isFalse();
         }
 
         @Test
@@ -230,6 +306,21 @@ class RowSlotTest {
             assertThatThrownBy(() -> new RowSlot.Text(null))
                 .isInstanceOf(NullPointerException.class)
                 .hasMessageContaining("textSpan");
+        }
+
+        @Test
+        void constructorRejectsAMultiRunValueWithNoRuns() {
+            // A slot holding no value is RowSlot.EMPTY and a value that draws nothing is a blank run,
+            // so an empty list spells neither absence and would reach the layout as a value of nothing.
+            assertThatThrownBy(() -> new RowSlot.TextRuns(List.of()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("textSpans");
+        }
+
+        @Test
+        void constructorRejectsAMultiRunValueWithNoRunList() {
+            assertThatThrownBy(() -> new RowSlot.TextRuns(null))
+                .isInstanceOf(NullPointerException.class);
         }
 
         @Test

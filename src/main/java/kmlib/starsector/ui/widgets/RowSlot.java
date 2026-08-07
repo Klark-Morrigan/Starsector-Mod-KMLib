@@ -1,8 +1,12 @@
 package kmlib.starsector.ui.widgets;
 
+import kmlib.starsector.ui.text.LabelRun;
+import kmlib.starsector.ui.text.LabelRuns;
+import kmlib.starsector.ui.text.LabelRuns.LabelRunOffsets;
 import kmlib.starsector.ui.text.StyledSpanMeasurer;
 import kmlib.starsector.ui.text.TextSpan;
 
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -100,7 +104,8 @@ public sealed interface RowSlot {
     /**
      * A run of text drawn in the slot - a value, a count, a short caption. It carries its colour with
      * it as a {@link TextSpan} does, so a slot's text and the colour it draws in cannot be reached for
-     * separately and drift.
+     * separately and drift. One colour for the whole of it: a value with a stretch picked out in its own
+     * shade is {@link TextRuns}.
      *
      * @param textSpan the run and the colour it draws in, before any opacity fade the host applies
      */
@@ -132,6 +137,74 @@ public sealed interface RowSlot {
         @Override
         public boolean isFilled() {
             return textSpan.hasContent();
+        }
+    }
+
+    /**
+     * A value drawn as several runs of text, each in its own colour - a finding and the working behind
+     * it, say, or a reading and the unit it is stated in. The runs read left to right inside the one
+     * column the slot occupies, spaced by the same word gap a label's runs are, so a stack of rows still
+     * lines its values up however many runs each of them is made of.
+     *
+     * <p>Kept apart from {@link Text} rather than replacing it, because a value of one run is what almost
+     * every row carries: spelled as a list of one, every caller building a plain value would compose a
+     * list and every reader of one would unwrap it. What the two must not differ on is what a run is
+     * worth, so both are measured by the rule a run of text is measured by and both charge a blank run
+     * nothing.
+     *
+     * <p>How the runs compose - the gap between two of them, and a blank one costing neither gap nor
+     * width - is {@link LabelRuns}' rule rather than a second one stated here, so a value picked out in
+     * two colours is spaced exactly as a label picked out in two colours is.
+     *
+     * @param textSpans the runs in reading order, each with the colour it draws in before any opacity
+     *                  fade the host applies; never empty
+     */
+    record TextRuns(
+        List<TextSpan> textSpans) implements RowSlot {
+
+        /**
+         * Copies the runs and rejects an empty or null-bearing list, since a slot holding no value is
+         * {@link #EMPTY} and a value that draws nothing is a blank run - so neither absence needs an
+         * empty list to spell it, and a null would otherwise surface inside a measurement or a draw.
+         */
+        public TextRuns {
+            textSpans = List.copyOf(textSpans);
+            if (textSpans.isEmpty()) {
+                throw new IllegalArgumentException("textSpans must carry at least one run");
+            }
+        }
+
+        /**
+         * Where each run sits relative to the slot's own left edge, and how wide the runs come to
+         * together. Offered beside the width because a renderer laying the runs inside the column needs
+         * both, and answering them from one walk is what stops the room the column reserved and the runs
+         * painted into it from disagreeing.
+         *
+         * @param lineHeight   the height of the line the slot sits on, in UI units
+         * @param spanMeasurer the width measurement already bound to the look that line draws in
+         * @return each run's offset from the slot's left edge, and the width the runs occupy together
+         */
+        public LabelRunOffsets measureRunOffsets(float lineHeight, StyledSpanMeasurer spanMeasurer) {
+            return LabelRuns.measureRunOffsets(
+                List.<LabelRun>copyOf(textSpans),
+                lineHeight,
+                spanMeasurer);
+        }
+
+        // The column is reserved from the same walk the runs are laid out by, so a value of two runs is
+        // charged the gap between them rather than the sum of the glyphs alone.
+        @Override
+        public float computeWidth(float lineHeight, StyledSpanMeasurer spanMeasurer) {
+            return measureRunOffsets(lineHeight, spanMeasurer).runsWidth();
+        }
+
+        // Filled where any one run has something to draw, which is exactly when the walk above charges
+        // the slot a width - so what reserves the column and what paints into it cannot disagree.
+        @Override
+        public boolean isFilled() {
+            return textSpans
+                .stream()
+                .anyMatch(TextSpan::hasContent);
         }
     }
 

@@ -89,17 +89,18 @@ class TooltipRowTest {
 
     @Nested
     class Constructor {
+
         @Test
         void constructorRejectsATableRowWithNullContent() {
             // A line is its content plus how the box treats it, so a line with no content at all is not a
             // line - and a null would otherwise surface inside a measurement, well past the point that
             // could say which line was meant.
             assertThatThrownBy(() -> new TooltipRow.TableRow(
-                TooltipLineStyle.PARAGRAPH,
-                TooltipLabelPlacement.ALIGNED_WITH_CRESTS,
-                0f,
-                0,
-                null))
+                    TooltipLineStyle.PARAGRAPH,
+                    TooltipLabelPlacement.ALIGNED_WITH_CRESTS,
+                    0f,
+                    0,
+                    null))
                 .isInstanceOf(NullPointerException.class)
                 .hasMessageContaining("labelledRow");
         }
@@ -109,8 +110,8 @@ class TooltipRowTest {
             // A centred line holds its label directly rather than through a labelled row, so the floor
             // that a line has a label has to hold here too - it is the same floor, not a second one.
             assertThatThrownBy(() -> new TooltipRow.CentredRow(
-                TooltipLineStyle.PARAGRAPH,
-                List.of()))
+                    TooltipLineStyle.PARAGRAPH,
+                    List.of()))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("labelRuns");
         }
@@ -134,8 +135,8 @@ class TooltipRowTest {
         @Test
         void constructorRejectsACentredRowWithANullLabel() {
             assertThatThrownBy(() -> new TooltipRow.CentredRow(
-                TooltipLineStyle.PARAGRAPH,
-                null))
+                    TooltipLineStyle.PARAGRAPH,
+                    null))
                 .isInstanceOf(NullPointerException.class)
                 .hasMessageContaining("labelRuns");
         }
@@ -143,6 +144,7 @@ class TooltipRowTest {
 
     @Nested
     class CreateRow {
+
         @Test
         void createRowCarriesTheLabelAsOneRun() {
             assertThat(buildBareRow().labelRuns())
@@ -182,6 +184,7 @@ class TooltipRowTest {
 
     @Nested
     class CreateCentredRow {
+
         @Test
         void createCentredRowCarriesTheLabelAsOneRun() {
             assertThat(buildBareCentredRow().labelRuns())
@@ -224,6 +227,7 @@ class TooltipRowTest {
 
     @Nested
     class CarriesValue {
+
         @Test
         void carriesValueTrailsTheRowWithThatRun() {
 
@@ -254,7 +258,44 @@ class TooltipRowTest {
     }
 
     @Nested
+    class CarriesValueRuns {
+
+        @Test
+        void carriesValueRunsTrailsTheRowWithThoseRuns() {
+            // The runs fill the one trailing column together, so a value stating a finding and the
+            // working behind it still aligns with the plain values of the rows around it.
+            var valueTextSpans = List.of(
+                new TextSpan(VALUE, Color.GRAY),
+                new TextSpan(OTHER_VALUE, Color.CYAN));
+
+            assertThat(buildBareRow().carriesValueRuns(valueTextSpans).labelledRow().trailingRowSlot())
+                .isEqualTo(new RowSlot.TextRuns(valueTextSpans));
+        }
+
+        @Test
+        void carriesValueRunsReplacesAValueAlreadyCarried() {
+            // The two refinements fill one column, so a line cannot end up holding a single-run value
+            // and a multi-run one at once - the last one stated is what the row carries.
+            var row = buildBareRow()
+                .carriesValue(new TextSpan(VALUE, Color.GRAY))
+                .carriesValueRuns(List.of(new TextSpan(OTHER_VALUE, Color.CYAN)));
+
+            assertThat(row.labelledRow().trailingRowSlot())
+                .isEqualTo(new RowSlot.TextRuns(List.of(new TextSpan(OTHER_VALUE, Color.CYAN))));
+        }
+
+        @Test
+        void carriesValueRunsChangesNothingElse() {
+            assertRefinementChangesOnly(
+                buildRichRow().carriesValueRuns(List.of(new TextSpan(OTHER_VALUE, Color.CYAN))),
+                buildRichRow(),
+                "labelledRow.trailingRowSlot");
+        }
+    }
+
+    @Nested
     class ContinuesWith {
+
         @Test
         void continuesWithAppendsTheRun() {
             assertThat(buildBareRow()
@@ -298,8 +339,10 @@ class TooltipRowTest {
 
     @Nested
     class IndentsBy {
+
         @Test
         void indentsBySetsTheInset() {
+
             var row = buildBareRow().indentsBy(INDENT);
 
             assertThat(row.indent())
@@ -317,6 +360,7 @@ class TooltipRowTest {
 
     @Nested
     class ClearsCrestColumn {
+
         @Test
         void clearsCrestColumnStartsTheLabelAtTheContentEdge() {
 
@@ -339,6 +383,7 @@ class TooltipRowTest {
 
     @Nested
     class ReadsAs {
+        
         @Test
         void readsAsSetsTheKindOfLine() {
 

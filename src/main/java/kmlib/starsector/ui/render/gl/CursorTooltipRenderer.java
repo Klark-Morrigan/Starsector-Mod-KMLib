@@ -188,6 +188,38 @@ public final class CursorTooltipRenderer {
                 placement.rowTopY(),
                 LazyFont.TextAnchor.TOP_RIGHT);
         }
+        if (labelledRow.trailingRowSlot() instanceof RowSlot.TextRuns valueRowSlot) {
+            drawTrailingTextRuns(valueRowSlot, placement, rowPaint);
+        }
+    }
+
+    // Draws a value made of several runs inside the column reserved for it: the runs read left to right
+    // from the column's own left edge, which is its right anchor less the width the runs come to.
+    //
+    // The offsets come from the slot itself, through the same walk the layout charged the column its
+    // width by - so the room reserved and the runs painted into it are one measurement read twice rather
+    // than two that could disagree. Each run is drawn on its own for the reason the label's runs are:
+    // batched into one string, a run's colour would be baked absolute and the box's fade would stop
+    // applying to it.
+    private static void drawTrailingTextRuns(
+            RowSlot.TextRuns valueRowSlot,
+            TooltipLayout.TooltipRowLayout placement,
+            RowPaint rowPaint) {
+
+        var runOffsets = valueRowSlot.measureRunOffsets(
+            placement.lineHeight(),
+            rowPaint::measureSpanWidth);
+
+        var runsLeftX = placement.trailingRowSlotX() - runOffsets.runsWidth();
+        var textSpans = valueRowSlot.textSpans();
+
+        for (var index = 0; index < textSpans.size(); index++) {
+            rowPaint.drawSpan(
+                textSpans.get(index),
+                runsLeftX + runOffsets.runOffsetXs().get(index),
+                placement.rowTopY(),
+                LazyFont.TextAnchor.TOP_LEFT);
+        }
     }
 
     // The square any small image hangs in on this row: from the given left edge, the row's own line on
@@ -241,6 +273,15 @@ public final class CursorTooltipRenderer {
                 x,
                 y,
                 anchor);
+        }
+
+        // The width one of this row's spans draws at, measured on exactly the face and casing it will be
+        // painted in - the same binding the layout measured the row through, so a value laid out inside a
+        // column cannot come out wider than the column the box reserved for it.
+        private double measureSpanWidth(TextSpan textSpan) {
+            return LazyFontSpanMeasurer.measureSpanWidth(
+                textStyle.face(),
+                textStyle.resolveDisplayText(textSpan.text()));
         }
     }
 }

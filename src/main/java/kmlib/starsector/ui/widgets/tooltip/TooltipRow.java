@@ -247,6 +247,24 @@ public sealed interface TooltipRow {
             return rebuildWithContent(labelledRow.trailsWith(new RowSlot.Text(valueTextSpan)));
         }
 
+        /**
+         * Returns a copy of this line carrying {@code valueTextSpans} right-aligned to the box's content
+         * edge as one column - the runs reading left to right inside it, each in its own colour, for a
+         * value that states two things at once: a finding and the working behind it, say.
+         *
+         * <p>Its own refinement rather than a list-taking {@link #carriesValue}, because a value of one
+         * run is what almost every line carries and would otherwise be composed as a list of one at every
+         * call site. Both fill the same column, so a box mixing the two still aligns its values.
+         *
+         * @param valueTextSpans the value's runs in reading order, each with the colour it draws in;
+         *                       never empty
+         * @return an otherwise-identical line carrying that value
+         */
+        public TableRow carriesValueRuns(List<TextSpan> valueTextSpans) {
+            return rebuildWithContent(
+                labelledRow.trailsWith(new RowSlot.TextRuns(valueTextSpans)));
+        }
+
         @Override
         public TableRow continuesWith(LabelRun labelRun) {
             return rebuildWithContent(labelledRow.continuesWith(labelRun));
