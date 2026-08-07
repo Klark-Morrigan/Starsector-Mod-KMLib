@@ -483,6 +483,19 @@ final class MarketsTest {
         }
 
         @Test
+        void passes_through_markets_on_one_entity_whose_owner_has_no_id() {
+            // An owner with no id cannot be told apart from any other, so keying on it
+            // would merge places that share nothing but an unreadable faction.
+            var station = buildDiscoveredEntity();
+            var unnamedOwner = buildFaction(null);
+            var first = buildMarketAtPlace(station, unnamedOwner, 3);
+            var second = buildMarketAtPlace(station, unnamedOwner, 5);
+
+            assertThat(Markets.readLargestMarketsPerFaction(List.of(first, second)))
+                .containsExactly(first, second);
+        }
+
+        @Test
         void drops_null_markets() {
 
             var market = buildMarketAtPlace(
