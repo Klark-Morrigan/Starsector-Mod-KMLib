@@ -51,6 +51,12 @@ import java.util.function.ToDoubleFunction;
  * as a flag on the opening row would vary with whatever line happened to open each block, so the gap
  * under a title would differ from the gap between two body blocks for no reason a reader could see.
  *
+ * <p>Blocks nest, and the same reading settles the spacing inside one: a nested block takes the style's
+ * narrower group break above itself where the nested block before it came to more than a line, and the
+ * plain line gap otherwise. Spending it on the member that follows - and never above a block's first
+ * member - is what keeps the parting from piling up where several groups end together, without any step
+ * here having to count how many of them just closed.
+ *
  * <p>Every row's own look is resolved up front from the box's {@link TooltipStyle}, because a box's rows
  * need not share a face: a heading drawn in the game's blockier title atlas is far wider than a body
  * line of the same size, and it stacks at its own height. So the line height a row occupies and the face
@@ -83,6 +89,15 @@ public final class CursorTooltip {
     // Where a block's opening row sits within it. Named because the position is what makes a row the
     // one parted from the block above, which a bare zero in the walk below would not say.
     private static final int FIRST_ROW_OF_SECTION = 0;
+
+    // Where a block's first nested block sits within it. The one member never parted from what opens it:
+    // a block's own lines are its voice rather than a sibling of the groups beneath them, so the first
+    // group hugs the lines that introduce it.
+    private static final int FIRST_MEMBER_OF_SECTION = 0;
+
+    // The most a nested block can come to and still read as one item of a list. Past it the block broke
+    // down into an account of its own, which is what the next member is set clear of.
+    private static final int ONE_LINE = 1;
 
     private CursorTooltip() {
     }
@@ -140,35 +155,67 @@ public final class CursorTooltip {
         var styledRows = new ArrayList<StyledRow>();
         for (var section : sections) {
 
-            var sectionRows = section.rows();
-            for (var index = 0; index < sectionRows.size(); index++) {
+            // The box's very first row is not asked what parts it from what came before, since nothing
+            // did: the box's own padding already sits above it, and a break spent there would pad the
+            // top edge unevenly against every other side.
+            var leadingGap = styledRows.isEmpty()
+                ? NO_LEADING_GAP
+                : style.sectionBreak();
 
-                var isSectionOpener = index == FIRST_ROW_OF_SECTION;
-
-                // The box's very first row is not asked what parts it from what came before, since
-                // nothing did: the box's own padding already sits above it, and a break spent there
-                // would pad the top edge unevenly against every other side.
-                var leadingGap = styledRows.isEmpty()
-                    ? NO_LEADING_GAP
-                    : measureLeadingGap(isSectionOpener, style.sectionBreak());
-
-                styledRows.add(StyledRow.bindRowToStyle(
-                    sectionRows.get(index),
-                    leadingGap,
-                    style,
-                    measurer));
-            }
+            bindSectionRowsToStyles(styledRows, section, leadingGap, style, measurer);
         }
         return styledRows;
     }
 
-    // What a row below the box's first takes above itself: the style's break where it opens a block,
-    // and the plain inter-line gap where it continues the one it is in. The one rule that turns the
-    // grouping into spacing.
-    private static float measureLeadingGap(boolean isSectionOpener, float sectionBreak) {
-        return isSectionOpener
-            ? sectionBreak
-            : TooltipBoxLayout.LINE_GAP;
+    // Binds one block and everything nested in it, in draw order: its own lines, then each member block
+    // beneath them. Recursive because the grouping is - a block nests blocks to whatever depth its
+    // subject matter has - and one walk is what keeps a group three deep spaced by the same rule as one
+    // at the top of the box.
+    //
+    // Only the block's first line is handed the parting; the rest of its lines continue what it opened,
+    // and every member works out its own from what it follows.
+    private static void bindSectionRowsToStyles(
+            List<StyledRow> styledRows,
+            TooltipSection section,
+            float leadingGap,
+            TooltipStyle style,
+            TextSpanMeasurer measurer) {
+
+        var openingRows = section.openingRows();
+        for (var index = 0; index < openingRows.size(); index++) {
+
+            styledRows.add(StyledRow.bindRowToStyle(
+                openingRows.get(index),
+                index == FIRST_ROW_OF_SECTION ? leadingGap : TooltipBoxLayout.LINE_GAP,
+                style,
+                measurer));
+        }
+        var members = section.members();
+        for (var index = 0; index < members.size(); index++) {
+
+            bindSectionRowsToStyles(
+                styledRows,
+                members.get(index),
+                measureMemberGap(members, index, style.groupBreak()),
+                style,
+                measurer);
+        }
+    }
+
+    // What a nested block takes above itself. The rule that turns nesting into spacing, and the one place
+    // it is decided, so a parting cannot pile up where several groups end on the same line: it is spent
+    // by the member that follows, never above the first, and only where the member before it broke down
+    // into more than a line - a run of one-line members reads as the plain list it is.
+    private static float measureMemberGap(
+            List<TooltipSection> members,
+            int index,
+            float groupBreak) {
+
+        if (index == FIRST_MEMBER_OF_SECTION
+                || members.get(index - 1).countLines() <= ONE_LINE) {
+            return TooltipBoxLayout.LINE_GAP;
+        }
+        return groupBreak;
     }
 
     // The crest column's one width for the whole box: room for the widest leading slot any row fills,
@@ -401,13 +448,7 @@ public final class CursorTooltip {
                 TooltipStyle style,
                 TextSpanMeasurer measurer) {
 
-            // A centred line has left the table and so stands under nothing in it: it speaks for the
-            // box, which is the box's own voice however deep the table beside it goes.
-            var subordinationLevel = row instanceof TooltipRow.TableRow tableRow
-                ? tableRow.subordinationLevel()
-                : TooltipRow.TableRow.NO_SUBORDINATION;
-                
-            var textStyle = style.resolveStyleFor(row.lineStyle(), subordinationLevel);
+            var textStyle = style.resolveStyleFor(row.lineStyle(), row.subordinationLevel());
 
             // Measured through the style's own display text, not the authored text: a shouted line
             // measured as authored measures narrower than it paints, so the box sized from that

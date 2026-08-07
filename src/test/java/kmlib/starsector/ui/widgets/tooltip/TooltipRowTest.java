@@ -46,6 +46,8 @@ class TooltipRowTest {
     private static final float INDENT = 14f;
     private static final float OTHER_INDENT = 28f;
     private static final float TOLERANCE = 0.001f;
+    private static final int IN_THE_BOXS_VOICE = 0;
+    private static final int TWO_STEPS_UNDER = 2;
 
     // Pins a refinement to exactly the components it names: every other component must come through
     // untouched. One comparison rather than an enumeration of survivors, because an enumeration only
@@ -418,6 +420,31 @@ class TooltipRowTest {
                 buildRichCentredRow().readsAs(TooltipLineStyle.HEADER),
                 buildRichCentredRow(),
                 "lineStyle");
+        }
+    }
+
+    @Nested
+    class SubordinationLevel {
+
+        @Test
+        void subordinationLevelAnswersTheStepsATableRowWasPutUnder() {
+            assertThat(buildBareRow().subordinatedAt(TWO_STEPS_UNDER).subordinationLevel())
+                .isEqualTo(TWO_STEPS_UNDER);
+        }
+
+        @Test
+        void subordinationLevelAnswersTheBoxsOwnVoiceForACentredRow() {
+            // A centred line has left the table and stands under nothing in it, however deep the table
+            // beside it goes - asked of the interface, so a measurer and a renderer resolving its look
+            // cannot each answer the question their own way.
+            assertThat(buildBareCentredRow().subordinationLevel())
+                .isEqualTo(IN_THE_BOXS_VOICE);
+        }
+
+        @Test
+        void subordinationLevelAnswersTheBoxsOwnVoiceForAnUnplacedTableRow() {
+            assertThat(buildBareRow().subordinationLevel())
+                .isEqualTo(IN_THE_BOXS_VOICE);
         }
     }
 }

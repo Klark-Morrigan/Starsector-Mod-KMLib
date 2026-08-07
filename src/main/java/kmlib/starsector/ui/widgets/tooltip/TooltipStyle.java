@@ -28,19 +28,28 @@ import kmlib.starsector.ui.text.TextStyle;
  *                       it, in UI units; zero draws every level at its kind's own size
  * @param sectionBreak   the room taken above a block for the one above it, in UI units - what parts two
  *                       blocks, where two lines of one block sit a plain line gap apart
+ * @param groupBreak     the room taken above a block nested inside another for the nested block before
+ *                       it, in UI units - narrower than the section break, since a run inside a block
+ *                       should read as set apart from its neighbour rather than as a block of its own
  */
 public record TooltipStyle(
     TextStyle headerStyle,
     TextStyle paragraphStyle,
     TextStyle footnoteStyle,
     float levelShrink,
-    float sectionBreak) {
+    float sectionBreak,
+    float groupBreak) {
 
     // How far apart blocks stand unless a box says otherwise: half a line of body text past the gap two
     // lines of one block already sit at, which reads as a parted block without looking like a dropped
     // line. Stated as one measurement rather than derived from whichever line happens to open a block,
     // so every parting in a box is the same width whatever sizes its blocks begin at.
     private static final float DEFAULT_SECTION_BREAK = 11.5f;
+
+    // What parts two groups inside a block unless a box says otherwise: half the break between blocks,
+    // so a nested run is visibly set off from its neighbour while the block boundary above it still
+    // reads as the stronger of the two. A box wanting no inner parting at all asks for zero.
+    private static final float DEFAULT_GROUP_BREAK = 5.75f;
 
     // What a box demotes a subordinate line by unless it asks for something: nothing at all, so a stack
     // of rows reads at one size until a box states that its levels should read as levels.
@@ -71,7 +80,8 @@ public record TooltipStyle(
             paragraphStyle,
             paragraphStyle,
             NO_LEVEL_SHRINK,
-            DEFAULT_SECTION_BREAK);
+            DEFAULT_SECTION_BREAK,
+            DEFAULT_GROUP_BREAK);
     }
 
     /**
@@ -82,7 +92,7 @@ public record TooltipStyle(
      * @return an otherwise-identical typography setting its footnotes in that look
      */
     public TooltipStyle footnotedIn(TextStyle footnoteStyle) {
-        return rebuildOnTheSameFaces(footnoteStyle, levelShrink, sectionBreak);
+        return rebuildOnTheSameFaces(footnoteStyle, levelShrink, sectionBreak, groupBreak);
     }
 
     /**
@@ -100,7 +110,7 @@ public record TooltipStyle(
      * @return an otherwise-identical typography shrinking its levels by that much
      */
     public TooltipStyle shrunkPerLevel(float levelShrink) {
-        return rebuildOnTheSameFaces(footnoteStyle, levelShrink, sectionBreak);
+        return rebuildOnTheSameFaces(footnoteStyle, levelShrink, sectionBreak, groupBreak);
     }
 
     /**
@@ -111,35 +121,37 @@ public record TooltipStyle(
      * @return an otherwise-identical typography parting its blocks by that much
      */
     public TooltipStyle partedBy(float sectionBreak) {
-        return rebuildOnTheSameFaces(footnoteStyle, levelShrink, sectionBreak);
+        return rebuildOnTheSameFaces(footnoteStyle, levelShrink, sectionBreak, groupBreak);
     }
 
     /**
-     * Answers what {@code lineStyle} draws in - the lookup a renderer makes once per row, before
-     * measuring it or drawing it, so both use the one style and a row cannot be measured on a face it
-     * is not painted in.
+     * Returns a copy of this typography whose nested blocks stand {@code groupBreak} apart - the parting
+     * spent inside a block, between one group of lines and the next.
      *
-     * @param lineStyle the kind of line being laid out or drawn
-     * @return the look that kind draws in
+     * <p>Its own measurement rather than the section break reused, because the two boundaries are not the
+     * same statement: one block ends where the box changes subject, while a group ends where one item of
+     * the same list does. Drawn at one width they would read as equals, and the box would lose the shape
+     * its blocks give it.
+     *
+     * @param groupBreak the room taken above a nested block for the nested block before it, in UI units
+     * @return an otherwise-identical typography parting its nested blocks by that much
      */
-    public TextStyle resolveStyleFor(TooltipLineStyle lineStyle) {
-        // Matched value by value rather than by a map or an ordinal so that a new line style is a
-        // compile error here - the one place that would otherwise silently hand it the body look and
-        // leave the new kind indistinguishable from a paragraph on screen.
-        return switch (lineStyle) {
-            case HEADER -> headerStyle;
-            case PARAGRAPH -> paragraphStyle;
-            case FOOTNOTE -> footnoteStyle;
-        };
+    public TooltipStyle groupedBy(float groupBreak) {
+        return rebuildOnTheSameFaces(footnoteStyle, levelShrink, sectionBreak, groupBreak);
     }
 
     /**
      * Answers what a line of {@code lineStyle} standing {@code subordinationLevel} steps under the box's
      * own voice draws in - its kind's look, shrunk once per step by whatever the box asked for.
      *
-     * <p>The lookup a renderer actually makes, since a row carries both facts. Resolved here rather than
-     * by the renderer so the size a row is measured at and the size it is painted at come from one
-     * answer, and so a box that asked for no shrink resolves exactly the look its kind names.
+     * <p>The one lookup there is, since a row carries both facts. Resolved here rather than by the
+     * renderer so the size a row is measured at and the size it is painted at come from one answer, and
+     * so a box that asked for no shrink resolves exactly the look its kind names.
+     *
+     * <p>The kind alone is not answerable from outside, which is deliberate: a caller that resolved a
+     * look without the level would silently get the box's own voice, and a demoted line measured at one
+     * size and painted at another overlaps its own words. Making the level unskippable is what keeps the
+     * two sides of that in step.
      *
      * @param lineStyle          the kind of line being laid out or drawn
      * @param subordinationLevel how many steps that line stands under the box's own voice; zero for a
@@ -147,7 +159,7 @@ public record TooltipStyle(
      * @return the look that line draws in
      */
     public TextStyle resolveStyleFor(TooltipLineStyle lineStyle, int subordinationLevel) {
-        var lineStyleLook = resolveStyleFor(lineStyle);
+        var lineStyleLook = resolveLineStyleLook(lineStyle);
         if (subordinationLevel <= TooltipRow.TableRow.NO_SUBORDINATION
                 || levelShrink <= NO_LEVEL_SHRINK) {
             return lineStyleLook;
@@ -166,13 +178,29 @@ public record TooltipStyle(
     private TooltipStyle rebuildOnTheSameFaces(
             TextStyle footnoteStyle,
             float levelShrink,
-            float sectionBreak) {
+            float sectionBreak,
+            float groupBreak) {
 
         return new TooltipStyle(
             headerStyle,
             paragraphStyle,
             footnoteStyle,
             levelShrink,
-            sectionBreak);
+            sectionBreak,
+            groupBreak);
+    }
+
+    // The look one kind of line names, before any demotion is applied to it - the half of the lookup
+    // above that reads the styles, kept apart from the half that shrinks them so each is one decision.
+    //
+    // Matched value by value rather than by a map or an ordinal so that a new line style is a compile
+    // error here - the one place that would otherwise silently hand it the body look and leave the new
+    // kind indistinguishable from a paragraph on screen.
+    private TextStyle resolveLineStyleLook(TooltipLineStyle lineStyle) {
+        return switch (lineStyle) {
+            case HEADER -> headerStyle;
+            case PARAGRAPH -> paragraphStyle;
+            case FOOTNOTE -> footnoteStyle;
+        };
     }
 }

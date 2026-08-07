@@ -98,6 +98,18 @@ public sealed interface TooltipRow {
     List<LabelRun> labelRuns();
 
     /**
+     * How many steps this line stands under the box's own voice - zero for a line speaking in it.
+     *
+     * <p>Asked of every kind of line rather than of the one kind that can be put under something, because
+     * it is half of what a line's look is resolved from ({@link TooltipStyle#resolveStyleFor}): a measurer
+     * and a renderer each reaching for the level themselves would each have to branch on the kind, and one
+     * of them forgetting to would measure a line at a size the other paints it at.
+     *
+     * @return the number of steps under the box's voice; never negative
+     */
+    int subordinationLevel();
+
+    /**
      * Returns a copy of this line whose label runs on into {@code labelRun} - the next stretch of the
      * same sentence, a stretch of text picked out in its own colour or an image set among the words,
      * while what came before it stays as it was. Applied twice, a line reads in three runs at no extra
@@ -191,7 +203,8 @@ public sealed interface TooltipRow {
          * <p>Offered to the package rather than kept private because the same zero is the answer in
          * three places: the floor a row is held to here, the level at which a host resolves no shrink
          * at all ({@link TooltipStyle}), and what a line holding no table position of its own reads at
-         * ({@link CursorTooltip}). Three copies would agree until one of them was edited.
+         * ({@link CentredRow#subordinationLevel}). Three copies would agree until one of them was
+         * edited.
          */
         static final int NO_SUBORDINATION = 0;
 
@@ -371,6 +384,15 @@ public sealed interface TooltipRow {
          */
         public CentredRow {
             labelRuns = LabelRuns.copyRuns(labelRuns);
+        }
+
+        /**
+         * A centred line has left the table and so stands under nothing in it: it speaks for the box,
+         * which is the box's own voice however deep the table beside it goes.
+         */
+        @Override
+        public int subordinationLevel() {
+            return TableRow.NO_SUBORDINATION;
         }
 
         @Override

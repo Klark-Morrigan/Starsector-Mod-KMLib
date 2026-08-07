@@ -188,13 +188,13 @@ class TooltipStyleTest {
         
         @Test
         void resolveStyleForReturnsTheHeaderLookForAHeaderLine() {
-            assertThat(buildTwoFacedStyle().resolveStyleFor(TooltipLineStyle.HEADER))
+            assertThat(buildTwoFacedStyle().resolveStyleFor(TooltipLineStyle.HEADER, IN_THE_BOXS_VOICE))
                 .isEqualTo(HEADER_STYLE);
         }
 
         @Test
         void resolveStyleForReturnsTheParagraphLookForAParagraphLine() {
-            assertThat(buildTwoFacedStyle().resolveStyleFor(TooltipLineStyle.PARAGRAPH))
+            assertThat(buildTwoFacedStyle().resolveStyleFor(TooltipLineStyle.PARAGRAPH, IN_THE_BOXS_VOICE))
                 .isEqualTo(PARAGRAPH_STYLE);
         }
 
@@ -204,7 +204,7 @@ class TooltipStyleTest {
             // Swept over the enum rather than asserted per value: a renderer resolves whatever kind the
             // row it is drawing carries, so a kind with no answer would fail at paint time on the one
             // box that happened to use it.
-            assertThat(buildTwoFacedStyle().resolveStyleFor(lineStyle))
+            assertThat(buildTwoFacedStyle().resolveStyleFor(lineStyle, IN_THE_BOXS_VOICE))
                 .isNotNull();
         }
 
@@ -212,7 +212,7 @@ class TooltipStyleTest {
         void resolveStyleForReturnsTheFootnoteLookForANoteAtTheFoot() {
             assertThat(buildTwoFacedStyle()
                     .footnotedIn(FOOTNOTE_STYLE)
-                    .resolveStyleFor(TooltipLineStyle.FOOTNOTE))
+                    .resolveStyleFor(TooltipLineStyle.FOOTNOTE, IN_THE_BOXS_VOICE))
                 .isEqualTo(FOOTNOTE_STYLE);
         }
 
@@ -278,9 +278,9 @@ class TooltipStyleTest {
             // the lookup has to be free of any per-kind adjustment of its own.
             var flatStyle = TooltipStyle.createStyle(PARAGRAPH_STYLE, PARAGRAPH_STYLE);
 
-            assertThat(flatStyle.resolveStyleFor(TooltipLineStyle.HEADER))
+            assertThat(flatStyle.resolveStyleFor(TooltipLineStyle.HEADER, IN_THE_BOXS_VOICE))
                 .isEqualTo(PARAGRAPH_STYLE);
-            assertThat(flatStyle.resolveStyleFor(TooltipLineStyle.PARAGRAPH))
+            assertThat(flatStyle.resolveStyleFor(TooltipLineStyle.PARAGRAPH, IN_THE_BOXS_VOICE))
                 .isEqualTo(PARAGRAPH_STYLE);
         }
     }

@@ -117,10 +117,13 @@ public final class CursorTooltipRenderer {
             TooltipLayout.TooltipRowLayout placement,
             CursorTooltipStyle style) {
 
-        // The kind of line the row is decides the face, size, and casing every span of it shares -
-        // resolved once here, the same lookup the layout made when it measured them.
+        // What kind of line the row is and how far it stands under the box's voice together decide the
+        // face, size, and casing every span of it shares - resolved once here, from both facts, because
+        // this is exactly the lookup the layout made when it measured the row. Resolved from the kind
+        // alone, a demoted line would be painted at its kind's full size inside a line the box measured
+        // at the shrunk one, and every label past the first run would overlap the words before it.
         var rowPaint = new RowPaint(
-            style.typography().resolveStyleFor(row.lineStyle()),
+            style.typography().resolveStyleFor(row.lineStyle(), row.subordinationLevel()),
             style.opacity());
 
         if (row instanceof TooltipRow.TableRow tableRow) {

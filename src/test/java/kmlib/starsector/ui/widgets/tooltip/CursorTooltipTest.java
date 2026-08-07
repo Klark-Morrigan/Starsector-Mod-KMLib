@@ -65,6 +65,9 @@ class CursorTooltipTest {
     // arithmetic in each case names the number it is actually spending.
     private static final float SECTION_BREAK = 11.5f;
 
+    // How far apart those same styles part two blocks nested inside one, restated for the same reason.
+    private static final float GROUP_BREAK = 5.75f;
+
     // The row a step is ordinarily measured from - the top of the box, where nothing above the pair
     // under test can shift what parts them.
     private static final int FIRST_ROW = 0;
@@ -121,7 +124,7 @@ class CursorTooltipTest {
     }
 
     private static TooltipLayout layOut(List<TooltipRow> rows, TooltipStyle style) {
-        return layOutSections(List.of(new TooltipSection(rows)), style);
+        return layOutSections(List.of(TooltipSection.createSection(rows)), style);
     }
 
     private static TooltipLayout layOutSections(List<TooltipSection> sections, TooltipStyle style) {
@@ -132,8 +135,22 @@ class CursorTooltipTest {
     // Two lines put in blocks of their own, which is the only way to say they are parted.
     private static List<TooltipSection> partIntoSections(TooltipRow firstRow, TooltipRow secondRow) {
         return List.of(
-            new TooltipSection(List.of(firstRow)),
-            new TooltipSection(List.of(secondRow)));
+            TooltipSection.createSection(List.of(firstRow)),
+            TooltipSection.createSection(List.of(secondRow)));
+    }
+
+    // One block holding a heading over two groups: the first breaking down into an account of its own,
+    // the second a line on its own. The shape every parting case below is read off, since it holds all
+    // three boundaries at once - a block's lines to its first group, a group to its own account, and one
+    // group to the next.
+    private static TooltipSection buildGroupedSection(TooltipRow headingRow) {
+        return TooltipSection
+            .createSection(List.of(headingRow))
+            .nesting(List.of(
+                TooltipSection
+                    .createSection(List.of(TOP_TIER))
+                    .nesting(List.of(TooltipSection.createSection(List.of(MEMBER)))),
+                TooltipSection.createSection(List.of(TOP_TIER))));
     }
 
     private static TooltipRow.TableRow createCrestlessRow(String text) {
@@ -450,8 +467,8 @@ class CursorTooltipTest {
             // every block past the first one they lay out holds a single line.
             var layout = layOutSections(
                 List.of(
-                    new TooltipSection(List.of(TOP_TIER)),
-                    new TooltipSection(List.of(TOP_TIER, MEMBER))),
+                    TooltipSection.createSection(List.of(TOP_TIER)),
+                    TooltipSection.createSection(List.of(TOP_TIER, MEMBER))),
                 UNIFORM_STYLE);
 
             var secondBlockOpener = 1;
@@ -462,6 +479,82 @@ class CursorTooltipTest {
                 .isCloseTo(26.5f, within(TOLERANCE));
             assertThat(measureStepBelow(layout, secondBlockOpener))
                 .isCloseTo(19f, within(TOLERANCE));
+        }
+
+        @Test
+        void partsTwoNestedBlocksByTheStylesGroupBreakWhereTheFirstBrokeDownFurther() {
+            // What a nested block is for: an entry that broke down into an account of its own is one
+            // thing, and the entry after it stands clear of the whole of it rather than of its last
+            // line. Narrower than the section break, so a run inside a block never reads as a block.
+            var layout = layOutSections(List.of(buildGroupedSection(createCrestlessRow("AA"))),
+                UNIFORM_STYLE);
+
+            var lastLineOfTheFirstGroup = 2;
+
+            assertThat(measureStepBelow(layout, lastLineOfTheFirstGroup))
+                .isCloseTo(15f + GROUP_BREAK, within(TOLERANCE));
+        }
+
+        @Test
+        void partsABlocksFirstNestedBlockFromItsOwnLinesByTheLineGap() {
+            // A block's own lines are its voice rather than a sibling of the groups beneath them, so the
+            // first group hugs the lines that introduce it. A break spent here would put a gap under
+            // every heading in the box that the heading's own block boundary already paid for.
+            var layout = layOutSections(List.of(buildGroupedSection(createCrestlessRow("AA"))),
+                UNIFORM_STYLE);
+
+            assertThat(measureStepBelow(layout, FIRST_ROW))
+                .isCloseTo(19f, within(TOLERANCE));
+        }
+
+        @Test
+        void partsANestedBlockFromItsOwnAccountByTheLineGap() {
+            // The same rule one level down: what a group breaks into opens flush beneath it, so a parting
+            // never lands between an entry and the first term explaining it.
+            var layout = layOutSections(List.of(buildGroupedSection(createCrestlessRow("AA"))),
+                UNIFORM_STYLE);
+
+            var firstGroupOpener = 1;
+
+            assertThat(measureStepBelow(layout, firstGroupOpener))
+                .isCloseTo(19f, within(TOLERANCE));
+        }
+
+        @Test
+        void partsTwoOneLineNestedBlocksByTheLineGap() {
+            // A run of groups that each came to a line is a plain list, and a parting between every pair
+            // of them would space a list of colonies as though each were a breakdown.
+            var layout = layOutSections(
+                List.of(TooltipSection
+                    .createSection(List.of(createCrestlessRow("AA")))
+                    .nesting(List.of(
+                        TooltipSection.createSection(List.of(TOP_TIER)),
+                        TooltipSection.createSection(List.of(TOP_TIER))))),
+                UNIFORM_STYLE);
+
+            var firstGroup = 1;
+
+            assertThat(measureStepBelow(layout, firstGroup))
+                .isCloseTo(19f, within(TOLERANCE));
+        }
+
+        @Test
+        void spendsOneGroupBreakWhereSeveralNestedBlocksEndOnTheOneLine() {
+            // The whole point of charging the parting to the block that follows: a faction's last colony
+            // and the faction itself close on the same line, and the next faction must not be pushed off
+            // by both partings at once.
+            var layout = layOutSections(
+                List.of(TooltipSection
+                    .createSection(List.of(createCrestlessRow("AA")))
+                    .nesting(List.of(
+                        buildGroupedSection(TOP_TIER),
+                        TooltipSection.createSection(List.of(TOP_TIER))))),
+                UNIFORM_STYLE);
+
+            var lastLineOfTheFirstFaction = 4;
+
+            assertThat(measureStepBelow(layout, lastLineOfTheFirstFaction))
+                .isCloseTo(15f + GROUP_BREAK, within(TOLERANCE));
         }
 
         @Test
@@ -519,7 +612,7 @@ class CursorTooltipTest {
             // Nothing to part from - the box's own padding already sits above it - so the break is
             // dropped rather than padding the top edge unevenly.
             var box = layOutSections(
-                List.of(new TooltipSection(List.of(TOP_TIER, MEMBER))),
+                List.of(TooltipSection.createSection(List.of(TOP_TIER, MEMBER))),
                 UNIFORM_STYLE)
                 .box();
 
@@ -535,7 +628,7 @@ class CursorTooltipTest {
             TextSpanMeasurer measurer = CursorTooltipTest::measureSpanWidth;
 
             var box = CursorTooltip.layOut(
-                List.of(new TooltipSection(List.of(createCrestlessRow("AA")))),
+                List.of(TooltipSection.createSection(List.of(createCrestlessRow("AA")))),
                 UNIFORM_STYLE,
                 measurer,
                 290f,
