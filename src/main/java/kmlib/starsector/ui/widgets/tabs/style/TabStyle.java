@@ -4,7 +4,7 @@ import kmlib.starsector.ui.font.TextFace;
 
 /**
  * How a tab strip is sized and painted, carried as one injected value: which chrome it wears, its
- * dimensions, its colour scheme, how it presents a bound key, and the face its labels draw in. Tab look
+ * dimensions, its colour scheme, how it presents a bound key, and how its labels are lettered. Tab look
  * is a look, not a law: two panels can share the whole layout and still want their tabs sized or shaded
  * differently - one floating free with room to breathe, another crowded against a neighbour's chrome - so
  * the whole description travels with the call rather than living as constants every strip inherits alike.
@@ -13,8 +13,9 @@ import kmlib.starsector.ui.font.TextFace;
  * and its paint cannot disagree. The cost is that a caller laying out without drawing still supplies the
  * paint, and one drawing pre-laid tabs still supplies the band height; that is the cheaper side of the
  * trade. Substrate-independent throughout - {@link TabPalette} is AWT colours and unit fractions,
- * {@link HotkeyStyle} a colour and two dimensions, and {@link TextFace} a font and size - so the layout
- * may measure against this value and the renderer may paint from it.
+ * {@link HotkeyStyle} a colour and two dimensions, {@link TextFace} a font and size, and
+ * {@link TextHalo} a colour, a radius, and a fraction - so the layout may measure against this value and
+ * the renderer may paint from it.
  *
  * <p>Every dimension is UI-coordinate pixels and content-space: it measures the tab surface itself, not
  * any border a host strokes around the panel that carries it. A bordered box grows outward around its
@@ -30,13 +31,18 @@ import kmlib.starsector.ui.font.TextFace;
  * @param hotkey           how a tab presents the key it is bound to - the key's colour and whether it
  *                         is underlined
  * @param face             the font and size the tab labels are measured and drawn in
+ * @param textHalo         whether the labels stand inside a ring of themselves, and how wide it is; it
+ *                         sits beside the face because the two answer together - a small bitmap face
+ *                         wants the ring a smooth one drawn at size reads muddier for - and it costs no
+ *                         width, so nothing the layout measures moves with it
  */
 public record TabStyle(
     TabChrome chrome,
     float headerBandHeight,
     TabPalette palette,
     HotkeyStyle hotkey,
-    TextFace face) {
+    TextFace face,
+    TextHalo textHalo) {
         
     /**
      * The baseline band height: room enough for the larger tab face with a little slack above and below

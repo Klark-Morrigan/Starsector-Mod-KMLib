@@ -153,11 +153,14 @@ Both name a small image sized off its line, and they must not be merged. The dif
 what the image is attached to:
 
 - [`ImageSpan`](text/ImageSpan.java) is a **run**: part of a label's sentence, spaced by a
-  word gap and carried wherever that label goes. A centred line's crest is one, which is
-  what lets crest and words centre together as a unit.
+  word gap and carried wherever that label goes. A mark belonging to the thing a line names
+  is one - it lands where the sentence puts it, at whatever indent the line sits at, which is
+  also what lets a centred line's image and its words centre together as a unit.
 - [`RowSlot.Image`](widgets/RowSlot.java) is a **column**: reserved at one width across a
-  whole stack of rows, so the labels past it line up. A breakdown's per-faction crests are
-  these, which is why a crest-less row in that stack still indents to meet them.
+  whole stack of rows, so the labels past it line up, and an image-less row in that stack
+  still indents to meet them. That alignment is what it is for, so it earns its keep only
+  where the stack is flat: rows sitting at differing indents cannot share one gutter without
+  the deeper ones drawing their image left of the name it belongs to.
 
 The same crest reads differently in each: as a run it sits where the sentence puts it, as a
 slot it anchors to a gutter every row shares. So the choice is a statement about whether the
@@ -325,7 +328,7 @@ standing for a count is not prose.
 | [`controls`](controls/) | neutral | the sealed `ControlSpec` set and its enums; a control's own label is runs like any other label, and a stacked table's rows are `widgets`' own [`LabelledRow`](widgets/LabelledRow.java), so a strip and a tooltip are laid out against one row model |
 | [`widgets`](widgets/) | neutral | the shared `LabelledRow` core, its `RowSlot` flanks, and the row and box content and geometry built on them ([`tooltip`](widgets/tooltip/), [`tabs`](widgets/tabs/), [`scroll`](widgets/scroll/), [`segments`](widgets/segments/), [`lists`](widgets/lists/)) |
 | [`widgets/tabs`](widgets/tabs/) | neutral | a tab row's geometry ([`VanillaTabStrip`](widgets/tabs/VanillaTabStrip.java) lays it, [`RaisedButtonTabStrip`](widgets/tabs/RaisedButtonTabStrip.java) stands a button inside each laid tab), the seams a paint pass reads its per-tab [look](widgets/tabs/TabLookSource.java) and [lift](widgets/tabs/TabWashSource.java) through, the tabs' own text, and the tab panel's transient state |
-| [`widgets/tabs/style`](widgets/tabs/style/) | neutral | how a tab row looks, as one injected [`TabStyle`](widgets/tabs/style/TabStyle.java): its [chrome](widgets/tabs/style/TabChrome.java), the [palette](widgets/tabs/style/TabPalette.java) of per-state [looks](widgets/tabs/style/TabLook.java) and [lifts](widgets/tabs/style/TabWash.java), its [hotkey convention](widgets/tabs/style/HotkeyStyle.java), and the face it is lettered in - which the layout snaps its tabs at, so a row is measured in what it will be drawn in. Split out from the geometry beside it because a look is what a host varies. One palette type, one factory per chrome, and a fill rule behind each - a tab's shades computed from the engine's tab colours ([`VanillaTabFills`](widgets/tabs/style/VanillaTabFills.java)), a button's from the accent it is built with ([`VanillaButtonFills`](widgets/tabs/style/VanillaButtonFills.java)) - because the engine's own two controls brighten by different rules and neither is the other with a knob |
+| [`widgets/tabs/style`](widgets/tabs/style/) | neutral | how a tab row looks, as one injected [`TabStyle`](widgets/tabs/style/TabStyle.java): its [chrome](widgets/tabs/style/TabChrome.java), the [palette](widgets/tabs/style/TabPalette.java) of per-state [looks](widgets/tabs/style/TabLook.java) and [lifts](widgets/tabs/style/TabWash.java), its [hotkey convention](widgets/tabs/style/HotkeyStyle.java), and the face it is lettered in - which the layout snaps its tabs at, so a row is measured in what it will be drawn in - with the [ring](widgets/tabs/style/TextHalo.java) that face wants around it, copies of the text laid on all four sides that cost no width and so move no tab. Split out from the geometry beside it because a look is what a host varies. One palette type, one factory per chrome, and a fill rule behind each - a tab's shades computed from the engine's tab colours ([`VanillaTabFills`](widgets/tabs/style/VanillaTabFills.java)), a button's from the accent it is built with ([`VanillaButtonFills`](widgets/tabs/style/VanillaButtonFills.java)) - because the engine's own two controls brighten by different rules and neither is the other with a knob |
 | [`widgets/tooltip`](widgets/tooltip/) | neutral | the hover box's own content and geometry - [`TooltipRow`](widgets/tooltip/TooltipRow.java) and the [`TooltipSection`](widgets/tooltip/TooltipSection.java) blocks it stacks in, the [`TooltipStyle`](widgets/tooltip/TooltipStyle.java) those are laid against, and [`CursorTooltip`](widgets/tooltip/CursorTooltip.java) placing them |
 | [`layout`](layout/) | neutral | box placement, strips, padding, screen anchors, and the [tabs row](layout/TabsControlLayout.java) - the one control whose dimensions come from the vanilla tab strip rather than from a body-font label |
 | [`label`](label/) | neutral | label fitting, plus the length-estimator port |

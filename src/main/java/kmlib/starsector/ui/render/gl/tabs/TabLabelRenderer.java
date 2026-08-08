@@ -34,8 +34,13 @@ import java.util.List;
  *
  * <p>Every colour fades by one opacity, so the text tracks whatever chrome is drawn under it. The runs are
  * separate drawables re-coloured per frame rather than one baked multi-colour run precisely so they fade
- * with the rest instead of staying opaque. GL passthrough (over {@link UiFill} for the underline and the
- * font cache for the glyphs), exercised in-engine like the other draw helpers.
+ * with the rest instead of staying opaque. That is also what lets a haloed style draw the group several
+ * times from the one set of drawables, re-colouring them between the ring and the text: a colour set on a
+ * single-colour drawable is a live knob, where a baked multi-colour run would hold its tints against
+ * every pass.
+ *
+ * <p>GL passthrough (over {@link UiFill} for the underline and the font cache for the glyphs), exercised
+ * in-engine like the other draw helpers.
  */
 public final class TabLabelRenderer {
 
@@ -45,17 +50,19 @@ public final class TabLabelRenderer {
     /**
      * Draws the tab's text centred as one group inside {@code bounds}: the label in the look's own label
      * colour, the bound key in the hotkey colour, and a hairline under that key when the style asks for
-     * one. Skipped silently when any run's font cannot load, so a tab falls back to nothing rather than to
-     * a half-drawn line.
+     * one. A haloed style rings the whole group first, laying it down once per side in the halo's colour,
+     * so the emphasis is backed along with the text it marks. Skipped silently when any run's font cannot
+     * load, so a tab falls back to nothing rather than to a half-drawn line.
      *
-     * <p>Takes the whole row style rather than the two fields it reads from it, so a caller cannot hand
+     * <p>Takes the whole row style rather than the three fields it reads from it, so a caller cannot hand
      * this the hotkey convention of one style and the face of another.
      *
      * @param bounds  the box to centre the text in, in UI coordinates
      * @param content the tab's label and its optional bound key
      * @param look    the tab's settled look; only its label colour is read, the fill being the calling
      *                chrome's to paint
-     * @param style   the row's look; its hotkey presentation and its face are what this pass reads
+     * @param style   the row's look; its hotkey presentation, its face, and its text halo are what this
+     *                pass reads
      * @param opacity overall alpha, 0..1, applied to every glyph colour and to the underline
      */
     public static void renderCentredLabel(
@@ -65,37 +72,32 @@ public final class TabLabelRenderer {
             TabStyle style,
             float opacity) {
 
-        var hotkeyStyle = style.hotkey();
-        var runs = resolveDrawnRuns(
-            TabShortcutText.resolveRuns(content),
-            style.face(),
-            Colours.scaleAlpha(look.label(), opacity),
-            Colours.scaleAlpha(hotkeyStyle.keyColour(), opacity));
-
+        var runs = resolveDrawnRuns(TabShortcutText.resolveRuns(content), style.face());
         if (runs == null) {
             return;
         }
-        var centerY = bounds.computeCenterY();
-        var runX = bounds.x() + (bounds.width() - computeRunsWidth(runs)) / 2f;
+        var hotkeyStyle = style.hotkey();
+        var textHalo = style.textHalo();
+        var haloOpacity = opacity * textHalo.strength();
 
-        for (var run : runs) {
-            run.drawable().draw(runX, centerY);
-
-            if (run.isKey() && hotkeyStyle.isKeyUnderlined()) {
-                drawKeyUnderline(run.drawable(), runX, centerY, hotkeyStyle, opacity);
-            }
-            runX += run.drawable().getWidth();
+        // The ring goes down first, so the text proper covers whatever of it lands under the glyphs. Every
+        // copy is one shade - a ring is the group's silhouette, so a key lit inside it would read as a
+        // misplaced second copy of the label rather than as an edge on the first - which is also why the
+        // colours are set once for the whole ring rather than per copy: a colour set on a drawable costs a
+        // rebuild, and four identical sets would pay it four times over.
+        setRunColours(runs, textHalo.colour(), textHalo.colour(), haloOpacity);
+        for (var haloBox : textHalo.computeHaloBoxes(bounds)) {
+            drawRunGroup(haloBox, runs, hotkeyStyle, textHalo.colour(), haloOpacity);
         }
+        setRunColours(runs, look.label(), hotkeyStyle.keyColour(), opacity);
+        drawRunGroup(bounds, runs, hotkeyStyle, hotkeyStyle.keyColour(), opacity);
     }
 
-    // Resolves each run to a drawable set to its role's colour and anchored for the left-to-right walk
-    // above. Null when any run's font cannot load: the runs are one line of text broken up, so drawing
+    // Resolves each run to a drawable anchored for the left-to-right walk below. Colourless: a drawable is
+    // re-coloured per pass rather than per resolve, so a haloed style spends one resolve on all of its
+    // passes. Null when any run's font cannot load: the runs are one line of text broken up, so drawing
     // the pieces that did resolve would leave a tab reading as a fragment of its own name.
-    private static List<DrawnRun> resolveDrawnRuns(
-            List<TabTextRun> runs,
-            TextFace textFace,
-            Color labelColour,
-            Color keyColour) {
+    private static List<DrawnRun> resolveDrawnRuns(List<TabTextRun> runs, TextFace textFace) {
 
         var drawn = new ArrayList<DrawnRun>(runs.size());
         for (var run : runs) {
@@ -104,13 +106,50 @@ public final class TabLabelRenderer {
             if (drawable == null) {
                 return null;
             }
-            var isKey = run.role() == TabTextRun.Role.KEY;
-
-            drawable.setBaseColor(isKey ? keyColour : labelColour);
             drawable.setAnchor(LazyFont.TextAnchor.CENTER_LEFT);
-            drawn.add(new DrawnRun(drawable, isKey));
+            drawn.add(new DrawnRun(drawable, run.role() == TabTextRun.Role.KEY));
         }
         return drawn;
+    }
+
+    // Sets each run to its role's colour, faded to the pass it is about to be drawn at. Apart from the
+    // draw below because a colour survives any number of draws: a ring lays the same group down four
+    // times in one shade, and setting a drawable's colour is what forces it to rebuild.
+    private static void setRunColours(
+            List<DrawnRun> runs,
+            Color labelColour,
+            Color keyColour,
+            float opacity) {
+
+        for (var run : runs) {
+            run.drawable().setBaseColor(
+                Colours.scaleAlpha(run.isKey() ? keyColour : labelColour, opacity));
+        }
+    }
+
+    // One laying-down of the whole group inside the given box, in whatever colours the runs currently
+    // carry. The group centres in whichever box it is handed, so a ring copy moves every piece of it - the
+    // runs and the emphasis under one of them - by taking a shifted box rather than by shifting each draw
+    // site. The key's colour is still passed, the underline being a quad of this pass's own rather than
+    // something the drawables carry.
+    private static void drawRunGroup(
+            Rectangle bounds,
+            List<DrawnRun> runs,
+            HotkeyStyle hotkeyStyle,
+            Color keyColour,
+            float opacity) {
+
+        var centerY = bounds.computeCenterY();
+        var runX = bounds.x() + (bounds.width() - computeRunsWidth(runs)) / 2f;
+
+        for (var run : runs) {
+            run.drawable().draw(runX, centerY);
+
+            if (run.isKey() && hotkeyStyle.isKeyUnderlined()) {
+                drawKeyUnderline(run.drawable(), runX, centerY, hotkeyStyle, keyColour, opacity);
+            }
+            runX += run.drawable().getWidth();
+        }
     }
 
     // The whole line's rendered width, so the group centres in the box as the one string the layout
@@ -127,11 +166,16 @@ public final class TabLabelRenderer {
     // The styled emphasis under the key alone. The run is anchored centre-left, so it stands its own
     // height about the draw y; the style places the line against that box, so every renderer drawing this
     // look puts it in the same spot. Faded by the caller's opacity like every other quad it draws.
+    //
+    // The colour comes from the pass rather than from the style: the line marks the key, so it belongs to
+    // whichever copy of the group is being laid down - a ring copy drawing it in the styled gold would
+    // leave gold hairlines standing out around the one under the key.
     private static void drawKeyUnderline(
             DrawableString key,
             float keyX,
             float centerY,
             HotkeyStyle hotkeyStyle,
+            Color keyColour,
             float opacity) {
 
         var keyBox = new Rectangle(
@@ -142,7 +186,7 @@ public final class TabLabelRenderer {
 
         UiFill.renderQuad(
             hotkeyStyle.computeUnderlineBox(keyBox),
-            new UiElementPaint(hotkeyStyle.keyColour(), opacity));
+            new UiElementPaint(keyColour, opacity));
     }
 
     // One resolved run: the drawable to paint and whether it is the bound key, which is all the draw
