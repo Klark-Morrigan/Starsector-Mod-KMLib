@@ -163,10 +163,14 @@ public final class CursorTooltipRenderer {
             return;
         }
         if (labelRun instanceof ImageSpan imageSpan) {
+
+            // The tint travels with the path: an asset whose colour was authored beside it is drawn in
+            // that colour, and one that stated none is drawn as its own pixels have it.
             UiSprite.renderImage(
                 imageSpan.spritePath(),
                 computeImageBox(runX, placement),
-                rowPaint.opacity());
+                rowPaint.opacity(),
+                imageSpan.tintColour());
         }
     }
 

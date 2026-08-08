@@ -3,18 +3,27 @@ package kmlib.starsector.ui.text;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.awt.Color;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Pins {@link ImageSpan}'s two contracts: an image run always holds a path to load, and it squares off
- * whatever line it is set on. Both matter downstream without being checked there - a null path reports
- * as a failure at the texture lookup inside a draw call rather than at whoever built the run, and a
- * width that did not follow the line would reserve room the drawn square then failed to fill.
+ * Pins {@link ImageSpan}'s contracts: an image run always holds a path to load, it squares off whatever
+ * line it is set on, and it carries the tint its asset was authored with - stating none where the
+ * colours are in the texture's own pixels. All three matter downstream without being checked there - a
+ * null path reports as a failure at the texture lookup inside a draw call rather than at whoever built
+ * the run, a width that did not follow the line would reserve room the drawn square then failed to
+ * fill, and a tint dropped between the asset read and the draw shows as a glyph in a shade nobody
+ * chose.
  */
 class ImageSpanTest {
 
     private static final String CREST_SPRITE_PATH = "graphics/factions/crest_hegemony.png";
+
+    private static final String ICON_SPRITE_PATH = "graphics/warroom/icon_planet.png";
+
+    private static final Color ICON_TINT = new Color(120, 190, 255);
 
     // Measures every run as one unit wide, so a width taken from the glyph measurement rather than from
     // the line would be visible in the assertion below.
@@ -35,6 +44,45 @@ class ImageSpanTest {
                 .isInstanceOf(NullPointerException.class)
                 .hasMessageContaining("spritePath");
         }
+
+        @Test
+        void constructorStatesNoTintForAnImageDrawnAsAuthored() {
+            // A crest's colours are in its own pixels, so the path alone builds the run and the draw is
+            // left to multiply by nothing.
+            assertThat(new ImageSpan(CREST_SPRITE_PATH).tintColour()).isNull();
+        }
+
+        @Test
+        void constructorKeepsTheTintItWasGiven() {
+            // A map glyph's colour is authored beside its path, so the run carries it to the draw rather
+            // than the draw picking a shade of its own.
+            assertThat(new ImageSpan(ICON_SPRITE_PATH, ICON_TINT).tintColour())
+                .isEqualTo(ICON_TINT);
+        }
+    }
+
+    @Nested
+    class Equals {
+
+        @Test
+        void equalsIsTrueForTheSamePathAndTint() {
+            assertThat(new ImageSpan(ICON_SPRITE_PATH, ICON_TINT))
+                .isEqualTo(new ImageSpan(ICON_SPRITE_PATH, ICON_TINT));
+        }
+
+        @Test
+        void equalsIsFalseForTheSamePathInAnotherTint() {
+            // The tint is half of what an image run states, so two runs of one shared glyph in two
+            // colours are two different marks rather than one repeated.
+            assertThat(new ImageSpan(ICON_SPRITE_PATH, ICON_TINT))
+                .isNotEqualTo(new ImageSpan(ICON_SPRITE_PATH, new Color(255, 90, 60)));
+        }
+
+        @Test
+        void equalsIsFalseForATintedSpanAgainstAnUntintedOne() {
+            assertThat(new ImageSpan(ICON_SPRITE_PATH, ICON_TINT))
+                .isNotEqualTo(new ImageSpan(ICON_SPRITE_PATH));
+        }
     }
 
     @Nested
@@ -52,6 +100,14 @@ class ImageSpanTest {
         void computeWidthFollowsATallerLine() {
             assertThat(new ImageSpan(CREST_SPRITE_PATH).computeWidth(32f, ONE_UNIT_PER_RUN))
                 .isEqualTo(32f);
+        }
+
+        @Test
+        void computeWidthIsUnchangedByATint() {
+            // A tint is a colour the texture is multiplied by, so it changes what the square shows and
+            // never how much room the line reserves for it.
+            assertThat(new ImageSpan(ICON_SPRITE_PATH, ICON_TINT).computeWidth(20f, ONE_UNIT_PER_RUN))
+                .isEqualTo(20f);
         }
     }
 

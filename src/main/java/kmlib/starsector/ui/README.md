@@ -168,6 +168,12 @@ image belongs to the words or to the table - and the two sets stay separate beca
 box or a sort triangle is a column that has no reading mid-word, and so is spelled only in
 `RowSlot`.
 
+Only the run carries a tint. Some assets are one shared glyph per family whose colour is
+declared beside the path, so a run states that colour and the draw multiplies by it; a run
+that states none is drawn as authored. `RowSlot.Image` is untinted, because a column of
+identically-shaded marks is what a gutter is for - and widening it on speculation would be a
+second tint rule to keep in step with the first.
+
 ## Ports across the boundary
 
 Where the neutral middle needs something only a surface can answer, it takes a port and

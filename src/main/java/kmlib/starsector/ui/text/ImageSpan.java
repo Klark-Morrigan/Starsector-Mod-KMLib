@@ -1,5 +1,6 @@
 package kmlib.starsector.ui.text;
 
+import java.awt.Color;
 import java.util.Objects;
 
 /**
@@ -12,23 +13,45 @@ import java.util.Objects;
  * level with the words beside it whatever face they draw in and a stack of lines shows equally-sized
  * images without any line stating a size.
  *
- * <p>It carries no colour, unlike the {@link TextSpan} it shares a label with: a crest is drawn as it
- * was authored and is only ever faded by the host's opacity, so a colour here would be a tint nothing
- * asked for. That asymmetry is why the two are separate members of {@link LabelRun} rather than one
- * record with an optional image.
+ * <p>Its colour is the image's own rather than the label's, which is not what the {@link TextSpan} it
+ * shares a label with means by one: a text span states the colour its glyphs are drawn in, while a tint
+ * here is a colour the texture is multiplied by. A crest passes none - its colours are in its own
+ * pixels and only ever faded by the host's opacity. An image whose colour was authored beside its path
+ * states that colour here, because some families are drawn as one shared glyph told apart only by the
+ * colour each type declares, and drawn untinted every member of the family comes out the same shape in
+ * the same shade. Either way the tint is the asset's, so it travels with the path from wherever the
+ * asset was read all the way to the draw rather than being picked by whatever paints the line.
  *
  * @param spritePath the image's {@code graphics} texture path
+ * @param tintColour the colour the texture is multiplied by, or null for an image drawn as authored
  */
 public record ImageSpan(
-    String spritePath) implements LabelRun {
+    String spritePath,
+    Color tintColour) implements LabelRun {
+
+    // How an image that states no tint spells its absence. Named so the untinted spelling has one home
+    // rather than a bare null standing in for it wherever a run is built from a path alone.
+    private static final Color NO_TINT = null;
 
     /**
      * Rejects a null path, since a label that shows no image simply carries no image run rather than
      * one with nothing to load. A null otherwise surfaces at the texture lookup inside a draw call,
-     * well past the point that could say which line was meant.
+     * well past the point that could say which line was meant. The tint is nullable by design - most
+     * images are drawn as authored - so only the path is checked here.
      */
     public ImageSpan {
         Objects.requireNonNull(spritePath, "spritePath");
+    }
+
+    /**
+     * Builds a run for an image drawn as its asset authored it, stating no tint. What a caller reaches
+     * for when the colours are in the texture's own pixels - a faction crest - so it need not name a
+     * white it did not choose to say it chose nothing.
+     *
+     * @param spritePath the image's {@code graphics} texture path
+     */
+    public ImageSpan(String spritePath) {
+        this(spritePath, NO_TINT);
     }
 
     /**
