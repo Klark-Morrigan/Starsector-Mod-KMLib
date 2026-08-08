@@ -88,6 +88,18 @@ final class TabChromeRendererTest {
         }
 
         @Test
+        void TabChromeRenderer_paintEachTab_handsEachTabItsPlaceInTheRow() {
+            // A chrome can place a button from its position - the raised-button row parts every button from
+            // the one on its left and exempts the leading one - so the position handed over has to be the
+            // tab's own place counted from the left rather than any other numbering.
+            var painted = paintAll(TWO_LOOKS, tabIndex -> NO_LIFT);
+
+            assertThat(painted)
+                .extracting(Painting::rowIndex)
+                .containsExactly(0, 1);
+        }
+
+        @Test
         void TabChromeRenderer_paintEachTab_paintsNothingForAnEmptyRow() {
             // A panel can carry a bandless header, and a chrome handed no tabs must draw no chrome rather
             // than reaching for a first tab that is not there.
@@ -130,11 +142,11 @@ final class TabChromeRendererTest {
             tabs,
             looks,
             washes,
-            (tab, look) -> painted.add(new Painting(tab, look)));
+            (rowIndex, tab, look) -> painted.add(new Painting(rowIndex, tab, look)));
         return painted;
     }
 
-    // One call the walk made: which tab was handed over, and in which look.
-    private record Painting(VanillaTab tab, TabLook look) {
+    // One call the walk made: which tab was handed over, where in the row it stood, and in which look.
+    private record Painting(int rowIndex, VanillaTab tab, TabLook look) {
     }
 }

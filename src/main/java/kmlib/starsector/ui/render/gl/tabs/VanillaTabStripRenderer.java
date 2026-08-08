@@ -66,7 +66,10 @@ public final class VanillaTabStripRenderer {
 
         var chromeAccent = style.palette().chromeAccent();
 
-        TabChromeRenderer.paintEachTab(tabs, looks, washes, (tab, look) -> {
+        // The row position the walk hands over is a raised button's business, not a strip's: every tab here
+        // is drawn the same whatever its place in the row, the seams between them being ruled in one pass
+        // below.
+        TabChromeRenderer.paintEachTab(tabs, looks, washes, (rowIndex, tab, look) -> {
             renderChrome(tab.bounds(), look, chromeAccent, opacity);
             TabLabelRenderer.renderCentredLabel(tab.bounds(), tab.content(), look, style, opacity);
         });

@@ -84,12 +84,12 @@ public final class RaisedButtonTabStripRenderer {
 
         var chromeAccent = style.palette().chromeAccent();
 
-        TabChromeRenderer.paintEachTab(tabs, looks, washes, (tab, look) -> {
+        TabChromeRenderer.paintEachTab(tabs, looks, washes, (rowIndex, tab, look) -> {
 
-            // The button inside the laid tab, its gap to either neighbour taken out of the tab rather than
-            // added to the row - the hit box the panel tests stays the whole tab, so the channel between
-            // two buttons still answers to whichever one it was laid inside.
-            var buttonBox = RaisedButtonTabStrip.computeButtonBox(tab.bounds());
+            // The button inside the laid tab, the channel parting it from its left-hand neighbour taken out
+            // of the tab rather than added to the row - the hit box the panel tests stays the whole tab, so
+            // the channel still answers to whichever button it was laid inside.
+            var buttonBox = RaisedButtonTabStrip.computeButtonBox(tab.bounds(), rowIndex);
 
             renderButtonChrome(buttonBox, chromeAccent, opacity);
             UiFill.renderQuad(

@@ -53,7 +53,7 @@ public interface TabChromeRenderer {
      * @param tabs    the laid-out tabs, in row order
      * @param looks   where each tab's settled look comes from
      * @param washes  where each tab's resolved lift comes from
-     * @param painter what to draw for one tab, given the look it is painted at
+     * @param painter what to draw for one tab, given its place in the row and the look it is painted at
      */
     static void paintEachTab(
             List<VanillaTab> tabs,
@@ -63,6 +63,7 @@ public interface TabChromeRenderer {
 
         for (var index = 0; index < tabs.size(); index++) {
             painter.paintTab(
+                index,
                 tabs.get(index),
                 looks.resolveLookAt(index).computeWashedLook(washes.resolveWashAt(index)));
         }
@@ -98,9 +99,15 @@ public interface TabChromeRenderer {
         /**
          * Draws one tab.
          *
-         * @param tab  the laid-out tab - its box, and the label and bound key it shows
-         * @param look the look it is painted at, its lift included
+         * <p>The position comes with the tab because a chrome's geometry can turn on it - a row of raised
+         * buttons parts each button from the one on its left, which is a thing only the leading tab is
+         * exempt from. It is handed down from the walk rather than counted by the chrome, so a chrome
+         * cannot end up numbering the row differently from the source that reported its looks.
+         *
+         * @param rowIndex the tab's position in the row, counting from the left
+         * @param tab      the laid-out tab - its box, and the label and bound key it shows
+         * @param look     the look it is painted at, its lift included
          */
-        void paintTab(VanillaTab tab, TabLook look);
+        void paintTab(int rowIndex, VanillaTab tab, TabLook look);
     }
 }
