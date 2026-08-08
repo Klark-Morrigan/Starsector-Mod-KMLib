@@ -41,6 +41,26 @@ public record Rectangle(float x, float y, float width, float height) {
     }
 
     /**
+     * This rectangle pulled inward by {@code inset} on all four sides, holding its centre - the box left
+     * inside a frame of that thickness, so an element drawn within one is placed from the box it is
+     * framed by rather than from four corner offsets spelt out at the draw site. Extents floor at zero, so
+     * a box too small to hold its own inset collapses at its centre rather than inverting into a
+     * rectangle drawn back-to-front across whatever it was inside.
+     *
+     * @param inset how far to pull each side inward
+     * @return the inner box, with zero-floored extents
+     */
+    public Rectangle computeInsetBox(float inset) {
+        var innerWidth = Math.max(0f, width - 2f * inset);
+        var innerHeight = Math.max(0f, height - 2f * inset);
+        return new Rectangle(
+            computeCenterX() - innerWidth / 2f,
+            computeCenterY() - innerHeight / 2f,
+            innerWidth,
+            innerHeight);
+    }
+
+    /**
      * @return the x of the rectangle's horizontal centre, for placing a centred element
      */
     public float computeCenterX() {

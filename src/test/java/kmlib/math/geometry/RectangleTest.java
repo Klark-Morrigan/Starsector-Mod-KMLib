@@ -9,7 +9,8 @@ import static org.assertj.core.api.Assertions.within;
 /**
  * Pins the rectangle's point test: interior points are inside, exterior points are not, and
  * the edges count as inside so a hairline-precise hit does not fall through. Also pins the centre
- * accessors used to place a centred element.
+ * accessors used to place a centred element, and the inset box an element drawn inside a frame is
+ * placed from - the floor that keeps a box too small for its own inset from inverting included.
  */
 class RectangleTest {
     private static final float TOLERANCE = 0.01f;
@@ -79,6 +80,31 @@ class RectangleTest {
             var viewport = new Rectangle(20f, 0f, 0f, 100f);
             var box = new Rectangle(0f, 0f, 20f, 100f);
             assertThat(viewport.intersectWith(box)).isEqualTo(new Rectangle(20f, 0f, 0f, 100f));
+        }
+    }
+
+    @Nested
+    class ComputeInsetBox {
+
+        @Test
+        void pullsEverySideInwardByTheInset() {
+            // Each side moves in by 2, so the corner shifts by 2 and each extent loses 4.
+            assertThat(new Rectangle(10f, 20f, 100f, 50f).computeInsetBox(2f))
+                .isEqualTo(new Rectangle(12f, 22f, 96f, 46f));
+        }
+
+        @Test
+        void returnsTheBoxItselfAtNoInset() {
+            assertThat(new Rectangle(10f, 20f, 100f, 50f).computeInsetBox(0f))
+                .isEqualTo(new Rectangle(10f, 20f, 100f, 50f));
+        }
+
+        @Test
+        void collapsesAtTheCentreWhenTheBoxCannotHoldItsOwnInset() {
+            // A box narrower than twice the inset would invert into a rectangle drawn back-to-front
+            // across whatever it was inside, so the extent floors at zero and the box holds its centre.
+            assertThat(new Rectangle(10f, 20f, 6f, 50f).computeInsetBox(4f))
+                .isEqualTo(new Rectangle(13f, 24f, 0f, 42f));
         }
     }
 
