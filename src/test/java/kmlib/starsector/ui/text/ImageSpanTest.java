@@ -83,6 +83,14 @@ class ImageSpanTest {
             assertThat(new ImageSpan(ICON_SPRITE_PATH, ICON_TINT))
                 .isNotEqualTo(new ImageSpan(ICON_SPRITE_PATH));
         }
+
+        @Test
+        void equalsIsTrueForTheTwoSpellingsOfAnUntintedImage() {
+            // Untinted has one value however it was built, so a run assembled from a path alone and one
+            // stating no colour are the same mark rather than two that happen to draw alike.
+            assertThat(new ImageSpan(CREST_SPRITE_PATH))
+                .isEqualTo(new ImageSpan(CREST_SPRITE_PATH, null));
+        }
     }
 
     @Nested
