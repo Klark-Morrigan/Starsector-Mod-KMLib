@@ -236,6 +236,13 @@ final class VanillaClaimBreakdownReaderTest {
             assertThat(standing.otherMarkets())
                 .extracting(MarketClaimBreakdown::marketName)
                 .containsExactly("Tigra City");
+
+            // The hiddenness rides the listed market itself, so a reader of the parts can tell a
+            // market that lost a listing tie from one the mechanic never compared at all.
+            assertThat(standing.standingMarket().isHiddenMarket())
+                .isFalse();
+            assertThat(standing.otherMarkets().get(0).isHiddenMarket())
+                .isTrue();
         }
 
         @Test

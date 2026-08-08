@@ -20,9 +20,11 @@ final class MarketClaimBreakdownTest {
     // built below takes the head of the list.
     private static final int FIRST_LISTED = 1;
 
-    // The market is one the player has found. Nothing here is about what a box may name, and the
-    // sum the whole suite is about is the same either way - the mechanic never asks.
+    // The market is one the player has found, held in the open. Nothing here is about what a box
+    // may name or which market competes, and the sum the whole suite is about is the same either
+    // way - the arithmetic reads neither flag.
     private static final boolean IS_KNOWN_TO_PLAYER = true;
+    private static final boolean IS_NOT_HIDDEN = false;
 
     @Nested
     class ComputeTotalScore {
@@ -112,6 +114,7 @@ final class MarketClaimBreakdownTest {
             MARKET_NAME,
             FIRST_LISTED,
             IS_KNOWN_TO_PLAYER,
+            IS_NOT_HIDDEN,
             marketSize,
             siblingMarketCount,
             militaryBonus);

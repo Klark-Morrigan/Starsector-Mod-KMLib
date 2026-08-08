@@ -29,10 +29,11 @@ public final class ClaimStandingFixture {
     // not posing a tie, so every standing built here takes the head of the list.
     private static final int FIRST_LISTED = 1;
 
-    // The market is one the player has found. A test posing standings by score alone is not
-    // posing a fog-of-war case, and a box withholding an unfound colony would leave such a test
-    // asserting on lines that were never drawn.
+    // The market is one the player has found, held in the open. A test posing standings by score
+    // alone is posing neither a fog-of-war case nor a hidden base - and a standing market could
+    // not be hidden in any case, the mechanic never letting one stand for its faction.
     private static final boolean IS_KNOWN_TO_PLAYER = true;
+    private static final boolean IS_NOT_HIDDEN = false;
 
     private ClaimStandingFixture() {
     }
@@ -58,6 +59,7 @@ public final class ClaimStandingFixture {
                 STANDING_MARKET_NAME,
                 FIRST_LISTED,
                 IS_KNOWN_TO_PLAYER,
+                IS_NOT_HIDDEN,
                 score,
                 NO_SIBLING_MARKETS,
                 OptionalInt.empty()),

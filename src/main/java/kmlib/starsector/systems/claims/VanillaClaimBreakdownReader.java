@@ -109,7 +109,6 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
             // gaps in it for a reader to wonder about.
             claimedMarkets.add(new ClaimedMarket(
                 faction,
-                market.isHidden(),
                 computeMarketClaim(market, markets, claimedMarkets.size() + FIRST_LISTED)));
         }
         return claimedMarkets;
@@ -246,6 +245,7 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
             market.getName(),
             listingPosition,
             Markets.isKnownToPlayer(market),
+            market.isHidden(),
             market.getSize(),
             siblingMarketCount,
             Markets.isMilitary(market)
@@ -256,9 +256,9 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
     // A hidden market is counted through its siblings rather than on its own account, so
     // scoring it separately would count it twice - and, since a faction stands on its strongest
     // market alone, a large hidden base would displace the visible colony actually contesting
-    // the system.
+    // the system. Read off the claim, which records the same hiddenness for its own readers.
     private static boolean isScoredOnItsOwnAccount(ClaimedMarket claimedMarket) {
-        return !claimedMarket.isHiddenMarket();
+        return !claimedMarket.claim().isHiddenMarket();
     }
 
     // The player is present but ineligible: the mechanic never lets a player colony claim a
@@ -270,14 +270,13 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
     }
 
     /**
-     * One scored market of the system's economy, kept beside the faction that owns it and the
-     * hiddenness that decides whether it can stand for that faction. Holding the whole walk as
-     * these lets the claimant and the standings be resolved from one pass of the economy under
-     * their two different rules, without scoring any market twice.
+     * One scored market of the system's economy, kept beside the faction that owns it - the one
+     * fact the claim itself cannot carry, being a plain value with no Starsector types in it.
+     * Holding the whole walk as these lets the claimant and the standings be resolved from one
+     * pass of the economy under their two different rules, without scoring any market twice.
      */
     private record ClaimedMarket(
         FactionAPI faction,
-        boolean isHiddenMarket,
         MarketClaimBreakdown claim) {
     }
 }
