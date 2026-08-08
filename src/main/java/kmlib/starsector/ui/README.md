@@ -270,7 +270,9 @@ vocabulary implements, [`ListSortModes`](widgets/lists/ListSortModes.java) bundl
 vocabulary with the fallback an unrecognised key lands on,
 [`ListSort`](widgets/lists/ListSort.java) is how a list is ranked - the active mode, its
 [`SortDirection`](widgets/lists/SortDirection.java), and the vocabulary both were chosen
-from - and [`ListColumns`](widgets/lists/ListColumns.java) is the one-or-two column choice.
+from - [`ListPicker`](widgets/lists/ListPicker.java) is a list bundled with the vocabulary
+that ranks it, which is what a consumer hands over when *which* list it offers varies, and
+[`ListColumns`](widgets/lists/ListColumns.java) is the one-or-two column choice.
 The two selectors - [`SortSelectorControl`](widgets/lists/SortSelectorControl.java) and
 [`ColumnsSelectorControl`](widgets/lists/ColumnsSelectorControl.java) - draw and drive them.
 
@@ -278,7 +280,12 @@ The vocabulary rides on the sort rather than beside it because nothing here read
 without the other: a mode with no set around it cannot say what clicking another row would
 select, and a set with no active mode cannot say which row is lit. Carrying them apart made
 every builder in the family take both and trust that the two matched, which is what
-`ListSort`'s constructor now checks instead.
+`ListSort`'s constructor now checks instead. `ListPicker` is the same bundling one step
+earlier, before a sort is resolved at all: a consumer whose lists rank by different metrics
+hands over the list and the vocabulary that can read it as one value, so nothing between the
+two can pair a list with a vocabulary that cannot rank it. Its `empty()` is the offers-nothing
+answer, and it carries no fallback mode - an empty picker draws nothing, so the item list is
+read and found empty before any stored sort is resolved against it.
 
 [`ListPickerControl`](widgets/lists/ListPickerControl.java) is what they compose into: a
 rule, the columns selector, a row pairing the sort selector with whatever the consumer
