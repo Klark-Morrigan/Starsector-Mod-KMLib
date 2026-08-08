@@ -215,6 +215,48 @@ final class ColoursTest {
     }
 
     @Nested
+    class BlendTowards {
+
+        @Test
+        void lerps_the_alpha_channel_along_with_the_rgb() {
+            // The whole difference from blendRgbTowards, so the two are told apart on the one channel
+            // they disagree about: 200 + (32-200)*0.5 = 116, where the RGB-only blend would answer 200.
+            var blended = Colours.blendTowards(
+                new Color(40, 80, 120, 200),
+                new Color(240, 80, 20, 32),
+                0.5f);
+
+            assertThat(blended.getRed()).isEqualTo(140);
+            assertThat(blended.getGreen()).isEqualTo(80);
+            assertThat(blended.getBlue()).isEqualTo(70);
+            assertThat(blended.getAlpha()).isEqualTo(116);
+        }
+
+        @Test
+        void carries_a_fully_transparent_base_all_the_way_to_the_targets_alpha() {
+            // The case the blend exists for: an unpainted surface fading in. An alpha kept from the base
+            // would hold this at zero the whole way, so the travel would never appear at all.
+            var blended = Colours.blendTowards(
+                new Color(21, 65, 77, 0),
+                new Color(21, 65, 77, 255),
+                1f);
+
+            assertThat(blended.getAlpha()).isEqualTo(255);
+        }
+
+        @Test
+        void returns_the_base_at_a_zero_amount() {
+
+            var blended = Colours.blendTowards(
+                new Color(10, 20, 30, 128),
+                new Color(200, 200, 200, 255),
+                0f);
+
+            assertThat(blended).isEqualTo(new Color(10, 20, 30, 128));
+        }
+    }
+
+    @Nested
     class FlattenOnto {
 
         @Test

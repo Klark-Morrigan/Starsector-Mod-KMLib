@@ -111,6 +111,33 @@ public final class Colours {
     }
 
     /**
+     * Lerps every channel of {@code base} toward {@code target}, alpha included - the whole-colour
+     * counterpart of {@link #blendRgbTowards}, for a caller whose two ends differ in how solid they are
+     * and not only in hue. A surface fading in from unpainted is the case that needs it: an alpha kept
+     * from the base would hold a transparent start transparent the whole way, so the fade would never
+     * appear at all.
+     *
+     * <p>Kept apart from the RGB-only blend rather than replacing it, because the two answer different
+     * questions. A wash over a fill that is already a surface is a pure brightness shift, and carrying an
+     * alpha across there would change how solid the element is as a side effect of brightening it.
+     *
+     * <p>Each channel is rounded and clamped, so an out-of-range amount saturates rather than throwing
+     * from {@link Color}'s constructor.
+     *
+     * @param base   the colour to move from
+     * @param target the colour to move toward, its alpha included
+     * @param amount the fraction to move each channel from base toward target
+     * @return base moved toward target by amount on all four channels
+     */
+    public static Color blendTowards(Color base, Color target, float amount) {
+        return new Color(
+            lerpChannel(base.getRed(), target.getRed(), amount),
+            lerpChannel(base.getGreen(), target.getGreen(), amount),
+            lerpChannel(base.getBlue(), target.getBlue(), amount),
+            lerpChannel(base.getAlpha(), target.getAlpha(), amount));
+    }
+
+    /**
      * The opaque colour a translucent {@code colour} composites to over {@code backdrop} - what the eye
      * already sees where that colour is drawn over that backdrop, stated as one shade that needs neither.
      * For a caller whose element must carry its own surface rather than borrow one, and for reproducing
