@@ -1,5 +1,6 @@
 package kmlib.starsector.ui.render.gl.style;
 
+import kmlib.starsector.ui.colour.AccentColours;
 import kmlib.starsector.ui.font.StarsectorFont;
 import kmlib.starsector.ui.render.gl.controls.ControlRenderer;
 import kmlib.starsector.ui.render.gl.panel.PanelRenderer;

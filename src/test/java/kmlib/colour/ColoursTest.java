@@ -254,6 +254,19 @@ final class ColoursTest {
 
             assertThat(blended).isEqualTo(new Color(10, 20, 30, 128));
         }
+
+        @Test
+        void saturates_every_channel_including_alpha_when_the_amount_exceeds_one() {
+            // 200 + (255-200)*2 = 310 on the RGB and 128 + (255-128)*2 = 382 on the alpha would both
+            // overflow Color's 0-255 range. The alpha is the one this blend adds, so it is the one an
+            // out-of-range amount could newly throw from.
+            var blended = Colours.blendTowards(
+                new Color(200, 200, 200, 128),
+                new Color(255, 255, 255, 255),
+                2f);
+
+            assertThat(blended).isEqualTo(new Color(255, 255, 255, 255));
+        }
     }
 
     @Nested

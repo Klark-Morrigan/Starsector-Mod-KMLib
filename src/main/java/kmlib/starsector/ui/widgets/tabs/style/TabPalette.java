@@ -1,5 +1,6 @@
 package kmlib.starsector.ui.widgets.tabs.style;
 
+import kmlib.starsector.ui.colour.AccentColours;
 import kmlib.starsector.ui.colour.StarsectorUiColour;
 import kmlib.starsector.ui.widgets.tabs.VanillaTabStrip;
 
@@ -159,42 +160,42 @@ public record TabPalette(
      * rather than left for the chrome to opt out of: the pulse still runs, and the panel still sounds it,
      * because what a press does is the palette's to say and not the paint pass's.
      *
-     * @param darkAccent  the accent's dark step, which the engine fills and frames a button with; taken as
-     *                    the chrome accent too, that being what frames the row here
-     * @param baseAccent  the accent's base step - the label an untouched button reads in, and the light the
-     *                    pointer adds over a lit interior
-     * @param litLabel    the accent's brighter step, which a button being shown or pointed at labels in
+     * <p>The whole accent rather than the steps it needs, and that is why {@link AccentColours} is a
+     * neutral value: all three arrive here, in an order a caller cannot transpose. Handed over loose they
+     * would be three same-typed arguments whose only guard is their names at the call site, and a dark
+     * swapped with a bright compiles, paints, and reads as a button lit inside out.
+     *
+     * @param accent the accent the buttons are built from - its dark step fills and frames them, its base
+     *               is what the pointer adds and what an untouched label reads in, and its bright step
+     *               labels the one being shown
      * @return the vanilla raised-button palette
      */
-    public static TabPalette createRaisedButtonPalette(
-            Color darkAccent,
-            Color baseAccent,
-            Color litLabel) {
+    public static TabPalette createRaisedButtonPalette(AccentColours accent) {
 
         // The backing the chrome lays under every button, which the dark step is composited onto. Black
         // rather than the host's own panel fill for the reason the tab paint above takes black: a button
         // row stands wherever its panel does, and a shade measured against one surface would be wrong over
         // the others.
         var buttonPaint = new VanillaButtonPaint(
-            darkAccent,
-            baseAccent,
+            accent.dark(),
+            accent.base(),
             StarsectorUiColour.BLACK.resolve());
 
         return new TabPalette(
-            darkAccent,
+            accent.dark(),
             new TabLook(
                 VanillaButtonFills.resolveUnpaintedFill(buttonPaint),
-                baseAccent),
+                accent.base()),
             new TabLook(
                 VanillaButtonFills.resolveFillAtGlow(buttonPaint, VanillaButtonFills.NO_GLOW),
-                litLabel),
+                accent.bright()),
             new TabLook(
                 VanillaButtonFills.resolveFillAtGlow(buttonPaint, VanillaButtonFills.POINTED_GLOW),
-                litLabel),
+                accent.bright()),
             // Aimed along the same axis the interiors brighten by, so the day this chrome does want a
             // visible press it lifts toward the shade its lit states already travel to rather than toward
             // one named nowhere.
-            new TabWash(baseAccent, NO_PRESS_LIFT));
+            new TabWash(accent.base(), NO_PRESS_LIFT));
     }
 
     /**

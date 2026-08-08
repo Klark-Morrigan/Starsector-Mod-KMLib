@@ -19,7 +19,11 @@ import java.awt.Color;
  *                    translucency is what the backing shows through, and so part of the shade
  * @param glowColour  the accent the pointer adds over that fill - the engine hands a button its base
  *                    colour for exactly this, so it is added as it comes rather than whitened first
- * @param backdrop    the backing the button is drawn over, taken as opaque
+ * @param backdrop    the surface the engine's own translucent fill composites against, taken as opaque -
+ *                    what a sampled vanilla button is a measurement of, and so what reproducing its shade
+ *                    is measured from. Not a claim about what a chrome lays under its own buttons: the
+ *                    shades this yields are opaque, so whatever backs them is covered wherever one is
+ *                    painted and shows through only where none is
  */
 public record VanillaButtonPaint(
     Color fill,

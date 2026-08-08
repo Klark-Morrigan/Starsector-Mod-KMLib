@@ -3,6 +3,7 @@ package kmlib.starsector.ui.widgets.tabs.style;
 import com.fs.starfarer.api.util.Misc;
 
 import kmlib.starsector.testing.StarsectorSettingsFake;
+import kmlib.starsector.ui.colour.AccentColours;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -80,11 +81,16 @@ final class TabPaletteTest {
     // The three steps of the accent a raised-button row is built from. Handed in rather than stubbed: a
     // vanilla button takes its whole look from an accent set, so that factory reads no engine role at all.
     // The stock install's own dark and base steps, so the shades below are the ones the engine's own
-    // buttons wear; the lit label is a shade unlike either, so a label taking the wrong step shows as a
-    // number this test does not expect.
+    // buttons wear; the bright step is a shade unlike either, so a label taking the wrong step of the
+    // three shows as a number this test does not expect.
     private static final Color BUTTON_DARK_ACCENT = new Color(31, 94, 112, 175);
     private static final Color BUTTON_BASE_ACCENT = new Color(165, 230, 255);
-    private static final Color BUTTON_LIT_LABEL = new Color(203, 245, 255);
+    private static final Color BUTTON_BRIGHT_ACCENT = new Color(203, 245, 255);
+
+    private static final AccentColours BUTTON_ACCENT = new AccentColours(
+        BUTTON_DARK_ACCENT,
+        BUTTON_BASE_ACCENT,
+        BUTTON_BRIGHT_ACCENT);
 
     // The map-tab palette built with the engine's own roles stubbed out. The settings proxy goes in before
     // Mockito touches Misc, whose static initialiser reads it; the palette is resolved inside the stub's
@@ -122,10 +128,7 @@ final class TabPaletteTest {
     // engine stub around it: a vanilla button is built from an accent set and reads no settings role, so
     // the factory is handed everything it paints from.
     private static TabPalette buildRaisedButtonPalette() {
-        return TabPalette.createRaisedButtonPalette(
-            BUTTON_DARK_ACCENT,
-            BUTTON_BASE_ACCENT,
-            BUTTON_LIT_LABEL);
+        return TabPalette.createRaisedButtonPalette(BUTTON_ACCENT);
     }
 
     @Nested
@@ -339,9 +342,9 @@ final class TabPaletteTest {
             var palette = buildRaisedButtonPalette();
 
             assertThat(palette.selected().label())
-                .isEqualTo(BUTTON_LIT_LABEL);
+                .isEqualTo(BUTTON_BRIGHT_ACCENT);
             assertThat(palette.hovered().label())
-                .isEqualTo(BUTTON_LIT_LABEL);
+                .isEqualTo(BUTTON_BRIGHT_ACCENT);
         }
 
         @Test
