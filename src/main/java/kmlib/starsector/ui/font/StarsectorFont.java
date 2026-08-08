@@ -34,6 +34,16 @@ public enum StarsectorFont {
     VANILLA_ORBITRON_12_CONDENSED("orbitron12condensed", 12),
 
     /**
+     * The pixel face vanilla sets its compact chrome in - the map-toggle buttons above the intel
+     * screen's visor - so a KM row drawn to sit among those buttons is lettered the way they are.
+     *
+     * <p>Its atlas draws capitals whatever case a caller writes: every glyph sits on the same 5x5
+     * cell with lowercase included and no descenders, so a mixed-case label needs no upper-casing
+     * pass and the width it is measured at is the width it draws at.
+     */
+    VANILLA_VICTOR_10("victor10", 10),
+
+    /**
      * The highest-resolution antialiased atlas the game ships, and so the only one that stays clean
      * when text is magnified far past its native size.
      */

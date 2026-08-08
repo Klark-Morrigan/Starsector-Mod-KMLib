@@ -29,9 +29,9 @@ import java.util.List;
  * <p>A tabs row reaches the screen two ways, and both come through here so a tab is hit exactly where it
  * is drawn either way. In a strip <strong>body</strong> it is an ordinary stacked control, measured and
  * split like the rest ({@link #measureRowWidth}, {@link #splitIntoSegments}). As a panel
- * <strong>header</strong> it is laid flush at the interior top, at the band height an injected
- * {@link TabStyle} states ({@link #layoutHeaderControl}). The two differ only in where the band hangs
- * and how tall it stands - never in how a tab within it snaps.
+ * <strong>header</strong> it is laid flush at the interior top, at the band height and in the face an
+ * injected {@link TabStyle} states ({@link #layoutHeaderControl}). The two differ only in where the band
+ * hangs, how tall it stands, and what it is measured in - never in how a tab within it snaps.
  *
  * <p>UI coordinates throughout (origin bottom-left, y grows up); text snapping runs through the injected
  * {@link LineWidthMeasurer}, so this stays a pure computation like the rest of the package.
@@ -40,11 +40,11 @@ public final class TabsControlLayout {
 
     // Tabs-row geometry: a TABS row stands one tab-height tall (taller than a body row, since the tab
     // face is larger), each tab snapped to its label-plus-shortcut width with slack so text does not
-    // touch the edges and a floor so a short tab still gives a clickable box, and measured at the tab
-    // face size. Public so a host framing chrome around a tab row, or drawing into one, reads the same
-    // values the tabs were snapped to. The height reads off the baseline dimension rather than
-    // repeating its literal, so a body TABS row - which sizes itself and takes no injected style -
-    // matches an unstyled header band.
+    // touch the edges and a floor so a short tab still gives a clickable box. Public so a host framing
+    // chrome around a tab row, or drawing into one, reads the same values the tabs were snapped to. The
+    // height and the font size are both baselines for the unstyled body row - a styled header snaps to
+    // the band and the face its own style names - so a body TABS row, which sizes itself and takes no
+    // injected style, matches an unstyled header band.
     public static final float TAB_HEIGHT = TabStyle.DEFAULT_HEADER_BAND_HEIGHT;
     public static final float TAB_TEXT_PADDING = 16f;
     public static final float MIN_TAB_WIDTH = 48f;
@@ -97,17 +97,23 @@ public final class TabsControlLayout {
             TabStyle tabStyle,
             LineWidthMeasurer measurer) {
 
+        // Snapped at the size the style paints its labels at, not at the baseline below: a header wears
+        // its host's face, so two hosts on different faces snap their tabs to what each will actually
+        // draw. The face reaches the measurement anyway (the caller loads its measurer from the style);
+        // taking the size off the same value is what stops a tab being sized in one face and lettered in
+        // another.
+        var fontSize = tabStyle.face().size();
         var bandHeight = tabStyle.headerBandHeight();
         var bounds = new Rectangle(
             originX,
             topY - bandHeight,
-            measureRowWidth(tabs, measurer),
+            measureRowWidth(tabs, measurer, fontSize),
             bandHeight);
 
         return new Control(
             tabs,
             bounds,
-            splitIntoSegments(tabs, bounds, measurer));
+            splitIntoSegments(tabs, bounds, measurer, fontSize));
     }
 
     /**
@@ -115,15 +121,15 @@ public final class TabsControlLayout {
      * width through the shared {@link VanillaTabStrip} geometry - the same snap {@link #splitIntoSegments}
      * later applies - so the measured row is exactly as wide as the drawn tabs.
      *
+     * <p>Measured at the baseline tab size, this being the body path: a tabs row stacked inside a strip
+     * carries no style to name a size of its own, the same reason it stands at {@link #TAB_HEIGHT}.
+     *
      * @param tabs     the tabs control, its labels and per-tab shortcuts in row order
      * @param measurer measures each tab label's rendered width for snapping
      * @return the row width the tabs occupy side by side
      */
     static float measureRowWidth(ControlSpec.Tabs tabs, LineWidthMeasurer measurer) {
-        return VanillaTabStrip.measureRowWidth(
-            buildTabContents(tabs),
-            buildSegmentSpec(),
-            measurer);
+        return measureRowWidth(tabs, measurer, TAB_FONT_SIZE);
     }
 
     /**
@@ -132,6 +138,9 @@ public final class TabsControlLayout {
      * fill the row they were laid into rather than a fixed height, so a header band standing at an
      * injected height splits into tabs of that height instead of segments floating loose in a taller or
      * shorter band.
+     *
+     * <p>Snapped at the baseline tab size for the same reason {@link #measureRowWidth} is - this is the
+     * body path, which carries no style.
      *
      * @param tabs     the tabs control, its labels and per-tab shortcuts in row order
      * @param row      the row the tabs were laid into - a stacked strip row, or a header band
@@ -142,12 +151,48 @@ public final class TabsControlLayout {
             ControlSpec.Tabs tabs,
             Rectangle row,
             LineWidthMeasurer measurer) {
+        return splitIntoSegments(tabs, row, measurer, TAB_FONT_SIZE);
+    }
+
+    // The segment-sizing rule for a tabs row: the tab padding, minimum, and the size the labels are
+    // measured at. A tabs row always snaps each tab to its own label-plus-shortcut width, so this reads
+    // SNAPPED. One rule behind both the width measurement and the segment split, so the two cannot size
+    // a tab differently.
+    private static SegmentSpec buildSegmentSpec(double fontSize) {
+        return new SegmentSpec(
+            TAB_TEXT_PADDING,
+            MIN_TAB_WIDTH,
+            fontSize,
+            SegmentSizing.SNAPPED);
+    }
+
+    // The row width at a named measurement size. The size is a parameter rather than the constant
+    // because a header takes its host's face while a body row takes the baseline; both go through this
+    // one snap, so a header and a body row cannot come to size a tab by different rules.
+    private static float measureRowWidth(
+            ControlSpec.Tabs tabs,
+            LineWidthMeasurer measurer,
+            double fontSize) {
+
+        return VanillaTabStrip.measureRowWidth(
+            buildTabContents(tabs),
+            buildSegmentSpec(fontSize),
+            measurer);
+    }
+
+    // The hit segments at a named measurement size - the split half of the rule above, taking the size
+    // the same way so a row is split exactly as it was measured.
+    private static List<Rectangle> splitIntoSegments(
+            ControlSpec.Tabs tabs,
+            Rectangle row,
+            LineWidthMeasurer measurer,
+            double fontSize) {
 
         var laidOut = VanillaTabStrip.layoutTabs(
             row.x(),
             row.y() + row.height(),
             row.height(),
-            buildSegmentSpec(),
+            buildSegmentSpec(fontSize),
             buildTabContents(tabs),
             measurer);
 
@@ -156,16 +201,5 @@ public final class TabsControlLayout {
             segments.add(tab.bounds());
         }
         return List.copyOf(segments);
-    }
-
-    // The segment-sizing rule for a tabs row: the tab padding, minimum, and tab font. A tabs row always
-    // snaps each tab to its own label-plus-shortcut width, so this reads SNAPPED. One rule behind both
-    // the width measurement and the segment split, so the two cannot size a tab differently.
-    private static SegmentSpec buildSegmentSpec() {
-        return new SegmentSpec(
-            TAB_TEXT_PADDING,
-            MIN_TAB_WIDTH,
-            TAB_FONT_SIZE,
-            SegmentSizing.SNAPPED);
     }
 }

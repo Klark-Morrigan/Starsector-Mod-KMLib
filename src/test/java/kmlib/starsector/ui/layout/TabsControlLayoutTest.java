@@ -3,6 +3,8 @@ package kmlib.starsector.ui.layout;
 import kmlib.starsector.ui.controls.ControlAction;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
+import kmlib.starsector.ui.font.StarsectorFont;
+import kmlib.starsector.ui.font.TextFace;
 import kmlib.starsector.ui.widgets.tabs.style.TabStyles;
 import kmlib.testfixtures.starsector.ui.font.LineWidthMeasurerFake;
 
@@ -41,7 +43,21 @@ final class TabsControlLayoutTest {
         0,
         ControlAction.NONE);
 
+    // A face at a size no baseline names, so a row measured at the style's size cannot be mistaken for
+    // one measured at the layout's own constant. Which atlas it names never shows - nothing here loads a
+    // font - so it is a real one at an invented size rather than an invented face.
+    private static final double STYLED_FONT_SIZE = 8d;
+    private static final TextFace STYLED_FACE = new TextFace(
+        StarsectorFont.VANILLA_ORBITRON_20AA,
+        STYLED_FONT_SIZE);
+
     private final LineWidthMeasurer measurerFake = new LineWidthMeasurerFake(WIDTH_PER_CHAR);
+
+    // Widths that scale with the size they are asked for, unlike the shared fake above, which reports one
+    // width per character whatever size it is handed. The size the layout chose is invisible to a
+    // size-blind measurer, so pinning that choice needs a measurer that spends it.
+    private final LineWidthMeasurer sizeScaledMeasurerFake =
+        (line, fontSize) -> line.length() * fontSize;
 
     @Nested
     class BuildTabContents {
@@ -117,6 +133,24 @@ final class TabsControlLayoutTest {
 
             assertThat(header.bounds().width())
                 .isCloseTo(first + second, within(TOLERANCE));
+        }
+
+        @Test
+        void layoutHeaderControlSnapsItsTabsAtTheSizeItsStyleLettersThemIn() {
+            // A header wears its host's face, so a host on a smaller face would otherwise letter its
+            // tabs into boxes cut for the baseline size - text adrift in a row measured for another
+            // face. The same 8- and 13-character labels as above, measured at the style's size of 8
+            // and each given the 16 of tab padding: 80 and 120, so 200 across. At the layout's own
+            // baseline of 15 the row would come out 347 instead.
+            var header = TabsControlLayout.layoutHeaderControl(
+                TABS,
+                HEADER_X,
+                HEADER_TOP_Y,
+                TabStyles.buildAtBandHeightInFace(BAND_HEIGHT, STYLED_FACE),
+                sizeScaledMeasurerFake);
+
+            assertThat(header.bounds().width())
+                .isCloseTo(200f, within(TOLERANCE));
         }
 
         @Test

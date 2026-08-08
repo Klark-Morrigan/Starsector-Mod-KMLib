@@ -58,6 +58,19 @@ public final class TabStyles {
      * @return the tab style at that band height
      */
     public static TabStyle buildAtBandHeight(float headerBandHeight) {
+        return buildAtBandHeightInFace(headerBandHeight, STAND_IN_FACE);
+    }
+
+    /**
+     * Builds a tab style standing its band at the given height and lettered in the given face - for a
+     * test whose subject is the face itself, the size a row is measured at being the one thing a style's
+     * face decides for the layout.
+     *
+     * @param headerBandHeight how tall the tab band stands, passed through as above
+     * @param face             the face the tabs are measured and drawn in
+     * @return the tab style at that band height and face
+     */
+    public static TabStyle buildAtBandHeightInFace(float headerBandHeight, TextFace face) {
         return new TabStyle(
             // The map's own chrome, which no test here draws: these assert dimensions and geometry, and a
             // chrome is read only at paint time.
@@ -65,6 +78,6 @@ public final class TabStyles {
             headerBandHeight,
             STAND_IN_PALETTE,
             STAND_IN_HOTKEY,
-            STAND_IN_FACE);
+            face);
     }
 }

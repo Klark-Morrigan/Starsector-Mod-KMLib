@@ -23,6 +23,7 @@ class StarsectorFontTest {
             case VANILLA_INSIGNIA_15 -> "graphics/fonts/insignia15LTaa.fnt";
             case VANILLA_ORBITRON_20AA -> "graphics/fonts/orbitron20aa.fnt";
             case VANILLA_ORBITRON_12_CONDENSED -> "graphics/fonts/orbitron12condensed.fnt";
+            case VANILLA_VICTOR_10 -> "graphics/fonts/victor10.fnt";
             case VANILLA_INSIGNIA_42 -> "graphics/fonts/insignia42LTaa.fnt";
             };
 
@@ -54,6 +55,10 @@ class StarsectorFontTest {
             case VANILLA_INSIGNIA_15 -> 15;
             case VANILLA_ORBITRON_20AA -> 20;
             case VANILLA_ORBITRON_12_CONDENSED -> 12;
+            // The descriptor spells it "size=-10": BMFont writes the height it matched as a negative
+            // when the face was rasterised to a character height rather than to a point size, so the
+            // atlas is a 10 and the sign is the setting it was made with.
+            case VANILLA_VICTOR_10 -> 10;
             case VANILLA_INSIGNIA_42 -> 42;
             };
 
