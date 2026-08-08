@@ -151,6 +151,14 @@ final class TabsControlLayoutTest {
 
             assertThat(header.bounds().width())
                 .isCloseTo(200f, within(TOLERANCE));
+
+            // The segments are asserted beside the row because the two are snapped by separate calls:
+            // a split left on the baseline while the row followed the style would measure the band
+            // correctly and still hand the renderer boxes the tabs are not drawn in.
+            assertThat(header.segments().get(0).width())
+                .isCloseTo(80f, within(TOLERANCE));
+            assertThat(header.segments().get(1).width())
+                .isCloseTo(120f, within(TOLERANCE));
         }
 
         @Test
