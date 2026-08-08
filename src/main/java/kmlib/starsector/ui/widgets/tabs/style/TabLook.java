@@ -13,7 +13,9 @@ import java.awt.Color;
  * <p>The two travel together rather than as separate palette roles, so a state cannot be given a fill
  * without the label meant to sit legibly on it.
  *
- * @param fill  the solid fill covering the tab; the tab's own surface, not a tint over a backdrop
+ * @param fill  the fill covering the tab; how solid it is is the fill's own, so a chrome standing its
+ *              tabs on a backing states an unpainted interior as a fill at zero alpha rather than as a
+ *              state its paint pass skips
  * @param label the colour the tab's label text reads in against that fill
  */
 public record TabLook(
@@ -29,6 +31,11 @@ public record TabLook(
      * <p>Held here rather than at each consumer because the ends of a fade are looks whichever animation
      * drives it, so a hover, a blink, and any later look-to-look travel move a tab the same way.
      *
+     * <p>How solid each shade is travels with it. A chrome whose resting state is an unpainted interior
+     * names that as a fill at zero alpha, so a fade that carried the starting alpha across would leave the
+     * whole travel invisible; a chrome whose looks are all opaque surfaces interpolates 255 to 255 and is
+     * untouched by the same rule.
+     *
      * @param targetLook the look being travelled toward
      * @param fraction   how far along the way, 0 (this look) to 1 (the target); confined to that range so a
      *                   composed value that overshoots settles on the target rather than blending past it
@@ -39,8 +46,8 @@ public record TabLook(
         var travelled = Ranges.clampToUnit(fraction);
 
         return new TabLook(
-            Colours.blendRgbTowards(fill, targetLook.fill(), travelled),
-            Colours.blendRgbTowards(label, targetLook.label(), travelled));
+            Colours.blendTowards(fill, targetLook.fill(), travelled),
+            Colours.blendTowards(label, targetLook.label(), travelled));
     }
 
     /**

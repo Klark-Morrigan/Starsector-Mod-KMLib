@@ -45,6 +45,12 @@ final class TabPaletteTest {
     // A fully opaque alpha channel, so a fill assertion reads as "a surface" rather than as a bare 255.
     private static final int OPAQUE_ALPHA = 255;
 
+    // The other end of the same channel, for the one chrome whose resting interior is not painted at all.
+    private static final int UNPAINTED_ALPHA = 0;
+
+    // A lift that moves a tab nowhere, for the chrome copying an engine control with no pressed state.
+    private static final float NO_LIFT = 0f;
+
     private static final TabPalette PALETTE = new TabPalette(
         CHROME_ACCENT,
         UNSELECTED_LOOK,
@@ -70,6 +76,15 @@ final class TabPaletteTest {
     // skipped the composite and took the raw value - comes out a number this test does not expect.
     private static final String BUTTON_BG_DARK_KEY = "buttonBgDark";
     private static final Color STUBBED_BUTTON_BG_DARK = new Color(31, 94, 112, 175);
+
+    // The three steps of the accent a raised-button row is built from. Handed in rather than stubbed: a
+    // vanilla button takes its whole look from an accent set, so that factory reads no engine role at all.
+    // The stock install's own dark and base steps, so the shades below are the ones the engine's own
+    // buttons wear; the lit label is a shade unlike either, so a label taking the wrong step shows as a
+    // number this test does not expect.
+    private static final Color BUTTON_DARK_ACCENT = new Color(31, 94, 112, 175);
+    private static final Color BUTTON_BASE_ACCENT = new Color(165, 230, 255);
+    private static final Color BUTTON_LIT_LABEL = new Color(203, 245, 255);
 
     // The map-tab palette built with the engine's own roles stubbed out. The settings proxy goes in before
     // Mockito touches Misc, whose static initialiser reads it; the palette is resolved inside the stub's
@@ -101,6 +116,16 @@ final class TabPaletteTest {
         } finally {
             StarsectorSettingsFake.clearSettings();
         }
+    }
+
+    // The raised-button palette over the three accent steps above, the pairing its cases all read. No
+    // engine stub around it: a vanilla button is built from an accent set and reads no settings role, so
+    // the factory is handed everything it paints from.
+    private static TabPalette buildRaisedButtonPalette() {
+        return TabPalette.createRaisedButtonPalette(
+            BUTTON_DARK_ACCENT,
+            BUTTON_BASE_ACCENT,
+            BUTTON_LIT_LABEL);
     }
 
     @Nested
@@ -260,6 +285,72 @@ final class TabPaletteTest {
 
             assertThat(palette.hovered().label())
                 .isEqualTo(palette.selected().label());
+        }
+    }
+
+    @Nested
+    class CreateRaisedButtonPalette {
+
+        @Test
+        void createRaisedButtonPaletteRulesTheRowInTheDarkStepItIsHanded() {
+            // The engine frames its own buttons in the dark member of the accent it builds them from, so
+            // this chrome's rule is that step rather than a shade chosen beside it - which is the whole of
+            // why the frame stops moving with the fill.
+            assertThat(buildRaisedButtonPalette().chromeAccent())
+                .isEqualTo(BUTTON_DARK_ACCENT);
+        }
+
+        @Test
+        void createRaisedButtonPaletteLeavesARestingButtonsInteriorUnpainted() {
+            // The departure from every other palette here, and the one the chrome reads as "draw nothing":
+            // a button not being shown is the backing and the frame with no interior, stated as a fill at
+            // zero alpha rather than as a state the paint pass tests for.
+            assertThat(buildRaisedButtonPalette().unselected().fill().getAlpha())
+                .isEqualTo(UNPAINTED_ALPHA);
+        }
+
+        @Test
+        void createRaisedButtonPaletteFillsTheShownButtonWithTheDarkStepOverTheBacking() {
+            // The dark step (31, 94, 112 at alpha 175) composited onto black - what the engine's own lit
+            // buttons wear, taken from the accent handed in rather than named here.
+            assertThat(buildRaisedButtonPalette().selected().fill())
+                .isEqualTo(new Color(21, 65, 77, OPAQUE_ALPHA));
+        }
+
+        @Test
+        void createRaisedButtonPaletteLightsThePointedButtonWithItsBaseStep() {
+            // The shown button's interior plus 0.175 of the base accent undiluted, which is how a vanilla
+            // button brightens - not the whitened glow a tab takes.
+            assertThat(buildRaisedButtonPalette().hovered().fill())
+                .isEqualTo(new Color(50, 105, 122, OPAQUE_ALPHA));
+        }
+
+        @Test
+        void createRaisedButtonPaletteReadsAnUntouchedButtonsLabelInTheBaseStep() {
+            // The colour the engine builds a button's text from, which an untouched one wears as it comes.
+            assertThat(buildRaisedButtonPalette().unselected().label())
+                .isEqualTo(BUTTON_BASE_ACCENT);
+        }
+
+        @Test
+        void createRaisedButtonPaletteSwitchesALitButtonsLabelToTheBrighterStep() {
+            // Both lit states, as on the strip: the labels part by colour, and the fills - which stand at
+            // different glows - are what tell the shown button from the pointed-at one.
+            var palette = buildRaisedButtonPalette();
+
+            assertThat(palette.selected().label())
+                .isEqualTo(BUTTON_LIT_LABEL);
+            assertThat(palette.hovered().label())
+                .isEqualTo(BUTTON_LIT_LABEL);
+        }
+
+        @Test
+        void createRaisedButtonPaletteAnswersAPressWithNoLiftAtAll() {
+            // The engine's own intel buttons hold no shade while the pointer is down. Stated as a depth of
+            // zero rather than as a wash the chrome declines to paint, so the pulse still runs and the
+            // press still sounds - the palette says what a press looks like, not whether one happened.
+            assertThat(buildRaisedButtonPalette().resolveWash(TabWashState.CLICKED).strength())
+                .isEqualTo(NO_LIFT);
         }
     }
 }

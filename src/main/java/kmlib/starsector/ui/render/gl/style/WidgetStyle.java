@@ -20,7 +20,7 @@ import kmlib.starsector.ui.widgets.tabs.style.TabStyle;
  * bare {@code Color}s in a row would be four positions a caller could transpose with nothing to catch
  * it - a frame stroked in the tick colour compiles and paints. Grouped by what each dresses, the same
  * slip is a compile error, and each group is small enough that what remains transposable inside one is
- * two shades named a line apart. The handle and the tabs were already grouped this way, for their own
+ * a handful of shades named a line apart, ordered so a transposition reads wrong. The handle and the tabs were already grouped this way, for their own
  * reason: each is chrome a consumer may want pitched apart from the panel's accents, so its shades are
  * swapped wholesale.
  *
@@ -31,7 +31,8 @@ import kmlib.starsector.ui.widgets.tabs.style.TabStyle;
  * a host has one place to state its presentation rather than one for the seen half and one for the heard.
  *
  * @param boxColours    the backdrop and frame shades the box itself is drawn in
- * @param accentColours the accent pair every control on the panel washes, labels, and ticks with
+ * @param accentColours the accent steps every control on the panel recedes, washes, labels, and ticks
+ *                      with
  * @param bodyFont      the atlas the body-control labels draw in
  * @param tabStyle      the tab look a tabs control draws in; only its colours and face are read here,
  *                      its band height being the layout's side of the same value

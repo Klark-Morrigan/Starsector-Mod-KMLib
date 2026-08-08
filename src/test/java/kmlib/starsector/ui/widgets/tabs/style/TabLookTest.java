@@ -37,7 +37,7 @@ final class TabLookTest {
             var blended = LOOK.computeBlendedLook(TARGET_LOOK, 0.5f);
 
             assertThat(blended.fill())
-                .isEqualTo(new Color(50, 150, 100, 128));
+                .isEqualTo(new Color(50, 150, 100, 80));
         }
 
         @Test
@@ -46,21 +46,33 @@ final class TabLookTest {
             var blended = LOOK.computeBlendedLook(TARGET_LOOK, 0.5f);
 
             assertThat(blended.label())
-                .isEqualTo(new Color(100, 150, 50, 255));
+                .isEqualTo(new Color(100, 150, 50, 160));
         }
 
         @Test
-        void computeBlendedLookKeepsEachShadesOwnAlphaRatherThanTheTargets() {
-            // The strip fades as a unit through its own opacity, so a look's alpha is the shade's own and
-            // must survive a blend - a fade that carried the target's alpha across would make a hovered tab
-            // change transparency as well as colour.
+        void computeBlendedLookCarriesHowSolidEachShadeIsAcrossToo() {
+            // How solid a look is is part of the look, not a property of the shade it started from: a
+            // chrome whose resting state is an unpainted interior states that as a fill at zero alpha, so
+            // a fade that kept the starting alpha would never bring the target's surface in at all.
             var blended = LOOK.computeBlendedLook(TARGET_LOOK, 1f);
 
             assertThat(blended)
                 .isEqualTo(
                     new TabLook(
-                        new Color(100, 200, 0, 128),
-                        new Color(0, 200, 100, 255)));
+                        new Color(100, 200, 0, 32),
+                        new Color(0, 200, 100, 64)));
+        }
+
+        @Test
+        void computeBlendedLookBringsAFadeOffAnUnpaintedFillAllTheWayToItsSurface() {
+            // The raised button's own case, spelt out because it is what the alpha travel is for: a tab
+            // resting on nothing but its backing arrives at the same opaque interior a settled one wears
+            // rather than staying invisible while its colour changes underneath it.
+            var unpainted = new TabLook(new Color(21, 65, 77, 0), new Color(165, 230, 255, 255));
+            var lit = new TabLook(new Color(50, 105, 122, 255), new Color(203, 245, 255, 255));
+
+            assertThat(unpainted.computeBlendedLook(lit, 1f).fill())
+                .isEqualTo(new Color(50, 105, 122, 255));
         }
 
         @Test
@@ -82,7 +94,7 @@ final class TabLookTest {
             var blended = LOOK.computeBlendedLook(TARGET_LOOK, 1.5f);
 
             assertThat(blended.fill())
-                .isEqualTo(new Color(100, 200, 0, 128));
+                .isEqualTo(new Color(100, 200, 0, 32));
         }
     }
 

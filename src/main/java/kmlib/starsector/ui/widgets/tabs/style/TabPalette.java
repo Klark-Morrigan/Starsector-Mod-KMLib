@@ -8,15 +8,17 @@ import java.awt.Color;
 /**
  * The paint a {@link VanillaTabStrip} wears: the accent its chrome is ruled in, the settled look of each
  * {@link TabLookState}, and the lift each {@link TabWashState} raises a tab by. Kept as a record so a
- * consumer can override any one of them, with {@link #createMapTabPalette} supplying the live vanilla
- * map-tab values through the {@link StarsectorUiColour} palette, so a strip follows a restyled install
- * and never receives a null shade from an early-boot accessor.
+ * consumer can override any one of them, with a factory per chrome supplying the live vanilla values -
+ * {@link #createMapTabPalette} for the map's strip and {@link #createRaisedButtonPalette} for the intel
+ * screen's buttons - so a row follows a restyled install and never receives a null shade from an
+ * early-boot accessor.
  *
- * <p>What it follows is the install's settings, not the player's faction. Every fill and every label is
- * worked out from the two colours the engine paints its own tabs with, which take no faction tint at all.
- * The chrome accent ruling the row is the one value with no vanilla counterpart to copy - a vanilla tab
- * strip has no such rule - so the factory takes it from its caller rather than picking one: which shade a
- * row is ruled in is a question about the panel the row belongs to, and only that panel can answer it.
+ * <p>The two factories differ in where their shades come from, because the engine's own two chromes do.
+ * A vanilla tab is painted from the button roles in settings and takes no faction tint at all, so the map
+ * factory reads those roles through {@link StarsectorUiColour} itself; a vanilla button is built from a
+ * whole three-colour accent and takes nothing else, so the button factory is handed one. What each
+ * factory cannot pick is which accent that is: which palette a row answers to is a question about the
+ * panel it belongs to, and only that panel can answer it.
  *
  * <p>Two flavours sit here for the reason they are separate types: a look is a shade a tab settles on, a
  * momentary state a brief lift over whichever look it has settled on. Naming the hovered shade outright
@@ -53,6 +55,12 @@ public record TabPalette(
     // the strip has no other use for.
     private static final float PRESS_GLOW_LIFT = 0.25f;
 
+    // A press that shows nothing, for a chrome copying an engine control that takes no pressed state at
+    // all. Stated as a depth of zero rather than as an absent wash: the lift is still resolved and still
+    // decays, so the moments the panel hangs on a running pulse - the press sound among them - are the
+    // same under either chrome.
+    private static final float NO_PRESS_LIFT = 0f;
+
     /**
      * The live vanilla map-tab paint: the caller's accent for the chrome, the three map-tab fills and
      * labels the engine's own tabs settle on, and the lift a press raises one by. Everything vanilla
@@ -82,8 +90,9 @@ public record TabPalette(
      * glyph's coverage gives irreconcilable answers against the blue and one consistent answer against the
      * grey.
      *
-     * <p>The lifts over these looks blend RGB alone, so a look that starts opaque - as all three fills do -
-     * stays opaque through every hover, blink, and click.
+     * <p>Every fill here is opaque, so a tab painted from this palette stays a surface throughout: a lift
+     * blends RGB alone, and a fade between two of these looks interpolates an alpha that is 255 at both
+     * ends.
      *
      * @param chromeAccent the shade the row's dividers and baseline are ruled in, the panel's own to
      *                     choose - see the note on this type
@@ -128,6 +137,64 @@ public record TabPalette(
             // its own glow colour, so a press aimed at white would be the one shade on the strip travelling
             // in a direction none of the fills do - most visible exactly when the player is looking at it.
             new TabWash(VanillaTabFills.resolveGlowColour(restingLabel), PRESS_GLOW_LIFT));
+    }
+
+    /**
+     * The vanilla raised-button paint, from the three steps of the accent the engine builds one of its own
+     * buttons with. Where the map-tab palette above reads the engine for its shades, this one is handed
+     * them: a vanilla button takes its whole look from the faction's three-colour set rather than from the
+     * button roles in settings, so which set that is is the panel's question and not this factory's.
+     *
+     * <p>The three looks are the dark step at the two lit amounts {@link VanillaButtonFills} names, plus an
+     * unpainted resting interior. Resting is stated as a fill at zero alpha rather than as a state the
+     * chrome skips, so a button not being shown is the chrome's own backing and frame with nothing inside
+     * them - and the travel onto either lit state is that one interior fading in.
+     *
+     * <p>The labels part by colour rather than by amount, as the map tabs' do: an untouched button reads in
+     * the accent it was built from, and one being shown or pointed at in the brighter step reserved for
+     * marks that must stand against it.
+     *
+     * <p>A press paints nothing here. The engine's own intel buttons hold no lit shade while the pointer is
+     * down - they answer a click with their sound alone - so the click lift is stated at zero strength
+     * rather than left for the chrome to opt out of: the pulse still runs, and the panel still sounds it,
+     * because what a press does is the palette's to say and not the paint pass's.
+     *
+     * @param darkAccent  the accent's dark step, which the engine fills and frames a button with; taken as
+     *                    the chrome accent too, that being what frames the row here
+     * @param baseAccent  the accent's base step - the label an untouched button reads in, and the light the
+     *                    pointer adds over a lit interior
+     * @param litLabel    the accent's brighter step, which a button being shown or pointed at labels in
+     * @return the vanilla raised-button palette
+     */
+    public static TabPalette createRaisedButtonPalette(
+            Color darkAccent,
+            Color baseAccent,
+            Color litLabel) {
+
+        // The backing the chrome lays under every button, which the dark step is composited onto. Black
+        // rather than the host's own panel fill for the reason the tab paint above takes black: a button
+        // row stands wherever its panel does, and a shade measured against one surface would be wrong over
+        // the others.
+        var buttonPaint = new VanillaButtonPaint(
+            darkAccent,
+            baseAccent,
+            StarsectorUiColour.BLACK.resolve());
+
+        return new TabPalette(
+            darkAccent,
+            new TabLook(
+                VanillaButtonFills.resolveUnpaintedFill(buttonPaint),
+                baseAccent),
+            new TabLook(
+                VanillaButtonFills.resolveFillAtGlow(buttonPaint, VanillaButtonFills.NO_GLOW),
+                litLabel),
+            new TabLook(
+                VanillaButtonFills.resolveFillAtGlow(buttonPaint, VanillaButtonFills.POINTED_GLOW),
+                litLabel),
+            // Aimed along the same axis the interiors brighten by, so the day this chrome does want a
+            // visible press it lifts toward the shade its lit states already travel to rather than toward
+            // one named nowhere.
+            new TabWash(baseAccent, NO_PRESS_LIFT));
     }
 
     /**

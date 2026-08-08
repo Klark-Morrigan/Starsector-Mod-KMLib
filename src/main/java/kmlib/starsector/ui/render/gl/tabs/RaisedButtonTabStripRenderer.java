@@ -1,5 +1,6 @@
 package kmlib.starsector.ui.render.gl.tabs;
 
+import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.render.gl.UiBoxes;
 import kmlib.starsector.ui.render.gl.UiElementPaint;
 import kmlib.starsector.ui.render.gl.UiFill;
@@ -9,8 +10,10 @@ import kmlib.starsector.ui.widgets.tabs.TabLookSource;
 import kmlib.starsector.ui.widgets.tabs.TabWashSource;
 import kmlib.starsector.ui.widgets.tabs.VanillaTab;
 import kmlib.starsector.ui.widgets.tabs.VanillaTabStrip;
+import kmlib.starsector.ui.widgets.tabs.style.TabPalette;
 import kmlib.starsector.ui.widgets.tabs.style.TabStyle;
 
+import java.awt.Color;
 import java.util.List;
 
 /**
@@ -25,19 +28,34 @@ import java.util.List;
  * chromes animate identically and neither computes any timing. Selection is not asked for here either -
  * the lit tab arrives on its own shade, exactly as it does on the strip.
  *
- * <p>The frame takes the look's own label colour rather than the palette's chrome accent, which is what
- * makes a lit button read as lit all over: the look's three shades are one colour at the engine's three
- * glow amounts, so a frame drawn from it brightens with the fill and the text under the pointer instead of
- * standing at one tone while they move. It also keeps this pass selection-blind - "brighter frame when
- * shown" falls out of the look it was handed rather than out of a state it would have to be told.
+ * <p>A button is a constant frame around a changing interior, which is the whole of how it differs from a
+ * tab. The two hairlines and the backing beneath them are drawn the same whatever the button is doing, and
+ * only the interior quad moves with the look - matching the engine's own buttons, whose outline never
+ * shifts and whose fill carries the entire signal. A frame that brightened with the fill would be the one
+ * thing on the row moving that the row it was drawn to match holds still.
  *
- * <p>Opacity scales the fill, the frame, and the text alike, so a button fades as one piece. GL
- * passthrough (over {@link UiFill} and {@link UiBoxes}), exercised in-engine like the other draw helpers.
+ * <p>The backing is why a button reads as a button over a lit map: the interior it stands under is the
+ * accent's dark step, translucent as the engine keeps it, so without something solid beneath it a button
+ * over a bright nebula would read as a tinted patch of map. A button not being shown paints no interior at
+ * all, that state arriving as a fill at zero alpha rather than as a case this pass tests for.
+ *
+ * <p>Opacity scales the backing, the frames, the fill, and the text alike, so a button fades as one piece.
+ * GL passthrough (over {@link UiFill} and {@link UiBoxes}), exercised in-engine like the other draw
+ * helpers.
  */
 public final class RaisedButtonTabStripRenderer {
 
-    // The button outline's weight, matching the hairline the engine's own buttons are framed in.
+    // The button outline's weight, matching the hairline the engine's own buttons are framed in. Both
+    // frames are drawn at it, so the pair reads as one two-tone edge rather than as a line and a shadow.
     private static final float FRAME_THICKNESS = 1f;
+
+    // How far in the interior sits: clear of both hairlines, so neither is painted over by a lit fill.
+    private static final float INTERIOR_INSET = 2f * FRAME_THICKNESS;
+
+    // How solid the backing under a button is. Short of opaque, so the map still shows faintly through a
+    // row that would otherwise read as a solid bar laid across the screen, and far enough from clear that
+    // a button over the brightest content it can stand on still holds its own shape.
+    private static final float BACKING_ALPHA = 0.75f;
 
     private RaisedButtonTabStripRenderer() {
     }
@@ -52,8 +70,9 @@ public final class RaisedButtonTabStripRenderer {
      *                blended into it here, so this pass only paints it
      * @param washes  where each tab's resolved lift comes from - the interaction is already composed into
      *                a wash here, so this pass only paints it
-     * @param style   the row's look; its hotkey presentation and its face are read here, its band height
-     *                having been spent laying the tabs out
+     * @param style   the row's look; its palette's chrome accent (see
+     *                {@link TabPalette#createRaisedButtonPalette}), its hotkey presentation, and its face
+     *                are read here, its band height having been spent laying the tabs out
      * @param opacity overall alpha, 0..1, applied to every quad and every text colour
      */
     public static void render(
@@ -63,6 +82,8 @@ public final class RaisedButtonTabStripRenderer {
             TabStyle style,
             float opacity) {
 
+        var chromeAccent = style.palette().chromeAccent();
+
         TabChromeRenderer.paintEachTab(tabs, looks, washes, (tab, look) -> {
 
             // The button inside the laid tab, its gap to either neighbour taken out of the tab rather than
@@ -70,13 +91,30 @@ public final class RaisedButtonTabStripRenderer {
             // two buttons still answers to whichever one it was laid inside.
             var buttonBox = RaisedButtonTabStrip.computeButtonBox(tab.bounds());
 
-            UiFill.renderQuad(buttonBox, new UiElementPaint(look.fill(), opacity));
-            UiBoxes.renderBorder(
-                buttonBox,
-                new BoxBorder(FRAME_THICKNESS),
-                new UiElementPaint(look.label(), opacity));
+            renderButtonChrome(buttonBox, chromeAccent, opacity);
+            UiFill.renderQuad(
+                buttonBox.computeInsetBox(INTERIOR_INSET),
+                new UiElementPaint(look.fill(), opacity));
 
             TabLabelRenderer.renderCentredLabel(buttonBox, tab.content(), look, style, opacity);
         });
+    }
+
+    // What every button wears whatever its state: a backing solid enough to stand on live content, an
+    // outer hairline in the accent's dark step, and an inner one in black. The pair of hairlines is what
+    // gives the engine's own buttons their weight against a lit map - a single line reads as a hairline
+    // sitting on whatever is behind it, two read as an edge - and neither answers to the look, so a button
+    // being shown differs from a resting one in its interior alone.
+    private static void renderButtonChrome(Rectangle buttonBox, Color chromeAccent, float opacity) {
+
+        UiFill.renderQuad(buttonBox, new UiElementPaint(Color.BLACK, opacity * BACKING_ALPHA));
+        UiBoxes.renderBorder(
+            buttonBox,
+            new BoxBorder(FRAME_THICKNESS),
+            new UiElementPaint(chromeAccent, opacity));
+        UiBoxes.renderBorder(
+            buttonBox.computeInsetBox(FRAME_THICKNESS),
+            new BoxBorder(FRAME_THICKNESS),
+            new UiElementPaint(Color.BLACK, opacity));
     }
 }
