@@ -371,4 +371,60 @@ final class ColoursTest {
             assertThat(lit.getRed()).isEqualTo(255);
         }
     }
+
+    @Nested
+    class AddLight {
+
+        @Test
+        void adds_the_same_channels_addOverlay_does() {
+            // The channel rule is shared with the method beside it - the two part over how solid the result
+            // is, not over how bright - so a change to one that did not reach the other would leave the same
+            // light landing in two different colours.
+            var lit = Colours.addLight(
+                new Color(20, 30, 40, 255),
+                new Color(200, 100, 60, 128),
+                0.5f);
+
+            assertThat(lit.getRed()).isEqualTo(70);
+            assertThat(lit.getGreen()).isEqualTo(55);
+            assertThat(lit.getBlue()).isEqualTo(55);
+        }
+
+        @Test
+        void paints_an_unpainted_surface_as_solidly_as_the_light_landing_on_it() {
+            // The whole reason this stands apart from addOverlay: a surface drawn at nothing has no
+            // channels worth brightening, so the light itself is what paints it - a quarter of the way to
+            // the light's own solidity at a quarter weight.
+            var lit = Colours.addLight(
+                new Color(20, 30, 40, 0),
+                new Color(200, 200, 200, 255),
+                0.25f);
+
+            assertThat(lit.getAlpha()).isEqualTo(64);
+        }
+
+        @Test
+        void leaves_a_solid_surface_solid_under_a_fainter_light() {
+            // Light only ever adds. A dim light on a solid surface would otherwise eat a hole in it, which
+            // is the one way this rule could make something less visible than it was.
+            var lit = Colours.addLight(
+                new Color(20, 30, 40, 255),
+                new Color(200, 200, 200, 100),
+                1f);
+
+            assertThat(lit.getAlpha()).isEqualTo(255);
+        }
+
+        @Test
+        void leaves_the_base_unchanged_at_a_zero_weight() {
+            // Including its alpha: what the light painted has to come back off as the light goes, or a
+            // surface once lit would keep a shade of its own for good.
+            var lit = Colours.addLight(
+                new Color(20, 30, 40, 0),
+                new Color(200, 200, 200, 255),
+                0f);
+
+            assertThat(lit).isEqualTo(new Color(20, 30, 40, 0));
+        }
+    }
 }

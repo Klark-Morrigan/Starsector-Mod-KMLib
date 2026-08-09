@@ -45,9 +45,11 @@ import java.util.List;
  */
 public final class RaisedButtonTabStripRenderer {
 
-    // The button outline's weight, matching the hairline the engine's own buttons are framed in. Both
-    // frames are drawn at it, so the pair reads as one two-tone edge rather than as a line and a shadow.
-    private static final float FRAME_THICKNESS = 1f;
+    // The button outline's weight, read off the geometry that reached its box out over the panel's own
+    // lines by exactly this much - a heavier stroke here would leave those borders half on the line they
+    // were meant to cover. Both frames are drawn at it, so the pair reads as one two-tone edge rather than
+    // as a line and a shadow.
+    private static final float FRAME_THICKNESS = RaisedButtonTabStrip.FRAME_THICKNESS;
 
     // How far in the interior sits: clear of both hairlines, so neither is painted over by a lit fill.
     private static final float INTERIOR_INSET = 2f * FRAME_THICKNESS;
@@ -86,9 +88,10 @@ public final class RaisedButtonTabStripRenderer {
 
         TabChromeRenderer.paintEachTab(tabs, looks, washes, (rowIndex, tab, look) -> {
 
-            // The button inside the laid tab, the channel parting it from its left-hand neighbour taken out
+            // The button about the laid tab, the channel parting it from its left-hand neighbour taken out
             // of the tab rather than added to the row - the hit box the panel tests stays the whole tab, so
-            // the channel still answers to whichever button it was laid inside.
+            // the channel still answers to whichever button it was laid inside, and the hairline the box
+            // reaches out over the panel's own lines with costs it no reach at all.
             var buttonBox = RaisedButtonTabStrip.computeButtonBox(tab.bounds(), rowIndex);
 
             renderButtonChrome(buttonBox, chromeAccent, opacity);
@@ -96,7 +99,12 @@ public final class RaisedButtonTabStripRenderer {
                 buttonBox.computeInsetBox(INTERIOR_INSET),
                 new UiElementPaint(look.fill(), opacity));
 
-            TabLabelRenderer.renderCentredLabel(buttonBox, tab.content(), look, style, opacity);
+            TabLabelRenderer.renderCentredLabel(
+                RaisedButtonTabStrip.computeLabelBox(buttonBox),
+                tab.content(),
+                look,
+                style,
+                opacity);
         });
     }
 

@@ -63,4 +63,29 @@ public record TabLook(
             wash.computeWashedColour(fill),
             wash.computeWashedColour(label));
     }
+
+    /**
+     * This look with light added to it - fill and label alike, so a lit tab reads as one piece. Light
+     * added rather than a shade travelled toward, which is a different motion and not a differently
+     * weighted one: adding reproduces a glow pass drawn over a surface, where travelling walks the
+     * surface's own colour toward another and can only ever arrive at it.
+     *
+     * <p>The light is a surface of its own, so a look naming an unpainted fill is painted by whatever
+     * light lands on it and goes back to unpainted as that light comes off. A chrome resting on an
+     * unpainted interior would otherwise answer with its label alone - the surface brightening in channels
+     * nobody can see, because it is still drawn at nothing.
+     *
+     * @param glowColour the light being added; its own alpha scales what it contributes and is how solid
+     *                   it makes what it lands on
+     * @param glowAmount how much of it to add, 0 adding nothing and 1 adding it in full
+     * @return the look with that much light on it
+     */
+    public TabLook computeGlowingLook(Color glowColour, float glowAmount) {
+
+        var added = Ranges.clampToUnit(glowAmount);
+
+        return new TabLook(
+            Colours.addLight(fill, glowColour, added),
+            Colours.addLight(label, glowColour, added));
+    }
 }

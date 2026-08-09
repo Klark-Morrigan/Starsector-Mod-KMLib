@@ -44,21 +44,25 @@ class StarsectorFontTest {
 
     @Nested
     class GetNativeSize {
-        // The size each atlas was rasterised at, read off the "size=" in its .fnt descriptor under
-        // starsector-core/graphics/fonts. Restated here rather than parsed from the descriptor: a unit
-        // test has no game install to read, and the point of the check is that a value's declared
-        // native size still matches the atlas its path names.
+        // The size each atlas draws 1:1 at, read off the "lineHeight" in its .fnt descriptor under
+        // starsector-core/graphics/fonts - the number the font loader scales a request against.
+        // Restated here rather than parsed from the descriptor: a unit test has no game install to
+        // read, and the point of the check is that a value's declared native size still matches the
+        // atlas its path names.
         @ParameterizedTest
         @EnumSource(StarsectorFont.class)
-        void getNativeSizeReportsTheSizeItsAtlasWasRasterisedAt(StarsectorFont font) {
+        void getNativeSizeReportsTheSizeItsAtlasDrawsOneToOneAt(StarsectorFont font) {
             var expected = switch (font) {
             case VANILLA_INSIGNIA_15 -> 15;
             case VANILLA_ORBITRON_20AA -> 20;
+            // TODO: the atlas states a line height of 15; this is the nominal size its filename
+            // carries, so the face draws at four-fifths scale. Pinned as it stands rather than as it
+            // should be, correcting it being a deliberate resize of the text drawn in it.
             case VANILLA_ORBITRON_12_CONDENSED -> 12;
-            // The descriptor spells it "size=-10": BMFont writes the height it matched as a negative
-            // when the face was rasterised to a character height rather than to a point size, so the
-            // atlas is a 10 and the sign is the setting it was made with.
-            case VANILLA_VICTOR_10 -> 10;
+            // The descriptor spells "size=-10" - BMFont writes the character height it matched as a
+            // negative - but states "lineHeight=9", and the line height is what a request is scaled
+            // against. So the pixel face is asked for at 9 and the 10 in its name is not a size at all.
+            case VANILLA_VICTOR_10 -> 9;
             case VANILLA_INSIGNIA_42 -> 42;
             };
 

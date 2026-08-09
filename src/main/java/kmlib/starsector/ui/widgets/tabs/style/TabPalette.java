@@ -21,9 +21,11 @@ import java.awt.Color;
  * factory cannot pick is which accent that is: which palette a row answers to is a question about the
  * panel it belongs to, and only that panel can answer it.
  *
- * <p>Two flavours sit here for the reason they are separate types: a look is a shade a tab settles on, a
- * momentary state a brief lift over whichever look it has settled on. Naming the hovered shade outright
- * rather than deriving it per tab is what lets the resting and the selected tab meet under the pointer.
+ * <p>Three flavours sit here for the reason they are separate types: a look is a shade a tab settles on, a
+ * momentary state a brief lift over whichever look it has settled on, and a {@link TabHover} what the
+ * pointer does to whichever look a tab is wearing - which the two chromes disagree about, one meeting at a
+ * shade and the other lighting from where it stands, so it is a rule the palette states rather than a
+ * shade every palette must have.
  *
  * <p>Substrate-independent, like the rest of this package: colour values and unit fractions, with nothing
  * GL about them, so the whole description travels inside the {@link TabStyle} the layout is measured
@@ -33,21 +35,22 @@ import java.awt.Color;
  * sits with the rest of a key's presentation on {@link HotkeyStyle} rather than among values that answer
  * to a tab's state.
  *
- * <p>Nor is a lift of its own for a bound key's press. That blink travels onto the {@link #hovered} shade
- * rather than past it, so it is spent on the look channel and needs no wash to name.
+ * <p>Nor is a lift of its own for a bound key's press. That blink carries its tab as far into the
+ * {@link #hover} rule as the pointer would and no further, so it is spent on the look channel and needs no
+ * wash to name.
  *
  * @param chromeAccent the colour of the dividers and the baseline grounding the row
  * @param unselected   the resting look of a tab the panel is not showing
  * @param selected     the look of the tab whose content the panel is showing
- * @param hovered      the look the tab under the pointer wears, selected or not - and the shade a bound
- *                     key's blink carries its tab to
+ * @param hover        what the pointer does to a tab of either kind - and what a bound key's blink
+ *                     carries its tab into
  * @param clicked      the peak lift a click raises its tab by
  */
 public record TabPalette(
     Color chromeAccent,
     TabLook unselected,
     TabLook selected,
-    TabLook hovered,
+    TabHover hover,
     TabWash clicked) {
 
     // How far a pressed tab lifts past the shade it was already wearing. Modest, because it is measured
@@ -128,12 +131,13 @@ public record TabPalette(
             new TabLook(
                 VanillaTabFills.resolveFillAtGlow(tabPaint, VanillaTabFills.SELECTED_GLOW),
                 litLabel),
-            // The two lit states share the label and are told apart by their fills, which already stand at
-            // different glows. Only the shown tab's label has been measured; the pointed-at one taking the
-            // same grey is the smaller claim, and the fill is what marks the difference in either case.
-            new TabLook(
+            // One shade both tabs meet at, which is the engine's own strip rule. The two lit states share
+            // the label and are told apart by their fills, which already stand at different glows - only
+            // the shown tab's label has been measured; the pointed-at one taking the same grey is the
+            // smaller claim, and the fill is what marks the difference in either case.
+            new TabHover.MeetingShade(new TabLook(
                 VanillaTabFills.resolveFillAtGlow(tabPaint, VanillaTabFills.POINTED_GLOW),
-                litLabel),
+                litLabel)),
             // The press lifts along the glow rather than toward white: the engine brightens a tab by adding
             // its own glow colour, so a press aimed at white would be the one shade on the strip travelling
             // in a direction none of the fills do - most visible exactly when the player is looking at it.
@@ -189,9 +193,15 @@ public record TabPalette(
             new TabLook(
                 VanillaButtonFills.resolveFillAtGlow(buttonPaint, VanillaButtonFills.NO_GLOW),
                 accent.bright()),
-            new TabLook(
-                VanillaButtonFills.resolveFillAtGlow(buttonPaint, VanillaButtonFills.POINTED_GLOW),
-                accent.bright()),
+            // The pointer adds plain light to whatever a button already wears, which is the engine's own
+            // button rule and the reason this is a glow rather than a shade: the shown button lights from
+            // its lit interior and an unshown one from an unpainted one, so the two never meet under the
+            // pointer the way a strip's tabs do. An unshown button rests on an unpainted interior, and the
+            // light is what paints it: as much of it as the pointer has brought, no more. White rather
+            // than the accent - see the fit on {@link VanillaButtonFills#POINTED_LIGHT}.
+            new TabHover.AddedGlow(
+                VanillaButtonFills.POINTED_LIGHT,
+                VanillaButtonFills.POINTED_GLOW),
             // Aimed along the same axis the interiors brighten by, so the day this chrome does want a
             // visible press it lifts toward the shade its lit states already travel to rather than toward
             // one named nowhere.
@@ -208,27 +218,27 @@ public record TabPalette(
         return switch (lookState) {
             case UNSELECTED -> unselected;
             case SELECTED -> selected;
-            case HOVERED -> hovered;
         };
     }
 
     /**
-     * The look a tab wears part-way onto the hovered shade: the look its selection names, blended toward the
-     * hovered role by however far its fade has run. The whole of the hover channel's resolution, so a tab
-     * that has not moved reads exactly as its settled look and one fully hovered reads exactly as the hovered
-     * role, with no separate path for either end.
+     * The look a tab wears part-way into being pointed at: the look its selection names, carried however far
+     * its fade has run by whichever hover rule this palette answers by. The whole of the hover channel's
+     * resolution, so a tab that has not moved reads exactly as its settled look and one fully hovered reads
+     * exactly as that rule's destination, with no separate path for either end.
      *
-     * <p>Selection is a flag rather than a {@link TabLookState} because the hovered state is the destination
-     * here rather than a state a tab could be asked for: a tab is resting or lit, and the hover is how far it
-     * has travelled away from that.
+     * <p>Selection is a flag rather than a {@link TabLookState} because being pointed at is the departure
+     * here rather than a state a tab could be asked for: a tab is resting or lit, and the hover is how far
+     * it has travelled away from that.
      *
      * @param isSelected    whether this is the tab whose content the panel is showing
-     * @param hoverFraction how far the tab has travelled onto the hovered shade, 0 fully off and 1 fully on
+     * @param hoverFraction how far the tab has travelled into being pointed at, 0 fully off and 1 fully on
      * @return the tab's look at that point
      */
     public TabLook resolveLookAtHoverFraction(boolean isSelected, float hoverFraction) {
-        return resolveLook(resolveSettledLookState(isSelected))
-            .computeBlendedLook(resolveLook(TabLookState.HOVERED), hoverFraction);
+        return hover.computeHoveredLook(
+            resolveLook(resolveSettledLookState(isSelected)),
+            hoverFraction);
     }
 
     /**

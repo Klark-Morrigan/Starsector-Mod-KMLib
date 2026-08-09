@@ -1,5 +1,6 @@
 package kmlib.starsector.ui.widgets.tabs;
 
+import kmlib.starsector.ui.widgets.tabs.style.TabHover;
 import kmlib.starsector.ui.widgets.tabs.style.TabLook;
 import kmlib.starsector.ui.widgets.tabs.style.TabPalette;
 import kmlib.starsector.ui.widgets.tabs.style.TabWash;
@@ -37,7 +38,7 @@ final class TabWashSourceTest {
         STAND_IN_SHADE,
         STAND_IN_LOOK,
         STAND_IN_LOOK,
-        STAND_IN_LOOK,
+        new TabHover.MeetingShade(STAND_IN_LOOK),
         new TabWash(CLICK_TARGET, CLICK_DEPTH));
 
     // Indices past either end of a row, since a source is asked per tab and must not assume the row it is

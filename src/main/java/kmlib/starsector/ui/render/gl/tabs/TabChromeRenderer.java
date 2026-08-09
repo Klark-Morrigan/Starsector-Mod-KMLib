@@ -1,5 +1,7 @@
 package kmlib.starsector.ui.render.gl.tabs;
 
+import kmlib.math.geometry.Rectangle;
+import kmlib.starsector.ui.widgets.tabs.RaisedButtonTabStrip;
 import kmlib.starsector.ui.widgets.tabs.TabLookSource;
 import kmlib.starsector.ui.widgets.tabs.TabWashSource;
 import kmlib.starsector.ui.widgets.tabs.VanillaTab;
@@ -37,6 +39,27 @@ public interface TabChromeRenderer {
         return switch (chrome) {
             case STRIP -> VanillaTabStripRenderer::render;
             case RAISED_BUTTON -> RaisedButtonTabStripRenderer::render;
+        };
+    }
+
+    /**
+     * How much of the screen a chrome needs to paint the row laid into {@code band}: the band itself for a
+     * chrome that stays within it, and the band grown by whatever a chrome reaches outside it.
+     *
+     * <p>A caller clipping the row to its band would otherwise crop that reach silently, which is a border
+     * that simply is not there rather than an error anything reports. It sits beside the painter lookup
+     * because it is the same question asked of the same enum - what a chrome draws, and where - and a
+     * chrome added to one without the other would be cropped or over-clipped by exactly the amount it
+     * differs by.
+     *
+     * @param chrome which surface the row's paint is laid onto
+     * @param band   the row's laid-out band, in UI coordinates
+     * @return the region that chrome may paint into
+     */
+    static Rectangle computePaintedRegionFor(TabChrome chrome, Rectangle band) {
+        return switch (chrome) {
+            case STRIP -> band;
+            case RAISED_BUTTON -> RaisedButtonTabStrip.computeRowFootprint(band);
         };
     }
 

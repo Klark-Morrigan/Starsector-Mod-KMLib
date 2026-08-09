@@ -1,5 +1,6 @@
 package kmlib.starsector.ui.widgets.tabs;
 
+import kmlib.starsector.ui.widgets.tabs.style.TabHover;
 import kmlib.starsector.ui.widgets.tabs.style.TabLook;
 import kmlib.starsector.ui.widgets.tabs.style.TabPalette;
 import kmlib.starsector.ui.widgets.tabs.style.TabWash;
@@ -38,7 +39,7 @@ final class TabLookSourceTest {
         new Color(5, 5, 5),
         UNSELECTED_LOOK,
         SELECTED_LOOK,
-        HOVERED_LOOK,
+        new TabHover.MeetingShade(HOVERED_LOOK),
         NO_LIFT);
 
     private static final int SELECTED_INDEX = 1;

@@ -33,6 +33,12 @@ final class VanillaButtonFillsTest {
     private static final int OPAQUE_ALPHA = 255;
     private static final int UNPAINTED_ALPHA = 0;
 
+    // A glow weight of this test's own, for the cases about the rule rather than about a vanilla shade.
+    // Not the pointer's amount: what the pointer adds is plain light and is added by the hover rule, so
+    // feeding its weight to a method that adds the paint's own glow colour would mix two rules into one
+    // expectation. A round quarter, so the products it lands on are read off the page.
+    private static final float QUARTER_GLOW = 0.25f;
+
     @Nested
     class ResolveFillAtGlow {
 
@@ -45,26 +51,24 @@ final class VanillaButtonFillsTest {
         }
 
         @Test
-        void resolveFillAtGlowAddsTheBaseAccentUndilutedUnderThePointer() {
-            // The shown button's interior plus 0.175 of the base accent as it comes: (21, 65, 77) gains
-            // 29, 40, and 45. Samples as #346a7c, which is what fixed the weight - solving that against
-            // the shade above gives the same 0.175 on all three channels, where a whitened glow of the
-            // kind a tab takes gives three different answers and so cannot be the rule here.
-            assertThat(resolveFillAt(VanillaButtonFills.POINTED_GLOW))
-                .isEqualTo(new Color(50, 105, 122, OPAQUE_ALPHA));
+        void resolveFillAtGlowAddsThePaintsOwnGlowColourUndiluted() {
+            // Light is piled on rather than blended toward: the shown button's interior plus a quarter of
+            // the base accent as it comes, so (21, 65, 77) gains 41, 58 (the half rounding up), and 64 rather than moving a
+            // quarter of the way to a colour it can never pass.
+            assertThat(resolveFillAt(QUARTER_GLOW))
+                .isEqualTo(new Color(62, 123, 141, OPAQUE_ALPHA));
         }
 
         @Test
-        void resolveFillAtGlowKeepsThePointedButtonBrighterThanTheShownOne() {
-            // The interior is the whole signal - the frame around it never moves - so a pointed-at button
-            // has to outshine the shown one on every channel or the two states read alike under the
-            // pointer.
+        void resolveFillAtGlowLeavesALitInteriorBrighterOnEveryChannel() {
+            // The interior is the whole signal - the frame around it never moves - so light added to it
+            // has to show on every channel or two states read alike.
             var shown = resolveFillAt(VanillaButtonFills.NO_GLOW);
-            var pointed = resolveFillAt(VanillaButtonFills.POINTED_GLOW);
+            var lit = resolveFillAt(QUARTER_GLOW);
 
-            assertThat(pointed.getRed()).isGreaterThan(shown.getRed());
-            assertThat(pointed.getGreen()).isGreaterThan(shown.getGreen());
-            assertThat(pointed.getBlue()).isGreaterThan(shown.getBlue());
+            assertThat(lit.getRed()).isGreaterThan(shown.getRed());
+            assertThat(lit.getGreen()).isGreaterThan(shown.getGreen());
+            assertThat(lit.getBlue()).isGreaterThan(shown.getBlue());
         }
 
         @Test
@@ -85,7 +89,7 @@ final class VanillaButtonFillsTest {
         void resolveFillAtGlowReturnsAnOpaqueInterior() {
             // A lit interior covers the backing rather than tinting it: left translucent, the shade a
             // button reads at would depend on what the row happens to stand over.
-            assertThat(resolveFillAt(VanillaButtonFills.POINTED_GLOW).getAlpha())
+            assertThat(resolveFillAt(QUARTER_GLOW).getAlpha())
                 .isEqualTo(OPAQUE_ALPHA);
         }
     }

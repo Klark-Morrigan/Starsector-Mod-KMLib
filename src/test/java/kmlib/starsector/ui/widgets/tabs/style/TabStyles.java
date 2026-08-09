@@ -28,7 +28,7 @@ public final class TabStyles {
         STAND_IN_SHADE,
         new TabLook(STAND_IN_SHADE, STAND_IN_SHADE),
         new TabLook(STAND_IN_SHADE, STAND_IN_SHADE),
-        new TabLook(STAND_IN_SHADE, STAND_IN_SHADE),
+        new TabHover.MeetingShade(new TabLook(STAND_IN_SHADE, STAND_IN_SHADE)),
         STAND_IN_NO_LIFT);
 
     // A plain key in the same stand-in shade: the tests here draw nothing, so how a bound key is

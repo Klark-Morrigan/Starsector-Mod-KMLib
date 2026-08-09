@@ -1,7 +1,10 @@
 package kmlib.starsector.ui.widgets;
 
 import kmlib.math.geometry.BoxEdge;
+import kmlib.math.geometry.Rectangle;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -39,5 +42,59 @@ public record BoxBorder(float width, Set<BoxEdge> edges) {
      */
     public float computeEdgeInset(BoxEdge edge) {
         return edges.contains(edge) ? width : 0f;
+    }
+
+    /**
+     * The quads that stroke this border inside {@code bounds}, one per drawn edge and no two of them
+     * overlapping: the horizontal edges run the box's full width, and the vertical ones run only between
+     * them, giving up the width of whichever horizontal edge is actually drawn at each end. Empty for a
+     * zero width, which is a border that strokes nothing.
+     *
+     * <p>The four are cut this way because a corner covered twice is a corner drawn twice: every shade
+     * here composites, so a translucent frame - which is what the engine's own controls are drawn in -
+     * comes out with four bright corner pixels and reads as a box with tacks in it. Solved by placing the
+     * quads rather than by the pass that fills them, so every surface that strokes a border inherits the
+     * cut, and so the arithmetic is checkable without a drawing surface.
+     *
+     * <p>An open edge gives up nothing: a vertical edge meeting a side that is not stroked runs to the
+     * box's own edge, since there is no quad there to leave room for.
+     *
+     * @param bounds the footprint to frame, in UI coordinates (origin bottom-left)
+     * @return the edge quads to fill, in no particular order; empty when nothing is stroked
+     */
+    public List<Rectangle> computeStrokeBoxes(Rectangle bounds) {
+
+        var strokes = new ArrayList<Rectangle>(edges.size());
+        if (width <= 0f) {
+            return List.of();
+        }
+        var bottomInset = computeEdgeInset(BoxEdge.BOTTOM);
+        var topInset = computeEdgeInset(BoxEdge.TOP);
+
+        // The verticals run between whatever horizontals were drawn. Floored at zero so a box shorter than
+        // the two edges it is asked for collapses its sides rather than inverting them through its corners.
+        var sideHeight = Math.max(0f, bounds.height() - bottomInset - topInset);
+
+        if (edges.contains(BoxEdge.BOTTOM)) {
+            strokes.add(new Rectangle(bounds.x(), bounds.y(), bounds.width(), width));
+        }
+        if (edges.contains(BoxEdge.TOP)) {
+            strokes.add(new Rectangle(
+                bounds.x(),
+                bounds.y() + bounds.height() - width,
+                bounds.width(),
+                width));
+        }
+        if (edges.contains(BoxEdge.LEFT)) {
+            strokes.add(new Rectangle(bounds.x(), bounds.y() + bottomInset, width, sideHeight));
+        }
+        if (edges.contains(BoxEdge.RIGHT)) {
+            strokes.add(new Rectangle(
+                bounds.x() + bounds.width() - width,
+                bounds.y() + bottomInset,
+                width,
+                sideHeight));
+        }
+        return List.copyOf(strokes);
     }
 }

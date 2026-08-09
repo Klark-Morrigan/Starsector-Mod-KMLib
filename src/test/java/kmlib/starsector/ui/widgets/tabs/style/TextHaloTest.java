@@ -79,10 +79,10 @@ final class TextHaloTest {
     class CreateBlackHairline {
 
         @Test
-        void createBlackHairlineRingsTheTextInBlackShortOfSolid() {
-            // A dark ring is what gives a hard-edged pixel face an edge to sit against live content. Short
-            // of solid, or it reads as a second blurred word standing behind the label rather than as the
-            // glyphs' own outline.
+        void createBlackHairlineRingsTheTextInSolidBlack() {
+            // A black ring is what gives a hard-edged pixel face an edge to sit against live content, and it
+            // is solid because the face is: single-pixel strokes backed by a partial shade read as a grey
+            // smudge where the vanilla text beside them reads as strokes on black.
             var halo = TextHalo.createBlackHairline();
 
             assertThat(halo.isHaloDrawn())
@@ -92,7 +92,7 @@ final class TextHaloTest {
             assertThat(halo.radius())
                 .isGreaterThan(0f);
             assertThat(halo.strength())
-                .isBetween(0f, 1f);
+                .isEqualTo(1f);
         }
     }
 }

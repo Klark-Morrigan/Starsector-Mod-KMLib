@@ -188,9 +188,44 @@ public final class Colours {
             base.getAlpha());
     }
 
+    /**
+     * {@code base} with {@code light} laid over it as a surface of its own: the channels added exactly as
+     * {@link #addOverlay} adds them, and the result made as solid as the light landing on it. The
+     * difference from that method is the whole point - light falling on a see-through surface is still
+     * light, so it has to be visible, where {@code addOverlay} keeps the base's alpha and would brighten
+     * the channels of something that goes on being drawn at nothing.
+     *
+     * <p>For a chrome whose resting state is an unpainted surface: light landing on it is what paints it,
+     * and taking that back off leaves it unpainted again. A base already solid is untouched on that
+     * channel, so a caller whose surfaces are all opaque cannot tell the two methods apart.
+     *
+     * @param base        the surface the light is added to
+     * @param light       the light being added; its own alpha scales its contribution and is the ceiling
+     *                    the base's own alpha is carried toward
+     * @param lightWeight how much of the light to add, 0 adding nothing and 1 adding it in full
+     * @return the base brightened and made solid by that much light, clamped at white
+     */
+    public static Color addLight(Color base, Color light, float lightWeight) {
+
+        var addedWeight = light.getAlpha() / MAX_CHANNEL * lightWeight;
+
+        return new Color(
+            addChannel(base.getRed(), light.getRed(), addedWeight),
+            addChannel(base.getGreen(), light.getGreen(), addedWeight),
+            addChannel(base.getBlue(), light.getBlue(), addedWeight),
+            raiseAlphaToward(base.getAlpha(), light.getAlpha(), lightWeight));
+    }
+
     // Adds a weighted share of one 0-255 channel onto another, saturating rather than wrapping.
     private static int addChannel(int base, int added, float addedWeight) {
         return roundToChannel(base + added * addedWeight);
+    }
+
+    // How solid a surface becomes under light: carried that fraction of the way toward the light's own
+    // solidity, and never below where it started. Light can only ever add - a dim light falling on a solid
+    // surface leaves it solid rather than eating a hole in it.
+    private static int raiseAlphaToward(int baseAlpha, int lightAlpha, float lightWeight) {
+        return roundToChannel(baseAlpha + Math.max(0, lightAlpha - baseAlpha) * lightWeight);
     }
 
     // Scales one 0-255 channel by the factor.

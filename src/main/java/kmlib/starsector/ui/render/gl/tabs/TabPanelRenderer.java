@@ -131,7 +131,13 @@ public final class TabPanelRenderer {
             WidgetStyle style,
             TabInteractionSources tabInteractions) {
 
-        UiScissor.push(placement.drawnHeaderBand());
+        // Clipped to what the chrome paints rather than to the band alone: a chrome whose buttons lay their
+        // borders on the panel's own lines reaches a hairline outside the band, and a clip cut to the band
+        // would drop exactly those borders. The fold still wipes the row, the reach travelling with the
+        // narrowing band.
+        UiScissor.push(TabChromeRenderer.computePaintedRegionFor(
+            style.tabStyle().chrome(),
+            placement.drawnHeaderBand()));
         GlStateGuard.bracket(() -> ControlRenderer.render(
             placement.tabsHeader(),
             style,

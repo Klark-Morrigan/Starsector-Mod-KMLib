@@ -29,8 +29,9 @@ import java.util.List;
  * @param isHaloDrawn whether the ring is drawn at all; false leaves the fields below unread
  * @param radius      how far each copy sits from the text it backs, in UI pixels
  * @param strength    how solid the ring is, 0..1, applied on top of whatever opacity the row is drawn at.
- *                    A copy short of solid is what keeps the ring reading as an edge on the glyphs rather
- *                    than as a second, blurred word behind them
+ *                    It is a knob rather than a constant because it answers to the face: a stroke a pixel
+ *                    wide wants the full shade behind it, where a heavier face would read as blurred for
+ *                    the same ring
  */
 public record TextHalo(
     Color colour,
@@ -38,11 +39,13 @@ public record TextHalo(
     float radius,
     float strength) {
 
-    // A single pixel out, at half strength. Both are dialled against the real intel chrome rather than
-    // derived: the engine's own text pass is behind obfuscated classes, and the face itself carries no
-    // edge to read one off - every pixel in its atlas is either fully on or fully off.
+    // A single pixel out, solid. Dialled against the real intel chrome rather than derived: the
+    // engine's own text pass is behind obfuscated classes, and the face itself carries no edge to read
+    // one off - every pixel in its atlas is either fully on or fully off. Solid for that same reason:
+    // a face of hard-edged pixels backed by a partial shade reads as a grey smudge around the strokes
+    // where the vanilla text it stands beside reads as strokes on black.
     private static final float HAIRLINE_HALO_RADIUS = 1f;
-    private static final float HAIRLINE_HALO_STRENGTH = 0.5f;
+    private static final float HAIRLINE_HALO_STRENGTH = 1f;
 
     /**
      * No ring: the text stands on its own, which is what a smooth face drawn at size wants. A frozen

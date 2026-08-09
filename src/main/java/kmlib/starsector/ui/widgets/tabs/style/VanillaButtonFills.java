@@ -1,6 +1,7 @@
 package kmlib.starsector.ui.widgets.tabs.style;
 
 import kmlib.colour.Colours;
+import kmlib.starsector.ui.colour.StarsectorUiColour;
 
 import java.awt.Color;
 
@@ -11,10 +12,10 @@ import java.awt.Color;
  * member, so both shades here are that member - once as it comes, once brightened.
  *
  * <p>A separate rule from {@link VanillaTabFills} rather than that one with a knob. A tab's light is its
- * own label colour taken half-way to white and tempered by how solid its fill is; a button's is its base
- * accent added undiluted. Solving a sampled pointed-at button against its lit shade gives one consistent
- * weight on every channel against the base accent, and no consistent weight at all against a tab's
- * whitened glow - which is what says the two chromes brighten by different rules.
+ * own label colour taken half-way to white and tempered by how solid its fill is - so a strip's glow
+ * carries the row's own colour - where a button takes plain white at a weight of its own. The two land in
+ * different places for the same lit shade, which is what says these are two rules and not one with a
+ * knob.
  *
  * <p>Interiors only. What frames a button and what backs it are constants of the chrome, drawn the same
  * whatever the button is doing - which is the whole difference from a tab, where the fill and the rule
@@ -27,12 +28,20 @@ import java.awt.Color;
 public final class VanillaButtonFills {
 
     /**
-     * How much of its base accent a button under the pointer adds over its lit interior. Fitted rather
-     * than read: it is what solving a sampled pointed-at button against its lit shade gives, the engine's
-     * own constant living behind an obfuscated widget where it cannot be looked up. That it lands within a
-     * channel value of the sample on all three channels is the evidence the rule's shape is right.
+     * The light a button under the pointer takes: white, at {@link #POINTED_GLOW}. Fitted rather than
+     * read, the engine's own constant living behind an obfuscated widget - but fitted against a
+     * side-by-side sample of the two rows, where a vanilla button lit at #17424f reads #3f6d78 under the
+     * pointer. That is +42, +44, +43 - one weight on every channel against white, and three different
+     * weights against the accent the button is built from, which is what says the light is white and not
+     * more of the button's own colour.
      */
-    public static final float POINTED_GLOW = 0.175f;
+    public static final Color POINTED_LIGHT = StarsectorUiColour.WHITE.resolve();
+
+    /**
+     * How much {@link #POINTED_LIGHT} a button under the pointer takes. Lands within a channel value of
+     * the sampled shade on all three channels.
+     */
+    public static final float POINTED_GLOW = 0.17f;
 
     /** No glow at all, which is where the button the panel is showing sits. */
     public static final float NO_GLOW = 0f;

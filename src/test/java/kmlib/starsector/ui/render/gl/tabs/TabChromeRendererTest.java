@@ -109,6 +109,31 @@ final class TabChromeRendererTest {
     }
 
     @Nested
+    class ComputePaintedRegionFor {
+
+        // A band with no round relationship between its corner and its extents, so a region grown on the
+        // wrong side cannot land on the expected rectangle by coincidence.
+        private static final Rectangle BAND = new Rectangle(100f, 50f, 63f, 18f);
+
+        @Test
+        void TabChromeRenderer_computePaintedRegionFor_keepsAStripWithinItsBand() {
+            // A strip's tabs are the band, so the region it paints into is the band itself - growing it
+            // would let a fold's wipe leave a sliver of row standing past the edge it wiped to.
+            assertThat(TabChromeRenderer.computePaintedRegionFor(TabChrome.STRIP, BAND))
+                .isEqualTo(BAND);
+        }
+
+        @Test
+        void TabChromeRenderer_computePaintedRegionFor_admitsTheRaisedButtonsReachPastTheBand() {
+            // The raised buttons lay their left and bottom borders on the lines the panel already draws,
+            // which are a hairline outside the band; a caller clipping to the band would crop exactly those
+            // two borders and nothing would report it.
+            assertThat(TabChromeRenderer.computePaintedRegionFor(TabChrome.RAISED_BUTTON, BAND))
+                .isEqualTo(new Rectangle(99f, 49f, 64f, 19f));
+        }
+    }
+
+    @Nested
     class ResolveRendererFor {
 
         @Test

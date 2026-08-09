@@ -9,12 +9,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 
 /**
- * Pins {@link RaisedButtonTabStrip}: a button stands inside the tab the row was laid out with, never
- * outside it, and gives up room on its left alone. That is what puts the leading button flush with the row's
- * left edge and one channel between every pair, matching the engine's own button row; containment is the
- * guard beneath it, a button drawn past its tab overlapping the neighbour that would answer a click landing
- * on it. The degenerate tab is pinned beside them so a row squeezed too small collapses its buttons rather
- * than inverting them across each other.
+ * Pins {@link RaisedButtonTabStrip}: a button gives up room on its left alone, and reaches a hairline past
+ * its tab on the two edges that meet a line the panel already draws. Those are what put the leading button's
+ * border on the frame beside it, every button's border on the body beneath it, and one channel between each
+ * pair - the row the engine's own buttons make. What is guarded underneath is that the reach stops there: a
+ * button drawn into its neighbour would overlap the tab that answers a click landing on it, and the
+ * degenerate tab is pinned beside them so a row squeezed too small collapses its buttons rather than
+ * inverting them across each other.
  */
 final class RaisedButtonTabStripTest {
 
@@ -30,25 +31,42 @@ final class RaisedButtonTabStripTest {
     private static final float TOLERANCE = 0.01f;
 
     @Nested
+    class ComputeRowFootprint {
+
+        @Test
+        void RaisedButtonTabStrip_computeRowFootprint_admitsTheHairlineTheRowReachesPastItsBand() {
+            // What a caller clipping the row has to allow: the two borders the buttons lay on the panel's
+            // own lines fall outside the band they were laid into, so a clip cut to the band alone would
+            // drop them - and a dropped border reads as a button open on that side, not as an error.
+            var footprint = RaisedButtonTabStrip.computeRowFootprint(new Rectangle(100f, 50f, 63f, 18f));
+
+            assertThat(footprint)
+                .isEqualTo(new Rectangle(99f, 49f, 64f, 19f));
+        }
+    }
+
+    @Nested
     class ComputeButtonBox {
 
         @Test
-        void RaisedButtonTabStrip_computeButtonBox_standsTheLeadingButtonFlushWithItsTab() {
-            // The first button has no neighbour on its left to be parted from, so it gives up nothing and
-            // starts where the row starts - the vanilla row's leftmost button sits flush against its edge.
+        void RaisedButtonTabStrip_computeButtonBox_reachesTheLeadingButtonOverTheFrameBesideIt() {
+            // The first button has no neighbour on its left to be parted from, and the line it does meet
+            // there is the panel's own frame - so it gives up no channel and reaches a hairline past the
+            // row, laying its border on that frame rather than alongside it.
             var button = RaisedButtonTabStrip.computeButtonBox(TAB_BOUNDS, LEADING_TAB);
 
             assertThat(button.x())
-                .isCloseTo(100f, within(TOLERANCE));
+                .isCloseTo(99f, within(TOLERANCE));
             assertThat(button.width())
-                .isCloseTo(63f, within(TOLERANCE));
+                .isCloseTo(64f, within(TOLERANCE));
         }
 
         @Test
         void RaisedButtonTabStrip_computeButtonBox_takesTheChannelFromTheLeftOfAFollowingButton() {
             // The channel between two buttons comes out of the right-hand one of the pair rather than being
             // added to the row, so a chrome swap moves no tab: the button narrows and its right edge stays
-            // where the layout put the tab's.
+            // where the layout put the tab's. Only the leading button reaches leftward - a following one
+            // meets its neighbour there, not a line.
             var button = RaisedButtonTabStrip.computeButtonBox(TAB_BOUNDS, FOLLOWING_TAB);
 
             assertThat(button.x())
@@ -58,15 +76,16 @@ final class RaisedButtonTabStripTest {
         }
 
         @Test
-        void RaisedButtonTabStrip_computeButtonBox_fillsTheBandTopToBottom() {
+        void RaisedButtonTabStrip_computeButtonBox_reachesEveryButtonOverTheBodyBeneathIt() {
             // A vanilla button is sized to the row it sits in, so the button wears the whole band its host
-            // tuned rather than floating clear of the body beneath it.
+            // tuned - and a hairline more, its bottom border landing on the body's own top border instead of
+            // stacking a second rule on top of it.
             var button = RaisedButtonTabStrip.computeButtonBox(TAB_BOUNDS, FOLLOWING_TAB);
 
             assertThat(button.y())
-                .isCloseTo(50f, within(TOLERANCE));
+                .isCloseTo(49f, within(TOLERANCE));
             assertThat(button.height())
-                .isCloseTo(19f, within(TOLERANCE));
+                .isCloseTo(20f, within(TOLERANCE));
         }
 
         @Test

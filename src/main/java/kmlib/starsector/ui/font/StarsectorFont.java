@@ -7,11 +7,19 @@ package kmlib.starsector.ui.font;
  * fails to draw at runtime, and the set of faces the mods actually use is answerable in one place
  * rather than by grepping string literals across two repositories.
  *
- * <p>Each value carries the size its atlas was rasterised at, because a bitmap face has exactly one
- * resolution it is crisp at - glyphs land 1:1 at that size and are scaled at any other. A caller
- * with no size of its own therefore names the native one rather than repeating a number the atlas
- * already states. The role a face plays is deliberately not encoded in the value name: this enum
- * says which atlases exist, and the styles built over it say which role draws in which.
+ * <p>Each value carries the size its atlas draws 1:1 at, because a bitmap face has exactly one
+ * resolution it is crisp at - glyphs land pixel-for-pixel at that size and are resampled at any
+ * other. A caller with no size of its own therefore names the native one rather than repeating a
+ * number the atlas already states. The role a face plays is deliberately not encoded in the value
+ * name: this enum says which atlases exist, and the styles built over it say which role draws in
+ * which.
+ *
+ * <p>That size is the descriptor's {@code lineHeight}, not its nominal {@code size=}: the font
+ * loader scales a face by the size asked for over the atlas's line height, so the line height is
+ * what a request has to name to come out at 1:1. The two agree on every antialiased atlas here and
+ * part on the pixel faces, which state the character height they were matched at as a negative
+ * {@code size=} - so the distinction only shows itself where it matters most, a pixel face being
+ * the one kind of atlas a fractional scale visibly damages.
  */
 public enum StarsectorFont {
 
@@ -30,6 +38,12 @@ public enum StarsectorFont {
      * The narrow, small Orbitron the game sets its tooltip key hints in - the "Press F1 for more
      * info" line at the foot of a vanilla box. Condensed rather than merely small, so a line of it
      * stays under the width of the content it sits beneath.
+     *
+     * <p>TODO: its atlas draws 1:1 at 15, the line height its descriptor states; the 12 here is the
+     * nominal size its filename carries, so text asking for the native size renders at four-fifths
+     * scale. Being an antialiased face it resamples cleanly and the shortfall has gone unnoticed,
+     * which is why correcting it is a deliberate resize of the footnote text rather than a fix
+     * folded into this one.
      */
     VANILLA_ORBITRON_12_CONDENSED("orbitron12condensed", 12),
 
@@ -40,8 +54,13 @@ public enum StarsectorFont {
      * <p>Its atlas draws capitals whatever case a caller writes: every glyph sits on the same 5x5
      * cell with lowercase included and no descenders, so a mixed-case label needs no upper-casing
      * pass and the width it is measured at is the width it draws at.
+     *
+     * <p>Nine, against the {@code size=-10} its name and its descriptor both carry: the atlas states
+     * a line height of 9, and that is what the loader scales against. Asked for at 10 it comes out
+     * at ten-ninths - which on a face of single-pixel strokes is a row of glyphs landing between
+     * pixels rather than a slightly larger row of them.
      */
-    VANILLA_VICTOR_10("victor10", 10),
+    VANILLA_VICTOR_10("victor10", 9),
 
     /**
      * The highest-resolution antialiased atlas the game ships, and so the only one that stays clean
