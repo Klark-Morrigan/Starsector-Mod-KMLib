@@ -54,10 +54,12 @@ public final class RaisedButtonTabStripRenderer {
     // How far in the interior sits: clear of both hairlines, so neither is painted over by a lit fill.
     private static final float INTERIOR_INSET = 2f * FRAME_THICKNESS;
 
-    // How solid the backing under a button is. Short of opaque, so the map still shows faintly through a
-    // row that would otherwise read as a solid bar laid across the screen, and far enough from clear that
-    // a button over the brightest content it can stand on still holds its own shape.
-    private static final float BACKING_ALPHA = 0.75f;
+    // How solid the backing under a button is. Read off the engine's own row rather than chosen: over a
+    // flat map fill of #505850 an unshown vanilla button's interior samples #1b1d1b, which is that fill
+    // kept at 0.337, 0.330, 0.337 - a flat, untinted darkening, so what vanilla lays there is plain black
+    // at about two thirds and no fill of its own. Short of opaque for a reason the sample bears out: the
+    // map still shows through a row that would otherwise read as a solid bar laid across the screen.
+    private static final float BACKING_ALPHA = 0.665f;
 
     private RaisedButtonTabStripRenderer() {
     }

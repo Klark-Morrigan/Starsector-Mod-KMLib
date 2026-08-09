@@ -48,8 +48,8 @@ public sealed interface TabHover {
      * The rule vanilla's raised buttons answer by: the pointer adds light to whatever the button already
      * wears, so the shown button and an unshown one light by the same amount from different places and
      * never meet. Added rather than travelled toward, because that is what the engine's own buttons do -
-     * solving a sampled pointed-at button against its lit shade gives one consistent weight of added
-     * light on every channel, and no consistent weight at all as a blend.
+     * solving a sampled pointed-at button against the shade it was resting at gives one consistent weight
+     * of added accent on every channel, and no consistent weight at all as a blend.
      *
      * <p>The light paints as well as brightens: an unshown button rests on an unpainted interior, and what
      * the pointer puts there is that light itself, as solid as the light is deep. Brightening the channels

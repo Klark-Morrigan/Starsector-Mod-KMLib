@@ -321,14 +321,14 @@ final class TabPaletteTest {
         }
 
         @Test
-        void createRaisedButtonPaletteLightsThePointedButtonWithPlainLight() {
-            // The shown button's interior plus 0.17 of plain white, which is how a vanilla button
-            // brightens: sampled side by side, its lit #17424f reads #3f6d78 under the pointer, one weight
-            // on every channel against white and three different ones against the accent.
+        void createRaisedButtonPaletteLightsThePointedButtonWithItsBaseStep() {
+            // The shown button's interior plus 0.17 of the base accent as it comes, which is how a vanilla
+            // button brightens - the accent's own proportions rather than the equal channels white would
+            // add, and not the whitened glow a tab takes.
             assertThat(buildRaisedButtonPalette()
                     .resolveLookAtHoverFraction(SELECTED, FULLY_HOVERED)
                     .fill())
-                .isEqualTo(new Color(64, 108, 120, OPAQUE_ALPHA));
+                .isEqualTo(new Color(49, 104, 120, OPAQUE_ALPHA));
         }
 
         @Test
@@ -336,13 +336,13 @@ final class TabPaletteTest {
             // Where a strip's two tabs meet under the pointer, a button row's do not: the engine adds light
             // to whatever a button already wears, so an unshown one lights from an unpainted interior and
             // the shown one from its lit shade, and the two stay as far apart as they started. The pointer
-            // paints the unshown one at 0.17 of the light's own solidity - visible, and nowhere near the
+            // paints the unshown one at 0.17 of the accent's own solidity - visible, and nowhere near the
             // shown button's surface.
             var palette = buildRaisedButtonPalette();
             var hoveredUnshown = palette.resolveLookAtHoverFraction(UNSELECTED, FULLY_HOVERED);
 
             assertThat(hoveredUnshown.fill())
-                .isEqualTo(new Color(64, 108, 120, 43));
+                .isEqualTo(new Color(49, 104, 120, 43));
             assertThat(hoveredUnshown.fill())
                 .isNotEqualTo(palette.resolveLookAtHoverFraction(SELECTED, FULLY_HOVERED).fill());
         }
@@ -351,12 +351,12 @@ final class TabPaletteTest {
         void createRaisedButtonPaletteLiftsAPointedButtonsLabelWithItsFill() {
             // The label is lit by the same added light as the surface under it, which is what makes a
             // pointed-at button read as one piece brightening rather than as a fill moving under fixed
-            // text. The bright step (203, 245, 255) gains 0.17 of white and saturates on the two channels
-            // already near it.
+            // text. The bright step (203, 245, 255) gains 0.17 of the base accent and saturates on the two
+            // channels already near white - the same light the interior under it took.
             assertThat(buildRaisedButtonPalette()
                     .resolveLookAtHoverFraction(SELECTED, FULLY_HOVERED)
                     .label())
-                .isEqualTo(new Color(246, 255, 255));
+                .isEqualTo(new Color(231, 255, 255));
         }
 
         @Test

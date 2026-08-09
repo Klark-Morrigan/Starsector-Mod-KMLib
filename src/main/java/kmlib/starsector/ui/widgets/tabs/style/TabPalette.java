@@ -192,15 +192,13 @@ public record TabPalette(
             new TabLook(
                 VanillaButtonFills.resolveShownFill(buttonPaint),
                 accent.bright()),
-            // The pointer adds plain light to whatever a button already wears, which is the engine's own
+            // The pointer adds its base step to whatever a button already wears, which is the engine's own
             // button rule and the reason this is a glow rather than a shade: the shown button lights from
             // its lit interior and an unshown one from an unpainted one, so the two never meet under the
             // pointer the way a strip's tabs do. An unshown button rests on an unpainted interior, and the
-            // light is what paints it: as much of it as the pointer has brought, no more. White rather
-            // than the accent - see the fit on {@link VanillaButtonFills#POINTED_LIGHT}.
-            new TabHover.AddedGlow(
-                VanillaButtonFills.POINTED_LIGHT,
-                VanillaButtonFills.POINTED_GLOW),
+            // light is what paints it: as much of the accent as the pointer has brought, no more. The
+            // accent rather than white - see the fit on VanillaButtonFills.POINTED_GLOW.
+            new TabHover.AddedGlow(accent.base(), VanillaButtonFills.POINTED_GLOW),
             // Aimed along the same axis the interiors brighten by, so the day this chrome does want a
             // visible press it lifts toward the shade its lit states already travel to rather than toward
             // one named nowhere.
