@@ -95,4 +95,87 @@ class KmlibStringsTest {
                 .isEmpty();
         }
     }
+
+    @Nested
+    class DropAdjacentRepeatedWords {
+
+        // A subject of two words with a third appended that opens on the word the subject ends on -
+        // the stutter the whole read exists for, stated once so the cases differ only in what they
+        // are about.
+        private static final int TWO_WORD_SUBJECT = 2;
+
+        @Test
+        void dropAdjacentRepeatedWordsDropsAWordRepeatingTheOneBeforeIt() {
+            assertThat(KmlibStrings.dropAdjacentRepeatedWords(
+                    "Penelope's Star Star System",
+                    TWO_WORD_SUBJECT))
+                .isEqualTo("Penelope's Star System");
+        }
+
+        @Test
+        void dropAdjacentRepeatedWordsKeepsARepeatInsideTheProtectedOpening() {
+            // The case the protection exists for: the repeat is the subject's own, so dropping it
+            // would answer a name nobody has.
+            assertThat(KmlibStrings.dropAdjacentRepeatedWords("Ko Ko Star System", TWO_WORD_SUBJECT))
+                .isEqualTo("Ko Ko Star System");
+        }
+
+        @Test
+        void dropAdjacentRepeatedWordsMatchesARepeatIgnoringCase() {
+            // The two phrases were written apart, so the one that repeats need not be capitalised
+            // as the word it repeats was.
+            assertThat(KmlibStrings.dropAdjacentRepeatedWords(
+                    "Penelope's Star STAR System",
+                    TWO_WORD_SUBJECT))
+                .isEqualTo("Penelope's Star System");
+        }
+
+        @Test
+        void dropAdjacentRepeatedWordsPutsEveryWordInReachOfAProtectionOfNone() {
+            // The hazard the count is required for, pinned rather than left to a caller to find:
+            // unprotected, the walk eats the subject's own repetition too.
+            assertThat(KmlibStrings.dropAdjacentRepeatedWords("Ko Ko Star System", 0))
+                .isEqualTo("Ko Star System");
+        }
+
+        @Test
+        void dropAdjacentRepeatedWordsAnswersUnchangedTextAsTheVeryStringGiven() {
+            // A caller handing over something it must not see respaced gets it back untouched
+            // wherever there was no stutter to drop.
+            var text = "Galatia  Star System";
+
+            assertThat(KmlibStrings.dropAdjacentRepeatedWords(text, 1))
+                .isSameAs(text);
+        }
+
+        @Test
+        void dropAdjacentRepeatedWordsRejoinsWhatIsLeftOnOneSpace() {
+            // The other half of that rule: once a word goes, the text is being repaired rather than
+            // preserved, so whatever spacing it was written with does not survive.
+            assertThat(KmlibStrings.dropAdjacentRepeatedWords(
+                    "Penelope's  Star   Star System",
+                    TWO_WORD_SUBJECT))
+                .isEqualTo("Penelope's Star System");
+        }
+
+        @Test
+        void dropAdjacentRepeatedWordsDropsEveryWordOfARunPastTheProtection() {
+            assertThat(KmlibStrings.dropAdjacentRepeatedWords(
+                    "Penelope's Star Star Star System",
+                    TWO_WORD_SUBJECT))
+                .isEqualTo("Penelope's Star System");
+        }
+
+        @Test
+        void dropAdjacentRepeatedWordsAnswersBlankTextAsGiven() {
+            assertThat(KmlibStrings.dropAdjacentRepeatedWords("  ", TWO_WORD_SUBJECT))
+                .isEqualTo("  ");
+        }
+
+        @Test
+        void dropAdjacentRepeatedWordsAnswersNullAsGiven() {
+            assertThat(KmlibStrings.dropAdjacentRepeatedWords(null, TWO_WORD_SUBJECT))
+                .isNull();
+        }
+    }
 }
