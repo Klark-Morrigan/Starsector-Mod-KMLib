@@ -36,7 +36,7 @@ import static org.mockito.Mockito.when;
  * {@link StarSystems#hasKnownOwnedMarket}, {@link StarSystems#getCentremostStar},
  * {@link StarSystems#getOrbitalDistanceTo}, {@link StarSystems#isReachable},
  * {@link StarSystems#find}, {@link StarSystems#findById}, {@link StarSystems#readMarkets},
- * {@link StarSystems#readMarketsUnlistedByEconomy} and
+ * {@link StarSystems#readMarketsUnlistedByEconomy}, {@link StarSystems#readDisplayName} and
  * {@link StarSystems#readFactionClaimOverride}. Each method's cases live in a
  * {@link Nested} group so
  * the suite reports as a per-method tree; the shared mock builders stay on the
@@ -50,6 +50,7 @@ final class StarSystemsTest {
 
     @Nested
     class GetHyperspacePositions {
+
         @Test
         void collects_each_system_position_as_xy() {
 
@@ -95,6 +96,7 @@ final class StarSystemsTest {
 
     @Nested
     class CollectPositionsById {
+
         @Test
         void keys_each_selected_system_by_id_with_its_position() {
 
@@ -176,6 +178,7 @@ final class StarSystemsTest {
 
     @Nested
     class GetPlayerStarSystem {
+
         @Test
         void returns_the_fleets_system() {
 
@@ -232,6 +235,7 @@ final class StarSystemsTest {
 
     @Nested
     class FindById {
+
         @Test
         void returns_the_system_whose_id_matches() {
 
@@ -276,6 +280,7 @@ final class StarSystemsTest {
 
     @Nested
     class GetStars {
+
         @Test
         void keeps_only_the_stars_in_system_order() {
 
@@ -300,6 +305,7 @@ final class StarSystemsTest {
 
     @Nested
     class GetCentremostStar {
+
         @Test
         void returns_the_only_star_in_a_single_star_system() {
 
@@ -366,6 +372,7 @@ final class StarSystemsTest {
 
     @Nested
     class GetOrbitalDistanceTo {
+
         @Test
         void sums_a_planets_own_orbit_to_its_star() {
 
@@ -406,6 +413,7 @@ final class StarSystemsTest {
 
     @Nested
     class HasKnownOwnedMarket {
+
         @Test
         void returns_true_for_a_visible_owned_market() {
 
@@ -487,6 +495,7 @@ final class StarSystemsTest {
 
     @Nested
     class HasFoundOwnedMarket {
+
         @Test
         void returns_true_for_a_visible_owned_market() {
 
@@ -571,6 +580,7 @@ final class StarSystemsTest {
 
     @Nested
     class ReadMarkets {
+
         @Test
         void returns_the_systems_markets_in_economy_order() {
 
@@ -638,6 +648,7 @@ final class StarSystemsTest {
 
     @Nested
     class ReadMarketsUnlistedByEconomy {
+
         @Test
         void yields_the_market_the_economy_does_not_list_and_not_the_ones_it_does() {
             // Vanilla builds Galatia Academy as a real market on a real station and deliberately
@@ -777,7 +788,86 @@ final class StarSystemsTest {
     }
 
     @Nested
+    class ReadDisplayName {
+
+        @Test
+        void drops_a_type_word_the_name_already_ends_on() {
+            // Vanilla composes the name as the base name plus the type, so a system named after its
+            // star stutters: the reading the whole method exists for.
+            assertThat(StarSystems.readDisplayName(
+                    buildSystemNamed("Penelope's Star Star System", "Penelope's Star")))
+                .isEqualTo("Penelope's Star System");
+        }
+
+        @Test
+        void answers_a_name_with_no_repetition_unchanged() {
+            // The ordinary system: the type word is nothing the base name ended on, so the composed
+            // name already reads as a person would have written it.
+            assertThat(StarSystems.readDisplayName(
+                    buildSystemNamed("Galatia Star System", "Galatia")))
+                .isEqualTo("Galatia Star System");
+        }
+
+        @Test
+        void keeps_a_repetition_inside_the_name_proper() {
+            // The case the protection exists for: the repeat is the name's own, so dropping it would
+            // answer "Ko Star System" - a system nobody named.
+            assertThat(StarSystems.readDisplayName(
+                    buildSystemNamed("Ko Ko Star System", "Ko Ko")))
+                .isEqualTo("Ko Ko Star System");
+        }
+
+        @Test
+        void answers_the_name_untouched_where_the_name_proper_is_not_what_it_opens_with() {
+            // getNameWithNoType strips its type word globally, so a base name carrying that word in
+            // its middle comes back as something the name does not begin with - and a word count
+            // taken from it would protect the wrong words.
+            assertThat(StarSystems.readDisplayName(
+                    buildSystemNamed("Nebula Ridge Nebula", "Ridge")))
+                .isEqualTo("Nebula Ridge Nebula");
+        }
+
+        @Test
+        void answers_a_name_that_is_its_own_name_proper_untouched() {
+            // Nothing was appended, so every word is protected and there is nothing to weigh.
+            assertThat(StarSystems.readDisplayName(buildSystemNamed("Galatia", "Galatia")))
+                .isEqualTo("Galatia");
+        }
+
+        @Test
+        void answers_the_name_untouched_where_the_name_proper_is_blank() {
+            // With no base name to protect, a general scan could cut a word out of the name itself.
+            assertThat(StarSystems.readDisplayName(buildSystemNamed("Ko Ko System", " ")))
+                .isEqualTo("Ko Ko System");
+        }
+
+        @Test
+        void matches_the_repeat_ignoring_case() {
+            assertThat(StarSystems.readDisplayName(
+                    buildSystemNamed("Penelope's Star STAR System", "Penelope's Star")))
+                .isEqualTo("Penelope's Star System");
+        }
+
+        @Test
+        void answers_an_unchanged_name_as_the_very_string_it_was_given() {
+            // A name that lost nothing is handed back rather than rejoined: rebuilding it would
+            // normalise whatever spacing it was authored with, changing a name for no gain.
+            var name = "Galatia  Star System";
+
+            assertThat(StarSystems.readDisplayName(buildSystemNamed(name, "Galatia")))
+                .isSameAs(name);
+        }
+
+        @Test
+        void returns_blank_for_a_null_system() {
+            assertThat(StarSystems.readDisplayName(null))
+                .isEmpty();
+        }
+    }
+
+    @Nested
     class ReadFactionClaimOverride {
+
         @Test
         void returns_the_decreed_faction_id() {
             assertThat(StarSystems.readFactionClaimOverride(buildSystemClaimedBy("luddic_church")))
@@ -813,6 +903,7 @@ final class StarSystemsTest {
 
     @Nested
     class IsReachable {
+
         @Test
         void returns_true_for_a_system_with_a_jump_point() {
             assertThat(StarSystems.isReachable(buildSystemNotCutOff("a")))
@@ -886,6 +977,7 @@ final class StarSystemsTest {
 
     @Nested
     class Find {
+        
         @Test
         void returns_the_tagged_entity_whose_id_matches() {
 
@@ -940,6 +1032,20 @@ final class StarSystemsTest {
 
     private static StarSystemAPI buildOnlySystem(SectorAPI sector) {
         return sector.getStarSystems().get(0);
+    }
+
+    // A system answering vanilla's two names: the composed one every surface reads, and the base
+    // name under it - the pair a display name is derived from.
+    private static StarSystemAPI buildSystemNamed(String name, String nameProper) {
+
+        var systemMock = mock(StarSystemAPI.class);
+
+        when(systemMock.getName())
+            .thenReturn(name);
+        when(systemMock.getNameWithNoType())
+            .thenReturn(nameProper);
+
+        return systemMock;
     }
 
     // A star fixed at a location, so a central-star search can rank stars by nearness to the

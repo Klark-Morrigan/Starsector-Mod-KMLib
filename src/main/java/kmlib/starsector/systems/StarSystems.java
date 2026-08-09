@@ -53,6 +53,7 @@ public final class StarSystems {
      *         the sector's star-system order.
      */
     public static List<double[]> getHyperspacePositions(SectorAPI sector) {
+
         var positions = new ArrayList<double[]>();
         if (sector == null) {
             return positions;
@@ -84,6 +85,7 @@ public final class StarSystems {
     public static Map<String, double[]> collectPositionsById(
             SectorAPI sector,
             Predicate<StarSystemAPI> shouldInclude) {
+                
         var positions = new LinkedHashMap<String, double[]>();
         if (sector == null) {
             return positions;
@@ -142,6 +144,51 @@ public final class StarSystems {
             }
         }
         return null;
+    }
+
+    /**
+     * The name a surface titles {@code system} by - vanilla's own composed name, less a type word
+     * the name already ends on.
+     *
+     * <p>Vanilla composes a system's name as its base name plus its type, so a system named after
+     * its star ends the first on the word the second opens with: {@code getName()} over Penelope's
+     * Star reads "Penelope's Star Star System". Dropping the type outright would answer "Penelope's
+     * Star", losing the one word telling a reader the subject is the system rather than the star in
+     * it; dropping the repetition keeps both, which is what a person writing the title by hand would
+     * have put.
+     *
+     * <p>Only the words past the name proper are ever in reach. Left unconstrained the scan cannot
+     * tell a name's own repetition from the collision vanilla's composition created, so a system
+     * named "Ko Ko" would be titled "Ko Star System" - a name no longer anyone's. Protecting the
+     * name proper makes that impossible by construction rather than by a rule about where a repeat
+     * is allowed to fall, which is also what holds the read good if vanilla ever composes a longer
+     * type.
+     *
+     * <p>Where the name proper is not what the name opens with, the name is answered untouched.
+     * {@code getNameWithNoType} strips its type word globally, so a nebula carrying that word in the
+     * middle of its base name comes back as something the name does not begin with - and the word
+     * count would then protect the wrong words. A title keeping vanilla's own wart is worse than a
+     * title; a title with a word cut out of the middle of a name is wrong.
+     *
+     * @param system the system to name; null yields a blank name, there being no name to read
+     * @return the system's name with a repeated type word dropped, or vanilla's own name where
+     *         nothing repeats or the name proper cannot be told apart within it
+     */
+    public static String readDisplayName(StarSystemAPI system) {
+        var name = system == null ? null : system.getName();
+        if (name == null) {
+            return "";
+        }
+        var nameProper = system.getNameWithNoType();
+        if (!KmlibStrings.hasText(nameProper) || !name.startsWith(nameProper)) {
+            return name;
+        }
+        // The name proper is what this system is called and the words past it are what vanilla
+        // appended, so protecting exactly that many words puts only the type in reach - which is
+        // what makes a general repeat scan safe over a name.
+        return KmlibStrings.dropAdjacentRepeatedWords(
+            name,
+            KmlibStrings.splitIntoWords(nameProper).size());
     }
 
     /**
@@ -349,10 +396,13 @@ public final class StarSystems {
         if (system == null) {
             return null;
         }
+
         var centre = system.getCenter();
         var centreLocation = centre == null ? null : centre.getLocation();
-        SectorEntityToken nearestStar = null;
         var nearestDistance = Double.POSITIVE_INFINITY;
+
+        SectorEntityToken nearestStar = null;
+
         for (var star : getStars(system)) {
             var distance = centreLocation == null
                 ? 0.0
