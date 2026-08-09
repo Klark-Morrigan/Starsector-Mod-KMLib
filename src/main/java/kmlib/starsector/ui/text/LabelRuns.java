@@ -1,5 +1,6 @@
 package kmlib.starsector.ui.text;
 
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -10,11 +11,22 @@ import java.util.Objects;
  * more than one kind of content carries a label - a row of a stack, a control of a strip - and how runs
  * compose is a fact about runs rather than about whichever content happens to hold them.
  *
- * <p>Runs <em>flow</em>: each starts a word gap past where the one before it measured out, and none of
- * them is charged to a column. That is what parts them from the slots flanking a label, which are columns
- * reserved at one width across a whole stack so the labels between them line up. A surface that laid runs
- * as columns would align the second colour of every line, which is not what picking a stretch of a
- * sentence out means.
+ * <p>Runs <em>flow</em>: each starts one word space past where the one before it measured out, and none
+ * of them is charged to a column. That is what parts them from the slots flanking a label, which are
+ * columns reserved at one width across a whole stack so the labels between them line up. A surface that
+ * laid runs as columns would align the second colour of every line, which is not what picking a stretch
+ * of a sentence out means.
+ *
+ * <p>That space is the drawing face's own, measured on the line the runs sit on, so a label spaces its
+ * runs the way the font spaces its words and a stack of lines at several sizes reads at one rhythm. A
+ * fixed number cannot: it is a word space at whichever size it was chosen for and a column break at every
+ * smaller one.
+ *
+ * <p>Both forms a label can be laid in are spaced here - as geometry where the runs are placed one by one
+ * ({@link #measureRunOffsets}), and as a character where they are joined into a single draw
+ * ({@link #resolveLineText}). Spacing is therefore never something an author writes into a phrase: a
+ * caller that wrote its own would have to know which form its content ends up drawn in, and a label
+ * carrying a separator of its own is spaced twice on the form that already spaces it.
  *
  * <p>What a run is - a stretch of text or a small image - is {@link LabelRun}'s sealed set, and nothing
  * here reads it: a run is asked its own width and whether it draws at all, so a label composed of words
@@ -26,10 +38,21 @@ import java.util.Objects;
  */
 public final class LabelRuns {
 
-    // The gap between two drawn runs of one label, in UI units. A word space rather than a column, so it
-    // is charged only where one run actually follows another - and held here rather than per surface,
-    // since a strip and a tooltip spacing the same runs differently would read as two different rules.
-    private static final float RUN_GAP = 6f;
+    // The space charged between two drawn runs of one label: the face's own space glyph, measured on the
+    // line the runs sit on. A word space rather than a column, so it is charged only where one run
+    // actually follows another - and held here rather than per surface, since a strip and a tooltip
+    // spacing the same runs differently would read as two different rules.
+    //
+    // Measured rather than fixed because the runs of a label are one sentence, and how wide a word space
+    // is in a sentence is the font's statement, not the layout's. A flat number is only ever right at one
+    // size: it reads tight under a 20pt heading and, on a stack that shrinks its deeper levels, grows to
+    // two thirds the glyph height by the time it reaches a footnote - so the same rule that reads as a
+    // space at the top of a box reads as a column break at the bottom of it.
+    //
+    // A colour is needed to build a span and says nothing about its width; nothing is ever drawn from
+    // this one.
+    private static final String WORD_SPACE_TEXT = " ";
+    private static final TextSpan WORD_SPACE = new TextSpan(WORD_SPACE_TEXT, Color.WHITE);
 
     private LabelRuns() {
     }
@@ -79,7 +102,8 @@ public final class LabelRuns {
      * @param labelRuns  the label's runs in reading order
      * @param lineHeight the height of the line the runs sit on, in UI units - what an image run squares
      *                   itself off, and ignored by a run of text
-     * @param measurer   the width measurement already bound to the face the label draws in
+     * @param measurer   the width measurement already bound to the face the label draws in, which is
+     *                   also asked for the face's own space - the gap charged between two drawn runs
      * @return each run's offset from the label's left edge, and the width the runs occupy together
      */
     public static LabelRunOffsets measureRunOffsets(
@@ -88,6 +112,10 @@ public final class LabelRuns {
             StyledSpanMeasurer measurer) {
 
         var runOffsetXs = new ArrayList<Float>(labelRuns.size());
+
+        // Asked once for the whole label rather than per gap: every run of a label is spoken in the one
+        // look, so a second measurement could only ever return the same number at a cost.
+        var wordSpaceWidth = (float) measurer.measureSpanWidth(WORD_SPACE);
         var runsWidth = 0f;
         var hasDrawnRun = false;
 
@@ -97,7 +125,7 @@ public final class LabelRuns {
                 continue;
             }
             if (hasDrawnRun) {
-                runsWidth += RUN_GAP;
+                runsWidth += wordSpaceWidth;
             }
             runOffsetXs.add(runsWidth);
             runsWidth += labelRun.computeWidth(lineHeight, measurer);
@@ -107,24 +135,42 @@ public final class LabelRuns {
     }
 
     /**
-     * The whole label as one line: the text of its runs in reading order, joined. For a surface that lays
-     * a label in a single draw and charges it a single measurement, where each run's own anchor is never
-     * worked out and so the runs read as the one sentence they already are.
+     * The whole label as one line: the text of its runs in reading order, one word space between each
+     * two that draw. For a surface that lays a label in a single draw and charges it a single
+     * measurement, where each run's own anchor is never worked out and so the runs read as the one
+     * sentence they already are.
      *
-     * <p>Neither the colours nor any image runs survive the join, since one line drawn once draws in one
-     * colour and holds only glyphs. A surface sizing itself from this alone therefore reserves nothing
-     * for a label's images; one that shows them reads the runs themselves and measures through
+     * <p>Spaced by the same rule the run-by-run form is placed by, spelled as a character here because
+     * this form has no geometry to space with - there are no per-run anchors to set apart, so the one
+     * thing that can part two runs is a space in the string. That the two forms agree is what lets a
+     * label be authored once and laid either way: a caller writing its own separator would have to know
+     * which of the two its content ends up on, and would double the space on the one and be right on the
+     * other.
+     *
+     * <p>A run with nothing to draw is passed over rather than joined, so it costs the line neither a
+     * space nor an empty stretch - the same reading {@link #measureRunOffsets} charges it nothing by.
+     * Neither the colours nor any image runs survive the join, since one line drawn once draws in one
+     * colour and holds only glyphs; an image therefore takes no space here either, where the run-by-run
+     * form squares one off its line. A surface sizing itself from this alone reserves nothing for a
+     * label's images; one that shows them reads the runs themselves and measures through
      * {@link #measureRunOffsets}.
      *
      * @param labelRuns the label's runs in reading order
-     * @return the text of the runs joined into one line
+     * @return the text of the runs that draw, joined by one space each
      */
     public static String resolveLineText(List<LabelRun> labelRuns) {
         var lineText = new StringBuilder();
         for (var labelRun : labelRuns) {
-            if (labelRun instanceof TextSpan textSpan) {
-                lineText.append(textSpan.text());
+
+            if (!(labelRun instanceof TextSpan textSpan) || !textSpan.hasContent()) {
+                continue;
             }
+            // Spent between two runs that draw rather than in front of every one, so a label opening on
+            // an image or on a run that came out blank still starts on its first word.
+            if (!lineText.isEmpty()) {
+                lineText.append(WORD_SPACE_TEXT);
+            }
+            lineText.append(textSpan.text());
         }
         return lineText.toString();
     }

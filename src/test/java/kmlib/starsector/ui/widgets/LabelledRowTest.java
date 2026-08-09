@@ -239,13 +239,14 @@ class LabelledRowTest {
         @Test
         void resolveLabelTextJoinsTheRunsInReadingOrder() {
             // The runs are one sentence picked out in several colours, so a surface that lays the
-            // label in a single draw gets the sentence rather than its first stretch.
+            // label in a single draw gets the sentence rather than its first stretch - and gets it
+            // spaced, since this form has no per-run anchors to part the runs with.
             var row = buildBareRow()
                 .continuesWith(new TextSpan(RUN_TEXT, Color.YELLOW))
                 .continuesWith(new TextSpan(OTHER_RUN_TEXT, Color.RED));
 
             assertThat(row.resolveLabelText())
-                .isEqualTo("Hegemonycore territorycontested");
+                .isEqualTo("Hegemony core territory contested");
         }
 
         @Test

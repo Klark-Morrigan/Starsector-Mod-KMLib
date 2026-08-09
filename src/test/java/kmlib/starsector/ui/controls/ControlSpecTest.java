@@ -197,12 +197,12 @@ final class ControlSpecTest {
 
             var checkbox = LabelledControlSpecs
                 .buildCheckbox("Muted", true, ControlAction.NONE)
-                .continuesWith(new TextSpan(" (recedes)", Color.YELLOW));
+                .continuesWith(new TextSpan("(recedes)", Color.YELLOW));
 
             assertThat(checkbox.labelRuns())
                 .containsExactly(
                     new TextSpan("Muted", LabelledControlSpecs.LABEL_TEXT_COLOUR),
-                    new TextSpan(" (recedes)", Color.YELLOW));
+                    new TextSpan("(recedes)", Color.YELLOW));
             assertThat(checkbox.selectedIndex())
                 .isZero();
         }
@@ -212,7 +212,7 @@ final class ControlSpecTest {
             // A strip snaps a control to what its label says, not to how many colours it says it in.
             var checkbox = LabelledControlSpecs
                 .buildCheckbox("Muted", true, ControlAction.NONE)
-                .continuesWith(new TextSpan(" (recedes)", Color.YELLOW));
+                .continuesWith(new TextSpan("(recedes)", Color.YELLOW));
 
             assertThat(checkbox.labels())
                 .containsExactly("Muted (recedes)");
@@ -266,12 +266,12 @@ final class ControlSpecTest {
 
             var toggle = LabelledControlSpecs
                 .buildToggle("Factions", true, ControlAction.NONE)
-                .continuesWith(new TextSpan(" 3", Color.YELLOW));
+                .continuesWith(new TextSpan("3", Color.YELLOW));
 
             assertThat(toggle.labelRuns())
                 .containsExactly(
                     new TextSpan("Factions", LabelledControlSpecs.LABEL_TEXT_COLOUR),
-                    new TextSpan(" 3", Color.YELLOW));
+                    new TextSpan("3", Color.YELLOW));
             assertThat(toggle.selectedIndex())
                 .isZero();
         }
@@ -311,12 +311,12 @@ final class ControlSpecTest {
 
             var label = LabelledControlSpecs
                 .buildLabel("Non-allied factions are")
-                .continuesWith(new TextSpan(" hidden", Color.YELLOW));
+                .continuesWith(new TextSpan("hidden", Color.YELLOW));
 
             assertThat(label.labelRuns())
                 .containsExactly(
                     new TextSpan("Non-allied factions are", LabelledControlSpecs.LABEL_TEXT_COLOUR),
-                    new TextSpan(" hidden", Color.YELLOW));
+                    new TextSpan("hidden", Color.YELLOW));
         }
     }
 
@@ -441,10 +441,11 @@ final class ControlSpecTest {
         @Test
         void labelsAreEachRowsRunsReadAsOneLine() {
             // A row's label may be authored in several runs so part of it draws in its own colour; a
-            // strip that snaps a control to its text charges the whole line, so the runs read as one.
+            // strip that snaps a control to its text charges the whole line, so the runs read as one -
+            // parted by the run vocabulary's own space rather than by one written into a phrase.
             var table = ControlSpec.VerticalTable.createColumnTable(
                 List.of(VerticalTableSpecs.buildRow("Hegemony")
-                    .continuesWith(new TextSpan(" (7)", VerticalTableSpecs.ROW_TEXT_COLOUR))),
+                    .continuesWith(new TextSpan("(7)", VerticalTableSpecs.ROW_TEXT_COLOUR))),
                 0,
                 ControlAction.NONE);
 

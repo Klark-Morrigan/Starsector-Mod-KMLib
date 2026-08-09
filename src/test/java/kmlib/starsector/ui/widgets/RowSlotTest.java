@@ -28,10 +28,11 @@ class RowSlotTest {
     private static final Color SLOT_COLOUR = new Color(200, 150, 50);
     private static final Color OTHER_SLOT_COLOUR = new Color(140, 140, 140);
 
-    // The word gap two drawn runs of one value stand apart by, restated here rather than read from the
-    // rule that applies it: read from the subject the expectation would follow a change to the spacing
-    // rather than catching it.
-    private static final float RUN_GAP = 6f;
+    // The word space two drawn runs of one value stand apart by: the drawing face's own, which the
+    // stand-in measurer below charges as the one character it is. Restated here rather than read from
+    // the rule that applies it: read from the subject the expectation would follow a change to the
+    // spacing rather than catching it.
+    private static final float WORD_SPACE = 1f;
 
     // A measurement no slot under test is allowed to spend. Handed to the kinds whose width is geometry
     // rather than glyphs, so "it never asks" is pinned as a contract rather than left as something that
@@ -118,14 +119,14 @@ class RowSlotTest {
 
         @Test
         void computeWidthSumsTheRunsOfAValueDrawnInSeveral() {
-            // Four characters, the word gap, then two more: the column reserves room for the gap the
+            // Four characters, the word space, then two more: the column reserves room for the space the
             // runs are drawn apart by, or the second run would be painted past the edge it was sized to.
             assertThat(computeWidth(
                     new RowSlot.TextRuns(List.of(
                         new TextSpan("9999", SLOT_COLOUR),
                         new TextSpan("12", OTHER_SLOT_COLOUR))),
                     LINE_HEIGHT))
-                .isEqualTo(4f + RUN_GAP + 2f);
+                .isEqualTo(4f + WORD_SPACE + 2f);
         }
 
         @Test

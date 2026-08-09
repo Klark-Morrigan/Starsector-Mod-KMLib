@@ -337,10 +337,10 @@ class CursorTooltipTest {
                     new TextSpan("BB", Color.GRAY),
                     new TextSpan("C", Color.WHITE)));
 
-            // No crest column; label 2 + value gap 16 + value (2 + run gap 6 + 1) = 27; + 8 padding
-            // each side = 43.
+            // No crest column; label 2 + value gap 16 + value (2 + the body face's 1-wide space + 1) =
+            // 22; + 8 padding each side = 38.
             assertThat(layOut(List.of(row)).box().width())
-                .isCloseTo(43f, within(TOLERANCE));
+                .isCloseTo(38f, within(TOLERANCE));
         }
 
         @Test
@@ -403,9 +403,9 @@ class CursorTooltipTest {
 
         @Test
         void centresACentredRowsLabelRunsAsOneSpan() {
-            // Span: first run 2 + run gap 6 + second run 3 = 11, centred in the title's 26-wide region,
-            // so the label starts at 226 + (26 - 11) / 2 and the second run still follows one gap past
-            // it - the runs centre together because they are one sentence, not two columns.
+            // Span: first run 2 + the face's 1-wide space + second run 3 = 6, centred in the title's
+            // 26-wide region, so the label starts at 226 + (26 - 6) / 2 and the second run still follows
+            // one space past it - the runs centre together because they are one sentence, not two columns.
             var title = createCrestlessRow("AAAAAAAAAA").clearsCrestColumn();
             var centred = createCentredRow("BB")
                 .continuesWith(new TextSpan("MMM", Color.YELLOW));
@@ -413,30 +413,30 @@ class CursorTooltipTest {
             var centredRow = layOut(List.of(title, centred)).rows().get(1);
 
             assertThat(readRunX(centredRow, FIRST_RUN))
-                .isCloseTo(233.5f, within(TOLERANCE));
+                .isCloseTo(236f, within(TOLERANCE));
             assertThat(readRunX(centredRow, SECOND_RUN))
-                .isCloseTo(241.5f, within(TOLERANCE));
+                .isCloseTo(239f, within(TOLERANCE));
         }
 
         @Test
         void sizesACentredRowToItsImageRunAndWordsTogether() {
-            // A crest set among the words is charged the line it squares off, so the span is image 15 +
-            // run gap 6 + label 2 = 23, and the box is that plus 8 padding each side. Charged to the
-            // span rather than to a column is what keeps the line centred: a box widened for a gutter
-            // would push the crest and its words off the middle.
+            // A crest set among the words is charged the line it squares off, so the span is label 2 +
+            // the face's 1-wide space + image 15 = 18, and the box is that plus 8 padding each side.
+            // Charged to the span rather than to a column is what keeps the line centred: a box widened
+            // for a gutter would push the crest and its words off the middle.
             var box = layOut(List.of(createCentredRow("BB")
                 .continuesWith(new ImageSpan("crest_a"))))
                 .box();
 
             assertThat(box.width())
-                .isCloseTo(39f, within(TOLERANCE));
+                .isCloseTo(34f, within(TOLERANCE));
         }
 
         @Test
         void centresACentredRowsImageRunWithItsWords() {
-            // The crest leads the sentence rather than a column: the 23-wide span (15 + 6 + 2) centres
-            // in the title's 26-wide region at 226 + (26 - 23) / 2, and the words follow one run gap
-            // past the image's own square at 227.5 + 15 + 6.
+            // The crest leads the sentence rather than a column: the 18-wide span (15 + the face's
+            // 1-wide space + 2) centres in the title's 26-wide region at 226 + (26 - 18) / 2, and the
+            // words follow one space past the image's own square at 230 + 15 + 1.
             var title = createCrestlessRow("AAAAAAAAAA").clearsCrestColumn();
             var centred = TooltipRow
                 .createCentredRow(new ImageSpan("crest_a"))
@@ -445,9 +445,9 @@ class CursorTooltipTest {
             var centredRow = layOut(List.of(title, centred)).rows().get(1);
 
             assertThat(readRunX(centredRow, FIRST_RUN))
-                .isCloseTo(227.5f, within(TOLERANCE));
+                .isCloseTo(230f, within(TOLERANCE));
             assertThat(readRunX(centredRow, SECOND_RUN))
-                .isCloseTo(248.5f, within(TOLERANCE));
+                .isCloseTo(246f, within(TOLERANCE));
         }
 
         @Test
@@ -654,17 +654,17 @@ class CursorTooltipTest {
             var only = layOut(List.of(continued)).rows().get(0);
 
             // The run carries on from where the one before it ended rather than sitting in a shared
-            // column: label left edge 226 + its measured 2 + the 6 run gap = 234.
+            // column: label left edge 226 + its measured 2 + the body face's 1-wide space = 229.
             assertThat(readRunX(only, FIRST_RUN))
                 .isCloseTo(226f, within(TOLERANCE));
             assertThat(readRunX(only, SECOND_RUN))
-                .isCloseTo(234f, within(TOLERANCE));
+                .isCloseTo(229f, within(TOLERANCE));
         }
 
         @Test
         void anchorsAThirdRunPastTheSecond() {
-            // A third colour on one line costs the layout nothing beyond another gap: 226 + 2 + 6 = 234
-            // for the second run, + its 3 + 6 = 243 for the third.
+            // A third colour on one line costs the layout nothing beyond another space: 226 + 2 + 1 =
+            // 229 for the second run, + its 3 + 1 = 233 for the third.
             var continued = createCrestlessRow("AA")
                 .continuesWith(new TextSpan("MMM", Color.YELLOW))
                 .continuesWith(new TextSpan("XX", Color.CYAN));
@@ -672,7 +672,7 @@ class CursorTooltipTest {
             var only = layOut(List.of(continued)).rows().get(0);
 
             assertThat(readRunX(only, THIRD_RUN))
-                .isCloseTo(243f, within(TOLERANCE));
+                .isCloseTo(233f, within(TOLERANCE));
         }
 
         @Test
@@ -681,21 +681,22 @@ class CursorTooltipTest {
             var continued = createCrestlessRow("AA").continuesWith(new TextSpan("MMM", Color.YELLOW));
             var box = layOut(List.of(continued)).box();
 
-            // Label 2 + run gap 6 + second run 3 + value gap 16 = 27; + 8 padding each side = 43.
+            // Label 2 + the face's 1-wide space + second run 3 + value gap 16 = 22; + 8 padding each
+            // side = 38.
             assertThat(box.width())
-                .isCloseTo(43f, within(TOLERANCE));
+                .isCloseTo(38f, within(TOLERANCE));
         }
 
         @Test
         void anchorsASecondRunPastAReservedCrestColumn() {
             // A run rides off where the label itself starts, so it clears the crest gutter the box
             // reserved rather than being measured from the row's left edge: 226 + crest 15 + gap 6 +
-            // label 2 + run gap 6 = 255.
+            // label 2 + the face's 1-wide space = 250.
             var continued = createCrestlessRow("AA").continuesWith(new TextSpan("MMM", Color.YELLOW));
             var continuedRow = layOut(List.of(continued, TOP_TIER)).rows().get(0);
 
             assertThat(readRunX(continuedRow, SECOND_RUN))
-                .isCloseTo(255f, within(TOLERANCE));
+                .isCloseTo(250f, within(TOLERANCE));
         }
 
         @Test
@@ -849,13 +850,14 @@ class CursorTooltipTest {
         @Test
         void anchorsAHeadingRowsSecondRunOnTheHeadingFace() {
             // A run rides off the measured width of what came before it, so a heading's second run has to
-            // clear the first as the heading face measures it: 226 + label 2 * 3 + run gap 6 = 238, where
-            // the body face's measurement would have set it at 234 and let the wider label run under it.
+            // clear the first as the heading face measures it - and the space parting them is that face's
+            // own, three units where the body's is one: 226 + label 2 * 3 + space 3 = 235, where the body
+            // face's measurement would have set it at 229 and let the wider label run under it.
             var continued = createHeadingRow("AA").continuesWith(new TextSpan("MMM", Color.YELLOW));
             var continuedRow = layOut(List.of(continued), TWO_FACE_STYLE).rows().get(0);
 
             assertThat(readRunX(continuedRow, SECOND_RUN))
-                .isCloseTo(238f, within(TOLERANCE));
+                .isCloseTo(235f, within(TOLERANCE));
         }
 
         @Test

@@ -16,11 +16,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * label is held to, that a run is added to what is there rather than replacing it, that the runs read as
  * one line when a surface draws them in one pass, and where they measure out to when drawn as several.
  *
- * <p>The offsets are the contract worth fixing hardest. A run starting a word gap past the one before it
- * and a blank run being charged nothing are what make two surfaces lay the same label identically - and a
- * placement that disagreed with the width its host was sized to is drift no draw call could catch. An
- * image run is held to the same walk, since a crest set among a line's words is spaced and anchored by
- * the sentence rather than by a column.
+ * <p>The offsets are the contract worth fixing hardest. A run starting one word space past the one before
+ * it, that space being the drawing face's own, and a blank run being charged nothing are what make two
+ * surfaces lay the same label identically - and a placement that disagreed with the width its host was
+ * sized to is drift no draw call could catch. An image run is held to the same walk, since a crest set
+ * among a line's words is spaced and anchored by the sentence rather than by a column.
  */
 class LabelRunsTest {
 
@@ -46,12 +46,12 @@ class LabelRunsTest {
 
             var runs = LabelRuns.appendRun(
                 List.of(new TextSpan("Hegemony", RUN_COLOUR)),
-                new TextSpan(" (7)", OTHER_RUN_COLOUR));
+                new TextSpan("(7)", OTHER_RUN_COLOUR));
 
             assertThat(runs)
                 .containsExactly(
                     new TextSpan("Hegemony", RUN_COLOUR),
-                    new TextSpan(" (7)", OTHER_RUN_COLOUR));
+                    new TextSpan("(7)", OTHER_RUN_COLOUR));
         }
 
         @Test
@@ -75,7 +75,7 @@ class LabelRunsTest {
             var callerRuns = new ArrayList<LabelRun>();
             callerRuns.add(new TextSpan("Hegemony", RUN_COLOUR));
 
-            LabelRuns.appendRun(callerRuns, new TextSpan(" (7)", OTHER_RUN_COLOUR));
+            LabelRuns.appendRun(callerRuns, new TextSpan("(7)", OTHER_RUN_COLOUR));
 
             assertThat(callerRuns)
                 .hasSize(1);
@@ -90,12 +90,12 @@ class LabelRunsTest {
 
             var runs = LabelRuns.copyRuns(List.of(
                 new TextSpan("Hegemony", RUN_COLOUR),
-                new TextSpan(" (7)", OTHER_RUN_COLOUR)));
+                new TextSpan("(7)", OTHER_RUN_COLOUR)));
 
             assertThat(runs)
                 .containsExactly(
                     new TextSpan("Hegemony", RUN_COLOUR),
-                    new TextSpan(" (7)", OTHER_RUN_COLOUR));
+                    new TextSpan("(7)", OTHER_RUN_COLOUR));
         }
 
         @Test
@@ -155,7 +155,8 @@ class LabelRunsTest {
 
         @Test
         void measureRunOffsetsStartsEachRunAWordGapPastTheOneBefore() {
-            // The runs read as one sentence, so the second starts past the first plus the gap: 2 + 6.
+            // The runs read as one sentence, so the second starts past the first plus the face's own
+            // space, which this measurer charges as the one character it is: 2 + 1.
             var offsets = LabelRuns.measureRunOffsets(
                 List.of(
                     new TextSpan("AA", RUN_COLOUR),
@@ -164,15 +165,15 @@ class LabelRunsTest {
                 ONE_UNIT_PER_CHARACTER);
 
             assertThat(offsets.runOffsetXs())
-                .containsExactly(0f, 8f);
+                .containsExactly(0f, 3f);
             assertThat(offsets.runsWidth())
-                .isEqualTo(11f);
+                .isEqualTo(6f);
         }
 
         @Test
         void measureRunOffsetsChargesAnImageRunItsLineHeight() {
-            // An image squares off its line, so the label is charged 20 for the crest, the 6-unit word
-            // gap, and 3 for the glyphs after it.
+            // An image squares off its line, so the label is charged 20 for the crest, the face's 1-wide
+            // space, and 3 for the glyphs after it.
             var offsets = LabelRuns.measureRunOffsets(
                 List.of(
                     new ImageSpan(CREST_SPRITE_PATH),
@@ -181,15 +182,15 @@ class LabelRunsTest {
                 ONE_UNIT_PER_CHARACTER);
 
             assertThat(offsets.runOffsetXs())
-                .containsExactly(0f, 26f);
+                .containsExactly(0f, 21f);
             assertThat(offsets.runsWidth())
-                .isEqualTo(29f);
+                .isEqualTo(24f);
         }
 
         @Test
         void measureRunOffsetsSpacesAnImageRunFromTheWordsBeforeIt() {
-            // The image is a run like any other, so it takes the same word gap a second colour would
-            // rather than butting against the glyphs: 2 + 6.
+            // The image is a run like any other, so it takes the same word space a second colour would
+            // rather than butting against the glyphs: 2 + 1.
             var offsets = LabelRuns.measureRunOffsets(
                 List.of(
                     new TextSpan("AA", RUN_COLOUR),
@@ -198,9 +199,9 @@ class LabelRunsTest {
                 ONE_UNIT_PER_CHARACTER);
 
             assertThat(offsets.runOffsetXs())
-                .containsExactly(0f, 8f);
+                .containsExactly(0f, 3f);
             assertThat(offsets.runsWidth())
-                .isEqualTo(28f);
+                .isEqualTo(23f);
         }
 
         @Test
@@ -216,9 +217,31 @@ class LabelRunsTest {
                 ONE_UNIT_PER_CHARACTER);
 
             assertThat(offsets.runOffsetXs())
-                .containsExactly(0f, 2f, 8f);
+                .containsExactly(0f, 2f, 3f);
             assertThat(offsets.runsWidth())
-                .isEqualTo(11f);
+                .isEqualTo(6f);
+        }
+
+        @Test
+        void measureRunOffsetsTakesItsWordSpaceFromTheDrawingFace() {
+            // The rule the whole measurement turns on: the space parting two runs is the face's own, so a
+            // face with a wide space spaces its runs widely and one with a narrow space does not. Fixed at
+            // one number instead, a stack whose lines draw at several sizes would space a footnote's runs
+            // as far apart as a heading's, which reads as a column break rather than as a space.
+            StyledSpanMeasurer wideSpacedFace =
+                textSpan -> textSpan.text().equals(" ") ? 5d : textSpan.text().length();
+
+            var offsets = LabelRuns.measureRunOffsets(
+                List.of(
+                    new TextSpan("AA", RUN_COLOUR),
+                    new TextSpan("BBB", OTHER_RUN_COLOUR)),
+                LINE_HEIGHT,
+                wideSpacedFace);
+
+            assertThat(offsets.runOffsetXs())
+                .containsExactly(0f, 7f);
+            assertThat(offsets.runsWidth())
+                .isEqualTo(10f);
         }
 
         @Test
@@ -244,10 +267,25 @@ class LabelRunsTest {
 
         @Test
         void resolveLineTextJoinsTheRunsInReadingOrder() {
-
+            // Parted by one space, spelled here because this form has no anchors to part them with -
+            // the same rule the run-by-run form spends as geometry, so a label authored once reads
+            // alike whichever way a surface lays it.
             var lineText = LabelRuns.resolveLineText(List.of(
                 new TextSpan("Hegemony", RUN_COLOUR),
-                new TextSpan(" (7)", OTHER_RUN_COLOUR)));
+                new TextSpan("(7)", OTHER_RUN_COLOUR)));
+
+            assertThat(lineText)
+                .isEqualTo("Hegemony (7)");
+        }
+
+        @Test
+        void resolveLineTextPassesOverARunWithNothingToDraw() {
+            // The space is spent between two runs that draw, so a run assembled from parts and coming up
+            // blank costs the line neither a space of its own nor a doubled one around it.
+            var lineText = LabelRuns.resolveLineText(List.of(
+                new TextSpan("Hegemony", RUN_COLOUR),
+                TextSpan.createBlank(OTHER_RUN_COLOUR),
+                new TextSpan("(7)", OTHER_RUN_COLOUR)));
 
             assertThat(lineText)
                 .isEqualTo("Hegemony (7)");
@@ -262,7 +300,8 @@ class LabelRunsTest {
         @Test
         void resolveLineTextLeavesOutAnImageRun() {
             // The line form is glyphs only, so a surface drawing a label in one pass gets its words and
-            // is charged nothing for a crest it will not be laying out run by run.
+            // is charged nothing for a crest it will not be laying out run by run - not even the space
+            // that would part one, which would open the line on a blank the crest was meant to fill.
             var lineText = LabelRuns.resolveLineText(List.of(
                 new ImageSpan(CREST_SPRITE_PATH),
                 new TextSpan("Hegemony", RUN_COLOUR)));

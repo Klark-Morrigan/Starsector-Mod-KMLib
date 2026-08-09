@@ -79,8 +79,9 @@ final class ControlStripLayoutTest {
         @Test
         void measureStripChargesAContinuedLabelBothRunsAndTheGapBetweenThem() {
             // A control that picks part of its label out in another colour is drawn run by run, so the
-            // row it is snapped into has to hold the runs and the word gap parting them - "Muted" (5) and
-            // "on" (2) at 10 per character, plus the 6-unit run gap.
+            // row it is snapped into has to hold the runs and the word space parting them - "Muted" (5)
+            // and "on" (2) at 10 per character, plus the face's own space, which this measurer charges
+            // as the one character it is.
             var checkbox = LabelledControlSpecs
                 .buildCheckbox("Muted", false, ControlAction.NONE)
                 .continuesWith(LabelledControlSpecs.buildLabelSpan("on"));
@@ -92,7 +93,7 @@ final class ControlStripLayoutTest {
             var expectedRow = ControlStripLayout.CONTROL_ROW_HEIGHT
                 + RowColumnSpec.CONTROL_ROW.leadingLabelGap()
                 + 5 * WIDTH_PER_CHAR
-                + 6f
+                + WIDTH_PER_CHAR
                 + 2 * WIDTH_PER_CHAR;
 
             assertThat(measurement.rowWidths().get(0))
@@ -102,8 +103,8 @@ final class ControlStripLayoutTest {
         @Test
         void measureStripChargesAnImageRunTheControlRowHeight() {
             // An image set among a label's words squares off the row it sits on, so the strip reserves
-            // that square and the word gap in front of it as it would any other run - "Muted" (5) at 10
-            // per character, the 6-unit run gap, then the 20-unit square. Measured from the runs rather
+            // that square and the word space in front of it as it would any other run - "Muted" (5) at 10
+            // per character, the face's own space, then the 20-unit square. Measured from the runs rather
             // than from the label's text, which holds no image and would size the row too narrow.
             var checkbox = LabelledControlSpecs
                 .buildCheckbox("Muted", false, ControlAction.NONE)
@@ -116,7 +117,7 @@ final class ControlStripLayoutTest {
             var expectedRow = ControlStripLayout.CONTROL_ROW_HEIGHT
                 + RowColumnSpec.CONTROL_ROW.leadingLabelGap()
                 + 5 * WIDTH_PER_CHAR
-                + 6f
+                + WIDTH_PER_CHAR
                 + ControlStripLayout.CONTROL_ROW_HEIGHT;
 
             assertThat(measurement.rowWidths().get(0))
@@ -127,7 +128,7 @@ final class ControlStripLayoutTest {
         void measureStripChargesAContinuedToggleLabelBothRunsAndTheGapBetweenThem() {
             // A toggle sizes its button past its label, so the runs and their gap have to reach the
             // padding rather than only the first run - "Factions" (8) and "3" (1) at 10 per character,
-            // plus the 6-unit run gap, plus the button's own padding.
+            // plus the face's own space, plus the button's own padding.
             var toggle = LabelledControlSpecs
                 .buildToggle("Factions", true, ControlAction.NONE)
                 .continuesWith(LabelledControlSpecs.buildLabelSpan("3"));
@@ -137,7 +138,7 @@ final class ControlStripLayoutTest {
                 measurerFake);
 
             var expectedRow = 8 * WIDTH_PER_CHAR
-                + 6f
+                + WIDTH_PER_CHAR
                 + 1 * WIDTH_PER_CHAR
                 + ControlStripLayout.TOGGLE_TEXT_PADDING;
 
@@ -150,7 +151,7 @@ final class ControlStripLayoutTest {
             // The shape a picker list actually draws: a crest, a name called out part-way through in
             // another colour, and a right-aligned value. The row has to hold both runs and the gap
             // parting them, or the column comes out narrower than the name painted into it - "AB" (2)
-            // and "12" (2) at 10 per character with the 6-unit run gap between them.
+            // and "12" (2) at 10 per character with the face's own space between them.
             var table = ControlSpec.VerticalTable.createColumnTable(
                 List.of(VerticalTableSpecs
                     .buildRow("AB")
@@ -167,7 +168,7 @@ final class ControlStripLayoutTest {
 
             var expectedRow = IconLabelRow.measureRowWidth(
                 ControlStripLayout.CONTROL_ROW_HEIGHT,
-                2 * WIDTH_PER_CHAR + 6f + 2 * WIDTH_PER_CHAR,
+                2 * WIDTH_PER_CHAR + WIDTH_PER_CHAR + 2 * WIDTH_PER_CHAR,
                 true,
                 1 * WIDTH_PER_CHAR);
 
