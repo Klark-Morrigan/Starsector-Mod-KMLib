@@ -544,6 +544,101 @@ final class MarketsTest {
     }
 
     @Nested
+    class IsSamePlaceAndOwner {
+
+        @Test
+        void reports_two_markets_on_one_entity_under_one_owner_as_one_place() {
+            // The shape a merged listing has to collapse: IndEvo hangs its own Galatia Academy
+            // market on the station that already carries vanilla's, both independent-owned.
+            var station = buildDiscoveredEntity();
+            var independent = buildFaction("independent");
+
+            assertThat(Markets.isSamePlaceAndOwner(
+                    buildMarketAtPlace(station, independent, 3),
+                    buildMarketAtPlace(station, independent, 5)))
+                .isTrue();
+        }
+
+        @Test
+        void reports_a_market_as_its_own_place() {
+
+            var market = buildMarketAtPlace(
+                buildDiscoveredEntity(), buildFaction("hegemony"), 4);
+
+            assertThat(Markets.isSamePlaceAndOwner(market, market))
+                .isTrue();
+        }
+
+        @Test
+        void reports_a_market_with_no_entity_as_its_own_place() {
+            // Identity settles it before the key is ever built, so a market that answers for
+            // nothing but itself still answers for itself.
+            var market = buildMarketAtPlace(null, buildFaction("hegemony"), 4);
+
+            assertThat(Markets.isSamePlaceAndOwner(market, market))
+                .isTrue();
+        }
+
+        @Test
+        void reports_two_markets_on_one_entity_under_different_owners_as_two_places() {
+
+            var station = buildDiscoveredEntity();
+
+            assertThat(Markets.isSamePlaceAndOwner(
+                    buildMarketAtPlace(station, buildFaction("hegemony"), 3),
+                    buildMarketAtPlace(station, buildFaction("pirates"), 5)))
+                .isFalse();
+        }
+
+        @Test
+        void reports_two_markets_of_one_owner_on_separate_entities_as_two_places() {
+
+            var independent = buildFaction("independent");
+
+            assertThat(Markets.isSamePlaceAndOwner(
+                    buildMarketAtPlace(buildDiscoveredEntity(), independent, 3),
+                    buildMarketAtPlace(buildDiscoveredEntity(), independent, 5)))
+                .isFalse();
+        }
+
+        @Test
+        void reports_two_distinct_markets_with_no_entity_as_two_places() {
+            // A missing key is not a key two markets can share, so each answers for itself alone.
+            var independent = buildFaction("independent");
+
+            assertThat(Markets.isSamePlaceAndOwner(
+                    buildMarketAtPlace(null, independent, 3),
+                    buildMarketAtPlace(null, independent, 5)))
+                .isFalse();
+        }
+
+        @Test
+        void reports_two_distinct_markets_with_no_owner_as_two_places() {
+
+            var station = buildDiscoveredEntity();
+
+            assertThat(Markets.isSamePlaceAndOwner(
+                    buildMarketAtPlace(station, null, 3),
+                    buildMarketAtPlace(station, null, 5)))
+                .isFalse();
+        }
+
+        @Test
+        void reports_a_null_market_as_the_same_place_as_nothing() {
+
+            var market = buildMarketAtPlace(
+                buildDiscoveredEntity(), buildFaction("hegemony"), 4);
+
+            assertThat(Markets.isSamePlaceAndOwner(null, market))
+                .isFalse();
+            assertThat(Markets.isSamePlaceAndOwner(market, null))
+                .isFalse();
+            assertThat(Markets.isSamePlaceAndOwner(null, null))
+                .isFalse();
+        }
+    }
+
+    @Nested
     class IsMilitary {
 
         @BeforeEach

@@ -300,6 +300,29 @@ public final class Markets {
     }
 
     /**
+     * Whether two markets stand for the same colony under the same owner - the identity
+     * {@link #readLargestMarketsPerFaction} groups by, offered as a plain test for a caller
+     * merging two listings of markets rather than resolving one.
+     *
+     * <p>The market object itself is asked first, so a market is always the same place as
+     * itself. A market with no entity, or no owner whose id can be read, answers for nothing
+     * but itself thereafter: a missing key is not a key two markets can share.
+     *
+     * @param left  one market; null is the same place as nothing at all
+     * @param right the other market; null is the same place as nothing at all
+     * @return true when both stand for one colony under one faction
+     */
+    public static boolean isSamePlaceAndOwner(MarketAPI left, MarketAPI right) {
+        if (left == null || right == null) {
+            return false;
+        }
+        if (left == right) {
+            return true;
+        }
+        return buildPlaceKey(left).equals(buildPlaceKey(right));
+    }
+
+    /**
      * Whether a market is a military one - a garrison rather than a plain colony.
      *
      * <p>Delegates to {@link Misc#isMilitary}, which reads the
