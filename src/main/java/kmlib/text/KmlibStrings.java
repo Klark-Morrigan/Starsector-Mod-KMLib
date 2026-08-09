@@ -1,7 +1,10 @@
 package kmlib.text;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * Generic, Starsector-agnostic string predicates shared across the
+ * Generic, Starsector-agnostic reads over strings shared across the
  * KMLib jar. Lives in its own package (not {@code kmlib.starsector.*})
  * because the helpers here are pure text utilities - they have no
  * dependency on Starsector's API surface and are reused by any KMLib
@@ -35,5 +38,30 @@ public final class KmlibStrings {
             }
         }
         return false;
+    }
+
+    /**
+     * The whitespace-parted words of {@code text}, in the order they are
+     * written and with empties dropped, so leading, trailing or doubled
+     * spacing changes nothing about the answer.
+     *
+     * <p>Empties are dropped rather than reported because a caller counting
+     * or walking words means the words: a count shifted by how the string
+     * happened to be spaced is a count of something else. A caller that
+     * genuinely needs to know a string was blank tests it with
+     * {@link #hasText} first, which states that question directly.
+     *
+     * @param text the string to part; null or blank yields an empty list
+     * @return the words, never null
+     */
+    public static List<String> splitIntoWords(String text) {
+        var words = new ArrayList<String>();
+        if (!hasText(text)) {
+            return words;
+        }
+        for (var word : text.trim().split("\\s+")) {
+            words.add(word);
+        }
+        return words;
     }
 }

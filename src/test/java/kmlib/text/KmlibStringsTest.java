@@ -9,26 +9,31 @@ class KmlibStringsTest {
 
     @Nested
     class HasText {
+
         @Test
         void hasTextIsFalseOnNull() {
-            assertThat(KmlibStrings.hasText(null)).isFalse();
+            assertThat(KmlibStrings.hasText(null))
+                .isFalse();
         }
 
         @Test
         void hasTextIsFalseOnEmpty() {
-            assertThat(KmlibStrings.hasText("")).isFalse();
+            assertThat(KmlibStrings.hasText(""))
+                .isFalse();
         }
 
         @Test
         void hasTextIsFalseOnWhitespaceOnly() {
             // Mix of space, tab, newline so the per-char loop runs over
             // each whitespace flavour the predicate is meant to dismiss.
-            assertThat(KmlibStrings.hasText(" \t\n ")).isFalse();
+            assertThat(KmlibStrings.hasText(" \t\n "))
+                .isFalse();
         }
 
         @Test
         void hasTextIsTrueOnPlainText() {
-            assertThat(KmlibStrings.hasText("Independent")).isTrue();
+            assertThat(KmlibStrings.hasText("Independent"))
+                .isTrue();
         }
 
         @Test
@@ -36,7 +41,58 @@ class KmlibStringsTest {
             // The predicate accepts any string containing at least one
             // non-whitespace character - it is not a "trim then check"
             // wrapper, so surrounding whitespace stays in the input.
-            assertThat(KmlibStrings.hasText("  word  ")).isTrue();
+            assertThat(KmlibStrings.hasText("  word  "))
+                .isTrue();
+        }
+    }
+
+    @Nested
+    class SplitIntoWords {
+
+        @Test
+        void splitIntoWordsPartsASentenceIntoItsWordsInOrder() {
+            assertThat(KmlibStrings.splitIntoWords("Penelope's Star System"))
+                .containsExactly("Penelope's", "Star", "System");
+        }
+
+        @Test
+        void splitIntoWordsIgnoresSurroundingAndDoubledSpacing() {
+            // The reason the answer is words rather than pieces: a caller counting or walking
+            // them means the words, so how the string happened to be spaced changes nothing.
+            assertThat(KmlibStrings.splitIntoWords("  Penelope's   Star \t System \n"))
+                .containsExactly("Penelope's", "Star", "System");
+        }
+
+        @Test
+        void splitIntoWordsPartsAWhitespaceFlavourOtherThanTheSpace() {
+            assertThat(KmlibStrings.splitIntoWords("first\tsecond\nthird"))
+                .containsExactly("first", "second", "third");
+        }
+
+        @Test
+        void splitIntoWordsAnswersOneWordForAStringWithoutSpacing() {
+            assertThat(KmlibStrings.splitIntoWords("Galatia"))
+                .containsExactly("Galatia");
+        }
+
+        @Test
+        void splitIntoWordsIsEmptyOnWhitespaceOnly() {
+            // No words were written, so none are reported - rather than the one empty piece a
+            // bare split answers, which would count as a word everywhere the count is read.
+            assertThat(KmlibStrings.splitIntoWords(" \t\n "))
+                .isEmpty();
+        }
+
+        @Test
+        void splitIntoWordsIsEmptyOnEmpty() {
+            assertThat(KmlibStrings.splitIntoWords(""))
+                .isEmpty();
+        }
+
+        @Test
+        void splitIntoWordsIsEmptyOnNull() {
+            assertThat(KmlibStrings.splitIntoWords(null))
+                .isEmpty();
         }
     }
 }
