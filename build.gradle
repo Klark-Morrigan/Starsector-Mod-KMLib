@@ -205,12 +205,13 @@ dependencies {
 }
 
 jacocoTestReport {
-    // The 'testing' package ships test fixtures (e.g. StarsectorSettingsFake)
-    // in main so downstream mods can reuse them; they're production-located
-    // but test-only, so excluding them keeps the coverage signal honest.
+    // The 'testfixtures' package ships fakes in main so downstream mods can reuse
+    // them (the jar is consumed flat, so java-test-fixtures cannot carry them);
+    // they're production-located but test-only, so excluding them keeps the
+    // coverage signal honest.
     classDirectories.setFrom(
         files(classDirectories.files.collect {
-            fileTree(dir: it, exclude: ['kmlib/starsector/testing/**'])
+            fileTree(dir: it, exclude: ['kmlib/testfixtures/**'])
         })
     )
 }

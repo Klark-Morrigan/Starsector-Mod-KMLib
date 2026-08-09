@@ -2,8 +2,8 @@ package kmlib.starsector.ui.widgets.tabs.style;
 
 import com.fs.starfarer.api.util.Misc;
 
-import kmlib.starsector.testing.StarsectorSettingsFake;
 import kmlib.starsector.ui.colour.AccentColours;
+import kmlib.testfixtures.starsector.settings.StarsectorSettingsFake;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

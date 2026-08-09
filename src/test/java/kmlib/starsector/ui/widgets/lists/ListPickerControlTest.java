@@ -2,12 +2,12 @@ package kmlib.starsector.ui.widgets.lists;
 
 import com.fs.starfarer.api.util.Misc;
 
-import kmlib.starsector.testing.StarsectorSettingsFake;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.ReselectBehaviour;
 import kmlib.starsector.ui.text.TextSpan;
 import kmlib.starsector.ui.widgets.LabelledRow;
 import kmlib.starsector.ui.widgets.RowSlot;
+import kmlib.testfixtures.starsector.settings.StarsectorSettingsFake;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

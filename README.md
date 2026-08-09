@@ -113,9 +113,6 @@ src/main/java/kmlib/
                      one - down to the terms each market's score is the
                      sum of - for callers that must justify a claim
                      rather than merely colour by it
-    testing/       - the no-op SettingsAPI proxy KM tests install into
-                     Global before touching Misc (whose static
-                     initialiser would otherwise NPE)
     time/          - campaign clock wrapper
     ui/            - UI toolkit, tiered by render substrate: a spec
                      names content (controls, built out of widgets'
@@ -176,6 +173,10 @@ src/main/java/kmlib/
                      widget tree a layout rule walks once there - plus
                      builders for the values those ports report. Ships in
                      the MAIN jar so consumer mods' tests can use them
+    starsector/
+      settings/    - the no-op SettingsAPI proxy KM tests install into
+                     Global before touching Misc (whose static
+                     initialiser would otherwise NPE)
 src/bridgestubs/java/ - compile-only mirrors of the Fast Rendering bridge
                         members KMLib reads, so an install without fr.jar
                         still compiles (see Build & Test); never shipped,
@@ -222,7 +223,7 @@ Packages with more behind them than one line can carry:
 | [`opengl/`](src/main/java/kmlib/opengl/), [`starsector/ui/map/`](src/main/java/kmlib/starsector/ui/map/), [`starsector/ui/render/gl/`](src/main/java/kmlib/starsector/ui/render/gl/) | [Rendering environment](#rendering-environment) |
 | [`starsector/factions/`](src/main/java/kmlib/starsector/factions/) | [Player Faction Resolution](#player-faction-resolution) |
 | [`starsector/intel/`](src/main/java/kmlib/starsector/intel/) | [Intel Base Classes](#intel-base-classes) |
-| [`starsector/testing/`](src/main/java/kmlib/starsector/testing/), [`testfixtures/`](src/main/java/kmlib/testfixtures/) | [Build & Test](#build--test) |
+| [`testfixtures/`](src/main/java/kmlib/testfixtures/) | [Build & Test](#build--test) |
 | [`starsector/ui/`](src/main/java/kmlib/starsector/ui/) | [UI primitives, tiered by surface](src/main/java/kmlib/starsector/ui/README.md) |
 | [`starsector/ui/colour/`](src/main/java/kmlib/starsector/ui/colour/) | [UI Colour Palette](#ui-colour-palette) |
 | [`starsector/ui/font/`](src/main/java/kmlib/starsector/ui/font/), [`starsector/ui/label/`](src/main/java/kmlib/starsector/ui/label/) | [Caching](#caching) |

@@ -1,4 +1,4 @@
-package kmlib.starsector.testing;
+package kmlib.testfixtures.starsector.settings;
 
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.SettingsAPI;
@@ -15,11 +15,13 @@ import java.lang.reflect.Proxy;
  * moment Mockito's inline mock-maker triggers class loading, so any
  * test that wants to stub Misc must install a proxy first.
  *
- * <p>Lives in the production source set rather than {@code src/test}
- * so consumer mods can reach it through their {@code testCompileOnly}
- * dependency on {@code KMLib.jar}. The class is never instantiated and
- * exposes only static entry points; players running with KMLib enabled
- * pay nothing for it at runtime.
+ * <p>Lives in the production source set rather than {@code src/test},
+ * with the rest of {@code kmlib.testfixtures}, so consumer mods can
+ * reach it through their {@code testCompileOnly} dependency on
+ * {@code KMLib.jar} - the jar is consumed flat, with no Gradle variants
+ * for a test-fixtures artifact to travel in. The class is never
+ * instantiated and exposes only static entry points; players running
+ * with KMLib enabled pay nothing for it at runtime.
  *
  * <p>String lookups go through a {@link SettingsStringSource} so each
  * mod can plug in its own localisation map without KMLib having to

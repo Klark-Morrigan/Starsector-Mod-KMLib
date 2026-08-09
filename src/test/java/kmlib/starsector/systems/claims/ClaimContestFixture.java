@@ -11,7 +11,7 @@ import com.fs.starfarer.api.campaign.rules.MemoryAPI;
 import com.fs.starfarer.api.impl.campaign.ids.MemFlags;
 
 import kmlib.starsector.factions.FactionCustomFixture;
-import kmlib.starsector.testing.StarsectorSettingsFake;
+import kmlib.testfixtures.starsector.settings.StarsectorSettingsFake;
 
 import org.mockito.MockedStatic;
 

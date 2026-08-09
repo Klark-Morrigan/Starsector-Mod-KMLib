@@ -2,8 +2,8 @@ package kmlib.starsector.ui.text;
 
 import com.fs.starfarer.api.util.Misc;
 
-import kmlib.starsector.testing.StarsectorSettingsFake;
 import kmlib.starsector.ui.font.StarsectorFont;
+import kmlib.testfixtures.starsector.settings.StarsectorSettingsFake;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
