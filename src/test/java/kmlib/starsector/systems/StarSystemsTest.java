@@ -686,13 +686,13 @@ final class StarSystemsTest {
             // carrying two market objects for the one colony - counted twice, it would list a
             // faction's foothold as two separate holdings.
             var station = buildDiscoveredEntity();
-            var independent = mock(FactionAPI.class);
+            var independentMock = mock(FactionAPI.class);
 
-            when(independent.getId())
+            when(independentMock.getId())
                 .thenReturn("independent");
 
-            var listed = buildColonyAtPlace(station, independent);
-            var supplementary = buildColonyAtPlace(station, independent);
+            var listed = buildColonyAtPlace(station, independentMock);
+            var supplementary = buildColonyAtPlace(station, independentMock);
             var sector = buildSectorWithMarkets(listed);
 
             when(station.getMarket())
