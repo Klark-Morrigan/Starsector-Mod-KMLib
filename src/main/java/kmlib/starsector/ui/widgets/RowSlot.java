@@ -6,6 +6,7 @@ import kmlib.starsector.ui.text.LabelRuns.LabelRunOffsets;
 import kmlib.starsector.ui.text.StyledSpanMeasurer;
 import kmlib.starsector.ui.text.TextSpan;
 
+import java.awt.Color;
 import java.util.List;
 import java.util.Objects;
 
@@ -76,10 +77,22 @@ public sealed interface RowSlot {
      * as a square as tall as its line, so it sits level with the label beside it whatever face that
      * label draws in, and a stack of rows shows equally-sized images without any row stating a size.
      *
+     * <p>It carries an optional tint the draw multiplies it by, which is how a row states that its
+     * mark reads back from the rest of the stack: a receded row's crest has to recede with the words
+     * beside it, or the row reads as a rendering slip rather than as a state. The tint is stated per
+     * slot because the state it stands for is per row, while the gutter stays even because a stack's
+     * tints come from one palette in whatever builds the rows rather than from each item.
+     *
+     * <p>A tint darkens; it does not fade. Alpha stays the host's, so a row cannot quietly composite
+     * at an opacity of its own - which also means a tint carrying alpha of its own would re-introduce
+     * exactly the fade this separation avoids, and callers pass an opaque colour.
+     *
      * @param spritePath the image's {@code graphics} texture path
+     * @param tintColour the colour the texture is multiplied by, or null to draw it as authored
      */
     record Image(
-        String spritePath) implements RowSlot {
+        String spritePath,
+        Color tintColour) implements RowSlot {
 
         /**
          * Rejects a null path, since a slot holding no image is {@link #EMPTY} rather than an image
@@ -88,6 +101,17 @@ public sealed interface RowSlot {
          */
         public Image {
             Objects.requireNonNull(spritePath, "spritePath");
+        }
+
+        /**
+         * The image drawn in its own colours - the ordinary case, since most marks are authored in
+         * the shade they are meant to read at and a stack that tints none of its rows would
+         * otherwise have to spell out a no-op multiply on every one of them.
+         *
+         * @param spritePath the image's {@code graphics} texture path
+         */
+        public Image(String spritePath) {
+            this(spritePath, null);
         }
 
         @Override

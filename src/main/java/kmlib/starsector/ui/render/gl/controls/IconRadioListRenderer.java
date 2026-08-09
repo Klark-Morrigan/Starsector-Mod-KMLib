@@ -17,11 +17,11 @@ import java.util.List;
  * {@link RadioRowRenderer} leaves labels to its caller.
  *
  * <p>Each option is described by the {@link RowSlot} its row leads with: a slot holding an image draws
- * that image, and every other kind of slot - a row leading with nothing, or with something this widget
- * does not paint - simply leaves the leading column clear. The image is drawn from its path through
- * {@link UiSprite#renderImage}, so a missing or unknown texture routes to a skipped image rather than
- * aborting the whole list. The number of options is the size of the slot list, so one slot stands for
- * each row.
+ * that image in whatever tint the slot states, and every other kind of slot - a row leading with
+ * nothing, or with something this widget does not paint - simply leaves the leading column clear. The
+ * image is drawn from its path through {@link UiSprite#renderImage}, so a missing or unknown texture
+ * routes to a skipped image rather than aborting the whole list. The number of options is the size of
+ * the slot list, so one slot stands for each row.
  *
  * <p>The list is always vertical (a stacked column of options); an icon list only makes sense as a
  * column, so the alignment is fixed rather than a parameter. Its options can wrap across more than one
@@ -78,10 +78,14 @@ public final class IconRadioListRenderer {
                 continue;
             }
 
+            // Multiplied by whatever tint the slot states, so a row the caller marked as receding
+            // draws its icon back with its words rather than at full strength beside greyed text. A
+            // slot stating none passes null, which UiSprite already draws as authored.
             UiSprite.renderImage(
                 image.spritePath(),
                 IconLabelRow.computeIconBox(segments.get(index)),
-                opacity);
+                opacity,
+                image.tintColour());
         }
     }
 }

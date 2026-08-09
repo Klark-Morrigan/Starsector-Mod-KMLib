@@ -304,6 +304,23 @@ class RowSlotTest {
         }
 
         @Test
+        void constructorLeavesAnImageUntintedWhenNoColourIsStated() {
+            // The path-only form is what almost every row builds, so it must mean "as authored"
+            // rather than some stand-in shade: a null tint is the no-op multiply the draw already
+            // treats as drawing the texture's own pixels.
+            assertThat(new RowSlot.Image("crest_a").tintColour())
+                .isNull();
+        }
+
+        @Test
+        void constructorCarriesAStatedImageTint() {
+            // A row that recedes states the shade its mark is multiplied by, and the slot carries it
+            // through to the draw rather than the two ends agreeing on it separately.
+            assertThat(new RowSlot.Image("crest_a", SLOT_COLOUR).tintColour())
+                .isEqualTo(SLOT_COLOUR);
+        }
+
+        @Test
         void constructorRejectsATextSlotWithNoSpan() {
             assertThatThrownBy(() -> new RowSlot.Text(null))
                 .isInstanceOf(NullPointerException.class)

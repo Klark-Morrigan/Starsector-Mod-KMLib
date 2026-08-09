@@ -7,6 +7,7 @@ import kmlib.starsector.ui.text.TextSpan;
 import kmlib.starsector.ui.widgets.LabelledRow;
 import kmlib.starsector.ui.widgets.RowSlot;
 
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,6 +32,11 @@ import java.util.List;
  * (the picker sorts the items by that metric and labels each row with its value), while the right
  * half is the caller's - a consumer with nothing to pair passes none and the row draws as the sort
  * selector alone.
+ *
+ * <p>Every row's tone is resolved here rather than carried in by the item, so an item states only
+ * whether it reads back ({@link SelectableListItem#isDimmed}) and this decides how far back that is.
+ * A receded row draws its words and its crest back together - the words in the engine's gray, the
+ * crest darkened by a tint - since receding one and not the other reads as a rendering slip.
  *
  * <p>Nothing here reaches a save. The three live values arrive as parameters and the three picks
  * are reported through {@link ListPickerStore}, which is the division the whole family rests on.
@@ -134,26 +140,49 @@ public final class ListPickerControl {
     // would choke on; an item with no crest leads with nothing; and every row carries the metric's
     // value (a zero metric shows "0" rather than dropping the column), which for a mode with no
     // numeric metric is blank throughout and the rows read as a plain list.
+    //
+    // A row the caller marked as receding draws all three parts back at once, since a greyed name
+    // beside a full-strength crest reads as a rendering slip rather than as a state. Both tones are
+    // resolved here rather than asked of the item, so what "receding" looks like is one decision the
+    // whole family shares and a consumer states only which of its rows are in that state.
     private static <T extends SelectableListItem> List<LabelledRow> buildItemRows(
             List<T> items,
             ListSortMode<T> sortMode) {
 
         var textColour = StarsectorUiColour.VANILLA_TEXT.resolve();
+        var recededTextColour = StarsectorUiColour.VANILLA_GRAY.resolve();
         var itemRows = new ArrayList<LabelledRow>(items.size());
 
         for (var item : items) {
             var displayName = item.displayName() == null ? "" : item.displayName();
             var crestSpritePath = item.crestSpritePath();
+            var rowColour = item.isDimmed() ? recededTextColour : textColour;
 
             itemRows.add(LabelledRow
-                .createRow(new TextSpan(displayName, textColour))
+                .createRow(new TextSpan(displayName, rowColour))
                 .leadsWith(crestSpritePath == null
                     ? RowSlot.EMPTY
-                    : new RowSlot.Image(crestSpritePath))
+                    : new RowSlot.Image(crestSpritePath, resolveCrestTint(item)))
                 .trailsWith(new RowSlot.Text(
-                    new TextSpan(sortMode.resolveTrailingValue(item), textColour))));
+                    new TextSpan(sortMode.resolveTrailingValue(item), rowColour))));
         }
         return itemRows;
+    }
+
+    // What a row's crest is multiplied by: nothing at all for an ordinary row, so its badge draws in
+    // the colours it was authored in, and a flat neutral for a receding one, which halves every
+    // channel while leaving the hue that identifies the badge readable.
+    //
+    // Deliberately not the tone its words recede to. That one is the engine's own gray, which carries
+    // an alpha under 255 (a live settings read - textGrayColor is [175,175,175,180] in the stock
+    // file), and a sprite tint's alpha channel multiplies into the draw: using it here would fade the
+    // crest as well as darken it, which is the one thing receding a mark must not do - a badge behind
+    // the map showing through reads as half-drawn rather than as receded. The frozen literal is opaque
+    // and so darkens only.
+    private static Color resolveCrestTint(SelectableListItem item) {
+        return item.isDimmed()
+            ? StarsectorUiColour.DIM_GRAY.resolve()
+            : null;
     }
 
     // Reports the clicked item as the spotlighted one, or reports a clear when the click landed on

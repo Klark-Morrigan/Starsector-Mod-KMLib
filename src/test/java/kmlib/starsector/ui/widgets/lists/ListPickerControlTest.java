@@ -66,9 +66,17 @@ final class ListPickerControlTest {
     private static final int COLUMNS_SELECTOR = 1;
     private static final int SORT_ROW = 2;
 
-    // The engine tone the picker's rows carry, stood in for so the rows can be built without the live
-    // palette in reach.
+    // The engine tones the picker's rows carry, stood in for so the rows can be built without the live
+    // palette in reach. Two distinguishable stand-ins, since what the tone cases assert is which of the
+    // two a row took.
     private static final Color TEXT = Color.LIGHT_GRAY;
+    private static final Color GRAY = Color.DARK_GRAY;
+
+    // What a receded row's crest is multiplied by, spelled as the literal shade rather than read back
+    // off the palette the picker resolves it from - an expectation computed the way the code computes
+    // it would hold however the shade drifted. Opaque on purpose: a tint's alpha multiplies into the
+    // draw, so a translucent one would fade the crest instead of darkening it.
+    private static final Color CREST_TINT = new Color(130, 130, 130);
 
     // Collects whatever the picker reports, so a test reads what the caller would have been asked to
     // persist.
@@ -86,6 +94,9 @@ final class ListPickerControlTest {
         miscMock
             .when(Misc::getTextColor)
             .thenReturn(TEXT);
+        miscMock
+            .when(Misc::getGrayColor)
+            .thenReturn(GRAY);
     }
 
     @AfterEach
@@ -214,7 +225,6 @@ final class ListPickerControlTest {
             // A third item that trails on severity but leads on radius, so a radius sort visibly
             // reorders the list rather than just relabelling it.
             var squall = new Anomaly("squall_1", "Squall", "crest_squall", 1, 12);
-
             var picker = buildPickerFor(build(
                 List.of(STORM, DRIFT, squall),
                 null,
@@ -254,11 +264,65 @@ final class ListPickerControlTest {
         }
 
         @Test
+        void buildPickerDrawsAnOrdinaryRowAtFullStrength() {
+            // The baseline the receded case is read against: an item that says nothing about reading
+            // back takes the plain tone throughout and its crest draws in the colours it was authored
+            // in, so nothing is tinted on speculation.
+            // Ranked by the one fixture mode that writes a number onto its rows, so the trailing
+            // value carries a tone to read rather than the blank the other modes leave.
+            var picker = buildPickerFor(build(List.of(STORM), null, AnomalySortMode.RADIUS));
+            var row = picker.labelledRows().get(0);
+
+            assertThat(row.labelRuns())
+                .containsExactly(new TextSpan("Storm", TEXT));
+            assertThat(row.trailingRowSlot())
+                .isEqualTo(new RowSlot.Text(new TextSpan("8", TEXT)));
+            assertThat(row.leadingRowSlot())
+                .isEqualTo(new RowSlot.Image("crest_storm", null));
+        }
+
+        @Test
+        void buildPickerRecedesADimmedRowsWordsAndCrestTogether() {
+            // A row the caller marked as reading back recedes as a whole: its name and its value take
+            // the engine's gray and its crest is multiplied by the flat tint, so the row cannot draw
+            // greyed words beside a full-strength badge - which reads as a rendering slip rather than
+            // as a state. The tint is a separate shade from the words' tone on purpose; see the
+            // constant.
+            var lapsed = new Anomaly("lapsed_1", "Lapsed", "crest_lapsed", 0, 0, true);
+            var picker = buildPickerFor(build(List.of(lapsed), null, AnomalySortMode.RADIUS));
+            var row = picker.labelledRows().get(0);
+
+            assertThat(row.labelRuns())
+                .containsExactly(new TextSpan("Lapsed", GRAY));
+            assertThat(row.trailingRowSlot())
+                .isEqualTo(new RowSlot.Text(new TextSpan("0", GRAY)));
+            assertThat(row.leadingRowSlot())
+                .isEqualTo(new RowSlot.Image("crest_lapsed", CREST_TINT));
+        }
+
+        @Test
+        void buildPickerRecedesOnlyTheRowsThatSayTheyDo() {
+            // The state is per row rather than per list, so a receded row and a full-strength one sit
+            // in the same list without either taking the other's tone.
+            var lapsed = new Anomaly("lapsed_1", "Lapsed", "crest_lapsed", 0, 0, true);
+            var picker = buildPickerFor(build(
+                List.of(STORM, lapsed),
+                null,
+                AnomalySortMode.RADIUS));
+
+            assertThat(picker.labels())
+                .containsExactly("Storm", "Lapsed");
+            assertThat(readLeadingRowSlots(picker))
+                .containsExactly(
+                    new RowSlot.Image("crest_storm", null),
+                    new RowSlot.Image("crest_lapsed", CREST_TINT));
+        }
+
+        @Test
         void buildPickerLabelsANamelessItemAsAnEmptyRow() {
             // An item whose name did not resolve draws as an unlabelled row, not a null the width
             // measurer would choke on.
             var nameless = new Anomaly("ghost_1", null, null, 4, 4);
-
             var picker = buildPickerFor(build(List.of(nameless), null, AnomalySortMode.SEVERITY));
 
             assertThat(picker.labels())
@@ -292,9 +356,18 @@ final class ListPickerControlTest {
             // a two-column list, a single-column choice a one-column list, so the layout wraps the
             // rows exactly as the selector says.
             var oneColumn = buildPickerFor(buildPicker(
-                ANOMALIES, null, sortOf(AnomalySortMode.ALPHA), ListColumns.ONE, TRAILING));
+                ANOMALIES,
+                null,
+                sortOf(AnomalySortMode.ALPHA),
+                ListColumns.ONE,
+                TRAILING));
+
             var twoColumn = buildPickerFor(buildPicker(
-                ANOMALIES, null, sortOf(AnomalySortMode.ALPHA), ListColumns.TWO, TRAILING));
+                ANOMALIES,
+                null,
+                sortOf(AnomalySortMode.ALPHA),
+                ListColumns.TWO,
+                TRAILING));
 
             assertThat(oneColumn.columnCount())
                 .isEqualTo(1);

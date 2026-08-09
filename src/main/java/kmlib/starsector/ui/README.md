@@ -168,11 +168,18 @@ image belongs to the words or to the table - and the two sets stay separate beca
 box or a sort triangle is a column that has no reading mid-word, and so is spelled only in
 `RowSlot`.
 
-Only the run carries a tint. Some assets are one shared glyph per family whose colour is
-declared beside the path, so a run states that colour and the draw multiplies by it; a run
-that states none is drawn as authored. `RowSlot.Image` is untinted, because a column of
-identically-shaded marks is what a gutter is for - and widening it on speculation would be a
-second tint rule to keep in step with the first.
+Both carry a tint, and for different reasons. A run states the colour of an asset that is one
+shared glyph per family, told apart only by what each declares beside the path. A slot states
+the colour of a mark whose *row* reads back from the stack around it - a picker row that is
+worth offering but has nothing to show, whose crest has to recede with its words or the row
+reads as half-drawn. Either way the draw multiplies by the stated colour and a null is drawn
+as authored.
+
+The gutter stays even under that, which is what the column is for: a stack's tints come from
+one palette in whatever builds its rows, not from each item, so two receded rows cannot recede
+differently. And a tint darkens rather than fades - the alpha is the host's - so a tint stated
+with an alpha of its own would put a second opacity into a draw that already has one. Pass an
+opaque colour.
 
 ## Ports across the boundary
 
@@ -301,11 +308,15 @@ are. Re-picking the lit row clears the spotlight rather than re-selecting it, th
 is resolved against the *ranked* order rather than the order the caller handed over, and an
 index outside the rows is ignored rather than trusted.
 [`SelectableListItem`](widgets/lists/SelectableListItem.java) is the seam its rows are drawn
-from - an id, a label, a crest, and nothing else - which a consumer implements on its own
-item type, so the list ranks through that consumer's own comparators and nothing is copied
-into a library value on the way in. The right half of the sort row is a parameter for the
-same reason: pairing something with the sort is a layout decision this package can hold,
-what sits there is not.
+from - an id, a label, a crest, whether the row reads back (`isDimmed`), and nothing else -
+which a consumer implements on its own item type, so the list ranks through that consumer's own
+comparators and nothing is copied into a library value on the way in. `isDimmed` splits the
+question the way the rest of the package splits every question: the consumer answers *which*
+rows read back, because only it knows what its numbers mean, and the picker answers *how far*,
+so one mod's receded row cannot look unlike another's. It defaults to false, so a list whose
+every item is equally worth picking implements nothing. The right half of the sort row is a
+parameter for the same reason: pairing something with the sort is a layout decision this
+package can hold, what sits there is not.
 
 [`RevisionMemo`](widgets/lists/RevisionMemo.java) is where a consumer holds the resolved
 list between frames, since a body is built twice a frame (render and hit-test) and a picker

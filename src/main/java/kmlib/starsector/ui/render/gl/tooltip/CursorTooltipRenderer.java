@@ -184,12 +184,15 @@ public final class CursorTooltipRenderer {
         // What the leading column holds decides what is drawn in it: a slot holding something other than
         // an image draws nothing here rather than resolving to a texture lookup never meant for it.
         // Faded through the paint the row's text draws with, so a crest and the label beside it cannot
-        // end up compositing at two different alphas.
+        // end up compositing at two different alphas, and multiplied by whatever tint the slot states -
+        // honoured here as well as in the list widget, since a slot whose tint one of the two surfaces
+        // silently ignored would be worse than one that carried none.
         if (labelledRow.leadingRowSlot() instanceof RowSlot.Image crestRowSlot) {
             UiSprite.renderImage(
                 crestRowSlot.spritePath(),
                 computeImageBox(placement.leadingRowSlotX(), placement),
-                rowPaint.opacity());
+                rowPaint.opacity(),
+                crestRowSlot.tintColour());
         }
         if (labelledRow.trailingRowSlot() instanceof RowSlot.Text valueRowSlot) {
             rowPaint.drawSpan(
