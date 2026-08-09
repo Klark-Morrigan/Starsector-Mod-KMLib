@@ -20,15 +20,10 @@ final class MarketClaimBreakdownTest {
     // built below takes the head of the list.
     private static final int FIRST_LISTED = 1;
 
-    // The market is one the player has found, held in the open. Nothing here is about what a box
-    // may name or which market competes, and the sum the whole suite is about is the same either
-    // way - the arithmetic reads neither flag.
+    // The market is one the player has found. Nothing here is about what a box may name, and the
+    // sum the whole suite is about is the same either way - the arithmetic reads neither this nor
+    // how the contest met the market.
     private static final boolean IS_KNOWN_TO_PLAYER = true;
-    private static final boolean IS_NOT_HIDDEN = false;
-
-    // The market is one the economy lists, which the arithmetic reads no more than it reads the
-    // other two. Only the competitor test below turns on it, and it states the flag itself.
-    private static final boolean IS_NOT_OFF_ECONOMY = false;
 
     // The plainest colony there is - a size and nothing else - for the cases about how a contest
     // reached a market rather than about what it came to.
@@ -94,6 +89,20 @@ final class MarketClaimBreakdownTest {
         }
 
         @Test
+        void readsAnAbsentAdmissionGivenAsNullAsTheWeighedOne() {
+            // The ordinary market is the one a hand-built case leaves unstated, so an unstated
+            // admission has to mean the competitor rather than fail late on a null.
+            var claim = buildClaimAdmittedAs(null);
+
+            assertThat(claim.isScoredOnItsOwnAccount())
+                .isTrue();
+            assertThat(claim.isHiddenMarket())
+                .isFalse();
+            assertThat(claim.isOffEconomyMarket())
+                .isFalse();
+        }
+
+        @Test
         void carriesTheColonyItWasBuiltFrom() {
 
             var claim = buildClaim(5, 2, OptionalInt.of(10));
@@ -111,42 +120,6 @@ final class MarketClaimBreakdownTest {
         }
     }
 
-    @Nested
-    class IsScoredOnItsOwnAccount {
-
-        @Test
-        void countsAMarketHeldInTheOpenAndListedByTheEconomy() {
-
-            assertThat(buildClaimReachedAs(false, false).isScoredOnItsOwnAccount())
-                .isTrue();
-        }
-
-        @Test
-        void passesOverAHiddenMarket() {
-            // The mechanic skips it before scoring, so it reaches the contest through the sibling
-            // term alone and competes for nothing.
-            assertThat(buildClaimReachedAs(true, false).isScoredOnItsOwnAccount())
-                .isFalse();
-        }
-
-        @Test
-        void passesOverAMarketTheEconomyDoesNotList() {
-            // The mechanic walks the economy, so a colony left off that listing is never reached -
-            // a different reason from concealment, and the same answer, which is the whole point
-            // of asking it here rather than as two tests at every reader.
-            assertThat(buildClaimReachedAs(false, true).isScoredOnItsOwnAccount())
-                .isFalse();
-        }
-
-        @Test
-        void passesOverAMarketThatIsBothAtOnce() {
-            // Galatia Academy's own shape: concealed and unregistered together, which is why the
-            // two are carried as separate facts rather than folded into one.
-            assertThat(buildClaimReachedAs(true, true).isScoredOnItsOwnAccount())
-                .isFalse();
-        }
-    }
-
     // One market's claim arithmetic, stated by the three terms every case here varies and nothing
     // else: which market it is, whether the player has found it and how the contest reached it are
     // the same throughout, and spelled at each call they would bury the terms the suite is about.
@@ -159,25 +132,20 @@ final class MarketClaimBreakdownTest {
             MARKET_NAME,
             FIRST_LISTED,
             IS_KNOWN_TO_PLAYER,
-            IS_NOT_HIDDEN,
-            IS_NOT_OFF_ECONOMY,
+            ContestAdmission.WEIGHED,
             marketSize,
             siblingMarketCount,
             militaryBonus);
     }
 
-    // The same market posed by the two ways a contest can carry one without weighing it, which is
-    // the whole of what the competitor test reads.
-    private static MarketClaimBreakdown buildClaimReachedAs(
-            boolean isHiddenMarket,
-            boolean isOffEconomyMarket) {
-
+    // The same market posed under a stated admission, for the case about what an unstated one is
+    // read as. Its terms are the plainest there are, no case about admission being about the sum.
+    private static MarketClaimBreakdown buildClaimAdmittedAs(ContestAdmission admission) {
         return new MarketClaimBreakdown(
             MARKET_NAME,
             FIRST_LISTED,
             IS_KNOWN_TO_PLAYER,
-            isHiddenMarket,
-            isOffEconomyMarket,
+            admission,
             PLAIN_MARKET_SIZE,
             NO_SIBLING_MARKETS,
             OptionalInt.empty());

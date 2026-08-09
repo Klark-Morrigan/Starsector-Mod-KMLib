@@ -210,9 +210,8 @@ public final class StarSystems {
     }
 
     /**
-     * The markets present in {@code system} whether or not the economy lists them: the economy's
-     * own markets in economy order, then any market hung on one of the system's entities that
-     * list does not already hold, in entity order.
+     * The markets hung on {@code system}'s own entities that the economy does not list, in entity
+     * order - what {@link #readMarkets} cannot see, and nothing it can.
      *
      * <p>A colony can sit on a real entity, owned by a real faction, and never be registered with
      * the economy - vanilla builds Galatia Academy that way on purpose. A caller <em>describing</em>
@@ -222,16 +221,21 @@ public final class StarSystems {
      * that one's "the economy's list, in the economy's order" contract is what a mirrored mechanic
      * depends on.
      *
+     * <p>Answering only what the economy leaves out, rather than the whole of what is present, is
+     * what leaves a caller that needs both able to tell them apart by which read they came from. A
+     * combined answer would have every such caller re-deriving that split against the economy's
+     * list, which is a second implementation of the very comparison made here.
+     *
      * <p>Sameness is the market object itself first and {@link Markets#isSamePlaceAndOwner} after,
-     * so a mod hanging its own market beside vanilla's on one station contributes that colony
-     * once rather than twice.
+     * taken against the economy's markets and against the ones already found, so a mod hanging its
+     * own market beside vanilla's on one station yields nothing here rather than a duplicate of the
+     * colony the economy already lists.
      *
      * @param sector the sector whose economy is read; null (or a null economy) yields an empty
      *               list - with no economy to compare against there is no telling a listed market
      *               from an unlisted one
      * @param system the system to read; null yields an empty list
-     * @return the economy's markets in economy order followed by the ones it does not list, in
-     *         entity order; never null
+     * @return the system's markets the economy does not list, in entity order; never null
      */
     public static List<MarketAPI> readMarketsUnlistedByEconomy(
             SectorAPI sector,
@@ -240,16 +244,22 @@ public final class StarSystems {
         if (sector == null || system == null || sector.getEconomy() == null) {
             return List.of();
         }
-        var presentMarkets = new ArrayList<>(readMarkets(sector, system));
+        // Seeded with the economy's own markets so one scan answers both halves of sameness - a
+        // market the economy lists, and one an earlier entity already yielded - then dropped from
+        // the answer, the caller having read those from the economy itself.
+        var listedMarkets = readMarkets(sector, system);
+        var seenMarkets = new ArrayList<>(listedMarkets);
+        var unlistedMarkets = new ArrayList<MarketAPI>();
 
         for (var entity : system.getAllEntities()) {
             var market = entity == null ? null : entity.getMarket();
 
-            if (market != null && !isAlreadyPresent(presentMarkets, market)) {
-                presentMarkets.add(market);
+            if (market != null && !isAlreadyPresent(seenMarkets, market)) {
+                seenMarkets.add(market);
+                unlistedMarkets.add(market);
             }
         }
-        return presentMarkets;
+        return unlistedMarkets;
     }
 
     /**

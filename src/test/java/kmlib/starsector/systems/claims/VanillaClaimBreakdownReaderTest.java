@@ -297,6 +297,55 @@ final class VanillaClaimBreakdownReaderTest {
         }
 
         @Test
+        void numbersAMarketTheEconomyDoesNotListAfterEveryMarketItDoes() {
+            // The place is stated to the player, so it has to run without a gap and in the order the
+            // contest was walked - the economy's own markets first, since those are the ones a tie
+            // between them is settled by, and what the economy never listed after all of them.
+            var hegemony = claimContest.buildFaction("hegemony", true);
+            var capital = claimContest.buildMarket(hegemony, 5);
+            var outpost = claimContest.buildMarket(hegemony, 3);
+            var academy = claimContest.buildMarket(hegemony, 4);
+
+            claimContest.nameMarket(capital, "Chicomoztoc");
+            claimContest.nameMarket(outpost, "Kazeron");
+            claimContest.nameMarket(academy, "Galatia Academy");
+            claimContest.placeMarketsInSystem(capital, outpost);
+            claimContest.placeOffEconomyMarketsInSystem(academy);
+
+            var standing = new VanillaClaimBreakdownReader()
+                .readBreakdown(claimContest.getSystem())
+                .scores()
+                .get(0);
+
+            assertThat(standing.standingMarket().listingPosition())
+                .isEqualTo(1);
+            assertThat(standing.otherMarkets())
+                .extracting(
+                    MarketClaimBreakdown::marketName,
+                    MarketClaimBreakdown::listingPosition)
+                .containsExactly(tuple("Kazeron", 2), tuple("Galatia Academy", 3));
+        }
+
+        @Test
+        void skipsAMarketTheEconomyDoesNotListThatHasNoOwningFaction() {
+            // The unowned case reaches the walk down the entity half too, and the mechanic would
+            // throw on one there exactly as it would on an unowned market of the economy's own.
+            var hegemony = claimContest.buildFaction("hegemony", true);
+
+            claimContest.placeMarketsInSystem(claimContest.buildMarket(hegemony, 3));
+            claimContest.placeOffEconomyMarketsInSystem(claimContest.buildMarket(null, 9));
+
+            var breakdown =
+                new VanillaClaimBreakdownReader().readBreakdown(claimContest.getSystem());
+
+            assertThat(breakdown.scores())
+                .extracting(FactionClaimScore::factionId)
+                .containsExactly("hegemony");
+            assertThat(breakdown.scores().get(0).otherMarkets())
+                .isEmpty();
+        }
+
+        @Test
         void keepsAMarketTheEconomyDoesNotListOutOfTheSiblingCount() {
 
             var independent = claimContest.buildFaction("independent", true);

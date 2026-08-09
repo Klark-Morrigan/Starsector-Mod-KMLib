@@ -639,21 +639,40 @@ final class StarSystemsTest {
     @Nested
     class ReadMarketsUnlistedByEconomy {
         @Test
-        void appends_a_market_the_economy_does_not_list_after_the_ones_it_does() {
+        void yields_the_market_the_economy_does_not_list_and_not_the_ones_it_does() {
             // Vanilla builds Galatia Academy as a real market on a real station and deliberately
             // never registers it, so a read of the economy alone reports the station as nobody's.
+            // Only that market comes back: a caller wanting the listed ones has already read them,
+            // and handing them over again would leave it comparing the two lists to tell them apart.
             var listed = buildVisibleColony();
             var academy = buildVisibleColony();
             var sector = buildSectorWithMarkets(listed);
 
-            placeEntitiesInOnlySystem(sector, buildEntityCarrying(academy));
+            placeEntitiesInOnlySystem(sector, buildEntityCarrying(listed), buildEntityCarrying(academy));
 
             assertThat(StarSystems.readMarketsUnlistedByEconomy(sector, buildOnlySystem(sector)))
-                .containsExactly(listed, academy);
+                .containsExactly(academy);
         }
 
         @Test
-        void appends_off_economy_markets_in_entity_order() {
+        void yields_nothing_for_a_system_the_economy_lists_whole() {
+            // The ordinary system: every market on an entity is one the economy already hands over,
+            // so the read that exists to find what it left out finds nothing to add.
+            var first = buildVisibleColony();
+            var second = buildVisibleColony();
+            var sector = buildSectorWithMarkets(first, second);
+
+            placeEntitiesInOnlySystem(
+                sector,
+                buildEntityCarrying(first),
+                buildEntityCarrying(second));
+
+            assertThat(StarSystems.readMarketsUnlistedByEconomy(sector, buildOnlySystem(sector)))
+                .isEmpty();
+        }
+
+        @Test
+        void yields_unlisted_markets_in_entity_order() {
 
             var first = buildVisibleColony();
             var second = buildVisibleColony();
@@ -669,7 +688,7 @@ final class StarSystemsTest {
         }
 
         @Test
-        void does_not_repeat_a_market_the_economy_already_lists() {
+        void yields_a_market_the_economy_already_lists_no_second_time() {
 
             var listed = buildVisibleColony();
             var sector = buildSectorWithMarkets(listed);
@@ -677,7 +696,23 @@ final class StarSystemsTest {
             placeEntitiesInOnlySystem(sector, buildEntityCarrying(listed));
 
             assertThat(StarSystems.readMarketsUnlistedByEconomy(sector, buildOnlySystem(sector)))
-                .containsExactly(listed);
+                .isEmpty();
+        }
+
+        @Test
+        void yields_one_unlisted_market_once_though_two_entities_carry_it() {
+            // Vanilla hangs a station's market on the station and on what it orbits alike, so one
+            // colony can be reached twice down the entity walk.
+            var academy = buildVisibleColony();
+            var sector = buildSectorWithMarkets();
+
+            placeEntitiesInOnlySystem(
+                sector,
+                buildEntityCarrying(academy),
+                buildEntityCarrying(academy));
+
+            assertThat(StarSystems.readMarketsUnlistedByEconomy(sector, buildOnlySystem(sector)))
+                .containsExactly(academy);
         }
 
         @Test
@@ -697,23 +732,22 @@ final class StarSystemsTest {
 
             when(station.getMarket())
                 .thenReturn(supplementary);
-                
+
             placeEntitiesInOnlySystem(sector, station);
 
             assertThat(StarSystems.readMarketsUnlistedByEconomy(sector, buildOnlySystem(sector)))
-                .containsExactly(listed);
+                .isEmpty();
         }
 
         @Test
         void ignores_an_entity_carrying_no_market() {
 
-            var listed = buildVisibleColony();
-            var sector = buildSectorWithMarkets(listed);
+            var sector = buildSectorWithMarkets(buildVisibleColony());
 
             placeEntitiesInOnlySystem(sector, buildDiscoveredEntity());
 
             assertThat(StarSystems.readMarketsUnlistedByEconomy(sector, buildOnlySystem(sector)))
-                .containsExactly(listed);
+                .isEmpty();
         }
 
         @Test

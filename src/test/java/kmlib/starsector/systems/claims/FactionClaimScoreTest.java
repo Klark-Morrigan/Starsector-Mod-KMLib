@@ -25,12 +25,10 @@ final class FactionClaimScoreTest {
     private static final int FIRST_LISTED = 1;
     private static final int SECOND_LISTED = 2;
 
-    // Both markets are ones the player has found, held in the open. Nothing here is about what a
-    // box may name or which market competes, and a standing carries the same score either way -
-    // the score reads neither flag.
+    // Both markets are ones the player has found, and both are ones the mechanic weighed. Nothing
+    // here is about what a box may name or which market competes, and a standing carries the same
+    // score either way - the score reads neither.
     private static final boolean IS_KNOWN_TO_PLAYER = true;
-    private static final boolean IS_NOT_HIDDEN = false;
-    private static final boolean IS_NOT_OFF_ECONOMY = false;
 
     private static final boolean IS_TERRITORIAL = true;
 
@@ -128,8 +126,7 @@ final class FactionClaimScoreTest {
             marketName,
             listingPosition,
             IS_KNOWN_TO_PLAYER,
-            IS_NOT_HIDDEN,
-            IS_NOT_OFF_ECONOMY,
+            ContestAdmission.WEIGHED,
             marketSize,
             siblingMarketCount,
             militaryBonus);

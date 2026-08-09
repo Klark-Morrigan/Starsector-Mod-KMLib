@@ -68,6 +68,11 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
     // is stated to the player, who reads a list of markets as first, second, third.
     private static final int FIRST_LISTED = 1;
 
+    // Which of the two reads a run of markets came out of. Named at the call sites rather than
+    // worked out per market, the read that answered a market being the whole of what settles it.
+    private static final boolean IS_LISTED_BY_ECONOMY = false;
+    private static final boolean IS_OFF_ECONOMY = true;
+
     @Override
     public SystemClaimBreakdown readBreakdown(StarSystemAPI system) {
 
@@ -97,24 +102,44 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
 
     // Every market in the system that belongs to somebody, scored, in the order the economy
     // lists them - the order a tied contest is settled in, so it is the order kept throughout -
-    // followed by the markets the economy does not list at all. An unowned market belongs to
-    // nobody's standing and the mechanic would throw on one, so it is dropped here rather than
-    // guarded against at each later read.
+    // followed by the markets the economy does not list at all.
     //
-    // Two reads rather than one, because the two lists answer different questions. Every market
-    // present is walked, so the account names a colony the player can see on the map; but only
-    // the economy's own may feed an arithmetic vanilla runs off the economy, which is why the
-    // sibling count below is handed the narrower list. Widening that count instead would raise a
-    // real colony's score over what the game scores it at, and could hand the system to a
+    // Two reads rather than one, because the two answer different questions. Every market present
+    // is walked, so the account names a colony the player can see on the map; but only the
+    // economy's own may feed an arithmetic vanilla runs off the economy, which is why the sibling
+    // count below is handed the narrower list at both calls. Widening that count instead would
+    // raise a real colony's score over what the game scores it at, and could hand the system to a
     // different faction - a mechanic change wearing a display fix's clothes.
     private static List<ClaimedMarket> readClaimedMarkets(StarSystemAPI system) {
 
         var sector = Global.getSector();
         var economyMarkets = StarSystems.readMarkets(sector, system);
-        var presentMarkets = StarSystems.readMarketsUnlistedByEconomy(sector, system);
-        var claimedMarkets = new ArrayList<ClaimedMarket>(presentMarkets.size());
+        var claimedMarkets = new ArrayList<ClaimedMarket>();
 
-        for (var market : presentMarkets) {
+        appendClaimedMarkets(claimedMarkets, economyMarkets, economyMarkets, IS_LISTED_BY_ECONOMY);
+        appendClaimedMarkets(
+            claimedMarkets,
+            StarSystems.readMarketsUnlistedByEconomy(sector, system),
+            economyMarkets,
+            IS_OFF_ECONOMY);
+
+        return claimedMarkets;
+    }
+
+    // One walk's worth of markets folded onto the end of the run, each numbered by where it lands
+    // in it. Called once per read rather than over a merged list, so which of the two a market came
+    // from is settled by the read that answered it - a merged list would have to be compared back
+    // against the economy's to recover the same fact, which is that comparison written twice.
+    //
+    // An unowned market belongs to nobody's standing and the mechanic would throw on one, so it is
+    // dropped here rather than guarded against at each later read.
+    private static void appendClaimedMarkets(
+            List<ClaimedMarket> claimedMarkets,
+            List<MarketAPI> markets,
+            List<MarketAPI> economyMarkets,
+            boolean isOffEconomyMarket) {
+
+        for (var market : markets) {
             var faction = market == null ? null : market.getFaction();
 
             if (faction == null) {
@@ -131,9 +156,8 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
                     market,
                     economyMarkets,
                     claimedMarkets.size() + FIRST_LISTED,
-                    !isListedByEconomy(economyMarkets, market))));
+                    isOffEconomyMarket)));
         }
-        return claimedMarkets;
     }
 
     // Vanilla's own pass, market by market in economy order: the running maximum only ever
@@ -270,27 +294,12 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
             market.getName(),
             listingPosition,
             Markets.isKnownToPlayer(market),
-            market.isHidden(),
-            isOffEconomyMarket,
+            new ContestAdmission(market.isHidden(), isOffEconomyMarket),
             market.getSize(),
             siblingMarketCount,
             Markets.isMilitary(market)
                 ? OptionalInt.of(MILITARY_MARKET_BONUS)
                 : OptionalInt.empty());
-    }
-
-    // Whether the economy hands this very market over as one of the system's. Identity rather
-    // than equality, since the wider read has already collapsed two market objects standing for
-    // one colony - so anything reaching here that is not one of the economy's own objects is a
-    // colony the economy genuinely does not list.
-    private static boolean isListedByEconomy(List<MarketAPI> economyMarkets, MarketAPI market) {
-
-        for (var listed : economyMarkets) {
-            if (listed == market) {
-                return true;
-            }
-        }
-        return false;
     }
 
     // The player is present but ineligible: the mechanic never lets a player colony claim a

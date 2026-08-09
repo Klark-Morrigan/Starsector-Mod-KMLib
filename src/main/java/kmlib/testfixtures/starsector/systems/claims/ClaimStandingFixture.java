@@ -1,5 +1,6 @@
 package kmlib.testfixtures.starsector.systems.claims;
 
+import kmlib.starsector.systems.claims.ContestAdmission;
 import kmlib.starsector.systems.claims.FactionClaimScore;
 import kmlib.starsector.systems.claims.MarketClaimBreakdown;
 
@@ -29,15 +30,9 @@ public final class ClaimStandingFixture {
     // not posing a tie, so every standing built here takes the head of the list.
     private static final int FIRST_LISTED = 1;
 
-    // The market is one the player has found, held in the open. A test posing standings by score
-    // alone is posing neither a fog-of-war case nor a hidden base - and a standing market could
-    // not be hidden in any case, the mechanic never letting one stand for its faction.
+    // The market is one the player has found. A test posing standings by score alone is posing no
+    // fog-of-war case.
     private static final boolean IS_KNOWN_TO_PLAYER = true;
-    private static final boolean IS_NOT_HIDDEN = false;
-
-    // The market is one the economy lists. A standing market could not be otherwise in any case,
-    // the mechanic never reaching a colony the economy leaves out.
-    private static final boolean IS_NOT_OFF_ECONOMY = false;
 
     private ClaimStandingFixture() {
     }
@@ -63,8 +58,9 @@ public final class ClaimStandingFixture {
                 STANDING_MARKET_NAME,
                 FIRST_LISTED,
                 IS_KNOWN_TO_PLAYER,
-                IS_NOT_HIDDEN,
-                IS_NOT_OFF_ECONOMY,
+                // Held in the open and listed by the economy, which a standing market could not be
+                // otherwise in any case: the mechanic lets neither kind stand for a faction.
+                ContestAdmission.WEIGHED,
                 score,
                 NO_SIBLING_MARKETS,
                 OptionalInt.empty()),
