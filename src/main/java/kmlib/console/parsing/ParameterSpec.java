@@ -2,6 +2,7 @@ package kmlib.console.parsing;
 
 import kmlib.console.output.CommandOutput;
 import kmlib.console.output.ConsoleCommandOutput;
+import kmlib.text.KmlibStrings;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -114,12 +115,12 @@ public abstract class ParameterSpec {
         return parameter;
     }
 
-    // Splits a raw argument string into tokens on whitespace; a null or blank
-    // string yields no tokens (rather than one empty token, which String.split
-    // would return), so an argument-less command parses as nothing supplied.
+    // The words of a raw argument string, as the tokens the parser walks. Taken
+    // from the shared word read, which answers no words for a null or blank
+    // string rather than the one empty piece a bare split leaves - so an
+    // argument-less command parses as nothing supplied.
     private static String[] tokenize(String args) {
-        var trimmed = args == null ? "" : args.trim();
-        return trimmed.isEmpty() ? new String[0] : trimmed.split("\\s+");
+        return KmlibStrings.splitIntoWords(args).toArray(new String[0]);
     }
 
     // The concrete empty spec behind takingNoArguments: it declares no

@@ -82,22 +82,25 @@ public final class SpawnEntityCommand extends KmlibBaseConsoleCommand {
         if (!command.isValid()) {
             return command.getResult();
         }
-        // The first token selects the kind; the rest configure focus and speed.
-        var trimmed = args == null ? "" : args.trim();
-        var tokens = trimmed.isEmpty() ? new String[] {""} : trimmed.split("\\s+");
-
-        var kind = SpawnableKind.fromArg(tokens[0]);
+        // The first word selects the kind; the rest configure focus and speed. A
+        // bare invocation names no word at all, which is no kind - reported as the
+        // unknown type it is, so the message lists what the command does accept.
+        var words = KmlibStrings.splitIntoWords(args);
+        var kindArg = words.isEmpty() ? "" : words.get(0);
+        var kind = SpawnableKind.fromArg(kindArg);
         if (kind == null) {
             output.showMessage("Unknown entity type '"
-                + tokens[0]
+                + kindArg
                 + "'. Supported: "
                 + SpawnableKind.listSupportedArgs()
                 + '.');
             return CommandResult.ERROR;
         }
-        // The spec prints why on a malformed argument; surface that as bad
-        // syntax. The kind is token 0; everything after it is the spec's to parse.
-        var parameterTokens = Arrays.copyOfRange(tokens, 1, tokens.length);
+        // The spec prints why on a malformed argument; surface that as bad syntax.
+        // A kind was named, so the words past it are the spec's to parse.
+        var parameterTokens = words
+            .subList(1, words.size())
+            .toArray(new String[0]);
         var parsed = SPEC.parse(parameterTokens, output);
         if (!parsed.isValid()) {
             return parsed.getResult();

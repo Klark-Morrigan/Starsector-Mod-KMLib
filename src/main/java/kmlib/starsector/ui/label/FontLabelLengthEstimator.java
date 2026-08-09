@@ -1,6 +1,7 @@
 package kmlib.starsector.ui.label;
 
 import kmlib.starsector.ui.font.LineWidthMeasurer;
+import kmlib.text.KmlibStrings;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,14 +35,14 @@ public final class FontLabelLengthEstimator implements LabelLengthEstimator {
     private static final double REFERENCE_FONT_SIZE = 100.0;
 
     private final LineWidthMeasurer measurer;
-    private final String[] words;
+    private final List<String> words;
     // The resolved wrap per line count; null marks a count the text cannot fill, so
     // the miss is remembered too and never re-derived.
     private final Map<Integer, LineWrap> wrapByLineCount = new HashMap<>();
 
     public FontLabelLengthEstimator(LineWidthMeasurer measurer, String text) {
         this.measurer = measurer;
-        this.words = text.trim().split("\\s+");
+        this.words = KmlibStrings.splitIntoWords(text);
     }
 
     @Override
@@ -73,7 +74,7 @@ public final class FontLabelLengthEstimator implements LabelLengthEstimator {
     // word-boundary splits: label strings are a handful of words, so trying every
     // split is cheaper than being clever and is exact.
     private LineWrap computeBalancedWrap(int lineCount) {
-        if (words.length < lineCount) {
+        if (words.size() < lineCount) {
             return null;
         }
         return findBestPartition(0, lineCount);
@@ -84,11 +85,11 @@ public final class FontLabelLengthEstimator implements LabelLengthEstimator {
     // split whose widest line is narrowest.
     private LineWrap findBestPartition(int startWord, int linesLeft) {
         if (linesLeft == 1) {
-            var line = joinWords(startWord, words.length);
+            var line = joinWords(startWord, words.size());
             return new LineWrap(List.of(line), measureWidthPerUnitHeight(line));
         }
         LineWrap best = null;
-        for (var endWord = startWord + 1; endWord <= words.length - (linesLeft - 1); endWord++) {
+        for (var endWord = startWord + 1; endWord <= words.size() - (linesLeft - 1); endWord++) {
             var line = joinWords(startWord, endWord);
             var lineWidth = measureWidthPerUnitHeight(line);
             var rest = findBestPartition(endWord, linesLeft - 1);
@@ -108,7 +109,7 @@ public final class FontLabelLengthEstimator implements LabelLengthEstimator {
     }
 
     private String joinWords(int startWord, int endWord) {
-        return String.join(" ", List.of(words).subList(startWord, endWord));
+        return String.join(" ", words.subList(startWord, endWord));
     }
 
     // A partial wrap extended by one line in front, its widest width the worse of the
