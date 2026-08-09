@@ -7,7 +7,6 @@ import kmlib.starsector.ui.text.TextSpan;
 import kmlib.starsector.ui.widgets.LabelledRow;
 import kmlib.starsector.ui.widgets.RowSlot;
 
-import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -151,38 +150,37 @@ public final class ListPickerControl {
 
         var textColour = StarsectorUiColour.VANILLA_TEXT.resolve();
         var recededTextColour = StarsectorUiColour.VANILLA_GRAY.resolve();
+
+        // What a receding row's crest is multiplied by, resolved once for the stack beside the tones
+        // its words take. A flat neutral, halving every channel while leaving the hue that identifies
+        // the badge readable - and deliberately not the tone the words recede to, which is the
+        // engine's own gray and carries an alpha under 255 (textGrayColor is [175,175,175,180] in the
+        // stock file). A sprite tint's alpha multiplies into the draw, so that one would fade the
+        // crest as well as darken it, and a badge with the map showing through reads as half-drawn
+        // rather than as receded. The frozen literal is opaque and so darkens only.
+        var recededCrestTint = StarsectorUiColour.DIM_GRAY.resolve();
         var itemRows = new ArrayList<LabelledRow>(items.size());
 
         for (var item : items) {
             var displayName = item.displayName() == null ? "" : item.displayName();
             var crestSpritePath = item.crestSpritePath();
-            var rowColour = item.isDimmed() ? recededTextColour : textColour;
+
+            // Asked once and spent on all three parts: a consumer may work this out rather than hold
+            // it, so a second read is both a second computation and a chance for one row to draw its
+            // words and its crest under different answers.
+            var isReceding = item.isDimmed();
+            var rowColour = isReceding ? recededTextColour : textColour;
+            var crestTint = isReceding ? recededCrestTint : null;
 
             itemRows.add(LabelledRow
                 .createRow(new TextSpan(displayName, rowColour))
                 .leadsWith(crestSpritePath == null
                     ? RowSlot.EMPTY
-                    : new RowSlot.Image(crestSpritePath, resolveCrestTint(item)))
+                    : new RowSlot.Image(crestSpritePath, crestTint))
                 .trailsWith(new RowSlot.Text(
                     new TextSpan(sortMode.resolveTrailingValue(item), rowColour))));
         }
         return itemRows;
-    }
-
-    // What a row's crest is multiplied by: nothing at all for an ordinary row, so its badge draws in
-    // the colours it was authored in, and a flat neutral for a receding one, which halves every
-    // channel while leaving the hue that identifies the badge readable.
-    //
-    // Deliberately not the tone its words recede to. That one is the engine's own gray, which carries
-    // an alpha under 255 (a live settings read - textGrayColor is [175,175,175,180] in the stock
-    // file), and a sprite tint's alpha channel multiplies into the draw: using it here would fade the
-    // crest as well as darken it, which is the one thing receding a mark must not do - a badge behind
-    // the map showing through reads as half-drawn rather than as receded. The frozen literal is opaque
-    // and so darkens only.
-    private static Color resolveCrestTint(SelectableListItem item) {
-        return item.isDimmed()
-            ? StarsectorUiColour.DIM_GRAY.resolve()
-            : null;
     }
 
     // Reports the clicked item as the spotlighted one, or reports a clear when the click landed on

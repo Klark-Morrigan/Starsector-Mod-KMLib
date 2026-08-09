@@ -139,6 +139,14 @@ class KmlibStringsTest {
         }
 
         @Test
+        void dropAdjacentRepeatedWordsPutsEveryWordInReachOfANegativeProtection() {
+            // A count below zero protects no more than none does, rather than counting
+            // back from the end - there is no "protect all but the last" reading here.
+            assertThat(KmlibStrings.dropAdjacentRepeatedWords("Ko Ko Star System", -1))
+                .isEqualTo("Ko Star System");
+        }
+
+        @Test
         void dropAdjacentRepeatedWordsAnswersUnchangedTextAsTheVeryStringGiven() {
             // A caller handing over something it must not see respaced gets it back untouched
             // wherever there was no stutter to drop.

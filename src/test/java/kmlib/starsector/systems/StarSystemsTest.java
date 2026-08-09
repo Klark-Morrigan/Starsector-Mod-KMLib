@@ -859,6 +859,21 @@ final class StarSystemsTest {
         }
 
         @Test
+        void drops_the_repeat_out_of_a_type_of_more_than_two_words() {
+            // The protection is a word count off the name proper rather than a rule about
+            // where the repeat may fall, so a longer composed type is in reach whole.
+            assertThat(StarSystems.readDisplayName(
+                    buildSystemNamed("Penelope's Star Star System Cluster", "Penelope's Star")))
+                .isEqualTo("Penelope's Star System Cluster");
+        }
+
+        @Test
+        void returns_blank_for_a_system_with_no_name() {
+            assertThat(StarSystems.readDisplayName(buildSystemNamed(null, "Penelope's Star")))
+                .isEmpty();
+        }
+
+        @Test
         void returns_blank_for_a_null_system() {
             assertThat(StarSystems.readDisplayName(null))
                 .isEmpty();

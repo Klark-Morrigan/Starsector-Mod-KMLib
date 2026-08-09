@@ -15,6 +15,7 @@ on at compile and runtime.
 - [Local linting](#local-linting)
 - [Reusable CI / release actions](#reusable-ci--release-actions)
 - [Consuming KMLib](#consuming-kmlib)
+  - [Test fixtures in the main jar](#test-fixtures-in-the-main-jar)
 - [Rendering environment](#rendering-environment)
 - [Caching](#caching)
 - [Player Faction Resolution](#player-faction-resolution)
@@ -76,7 +77,10 @@ src/main/java/kmlib/
                      and what KM code must know about Fast Rendering
                      (whether it is in force, how to read its matrix)
   profiling/       - section timings + timing report
-  text/            - string and number formatting / predicates
+  text/            - string and number formatting, plus the reads over a
+                     string every surface shares: is there text here, what
+                     are its words, and the stutter left where one phrase
+                     was appended to another ending on the same word
 
   Starsector-facing wrappers and seams:
   console/         - Console Commands base class and KMLib's own
@@ -223,7 +227,7 @@ Packages with more behind them than one line can carry:
 | [`opengl/`](src/main/java/kmlib/opengl/), [`starsector/ui/map/`](src/main/java/kmlib/starsector/ui/map/), [`starsector/ui/render/gl/`](src/main/java/kmlib/starsector/ui/render/gl/) | [Rendering environment](#rendering-environment) |
 | [`starsector/factions/`](src/main/java/kmlib/starsector/factions/) | [Player Faction Resolution](#player-faction-resolution) |
 | [`starsector/intel/`](src/main/java/kmlib/starsector/intel/) | [Intel Base Classes](#intel-base-classes) |
-| [`testfixtures/`](src/main/java/kmlib/testfixtures/) | [Build & Test](#build--test) |
+| [`testfixtures/`](src/main/java/kmlib/testfixtures/) | [Test fixtures in the main jar](#test-fixtures-in-the-main-jar) |
 | [`starsector/ui/`](src/main/java/kmlib/starsector/ui/) | [UI primitives, tiered by surface](src/main/java/kmlib/starsector/ui/README.md) |
 | [`starsector/ui/colour/`](src/main/java/kmlib/starsector/ui/colour/) | [UI Colour Palette](#ui-colour-palette) |
 | [`starsector/ui/font/`](src/main/java/kmlib/starsector/ui/font/), [`starsector/ui/label/`](src/main/java/kmlib/starsector/ui/label/) | [Caching](#caching) |
@@ -387,6 +391,29 @@ compileOnly files("${configuredStarsectorRoot}/mods/KMLib/jars/KMLib.jar")
 Tests in consuming mods that touch KMLib types also add the same jar as
 `testCompileOnly` / `testRuntimeOnly`. KMLib's hard dependencies apply to every mod
 that depends on it - see [Requirements](#requirements).
+
+### Test fixtures in the main jar
+
+[`testfixtures/`](src/main/java/kmlib/testfixtures/) holds the fakes a consuming
+mod's tests stand its subjects on - KMLib's own ports (claims, fonts, the intel
+screen, the modelview, console output), the core-UI hops and widget tree a layout
+rule walks, the builders for the values those ports report, and
+[`starsector/settings/`](src/main/java/kmlib/testfixtures/starsector/settings/)'s
+no-op `SettingsAPI` proxy, which a test installs into `Global` before touching
+`Misc` (whose static initialiser would otherwise NPE).
+
+They live in the production source set rather than `src/test` because of how the
+jar travels: a consumer resolves KMLib as a flat `files(...)` dependency, which
+carries no Gradle variants, so `java-test-fixtures` has nothing to publish
+through and a `src/test` class is unreachable downstream. Shipping them in the
+main jar is the one mechanism that makes a fake reusable across KMU and KMO with
+no new wiring; the classes are never instantiated in play, so a player pays
+nothing for them.
+
+Two consequences worth knowing. They are excluded from the JaCoCo report - being
+production-located but test-only, counting them would flatter the coverage
+signal. And the `Fake` suffix gate scans only `src/test`, so the suffix here is
+held by hand.
 
 ## Rendering environment
 
