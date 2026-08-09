@@ -55,10 +55,10 @@ class StarsectorFontTest {
             var expected = switch (font) {
             case VANILLA_INSIGNIA_15 -> 15;
             case VANILLA_ORBITRON_20AA -> 20;
-            // TODO: the atlas states a line height of 15; this is the nominal size its filename
-            // carries, so the face draws at four-fifths scale. Pinned as it stands rather than as it
-            // should be, correcting it being a deliberate resize of the text drawn in it.
-            case VANILLA_ORBITRON_12_CONDENSED -> 12;
+            // Another face whose name is not its size: "size=-12" is the character height it was
+            // matched at, where the descriptor's line height - the number a request is scaled
+            // against - is 15.
+            case VANILLA_ORBITRON_12_CONDENSED -> 15;
             // The descriptor spells "size=-10" - BMFont writes the character height it matched as a
             // negative - but states "lineHeight=9", and the line height is what a request is scaled
             // against. So the pixel face is asked for at 9 and the 10 in its name is not a size at all.

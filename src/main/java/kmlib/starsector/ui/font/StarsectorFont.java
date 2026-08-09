@@ -39,13 +39,11 @@ public enum StarsectorFont {
      * info" line at the foot of a vanilla box. Condensed rather than merely small, so a line of it
      * stays under the width of the content it sits beneath.
      *
-     * <p>TODO: its atlas draws 1:1 at 15, the line height its descriptor states; the 12 here is the
-     * nominal size its filename carries, so text asking for the native size renders at four-fifths
-     * scale. Being an antialiased face it resamples cleanly and the shortfall has gone unnoticed,
-     * which is why correcting it is a deliberate resize of the footnote text rather than a fix
-     * folded into this one.
+     * <p>Fifteen, against the {@code size=-12} its name and its descriptor both carry: the atlas
+     * states a line height of 15, and that is what the loader scales against. The twelve reads as
+     * the size because it is the size the face was matched at, not the size it draws at.
      */
-    VANILLA_ORBITRON_12_CONDENSED("orbitron12condensed", 12),
+    VANILLA_ORBITRON_12_CONDENSED("orbitron12condensed", 15),
 
     /**
      * The pixel face vanilla sets its compact chrome in - the map-toggle buttons above the intel
