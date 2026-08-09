@@ -7,9 +7,9 @@ import java.awt.Color;
 
 /**
  * The interior shades a vanilla raised button settles on, worked out from the colours the engine builds
- * one with: a button is its dark accent step laid over the backing behind it, with the pointer adding its
- * base accent on top. The engine hands a button a three-colour set and draws its interior from the dark
- * member, so both shades here are that member - once as it comes, once brightened.
+ * one with: the dark accent step laid over the backing behind it. The engine hands a button a
+ * three-colour set and draws its interior from the dark member, so both shades here are that member -
+ * once laid down, once not.
  *
  * <p>A separate rule from {@link VanillaTabFills} rather than that one with a knob. A tab's light is its
  * own label colour taken half-way to white and tempered by how solid its fill is - so a strip's glow
@@ -21,9 +21,13 @@ import java.awt.Color;
  * whatever the button is doing - which is the whole difference from a tab, where the fill and the rule
  * around it move together.
  *
- * <p>The lit shades come back opaque, having been composited onto the backing; the unpainted one is that
- * same shade at zero alpha, so the travel between them is an interior fading in over an unchanged backing
- * rather than two unrelated colours crossing.
+ * <p>The shown shade comes back opaque, having been composited onto the backing; the unpainted one is
+ * that same shade at zero alpha, so the travel between them is an interior fading in over an unchanged
+ * backing rather than two unrelated colours crossing.
+ *
+ * <p>Settled shades only. What the pointer adds is not among them - {@link #POINTED_LIGHT} is a colour
+ * the hover rule lays over whichever shade a button has settled on, so it is stated here as the vanilla
+ * fact it is and applied where every other momentary lift is.
  */
 public final class VanillaButtonFills {
 
@@ -43,42 +47,34 @@ public final class VanillaButtonFills {
      */
     public static final float POINTED_GLOW = 0.17f;
 
-    /** No glow at all, which is where the button the panel is showing sits. */
-    public static final float NO_GLOW = 0f;
-
-    // What an unpainted interior is: the lit shade with nothing of it laid down. Naming zero here is what
-    // lets the resting state be a value rather than a quad the paint pass learns to skip.
+    // What an unpainted interior is: the shown shade with nothing of it laid down. Naming zero here is
+    // what lets the resting state be a value rather than a quad the paint pass learns to skip.
     private static final float UNPAINTED_ALPHA = 0f;
 
     private VanillaButtonFills() {
     }
 
     /**
-     * The interior of a button that is not being shown: its lit shade, unpainted - so the backing behind
-     * it is what the eye sees, and a fade onto any lit state is that shade arriving rather than a second
+     * The interior of a button that is not being shown: the shown shade, unpainted - so the backing behind
+     * it is what the eye sees, and a fade onto the shown state is that shade arriving rather than a second
      * colour travelling in from somewhere.
      *
-     * @param paint the three colours a vanilla button is painted from
-     * @return the lit shade at zero alpha
+     * @param paint the colours a vanilla button's interior is worked out from
+     * @return the shown shade at zero alpha
      */
     public static Color resolveUnpaintedFill(VanillaButtonPaint paint) {
-        return Colours.scaleAlpha(resolveFillAtGlow(paint, NO_GLOW), UNPAINTED_ALPHA);
+        return Colours.scaleAlpha(resolveShownFill(paint), UNPAINTED_ALPHA);
     }
 
     /**
-     * The interior a lit button settles on at a given glow: its dark step composited onto the backing,
-     * with that much of its base accent added on top. One method for both lit states, since they differ
-     * in the amount alone.
+     * The interior the button being shown settles on: its dark step composited onto the backing, and
+     * nothing else. There is no second lit shade to compute - what the pointer adds is added over
+     * whichever of these two a button has settled on.
      *
-     * @param paint      the three colours a vanilla button is painted from
-     * @param glowAmount how brightly the button is lit: {@link #NO_GLOW} for the one being shown,
-     *                   {@link #POINTED_GLOW} for the one under the pointer
-     * @return the opaque interior shade at that glow
+     * @param paint the colours a vanilla button's interior is worked out from
+     * @return the opaque interior shade
      */
-    public static Color resolveFillAtGlow(VanillaButtonPaint paint, float glowAmount) {
-        return Colours.addOverlay(
-            Colours.flattenOnto(paint.fill(), paint.backdrop()),
-            paint.glowColour(),
-            glowAmount);
+    public static Color resolveShownFill(VanillaButtonPaint paint) {
+        return Colours.flattenOnto(paint.fill(), paint.backdrop());
     }
 }

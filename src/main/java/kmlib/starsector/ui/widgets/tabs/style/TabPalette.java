@@ -182,7 +182,6 @@ public record TabPalette(
         // the others.
         var buttonPaint = new VanillaButtonPaint(
             accent.dark(),
-            accent.base(),
             StarsectorUiColour.BLACK.resolve());
 
         return new TabPalette(
@@ -191,7 +190,7 @@ public record TabPalette(
                 VanillaButtonFills.resolveUnpaintedFill(buttonPaint),
                 accent.base()),
             new TabLook(
-                VanillaButtonFills.resolveFillAtGlow(buttonPaint, VanillaButtonFills.NO_GLOW),
+                VanillaButtonFills.resolveShownFill(buttonPaint),
                 accent.bright()),
             // The pointer adds plain light to whatever a button already wears, which is the engine's own
             // button rule and the reason this is a glow rather than a shade: the shown button lights from

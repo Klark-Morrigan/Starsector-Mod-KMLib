@@ -4,6 +4,7 @@ import kmlib.colour.Colours;
 import kmlib.math.ranges.Ranges;
 
 import java.awt.Color;
+import java.util.function.UnaryOperator;
 
 /**
  * The whole settled look of a tab in one {@link TabLookState}: the fill its surface takes and the colour
@@ -45,6 +46,8 @@ public record TabLook(
 
         var travelled = Ranges.clampToUnit(fraction);
 
+        // The one case where the two surfaces do not take the same operation: each travels toward its own
+        // counterpart in the target, so the pair is built here rather than through the mapping below.
         return new TabLook(
             Colours.blendTowards(fill, targetLook.fill(), travelled),
             Colours.blendTowards(label, targetLook.label(), travelled));
@@ -59,9 +62,7 @@ public record TabLook(
      * @return the look as painted under that lift
      */
     public TabLook computeWashedLook(TabWash wash) {
-        return new TabLook(
-            wash.computeWashedColour(fill),
-            wash.computeWashedColour(label));
+        return computeMappedLook(wash::computeWashedColour);
     }
 
     /**
@@ -84,8 +85,15 @@ public record TabLook(
 
         var added = Ranges.clampToUnit(glowAmount);
 
+        return computeMappedLook(colour -> Colours.addLight(colour, glowColour, added));
+    }
+
+    // Both of a look's surfaces put through one operation. The invariant every transform here holds -
+    // fill and label move alike, so a lifted tab reads as one piece rather than as a fill sliding out
+    // from under its text - written once, so a new transform inherits it rather than restating it.
+    private TabLook computeMappedLook(UnaryOperator<Color> operation) {
         return new TabLook(
-            Colours.addLight(fill, glowColour, added),
-            Colours.addLight(label, glowColour, added));
+            operation.apply(fill),
+            operation.apply(label));
     }
 }

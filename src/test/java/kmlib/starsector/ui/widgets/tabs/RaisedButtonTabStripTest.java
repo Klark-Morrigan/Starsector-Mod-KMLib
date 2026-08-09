@@ -103,4 +103,35 @@ final class RaisedButtonTabStripTest {
                 .isCloseTo(102f, within(TOLERANCE));
         }
     }
+
+    @Nested
+    class ComputeLabelBox {
+
+        @Test
+        void RaisedButtonTabStrip_computeLabelBox_raisesTheTextOffTheLineBoxsOwnMiddle() {
+            // The face this chrome is lettered in leaves the room for descenders empty at the foot of every
+            // glyph, so text centred by that box reads low by about the space it is not using. A whole
+            // pixel, never a fraction of one - a face of hard-edged pixels drawn on a half-pixel row is
+            // split across two rows of screen.
+            var labelBox = RaisedButtonTabStrip.computeLabelBox(new Rectangle(100f, 49f, 60f, 20f));
+
+            assertThat(labelBox.y())
+                .isCloseTo(50f, within(TOLERANCE));
+        }
+
+        @Test
+        void RaisedButtonTabStrip_computeLabelBox_leavesTheButtonsOwnSpanAlone() {
+            // Only the text moves. The box keeps the button's width and height so the label still centres
+            // across the button it belongs to rather than across a box of its own shape.
+            var buttonBox = new Rectangle(100f, 49f, 60f, 20f);
+            var labelBox = RaisedButtonTabStrip.computeLabelBox(buttonBox);
+
+            assertThat(labelBox.x())
+                .isCloseTo(100f, within(TOLERANCE));
+            assertThat(labelBox.width())
+                .isCloseTo(60f, within(TOLERANCE));
+            assertThat(labelBox.height())
+                .isCloseTo(20f, within(TOLERANCE));
+        }
+    }
 }

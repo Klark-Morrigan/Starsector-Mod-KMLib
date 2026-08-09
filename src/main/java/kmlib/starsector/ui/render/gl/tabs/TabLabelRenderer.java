@@ -1,6 +1,7 @@
 package kmlib.starsector.ui.render.gl.tabs;
 
 import kmlib.colour.Colours;
+import kmlib.math.geometry.PixelGrid;
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.font.DrawableStringCache;
 import kmlib.starsector.ui.font.TextFace;
@@ -144,14 +145,12 @@ public final class TabLabelRenderer {
 
         for (var run : runs) {
 
-            // Snapped to whole pixels before it is drawn. A face draws pixel-for-pixel only where it lands
-            // on the grid: centring a run of one width inside a box of another puts it half a pixel out as
-            // often as not, and a glyph resampled across two columns comes out both softer and dimmer than
-            // the colour it was set in - a bitmap face worst of all, having no antialiasing of its own to
-            // hide behind. Snapped per run rather than once for the group, so the rounding cannot pile up
-            // along a line.
-            var drawnX = Math.round(runX);
-            var drawnCentreY = snapCentreToPixelGrid(centerY, run.drawable().getHeight());
+            // Snapped to whole pixels before it is drawn: centring a run of one width inside a box of
+            // another puts it half a pixel out as often as not, and a glyph resampled across two columns
+            // comes out both softer and dimmer than the colour it was set in. Snapped per run rather than
+            // once for the group, so the rounding cannot pile up along a line.
+            var drawnX = PixelGrid.computeSnappedEdge(runX);
+            var drawnCentreY = PixelGrid.computeSnappedCentre(centerY, run.drawable().getHeight());
 
             run.drawable().draw(drawnX, drawnCentreY);
 
@@ -160,13 +159,6 @@ public final class TabLabelRenderer {
             }
             runX += run.drawable().getWidth();
         }
-    }
-
-    // The centre to draw a run of this height about, moved so the run's own edges land on whole pixels.
-    // Snapping the centre itself would be wrong for half the cases: a run of odd height centred on a whole
-    // pixel has both its edges on half ones, which is the very thing being avoided.
-    private static float snapCentreToPixelGrid(float centreY, float runHeight) {
-        return Math.round(centreY - runHeight / 2f) + runHeight / 2f;
     }
 
     // The whole line's rendered width, so the group centres in the box as the one string the layout

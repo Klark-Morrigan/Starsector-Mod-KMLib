@@ -207,12 +207,15 @@ public final class Colours {
      */
     public static Color addLight(Color base, Color light, float lightWeight) {
 
-        var addedWeight = light.getAlpha() / MAX_CHANNEL * lightWeight;
+        // The channels are the additive blend's, taken from it rather than spelt out again, so the two
+        // methods cannot come to brighten the same light differently; the alpha is the whole of what this
+        // one adds.
+        var brightened = addOverlay(base, light, lightWeight);
 
         return new Color(
-            addChannel(base.getRed(), light.getRed(), addedWeight),
-            addChannel(base.getGreen(), light.getGreen(), addedWeight),
-            addChannel(base.getBlue(), light.getBlue(), addedWeight),
+            brightened.getRed(),
+            brightened.getGreen(),
+            brightened.getBlue(),
             raiseAlphaToward(base.getAlpha(), light.getAlpha(), lightWeight));
     }
 
