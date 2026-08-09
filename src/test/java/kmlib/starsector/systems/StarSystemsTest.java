@@ -35,8 +35,9 @@ import static org.mockito.Mockito.when;
  * {@link StarSystems#getPlayerStarSystem}, {@link StarSystems#getStars},
  * {@link StarSystems#hasKnownOwnedMarket}, {@link StarSystems#getCentremostStar},
  * {@link StarSystems#getOrbitalDistanceTo}, {@link StarSystems#isReachable},
- * {@link StarSystems#find}, {@link StarSystems#findById}, {@link StarSystems#readMarkets}
- * and {@link StarSystems#readFactionClaimOverride}. Each method's cases live in a
+ * {@link StarSystems#find}, {@link StarSystems#findById}, {@link StarSystems#readMarkets},
+ * {@link StarSystems#readMarketsUnlistedByEconomy} and
+ * {@link StarSystems#readFactionClaimOverride}. Each method's cases live in a
  * {@link Nested} group so
  * the suite reports as a per-method tree; the shared mock builders stay on the
  * outer class.
@@ -636,6 +637,112 @@ final class StarSystemsTest {
     }
 
     @Nested
+    class ReadMarketsUnlistedByEconomy {
+        @Test
+        void appends_a_market_the_economy_does_not_list_after_the_ones_it_does() {
+            // Vanilla builds Galatia Academy as a real market on a real station and deliberately
+            // never registers it, so a read of the economy alone reports the station as nobody's.
+            var listed = buildVisibleColony();
+            var academy = buildVisibleColony();
+            var sector = buildSectorWithMarkets(listed);
+
+            placeEntitiesInOnlySystem(sector, buildEntityCarrying(academy));
+
+            assertThat(StarSystems.readMarketsUnlistedByEconomy(sector, buildOnlySystem(sector)))
+                .containsExactly(listed, academy);
+        }
+
+        @Test
+        void appends_off_economy_markets_in_entity_order() {
+
+            var first = buildVisibleColony();
+            var second = buildVisibleColony();
+            var sector = buildSectorWithMarkets();
+
+            placeEntitiesInOnlySystem(
+                sector,
+                buildEntityCarrying(first),
+                buildEntityCarrying(second));
+
+            assertThat(StarSystems.readMarketsUnlistedByEconomy(sector, buildOnlySystem(sector)))
+                .containsExactly(first, second);
+        }
+
+        @Test
+        void does_not_repeat_a_market_the_economy_already_lists() {
+
+            var listed = buildVisibleColony();
+            var sector = buildSectorWithMarkets(listed);
+
+            placeEntitiesInOnlySystem(sector, buildEntityCarrying(listed));
+
+            assertThat(StarSystems.readMarketsUnlistedByEconomy(sector, buildOnlySystem(sector)))
+                .containsExactly(listed);
+        }
+
+        @Test
+        void resolves_two_markets_on_one_entity_under_one_owner_to_one() {
+            // A mod supersedes a market by adding rather than replacing, so the station ends up
+            // carrying two market objects for the one colony - counted twice, it would list a
+            // faction's foothold as two separate holdings.
+            var station = buildDiscoveredEntity();
+            var independent = mock(FactionAPI.class);
+
+            when(independent.getId())
+                .thenReturn("independent");
+
+            var listed = buildColonyAtPlace(station, independent);
+            var supplementary = buildColonyAtPlace(station, independent);
+            var sector = buildSectorWithMarkets(listed);
+
+            when(station.getMarket())
+                .thenReturn(supplementary);
+                
+            placeEntitiesInOnlySystem(sector, station);
+
+            assertThat(StarSystems.readMarketsUnlistedByEconomy(sector, buildOnlySystem(sector)))
+                .containsExactly(listed);
+        }
+
+        @Test
+        void ignores_an_entity_carrying_no_market() {
+
+            var listed = buildVisibleColony();
+            var sector = buildSectorWithMarkets(listed);
+
+            placeEntitiesInOnlySystem(sector, buildDiscoveredEntity());
+
+            assertThat(StarSystems.readMarketsUnlistedByEconomy(sector, buildOnlySystem(sector)))
+                .containsExactly(listed);
+        }
+
+        @Test
+        void returns_empty_for_a_null_sector() {
+            assertThat(StarSystems.readMarketsUnlistedByEconomy(null, mock(StarSystemAPI.class)))
+                .isEmpty();
+        }
+
+        @Test
+        void returns_empty_for_a_null_system() {
+            assertThat(StarSystems.readMarketsUnlistedByEconomy(mock(SectorAPI.class), null))
+                .isEmpty();
+        }
+
+        @Test
+        void returns_empty_when_the_sector_has_no_economy() {
+            // With no listing to compare against there is no telling a listed market from an
+            // unlisted one, so the read reports nothing rather than every market it can reach.
+            var sectorMock = mock(SectorAPI.class);
+
+            when(sectorMock.getEconomy())
+                .thenReturn(null);
+
+            assertThat(StarSystems.readMarketsUnlistedByEconomy(sectorMock, mock(StarSystemAPI.class)))
+                .isEmpty();
+        }
+    }
+
+    @Nested
     class ReadFactionClaimOverride {
         @Test
         void returns_the_decreed_faction_id() {
@@ -874,6 +981,53 @@ final class StarSystemsTest {
             .thenReturn(economyMock);
 
         return sectorMock;
+    }
+
+    // Hands the sector's one system the entities present in it - the second half of "what is in
+    // this system", beside the economy's own listing.
+    private static void placeEntitiesInOnlySystem(
+            SectorAPI sector,
+            SectorEntityToken... entities) {
+
+        when(buildOnlySystem(sector).getAllEntities())
+            .thenReturn(List.of(entities));
+    }
+
+    // An entity with a market hung on it, which is how an unregistered colony reaches a reader at
+    // all: the economy does not list it, so the entity is the only thing that names it.
+    private static SectorEntityToken buildEntityCarrying(MarketAPI market) {
+
+        var entityMock = buildDiscoveredEntity();
+
+        when(entityMock.getMarket())
+            .thenReturn(market);
+
+        return entityMock;
+    }
+
+    // An entity the player has found, so a colony on it passes the known-to-player gate.
+    private static SectorEntityToken buildDiscoveredEntity() {
+
+        var entityMock = mock(SectorEntityToken.class);
+
+        when(entityMock.isDiscoverable())
+            .thenReturn(false);
+
+        return entityMock;
+    }
+
+    // A colony at a stated place under a stated owner - the pair that decides whether two market
+    // objects stand for one holding or for two.
+    private static MarketAPI buildColonyAtPlace(SectorEntityToken entity, FactionAPI faction) {
+
+        var marketMock = mock(MarketAPI.class);
+
+        when(marketMock.getFaction())
+            .thenReturn(faction);
+        when(marketMock.getPrimaryEntity())
+            .thenReturn(entity);
+
+        return marketMock;
     }
 
     // A visible owned colony: a faction owns it, it is not condition-only, and its
