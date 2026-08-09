@@ -153,7 +153,7 @@ Both name a small image sized off its line, and they must not be merged. The dif
 what the image is attached to:
 
 - [`ImageSpan`](text/ImageSpan.java) is a **run**: part of a label's sentence, spaced by a
-  word gap and carried wherever that label goes. A mark belonging to the thing a line names
+  word space and carried wherever that label goes. A mark belonging to the thing a line names
   is one - it lands where the sentence puts it, at whatever indent the line sits at, which is
   also what lets a centred line's image and its words centre together as a unit.
 - [`RowSlot.Image`](widgets/RowSlot.java) is a **column**: reserved at one width across a

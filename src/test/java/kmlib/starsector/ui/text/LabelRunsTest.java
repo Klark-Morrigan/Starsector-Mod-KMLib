@@ -298,6 +298,53 @@ class LabelRunsTest {
         }
 
         @Test
+        void resolveLineTextSpacesTheRunsAsWidelyAsTheyArePlaced() {
+            // The invariant the two forms stand or fall on. They part their runs by one rule written
+            // twice - as a width added between two drawn runs, and as a character appended between them -
+            // so nothing but a test holds them together, and a surface that measures by one and draws by
+            // the other would space its words twice or not at all. Pinned on the measurer charging a unit
+            // per character, where the joined line's own length is the width the placed form measures to.
+            var labelRuns = List.<LabelRun>of(
+                new TextSpan("Hegemony", RUN_COLOUR),
+                new TextSpan("(7)", OTHER_RUN_COLOUR),
+                new TextSpan("contested", RUN_COLOUR));
+
+            var lineText = LabelRuns.resolveLineText(labelRuns);
+
+            // Stated as the literal too, so the two forms cannot pass by being wrong together.
+            assertThat(lineText)
+                .isEqualTo("Hegemony (7) contested");
+            assertThat((float) lineText.length())
+                .isEqualTo(LabelRuns
+                    .measureRunOffsets(labelRuns, LINE_HEIGHT, ONE_UNIT_PER_CHARACTER)
+                    .runsWidth());
+        }
+
+        @Test
+        void resolveLineTextReadsALabelOfBlankRunsAsNothing() {
+            // Every run assembled from parts and coming up empty leaves no line at all - not a string of
+            // the spaces that would have parted them, which a surface would then measure and centre.
+            assertThat(LabelRuns.resolveLineText(List.of(
+                    TextSpan.createBlank(RUN_COLOUR),
+                    new TextSpan("   ", OTHER_RUN_COLOUR))))
+                .isEmpty();
+        }
+
+        @Test
+        void resolveLineTextPassesOverAnImageRunBetweenTwoWords() {
+            // A crest set among the words contributes neither glyphs nor a space, so the words either
+            // side of it close to the single space that parts them - where a space charged per run would
+            // leave the line reading as though something had been dropped out of it.
+            var lineText = LabelRuns.resolveLineText(List.of(
+                new TextSpan("Hegemony", RUN_COLOUR),
+                new ImageSpan(CREST_SPRITE_PATH),
+                new TextSpan("(7)", OTHER_RUN_COLOUR)));
+
+            assertThat(lineText)
+                .isEqualTo("Hegemony (7)");
+        }
+
+        @Test
         void resolveLineTextLeavesOutAnImageRun() {
             // The line form is glyphs only, so a surface drawing a label in one pass gets its words and
             // is charged nothing for a crest it will not be laying out run by run - not even the space
