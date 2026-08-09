@@ -3,6 +3,7 @@ package kmlib.starsector.systems.claims;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
+import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.campaign.econ.EconomyAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
@@ -14,6 +15,7 @@ import kmlib.starsector.testing.StarsectorSettingsFake;
 
 import org.mockito.MockedStatic;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.mockito.Mockito.mock;
@@ -77,6 +79,26 @@ final class ClaimContestFixture implements AutoCloseable {
     void placeMarketsInSystem(MarketAPI... markets) {
         when(economyMock.getMarkets(systemMock))
             .thenReturn(List.of(markets));
+    }
+
+    /**
+     * Hangs the given markets on entities of the system without registering any of them with the
+     * economy - the shape vanilla builds Galatia Academy in, a real colony on a real station that
+     * the mechanic's own walk never reaches.
+     */
+    void placeOffEconomyMarketsInSystem(MarketAPI... markets) {
+
+        var entities = new ArrayList<SectorEntityToken>(markets.length);
+
+        for (var market : markets) {
+            var entityMock = mock(SectorEntityToken.class);
+
+            when(entityMock.getMarket())
+                .thenReturn(market);
+            entities.add(entityMock);
+        }
+        when(systemMock.getAllEntities())
+            .thenReturn(entities);
     }
 
     /** Sets the system's claiming-faction memory flag, the override that settles a claim. */

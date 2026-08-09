@@ -26,6 +26,15 @@ final class MarketClaimBreakdownTest {
     private static final boolean IS_KNOWN_TO_PLAYER = true;
     private static final boolean IS_NOT_HIDDEN = false;
 
+    // The market is one the economy lists, which the arithmetic reads no more than it reads the
+    // other two. Only the competitor test below turns on it, and it states the flag itself.
+    private static final boolean IS_NOT_OFF_ECONOMY = false;
+
+    // The plainest colony there is - a size and nothing else - for the cases about how a contest
+    // reached a market rather than about what it came to.
+    private static final int PLAIN_MARKET_SIZE = 5;
+    private static final int NO_SIBLING_MARKETS = 0;
+
     @Nested
     class ComputeTotalScore {
 
@@ -102,9 +111,45 @@ final class MarketClaimBreakdownTest {
         }
     }
 
+    @Nested
+    class IsScoredOnItsOwnAccount {
+
+        @Test
+        void countsAMarketHeldInTheOpenAndListedByTheEconomy() {
+
+            assertThat(buildClaimReachedAs(false, false).isScoredOnItsOwnAccount())
+                .isTrue();
+        }
+
+        @Test
+        void passesOverAHiddenMarket() {
+            // The mechanic skips it before scoring, so it reaches the contest through the sibling
+            // term alone and competes for nothing.
+            assertThat(buildClaimReachedAs(true, false).isScoredOnItsOwnAccount())
+                .isFalse();
+        }
+
+        @Test
+        void passesOverAMarketTheEconomyDoesNotList() {
+            // The mechanic walks the economy, so a colony left off that listing is never reached -
+            // a different reason from concealment, and the same answer, which is the whole point
+            // of asking it here rather than as two tests at every reader.
+            assertThat(buildClaimReachedAs(false, true).isScoredOnItsOwnAccount())
+                .isFalse();
+        }
+
+        @Test
+        void passesOverAMarketThatIsBothAtOnce() {
+            // Galatia Academy's own shape: concealed and unregistered together, which is why the
+            // two are carried as separate facts rather than folded into one.
+            assertThat(buildClaimReachedAs(true, true).isScoredOnItsOwnAccount())
+                .isFalse();
+        }
+    }
+
     // One market's claim arithmetic, stated by the three terms every case here varies and nothing
-    // else: which market it is and whether the player has found it are the same throughout, and
-    // spelled at each call they would bury the terms the suite is actually about.
+    // else: which market it is, whether the player has found it and how the contest reached it are
+    // the same throughout, and spelled at each call they would bury the terms the suite is about.
     private static MarketClaimBreakdown buildClaim(
             int marketSize,
             int siblingMarketCount,
@@ -115,8 +160,26 @@ final class MarketClaimBreakdownTest {
             FIRST_LISTED,
             IS_KNOWN_TO_PLAYER,
             IS_NOT_HIDDEN,
+            IS_NOT_OFF_ECONOMY,
             marketSize,
             siblingMarketCount,
             militaryBonus);
+    }
+
+    // The same market posed by the two ways a contest can carry one without weighing it, which is
+    // the whole of what the competitor test reads.
+    private static MarketClaimBreakdown buildClaimReachedAs(
+            boolean isHiddenMarket,
+            boolean isOffEconomyMarket) {
+
+        return new MarketClaimBreakdown(
+            MARKET_NAME,
+            FIRST_LISTED,
+            IS_KNOWN_TO_PLAYER,
+            isHiddenMarket,
+            isOffEconomyMarket,
+            PLAIN_MARKET_SIZE,
+            NO_SIBLING_MARKETS,
+            OptionalInt.empty());
     }
 }

@@ -19,11 +19,12 @@ import java.util.OptionalInt;
  * inputs.
  *
  * @param marketName         the colony's display name
- * @param listingPosition    where the market falls in the system's economy listing, counting from
- *                           one. Carried because the contest is settled on a strictly greater
- *                           score, so two markets that tie are separated by nothing but this - the
- *                           earlier-listed one wins - and an explanation with no way to state it
- *                           can only report a tied outcome as arbitrary
+ * @param listingPosition    where the market falls among the system's owned markets, counting from
+ *                           one: the economy's own in the order it lists them, then any market it
+ *                           does not list. Carried because the contest is settled on a strictly
+ *                           greater score, so two markets that tie are separated by nothing but
+ *                           this - the earlier-listed one wins - and an explanation with no way to
+ *                           state it can only report a tied outcome as arbitrary
  * @param isKnownToPlayer    whether the player knows this colony exists at all. The mechanic
  *                           itself never asks - it settles a contest over colonies nobody has
  *                           found - so the answer is carried rather than applied, leaving an
@@ -35,6 +36,14 @@ import java.util.OptionalInt;
  *                           tie - while still counting toward the sibling term. Independent of
  *                           {@link #isKnownToPlayer}: a discovered base is known and hidden at
  *                           once
+ * @param isOffEconomyMarket whether the colony sits outside the economy's own listing - a real
+ *                           market on a real entity that was never registered, as vanilla builds
+ *                           Galatia Academy. The mechanic walks the economy and nothing else, so
+ *                           such a market never enters the contest at all: it takes no standing,
+ *                           and unlike a hidden one it does not even reach the sibling term.
+ *                           Independent of {@link #isHiddenMarket}: the Academy is both at once,
+ *                           a raided pirate base is hidden and listed, and a mod's unregistered
+ *                           market need not be hidden at all
  * @param marketSize         the colony's own size rating, the term the score starts from
  * @param siblingMarketCount how many other markets the same faction holds in the system, each
  *                           worth a point - so the count is the term. Taken over every market
@@ -47,6 +56,7 @@ public record MarketClaimBreakdown(
     int listingPosition,
     boolean isKnownToPlayer,
     boolean isHiddenMarket,
+    boolean isOffEconomyMarket,
     int marketSize,
     int siblingMarketCount,
     OptionalInt militaryBonus) {
@@ -57,6 +67,21 @@ public record MarketClaimBreakdown(
     /** Reads a bonus handed over as null as no bonus, so a hand-built market cannot fail late. */
     public MarketClaimBreakdown {
         militaryBonus = militaryBonus == null ? OptionalInt.empty() : militaryBonus;
+    }
+
+    /**
+     * Whether the mechanic weighed this market as a competitor in its own right.
+     *
+     * <p>Two kinds of market are carried in a contest without ever taking part in it: one held in
+     * concealment, which the walk skips before scoring, and one the economy does not list, which
+     * the walk never reaches. Nothing reading a finished contest needs to tell those apart - both
+     * counted for nothing - so the question is asked once here rather than as a pair of tests
+     * every reader has to remember to keep in step.
+     *
+     * @return true when the market competed on its own account
+     */
+    public boolean isScoredOnItsOwnAccount() {
+        return !isHiddenMarket && !isOffEconomyMarket;
     }
 
     /**

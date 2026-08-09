@@ -230,8 +230,8 @@ public final class StarSystems {
      *               list - with no economy to compare against there is no telling a listed market
      *               from an unlisted one
      * @param system the system to read; null yields an empty list
-     * @return the economy's markets in economy order followed by the off-economy ones in entity
-     *         order; never null
+     * @return the economy's markets in economy order followed by the ones it does not list, in
+     *         entity order; never null
      */
     public static List<MarketAPI> readMarketsUnlistedByEconomy(
             SectorAPI sector,

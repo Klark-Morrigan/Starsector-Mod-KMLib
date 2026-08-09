@@ -35,6 +35,10 @@ public final class ClaimStandingFixture {
     private static final boolean IS_KNOWN_TO_PLAYER = true;
     private static final boolean IS_NOT_HIDDEN = false;
 
+    // The market is one the economy lists. A standing market could not be otherwise in any case,
+    // the mechanic never reaching a colony the economy leaves out.
+    private static final boolean IS_NOT_OFF_ECONOMY = false;
+
     private ClaimStandingFixture() {
     }
 
@@ -60,6 +64,7 @@ public final class ClaimStandingFixture {
                 FIRST_LISTED,
                 IS_KNOWN_TO_PLAYER,
                 IS_NOT_HIDDEN,
+                IS_NOT_OFF_ECONOMY,
                 score,
                 NO_SIBLING_MARKETS,
                 OptionalInt.empty()),

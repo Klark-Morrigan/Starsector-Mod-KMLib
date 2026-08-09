@@ -15,9 +15,10 @@ import static org.assertj.core.api.Assertions.tuple;
  * of those would make a claim explanation disagree with the map fill it explains, which is the
  * failure this suite exists to catch.
  *
- * <p>It also pins the one place the reader deliberately parts from vanilla - the player scored
- * as a barred presence - since that reads as drift to anyone checking the two side by side, and
- * would otherwise be quietly "corrected" back into a mechanic that hides the player's colonies.
+ * <p>It also pins the two places the reader deliberately parts from vanilla - the player scored as
+ * a barred presence, and a colony the economy does not list carried as one that took no part -
+ * since both read as drift to anyone checking the two side by side, and would otherwise be quietly
+ * "corrected" back into a mechanic that leaves real colonies out of its account.
  */
 final class VanillaClaimBreakdownReaderTest {
 
@@ -262,6 +263,77 @@ final class VanillaClaimBreakdownReaderTest {
                 .isEmpty();
             assertThat(breakdown.claimantFactionId())
                 .isNull();
+        }
+
+        @Test
+        void listsAMarketTheEconomyDoesNotListAmongAFactionsOthersWithoutScoringIt() {
+
+            var independent = claimContest.buildFaction("independent", true);
+            var ancyra = claimContest.buildMarket(independent, 5);
+            var academy = claimContest.buildMarket(independent, 6);
+
+            claimContest.nameMarket(ancyra, "Ancyra");
+            claimContest.nameMarket(academy, "Galatia Academy");
+            claimContest.placeMarketsInSystem(ancyra);
+            claimContest.placeOffEconomyMarketsInSystem(academy);
+
+            var standing = new VanillaClaimBreakdownReader()
+                .readBreakdown(claimContest.getSystem())
+                .scores()
+                .get(0);
+
+            // The station is on the map in the faction's colours, so an account of the system that
+            // never mentions it says less than the player can already see. It takes no standing all
+            // the same: vanilla's walk covers the economy, and it was never registered.
+            assertThat(standing.standingMarket().marketName())
+                .isEqualTo("Ancyra");
+            assertThat(standing.otherMarkets())
+                .extracting(MarketClaimBreakdown::marketName)
+                .containsExactly("Galatia Academy");
+            assertThat(standing.otherMarkets().get(0).isOffEconomyMarket())
+                .isTrue();
+            assertThat(standing.standingMarket().isOffEconomyMarket())
+                .isFalse();
+        }
+
+        @Test
+        void keepsAMarketTheEconomyDoesNotListOutOfTheSiblingCount() {
+
+            var independent = claimContest.buildFaction("independent", true);
+
+            claimContest.placeMarketsInSystem(claimContest.buildMarket(independent, 5));
+            claimContest.placeOffEconomyMarketsInSystem(claimContest.buildMarket(independent, 6));
+
+            var breakdown =
+                new VanillaClaimBreakdownReader().readBreakdown(claimContest.getSystem());
+
+            // Vanilla counts siblings over the economy's own markets, so admitting an unregistered
+            // one would raise a real colony above the score the game scores it at - and could hand
+            // the system to a different faction, which is a mechanic change, not a fuller account.
+            assertThat(breakdown.scores())
+                .extracting(FactionClaimScore::factionId, FactionClaimScore::score)
+                .containsExactly(tuple("independent", 5));
+        }
+
+        @Test
+        void leavesTheClaimWithATerritorialFactionAnUnlistedMarketOutscores() {
+
+            var hegemony = claimContest.buildFaction("hegemony", true);
+            var independent = claimContest.buildFaction("independent", true);
+
+            claimContest.placeMarketsInSystem(claimContest.buildMarket(hegemony, 3));
+            claimContest.placeOffEconomyMarketsInSystem(claimContest.buildMarket(independent, 9));
+
+            var breakdown =
+                new VanillaClaimBreakdownReader().readBreakdown(claimContest.getSystem());
+
+            // The unlisted colony out-sizes everything present and still takes nothing: it never
+            // reaches a standing at all, so the claimant is the one vanilla itself would name.
+            assertThat(breakdown.scores())
+                .extracting(FactionClaimScore::factionId)
+                .containsExactly("hegemony");
+            assertThat(breakdown.claimantFactionId())
+                .isEqualTo("hegemony");
         }
 
         @Test

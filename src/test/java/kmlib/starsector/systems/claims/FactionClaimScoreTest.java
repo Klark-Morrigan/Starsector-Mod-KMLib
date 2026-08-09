@@ -30,6 +30,7 @@ final class FactionClaimScoreTest {
     // the score reads neither flag.
     private static final boolean IS_KNOWN_TO_PLAYER = true;
     private static final boolean IS_NOT_HIDDEN = false;
+    private static final boolean IS_NOT_OFF_ECONOMY = false;
 
     private static final boolean IS_TERRITORIAL = true;
 
@@ -128,6 +129,7 @@ final class FactionClaimScoreTest {
             listingPosition,
             IS_KNOWN_TO_PLAYER,
             IS_NOT_HIDDEN,
+            IS_NOT_OFF_ECONOMY,
             marketSize,
             siblingMarketCount,
             militaryBonus);

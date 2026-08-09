@@ -23,8 +23,9 @@ import java.util.List;
  * @param standingMarket the faction's strongest scoring market in the system, the one its
  *                       whole standing rests on
  * @param otherMarkets   every other market the faction holds in the system, in the order the
- *                       economy lists them. A hidden market is among them - it is present for
- *                       the sibling count - though it can never be the standing market itself
+ *                       listing reaches them. A market the contest never weighed is among them -
+ *                       a hidden one, present for the sibling count, or one the economy does not
+ *                       list, present on the map - though neither can be the standing market
  */
 public record FactionClaimScore(
     String factionId,

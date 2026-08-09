@@ -43,7 +43,15 @@ import java.util.OptionalInt;
  * this is not about whether the player has found it - a market's hiddenness and its entity's
  * discovery are independent, and the mechanic reads only the former.
  *
- * <p>Scoring walks the whole economy of a system, so it is the expensive read of the two; the
+ * <p>The standings go one market wider again, in the other direction: a colony the economy does
+ * not list at all is carried too, treated exactly as a hidden market is - present in its faction's
+ * holdings, never scored, never a claimant. Vanilla builds Galatia Academy that way deliberately,
+ * and a system account that never mentions the station on screen in a faction's colours is telling
+ * a reader less than the map already shows them. It takes no part because vanilla's own walk never
+ * reaches it, which is the same reason it is kept out of the sibling count: admitting it there
+ * would raise a real colony's score above the one the game scores it at.
+ *
+ * <p>Scoring walks every market present in a system, so it is the expensive read of the two; the
  * override is a bare memory read and stays cheap.
  */
 public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
@@ -88,28 +96,42 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
     }
 
     // Every market in the system that belongs to somebody, scored, in the order the economy
-    // lists them - the order a tied contest is settled in, so it is the order kept throughout.
-    // An unowned market belongs to nobody's standing and the mechanic would throw on one, so it
-    // is dropped here rather than guarded against at each later read.
+    // lists them - the order a tied contest is settled in, so it is the order kept throughout -
+    // followed by the markets the economy does not list at all. An unowned market belongs to
+    // nobody's standing and the mechanic would throw on one, so it is dropped here rather than
+    // guarded against at each later read.
+    //
+    // Two reads rather than one, because the two lists answer different questions. Every market
+    // present is walked, so the account names a colony the player can see on the map; but only
+    // the economy's own may feed an arithmetic vanilla runs off the economy, which is why the
+    // sibling count below is handed the narrower list. Widening that count instead would raise a
+    // real colony's score over what the game scores it at, and could hand the system to a
+    // different faction - a mechanic change wearing a display fix's clothes.
     private static List<ClaimedMarket> readClaimedMarkets(StarSystemAPI system) {
 
-        var markets = StarSystems.readMarkets(Global.getSector(), system);
-        var claimedMarkets = new ArrayList<ClaimedMarket>(markets.size());
+        var sector = Global.getSector();
+        var economyMarkets = StarSystems.readMarkets(sector, system);
+        var presentMarkets = StarSystems.readMarketsUnlistedByEconomy(sector, system);
+        var claimedMarkets = new ArrayList<ClaimedMarket>(presentMarkets.size());
 
-        for (var market : markets) {
+        for (var market : presentMarkets) {
             var faction = market == null ? null : market.getFaction();
 
             if (faction == null) {
                 continue;
             }
             // The place a market takes is its place among the owned ones, counting from one, rather
-            // than its raw index in the economy's list. The two order every market identically -
-            // dropping the unowned ones takes nothing out of order - and the contest is settled on
-            // relative order alone, so numbering the markets that take part leaves a run with no
-            // gaps in it for a reader to wonder about.
+            // than its raw index in the listing. The two order every market identically - dropping
+            // the unowned ones takes nothing out of order - and the contest is settled on relative
+            // order alone, so numbering the markets that take part leaves a run with no gaps in it
+            // for a reader to wonder about.
             claimedMarkets.add(new ClaimedMarket(
                 faction,
-                computeMarketClaim(market, markets, claimedMarkets.size() + FIRST_LISTED)));
+                computeMarketClaim(
+                    market,
+                    economyMarkets,
+                    claimedMarkets.size() + FIRST_LISTED,
+                    !isListedByEconomy(economyMarkets, market))));
         }
         return claimedMarkets;
     }
@@ -127,7 +149,7 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
         var topScore = NO_LEADING_SCORE;
 
         for (var claimedMarket : claimedMarkets) {
-            if (!isScoredOnItsOwnAccount(claimedMarket)
+            if (!claimedMarket.claim().isScoredOnItsOwnAccount()
                     || !isEligibleToClaim(claimedMarket.faction())) {
                 continue;
             }
@@ -149,7 +171,7 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
         var standingByFactionId = new LinkedHashMap<String, ClaimedMarket>();
 
         for (var claimedMarket : claimedMarkets) {
-            if (isScoredOnItsOwnAccount(claimedMarket)) {
+            if (claimedMarket.claim().isScoredOnItsOwnAccount()) {
                 recordBestStanding(standingByFactionId, claimedMarket);
             }
         }
@@ -184,9 +206,10 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
     }
 
     // The rest of what the faction holds in the system, its standing market aside - hidden
-    // markets included, since they are present for the sibling count. Matched on the same
-    // faction identity the sibling count runs on, so the count a standing carries is exactly
-    // how many markets are listed under it and a reader can check one against the other.
+    // markets included, since they are present for the sibling count, and off-economy ones
+    // included, since they are present on the map whatever the mechanic made of them. Matched on
+    // the same faction identity the sibling count runs on, so an account of the count has the
+    // markets it counts listed beneath it.
     //
     // The standing itself is told apart by identity rather than by value, since the walk holds
     // one of these per market: two indistinguishable twin colonies are then each other's
@@ -220,10 +243,11 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
     }
 
     // A market's weight in the contest: its size, a point for every other market its faction
-    // holds in the same system, and the military bonus. The sibling count runs over every
-    // market present - hidden and player-owned ones included - because sheer presence is what
-    // it measures, not who is eligible to claim. Faction identity is compared by reference,
-    // as the mechanic compares it; the game holds one instance per faction.
+    // holds in the same system, and the military bonus. The sibling count runs over the economy's
+    // markets alone - hidden and player-owned ones included, because sheer presence is what it
+    // measures, but nothing the economy does not list, because that is the set vanilla counts
+    // over. Faction identity is compared by reference, as the mechanic compares it; the game
+    // holds one instance per faction.
     //
     // Whether the player knows the market exists is recorded beside all that and applied to
     // none of it. The mechanic scores what is there rather than what has been found, so a
@@ -231,12 +255,13 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
     // a box that would rather not name an unfound colony reads the flag instead.
     private static MarketClaimBreakdown computeMarketClaim(
             MarketAPI market,
-            List<MarketAPI> systemMarkets,
-            int listingPosition) {
+            List<MarketAPI> economyMarkets,
+            int listingPosition,
+            boolean isOffEconomyMarket) {
 
         var siblingMarketCount = 0;
 
-        for (var other : systemMarkets) {
+        for (var other : economyMarkets) {
             if (other != null && other != market && other.getFaction() == market.getFaction()) {
                 siblingMarketCount++;
             }
@@ -246,6 +271,7 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
             listingPosition,
             Markets.isKnownToPlayer(market),
             market.isHidden(),
+            isOffEconomyMarket,
             market.getSize(),
             siblingMarketCount,
             Markets.isMilitary(market)
@@ -253,12 +279,18 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
                 : OptionalInt.empty());
     }
 
-    // A hidden market is counted through its siblings rather than on its own account, so
-    // scoring it separately would count it twice - and, since a faction stands on its strongest
-    // market alone, a large hidden base would displace the visible colony actually contesting
-    // the system. Read off the claim, which records the same hiddenness for its own readers.
-    private static boolean isScoredOnItsOwnAccount(ClaimedMarket claimedMarket) {
-        return !claimedMarket.claim().isHiddenMarket();
+    // Whether the economy hands this very market over as one of the system's. Identity rather
+    // than equality, since the wider read has already collapsed two market objects standing for
+    // one colony - so anything reaching here that is not one of the economy's own objects is a
+    // colony the economy genuinely does not list.
+    private static boolean isListedByEconomy(List<MarketAPI> economyMarkets, MarketAPI market) {
+
+        for (var listed : economyMarkets) {
+            if (listed == market) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // The player is present but ineligible: the mechanic never lets a player colony claim a
