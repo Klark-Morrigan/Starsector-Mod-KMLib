@@ -8,6 +8,7 @@ import com.fs.starfarer.api.impl.campaign.ids.Tags;
 
 import kmlib.console.output.CommandOutput;
 import kmlib.console.parsing.ParameterSpec;
+import kmlib.starsector.systems.StarSystems;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -86,7 +87,7 @@ public final class ListMapSpoilersCommand extends KmlibBaseConsoleCommand {
                 continue;
             }
             systemCount++;
-            report.append('\n').append(system.getName());
+            report.append('\n').append(StarSystems.readDisplayName(system));
             if (isSystemCutOff) {
                 report.append("  [cut off]");
             }

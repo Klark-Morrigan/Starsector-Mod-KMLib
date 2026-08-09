@@ -43,6 +43,7 @@ final class ListMapSpoilersCommandTest {
 
     @Nested
     class BuildReport {
+
         @Test
         void omitsOrdinaryFullyVisibleSystems() {
             
@@ -201,6 +202,7 @@ final class ListMapSpoilersCommandTest {
 
     @Nested
     class RunCommand {
+
         private MockedStatic<Global> globalMock;
         private CommandOutputFake outputFake;
         private ListMapSpoilersCommand command;
@@ -262,7 +264,8 @@ final class ListMapSpoilersCommandTest {
     }
 
     private enum Visibility {
-        SHOWN, UNDISCOVERED
+        SHOWN,
+        UNDISCOVERED,
     }
 
     private static SectorAPI buildSectorWith(SystemWithMarkets... systems) {
@@ -331,6 +334,7 @@ final class ListMapSpoilersCommandTest {
     // Pairs a stubbed system with the market list its economy returns, so the
     // sector wiring can register both without nested stubbing.
     private static final class SystemWithMarkets {
+        
         private final StarSystemAPI system;
         private final List<MarketAPI> markets;
 

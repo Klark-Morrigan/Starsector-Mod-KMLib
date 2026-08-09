@@ -152,7 +152,7 @@ public final class SpawnEntityCommand extends KmlibBaseConsoleCommand {
                 output.showMessage("No entity with id '"
                     + focusId
                     + "' in "
-                    + system.getName()
+                    + StarSystems.readDisplayName(system)
                     + ".");
             }
             return focus;
@@ -251,7 +251,7 @@ public final class SpawnEntityCommand extends KmlibBaseConsoleCommand {
                 return "Spawned "
                     + spawned.getName()
                     + " at your fleet position in "
-                    + system.getName()
+                    + StarSystems.readDisplayName(system)
                     + ", generated its hyperspace entrance,"
                     + " and cleared the cut-off tag.";
             }

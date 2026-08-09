@@ -49,7 +49,7 @@ public final class ActivateGateCommand extends KmlibBaseConsoleCommand {
             output.showMessage("No gate with id '"
                 + id
                 + "' in "
-                + system.getName()
+                + StarSystems.readDisplayName(system)
                 + ".");
             return CommandResult.ERROR;
         }
@@ -58,7 +58,7 @@ public final class ActivateGateCommand extends KmlibBaseConsoleCommand {
         output.showMessage("Activated gate '"
             + id
             + "' in "
-            + system.getName()
+            + StarSystems.readDisplayName(system)
             + "; it lights up on its next advance.");
         return CommandResult.SUCCESS;
     }

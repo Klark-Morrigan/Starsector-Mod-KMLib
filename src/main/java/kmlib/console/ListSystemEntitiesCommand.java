@@ -90,7 +90,7 @@ public final class ListSystemEntitiesCommand extends KmlibBaseConsoleCommand {
             ? collectGatesAndAncestors(entities, center)
             : null;
 
-        var report = new StringBuilder("System entities in ").append(system.getName());
+        var report = new StringBuilder("System entities in ").append(StarSystems.readDisplayName(system));
         if (isGatesOnly) {
             report.append(" (gates only)");
         }
