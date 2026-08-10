@@ -89,7 +89,8 @@ src/main/java/kmlib/
   settings/        - LunaLib settings read / write + labelled choices
   starsector/
     entities/      - spawning custom campaign entities, their orbits,
-                     and name generation (Gates as a type helper)
+                     name generation, and the map glyph an entity is
+                     marked with (Gates as a type helper)
     factions/      - player-faction lifecycle (established-check +
                      display-name normaliser; handles vanilla + Nex
                      defaults), faction colours, crests, flags
