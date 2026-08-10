@@ -1,8 +1,12 @@
 package kmlib.starsector.systems.claims;
 
+import kmlib.starsector.entities.EntityMapIcon;
+
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.awt.Color;
+import java.util.Optional;
 import java.util.OptionalInt;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -24,6 +28,11 @@ final class MarketClaimBreakdownTest {
     // sum the whole suite is about is the same either way - the arithmetic reads neither this nor
     // how the contest met the market.
     private static final boolean IS_KNOWN_TO_PLAYER = true;
+
+    // The glyph the sector map marks the colony's entity with. Carried through the record untouched,
+    // no case here being about what a surface goes on to draw with it.
+    private static final Optional<EntityMapIcon> MARKET_ICON = Optional.of(
+        new EntityMapIcon("graphics/warroom/icon_planet.png", new Color(120, 200, 90)));
 
     // The plainest colony there is - a size and nothing else - for the cases about how a contest
     // reached a market rather than about what it came to.
@@ -89,6 +98,24 @@ final class MarketClaimBreakdownTest {
         }
 
         @Test
+        void readsAnAbsentIconGivenAsNullAsNoIcon() {
+            // A hand-built market states its terms and rarely its glyph, so an unstated icon has to
+            // mean an unmarked colony rather than fail late where a line is being composed.
+            var claim = new MarketClaimBreakdown(
+                MARKET_NAME,
+                null,
+                FIRST_LISTED,
+                IS_KNOWN_TO_PLAYER,
+                ContestAdmission.WEIGHED,
+                PLAIN_MARKET_SIZE,
+                NO_SIBLING_MARKETS,
+                OptionalInt.empty());
+
+            assertThat(claim.marketIcon())
+                .isEmpty();
+        }
+
+        @Test
         void readsAnAbsentAdmissionGivenAsNullAsTheWeighedOne() {
             // The ordinary market is the one a hand-built case leaves unstated, so an unstated
             // admission has to mean the competitor rather than fail late on a null.
@@ -108,9 +135,15 @@ final class MarketClaimBreakdownTest {
             var claim = buildClaim(5, 2, OptionalInt.of(10));
 
             // Every term survives the sum, since the box explaining a claim prints them rather
-            // than the total the map paints its fill by.
+            // than the total the map paints its fill by - and so does what identifies the colony
+            // they belong to, name and map glyph alike, a term printed against no colony being
+            // no account at all.
             assertThat(claim.marketName())
                 .isEqualTo("Chicomoztoc");
+            assertThat(claim.marketIcon())
+                .contains(new EntityMapIcon(
+                    "graphics/warroom/icon_planet.png",
+                    new Color(120, 200, 90)));
             assertThat(claim.marketSize())
                 .isEqualTo(5);
             assertThat(claim.siblingMarketCount())
@@ -130,6 +163,7 @@ final class MarketClaimBreakdownTest {
 
         return new MarketClaimBreakdown(
             MARKET_NAME,
+            MARKET_ICON,
             FIRST_LISTED,
             IS_KNOWN_TO_PLAYER,
             ContestAdmission.WEIGHED,
@@ -143,6 +177,7 @@ final class MarketClaimBreakdownTest {
     private static MarketClaimBreakdown buildClaimAdmittedAs(ContestAdmission admission) {
         return new MarketClaimBreakdown(
             MARKET_NAME,
+            MARKET_ICON,
             FIRST_LISTED,
             IS_KNOWN_TO_PLAYER,
             admission,

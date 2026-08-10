@@ -1,6 +1,7 @@
 package kmlib.starsector.systems.claims;
 
 import com.fs.starfarer.api.Global;
+import com.fs.starfarer.api.campaign.CustomEntitySpecAPI;
 import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
@@ -15,6 +16,7 @@ import kmlib.testfixtures.starsector.settings.StarsectorSettingsFake;
 
 import org.mockito.MockedStatic;
 
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -111,6 +113,30 @@ final class ClaimContestFixture implements AutoCloseable {
     void nameMarket(MarketAPI market, String name) {
         when(market.getName())
             .thenReturn(name);
+    }
+
+    /**
+     * Hangs a map glyph on a market's own entity - a custom-entity spec's authored path and colour,
+     * which is where vanilla keeps a station's icon. A plain market built here has no primary entity
+     * at all, so a colony is unmarked unless a case says otherwise.
+     */
+    void giveMarketAMapIcon(MarketAPI market, String iconName, Color iconColour) {
+
+        // The spec is built and stubbed before the entity's own stubbing opens, so the two do not
+        // nest into an unfinished-stubbing error.
+        var entitySpecMock = mock(CustomEntitySpecAPI.class);
+
+        when(entitySpecMock.getIconName())
+            .thenReturn(iconName);
+        when(entitySpecMock.getIconColor())
+            .thenReturn(iconColour);
+
+        var entityMock = mock(SectorEntityToken.class);
+
+        when(entityMock.getCustomEntitySpec())
+            .thenReturn(entitySpecMock);
+        when(market.getPrimaryEntity())
+            .thenReturn(entityMock);
     }
 
     /** Raises a market's military flag, the condition behind vanilla's flat garrison bonus. */

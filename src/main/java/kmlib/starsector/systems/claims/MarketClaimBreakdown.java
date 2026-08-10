@@ -1,5 +1,8 @@
 package kmlib.starsector.systems.claims;
 
+import kmlib.starsector.entities.EntityMapIcon;
+
+import java.util.Optional;
 import java.util.OptionalInt;
 
 /**
@@ -19,6 +22,10 @@ import java.util.OptionalInt;
  * inputs.
  *
  * @param marketName         the colony's display name
+ * @param marketIcon         the glyph the sector map marks the colony's own entity with, or empty
+ *                           where it carries none. Recorded on the walk that met the colony rather
+ *                           than looked up again by whatever draws the name, so the icon shown can
+ *                           only ever be the icon of the colony whose score is stated beside it
  * @param listingPosition    where the market falls among the system's owned markets, counting from
  *                           one: the economy's own in the order it lists them, then any market it
  *                           does not list. Carried because the contest is settled on a strictly
@@ -43,6 +50,7 @@ import java.util.OptionalInt;
  */
 public record MarketClaimBreakdown(
     String marketName,
+    Optional<EntityMapIcon> marketIcon,
     int listingPosition,
     boolean isKnownToPlayer,
     ContestAdmission admission,
@@ -54,10 +62,11 @@ public record MarketClaimBreakdown(
     private static final int NO_MILITARY_BONUS = 0;
 
     /**
-     * Reads a bonus handed over as null as no bonus, and an unstated admission as the weighed one,
-     * so a hand-built market cannot fail late on either.
+     * Reads a bonus handed over as null as no bonus, an unstated admission as the weighed one, and
+     * an unstated icon as no icon, so a hand-built market cannot fail late on any of the three.
      */
     public MarketClaimBreakdown {
+        marketIcon = marketIcon == null ? Optional.empty() : marketIcon;
         militaryBonus = militaryBonus == null ? OptionalInt.empty() : militaryBonus;
         admission = admission == null ? ContestAdmission.WEIGHED : admission;
     }

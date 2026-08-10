@@ -6,6 +6,7 @@ import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.util.Misc;
 
+import kmlib.starsector.entities.EntityMapIcons;
 import kmlib.starsector.factions.FactionFlags;
 import kmlib.starsector.markets.Markets;
 import kmlib.starsector.systems.StarSystems;
@@ -277,6 +278,10 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
     // none of it. The mechanic scores what is there rather than what has been found, so a
     // fog-of-war filter here would resolve a different claimant from the one the game reports;
     // a box that would rather not name an unfound colony reads the flag instead.
+    //
+    // The glyph the map marks the colony's entity with is recorded here for the same reason the
+    // name is: a surface listing the colony needs to identify it, and reading the icon on the walk
+    // that met the market is what stops a second lookup answering for a different one.
     private static MarketClaimBreakdown computeMarketClaim(
             MarketAPI market,
             List<MarketAPI> economyMarkets,
@@ -292,6 +297,7 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
         }
         return new MarketClaimBreakdown(
             market.getName(),
+            EntityMapIcons.resolveMapIcon(market.getPrimaryEntity()),
             listingPosition,
             Markets.isKnownToPlayer(market),
             new ContestAdmission(market.isHidden(), isOffEconomyMarket),

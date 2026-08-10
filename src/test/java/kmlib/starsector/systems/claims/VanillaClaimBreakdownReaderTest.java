@@ -1,9 +1,13 @@
 package kmlib.starsector.systems.claims;
 
+import kmlib.starsector.entities.EntityMapIcon;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+
+import java.awt.Color;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -19,6 +23,11 @@ import static org.assertj.core.api.Assertions.tuple;
  * a barred presence, and a colony the economy does not list carried as one that took no part -
  * since both read as drift to anyone checking the two side by side, and would otherwise be quietly
  * "corrected" back into a mechanic that leaves real colonies out of its account.
+ *
+ * <p>What identifies a market rather than scoring it - its name and the glyph the map marks its
+ * entity with - is pinned here too, since a surface listing the markets behind a standing reads both
+ * off this walk rather than looking the market up again. That reading them changes no outcome is
+ * asserted head-on beside them.
  */
 final class VanillaClaimBreakdownReaderTest {
 
@@ -36,6 +45,7 @@ final class VanillaClaimBreakdownReaderTest {
 
     @Nested
     class ReadBreakdown {
+
         @Test
         void scoresAFactionOnItsStrongestMarket() {
 
@@ -88,6 +98,76 @@ final class VanillaClaimBreakdownReaderTest {
             assertThat(standing.otherMarkets())
                 .extracting(MarketClaimBreakdown::marketName)
                 .containsExactly("Kazeron");
+        }
+
+        @Test
+        void carriesTheGlyphTheMapMarksAMarketWith() {
+            // A box listing the markets behind a standing leads each with the map's own glyph, and
+            // reads it off the breakdown rather than looking the market up a second time - so the
+            // icon drawn can only belong to the colony whose score is stated beside it. The colour
+            // travels with the path because vanilla draws a whole family from one sprite and tells
+            // the types apart by nothing else.
+            var independent = claimContest.buildFaction("independent", true);
+            var ancyra = claimContest.buildMarket(independent, 5);
+
+            claimContest.giveMarketAMapIcon(
+                ancyra,
+                "graphics/icons/station0.png",
+                new Color(200, 200, 255));
+
+            claimContest.placeMarketsInSystem(ancyra);
+
+            var standing = new VanillaClaimBreakdownReader()
+                .readBreakdown(claimContest.getSystem())
+                .scores()
+                .get(0);
+
+            assertThat(standing.standingMarket().marketIcon())
+                .contains(new EntityMapIcon(
+                    "graphics/icons/station0.png",
+                    new Color(200, 200, 255)));
+        }
+
+        @Test
+        void carriesNoGlyphForAMarketTheMapMarksWithNone() {
+            // An entity with no icon spec at all reaches the box as an absence rather than as a path
+            // to a sprite that does not exist, which is what lets the line open on its name.
+            var hegemony = claimContest.buildFaction("hegemony", true);
+
+            claimContest.placeMarketsInSystem(claimContest.buildMarket(hegemony, 4));
+
+            var standing = new VanillaClaimBreakdownReader()
+                .readBreakdown(claimContest.getSystem())
+                .scores()
+                .get(0);
+
+            assertThat(standing.standingMarket().marketIcon())
+                .isEmpty();
+        }
+
+        @Test
+        void resolvesTheSameContestWhicheverMarketsTheMapMarks() {
+            // The glyph is what identifies a colony in a list and nothing the mechanic weighs, so
+            // reading it on the walk must leave the claimant and the ranking exactly where they were.
+            var hegemony = claimContest.buildFaction("hegemony", true);
+            var tritachyon = claimContest.buildFaction("tritachyon", true);
+            var weaker = claimContest.buildMarket(hegemony, 4);
+
+            claimContest.giveMarketAMapIcon(
+                weaker,
+                "graphics/icons/station0.png",
+                new Color(200, 200, 255));
+                
+            claimContest.placeMarketsInSystem(weaker, claimContest.buildMarket(tritachyon, 7));
+
+            var breakdown =
+                new VanillaClaimBreakdownReader().readBreakdown(claimContest.getSystem());
+
+            assertThat(breakdown.scores())
+                .extracting(FactionClaimScore::factionId, FactionClaimScore::score)
+                .containsExactly(tuple("tritachyon", 7), tuple("hegemony", 4));
+            assertThat(breakdown.claimantFactionId())
+                .isEqualTo("tritachyon");
         }
 
         @Test
@@ -624,6 +704,7 @@ final class VanillaClaimBreakdownReaderTest {
 
     @Nested
     class ReadCoreFactionId {
+
         @Test
         void reportsTheFactionIdTheFlagImposes() {
 
@@ -653,7 +734,6 @@ final class VanillaClaimBreakdownReaderTest {
     private static FactionClaimScore readStanding(
             SystemClaimBreakdown breakdown,
             String factionId) {
-
         return breakdown
             .scores()
             .stream()

@@ -1,10 +1,13 @@
 package kmlib.starsector.systems.claims;
 
+import kmlib.starsector.entities.EntityMapIcon;
+
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.OptionalInt;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,6 +32,10 @@ final class FactionClaimScoreTest {
     // here is about what a box may name or which market competes, and a standing carries the same
     // score either way - the score reads neither.
     private static final boolean IS_KNOWN_TO_PLAYER = true;
+
+    // Neither colony's entity carries a map glyph. What identifies a market is nothing a standing
+    // reads, so a case here states one no more than it states a name it never asserts.
+    private static final Optional<EntityMapIcon> NO_MAP_ICON = Optional.empty();
 
     private static final boolean IS_TERRITORIAL = true;
 
@@ -124,6 +131,7 @@ final class FactionClaimScoreTest {
 
         return new MarketClaimBreakdown(
             marketName,
+            NO_MAP_ICON,
             listingPosition,
             IS_KNOWN_TO_PLAYER,
             ContestAdmission.WEIGHED,

@@ -1,10 +1,12 @@
 package kmlib.testfixtures.starsector.systems.claims;
 
+import kmlib.starsector.entities.EntityMapIcon;
 import kmlib.starsector.systems.claims.ContestAdmission;
 import kmlib.starsector.systems.claims.FactionClaimScore;
 import kmlib.starsector.systems.claims.MarketClaimBreakdown;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.OptionalInt;
 
 /**
@@ -34,6 +36,11 @@ public final class ClaimStandingFixture {
     // fog-of-war case.
     private static final boolean IS_KNOWN_TO_PLAYER = true;
 
+    // The colony's entity carries no map glyph. A test posing standings by score alone is not about
+    // how a market line is identified, and an icon here would put a mark on every box built from
+    // this fixture.
+    private static final Optional<EntityMapIcon> NO_MAP_ICON = Optional.empty();
+
     private ClaimStandingFixture() {
     }
 
@@ -56,6 +63,7 @@ public final class ClaimStandingFixture {
             isTerritorial,
             new MarketClaimBreakdown(
                 STANDING_MARKET_NAME,
+                NO_MAP_ICON,
                 FIRST_LISTED,
                 IS_KNOWN_TO_PLAYER,
                 // Held in the open and listed by the economy, which a standing market could not be
