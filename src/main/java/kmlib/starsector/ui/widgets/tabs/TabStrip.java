@@ -9,12 +9,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Lays out and hit-tests a horizontal row of text-snapped tabs. Each tab is only as wide as its own
- * label needs plus a padding, floored at a minimum, so a short label does not carry a wide empty box
- * and a long one is never clipped - the SNAPPED case of the shared {@link HorizontalSegments} width
- * rule, which this delegates its sizing and placement to. This is the reusable half of a tab bar -
- * where each tab sits and which one a point falls in; how the tab is painted (colours, selected/hover
- * states, its label text) stays with the consumer, which owns that visual state.
+ * Lays out and hit-tests a horizontal row of tabs, sized and parted however the {@link SegmentSpec} it
+ * is handed says: each tab snapped to its own label, or every tab taking one stated box, and the row
+ * abutting or parted by a channel. All of it delegates to the shared {@link HorizontalSegments} rule, so
+ * a tab row and a radio row cannot come to size a segment differently. This is the reusable half of a
+ * tab bar - where each tab sits and which one a point falls in; how the tab is painted (colours,
+ * selected/hover states, its label text) stays with the consumer, which owns that visual state.
  *
  * <p>Pure geometry in UI coordinates (origin bottom-left), unit-testable with a fake measurer:
  * it touches no GL surface and holds no state.
@@ -27,15 +27,16 @@ public final class TabStrip {
     }
 
     /**
-     * Lays tabs left to right from {@code originX}, each snapped to its measured label width per {@code
-     * spec} (a SNAPPED {@link SegmentSpec}). The row hangs down from {@code rowTopY} (UI y grows up), so
-     * every tab shares the same top edge and height. Sizes and places through {@link HorizontalSegments}
-     * so the tabs land exactly where {@link #measureRowWidth} reserved for them.
+     * Lays tabs left to right from {@code originX}, each sized and parted per {@code spec}. The row hangs
+     * down from {@code rowTopY} (UI y grows up), so every tab shares the same top edge and height - a
+     * caller wanting a tab shorter than its band passes the shorter height and keeps the remainder below.
+     * Sizes and places through {@link HorizontalSegments} so the tabs land exactly where {@link
+     * #measureRowWidth} reserved for them, interior channels included.
      *
      * @param originX   the row's left edge, in UI coordinates
      * @param rowTopY   the row's top edge, in UI coordinates
      * @param tabHeight the height every tab shares
-     * @param spec      the tab-sizing rule (padding, minimum, font size, SNAPPED)
+     * @param spec      the tab-sizing rule (padding, minimum, font size, sizing, box and channel)
      * @param labels    the tab labels, in row order left to right
      * @param measurer  measures each label's rendered width in the label font
      * @return one {@link LabeledTab} per label, in the same order
@@ -57,7 +58,8 @@ public final class TabStrip {
             originX,
             rowTopY - tabHeight,
             tabHeight,
-            widths);
+            widths,
+            spec.neighbourGap());
 
         var tabs = new ArrayList<LabeledTab>(labels.size());
 

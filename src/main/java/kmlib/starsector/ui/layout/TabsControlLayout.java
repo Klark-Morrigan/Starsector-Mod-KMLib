@@ -8,6 +8,7 @@ import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.widgets.segments.SegmentSpec;
 import kmlib.starsector.ui.widgets.tabs.VanillaTabContent;
 import kmlib.starsector.ui.widgets.tabs.VanillaTabStrip;
+import kmlib.starsector.ui.widgets.tabs.style.TabBox;
 import kmlib.starsector.ui.widgets.tabs.style.TabStyle;
 
 import java.util.ArrayList;
@@ -104,16 +105,17 @@ public final class TabsControlLayout {
         // another.
         var fontSize = tabStyle.face().size();
         var bandHeight = tabStyle.headerBandHeight();
+        var tabBox = tabStyle.tabBox();
         var bounds = new Rectangle(
             originX,
             topY - bandHeight,
-            measureRowWidth(tabs, measurer, fontSize),
+            measureRowWidth(tabs, measurer, fontSize, tabBox),
             bandHeight);
 
         return new Control(
             tabs,
             bounds,
-            splitIntoSegments(tabs, bounds, measurer, fontSize));
+            splitIntoSegments(tabs, bounds, measurer, fontSize, tabBox));
     }
 
     /**
@@ -129,7 +131,7 @@ public final class TabsControlLayout {
      * @return the row width the tabs occupy side by side
      */
     static float measureRowWidth(ControlSpec.Tabs tabs, LineWidthMeasurer measurer) {
-        return measureRowWidth(tabs, measurer, TAB_FONT_SIZE);
+        return measureRowWidth(tabs, measurer, TAB_FONT_SIZE, TabBox.SNAPPED);
     }
 
     /**
@@ -151,48 +153,58 @@ public final class TabsControlLayout {
             ControlSpec.Tabs tabs,
             Rectangle row,
             LineWidthMeasurer measurer) {
-        return splitIntoSegments(tabs, row, measurer, TAB_FONT_SIZE);
+        return splitIntoSegments(tabs, row, measurer, TAB_FONT_SIZE, TabBox.SNAPPED);
     }
 
     // The segment-sizing rule for a tabs row: the tab padding, minimum, and the size the labels are
-    // measured at. A tabs row always snaps each tab to its own label-plus-shortcut width, so this reads
-    // SNAPPED. One rule behind both the width measurement and the segment split, so the two cannot size
-    // a tab differently.
-    private static SegmentSpec buildSegmentSpec(double fontSize) {
+    // measured at, under whichever width rule the box states. A box with a width of its own reads FIXED
+    // and measures no label; a snapped box keeps the label-plus-shortcut snap a body row has always
+    // taken. One rule behind both the width measurement and the segment split, so the two cannot size a
+    // tab differently.
+    private static SegmentSpec buildSegmentSpec(double fontSize, TabBox tabBox) {
         return new SegmentSpec(
             TAB_TEXT_PADDING,
             MIN_TAB_WIDTH,
             fontSize,
-            SegmentSizing.SNAPPED);
+            tabBox.isFixedWidth() ? SegmentSizing.FIXED : SegmentSizing.SNAPPED,
+            tabBox.width(),
+            tabBox.neighbourGap());
     }
 
-    // The row width at a named measurement size. The size is a parameter rather than the constant
-    // because a header takes its host's face while a body row takes the baseline; both go through this
-    // one snap, so a header and a body row cannot come to size a tab by different rules.
+    // The row width at a named measurement size and box. Both are parameters rather than constants
+    // because a header takes its host's face and its host's box while a body row takes the baseline and
+    // snaps; both go through this one rule, so a header and a body row cannot come to size a tab
+    // differently.
     private static float measureRowWidth(
             ControlSpec.Tabs tabs,
             LineWidthMeasurer measurer,
-            double fontSize) {
+            double fontSize,
+            TabBox tabBox) {
 
         return VanillaTabStrip.measureRowWidth(
             buildTabContents(tabs),
-            buildSegmentSpec(fontSize),
+            buildSegmentSpec(fontSize, tabBox),
             measurer);
     }
 
-    // The hit segments at a named measurement size - the split half of the rule above, taking the size
-    // the same way so a row is split exactly as it was measured.
+    // The hit segments at a named measurement size and box - the split half of the rule above, taking
+    // both the same way so a row is split exactly as it was measured.
+    //
+    // The tabs hang from the band's top at the box's own height, so a box shorter than its band leaves
+    // the remainder below it - the pixel the engine's own map row keeps for the line its tabs stand on.
     private static List<Rectangle> splitIntoSegments(
             ControlSpec.Tabs tabs,
             Rectangle row,
             LineWidthMeasurer measurer,
-            double fontSize) {
+            double fontSize,
+            TabBox tabBox) {
 
+        var rowTopY = row.y() + row.height();
         var laidOut = VanillaTabStrip.layoutTabs(
             row.x(),
-            row.y() + row.height(),
-            row.height(),
-            buildSegmentSpec(fontSize),
+            rowTopY,
+            tabBox.resolveTabHeight(row.height()),
+            buildSegmentSpec(fontSize, tabBox),
             buildTabContents(tabs),
             measurer);
 

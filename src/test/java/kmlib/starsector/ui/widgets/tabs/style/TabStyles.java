@@ -71,11 +71,41 @@ public final class TabStyles {
      * @return the tab style at that band height and face
      */
     public static TabStyle buildAtBandHeightInFace(float headerBandHeight, TextFace face) {
+        return buildAtBandHeightInFaceAndBox(headerBandHeight, face, TabBox.SNAPPED);
+    }
+
+    /**
+     * Builds a tab style standing its band at the given height with the given tab box - for a test whose
+     * subject is the box, a fixed one sizing the row without measuring a label at all.
+     *
+     * @param headerBandHeight how tall the tab band stands, passed through as above
+     * @param tabBox           the box each tab stands in within that band
+     * @return the tab style at that band height and box
+     */
+    public static TabStyle buildAtBandHeightInBox(float headerBandHeight, TabBox tabBox) {
+        return buildAtBandHeightInFaceAndBox(headerBandHeight, STAND_IN_FACE, tabBox);
+    }
+
+    /**
+     * Builds a tab style standing its band at the given height, lettered in the given face and standing
+     * its tabs in the given box - the one composition the narrower builders above both route through.
+     *
+     * @param headerBandHeight how tall the tab band stands, passed through as above
+     * @param face             the face the tabs are measured and drawn in
+     * @param tabBox           the box each tab stands in within that band
+     * @return the tab style at that band height, face and box
+     */
+    public static TabStyle buildAtBandHeightInFaceAndBox(
+            float headerBandHeight,
+            TextFace face,
+            TabBox tabBox) {
+
         return new TabStyle(
             // The map's own chrome, which no test here draws: these assert dimensions and geometry, and a
             // chrome is read only at paint time.
             TabChrome.STRIP,
             headerBandHeight,
+            tabBox,
             STAND_IN_PALETTE,
             STAND_IN_HOTKEY,
             face,

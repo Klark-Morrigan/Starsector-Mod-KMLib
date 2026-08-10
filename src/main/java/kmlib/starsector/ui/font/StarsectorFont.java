@@ -40,9 +40,10 @@ public enum StarsectorFont {
     VANILLA_ORBITRON_20AA("orbitron20aa", 20, AtlasSmoothing.SMOOTHED),
 
     /**
-     * The narrow, small Orbitron the game sets its tooltip key hints in - the "Press F1 for more
-     * info" line at the foot of a vanilla box. Condensed rather than merely small, so a line of it
-     * stays under the width of the content it sits beneath.
+     * The narrow Orbitron the game sets its sector-map Sector/System tabs in, and its tooltip key
+     * hints - the "Press F1 for more info" line at the foot of a vanilla box. Condensed rather than
+     * merely small: at the same height as the title face it draws a visibly narrower glyph, which is
+     * what lets a fixed-width tab hold a label the wider face would overrun.
      *
      * <p>Fifteen, against the {@code size=-12} its name and its descriptor both carry: the atlas
      * states a line height of 15, and that is what the loader scales against. The twelve reads as

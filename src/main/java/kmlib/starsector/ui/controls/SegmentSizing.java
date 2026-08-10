@@ -20,7 +20,16 @@ public enum SegmentSizing {
 
     /**
      * Each segment snaps to its own label plus the padding, floored at a minimum, so a short label
-     * does not carry a wide empty cell and a long one is never clipped (the Sector/System tab strip).
+     * does not carry a wide empty cell and a long one is never clipped.
      */
-    SNAPPED
+    SNAPPED,
+
+    /**
+     * Every segment takes one stated width whatever its label measures, so the row's geometry is a
+     * property of the chrome rather than of its text (the vanilla Sector/System tab strip, whose tabs
+     * are a fixed box the label is centred in). Unlike {@link #UNIFORM}, which is still measured - it
+     * asks the labels how wide the widest is - this asks them nothing, so a renamed label moves no tab
+     * and a label wider than the box overruns it rather than growing it.
+     */
+    FIXED
 }

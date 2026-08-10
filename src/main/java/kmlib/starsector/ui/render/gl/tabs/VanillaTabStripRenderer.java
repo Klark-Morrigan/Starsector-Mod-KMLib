@@ -80,10 +80,16 @@ public final class VanillaTabStripRenderer {
         // primitive so this strip and a radio row divide their segments the same way. Drawn after the
         // per-tab chrome (a divider must sit over the backdrops it parts) and clear of the centred
         // labels, so the single pass reads identically to a per-tab rule.
-        HorizontalSegmentsRenderer.renderSeamDividers(
-            collectBounds(tabs),
-            chromeAccent,
-            opacity);
+        //
+        // Only where the tabs actually abut. A row parted by a channel has no seam to rule: the rule
+        // would land in the empty gap, marking a join between two tabs that do not touch - and the
+        // engine's own parted row draws nothing there either.
+        if (!style.tabBox().isParted()) {
+            HorizontalSegmentsRenderer.renderSeamDividers(
+                collectBounds(tabs),
+                chromeAccent,
+                opacity);
+        }
     }
 
     // The laid tab boxes, in row order, for the shared seam-divider pass.

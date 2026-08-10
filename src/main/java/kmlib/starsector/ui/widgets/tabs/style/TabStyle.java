@@ -24,9 +24,14 @@ import kmlib.starsector.ui.font.TextFace;
  * @param chrome           which surface the row's paint is laid onto - the map's seamless strip or the
  *                         intel screen's raised buttons; read only at paint time, every other field
  *                         meaning the same thing under either
- * @param headerBandHeight how tall the band carrying a panel's tabs stands, and so the height every tab
- *                         in it shares; a non-positive value collapses the band to nothing rather than
- *                         inverting it, leaving the panel its body alone
+ * @param headerBandHeight how tall the band carrying a panel's tabs stands; a non-positive value
+ *                         collapses the band to nothing rather than inverting it, leaving the panel its
+ *                         body alone
+ * @param tabBox           the box each tab stands in within that band - a stated width, height and
+ *                         neighbour channel, or {@link TabBox#SNAPPED} for tabs sized to their own
+ *                         labels and abutting. It sits beside the band height because the two answer
+ *                         together: the band is the room the row is given, this is what the row does
+ *                         with it
  * @param palette          the strip's chrome accent, per-state resting looks, and interaction lifts
  * @param hotkey           how a tab presents the key it is bound to - the key's colour and whether it
  *                         is underlined
@@ -39,6 +44,7 @@ import kmlib.starsector.ui.font.TextFace;
 public record TabStyle(
     TabChrome chrome,
     float headerBandHeight,
+    TabBox tabBox,
     TabPalette palette,
     HotkeyStyle hotkey,
     TextFace face,

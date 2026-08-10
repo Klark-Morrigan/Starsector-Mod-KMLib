@@ -5,6 +5,7 @@ import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.font.StarsectorFont;
 import kmlib.starsector.ui.font.TextFace;
+import kmlib.starsector.ui.widgets.tabs.style.TabBox;
 import kmlib.starsector.ui.widgets.tabs.style.TabStyles;
 import kmlib.testfixtures.starsector.ui.font.LineWidthMeasurerFake;
 
@@ -36,6 +37,18 @@ final class TabsControlLayoutTest {
     private static final float HEADER_X = 40f;
     private static final float HEADER_TOP_Y = 500f;
     private static final float BAND_HEIGHT = 17f;
+
+    // The sector map's own tab box (com.fs.starfarer.coreui.A.G): a 130 x 18 tab, neighbours parted by a
+    // pixel, standing in a band that reserves one more than the tab is tall. Literal rather than read off
+    // the box under test, so a box quietly re-dimensioned fails here instead of agreeing with itself.
+    private static final float VANILLA_TAB_WIDTH = 130f;
+    private static final float VANILLA_TAB_HEIGHT = 18f;
+    private static final float VANILLA_TAB_GAP = 1f;
+    private static final float VANILLA_BAND_HEIGHT = 19f;
+    private static final TabBox VANILLA_MAP_TAB = new TabBox(
+        VANILLA_TAB_WIDTH,
+        VANILLA_TAB_HEIGHT,
+        VANILLA_TAB_GAP);
 
     private static final ControlSpec.Tabs TABS = new ControlSpec.Tabs(
         List.of("No Layer", "Political Map"),
@@ -133,6 +146,77 @@ final class TabsControlLayoutTest {
 
             assertThat(header.bounds().width())
                 .isCloseTo(first + second, within(TOLERANCE));
+        }
+
+        @Test
+        void layoutHeaderControlLaysEveryTabToItsStyledBoxWhateverItsLabel() {
+            // Vanilla's own box: two 130-wide tabs whatever their labels measure. The two labels differ by
+            // 5 characters - 50 measured units apart under this fake - and the boxes do not differ at all,
+            // which is the whole of what a fixed row claims over a snapped one.
+            var header = TabsControlLayout.layoutHeaderControl(
+                TABS,
+                HEADER_X,
+                HEADER_TOP_Y,
+                TabStyles.buildAtBandHeightInBox(VANILLA_BAND_HEIGHT, VANILLA_MAP_TAB),
+                measurerFake);
+
+            assertThat(header.segments().get(0).width())
+                .isCloseTo(VANILLA_TAB_WIDTH, within(TOLERANCE));
+            assertThat(header.segments().get(1).width())
+                .isCloseTo(VANILLA_TAB_WIDTH, within(TOLERANCE));
+        }
+
+        @Test
+        void layoutHeaderControlPartsNeighbouringTabsByTheStyledChannel() {
+            // The leading tab flush at the row's left edge and the second one channel past its right, so
+            // the pair matches the engine's own: 40 and 40 + 130 + 1. The channel is stepped over rather
+            // than taken from either box, so neither tab narrows to pay for it.
+            var header = TabsControlLayout.layoutHeaderControl(
+                TABS,
+                HEADER_X,
+                HEADER_TOP_Y,
+                TabStyles.buildAtBandHeightInBox(VANILLA_BAND_HEIGHT, VANILLA_MAP_TAB),
+                measurerFake);
+
+            assertThat(header.segments().get(0).x())
+                .isCloseTo(HEADER_X, within(TOLERANCE));
+            assertThat(header.segments().get(1).x())
+                .isCloseTo(HEADER_X + VANILLA_TAB_WIDTH + VANILLA_TAB_GAP, within(TOLERANCE));
+        }
+
+        @Test
+        void layoutHeaderControlSpansTheBoxesAndTheChannelsBetweenThem() {
+            // 130 + 1 + 130. The channel counts toward the row because it is room the tabs do not cover,
+            // so a panel framing chrome around this row reserves the width the row actually occupies.
+            var header = TabsControlLayout.layoutHeaderControl(
+                TABS,
+                HEADER_X,
+                HEADER_TOP_Y,
+                TabStyles.buildAtBandHeightInBox(VANILLA_BAND_HEIGHT, VANILLA_MAP_TAB),
+                measurerFake);
+
+            assertThat(header.bounds().width())
+                .isCloseTo(2 * VANILLA_TAB_WIDTH + VANILLA_TAB_GAP, within(TOLERANCE));
+        }
+
+        @Test
+        void layoutHeaderControlStandsItsTabsShorterThanTheBandTheyHangIn() {
+            // An 18 tab in a 19 band, hanging from the band's top: the spare pixel falls below the tabs,
+            // which is where the vanilla row keeps the line its tabs stand on. The band itself is still
+            // the full 19, since that is the room the panel gave the row.
+            var header = TabsControlLayout.layoutHeaderControl(
+                TABS,
+                HEADER_X,
+                HEADER_TOP_Y,
+                TabStyles.buildAtBandHeightInBox(VANILLA_BAND_HEIGHT, VANILLA_MAP_TAB),
+                measurerFake);
+
+            assertThat(header.bounds().height())
+                .isCloseTo(VANILLA_BAND_HEIGHT, within(TOLERANCE));
+            assertThat(header.segments().get(0).height())
+                .isCloseTo(VANILLA_TAB_HEIGHT, within(TOLERANCE));
+            assertThat(header.segments().get(0).y() + header.segments().get(0).height())
+                .isCloseTo(HEADER_TOP_Y, within(TOLERANCE));
         }
 
         @Test
