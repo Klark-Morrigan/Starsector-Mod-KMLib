@@ -20,6 +20,11 @@ import static org.mockito.Mockito.when;
  * other entity's on a custom-entity spec, so both arms are asserted head-on, along with the
  * blank-is-absent rule that decides when there is no icon to draw at all.
  *
+ * <p>An entity carrying a spec is arranged through a builder per arm, so a case states the icon it
+ * is about rather than the two mocks it takes to hold one. The spec-less cases stay inline: they
+ * arrange a different shape - an entity with no spec at all - rather than a variation of the same
+ * one.
+ *
  * <p>Cases live in a {@link Nested} group named for the method under test, so the suite reports as
  * a per-method tree.
  */
@@ -31,15 +36,9 @@ final class EntityMapIconsTest {
         @Test
         void resolveMapIconReadsAPlanetsOwnSpec() {
 
-            var planetMock = mock(PlanetAPI.class);
-            var planetSpecMock = mock(PlanetSpecAPI.class);
-
-            when(planetMock.getSpec())
-                .thenReturn(planetSpecMock);
-            when(planetSpecMock.getIconTexture())
-                .thenReturn("graphics/warroom/icon_planet.png");
-            when(planetSpecMock.getIconColor())
-                .thenReturn(new Color(120, 200, 90));
+            var planetMock = buildPlanetWithIcon(
+                "graphics/warroom/icon_planet.png",
+                new Color(120, 200, 90));
 
             assertThat(EntityMapIcons.resolveMapIcon(planetMock))
                 .contains(new EntityMapIcon(
@@ -50,15 +49,9 @@ final class EntityMapIconsTest {
         @Test
         void resolveMapIconReadsACustomEntitysOwnSpec() {
 
-            var stationMock = mock(SectorEntityToken.class);
-            var entitySpecMock = mock(CustomEntitySpecAPI.class);
-
-            when(stationMock.getCustomEntitySpec())
-                .thenReturn(entitySpecMock);
-            when(entitySpecMock.getIconName())
-                .thenReturn("graphics/icons/station0.png");
-            when(entitySpecMock.getIconColor())
-                .thenReturn(new Color(200, 200, 255));
+            var stationMock = buildCustomEntityWithIcon(
+                "graphics/icons/station0.png",
+                new Color(200, 200, 255));
 
             assertThat(EntityMapIcons.resolveMapIcon(stationMock))
                 .contains(new EntityMapIcon(
@@ -100,14 +93,9 @@ final class EntityMapIconsTest {
         @Test
         void resolveMapIconIsEmptyForABlankPlanetIconPath() {
             // An authored-but-empty path reads as no icon, so a whitespace path collapses to empty
-            // rather than pointing a caller at a missing sprite.
-            var planetMock = mock(PlanetAPI.class);
-            var planetSpecMock = mock(PlanetSpecAPI.class);
-
-            when(planetMock.getSpec())
-                .thenReturn(planetSpecMock);
-            when(planetSpecMock.getIconTexture())
-                .thenReturn("   ");
+            // rather than pointing a caller at a missing sprite. The colour is authored and good,
+            // which is what says the path alone decides whether there is an icon here.
+            var planetMock = buildPlanetWithIcon("   ", Color.WHITE);
 
             assertThat(EntityMapIcons.resolveMapIcon(planetMock))
                 .isEmpty();
@@ -116,13 +104,7 @@ final class EntityMapIconsTest {
         @Test
         void resolveMapIconIsEmptyForABlankCustomEntityIconPath() {
 
-            var stationMock = mock(SectorEntityToken.class);
-            var entitySpecMock = mock(CustomEntitySpecAPI.class);
-
-            when(stationMock.getCustomEntitySpec())
-                .thenReturn(entitySpecMock);
-            when(entitySpecMock.getIconName())
-                .thenReturn(null);
+            var stationMock = buildCustomEntityWithIcon(null, Color.WHITE);
 
             assertThat(EntityMapIcons.resolveMapIcon(stationMock))
                 .isEmpty();
@@ -131,15 +113,9 @@ final class EntityMapIconsTest {
         @Test
         void resolveMapIconTrimsTheAuthoredPath() {
 
-            var stationMock = mock(SectorEntityToken.class);
-            var entitySpecMock = mock(CustomEntitySpecAPI.class);
-
-            when(stationMock.getCustomEntitySpec())
-                .thenReturn(entitySpecMock);
-            when(entitySpecMock.getIconName())
-                .thenReturn("  graphics/icons/relay.png  ");
-            when(entitySpecMock.getIconColor())
-                .thenReturn(Color.WHITE);
+            var stationMock = buildCustomEntityWithIcon(
+                "  graphics/icons/relay.png  ",
+                Color.WHITE);
 
             assertThat(EntityMapIcons.resolveMapIcon(stationMock))
                 .contains(new EntityMapIcon("graphics/icons/relay.png", Color.WHITE));
@@ -149,18 +125,44 @@ final class EntityMapIconsTest {
         void resolveMapIconCarriesAnUncolouredGlyph() {
             // A spec authoring no colour still has an icon: the glyph's own pixels carry it, and
             // the draw reads a null tint as "as authored". Only the path decides presence.
-            var stationMock = mock(SectorEntityToken.class);
-            var entitySpecMock = mock(CustomEntitySpecAPI.class);
-
-            when(stationMock.getCustomEntitySpec())
-                .thenReturn(entitySpecMock);
-            when(entitySpecMock.getIconName())
-                .thenReturn("graphics/icons/buoy.png");
-            when(entitySpecMock.getIconColor())
-                .thenReturn(null);
+            var stationMock = buildCustomEntityWithIcon("graphics/icons/buoy.png", null);
 
             assertThat(EntityMapIcons.resolveMapIcon(stationMock))
                 .contains(new EntityMapIcon("graphics/icons/buoy.png", null));
         }
+    }
+
+    // A planet answering the icon its planet spec authored. Typed as the planet interface rather
+    // than as a token, since it is that type the read branches on.
+    private static PlanetAPI buildPlanetWithIcon(String iconTexture, Color iconColour) {
+
+        var planetMock = mock(PlanetAPI.class);
+        var planetSpecMock = mock(PlanetSpecAPI.class);
+
+        when(planetMock.getSpec())
+            .thenReturn(planetSpecMock);
+        when(planetSpecMock.getIconTexture())
+            .thenReturn(iconTexture);
+        when(planetSpecMock.getIconColor())
+            .thenReturn(iconColour);
+
+        return planetMock;
+    }
+
+    // A non-planet token - a station, relay or buoy - answering the icon its custom-entity spec
+    // authored, which vanilla names and colours through accessors of its own.
+    private static SectorEntityToken buildCustomEntityWithIcon(String iconName, Color iconColour) {
+
+        var entityMock = mock(SectorEntityToken.class);
+        var entitySpecMock = mock(CustomEntitySpecAPI.class);
+
+        when(entityMock.getCustomEntitySpec())
+            .thenReturn(entitySpecMock);
+        when(entitySpecMock.getIconName())
+            .thenReturn(iconName);
+        when(entitySpecMock.getIconColor())
+            .thenReturn(iconColour);
+
+        return entityMock;
     }
 }
