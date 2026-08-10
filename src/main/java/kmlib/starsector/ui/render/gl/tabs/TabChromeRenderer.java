@@ -2,20 +2,20 @@ package kmlib.starsector.ui.render.gl.tabs;
 
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.widgets.tabs.RaisedButtonTabStrip;
-import kmlib.starsector.ui.widgets.tabs.TabLookSource;
-import kmlib.starsector.ui.widgets.tabs.TabWashSource;
+import kmlib.starsector.ui.widgets.tabs.TabPaintSources;
 import kmlib.starsector.ui.widgets.tabs.VanillaTab;
 import kmlib.starsector.ui.widgets.tabs.style.TabChrome;
-import kmlib.starsector.ui.widgets.tabs.style.TabLook;
+import kmlib.starsector.ui.widgets.tabs.style.TabLight;
+import kmlib.starsector.ui.widgets.tabs.style.TabPaint;
 import kmlib.starsector.ui.widgets.tabs.style.TabStyle;
 
 import java.util.List;
 
 /**
- * What every tab chrome can do: paint a laid-out row of tabs at the looks and lifts it is handed. The
- * contract exists so the chromes are interchangeable by type rather than by coincidence - two paint passes
- * that happen to take the same five arguments today could drift apart on the next change, and a caller
- * choosing between them would then be choosing between two different jobs.
+ * What every tab chrome can do: paint a laid-out row of tabs at the paint it is handed. The contract
+ * exists so the chromes are interchangeable by type rather than by coincidence - two paint passes that
+ * happen to take the same arguments today could drift apart on the next change, and a caller choosing
+ * between them would then be choosing between two different jobs.
  *
  * <p>It is also the seam a third chrome plugs into. Adding one is a renderer satisfying this and a case in
  * {@link #resolveRendererFor}; nothing that draws a tab row learns of it.
@@ -68,53 +68,53 @@ public interface TabChromeRenderer {
      * shade its look source reports, lifted by whatever pulse its wash source reports for it. A tab with no
      * pulse carries a wash that moves it nowhere, so nothing here decides whether a lift applies.
      *
-     * <p>Held here rather than at each chrome because the two channels resolve in one order only - the look
-     * settles, and the lift is layered over what it yields. A chrome writing that walk itself is a chance to
-     * compose them the other way round, which gives a click over a half-faded hover a colour neither channel
-     * named. A chrome supplies what it draws per tab and nothing about how the row is read.
+     * <p>Held here rather than at each chrome because the channels resolve in one order only - the look
+     * settles, the lift is layered over what it yields, and the light is added over whatever was drawn. A
+     * chrome writing that walk itself is a chance to compose them the other way round, which gives a click
+     * over a half-faded hover a colour neither channel named. A chrome supplies what it draws per tab and
+     * nothing about how the row is read.
      *
      * @param tabs    the laid-out tabs, in row order
-     * @param looks   where each tab's settled look comes from
-     * @param washes  where each tab's resolved lift comes from
-     * @param painter what to draw for one tab, given its place in the row and the look it is painted at
+     * @param sources where each tab's look, lift, and light come from
+     * @param painter what to draw for one tab, given its place in the row and the paint it takes
      */
     static void paintEachTab(
             List<VanillaTab> tabs,
-            TabLookSource looks,
-            TabWashSource washes,
+            TabPaintSources sources,
             TabPainter painter) {
 
         for (var index = 0; index < tabs.size(); index++) {
             painter.paintTab(
                 index,
                 tabs.get(index),
-                looks.resolveLookAt(index).computeWashedLook(washes.resolveWashAt(index)));
+                new TabPaint(
+                    sources.looks().resolveLookAt(index)
+                        .computeWashedLook(sources.washes().resolveWashAt(index)),
+                    sources.lights().resolveLightAt(index)));
         }
     }
 
     /**
-     * Paints the row. Both channels arrive resolved - a tab has already faded onto its hovered shade and
-     * already carries whatever lift is running on it - so an implementation paints what it is handed and
-     * computes no timing.
+     * Paints the row. Every channel arrives resolved - a tab has already faded onto its hovered shade,
+     * already carries whatever lift is running on it, and is handed the light to finish it with - so an
+     * implementation paints what it is given and computes no timing.
      *
      * @param tabs    the laid-out tabs, in row order
-     * @param looks   where each tab's settled look comes from
-     * @param washes  where each tab's resolved lift comes from
+     * @param sources where each tab's look, lift, and light come from
      * @param style   the row's look; its band height having been spent laying the tabs out, a chrome reads
      *                only the paint it carries
      * @param opacity overall alpha, 0..1, applied to every quad and every text colour
      */
     void renderTabs(
         List<VanillaTab> tabs,
-        TabLookSource looks,
-        TabWashSource washes,
+        TabPaintSources sources,
         TabStyle style,
         float opacity);
 
     /**
      * What a chrome draws for one tab. The whole of what differs between the chromes: the row's walk and
-     * the composition of its two channels belong to the contract, so an implementation of this is handed a
-     * finished look and decides only what surface to lay it on.
+     * the composition of its channels belong to the contract, so an implementation of this is handed
+     * finished paint and decides only what surface to lay it on.
      */
     @FunctionalInterface
     interface TabPainter {
@@ -129,8 +129,10 @@ public interface TabChromeRenderer {
          *
          * @param rowIndex the tab's position in the row, counting from the left
          * @param tab      the laid-out tab - its box, and the label and bound key it shows
-         * @param look     the look it is painted at, its lift included
+         * @param paint    what to paint it with: the surface it settled on, and the light to lay over the
+         *                 finished result - {@link TabLight#NONE} where the row's pointer rule brightens by
+         *                 shade instead
          */
-        void paintTab(int rowIndex, VanillaTab tab, TabLook look);
+        void paintTab(int rowIndex, VanillaTab tab, TabPaint paint);
     }
 }

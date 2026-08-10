@@ -5,6 +5,7 @@ import kmlib.math.geometry.PixelGrid;
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.font.DrawableStringCache;
 import kmlib.starsector.ui.font.TextFace;
+import kmlib.starsector.ui.render.gl.GlyphAtlasFilter;
 import kmlib.starsector.ui.render.gl.UiElementPaint;
 import kmlib.starsector.ui.render.gl.UiFill;
 import kmlib.starsector.ui.widgets.tabs.TabShortcutText;
@@ -39,6 +40,10 @@ import java.util.List;
  * times from the one set of drawables, re-colouring them between the ring and the text: a colour set on a
  * single-colour drawable is a live knob, where a baked multi-colour run would hold its tints against
  * every pass.
+ *
+ * <p>The whole group - the ring and the text over it - is drawn under the sampling its atlas asks for, so
+ * a pixel face lands its strokes whole rather than losing part of each to an interpolating filter. Held
+ * around both passes rather than around each, since they draw the same glyphs from the same atlas.
  *
  * <p>GL passthrough (over {@link UiFill} for the underline and the font cache for the glyphs), exercised
  * in-engine like the other draw helpers.
@@ -86,17 +91,23 @@ public final class TabLabelRenderer {
         var textHalo = style.textHalo();
         var haloOpacity = opacity * textHalo.strength();
 
-        // The ring goes down first, so the text proper covers whatever of it lands under the glyphs. Both
-        // roles take the one shade - a ring is the group's silhouette, so a key lit inside it would read
-        // as a misplaced second copy of the label rather than as an edge on the first - and the colour is
-        // set once for the whole ring rather than per copy, which is what says the four are one thing seen
-        // four times.
-        setRunColours(runs, textHalo.colour(), textHalo.colour(), haloOpacity);
-        for (var haloBox : textHalo.computeHaloBoxes(bounds)) {
-            drawRunGroup(haloBox, runs, hotkeyStyle);
-        }
-        setRunColours(runs, look.label(), hotkeyStyle.keyColour(), opacity);
-        drawRunGroup(bounds, runs, hotkeyStyle);
+        // Drawn once per sampling pass, at whatever weight that pass contributes: a pixel face lands
+        // between the two filters rather than under either, so every colour set here carries the pass's
+        // own weight and the passes composite on the screen.
+        GlyphAtlasFilter.drawUnderAtlasFilter(style.face(), passOpacity -> {
+
+            // The ring goes down first, so the text proper covers whatever of it lands under the glyphs.
+            // Both roles take the one shade - a ring is the group's silhouette, so a key lit inside it
+            // would read as a misplaced second copy of the label rather than as an edge on the first - and
+            // the colour is set once for the whole ring rather than per copy, which is what says the four
+            // are one thing seen four times.
+            setRunColours(runs, textHalo.colour(), textHalo.colour(), haloOpacity * passOpacity);
+            for (var haloBox : textHalo.computeHaloBoxes(bounds)) {
+                drawRunGroup(haloBox, runs, hotkeyStyle);
+            }
+            setRunColours(runs, look.label(), hotkeyStyle.keyColour(), opacity * passOpacity);
+            drawRunGroup(bounds, runs, hotkeyStyle);
+        });
     }
 
     // Resolves each run to a drawable anchored for the left-to-right walk below. Colourless: a drawable is

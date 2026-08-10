@@ -28,6 +28,21 @@ public sealed interface TabHover {
     TabLook computeHoveredLook(TabLook settledLook, float hoverFraction);
 
     /**
+     * The light to lay over the finished tab at that same point of the fade, for a rule that brightens by
+     * adding rather than by settling on another shade.
+     *
+     * <p>Two answers rather than one because the two rules reach the screen differently, not because they
+     * differ in amount: a shade is the tab's own surface and has to be resolved before it is painted, where
+     * light lands on whatever the surface turned out to be - the fill, the text, and anything showing
+     * through an unpainted interior. A rule that names a shade adds no light, and one that adds light
+     * leaves the settled look alone, so a tab is never brightened twice over.
+     *
+     * @param hoverFraction how far the fade has run, 0 fully off and 1 fully on
+     * @return the light to add, or {@link TabLight#NONE} where the rule brightens by shade
+     */
+    TabLight computeAddedLight(float hoverFraction);
+
+    /**
      * The rule vanilla's tab strips answer by: every tab under the pointer travels to one named shade,
      * whatever it was showing before. It is what lets the resting and the shown tab meet, which no lift
      * applied to each tab's own fill could produce - two starting colours moved by one fraction stay two
@@ -42,6 +57,11 @@ public sealed interface TabHover {
         public TabLook computeHoveredLook(TabLook settledLook, float hoverFraction) {
             return settledLook.computeBlendedLook(shade, hoverFraction);
         }
+
+        @Override
+        public TabLight computeAddedLight(float hoverFraction) {
+            return TabLight.NONE;
+        }
     }
 
     /**
@@ -51,9 +71,11 @@ public sealed interface TabHover {
      * solving a sampled pointed-at button against the shade it was resting at gives one consistent weight
      * of added accent on every channel, and no consistent weight at all as a blend.
      *
-     * <p>The light paints as well as brightens: an unshown button rests on an unpainted interior, and what
-     * the pointer puts there is that light itself, as solid as the light is deep. Brightening the channels
-     * of a surface still drawn at nothing would leave the button answering with its label alone.
+     * <p>The light is laid over the finished button rather than mixed into its surface, which is what makes
+     * an unshown button answer the pointer at all: its interior is unpainted, so a shade mixed in arrives
+     * diluted by however little of it is painted - a fraction of the step the shown button takes, where the
+     * engine's own two move by the same one. Added over the top, both do, and the label the light crosses
+     * brightens with the surface under it because one pass covers the whole button.
      *
      * @param glowColour the light added, whichever colour a chrome's own counterpart is lit by
      * @param glowAmount how much of it a fully hovered button takes
@@ -64,7 +86,12 @@ public sealed interface TabHover {
 
         @Override
         public TabLook computeHoveredLook(TabLook settledLook, float hoverFraction) {
-            return settledLook.computeGlowingLook(glowColour, glowAmount * hoverFraction);
+            return settledLook;
+        }
+
+        @Override
+        public TabLight computeAddedLight(float hoverFraction) {
+            return new TabLight(glowColour, glowAmount * hoverFraction);
         }
     }
 }

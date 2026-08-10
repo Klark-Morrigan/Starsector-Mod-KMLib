@@ -6,8 +6,7 @@ import kmlib.starsector.ui.render.gl.UiElementPaint;
 import kmlib.starsector.ui.render.gl.UiFill;
 import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.tabs.RaisedButtonTabStrip;
-import kmlib.starsector.ui.widgets.tabs.TabLookSource;
-import kmlib.starsector.ui.widgets.tabs.TabWashSource;
+import kmlib.starsector.ui.widgets.tabs.TabPaintSources;
 import kmlib.starsector.ui.widgets.tabs.VanillaTab;
 import kmlib.starsector.ui.widgets.tabs.VanillaTabStrip;
 import kmlib.starsector.ui.widgets.tabs.style.TabPalette;
@@ -70,10 +69,8 @@ public final class RaisedButtonTabStripRenderer {
      * for a plain key gets buttons with no underline, matching the intel screen's own.
      *
      * @param tabs    the laid-out tabs, in row order
-     * @param looks   where each tab's settled look comes from - selection and the hover fade are already
-     *                blended into it here, so this pass only paints it
-     * @param washes  where each tab's resolved lift comes from - the interaction is already composed into
-     *                a wash here, so this pass only paints it
+     * @param sources where each tab's look, lift, and light come from - every one of them already resolved
+     *                here, so this pass only paints them
      * @param style   the row's look; its palette's chrome accent (see
      *                {@link TabPalette#createRaisedButtonPalette}), its hotkey presentation, and its face
      *                are read here, its band height having been spent laying the tabs out
@@ -81,14 +78,13 @@ public final class RaisedButtonTabStripRenderer {
      */
     public static void render(
             List<VanillaTab> tabs,
-            TabLookSource looks,
-            TabWashSource washes,
+            TabPaintSources sources,
             TabStyle style,
             float opacity) {
 
         var chromeAccent = style.palette().chromeAccent();
 
-        TabChromeRenderer.paintEachTab(tabs, looks, washes, (rowIndex, tab, look) -> {
+        TabChromeRenderer.paintEachTab(tabs, sources, (rowIndex, tab, paint) -> {
 
             // The button about the laid tab, the channel parting it from its left-hand neighbour taken out
             // of the tab rather than added to the row - the hit box the panel tests stays the whole tab, so
@@ -99,14 +95,25 @@ public final class RaisedButtonTabStripRenderer {
             renderButtonChrome(buttonBox, chromeAccent, opacity);
             UiFill.renderQuad(
                 buttonBox.computeInsetBox(INTERIOR_INSET),
-                new UiElementPaint(look.fill(), opacity));
+                new UiElementPaint(paint.look().fill(), opacity));
 
             TabLabelRenderer.renderCentredLabel(
                 RaisedButtonTabStrip.computeLabelBox(buttonBox),
                 tab.content(),
-                look,
+                paint.look(),
                 style,
                 opacity);
+
+            // Last of all, and over the interior alone: the pointer's light is added to what is on the
+            // screen rather than mixed into what this pass painted, so it lands the same on a lit interior
+            // and on an unpainted one showing the map through it - which is what the engine's own buttons
+            // do. Drawn after the label so the text brightens with the surface under it, and stopped at the
+            // same inset the interior takes so neither hairline is touched: a button's frame is the one
+            // part of it that holds still, and light spilling onto the outer line would move the very edge
+            // the constant frame exists to keep put.
+            UiFill.renderAdditiveQuad(
+                buttonBox.computeInsetBox(INTERIOR_INSET),
+                new UiElementPaint(paint.light().colour(), paint.light().weight() * opacity));
         });
     }
 

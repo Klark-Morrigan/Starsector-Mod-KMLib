@@ -20,6 +20,11 @@ package kmlib.starsector.ui.font;
  * part on the pixel faces, which state the character height they were matched at as a negative
  * {@code size=} - so the distinction only shows itself where it matters most, a pixel face being
  * the one kind of atlas a fractional scale visibly damages.
+ *
+ * <p>Each value also carries whether its atlas wants interpolating, which its descriptor states as
+ * {@code smooth}. Drawing at the native size is only half of what a pixel face needs: landed
+ * pixel-for-pixel but drawn through an interpolating filter, every one of its single-pixel strokes
+ * is an edge and loses part of itself, so the text arrives dimmer than the colour it was set in.
  */
 public enum StarsectorFont {
 
@@ -27,12 +32,12 @@ public enum StarsectorFont {
      * The game's {@code defaultFont} (from {@code settings.json}), which carries vanilla's
      * paragraph text.
      */
-    VANILLA_INSIGNIA_15("insignia15LTaa", 15),
+    VANILLA_INSIGNIA_15("insignia15LTaa", 15, AtlasSmoothing.SMOOTHED),
 
     /**
      * Vanilla's title and section-heading face, distinctly wider and blockier than the body face.
      */
-    VANILLA_ORBITRON_20AA("orbitron20aa", 20),
+    VANILLA_ORBITRON_20AA("orbitron20aa", 20, AtlasSmoothing.SMOOTHED),
 
     /**
      * The narrow, small Orbitron the game sets its tooltip key hints in - the "Press F1 for more
@@ -43,7 +48,7 @@ public enum StarsectorFont {
      * states a line height of 15, and that is what the loader scales against. The twelve reads as
      * the size because it is the size the face was matched at, not the size it draws at.
      */
-    VANILLA_ORBITRON_12_CONDENSED("orbitron12condensed", 15),
+    VANILLA_ORBITRON_12_CONDENSED("orbitron12condensed", 15, AtlasSmoothing.SMOOTHED),
 
     /**
      * The pixel face vanilla sets its compact chrome in - the map-toggle buttons above the intel
@@ -58,13 +63,13 @@ public enum StarsectorFont {
      * at ten-ninths - which on a face of single-pixel strokes is a row of glyphs landing between
      * pixels rather than a slightly larger row of them.
      */
-    VANILLA_VICTOR_10("victor10", 9),
+    VANILLA_VICTOR_10("victor10", 9, AtlasSmoothing.PIXEL_EXACT),
 
     /**
      * The highest-resolution antialiased atlas the game ships, and so the only one that stays clean
      * when text is magnified far past its native size.
      */
-    VANILLA_INSIGNIA_42("insignia42LTaa", 42);
+    VANILLA_INSIGNIA_42("insignia42LTaa", 42, AtlasSmoothing.SMOOTHED);
 
     // The game's bitmap fonts all live under graphics/fonts with a .fnt extension, so a basename
     // resolves to a loadable path by wrapping. Held here rather than at the loader, so the one
@@ -72,12 +77,14 @@ public enum StarsectorFont {
     private static final String FONT_DIR = "graphics/fonts/";
     private static final String FONT_EXTENSION = ".fnt";
 
+    private final AtlasSmoothing smoothing;
     private final String basename;
     private final int nativeSize;
 
-    StarsectorFont(String basename, int nativeSize) {
+    StarsectorFont(String basename, int nativeSize, AtlasSmoothing smoothing) {
         this.basename = basename;
         this.nativeSize = nativeSize;
+        this.smoothing = smoothing;
     }
 
     /**
@@ -86,6 +93,15 @@ public enum StarsectorFont {
      */
     public int getNativeSize() {
         return nativeSize;
+    }
+
+    /**
+     * @return whether this atlas's glyphs want interpolating when drawn, as its descriptor's
+     *         {@code smooth} states - what a draw pass reads to pick the filter it binds the atlas
+     *         under
+     */
+    public AtlasSmoothing getSmoothing() {
+        return smoothing;
     }
 
     /**

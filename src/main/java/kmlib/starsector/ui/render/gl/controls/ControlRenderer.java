@@ -26,7 +26,9 @@ import kmlib.starsector.ui.widgets.IconLabelRow;
 import kmlib.starsector.ui.widgets.LabelledRow;
 import kmlib.starsector.ui.widgets.RowSlot;
 import kmlib.starsector.ui.widgets.tabs.TabInteractionSources;
+import kmlib.starsector.ui.widgets.tabs.TabLightSource;
 import kmlib.starsector.ui.widgets.tabs.TabLookSource;
+import kmlib.starsector.ui.widgets.tabs.TabPaintSources;
 import kmlib.starsector.ui.widgets.tabs.TabWashSource;
 import kmlib.starsector.ui.widgets.tabs.VanillaTabStrip;
 
@@ -150,11 +152,18 @@ public final class ControlRenderer {
             tabStyle.palette(),
             tabInteractions.pulseSource());
 
+        // The hover fraction is spent twice, on the two halves of one rule: a palette answering the pointer
+        // with a shade blends the look and lights nothing, and one answering with a glow leaves the look
+        // alone and lights the finished tab. Which of the two happens is the palette's, so both are wired
+        // here whatever chrome the row wears.
+        var lights = TabLightSource.createHoverLitSource(
+            tabStyle.palette(),
+            tabInteractions.hoverSource());
+
         TabChromeRenderer.resolveRendererFor(tabStyle.chrome())
             .renderTabs(
                 tabs,
-                looks,
-                washes,
+                new TabPaintSources(looks, washes, lights),
                 tabStyle,
                 paint.opacity());
     }

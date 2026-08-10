@@ -69,11 +69,13 @@ src/main/java/kmlib/
                    scoped names that put library work under the mod it was done for
   math/            - easing/, geometry/ (polygon offsetting, smoothing,
                      regions, rings, Voronoi cells, principal axis,
-                     spans, disks), hashing/ (avalanche, content
-                     fingerprints), motion/, random/, ranges/, solving/
+                     spans, disks, pixel-grid snapping), hashing/
+                     (avalanche, content fingerprints), motion/, random/,
+                     ranges/, solving/
   opengl/          - GL primitive emission (lines, quads, triangles,
                      vertex runs), the saved-state scope a blended 2D
-                     pass draws inside, polygon tessellation, hatching,
+                     pass draws inside, how a pass blends and how a
+                     texture is sampled, polygon tessellation, hatching,
                      and what KM code must know about Fast Rendering
                      (whether it is in force, how to read its matrix)
   profiling/       - section timings + timing report

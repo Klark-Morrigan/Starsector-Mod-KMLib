@@ -1,12 +1,16 @@
 package kmlib.starsector.ui.render.gl.tabs;
 
 import kmlib.math.geometry.Rectangle;
+import kmlib.starsector.ui.widgets.tabs.TabLightSource;
 import kmlib.starsector.ui.widgets.tabs.TabLookSource;
+import kmlib.starsector.ui.widgets.tabs.TabPaintSources;
 import kmlib.starsector.ui.widgets.tabs.TabWashSource;
 import kmlib.starsector.ui.widgets.tabs.VanillaTab;
 import kmlib.starsector.ui.widgets.tabs.VanillaTabContent;
 import kmlib.starsector.ui.widgets.tabs.style.TabChrome;
+import kmlib.starsector.ui.widgets.tabs.style.TabLight;
 import kmlib.starsector.ui.widgets.tabs.style.TabLook;
+import kmlib.starsector.ui.widgets.tabs.style.TabPaint;
 import kmlib.starsector.ui.widgets.tabs.style.TabWash;
 
 import org.junit.jupiter.api.Nested;
@@ -59,9 +63,9 @@ final class TabChromeRendererTest {
             // source named rather than at something a zero-strength blend nudged.
             var painted = paintAll(TWO_LOOKS, tabIndex -> NO_LIFT);
 
-            assertThat(painted.get(0).look())
+            assertThat(painted.get(0).paint().look())
                 .isEqualTo(FIRST_LOOK);
-            assertThat(painted.get(1).look())
+            assertThat(painted.get(1).paint().look())
                 .isEqualTo(SECOND_LOOK);
         }
 
@@ -72,7 +76,7 @@ final class TabChromeRendererTest {
             // label move together - a lift that moved only one would part the text from the tab under it.
             var painted = paintAll(TWO_LOOKS, tabIndex -> FULL_LIFT);
 
-            assertThat(painted.get(0).look())
+            assertThat(painted.get(0).paint().look())
                 .isEqualTo(new TabLook(LIFT_TARGET, LIFT_TARGET));
         }
 
@@ -134,6 +138,38 @@ final class TabChromeRendererTest {
     }
 
     @Nested
+    class ResolvedLights {
+
+        @Test
+        void TabChromeRenderer_paintEachTab_handsEachTabTheLightItsSourceReports() {
+            // The third channel, and the one drawn after everything else: a chrome cannot lay light over a
+            // finished tab it was never handed, so the walk has to carry it per tab exactly as it carries
+            // the look.
+            var lit = new TabLight(LIFT_TARGET, 0.25f);
+            var painted = paintAll(
+                TWO_TABS,
+                new TabPaintSources(TWO_LOOKS, tabIndex -> NO_LIFT, tabIndex -> lit));
+
+            assertThat(painted)
+                .extracting(painting -> painting.paint().light())
+                .containsExactly(lit, lit);
+        }
+
+        @Test
+        void TabChromeRenderer_paintEachTab_leavesTheLookAloneWhereTheLightIsTheChannelMoving() {
+            // The two channels do not compose: light is added over what the look painted, so a lit tab's
+            // look has to arrive exactly as its source reported it. Blending the two here would put the
+            // light on twice, once mixed in and once added.
+            var painted = paintAll(
+                TWO_TABS,
+                new TabPaintSources(TWO_LOOKS, tabIndex -> NO_LIFT, tabIndex -> new TabLight(LIFT_TARGET, 1f)));
+
+            assertThat(painted.get(0).paint().look())
+                .isEqualTo(FIRST_LOOK);
+        }
+    }
+
+    @Nested
     class ResolveRendererFor {
 
         @Test
@@ -162,16 +198,21 @@ final class TabChromeRendererTest {
             TabLookSource looks,
             TabWashSource washes) {
 
+        return paintAll(tabs, new TabPaintSources(looks, washes, TabLightSource.createUnlitSource()));
+    }
+
+    // The same again over a caller's own sources, for the cases about a channel other than the look.
+    private static List<Painting> paintAll(List<VanillaTab> tabs, TabPaintSources sources) {
+
         var painted = new ArrayList<Painting>();
         TabChromeRenderer.paintEachTab(
             tabs,
-            looks,
-            washes,
-            (rowIndex, tab, look) -> painted.add(new Painting(rowIndex, tab, look)));
+            sources,
+            (rowIndex, tab, paint) -> painted.add(new Painting(rowIndex, tab, paint)));
         return painted;
     }
 
-    // One call the walk made: which tab was handed over, where in the row it stood, and in which look.
-    private record Painting(int rowIndex, VanillaTab tab, TabLook look) {
+    // One call the walk made: which tab was handed over, where in the row it stood, and the paint it took.
+    private record Painting(int rowIndex, VanillaTab tab, TabPaint paint) {
     }
 }

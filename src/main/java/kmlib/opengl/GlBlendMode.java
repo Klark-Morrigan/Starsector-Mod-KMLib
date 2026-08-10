@@ -34,10 +34,15 @@ public enum GlBlendMode {
         this.destinationFactor = destinationFactor;
     }
 
-    // Makes this mode the live blend function. Package-private: blending is only ever set up
-    // as part of a pass, and a caller setting it alone would be changing state nothing here
-    // restores.
-    void applyBlendFunction() {
+    /**
+     * Makes this mode the live blend function.
+     *
+     * <p>It changes state nothing here restores, so a caller is one that is already inside a save -
+     * either {@link GlPasses#runBlendedPass}, which chooses the mode for a whole pass, or a draw
+     * primitive setting its own mode per call inside a bracketed one. What it must not be is a caller
+     * with no save above it at all, which would hand the pipeline on blending however it last drew.
+     */
+    public void applyBlendFunction() {
         GL11.glBlendFunc(sourceFactor, destinationFactor);
     }
 }

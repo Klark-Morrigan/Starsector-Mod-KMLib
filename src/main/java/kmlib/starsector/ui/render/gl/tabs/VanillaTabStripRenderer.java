@@ -4,8 +4,7 @@ import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.render.gl.UiElementPaint;
 import kmlib.starsector.ui.render.gl.UiFill;
 import kmlib.starsector.ui.render.gl.controls.HorizontalSegmentsRenderer;
-import kmlib.starsector.ui.widgets.tabs.TabLookSource;
-import kmlib.starsector.ui.widgets.tabs.TabWashSource;
+import kmlib.starsector.ui.widgets.tabs.TabPaintSources;
 import kmlib.starsector.ui.widgets.tabs.VanillaTab;
 import kmlib.starsector.ui.widgets.tabs.VanillaTabStrip;
 import kmlib.starsector.ui.widgets.tabs.style.TabLook;
@@ -48,10 +47,9 @@ public final class VanillaTabStripRenderer {
      * second reading of the same fact would be a second chance to disagree with it.
      *
      * @param tabs    the laid-out tabs, in row order
-     * @param looks   where each tab's settled look comes from - selection and the hover fade are already
-     *                blended into it here, so this pass only paints it
-     * @param washes  where each tab's resolved lift comes from - the interaction is already composed into
-     *                a wash here, so this pass only paints it
+     * @param sources where each tab's look, lift, and light come from - every one of them already resolved
+     *                here, so this pass only paints them. A strip answers the pointer with a shade rather
+     *                than a glow, so the light it is handed is always none and nothing is drawn for it
      * @param style   the strip's look; its palette's chrome accent (see
      *                {@link TabPalette#createMapTabPalette}), its hotkey presentation, and its face are
      *                read here, its band height having been spent laying the tabs out
@@ -59,19 +57,24 @@ public final class VanillaTabStripRenderer {
      */
     public static void render(
             List<VanillaTab> tabs,
-            TabLookSource looks,
-            TabWashSource washes,
+            TabPaintSources sources,
             TabStyle style,
             float opacity) {
 
         var chromeAccent = style.palette().chromeAccent();
 
-        // The row position the walk hands over is a raised button's business, not a strip's: every tab here
-        // is drawn the same whatever its place in the row, the seams between them being ruled in one pass
-        // below.
-        TabChromeRenderer.paintEachTab(tabs, looks, washes, (rowIndex, tab, look) -> {
-            renderChrome(tab.bounds(), look, chromeAccent, opacity);
-            TabLabelRenderer.renderCentredLabel(tab.bounds(), tab.content(), look, style, opacity);
+        // Two of the things the walk hands over are a raised button's business, not a strip's: every tab
+        // here is drawn the same whatever its place in the row - the seams between them are ruled in one
+        // pass below - and this chrome's pointer rule is a shade the look already carries, so the paint's
+        // light is never anything to lay down.
+        TabChromeRenderer.paintEachTab(tabs, sources, (rowIndex, tab, paint) -> {
+            renderChrome(tab.bounds(), paint.look(), chromeAccent, opacity);
+            TabLabelRenderer.renderCentredLabel(
+                tab.bounds(),
+                tab.content(),
+                paint.look(),
+                style,
+                opacity);
         });
         // The seams between tabs, ruled once over the laid boxes through the shared segmented-row
         // primitive so this strip and a radio row divide their segments the same way. Drawn after the

@@ -239,6 +239,20 @@ public record TabPalette(
     }
 
     /**
+     * The light to lay over a finished tab at that point of its fade - the other half of the hover
+     * channel, and empty for a rule that answers the pointer with a shade instead.
+     *
+     * <p>Selection is not asked for: light is added to whatever the tab turned out to look like, so which
+     * shade that was is already spent by the time this lands.
+     *
+     * @param hoverFraction how far the tab has travelled into being pointed at, 0 fully off and 1 fully on
+     * @return the light to add, or {@link TabLight#NONE}
+     */
+    public TabLight resolveLightAtHoverFraction(float hoverFraction) {
+        return hover.computeAddedLight(hoverFraction);
+    }
+
+    /**
      * The lift a tab takes from the given momentary state at its full depth. A caller animating the lift
      * scales it down as the pulse decays.
      *

@@ -3,6 +3,7 @@ package kmlib.starsector.ui.render.gl;
 import com.fs.starfarer.api.util.Misc;
 
 import kmlib.math.geometry.Rectangle;
+import kmlib.opengl.GlBlendMode;
 import kmlib.opengl.GlColour;
 import kmlib.opengl.GlQuads;
 import kmlib.opengl.GlTriangles;
@@ -44,20 +45,32 @@ public final class UiFill {
         if (paint.isHidden()) {
             return;
         }
-        GL11.glDisable(GL11.GL_TEXTURE_2D);
-        GL11.glEnable(GL11.GL_BLEND);
-        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+        beginUntexturedPass(GlBlendMode.ALPHA);
         GlColour.set(paint.colour(), paint.alpha());
-        var left = bounds.x();
-        var bottom = bounds.y();
-        var right = left + bounds.width();
-        var top = bottom + bounds.height();
-        GlQuads.fillQuad(new float[] {
-            left, bottom,
-            left, top,
-            right, top,
-            right, bottom,
-        });
+        renderQuadVertices(bounds);
+    }
+
+    /**
+     * Fills {@code bounds} with {@code paint} added to the pixels already there rather than composited
+     * over them: the paint's alpha scales how much of its colour is added, and nothing is ever darkened.
+     * A hidden paint emits nothing. Must run with a current GL context, like any immediate-mode GL call.
+     *
+     * <p>For light, as against surface. A composited quad interpolates toward its own colour, so what it
+     * lands on depends on what was already there - over a transparent surface it arrives diluted, and over
+     * a bright one it can darken. Added, the same pass lifts every pixel it covers by the same amount,
+     * which is what an element standing on live content needs when it must brighten by a fixed step
+     * whatever is showing behind it.
+     *
+     * @param bounds the rectangle to light, in UI coordinates (UI origin is bottom-left)
+     * @param paint  the light's colour and how much of it to add
+     */
+    public static void renderAdditiveQuad(Rectangle bounds, UiElementPaint paint) {
+        if (paint.isHidden()) {
+            return;
+        }
+        beginUntexturedPass(GlBlendMode.ADDITIVE);
+        GlColour.set(paint.colour(), paint.alpha());
+        renderQuadVertices(bounds);
     }
 
     /**
@@ -73,10 +86,36 @@ public final class UiFill {
         if (paint.isHidden()) {
             return;
         }
-        GL11.glDisable(GL11.GL_TEXTURE_2D);
-        GL11.glEnable(GL11.GL_BLEND);
-        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+        beginUntexturedPass(GlBlendMode.ALPHA);
         GlColour.set(paint.colour(), paint.alpha());
         GlTriangles.fillTriangle(vertices);
+    }
+
+    // What every fill here draws under: no texture, blending on, and the mode this one composites by.
+    // Set per call rather than for a whole pass because these are primitives a widget scatters through a
+    // bracketed draw, mixing modes as it goes - the save that puts the pipeline back is the bracket's, and
+    // a mode chosen per pass would be a mode the next primitive silently inherited.
+    private static void beginUntexturedPass(GlBlendMode blendMode) {
+        GL11.glDisable(GL11.GL_TEXTURE_2D);
+        GL11.glEnable(GL11.GL_BLEND);
+        blendMode.applyBlendFunction();
+    }
+
+    // The four corners of a UI box, wound for the shared quad emitter. Held apart from the passes above
+    // because they differ in how the colour lands and not in where the quad is, so a change to one cannot
+    // move the other.
+    private static void renderQuadVertices(Rectangle bounds) {
+
+        var left = bounds.x();
+        var bottom = bounds.y();
+        var right = left + bounds.width();
+        var top = bottom + bounds.height();
+
+        GlQuads.fillQuad(new float[] {
+            left, bottom,
+            left, top,
+            right, top,
+            right, bottom,
+        });
     }
 }
