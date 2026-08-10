@@ -161,9 +161,9 @@ final class TabsControlLayoutTest {
                 measurerFake);
 
             assertThat(header.segments().get(0).width())
-                .isCloseTo(VANILLA_TAB_WIDTH, within(TOLERANCE));
+                .isCloseTo(130f, within(TOLERANCE));
             assertThat(header.segments().get(1).width())
-                .isCloseTo(VANILLA_TAB_WIDTH, within(TOLERANCE));
+                .isCloseTo(130f, within(TOLERANCE));
         }
 
         @Test
@@ -178,10 +178,13 @@ final class TabsControlLayoutTest {
                 TabStyles.buildAtBandHeightInBox(VANILLA_BAND_HEIGHT, VANILLA_MAP_TAB),
                 measurerFake);
 
+            // Literal 171 rather than the constants re-added: an expectation computed from the very
+            // numbers handed to the subject agrees with itself however the placement is arithmetically
+            // wrong. 40 (the header anchor) + 130 + 1.
             assertThat(header.segments().get(0).x())
                 .isCloseTo(HEADER_X, within(TOLERANCE));
             assertThat(header.segments().get(1).x())
-                .isCloseTo(HEADER_X + VANILLA_TAB_WIDTH + VANILLA_TAB_GAP, within(TOLERANCE));
+                .isCloseTo(171f, within(TOLERANCE));
         }
 
         @Test
@@ -196,7 +199,7 @@ final class TabsControlLayoutTest {
                 measurerFake);
 
             assertThat(header.bounds().width())
-                .isCloseTo(2 * VANILLA_TAB_WIDTH + VANILLA_TAB_GAP, within(TOLERANCE));
+                .isCloseTo(261f, within(TOLERANCE));
         }
 
         @Test
@@ -212,9 +215,9 @@ final class TabsControlLayoutTest {
                 measurerFake);
 
             assertThat(header.bounds().height())
-                .isCloseTo(VANILLA_BAND_HEIGHT, within(TOLERANCE));
+                .isCloseTo(19f, within(TOLERANCE));
             assertThat(header.segments().get(0).height())
-                .isCloseTo(VANILLA_TAB_HEIGHT, within(TOLERANCE));
+                .isCloseTo(18f, within(TOLERANCE));
             assertThat(header.segments().get(0).y() + header.segments().get(0).height())
                 .isCloseTo(HEADER_TOP_Y, within(TOLERANCE));
         }

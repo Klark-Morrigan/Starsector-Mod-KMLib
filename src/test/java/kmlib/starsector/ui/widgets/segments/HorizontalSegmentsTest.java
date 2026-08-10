@@ -14,11 +14,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Pins {@link HorizontalSegments}, the width-and-placement SSOT both a horizontal radio and a tab
- * strip size themselves through: uniform sizing gives every segment the widest label plus padding
- * while snapped sizing gives each its own label plus padding (floored at the minimum), the row width
- * is the widths summed, placement lays those widths side by side from an origin, and the dividers land
- * on the real seams of the laid segments whether even or ragged. A consistency check pins that a
- * measured row equals the widths the placement lays, for both sizings.
+ * strip size themselves through: uniform sizing gives every segment the widest label plus padding,
+ * snapped sizing gives each its own label plus padding (floored at the minimum), and fixed sizing gives
+ * every segment one stated width without measuring a label at all. The row width is those widths summed
+ * plus one channel per neighbouring pair, placement lays the widths from an origin and steps over each
+ * channel, and the dividers land on the real seams of the laid segments whether even or ragged. A
+ * consistency check pins that a measured row equals the widths the placement lays, for both measured
+ * sizings.
  */
 class HorizontalSegmentsTest {
 
@@ -37,6 +39,34 @@ class HorizontalSegmentsTest {
 
     private static final SegmentSpec FIXED_PARTED = new SegmentSpec(
         0f, 0f, 13d, SegmentSizing.FIXED, 130f, 1f);
+
+    @Nested
+    class Construction {
+
+        @Test
+        void floorsANegativeBoxAndChannelAtZero() {
+            // Floored rather than rejected, for the reason the placement cares about: a negative channel
+            // would step the cursor backwards and lay each segment across the one before it.
+            var negative = new SegmentSpec(8f, 40f, 13d, SegmentSizing.FIXED, -130f, -1f);
+
+            assertThat(negative.fixedWidth())
+                .isZero();
+            assertThat(negative.neighbourGap())
+                .isZero();
+        }
+
+        @Test
+        void leavesTheMeasuredRowAbuttingWithNoBoxOfItsOwn() {
+            // The four-argument form is what every caller predating fixed boxes uses, so what it defaults
+            // to is load-bearing: a stray box or channel here would move every radio row in the mod.
+            var measured = new SegmentSpec(8f, 40f, 13d, SegmentSizing.SNAPPED);
+
+            assertThat(measured.fixedWidth())
+                .isZero();
+            assertThat(measured.neighbourGap())
+                .isZero();
+        }
+    }
 
     @Nested
     class ComputeSegmentWidths {

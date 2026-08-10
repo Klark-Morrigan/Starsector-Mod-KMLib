@@ -8,8 +8,13 @@ package kmlib.starsector.ui.controls;
  *
  * <p>Only a horizontal segmented control carries a segment-sizing choice. A {@link
  * ControlSpec.VerticalTable}'s wrapped columns are uniform by construction (each column the widest option
- * plus padding), and a tabs row always snaps, so {@link #UNIFORM} versus {@link #SNAPPED} is a real
- * choice on a horizontal radio alone.
+ * plus padding), so a vertical table has nothing to choose.
+ *
+ * <p>The two controls that do choose, choose differently. A horizontal radio picks between the measured
+ * rules - even cells or ragged ones - and never states a width of its own. A tabs row picks between
+ * measuring at all: a row stacked in a body snaps to its labels, while a header row takes whichever box
+ * its {@link kmlib.starsector.ui.widgets.tabs.style.TabStyle} states, which for a row copying vanilla's
+ * map tabs is a fixed one.
  */
 public enum SegmentSizing {
     /**
