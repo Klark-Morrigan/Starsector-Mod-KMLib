@@ -39,8 +39,8 @@ public final class CoreUiTree {
     private static final String GET_CURRENT_TAB_METHOD = "getCurrentTab";
     private static final String GET_CHILDREN_METHOD = "getChildrenCopy";
 
-    // ReflectionUtils.invoke resolves a public method (declared=false) matching these argument
-    // types - none, for the no-arg reads here.
+    // ReflectionUtils.invoke resolves a public method (declared=false) matching the argument types
+    // it is handed - none, for the reads this class takes itself.
     private static final Object[] NO_ARGS = new Object[0];
     private static final boolean PUBLIC_METHOD = false;
 
@@ -74,8 +74,36 @@ public final class CoreUiTree {
      *                          kind of read failure
      */
     public static Object invokeNoArg(Object instance, String methodName) {
+        return invokeWithArgs(instance, methodName, NO_ARGS);
+    }
+
+    /**
+     * Invokes a public method by name with arguments, for the hops that take them.
+     *
+     * <p>Separate from {@link #invokeNoArg} rather than replacing it, because the two say different
+     * things at a call site: the no-arg name asserts the hop takes nothing, where this one would
+     * read as an argument list that happened to come out empty.
+     *
+     * <p>The parameter types the method is resolved against come from the arguments' own classes,
+     * with a boxed primitive unwrapping to the primitive - so a {@code Float} handed in here
+     * resolves a {@code (float)} parameter, which is the shape the core UI's draw and input entry
+     * points take. The consequence is that an argument must be non-null and of the method's exact
+     * declared type: a supertype or an interface the parameter is declared as will not resolve.
+     *
+     * <p>Every failure - no method of that name and shape, or the call itself throwing - comes back
+     * out, leaving the caller to decide what a failed hop means. It arrives undeclared and not
+     * necessarily as a {@link RuntimeException}: the bypass is Kotlin, which lets the checked
+     * exceptions of the lookup and of the target's own throw escape unannounced. A caller guarding
+     * this has to catch {@link Throwable}, the way the reads in this class do.
+     *
+     * @param instance   the object to call on
+     * @param methodName the public method to resolve
+     * @param arguments  the arguments to pass, which also select the overload
+     * @return whatever the method returned, or null for a void one
+     */
+    public static Object invokeWithArgs(Object instance, String methodName, Object... arguments) {
         // invoke is an instance method on the ReflectionUtils singleton; only set/get are static.
-        return ReflectionUtils.INSTANCE.invoke(methodName, instance, NO_ARGS, PUBLIC_METHOD);
+        return ReflectionUtils.INSTANCE.invoke(methodName, instance, arguments, PUBLIC_METHOD);
     }
 
     /**

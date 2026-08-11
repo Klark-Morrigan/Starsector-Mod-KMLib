@@ -36,6 +36,11 @@ import static org.mockito.Mockito.when;
  * null, which is what lets a caller tell a broken reach from an empty screen and apply its own
  * policy to each. Both halves are reachable here because neither needs a live widget tree - only a
  * component that answers the method name, which is what the fixture is.
+ *
+ * <p>Alongside them, the one thing about the argument-taking invoke a caller cannot see from its
+ * signature: a boxed argument resolves the primitive parameter, which is what makes the core UI's
+ * {@code (float)} entry points reachable at all from mod code that can only hand over a
+ * {@code Float}.
  */
 class CoreUiTreeTest {
 
@@ -79,6 +84,41 @@ class CoreUiTreeTest {
             // tell "no such method" apart from "the method answered nothing".
             assertThatThrownBy(() -> CoreUiTree.invokeNoArg(new Object(), "getChildrenCopy"))
                 .isInstanceOf(Exception.class);
+        }
+    }
+
+    @Nested
+    class InvokeWithArgs {
+
+        @Test
+        void invokeWithArgsPassesABoxedFloatToAPrimitiveParameter() {
+            // The load-bearing case: the core UI's draw and input entry points declare primitive
+            // float, and a caller can only hand in the boxed one. Were the argument's own class
+            // used as the parameter type, no such method would ever be found.
+            var targetFake = new ArgumentTakingTargetFake();
+
+            CoreUiTree.invokeWithArgs(targetFake, "recordAlpha", 0.75f);
+
+            assertThat(targetFake.readRecordedAlpha())
+                .isEqualTo(0.75f);
+        }
+
+        @Test
+        void invokeWithArgsReturnsWhatTheNamedMethodAnswers() {
+
+            assertThat(CoreUiTree
+                .invokeWithArgs(new ArgumentTakingTargetFake(), "recordAlpha", 0.75f))
+                .isEqualTo("recorded");
+        }
+
+        @Test
+        void invokeWithArgsThrowsWhenNoMethodTakesThatArgumentShape() {
+            // The arguments select the overload, so a name that exists but takes something else is
+            // as unreachable as one that does not exist at all. Both are raised rather than
+            // answered null, so a caller drawing through this class learns it drew nothing.
+            assertThatThrownBy(() -> CoreUiTree
+                .invokeWithArgs(new ArgumentTakingTargetFake(), "recordAlpha", "not a float"))
+                .isInstanceOf(Throwable.class);
         }
     }
 
@@ -193,6 +233,29 @@ class CoreUiTreeTest {
 
             assertThatThrownBy(CoreUiTree::resolveCurrentTab)
                 .isInstanceOf(Exception.class);
+        }
+    }
+
+    // Stands for a core-UI component's argument-taking entry point, of which render(float) is the
+    // one this class exists to reach. Primitive float rather than boxed on purpose: resolving it
+    // from a Float is the whole behaviour under test, and a Float parameter would pass either way.
+    //
+    // Local rather than a shipped fixture because nothing outside this test needs it - a consuming
+    // mod invoking with arguments does so against a real widget, not against a shape KMLib made up.
+    // Public because a by-name invoke resolves a public method and then calls it, which an
+    // enclosing class's package-private visibility does not affect but the nested type's own does.
+    public static final class ArgumentTakingTargetFake {
+        
+        private float recordedAlpha = Float.NaN;
+
+        public float readRecordedAlpha() {
+            return recordedAlpha;
+        }
+
+        // Answers a value so the return path is observable as well as the argument path.
+        public String recordAlpha(float alphaMult) {
+            recordedAlpha = alphaMult;
+            return "recorded";
         }
     }
 
