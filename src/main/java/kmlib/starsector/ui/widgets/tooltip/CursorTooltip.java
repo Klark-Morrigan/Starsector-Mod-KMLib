@@ -94,10 +94,6 @@ public final class CursorTooltip {
     // for a row that steps out of the column to lay flush.
     private static final float NO_CREST_COLUMN = 0f;
 
-    // What a label that came out blank measures. Named because it is read as a question about the row -
-    // whether there is a name for a leader rule to point back to - rather than as a width worth zero.
-    private static final float NO_LABEL_WIDTH = 0f;
-
     private CursorTooltip() {
     }
 
@@ -239,17 +235,23 @@ public final class CursorTooltip {
             float rowTopY,
             float crestColumnWidth) {
 
+        // Walked once for the whole row and read by every part of it that is placed off the label: where
+        // each run anchors, where a centred span starts, and where the label stops for a rule to lead
+        // from. Walked per reader instead, one of them would eventually be placing a row against a
+        // measurement the others had not made.
+        var labelRunOffsets = measureLabelRunOffsets(styledRow);
+
         // A centred line holds no columns to place. Its label anchors off the content region's midpoint
         // instead - its later runs still ride off that anchor, so a whole label centres as one span -
         // and the column anchors it is handed are the box's own content edges, which it draws nothing in.
-        // It rules no leader either: a rule leads to a value column, and this line has left the table
+        // It leads no rule either: a rule leads to a value column, and this line has left the table
         // that has one.
         if (!(styledRow.row() instanceof TooltipRow.TableRow tableRow)) {
             return new TooltipLayout.TooltipRowLayout(
                 rowTopY,
                 (float) styledRow.lineHeight(),
                 leftX,
-                anchorLabelRuns(styledRow, centreLabelX(styledRow, leftX, rightX)),
+                anchorLabelRuns(labelRunOffsets, centreLabelX(labelRunOffsets, leftX, rightX)),
                 TooltipLeaderLine.NONE,
                 rightX);
         }
@@ -260,8 +262,12 @@ public final class CursorTooltip {
             rowTopY,
             (float) styledRow.lineHeight(),
             leadingRowSlotX,
-            anchorLabelRuns(styledRow, labelStartX),
-            measureLeaderLine(styledRow, tableRow, labelStartX, rightX),
+            anchorLabelRuns(labelRunOffsets, labelStartX),
+            measureLeaderLine(
+                styledRow,
+                tableRow.labelledRow().trailingRowSlot(),
+                labelStartX + labelRunOffsets.runsWidth(),
+                rightX),
             rightX);
     }
 
@@ -281,21 +287,20 @@ public final class CursorTooltip {
     // row could only ever drift from the columns it is meant to join.
     private static TooltipLeaderLine measureLeaderLine(
             StyledRow styledRow,
-            TooltipRow.TableRow tableRow,
-            float labelStartX,
+            RowSlot trailingRowSlot,
+            float labelEndX,
             float rightX) {
 
         // Both ends have to be there for a rule to join them: a row trailing with nothing has no value to
-        // lead to, and one whose label came out blank has no name to lead back from.
-        var trailingRowSlot = tableRow.labelledRow().trailingRowSlot();
-        var labelWidth = measureLabelRunOffsets(styledRow).runsWidth();
-
-        if (!trailingRowSlot.isFilled() || labelWidth <= NO_LABEL_WIDTH) {
+        // lead to, and one whose runs all came out blank has no name to lead back from. Both are asked of
+        // the content rather than of a width, so the two ends are settled by one kind of question.
+        if (!trailingRowSlot.isFilled()
+                || !LabelRuns.hasDrawnRun(styledRow.row().labelRuns())) {
             return TooltipLeaderLine.NONE;
         }
         var wordSpaceWidth = styledRow.measureWordSpaceWidth();
         var leaderLine = new TooltipLeaderLine(
-            labelStartX + labelWidth + wordSpaceWidth,
+            labelEndX + wordSpaceWidth,
             rightX - styledRow.measureSlotWidth(trailingRowSlot) - wordSpaceWidth);
 
         return leaderLine.computeWidth() >= wordSpaceWidth
@@ -307,9 +312,11 @@ public final class CursorTooltip {
     // shifted to wherever the label itself starts. Shifting one measured walk rather than re-deriving
     // the offsets per placement is what keeps the anchors and the width the box was sized to in step
     // whatever the row's placement turns out to be.
-    private static List<Float> anchorLabelRuns(StyledRow styledRow, float labelStartX) {
+    private static List<Float> anchorLabelRuns(
+            LabelRunOffsets labelRunOffsets,
+            float labelStartX) {
 
-        var runOffsetXs = measureLabelRunOffsets(styledRow).runOffsetXs();
+        var runOffsetXs = labelRunOffsets.runOffsetXs();
         var runXs = new ArrayList<Float>(runOffsetXs.size());
 
         for (var runOffsetX : runOffsetXs) {
@@ -346,10 +353,12 @@ public final class CursorTooltip {
     }
 
     // Where each of a row's label runs sits relative to the label's own left edge, and how wide the runs
-    // come to together, measured on this row's own face. The one walk the width measurement, the
-    // centring, and the placement all read, so a centred row is placed against exactly the span the box
-    // was sized to hold and no anchor can drift from the width it was charged. How runs compose into a
-    // line is LabelRuns' rule, shared with every other surface that lays a label.
+    // come to together, measured on this row's own face. The one walk the sizing pass and the placement
+    // pass each read - the placement taking it once per row and handing it to everything placed off the
+    // label - so a centred row is placed against exactly the span the box was sized to hold, a rule leads
+    // from where the label the box was widened for actually stops, and no anchor can drift from the width
+    // it was charged. How runs compose into a line is LabelRuns' rule, shared with every other surface
+    // that lays a label.
     //
     // The row's own line height goes along because an image run squares itself off it, the same size the
     // crest column reserves for a leading image - so a crest set among a line's words and one set in its
@@ -365,13 +374,13 @@ public final class CursorTooltip {
     // split evenly to either side. A centred row that is itself the widest row sized the region to its
     // own span, so it lands flush at the content edge and nothing shifts.
     private static float centreLabelX(
-            StyledRow styledRow,
+            LabelRunOffsets labelRunOffsets,
             float leftX,
             float rightX) {
 
         var slack = rightX
             - leftX
-            - measureLabelRunOffsets(styledRow).runsWidth();
+            - labelRunOffsets.runsWidth();
 
         return leftX + slack / 2f;
     }
