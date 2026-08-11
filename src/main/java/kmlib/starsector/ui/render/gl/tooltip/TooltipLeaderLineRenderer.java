@@ -10,10 +10,11 @@ import kmlib.starsector.ui.render.gl.UiFill;
 import kmlib.starsector.ui.widgets.tooltip.TooltipLeaderLine;
 
 /**
- * Paints the rule a tooltip row leads from its label across to its value: a hairline in the engine's own
- * grey, set on the optical line of the words either side of it and faded by the box's opacity. The visual
- * aid a wide row needs - the value column is anchored to the box's right edge whatever the label
- * measures, so a reader tracking a number back to its name has the rule to follow rather than empty space.
+ * Paints the rule a tooltip row leads from its label across to its value: a hairline set on the optical
+ * line of the words either side of it, in the engine's own grey let down to the weight that grey reads at
+ * as text, and faded by the box's opacity on top of that. The visual aid a wide row needs - the value
+ * column is anchored to the box's right edge whatever the label measures, so a reader tracking a number
+ * back to its name has the rule to follow rather than empty space.
  *
  * <p>Its own pass rather than a step inside the row draw, because it is the one part of a row that is
  * neither glyphs nor a slot's content: it is chrome set <em>between</em> two columns, and it lines itself
@@ -26,15 +27,22 @@ import kmlib.starsector.ui.widgets.tooltip.TooltipLeaderLine;
  */
 public final class TooltipLeaderLineRenderer {
 
-    // Half a UI unit, so the rule reads under the grey text it runs between rather than level with it. A
-    // solid run covers every pixel it crosses where a glyph stroke spends most of its edge at partial
-    // alpha, so the same shade laid at a full unit comes out heavier than the words either side of it -
-    // and a leader that reads as strongly as the line it serves has become a divider parting the label
-    // from the value, which is the opposite of what it is for.
+    // A hairline, and a whole UI unit of one: a run thinner than a pixel no longer covers a pixel row
+    // outright, so how solid it lands would depend on where the row falls against the pixel grid - which
+    // moves as the box follows the cursor, and would have the rule strengthen and fade as the player
+    // tracks across the map. The weight is let down through the alpha below instead, which composites the
+    // same wherever the run lands.
+    private static final float LEADER_LINE_THICKNESS = 1f;
+
+    // What the rule is let down by so it reads as the greyed-out text beside it rather than above it. It
+    // draws in the grey that text draws in, but a solid run covers every pixel it crosses outright where
+    // a glyph stroke of the same shade spends much of its own footprint at partial alpha - so at equal
+    // alpha the line comes out the heavier mark, and a leader reading more strongly than the words it
+    // joins has become a divider parting them.
     //
-    // Under a whole unit the run no longer covers a pixel row outright: how solid it lands depends on
-    // where the row falls against the pixel grid, which moves as the box follows the cursor.
-    private static final float LEADER_LINE_THICKNESS = 0.5f;
+    // Matched against that text by eye, there being no metric for how much of a pixel a bitmap face's
+    // strokes actually cover: it varies by face, by size, and by how each atlas was rasterised.
+    private static final float TEXT_WEIGHT_ALPHA_MULT = 0.65f;
 
     // Half the thickness - what the rule is dropped by to sit centred on the line it was given, rather
     // than hanging below it.
@@ -78,6 +86,8 @@ public final class TooltipLeaderLineRenderer {
                 bandCentreY - HALF_THICKNESS,
                 leaderLine.computeWidth(),
                 LEADER_LINE_THICKNESS),
-            new UiElementPaint(StarsectorUiColour.VANILLA_GRAY.resolve(), opacity));
+            new UiElementPaint(
+                StarsectorUiColour.VANILLA_GRAY.resolve(),
+                opacity * TEXT_WEIGHT_ALPHA_MULT));
     }
 }
