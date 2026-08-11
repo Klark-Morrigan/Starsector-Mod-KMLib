@@ -90,6 +90,24 @@ public final class LabelRuns {
     }
 
     /**
+     * Whether a label draws anything at all - true where any one of its runs has something to show.
+     *
+     * <p>Asked of the runs rather than measured, the way a {@link kmlib.starsector.ui.widgets.RowSlot} is
+     * asked whether it is filled: a caller deciding whether a label is there to be pointed at holds no
+     * face to measure it against, and should not have to resolve one to learn that every run of it came
+     * out blank. Which runs read as blank is each run's own rule, so a label answers here exactly as the
+     * walk below charges it.
+     *
+     * @param labelRuns the label's runs in reading order
+     * @return true when at least one run draws
+     */
+    public static boolean hasDrawnRun(List<LabelRun> labelRuns) {
+        return labelRuns
+            .stream()
+            .anyMatch(LabelRun::hasContent);
+    }
+
+    /**
      * The gap one label charges between two of its drawn runs: the drawing face's own word space,
      * measured through the look the label is set in.
      *

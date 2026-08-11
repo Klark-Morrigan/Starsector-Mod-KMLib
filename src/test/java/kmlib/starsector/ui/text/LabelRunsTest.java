@@ -150,6 +150,50 @@ class LabelRunsTest {
     }
 
     @Nested
+    class HasDrawnRun {
+
+        @Test
+        void hasDrawnRunIsTrueForALabelWithWords() {
+
+            assertThat(LabelRuns.hasDrawnRun(List.of(new TextSpan("Hegemony", RUN_COLOUR))))
+                .isTrue();
+        }
+
+        @Test
+        void hasDrawnRunIsFalseWhereEveryRunCameOutBlank() {
+            // What a caller that assembled a label from parts and came up with nothing produces. Asked
+            // of the runs rather than measured, so whatever decides whether a label is there to point at
+            // needs no face to find out.
+            var blankRuns = List.<LabelRun>of(
+                new TextSpan("", RUN_COLOUR),
+                new TextSpan("  ", OTHER_RUN_COLOUR));
+
+            assertThat(LabelRuns.hasDrawnRun(blankRuns))
+                .isFalse();
+        }
+
+        @Test
+        void hasDrawnRunIsTrueWhereOnlyALaterRunDraws() {
+            // A label opening on a blank still draws, so it is a label - the same reading the offsets
+            // walk gives it, where the blank is passed over and the run after it starts the line.
+            var runs = List.<LabelRun>of(
+                new TextSpan("", RUN_COLOUR),
+                new TextSpan("(7)", OTHER_RUN_COLOUR));
+
+            assertThat(LabelRuns.hasDrawnRun(runs))
+                .isTrue();
+        }
+
+        @Test
+        void hasDrawnRunIsTrueForALabelOfOneImage() {
+            // A crest set among the words draws as much as a word does, so a label made of one is there
+            // to be pointed at - measured on its text alone it would read as empty.
+            assertThat(LabelRuns.hasDrawnRun(List.of(new ImageSpan(CREST_SPRITE_PATH))))
+                .isTrue();
+        }
+    }
+
+    @Nested
     class MeasureWordSpaceWidth {
 
         @Test
