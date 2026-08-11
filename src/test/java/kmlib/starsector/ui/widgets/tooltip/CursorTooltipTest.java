@@ -25,7 +25,9 @@ import static org.assertj.core.api.Assertions.within;
  * however tall the rows stack, each row's line and its three columns anchor within the placed box, a
  * crest-less row still reserves its column unless it steps out of it, a centred row lays as a
  * standalone span in the middle of the content region, and two blocks are parted where two lines of one
- * block are not. Where no parting falls, the room a line takes is the style's answer for the tier of the
+ * block are not. A row carrying both a label and a value also measures the stretch a rule is led along
+ * between them - stood off each end by that row's own word space, and led only where what is left is at
+ * least that long. Where no parting falls, the room a line takes is the style's answer for the tier of the
  * line above it, so a run at one depth stacks at its own gap while the boundaries still win over it. The flanking columns are reserved from what each row's slot reports, so what a row
  * leads or trails with is pinned by width rather than by kind. On top of that, each row is measured and stacked in the look its own kind of line
  * resolves to, which is the whole reason a box can hold a heading and a body line at once. The box
@@ -37,14 +39,19 @@ class CursorTooltipTest {
 
     private static final StarsectorFont BODY_FONT = StarsectorFont.VANILLA_INSIGNIA_15;
     private static final StarsectorFont HEADING_FONT = StarsectorFont.VANILLA_ORBITRON_20AA;
+    private static final StarsectorFont SPRAWLING_FONT = StarsectorFont.VANILLA_INSIGNIA_42;
     private static final double BODY_LINE_HEIGHT = 15d;
     private static final double HEADING_LINE_HEIGHT = 20d;
+    private static final double SPRAWLING_LINE_HEIGHT = 42d;
 
     // How the stand-in faces measure. The body face charges one unit per character, so a label's width
     // is its length and the arithmetic below reads off the strings directly; the heading face charges
     // triple, standing in for a genuinely wider atlas, so a measured width says which face measured it.
+    // The sprawling face charges nine, wide enough that its own word space swallows the gap the box
+    // reserves between a label and a value - the only shape in which a leader rule has nowhere to run.
     private static final double BODY_WIDTH_PER_CHARACTER = 1d;
     private static final double HEADING_WIDTH_PER_CHARACTER = 3d;
+    private static final double SPRAWLING_WIDTH_PER_CHARACTER = 9d;
 
     // A capital I costs four units where a lower-case one costs one, so a width also says whether a span
     // was measured as its caller authored it or as its style will actually draw it. No other label here
@@ -94,6 +101,12 @@ class CursorTooltipTest {
         createStyle(HEADING_FONT, HEADING_LINE_HEIGHT),
         createStyle(BODY_FONT, BODY_LINE_HEIGHT));
 
+    // A box set throughout in the sprawling face, whose word space is wider than half the gap the box
+    // reserves for its value column - so its rows close up to less than a space between label and value.
+    private static final TooltipStyle SPRAWLING_STYLE = TooltipStyle.createStyle(
+        createStyle(SPRAWLING_FONT, SPRAWLING_LINE_HEIGHT),
+        createStyle(SPRAWLING_FONT, SPRAWLING_LINE_HEIGHT));
+
     // The uniform box with one tier of its lines closed up: everything else still resolves the plain gap,
     // which is what lets the cases below say whether a step was resolved from the line above the gap or
     // from the line below it.
@@ -124,15 +137,25 @@ class CursorTooltipTest {
     }
 
     private static double measureSpanWidth(TextFace face, String span) {
-        var widthPerCharacter = face.font() == HEADING_FONT
-            ? HEADING_WIDTH_PER_CHARACTER
-            : BODY_WIDTH_PER_CHARACTER;
+        var widthPerCharacter = resolveWidthPerCharacter(face.font());
 
         var characterCost = 0d;
         for (var character : span.toCharArray()) {
             characterCost += character == 'I' ? SHOUTED_I_WIDTH : 1d;
         }
         return characterCost * widthPerCharacter;
+    }
+
+    // What one glyph of a face costs. Switched over the faces rather than tested against one, so a third
+    // stand-in face is priced here alone and no case below has to say which branch it fell down.
+    private static double resolveWidthPerCharacter(StarsectorFont font) {
+        if (font == HEADING_FONT) {
+            return HEADING_WIDTH_PER_CHARACTER;
+        }
+        if (font == SPRAWLING_FONT) {
+            return SPRAWLING_WIDTH_PER_CHARACTER;
+        }
+        return BODY_WIDTH_PER_CHARACTER;
     }
 
     // Lays the rows out as one block, which is what every case not about the parting is testing: lines
@@ -217,6 +240,12 @@ class CursorTooltipTest {
         return createCrestlessRow(text)
             .clearsCrestColumn()
             .readsAs(TooltipLineStyle.HEADER);
+    }
+
+    // The stretch a row leads its rule along. Read through a helper so a case names the row it is asking
+    // about rather than the two hops it takes to reach one.
+    private static TooltipLeaderLine readLeaderLine(TooltipLayout layout, int rowIndex) {
+        return layout.rows().get(rowIndex).leaderLine();
     }
 
     // Where one of a row's label runs anchors. Read by position rather than by name, since the runs are
@@ -306,6 +335,115 @@ class CursorTooltipTest {
                 .isCloseTo(261f, within(TOLERANCE));
             assertThat(member.trailingRowSlotX())
                 .isCloseTo(282f, within(TOLERANCE));
+        }
+
+        @Test
+        void leadsARuleFromTheLabelsEndToTheValuesStart() {
+            // The aid itself: the value column is pinned to the box's right edge whatever the label
+            // measures, so the two ends of a row can sit far apart and the rule is what carries the eye
+            // across. Its ends stand one word space clear of the glyphs either side - the member's label
+            // ends at 261 + 4, and its value starts at 282 - 1.
+            var valuedRow = 1;
+            var leaderLine = readLeaderLine(layOut(List.of(TOP_TIER, MEMBER)), valuedRow);
+
+            assertThat(leaderLine.isRuled())
+                .isTrue();
+            assertThat(leaderLine.leftX())
+                .isCloseTo(266f, within(TOLERANCE));
+            assertThat(leaderLine.rightX())
+                .isCloseTo(280f, within(TOLERANCE));
+        }
+
+        @Test
+        void standsALeaderRuleOffBothEndsByTheRowsOwnWordSpace() {
+            // The standoff is the row's own face's space, not a width chosen once for the box: the
+            // heading face sets a 3-wide space, so its rule runs 226 + label 6 + 3 to 251 - value 3 - 3.
+            // Measured on the body face it would run 233 to 247 and crowd the glyphs of a face that
+            // spaces its own words three times as widely.
+            var headed = createHeadingRow("AA").carriesValue(new TextSpan("9", Color.GRAY));
+            var leaderLine = readLeaderLine(layOut(List.of(headed), TWO_FACE_STYLE), FIRST_ROW);
+
+            assertThat(leaderLine.leftX())
+                .isCloseTo(235f, within(TOLERANCE));
+            assertThat(leaderLine.rightX())
+                .isCloseTo(245f, within(TOLERANCE));
+        }
+
+        @Test
+        void leadsNoRuleFromARowThatTrailsWithNothing() {
+            // A rule leads to a value, so a row carrying none has nothing to lead to - and a rule run
+            // from a label out to the empty right edge would point at the box rather than at anything
+            // in it.
+            var leaderLine = readLeaderLine(layOut(List.of(TOP_TIER, MEMBER)), FIRST_ROW);
+
+            assertThat(leaderLine.isRuled())
+                .isFalse();
+        }
+
+        @Test
+        void leadsNoRuleFromALabelThatCameOutBlank() {
+            // The other end has to be there too: a caller that assembled a label from parts and came up
+            // blank has no name for the rule to lead back from, so the row shows its value alone rather
+            // than a rule emerging from the content edge.
+            var blankLabelled = createCrestlessRow("").carriesValue(new TextSpan("9", Color.GRAY));
+
+            assertThat(readLeaderLine(layOut(List.of(blankLabelled)), FIRST_ROW).isRuled())
+                .isFalse();
+        }
+
+        @Test
+        void leadsNoRuleAcrossACentredRow() {
+            // A centred line has left the table and holds no value column, so there are no two columns
+            // for a rule to join - and one ruled to the content edge would cut across the very line the
+            // box centred.
+            var centred = createCentredRow("AA");
+            var centredRow = 1;
+
+            assertThat(readLeaderLine(layOut(List.of(TOP_TIER, centred)), centredRow).isRuled())
+                .isFalse();
+        }
+
+        @Test
+        void leadsNoRuleWhereTheColumnsCloseToWithinAWordSpace() {
+            // The floor: what is left after both standoffs has to be at least a word space long, or the
+            // rule is a smudge between two columns already close enough to read as one line. The
+            // sprawling face's 9-wide space eats the whole 16 the box reserves - label ends at 226 + 9
+            // and the value starts at 260 - 9, leaving 16 for two 9-wide standoffs.
+            var valued = createCrestlessRow("A").carriesValue(new TextSpan("B", Color.GRAY));
+
+            assertThat(readLeaderLine(layOut(List.of(valued), SPRAWLING_STYLE), FIRST_ROW).isRuled())
+                .isFalse();
+        }
+
+        @Test
+        void leadsARuleWhereTheColumnsStandAWordSpaceApartOrMore() {
+            // The same row on the body face clears the floor comfortably - 226 + 1 + 1 to 244 - 1 - 1 -
+            // so the case above is the standoffs closing up rather than a rule that never leads at all.
+            var valued = createCrestlessRow("A").carriesValue(new TextSpan("B", Color.GRAY));
+            var leaderLine = readLeaderLine(layOut(List.of(valued)), FIRST_ROW);
+
+            assertThat(leaderLine.leftX())
+                .isCloseTo(228f, within(TOLERANCE));
+            assertThat(leaderLine.rightX())
+                .isCloseTo(242f, within(TOLERANCE));
+        }
+
+        @Test
+        void leadsARuleToTheLeftEdgeOfAValueDrawnInSeveralRuns() {
+            // The rule stops where the value column starts drawing, not at the box's right edge: a value
+            // picked out in two colours is measured as the one column it fills (2 + the face's 1-wide
+            // space + 1 = 4), so the rule ends at 248 - 4 - 1 rather than running under its first run.
+            var valued = createCrestlessRow("AA")
+                .carriesValueRuns(List.of(
+                    new TextSpan("BB", Color.GRAY),
+                    new TextSpan("C", Color.WHITE)));
+
+            var leaderLine = readLeaderLine(layOut(List.of(valued)), FIRST_ROW);
+
+            assertThat(leaderLine.leftX())
+                .isCloseTo(229f, within(TOLERANCE));
+            assertThat(leaderLine.rightX())
+                .isCloseTo(243f, within(TOLERANCE));
         }
 
         @Test

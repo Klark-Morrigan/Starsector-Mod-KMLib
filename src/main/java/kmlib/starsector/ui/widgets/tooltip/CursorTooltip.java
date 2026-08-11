@@ -37,6 +37,12 @@ import java.util.function.ToDoubleFunction;
  * slots turn out to hold, so a row that leads or trails with something other than the crest and value a
  * tooltip usually carries is measured and placed by the same arithmetic as the rest.
  *
+ * <p>A row carrying both a label and a value also gets the stretch between them measured as a {@link
+ * TooltipLeaderLine} - the run a rule may be led along to tie the two ends of a wide row together, since
+ * the value column is pinned to the box's right edge however short the label is. It is resolved here
+ * because it is worked out from the very widths this widget measured to place the row; a surface deriving
+ * it from the anchors would be measuring the row a second time, against which its rule could only drift.
+ *
  * <p>A {@link TooltipRow.CentredRow} is laid outside that column model entirely: its label's runs centre
  * together as one span in the content region, and it is sized to that span alone, so a title or a lone
  * statement centres over whatever the box holds rather than aligning as an entry of it. Such a row holds
@@ -87,6 +93,10 @@ public final class CursorTooltip {
     // The crest column's width in a box that reserves none - either because no row carries a crest, or
     // for a row that steps out of the column to lay flush.
     private static final float NO_CREST_COLUMN = 0f;
+
+    // What a label that came out blank measures. Named because it is read as a question about the row -
+    // whether there is a name for a leader rule to point back to - rather than as a width worth zero.
+    private static final float NO_LABEL_WIDTH = 0f;
 
     private CursorTooltip() {
     }
@@ -232,24 +242,65 @@ public final class CursorTooltip {
         // A centred line holds no columns to place. Its label anchors off the content region's midpoint
         // instead - its later runs still ride off that anchor, so a whole label centres as one span -
         // and the column anchors it is handed are the box's own content edges, which it draws nothing in.
+        // It rules no leader either: a rule leads to a value column, and this line has left the table
+        // that has one.
         if (!(styledRow.row() instanceof TooltipRow.TableRow tableRow)) {
             return new TooltipLayout.TooltipRowLayout(
                 rowTopY,
                 (float) styledRow.lineHeight(),
                 leftX,
                 anchorLabelRuns(styledRow, centreLabelX(styledRow, leftX, rightX)),
+                TooltipLeaderLine.NONE,
                 rightX);
         }
         var leadingRowSlotX = leftX + tableRow.indent();
+        var labelStartX = leadingRowSlotX + measureCrestOffset(tableRow, crestColumnWidth);
 
         return new TooltipLayout.TooltipRowLayout(
             rowTopY,
             (float) styledRow.lineHeight(),
             leadingRowSlotX,
-            anchorLabelRuns(
-                styledRow,
-                leadingRowSlotX + measureCrestOffset(tableRow, crestColumnWidth)),
+            anchorLabelRuns(styledRow, labelStartX),
+            measureLeaderLine(styledRow, tableRow, labelStartX, rightX),
             rightX);
+    }
+
+    // The stretch this row leads a rule along, from where its label stopped to where its value starts.
+    // The visual aid a wide row needs: the value column is anchored to the box's right edge whatever the
+    // label measures, so a short name and its number can end up a long way apart, and a reader tracking
+    // one back to the other has nothing to follow across the gap.
+    //
+    // Stood off each end by the face's own word space - the same space the label parts its own runs by -
+    // so the rule reads as a mark set between two words rather than as a stroke run into them. Led only
+    // where what is left is at least that space long: shorter than the gap it stands in, a rule is a
+    // smudge between two columns already close enough to read as one line, and the aid is only wanted
+    // where the eye could actually lose the line.
+    //
+    // Measured here, beside the label and column widths it is worked out from, rather than by whatever
+    // paints it: those widths are this layout's own, and a rule derived from a second measurement of the
+    // row could only ever drift from the columns it is meant to join.
+    private static TooltipLeaderLine measureLeaderLine(
+            StyledRow styledRow,
+            TooltipRow.TableRow tableRow,
+            float labelStartX,
+            float rightX) {
+
+        // Both ends have to be there for a rule to join them: a row trailing with nothing has no value to
+        // lead to, and one whose label came out blank has no name to lead back from.
+        var trailingRowSlot = tableRow.labelledRow().trailingRowSlot();
+        var labelWidth = measureLabelRunOffsets(styledRow).runsWidth();
+
+        if (!trailingRowSlot.isFilled() || labelWidth <= NO_LABEL_WIDTH) {
+            return TooltipLeaderLine.NONE;
+        }
+        var wordSpaceWidth = styledRow.measureWordSpaceWidth();
+        var leaderLine = new TooltipLeaderLine(
+            labelStartX + labelWidth + wordSpaceWidth,
+            rightX - styledRow.measureSlotWidth(trailingRowSlot) - wordSpaceWidth);
+
+        return leaderLine.computeWidth() >= wordSpaceWidth
+            ? leaderLine
+            : TooltipLeaderLine.NONE;
     }
 
     // Where each of a row's label runs anchors in the placed box: the offsets the runs measured out at,
@@ -373,6 +424,14 @@ public final class CursorTooltip {
                 spanText -> measurer.measureSpanWidth(
                     textStyle.face(),
                     textStyle.resolveDisplayText(spanText)));
+        }
+
+        // The word space this row's own face sets between two words. What a mark set among the line's
+        // words rather than on them stands off by, asked of the row so that the space a rule keeps and
+        // the space the label parts its runs by are one measurement on one face - restated as a number
+        // here, the two would read alike on the face they were chosen for and part on every other.
+        private float measureWordSpaceWidth() {
+            return LabelRuns.measureWordSpaceWidth(this::measureSpanWidth);
         }
 
         // The width one of this row's flanking slots occupies. Each kind of slot answers for itself off

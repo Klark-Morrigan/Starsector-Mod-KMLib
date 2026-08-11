@@ -3,6 +3,7 @@ package kmlib.starsector.ui.widgets.tooltip;
 import kmlib.math.geometry.Rectangle;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * The resolved geometry of a laid-out {@link CursorTooltip}: the box footprint and, per row in draw
@@ -38,11 +39,19 @@ public record TooltipLayout(
      * layout already measured. A run with nothing to draw anchors where the run before it ended: nothing
      * is drawn there, so the anchor is unused rather than wrong, and the run costs the line no gap.
      *
+     * <p>Between the label and the trailing column sits the row's {@link TooltipLeaderLine} - the stretch
+     * a rule may be led along to tie the two ends of a wide row together. It is resolved here, with the
+     * columns it runs between, rather than left to a renderer to work out from the anchors: the label's
+     * width and the value's are measurements this layout already made, and a paint measuring them again
+     * would be joining columns it had derived a second time.
+     *
      * @param rowTopY          the row's top edge, in UI coordinates (UI origin is bottom-left), which
      *                         every part of the row anchors from
      * @param lineHeight       the height of the line the row occupies, in UI units
      * @param leadingRowSlotX  the leading column's left-anchor x, in UI coordinates
      * @param labelRunXs       each label run's left-anchor x, in UI coordinates, in run order
+     * @param leaderLine       the stretch between label and value a rule runs along, or
+     *                         {@link TooltipLeaderLine#NONE} where the row rules none
      * @param trailingRowSlotX the trailing column's right-anchor x, in UI coordinates
      */
     public record TooltipRowLayout(
@@ -50,9 +59,17 @@ public record TooltipLayout(
         float lineHeight,
         float leadingRowSlotX,
         List<Float> labelRunXs,
+        TooltipLeaderLine leaderLine,
         float trailingRowSlotX) {
 
+        /**
+         * Rejects a null rule at construction: a row that rules none carries
+         * {@link TooltipLeaderLine#NONE}, so a null is a placement built wrongly rather than a row with
+         * nothing to rule - and would otherwise surface inside a draw call, past the point that could
+         * say which row was meant.
+         */
         public TooltipRowLayout {
+            Objects.requireNonNull(leaderLine, "leaderLine");
             labelRunXs = List.copyOf(labelRunXs);
         }
     }

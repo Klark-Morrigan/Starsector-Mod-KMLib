@@ -30,8 +30,9 @@ import java.util.List;
 
 /**
  * Draws a {@link CursorTooltip}'s blocks as a free-floating box at the cursor: it lays them out through
- * the widget, resolves each row's look from the kind of line it is, and paints the box, each crest, and
- * each row's label - run by run, words and inline images alike - and its value in one bracketed GL pass.
+ * the widget, resolves each row's look from the kind of line it is, and paints the box, each crest, each
+ * row's label - run by run, words and inline images alike - its value, and the
+ * {@linkplain TooltipLeaderLineRenderer rule} led between the two, in one bracketed GL pass.
  * The sanctioned way for a KM UI to show a tooltip
  * on a core screen that offers no panel to hang a vanilla {@code TooltipMakerAPI} on - the same rationale
  * that puts the panel renderers here beside it.
@@ -129,6 +130,17 @@ public final class CursorTooltipRenderer {
         if (row instanceof TooltipRow.TableRow tableRow) {
             drawFlankingRowSlots(tableRow.labelledRow(), placement, rowPaint);
         }
+
+        // Ruled along the stretch the layout measured, not one worked out from the anchors beside it: the
+        // label's end and the value's start were settled when the row was placed, and a rule re-derived
+        // here could only drift from the two columns it exists to join. Attempted on every row, since a
+        // row with no rule to lead carries a stretch that draws nothing - the same reading a blank span
+        // gets, so no branch here has to learn which rows have values.
+        TooltipLeaderLineRenderer.render(
+            placement.leaderLine(),
+            placement.rowTopY(),
+            rowPaint.textStyle().face(),
+            rowPaint.opacity());
 
         // Anchored as the layout pinned them, not by each style's own alignment: the columns are the
         // layout's decision, so a style's default anchor has no say in a box that resolved its own. The
