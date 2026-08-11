@@ -104,6 +104,11 @@ final class TabPanelPlacementTest {
                 .isFalse();
             assertThat(bodyless.containsPoint(INSIDE_NOTCH_X, INSIDE_NOTCH_Y))
                 .isFalse();
+
+            // Not even the corner the empty box is parked on, which is outside the row: a box standing for
+            // a body that is not there is not a place the panel paints, so it claims nothing.
+            assertThat(bodyless.containsPoint(HEADER_BAND.x() - BORDER_WIDTH, HEADER_BAND.y()))
+                .isFalse();
         }
     }
 
@@ -130,10 +135,25 @@ final class TabPanelPlacementTest {
 
         @Test
         void computeOuterBoundForABodylessPanelIsItsRow() {
-            // No handle to reach past and an empty box at the row's own anchor, so the row is the
-            // whole of the bound - the absent notch is skipped rather than read as a rect at the origin.
+            // The row is the whole of the bound: no handle to reach past, and the empty box standing for the
+            // missing body is left out rather than dragging the bound to the outer edge it is parked on.
             assertThat(placeBodylessPanel().computeOuterBound())
                 .isEqualTo(new Rectangle(100f, 600f, 300f, 20f));
+        }
+
+        @Test
+        void computeOuterBoundEnclosesEveryPointTheFootprintClaims() {
+            // The invariant a clip taken from the bound rests on: nothing the panel draws, and so nothing
+            // the pointer can be on, falls outside it. A bound missing a piece would clip a pass to a
+            // region that stops short exactly where that piece is drawn.
+            var bound = placePanel(NOTCH, HEADER_BAND).computeOuterBound();
+
+            assertThat(bound.containsPoint(INSIDE_BODY_X, INSIDE_BODY_Y))
+                .isTrue();
+            assertThat(bound.containsPoint(INSIDE_HEADER_X, INSIDE_HEADER_Y))
+                .isTrue();
+            assertThat(bound.containsPoint(INSIDE_NOTCH_X, INSIDE_NOTCH_Y))
+                .isTrue();
         }
     }
 
@@ -190,10 +210,13 @@ final class TabPanelPlacementTest {
             notch);
     }
 
-    // A tab whose body is empty: an empty box at the anchor, no controls, and no handle.
+    // A tab whose body is empty: an empty box at the anchor, no controls, and no handle. The box is parked
+    // a border-width left of the row, where the layout leaves it - it is anchored at the panel's outer edge
+    // while the row starts inside the border - so a footprint that read it would be visibly wider than the
+    // row rather than coinciding with it by accident of the fixture.
     private static TabPanelPlacement placeBodylessPanel() {
 
-        var emptyBox = new Rectangle(HEADER_BAND.x(), HEADER_BAND.y(), 0f, 0f);
+        var emptyBox = new Rectangle(HEADER_BAND.x() - BORDER_WIDTH, HEADER_BAND.y(), 0f, 0f);
 
         return new TabPanelPlacement(
             buildHeaderControl(),

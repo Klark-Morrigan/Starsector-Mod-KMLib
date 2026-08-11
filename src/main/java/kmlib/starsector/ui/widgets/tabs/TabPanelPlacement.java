@@ -76,10 +76,10 @@ public record TabPanelPlacement(
 
     /**
      * The smallest rectangle enclosing everything the panel paints - the drawn tab row, the body's box
-     * and the collapse handle. The panel has no single box of its own, since the three sit outside one
-     * another, so a pass that needs one region for the whole panel rather than a test per piece composes
-     * it here: from the same pieces {@link #containsPoint} tests, so what the panel draws, what it
-     * claims from the pointer, and what it bounds cannot drift apart.
+     * and the collapse handle, and the row alone when there is no body. The panel has no single box of its
+     * own, since the three sit outside one another, so a pass that needs one region for the whole panel
+     * rather than a test per piece composes it here: from the same pieces {@link #containsPoint} tests, so
+     * what the panel draws, what it claims from the pointer, and what it bounds cannot drift apart.
      *
      * <p>The bound is a superset of the footprint, not the footprint itself: the corner beside a tab row
      * narrower than its body is inside the bound and outside every piece. That suits a clip or a
@@ -92,9 +92,11 @@ public record TabPanelPlacement(
 
         var parts = listDrawnParts();
 
+        // Seeded with the row rather than with an empty rect at the origin, which would drag the bound back
+        // to a corner of the screen the panel is nowhere near.
         var bound = parts.get(0);
-        for (var part : parts) {
-            bound = bound.unionWith(part);
+        for (var index = 1; index < parts.size(); index++) {
+            bound = bound.unionWith(parts.get(index));
         }
         return bound;
     }
@@ -124,10 +126,18 @@ public record TabPanelPlacement(
 
     // The rects the panel puts on screen, as one list: the drawn row, the body's box, and the handle when
     // there is one. Every question about where the panel is - is the pointer on it, what does it span -
-    // is answered off this list, so a piece can only be added or dropped for all of them at once.
-    // A bodyless panel still lists its empty box, which is laid out at the row's anchor: it contains
-    // nothing but the point it sits on, and encloses nothing the row does not.
+    // is answered off this list, so a piece can only be added or dropped for all of them at once. The row
+    // is always in it; a panel that painted nothing at all would not be laid out.
+    //
+    // A bodyless panel lists its row alone. The empty box such a panel carries stands for the absence of a
+    // body rather than for a place, and is anchored at the panel's outer edge while the row starts inside
+    // the border - so a list that took it in would claim, and bound, a border's width of screen to the
+    // left of everything the panel paints.
     private List<Rectangle> listDrawnParts() {
+
+        if (!hasBody()) {
+            return List.of(drawnHeaderBand);
+        }
         return notch == null
             ? List.of(drawnHeaderBand, body.box())
             : List.of(drawnHeaderBand, body.box(), notch);
