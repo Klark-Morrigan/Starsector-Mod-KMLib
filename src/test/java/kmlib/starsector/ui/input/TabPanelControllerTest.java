@@ -78,6 +78,12 @@ final class TabPanelControllerTest {
     private static final int FIRST_TAB_INDEX = 0;
     private static final int SECOND_TAB_INDEX = 1;
 
+    // The header spec every placement carries unless its case needs an action recorded or another tab lit.
+    // A header is an ordinary laid-out tabs control, so the resolver reads the row's selection off a spec
+    // like this one rather than off the placement - which is why none of these placements can go without.
+    private static final ControlSpec.Tabs TABS_SHOWING_FIRST_TAB =
+        buildTabsSpecShowing(FIRST_TAB_INDEX, ControlAction.NONE);
+
     // What the two hit-tests report when the pointer is on neither element, named so an advance reads as a
     // pointer position rather than as a null and a false.
     private static final Integer NO_TAB_HOVERED = null;
@@ -1194,12 +1200,12 @@ final class TabPanelControllerTest {
     // A panel with a body but no handle laid for it - all the tab hit-test needs, and the shape every case
     // that is not about the handle reads.
     private static TabPanelPlacement buildTwoTabPlacement() {
-        return buildPlacement(null, buildTabsSpecShowing(FIRST_TAB_INDEX, ControlAction.NONE));
+        return buildPlacement(null, TABS_SHOWING_FIRST_TAB);
     }
 
     // The same panel carrying a handle, for the hit-tests that have to tell the panel's two parts apart.
     private static TabPanelPlacement buildTwoTabPlacementWithNotch() {
-        return buildPlacement(NOTCH, buildTabsSpecShowing(FIRST_TAB_INDEX, ControlAction.NONE));
+        return buildPlacement(NOTCH, TABS_SHOWING_FIRST_TAB);
     }
 
     // The same panel whose header fires into the caller's recorder, for the press path - which is what the
@@ -1222,10 +1228,7 @@ final class TabPanelControllerTest {
     // The same panel with only part of its row still drawn, for the cases about what a folding panel
     // claims: the row is laid out whole either way, and the drawn band is what the fold has left of it.
     private static TabPanelPlacement buildPlacementWithDrawnBand(Rectangle drawnHeaderBand) {
-        return buildPlacement(
-            null,
-            buildTabsSpecShowing(FIRST_TAB_INDEX, ControlAction.NONE),
-            drawnHeaderBand);
+        return buildPlacement(null, TABS_SHOWING_FIRST_TAB, drawnHeaderBand);
     }
 
     // The same panel with nothing beneath its row - what a tab whose body is empty lays out: no controls,

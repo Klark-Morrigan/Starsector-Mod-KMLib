@@ -51,12 +51,6 @@ public final class TabPanelController {
      */
     public static final TraverseDurations HOTKEY_BLINK_DURATIONS = new TraverseDurations(0.05f, 0.2f);
 
-    // What the header's resolver reports when the point is on no tab of the row - and what a panel not
-    // presenting its tabs reports whatever the point is over. Null rather than an index sentinel,
-    // because a keyed set of fades is asked "which tab, if any" and an out-of-row index would key an
-    // entry like any other.
-    private static final Integer NO_TAB_RESOLVED = null;
-
     // The body's controller, owning the scroll and drag state; this routes everything but a header-tab or
     // notch press to it, so the panel's scroll and drag behaviour is the plain panel's, unchanged.
     private final PanelController bodyController = new PanelController();
@@ -438,7 +432,7 @@ public final class TabPanelController {
         // to answer, or pressing it reads as a panel that missed the click.
         var pressedTabIndex = resolveTabIndexAtPoint(placement, pointX, pointY);
 
-        if (pressedTabIndex == NO_TAB_RESOLVED) {
+        if (pressedTabIndex == PanelController.NO_CELL_RESOLVED) {
             return false;
         }
         // Held rather than self-timed: the lift reports a press the player is still making, so it waits at
@@ -554,7 +548,7 @@ public final class TabPanelController {
 
         // A panel presenting no tabs is a pointer on no tab, whatever is laid out under it.
         if (!isPresentingTabsOf(placement)) {
-            return NO_TAB_RESOLVED;
+            return PanelController.NO_CELL_RESOLVED;
         }
         // Through the body's own control resolver rather than a hit-test of the header's own: the header is
         // an ordinary laid-out control, and one mapping of a row miss onto "no cell" is one place for the

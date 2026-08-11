@@ -246,6 +246,38 @@ final class PanelControllerTest {
     }
 
     @Nested
+    class ActivateCellIfActionable {
+
+        @Test
+        void activateCellIfActionableFiresTheCellItWasHandedWithoutHitTestingForOne() {
+            // The seam a header press reaches directly, having resolved its own tab already: the cell handed
+            // over is the cell that fires, with no point to test it against. Pinned apart from the press
+            // above because that caller resolves and fires in one call, and this one cannot - a tab lifts on
+            // the raw hit and acts only if the row says that hit is worth acting on.
+            var firedCell = new int[] {-1};
+            var tabs = buildTwoTabRowAtRow(0, cell -> firedCell[0] = cell);
+            var activatedCell = PanelController.activateCellIfActionable(tabs, 1);
+
+            assertThat(activatedCell)
+                .isEqualTo(1);
+            assertThat(firedCell[0])
+                .as("the cell reported is the cell the action fired for")
+                .isEqualTo(1);
+        }
+
+        @Test
+        void activateCellIfActionableActsOnNothingForAControlThatIsNotInteractive() {
+            // A caption carries no action to reach, so a cell named on one goes nowhere rather than throwing
+            // on the cast that would reach it. Nothing resolves a cell on a label today, which is exactly
+            // why this is stated here rather than left to whichever caller first hands one over.
+            var label = new Control(LabelledControlSpecs.buildLabel("Caption"), ROW, List.of());
+
+            assertThat(PanelController.activateCellIfActionable(label, ControlSpec.SINGLE_CELL))
+                .isNull();
+        }
+    }
+
+    @Nested
     class ResolveHitCell {
 
         @Test

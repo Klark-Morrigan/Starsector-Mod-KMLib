@@ -36,7 +36,10 @@ public final class PanelController {
     // hit target, and what the firing step reports when the cell it was handed turned out to be inert. Null
     // rather than an index sentinel, because the answer is "which cell, if any": an out-of-range index reads
     // as a cell like any other to a caller keying anything by it, while a null cannot be keyed by at all.
-    private static final Integer NO_CELL_RESOLVED = null;
+    //
+    // Shared with the tab panel rather than restated there, this being the answer its header resolver hands
+    // straight back - a second name for one null is a second place to explain why it is not an index.
+    static final Integer NO_CELL_RESOLVED = null;
 
     // This panel's scroll position, read by the layout and written by the wheel and by a drag.
     private final ScrollState scrollState = new ScrollState();
