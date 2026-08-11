@@ -26,16 +26,17 @@ import kmlib.starsector.ui.widgets.scroll.ScrollState;
  * separately, so a tab switch stays with that controller.
  */
 public final class PanelController {
+
     // Pixels one wheel notch scrolls the flex list. Only the wheel's sign is read (like the vanilla
     // scroll lists), so each notch moves this fixed step regardless of the raw wheel magnitude - about two
     // list rows, a comfortable step without overshooting a short list.
     private static final float SCROLL_STEP_PX = 40f;
 
-    // What a hit-test reports when the press acted on nothing - it missed every cell, landed on chrome that
-    // is not a hit target, or fell on a segment the control treats as inert. Null rather than an index
+    // What a hit-test reports when the point landed on nothing - it missed every cell, landed on chrome
+    // that is not a hit target, or fell on a segment the control treats as inert. Null rather than an index
     // sentinel, because the answer is "which cell, if any": an out-of-range index reads as a cell like any
     // other to a caller keying anything by it, while a null cannot be keyed by at all.
-    private static final Integer NO_CELL_ACTIVATED = null;
+    private static final Integer NO_CELL_RESOLVED = null;
 
     // This panel's scroll position, read by the layout and written by the wheel and by a drag.
     private final ScrollState scrollState = new ScrollState();
@@ -100,13 +101,10 @@ public final class PanelController {
     }
 
     /**
-     * Hit-tests a control in a scrollable strip: a control marked {@link
-     * ControlSpec.VerticalTable#scrolls()} counts only inside {@code flexViewport}, then fires as {@link
-     * #activateControlIfHit(Control, float, float)}. The scrolling list clips because a row
-     * scrolled up under a pinned header (or down under a footer) is drawn away, so its segment - still laid
-     * out at its scrolled position - must not stay clickable through the control that hides it. Every
-     * non-scrolling control ignores the viewport, so the clip bites only the one flex list. Read by the
-     * body strip, whose one scrolling list needs it.
+     * Fires the action of the cell a press lands on in a scrollable strip, and reports which cell that was.
+     * Resolves the cell through {@link #resolveHitCell(Control, Rectangle, float, float)} and fires it, so
+     * the geometry a press acts on is the geometry that resolver answers and nothing else. Read by the body
+     * strip, whose one scrolling list needs the viewport clip.
      *
      * @param control      the laid-out control to hit-test
      * @param flexViewport the scrolling control's viewport; a scrolling control only counts inside it
@@ -119,31 +117,19 @@ public final class PanelController {
             Rectangle flexViewport,
             float pointX,
             float pointY) {
-        if (control.spec() instanceof ControlSpec.VerticalTable table
-                && table.scrolls()
-                && !flexViewport.containsPoint(pointX, pointY)) {
-            return NO_CELL_ACTIVATED;
-        }
-        return activateControlIfHit(control, pointX, pointY);
+        return activateResolvedCell(
+            control,
+            resolveHitCell(control, flexViewport, pointX, pointY));
     }
 
     /**
-     * Fires the control's action if the press lands on an actionable cell, and reports which cell that was,
-     * for a control not subject to scroll-clipping (a panel header, or any control that never scrolls). The
-     * cell comes back rather than a bare yes/no because the hit-test is the only thing that resolved it: a
-     * caller wanting to mark the cell it just fired would otherwise walk the same segments a second time to
-     * recover a number this already had. A radio
-     * or a tabs row hits by segment over the segments the layout laid; a radio whose reselect swallows a
-     * re-pick - and a tabs row, always inert on its lit tab - treats a press on the lit segment as inert,
-     * while a re-firing radio reads the raw hit so a press on the lit segment reaches its action. A
-     * single-cell checkbox or toggle hits anywhere on its row, reported as {@link
-     * ControlSpec#SINGLE_CELL}. A caption label or a
-     * divider is not a hit target and is skipped, so the press falls through to a control below rather than
-     * being swallowed on an inert action. The action's meaning stays with whoever supplied the spec - this
-     * only maps the click to a cell. A control in a scrollable strip uses {@link
-     * #activateControlIfHit(Control, Rectangle, float, float)}, which clips a scrolling control first;
-     * package-private so a {@link TabPanelController} hit-tests its header tabs control through this same
-     * segment path.
+     * Fires the action of the cell a press lands on, and reports which cell that was, for a control not
+     * subject to scroll-clipping (a panel header, or any control that never scrolls). The cell comes back
+     * rather than a bare yes/no because the hit-test is the only thing that resolved it: a caller wanting to
+     * mark the cell it just fired would otherwise walk the same segments a second time to recover a number
+     * this already had. The action's meaning stays with whoever supplied the spec - this only maps the click
+     * to a cell. Package-private so a {@link TabPanelController} fires its header tabs control through this
+     * same path.
      *
      * @param control the laid-out control to hit-test
      * @param pointX  the press x, in UI coordinates
@@ -151,11 +137,60 @@ public final class PanelController {
      * @return the cell that fired, or {@code null} when the press acted on nothing
      */
     static Integer activateControlIfHit(Control control, float pointX, float pointY) {
+        return activateResolvedCell(control, resolveHitCell(control, pointX, pointY));
+    }
+
+    /**
+     * Resolves which cell of a control in a scrollable strip a point lands on: a control marked {@link
+     * ControlSpec.VerticalTable#scrolls()} counts only inside {@code flexViewport}, and otherwise resolves
+     * as {@link #resolveHitCell(Control, float, float)}. The scrolling list clips because a row scrolled up
+     * under a pinned header (or down under a footer) is drawn away, so its segment - still laid out at its
+     * scrolled position - must not stay hittable through the control that hides it. Every non-scrolling
+     * control ignores the viewport, so the clip bites only the one flex list.
+     *
+     * @param control      the laid-out control to hit-test
+     * @param flexViewport the scrolling control's viewport; a scrolling control only counts inside it
+     * @param pointX       the point's x, in UI coordinates
+     * @param pointY       the point's y, in UI coordinates
+     * @return the cell under the point, or {@code null} when it lands on none
+     */
+    static Integer resolveHitCell(
+            Control control,
+            Rectangle flexViewport,
+            float pointX,
+            float pointY) {
+                
+        if (control.spec() instanceof ControlSpec.VerticalTable table
+                && table.scrolls()
+                && !flexViewport.containsPoint(pointX, pointY)) {
+            return NO_CELL_RESOLVED;
+        }
+        return resolveHitCell(control, pointX, pointY);
+    }
+
+    /**
+     * Resolves which cell of a control a point lands on, without firing anything. A radio or a tabs row hits
+     * by segment over the segments the layout laid; a radio whose reselect swallows a re-pick - and a tabs
+     * row, always inert on its lit tab - resolves the lit segment to no cell, while a re-firing radio reads
+     * the raw hit so the lit segment resolves to itself. A single-cell checkbox or toggle hits anywhere on
+     * its row, reported as {@link ControlSpec#SINGLE_CELL}. A caption label or a divider is not a hit target
+     * and resolves to no cell, so a press falls through to a control below rather than being swallowed on an
+     * inert action.
+     *
+     * <p>This is the press's resolver: the reselect narrowing above is part of the answer, so a caller
+     * reading it learns which cell a press would act on, not merely which cell is under the pointer.
+     *
+     * @param control the laid-out control to hit-test
+     * @param pointX  the point's x, in UI coordinates
+     * @param pointY  the point's y, in UI coordinates
+     * @return the cell under the point, or {@code null} when it lands on none
+     */
+    static Integer resolveHitCell(Control control, float pointX, float pointY) {
         // A caption row and a divider are drawn but not clickable - they are not Interactive - so a press
         // over either hits nothing and falls through to let the loop try the controls below, never
         // consuming a click as if it acted. The divider matters here because it spans the whole body width.
         if (!(control.spec() instanceof ControlSpec.Interactive interactive)) {
-            return NO_CELL_ACTIVATED;
+            return NO_CELL_RESOLVED;
         }
         // A radio or a tabs row hits by segment over the segments the layout laid - a radio's equal cells
         // or a tabs row's per-tab boxes. The reselect behaviour then selects raw-hit (a re-pick fires) vs
@@ -174,16 +209,16 @@ public final class PanelController {
                     interactive.selectedIndex(),
                     pointX,
                     pointY);
+            // Branched rather than a ternary: a conditional mixing the boxed no-cell answer with the int
+            // index unboxes both arms, so the miss case would throw on the null instead of reporting it.
             if (segmentIndex == RadioRow.NO_SEGMENT) {
-                return NO_CELL_ACTIVATED;
+                return NO_CELL_RESOLVED;
             }
-            interactive.action().activateCell(segmentIndex);
             return segmentIndex;
         }
         if (!control.bounds().containsPoint(pointX, pointY)) {
-            return NO_CELL_ACTIVATED;
+            return NO_CELL_RESOLVED;
         }
-        interactive.action().activateCell(ControlSpec.SINGLE_CELL);
         return ControlSpec.SINGLE_CELL;
     }
 
@@ -242,6 +277,19 @@ public final class PanelController {
             return;
         }
         scrollState.scrollBy(-Math.signum((float) event.getEventValue()) * SCROLL_STEP_PX);
+    }
+
+    // Fires the action of a cell the resolver already picked out, reporting it back so a caller reads one
+    // number for "what was hit" and "what fired". Only an Interactive spec ever resolves to a cell, so the
+    // pattern test cannot fail once one came back; it is how the action is reached without a cast.
+    private static Integer activateResolvedCell(Control control, Integer resolvedCell) {
+        if (resolvedCell == NO_CELL_RESOLVED) {
+            return NO_CELL_RESOLVED;
+        }
+        if (control.spec() instanceof ControlSpec.Interactive interactive) {
+            interactive.action().activateCell(resolvedCell);
+        }
+        return resolvedCell;
     }
 
     // Routes a left press inside the box to the body control under it: a control fires its action. A press

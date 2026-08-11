@@ -21,9 +21,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  * that control's action, while a caption label - drawn but not clickable - is passed over so it never
  * swallows a click as if it acted, and a scrolling control only counts inside its viewport.
  *
- * <p>Each case asserts the cell the hit-test reports alongside the cell the action was actually called
- * with. They are the same number by design - a caller marking what it just fired reads the reported one -
- * so pinning only one would let a press fire one cell and report another.
+ * <p>Each firing case asserts the cell the hit-test reports alongside the cell the action was actually
+ * called with. They are the same number by design - a caller marking what it just fired reads the reported
+ * one - so pinning only one would let a press fire one cell and report another.
+ *
+ * <p>The resolver cases pin the other half of that split: the same geometry answered without the action
+ * being reached, so a reader that only wants the cell under a point cannot activate it by asking.
  */
 final class PanelControllerTest {
 
@@ -259,6 +262,68 @@ final class PanelControllerTest {
             assertThat(fired[0])
                 .as("the lit segment's action must not fire")
                 .isFalse();
+        }
+    }
+
+    @Nested
+    class ResolveHitCell {
+
+        @Test
+        void resolveHitCellReportsTheHitCellWithoutFiringItsAction() {
+
+            var fired = new boolean[1];
+
+            // Resolution answers geometry alone: the same press that fires through activateControlIfHit
+            // reports its cell here while the control's action stays untouched, which is what lets a
+            // reader that only wants to know what is under a point share this path with the press.
+            var checkbox = buildCheckboxControl("Muted", cell -> fired[0] = true);
+            var resolvedCell = PanelController.resolveHitCell(
+                checkbox,
+                FULL_VIEWPORT,
+                ROW.x() + ROW.width() / 2f,
+                ROW.y() + ROW.height() / 2f);
+
+            assertThat(resolvedCell)
+                .as("a single-cell control resolves to cell 0")
+                .isZero();
+            assertThat(fired[0])
+                .as("resolving a cell must not fire it")
+                .isFalse();
+        }
+
+        @Test
+        void resolveHitCellRejectsAScrollingListOptionScrolledOutOfItsViewport() {
+
+            var list = buildScrollingListAtRow(ControlAction.NONE);
+
+            // The option's segment sits at ROW, but the viewport is a strip well above it - as if the row
+            // scrolled up under the header - so a point over the clipped-out row resolves to no cell.
+            var viewportAbove = new Rectangle(ROW.x(), ROW.y() + 100f, ROW.width(), 40f);
+            var resolvedCell = PanelController.resolveHitCell(
+                list,
+                viewportAbove,
+                ROW.x() + ROW.width() / 2f,
+                ROW.y() + ROW.height() / 2f);
+
+            assertThat(resolvedCell)
+                .as("a row clipped from the viewport is under nothing")
+                .isNull();
+        }
+
+        @Test
+        void resolveHitCellTreatsTheLitTabAsInert() {
+
+            // This is the press's resolver, so the reselect narrowing is part of its answer: the lit tab of
+            // an always-inert tabs row resolves to no cell, matching what a press there would act on.
+            var tabs = buildTwoTabRowAtRow(0, ControlAction.NONE);
+            var resolvedCell = PanelController.resolveHitCell(
+                tabs,
+                ROW.x() + ROW.width() / 4f,
+                ROW.y() + ROW.height() / 2f);
+
+            assertThat(resolvedCell)
+                .as("the lit tab of an inert tabs row resolves to no cell")
+                .isNull();
         }
     }
 
