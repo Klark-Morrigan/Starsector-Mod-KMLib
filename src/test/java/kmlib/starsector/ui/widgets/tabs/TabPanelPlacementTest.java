@@ -20,6 +20,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * tab row stands above the box, the handle is drawn past its right border edge, and a bodyless panel is
  * the row alone - so a footprint that stopped at the box would disown two of them, and a panel that
  * disowns the screen it paints on lets whatever is behind go on reading the pointer.
+ *
+ * <p>Pins the enclosing bound over the same three pieces, since a pass that needs one region for the whole
+ * panel must not get a rect that leaves a piece outside it.
  */
 final class TabPanelPlacementTest {
 
@@ -101,6 +104,36 @@ final class TabPanelPlacementTest {
                 .isFalse();
             assertThat(bodyless.containsPoint(INSIDE_NOTCH_X, INSIDE_NOTCH_Y))
                 .isFalse();
+        }
+    }
+
+    @Nested
+    class ComputeOuterBound {
+
+        @Test
+        void computeOuterBoundEnclosesTheRowTheBodyAndTheHandle() {
+            // Left and bottom come from the box (x 100, y 200), the right edge from the handle
+            // (x 400 + 20), the top from the row (y 600 + 20).
+            assertThat(placePanel(NOTCH, HEADER_BAND).computeOuterBound())
+                .isEqualTo(new Rectangle(100f, 200f, 320f, 420f));
+        }
+
+        @Test
+        void computeOuterBoundWidensToARowOverhangingTheBody() {
+            // The row is not clipped to the body's span at rest, so a wider row pushes both side edges
+            // of the bound out past the box - the piece that reaches furthest sets each edge.
+            var wideBand = new Rectangle(80f, 600f, 400f, 20f);
+
+            assertThat(placePanel(NOTCH, wideBand).computeOuterBound())
+                .isEqualTo(new Rectangle(80f, 200f, 400f, 420f));
+        }
+
+        @Test
+        void computeOuterBoundForABodylessPanelIsItsRow() {
+            // No handle to reach past and an empty box at the row's own anchor, so the row is the
+            // whole of the bound - the absent notch is skipped rather than read as a rect at the origin.
+            assertThat(placeBodylessPanel().computeOuterBound())
+                .isEqualTo(new Rectangle(100f, 600f, 300f, 20f));
         }
     }
 

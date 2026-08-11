@@ -1,9 +1,12 @@
 package kmlib.starsector.ui.widgets.tabs;
 
 import kmlib.math.geometry.Rectangle;
+import kmlib.math.geometry.Rectangles;
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.PanelPlacement;
+
+import java.util.List;
 
 /**
  * One laid-out tab panel: a headerless {@link PanelPlacement} for the {@code body} with a {@code
@@ -17,7 +20,8 @@ import kmlib.starsector.ui.widgets.PanelPlacement;
  * inside it, the way a strip of tabs sits on the panel it selects, so nothing of the body reaches behind the
  * row and a bodyless panel is its row and nothing else. The box's width tracks the body, so a tab row wider
  * than the body overhangs the frame rather than widening it. The panel's footprint is therefore the box
- * plus the drawn row (plus the handle) rather than the box alone - {@link #containsPoint} states it.
+ * plus the drawn row (plus the handle) rather than the box alone - {@link #containsPoint} tests it piece
+ * by piece, and {@link #computeOuterBound} encloses the same pieces in one rect.
  *
  * <p>The {@code drawnHeaderBand} is how much of the row is on screen: the whole row at rest, and the part
  * the fold has not yet wiped while the body is folding. One rect the draw pass clips the row to and the
@@ -67,9 +71,32 @@ public record TabPanelPlacement(
      * @return whether the point is on the drawn tab row, the body, or the collapse handle
      */
     public boolean containsPoint(float pointX, float pointY) {
-        return drawnHeaderBand.containsPoint(pointX, pointY)
-            || body.box().containsPoint(pointX, pointY)
-            || containsPointInNotch(pointX, pointY);
+        return Rectangles.findIndexContaining(listDrawnParts(), pointX, pointY) != Rectangles.NONE;
+    }
+
+    /**
+     * The smallest rectangle enclosing everything the panel paints - the drawn tab row, the body's box
+     * and the collapse handle. The panel has no single box of its own, since the three sit outside one
+     * another, so a pass that needs one region for the whole panel rather than a test per piece composes
+     * it here: from the same pieces {@link #containsPoint} tests, so what the panel draws, what it
+     * claims from the pointer, and what it bounds cannot drift apart.
+     *
+     * <p>The bound is a superset of the footprint, not the footprint itself: the corner beside a tab row
+     * narrower than its body is inside the bound and outside every piece. That suits a clip or a
+     * backdrop, which may cover screen the panel does not paint on; it does not suit a hit test, which
+     * must not claim that corner - {@link #containsPoint} stays the answer there.
+     *
+     * @return the enclosing bound of the drawn row, the body and the handle, in UI coordinates
+     */
+    public Rectangle computeOuterBound() {
+
+        var parts = listDrawnParts();
+
+        var bound = parts.get(0);
+        for (var part : parts) {
+            bound = bound.unionWith(part);
+        }
+        return bound;
     }
 
     /**
@@ -93,5 +120,16 @@ public record TabPanelPlacement(
      */
     public boolean containsPointInNotch(float pointX, float pointY) {
         return notch != null && notch.containsPoint(pointX, pointY);
+    }
+
+    // The rects the panel puts on screen, as one list: the drawn row, the body's box, and the handle when
+    // there is one. Every question about where the panel is - is the pointer on it, what does it span -
+    // is answered off this list, so a piece can only be added or dropped for all of them at once.
+    // A bodyless panel still lists its empty box, which is laid out at the row's anchor: it contains
+    // nothing but the point it sits on, and encloses nothing the row does not.
+    private List<Rectangle> listDrawnParts() {
+        return notch == null
+            ? List.of(drawnHeaderBand, body.box())
+            : List.of(drawnHeaderBand, body.box(), notch);
     }
 }
