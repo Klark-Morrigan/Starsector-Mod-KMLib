@@ -112,13 +112,14 @@ public final class TabPanelRenderer {
             NotchState notchState,
             float opacity) {
 
-        var isCollapsing = notchState.isFolding();
-        if (isCollapsing) {
-            UiScissor.push(placement.body().box());
-        }
-        PanelRenderer.render(placement.body(), style, border, opacity);
-        if (isCollapsing) {
-            UiScissor.pop();
+        // Named once and run either way, so the clipped and unclipped paths cannot drift apart in
+        // what they draw - only in whether the clip is around it.
+        Runnable drawBody = () -> PanelRenderer.render(placement.body(), style, border, opacity);
+
+        if (notchState.isFolding()) {
+            UiScissor.runClippedTo(placement.body().box(), drawBody);
+        } else {
+            drawBody.run();
         }
     }
 
@@ -135,15 +136,15 @@ public final class TabPanelRenderer {
         // borders on the panel's own lines reaches a hairline outside the band, and a clip cut to the band
         // would drop exactly those borders. The fold still wipes the row, the reach travelling with the
         // narrowing band.
-        UiScissor.push(TabChromeRenderer.computePaintedRegionFor(
-            style.tabStyle().chrome(),
-            placement.drawnHeaderBand(),
-            style.tabStyle().resolveTabHeight()));
-        GlStateGuard.bracket(() -> ControlRenderer.render(
-            placement.tabsHeader(),
-            style,
-            HEADER_OPACITY,
-            tabInteractions));
-        UiScissor.pop();
+        UiScissor.runClippedTo(
+            TabChromeRenderer.computePaintedRegionFor(
+                style.tabStyle().chrome(),
+                placement.drawnHeaderBand(),
+                style.tabStyle().resolveTabHeight()),
+            () -> GlStateGuard.bracket(() -> ControlRenderer.render(
+                placement.tabsHeader(),
+                style,
+                HEADER_OPACITY,
+                tabInteractions)));
     }
 }

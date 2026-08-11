@@ -76,12 +76,9 @@ public final class PanelRenderer {
                 // intersected with the box first: when a collapsing tab panel narrows the box, the list
                 // stays inside that shrinking frame and wipes with it rather than escaping to full width.
                 // Uncollapsed the viewport already sits within the box, so the intersection is a no-op.
-                UiScissor.push(placement
-                    .flexViewport()
-                    .intersectWith(placement.box()));
-
-                drawControl(control, style, opacity);
-                UiScissor.pop();
+                UiScissor.runClippedTo(
+                    placement.flexViewport().intersectWith(placement.box()),
+                    () -> drawControl(control, style, opacity));
             } else {
                 drawControl(control, style, opacity);
             }

@@ -53,22 +53,18 @@ public final class CoreUiComponentRenderer {
      * <p>Every way the draw can fail - the component exposing no such entry point, or its own draw
      * throwing - comes back out to the caller, undeclared and not necessarily as a {@link
      * RuntimeException} (see {@link CoreUiTree#invokeWithArgs}). What a failed repaint means is the
-     * caller's to decide, so a guard around this catches {@link Throwable}. The clip is ended
-     * whichever way the draw leaves, since a clip left enabled would silently cut every later draw
-     * in the frame down to this one region.
+     * caller's to decide, so a guard around this catches {@link Throwable}. Both the clip and the GL
+     * state are still restored on the way out, whichever way the draw leaves.
      *
      * @param component the live core-UI component to draw again, non-null
      * @param uiRegion  the region to confine the repaint to, in UI coordinates
      */
     public static void renderClippedTo(Object component, Rectangle uiRegion) {
-        UiScissor.push(uiRegion);
-        try {
-            // The component draws with whatever texturing, blending and colour it likes; the state
-            // save is what stops those reaching the rest of the pass drawing around this call.
-            GlStateGuard.bracket(
-                () -> CoreUiTree.invokeWithArgs(component, RENDER_METHOD, FULL_OPACITY));
-        } finally {
-            UiScissor.pop();
-        }
+        // The component draws with whatever texturing, blending and colour it likes; the state save
+        // is what stops those reaching the rest of the pass drawing around this call. Inside the
+        // clip rather than around it, so a scissor enable the component flips is restored before the
+        // clip itself is lifted.
+        UiScissor.runClippedTo(uiRegion, () -> GlStateGuard.bracket(
+            () -> CoreUiTree.invokeWithArgs(component, RENDER_METHOD, FULL_OPACITY)));
     }
 }

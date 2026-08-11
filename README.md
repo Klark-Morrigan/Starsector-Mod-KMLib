@@ -238,11 +238,21 @@ Packages with more behind them than one line can carry:
 | [`starsector/ui/highlight/`](src/main/java/kmlib/starsector/ui/highlight/) | [Highlighted Text](#highlighted-text) |
 | [`starsector/ui/text/`](src/main/java/kmlib/starsector/ui/text/) | [Two span measurers](src/main/java/kmlib/starsector/ui/README.md#two-span-measurers) |
 
-The two obf-cast seams, [`starsector/ui/intel/`](src/main/java/kmlib/starsector/ui/intel/)
-and [`starsector/ui/map/`](src/main/java/kmlib/starsector/ui/map/), are the only
-packages that reach into the game's concrete UI classes. Both compile against the
-obfuscated jars and cast rather than using reflection, and both fail closed - an
-unresolvable link reports "nothing there" instead of throwing on a live screen.
+Three packages reach into the game's concrete UI classes, by two mechanisms that
+differ in what a broken link costs the caller.
+
+The obf-cast seams, [`starsector/ui/intel/`](src/main/java/kmlib/starsector/ui/intel/)
+and [`starsector/ui/map/`](src/main/java/kmlib/starsector/ui/map/), compile against
+the obfuscated jars and cast. Both fail closed - an unresolvable link reports
+"nothing there" instead of throwing on a live screen.
+
+[`starsector/ui/coreui/`](src/main/java/kmlib/starsector/ui/coreui/) reaches the same
+classes by *name* instead, which is the only way in for members an obfuscated build
+leaves unwritable in Java source. It is deliberately policy-free: a hop either
+answers or throws, and what a failure means is the caller's to decide, since a read
+that suppresses a feature and one that draws it want opposite defaults. So a
+consumer of that package writes its own guard - over `Throwable`, the reach
+declaring nothing - where a consumer of the cast seams inherits one.
 
 ## Reusable CI / release actions
 

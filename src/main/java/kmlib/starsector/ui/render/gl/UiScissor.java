@@ -17,8 +17,10 @@ import org.lwjgl.opengl.GL11;
  * so it is exercised in-engine like the other draw helpers; the rescale itself is the unit-tested pure
  * conversion.
  *
- * <p>{@link #push} saves the prior scissor state and enables the clip; {@link #pop} restores it, so the
- * clip brackets one element's draw and leaves the surrounding passes unclipped. The two must be paired.
+ * <p>{@link #runClippedTo} is how a caller brackets a draw: it pairs the two halves below and ends the
+ * clip whichever way the draw leaves, which matters because a clip left enabled does not fail loudly -
+ * it silently cuts every later draw in the frame down to one element's region. Reach for the raw {@link
+ * #push} / {@link #pop} only where the clip cannot bracket a single call, and pair them by hand there.
  *
  * <p>The clip is ABSOLUTE: a raw {@link GL11#glScissor} replaces the whole clip region, so pushing while
  * an outer clip is already active does not narrow it, it supplants it for the bracketed draw. A caller
@@ -30,6 +32,28 @@ import org.lwjgl.opengl.GL11;
  */
 public final class UiScissor {
     private UiScissor() {
+    }
+
+    /**
+     * Runs {@code draw} clipped to {@code uiRegion}, ending the clip on the way out even if the draw
+     * throws. Must run with a current GL context, like any immediate-mode GL call.
+     *
+     * <p>The bracket form rather than a paired {@link #push} / {@link #pop} wherever the clip covers one
+     * call, because the two failure modes are not comparable: a leaked state save shows up as the next
+     * pass drawing wrong, where a leaked clip shows up as later passes not drawing at all, in a place
+     * with no clue pointing back here. Mirrors {@link GlStateGuard#bracket}, which brackets the other
+     * piece of state a UI draw borrows.
+     *
+     * @param uiRegion the clip rectangle, in UI coordinates
+     * @param draw     the drawing to confine to it
+     */
+    public static void runClippedTo(Rectangle uiRegion, Runnable draw) {
+        push(uiRegion);
+        try {
+            draw.run();
+        } finally {
+            pop();
+        }
     }
 
     /**
