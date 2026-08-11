@@ -134,7 +134,7 @@ final class MarketsTest {
         @Test
         void reads_a_null_market_as_blank_and_unmarked() {
             assertThat(Markets.readNameplate(null))
-                .isEqualTo(EntityNameplate.createUnmarkedNameplate(""));
+                .isEqualTo(EntityNameplate.BLANK);
         }
     }
 

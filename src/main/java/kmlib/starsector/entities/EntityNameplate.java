@@ -28,6 +28,16 @@ public record EntityNameplate(
     Optional<EntityMapIcon> mapIcon) {
 
     /**
+     * What a subject that is not there reads as: no name and no glyph.
+     *
+     * <p>Every read that has to answer for a missing subject answers this one value, so what a
+     * caller draws in that case is settled here rather than spelled out again per read - which is
+     * what lets it be reconsidered in one place, a blank line being a decision rather than an
+     * obvious truth.
+     */
+    public static final EntityNameplate BLANK = new EntityNameplate("", Optional.empty());
+
+    /**
      * Reads an unstated glyph as no glyph, so a hand-built nameplate cannot fail late on the half a
      * caller had nothing to say about.
      */

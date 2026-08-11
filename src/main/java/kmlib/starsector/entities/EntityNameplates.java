@@ -20,11 +20,6 @@ import com.fs.starfarer.api.campaign.SectorEntityToken;
  */
 public final class EntityNameplates {
 
-    // What an entity that is not there is named. A caller reading an entity the game turned out not
-    // to hold gets a nameplate it can draw rather than a throw at the draw, which is the
-    // null-defensive shape the rest of the package holds to.
-    private static final String NO_NAME = "";
-
     private EntityNameplates() {
         // utility class, no instances.
     }
@@ -32,12 +27,14 @@ public final class EntityNameplates {
     /**
      * Reads an entity's nameplate - both halves off the one token.
      *
-     * @param entity the entity to identify; null yields a blank name and no glyph
+     * @param entity the entity to identify; null yields {@link EntityNameplate#BLANK}, so a caller
+     *               reading an entity the game turned out not to hold gets something it can draw
+     *               rather than a throw at the draw
      * @return the entity's nameplate
      */
     public static EntityNameplate readNameplate(SectorEntityToken entity) {
         if (entity == null) {
-            return EntityNameplate.createUnmarkedNameplate(NO_NAME);
+            return EntityNameplate.BLANK;
         }
         return new EntityNameplate(
             entity.getName(),

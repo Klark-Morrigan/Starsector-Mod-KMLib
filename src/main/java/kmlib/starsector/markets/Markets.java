@@ -73,13 +73,14 @@ public final class Markets {
      * at each surface printing a list of colonies. Read apart, one colony's name is one call away
      * from being drawn beside another's glyph.
      *
-     * @param market the market to identify; null (or one with no primary entity) yields a blank
-     *               name and no glyph, the null-defensive shape the rest of the class holds to
+     * @param market the market to identify; null yields {@link EntityNameplate#BLANK}, the
+     *               null-defensive shape the rest of the class holds to, and one with no primary
+     *               entity is named with no glyph
      * @return the market's nameplate
      */
     public static EntityNameplate readNameplate(MarketAPI market) {
         if (market == null) {
-            return EntityNameplate.createUnmarkedNameplate("");
+            return EntityNameplate.BLANK;
         }
         return new EntityNameplate(
             market.getName(),

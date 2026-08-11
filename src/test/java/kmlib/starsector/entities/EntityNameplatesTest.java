@@ -63,7 +63,7 @@ final class EntityNameplatesTest {
             // The null-defensive shape the package holds to: a caller reading an entity that turned
             // out not to be there gets something it can draw rather than a throw at the draw.
             assertThat(EntityNameplates.readNameplate(null))
-                .isEqualTo(EntityNameplate.createUnmarkedNameplate(""));
+                .isEqualTo(EntityNameplate.BLANK);
         }
     }
 
