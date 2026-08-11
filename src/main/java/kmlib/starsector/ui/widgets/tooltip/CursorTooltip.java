@@ -51,6 +51,12 @@ import java.util.function.ToDoubleFunction;
  * as a flag on the opening row would vary with whatever line happened to open each block, so the gap
  * under a title would differ from the gap between two body blocks for no reason a reader could see.
  *
+ * <p>The line gap itself is the style's answer for the tier of the row <em>just laid</em>
+ * ({@link TooltipStyle#resolveLineGapAfter}), never for the row about to be: a run of lines at one depth
+ * is what a reader takes in as a unit, so it is the run that a box tightens or opens up. Resolved from
+ * the row below instead, the first line of a run would take its own tier's gap and shift the whole run
+ * away from the line it belongs under.
+ *
  * <p>Blocks nest, and the same reading settles the spacing inside one: a nested block takes the style's
  * narrower group break above itself where the nested block before it came to more than a line, and the
  * plain line gap otherwise. Spending it on the member that follows - and never above a block's first
@@ -99,6 +105,11 @@ public final class CursorTooltip {
     // The most a nested block can come to and still read as one item of a list. Past it the block broke
     // down into an account of its own, which is what the next member is set clear of.
     private static final int ONE_LINE = 1;
+
+    // Where the row a line gap is resolved from sits in the run bound so far: the last of them, since the
+    // gap belongs to the tier of the line just laid. Named because that position is what makes it the row
+    // being read, which a bare one subtracted from a size would not say.
+    private static final int LAST_BOUND_ROW = 1;
 
     private CursorTooltip() {
     }
@@ -187,7 +198,9 @@ public final class CursorTooltip {
 
             styledRows.add(StyledRow.bindRowToStyle(
                 openingRows.get(index),
-                index == FIRST_ROW_OF_SECTION ? leadingGap : TooltipBoxLayout.LINE_GAP,
+                index == FIRST_ROW_OF_SECTION
+                    ? leadingGap
+                    : measureLineGapAfterLastBoundRow(styledRows, style),
                 style,
                 measurer));
         }
@@ -199,7 +212,7 @@ public final class CursorTooltip {
             bindSectionRowsToStyles(
                 styledRows,
                 member,
-                measureMemberGap(precedingMember, style.spacing().groupBreak()),
+                measureMemberGap(precedingMember, styledRows, style),
                 style,
                 measurer);
 
@@ -211,12 +224,36 @@ public final class CursorTooltip {
     // it is decided, so a parting cannot pile up where several groups end on the same line: it is spent
     // by the member that follows, never above the first, and only where the member before it broke down
     // into more than a line - a run of one-line members reads as the plain list it is.
-    private static float measureMemberGap(TooltipSection precedingMember, float groupBreak) {
+    //
+    // Where no parting is due, the member opens at the plain gap under the line above it, which is where
+    // nearly every gap in a listing comes from: a caller that gives each entry a block of its own has no
+    // two lines sharing one block for the gap to fall between.
+    private static float measureMemberGap(
+            TooltipSection precedingMember,
+            List<StyledRow> styledRows,
+            TooltipStyle style) {
+
         if (precedingMember == NO_PRECEDING_MEMBER
                 || precedingMember.countLines() <= ONE_LINE) {
-            return TooltipBoxLayout.LINE_GAP;
+            return measureLineGapAfterLastBoundRow(styledRows, style);
         }
-        return groupBreak;
+        return style.spacing().groupBreak();
+    }
+
+    // The room a line takes above itself where no block boundary parts it from what came before: what the
+    // box's typography spends after the row just laid, resolved from that row's own tier.
+    //
+    // Read off the run bound so far rather than passed in, because the row a gap follows is its last
+    // element either way - whether the gap falls between two lines of one block or above a member opening
+    // beneath its parent's lines - and the two callers would otherwise each have to work out which row
+    // that is. It is never empty here: a TooltipSection carries at least one line, so a row is always
+    // bound before any gap inside or beneath that block is asked for.
+    private static float measureLineGapAfterLastBoundRow(
+            List<StyledRow> styledRows,
+            TooltipStyle style) {
+
+        var lastBoundRow = styledRows.get(styledRows.size() - LAST_BOUND_ROW).row();
+        return style.resolveLineGapAfter(lastBoundRow.subordinationLevel());
     }
 
     // The crest column's one width for the whole box: room for the widest leading slot any row fills,

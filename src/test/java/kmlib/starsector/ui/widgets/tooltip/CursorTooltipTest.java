@@ -25,7 +25,8 @@ import static org.assertj.core.api.Assertions.within;
  * however tall the rows stack, each row's line and its three columns anchor within the placed box, a
  * crest-less row still reserves its column unless it steps out of it, a centred row lays as a
  * standalone span in the middle of the content region, and two blocks are parted where two lines of one
- * block are not. The flanking columns are reserved from what each row's slot reports, so what a row
+ * block are not. Where no parting falls, the room a line takes is the style's answer for the tier of the
+ * line above it, so a run at one depth stacks at its own gap while the boundaries still win over it. The flanking columns are reserved from what each row's slot reports, so what a row
  * leads or trails with is pinned by width rather than by kind. On top of that, each row is measured and stacked in the look its own kind of line
  * resolves to, which is the whole reason a box can hold a heading and a body line at once. The box
  * padding and screen clamp themselves are {@link kmlib.starsector.ui.layout.TooltipBoxLayout}'s and
@@ -68,6 +69,17 @@ class CursorTooltipTest {
     // How far apart those same styles part two blocks nested inside one, restated for the same reason.
     private static final float GROUP_BREAK = 5.75f;
 
+    // The gap two lines of one block sit at where the box holds no tier apart, restated for the same
+    // reason.
+    private static final float LINE_GAP = 4f;
+
+    // A tier the tiered style below holds apart from the rest, and the gap it holds it at: a step no
+    // other tier resolves, so a measured step says which line's tier the gap was read from. The level
+    // above it is named too, since a run is only tightened once the line introducing it has been passed.
+    private static final int TIGHTENED_LEVEL = 2;
+    private static final int LEVEL_ABOVE_THE_TIGHTENED_RUN = 1;
+    private static final float TIGHTENED_GAP = 1f;
+
     // The row a step is ordinarily measured from - the top of the box, where nothing above the pair
     // under test can shift what parts them.
     private static final int FIRST_ROW = 0;
@@ -81,6 +93,12 @@ class CursorTooltipTest {
     private static final TooltipStyle TWO_FACE_STYLE = TooltipStyle.createStyle(
         createStyle(HEADING_FONT, HEADING_LINE_HEIGHT),
         createStyle(BODY_FONT, BODY_LINE_HEIGHT));
+
+    // The uniform box with one tier of its lines closed up: everything else still resolves the plain gap,
+    // which is what lets the cases below say whether a step was resolved from the line above the gap or
+    // from the line below it.
+    private static final TooltipStyle TIERED_STYLE = UNIFORM_STYLE.stackedAt(
+        TooltipLineGaps.createGaps(LINE_GAP).gappedAtLevel(TIGHTENED_LEVEL, TIGHTENED_GAP));
 
     // A top-tier row at no indent (short label, no value) and a wider indented member (longer label, a
     // value): the member is the widest laid-out row, so it must drive the box width even though it is the
@@ -163,6 +181,12 @@ class CursorTooltipTest {
 
     private static TooltipRow.TableRow createCrestlessRow(String text) {
         return TooltipRow.createRow(new TextSpan(text, Color.WHITE));
+    }
+
+    // A body line standing a stated number of steps under the box's voice - the fact a per-tier gap is
+    // resolved from. Crest-less, so nothing but the spacing differs between the lines of a tiered case.
+    private static TooltipRow.TableRow createSubordinateRow(String text, int subordinationLevel) {
+        return createCrestlessRow(text).subordinatedAt(subordinationLevel);
     }
 
     private static TooltipRow.CentredRow createCentredRow(String text) {
@@ -559,6 +583,94 @@ class CursorTooltipTest {
             var lastLineOfTheFirstFaction = 4;
 
             assertThat(measureStepBelow(layout, lastLineOfTheFirstFaction))
+                .isCloseTo(15f + GROUP_BREAK, within(TOLERANCE));
+        }
+
+        @Test
+        void stacksARunOfLinesAtTheGapTheirOwnTierIsHeldAt() {
+            // What the per-tier gaps are for: a run of lines at one depth closes up to its own gap, so a
+            // box can tighten its deepest listing without touching the lines above it.
+            var step = measureRowStep(
+                List.of(
+                    createSubordinateRow("AA", TIGHTENED_LEVEL),
+                    createSubordinateRow("BB", TIGHTENED_LEVEL)),
+                TIERED_STYLE);
+
+            assertThat(step)
+                .isCloseTo(15f + TIGHTENED_GAP, within(TOLERANCE));
+        }
+
+        @Test
+        void opensARunAtTheGapOfTheShallowerLineAboveIt() {
+            // The gap belongs to the line just drawn rather than to the line about to be. So the first
+            // line of a tightened run follows the line introducing it at that line's own gap, and only
+            // the lines within the run close up - resolved the other way, the whole run would be pulled
+            // up against the line it stands under.
+            var layout = layOut(
+                List.of(
+                    createSubordinateRow("AA", LEVEL_ABOVE_THE_TIGHTENED_RUN),
+                    createSubordinateRow("BB", TIGHTENED_LEVEL),
+                    createSubordinateRow("CC", TIGHTENED_LEVEL)),
+                TIERED_STYLE);
+
+            var firstLineOfTheRun = 1;
+
+            assertThat(measureStepBelow(layout, FIRST_ROW))
+                .isCloseTo(15f + LINE_GAP, within(TOLERANCE));
+            assertThat(measureStepBelow(layout, firstLineOfTheRun))
+                .isCloseTo(15f + TIGHTENED_GAP, within(TOLERANCE));
+        }
+
+        @Test
+        void opensANestedBlockAtTheGapOfTheLineItFollows() {
+            // Where nearly every gap in a listing actually falls: a caller that gives each entry a block
+            // of its own has no two lines sharing one block, so a tier gap that reached only the lines
+            // within a block would never be spent at all.
+            var layout = layOutSections(
+                List.of(TooltipSection
+                    .createSection(List.of(createSubordinateRow("AA", TIGHTENED_LEVEL)))
+                    .nesting(List.of(TooltipSection.createSection(
+                        List.of(createSubordinateRow("BB", TIGHTENED_LEVEL)))))),
+                TIERED_STYLE);
+
+            assertThat(measureStepBelow(layout, FIRST_ROW))
+                .isCloseTo(15f + TIGHTENED_GAP, within(TOLERANCE));
+        }
+
+        @Test
+        void partsTwoBlocksOfATightenedTierByTheStylesBreak() {
+            // A tier gap is what stands where no boundary falls, so it cannot close up the boundaries: a
+            // block of tightened lines is parted from the next by the box's own break, exactly as any
+            // other block is.
+            var step = measureSectionStep(
+                partIntoSections(
+                    createSubordinateRow("AA", TIGHTENED_LEVEL),
+                    createSubordinateRow("BB", TIGHTENED_LEVEL)),
+                TIERED_STYLE);
+
+            assertThat(step)
+                .isCloseTo(15f + SECTION_BREAK, within(TOLERANCE));
+        }
+
+        @Test
+        void partsTwoNestedBlocksOfATightenedTierByTheStylesGroupBreak() {
+            // The same at the inner boundary: an entry that broke down into an account of its own is
+            // still set clear of the entry after it, however tightly the tier's own lines stack.
+            var layout = layOutSections(
+                List.of(TooltipSection
+                    .createSection(List.of(createSubordinateRow("AA", TIGHTENED_LEVEL)))
+                    .nesting(List.of(
+                        TooltipSection
+                            .createSection(List.of(createSubordinateRow("BB", TIGHTENED_LEVEL)))
+                            .nesting(List.of(TooltipSection.createSection(
+                                List.of(createSubordinateRow("CC", TIGHTENED_LEVEL))))),
+                        TooltipSection.createSection(
+                            List.of(createSubordinateRow("DD", TIGHTENED_LEVEL)))))),
+                TIERED_STYLE);
+
+            var lastLineOfTheFirstGroup = 2;
+
+            assertThat(measureStepBelow(layout, lastLineOfTheFirstGroup))
                 .isCloseTo(15f + GROUP_BREAK, within(TOLERANCE));
         }
 
