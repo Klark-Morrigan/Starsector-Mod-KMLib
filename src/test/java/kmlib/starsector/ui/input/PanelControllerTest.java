@@ -26,7 +26,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * one - so pinning only one would let a press fire one cell and report another.
  *
  * <p>The resolver cases pin the other half of that split: the same geometry answered without the action
- * being reached, so a reader that only wants the cell under a point cannot activate it by asking.
+ * being reached, and answered without the reselect narrowing the firing cases above pin - a lit segment is
+ * under the pointer whether or not pressing it would do anything, which is what lets a hover read the
+ * resolver a press reads.
  */
 final class PanelControllerTest {
 
@@ -311,10 +313,6 @@ final class PanelControllerTest {
         @Test
         void resolveHitCellReportsTheLitSegmentOfADeselectableRadio() {
 
-            // The other half of the press's narrowing: a DESELECT radio wants a re-pick to reach its action,
-            // so its lit segment resolves to itself rather than to no cell - the answer an inert row gives.
-            // Both directions are pinned because the narrowing is what separates this resolver from a plain
-            // "what is under the pointer", and a change that dropped it would still pass the inert case.
             var radio = buildTwoSegmentHorizontalRadioAtRow(ControlSpec.HorizontalRadio.of(
                     List.of("Factions", "Alliances"),
                     0,
@@ -327,15 +325,38 @@ final class PanelControllerTest {
                 ROW.y() + ROW.height() / 2f);
 
             assertThat(resolvedCell)
-                .as("a re-firing radio resolves its lit segment to itself")
                 .isZero();
         }
 
         @Test
-        void resolveHitCellTreatsTheLitTabAsInert() {
+        void resolveHitCellReportsTheLitSegmentOfAnInertRadioToo() {
 
-            // This is the press's resolver, so the reselect narrowing is part of its answer: the lit tab of
-            // an always-inert tabs row resolves to no cell, matching what a press there would act on.
+            // The line this resolver is drawn along: an INERT row swallows a press on its lit segment, and
+            // the segment is still what the point is over. Pinned beside the deselectable case above, which
+            // resolves the same way for a different reason - so a narrowing creeping back in shows here
+            // rather than hiding behind a reselect that would have answered alike.
+            var radio = buildTwoSegmentHorizontalRadioAtRow(ControlSpec.HorizontalRadio.of(
+                List.of("Short", "Full"),
+                0,
+                ControlAction.NONE));
+
+            var resolvedCell = PanelController.resolveHitCell(
+                radio,
+                ROW.x() + ROW.width() / 4f,
+                ROW.y() + ROW.height() / 2f);
+
+            assertThat(resolvedCell)
+                .as("what a point is over does not depend on what pressing it would do")
+                .isZero();
+        }
+
+        @Test
+        void resolveHitCellReportsTheLitTabOfAnAlwaysInertTabsRow() {
+
+            // The case the sidebar's look rests on: a tabs row fires nothing on the tab it is already
+            // showing, and that tab still has to light under the pointer - the resting and the selected tab
+            // converge on one hovered shade, with the underline left to mark the selection. A resolver that
+            // answered "what would a press act on" would leave the lit tab dark for as long as it is lit.
             var tabs = buildTwoTabRowAtRow(0, ControlAction.NONE);
             var resolvedCell = PanelController.resolveHitCell(
                 tabs,
@@ -343,8 +364,8 @@ final class PanelControllerTest {
                 ROW.y() + ROW.height() / 2f);
 
             assertThat(resolvedCell)
-                .as("the lit tab of an inert tabs row resolves to no cell")
-                .isNull();
+                .as("the lit tab is under the pointer like any other")
+                .isZero();
         }
     }
 

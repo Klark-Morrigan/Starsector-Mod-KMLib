@@ -4,11 +4,9 @@ import com.fs.starfarer.api.input.InputEventAPI;
 
 import kmlib.animation.PulseEnvelopes;
 import kmlib.animation.TraverseDurations;
-import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.sound.UiSoundPlayer;
 import kmlib.starsector.ui.sound.UiSoundScheme;
 import kmlib.starsector.ui.sound.VanillaUiSoundPlayer;
-import kmlib.starsector.ui.widgets.RadioRow;
 import kmlib.starsector.ui.widgets.scroll.ScrollState;
 import kmlib.starsector.ui.widgets.tabs.TabInteractionSources;
 import kmlib.starsector.ui.widgets.tabs.TabPanelCollapse;
@@ -53,11 +51,11 @@ public final class TabPanelController {
      */
     public static final TraverseDurations HOTKEY_BLINK_DURATIONS = new TraverseDurations(0.05f, 0.2f);
 
-    // What the tab hit-test reports when the pointer is on no tab of the row - and what a panel not
-    // presenting its tabs reports whatever the pointer is over. Null rather than an index sentinel,
+    // What the header's resolver reports when the point is on no tab of the row - and what a panel not
+    // presenting its tabs reports whatever the point is over. Null rather than an index sentinel,
     // because a keyed set of fades is asked "which tab, if any" and an out-of-row index would key an
     // entry like any other.
-    private static final Integer NO_TAB_HOVERED = null;
+    private static final Integer NO_TAB_RESOLVED = null;
 
     // The body's controller, owning the scroll and drag state; this routes everything but a header-tab or
     // notch press to it, so the panel's scroll and drag behaviour is the plain panel's, unchanged.
@@ -424,11 +422,8 @@ public final class TabPanelController {
      * whether or not anything came of it, and a tab that answered it with nothing at all would read as a
      * panel that missed the click rather than as one with nothing to do.
      *
-     * <p>A panel not presenting its tabs offers none to press, on the same rule its hover fades answer to.
-     * This is a gate rather than a consequence of the fold, because folding is a paint-time clip over a
-     * header that stays laid out at the panel's full width: the tabs a docked panel wipes off the screen keep
-     * their hit boxes exactly where they were, so without this a press on bare screen where a tab used to be
-     * would fire that tab and swallow the click, with nothing drawn there to explain why.
+     * <p>A panel not presenting its tabs offers none to press, on the same rule its hover fades answer to -
+     * and through the same resolver, so the two cannot come to disagree about which tabs are live.
      *
      * @param placement the laid-out tab panel the renderer drew this frame
      * @param pointX    the press x in UI coordinates, the coordinates the placement is laid out in
@@ -438,19 +433,12 @@ public final class TabPanelController {
      */
     boolean activateTabAtPoint(TabPanelPlacement placement, float pointX, float pointY) {
 
-        // Nothing to aim at, nothing to fire - see isPresentingTabsOf. The handle takes no such gate, being
-        // what brings a docked panel back, and it is tested before this, so gating here cannot reach it.
-        if (!isPresentingTabsOf(placement)) {
-            return false;
-        }
-        // The segment under the press, the header never scrolling and so hit-testing unclipped, unlike a
-        // body control in the flex list. The raw segment rather than the actionable one a body radio
-        // resolves: what lifts is what the player pressed, and the lit tab fires nothing yet still has to
-        // answer, or pressing it reads as a panel that missed the click.
-        var tabsHeader = placement.tabsHeader();
-        var pressedTabIndex = RadioRow.findSegmentIndexAt(tabsHeader.segments(), pointX, pointY);
+        // What the pointer is on, taken from the one resolver the fades read too. The raw tab rather than an
+        // actionable one: what lifts is what the player pressed, and the lit tab fires nothing yet still has
+        // to answer, or pressing it reads as a panel that missed the click.
+        var pressedTabIndex = resolveTabIndexAtPoint(placement, pointX, pointY);
 
-        if (pressedTabIndex == RadioRow.NO_SEGMENT) {
+        if (pressedTabIndex == NO_TAB_RESOLVED) {
             return false;
         }
         // Held rather than self-timed: the lift reports a press the player is still making, so it waits at
@@ -458,12 +446,10 @@ public final class TabPanelController {
         tabClickPulses.startHeldPulseAt(pressedTabIndex);
 
         // The action answers the switch, not the press, so the tab already being shown fires nothing - a
-        // tabs row is inert on its lit tab, as a vanilla strip is. Split from the lift because the two
-        // report different things, and only this one has a reason to do nothing.
-        if (tabsHeader.spec() instanceof ControlSpec.Interactive interactive
-                && pressedTabIndex != interactive.selectedIndex()) {
-            interactive.action().activateCell(pressedTabIndex);
-        }
+        // tabs row carries no reselect field and so reads as INERT, which is that rule. Split from the lift
+        // because the two report different things, and only this one has a reason to do nothing; the answer
+        // it returns is dropped, the lift above having already recorded which tab the player pressed.
+        PanelController.activateCellIfActionable(placement.tabsHeader(), pressedTabIndex);
         return true;
     }
 
@@ -487,14 +473,11 @@ public final class TabPanelController {
             float elapsedSeconds,
             TraverseDurations durations) {
 
-        // The gate is spent here, where the placement says whether this panel has tabs to present at all,
-        // rather than inside the advance below: a panel not presenting them is pointing at none of them,
-        // which is the same statement as a pointer that is on no tab.
+        // The fold is settled inside the resolver rather than here, so the hover and the press cannot ask it
+        // differently; what reaches the advance below is only where the pointer is.
         advanceInputMotionsForFrame(
             new TabPanelHover(
-                isPresentingTabsOf(placement)
-                    ? resolveTabIndexAtPoint(placement, pointX, pointY)
-                    : NO_TAB_HOVERED,
+                resolveTabIndexAtPoint(placement, pointX, pointY),
                 placement.containsPointInNotch(pointX, pointY)),
             elapsedSeconds,
             durations);
@@ -538,33 +521,45 @@ public final class TabPanelController {
     }
 
     /**
-     * Which header tab a point falls on, as the key a hover fade is held under. Resolved over the header
-     * control's laid segments - the same rectangles a press is hit-tested against - so the tab that lights
-     * and the tab that would fire are always the same one.
+     * Which header tab a point falls on, given what the panel is currently showing - the one hit-test the
+     * panel answers the header with, read by the hover that lights a tab and by the press that fires one. Two
+     * readers of one geometry rather than two hit-tests that happen to agree: the tab that lights and the tab
+     * a press lands on are the same tab because they are the same answer.
+     *
+     * <p>It answers geometry and visibility and nothing else. Whether pressing that tab would <em>do</em>
+     * anything is the press path's own question, settled after this by {@link
+     * PanelController#activateCellIfActionable} - which is what lets the lit tab light while firing nothing.
+     * A resolver that folded the two together would take that shade away, the sidebar's look having the
+     * resting and the selected tab converge on one hovered shade with the underline left to mark the
+     * selection.
+     *
+     * <p>The fold is part of the visibility it answers, so neither reader tests it for itself. Folding is a
+     * paint-time clip over a header that stays laid out at the panel's full width: the tabs a docked panel
+     * wipes off the screen keep their hit boxes exactly where they were, so a point on one of them is a point
+     * on bare screen - it must not fire that tab and swallow the click, nor light a tab the player cannot
+     * see. See {@link #isPresentingTabsOf} for what a bodyless panel answers.
+     *
+     * <p>The header never scrolls, so it hit-tests unclipped - unlike a body control in the flex list, whose
+     * rows answer to their viewport.
      *
      * @param placement the laid-out tab panel to test against
      * @param pointX    the point's x in UI coordinates, the coordinates the placement is laid out in
      * @param pointY    the point's y in UI coordinates
-     * @return the tab's index, or null when the point is on no tab
+     * @return the tab's index, or null when the point is on no tab the panel is presenting
      */
-    static Integer resolveTabIndexAtPoint(
+    Integer resolveTabIndexAtPoint(
             TabPanelPlacement placement,
             float pointX,
             float pointY) {
 
-        var segmentIndex = RadioRow.findSegmentIndexAt(
-            placement.tabsHeader().segments(),
-            pointX,
-            pointY);
-
-        // Null rather than the row-miss sentinel, because a keyed animation set is asked "which element, if
-        // any" and an out-of-row index would be a key like another - one entry per place the pointer missed.
-        // Returned from a branch rather than a conditional: the miss is an Integer and the hit a primitive
-        // int, and a conditional over the two unboxes, which would turn this answer into a thrown NPE.
-        if (segmentIndex == RadioRow.NO_SEGMENT) {
-            return NO_TAB_HOVERED;
+        // A panel presenting no tabs is a pointer on no tab, whatever is laid out under it.
+        if (!isPresentingTabsOf(placement)) {
+            return NO_TAB_RESOLVED;
         }
-        return segmentIndex;
+        // Through the body's own control resolver rather than a hit-test of the header's own: the header is
+        // an ordinary laid-out control, and one mapping of a row miss onto "no cell" is one place for the
+        // unboxing trap that mapping carries to be got wrong.
+        return PanelController.resolveHitCell(placement.tabsHeader(), pointX, pointY);
     }
 
     /**

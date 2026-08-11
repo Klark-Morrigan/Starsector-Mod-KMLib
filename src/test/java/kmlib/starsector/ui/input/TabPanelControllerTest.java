@@ -28,11 +28,11 @@ import static org.assertj.core.api.Assertions.within;
 /**
  * Pins {@link TabPanelController}'s construction seams - the default opens the panel expanded and the
  * docked-start factory opens it collapsed, so a host picks the initial fold through construction rather
- * than driving the animation to reach it - and the two channels the panel's tabs are painted from: the
- * hit-test that decides which tab a fade is held for, the fades it steps for the tabs and for the collapse
- * handle, the docked gate that silences the tabs while leaving the handle live, the click pulse a press on a
- * tab starts, and the blink a bound key's press runs on the look channel beside the hover it shares that
- * channel with. It also pins what the panel answers those moments with: which sounds, at which moments,
+ * than driving the animation to reach it - and the two channels the panel's tabs are painted from: the one
+ * resolver that decides which tab a fade is held for and which tab a press landed on, the fades it steps for
+ * the tabs and for the collapse handle, the docked gate that resolver carries - silencing the tabs while
+ * leaving the handle live - the click pulse a press on a tab starts, and the blink a bound key's press runs
+ * on the look channel beside the hover it shares that channel with. It also pins what the panel answers those moments with: which sounds, at which moments,
  * and - the point of that seam - taken from the look the panel wears rather than named in its own code.
  * The pointer routing and the scroll delegation run against live input events and are
  * exercised in-engine, as is the cursor read the per-frame advance opens with - which is why the advance and
@@ -681,6 +681,24 @@ final class TabPanelControllerTest {
         }
 
         @Test
+        void advanceInputMotionsAtPointLightsTheTabTheHeaderIsAlreadyShowing() {
+            // The hover half of what the shared resolver is for. A press on this tab fires nothing, and the
+            // pointer still has to light it: the sidebar's resting and selected tabs converge on one hovered
+            // shade, with the underline left to mark the selection. Hover read as "what a press would
+            // activate" would leave the selected tab the one tab that never answers the pointer.
+            var controller = new TabPanelController();
+            controller.advanceInputMotionsAtPoint(
+                buildTwoTabPlacementShowing(FIRST_TAB_INDEX, ControlAction.NONE),
+                INSIDE_FIRST_TAB_X,
+                ON_TAB_ROW_Y,
+                FULL_STEP_SECONDS,
+                DURATIONS);
+
+            assertThat(hoverFractionAt(controller, FIRST_TAB_INDEX))
+                .isCloseTo(1f, within(TOLERANCE));
+        }
+
+        @Test
         void advanceInputMotionsAtPointLightsNoTabOfADockedPanel() {
             // Where the gate now lives: the placement says the panel has a body, the fold says that body is
             // behind the rail, so the tab under the pointer is not one the player can see to point at.
@@ -875,12 +893,12 @@ final class TabPanelControllerTest {
 
         @Test
         void resolveTabIndexAtPointReturnsTheTabThePointIsOn() {
-            assertThat(TabPanelController.resolveTabIndexAtPoint(
+            assertThat(new TabPanelController().resolveTabIndexAtPoint(
                     buildTwoTabPlacement(),
                     INSIDE_FIRST_TAB_X,
                     ON_TAB_ROW_Y))
                 .isEqualTo(0);
-            assertThat(TabPanelController.resolveTabIndexAtPoint(
+            assertThat(new TabPanelController().resolveTabIndexAtPoint(
                     buildTwoTabPlacement(),
                     INSIDE_SECOND_TAB_X,
                     ON_TAB_ROW_Y))
@@ -891,7 +909,7 @@ final class TabPanelControllerTest {
         void resolveTabIndexAtPointReturnsNoTabForAPointOnTheBody() {
             // A pointer inside the panel but below the header is on no tab, so the whole row winds down
             // rather than the nearest tab staying lit.
-            assertThat(TabPanelController.resolveTabIndexAtPoint(
+            assertThat(new TabPanelController().resolveTabIndexAtPoint(
                     buildTwoTabPlacement(),
                     INSIDE_FIRST_TAB_X,
                     BELOW_TABS_Y))
@@ -900,11 +918,47 @@ final class TabPanelControllerTest {
 
         @Test
         void resolveTabIndexAtPointReturnsNoTabForAPointOffThePanel() {
-            assertThat(TabPanelController.resolveTabIndexAtPoint(
+            assertThat(new TabPanelController().resolveTabIndexAtPoint(
                     buildTwoTabPlacement(),
                     OFF_PANEL_X,
                     OFF_PANEL_Y))
                 .isNull();
+        }
+
+        @Test
+        void resolveTabIndexAtPointReturnsNoTabOnADockedPanelsLaidOutTab() {
+            // The fold gate, now part of the answer rather than a test each reader runs for itself. The tab
+            // is laid out exactly where it was - folding only clips the header at paint time - so this point
+            // is on a tab by geometry alone and on bare screen by what the player can see.
+            assertThat(TabPanelController.createStartingDocked().resolveTabIndexAtPoint(
+                    buildTwoTabPlacement(),
+                    INSIDE_FIRST_TAB_X,
+                    ON_TAB_ROW_Y))
+                .isNull();
+        }
+
+        @Test
+        void resolveTabIndexAtPointReturnsABodylessPanelsTabWhateverTheFoldSays() {
+            // The same docked controller over a row with nothing under it: it is drawn in full, so it
+            // resolves in full. A fold another tab left standing says nothing about a panel that has none.
+            assertThat(TabPanelController.createStartingDocked().resolveTabIndexAtPoint(
+                    buildBodylessTwoTabPlacement(),
+                    INSIDE_FIRST_TAB_X,
+                    ON_TAB_ROW_Y))
+                .isEqualTo(0);
+        }
+
+        @Test
+        void resolveTabIndexAtPointReturnsTheTabTheHeaderIsAlreadyShowing() {
+            // Geometry and visibility, never actionability: the lit tab fires nothing and is still the tab
+            // the pointer is on, so it lights like any other - which is the shade the sidebar's resting and
+            // selected tabs converge on. Resolved to no cell, the tab under the pointer would go dark for
+            // as long as it was the one selected.
+            assertThat(new TabPanelController().resolveTabIndexAtPoint(
+                    buildTwoTabPlacementShowing(FIRST_TAB_INDEX, ControlAction.NONE),
+                    INSIDE_FIRST_TAB_X,
+                    ON_TAB_ROW_Y))
+                .isEqualTo(FIRST_TAB_INDEX);
         }
     }
 
@@ -1140,28 +1194,21 @@ final class TabPanelControllerTest {
     // A panel with a body but no handle laid for it - all the tab hit-test needs, and the shape every case
     // that is not about the handle reads.
     private static TabPanelPlacement buildTwoTabPlacement() {
-        return buildPlacement(null, null);
+        return buildPlacement(null, buildTabsSpecShowing(FIRST_TAB_INDEX, ControlAction.NONE));
     }
 
     // The same panel carrying a handle, for the hit-tests that have to tell the panel's two parts apart.
     private static TabPanelPlacement buildTwoTabPlacementWithNotch() {
-        return buildPlacement(NOTCH, null);
+        return buildPlacement(NOTCH, buildTabsSpecShowing(FIRST_TAB_INDEX, ControlAction.NONE));
     }
 
-    // The same panel whose header carries a real tabs spec, for the press path - which fires the spec's own
-    // action and is inert on the tab the spec says is already showing, neither of which a header with no
-    // spec can express.
+    // The same panel whose header fires into the caller's recorder, for the press path - which is what the
+    // spec's own action is reached through.
     private static TabPanelPlacement buildTwoTabPlacementShowing(
             int selectedIndex,
             ControlAction onTabFired) {
 
-        return buildPlacement(
-            NOTCH,
-            new ControlSpec.Tabs(
-                List.of("First", "Second"),
-                List.of(),
-                selectedIndex,
-                onTabFired));
+        return buildPlacement(NOTCH, buildTabsSpecShowing(selectedIndex, onTabFired));
     }
 
     // A placement carrying what the hit-tests read: a two-tab header control with its per-tab segments, and
@@ -1175,31 +1222,36 @@ final class TabPanelControllerTest {
     // The same panel with only part of its row still drawn, for the cases about what a folding panel
     // claims: the row is laid out whole either way, and the drawn band is what the fold has left of it.
     private static TabPanelPlacement buildPlacementWithDrawnBand(Rectangle drawnHeaderBand) {
-        return buildPlacement(null, null, drawnHeaderBand);
+        return buildPlacement(
+            null,
+            buildTabsSpecShowing(FIRST_TAB_INDEX, ControlAction.NONE),
+            drawnHeaderBand);
     }
 
     // The same panel with nothing beneath its row - what a tab whose body is empty lays out: no controls,
     // and with nothing to fold, no handle either. Every other builder here carries a body, since a panel
     // that has one is what the fold gate is about.
     private static TabPanelPlacement buildBodylessTwoTabPlacement() {
-        return buildPlacement(null, null, HEADER_BAND, List.of());
+        return buildBodylessTwoTabPlacementShowing(FIRST_TAB_INDEX, ControlAction.NONE);
     }
 
-    // The bodyless panel whose header carries a real tabs spec, for the press path - which needs a spec to
-    // fire an action from.
+    // The bodyless panel firing into the caller's recorder, for the press path.
     private static TabPanelPlacement buildBodylessTwoTabPlacementShowing(
             int selectedIndex,
             ControlAction onTabFired) {
 
         return buildPlacement(
             null,
-            new ControlSpec.Tabs(
-                List.of("First", "Second"),
-                List.of(),
-                selectedIndex,
-                onTabFired),
+            buildTabsSpecShowing(selectedIndex, onTabFired),
             HEADER_BAND,
             List.of());
+    }
+
+    // The header's own spec: a two-tab row showing one of them and firing the given action. Every placement
+    // here carries one, a header being an ordinary laid-out tabs control - so the hit-test reads the row's
+    // selection and its action off the same spec the layout would have put there.
+    private static ControlSpec.Tabs buildTabsSpecShowing(int selectedIndex, ControlAction onTabFired) {
+        return new ControlSpec.Tabs(List.of("First", "Second"), List.of(), selectedIndex, onTabFired);
     }
 
     private static TabPanelPlacement buildPlacement(
