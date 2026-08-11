@@ -1,6 +1,7 @@
 package kmlib.starsector.markets;
 
 import com.fs.starfarer.api.campaign.CampaignFleetAPI;
+import com.fs.starfarer.api.campaign.CustomEntitySpecAPI;
 import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
@@ -8,6 +9,8 @@ import com.fs.starfarer.api.campaign.rules.MemoryAPI;
 import com.fs.starfarer.api.impl.campaign.ids.MemFlags;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
 
+import kmlib.starsector.entities.EntityMapIcon;
+import kmlib.starsector.entities.EntityNameplate;
 import kmlib.testfixtures.starsector.settings.StarsectorSettingsFake;
 
 import org.junit.jupiter.api.AfterEach;
@@ -15,8 +18,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.awt.Color;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -24,7 +29,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * Pins the contracts of {@link Markets#isOwnedColony},
+ * Pins the contracts of {@link Markets#isOwnedColony}, {@link Markets#readNameplate},
  * {@link Markets#findAttachedStation}, {@link Markets#hasAttachedStation},
  * {@link Markets#getStabilityFraction},
  * {@link Markets#isKnownToPlayer}, {@link Markets#isCountedAsColony},
@@ -38,6 +43,7 @@ final class MarketsTest {
 
     @Nested
     class IsOwnedColony {
+
         @Test
         void returns_true_for_a_faction_owned_non_condition_market() {
 
@@ -69,6 +75,66 @@ final class MarketsTest {
         void returns_false_for_a_null_market() {
             assertThat(Markets.isOwnedColony(null))
                 .isFalse();
+        }
+    }
+
+    @Nested
+    class ReadNameplate {
+
+        @Test
+        void reads_the_market_s_own_name_with_its_primary_entity_s_glyph() {
+            // The pairing is the whole of the read: a market is named in its own right while the
+            // glyph belongs to the entity it sits on, and joining the two here is what stops a
+            // surface pairing one colony's name with another's mark.
+            // The entity is built before the market's own stubbing opens, so the two do not nest
+            // into an unfinished-stubbing error.
+            var entity = buildEntityWithMapIcon(
+                "graphics/icons/station0.png",
+                new Color(200, 200, 255));
+
+            var market = buildMarketNamed("Ancyra");
+
+            when(market.getPrimaryEntity())
+                .thenReturn(entity);
+
+            assertThat(Markets.readNameplate(market))
+                .isEqualTo(new EntityNameplate(
+                    "Ancyra",
+                    Optional.of(new EntityMapIcon(
+                        "graphics/icons/station0.png",
+                        new Color(200, 200, 255)))));
+        }
+
+        @Test
+        void names_a_market_whose_entity_carries_no_glyph() {
+
+            var entityMock = mock(SectorEntityToken.class);
+            var market = buildMarketNamed("Jangala");
+
+            when(market.getPrimaryEntity())
+                .thenReturn(entityMock);
+
+            assertThat(Markets.readNameplate(market))
+                .isEqualTo(EntityNameplate.createUnmarkedNameplate("Jangala"));
+        }
+
+        @Test
+        void reads_a_market_with_no_primary_entity_as_named_and_unmarked() {
+            // A market the game has not sited yet answers no entity, which is the absence the icon
+            // read already handles - the name still identifies it.
+            var market = buildMarketNamed("Kazeron");
+
+            when(market.getPrimaryEntity())
+                .thenReturn(null);
+
+            assertThat(Markets.readNameplate(market))
+                .isEqualTo(EntityNameplate.createUnmarkedNameplate("Kazeron"));
+        }
+
+        @Test
+        void reads_a_null_market_as_blank_and_unmarked() {
+            assertThat(Markets.readNameplate(null))
+                .isEqualTo(EntityNameplate.createUnmarkedNameplate(""));
         }
     }
 
@@ -170,6 +236,7 @@ final class MarketsTest {
     // or null connected entities) belong to the read that runs the scan, above.
     @Nested
     class HasAttachedStation {
+
         @Test
         void returns_true_for_a_market_that_owns_a_station() {
 
@@ -197,6 +264,7 @@ final class MarketsTest {
 
     @Nested
     class GetStabilityFraction {
+
         @Test
         void full_stability_is_one() {
             assertThat(Markets.getStabilityFraction(buildMarketAtStability(10.0f)))
@@ -236,6 +304,7 @@ final class MarketsTest {
 
     @Nested
     class IsKnownToPlayer {
+
         @Test
         void returns_true_when_the_entity_is_discovered() {
 
@@ -281,6 +350,7 @@ final class MarketsTest {
 
     @Nested
     class IsCountedAsColony {
+
         @Test
         void returns_true_for_a_known_owned_colony() {
 
@@ -326,6 +396,7 @@ final class MarketsTest {
 
     @Nested
     class IsDiscoveredByPlayer {
+
         @Test
         void returns_true_when_the_entity_is_discovered() {
 
@@ -364,6 +435,7 @@ final class MarketsTest {
 
     @Nested
     class IsFoundColony {
+        
         @Test
         void returns_true_for_a_found_colony_that_stays_concealed() {
 
@@ -764,6 +836,35 @@ final class MarketsTest {
             .thenReturn(entityMock);
 
         return marketMock;
+    }
+
+    // A market answering only its display name, which is the one half of an identity the market
+    // itself supplies - the other belongs to whatever entity a case goes on to site it on.
+    private static MarketAPI buildMarketNamed(String name) {
+
+        var marketMock = mock(MarketAPI.class);
+
+        when(marketMock.getName())
+            .thenReturn(name);
+
+        return marketMock;
+    }
+
+    // An entity the map marks with the given glyph, authored on a custom-entity spec - where
+    // vanilla keeps a station's icon, and the arm the identity read reaches for a non-planet.
+    private static SectorEntityToken buildEntityWithMapIcon(String iconName, Color iconColour) {
+
+        var entityMock = mock(SectorEntityToken.class);
+        var entitySpecMock = mock(CustomEntitySpecAPI.class);
+
+        when(entityMock.getCustomEntitySpec())
+            .thenReturn(entitySpecMock);
+        when(entitySpecMock.getIconName())
+            .thenReturn(iconName);
+        when(entitySpecMock.getIconColor())
+            .thenReturn(iconColour);
+
+        return entityMock;
     }
 
     private static MarketAPI buildOwnedColony(FactionAPI faction, boolean isConditionOnly) {

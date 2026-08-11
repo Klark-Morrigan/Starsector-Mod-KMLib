@@ -6,6 +6,9 @@ import com.fs.starfarer.api.impl.campaign.ids.MemFlags;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
 import com.fs.starfarer.api.util.Misc;
 
+import kmlib.starsector.entities.EntityMapIcons;
+import kmlib.starsector.entities.EntityNameplate;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -59,6 +62,28 @@ public final class Markets {
         return market != null
             && market.getFaction() != null
             && !market.isPlanetConditionMarketOnly();
+    }
+
+    /**
+     * How a market is identified to a reader: the name it goes by, and the glyph the sector map
+     * marks it with.
+     *
+     * <p>The two come from different places - a market is named in its own right while the glyph
+     * belongs to the entity it sits on - which is exactly why the pairing is made here rather than
+     * at each surface printing a list of colonies. Read apart, one colony's name is one call away
+     * from being drawn beside another's glyph.
+     *
+     * @param market the market to identify; null (or one with no primary entity) yields a blank
+     *               name and no glyph, the null-defensive shape the rest of the class holds to
+     * @return the market's nameplate
+     */
+    public static EntityNameplate readNameplate(MarketAPI market) {
+        if (market == null) {
+            return EntityNameplate.createUnmarkedNameplate("");
+        }
+        return new EntityNameplate(
+            market.getName(),
+            EntityMapIcons.resolveMapIcon(market.getPrimaryEntity()));
     }
 
     /**
