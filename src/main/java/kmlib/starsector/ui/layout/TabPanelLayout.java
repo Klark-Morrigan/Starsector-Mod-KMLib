@@ -14,9 +14,11 @@ import java.util.List;
 
 /**
  * Composes a tab panel: a tabs-control header standing ON a bordered body box, the way a tab strip sits on
- * the panel it selects rather than inside it. The row hangs from the panel's own anchor with no border
- * above or beside it, and the framed body starts where the row ends, so nothing of the body reaches behind
- * the tabs - the row is opaque chrome in its own right. It REUSES {@link PanelLayout}'s framing - the same
+ * the panel it selects rather than inside it. The row hangs from the panel's own top anchor with no border
+ * above it, and the framed body starts where the row ends, so nothing of the body reaches behind the tabs -
+ * the row is opaque chrome in its own right. Across, it starts where the body's content does: the frame is
+ * drawn down the body alone, so a row laid at the box's outer edge would overhang a frame that is not
+ * beside it. It REUSES {@link PanelLayout}'s framing - the same
  * {@link PanelLayout#computeContentOrigin} anchor and {@link PanelLayout#framePlacement} that frame a plain
  * panel - so the body beneath the row is framed exactly as a headerless panel is, and the tab row never
  * drives the box width: a tab row wider than the body overhangs the frame rather than stretching it. It
@@ -99,13 +101,20 @@ public final class TabPanelLayout {
         // top, and the vertical budget - so a styled band cannot move one of them and not the rest.
         var headerBandHeight = tabStyle.headerBandHeight();
 
-        // Header: the tabs control hung from the panel's own anchor, taking no border inset above or beside
-        // it - the row is the panel's chrome rather than content inside its frame, so the frame starts below
-        // it. Reuses the same tab measurement and segment split a body tabs row uses, so it is not bespoke
-        // tab-strip framing.
+        // Header: the tabs control hung from the panel's own top anchor, taking no border inset above it -
+        // the row stands on the frame rather than inside it, so the frame starts below the row. Reuses the
+        // same tab measurement and segment split a body tabs row uses, so it is not bespoke tab-strip
+        // framing.
+        //
+        // Its left edge does take the frame's inset, so the row starts where the body's content starts
+        // rather than where the body's outer edge does. A row laid at the outer edge overhangs its own
+        // frame by the border's width, which reads as a row a pixel out of step with whatever the panel
+        // was aligned to - and the frame is drawn down the body alone, so there is nothing beside the row
+        // for it to have been flush with. An unstroked left edge insets by nothing, so a panel sitting
+        // flush against a neighbour keeps its row where its content is either way.
         var tabsHeader = TabsControlLayout.layoutHeaderControl(
             tabsSpec,
-            padding.left(),
+            padding.left() + border.computeEdgeInset(BoxEdge.LEFT),
             screenHeight - padding.top(),
             tabStyle,
             measurer);

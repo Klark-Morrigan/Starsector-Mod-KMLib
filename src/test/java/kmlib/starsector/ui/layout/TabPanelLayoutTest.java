@@ -43,9 +43,9 @@ final class TabPanelLayoutTest {
     private static final int BORDER_WIDTH = 2;
     private static final float TOLERANCE = 0.01f;
 
-    // The tab row hangs from the panel's own anchor, taking no border inset above or beside it.
+    // The tab row hangs from the panel's own top anchor, taking no border inset above it; across, it
+    // starts at the body's content edge (CONTENT_X below), the frame being drawn down the body alone.
     private static final float HEADER_TOP_Y = SCREEN_HEIGHT - PADDING_TOP;
-    private static final float HEADER_X = PADDING_LEFT;
 
     // The band the baseline style stands, so the expected header edges track whatever style is injected
     // rather than a constant the layout no longer reads.
@@ -103,8 +103,8 @@ final class TabPanelLayoutTest {
             var first = header.segments().get(0);
 
             assertThat(first.x())
-                .as("the row stands on the panel, so it starts at the anchor rather than inside the frame")
-                .isCloseTo(HEADER_X, within(TOLERANCE));
+                .as("the row starts where the body's content does, not at the box's outer edge")
+                .isCloseTo(CONTENT_X, within(TOLERANCE));
             assertThat(first.width())
                 .isCloseTo(FIRST_TAB_WIDTH, within(TOLERANCE));
             assertThat(first.y() + first.height())
@@ -116,7 +116,8 @@ final class TabPanelLayoutTest {
             var second = header.segments().get(1);
 
             assertThat(second.x())
-                .isCloseTo(HEADER_X + FIRST_TAB_WIDTH, within(TOLERANCE));
+                .as("the second tab abuts the first, this style stating no channel between them")
+                .isCloseTo(CONTENT_X + FIRST_TAB_WIDTH, within(TOLERANCE));
             assertThat(second.width())
                 .isCloseTo(SECOND_TAB_WIDTH, within(TOLERANCE));
         }
@@ -462,11 +463,15 @@ final class TabPanelLayoutTest {
             var drawn = placement.drawnHeaderBand();
 
             // Mid-fold the row narrows to the box's own span, so the panel wipes toward its anchored edge
-            // as one piece rather than leaving a full-width row above a half-folded frame.
+            // as one piece rather than leaving a full-width row above a half-folded frame. The wipe eats
+            // the row from the right: its left edge stands where it was laid - at the body's content edge,
+            // a border inside the box's own - and its right edge rides the shrinking frame down.
             assertThat(drawn.x())
-                .isCloseTo(box.x(), within(TOLERANCE));
-            assertThat(drawn.width())
-                .isCloseTo(box.width(), within(TOLERANCE));
+                .as("the anchored edge does not move, so the row still starts at its content edge")
+                .isCloseTo(CONTENT_X, within(TOLERANCE));
+            assertThat(drawn.x() + drawn.width())
+                .as("the wiped row ends where the folding box ends")
+                .isCloseTo(box.x() + box.width(), within(TOLERANCE));
             assertThat(drawn.width())
                 .isLessThan(placement.tabsHeader().bounds().width());
 
