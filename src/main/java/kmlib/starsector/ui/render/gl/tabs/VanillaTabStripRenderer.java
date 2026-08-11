@@ -27,8 +27,9 @@ import java.util.List;
  * <p>Two things belong to the row rather than to any tab in it, and both are drawn once. The baseline runs
  * beneath every tab, outside them all: drawn within a tab it would be a translucent rule over that tab's
  * own fill, taking a different shade as the tab faded, pulsed or lit - and it would be cut wherever a
- * parted row leaves a channel, which is where a row anchoring its tabs most needs it whole. The seam
- * dividers are drawn only where the tabs actually touch, a parted row having no seam to mark.
+ * parted row leaves a channel, which is where a row anchoring its tabs most needs it whole. What runs
+ * between the tabs is the other: seam dividers where they touch, and the row's own backing filled into the
+ * channels where they do not - a parted row having no seam to mark and a strip of bare screen to cover.
  *
  * <p>The lit tab is marked by its fill and nothing else - no bar caps it. So the one mark of selection is
  * a shade, and the shade a tab wears under the pointer is what a reader has to keep clear of it: the two
@@ -86,17 +87,27 @@ public final class VanillaTabStripRenderer {
                 style,
                 opacity);
         });
-        // The seams between tabs, ruled once over the laid boxes through the shared segmented-row
-        // primitive so this strip and a radio row divide their segments the same way. Drawn after the
-        // per-tab chrome (a divider must sit over the backdrops it parts) and clear of the centred
-        // labels, so the single pass reads identically to a per-tab rule.
+        // What runs between the tabs, which is one thing or the other and never both - a row either abuts
+        // its tabs or parts them. Both are drawn once over the laid boxes through the shared segmented-row
+        // primitive, so this strip and a radio row divide their segments the same way, and both are drawn
+        // after the per-tab chrome (each sits over the surfaces it parts) and clear of the centred labels.
         //
-        // Only where the tabs actually abut. A row parted by a channel has no seam to rule: the rule
-        // would land in the empty gap, marking a join between two tabs that do not touch - and the
-        // engine's own parted row draws nothing there either.
-        if (!style.tabBox().isParted()) {
+        // An abutting row is marked where its tabs meet. A parted one has no such join - a rule would land
+        // in the empty channel, marking a meeting between two tabs that do not touch - and what it has
+        // instead is the row's own backing showing between the boxes. Vanilla's parted row rules nothing
+        // there because it stands on a dark panel that fills the channel for it; a strip floating over the
+        // map has no such panel, so it paints that surface itself rather than letting the map show through
+        // a one-pixel slot.
+        var bounds = collectBounds(tabs);
+
+        if (style.tabBox().isParted()) {
+            HorizontalSegmentsRenderer.renderChannelFills(
+                bounds,
+                style.palette().backing(),
+                opacity);
+        } else {
             HorizontalSegmentsRenderer.renderSeamDividers(
-                collectBounds(tabs),
+                bounds,
                 chromeAccent,
                 opacity);
         }

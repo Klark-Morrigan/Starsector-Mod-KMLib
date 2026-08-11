@@ -44,12 +44,14 @@ final class TabLightSourceTest {
 
     private static final TabPalette GLOWING_PALETTE = new TabPalette(
         STAND_IN_SHADE,
+        STAND_IN_SHADE,
         STAND_IN_LOOK,
         STAND_IN_LOOK,
         new TabHover.AddedGlow(GLOW_COLOUR, GLOW_AMOUNT),
         STAND_IN_NO_LIFT);
 
     private static final TabPalette SHADED_PALETTE = new TabPalette(
+        STAND_IN_SHADE,
         STAND_IN_SHADE,
         STAND_IN_LOOK,
         STAND_IN_LOOK,

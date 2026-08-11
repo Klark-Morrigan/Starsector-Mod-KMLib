@@ -40,6 +40,9 @@ import java.awt.Color;
  * wash to name.
  *
  * @param chromeAccent the colour of the dividers and the baseline grounding the row
+ * @param backing      the surface the row stands over, which every fill here is composited onto - and
+ *                     which a parted row shows through the channels between its tabs, so the strip has
+ *                     it to paint there rather than letting whatever the panel floats on show between
  * @param unselected   the resting look of a tab the panel is not showing
  * @param selected     the look of the tab whose content the panel is showing
  * @param hover        what the pointer does to a tab of either kind - and what a bound key's blink
@@ -48,6 +51,7 @@ import java.awt.Color;
  */
 public record TabPalette(
     Color chromeAccent,
+    Color backing,
     TabLook unselected,
     TabLook selected,
     TabHover hover,
@@ -113,18 +117,23 @@ public record TabPalette(
         // coverage and cannot be reconciled with any lifted form of the blue.
         var litLabel = StarsectorUiColour.VANILLA_TEXT.resolve();
 
-        // The engine's own tab paint. The backdrop is black rather than the host's own panel fill, because
-        // a tab row stands wherever its panel does - over a body, over the map where a tab has no body at
-        // all - and a fill measured against one of those would be wrong in the others. Its label colour is
-        // the resting one throughout, that being what the fills' glow is measured off whatever the text
-        // above them is doing.
+        // The surface the row stands over. Black rather than the host's own panel fill, because a tab row
+        // stands wherever its panel does - over a body, over the map where a tab has no body at all - and a
+        // fill measured against one of those would be wrong in the others. Named once and spent twice: the
+        // fills are composited onto it, and a parted row paints it into the channels between its tabs, so
+        // the surface a tab was measured against is the surface showing beside it.
+        var backing = StarsectorUiColour.BLACK.resolve();
+
+        // The engine's own tab paint. Its label colour is the resting one throughout, that being what the
+        // fills' glow is measured off whatever the text above them is doing.
         var tabPaint = new VanillaTabPaint(
             StarsectorUiColour.VANILLA_BUTTON_BG_DARK.resolve(),
             restingLabel,
-            StarsectorUiColour.BLACK.resolve());
+            backing);
 
         return new TabPalette(
             chromeAccent,
+            backing,
             new TabLook(
                 VanillaTabFills.resolveRestingFill(tabPaint),
                 restingLabel),
@@ -180,12 +189,15 @@ public record TabPalette(
         // rather than the host's own panel fill for the reason the tab paint above takes black: a button
         // row stands wherever its panel does, and a shade measured against one surface would be wrong over
         // the others.
+        var backing = StarsectorUiColour.BLACK.resolve();
+
         var buttonPaint = new VanillaButtonPaint(
             accent.dark(),
-            StarsectorUiColour.BLACK.resolve());
+            backing);
 
         return new TabPalette(
             accent.dark(),
+            backing,
             new TabLook(
                 VanillaButtonFills.resolveUnpaintedFill(buttonPaint),
                 accent.base()),

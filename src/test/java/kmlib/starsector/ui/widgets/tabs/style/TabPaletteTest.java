@@ -25,6 +25,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 final class TabPaletteTest {
 
     private static final Color CHROME_ACCENT = new Color(10, 10, 10);
+
+    // The surface the row stands over. A shade of its own, so a lookup answering off it rather than off a
+    // look shows as a number no case here expects.
+    private static final Color BACKING = new Color(15, 15, 15);
+
     private static final TabLook UNSELECTED_LOOK = new TabLook(
         new Color(20, 20, 20),
         new Color(30, 30, 30));
@@ -62,6 +67,7 @@ final class TabPaletteTest {
 
     private static final TabPalette PALETTE = new TabPalette(
         CHROME_ACCENT,
+        BACKING,
         UNSELECTED_LOOK,
         SELECTED_LOOK,
         new TabHover.MeetingShade(HOVERED_LOOK),
@@ -216,6 +222,15 @@ final class TabPaletteTest {
         }
 
         @Test
+        void createMapTabPaletteBacksTheRowWithTheSurfaceItsFillsWereCompositedOnto() {
+            // Black, and the same black the fills below were worked out over. A parted row paints this into
+            // the channels between its tabs, so a backing that drifted from the surface the fills were
+            // measured against would show in game as a strip of a shade no tab beside it stands on.
+            assertThat(buildMapTabPaletteUnderStubbedEngine().backing())
+                .isEqualTo(new Color(0, 0, 0));
+        }
+
+        @Test
         void createMapTabPaletteCompositesTheRestingFillFromTheEnginesButtonFill() {
             // The dark button fill (31, 94, 112 at alpha 175) laid over black - the shade a vanilla tab
             // rests at, taken from the engine's own colour rather than named here, so a restyled install
@@ -313,6 +328,15 @@ final class TabPaletteTest {
             // why the frame stops moving with the fill.
             assertThat(buildRaisedButtonPalette().chromeAccent())
                 .isEqualTo(BUTTON_DARK_ACCENT);
+        }
+
+        @Test
+        void createRaisedButtonPaletteBacksTheRowWithTheSurfaceItsInteriorsWereCompositedOnto() {
+            // The same black the strip's rows stand on, and the same one the shown button's interior below
+            // was composited over - a button's resting interior is unpainted, so the backing is literally
+            // what shows through it.
+            assertThat(buildRaisedButtonPalette().backing())
+                .isEqualTo(new Color(0, 0, 0));
         }
 
         @Test

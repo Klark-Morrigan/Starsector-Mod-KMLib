@@ -35,8 +35,14 @@ final class TabLookSourceTest {
     // nowhere, and a lift here would colour a look assertion with something the look channel never chose.
     private static final TabWash NO_LIFT = new TabWash(new Color(255, 255, 255), 0f);
 
+    // The chrome accent and the surface the row stands over. Neither reaches a look, so both are shades no
+    // blend of the looks above could land on - a source that took either for a fill shows as a wrong number.
+    private static final Color STAND_IN_ACCENT = new Color(5, 5, 5);
+    private static final Color STAND_IN_BACKING = new Color(15, 15, 15);
+
     private static final TabPalette PALETTE = new TabPalette(
-        new Color(5, 5, 5),
+        STAND_IN_ACCENT,
+        STAND_IN_BACKING,
         UNSELECTED_LOOK,
         SELECTED_LOOK,
         new TabHover.MeetingShade(HOVERED_LOOK),

@@ -36,6 +36,7 @@ final class TabWashSourceTest {
 
     private static final TabPalette PALETTE = new TabPalette(
         STAND_IN_SHADE,
+        STAND_IN_SHADE,
         STAND_IN_LOOK,
         STAND_IN_LOOK,
         new TabHover.MeetingShade(STAND_IN_LOOK),

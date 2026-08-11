@@ -26,6 +26,7 @@ public final class TabStyles {
 
     private static final TabPalette STAND_IN_PALETTE = new TabPalette(
         STAND_IN_SHADE,
+        STAND_IN_SHADE,
         new TabLook(STAND_IN_SHADE, STAND_IN_SHADE),
         new TabLook(STAND_IN_SHADE, STAND_IN_SHADE),
         new TabHover.MeetingShade(new TabLook(STAND_IN_SHADE, STAND_IN_SHADE)),
