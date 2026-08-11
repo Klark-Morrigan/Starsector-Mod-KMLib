@@ -90,6 +90,24 @@ public final class LabelRuns {
     }
 
     /**
+     * The gap one label charges between two of its drawn runs: the drawing face's own word space,
+     * measured through the look the label is set in.
+     *
+     * <p>Offered beside the walk that spends it because a surface setting something <em>between</em> a
+     * label and what follows it - a rule led from the end of a label across to the value it points at -
+     * has to stand off the words by the very space the label parts its own runs by. Held off by a number
+     * of its own, that mark reads as belonging to a second rhythm than the line it sits on, and does so
+     * differently at every size the box draws at. Read off the same span the walk charges, so the two
+     * cannot answer differently.
+     *
+     * @param measurer the width measurement already bound to the face the label draws in
+     * @return the face's own word space, in UI units
+     */
+    public static float measureWordSpaceWidth(StyledSpanMeasurer measurer) {
+        return (float) measurer.measureSpanWidth(WORD_SPACE);
+    }
+
+    /**
      * Where each of a label's runs sits relative to the label's own left edge, and how wide the runs come
      * to together. One walk, returned as a pair, because a caller re-deriving either half from the other
      * would be re-deciding the gap rule - and a placement disagreeing with the width its host was sized
@@ -115,7 +133,7 @@ public final class LabelRuns {
 
         // Asked once for the whole label rather than per gap: every run of a label is spoken in the one
         // look, so a second measurement could only ever return the same number at a cost.
-        var wordSpaceWidth = (float) measurer.measureSpanWidth(WORD_SPACE);
+        var wordSpaceWidth = measureWordSpaceWidth(measurer);
         var runsWidth = 0f;
         var hasDrawnRun = false;
 

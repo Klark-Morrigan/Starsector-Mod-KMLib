@@ -38,6 +38,19 @@ class LabelRunsTest {
     private static final StyledSpanMeasurer ONE_UNIT_PER_CHARACTER =
         textSpan -> textSpan.text().length();
 
+    // What a face that sets its words far apart charges for a space, against the one unit it charges any
+    // other glyph. A width no character count below can produce, so a measured gap says the space was
+    // read off the face rather than assumed.
+    private static final float WIDE_WORD_SPACE_WIDTH = 7f;
+
+    // A face whose glyphs cost a unit each but whose space costs the width above - the shape that says
+    // whether a caller standing a mark off a label read the face's own space or a number of its own.
+    private static StyledSpanMeasurer createSpaceHeavyMeasurer() {
+        return textSpan -> textSpan.text().isBlank()
+            ? WIDE_WORD_SPACE_WIDTH * textSpan.text().length()
+            : textSpan.text().length();
+    }
+
     @Nested
     class AppendRun {
 
@@ -133,6 +146,42 @@ class LabelRunsTest {
                     new TextSpan("Hegemony", RUN_COLOUR),
                     null)))
                 .isInstanceOf(NullPointerException.class);
+        }
+    }
+
+    @Nested
+    class MeasureWordSpaceWidth {
+
+        @Test
+        void measureWordSpaceWidthChargesTheFacesOwnSpace() {
+            // A space is one character, so this measurer charges it one unit - the same one the walk
+            // below spends between two runs. Offered for a mark set between a label and what follows it,
+            // which has to stand off by the very space the label parts its own runs by.
+            var wordSpaceWidth = LabelRuns.measureWordSpaceWidth(ONE_UNIT_PER_CHARACTER);
+
+            assertThat(wordSpaceWidth)
+                .isEqualTo(1f);
+        }
+
+        @Test
+        void measureWordSpaceWidthAnswersWhatTheRunWalkSpends() {
+            // The two must not part: what a caller stands a mark off by is read from the same span the
+            // offsets walk charges between runs, so a face that spaces its words widely spaces both.
+            var wideSpaceMeasurer = createSpaceHeavyMeasurer();
+
+            var offsets = LabelRuns.measureRunOffsets(
+                List.of(
+                    new TextSpan("AA", RUN_COLOUR),
+                    new TextSpan("BBB", OTHER_RUN_COLOUR)),
+                LINE_HEIGHT,
+                wideSpaceMeasurer);
+
+            // The second run opens at 2 + the 7-wide space this face sets, which is exactly what the
+            // standalone measurement answers.
+            assertThat(LabelRuns.measureWordSpaceWidth(wideSpaceMeasurer))
+                .isEqualTo(7f);
+            assertThat(offsets.runOffsetXs())
+                .containsExactly(0f, 9f);
         }
     }
 
