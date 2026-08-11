@@ -97,15 +97,19 @@ public final class TabPanelLayout {
             LineWidthMeasurer measurer,
             TabPanelViewState viewState) {
 
-        // The one band height every step below frames against - the header's own bounds, the body box's
-        // top, and the vertical budget - so a styled band cannot move one of them and not the rest.
+        // The band the row is given, and the height its tabs actually stand within it - the two part where
+        // a chrome states a box shorter than its band, which is the room the strip lays its baseline in.
         var headerBandHeight = tabStyle.headerBandHeight();
+        var tabHeight = tabStyle.tabBox().resolveTabHeight(headerBandHeight);
 
-        // The body is framed as a plain headerless panel would be against a screen ending where the tab row
-        // does: its box hangs from the row's bottom edge, and every inset a plain panel spends is spent
-        // below the row rather than around it. Resolved before the row because the row is laid against it.
+        // The body is framed as a plain headerless panel would be against a screen ending where the TABS
+        // end, not where their band does: its box hangs from the tabs' own bottom edge, so its top border
+        // is drawn in the very row the strip rules its baseline in and the two coincide instead of stacking
+        // into a two-pixel rule with a dead pixel between them. Neither side is told about the other - the
+        // row rules under its tabs and the body frames from its own top - and they meet because both are
+        // measured from the same edge. Resolved before the row because the row is laid against it.
         var origin = PanelLayout.computeContentOrigin(
-            screenHeight - headerBandHeight,
+            screenHeight - tabHeight,
             padding,
             border);
 
@@ -133,11 +137,15 @@ public final class TabPanelLayout {
         // vertical budget the same way a plain panel counts only its own border. The vertical budget spends
         // the border only on the edges that are stroked, so an open top or bottom returns that width to the
         // body.
+        // Charged the tab height rather than the band, matching the box's own top: the pixel the band keeps
+        // under its tabs is where the body's top border now goes, so it is the body's room and not a strip
+        // of nothing above it. The panel's overall footprint is unchanged - the box starts a pixel higher
+        // and is allowed a pixel more, so its bottom lands where it always did.
         var maxBodyHeight = screenHeight
             - padding.top()
             - border.computeEdgeInset(BoxEdge.TOP)
             - border.computeEdgeInset(BoxEdge.BOTTOM)
-            - headerBandHeight
+            - tabHeight
             - padding.bottom();
 
         var bodyStrip = CappedStripLayout.layoutBodyStrip(

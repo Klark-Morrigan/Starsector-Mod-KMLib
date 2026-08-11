@@ -120,19 +120,30 @@ final class TabChromeRendererTest {
         private static final Rectangle BAND = new Rectangle(100f, 50f, 63f, 18f);
 
         @Test
-        void TabChromeRenderer_computePaintedRegionFor_keepsAStripWithinItsBand() {
-            // A strip's tabs are the band, so the region it paints into is the band itself - growing it
-            // would let a fold's wipe leave a sliver of row standing past the edge it wiped to.
-            assertThat(TabChromeRenderer.computePaintedRegionFor(TabChrome.STRIP, BAND))
+        void TabChromeRenderer_computePaintedRegionFor_keepsAStripWithinABandThatHousesItsBaseline() {
+            // 17-tall tabs in this 18 band leave the row a pixel under them to rule its baseline in, so the
+            // strip paints no further than the band it was given - growing it would let a fold's wipe leave
+            // a sliver of row standing past the edge it wiped to.
+            assertThat(TabChromeRenderer.computePaintedRegionFor(TabChrome.STRIP, BAND, 17f))
                 .isEqualTo(BAND);
+        }
+
+        @Test
+        void TabChromeRenderer_computePaintedRegionFor_admitsAStripsBaselineBelowFullHeightTabs() {
+            // Tabs filling their band leave nowhere inside it for the line they stand on, so the row reaches
+            // one below. Clipped to the band alone the strip would come out with no baseline at all, which
+            // reads as a row that forgot its anchor rather than as a clip that ate one.
+            assertThat(TabChromeRenderer.computePaintedRegionFor(TabChrome.STRIP, BAND, 18f))
+                .isEqualTo(new Rectangle(100f, 49f, 63f, 19f));
         }
 
         @Test
         void TabChromeRenderer_computePaintedRegionFor_admitsTheRaisedButtonsReachPastTheBand() {
             // The raised buttons lay their left and bottom borders on the lines the panel already draws,
             // which are a hairline outside the band; a caller clipping to the band would crop exactly those
-            // two borders and nothing would report it.
-            assertThat(TabChromeRenderer.computePaintedRegionFor(TabChrome.RAISED_BUTTON, BAND))
+            // two borders and nothing would report it. Its tab height is not asked of it - this chrome's
+            // reach is its frame's, whatever height its buttons stand at.
+            assertThat(TabChromeRenderer.computePaintedRegionFor(TabChrome.RAISED_BUTTON, BAND, 18f))
                 .isEqualTo(new Rectangle(99f, 49f, 64f, 19f));
         }
     }

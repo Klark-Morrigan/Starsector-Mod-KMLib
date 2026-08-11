@@ -137,7 +137,8 @@ public final class TabPanelRenderer {
         // narrowing band.
         UiScissor.push(TabChromeRenderer.computePaintedRegionFor(
             style.tabStyle().chrome(),
-            placement.drawnHeaderBand()));
+            placement.drawnHeaderBand(),
+            style.tabStyle().tabBox().resolveTabHeight(style.tabStyle().headerBandHeight())));
         GlStateGuard.bracket(() -> ControlRenderer.render(
             placement.tabsHeader(),
             style,

@@ -32,8 +32,6 @@ import java.util.List;
  */
 public final class VanillaTabStripRenderer {
 
-    private static final float BASELINE_THICKNESS = 1f;
-
     private VanillaTabStripRenderer() {
     }
 
@@ -63,12 +61,18 @@ public final class VanillaTabStripRenderer {
 
         var chromeAccent = style.palette().chromeAccent();
 
+        // The line the row stands on, laid before the tabs so a tab's own surface is never drawn over by
+        // it: it belongs to the row rather than to any tab, and an empty row has none to stand on.
+        if (!tabs.isEmpty()) {
+            renderBaseline(tabs, chromeAccent, opacity);
+        }
+
         // Two of the things the walk hands over are a raised button's business, not a strip's: every tab
         // here is drawn the same whatever its place in the row - the seams between them are ruled in one
         // pass below - and this chrome's pointer rule is a shade the look already carries, so the paint's
         // light is never anything to lay down.
         TabChromeRenderer.paintEachTab(tabs, sources, (rowIndex, tab, paint) -> {
-            renderChrome(tab.bounds(), paint.look(), chromeAccent, opacity);
+            renderChrome(tab.bounds(), paint.look(), opacity);
             TabLabelRenderer.renderCentredLabel(
                 tab.bounds(),
                 tab.content(),
@@ -101,24 +105,34 @@ public final class VanillaTabStripRenderer {
         return bounds;
     }
 
-    // The tab's solid fill as its look gives it, over a faint baseline grounding the row. The fill IS the
-    // tab's surface: there is no black backdrop underneath, so an unselected tab reads as its solid colour
-    // rather than that colour bled over black - and it is the whole of what marks the lit tab, which is
-    // why nothing here asks which tab that is. The inter-tab seams are drawn once by the caller through
-    // the shared primitive, not here.
-    private static void renderChrome(
-            Rectangle bounds,
-            TabLook look,
-            Color chromeAccent,
-            float opacity) {
-
+    // The tab's solid fill as its look gives it. The fill IS the tab's surface: there is no black backdrop
+    // underneath, so an unselected tab reads as its solid colour rather than that colour bled over black -
+    // and it is the whole of what marks the lit tab, which is why nothing here asks which tab that is. The
+    // inter-tab seams and the baseline under the row are drawn once by the caller, not here.
+    private static void renderChrome(Rectangle bounds, TabLook look, float opacity) {
         UiFill.renderQuad(bounds, new UiElementPaint(look.fill(), opacity));
+    }
+
+    // The line the row stands on: one quad spanning every tab, laid in the row directly beneath them.
+    //
+    // Outside the tabs rather than inside, which is two fixes in one. A line drawn within a tab is
+    // translucent over that tab's own fill, so it took a different shade as the tab faded, pulsed or lit -
+    // a rule that moves with the surface it is ruling. And a line drawn per tab is cut wherever the tabs
+    // are parted, which is exactly where a row that anchors its tabs needs it whole.
+    //
+    // Spanning the laid tabs rather than any band the row was given, so it reaches from the leading tab's
+    // left edge to the trailing tab's right and no further: the row's own width is what it grounds.
+    private static void renderBaseline(List<VanillaTab> tabs, Color chromeAccent, float opacity) {
+
+        var leading = tabs.get(0).bounds();
+        var trailing = tabs.get(tabs.size() - 1).bounds();
+
         UiFill.renderQuad(
             new Rectangle(
-                bounds.x(),
-                bounds.y(),
-                bounds.width(),
-                BASELINE_THICKNESS),
+                leading.x(),
+                leading.y() - VanillaTabStrip.BASELINE_THICKNESS,
+                trailing.x() + trailing.width() - leading.x(),
+                VanillaTabStrip.BASELINE_THICKNESS),
             new UiElementPaint(
                 chromeAccent,
                 opacity * HorizontalSegmentsRenderer.DIVIDER_ALPHA_MULT));

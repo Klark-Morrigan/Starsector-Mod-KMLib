@@ -18,7 +18,41 @@ import java.util.List;
  */
 public final class VanillaTabStrip {
 
+    /**
+     * The weight of the line the row stands on, laid in the row directly beneath the tabs.
+     *
+     * <p>Public because it is a fact about the row's footprint and not only about its paint: the line falls
+     * outside every tab, so a caller clipping the row has to know the row reaches this far below whatever
+     * band it was laid into.
+     */
+    public static final float BASELINE_THICKNESS = 1f;
+
     private VanillaTabStrip() {
+    }
+
+    /**
+     * The screen the whole row covers, given the band it was laid into: the band, plus the line its tabs
+     * stand on where that falls below them. A row whose tabs are shorter than their band already leaves
+     * room for it, so nothing is added there; one whose tabs fill the band reaches a line further down.
+     *
+     * <p>A caller clipping the row to its band alone would otherwise crop the line away, which reads as a
+     * row that forgot its anchor rather than as a clip that ate one.
+     *
+     * @param band      the row's laid-out band, in UI coordinates (origin bottom-left)
+     * @param tabHeight how tall the tabs within that band stand
+     * @return the region this chrome paints into, in the same coordinates
+     */
+    public static Rectangle computeRowFootprint(Rectangle band, float tabHeight) {
+
+        // What the band already leaves under its tabs, and so what the line can be drawn in for free.
+        var spareBelowTabs = Math.max(0f, band.height() - tabHeight);
+        var reach = Math.max(0f, BASELINE_THICKNESS - spareBelowTabs);
+
+        return new Rectangle(
+            band.x(),
+            band.y() - reach,
+            band.width(),
+            band.height() + reach);
     }
 
     /**

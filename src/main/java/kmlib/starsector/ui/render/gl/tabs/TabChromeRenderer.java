@@ -4,6 +4,7 @@ import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.widgets.tabs.RaisedButtonTabStrip;
 import kmlib.starsector.ui.widgets.tabs.TabPaintSources;
 import kmlib.starsector.ui.widgets.tabs.VanillaTab;
+import kmlib.starsector.ui.widgets.tabs.VanillaTabStrip;
 import kmlib.starsector.ui.widgets.tabs.style.TabChrome;
 import kmlib.starsector.ui.widgets.tabs.style.TabLight;
 import kmlib.starsector.ui.widgets.tabs.style.TabPaint;
@@ -52,13 +53,15 @@ public interface TabChromeRenderer {
      * chrome added to one without the other would be cropped or over-clipped by exactly the amount it
      * differs by.
      *
-     * @param chrome which surface the row's paint is laid onto
-     * @param band   the row's laid-out band, in UI coordinates
+     * @param chrome    which surface the row's paint is laid onto
+     * @param band      the row's laid-out band, in UI coordinates
+     * @param tabHeight how tall the tabs stand within that band; a chrome reaching below its tabs needs it
+     *                  to know whether the band already leaves room for that reach
      * @return the region that chrome may paint into
      */
-    static Rectangle computePaintedRegionFor(TabChrome chrome, Rectangle band) {
+    static Rectangle computePaintedRegionFor(TabChrome chrome, Rectangle band, float tabHeight) {
         return switch (chrome) {
-            case STRIP -> band;
+            case STRIP -> VanillaTabStrip.computeRowFootprint(band, tabHeight);
             case RAISED_BUTTON -> RaisedButtonTabStrip.computeRowFootprint(band);
         };
     }
