@@ -114,8 +114,12 @@ Every measurement of room a box spends travels as one
 [`TooltipSpacing`](widgets/tooltip/TooltipSpacing.java) on its style, since the three are one subject
 and are read together by whatever stacks the content. The line gap within it is a
 [`TooltipLineGaps`](widgets/tooltip/TooltipLineGaps.java) rather than a single width, because it is the
-one of the three that varies by depth: a box states a gap per subordination level and every tier it
-did not name falls back on the base gap. The gap belongs to the tier of the line **just drawn**, not
+one of the three that varies by depth: a box states a gap per subordination level, each statement
+governs the tiers nested under it until another is stated, and whatever stands above the shallowest
+statement keeps the base gap. Inherited downward because a box cannot know how deep its subject
+matter goes - a line below the deepest stated tier belongs to that tier's account, and given the base
+gap instead the innermost lines of a listing would be the airiest in the box.
+The gap belongs to the tier of the line **just drawn**, not
 of the line about to be - a run of lines at one depth is what a reader takes in as a unit, so it is
 the run that tightens, and resolved the other way the first line of a run would take its own tier's
 gap and pull the whole run up against the line it stands under. A map rather than a width per tier

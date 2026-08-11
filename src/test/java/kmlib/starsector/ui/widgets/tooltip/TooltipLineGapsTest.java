@@ -10,10 +10,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 
 /**
- * Pins the one lookup a box's line spacing answers: a tier held apart on purpose gets its own gap, and
- * every other tier falls back on the base one. That fallback is what lets a box state only the runs it
- * wants tightened - a tier that resolved to zero, or to whichever gap was stated last, would respace
- * lines nobody said anything about.
+ * Pins the one lookup a box's line spacing answers: a tier held apart on purpose gets its own gap, the
+ * tiers nested under it inherit it, and whatever stands above the shallowest statement keeps the base
+ * one. Those two fallbacks are what let a box state only the runs it wants tightened - a tier that
+ * resolved to zero, or to whichever gap was stated last wherever it sat, would respace lines nobody said
+ * anything about.
  */
 class TooltipLineGapsTest {
 
@@ -33,6 +34,11 @@ class TooltipLineGapsTest {
     private static final int TWO_STEPS_UNDER = 2;
     private static final int THREE_STEPS_UNDER = 3;
     private static final int FOUR_STEPS_UNDER = 4;
+
+    // Deeper than any box states a tier for, and deeper than any listing seen so far - the lookup is
+    // walked up from the level it is handed, so a depth well past the stated ones is what says the walk
+    // ends at a statement rather than at some bound near it.
+    private static final int FAR_DEEPER_THAN_ANY_STATED = 12;
 
     private static TooltipLineGaps buildFlatGaps() {
         return TooltipLineGaps.createGaps(BASE_GAP);
@@ -182,11 +188,43 @@ class TooltipLineGapsTest {
         }
 
         @Test
-        void resolveGapAfterReturnsTheBaseGapForATierDeeperThanAnyStated() {
-            // A listing is as deep as its subject matter, so a box always resolves tiers past the last
-            // one it named - those keep the base gap rather than the deepest stated one.
-            assertThat(buildTieredGaps().resolveGapAfter(FOUR_STEPS_UNDER))
+        void resolveGapAfterCarriesTheDeepestStatedTierDownToEveryTierUnderIt() {
+            // A listing is as deep as its subject matter, so a box resolves tiers past the last one it
+            // named. Those are part of the deepest named run's account and read with it - given the base
+            // gap instead, the innermost lines of a box would be the airiest thing in it, which is the
+            // reverse of what tightening the run above them asked for.
+            var gaps = buildTieredGaps();
+
+            assertThat(gaps.resolveGapAfter(FOUR_STEPS_UNDER))
+                .isCloseTo(TIER_GAP, within(TOLERANCE));
+            assertThat(gaps.resolveGapAfter(FAR_DEEPER_THAN_ANY_STATED))
+                .isCloseTo(TIER_GAP, within(TOLERANCE));
+        }
+
+        @Test
+        void resolveGapAfterCarriesAStatedTierOnlyDownwards() {
+            // The inheritance runs one way: a tier nested under a statement is part of that run, while
+            // the lines a run hangs from are not - so a box tightening something deep never pulls the
+            // lines above it together as a side effect.
+            var gaps = buildFlatGaps().gappedAtLevel(THREE_STEPS_UNDER, TIER_GAP);
+
+            assertThat(gaps.resolveGapAfter(TWO_STEPS_UNDER))
                 .isCloseTo(BASE_GAP, within(TOLERANCE));
+            assertThat(gaps.resolveGapAfter(FOUR_STEPS_UNDER))
+                .isCloseTo(TIER_GAP, within(TOLERANCE));
+        }
+
+        @Test
+        void resolveGapAfterTakesTheNearestStatedTierAboveALevelRatherThanTheDeepestOne() {
+            // Which statement a level inherits, where a box states more than one: the nearest above it,
+            // so each stated tier governs the run it opens and hands over at the next statement rather
+            // than at whichever one happens to be deepest.
+            var gaps = buildTieredGaps();
+
+            assertThat(gaps.resolveGapAfter(TWO_STEPS_UNDER))
+                .isCloseTo(FACTOR_GAP, within(TOLERANCE));
+            assertThat(gaps.resolveGapAfter(THREE_STEPS_UNDER))
+                .isCloseTo(TIER_GAP, within(TOLERANCE));
         }
 
         @Test

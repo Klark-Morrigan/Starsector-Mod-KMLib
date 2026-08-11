@@ -15,9 +15,16 @@ import java.util.Map;
  * gap and shift the whole run away from the line it belongs under.
  *
  * <p>A map rather than a field per tier because a listing goes as deep as its subject matter does, and
- * a type naming a gap per level would run out at whichever depth its author imagined. A tier nobody
- * stated a gap for falls back on the base gap, so a box states only the runs it wants held apart from
- * the rest.
+ * a type naming a gap per level would run out at whichever depth its author imagined. A stated tier
+ * governs its own lines and everything nested under them until another tier is stated, and the base gap
+ * governs whatever stands above the shallowest statement - so a box states only the runs it wants held
+ * apart from the rest, and states each of them once.
+ *
+ * <p>Inherited downward rather than resolved per level for the same reason the map exists: a box cannot
+ * know how deep its subject matter goes. A line below the deepest stated tier is part of that tier's
+ * account, so falling back on the base gap there would leave the innermost, most tightly packed part of
+ * a listing the airiest thing in the box - the exact reverse of what tightening the run above it asked
+ * for, and visible only on the one system that happens to list something that deep.
  *
  * @param baseGap                   the room spent after a line whose tier was never stated, in UI
  *                                  units - the spacing every box has before it asks for anything
@@ -73,15 +80,26 @@ public record TooltipLineGaps(
 
     /**
      * Answers how much room is spent after a line standing {@code subordinationLevel} steps under the
-     * box's own voice - that tier's gap where one was stated, and the base gap where none was.
+     * box's own voice - that tier's gap where one was stated, otherwise the gap of the nearest tier
+     * stated above it, and the base gap where no tier above it was stated at all.
      *
      * @param subordinationLevel how many steps under the box's own voice the line above the gap stands
      * @return the room spent after that line, in UI units
      */
     public float resolveGapAfter(int subordinationLevel) {
-        return gapsBySubordinationLevel.getOrDefault(
-            floorAtTheBoxsVoice(subordinationLevel),
-            baseGap);
+        // Walked up from the line's own tier rather than looked up once, so a statement carries down
+        // the levels nested under it however deep they run. Bounded by the box's own voice, and by the
+        // depth of the stack in practice, so the walk is a handful of steps at most.
+        for (var tier = floorAtTheBoxsVoice(subordinationLevel);
+                tier >= TooltipRow.TableRow.NO_SUBORDINATION;
+                tier--) {
+
+            var statedGap = gapsBySubordinationLevel.get(tier);
+            if (statedGap != null) {
+                return statedGap;
+            }
+        }
+        return baseGap;
     }
 
     // Reads a level above the box's own voice as speaking in it, at both ends: a row floors its own
