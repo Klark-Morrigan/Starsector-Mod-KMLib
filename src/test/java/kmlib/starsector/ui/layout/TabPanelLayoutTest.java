@@ -8,6 +8,7 @@ import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
 import kmlib.starsector.ui.widgets.tabs.TabPanelViewState;
+import kmlib.starsector.ui.widgets.tabs.style.TabBox;
 import kmlib.starsector.ui.widgets.tabs.style.TabStyle;
 import kmlib.starsector.ui.widgets.tabs.style.TabStyles;
 import kmlib.testfixtures.starsector.ui.font.LineWidthMeasurerFake;
@@ -122,6 +123,37 @@ final class TabPanelLayoutTest {
                 .isCloseTo(22f + FIRST_TAB_WIDTH, within(TOLERANCE));
             assertThat(second.width())
                 .isCloseTo(SECOND_TAB_WIDTH, within(TOLERANCE));
+        }
+
+        @Test
+        void computePlacementStandsTheBoxOnTheTabsBottomEdgeNotTheBandsWhenTheBoxIsShorter() {
+            // A 18-tall tab in a 19 band: the box hangs from the TABS' bottom, so the pixel the band keeps
+            // under them is the box's own top border - the row rules its baseline in that same pixel, and
+            // the two coincide instead of stacking into a two-pixel rule with a dead pixel between.
+            //
+            // Literals rather than the fixture's arithmetic: 950 is the header top (1000 - 50), so the
+            // tabs' bottom is 932 and the box top must be that, not the band's 931.
+            var placement = placeStyled(
+                TabStyles.buildAtBandHeightInBox(19f, new TabBox(130f, 18f, 1f)),
+                BODY);
+
+            assertThat(placement.body().box().y() + placement.body().box().height())
+                .as("the box's top is the tabs' bottom edge, a pixel above the band's own")
+                .isCloseTo(932f, within(TOLERANCE));
+            assertThat(placement.tabsHeader().segments().get(0).y())
+                .as("and that is where the tabs actually end")
+                .isCloseTo(932f, within(TOLERANCE));
+        }
+
+        @Test
+        void computePlacementLeavesTheBoxOnTheBandWhenTheTabsFillIt() {
+            // The other end of the same rule: a snapped row's tabs are the band, so there is no spare pixel
+            // and the box's top is the band's bottom as it always was. Pinned so the shorter-box case above
+            // reads as the box following the tabs rather than as a constant offset applied everywhere.
+            var placement = place(BODY);
+
+            assertThat(placement.body().box().y() + placement.body().box().height())
+                .isCloseTo(BOX_TOP_Y, within(TOLERANCE));
         }
 
         @Test

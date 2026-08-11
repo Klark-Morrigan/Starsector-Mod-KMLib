@@ -97,10 +97,11 @@ public final class TabPanelLayout {
             LineWidthMeasurer measurer,
             TabPanelViewState viewState) {
 
-        // The band the row is given, and the height its tabs actually stand within it - the two part where
-        // a chrome states a box shorter than its band, which is the room the strip lays its baseline in.
-        var headerBandHeight = tabStyle.headerBandHeight();
-        var tabHeight = tabStyle.tabBox().resolveTabHeight(headerBandHeight);
+        // How tall the tabs stand, which is what everything below frames against. Not the band: the two
+        // part where a chrome states a box shorter than its band, and the pixel between them is the row's
+        // to rule its baseline in. The band itself is the header's own business, spent inside the call
+        // that lays the row out.
+        var tabHeight = tabStyle.resolveTabHeight();
 
         // The body is framed as a plain headerless panel would be against a screen ending where the TABS
         // end, not where their band does: its box hangs from the tabs' own bottom edge, so its top border

@@ -72,4 +72,18 @@ public record TabStyle(
     public TabStyle {
         headerBandHeight = Math.max(0f, headerBandHeight);
     }
+
+    /**
+     * How tall this style's tabs stand: its box's own height where it states one, otherwise the whole band.
+     *
+     * <p>Asked of the style rather than of the box, because the answer needs both the box and the band and
+     * this is the one value carrying the pair. A layout placing the tabs and a paint pass clipping around
+     * them read the same number here rather than each combining the two, which is how the row a fold wipes
+     * and the row a chrome paints stay the same row.
+     *
+     * @return the height every tab in this style's band stands at
+     */
+    public float resolveTabHeight() {
+        return tabBox.resolveTabHeight(headerBandHeight);
+    }
 }

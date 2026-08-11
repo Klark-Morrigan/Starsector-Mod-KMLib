@@ -138,7 +138,7 @@ public final class TabPanelRenderer {
         UiScissor.push(TabChromeRenderer.computePaintedRegionFor(
             style.tabStyle().chrome(),
             placement.drawnHeaderBand(),
-            style.tabStyle().tabBox().resolveTabHeight(style.tabStyle().headerBandHeight())));
+            style.tabStyle().resolveTabHeight()));
         GlStateGuard.bracket(() -> ControlRenderer.render(
             placement.tabsHeader(),
             style,

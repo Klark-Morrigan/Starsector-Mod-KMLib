@@ -18,11 +18,17 @@ import java.util.List;
 /**
  * Raw-GL paint for a {@link VanillaTabStrip}: the sector-map Sector/System tab look - each tab a solid
  * fill (dark at rest, bright when active, travelling toward one shared shade under the pointer) lifted by
- * whatever pulse its wash source reports, with hairline dividers on the seams between them. The tab
- * geometry lives on the substrate-independent widget; this draws it. The seams are the chrome every
- * horizontal segmented control shares, so they come from {@link HorizontalSegmentsRenderer} (as a radio
- * row's do); the per-state fill, the wash, and the baseline are this strip's own, and what each tab says
- * is {@link TabLabelRenderer}'s, shared with the raised-button chrome that spells a tab out the same way.
+ * whatever pulse its wash source reports, standing on one line that runs the whole row. The tab geometry
+ * lives on the substrate-independent widget; this draws it. Where the tabs abut, the seams between them
+ * are ruled through {@link HorizontalSegmentsRenderer} (as a radio row's are); the per-state fill, the
+ * wash, and the baseline are this strip's own, and what each tab says is {@link TabLabelRenderer}'s,
+ * shared with the raised-button chrome that spells a tab out the same way.
+ *
+ * <p>Two things belong to the row rather than to any tab in it, and both are drawn once. The baseline runs
+ * beneath every tab, outside them all: drawn within a tab it would be a translucent rule over that tab's
+ * own fill, taking a different shade as the tab faded, pulsed or lit - and it would be cut wherever a
+ * parted row leaves a channel, which is where a row anchoring its tabs most needs it whole. The seam
+ * dividers are drawn only where the tabs actually touch, a parted row having no seam to mark.
  *
  * <p>The lit tab is marked by its fill and nothing else - no bar caps it. So the one mark of selection is
  * a shade, and the shade a tab wears under the pointer is what a reader has to keep clear of it: the two

@@ -30,19 +30,6 @@ import kmlib.starsector.ui.font.TextFace;
  */
 public final class GlyphAtlasFilter {
 
-    /**
-     * How much of a pixel face's hard edge survives where a caller has no opinion: 1 draws it unfiltered
-     * and nothing else, 0 leaves it interpolated as the loader found it, and a value between draws the hard
-     * pass and lays the interpolated one over it at the remainder. A visual choice rather than a derived
-     * one - the two ends are what the atlas asks for and what the engine does to it, and neither of them is
-     * what looks right beside the chrome this text sits among.
-     *
-     * <p>A baseline and not a shared setting: the right amount answers to the chrome the text stands
-     * beside, so two rows on one screen can want different amounts and each passes its own. It is stated
-     * here so a caller with nothing to match against has a number to start from rather than inventing one.
-     */
-    public static final float DEFAULT_PIXEL_FACE_SHARPNESS = 0.8f;
-
     // What the atlas is handed back at. The engine's own default for a sprite, and so what every other
     // consumer of a shared atlas is drawing under.
     private static final GlTextureFilter SHARED_DEFAULT_FILTER = GlTextureFilter.SMOOTHED;
