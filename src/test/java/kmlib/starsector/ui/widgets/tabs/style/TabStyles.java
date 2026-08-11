@@ -111,6 +111,9 @@ public final class TabStyles {
             face,
             // No ring, for the same reason the key is left plain: a halo costs no width, so a measured row
             // is the same either way, and the un-haloed look keeps the fixture from implying otherwise.
-            TextHalo.NONE);
+            TextHalo.NONE,
+            // Fully hard, which no test here reads: sharpness reaches the paint pass alone and moves
+            // nothing these fixtures measure.
+            1f);
     }
 }

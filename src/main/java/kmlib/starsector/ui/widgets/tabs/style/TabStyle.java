@@ -40,6 +40,11 @@ import kmlib.starsector.ui.font.TextFace;
  *                         sits beside the face because the two answer together - a small bitmap face
  *                         wants the ring a smooth one drawn at size reads muddier for - and it costs no
  *                         width, so nothing the layout measures moves with it
+ * @param pixelFaceSharpness how hard a hard-edged face reads, 0 fully interpolated and 1 fully unfiltered
+ *                         (see {@link kmlib.starsector.ui.render.gl.GlyphAtlasFilter}); unread by a face
+ *                         that carries its own antialiasing. Per style rather than one setting for the
+ *                         screen, because the right amount is whatever matches the chrome this row stands
+ *                         beside, and two rows on one screen stand beside different chrome
  */
 public record TabStyle(
     TabChrome chrome,
@@ -48,7 +53,8 @@ public record TabStyle(
     TabPalette palette,
     HotkeyStyle hotkey,
     TextFace face,
-    TextHalo textHalo) {
+    TextHalo textHalo,
+    float pixelFaceSharpness) {
         
     /**
      * The baseline band height: room enough for the larger tab face with a little slack above and below

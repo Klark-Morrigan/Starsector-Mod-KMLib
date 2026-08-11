@@ -31,15 +31,15 @@ import kmlib.starsector.ui.font.TextFace;
 public final class GlyphAtlasFilter {
 
     /**
-     * How much of a pixel face's hard edge survives where nothing has said otherwise: 1 draws it unfiltered
+     * How much of a pixel face's hard edge survives where a caller has no opinion: 1 draws it unfiltered
      * and nothing else, 0 leaves it interpolated as the loader found it, and a value between draws the hard
      * pass and lays the interpolated one over it at the remainder. A visual choice rather than a derived
      * one - the two ends are what the atlas asks for and what the engine does to it, and neither of them is
      * what looks right beside the chrome this text sits among.
      *
-     * <p>Settled in game against the engine's own row: mostly hard, which reads more aliased than that row
-     * does, but it is the tone that matches rather than the edge - the interpolated end costs the strokes
-     * enough of themselves to read as a different colour, and that shows first.
+     * <p>A baseline and not a shared setting: the right amount answers to the chrome the text stands
+     * beside, so two rows on one screen can want different amounts and each passes its own. It is stated
+     * here so a caller with nothing to match against has a number to start from rather than inventing one.
      */
     public static final float DEFAULT_PIXEL_FACE_SHARPNESS = 0.8f;
 
@@ -49,12 +49,6 @@ public final class GlyphAtlasFilter {
 
     // The pass that lays down the whole of what it draws, over which any second pass is weighted.
     private static final float FULL_PASS = 1f;
-
-    // What the passes below actually read. Live state rather than a constant because the amount is a look
-    // rather than a number: it answers to the chrome it happens to sit beside, and a host that draws among
-    // different chrome - or a player who simply reads it differently - sets its own. The default above is
-    // what it stands at until one does.
-    private static float pixelFaceSharpness = DEFAULT_PIXEL_FACE_SHARPNESS;
 
     private GlyphAtlasFilter() {
     }
@@ -67,12 +61,15 @@ public final class GlyphAtlasFilter {
      * <p>A face whose atlas cannot be loaded, or one that wants the default anyway, draws once with nothing
      * changed - so a caller wraps every text pass in this rather than deciding per face which ones need it.
      *
-     * @param face     the face the runs are drawn in
-     * @param drawRuns the text pass itself, run once per pass and told what weight to draw at, which it
-     *                 folds into every colour it sets - so the two passes composite to a point between the
-     *                 two filters rather than to one drawn twice
+     * @param face      the face the runs are drawn in
+     * @param sharpness how much of the hard edge survives, 0 fully interpolated and 1 fully unfiltered;
+     *                  clamped to that range. Taken per call rather than held, because it answers to the
+     *                  chrome the text sits beside and two rows on one screen sit beside different chrome
+     * @param drawRuns  the text pass itself, run once per pass and told what weight to draw at, which it
+     *                  folds into every colour it sets - so the two passes composite to a point between the
+     *                  two filters rather than to one drawn twice
      */
-    public static void drawUnderAtlasFilter(TextFace face, GlyphPass drawRuns) {
+    public static void drawUnderAtlasFilter(TextFace face, float sharpness, GlyphPass drawRuns) {
 
         var font = LazyFontCache.loadByFace(face.font());
 
@@ -90,29 +87,11 @@ public final class GlyphAtlasFilter {
             drawRuns.drawAt(FULL_PASS);
 
             GlTextureFilter.SMOOTHED.applyTo(font.getTextureId());
-            drawRuns.drawAt(FULL_PASS - pixelFaceSharpness);
+            drawRuns.drawAt(FULL_PASS - Ranges.clampToUnit(sharpness));
 
         } finally {
             SHARED_DEFAULT_FILTER.applyTo(font.getTextureId());
         }
-    }
-
-    /**
-     * Sets how much of a pixel face's hard edge survives from here on, confined to 0..1 - the same meaning
-     * {@link #DEFAULT_PIXEL_FACE_SHARPNESS} carries. A caller with no opinion sets nothing and takes the
-     * default; one whose text sits among chrome of its own dials it against that.
-     *
-     * @param sharpness how hard the glyphs read, 0 fully interpolated and 1 fully unfiltered
-     */
-    public static void setPixelFaceSharpness(float sharpness) {
-        pixelFaceSharpness = Ranges.clampToUnit(sharpness);
-    }
-
-    /**
-     * @return how much of a pixel face's hard edge currently survives
-     */
-    public static float getPixelFaceSharpness() {
-        return pixelFaceSharpness;
     }
 
     /**

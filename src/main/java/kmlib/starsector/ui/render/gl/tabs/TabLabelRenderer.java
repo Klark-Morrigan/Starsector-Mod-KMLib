@@ -94,7 +94,7 @@ public final class TabLabelRenderer {
         // Drawn once per sampling pass, at whatever weight that pass contributes: a pixel face lands
         // between the two filters rather than under either, so every colour set here carries the pass's
         // own weight and the passes composite on the screen.
-        GlyphAtlasFilter.drawUnderAtlasFilter(style.face(), passOpacity -> {
+        GlyphAtlasFilter.drawUnderAtlasFilter(style.face(), style.pixelFaceSharpness(), passOpacity -> {
 
             // The ring goes down first, so the text proper covers whatever of it lands under the glyphs.
             // Both roles take the one shade - a ring is the group's silhouette, so a key lit inside it
