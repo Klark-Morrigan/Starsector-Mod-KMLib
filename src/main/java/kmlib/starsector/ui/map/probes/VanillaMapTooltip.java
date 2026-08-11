@@ -11,9 +11,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Answers "is the vanilla map screen showing a tooltip right now?" for an overlay that must step
- * aside for it. When the cursor is over a star (or any entity) the map draws its own tooltip; an
- * overlay drawing its own box wants to suppress it then so only one shows.
+ * Answers "which tooltip is the vanilla map screen showing right now?" for an overlay that must
+ * step aside for it. When the cursor is over a star (or any entity) the map draws its own tooltip;
+ * an overlay drawing its own box wants to suppress it then so only one shows.
+ *
+ * <p>The found component is handed back rather than reduced to a yes/no, because stepping aside is
+ * not the only way to cohabit with a tooltip: a caller that draws over the tooltip instead needs the
+ * component itself to act on. The probe stays a pure locator - it finds, it never draws.
  *
  * <p>There is no API for this, so it is read off the live core-UI tree. A tooltip is not a node in
  * that tree and not a typed field on the map widget - the widget that draws it is a tooltip <em>host</em>
@@ -74,31 +78,43 @@ public final class VanillaMapTooltip {
     private String lastLoggedOutcome;
 
     /**
-     * @return whether the vanilla map screen is currently drawing a tooltip; {@code false} on any
-     *         read failure, so the caller draws rather than hides on a broken read
+     * @return the core-UI component the vanilla map screen is currently showing as a tooltip, or
+     *         {@code null} when none is up; {@code null} on any read failure too, so the caller
+     *         falls back to its own drawing rather than acting on a broken read
      */
-    public boolean isShowing() {
+    public Object findShownTooltip() {
         try {
             var currentTab = CoreUiTree.resolveCurrentTab();
             if (currentTab == null) {
-                return reportOutcome(false, "no current tab", null);
+                reportOutcome(false, "no current tab", null);
+                return null;
             }
             // Build the diagnostic trace only when DEBUG is on, so a normal frame is a bare tree walk
             // with no per-node string work.
             var trace = LOG.isDebugEnabled() ? new WalkTrace(currentTab.getClass().getName()) : null;
-            var tooltip = findShownTooltip(currentTab, ProbeLimits.MAX_SEARCH_DEPTH, trace);
-            return reportOutcome(tooltip != null, null, trace);
+            var tooltip = searchSubtreeForShownTooltip(currentTab, ProbeLimits.MAX_SEARCH_DEPTH, trace);
+            reportOutcome(tooltip != null, null, trace);
+            return tooltip;
         } catch (Throwable failure) {
             warnOnce(failure);
-            return false;
+            return null;
         }
+    }
+
+    /**
+     * @return whether the vanilla map screen is currently drawing a tooltip; {@code false} on any
+     *         read failure, so the caller draws rather than hides on a broken read
+     */
+    public boolean isShowing() {
+        return findShownTooltip() != null;
     }
 
     // The first live vanilla tooltip in this subtree, or null when none is up. Recurses the panel's
     // children by depth, stopping at the bound so a malformed tree cannot loop the walk. Records every
     // shown tooltip into the trace (when one is given, i.e. DEBUG is on) so a walk that finds no vanilla
     // tooltip still says what it saw.
-    private static Object findShownTooltip(Object component, int depthRemaining, WalkTrace trace) {
+    private static Object searchSubtreeForShownTooltip(Object component, int depthRemaining,
+            WalkTrace trace) {
         if (component == null || depthRemaining < 0) {
             return null;
         }
@@ -119,7 +135,7 @@ public final class VanillaMapTooltip {
             }
         }
         for (var child : CoreUiTree.readChildrenOf(component)) {
-            var found = findShownTooltip(child, depthRemaining - 1, trace);
+            var found = searchSubtreeForShownTooltip(child, depthRemaining - 1, trace);
             if (found != null) {
                 return found;
             }
@@ -168,12 +184,11 @@ public final class VanillaMapTooltip {
     }
 
     // Logs the probe's outcome, at DEBUG, the first time it reaches a given state and on every change
-    // after, then returns the verdict so it reads as one line at the call site. A stable outcome logs
-    // once; a tooltip appearing or disappearing logs the transition, so the log shows what the probe saw
-    // without a per-frame flood. With DEBUG off it does nothing but return the verdict.
-    private boolean reportOutcome(boolean verdict, String reachFailure, WalkTrace trace) {
+    // after. A stable outcome logs once; a tooltip appearing or disappearing logs the transition, so
+    // the log shows what the probe saw without a per-frame flood. With DEBUG off it does nothing.
+    private void reportOutcome(boolean verdict, String reachFailure, WalkTrace trace) {
         if (!LOG.isDebugEnabled()) {
-            return verdict;
+            return;
         }
         var outcome = reachFailure != null
             ? "verdict=" + verdict + " (" + reachFailure + ")"
@@ -183,7 +198,6 @@ public final class VanillaMapTooltip {
             lastLoggedOutcome = outcome;
             LOG.debug("Vanilla map-tooltip probe: " + outcome);
         }
-        return verdict;
     }
 
     private void warnOnce(Throwable failure) {
