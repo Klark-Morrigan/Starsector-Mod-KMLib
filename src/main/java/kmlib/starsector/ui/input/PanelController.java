@@ -41,12 +41,6 @@ public final class PanelController {
     // straight back - a second name for one null is a second place to explain why it is not an index.
     static final Integer NO_CELL_RESOLVED = null;
 
-    // The same answer one granularity up: the point is over no body control at all, rather than over a
-    // control but on none of its cells. A separate name because a walk over the strip returns a different
-    // type from a hit-test of one control, not because it means anything different - a reader that has one
-    // of these has a control and a cell, and a reader that has neither has this.
-    static final ResolvedBodyCell NO_BODY_CELL_RESOLVED = null;
-
     // This panel's scroll position, read by the layout and written by the wheel and by a drag.
     private final ScrollState scrollState = new ScrollState();
 
@@ -123,10 +117,10 @@ public final class PanelController {
      * the two orders agree - which is why the one that matches what the player pressed is the one written
      * down, rather than the one that happens to fall out of a loop over firings.
      *
-     * <p>The hit comes back rather than a bare yes/no because the hit-test is the only thing that resolved
-     * it: a caller wanting to mark what it just fired would otherwise walk the strip a second time to
-     * recover what this already had. The action's meaning stays with whoever supplied the spec - this only
-     * maps the press to a cell.
+     * <p>Split from the pointer event above, and reporting what fired rather than nothing, so the pairing
+     * this seam exists for - the cell that fires is the cell that resolved - can be checked without an
+     * engine input event to raise. The event handler drops the answer: it has nothing to mark, the action
+     * carrying its own cell to whoever supplied the spec.
      *
      * @param placement the laid-out panel the renderer drew this frame
      * @param pointX    the press x, in UI coordinates
@@ -139,11 +133,11 @@ public final class PanelController {
             float pointY) {
 
         var hitCell = resolveHitBodyCell(placement, pointX, pointY);
-        if (hitCell == NO_BODY_CELL_RESOLVED) {
-            return NO_BODY_CELL_RESOLVED;
+        if (hitCell == null) {
+            return null;
         }
         if (activateCellIfActionable(hitCell.control(), hitCell.cell()) == NO_CELL_RESOLVED) {
-            return NO_BODY_CELL_RESOLVED;
+            return null;
         }
         return hitCell;
     }
@@ -214,7 +208,7 @@ public final class PanelController {
                 return new ResolvedBodyCell(control, resolvedCell);
             }
         }
-        return NO_BODY_CELL_RESOLVED;
+        return null;
     }
 
     /**
