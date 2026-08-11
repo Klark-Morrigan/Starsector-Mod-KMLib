@@ -24,22 +24,15 @@ import static org.assertj.core.api.Assertions.within;
  */
 class TooltipStyleTest {
 
-    // The parting a box gets without asking - restated here rather than read off the class under test,
-    // so a change to how far apart blocks stand has to be made deliberately in both places. It is
-    // today's spacing exactly: the 4 line gap plus half a 15pt line.
-    private static final float DEFAULT_SECTION_BREAK = 11.5f;
+    // The room a box asks for when it is not taking the standard spacing. Every one of them differs from
+    // the baseline TooltipSpacing hands out, so a refinement that dropped its argument and left the
+    // default in place cannot pass. What those baselines actually are is pinned in TooltipSpacingTest,
+    // which is the type that owns them.
     private static final float WIDER_SECTION_BREAK = 24f;
-
-    // The same for the parting inside a block, restated for the same reason. Narrower than the block
-    // parting above, which is the whole point of it having a measurement of its own.
-    private static final float DEFAULT_GROUP_BREAK = 5.75f;
     private static final float WIDER_GROUP_BREAK = 9f;
-    private static final float TOLERANCE = 0.001f;
-
-    // How far apart two lines of one block stand without a box asking - the box geometry's own line gap,
-    // restated for the same reason as the breaks above - and the tighter gap a box holds one run at.
-    private static final float DEFAULT_LINE_GAP = 4f;
+    private static final float STATED_LINE_GAP = 6f;
     private static final float TIGHTER_LINE_GAP = 1f;
+    private static final float TOLERANCE = 0.001f;
 
     // What a box demotes a step by when it asks, and what it demotes by when it does not - restated here
     // rather than read off the class under test, so the baseline of "no shrink until asked for" has to be
@@ -96,7 +89,7 @@ class TooltipStyleTest {
     // state every box that varies its spacing is in: one tier stated, and every other left as it was.
     private static TooltipStyle buildTightenedStyle() {
         return buildTwoFacedStyle().stackedAt(TooltipLineGaps
-            .createGaps(DEFAULT_LINE_GAP)
+            .createGaps(STATED_LINE_GAP)
             .gappedAtLevel(TWO_STEPS_UNDER, TIGHTER_LINE_GAP));
     }
 
@@ -113,28 +106,17 @@ class TooltipStyleTest {
     class CreateStyle {
 
         @Test
-        void createStyleCarriesTheTwoLooksAtTheStandardParting() {
-
+        void createStyleCarriesTheTwoLooksAtTheStandardSpacing() {
+            // The room a box spends is taken whole from the standard spacing rather than assembled here,
+            // so a box that asks for no room at all is spaced exactly as every other unrefined box is.
             var style = buildTwoFacedStyle();
 
             assertThat(style.headerStyle())
                 .isEqualTo(HEADER_STYLE);
             assertThat(style.paragraphStyle())
                 .isEqualTo(PARAGRAPH_STYLE);
-            assertThat(style.sectionBreak())
-                .isCloseTo(DEFAULT_SECTION_BREAK, within(TOLERANCE));
-        }
-
-        @Test
-        void createStyleStacksItsLinesAPlainGapApartAtEveryTier() {
-            // The baseline every box built before there was anything to name still stands at: one gap
-            // between two lines of a block, whatever depth the line above it sits at.
-            var style = buildTwoFacedStyle();
-
-            assertThat(style.resolveLineGapAfter(IN_THE_BOXS_VOICE))
-                .isCloseTo(DEFAULT_LINE_GAP, within(TOLERANCE));
-            assertThat(style.resolveLineGapAfter(TWO_STEPS_UNDER))
-                .isCloseTo(DEFAULT_LINE_GAP, within(TOLERANCE));
+            assertThat(style.spacing())
+                .isEqualTo(TooltipSpacing.createSpacing());
         }
 
         @Test
@@ -177,8 +159,8 @@ class TooltipStyleTest {
 
         @Test
         void shrunkPerLevelChangesNothingElse() {
-            // The step and the parting are both bare floats travelling side by side into the rebuild, so
-            // a transposition between them compiles silently - this is what would catch it.
+            // A box demoting its levels says nothing about how much room it spends between its lines or
+            // its blocks, so the whole of the spacing has to come through the refinement untouched.
             assertThat(buildTwoFacedStyle().shrunkPerLevel(LEVEL_SHRINK))
                 .usingRecursiveComparison()
                 .ignoringFields("levelShrink")
@@ -198,7 +180,9 @@ class TooltipStyleTest {
 
         @Test
         void partedBySetsHowFarApartTheBlocksStand() {
-            assertThat(buildTwoFacedStyle().partedBy(WIDER_SECTION_BREAK).sectionBreak())
+            // The refinement reaches one of three measurements held in one value, so this is also what
+            // pins it as the block parting rather than either of the two beside it.
+            assertThat(buildTwoFacedStyle().partedBy(WIDER_SECTION_BREAK).spacing().sectionBreak())
                 .isCloseTo(WIDER_SECTION_BREAK, within(TOLERANCE));
         }
 
@@ -208,7 +192,7 @@ class TooltipStyleTest {
             // looks have to come through the refinement untouched.
             assertThat(buildTwoFacedStyle().partedBy(WIDER_SECTION_BREAK))
                 .usingRecursiveComparison()
-                .ignoringFields("sectionBreak")
+                .ignoringFields("spacing.sectionBreak")
                 .isEqualTo(buildTwoFacedStyle());
         }
     }
@@ -218,7 +202,7 @@ class TooltipStyleTest {
 
         @Test
         void groupedBySetsHowFarApartTheNestedBlocksStand() {
-            assertThat(buildTwoFacedStyle().groupedBy(WIDER_GROUP_BREAK).groupBreak())
+            assertThat(buildTwoFacedStyle().groupedBy(WIDER_GROUP_BREAK).spacing().groupBreak())
                 .isCloseTo(WIDER_GROUP_BREAK, within(TOLERANCE));
         }
 
@@ -226,18 +210,8 @@ class TooltipStyleTest {
         void groupedByChangesNothingElse() {
             assertThat(buildTwoFacedStyle().groupedBy(WIDER_GROUP_BREAK))
                 .usingRecursiveComparison()
-                .ignoringFields("groupBreak")
+                .ignoringFields("spacing.groupBreak")
                 .isEqualTo(buildTwoFacedStyle());
-        }
-
-        @Test
-        void groupedByLeavesABlockPartingWiderThanAGroupParting() {
-            // The two are held apart so a run inside a block never reads as a block of its own, which
-            // only holds while the baseline keeps them in that order.
-            assertThat(buildTwoFacedStyle().groupBreak())
-                .isCloseTo(DEFAULT_GROUP_BREAK, within(TOLERANCE));
-            assertThat(buildTwoFacedStyle().groupBreak())
-                .isLessThan(buildTwoFacedStyle().sectionBreak());
         }
     }
 
@@ -246,17 +220,17 @@ class TooltipStyleTest {
 
         @Test
         void stackedAtSetsHowFarApartTheLinesOfABlockStand() {
-            assertThat(buildTightenedStyle().lineGaps().resolveGapAfter(TWO_STEPS_UNDER))
+            assertThat(buildTightenedStyle().spacing().lineGaps().resolveGapAfter(TWO_STEPS_UNDER))
                 .isCloseTo(TIGHTER_LINE_GAP, within(TOLERANCE));
         }
 
         @Test
         void stackedAtChangesNothingElse() {
             // A box tightening a run of its lines says nothing about how they are drawn or about how far
-            // apart its blocks stand, so everything but the spacing has to come through untouched.
+            // apart its blocks stand, so everything but the line gaps has to come through untouched.
             assertThat(buildTightenedStyle())
                 .usingRecursiveComparison()
-                .ignoringFields("lineGaps")
+                .ignoringFields("spacing.lineGaps")
                 .isEqualTo(buildTwoFacedStyle());
         }
     }
@@ -372,14 +346,6 @@ class TooltipStyleTest {
             // style at all: a stated tier has to answer through the same object the looks come from.
             assertThat(buildTightenedStyle().resolveLineGapAfter(TWO_STEPS_UNDER))
                 .isCloseTo(TIGHTER_LINE_GAP, within(TOLERANCE));
-        }
-
-        @Test
-        void resolveLineGapAfterReturnsThePlainGapForATierTheBoxNeverNamed() {
-            // Tightening one run must not respace the lines above it, which is what makes a box safe to
-            // state a single tier on.
-            assertThat(buildTightenedStyle().resolveLineGapAfter(ONE_STEP_UNDER))
-                .isCloseTo(DEFAULT_LINE_GAP, within(TOLERANCE));
         }
     }
 }

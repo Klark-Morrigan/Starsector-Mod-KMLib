@@ -161,7 +161,7 @@ public final class CursorTooltip {
             // top edge unevenly against every other side.
             var leadingGap = styledRows.isEmpty()
                 ? NO_LEADING_GAP
-                : style.sectionBreak();
+                : style.spacing().sectionBreak();
 
             bindSectionRowsToStyles(styledRows, section, leadingGap, style, measurer);
         }
@@ -199,7 +199,7 @@ public final class CursorTooltip {
             bindSectionRowsToStyles(
                 styledRows,
                 member,
-                measureMemberGap(precedingMember, style.groupBreak()),
+                measureMemberGap(precedingMember, style.spacing().groupBreak()),
                 style,
                 measurer);
 
