@@ -2,6 +2,7 @@ package kmlib.starsector.ui.map.probes;
 
 import com.fs.starfarer.api.Global;
 
+import kmlib.logging.SessionWarning;
 import kmlib.starsector.ui.coreui.CoreUiTree;
 
 import org.apache.log4j.Logger;

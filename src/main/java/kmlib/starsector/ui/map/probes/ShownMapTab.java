@@ -5,6 +5,7 @@ import com.fs.starfarer.api.campaign.CoreUITabId;
 import com.fs.starfarer.api.ui.SectorMapAPI;
 import com.fs.starfarer.api.ui.UIComponentAPI;
 
+import kmlib.logging.SessionWarning;
 import kmlib.starsector.ui.coreui.CoreUiTree;
 import kmlib.starsector.ui.intel.IntelScreenView;
 import kmlib.starsector.ui.intel.VanillaIntelScreenView;

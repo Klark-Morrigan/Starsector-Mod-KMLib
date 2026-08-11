@@ -3,6 +3,7 @@ package kmlib.starsector.ui.map.probes;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.ui.UIComponentAPI;
 
+import kmlib.logging.SessionWarning;
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.coreui.CoreUiTree;
 import kmlib.starsector.ui.input.UiCursor;

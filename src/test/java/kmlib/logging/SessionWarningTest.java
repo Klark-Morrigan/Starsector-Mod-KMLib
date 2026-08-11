@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.map.probes;
+package kmlib.logging;
 
 import org.apache.log4j.Logger;
 import org.junit.jupiter.api.Nested;
