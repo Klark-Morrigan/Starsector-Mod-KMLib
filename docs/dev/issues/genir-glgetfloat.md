@@ -14,9 +14,12 @@ takes the screen down with it rather than failing at load.
 
 Verified against **v0.8.2** (`fr.jar`, SHA-256
 `55c8cc3b9a1da7c257edfa822b772a3b6db06aadb82a0d110f6a256f503eaa4a`, 635887 bytes) on Starsector
-0.98a-RC8. It was first written against v0.7.2 and re-read on every release since: the `glGet*`
-surface has not changed across any of them, and `bridge/commands/GL11.java` is byte-identical
-between v0.7.7 and v0.8.2. What has moved around it is everything else - v0.7.4 moved the bridge
+0.98a-RC8, and re-read against **v0.8.3** (`fr.jar`, SHA-256
+`85896242dc0c1a69a822d516122db49d6f8cde77d4b8486a629e4770f5e560f8`, 634576 bytes), where it is
+unchanged. It was first written against v0.7.2 and re-read on every release since: the `glGet*`
+surface has not changed across any of them. `bridge/commands/GL11.java` is byte-identical between
+v0.7.7 and v0.8.2, and its only v0.8.3 change is inside `glGetTexImage`, which added a
+compressed-texture path. What has moved around it is everything else - v0.7.4 moved the bridge
 from `com.genir.renderer.bridge` to `com.genir.renderer.bridge.commands` and the command
 interfaces to `com.genir.renderer.bridge.interfaces`, and v0.8.0 replaced the system classloader
 with a Java agent, moving the rewriting itself into a second jar (`fr.agent.jar`,

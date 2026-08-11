@@ -36,21 +36,40 @@ against anything else.
 | Starsector | `0.98a-RC8` | - |
 | Fast Rendering | `v0.8.2` | `fr.jar` SHA-256 `55c8cc3b9a1da7c257edfa822b772a3b6db06aadb82a0d110f6a256f503eaa4a`, 635887 bytes; `fr.agent.jar` 14762 bytes |
 
+That row is the installed jar, and it is not the newest release. `v0.8.3` is
+published and has been read out of its release zip, but it is **not** dropped
+in, so nothing on this page is verified against a running copy of it. Its
+`fr.jar` is 634576 bytes, SHA-256
+`85896242dc0c1a69a822d516122db49d6f8cde77d4b8486a629e4770f5e560f8`; its
+`fr.agent.jar` is 14762 bytes and its entries are byte-identical to `v0.8.2`'s,
+so the rewrite tables that decide the bridge package name are unchanged. Read
+statically, nothing else KM binds to moved either: the whole
+`com.genir.renderer.bridge.**` tree is byte-identical bar `GL11.glGetTexImage`,
+which gained a compressed-texture path for an AMD driver crash; the `glGet*`
+and `glIsEnabled` signature sets are identical, so the inline-versus-stalling
+split below is unchanged; the shadowed game classes are the same 21 with only
+`Version` differing; and `StallDetector` and its arming point are untouched.
+What `v0.8.3` does rework is resource loading (`overrides/loading/**`,
+`PathUtil`), where all three of its release notes land: the loader thread pool
+splits into `FR-Texture-Loader`, `FR-Script-Loader` and `FR-Sound-Loader`, and
+the DDS cache becomes `Path`-keyed. This page makes no claims about any of it.
+
 Fast Rendering names itself only coarsely. `fr.jar` carries no manifest and the
 `fr.readme.txt` beside it names no release. From `v0.8.2` it does carry a version
-constant, `com.genir.renderer.Version.getVersion()` returning `"v0.8.2"`
-(`starsector-core/fr/com/genir/renderer/Version.java:7`) - but nothing in either
-jar calls it, so it identifies the artifact rather than anything a running game
-reports, and it is absent from every earlier release. The older signal is a
-display string in its shadowed copy of the game's own version class -
-`"Starsector 0.98a-RC8 FR8.2"`
+constant, `com.genir.renderer.Version.getVersion()`
+(`starsector-core/fr/com/genir/renderer/Version.java:7`), which returns the
+release string - `"v0.8.2"` on the installed jar, `"v0.8.3"` on the newest. But
+nothing in either jar calls it, so it identifies the artifact rather than
+anything a running game reports, and it is absent from every earlier release.
+The older signal is a display string in its shadowed copy of the game's own
+version class - `"Starsector 0.98a-RC8 FR8.2"`
 (`starsector-core/fr/com/fs/starfarer/Version.java:36`, `:51`), which is what
 puts `FR8.2` on the launcher and main menu. That is a two-component release
 number baked into a string literal, so it identifies a minor line and not a
 build: it cannot separate `v0.7.1` from `v0.7.1b`, and it changes only when
-genir bumps the literal. So the version above was established by hashing
-`fr.jar` against the release assets, and the SHA-256 is what actually identifies
-the bytes these citations were read from.
+genir bumps the literal (`v0.8.3` reads `FR8.3`). So the version above was
+established by hashing `fr.jar` against the release assets, and the SHA-256 is
+what actually identifies the bytes these citations were read from.
 
 Releases are published at
 [Halke1986/starsector-render](https://github.com/Halke1986/starsector-render/releases),
@@ -62,10 +81,10 @@ sha256sum "<starsector>/starsector-core/fr.jar"
 ```
 
 Sizes still separate neighbouring releases (`v0.7.6` is 632557 bytes, `v0.7.7` is
-632640, `v0.8.0` is 617425, `v0.8.1` is 631624, `v0.8.2` is 635887), so a size
-mismatch is a fast first check before hashing. Treat only the mismatch as
-informative: `v0.7.6` and `v0.7.7` are 83 bytes apart, close enough that a size
-*match* is weak evidence and hashing is what settles it.
+632640, `v0.8.0` is 617425, `v0.8.1` is 631624, `v0.8.2` is 635887, `v0.8.3` is
+634576), so a size mismatch is a fast first check before hashing. Treat only the
+mismatch as informative: `v0.7.6` and `v0.7.7` are 83 bytes apart, close enough
+that a size *match* is weak evidence and hashing is what settles it.
 
 Names below are release-specific, and a rename is not announced. Two moves so far
 have invalidated citations wholesale, neither mentioned in its release notes.
@@ -79,9 +98,10 @@ type - the detection string, the compile-only stubs - is therefore a fact about 
 range of releases, and the hash is what says which.
 
 The GL bridge itself has been stable across that upheaval. Every
-`com.genir.renderer.bridge.**` source KM reads is byte-identical between `v0.7.7`
-and `v0.8.2`; the sole exception is `context/BufferPool.java`, an internal
-per-buffer-type pooling rewrite that no KM code names.
+`com.genir.renderer.bridge.**` source KM reads is byte-identical from `v0.7.7`
+through `v0.8.3`; the two exceptions are `context/BufferPool.java`, an internal
+per-buffer-type pooling rewrite in `v0.8.0`, and the body of
+`commands/GL11.glGetTexImage` in `v0.8.3`, neither of which any KM code names.
 
 ## How to re-verify
 
@@ -386,12 +406,12 @@ thread](#it-defers-every-gl-call-to-a-render-thread)).
 
 `fr.jar` also ships patched copies of core game classes under `com.fs.*` (and
 `sound.*`), not just the GL bridge, and they shadow the game's own copies in
-`starfarer_obf.jar` / `fs.common_obf.jar`. There are 21 on `v0.8.2`, reaching well
-past rendering: `Version`, `BaseGameState`, `combat/CombatEngine`,
-`combat/CombatState`, `combat/entities/Ship`, `combat/ai/admiral/G`,
-`graphics/TextureLoader`, `graphics/LayeredRenderer`, `loading/SpecStore`,
-`loading/ScriptStore`, `loading/LoadingUtils`, `loading/ResourceLoaderState`,
-`campaign/save/B`, `campaign/rules/oOOO`, and
+`starfarer_obf.jar` / `fs.common_obf.jar`. There are 21 on `v0.8.2`, and the same
+21 on `v0.8.3`. They reach well past rendering: `Version`, `BaseGameState`,
+`combat/CombatEngine`, `combat/CombatState`, `combat/entities/Ship`,
+`combat/ai/admiral/G`, `graphics/TextureLoader`, `graphics/LayeredRenderer`,
+`loading/SpecStore`, `loading/ScriptStore`, `loading/LoadingUtils`,
+`loading/ResourceLoaderState`, `campaign/save/B`, `campaign/rules/oOOO`, and
 `api/impl/combat/threat/RoilingSwarmEffect` among them. The set grows:
 `combat/entities/Ship` and the `combat/E/o0OO` bounds class arrived in `v0.7.5`,
 `sound/C` in `v0.7.6`, `loading/LoadingUtils` in `v0.8.1`.
