@@ -67,4 +67,25 @@ public final class HorizontalSegmentsRenderer {
             UiFill.renderQuad(divider, dividerPaint);
         }
     }
+
+    /**
+     * Fills each channel of a parted row - the empty strip between two neighbouring segments - with {@code
+     * colour}. The counterpart to {@link #renderSeamDividers} for the other kind of row: an abutting row is
+     * marked where its segments meet, and a parted one has the surface its segments stand on showing
+     * between them instead, which a control floating over a screen of its own has to paint or the channel
+     * shows that screen through.
+     *
+     * <p>Filled at the caller's opacity rather than at a fainter one: this is a surface and not a rule, so
+     * it fades with the row it belongs to and no further. A row whose segments abut has no channel and
+     * draws nothing, so either kind of row may call it.
+     *
+     * @param segments the laid-out segment rects, in row order left to right
+     * @param colour   the surface the row stands over
+     * @param opacity  overall alpha, 0..1
+     */
+    public static void renderChannelFills(List<Rectangle> segments, Color colour, float opacity) {
+        for (var channel : HorizontalSegments.computeChannels(segments)) {
+            UiFill.renderQuad(channel, new UiElementPaint(colour, opacity));
+        }
+    }
 }
