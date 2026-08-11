@@ -7,6 +7,7 @@ import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.LabelledControlSpecs;
 import kmlib.starsector.ui.controls.ReselectBehaviour;
 import kmlib.starsector.ui.controls.VerticalTableSpecs;
+import kmlib.starsector.ui.widgets.PanelPlacement;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -21,14 +22,15 @@ import static org.assertj.core.api.Assertions.assertThat;
  * that control's action, while a caption label - drawn but not clickable - is passed over so it never
  * swallows a click as if it acted, and a scrolling control only counts inside its viewport.
  *
- * <p>Each firing case asserts the cell the hit-test reports alongside the cell the action was actually
- * called with. They are the same number by design - a caller marking what it just fired reads the reported
- * one - so pinning only one would let a press fire one cell and report another.
+ * <p>Each firing case asserts the hit reported alongside the cell the action was actually called with. They
+ * are the same number by design - a caller marking what it just fired reads the reported one - so pinning
+ * only one would let a press fire one cell and report another.
  *
  * <p>The resolver cases pin the other half of that split: the same geometry answered without the action
  * being reached, and answered without the reselect narrowing the firing cases above pin - a lit segment is
  * under the pointer whether or not pressing it would do anything, which is what lets a hover read the
- * resolver a press reads.
+ * resolver a press reads. The body walk is pinned there too rather than only through the press, since a
+ * hover reads the walk and never the firing above it.
  */
 final class PanelControllerTest {
 
@@ -41,16 +43,15 @@ final class PanelControllerTest {
         new Rectangle(0f, 0f, 10000f, 10000f);
 
     @Nested
-    class ActivateControlIfHit {
+    class ActivateBodyControlIfHit {
 
         @Test
-        void activateControlIfHitPassesOverACaptionLabelWithoutActing() {
+        void activateBodyControlIfHitPassesOverACaptionLabelWithoutActing() {
             // A caption row is drawn but never clickable - a Label is not Interactive - so a press over
             // it hits nothing and falls through rather than being swallowed as if it acted.
             var label = new Control(LabelledControlSpecs.buildLabel("Caption"), ROW, List.of());
-            var activatedCell = PanelController.activateControlIfHit(
-                label,
-                FULL_VIEWPORT,
+            var activatedCell = PanelController.activateBodyControlIfHit(
+                buildBodyPlacement(label),
                 ROW.x() + ROW.width() / 2f,
                 ROW.y() + ROW.height() / 2f);
 
@@ -59,31 +60,29 @@ final class PanelControllerTest {
         }
 
         @Test
-        void activateControlIfHitFiresACheckboxHitAnywhereOnItsRow() {
+        void activateBodyControlIfHitFiresACheckboxHitAnywhereOnItsRow() {
 
             var firedCell = new int[] {-1};
             var checkbox = buildCheckboxControl("Muted", cell -> firedCell[0] = cell);
-            var activatedCell = PanelController.activateControlIfHit(
-                checkbox,
-                FULL_VIEWPORT,
+            var activatedCell = PanelController.activateBodyControlIfHit(
+                buildBodyPlacement(checkbox),
                 ROW.x() + ROW.width() / 2f,
                 ROW.y() + ROW.height() / 2f);
 
             assertThat(activatedCell)
-                .as("a single-cell control reports cell 0")
-                .isZero();
+                .as("a single-cell control reports itself and cell 0")
+                .isEqualTo(new ResolvedBodyCell(checkbox, 0));
             assertThat(firedCell[0])
                 .as("the cell reported is the cell the action fired for")
                 .isZero();
         }
 
         @Test
-        void activateControlIfHitReportsNoHitForAPressOutsideACheckboxRow() {
+        void activateBodyControlIfHitReportsNoHitForAPressOutsideACheckboxRow() {
 
             var checkbox = buildCheckboxControl("Muted", ControlAction.NONE);
-            var activatedCell = PanelController.activateControlIfHit(
-                checkbox,
-                FULL_VIEWPORT,
+            var activatedCell = PanelController.activateBodyControlIfHit(
+                buildBodyPlacement(checkbox),
                 ROW.x() - 10f,
                 ROW.y() + ROW.height() / 2f);
 
@@ -92,37 +91,34 @@ final class PanelControllerTest {
         }
 
         @Test
-        void activateControlIfHitFiresAScrollingListOptionInsideItsViewport() {
+        void activateBodyControlIfHitFiresAScrollingListOptionInsideItsViewport() {
 
             var firedCell = new int[] {-1};
             var list = buildScrollingListAtRow(cell -> firedCell[0] = cell);
 
             // The press lands on the list's one option and inside a viewport that covers the row, so the
             // option fires as a normal radio hit.
-            var activatedCell = PanelController.activateControlIfHit(
-                list,
-                ROW,
+            var activatedCell = PanelController.activateBodyControlIfHit(
+                buildBodyPlacement(ROW, list),
                 ROW.x() + ROW.width() / 2f,
                 ROW.y() + ROW.height() / 2f);
 
             assertThat(activatedCell)
-                .isZero();
+                .isEqualTo(new ResolvedBodyCell(list, 0));
             assertThat(firedCell[0])
                 .isZero();
         }
 
         @Test
-        void activateControlIfHitRejectsAScrollingListOptionScrolledOutOfItsViewport() {
+        void activateBodyControlIfHitRejectsAScrollingListOptionScrolledOutOfItsViewport() {
 
             var fired = new boolean[1];
             var list = buildScrollingListAtRow(cell -> fired[0] = true);
 
             // The option's segment sits at ROW, but the viewport is a strip well above it - as if the row
             // scrolled up under the header - so the press over the clipped-out row must not fire it.
-            var viewportAbove = new Rectangle(ROW.x(), ROW.y() + 100f, ROW.width(), 40f);
-            var activatedCell = PanelController.activateControlIfHit(
-                list,
-                viewportAbove,
+            var activatedCell = PanelController.activateBodyControlIfHit(
+                buildBodyPlacement(buildViewportAboveRow(), list),
                 ROW.x() + ROW.width() / 2f,
                 ROW.y() + ROW.height() / 2f);
 
@@ -135,37 +131,35 @@ final class PanelControllerTest {
         }
 
         @Test
-        void activateControlIfHitFiresATabHitReportedAsThatTabIndex() {
+        void activateBodyControlIfHitFiresATabHitReportedAsThatTabIndex() {
 
             var firedCell = new int[] {-1};
 
             // The lit tab is the left one, so a press on the right (non-lit) tab fires it by its index.
             var tabs = buildTwoTabRowAtRow(0, cell -> firedCell[0] = cell);
-            var activatedCell = PanelController.activateControlIfHit(
-                tabs,
-                FULL_VIEWPORT,
+            var activatedCell = PanelController.activateBodyControlIfHit(
+                buildBodyPlacement(tabs),
                 ROW.x() + 3f * ROW.width() / 4f,
                 ROW.y() + ROW.height() / 2f);
 
             assertThat(activatedCell)
                 .as("a tab reports its own index")
-                .isEqualTo(1);
+                .isEqualTo(new ResolvedBodyCell(tabs, 1));
             assertThat(firedCell[0])
                 .as("the index reported is the index the action fired for")
                 .isEqualTo(1);
         }
 
         @Test
-        void activateControlIfHitTreatsAPressOnTheLitTabAsInert() {
+        void activateBodyControlIfHitTreatsAPressOnTheLitTabAsInert() {
 
             var fired = new boolean[1];
 
             // A tabs row is always inert on its lit tab (INERT reselect), so a press on the left, lit tab
             // reaches no action - matching a vanilla tab strip, where clicking the active tab does nothing.
             var tabs = buildTwoTabRowAtRow(0, cell -> fired[0] = true);
-            var activatedCell = PanelController.activateControlIfHit(
-                tabs,
-                FULL_VIEWPORT,
+            var activatedCell = PanelController.activateBodyControlIfHit(
+                buildBodyPlacement(tabs),
                 ROW.x() + ROW.width() / 4f,
                 ROW.y() + ROW.height() / 2f);
 
@@ -178,12 +172,11 @@ final class PanelControllerTest {
         }
 
         @Test
-        void activateControlIfHitReportsNoHitForAPressOutsideEveryTab() {
+        void activateBodyControlIfHitReportsNoHitForAPressOutsideEveryTab() {
 
             var tabs = buildTwoTabRowAtRow(0, ControlAction.NONE);
-            var activatedCell = PanelController.activateControlIfHit(
-                tabs,
-                FULL_VIEWPORT,
+            var activatedCell = PanelController.activateBodyControlIfHit(
+                buildBodyPlacement(tabs),
                 ROW.x() - 10f,
                 ROW.y() + ROW.height() / 2f);
 
@@ -192,34 +185,33 @@ final class PanelControllerTest {
         }
 
         @Test
-        void activateControlIfHitFiresADeselectableHorizontalRadioOnARepickOfItsLitSegment() {
+        void activateBodyControlIfHitFiresADeselectableHorizontalRadioOnARepickOfItsLitSegment() {
 
             var firedCell = new int[] {-1};
 
             // A DESELECT horizontal radio wants the re-pick to reach the action so the host turns the
             // control off, so a press on the left, lit segment fires it by its index (not swallowed).
             var radio = buildTwoSegmentHorizontalRadioAtRow(ControlSpec.HorizontalRadio.of(
-                    List.of("Factions", "Alliances"), 
+                    List.of("Factions", "Alliances"),
                     0,
                     cell -> firedCell[0] = cell)
                 .handlesReselect(ReselectBehaviour.DESELECT));
 
-            var activatedCell = PanelController.activateControlIfHit(
-                radio,
-                FULL_VIEWPORT,
+            var activatedCell = PanelController.activateBodyControlIfHit(
+                buildBodyPlacement(radio),
                 ROW.x() + ROW.width() / 4f,
                 ROW.y() + ROW.height() / 2f);
 
             assertThat(activatedCell)
                 .as("the lit segment reports its own index")
-                .isZero();
+                .isEqualTo(new ResolvedBodyCell(radio, 0));
             assertThat(firedCell[0])
                 .as("the index reported is the index the action fired for")
                 .isZero();
         }
 
         @Test
-        void activateControlIfHitTreatsAPressOnAnInertHorizontalRadiosLitSegmentAsInert() {
+        void activateBodyControlIfHitTreatsAPressOnAnInertHorizontalRadiosLitSegmentAsInert() {
 
             var fired = new boolean[1];
 
@@ -230,9 +222,8 @@ final class PanelControllerTest {
                 0,
                 cell -> fired[0] = true));
 
-            var activatedCell = PanelController.activateControlIfHit(
-                radio,
-                FULL_VIEWPORT,
+            var activatedCell = PanelController.activateBodyControlIfHit(
+                buildBodyPlacement(radio),
                 ROW.x() + ROW.width() / 4f,
                 ROW.y() + ROW.height() / 2f);
 
@@ -278,6 +269,105 @@ final class PanelControllerTest {
     }
 
     @Nested
+    class ResolveHitBodyCell {
+
+        @Test
+        void resolveHitBodyCellReportsTheHitControlWithoutFiringItsAction() {
+
+            var fired = new boolean[1];
+
+            // The walk answers geometry alone: the same press that fires through activateBodyControlIfHit
+            // reports its control here with the action untouched, which is what lets a hover - a reader that
+            // only wants to know what is under a point - share the walk with the press.
+            var checkbox = buildCheckboxControl("Muted", cell -> fired[0] = true);
+            var resolvedCell = PanelController.resolveHitBodyCell(
+                buildBodyPlacement(checkbox),
+                ROW.x() + ROW.width() / 2f,
+                ROW.y() + ROW.height() / 2f);
+
+            assertThat(resolvedCell)
+                .isEqualTo(new ResolvedBodyCell(checkbox, 0));
+            assertThat(fired[0])
+                .as("resolving a cell must not fire it")
+                .isFalse();
+        }
+
+        @Test
+        void resolveHitBodyCellReportsTheLitSegmentOfAnInertRowLikeAnyOther() {
+
+            // The contract line at the level a hover reads: an INERT row swallows a press on its lit
+            // segment, and the segment is still what the point is over. Pinned on the walk as well as on the
+            // single-control resolver, because a narrowing added here would leave the lit control dark while
+            // every test of the resolver below it still passed.
+            var radio = buildTwoSegmentHorizontalRadioAtRow(ControlSpec.HorizontalRadio.of(
+                List.of("Short", "Full"),
+                0,
+                ControlAction.NONE));
+
+            var resolvedCell = PanelController.resolveHitBodyCell(
+                buildBodyPlacement(radio),
+                ROW.x() + ROW.width() / 4f,
+                ROW.y() + ROW.height() / 2f);
+
+            assertThat(resolvedCell)
+                .as("what a point is over does not depend on what pressing it would do")
+                .isEqualTo(new ResolvedBodyCell(radio, 0));
+        }
+
+        @Test
+        void resolveHitBodyCellRejectsAScrollingListRowScrolledOutOfItsViewport() {
+
+            // The step's own rule, stated where a hover will read it: the row's segment sits at ROW and the
+            // viewport is a strip well above it, as if the row had scrolled up under a pinned control, so a
+            // point over the clipped-out row is over nothing. The walk asks for the viewport itself, which
+            // is why no caller can forget to.
+            var list = buildScrollingListAtRow(ControlAction.NONE);
+            var resolvedCell = PanelController.resolveHitBodyCell(
+                buildBodyPlacement(buildViewportAboveRow(), list),
+                ROW.x() + ROW.width() / 2f,
+                ROW.y() + ROW.height() / 2f);
+
+            assertThat(resolvedCell)
+                .as("a row clipped from the viewport is under nothing")
+                .isNull();
+        }
+
+        @Test
+        void resolveHitBodyCellReachesTheControlDrawnOverAScrolledAwayRow() {
+
+            // Why the clip has to live in the walk rather than beside it. Both controls are laid at ROW -
+            // the list's row having scrolled up to where the pinned checkbox is drawn - so the point is over
+            // two laid-out controls and only one of them is on screen. Without the clip the walk stops on
+            // the invisible row first and the checkbox the player can actually see never answers.
+            var checkbox = buildCheckboxControl("Muted", ControlAction.NONE);
+            var resolvedCell = PanelController.resolveHitBodyCell(
+                buildBodyPlacement(
+                    buildViewportAboveRow(),
+                    buildScrollingListAtRow(ControlAction.NONE),
+                    checkbox),
+                ROW.x() + ROW.width() / 2f,
+                ROW.y() + ROW.height() / 2f);
+
+            assertThat(resolvedCell)
+                .as("the control on screen answers, not the one clipped away under it")
+                .isEqualTo(new ResolvedBodyCell(checkbox, 0));
+        }
+
+        @Test
+        void resolveHitBodyCellReportsNoControlForAPointOnBlankBody() {
+
+            var checkbox = buildCheckboxControl("Muted", ControlAction.NONE);
+            var resolvedCell = PanelController.resolveHitBodyCell(
+                buildBodyPlacement(checkbox),
+                ROW.x() - 10f,
+                ROW.y() + ROW.height() / 2f);
+
+            assertThat(resolvedCell)
+                .isNull();
+        }
+    }
+
+    @Nested
     class ResolveHitCell {
 
         @Test
@@ -310,10 +400,9 @@ final class PanelControllerTest {
 
             // The option's segment sits at ROW, but the viewport is a strip well above it - as if the row
             // scrolled up under the header - so a point over the clipped-out row resolves to no cell.
-            var viewportAbove = new Rectangle(ROW.x(), ROW.y() + 100f, ROW.width(), 40f);
             var resolvedCell = PanelController.resolveHitCell(
                 list,
-                viewportAbove,
+                buildViewportAboveRow(),
                 ROW.x() + ROW.width() / 2f,
                 ROW.y() + ROW.height() / 2f);
 
@@ -330,10 +419,9 @@ final class PanelControllerTest {
             // The clip is the scrolling list's alone: a pinned control is drawn wherever it was laid, so a
             // viewport that excludes it says nothing about whether the player can see it. Without this the
             // clause holds only by luck, every other case passing a viewport that covers its control.
-            var viewportAbove = new Rectangle(ROW.x(), ROW.y() + 100f, ROW.width(), 40f);
             var resolvedCell = PanelController.resolveHitCell(
                 checkbox,
-                viewportAbove,
+                buildViewportAboveRow(),
                 ROW.x() + ROW.width() / 2f,
                 ROW.y() + ROW.height() / 2f);
 
@@ -399,6 +487,34 @@ final class PanelControllerTest {
                 .as("the lit tab is under the pointer like any other")
                 .isZero();
         }
+    }
+
+    // A panel whose body holds the given controls and whose flex viewport covers everything, so the walk
+    // over it is clipped only in the cases that build a viewport of their own.
+    private static PanelPlacement buildBodyPlacement(Control... bodyControls) {
+        return buildBodyPlacement(FULL_VIEWPORT, bodyControls);
+    }
+
+    // The same panel with the flex viewport a case wants to exercise the clip with. The box and body are
+    // the full viewport rather than a real frame: nothing here goes through handlePointer, which is the only
+    // reader that tests a point against them.
+    private static PanelPlacement buildBodyPlacement(
+            Rectangle flexViewport,
+            Control... bodyControls) {
+
+        return new PanelPlacement(
+            FULL_VIEWPORT,
+            FULL_VIEWPORT,
+            List.of(bodyControls),
+            flexViewport,
+            0f,
+            0f);
+    }
+
+    // A flex viewport sitting well above ROW, so a scrolling control laid out at ROW reads as a row that has
+    // scrolled up out of sight under whatever is pinned above the list.
+    private static Rectangle buildViewportAboveRow() {
+        return new Rectangle(ROW.x(), ROW.y() + 100f, ROW.width(), 40f);
     }
 
     // A single-row checkbox occupying ROW, so each test states only the label and action that

@@ -41,6 +41,12 @@ public final class PanelController {
     // straight back - a second name for one null is a second place to explain why it is not an index.
     static final Integer NO_CELL_RESOLVED = null;
 
+    // The same answer one granularity up: the point is over no body control at all, rather than over a
+    // control but on none of its cells. A separate name because a walk over the strip returns a different
+    // type from a hit-test of one control, not because it means anything different - a reader that has one
+    // of these has a control and a cell, and a reader that has neither has this.
+    static final ResolvedBodyCell NO_BODY_CELL_RESOLVED = null;
+
     // This panel's scroll position, read by the layout and written by the wheel and by a drag.
     private final ScrollState scrollState = new ScrollState();
 
@@ -94,40 +100,52 @@ public final class PanelController {
             scrollListUnderPointer(event, placement);
         } else if (event.isLMBDownEvent()) {
             if (!beginThumbDragIfPressed(event, placement)) {
-                actOnLeftPress(
-                    placement,
-                    event.getX(),
-                    event.getY());
+
+                // A press on the border or on blank body resolves to no control and only consumes (below),
+                // so empty chrome swallows the click without acting. What fired is immaterial here - the
+                // action carries its own cell - so the answer is dropped; a header tab is what needs it.
+                activateBodyControlIfHit(placement, event.getX(), event.getY());
             }
         }
         event.consume();
     }
 
     /**
-     * Fires the action of the cell a press lands on, and reports which cell that was. Resolves the cell
-     * through {@link #resolveHitCell(Control, Rectangle, float, float)} and offers it to {@link
-     * #activateCellIfActionable}, so the geometry a press acts on is the geometry that resolver answers and
-     * the narrowing that decides whether it acts is stated once, beside the action it gates.
+     * Fires the action of the body control a press lands on, and reports which cell of it fired. Resolves
+     * the press through {@link #resolveHitBodyCell} and offers what comes back to {@link
+     * #activateCellIfActionable}, so the geometry a press acts on is the geometry the panel's one body
+     * resolver answers, and the narrowing that decides whether it acts is stated once, beside the action it
+     * gates.
      *
-     * <p>The cell comes back rather than a bare yes/no because the hit-test is the only thing that resolved
-     * it: a caller wanting to mark the cell it just fired would otherwise walk the same segments a second
-     * time to recover a number this already had. The action's meaning stays with whoever supplied the spec -
-     * this only maps the click to a cell.
+     * <p>The walk stops at the control the point is over rather than at the first control willing to act. A
+     * press on an inert cell has landed on that cell, and looking past it for something further down the
+     * strip would fire a control the player never aimed at. Nothing in a vertical strip overlaps today, so
+     * the two orders agree - which is why the one that matches what the player pressed is the one written
+     * down, rather than the one that happens to fall out of a loop over firings.
      *
-     * @param control      the laid-out control to hit-test
-     * @param flexViewport the scrolling control's viewport; a scrolling control only counts inside it
-     * @param pointX       the press x, in UI coordinates
-     * @param pointY       the press y, in UI coordinates
-     * @return the cell that fired, or {@code null} when the press acted on nothing
+     * <p>The hit comes back rather than a bare yes/no because the hit-test is the only thing that resolved
+     * it: a caller wanting to mark what it just fired would otherwise walk the strip a second time to
+     * recover what this already had. The action's meaning stays with whoever supplied the spec - this only
+     * maps the press to a cell.
+     *
+     * @param placement the laid-out panel the renderer drew this frame
+     * @param pointX    the press x, in UI coordinates
+     * @param pointY    the press y, in UI coordinates
+     * @return the control and cell that fired, or {@code null} when the press acted on nothing
      */
-    static Integer activateControlIfHit(
-            Control control,
-            Rectangle flexViewport,
+    static ResolvedBodyCell activateBodyControlIfHit(
+            PanelPlacement placement,
             float pointX,
             float pointY) {
-        return activateCellIfActionable(
-            control,
-            resolveHitCell(control, flexViewport, pointX, pointY));
+
+        var hitCell = resolveHitBodyCell(placement, pointX, pointY);
+        if (hitCell == NO_BODY_CELL_RESOLVED) {
+            return NO_BODY_CELL_RESOLVED;
+        }
+        if (activateCellIfActionable(hitCell.control(), hitCell.cell()) == NO_CELL_RESOLVED) {
+            return NO_BODY_CELL_RESOLVED;
+        }
+        return hitCell;
     }
 
     /**
@@ -160,6 +178,46 @@ public final class PanelController {
     }
 
     /**
+     * Resolves which cell of which body control a point lands on - the one hit-test the panel answers its
+     * body with, read by the press that fires a control and by whatever lights one under the pointer. Two
+     * readers of one walk rather than two walks that happen to agree, so the control that lights and the
+     * control a press lands on are the same control because they are the same answer.
+     *
+     * <p>Taking the placement rather than a control is the whole point of it. The scrolling list is clipped
+     * to {@link PanelPlacement#flexViewport()} in here, so the viewport - the thing that decides whether a
+     * laid-out row is on screen at all - reaches the hit-test without any caller having to remember to hand
+     * it over. A row scrolled up under a pinned control (or down under a footer) keeps its segment exactly
+     * where the layout put it, so a caller walking the strip for itself and passing no viewport would find
+     * that row hittable, and lightable, straight through the control drawn over it.
+     *
+     * <p>Geometry and visibility and nothing else, like every resolver here: whether pressing the cell it
+     * reports would <em>do</em> anything is {@link #activateCellIfActionable}'s question, which is what lets
+     * a hover read what a press reads.
+     *
+     * @param placement the laid-out panel the renderer drew this frame
+     * @param pointX    the point's x, in UI coordinates
+     * @param pointY    the point's y, in UI coordinates
+     * @return the control and cell under the point, or {@code null} when it is over none
+     */
+    static ResolvedBodyCell resolveHitBodyCell(
+            PanelPlacement placement,
+            float pointX,
+            float pointY) {
+
+        for (var control : placement.bodyControls()) {
+
+            var resolvedCell = resolveHitCell(control, placement.flexViewport(), pointX, pointY);
+
+            // A caption, a divider, and a scrolled-away row all report no cell, so the walk carries on past
+            // them to the controls below rather than stopping on the first thing whose row the point is in.
+            if (resolvedCell != NO_CELL_RESOLVED) {
+                return new ResolvedBodyCell(control, resolvedCell);
+            }
+        }
+        return NO_BODY_CELL_RESOLVED;
+    }
+
+    /**
      * Resolves which cell of a control in a scrollable strip a point lands on: a control marked {@link
      * ControlSpec.VerticalTable#scrolls()} counts only inside {@code flexViewport}, and otherwise resolves
      * as {@link #resolveHitCell(Control, float, float)}. The scrolling list clips because a row scrolled up
@@ -178,7 +236,7 @@ public final class PanelController {
             Rectangle flexViewport,
             float pointX,
             float pointY) {
-                
+
         if (control.spec() instanceof ControlSpec.VerticalTable table
                 && table.scrolls()
                 && !flexViewport.containsPoint(pointX, pointY)) {
@@ -285,18 +343,6 @@ public final class PanelController {
             return;
         }
         scrollState.scrollBy(-Math.signum((float) event.getEventValue()) * SCROLL_STEP_PX);
-    }
-
-    // Routes a left press inside the box to the body control under it: a control fires its action. A press
-    // on the border or blank body falls through to no control and only consumes (handled by the caller),
-    // so empty chrome swallows the click without acting. Which cell fired is immaterial here - the action
-    // carries it - so only "did one" is read; a header tab is what needs the cell itself.
-    private static void actOnLeftPress(PanelPlacement placement, float pointX, float pointY) {
-        for (var control : placement.bodyControls()) {
-            if (activateControlIfHit(control, placement.flexViewport(), pointX, pointY) != null) {
-                return;
-            }
-        }
     }
 
     // Whether a press on an already-resolved cell reaches the control's action. Only a segmented control
