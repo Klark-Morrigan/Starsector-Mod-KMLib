@@ -3,6 +3,7 @@ package kmlib.starsector.ui.render.gl.tooltip;
 import kmlib.starsector.ui.widgets.tooltip.TooltipStyle;
 
 import java.awt.Color;
+import java.util.Objects;
 
 /**
  * The look a {@link CursorTooltipRenderer} paints a tooltip in: the typography each kind of its lines
@@ -15,18 +16,30 @@ import java.awt.Color;
  * part of the look that is not GL's business: the same value describes a tooltip drawn with the game's
  * own widgets. What is left here is the chrome that only a raw-GL box has to decide.
  *
- * @param typography   the look of each kind of line, from which every row's face, size, casing, and
- *                     default colour is resolved; a line's face size is also its line height and
- *                     crest side
- * @param opacity      overall alpha, 0..1, applied to the box, the crests, and the text alike
- * @param borderWidth  the box border thickness; 0 draws only the fill
- * @param fillColour   the box's backdrop colour
- * @param borderColour the box's border colour
+ * @param typography      the look of each kind of line, from which every row's face, size, casing, and
+ *                        default colour is resolved; a line's face size is also its line height and
+ *                        crest side
+ * @param opacity         overall alpha, 0..1, applied to the box, the crests, and the text alike
+ * @param borderWidth     the box border thickness; 0 draws only the fill
+ * @param fillColour      the box's backdrop colour
+ * @param borderColour    the box's border colour
+ * @param leaderLineStyle how heavily the rules led between a row's label and its value draw;
+ *                        {@link TooltipLeaderLineStyle#TEXT_WEIGHTED} unless the host tunes them
  */
 public record CursorTooltipStyle(
     TooltipStyle typography,
     float opacity,
     float borderWidth,
     Color fillColour,
-    Color borderColour) {
+    Color borderColour,
+    TooltipLeaderLineStyle leaderLineStyle) {
+
+    /**
+     * Rejects a null leader look at construction: a box that rules no leaders states
+     * {@link TooltipLeaderLineStyle#TEXT_WEIGHTED} at no thickness rather than leaving the look
+     * unstated, so nothing below has to read an absent look and a switched-off one as the same thing.
+     */
+    public CursorTooltipStyle {
+        Objects.requireNonNull(leaderLineStyle, "leaderLineStyle");
+    }
 }

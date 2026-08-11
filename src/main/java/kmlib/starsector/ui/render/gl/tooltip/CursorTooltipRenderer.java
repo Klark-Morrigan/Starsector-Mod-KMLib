@@ -140,6 +140,7 @@ public final class CursorTooltipRenderer {
             placement.leaderLine(),
             placement.rowTopY(),
             rowPaint.textStyle().face(),
+            style.leaderLineStyle(),
             rowPaint.opacity());
 
         // Anchored as the layout pinned them, not by each style's own alignment: the columns are the
