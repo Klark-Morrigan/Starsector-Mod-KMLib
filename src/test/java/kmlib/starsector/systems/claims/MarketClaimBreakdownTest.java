@@ -1,6 +1,7 @@
 package kmlib.starsector.systems.claims;
 
 import kmlib.starsector.entities.EntityMapIcon;
+import kmlib.starsector.entities.EntityNameplate;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -18,8 +19,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 final class MarketClaimBreakdownTest {
 
-    private static final String MARKET_NAME = "Chicomoztoc";
-
     // Where the market falls in the system's listing. No case here poses a tie, so every market
     // built below takes the head of the list.
     private static final int FIRST_LISTED = 1;
@@ -29,10 +28,12 @@ final class MarketClaimBreakdownTest {
     // how the contest met the market.
     private static final boolean IS_KNOWN_TO_PLAYER = true;
 
-    // The glyph the sector map marks the colony's entity with. Carried through the record untouched,
-    // no case here being about what a surface goes on to draw with it.
-    private static final Optional<EntityMapIcon> MARKET_ICON = Optional.of(
-        new EntityMapIcon("graphics/warroom/icon_planet.png", new Color(120, 200, 90)));
+    // How the colony is identified - its name and the glyph the sector map marks its entity with.
+    // Carried through the record untouched, no case here being about what a surface goes on to draw
+    // with either half.
+    private static final EntityNameplate MARKET_IDENTITY = new EntityNameplate(
+        "Chicomoztoc",
+        Optional.of(new EntityMapIcon("graphics/warroom/icon_planet.png", new Color(120, 200, 90))));
 
     // The plainest colony there is - a size and nothing else - for the cases about how a contest
     // reached a market rather than about what it came to.
@@ -98,24 +99,6 @@ final class MarketClaimBreakdownTest {
         }
 
         @Test
-        void readsAnAbsentIconGivenAsNullAsNoIcon() {
-            // A hand-built market states its terms and rarely its glyph, so an unstated icon has to
-            // mean an unmarked colony rather than fail late where a line is being composed.
-            var claim = new MarketClaimBreakdown(
-                MARKET_NAME,
-                null,
-                FIRST_LISTED,
-                IS_KNOWN_TO_PLAYER,
-                ContestAdmission.WEIGHED,
-                PLAIN_MARKET_SIZE,
-                NO_SIBLING_MARKETS,
-                OptionalInt.empty());
-
-            assertThat(claim.marketIcon())
-                .isEmpty();
-        }
-
-        @Test
         void readsAnAbsentAdmissionGivenAsNullAsTheWeighedOne() {
             // The ordinary market is the one a hand-built case leaves unstated, so an unstated
             // admission has to mean the competitor rather than fail late on a null.
@@ -138,12 +121,12 @@ final class MarketClaimBreakdownTest {
             // than the total the map paints its fill by - and so does what identifies the colony
             // they belong to, name and map glyph alike, a term printed against no colony being
             // no account at all.
-            assertThat(claim.marketName())
-                .isEqualTo("Chicomoztoc");
-            assertThat(claim.marketIcon())
-                .contains(new EntityMapIcon(
-                    "graphics/warroom/icon_planet.png",
-                    new Color(120, 200, 90)));
+            assertThat(claim.marketNameplate())
+                .isEqualTo(new EntityNameplate(
+                    "Chicomoztoc",
+                    Optional.of(new EntityMapIcon(
+                        "graphics/warroom/icon_planet.png",
+                        new Color(120, 200, 90)))));
             assertThat(claim.marketSize())
                 .isEqualTo(5);
             assertThat(claim.siblingMarketCount())
@@ -162,8 +145,7 @@ final class MarketClaimBreakdownTest {
             OptionalInt militaryBonus) {
 
         return new MarketClaimBreakdown(
-            MARKET_NAME,
-            MARKET_ICON,
+            MARKET_IDENTITY,
             FIRST_LISTED,
             IS_KNOWN_TO_PLAYER,
             ContestAdmission.WEIGHED,
@@ -176,8 +158,7 @@ final class MarketClaimBreakdownTest {
     // read as. Its terms are the plainest there are, no case about admission being about the sum.
     private static MarketClaimBreakdown buildClaimAdmittedAs(ContestAdmission admission) {
         return new MarketClaimBreakdown(
-            MARKET_NAME,
-            MARKET_ICON,
+            MARKET_IDENTITY,
             FIRST_LISTED,
             IS_KNOWN_TO_PLAYER,
             admission,

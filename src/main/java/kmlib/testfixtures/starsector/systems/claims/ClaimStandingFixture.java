@@ -1,12 +1,11 @@
 package kmlib.testfixtures.starsector.systems.claims;
 
-import kmlib.starsector.entities.EntityMapIcon;
+import kmlib.starsector.entities.EntityNameplate;
 import kmlib.starsector.systems.claims.ContestAdmission;
 import kmlib.starsector.systems.claims.FactionClaimScore;
 import kmlib.starsector.systems.claims.MarketClaimBreakdown;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.OptionalInt;
 
 /**
@@ -21,8 +20,11 @@ import java.util.OptionalInt;
 public final class ClaimStandingFixture {
 
     // The one colony a plainly-scored standing rests on. Named rather than left blank so a box
-    // rendering the market list has something to print.
-    private static final String STANDING_MARKET_NAME = "Standing Colony";
+    // rendering the market list has something to print, and marked with nothing: a test posing
+    // standings by score alone is not about how a market line is identified, and a glyph here would
+    // put a mark on every box built from this fixture.
+    private static final EntityNameplate STANDING_MARKET =
+        EntityNameplate.createUnmarkedNameplate("Standing Colony");
 
     // The market carries the whole score on its size, which is the shape with the fewest moving
     // parts: no siblings beside it and no garrison bonus folded into it.
@@ -35,11 +37,6 @@ public final class ClaimStandingFixture {
     // The market is one the player has found. A test posing standings by score alone is posing no
     // fog-of-war case.
     private static final boolean IS_KNOWN_TO_PLAYER = true;
-
-    // The colony's entity carries no map glyph. A test posing standings by score alone is not about
-    // how a market line is identified, and an icon here would put a mark on every box built from
-    // this fixture.
-    private static final Optional<EntityMapIcon> NO_MAP_ICON = Optional.empty();
 
     private ClaimStandingFixture() {
     }
@@ -62,8 +59,7 @@ public final class ClaimStandingFixture {
             factionId,
             isTerritorial,
             new MarketClaimBreakdown(
-                STANDING_MARKET_NAME,
-                NO_MAP_ICON,
+                STANDING_MARKET,
                 FIRST_LISTED,
                 IS_KNOWN_TO_PLAYER,
                 // Held in the open and listed by the economy, which a standing market could not be

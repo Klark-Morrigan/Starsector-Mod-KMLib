@@ -1,13 +1,12 @@
 package kmlib.starsector.systems.claims;
 
-import kmlib.starsector.entities.EntityMapIcon;
+import kmlib.starsector.entities.EntityNameplate;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.OptionalInt;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,10 +31,6 @@ final class FactionClaimScoreTest {
     // here is about what a box may name or which market competes, and a standing carries the same
     // score either way - the score reads neither.
     private static final boolean IS_KNOWN_TO_PLAYER = true;
-
-    // Neither colony's entity carries a map glyph. What identifies a market is nothing a standing
-    // reads, so a case here states one no more than it states a name it never asserts.
-    private static final Optional<EntityMapIcon> NO_MAP_ICON = Optional.empty();
 
     private static final boolean IS_TERRITORIAL = true;
 
@@ -89,7 +84,7 @@ final class FactionClaimScoreTest {
             otherMarkets.clear();
 
             assertThat(standing.otherMarkets())
-                .extracting(MarketClaimBreakdown::marketName)
+                .extracting(market -> market.marketNameplate().displayName())
                 .containsExactly("Kazeron");
         }
 
@@ -121,7 +116,9 @@ final class FactionClaimScoreTest {
     }
 
     // One of the faction's markets, stated by what a case here varies. Whether the player has found
-    // it is the same throughout, and spelled at each call it would bury the terms that matter.
+    // it is the same throughout, and spelled at each call it would bury the terms that matter. The
+    // colony is marked with no glyph: what identifies a market beyond its name is nothing a standing
+    // reads, so stating one would say a case turns on it.
     private static MarketClaimBreakdown buildMarket(
             String marketName,
             int listingPosition,
@@ -130,8 +127,7 @@ final class FactionClaimScoreTest {
             OptionalInt militaryBonus) {
 
         return new MarketClaimBreakdown(
-            marketName,
-            NO_MAP_ICON,
+            EntityNameplate.createUnmarkedNameplate(marketName),
             listingPosition,
             IS_KNOWN_TO_PLAYER,
             ContestAdmission.WEIGHED,

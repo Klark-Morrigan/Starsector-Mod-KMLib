@@ -89,14 +89,14 @@ final class VanillaClaimBreakdownReaderTest {
             // The standing rests on the one strongest market, and the rest are carried beside
             // it: the sibling point inside its score is exactly the one market listed under it,
             // which is what lets a reader check the number rather than take it on trust.
-            assertThat(standing.standingMarket().marketName())
+            assertThat(standing.standingMarket().marketNameplate().displayName())
                 .isEqualTo("Chicomoztoc");
             assertThat(standing.standingMarket().marketSize())
                 .isEqualTo(5);
             assertThat(standing.standingMarket().siblingMarketCount())
                 .isEqualTo(1);
             assertThat(standing.otherMarkets())
-                .extracting(MarketClaimBreakdown::marketName)
+                .extracting(market -> market.marketNameplate().displayName())
                 .containsExactly("Kazeron");
         }
 
@@ -122,7 +122,7 @@ final class VanillaClaimBreakdownReaderTest {
                 .scores()
                 .get(0);
 
-            assertThat(standing.standingMarket().marketIcon())
+            assertThat(standing.standingMarket().marketNameplate().mapIcon())
                 .contains(new EntityMapIcon(
                     "graphics/icons/station0.png",
                     new Color(200, 200, 255)));
@@ -141,7 +141,7 @@ final class VanillaClaimBreakdownReaderTest {
                 .scores()
                 .get(0);
 
-            assertThat(standing.standingMarket().marketIcon())
+            assertThat(standing.standingMarket().marketNameplate().mapIcon())
                 .isEmpty();
         }
 
@@ -191,12 +191,12 @@ final class VanillaClaimBreakdownReaderTest {
             // Economy order, not score order: the weakest colony leads because that is where
             // the economy put it. A caller wanting them ranked sorts them itself, and one that
             // read them as already ranked would be quietly wrong on every multi-colony system.
-            assertThat(standing.standingMarket().marketName())
+            assertThat(standing.standingMarket().marketNameplate().displayName())
                 .isEqualTo("Chicomoztoc");
             assertThat(standing.standingMarket().siblingMarketCount())
                 .isEqualTo(2);
             assertThat(standing.otherMarkets())
-                .extracting(MarketClaimBreakdown::marketName)
+                .extracting(market -> market.marketNameplate().displayName())
                 .containsExactly("Sindria", "Kazeron");
         }
 
@@ -310,12 +310,12 @@ final class VanillaClaimBreakdownReaderTest {
             // The larger base never stands for the faction, yet it is what the sibling point is
             // made of, so it is listed with the rest: dropping it would leave a count with
             // nothing beneath it to account for.
-            assertThat(standing.standingMarket().marketName())
+            assertThat(standing.standingMarket().marketNameplate().displayName())
                 .isEqualTo("Kanta's Den");
             assertThat(standing.standingMarket().siblingMarketCount())
                 .isEqualTo(1);
             assertThat(standing.otherMarkets())
-                .extracting(MarketClaimBreakdown::marketName)
+                .extracting(market -> market.marketNameplate().displayName())
                 .containsExactly("Tigra City");
 
             // The hiddenness rides the listed market itself, so a reader of the parts can tell a
@@ -365,10 +365,10 @@ final class VanillaClaimBreakdownReaderTest {
             // The station is on the map in the faction's colours, so an account of the system that
             // never mentions it says less than the player can already see. It takes no standing all
             // the same: vanilla's walk covers the economy, and it was never registered.
-            assertThat(standing.standingMarket().marketName())
+            assertThat(standing.standingMarket().marketNameplate().displayName())
                 .isEqualTo("Ancyra");
             assertThat(standing.otherMarkets())
-                .extracting(MarketClaimBreakdown::marketName)
+                .extracting(market -> market.marketNameplate().displayName())
                 .containsExactly("Galatia Academy");
             assertThat(standing.otherMarkets().get(0).isOffEconomyMarket())
                 .isTrue();
@@ -401,7 +401,7 @@ final class VanillaClaimBreakdownReaderTest {
                 .isEqualTo(1);
             assertThat(standing.otherMarkets())
                 .extracting(
-                    MarketClaimBreakdown::marketName,
+                    market -> market.marketNameplate().displayName(),
                     MarketClaimBreakdown::listingPosition)
                 .containsExactly(tuple("Kazeron", 2), tuple("Galatia Academy", 3));
         }
