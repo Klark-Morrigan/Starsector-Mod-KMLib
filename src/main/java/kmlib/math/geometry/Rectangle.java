@@ -6,12 +6,17 @@ package kmlib.math.geometry;
  * which matches {@code x}/{@code y} being the lower-left corner) and as a plain geometric
  * bound. A rectangle laid out for drawing hit-tests a point with no conversion.
  */
-public record Rectangle(float x, float y, float width, float height) {
+public record Rectangle(
+    float x,
+    float y,
+    float width,
+    float height) {
 
     /**
      * @return whether {@code (pointX, pointY)} lies within this rectangle, edges inclusive
      */
     public boolean containsPoint(float pointX, float pointY) {
+
         return pointX >= x
             && pointX <= x + width
             && pointY >= y
@@ -29,15 +34,38 @@ public record Rectangle(float x, float y, float width, float height) {
      * @return the overlapping region, with zero-floored extents
      */
     public Rectangle intersectWith(Rectangle other) {
+
         var left = Math.max(x, other.x);
         var bottom = Math.max(y, other.y);
         var right = Math.min(x + width, other.x + other.width);
         var top = Math.min(y + height, other.y + other.height);
+
         return new Rectangle(
             left,
             bottom,
             Math.max(0f, right - left),
             Math.max(0f, top - bottom));
+    }
+
+    /**
+     * Unions this rectangle with {@code other} into the smallest rectangle enclosing both. A widget
+     * painted as several rects sitting outside one another has no single box of its own; this is how
+     * one is composed, so a clip, a bound, or a backdrop covering the whole of it is stated once from
+     * the pieces rather than re-derived from corner arithmetic at each site. Unlike
+     * {@link #intersectWith} the result is a superset of both inputs, so it can cover screen neither
+     * input does - the gap between two disjoint pieces is inside the union.
+     *
+     * @param other the rectangle to widen this one to include
+     * @return the smallest rectangle containing both
+     */
+    public Rectangle unionWith(Rectangle other) {
+
+        var left = Math.min(x, other.x);
+        var bottom = Math.min(y, other.y);
+        var right = Math.max(x + width, other.x + other.width);
+        var top = Math.max(y + height, other.y + other.height);
+
+        return new Rectangle(left, bottom, right - left, top - bottom);
     }
 
     /**
@@ -51,8 +79,10 @@ public record Rectangle(float x, float y, float width, float height) {
      * @return the inner box, with zero-floored extents
      */
     public Rectangle computeInsetBox(float inset) {
+
         var innerWidth = Math.max(0f, width - 2f * inset);
         var innerHeight = Math.max(0f, height - 2f * inset);
+
         return new Rectangle(
             computeCenterX() - innerWidth / 2f,
             computeCenterY() - innerHeight / 2f,
