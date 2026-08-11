@@ -18,9 +18,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * snapped sizing gives each its own label plus padding (floored at the minimum), and fixed sizing gives
  * every segment one stated width without measuring a label at all. The row width is those widths summed
  * plus one channel per neighbouring pair, placement lays the widths from an origin and steps over each
- * channel, and the dividers land on the real seams of the laid segments whether even or ragged. A
- * consistency check pins that a measured row equals the widths the placement lays, for both measured
- * sizings.
+ * channel, and the dividers land on the real seams of the laid segments whether even or ragged. The
+ * channels are the other reading of the same row - the room the placement stepped over - and are pinned
+ * against the placement that made them. A consistency check pins that a measured row equals the widths the
+ * placement lays, for both measured sizings.
  */
 class HorizontalSegmentsTest {
 
@@ -262,6 +263,86 @@ class HorizontalSegmentsTest {
 
             assertThat(HorizontalSegments.computeDividers(List.of(), 1f))
                 .isEmpty();
+        }
+    }
+
+    @Nested
+    class ComputeChannels {
+
+        @Test
+        void yieldsTheEmptyStripBetweenEachPartedPair() {
+            // Vanilla's own parted row: 130-wide boxes one pixel apart, so the channel is the single pixel
+            // at 130 - room that belongs to neither box and shows whatever the row stands on.
+            var segments = List.of(
+                new Rectangle(0f, 0f, 130f, 18f),
+                new Rectangle(131f, 0f, 130f, 18f));
+
+            assertThat(HorizontalSegments.computeChannels(segments))
+                .containsExactly(new Rectangle(130f, 0f, 1f, 18f));
+        }
+
+        @Test
+        void yieldsAChannelPerPartedPairOfARaggedRow() {
+            // Unequal boxes parted by unequal channels, so each is read off its own neighbours rather than
+            // off one gap assumed to repeat: 40 wide from 40, then 3 wide from 110.
+            var segments = List.of(
+                new Rectangle(0f, 0f, 40f, 20f),
+                new Rectangle(42f, 0f, 68f, 20f),
+                new Rectangle(113f, 0f, 28f, 20f));
+
+            assertThat(HorizontalSegments.computeChannels(segments))
+                .containsExactly(new Rectangle(40f, 0f, 2f, 20f),
+                    new Rectangle(110f, 0f, 3f, 20f));
+        }
+
+        @Test
+        void yieldsNoChannelsWhenTheSegmentsAbut() {
+            // An abutting row has nothing between its boxes, so a host that calls this for either kind of
+            // row paints nothing here rather than a zero-width quad on every seam.
+            var segments = List.of(
+                new Rectangle(0f, 0f, 50f, 20f),
+                new Rectangle(50f, 0f, 50f, 20f));
+
+            assertThat(HorizontalSegments.computeChannels(segments))
+                .isEmpty();
+        }
+
+        @Test
+        void yieldsNoChannelsForFewerThanTwoSegments() {
+
+            assertThat(HorizontalSegments.computeChannels(
+                    List.of(new Rectangle(0f, 0f, 50f, 20f))))
+                .isEmpty();
+
+            assertThat(HorizontalSegments.computeChannels(List.of()))
+                .isEmpty();
+        }
+
+        @Test
+        void yieldsNoChannelWhereTwoSegmentsOverlap() {
+            // A negative reading is boxes laid across each other, which is no strip of backing at all: a
+            // rect built from it would be a quad drawn over the very segments it sits between.
+            var segments = List.of(
+                new Rectangle(0f, 0f, 50f, 20f),
+                new Rectangle(45f, 0f, 50f, 20f));
+
+            assertThat(HorizontalSegments.computeChannels(segments))
+                .isEmpty();
+        }
+
+        @Test
+        void landsTheChannelsWherePlacementSteppedOverTheGap() {
+            // The channels are the very room the placement stepped over, so the two are pinned against each
+            // other rather than against hand-written boxes: 130-wide fixed tabs parted by a pixel.
+            var widths = HorizontalSegments.computeSegmentWidths(
+                List.of("SECTOR", "SYSTEM"),
+                FIXED_PARTED,
+                measurerFake);
+            var placed = HorizontalSegments.placeSegments(
+                0f, 0f, 18f, widths, FIXED_PARTED.neighbourGap());
+
+            assertThat(HorizontalSegments.computeChannels(placed))
+                .containsExactly(new Rectangle(130f, 0f, 1f, 18f));
         }
     }
 

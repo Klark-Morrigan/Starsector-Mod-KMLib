@@ -27,7 +27,8 @@ import java.util.List;
  * <p>Segments abut by default and part by the spec's neighbour gap. A gap is stepped over between two
  * boxes rather than taken out of either, so it belongs to no segment and a point inside it falls in
  * none - which is why a parted row rules no seams: {@link #computeDividers} marks where two segments
- * meet, and in a parted row they never do.
+ * meet, and in a parted row they never do. What a parted row has instead is the channel itself, which
+ * {@link #computeChannels} hands back so a host can paint the surface its segments stand on.
  */
 public final class HorizontalSegments {
     private HorizontalSegments() {
@@ -174,5 +175,43 @@ public final class HorizontalSegments {
             dividers.add(new Rectangle(segment.x(), segment.y(), thickness, segment.height()));
         }
         return List.copyOf(dividers);
+    }
+
+    /**
+     * One rect per channel of {@code segments}: the empty row between each neighbouring pair, spanning the
+     * following segment's height. The counterpart to {@link #computeDividers} for the other kind of row -
+     * a parted row has no seam to rule but does have a strip of whatever lies behind it showing between its
+     * boxes, and a host that stands its segments on a surface of its own has to paint that strip or the
+     * channel shows the screen through.
+     *
+     * <p>Read off the laid segments rather than off the spec's gap, so the channels land between the boxes
+     * actually drawn whatever sized them. Neighbours that abut have no channel between them and yield
+     * none, which is what makes this safe to call for a row of either kind.
+     *
+     * @param segments the laid-out segments, in row order (from {@link #placeSegments})
+     * @return one rect per channel, in row order (empty when the segments abut or number fewer than two)
+     */
+    public static List<Rectangle> computeChannels(List<Rectangle> segments) {
+
+        var channels = new ArrayList<Rectangle>(Math.max(0, segments.size() - 1));
+
+        for (var index = 1; index < segments.size(); index++) {
+
+            var previous = segments.get(index - 1);
+            var segment = segments.get(index);
+            var channelWidth = segment.x() - (previous.x() + previous.width());
+
+            // Only a real channel. Zero is the abutting row, and a negative reading is a row whose boxes
+            // overlap - neither is a strip of backing to paint, and a rect of either width would be a quad
+            // drawn over the very segments it sits between.
+            if (channelWidth > 0f) {
+                channels.add(new Rectangle(
+                    previous.x() + previous.width(),
+                    segment.y(),
+                    channelWidth,
+                    segment.height()));
+            }
+        }
+        return List.copyOf(channels);
     }
 }
