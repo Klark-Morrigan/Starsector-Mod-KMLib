@@ -54,9 +54,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * map is drawing its own tooltip decides whether that caller draws at all, which is behaviour worth
  * pinning without a live game.
  */
-public final class VanillaMapTooltip {
+public final class VanillaMapTooltipProbe {
 
-    private static final Logger LOG = Global.getLogger(VanillaMapTooltip.class);
+    private static final Logger LOG = Global.getLogger(VanillaMapTooltipProbe.class);
 
     // The map's tooltip type, matched by name up the returned value's class hierarchy. Its expandable
     // subclass is what the map actually shows, so the walk up from the runtime class finds this.
@@ -116,7 +116,7 @@ public final class VanillaMapTooltip {
      * @return whether the vanilla map screen is currently drawing a tooltip; {@code false} on any
      *         read failure, so the caller draws rather than hides on a broken read
      */
-    public boolean isShowing() {
+    public boolean isTooltipShowing() {
         return findShownTooltip() != null;
     }
 
@@ -129,7 +129,7 @@ public final class VanillaMapTooltip {
     // for the rest of the run over one bad frame. The two arrive as different types, which is the
     // by-name reach's stated contract; the instance test rather than a second catch clause because the
     // reach declares neither, so naming the checked one in a catch would not compile.
-    static Object tooltipShownBy(Object component) {
+    static Object findTooltipShownBy(Object component) {
         var shape = component.getClass();
         if (Boolean.FALSE.equals(TOOLTIP_HOSTING_SHAPES.get(shape))) {
             return null;
@@ -187,7 +187,7 @@ public final class VanillaMapTooltip {
         if (trace != null) {
             trace.nodesVisited++;
         }
-        var tooltip = tooltipShownBy(component);
+        var tooltip = findTooltipShownBy(component);
         if (tooltip != null && isStandardTooltip(tooltip)) {
             // A widget can hold a configured tooltip whose fader sits idle at zero (never hovered), which
             // must not suppress our overlay - only a tooltip actually faded in should. So gate on the
@@ -231,7 +231,7 @@ public final class VanillaMapTooltip {
     // The walk ran: the verdict, and what it saw on the way when the trace was built.
     private void reportWalkOutcome(boolean verdict, WalkTrace trace) {
         if (LOG.isDebugEnabled()) {
-            logOutcomeChange("verdict=" + verdict + " " + (trace == null ? "" : trace.describe()));
+            logOutcomeChange("verdict=" + verdict + " " + (trace == null ? "" : trace.describeWalk()));
         }
     }
 
@@ -275,7 +275,7 @@ public final class VanillaMapTooltip {
             }
         }
 
-        private String describe() {
+        private String describeWalk() {
             return "tab=" + tabClassName
                 + " visited=" + nodesVisited
                 + " shownTooltips=" + shownTooltips;
