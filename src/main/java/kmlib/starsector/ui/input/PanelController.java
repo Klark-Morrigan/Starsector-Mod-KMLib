@@ -101,10 +101,14 @@ public final class PanelController {
     }
 
     /**
-     * Fires the action of the cell a press lands on in a scrollable strip, and reports which cell that was.
-     * Resolves the cell through {@link #resolveHitCell(Control, Rectangle, float, float)} and fires it, so
-     * the geometry a press acts on is the geometry that resolver answers and nothing else. Read by the body
-     * strip, whose one scrolling list needs the viewport clip.
+     * Fires the action of the cell a press lands on, and reports which cell that was. Resolves the cell
+     * through {@link #resolveHitCell(Control, Rectangle, float, float)} and fires that, so the geometry a
+     * press acts on is the geometry that resolver answers and nothing else.
+     *
+     * <p>The cell comes back rather than a bare yes/no because the hit-test is the only thing that resolved
+     * it: a caller wanting to mark the cell it just fired would otherwise walk the same segments a second
+     * time to recover a number this already had. The action's meaning stays with whoever supplied the spec -
+     * this only maps the click to a cell.
      *
      * @param control      the laid-out control to hit-test
      * @param flexViewport the scrolling control's viewport; a scrolling control only counts inside it
@@ -120,24 +124,6 @@ public final class PanelController {
         return activateResolvedCell(
             control,
             resolveHitCell(control, flexViewport, pointX, pointY));
-    }
-
-    /**
-     * Fires the action of the cell a press lands on, and reports which cell that was, for a control not
-     * subject to scroll-clipping (a panel header, or any control that never scrolls). The cell comes back
-     * rather than a bare yes/no because the hit-test is the only thing that resolved it: a caller wanting to
-     * mark the cell it just fired would otherwise walk the same segments a second time to recover a number
-     * this already had. The action's meaning stays with whoever supplied the spec - this only maps the click
-     * to a cell. Package-private so a {@link TabPanelController} fires its header tabs control through this
-     * same path.
-     *
-     * @param control the laid-out control to hit-test
-     * @param pointX  the press x, in UI coordinates
-     * @param pointY  the press y, in UI coordinates
-     * @return the cell that fired, or {@code null} when the press acted on nothing
-     */
-    static Integer activateControlIfHit(Control control, float pointX, float pointY) {
-        return activateResolvedCell(control, resolveHitCell(control, pointX, pointY));
     }
 
     /**

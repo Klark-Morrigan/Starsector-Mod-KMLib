@@ -190,28 +190,6 @@ final class PanelControllerTest {
         }
 
         @Test
-        void activateControlIfHitFiresAHeaderTabThroughTheUnclippedCore() {
-
-            var firedCell = new int[] {-1};
-
-            // The viewport-less core is the path a tab panel's header takes - the header never scrolls, so
-            // it is never clipped. A press on the right (non-lit) tab fires it by its index, no viewport.
-            var tabs = buildTwoTabRowAtRow(0, cell -> firedCell[0] = cell);
-            var activatedCell = PanelController.activateControlIfHit(
-                tabs,
-                FULL_VIEWPORT,
-                ROW.x() + 3f * ROW.width() / 4f,
-                ROW.y() + ROW.height() / 2f);
-
-            assertThat(activatedCell)
-                .as("a tab reports its own index")
-                .isEqualTo(1);
-            assertThat(firedCell[0])
-                .as("the index reported is the index the action fired for")
-                .isEqualTo(1);
-        }
-
-        @Test
         void activateControlIfHitFiresADeselectableHorizontalRadioOnARepickOfItsLitSegment() {
 
             var firedCell = new int[] {-1};
@@ -308,6 +286,49 @@ final class PanelControllerTest {
             assertThat(resolvedCell)
                 .as("a row clipped from the viewport is under nothing")
                 .isNull();
+        }
+
+        @Test
+        void resolveHitCellIgnoresTheViewportForANonScrollingControl() {
+
+            var checkbox = buildCheckboxControl("Muted", ControlAction.NONE);
+
+            // The clip is the scrolling list's alone: a pinned control is drawn wherever it was laid, so a
+            // viewport that excludes it says nothing about whether the player can see it. Without this the
+            // clause holds only by luck, every other case passing a viewport that covers its control.
+            var viewportAbove = new Rectangle(ROW.x(), ROW.y() + 100f, ROW.width(), 40f);
+            var resolvedCell = PanelController.resolveHitCell(
+                checkbox,
+                viewportAbove,
+                ROW.x() + ROW.width() / 2f,
+                ROW.y() + ROW.height() / 2f);
+
+            assertThat(resolvedCell)
+                .as("a control that never scrolls is not clipped by the flex viewport")
+                .isZero();
+        }
+
+        @Test
+        void resolveHitCellReportsTheLitSegmentOfADeselectableRadio() {
+
+            // The other half of the press's narrowing: a DESELECT radio wants a re-pick to reach its action,
+            // so its lit segment resolves to itself rather than to no cell - the answer an inert row gives.
+            // Both directions are pinned because the narrowing is what separates this resolver from a plain
+            // "what is under the pointer", and a change that dropped it would still pass the inert case.
+            var radio = buildTwoSegmentHorizontalRadioAtRow(ControlSpec.HorizontalRadio.of(
+                    List.of("Factions", "Alliances"),
+                    0,
+                    ControlAction.NONE)
+                .handlesReselect(ReselectBehaviour.DESELECT));
+
+            var resolvedCell = PanelController.resolveHitCell(
+                radio,
+                ROW.x() + ROW.width() / 4f,
+                ROW.y() + ROW.height() / 2f);
+
+            assertThat(resolvedCell)
+                .as("a re-firing radio resolves its lit segment to itself")
+                .isZero();
         }
 
         @Test
