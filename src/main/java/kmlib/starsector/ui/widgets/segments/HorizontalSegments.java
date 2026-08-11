@@ -199,14 +199,15 @@ public final class HorizontalSegments {
 
             var previous = segments.get(index - 1);
             var segment = segments.get(index);
-            var channelWidth = segment.x() - (previous.x() + previous.width());
+            var channelLeft = previous.x() + previous.width();
+            var channelWidth = segment.x() - channelLeft;
 
             // Only a real channel. Zero is the abutting row, and a negative reading is a row whose boxes
             // overlap - neither is a strip of backing to paint, and a rect of either width would be a quad
             // drawn over the very segments it sits between.
             if (channelWidth > 0f) {
                 channels.add(new Rectangle(
-                    previous.x() + previous.width(),
+                    channelLeft,
                     segment.y(),
                     channelWidth,
                     segment.height()));
