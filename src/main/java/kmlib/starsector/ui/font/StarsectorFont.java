@@ -48,8 +48,13 @@ public enum StarsectorFont {
      * <p>Fifteen, against the {@code size=-12} its name and its descriptor both carry: the atlas
      * states a line height of 15, and that is what the loader scales against. The twelve reads as
      * the size because it is the size the face was matched at, not the size it draws at.
+     *
+     * <p>Hard-edged despite being an Orbitron: its atlas is {@code aa=1}, so it carries no soft edge
+     * of its own and interpolating it costs every stroke part of itself. It reads as a smooth face
+     * because the family is a smooth one and because its {@code smooth=1} flag says so, and neither
+     * is the test.
      */
-    VANILLA_ORBITRON_12_CONDENSED("orbitron12condensed", 15, AtlasSmoothing.SMOOTHED),
+    VANILLA_ORBITRON_12_CONDENSED("orbitron12condensed", 15, AtlasSmoothing.PIXEL_EXACT),
 
     /**
      * The pixel face vanilla sets its compact chrome in - the map-toggle buttons above the intel

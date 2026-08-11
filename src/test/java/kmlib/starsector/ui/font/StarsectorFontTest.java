@@ -49,23 +49,27 @@ class StarsectorFontTest {
     @Nested
     class GetSmoothing {
 
-        // Whether each atlas wants interpolating, read off the "smooth" flag in its .fnt descriptor under
-        // starsector-core/graphics/fonts. Restated here rather than parsed for the reason the native size
-        // is: a unit test has no install to read, and what is worth pinning is that a value's declared
-        // smoothing still matches the atlas its path names.
+        // Whether each atlas wants interpolating, read off the "aa" count in its .fnt descriptor under
+        // starsector-core/graphics/fonts - how many samples a glyph was rasterised from, so aa=1 carries
+        // no soft edge of its own and aa=4 does. Restated here rather than parsed for the reason the
+        // native size is: a unit test has no install to read, and what is worth pinning is that a value's
+        // declared smoothing still matches the atlas its path names.
+        //
+        // The neighbouring "smooth" flag is not the test, and the two disagree in both directions across
+        // these five: orbitron20aa is antialiased at smooth=0, orbitron12condensed hard-edged at
+        // smooth=1. Reading the wrong one is what had the condensed face drawn interpolated.
         @ParameterizedTest
         @EnumSource(StarsectorFont.class)
         void getSmoothingReportsWhatItsAtlasAsksFor(StarsectorFont font) {
 
             var expected = switch (font) {
 
-            // "smooth=0" in a face whose every stroke is one pixel wide: interpolated, each of them is
-            // entirely edge and loses part of itself, which reads as text dimmer than the colour it was
-            // set in.
-                case VANILLA_VICTOR_10 -> AtlasSmoothing.PIXEL_EXACT;
+            // aa=1: every stroke is one pixel wide, so interpolated each of them is entirely edge and
+            // loses part of itself, which reads as text dimmer than the colour it was set in.
+                case VANILLA_VICTOR_10,
+                    VANILLA_ORBITRON_12_CONDENSED -> AtlasSmoothing.PIXEL_EXACT;
                 case VANILLA_INSIGNIA_15,
                     VANILLA_ORBITRON_20AA,
-                    VANILLA_ORBITRON_12_CONDENSED,
                     VANILLA_INSIGNIA_42 -> AtlasSmoothing.SMOOTHED;
             };
 
