@@ -26,10 +26,15 @@ import kmlib.starsector.ui.widgets.tooltip.TooltipLeaderLine;
  */
 public final class TooltipLeaderLineRenderer {
 
-    // A hairline: the thinnest mark that still reads as a continuous line at every UI scale. Any heavier
-    // and the rule starts reading as a divider parting the label from the value, which is the opposite of
-    // what a leader is for - it ties the two together.
-    private static final float LEADER_LINE_THICKNESS = 1f;
+    // Half a UI unit, so the rule reads under the grey text it runs between rather than level with it. A
+    // solid run covers every pixel it crosses where a glyph stroke spends most of its edge at partial
+    // alpha, so the same shade laid at a full unit comes out heavier than the words either side of it -
+    // and a leader that reads as strongly as the line it serves has become a divider parting the label
+    // from the value, which is the opposite of what it is for.
+    //
+    // Under a whole unit the run no longer covers a pixel row outright: how solid it lands depends on
+    // where the row falls against the pixel grid, which moves as the box follows the cursor.
+    private static final float LEADER_LINE_THICKNESS = 0.5f;
 
     // Half the thickness - what the rule is dropped by to sit centred on the line it was given, rather
     // than hanging below it.
