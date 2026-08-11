@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Proxy;
 import java.util.List;
 
@@ -25,7 +26,8 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 /**
- * Pins the by-name reach's one judgement and its one contract.
+ * Pins the by-name reach's one judgement, and the two halves of the contract every caller of it
+ * writes its failure handling against.
  *
  * <p>The judgement is that a component exposing no {@code getChildrenCopy} is a leaf rather than a
  * read failure. Every walk built on this class descends through that call, so were it to report a
@@ -34,8 +36,13 @@ import static org.mockito.Mockito.when;
  *
  * <p>The contract is the opposite half: a hop that is genuinely absent throws rather than answering
  * null, which is what lets a caller tell a broken reach from an empty screen and apply its own
- * policy to each. Both halves are reachable here because neither needs a live widget tree - only a
+ * policy to each. Both are reachable here because neither needs a live widget tree - only a
  * component that answers the method name, which is what the fixture is.
+ *
+ * <p>Its two halves are named by type rather than asserted loosely, because the types are what a
+ * guard is written against and neither is what a reader would assume: an unreachable hop raises a
+ * *checked* exception from methods that declare none, and a hop that resolves and then throws
+ * arrives wrapped rather than as itself. A guard shaped for either one alone lets the other past.
  *
  * <p>Alongside them, the one thing about the argument-taking invoke a caller cannot see from its
  * signature: a boxed argument resolves the primitive parameter, which is what makes the core UI's
@@ -116,9 +123,26 @@ class CoreUiTreeTest {
             // The arguments select the overload, so a name that exists but takes something else is
             // as unreachable as one that does not exist at all. Both are raised rather than
             // answered null, so a caller drawing through this class learns it drew nothing.
+            //
+            // Named exactly, because the type is the contract: a checked exception arrives from a
+            // method that declares none, so a guard written as catch (Exception) around a hop that
+            // can also fail the way below does would compile and still let the frame die.
             assertThatThrownBy(() -> CoreUiTree
                 .invokeWithArgs(new ArgumentTakingTargetFake(), "recordAlpha", "not a float"))
-                .isInstanceOf(Throwable.class);
+                .isInstanceOf(NoSuchMethodException.class);
+        }
+
+        @Test
+        void invokeWithArgsSurfacesTheTargetsOwnFailureWrapped() {
+            // The other half of the failure contract, and the one a caller sees at runtime rather
+            // than during development: a hop that resolves and then throws comes back as the
+            // reflection wrapper, not as what the target actually threw. A caller logging the
+            // caught throwable has to unwrap to say anything useful about why a draw failed.
+            assertThatThrownBy(() -> CoreUiTree
+                .invokeWithArgs(new ArgumentTakingTargetFake(), "refuseAlpha", 0.75f))
+                .isInstanceOf(InvocationTargetException.class)
+                .cause()
+                .isInstanceOf(IllegalStateException.class);
         }
     }
 
@@ -256,6 +280,12 @@ class CoreUiTreeTest {
         public String recordAlpha(float alphaMult) {
             recordedAlpha = alphaMult;
             return "recorded";
+        }
+
+        // A hop that resolves and then fails, which is how a live component's draw misbehaves -
+        // distinct from a hop that was never reachable, and surfacing differently.
+        public String refuseAlpha(float alphaMult) {
+            throw new IllegalStateException("A target that refuses the call.");
         }
     }
 

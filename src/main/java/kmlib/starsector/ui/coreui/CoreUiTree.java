@@ -40,7 +40,9 @@ public final class CoreUiTree {
     private static final String GET_CHILDREN_METHOD = "getChildrenCopy";
 
     // ReflectionUtils.invoke resolves a public method (declared=false) matching the argument types
-    // it is handed - none, for the reads this class takes itself.
+    // it is handed - none, for the reads this class takes itself. Passed as an explicit shared array
+    // rather than left to the varargs call, which would allocate a fresh empty one at each hop of
+    // every tree walk, and those run per frame.
     private static final Object[] NO_ARGS = new Object[0];
     private static final boolean PUBLIC_METHOD = false;
 
@@ -66,12 +68,13 @@ public final class CoreUiTree {
     /**
      * Invokes a public no-arg method by name, so a caller can take a hop this class does not name.
      *
+     * <p>Fails exactly as {@link #invokeWithArgs} does, being the same call with nothing to pass -
+     * see there for what comes back out, which a caller either expects (a leaf that exposes no such
+     * method) or treats as its own kind of read failure.
+     *
      * @param instance   the object to call on
      * @param methodName the public no-arg method to resolve
      * @return whatever the method returned
-     * @throws RuntimeException when the method is absent or the call fails, which a caller either
-     *                          expects (a leaf that exposes no such method) or treats as its own
-     *                          kind of read failure
      */
     public static Object invokeNoArg(Object instance, String methodName) {
         return invokeWithArgs(instance, methodName, NO_ARGS);
