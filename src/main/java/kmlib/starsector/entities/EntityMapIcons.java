@@ -17,6 +17,11 @@ import java.util.Optional;
  * entity, a spec the entity does not have, or a blank sprite path all resolve to empty - so every
  * caller agrees on when an icon is present rather than each re-deciding what a blank path means.
  *
+ * <p>The glyph alone, and nothing about the entity beside it: a caller printing an entity in a list
+ * wants its name in the same breath, and that pairing is {@link EntityNameplates}'s, which reads
+ * this for the half it covers. Answering both here would make an icon lookup the place a name comes
+ * from too.
+ *
  * <p>Vanilla splits the icon across two specs that share no accessor: a planet's is on its planet
  * spec, and everything else - stations, relays, buoys, arrays - carries its own on a custom-entity
  * spec. Branching on which of the two applies is exactly the kind of split a caller drawing a name
