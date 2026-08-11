@@ -36,6 +36,11 @@ class TooltipStyleTest {
     private static final float WIDER_GROUP_BREAK = 9f;
     private static final float TOLERANCE = 0.001f;
 
+    // How far apart two lines of one block stand without a box asking - the box geometry's own line gap,
+    // restated for the same reason as the breaks above - and the tighter gap a box holds one run at.
+    private static final float DEFAULT_LINE_GAP = 4f;
+    private static final float TIGHTER_LINE_GAP = 1f;
+
     // What a box demotes a step by when it asks, and what it demotes by when it does not - restated here
     // rather than read off the class under test, so the baseline of "no shrink until asked for" has to be
     // changed deliberately in both places.
@@ -87,6 +92,14 @@ class TooltipStyleTest {
         return buildTwoFacedStyle().shrunkPerLevel(LEVEL_SHRINK);
     }
 
+    // The same two looks under a box holding one run of its lines tighter than the rest, which is the
+    // state every box that varies its spacing is in: one tier stated, and every other left as it was.
+    private static TooltipStyle buildTightenedStyle() {
+        return buildTwoFacedStyle().stackedAt(TooltipLineGaps
+            .createGaps(DEFAULT_LINE_GAP)
+            .gappedAtLevel(TWO_STEPS_UNDER, TIGHTER_LINE_GAP));
+    }
+
     // The size a body line lands on standing that many steps under the box's own voice, which is the one
     // lookup a renderer makes per row.
     private static double resolveParagraphSizeAt(int subordinationLevel) {
@@ -110,6 +123,18 @@ class TooltipStyleTest {
                 .isEqualTo(PARAGRAPH_STYLE);
             assertThat(style.sectionBreak())
                 .isCloseTo(DEFAULT_SECTION_BREAK, within(TOLERANCE));
+        }
+
+        @Test
+        void createStyleStacksItsLinesAPlainGapApartAtEveryTier() {
+            // The baseline every box built before there was anything to name still stands at: one gap
+            // between two lines of a block, whatever depth the line above it sits at.
+            var style = buildTwoFacedStyle();
+
+            assertThat(style.resolveLineGapAfter(IN_THE_BOXS_VOICE))
+                .isCloseTo(DEFAULT_LINE_GAP, within(TOLERANCE));
+            assertThat(style.resolveLineGapAfter(TWO_STEPS_UNDER))
+                .isCloseTo(DEFAULT_LINE_GAP, within(TOLERANCE));
         }
 
         @Test
@@ -217,6 +242,26 @@ class TooltipStyleTest {
     }
 
     @Nested
+    class StackedAt {
+
+        @Test
+        void stackedAtSetsHowFarApartTheLinesOfABlockStand() {
+            assertThat(buildTightenedStyle().lineGaps().resolveGapAfter(TWO_STEPS_UNDER))
+                .isCloseTo(TIGHTER_LINE_GAP, within(TOLERANCE));
+        }
+
+        @Test
+        void stackedAtChangesNothingElse() {
+            // A box tightening a run of its lines says nothing about how they are drawn or about how far
+            // apart its blocks stand, so everything but the spacing has to come through untouched.
+            assertThat(buildTightenedStyle())
+                .usingRecursiveComparison()
+                .ignoringFields("lineGaps")
+                .isEqualTo(buildTwoFacedStyle());
+        }
+    }
+
+    @Nested
     class ResolveStyleFor {
         
         @Test
@@ -315,6 +360,26 @@ class TooltipStyleTest {
                 .isEqualTo(PARAGRAPH_STYLE);
             assertThat(flatStyle.resolveStyleFor(TooltipLineStyle.PARAGRAPH, IN_THE_BOXS_VOICE))
                 .isEqualTo(PARAGRAPH_STYLE);
+        }
+    }
+
+    @Nested
+    class ResolveLineGapAfter {
+
+        @Test
+        void resolveLineGapAfterReturnsTheGapTheBoxHoldsThatTierAt() {
+            // The lookup a surface makes per line, and the reason the spacing is reachable from the
+            // style at all: a stated tier has to answer through the same object the looks come from.
+            assertThat(buildTightenedStyle().resolveLineGapAfter(TWO_STEPS_UNDER))
+                .isCloseTo(TIGHTER_LINE_GAP, within(TOLERANCE));
+        }
+
+        @Test
+        void resolveLineGapAfterReturnsThePlainGapForATierTheBoxNeverNamed() {
+            // Tightening one run must not respace the lines above it, which is what makes a box safe to
+            // state a single tier on.
+            assertThat(buildTightenedStyle().resolveLineGapAfter(ONE_STEP_UNDER))
+                .isCloseTo(DEFAULT_LINE_GAP, within(TOLERANCE));
         }
     }
 }

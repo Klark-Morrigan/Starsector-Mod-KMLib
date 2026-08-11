@@ -1,5 +1,6 @@
 package kmlib.starsector.ui.widgets.tooltip;
 
+import kmlib.starsector.ui.layout.TooltipBoxLayout;
 import kmlib.starsector.ui.text.TextStyle;
 
 /**
@@ -26,6 +27,8 @@ import kmlib.starsector.ui.text.TextStyle;
  *                       it, so it defaults to the body look rather than being stated by every caller
  * @param levelShrink    how much smaller each step under the box's own voice draws than the step above
  *                       it, in UI units; zero draws every level at its kind's own size
+ * @param lineGaps       how far apart two lines of one block stand, by the tier of the line above the
+ *                       gap - the spacing spent everywhere no block boundary falls
  * @param sectionBreak   the room taken above a block for the one above it, in UI units - what parts two
  *                       blocks, where two lines of one block sit a plain line gap apart
  * @param groupBreak     the room taken above a block nested inside another for the nested block before
@@ -37,6 +40,7 @@ public record TooltipStyle(
     TextStyle paragraphStyle,
     TextStyle footnoteStyle,
     float levelShrink,
+    TooltipLineGaps lineGaps,
     float sectionBreak,
     float groupBreak) {
 
@@ -55,16 +59,23 @@ public record TooltipStyle(
     // of rows reads at one size until a box states that its levels should read as levels.
     private static final float NO_LEVEL_SHRINK = 0f;
 
+    // How far apart two lines of one block stand unless a box says otherwise: the box geometry's own
+    // line gap at every tier, so a style that never names a tier spaces its lines exactly as a box did
+    // before there was anything to name.
+    private static final TooltipLineGaps DEFAULT_LINE_GAPS =
+        TooltipLineGaps.createGaps(TooltipBoxLayout.LINE_GAP);
+
     // The smallest a demoted line is allowed to reach. A deep enough stack would otherwise arrive at a
     // size no atlas can render legibly, and then at zero and below - so the shrink stops here and the
     // deepest levels share a size rather than vanishing.
     private static final double SMALLEST_SUBORDINATE_SIZE = 7d;
 
     /**
-     * Builds the plainest typography there is: the two looks a box always has, with blocks and the
-     * groups nested in them parted by the standard breaks and a note at the foot set in the body look.
-     * What a box wants beyond that it layers on with {@link #partedBy}, {@link #groupedBy}, or
-     * {@link #footnotedIn}, so a caller states only what differs from the baseline.
+     * Builds the plainest typography there is: the two looks a box always has, with its lines a plain
+     * gap apart, blocks and the groups nested in them parted by the standard breaks, and a note at the
+     * foot set in the body look. What a box wants beyond that it layers on with {@link #partedBy},
+     * {@link #groupedBy}, {@link #stackedAt}, or {@link #footnotedIn}, so a caller states only what
+     * differs from the baseline.
      *
      * <p>The footnote defaults rather than being asked for because most boxes note nothing at all, and
      * one that does not never resolves the look - so demanding a third face here would have every caller
@@ -80,6 +91,7 @@ public record TooltipStyle(
             paragraphStyle,
             paragraphStyle,
             NO_LEVEL_SHRINK,
+            DEFAULT_LINE_GAPS,
             DEFAULT_SECTION_BREAK,
             DEFAULT_GROUP_BREAK);
     }
@@ -92,7 +104,7 @@ public record TooltipStyle(
      * @return an otherwise-identical typography setting its footnotes in that look
      */
     public TooltipStyle footnotedIn(TextStyle footnoteStyle) {
-        return rebuildOnTheSameFaces(footnoteStyle, levelShrink, sectionBreak, groupBreak);
+        return rebuildOnTheSameFaces(footnoteStyle, levelShrink, lineGaps, sectionBreak, groupBreak);
     }
 
     /**
@@ -110,7 +122,24 @@ public record TooltipStyle(
      * @return an otherwise-identical typography shrinking its levels by that much
      */
     public TooltipStyle shrunkPerLevel(float levelShrink) {
-        return rebuildOnTheSameFaces(footnoteStyle, levelShrink, sectionBreak, groupBreak);
+        return rebuildOnTheSameFaces(footnoteStyle, levelShrink, lineGaps, sectionBreak, groupBreak);
+    }
+
+    /**
+     * Returns a copy of this typography stacking its lines at {@code lineGaps} - the room spent between
+     * two lines of one block, which a box can hold at one width throughout or vary by how deep the line
+     * above the gap sits.
+     *
+     * <p>Its own value type rather than a measurement per level held here, because the tiers a box
+     * spaces are as many as its subject matter goes deep: a style naming a gap per level would run out
+     * at whichever depth its author imagined, and every box would then restate the arithmetic of which
+     * tier it meant.
+     *
+     * @param lineGaps how far apart two lines of one block stand, by the tier of the line above the gap
+     * @return an otherwise-identical typography stacking its lines at those gaps
+     */
+    public TooltipStyle stackedAt(TooltipLineGaps lineGaps) {
+        return rebuildOnTheSameFaces(footnoteStyle, levelShrink, lineGaps, sectionBreak, groupBreak);
     }
 
     /**
@@ -121,7 +150,7 @@ public record TooltipStyle(
      * @return an otherwise-identical typography parting its blocks by that much
      */
     public TooltipStyle partedBy(float sectionBreak) {
-        return rebuildOnTheSameFaces(footnoteStyle, levelShrink, sectionBreak, groupBreak);
+        return rebuildOnTheSameFaces(footnoteStyle, levelShrink, lineGaps, sectionBreak, groupBreak);
     }
 
     /**
@@ -137,7 +166,7 @@ public record TooltipStyle(
      * @return an otherwise-identical typography parting its nested blocks by that much
      */
     public TooltipStyle groupedBy(float groupBreak) {
-        return rebuildOnTheSameFaces(footnoteStyle, levelShrink, sectionBreak, groupBreak);
+        return rebuildOnTheSameFaces(footnoteStyle, levelShrink, lineGaps, sectionBreak, groupBreak);
     }
 
     /**
@@ -172,12 +201,28 @@ public record TooltipStyle(
             lineStyleLook.face().size() - subordinationLevel * levelShrink));
     }
 
+    /**
+     * Answers how much room stands under a line that sits {@code subordinationLevel} steps under the
+     * box's own voice, where no block boundary falls between it and the line below.
+     *
+     * <p>Delegated here rather than left to callers to read off the gaps, so that a surface stacking a
+     * box asks its typography one question per line - the same shape as {@link #resolveStyleFor} - and
+     * a box's spacing stays reachable from the one thing every surface already holds.
+     *
+     * @param subordinationLevel how many steps under the box's own voice the line above the gap stands
+     * @return the room spent under that line, in UI units
+     */
+    public float resolveLineGapAfter(int subordinationLevel) {
+        return lineGaps.resolveGapAfter(subordinationLevel);
+    }
+
     // Rebuilds the typography around whatever a refinement changed, carrying the two looks a box always
     // has over untouched. Shared rather than each refinement restating the parts it leaves alone - which
     // is where a fourth part, and then a fifth, eventually gets restated wrongly in one of them.
     private TooltipStyle rebuildOnTheSameFaces(
             TextStyle footnoteStyle,
             float levelShrink,
+            TooltipLineGaps lineGaps,
             float sectionBreak,
             float groupBreak) {
 
@@ -186,6 +231,7 @@ public record TooltipStyle(
             paragraphStyle,
             footnoteStyle,
             levelShrink,
+            lineGaps,
             sectionBreak,
             groupBreak);
     }
