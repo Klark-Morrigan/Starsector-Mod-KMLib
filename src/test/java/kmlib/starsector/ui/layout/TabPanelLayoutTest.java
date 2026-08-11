@@ -44,7 +44,7 @@ final class TabPanelLayoutTest {
     private static final float TOLERANCE = 0.01f;
 
     // The tab row hangs from the panel's own top anchor, taking no border inset above it; across, it
-    // starts at the body's content edge (CONTENT_X below), the frame being drawn down the body alone.
+    // starts at the body's content edge, the frame being drawn down the body alone.
     private static final float HEADER_TOP_Y = SCREEN_HEIGHT - PADDING_TOP;
 
     // The band the baseline style stands, so the expected header edges track whatever style is injected
@@ -102,9 +102,11 @@ final class TabPanelLayoutTest {
 
             var first = header.segments().get(0);
 
+            // Literal 22 - the 20 padding plus the 2 border - rather than the fixture's own sum, which
+            // would restate the arithmetic the layout just did and agree with it however wrong it was.
             assertThat(first.x())
                 .as("the row starts where the body's content does, not at the box's outer edge")
-                .isCloseTo(CONTENT_X, within(TOLERANCE));
+                .isCloseTo(22f, within(TOLERANCE));
             assertThat(first.width())
                 .isCloseTo(FIRST_TAB_WIDTH, within(TOLERANCE));
             assertThat(first.y() + first.height())
@@ -117,7 +119,7 @@ final class TabPanelLayoutTest {
 
             assertThat(second.x())
                 .as("the second tab abuts the first, this style stating no channel between them")
-                .isCloseTo(CONTENT_X + FIRST_TAB_WIDTH, within(TOLERANCE));
+                .isCloseTo(22f + FIRST_TAB_WIDTH, within(TOLERANCE));
             assertThat(second.width())
                 .isCloseTo(SECOND_TAB_WIDTH, within(TOLERANCE));
         }
@@ -151,7 +153,10 @@ final class TabPanelLayoutTest {
             var box = droppedLeft.body().box();
 
             // With no left border to reserve, the content sits flush at the box's left edge (the anchor)
-            // rather than inset by the border - where the tab row above it already stands.
+            // rather than inset by the border - and the tab row follows it there, the row being laid at
+            // the same content edge. This is the half of that rule a flush-mounted panel depends on: the
+            // fully framed case above stands its row at 22, and a row that took the inset unconditionally
+            // would gap this panel off the edge it was placed flush with.
             assertThat(body.x())
                 .isCloseTo(PADDING_LEFT, within(TOLERANCE));
             assertThat(droppedLeft.tabsHeader().segments().get(0).x())

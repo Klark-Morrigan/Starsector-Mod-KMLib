@@ -101,31 +101,32 @@ public final class TabPanelLayout {
         // top, and the vertical budget - so a styled band cannot move one of them and not the rest.
         var headerBandHeight = tabStyle.headerBandHeight();
 
+        // The body is framed as a plain headerless panel would be against a screen ending where the tab row
+        // does: its box hangs from the row's bottom edge, and every inset a plain panel spends is spent
+        // below the row rather than around it. Resolved before the row because the row is laid against it.
+        var origin = PanelLayout.computeContentOrigin(
+            screenHeight - headerBandHeight,
+            padding,
+            border);
+
         // Header: the tabs control hung from the panel's own top anchor, taking no border inset above it -
         // the row stands on the frame rather than inside it, so the frame starts below the row. Reuses the
         // same tab measurement and segment split a body tabs row uses, so it is not bespoke tab-strip
         // framing.
         //
-        // Its left edge does take the frame's inset, so the row starts where the body's content starts
-        // rather than where the body's outer edge does. A row laid at the outer edge overhangs its own
-        // frame by the border's width, which reads as a row a pixel out of step with whatever the panel
-        // was aligned to - and the frame is drawn down the body alone, so there is nothing beside the row
-        // for it to have been flush with. An unstroked left edge insets by nothing, so a panel sitting
-        // flush against a neighbour keeps its row where its content is either way.
+        // Across, it starts at the body's own content edge rather than at the box's outer one. A row laid
+        // at the outer edge overhangs its own frame by the border's width, which reads as a row a pixel out
+        // of step with whatever the panel was aligned to - and the frame is drawn down the body alone, so
+        // there is nothing beside the row for it to have been flush with. Taken from the shared content
+        // origin rather than re-derived here, so the row and the body beneath it cannot come to disagree
+        // about where the panel's content starts; an unstroked left edge insets by nothing, and both follow
+        // it together.
         var tabsHeader = TabsControlLayout.layoutHeaderControl(
             tabsSpec,
-            padding.left() + border.computeEdgeInset(BoxEdge.LEFT),
+            origin.contentX(),
             screenHeight - padding.top(),
             tabStyle,
             measurer);
-
-        // The body is framed as a plain headerless panel would be against a screen ending where the tab row
-        // does: its box hangs from the row's bottom edge, and every inset a plain panel spends is spent
-        // below the row rather than around it.
-        var origin = PanelLayout.computeContentOrigin(
-            screenHeight - headerBandHeight,
-            padding,
-            border);
 
         // Body: the same shared composition a plain panel frames, hung beneath the header band and capped so
         // the row and the box together clear the bottom margin - the band height counted against the
