@@ -134,28 +134,4 @@ class RadioRowTest {
             assertThat(RadioRow.findSegmentIndexAt(vertical, 20f, 25f)).isEqualTo(1);
         }
     }
-
-    @Nested
-    class FindHitElement {
-        private final List<Rectangle> segments =
-            RadioRow.splitIntoSegments(new Rectangle(0f, 0f, 100f, 20f), 2,
-                RadioAlignment.HORIZONTAL);
-
-        @Test
-        void findsTheHitSegmentWhenItIsNotTheSelectedOne() {
-            assertThat(RadioRow.findHitElement(segments, 0, 75f, 10f)).isEqualTo(1);
-        }
-
-        @Test
-        void reportsNoElementWhenTheHitIsTheAlreadySelectedSegment() {
-            assertThat(RadioRow.findHitElement(segments, 1, 75f, 10f))
-                .isEqualTo(RadioRow.NO_SEGMENT);
-        }
-
-        @Test
-        void reportsNoElementForAPointOutsideTheRow() {
-            assertThat(RadioRow.findHitElement(segments, 0, 150f, 10f))
-                .isEqualTo(RadioRow.NO_SEGMENT);
-        }
-    }
 }

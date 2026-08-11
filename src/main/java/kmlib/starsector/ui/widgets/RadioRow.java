@@ -19,7 +19,7 @@ import java.util.List;
  * <p>Segments flow either way ({@link RadioAlignment}): a horizontal group splits into equal columns
  * left to right, a vertical group into equal rows top to bottom, so a compact option pair reads as a
  * strip while a longer option list reads as a column. The flow is a splitting concern only - {@link
- * #splitIntoSegments} takes it, while the two hit-tests run over the already-split segments.
+ * #splitIntoSegments} takes it, while {@link #findSegmentIndexAt} runs over the already-split segments.
  *
  * <p>A vertical list can also lay its options across more than one column via {@link #splitIntoGrid}:
  * the options fill each column top to bottom before the next (column-major), so the first column holds
@@ -148,35 +148,5 @@ public final class RadioRow {
      */
     public static int findSegmentIndexAt(List<Rectangle> segments, float pointX, float pointY) {
         return Rectangles.findIndexContaining(segments, pointX, pointY);
-    }
-
-    /**
-     * The actionable segment a press resolves to: the segment containing {@code (pointX, pointY)},
-     * or {@link #NO_SEGMENT} when the point falls outside every segment OR lands on the segment
-     * already selected. Re-picking the lit option changes nothing - standard radio behaviour - so a
-     * press on it reports no segment, letting the caller consume the click yet fire no action. This
-     * is the selection rule folded into hit detection: the caller hands in the selection it already
-     * owns, and the widget alone decides which hits are worth acting on, so no consumer re-derives
-     * the "already on" check. A radio that instead toggles off on a re-pick skips this and reads the
-     * raw hit through {@link #findSegmentIndexAt}.
-     *
-     * @param segments      the row's segments, in flow order
-     * @param selectedIndex the currently lit segment, whose own cell is inert; a value outside the
-     *                      row (e.g. none selected) leaves every segment actionable
-     * @param pointX        the point's x, in UI coordinates
-     * @param pointY        the point's y, in UI coordinates
-     * @return the actionable segment's index, or {@link #NO_SEGMENT}
-     */
-    public static int findHitElement(
-            List<Rectangle> segments,
-            int selectedIndex,
-            float pointX,
-            float pointY) {
-                
-        var hitIndex = findSegmentIndexAt(segments, pointX, pointY);
-        if (hitIndex == selectedIndex) {
-            return NO_SEGMENT;
-        }
-        return hitIndex;
     }
 }
