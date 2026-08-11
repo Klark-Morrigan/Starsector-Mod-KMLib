@@ -161,7 +161,7 @@ class CursorTooltipTest {
     // steps off, so none of them restates the setup the assertion is not about.
     private static TooltipLayout layOutGroupedSection() {
         return layOutSections(
-            List.of(buildGroupedSection(createCrestlessRow("AA"))),
+            List.of(buildGroupedSection(createCrestlessRow("AA"), TOP_TIER, MEMBER)),
             UNIFORM_STYLE);
     }
 
@@ -169,14 +169,22 @@ class CursorTooltipTest {
     // the second a line on its own. The shape every parting case below is read off, since it holds all
     // three boundaries at once - a block's lines to its first group, a group to its own account, and one
     // group to the next.
-    private static TooltipSection buildGroupedSection(TooltipRow headingRow) {
+    //
+    // Its three lines are handed in rather than fixed, since a case about what a tier resolves needs the
+    // same shape built out of tiered lines - stated twice, the two copies would drift and a step read off
+    // one of them would no longer mean what the other's does.
+    private static TooltipSection buildGroupedSection(
+            TooltipRow headingRow,
+            TooltipRow groupRow,
+            TooltipRow detailRow) {
+
         return TooltipSection
             .createSection(List.of(headingRow))
             .nesting(List.of(
                 TooltipSection
-                    .createSection(List.of(TOP_TIER))
-                    .nesting(List.of(TooltipSection.createSection(List.of(MEMBER)))),
-                TooltipSection.createSection(List.of(TOP_TIER))));
+                    .createSection(List.of(groupRow))
+                    .nesting(List.of(TooltipSection.createSection(List.of(detailRow)))),
+                TooltipSection.createSection(List.of(groupRow))));
     }
 
     private static TooltipRow.TableRow createCrestlessRow(String text) {
@@ -576,7 +584,7 @@ class CursorTooltipTest {
                 List.of(TooltipSection
                     .createSection(List.of(createCrestlessRow("AA")))
                     .nesting(List.of(
-                        buildGroupedSection(TOP_TIER),
+                        buildGroupedSection(TOP_TIER, TOP_TIER, MEMBER),
                         TooltipSection.createSection(List.of(TOP_TIER))))),
                 UNIFORM_STYLE);
 
@@ -657,21 +665,31 @@ class CursorTooltipTest {
             // The same at the inner boundary: an entry that broke down into an account of its own is
             // still set clear of the entry after it, however tightly the tier's own lines stack.
             var layout = layOutSections(
-                List.of(TooltipSection
-                    .createSection(List.of(createSubordinateRow("AA", TIGHTENED_LEVEL)))
-                    .nesting(List.of(
-                        TooltipSection
-                            .createSection(List.of(createSubordinateRow("BB", TIGHTENED_LEVEL)))
-                            .nesting(List.of(TooltipSection.createSection(
-                                List.of(createSubordinateRow("CC", TIGHTENED_LEVEL))))),
-                        TooltipSection.createSection(
-                            List.of(createSubordinateRow("DD", TIGHTENED_LEVEL)))))),
+                List.of(buildGroupedSection(
+                    createSubordinateRow("AA", TIGHTENED_LEVEL),
+                    createSubordinateRow("BB", TIGHTENED_LEVEL),
+                    createSubordinateRow("CC", TIGHTENED_LEVEL))),
                 TIERED_STYLE);
 
             var lastLineOfTheFirstGroup = 2;
 
             assertThat(measureStepBelow(layout, lastLineOfTheFirstGroup))
                 .isCloseTo(15f + GROUP_BREAK, within(TOLERANCE));
+        }
+
+        @Test
+        void resolvesTheGapUnderACentredLineFromTheBoxsOwnVoice() {
+            // A centred line has left the table and speaks for the box, so it stands at no tier within
+            // it: the line under a centred title takes the box's plain gap however tightly the run it
+            // introduces stacks, which is what keeps a tightened listing from closing up on its own title.
+            var step = measureRowStep(
+                List.of(
+                    createCentredRow("AA"),
+                    createSubordinateRow("BB", TIGHTENED_LEVEL)),
+                TIERED_STYLE);
+
+            assertThat(step)
+                .isCloseTo(15f + LINE_GAP, within(TOLERANCE));
         }
 
         @Test

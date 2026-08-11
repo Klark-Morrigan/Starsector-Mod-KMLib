@@ -110,6 +110,19 @@ meeting, so neither of them can own it - carried as a flag on the line that open
 varies with whatever size that line happens to be, and the gap under a box's title then comes
 out different from the gaps between its body blocks for no reason a reader can see.
 
+Every measurement of room a box spends travels as one
+[`TooltipSpacing`](widgets/tooltip/TooltipSpacing.java) on its style, since the three are one subject
+and are read together by whatever stacks the content. The line gap within it is a
+[`TooltipLineGaps`](widgets/tooltip/TooltipLineGaps.java) rather than a single width, because it is the
+one of the three that varies by depth: a box states a gap per subordination level and every tier it
+did not name falls back on the base gap. The gap belongs to the tier of the line **just drawn**, not
+of the line about to be - a run of lines at one depth is what a reader takes in as a unit, so it is
+the run that tightens, and resolved the other way the first line of a run would take its own tier's
+gap and pull the whole run up against the line it stands under. A map rather than a width per tier
+for the same reason `shrunkPerLevel` is one step rather than a look per level: a listing goes as deep
+as its subject matter does. The block partings are not tiered - a boundary is the same width wherever
+it falls, and both still win where they apply.
+
 Blocks nest, so the same reading spaces a listing at every depth: a block holds its own opening
 lines over member blocks, and a member takes the narrower `groupBreak` above itself where the
 member before it came to more than one line. That parting is spent by the member that follows
