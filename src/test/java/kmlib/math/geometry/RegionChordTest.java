@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static kmlib.math.geometry.GeometryTestSupport.within;
+import static kmlib.math.geometry.GeometryTestSupport.buildAssertionSlack;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -25,13 +25,13 @@ class RegionChordTest {
                 .toSegment(new double[] {2, 5});
 
             assertThat(segment.startX())
-                .isCloseTo(12.0, within());
+                .isCloseTo(12.0, buildAssertionSlack());
             assertThat(segment.startY())
-                .isCloseTo(20.0, within());
+                .isCloseTo(20.0, buildAssertionSlack());
             assertThat(segment.endX())
-                .isCloseTo(15.0, within());
+                .isCloseTo(15.0, buildAssertionSlack());
             assertThat(segment.endY())
-                .isCloseTo(20.0, within());
+                .isCloseTo(20.0, buildAssertionSlack());
         }
 
         @Test
@@ -42,9 +42,9 @@ class RegionChordTest {
                 .toSegment(new double[] {-4, 4});
 
             assertThat(segment.startX())
-                .isCloseTo(-4.0, within());
+                .isCloseTo(-4.0, buildAssertionSlack());
             assertThat(segment.endX())
-                .isCloseTo(4.0, within());
+                .isCloseTo(4.0, buildAssertionSlack());
         }
 
         @Test
@@ -54,13 +54,13 @@ class RegionChordTest {
                 .toSegment(new double[] {0, 10});
 
             assertThat(segment.startX())
-                .isCloseTo(0.0, within());
+                .isCloseTo(0.0, buildAssertionSlack());
             assertThat(segment.startY())
-                .isCloseTo(0.0, within());
+                .isCloseTo(0.0, buildAssertionSlack());
             assertThat(segment.endX())
-                .isCloseTo(6.0, within());
+                .isCloseTo(6.0, buildAssertionSlack());
             assertThat(segment.endY())
-                .isCloseTo(8.0, within());
+                .isCloseTo(8.0, buildAssertionSlack());
         }
     }
 

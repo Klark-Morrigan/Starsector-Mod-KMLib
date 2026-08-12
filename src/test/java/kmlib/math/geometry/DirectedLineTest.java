@@ -3,7 +3,7 @@ package kmlib.math.geometry;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import static kmlib.math.geometry.GeometryTestSupport.within;
+import static kmlib.math.geometry.GeometryTestSupport.buildAssertionSlack;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -17,6 +17,7 @@ class DirectedLineTest {
 
     @Nested
     class ToUnitLine {
+        
         @Test
         void toUnitLineScalesTheDirectionToUnitLengthAndLeavesTheOriginWhereItWas() {
             // The 3-4-5 direction has length 5, so unit length is (0.6, 0.8); the origin
@@ -25,13 +26,13 @@ class DirectedLineTest {
                 .toUnitLine();
 
             assertThat(unitLine.originX())
-                .isCloseTo(10.0, within());
+                .isCloseTo(10.0, buildAssertionSlack());
             assertThat(unitLine.originY())
-                .isCloseTo(-5.0, within());
+                .isCloseTo(-5.0, buildAssertionSlack());
             assertThat(unitLine.directionX())
-                .isCloseTo(0.6, within());
+                .isCloseTo(0.6, buildAssertionSlack());
             assertThat(unitLine.directionY())
-                .isCloseTo(0.8, within());
+                .isCloseTo(0.8, buildAssertionSlack());
         }
 
         @Test
@@ -40,9 +41,9 @@ class DirectedLineTest {
                 .toUnitLine();
 
             assertThat(unitLine.directionX())
-                .isCloseTo(0.0, within());
+                .isCloseTo(0.0, buildAssertionSlack());
             assertThat(unitLine.directionY())
-                .isCloseTo(1.0, within());
+                .isCloseTo(1.0, buildAssertionSlack());
         }
 
         @Test

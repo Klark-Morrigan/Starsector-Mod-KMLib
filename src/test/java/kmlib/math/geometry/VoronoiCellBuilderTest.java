@@ -571,7 +571,7 @@ final class VoronoiCellBuilderTest {
             assertThat(pieces)
                 .hasSize(1);
             assertThat(GeometryTestSupport.computeSignedArea(pieces.get(0)))
-                .isCloseTo(WHOLE_SQUARE_AREA, GeometryTestSupport.within());
+                .isCloseTo(WHOLE_SQUARE_AREA, GeometryTestSupport.buildAssertionSlack());
         }
 
         @Test
@@ -593,9 +593,9 @@ final class VoronoiCellBuilderTest {
                 .allMatch(vertex -> vertex[0] >= 5 - 1e-9);
 
             assertThat(GeometryTestSupport.computeSignedArea(pieces.get(0)))
-                .isCloseTo(WHOLE_SQUARE_AREA / 2, GeometryTestSupport.within());
+                .isCloseTo(WHOLE_SQUARE_AREA / 2, GeometryTestSupport.buildAssertionSlack());
             assertThat(GeometryTestSupport.computeSignedArea(pieces.get(1)))
-                .isCloseTo(WHOLE_SQUARE_AREA / 2, GeometryTestSupport.within());
+                .isCloseTo(WHOLE_SQUARE_AREA / 2, GeometryTestSupport.buildAssertionSlack());
         }
 
         @Test
@@ -624,7 +624,7 @@ final class VoronoiCellBuilderTest {
                 total += GeometryTestSupport.computeSignedArea(pieces.get(i));
             }
             assertThat(total)
-                .isCloseTo(WHOLE_SQUARE_AREA, GeometryTestSupport.within());
+                .isCloseTo(WHOLE_SQUARE_AREA, GeometryTestSupport.buildAssertionSlack());
         }
 
         @Test
@@ -641,7 +641,7 @@ final class VoronoiCellBuilderTest {
             // The far site is beaten to every point of the square by the near one,
             // so it is handed nothing rather than a degenerate shape.
             assertThat(GeometryTestSupport.computeSignedArea(pieces.get(0)))
-                .isCloseTo(WHOLE_SQUARE_AREA, GeometryTestSupport.within());
+                .isCloseTo(WHOLE_SQUARE_AREA, GeometryTestSupport.buildAssertionSlack());
             assertThat(pieces.get(1))
                 .isEmpty();
         }

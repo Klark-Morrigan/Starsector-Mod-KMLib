@@ -16,10 +16,12 @@ import java.util.List;
  * rather than two independently rounded shapes that leave a seam.
  *
  * <p>The disk is approximated at a caller-chosen segment count rather than treated as a
- * true circle, so its arc is a chain of straight chords. A caller whose shapes already
- * carry a rounded bound (a {@link VoronoiCellBuilder} cell, whose max-radius seed is a
- * regular polygon) passes the same count that bound was seeded at, and the two arcs land
- * on the same chords instead of crossing each other at every vertex.
+ * true circle, so its arc is a chain of straight chords. That count travels with the
+ * centre and radius as one {@link Disk}, since two clips only agree when they approximate
+ * the disk identically: a caller whose shapes already carry a rounded bound (a
+ * {@link VoronoiCellBuilder} cell, whose max-radius seed is a regular polygon) passes the
+ * same count that bound was seeded at, and the two arcs land on the same chords instead of
+ * crossing each other at every vertex.
  *
  * <p>Subtraction also comes in a labelled form ({@link #subtractDiskWithLabels}), for a
  * caller that must know, per edge of the remainder, what lies across it - the difference
@@ -31,6 +33,7 @@ import java.util.List;
  * boolean. A concave subject yields undefined output rather than an error.
  */
 public final class Disks {
+
     // The two internal labels the disk walk stamps its own cuts with. They are kept out
     // of the caller's label space (which is every int) by living in the negatives while
     // the walk labels each subject edge by its index, so an edge's origin can be read
@@ -62,25 +65,17 @@ public final class Disks {
      * Keeps the part of {@code polygon} inside the disk of {@code radius} about
      * {@code center} - the polygon bounded to a maximum reach from a point.
      *
-     * @param polygon  the convex region to clip, as {x, y} vertices in winding order
-     * @param center   the disk's centre as {x, y}
-     * @param radius   the disk's radius; a radius too small to enclose area leaves
-     *                 nothing inside, so the result is empty
-     * @param segments sides of the regular polygon approximating the disk
+     * @param polygon the convex region to clip, as {x, y} vertices in winding order
+     * @param disk    the disk to bound it to; a radius too small to enclose area leaves
+     *                nothing inside, so the result is empty
      * @return the clipped region as {x, y} vertices in the polygon's winding; empty
      *         when nothing of the polygon lies inside the disk
-     * @throws IllegalArgumentException when {@code segments} cannot enclose an area
      */
-    public static List<double[]> intersectWithDisk(
-            List<double[]> polygon,
-            double[] center,
-            double radius,
-            int segments) {
+    public static List<double[]> intersectWithDisk(List<double[]> polygon, Disk disk) {
+
         return computeDiskSplit(
             buildUnlabelledSubject(polygon),
-            center,
-            radius,
-            segments,
+            disk,
             UNUSED_EDGE_LABEL,
             UNUSED_EDGE_LABEL)
             .inside();
@@ -99,28 +94,22 @@ public final class Disks {
      * including the hole, as its own ring - with the seams between pieces dropped as
      * shared interior edges.
      *
-     * @param polygon  the convex region to clip, as {x, y} vertices in winding order
-     * @param center   the disk's centre as {x, y}
-     * @param radius   the disk's radius; a radius too small to enclose area withholds
-     *                 nothing, so the polygon comes back whole
-     * @param segments sides of the regular polygon approximating the disk
+     * @param polygon the convex region to clip, as {x, y} vertices in winding order
+     * @param disk    the disk to withhold; a radius too small to enclose area withholds
+     *                nothing, so the polygon comes back whole
      * @return the remainder as disjoint convex pieces, each a list of {x, y} vertices
      *         in the polygon's winding; empty when the disk covers the whole polygon
-     * @throws IllegalArgumentException when {@code segments} cannot enclose an area
      */
-    public static List<List<double[]>> subtractDisk(
-            List<double[]> polygon,
-            double[] center,
-            double radius,
-            int segments) {
+    public static List<List<double[]>> subtractDisk(List<double[]> polygon, Disk disk) {
+
         var pieces = new ArrayList<List<double[]>>();
+        
         for (var piece : subtractDiskWithLabels(
             buildUnlabelledSubject(polygon),
-            center,
-            radius,
-            segments,
+            disk,
             UNUSED_EDGE_LABEL,
             UNUSED_EDGE_LABEL)) {
+
             pieces.add(piece.getVertices());
         }
         return pieces;
@@ -141,26 +130,23 @@ public final class Disks {
      * falls inside the chord's span is the whole of the difference, so a single edge that
      * crosses a chord's end is broken at it and each part labelled for itself.
      *
-     * @param polygon      the convex region to clip, its edges labelled with whatever
-     *                     lies across them
-     * @param center       the disk's centre as {x, y}
-     * @param radius       the disk's radius; a radius too small to enclose area withholds
-     *                     nothing, so the polygon comes back whole, labels and all
-     * @param segments     sides of the regular polygon approximating the disk
-     * @param rimLabel     the label for a cut along the withheld disk's rim
-     * @param fanCutLabel  the label for a cut between two pieces of the remainder
+     * @param polygon     the convex region to clip, its edges labelled with whatever
+     *                    lies across them
+     * @param disk        the disk to withhold; a radius too small to enclose area
+     *                    withholds nothing, so the polygon comes back whole, labels
+     *                    and all
+     * @param rimLabel    the label for a cut along the withheld disk's rim
+     * @param fanCutLabel the label for a cut between two pieces of the remainder
      * @return the remainder as disjoint convex labelled pieces, in the polygon's winding;
      *         empty when the disk covers the whole polygon
-     * @throws IllegalArgumentException when {@code segments} cannot enclose an area
      */
     public static List<LabelledPolygon> subtractDiskWithLabels(
             LabelledPolygon polygon,
-            double[] center,
-            double radius,
-            int segments,
+            Disk disk,
             int rimLabel,
             int fanCutLabel) {
-        return computeDiskSplit(polygon, center, radius, segments, rimLabel, fanCutLabel)
+
+        return computeDiskSplit(polygon, disk, rimLabel, fanCutLabel)
             .outsidePieces();
     }
 
@@ -171,7 +157,9 @@ public final class Disks {
     // Only the difference carries labels out, so they are stated in its sense - what lies
     // across an edge once the disk is withheld. The intersection's caller wants the
     // opposite sense of the same lines and asks for no labels, so it takes plain rings.
-    private record DiskSplit(List<double[]> inside, List<LabelledPolygon> outsidePieces) {
+    private record DiskSplit(
+        List<double[]> inside,
+        List<LabelledPolygon> outsidePieces) {
     }
 
     // Splits {@code polygon} along the disk's boundary in one walk over the disk's
@@ -183,33 +171,32 @@ public final class Disks {
     // pieces shed along the way are the difference, the survivor is the intersection.
     private static DiskSplit computeDiskSplit(
             LabelledPolygon polygon,
-            double[] center,
-            double radius,
-            int segments,
+            Disk disk,
             int rimLabel,
             int fanCutLabel) {
-        if (segments < Limits.MIN_VERTICES_TO_ENCLOSE_AREA) {
-            throw new IllegalArgumentException(
-                "segments must be at least " + Limits.MIN_VERTICES_TO_ENCLOSE_AREA
-                    + " to approximate a disk: " + segments);
-        }
+
         var subject = Rings.removeConsecutiveDuplicates(polygon);
         var subjectLabels = subject.getEdgeLabels();
+
         if (subjectLabels.length < Limits.MIN_VERTICES_TO_ENCLOSE_AREA) {
             return new DiskSplit(new ArrayList<>(), new ArrayList<>());
         }
+
         // A disk this small has no boundary to cut along: its chords are shorter than a
         // real edge, so their normals are noise. Report it as enclosing nothing rather
         // than letting the degenerate lines decide arbitrary sides.
-        if (radius < Limits.MIN_EDGE_LENGTH) {
+        if (disk.radius() < Limits.MIN_EDGE_LENGTH) {
+
             var whole = new ArrayList<LabelledPolygon>();
             whole.add(subject);
+
             return new DiskSplit(new ArrayList<>(), whole);
         }
 
-        var disk = LabelledPolygon
-            .createRegularPolygon(center, radius, segments, UNUSED_EDGE_LABEL)
+        var rimVertices = LabelledPolygon
+            .createRegularPolygon(disk, UNUSED_EDGE_LABEL)
             .getVertices();
+
         var outsidePieces = new ArrayList<LabelledPolygon>();
 
         // Restate the subject's edges by index while the walk runs, so a cut edge can be
@@ -218,8 +205,9 @@ public final class Disks {
             subject.getVertices(),
             buildEdgeIndexLabels(subjectLabels.length));
 
-        for (var i = 0; i < disk.size() && !remainder.isEmpty(); i++) {
-            var inside = buildInsideHalfPlane(disk, i);
+        for (var i = 0; i < rimVertices.size() && !remainder.isEmpty(); i++) {
+
+            var inside = buildInsideHalfPlane(rimVertices, i);
             var shed = remainder.clipToHalfPlane(
                 new HalfPlane(
                     inside.pointX(),
@@ -231,7 +219,7 @@ public final class Disks {
             var piece = Rings.removeConsecutiveDuplicates(buildResolvedPiece(
                 shed,
                 subjectLabels,
-                disk,
+                rimVertices,
                 i,
                 rimLabel,
                 fanCutLabel));
@@ -239,10 +227,12 @@ public final class Disks {
             if (isEnclosingArea(piece)) {
                 outsidePieces.add(piece);
             }
+
             remainder = remainder.clipToHalfPlane(inside, INSIDE_CUT_LABEL);
         }
 
         var inside = Rings.removeConsecutiveDuplicates(remainder);
+
         return new DiskSplit(
             isEnclosingArea(inside)
                 ? inside.getVertices()
@@ -254,9 +244,11 @@ public final class Disks {
     // edge lies on, with the normal pointing into the disk. createRegularPolygon winds
     // counter-clockwise, so the interior is to the left of each edge and the left
     // normal of the edge direction points at it.
-    private static HalfPlane buildInsideHalfPlane(List<double[]> disk, int index) {
-        var from = disk.get(index);
-        var to = disk.get((index + 1) % disk.size());
+    private static HalfPlane buildInsideHalfPlane(List<double[]> rimVertices, int index) {
+
+        var from = rimVertices.get(index);
+        var to = rimVertices.get((index + 1) % rimVertices.size());
+
         return new HalfPlane(
             from[0], from[1],
             -(to[1] - from[1]),
@@ -273,18 +265,22 @@ public final class Disks {
     private static LabelledPolygon buildResolvedPiece(
             LabelledPolygon piece,
             int[] subjectLabels,
-            List<double[]> disk,
+            List<double[]> rimVertices,
             int diskEdgeIndex,
             int rimLabel,
             int fanCutLabel) {
-        var chordStart = disk.get(diskEdgeIndex);
-        var chordEnd = disk.get((diskEdgeIndex + 1) % disk.size());
+
+        var chordStart = rimVertices.get(diskEdgeIndex);
+        var chordEnd = rimVertices.get((diskEdgeIndex + 1) % rimVertices.size());
         var vertices = piece.getVertices();
         var labels = piece.getEdgeLabels();
         var points = new ArrayList<double[]>(vertices.size());
         var resolved = new ArrayList<Integer>(vertices.size());
+
         for (var i = 0; i < vertices.size(); i++) {
+
             points.add(vertices.get(i));
+
             if (labels[i] == OUTSIDE_CUT_LABEL) {
                 appendChordSpans(
                     points,
@@ -318,14 +314,19 @@ public final class Disks {
             double[] chordEnd,
             int rimLabel,
             int fanCutLabel) {
+
         var fromParameter = computeChordParameter(chordStart, chordEnd, from);
         var toParameter = computeChordParameter(chordStart, chordEnd, to);
         var spanStart = fromParameter;
+
         for (var breakParameter : findCrossedChordEnds(fromParameter, toParameter)) {
+
             labels.add(pickSpanLabel(spanStart, breakParameter, rimLabel, fanCutLabel));
             points.add(computeChordPoint(chordStart, chordEnd, breakParameter));
+
             spanStart = breakParameter;
         }
+
         labels.add(pickSpanLabel(spanStart, toParameter, rimLabel, fanCutLabel));
     }
 
@@ -334,9 +335,11 @@ public final class Disks {
     // across it. An end the edge merely touches is no crossing: the edge is on one side
     // of it throughout, so there is nothing to break.
     private static List<Double> findCrossedChordEnds(double fromParameter, double toParameter) {
+
         var crossed = new ArrayList<Double>();
         var low = Math.min(fromParameter, toParameter);
         var high = Math.max(fromParameter, toParameter);
+
         for (var end : new double[] {CHORD_START_PARAMETER, CHORD_END_PARAMETER}) {
             if (end > low && end < high) {
                 crossed.add(end);
@@ -356,7 +359,9 @@ public final class Disks {
             double spanEnd,
             int rimLabel,
             int fanCutLabel) {
+
         var middle = (spanStart + spanEnd) * 0.5;
+
         return middle >= CHORD_START_PARAMETER && middle <= CHORD_END_PARAMETER
             ? rimLabel
             : fanCutLabel;
@@ -370,8 +375,10 @@ public final class Disks {
             double[] chordStart,
             double[] chordEnd,
             double[] point) {
+
         var chordX = chordEnd[0] - chordStart[0];
         var chordY = chordEnd[1] - chordStart[1];
+
         return ((point[0] - chordStart[0]) * chordX + (point[1] - chordStart[1]) * chordY)
             / (chordX * chordX + chordY * chordY);
     }
@@ -391,6 +398,7 @@ public final class Disks {
     // Labels every edge of a subject with its own index, the identity the walk needs to
     // hand an edge back the label it arrived with.
     private static int[] buildEdgeIndexLabels(int edgeCount) {
+
         var labels = new int[edgeCount];
         for (var i = 0; i < edgeCount; i++) {
             labels[i] = i;
@@ -399,6 +407,7 @@ public final class Disks {
     }
 
     private static int[] buildLabelArray(List<Integer> labels) {
+
         var array = new int[labels.size()];
         for (var i = 0; i < labels.size(); i++) {
             array[i] = labels.get(i);
@@ -409,6 +418,7 @@ public final class Disks {
     // A subject for a caller that has no labels to carry: every edge takes the throwaway
     // label, so the walk's bookkeeping runs over a vocabulary of one.
     private static LabelledPolygon buildUnlabelledSubject(List<double[]> polygon) {
+
         var labels = new int[polygon.size()];
         Arrays.fill(labels, UNUSED_EDGE_LABEL);
         return LabelledPolygon.fromLabelledEdges(polygon, labels);

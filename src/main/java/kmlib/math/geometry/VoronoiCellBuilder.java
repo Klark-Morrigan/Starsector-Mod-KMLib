@@ -22,6 +22,7 @@ import java.util.List;
  * once and cached by the caller.
  */
 public final class VoronoiCellBuilder {
+
     /**
      * Edge label for a cell edge that came from the max-radius bound rather than
      * a neighbour's bisector - a frontier into empty space, with no system on the
@@ -61,7 +62,9 @@ public final class VoronoiCellBuilder {
      * exactly when each lists the other here, so this is the adjacency graph
      * region merging is built on.
      */
-    public record LabelledCell(List<double[]> vertices, int[] edgeNeighbourSiteIndices) {
+    public record LabelledCell(
+        List<double[]> vertices,
+        int[] edgeNeighbourSiteIndices) {
     }
 
     /**
@@ -83,6 +86,7 @@ public final class VoronoiCellBuilder {
     public static List<List<double[]>> buildCells(
             List<double[]> sites,
             double maxCellRadius) {
+
         return buildCells(sites, maxCellRadius, DEFAULT_CELL_BOUND_SEGMENTS);
     }
 
@@ -106,7 +110,9 @@ public final class VoronoiCellBuilder {
             List<double[]> sites,
             double maxCellRadius,
             int boundSegments) {
+
         var cells = new ArrayList<List<double[]>>();
+
         if (sites.isEmpty()) {
             return cells;
         }
@@ -137,6 +143,7 @@ public final class VoronoiCellBuilder {
             double[] site,
             List<double[]> sites,
             double maxCellRadius) {
+
         return buildCell(site, sites, maxCellRadius, DEFAULT_CELL_BOUND_SEGMENTS);
     }
 
@@ -158,6 +165,7 @@ public final class VoronoiCellBuilder {
             List<double[]> sites,
             double maxCellRadius,
             int boundSegments) {
+
         return buildLabelledCell(indexOf(sites, site), sites, maxCellRadius, boundSegments)
             .vertices();
     }
@@ -184,6 +192,7 @@ public final class VoronoiCellBuilder {
             int siteIndex,
             List<double[]> sites,
             double maxCellRadius) {
+
         return buildLabelledCell(siteIndex, sites, maxCellRadius, DEFAULT_CELL_BOUND_SEGMENTS);
     }
 
@@ -208,18 +217,24 @@ public final class VoronoiCellBuilder {
             List<double[]> sites,
             double maxCellRadius,
             int boundSegments) {
+
         var site = sites.get(siteIndex);
+
         // Seed the cell with a bounded polygon whose every edge is a frontier
         // (BOUND_EDGE), then let each neighbour's bisector clip it, stamping the
         // cut edge with that neighbour's index. What survives labels each edge
         // with the site across it, or BOUND_EDGE where the seed was never cut.
         var cell = LabelledPolygon.createRegularPolygon(
-            site, maxCellRadius, boundSegments, BOUND_EDGE);
+            new Disk(site, maxCellRadius, boundSegments),
+            BOUND_EDGE);
+
         for (var other = 0; other < sites.size(); other++) {
+
             if (other == siteIndex) {
                 continue;
             }
             cell = clipToBisector(cell, site, sites.get(other), other);
+
             if (cell.isEmpty()) {
                 break;
             }
@@ -257,10 +272,13 @@ public final class VoronoiCellBuilder {
     public static List<List<double[]>> splitPolygonAmongSites(
             List<double[]> polygon,
             List<double[]> sites) {
+
         var pieces = new ArrayList<List<double[]>>(sites.size());
         var ring = Rings.removeConsecutiveDuplicates(polygon);
         var enclosesArea = ring.size() >= Limits.MIN_VERTICES_TO_ENCLOSE_AREA;
+
         for (var siteIndex = 0; siteIndex < sites.size(); siteIndex++) {
+
             pieces.add(enclosesArea
                 ? computeNearestRegion(ring, sites, siteIndex)
                 : new ArrayList<>());
@@ -278,13 +296,17 @@ public final class VoronoiCellBuilder {
             List<double[]> ring,
             List<double[]> sites,
             int siteIndex) {
+
         var site = sites.get(siteIndex);
         var region = LabelledPolygon.fromLabelledEdges(ring, new int[ring.size()]);
+
         for (var other = 0; other < sites.size(); other++) {
+
             if (other == siteIndex) {
                 continue;
             }
             region = clipToBisector(region, site, sites.get(other), other);
+
             if (region.isEmpty()) {
                 break;
             }
@@ -293,6 +315,7 @@ public final class VoronoiCellBuilder {
         // report it as no region rather than as a degenerate polygon a consumer
         // would have to re-test before drawing.
         var vertices = region.getVertices();
+
         return vertices.size() < Limits.MIN_VERTICES_TO_ENCLOSE_AREA
             ? new ArrayList<>()
             : vertices;
@@ -320,7 +343,9 @@ public final class VoronoiCellBuilder {
     // unlabelled buildCell skips its own site by; an element of the list, so the
     // search always hits.
     private static int indexOf(List<double[]> sites, double[] site) {
+
         for (var i = 0; i < sites.size(); i++) {
+            
             if (sites.get(i) == site) {
                 return i;
             }

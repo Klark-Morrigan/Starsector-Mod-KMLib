@@ -22,12 +22,12 @@ public final class PolygonSmoothing {
     /**
      * Rounds a closed polygon's corners with a fixed radius, leaving the
      * straight edges between corners intact, and chamfers corners sharper than
-     * {@code bevelBelowAngleRadians} with a flat cut instead.
+     * the shape's bevel threshold with a flat cut instead.
      *
-     * <p>At each vertex it steps back {@code radius} along both adjacent edges
+     * <p>At each vertex it steps back the shape's radius along both adjacent edges
      * and replaces the sharp corner with a true circular arc tangent to both
-     * edges at those step-back points, sampled into {@code segmentsPerCorner}
-     * segments. Because the cut is a fixed distance, not a fraction of the edge,
+     * edges at those step-back points, sampled into the shape's segment count.
+     * Because the cut is a fixed distance, not a fraction of the edge,
      * long edges stay long and only the corners soften - so a big cell does not
      * round off into a blob. The radius is clamped to half of each adjacent edge
      * so neighbouring corners never overlap, which also keeps the result convex
@@ -35,36 +35,33 @@ public final class PolygonSmoothing {
      * control point) rounds sharp corners uniformly instead of pinching back to a
      * near-point, so a spur is genuinely sanded off rather than left a spike.
      *
-     * <p>A corner still sharper than {@code bevelBelowAngleRadians} is cut straight
-     * across (a chamfer between the two step-back points) rather than arced, since
-     * an arc that tight reads as a nick; a non-positive threshold disables the
-     * chamfer and arcs every corner. Vertex cost is at most {@code corners *
-     * (segmentsPerCorner + 1)}.
+     * <p>A corner sharper than the bevel threshold is cut straight across (a chamfer
+     * between the two step-back points) rather than arced, since an arc that tight
+     * reads as a nick; a non-positive threshold disables the chamfer and arcs every
+     * corner. Vertex cost is at most {@code corners * (segmentsPerCorner + 1)}.
      *
-     * @param polygon                closed polygon vertices as {x, y} pairs
-     * @param radius                 corner radius in the polygon's units
-     * @param segmentsPerCorner      arc segments per rounded corner; higher is
-     *                               smoother
-     * @param bevelBelowAngleRadians corners with an interior angle below this
-     *                               are chamfered flat rather than rounded;
-     *                               non-positive rounds every corner
+     * @param polygon closed polygon vertices as {x, y} pairs
+     * @param shape   the radius, segment count and bevel threshold to round with
      * @return the rounded polygon; a copy of the input (deduplicated) when it
      *         has fewer than three vertices, or when radius/segments are
      *         non-positive (nothing to round)
      */
-    public static List<double[]> roundCorners(
-            List<double[]> polygon,
-            double radius,
-            int segmentsPerCorner,
-            double bevelBelowAngleRadians) {
+    public static List<double[]> roundCorners(List<double[]> polygon, CornerRounding shape) {
+
         var vertices = Rings.removeConsecutiveDuplicates(polygon);
         var count = vertices.size();
-        if (count < Limits.MIN_VERTICES_TO_ENCLOSE_AREA || radius <= 0 || segmentsPerCorner < 1) {
+        var segmentsPerCorner = shape.segmentsPerCorner();
+
+        if (count < Limits.MIN_VERTICES_TO_ENCLOSE_AREA
+                || shape.radius() <= 0
+                || segmentsPerCorner < 1) {
             return vertices;
         }
 
         var rounded = new ArrayList<double[]>(count * (segmentsPerCorner + 1));
+
         for (var i = 0; i < count; i++) {
+
             var previous = vertices.get((i - 1 + count) % count);
             var corner = vertices.get(i);
             var next = vertices.get((i + 1) % count);
@@ -72,17 +69,20 @@ public final class PolygonSmoothing {
             // Clamp the cut to half of the shorter adjacent edge so two corners
             // sharing an edge cannot eat into each other.
             var cut = Math.min(
-                radius,
+                shape.radius(),
                 0.5 * Math.min(
                     Points.computeDistance(corner, previous),
                     Points.computeDistance(corner, next)));
+
             var arcStart = computePointToward(corner, previous, cut);
             var arcEnd = computePointToward(corner, next, cut);
 
             // Below the threshold a rounded arc would still read as a spike, so
             // cut straight across the corner: the two step-back points alone.
-            if (bevelBelowAngleRadians > 0
-                    && computeInteriorAngle(previous, corner, next) < bevelBelowAngleRadians) {
+            if (shape.bevelBelowAngleRadians() > 0
+                    && computeInteriorAngle(previous, corner, next)
+                        < shape.bevelBelowAngleRadians()) {
+
                 rounded.add(arcStart);
                 rounded.add(arcEnd);
                 continue;
@@ -136,7 +136,9 @@ public final class PolygonSmoothing {
             List<double[]> polygon,
             double maxSpikeHeight,
             double maxCornerAngleRadians) {
+
         var vertices = Rings.removeConsecutiveDuplicates(polygon);
+
         if (vertices.size() < Limits.MIN_VERTICES_TO_ENCLOSE_AREA
                 || maxSpikeHeight <= 0
                 || maxCornerAngleRadians <= 0) {
@@ -147,18 +149,24 @@ public final class PolygonSmoothing {
         // a neighbour into a new spike, so re-scan until a full pass removes none.
         // Each removal drops a vertex and the loop stops at three, so it terminates.
         var removedAny = true;
+
         while (removedAny && vertices.size() > Limits.MIN_VERTICES_TO_ENCLOSE_AREA) {
+
             removedAny = false;
             var count = vertices.size();
+
             for (var i = 0; i < count; i++) {
+
                 var previous = vertices.get((i - 1 + count) % count);
                 var corner = vertices.get(i);
                 var next = vertices.get((i + 1) % count);
+
                 if (computeInteriorAngle(previous, corner, next) < maxCornerAngleRadians
                         && Lines.computePerpendicularDistance(
                             corner,
                             previous,
                             next) < maxSpikeHeight) {
+
                     vertices.remove(i);
                     removedAny = true;
                     break;
@@ -182,7 +190,9 @@ public final class PolygonSmoothing {
             double[] arcStart,
             double[] arcEnd,
             int segments) {
+
         var center = computeArcCenter(previous, corner, next, arcStart, arcEnd);
+
         if (center == null) {
             out.add(arcStart);
             out.add(arcEnd);
@@ -191,17 +201,23 @@ public final class PolygonSmoothing {
         var radius = Points.computeDistance(center, arcStart);
         var startAngle = Math.atan2(arcStart[1] - center[1], arcStart[0] - center[0]);
         var endAngle = Math.atan2(arcEnd[1] - center[1], arcEnd[0] - center[0]);
+
         // Sweep the short way (normalise to (-PI, PI]); that arc is the one on the
         // corner's side, so the rounded corner bulges toward the original vertex.
         var sweep = endAngle - startAngle;
+
         while (sweep <= -Math.PI) {
             sweep += 2.0 * Math.PI;
         }
+
         while (sweep > Math.PI) {
             sweep -= 2.0 * Math.PI;
         }
+
         for (var step = 0; step <= segments; step++) {
+
             var angle = startAngle + sweep * step / segments;
+
             out.add(new double[] {
                 center[0] + radius * Math.cos(angle),
                 center[1] + radius * Math.sin(angle),
@@ -220,6 +236,7 @@ public final class PolygonSmoothing {
             double[] next,
             double[] arcStart,
             double[] arcEnd) {
+
         // The centre lies on the perpendicular to each edge (the radius direction,
         // (-dy, dx)) through that edge's step-back point; where those two
         // perpendiculars cross is the centre. Parallel means collinear edges - no
@@ -236,12 +253,15 @@ public final class PolygonSmoothing {
     // A point {@code distance} from {@code from} toward {@code to}; returns from
     // itself when the two coincide (no direction).
     private static double[] computePointToward(double[] from, double[] to, double distance) {
+
         var deltaX = to[0] - from[0];
         var deltaY = to[1] - from[1];
         var length = Points.computeVectorLength(deltaX, deltaY);
+
         if (length < Limits.MIN_EDGE_LENGTH) {
             return new double[] {from[0], from[1]};
         }
+
         return new double[] {
             from[0] + deltaX / length * distance,
             from[1] + deltaY / length * distance,
@@ -258,12 +278,14 @@ public final class PolygonSmoothing {
             double[] previous,
             double[] corner,
             double[] next) {
+
         var angle = Points.computeAngleBetween(
             previous[0] - corner[0],
             previous[1] - corner[1],
             next[0] - corner[0],
             next[1] - corner[1],
             Limits.MIN_EDGE_LENGTH);
+            
         return Double.isNaN(angle) ? Math.PI : angle;
     }
 }

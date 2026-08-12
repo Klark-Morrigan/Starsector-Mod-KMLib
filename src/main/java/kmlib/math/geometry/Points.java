@@ -28,12 +28,16 @@ public final class Points {
      *         with nothing to average)
      */
     public static double[] computeMean(List<double[]> points) {
+
         if (points.isEmpty()) {
             throw new IllegalArgumentException("Cannot average no points");
         }
+
         var sumX = 0.0;
         var sumY = 0.0;
+
         for (var point : points) {
+
             sumX += point[0];
             sumY += point[1];
         }
@@ -65,6 +69,13 @@ public final class Points {
     }
 
     /**
+     * The signed projection of an {@code {x, y}} point onto an {@code {x, y}} axis.
+     */
+    public static double projectPointOnto(double[] point, double[] axis) {
+        return projectPointOnto(point[0], point[1], axis[0], axis[1]);
+    }
+
+    /**
      * The extent of a point cloud projected onto an axis, as {@code {min, max}} - the
      * lowest and highest of each point's signed projection {@code point . axis}. The
      * width of the cloud along that direction is {@code max - min}: measuring a spread
@@ -87,13 +98,18 @@ public final class Points {
             List<double[]> points,
             double axisX,
             double axisY) {
+
         if (points.isEmpty()) {
             throw new IllegalArgumentException("Cannot project an extent of no points");
         }
+
         var min = Double.POSITIVE_INFINITY;
         var max = Double.NEGATIVE_INFINITY;
+
         for (var point : points) {
+
             var projection = projectPointOnto(point[0], point[1], axisX, axisY);
+
             min = Math.min(min, projection);
             max = Math.max(max, projection);
         }
@@ -122,13 +138,17 @@ public final class Points {
             List<List<double[]>> pointGroups,
             double axisX,
             double axisY) {
+
         if (pointGroups.isEmpty()) {
             throw new IllegalArgumentException(
                 "Cannot project a combined extent of no point groups");
         }
+
         var min = Double.POSITIVE_INFINITY;
         var max = Double.NEGATIVE_INFINITY;
+
         for (var group : pointGroups) {
+
             var extent = projectExtentOnto(group, axisX, axisY);
             min = Math.min(min, extent[0]);
             max = Math.max(max, extent[1]);
@@ -160,8 +180,10 @@ public final class Points {
      * the hot path.
      */
     public static double computeDistanceSquared(double x1, double y1, double x2, double y2) {
+
         var deltaX = x1 - x2;
         var deltaY = y1 - y2;
+
         return deltaX * deltaX + deltaY * deltaY;
     }
 
@@ -212,7 +234,9 @@ public final class Points {
      *         is shorter than {@code minLength}
      */
     public static double[] computeUnitVector(double x, double y, double minLength) {
+
         var length = computeVectorLength(x, y);
+
         if (length < minLength) {
             return null;
         }
@@ -226,6 +250,15 @@ public final class Points {
      */
     public static double computeAngleDegrees(double x1, double y1, double x2, double y2) {
         return Math.toDegrees(Math.atan2(y2 - y1, x2 - x1));
+    }
+
+    /**
+     * The bearing in degrees between two {@code {x, y}} points, measured
+     * counter-clockwise from the positive x-axis, in the range
+     * {@code (-180, 180]}. Coincident points yield 0.
+     */
+    public static double computeAngleDegrees(double[] a, double[] b) {
+        return computeAngleDegrees(a[0], a[1], b[0], b[1]);
     }
 
     /**
@@ -265,12 +298,16 @@ public final class Points {
             double bx,
             double by,
             double minLength) {
+
         var aLength = computeVectorLength(ax, ay);
         var bLength = computeVectorLength(bx, by);
+
         if (aLength < minLength || bLength < minLength) {
             return Double.NaN;
         }
+
         var cosine = (ax * bx + ay * by) / (aLength * bLength);
+        
         // Clamp against rounding drift just outside [-1, 1] before acos.
         return Math.acos(Math.max(-1.0, Math.min(1.0, cosine)));
     }

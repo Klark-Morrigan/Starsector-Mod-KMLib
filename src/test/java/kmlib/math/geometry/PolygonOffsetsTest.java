@@ -6,9 +6,9 @@ import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 import java.util.List;
 
+import static kmlib.math.geometry.GeometryTestSupport.buildAssertionSlack;
 import static kmlib.math.geometry.GeometryTestSupport.buildReferenceSquare;
 import static kmlib.math.geometry.GeometryTestSupport.computeSignedArea;
-import static kmlib.math.geometry.GeometryTestSupport.within;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -66,13 +66,13 @@ final class PolygonOffsetsTest {
             var bottom = segments.get(0);
 
             assertThat(bottom.startY())
-                .isCloseTo(2.0, within());
+                .isCloseTo(2.0, buildAssertionSlack());
             assertThat(bottom.endY())
-                .isCloseTo(2.0, within());
+                .isCloseTo(2.0, buildAssertionSlack());
             assertThat(bottom.startX())
-                .isCloseTo(0.0, within());
+                .isCloseTo(0.0, buildAssertionSlack());
             assertThat(bottom.endX())
-                .isCloseTo(10.0, within());
+                .isCloseTo(10.0, buildAssertionSlack());
         }
 
         @Test
@@ -96,6 +96,25 @@ final class PolygonOffsetsTest {
                     1.0))
                 .isEmpty();
         }
+
+        @Test
+        void offset_skips_an_edge_too_short_to_have_a_direction() {
+            // This entry point offsets the ring as given, without the dedup the whole-
+            // polygon insets run first, so a near-coincident vertex pair reaches it as a
+            // real edge. That edge has no direction and so no normal: it is dropped
+            // rather than offset along a normal computed from rounding noise, leaving
+            // one segment for each of the other five edges.
+            var squareWithNeedleThinEdge = Arrays.asList(
+                new double[] {0, 0},
+                new double[] {10, 0},
+                new double[] {10, 10},
+                new double[] {10, 10 + 1e-9},
+                new double[] {5, 10},
+                new double[] {0, 10});
+
+            assertThat(PolygonOffsets.offsetEdgesInward(squareWithNeedleThinEdge, 2.0))
+                .hasSize(5);
+        }
     }
 
     @Nested
@@ -112,13 +131,13 @@ final class PolygonOffsetsTest {
                 .hasSize(4);
 
             assertThat(inset.get(0))
-                .containsExactly(new double[] {2, 2}, within());
+                .containsExactly(new double[] {2, 2}, buildAssertionSlack());
             assertThat(inset.get(1))
-                .containsExactly(new double[] {8, 2}, within());
+                .containsExactly(new double[] {8, 2}, buildAssertionSlack());
             assertThat(inset.get(2))
-                .containsExactly(new double[] {8, 8}, within());
+                .containsExactly(new double[] {8, 8}, buildAssertionSlack());
             assertThat(inset.get(3))
-                .containsExactly(new double[] {2, 8}, within());
+                .containsExactly(new double[] {2, 8}, buildAssertionSlack());
         }
 
         @Test
@@ -175,7 +194,7 @@ final class PolygonOffsetsTest {
                 .hasSize(4);
             assertThat(result.vertices())
                 .anySatisfy(v -> assertThat(v[0])
-                    .isCloseTo(10.0, within()));
+                    .isCloseTo(10.0, buildAssertionSlack()));
             assertThat(result.vertices())
                 .allMatch(v -> v[0] >= 2 - 1e-6
                     && v[0] <= 10 + 1e-6
@@ -201,9 +220,9 @@ final class PolygonOffsetsTest {
                 .hasSize(1);
 
             assertThat(kept.get(0)[0][0])
-                .isCloseTo(10.0, within());
+                .isCloseTo(10.0, buildAssertionSlack());
             assertThat(kept.get(0)[1][0])
-                .isCloseTo(10.0, within());
+                .isCloseTo(10.0, buildAssertionSlack());
             assertThat(kept.get(0)[0][1])
                 .isBetween(2.0 - 1e-6, 8.0 + 1e-6);
             assertThat(kept.get(0)[1][1])
@@ -268,7 +287,10 @@ final class PolygonOffsetsTest {
 
         @Test
         void inset_selected_edges_rejects_a_mask_not_parallel_to_the_edges() {
-            assertThatThrownBy(() -> PolygonOffsets.insetSelectedEdges(buildReferenceSquare(), new boolean[] {true}, 2.0))
+            assertThatThrownBy(() -> PolygonOffsets.insetSelectedEdges(
+                    buildReferenceSquare(),
+                    new boolean[] {true},
+                    2.0))
                 .isInstanceOf(IllegalArgumentException.class);
         }
 
@@ -320,9 +342,9 @@ final class PolygonOffsetsTest {
                 .hasSize(1);
 
             assertThat(kept.get(0)[0][0])
-                .isCloseTo(10.0, within());
+                .isCloseTo(10.0, buildAssertionSlack());
             assertThat(kept.get(0)[1][0])
-                .isCloseTo(10.0, within());
+                .isCloseTo(10.0, buildAssertionSlack());
         }
 
         @Test
@@ -349,8 +371,50 @@ final class PolygonOffsetsTest {
 
         @Test
         void per_edge_rejects_distances_not_parallel_to_the_edges() {
-            assertThatThrownBy(() -> PolygonOffsets.insetSelectedEdges(buildReferenceSquare(), new double[] {2.0}))
+            assertThatThrownBy(() -> PolygonOffsets.insetSelectedEdges(
+                    buildReferenceSquare(),
+                    new double[] {2.0}))
                 .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        void per_edge_returns_nothing_to_draw_below_three_vertices() {
+            // Two vertices bound no area, so there is no interior to pull edges into.
+            var result = PolygonOffsets.insetSelectedEdges(
+                Arrays.asList(new double[] {0, 0}, new double[] {10, 0}),
+                new double[] {2.0, 2.0});
+
+            assertThat(result.vertices())
+                .isEmpty();
+        }
+
+        @Test
+        void per_edge_skips_an_edge_too_short_to_have_a_direction() {
+            // Unlike the whole-polygon insets this path clips the ring as given, so a
+            // near-coincident vertex pair survives to the clip loop. That edge has no
+            // direction to offset along, so it is skipped rather than clipping the
+            // working polygon against a line built from rounding noise - which would
+            // shear the result down to nothing.
+            var squareWithThinEdge = Arrays.asList(
+                new double[] {0, 0},
+                new double[] {10, 0},
+                new double[] {10, 10},
+                new double[] {10, 10 + 1e-9},
+                new double[] {0, 10});
+
+            var result = PolygonOffsets.insetSelectedEdges(
+                squareWithThinEdge,
+                new double[] {2.0, 2.0, 2.0, 2.0, 2.0});
+
+            // The four real edges still pull in, so the survivor is the inset body
+            // rather than the empty ring a noise-normal clip would leave.
+            assertThat(result.vertices())
+                .isNotEmpty();
+            assertThat(result.vertices())
+                .allMatch(vertex -> vertex[0] >= 2 - 1e-6
+                    && vertex[0] <= 8 + 1e-6
+                    && vertex[1] >= 2 - 1e-6
+                    && vertex[1] <= 8 + 1e-6);
         }
 
         // Asserts two vertex rings match in size and position, so a per-edge result
@@ -363,7 +427,7 @@ final class PolygonOffsetsTest {
             for (var i = 0; i < expected.size(); i++) {
 
                 assertThat(actual.get(i))
-                    .containsExactly(expected.get(i), within());
+                    .containsExactly(expected.get(i), buildAssertionSlack());
             }
         }
 
@@ -412,11 +476,11 @@ final class PolygonOffsetsTest {
                 .hasSize(3);
 
             assertThat(cleaned.get(0))
-                .containsExactly(new double[] {0, 0}, within());
+                .containsExactly(new double[] {0, 0}, buildAssertionSlack());
             assertThat(cleaned.get(1))
-                .containsExactly(new double[] {10, 0}, within());
+                .containsExactly(new double[] {10, 0}, buildAssertionSlack());
             assertThat(cleaned.get(2))
-                .containsExactly(new double[] {5, 5}, within());
+                .containsExactly(new double[] {5, 5}, buildAssertionSlack());
         }
 
         @Test
@@ -483,19 +547,22 @@ final class PolygonOffsetsTest {
         void miter_inset_matches_the_convex_inset_on_a_square() {
             // On a convex shape the miter join and the half-plane clip agree: the
             // side-10 square insets by 2 to the concentric (2,2)..(8,8) square.
-            var inset = PolygonOffsets.insetPolygonByMiter(buildReferenceSquare(), 2.0, MITER_SPIKE_LIMIT);
+            var inset = PolygonOffsets.insetPolygonByMiter(
+                buildReferenceSquare(),
+                2.0,
+                MITER_SPIKE_LIMIT);
 
             assertThat(inset)
                 .hasSize(4);
 
             assertThat(inset.get(0))
-                .containsExactly(new double[] {2, 2}, within());
+                .containsExactly(new double[] {2, 2}, buildAssertionSlack());
             assertThat(inset.get(1))
-                .containsExactly(new double[] {8, 2}, within());
+                .containsExactly(new double[] {8, 2}, buildAssertionSlack());
             assertThat(inset.get(2))
-                .containsExactly(new double[] {8, 8}, within());
+                .containsExactly(new double[] {8, 8}, buildAssertionSlack());
             assertThat(inset.get(3))
-                .containsExactly(new double[] {2, 8}, within());
+                .containsExactly(new double[] {2, 8}, buildAssertionSlack());
         }
 
         @Test
@@ -520,16 +587,16 @@ final class PolygonOffsetsTest {
                 .hasSize(7);
 
             assertThat(inset.get(0))
-                .containsExactly(new double[] {2, 2}, within());
+                .containsExactly(new double[] {2, 2}, buildAssertionSlack());
             assertThat(inset.get(3))
-                .containsExactly(new double[] {10, 8}, within());
+                .containsExactly(new double[] {10, 8}, buildAssertionSlack());
             assertThat(inset.get(4))
-                .containsExactly(new double[] {8, 10}, within());
+                .containsExactly(new double[] {8, 10}, buildAssertionSlack());
 
             // The reflex corner never spikes to its miter crossing at (8,8).
             assertThat(inset)
                 .noneSatisfy(v -> assertThat(v)
-                    .containsExactly(new double[] {8, 8}, within()));
+                    .containsExactly(new double[] {8, 8}, buildAssertionSlack()));
         }
 
         @Test
@@ -576,19 +643,22 @@ final class PolygonOffsetsTest {
             // Every edge shifted the same distance is the scalar inset: the side-10
             // square insets by 2 to the concentric (2,2)..(8,8) square.
             var uniform = new double[] {2.0, 2.0, 2.0, 2.0};
-            var inset = PolygonOffsets.insetPolygonByMiter(buildReferenceSquare(), uniform, MITER_SPIKE_LIMIT);
+            var inset = PolygonOffsets.insetPolygonByMiter(
+                buildReferenceSquare(),
+                uniform,
+                MITER_SPIKE_LIMIT);
 
             assertThat(inset)
                 .hasSize(4);
 
             assertThat(inset.get(0))
-                .containsExactly(new double[] {2, 2}, within());
+                .containsExactly(new double[] {2, 2}, buildAssertionSlack());
             assertThat(inset.get(1))
-                .containsExactly(new double[] {8, 2}, within());
+                .containsExactly(new double[] {8, 2}, buildAssertionSlack());
             assertThat(inset.get(2))
-                .containsExactly(new double[] {8, 8}, within());
+                .containsExactly(new double[] {8, 8}, buildAssertionSlack());
             assertThat(inset.get(3))
-                .containsExactly(new double[] {2, 8}, within());
+                .containsExactly(new double[] {2, 8}, buildAssertionSlack());
         }
 
         @Test
@@ -597,19 +667,22 @@ final class PolygonOffsetsTest {
             // three inset inward by 2: the bottom corners drop below the original
             // y=0 line to y=-2, the outward bulge, and the top stays inset.
             var distances = new double[] {-2.0, 2.0, 2.0, 2.0};
-            var inset = PolygonOffsets.insetPolygonByMiter(buildReferenceSquare(), distances, MITER_SPIKE_LIMIT);
+            var inset = PolygonOffsets.insetPolygonByMiter(
+                buildReferenceSquare(),
+                distances,
+                MITER_SPIKE_LIMIT);
 
             assertThat(inset)
                 .hasSize(4);
 
             assertThat(inset.get(0))
-                .containsExactly(new double[] {2, -2}, within());
+                .containsExactly(new double[] {2, -2}, buildAssertionSlack());
             assertThat(inset.get(1))
-                .containsExactly(new double[] {8, -2}, within());
+                .containsExactly(new double[] {8, -2}, buildAssertionSlack());
             assertThat(inset.get(2))
-                .containsExactly(new double[] {8, 8}, within());
+                .containsExactly(new double[] {8, 8}, buildAssertionSlack());
             assertThat(inset.get(3))
-                .containsExactly(new double[] {2, 8}, within());
+                .containsExactly(new double[] {2, 8}, buildAssertionSlack());
         }
 
         @Test
@@ -655,6 +728,36 @@ final class PolygonOffsetsTest {
                     new double[] {1.0, 1.0},
                     MITER_SPIKE_LIMIT))
                 .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        void miter_inset_pulls_a_straight_through_corner_onto_the_offset_edge() {
+            // (5,0) is a corner only in the vertex list: its two edges are collinear, so
+            // both inward normals point the same way and their offset lines never meet.
+            // With no miter point to place, the corner takes the outbound edge's own
+            // offset position - it lands on the inset line like the edge it sits on,
+            // rather than being dropped or thrown off to a far intersection.
+            var squareWithMidEdgeVertex = Arrays.asList(
+                new double[] {0, 0},
+                new double[] {5, 0},
+                new double[] {10, 0},
+                new double[] {10, 10},
+                new double[] {0, 10});
+
+            var inset = PolygonOffsets.insetPolygonByMiter(
+                squareWithMidEdgeVertex,
+                2.0,
+                MITER_SPIKE_LIMIT);
+
+            // Six, not five: the corner emits both its inbound and outbound offset
+            // points, which coincide here. This pass offsets corners and leaves
+            // collinear hygiene to the caller, so the pair is carried rather than fused.
+            assertThat(inset)
+                .hasSize(6);
+            assertThat(inset.get(1))
+                .containsExactly(new double[] {5, 2}, buildAssertionSlack());
+            assertThat(inset.get(2))
+                .containsExactly(new double[] {5, 2}, buildAssertionSlack());
         }
     }
 }

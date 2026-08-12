@@ -13,23 +13,28 @@ import java.util.List;
  */
 final class GeometryTestSupport {
 
+    // The side the reference square is built at: small enough that an inset of 2 or 3
+    // leaves a shape to assert on, large enough that it does not itself read as
+    // degenerate.
+    private static final double REFERENCE_SIDE = 10;
+
     private GeometryTestSupport() {
     }
 
-    // The floating-point slack the geometry assertions allow: tight enough to pin
-    // exact corner coordinates, loose enough to absorb offset/clip rounding.
-    static Offset<Double> within() {
+    // The floating-point slack the geometry assertions allow: tight enough to pin exact
+    // corner coordinates, loose enough to absorb offset/clip rounding. The default for
+    // suites comparing coordinates a clip produced; one wanting a tighter bound than
+    // that (Points and PrincipalAxis go to 1e-9 and below) states its own inline, so a
+    // number written at an assertion always means a deliberate departure from this.
+    static Offset<Double> buildAssertionSlack() {
         return Offset.offset(1e-6);
     }
 
     // CCW square with side 10, the reference shape for the offset and smoothing
-    // tests.
+    // tests. Delegates rather than restating the corners, so the shape the suites
+    // assert exact coordinates against cannot drift from the parameterised one.
     static List<double[]> buildReferenceSquare() {
-        return Arrays.asList(
-            new double[] {0, 0},
-            new double[] {10, 0},
-            new double[] {10, 10},
-            new double[] {0, 10});
+        return buildSquare(REFERENCE_SIDE);
     }
 
     // CCW square of the given side, anchored at the origin.

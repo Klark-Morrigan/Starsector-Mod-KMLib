@@ -274,6 +274,14 @@ class PointsTest {
             // world distance.
             assertThat(Points.projectPointOnto(3, 4, 1.2, 1.6)).isCloseTo(10.0, within(1e-12));
         }
+
+        @Test
+        void projectPointOntoReadsAPointAndAxisGivenAsArrays() {
+            // The {x, y} form the rest of the geometry package passes points in, so a
+            // caller holding arrays need not spread them into four loose doubles.
+            assertThat(Points.projectPointOnto(new double[] {3, 4}, new double[] {0.6, 0.8}))
+                .isCloseTo(5.0, within(1e-12));
+        }
     }
 
     @Nested
@@ -386,6 +394,13 @@ class PointsTest {
         void computeAngleDegreesIsRelativeToTheFirstPoint() {
             assertThat(Points.computeAngleDegrees(2, 2, 5, 6)).isCloseTo(53.13,
                 within(0.01));
+        }
+
+        @Test
+        void computeAngleDegreesReadsTwoPointsGivenAsArrays() {
+            // The {x, y} form the rest of the geometry package passes points in.
+            assertThat(Points.computeAngleDegrees(new double[] {0, 0}, new double[] {1, 1}))
+                .isEqualTo(45.0);
         }
     }
 

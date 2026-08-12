@@ -19,6 +19,7 @@ import java.util.List;
  * mutating this one.
  */
 public final class LabelledPolygon {
+
     private final List<LabelledVertex> vertices;
 
     private LabelledPolygon(List<LabelledVertex> vertices) {
@@ -26,28 +27,30 @@ public final class LabelledPolygon {
     }
 
     /**
-     * Builds a regular {@code segments}-gon of {@code radius} about
-     * {@code center} with every edge labelled {@code seedLabel} - the seed a
-     * clipped shape is carved out of. Counter-clockwise winding.
+     * Builds the regular polygon approximating {@code disk} with every edge labelled
+     * {@code seedLabel} - the seed a clipped shape is carved out of. Counter-clockwise
+     * winding.
      *
-     * @param center    polygon centre as {x, y}
-     * @param radius    distance from the centre to each vertex
-     * @param segments  number of sides
+     * @param disk      the disk to approximate, supplying the centre, the distance from
+     *                  it to each vertex, and the number of sides
      * @param seedLabel the label every edge starts with, until a clip cuts it
      * @return the seed polygon
      */
-    public static LabelledPolygon createRegularPolygon(
-            double[] center,
-            double radius,
-            int segments,
-            int seedLabel) {
+    public static LabelledPolygon createRegularPolygon(Disk disk, int seedLabel) {
+
+        var segments = disk.segments();
         var vertices = new ArrayList<LabelledVertex>(segments);
+
         for (var i = 0; i < segments; i++) {
+
             var angle = 2.0 * Math.PI * i / segments;
-            vertices.add(new LabelledVertex(new double[] {
-                center[0] + radius * Math.cos(angle),
-                center[1] + radius * Math.sin(angle),
-            }, seedLabel));
+            
+            vertices.add(new LabelledVertex(
+                new double[] {
+                    disk.centreX() + disk.radius() * Math.cos(angle),
+                    disk.centreY() + disk.radius() * Math.sin(angle),
+                },
+                seedLabel));
         }
         return new LabelledPolygon(vertices);
     }
@@ -71,6 +74,7 @@ public final class LabelledPolygon {
      * @throws IllegalArgumentException when the two arrays are not parallel
      */
     public static LabelledPolygon fromLabelledEdges(List<double[]> vertices, int[] edgeLabels) {
+
         if (vertices.size() != edgeLabels.length) {
             throw new IllegalArgumentException(
                 "vertices and edgeLabels must be parallel: "
@@ -79,6 +83,7 @@ public final class LabelledPolygon {
                     + edgeLabels.length);
         }
         var labelled = new ArrayList<LabelledVertex>(vertices.size());
+
         for (var i = 0; i < vertices.size(); i++) {
             labelled.add(new LabelledVertex(vertices.get(i), edgeLabels[i]));
         }
@@ -107,12 +112,15 @@ public final class LabelledPolygon {
      * @return the clipped polygon; empty when nothing lies on the kept side
      */
     public LabelledPolygon clipToHalfPlane(HalfPlane boundary, int clipLabel) {
+
         var result = new ArrayList<LabelledVertex>();
         var count = vertices.size();
+
         // Sutherland-Hodgman edge walk; the half-plane side test lives in Lines and
         // the crossing point in Segment, so this method owns only the label
         // bookkeeping on top.
         for (var i = 0; i < count; i++) {
+
             var current = vertices.get(i);
             var next = vertices.get((i + 1) % count);
             var currentOffset = Lines.computeSignedOffsetFromLine(current.point(), boundary);
@@ -151,6 +159,7 @@ public final class LabelledPolygon {
      *         list, though the point arrays themselves are shared
      */
     public List<double[]> getVertices() {
+
         var points = new ArrayList<double[]>(vertices.size());
         for (var vertex : vertices) {
             points.add(vertex.point());
@@ -164,6 +173,7 @@ public final class LabelledPolygon {
      *         {@code (i + 1)} modulo the vertex count
      */
     public int[] getEdgeLabels() {
+
         var labels = new int[vertices.size()];
         for (var i = 0; i < vertices.size(); i++) {
             labels[i] = vertices.get(i).outgoingEdgeLabel();
@@ -174,6 +184,8 @@ public final class LabelledPolygon {
     // A polygon vertex paired with the label of the edge leaving it toward the
     // next vertex in the ring - how a clip threads each surviving edge's label
     // through the half-plane intersections.
-    private record LabelledVertex(double[] point, int outgoingEdgeLabel) {
+    private record LabelledVertex(
+        double[] point,
+        int outgoingEdgeLabel) {
     }
 }

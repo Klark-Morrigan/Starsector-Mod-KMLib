@@ -8,9 +8,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static kmlib.math.geometry.GeometryTestSupport.buildAssertionSlack;
 import static kmlib.math.geometry.GeometryTestSupport.buildSquare;
 import static kmlib.math.geometry.GeometryTestSupport.computeSignedArea;
-import static kmlib.math.geometry.GeometryTestSupport.within;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -52,7 +52,7 @@ final class PolygonRegionsTest {
             // The side-10 CCW square encloses 100; a positive sign reports the CCW
             // winding a consumer's fold-guard checks against.
             assertThat(computeSignedArea(buildSquare(10)))
-                .isCloseTo(100.0, within());
+                .isCloseTo(100.0, buildAssertionSlack());
         }
 
         @Test
@@ -66,7 +66,7 @@ final class PolygonRegionsTest {
                 new double[] {10, 0});
 
             assertThat(computeSignedArea(clockwise))
-                .isCloseTo(-100.0, within());
+                .isCloseTo(-100.0, buildAssertionSlack());
         }
 
         @Test
@@ -74,9 +74,9 @@ final class PolygonRegionsTest {
             // No ring can enclose area with under three corners, so both a lone point
             // and a two-vertex degenerate return zero rather than a stray sum.
             assertThat(computeSignedArea(List.of(new double[] {1, 1})))
-                .isCloseTo(0.0, within());
+                .isCloseTo(0.0, buildAssertionSlack());
             assertThat(computeSignedArea(Arrays.asList(new double[] {0, 0}, new double[] {10, 0})))
-                .isCloseTo(0.0, within());
+                .isCloseTo(0.0, buildAssertionSlack());
         }
 
         @Test
@@ -89,7 +89,7 @@ final class PolygonRegionsTest {
                 new double[] {10, 0});
 
             assertThat(computeSignedArea(collinear))
-                .isCloseTo(0.0, within());
+                .isCloseTo(0.0, buildAssertionSlack());
         }
     }
 
@@ -299,9 +299,9 @@ final class PolygonRegionsTest {
             assertThat(spans)
                 .hasSize(1);
             assertThat(spans.get(0)[0])
-                .isCloseTo(-5.0, within());
+                .isCloseTo(-5.0, buildAssertionSlack());
             assertThat(spans.get(0)[1])
-                .isCloseTo(5.0, within());
+                .isCloseTo(5.0, buildAssertionSlack());
         }
 
         @Test
@@ -328,13 +328,13 @@ final class PolygonRegionsTest {
                 .hasSize(2);
 
             assertThat(spans.get(0)[0])
-                .isCloseTo(-5.0, within());
+                .isCloseTo(-5.0, buildAssertionSlack());
             assertThat(spans.get(0)[1])
-                .isCloseTo(-1.0, within());
+                .isCloseTo(-1.0, buildAssertionSlack());
             assertThat(spans.get(1)[0])
-                .isCloseTo(1.0, within());
+                .isCloseTo(1.0, buildAssertionSlack());
             assertThat(spans.get(1)[1])
-                .isCloseTo(5.0, within());
+                .isCloseTo(5.0, buildAssertionSlack());
         }
 
         @Test
@@ -357,13 +357,13 @@ final class PolygonRegionsTest {
                 .hasSize(2);
 
             assertThat(spans.get(0)[0])
-                .isCloseTo(-10.0, within());
+                .isCloseTo(-10.0, buildAssertionSlack());
             assertThat(spans.get(0)[1])
-                .isCloseTo(-2.0, within());
+                .isCloseTo(-2.0, buildAssertionSlack());
             assertThat(spans.get(1)[0])
-                .isCloseTo(2.0, within());
+                .isCloseTo(2.0, buildAssertionSlack());
             assertThat(spans.get(1)[1])
-                .isCloseTo(10.0, within());
+                .isCloseTo(10.0, buildAssertionSlack());
         }
 
         @Test
@@ -418,9 +418,9 @@ final class PolygonRegionsTest {
                 .hasSize(1);
 
             assertThat(spans.get(0)[0])
-                .isCloseTo(-10.0, within());
+                .isCloseTo(-10.0, buildAssertionSlack());
             assertThat(spans.get(0)[1])
-                .isCloseTo(10.0, within());
+                .isCloseTo(10.0, buildAssertionSlack());
         }
 
         @Test
@@ -448,13 +448,13 @@ final class PolygonRegionsTest {
                 .hasSize(2);
 
             assertThat(spans.get(0)[0])
-                .isCloseTo(-10.0, within());
+                .isCloseTo(-10.0, buildAssertionSlack());
             assertThat(spans.get(0)[1])
-                .isCloseTo(-2.0, within());
+                .isCloseTo(-2.0, buildAssertionSlack());
             assertThat(spans.get(1)[0])
-                .isCloseTo(2.0, within());
+                .isCloseTo(2.0, buildAssertionSlack());
             assertThat(spans.get(1)[1])
-                .isCloseTo(10.0, within());
+                .isCloseTo(10.0, buildAssertionSlack());
         }
 
         @Test
@@ -497,10 +497,10 @@ final class PolygonRegionsTest {
             for (var i = 0; i < lineSpans.size(); i++) {
 
                 assertThat(bandSpans.get(i)[0])
-                    .isCloseTo(lineSpans.get(i)[0], within());
+                    .isCloseTo(lineSpans.get(i)[0], buildAssertionSlack());
 
                 assertThat(bandSpans.get(i)[1])
-                    .isCloseTo(lineSpans.get(i)[1], within());
+                    .isCloseTo(lineSpans.get(i)[1], buildAssertionSlack());
             }
         }
 

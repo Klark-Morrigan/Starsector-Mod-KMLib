@@ -67,11 +67,10 @@ src/main/java/kmlib/
                      no discrete event to consume
   logging/         - log4j level control over one mod's package subtree, and the
                    scoped names that put library work under the mod it was done for
-  math/            - easing/, geometry/ (polygon offsetting, smoothing,
-                     regions, rings, Voronoi cells, principal axis,
-                     spans, disks, pixel-grid snapping), hashing/
-                     (avalanche, content fingerprints), motion/, random/,
-                     ranges/, solving/
+  math/            - easing/, geometry/ (2D shapes, polygon passes and the
+                     point arithmetic under them - see its own README),
+                     hashing/ (avalanche, content fingerprints), motion/,
+                     random/, ranges/, solving/
   opengl/          - GL primitive emission (lines, quads, triangles,
                      vertex runs), the saved-state scope a blended 2D
                      pass draws inside, how a pass blends and how a
@@ -229,6 +228,7 @@ Packages with more behind them than one line can carry:
 | Package | Read |
 | --- | --- |
 | [`opengl/`](src/main/java/kmlib/opengl/), [`starsector/ui/map/`](src/main/java/kmlib/starsector/ui/map/), [`starsector/ui/render/gl/`](src/main/java/kmlib/starsector/ui/render/gl/) | [Rendering environment](#rendering-environment) |
+| [`math/geometry/`](src/main/java/kmlib/math/geometry/) | [2D shapes and polygon passes](src/main/java/kmlib/math/geometry/README.md) |
 | [`starsector/factions/`](src/main/java/kmlib/starsector/factions/) | [Player Faction Resolution](#player-faction-resolution) |
 | [`starsector/intel/`](src/main/java/kmlib/starsector/intel/) | [Intel Base Classes](#intel-base-classes) |
 | [`testfixtures/`](src/main/java/kmlib/testfixtures/) | [Test fixtures in the main jar](#test-fixtures-in-the-main-jar) |

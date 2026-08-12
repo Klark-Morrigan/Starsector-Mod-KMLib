@@ -32,10 +32,13 @@ final class PolygonSmoothingTest {
             // Side-100 square, radius 10, 3 segments/corner -> 4 corners x 4 points
             // = 16. The cut is a fixed 10 units, so the bottom edge stays straight
             // through its middle: the arc endpoints (10,0) and (90,0) lie on y = 0.
-            var rounded = PolygonSmoothing.roundCorners(buildSquare(100), 10.0, 3, 0.0);
+            var rounded = PolygonSmoothing.roundCorners(
+                buildSquare(100),
+                new CornerRounding(10.0, 3, 0.0));
 
             assertThat(rounded)
                 .hasSize(16);
+                
             assertThat(rounded)
                 .allMatch(vertex -> vertex[0] >= 0
                     && vertex[0] <= 100
@@ -53,7 +56,9 @@ final class PolygonSmoothingTest {
         void round_corners_clamps_an_oversized_radius_without_spiking() {
             // Radius far larger than the side: clamped to half the edge, so the
             // result still stays inside the square instead of overshooting.
-            var rounded = PolygonSmoothing.roundCorners(buildSquare(100), 10_000.0, 3, 0.0);
+            var rounded = PolygonSmoothing.roundCorners(
+                buildSquare(100),
+                new CornerRounding(10_000.0, 3, 0.0));
 
             assertThat(rounded)
                 .allMatch(vertex -> vertex[0] >= 0
@@ -64,8 +69,55 @@ final class PolygonSmoothingTest {
 
         @Test
         void round_corners_leaves_the_polygon_unchanged_for_zero_radius() {
-            assertThat(PolygonSmoothing.roundCorners(buildReferenceSquare(), 0.0, 3, 0.0))
+            assertThat(PolygonSmoothing.roundCorners(
+                    buildReferenceSquare(),
+                    new CornerRounding(0.0, 3, 0.0)))
                 .hasSize(4);
+        }
+
+        @Test
+        void round_corners_leaves_the_polygon_unchanged_for_no_segments_per_corner() {
+            // An arc sampled into no segments is not an arc; the pass declines rather
+            // than replacing each corner with its two bare step-back points.
+            assertThat(PolygonSmoothing.roundCorners(
+                    buildReferenceSquare(),
+                    new CornerRounding(2.0, 0, 0.0)))
+                .hasSize(4);
+        }
+
+        @Test
+        void round_corners_returns_the_input_below_three_vertices() {
+
+            var segment = Arrays.asList(
+                new double[] {0, 0},
+                new double[] {10, 0});
+
+            assertThat(PolygonSmoothing.roundCorners(segment, new CornerRounding(2.0, 3, 0.0)))
+                .hasSize(2);
+        }
+
+        @Test
+        void round_corners_chords_a_straight_through_corner() {
+            // (5,0) sits mid-edge, so its two step-back points and the corner are
+            // collinear and no arc centre exists. The pass falls back to the chord
+            // between those points instead of dividing through the degenerate centre.
+            var squareWithMidEdgeVertex = Arrays.asList(
+                new double[] {0, 0},
+                new double[] {5, 0},
+                new double[] {10, 0},
+                new double[] {10, 10},
+                new double[] {0, 10});
+
+            var rounded = PolygonSmoothing.roundCorners(
+                squareWithMidEdgeVertex,
+                new CornerRounding(1.0, 3, 0.0));
+
+            // Four real corners arc into 3 + 1 points each; the straight-through one
+            // contributes its two step-back points alone. 16 + 2 = 18.
+            assertThat(rounded)
+                .hasSize(18);
+            assertThat(rounded)
+                .allMatch(vertex -> vertex[1] >= -1e-6);
         }
 
         @Test
@@ -79,7 +131,9 @@ final class PolygonSmoothingTest {
                 new double[] {100, 0},
                 new double[] {100, 10});
 
-            var rounded = PolygonSmoothing.roundCorners(triangle, 5.0, 3, Math.toRadians(45));
+            var rounded = PolygonSmoothing.roundCorners(
+                triangle,
+                new CornerRounding(5.0, 3, Math.toRadians(45)));
 
             assertThat(rounded)
                 .hasSize(10);
@@ -104,10 +158,13 @@ final class PolygonSmoothingTest {
                 new double[] {10, 30},
                 new double[] {0, 30});
 
-            var rounded = PolygonSmoothing.roundCorners(lShape, 3.0, 3, 0.0);
+            var rounded = PolygonSmoothing.roundCorners(
+                lShape,
+                new CornerRounding(3.0, 3, 0.0));
 
             assertThat(rounded)
                 .hasSize(24);
+                
             assertThat(rounded)
                 .allMatch(vertex -> vertex[0] >= -1e-6
                     && vertex[0] <= 30 + 1e-6
@@ -145,7 +202,10 @@ final class PolygonSmoothingTest {
                 new double[] {49, 100},
                 new double[] {0, 100});
 
-            var cleaned = PolygonSmoothing.removeSpikes(squareWithNeedle, 20.0, MAX_CORNER_ANGLE);
+            var cleaned = PolygonSmoothing.removeSpikes(
+                squareWithNeedle,
+                20.0,
+                MAX_CORNER_ANGLE);
 
             // The needle apex is gone: nothing rises above the top edge. Splicing the
             // apex leaves its two shoulders collinear on y = 100 (this pass sands
@@ -170,7 +230,10 @@ final class PolygonSmoothingTest {
                 new double[] {49, 100},
                 new double[] {0, 100});
 
-            var cleaned = PolygonSmoothing.removeSpikes(squareWithCusp, 20.0, MAX_CORNER_ANGLE);
+            var cleaned = PolygonSmoothing.removeSpikes(
+                squareWithCusp,
+                20.0,
+                MAX_CORNER_ANGLE);
 
             // The inward nick apex at (50,92) is gone. As with the needle the spliced
             // shoulders stay collinear on y = 100, so the count drops short of 4.
@@ -194,7 +257,10 @@ final class PolygonSmoothingTest {
                 new double[] {40, 100},
                 new double[] {0, 100});
 
-            var cleaned = PolygonSmoothing.removeSpikes(squareWithPeninsula, 20.0, MAX_CORNER_ANGLE);
+            var cleaned = PolygonSmoothing.removeSpikes(
+                squareWithPeninsula,
+                20.0,
+                MAX_CORNER_ANGLE);
 
             assertThat(cleaned)
                 .anyMatch(vertex -> vertex[1] > 150);
@@ -214,7 +280,10 @@ final class PolygonSmoothingTest {
                 new double[] {30, 100},
                 new double[] {0, 100});
 
-            var cleaned = PolygonSmoothing.removeSpikes(squareWithBump, 20.0, MAX_CORNER_ANGLE);
+            var cleaned = PolygonSmoothing.removeSpikes(
+                squareWithBump,
+                20.0,
+                MAX_CORNER_ANGLE);
 
             assertThat(cleaned)
                 .anyMatch(vertex -> vertex[1] > 100 + 1e-6);
