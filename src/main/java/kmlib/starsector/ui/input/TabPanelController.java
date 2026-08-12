@@ -22,11 +22,12 @@ import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
  *
  * <p>One controller per panel, since it holds that panel's runtime state across frames: the body's scroll
  * and drag state, the collapse animation, the hover fades of the parts that light under the pointer - the
- * header tabs and the collapse handle - and the two triggered motions its tabs carry, a click's pulse and a
- * bound key's blink. A host creates it, reads
+ * header tabs, the body's own controls, and the collapse handle - and the two triggered motions its tabs
+ * carry, a click's pulse and a bound key's blink. A host creates it, reads
  * its {@link #getScrollState()} and {@link #getCollapseFraction()} when it lays the panel out, advances the
- * collapse and the input motions each frame it draws, reads {@link #getTabInteractionSources()} and {@link
- * #getNotchHoverFraction()} to paint with, and feeds it pointer events. That state lives here beside the
+ * collapse and the input motions each frame it draws, reads {@link #getTabInteractionSources()}, {@link
+ * #getNotchHoverFraction()} and {@link #resolveBodyHoverFractionAt} to paint with, and feeds it pointer
+ * events. That state lives here beside the
  * scroll offset because all of it is the panel's own transient per-session UI state, not the host's; a
  * consumer that lays out a placement and pumps this controller inherits the collapse handle and the live
  * tabs without wiring any of those animations itself. The panel opens
@@ -64,6 +65,13 @@ public final class TabPanelController {
     // state rather than on the placement, which is an immutable value the layout computes: a fade is where
     // the panel currently stands, not where its parts sit.
     private final HoverFades<Integer> tabHoverFades = new HoverFades<>();
+
+    // How far each body cell has travelled onto its hovered look, keyed by the slot it occupies in the
+    // strip. A second set rather than a second key space in the one above, the two rows having nothing to
+    // say to each other: a tab and a body control are never hovered together, but nor is either ever asked
+    // about in the other's terms, and one map holding both would have to be keyed by something that can
+    // spell either.
+    private final HoverFades<BodyCellSlot> bodyHoverFades = new HoverFades<>();
 
     // The click lift each header tab is carrying, keyed the same way the fades are. A separate holder rather
     // than a second reading off the fades because the two motions differ in kind: a hover is a position the
@@ -192,6 +200,18 @@ public final class TabPanelController {
     }
 
     /**
+     * How far onto its hovered look the body cell at a given slot currently stands, for the render pass to
+     * lift that widget's own chrome by. A bare fraction, so this end holds no colour: what the lift is made
+     * of - a blend, a wash, a brightened frame - is the widget's own paint, resolved where its style is.
+     *
+     * @param slot the body cell being asked about
+     * @return its hover fraction, 0 fully at rest and 1 fully on its hovered look
+     */
+    public float resolveBodyHoverFractionAt(BodyCellSlot slot) {
+        return bodyHoverFades.resolveHoverFractionAt(slot);
+    }
+
+    /**
      * @return true only when the panel is fully expanded and idle - not docked, docking, or undocking -
      *         which is a fact about the fold alone. What a caller gating input on the tabs wants is
      *         {@link #isPresentingTabsOf}, since a panel with no body to fold is presenting its tabs
@@ -246,11 +266,11 @@ public final class TabPanelController {
     }
 
     /**
-     * Steps every motion the panel makes in answer to input - its header tabs' and its collapse handle's
-     * hover fades, and the click pulses and hotkey blinks running on its tabs - by a frame's worth of time,
-     * for the host to call each frame it draws, after it has resolved the placement. One call rather than one
-     * per motion, so the panel's parts cannot be advanced against different placements or charged different
-     * slices of the same frame.
+     * Steps every motion the panel makes in answer to input - the hover fades of its header tabs, its body
+     * controls, and its collapse handle, and the click pulses and hotkey blinks running on its tabs - by a
+     * frame's worth of time, for the host to call each frame it draws, after it has resolved the placement.
+     * One call rather than one per motion, so the panel's parts cannot be advanced against different
+     * placements or charged different slices of the same frame.
      *
      * <p>What is under the pointer is resolved against the very placement being drawn rather than latched
      * from the last pointer event. That is what keeps a fade honest when the panel moves under a still
@@ -274,7 +294,7 @@ public final class TabPanelController {
             float elapsedSeconds,
             TraverseDurations durations) {
 
-        // One cursor read spent on both hit-tests, so the tab and the handle answer the same pointer.
+        // One cursor read spent on every hit-test, so each of the panel's parts answers the same pointer.
         advanceInputMotionsAtPoint(
             placement,
             UiCursor.getUiX(),
@@ -299,6 +319,7 @@ public final class TabPanelController {
      */
     public void resetInputMotions() {
         tabHoverFades.resetFades();
+        bodyHoverFades.resetFades();
         notchHoverFade.resetFade();
         tabClickPulses.resetPulses();
         tabHotkeyBlinks.resetPulses();
@@ -448,7 +469,7 @@ public final class TabPanelController {
     }
 
     /**
-     * Steps the input motions for a pointer at a given point, hit-testing the panel's two hoverable parts
+     * Steps the input motions for a pointer at a given point, hit-testing the panel's hoverable parts
      * against the placement being drawn. Split from the cursor read above for the same reason {@link
      * UiCursor} keeps its scaling separable from its LWJGL read: this is where each part is paired with the
      * hit-test that decides it - a pairing crossed over would light the handle for a tab - and the split is
@@ -467,11 +488,14 @@ public final class TabPanelController {
             float elapsedSeconds,
             TraverseDurations durations) {
 
-        // The fold is settled inside the resolver rather than here, so the hover and the press cannot ask it
-        // differently; what reaches the advance below is only where the pointer is.
+        // The fold is settled inside each resolver rather than here, so the hover and the press cannot ask
+        // it differently; what reaches the advance below is only where the pointer is. The body asks it of
+        // the box it is drawn inside and the header of its own gate, the two folding by different means -
+        // the box narrows, the row is clipped - and neither reader choosing for itself which applies.
         advanceInputMotionsForFrame(
             new TabPanelHover(
                 resolveTabIndexAtPoint(placement, pointX, pointY),
+                resolveBodyCellSlotAtPoint(placement, pointX, pointY),
                 placement.containsPointInNotch(pointX, pointY)),
             elapsedSeconds,
             durations);
@@ -502,6 +526,11 @@ public final class TabPanelController {
         // The handle is never gated with the tabs - it draws past the frame and outlives the fold, being
         // what brings a docked panel back.
         tabHoverFades.advanceTowardHoveredKey(hover.tabIndex(), elapsedSeconds, durations);
+
+        // The body's cells travel on the same pair of paces as the row above them, which is the whole of
+        // what the panel shares between its parts: what a fraction lifts a checkbox toward is that widget's
+        // own paint, and a panel answering the pointer at two speeds reads as two panels.
+        bodyHoverFades.advanceTowardHoveredKey(hover.bodyCellSlot(), elapsedSeconds, durations);
 
         notchHoverFade.advanceTowardHover(hover.isNotchHovered(), elapsedSeconds, durations);
         tabClickPulses.advanceByElapsedTime(elapsedSeconds, durations);
@@ -554,6 +583,25 @@ public final class TabPanelController {
         // an ordinary laid-out control, and one mapping of a row miss onto "no cell" is one place for the
         // unboxing trap that mapping carries to be got wrong.
         return PanelController.resolveHitCell(placement.tabsHeader(), pointX, pointY);
+    }
+
+    // Which body cell a point falls on, given what the panel is currently drawing - the body's half of the
+    // frame's reading. Through the body controller's own walk rather than a hit-test of this class's own,
+    // so the cell that lights and the cell a press lands on are the same cell because they are the same
+    // answer, and the viewport and box gates that walk carries are inherited rather than restated.
+    //
+    // A hit is reduced to where it landed, the control it names being the press's business alone: a fade is
+    // held against the slot, and a hover that also carried the widget could come to be keyed by it.
+    private static BodyCellSlot resolveBodyCellSlotAtPoint(
+            TabPanelPlacement placement,
+            float pointX,
+            float pointY) {
+
+        var hitCell = PanelController.resolveHitBodyCell(placement.body(), pointX, pointY);
+
+        return hitCell == null
+            ? null
+            : hitCell.slot();
     }
 
     /**

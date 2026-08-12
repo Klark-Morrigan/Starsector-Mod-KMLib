@@ -71,7 +71,7 @@ final class PanelControllerTest {
 
             assertThat(activatedCell)
                 .as("a single-cell control reports itself and cell 0")
-                .isEqualTo(new ResolvedBodyCell(checkbox, 0));
+                .isEqualTo(new ResolvedBodyCell(checkbox, new BodyCellSlot(0, 0)));
             assertThat(firedCell[0])
                 .as("the cell reported is the cell the action fired for")
                 .isZero();
@@ -104,7 +104,7 @@ final class PanelControllerTest {
                 ROW.y() + ROW.height() / 2f);
 
             assertThat(activatedCell)
-                .isEqualTo(new ResolvedBodyCell(list, 0));
+                .isEqualTo(new ResolvedBodyCell(list, new BodyCellSlot(0, 0)));
             assertThat(firedCell[0])
                 .isZero();
         }
@@ -144,7 +144,7 @@ final class PanelControllerTest {
 
             assertThat(activatedCell)
                 .as("a tab reports its own index")
-                .isEqualTo(new ResolvedBodyCell(tabs, 1));
+                .isEqualTo(new ResolvedBodyCell(tabs, new BodyCellSlot(0, 1)));
             assertThat(firedCell[0])
                 .as("the index reported is the index the action fired for")
                 .isEqualTo(1);
@@ -204,7 +204,7 @@ final class PanelControllerTest {
 
             assertThat(activatedCell)
                 .as("the lit segment reports its own index")
-                .isEqualTo(new ResolvedBodyCell(radio, 0));
+                .isEqualTo(new ResolvedBodyCell(radio, new BodyCellSlot(0, 0)));
             assertThat(firedCell[0])
                 .as("the index reported is the index the action fired for")
                 .isZero();
@@ -286,7 +286,7 @@ final class PanelControllerTest {
                 ROW.y() + ROW.height() / 2f);
 
             assertThat(resolvedCell)
-                .isEqualTo(new ResolvedBodyCell(checkbox, 0));
+                .isEqualTo(new ResolvedBodyCell(checkbox, new BodyCellSlot(0, 0)));
             assertThat(fired[0])
                 .as("resolving a cell must not fire it")
                 .isFalse();
@@ -311,7 +311,7 @@ final class PanelControllerTest {
 
             assertThat(resolvedCell)
                 .as("what a point is over does not depend on what pressing it would do")
-                .isEqualTo(new ResolvedBodyCell(radio, 0));
+                .isEqualTo(new ResolvedBodyCell(radio, new BodyCellSlot(0, 0)));
         }
 
         @Test
@@ -350,7 +350,46 @@ final class PanelControllerTest {
 
             assertThat(resolvedCell)
                 .as("the control on screen answers, not the one clipped away under it")
-                .isEqualTo(new ResolvedBodyCell(checkbox, 0));
+                .isEqualTo(new ResolvedBodyCell(checkbox, new BodyCellSlot(1, 0)));
+        }
+
+        @Test
+        void resolveHitBodyCellReportsTheSlotTheHitControlOccupiesInTheStrip() {
+
+            // Where a hit landed, not only what it landed on: a hover is held against the slot, so a walk
+            // that reported the second control with the first one's position would light a control the
+            // pointer is not on. Three controls with the hit on the last, so a slot answered off the walk's
+            // start or off its first match reads as a wrong number rather than as the right one by luck.
+            var checkbox = buildCheckboxControl("Muted", ControlAction.NONE);
+            var resolvedCell = PanelController.resolveHitBodyCell(
+                buildBodyPlacement(
+                    new Control(LabelledControlSpecs.buildLabel("Caption"), ROW, List.of()),
+                    new Control(new ControlSpec.Divider(), ROW, List.of()),
+                    checkbox),
+                ROW.x() + ROW.width() / 2f,
+                ROW.y() + ROW.height() / 2f);
+
+            assertThat(resolvedCell)
+                .isEqualTo(new ResolvedBodyCell(checkbox, new BodyCellSlot(2, 0)));
+        }
+
+        @Test
+        void resolveHitBodyCellReportsNoControlForAPointOutsideTheBoxTheBodyIsDrawnIn() {
+
+            // The fold, reaching the body the way it actually reaches it. A collapsing panel narrows the box
+            // and clips the body to it while every control keeps the position the layout gave it, so this
+            // checkbox is laid where it always was and is on screen nowhere. Stated in the walk rather than
+            // beside the press, which escapes it by accident: the press never gets this far, and a hover
+            // that walked the strip for itself would light a control behind the docked rail.
+            var checkbox = buildCheckboxControl("Muted", ControlAction.NONE);
+            var resolvedCell = PanelController.resolveHitBodyCell(
+                buildBodyPlacementBoxedTo(buildDockedRailBox(), checkbox),
+                ROW.x() + ROW.width() / 2f,
+                ROW.y() + ROW.height() / 2f);
+
+            assertThat(resolvedCell)
+                .as("a control the fold has wiped off the screen is under nothing")
+                .isNull();
         }
 
         @Test
@@ -495,20 +534,42 @@ final class PanelControllerTest {
         return buildBodyPlacement(FULL_VIEWPORT, bodyControls);
     }
 
-    // The same panel with the flex viewport a case wants to exercise the clip with. The box and body are
-    // the full viewport rather than a real frame: nothing here goes through handlePointer, which is the only
-    // reader that tests a point against them.
+    // The same panel with the flex viewport a case wants to exercise the clip with. Its box covers
+    // everything, so the walk's own box gate passes and each case here is about the clip it names.
     private static PanelPlacement buildBodyPlacement(
             Rectangle flexViewport,
             Control... bodyControls) {
 
+        return buildBodyPlacement(FULL_VIEWPORT, flexViewport, bodyControls);
+    }
+
+    // The same panel narrowed to the box a case wants to exercise the fold with, its flex viewport covering
+    // everything so the box is the only gate the walk can fail on.
+    private static PanelPlacement buildBodyPlacementBoxedTo(Rectangle box, Control... bodyControls) {
+        return buildBodyPlacement(box, FULL_VIEWPORT, bodyControls);
+    }
+
+    // The panel every case above is walked against: a box the body is drawn inside, a flex viewport its
+    // scrolling control is clipped to, and the controls laid in it. The body region is the box, nothing
+    // here reading it.
+    private static PanelPlacement buildBodyPlacement(
+            Rectangle box,
+            Rectangle flexViewport,
+            Control... bodyControls) {
+
         return new PanelPlacement(
-            FULL_VIEWPORT,
-            FULL_VIEWPORT,
+            box,
+            box,
             List.of(bodyControls),
             flexViewport,
             0f,
             0f);
+    }
+
+    // The rail a fully docked panel leaves of its box: a border's width at the body's left edge, well clear
+    // of ROW, so a control still laid out at ROW is one the fold has wiped off the screen.
+    private static Rectangle buildDockedRailBox() {
+        return new Rectangle(ROW.x(), ROW.y(), 1f, ROW.height());
     }
 
     // A flex viewport sitting well above ROW, so a scrolling control laid out at ROW reads as a row that has

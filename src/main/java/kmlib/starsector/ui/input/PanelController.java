@@ -84,6 +84,10 @@ public final class PanelController {
             continueThumbDrag(event, placement);
             return;
         }
+        // The panel's claim on the event rather than a visibility gate on its controls: what it decides is
+        // whether the wheel, a drag, and a press are this panel's to answer at all. The gate that keeps a
+        // folded-away control from being hit is stated once inside the resolver, so a reader that never
+        // reaches here - a hover - inherits it.
         if (!placement.box().containsPoint(event.getX(), event.getY())) {
             return;
         }
@@ -136,7 +140,7 @@ public final class PanelController {
         if (hitCell == null) {
             return null;
         }
-        if (activateCellIfActionable(hitCell.control(), hitCell.cell()) == NO_CELL_RESOLVED) {
+        if (activateCellIfActionable(hitCell.control(), hitCell.slot().cell()) == NO_CELL_RESOLVED) {
             return null;
         }
         return hitCell;
@@ -177,12 +181,13 @@ public final class PanelController {
      * readers of one walk rather than two walks that happen to agree, so the control that lights and the
      * control a press lands on are the same control because they are the same answer.
      *
-     * <p>Taking the placement rather than a control is the whole point of it. The scrolling list is clipped
-     * to {@link PanelPlacement#flexViewport()} in here, so the viewport - the thing that decides whether a
-     * laid-out row is on screen at all - reaches the hit-test without any caller having to remember to hand
-     * it over. A row scrolled up under a pinned control (or down under a footer) keeps its segment exactly
-     * where the layout put it, so a caller walking the strip for itself and passing no viewport would find
-     * that row hittable, and lightable, straight through the control drawn over it.
+     * <p>Taking the placement rather than a control is the whole point of it. Both of the things that decide
+     * whether a laid-out control is on screen live on it - the box the body is drawn inside and {@link
+     * PanelPlacement#flexViewport()} the scrolling list is clipped to - so each reaches the hit-test without
+     * any caller having to remember to hand it over. A row scrolled up under a pinned control (or down under
+     * a footer) keeps its segment exactly where the layout put it, and a folding panel narrows its box over
+     * controls that keep their laid-out places: a caller walking the strip for itself would find both
+     * hittable, and lightable, straight through whatever is drawn over them.
      *
      * <p>Geometry and visibility and nothing else, like every resolver here: whether pressing the cell it
      * reports would <em>do</em> anything is {@link #activateCellIfActionable}'s question, which is what lets
@@ -191,21 +196,33 @@ public final class PanelController {
      * @param placement the laid-out panel the renderer drew this frame
      * @param pointX    the point's x, in UI coordinates
      * @param pointY    the point's y, in UI coordinates
-     * @return the control and cell under the point, or {@code null} when it is over none
+     * @return the control under the point and the slot it sits at, or {@code null} when it is over none
      */
     static ResolvedBodyCell resolveHitBodyCell(
             PanelPlacement placement,
             float pointX,
             float pointY) {
 
-        for (var control : placement.bodyControls()) {
+        // The body is drawn within its box and wiped with it, so a point outside the box is on none of the
+        // controls laid inside: a collapsing panel narrows the box while its controls keep their laid-out
+        // positions, leaving a strip of them behind the rail that is on screen nowhere.
+        if (!placement.box().containsPoint(pointX, pointY)) {
+            return null;
+        }
+        var bodyControls = placement.bodyControls();
 
+        // Walked by index rather than over the list, the index being half of where the hit is: a fade is
+        // held against the slot a control occupies, so the walk that finds the control reports the slot too
+        // rather than leaving a reader to search the strip again for the position it just passed through.
+        for (var controlIndex = 0; controlIndex < bodyControls.size(); controlIndex++) {
+
+            var control = bodyControls.get(controlIndex);
             var resolvedCell = resolveHitCell(control, placement.flexViewport(), pointX, pointY);
 
             // A caption, a divider, and a scrolled-away row all report no cell, so the walk carries on past
             // them to the controls below rather than stopping on the first thing whose row the point is in.
             if (resolvedCell != NO_CELL_RESOLVED) {
-                return new ResolvedBodyCell(control, resolvedCell);
+                return new ResolvedBodyCell(control, new BodyCellSlot(controlIndex, resolvedCell));
             }
         }
         return null;

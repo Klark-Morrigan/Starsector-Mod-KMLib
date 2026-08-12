@@ -30,7 +30,9 @@ import static org.assertj.core.api.Assertions.within;
  * docked-start factory opens it collapsed, so a host picks the initial fold through construction rather
  * than driving the animation to reach it - and the two channels the panel's tabs are painted from: the one
  * resolver that decides which tab a fade is held for and which tab a press landed on, the fades it steps for
- * the tabs and for the collapse handle, the docked gate that resolver carries - silencing the tabs while
+ * the tabs, for the body's own cells - keyed by the slot each occupies in the strip, so a fade follows the
+ * place under the pointer rather than the widget a rebuild puts there - and for the collapse handle, the
+ * docked gate that resolver carries - silencing the tabs while
  * leaving the handle live - the click pulse a press on a tab starts, and the blink a bound key's press runs
  * on the look channel beside the hover it shares that channel with. It also pins what the panel answers those moments with: which sounds, at which moments,
  * and - the point of that seam - taken from the look the panel wears rather than named in its own code.
@@ -53,6 +55,12 @@ final class TabPanelControllerTest {
     // from the row on the y axis, so a point on the tabs is a point the body does not also claim - which is
     // what tells the row's own answer apart from the body's.
     private static final Rectangle BODY_BOX = new Rectangle(100f, 380f, 160f, 120f);
+
+    // What the fold leaves of that box once the panel is fully docked: a border's width at the left anchor,
+    // the two frame edges met into one vertical line. Clear of every point the body cases test, so a control
+    // still laid across BODY_BOX is one the fold has wiped off the screen.
+    private static final Rectangle DOCKED_RAIL_BOX =
+        new Rectangle(BODY_BOX.x(), BODY_BOX.y(), 1f, BODY_BOX.height());
 
     private static final float INSIDE_FIRST_TAB_X = 140f;
     private static final float INSIDE_SECOND_TAB_X = 220f;
@@ -84,11 +92,20 @@ final class TabPanelControllerTest {
     private static final ControlSpec.Tabs TABS_SHOWING_FIRST_TAB =
         buildTabsSpecShowing(FIRST_TAB_INDEX, ControlAction.NONE);
 
-    // What the two hit-tests report when the pointer is on neither element, named so an advance reads as a
-    // pointer position rather than as a null and a false.
+    // What the hit-tests report when the pointer is on none of the panel's parts, named so an advance reads
+    // as a pointer position rather than as two nulls and a false.
     private static final Integer NO_TAB_HOVERED = null;
+    private static final BodyCellSlot NO_BODY_CELL_HOVERED = null;
     private static final boolean NOTCH_HOVERED = true;
     private static final boolean NOTCH_NOT_HOVERED = false;
+
+    // The strip's only body control, laid at BODY_BOX by the placements below, and the cell of it a pointer
+    // over the body lands on. Named rather than built at each use, since a slot is what the body's fades are
+    // keyed by and two cases naming it differently would pass while agreeing about nothing.
+    private static final BodyCellSlot FIRST_BODY_SLOT = new BodyCellSlot(0, ControlSpec.SINGLE_CELL);
+
+    // A slot no placement here lays a control at, for the cases reading a cell the pointer is not on.
+    private static final BodyCellSlot SECOND_BODY_SLOT = new BodyCellSlot(1, ControlSpec.SINGLE_CELL);
 
     // A whole duration in one step, so an end state is reached without walking frames, and half of one for
     // the part-way reads.
@@ -411,7 +428,7 @@ final class TabPanelControllerTest {
             controller.startHotkeyBlinkAt(FIRST_TAB_INDEX);
 
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(NO_TAB_HOVERED, NOTCH_NOT_HOVERED),
+                new TabPanelHover(NO_TAB_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
                 TabPanelController.HOTKEY_BLINK_DURATIONS.riseSeconds(),
                 DURATIONS);
 
@@ -427,13 +444,13 @@ final class TabPanelControllerTest {
             var controller = new TabPanelController();
 
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(FIRST_TAB_INDEX, NOTCH_NOT_HOVERED),
+                new TabPanelHover(FIRST_TAB_INDEX, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
 
             controller.startHotkeyBlinkAt(FIRST_TAB_INDEX);
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(FIRST_TAB_INDEX, NOTCH_NOT_HOVERED),
+                new TabPanelHover(FIRST_TAB_INDEX, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
                 TabPanelController.HOTKEY_BLINK_DURATIONS.riseSeconds(),
                 DURATIONS);
 
@@ -451,12 +468,12 @@ final class TabPanelControllerTest {
             controller.startHotkeyBlinkAt(FIRST_TAB_INDEX);
 
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(NO_TAB_HOVERED, NOTCH_NOT_HOVERED),
+                new TabPanelHover(NO_TAB_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
                 TabPanelController.HOTKEY_BLINK_DURATIONS.riseSeconds(),
                 DURATIONS);
 
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(FIRST_TAB_INDEX, NOTCH_NOT_HOVERED),
+                new TabPanelHover(FIRST_TAB_INDEX, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
                 HALF_OF_THE_BLINKS_FALL_SECONDS,
                 DURATIONS);
 
@@ -473,12 +490,12 @@ final class TabPanelControllerTest {
             controller.startHotkeyBlinkAt(SECOND_TAB_INDEX);
 
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(NO_TAB_HOVERED, NOTCH_NOT_HOVERED),
+                new TabPanelHover(NO_TAB_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
                 TabPanelController.HOTKEY_BLINK_DURATIONS.riseSeconds(),
                 DURATIONS);
 
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(NO_TAB_HOVERED, NOTCH_NOT_HOVERED),
+                new TabPanelHover(NO_TAB_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
                 TabPanelController.HOTKEY_BLINK_DURATIONS.fallSeconds(),
                 DURATIONS);
 
@@ -509,7 +526,7 @@ final class TabPanelControllerTest {
             // interaction sources, or the strip paints a row that never moves however long it is hovered.
             var controller = new TabPanelController();
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(FIRST_TAB_INDEX, NOTCH_NOT_HOVERED),
+                new TabPanelHover(FIRST_TAB_INDEX, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
 
@@ -525,12 +542,12 @@ final class TabPanelControllerTest {
             var controller = new TabPanelController();
 
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(FIRST_TAB_INDEX, NOTCH_NOT_HOVERED),
+                new TabPanelHover(FIRST_TAB_INDEX, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
 
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(SECOND_TAB_INDEX, NOTCH_NOT_HOVERED),
+                new TabPanelHover(SECOND_TAB_INDEX, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
 
@@ -547,7 +564,7 @@ final class TabPanelControllerTest {
             // fold is asked once, not twice.
             var controller = TabPanelController.createStartingDocked();
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(FIRST_TAB_INDEX, NOTCH_NOT_HOVERED),
+                new TabPanelHover(FIRST_TAB_INDEX, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
 
@@ -556,11 +573,65 @@ final class TabPanelControllerTest {
         }
 
         @Test
+        void advanceInputMotionsForFrameRaisesTheNamedBodySlotAndNoOther() {
+            // The body's cells travel on the panel's own pair of paces, like the row above them: one frame
+            // of a whole traverse puts the hovered slot fully on its hovered look and leaves every other
+            // slot at rest.
+            var controller = new TabPanelController();
+            controller.advanceInputMotionsForFrame(
+                new TabPanelHover(NO_TAB_HOVERED, FIRST_BODY_SLOT, NOTCH_NOT_HOVERED),
+                FULL_STEP_SECONDS,
+                DURATIONS);
+
+            assertThat(controller.resolveBodyHoverFractionAt(FIRST_BODY_SLOT))
+                .isCloseTo(1f, within(TOLERANCE));
+            assertThat(controller.resolveBodyHoverFractionAt(SECOND_BODY_SLOT))
+                .isCloseTo(0f, within(TOLERANCE));
+        }
+
+        @Test
+        void advanceInputMotionsForFrameWindsTheDepartedBodySlotBackDown() {
+
+            var controller = new TabPanelController();
+
+            controller.advanceInputMotionsForFrame(
+                new TabPanelHover(NO_TAB_HOVERED, FIRST_BODY_SLOT, NOTCH_NOT_HOVERED),
+                FULL_STEP_SECONDS,
+                DURATIONS);
+
+            controller.advanceInputMotionsForFrame(
+                new TabPanelHover(NO_TAB_HOVERED, SECOND_BODY_SLOT, NOTCH_NOT_HOVERED),
+                FULL_STEP_SECONDS,
+                DURATIONS);
+
+            assertThat(controller.resolveBodyHoverFractionAt(FIRST_BODY_SLOT))
+                .isCloseTo(0f, within(TOLERANCE));
+            assertThat(controller.resolveBodyHoverFractionAt(SECOND_BODY_SLOT))
+                .isCloseTo(1f, within(TOLERANCE));
+        }
+
+        @Test
+        void advanceInputMotionsForFrameKeepsTheBodySlotsFadesApartFromTheTabsOwn() {
+            // The two rows are keyed in different terms and held apart, so a slot and a tab index that
+            // happen to name the same number cannot read as one another. Held in one set, the body cell of
+            // control 0 and tab 0 would light together and every case above would still pass.
+            var controller = new TabPanelController();
+            controller.advanceInputMotionsForFrame(
+                new TabPanelHover(NO_TAB_HOVERED, FIRST_BODY_SLOT, NOTCH_NOT_HOVERED),
+                FULL_STEP_SECONDS,
+                DURATIONS);
+
+            assertThat(hoverFractionAt(controller, FIRST_TAB_INDEX))
+                .as("a hovered body cell must leave the row above it at rest")
+                .isCloseTo(0f, within(TOLERANCE));
+        }
+
+        @Test
         void advanceInputMotionsForFrameLightsTheHandleWhileThePointerIsOnIt() {
 
             var controller = new TabPanelController();
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(NO_TAB_HOVERED, NOTCH_HOVERED),
+                new TabPanelHover(NO_TAB_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
 
@@ -574,12 +645,12 @@ final class TabPanelControllerTest {
             var controller = new TabPanelController();
 
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(NO_TAB_HOVERED, NOTCH_HOVERED),
+                new TabPanelHover(NO_TAB_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
 
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(NO_TAB_HOVERED, NOTCH_NOT_HOVERED),
+                new TabPanelHover(NO_TAB_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
 
@@ -593,7 +664,7 @@ final class TabPanelControllerTest {
             // back - so the gate that silences the tabs must not reach it.
             var controller = TabPanelController.createStartingDocked();
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(NO_TAB_HOVERED, NOTCH_HOVERED),
+                new TabPanelHover(NO_TAB_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
 
@@ -737,6 +808,43 @@ final class TabPanelControllerTest {
         }
 
         @Test
+        void advanceInputMotionsAtPointLightsTheBodyControlUnderThePointerAndNoTab() {
+            // The third pairing this seam holds: the body walk feeds the body fades. The point is inside the
+            // box and below the row, so a tab lighting here could only come from the wrong hit-test - and a
+            // body cell staying dark from the walk never being reached.
+            var controller = new TabPanelController();
+            controller.advanceInputMotionsAtPoint(
+                buildTwoTabPlacementWithNotch(),
+                INSIDE_FIRST_TAB_X,
+                BELOW_TABS_Y,
+                FULL_STEP_SECONDS,
+                DURATIONS);
+
+            assertThat(controller.resolveBodyHoverFractionAt(FIRST_BODY_SLOT))
+                .isCloseTo(1f, within(TOLERANCE));
+            assertThat(hoverFractionAt(controller, FIRST_TAB_INDEX))
+                .isCloseTo(0f, within(TOLERANCE));
+        }
+
+        @Test
+        void advanceInputMotionsAtPointLightsNoBodyControlBehindADockedPanelsRail() {
+            // The fold reaching the body, end to end: the placement's box is the rail a fully docked panel
+            // leaves, and the control is laid where it always was. The panel's own collapse state is not
+            // consulted for the body - the box the layout narrowed is - so a hover reads what is drawn
+            // rather than what the controller remembers.
+            var controller = new TabPanelController();
+            controller.advanceInputMotionsAtPoint(
+                buildDockedRailPlacement(),
+                INSIDE_FIRST_TAB_X,
+                BELOW_TABS_Y,
+                FULL_STEP_SECONDS,
+                DURATIONS);
+
+            assertThat(controller.resolveBodyHoverFractionAt(FIRST_BODY_SLOT))
+                .isCloseTo(0f, within(TOLERANCE));
+        }
+
+        @Test
         void advanceInputMotionsAtPointLightsTheHandleUnderThePointerAndNoTab() {
             // The other half of the pairing: the notch hit-test feeds the lone fade. The handle's rect is
             // clear of every tab, so a tab lighting here could only come from the wrong hit-test.
@@ -769,6 +877,8 @@ final class TabPanelControllerTest {
 
             assertThat(hoverFractionAt(controller, FIRST_TAB_INDEX))
                 .isCloseTo(0f, within(TOLERANCE));
+            assertThat(controller.resolveBodyHoverFractionAt(FIRST_BODY_SLOT))
+                .isCloseTo(0f, within(TOLERANCE));
             assertThat(controller.getNotchHoverFraction())
                 .isCloseTo(0f, within(TOLERANCE));
         }
@@ -799,7 +909,7 @@ final class TabPanelControllerTest {
             var controller = new TabPanelController();
 
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(FIRST_TAB_INDEX, NOTCH_NOT_HOVERED),
+                new TabPanelHover(FIRST_TAB_INDEX, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
                 HALF_STEP_SECONDS,
                 DURATIONS);
 
@@ -810,13 +920,31 @@ final class TabPanelControllerTest {
         }
 
         @Test
+        void resetInputMotionsDropsABodyCellsFadeLeftPartWayUpWhenThePanelStopsShowing() {
+            // The body's cells are dropped with the row's and for the same reason, and in the same call:
+            // a strip rebuilt for the next session would otherwise open with whatever now occupies that
+            // slot part-way lit, which the player never saw rise and would see fall for no reason.
+            var controller = new TabPanelController();
+
+            controller.advanceInputMotionsForFrame(
+                new TabPanelHover(NO_TAB_HOVERED, FIRST_BODY_SLOT, NOTCH_NOT_HOVERED),
+                HALF_STEP_SECONDS,
+                DURATIONS);
+
+            controller.resetInputMotions();
+
+            assertThat(controller.resolveBodyHoverFractionAt(FIRST_BODY_SLOT))
+                .isCloseTo(0f, within(TOLERANCE));
+        }
+
+        @Test
         void resetInputMotionsDropsTheHandlesFadeLeftPartWayUpWhenThePanelStopsShowing() {
             // The handle is dropped for the same reason and in the same call, so a panel re-opened under a
             // still pointer cannot paint one part lit and the other at rest.
             var controller = new TabPanelController();
 
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(NO_TAB_HOVERED, NOTCH_HOVERED),
+                new TabPanelHover(NO_TAB_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_HOVERED),
                 HALF_STEP_SECONDS,
                 DURATIONS);
 
@@ -838,7 +966,7 @@ final class TabPanelControllerTest {
                 ON_TAB_ROW_Y);
 
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(NO_TAB_HOVERED, NOTCH_NOT_HOVERED),
+                new TabPanelHover(NO_TAB_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
                 HALF_STEP_SECONDS,
                 DURATIONS);
                 
@@ -883,7 +1011,7 @@ final class TabPanelControllerTest {
 
             controller.startHotkeyBlinkAt(SECOND_TAB_INDEX);
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(NO_TAB_HOVERED, NOTCH_NOT_HOVERED),
+                new TabPanelHover(NO_TAB_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
                 HALF_STEP_SECONDS,
                 DURATIONS);
 
@@ -1148,12 +1276,12 @@ final class TabPanelControllerTest {
 
         // The pointer on one tab and off the handle.
         private static TabPanelHover buildHoverOnTab(Integer tabIndex) {
-            return new TabPanelHover(tabIndex, NOTCH_NOT_HOVERED);
+            return new TabPanelHover(tabIndex, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED);
         }
 
         // The pointer on the handle and off every tab, so what sounds can only have come from the handle.
         private static TabPanelHover buildHoverOnNotch() {
-            return new TabPanelHover(NO_TAB_HOVERED, NOTCH_HOVERED);
+            return new TabPanelHover(NO_TAB_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_HOVERED);
         }
 
         // A controller recording into this case's fake and answering by the engine's own scheme - the look
@@ -1192,7 +1320,7 @@ final class TabPanelControllerTest {
     // cannot be mistaken for the lift being asked about.
     private static void advanceAWholeTraverse(TabPanelController controller) {
         controller.advanceInputMotionsForFrame(
-            new TabPanelHover(NO_TAB_HOVERED, NOTCH_NOT_HOVERED),
+            new TabPanelHover(NO_TAB_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
             FULL_STEP_SECONDS,
             DURATIONS);
     }
@@ -1257,6 +1385,18 @@ final class TabPanelControllerTest {
         return new ControlSpec.Tabs(List.of("First", "Second"), List.of(), selectedIndex, onTabFired);
     }
 
+    // The same panel folded away to the rail a fully docked one leaves: the box narrowed to a border's
+    // width while the control beneath the row keeps the place the layout gave it, which is how a fold
+    // actually reaches the body - the box is clipped to, and the controls are not moved.
+    private static TabPanelPlacement buildDockedRailPlacement() {
+        return buildPlacement(
+            null,
+            TABS_SHOWING_FIRST_TAB,
+            HEADER_BAND,
+            List.of(buildBodyControl()),
+            DOCKED_RAIL_BOX);
+    }
+
     private static TabPanelPlacement buildPlacement(
             Rectangle notch,
             ControlSpec spec,
@@ -1271,10 +1411,20 @@ final class TabPanelControllerTest {
             Rectangle drawnHeaderBand,
             List<Control> bodyControls) {
 
+        return buildPlacement(notch, spec, drawnHeaderBand, bodyControls, BODY_BOX);
+    }
+
+    private static TabPanelPlacement buildPlacement(
+            Rectangle notch,
+            ControlSpec spec,
+            Rectangle drawnHeaderBand,
+            List<Control> bodyControls,
+            Rectangle bodyBox) {
+
         return new TabPanelPlacement(
             new Control(spec, HEADER_BAND, List.of(FIRST_TAB, SECOND_TAB)),
             drawnHeaderBand,
-            new PanelPlacement(BODY_BOX, BODY_BOX, bodyControls, BODY_BOX, 0f, 0f),
+            new PanelPlacement(bodyBox, bodyBox, bodyControls, bodyBox, 0f, 0f),
             new BoxBorder(BORDER_WIDTH),
             notch);
     }

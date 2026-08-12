@@ -51,9 +51,11 @@ final class PolygonOffsetsTest {
 
     @Nested
     class OffsetEdgesInward {
+
         @Test
         void offset_returns_one_segment_per_edge() {
-            assertThat(PolygonOffsets.offsetEdgesInward(square(), 2.0)).hasSize(4);
+            assertThat(PolygonOffsets.offsetEdgesInward(square(), 2.0))
+                .hasSize(4);
         }
 
         @Test
@@ -61,12 +63,16 @@ final class PolygonOffsetsTest {
             // The first edge (0,0)->(10,0) is the bottom edge; offsetting inward by
             // 2 lifts it from y = 0 to y = 2, spanning the same x extent.
             var segments = PolygonOffsets.offsetEdgesInward(square(), 2.0);
-
             var bottom = segments.get(0);
-            assertThat(bottom.startY()).isCloseTo(2.0, within());
-            assertThat(bottom.endY()).isCloseTo(2.0, within());
-            assertThat(bottom.startX()).isCloseTo(0.0, within());
-            assertThat(bottom.endX()).isCloseTo(10.0, within());
+
+            assertThat(bottom.startY())
+                .isCloseTo(2.0, within());
+            assertThat(bottom.endY())
+                .isCloseTo(2.0, within());
+            assertThat(bottom.startX())
+                .isCloseTo(0.0, within());
+            assertThat(bottom.endX())
+                .isCloseTo(10.0, within());
         }
 
         @Test
@@ -79,18 +85,22 @@ final class PolygonOffsetsTest {
                 new double[] {10, 1},
                 new double[] {0, 1});
 
-            assertThat(PolygonOffsets.offsetEdgesInward(thin, 2.0)).hasSize(4);
+            assertThat(PolygonOffsets.offsetEdgesInward(thin, 2.0))
+                .hasSize(4);
         }
 
         @Test
         void offset_returns_empty_for_fewer_than_two_vertices() {
             assertThat(PolygonOffsets.offsetEdgesInward(
-                List.of(new double[] {0, 0}), 1.0)).isEmpty();
+                    List.of(new double[] {0, 0}),
+                    1.0))
+                .isEmpty();
         }
     }
 
     @Nested
     class InsetConvexPolygon {
+
         @Test
         void inset_shrinks_a_square_to_a_concentric_square() {
             // The side-10 square inset by 2 is the side-6 square (2,2)..(8,8): each
@@ -98,11 +108,17 @@ final class PolygonOffsetsTest {
             // closed with clean corners rather than overshooting segments.
             var inset = PolygonOffsets.insetConvexPolygon(square(), 2.0);
 
-            assertThat(inset).hasSize(4);
-            assertThat(inset.get(0)).containsExactly(new double[] {2, 2}, within());
-            assertThat(inset.get(1)).containsExactly(new double[] {8, 2}, within());
-            assertThat(inset.get(2)).containsExactly(new double[] {8, 8}, within());
-            assertThat(inset.get(3)).containsExactly(new double[] {2, 8}, within());
+            assertThat(inset)
+                .hasSize(4);
+
+            assertThat(inset.get(0))
+                .containsExactly(new double[] {2, 2}, within());
+            assertThat(inset.get(1))
+                .containsExactly(new double[] {8, 2}, within());
+            assertThat(inset.get(2))
+                .containsExactly(new double[] {8, 8}, within());
+            assertThat(inset.get(3))
+                .containsExactly(new double[] {2, 8}, within());
         }
 
         @Test
@@ -116,7 +132,8 @@ final class PolygonOffsetsTest {
                 new double[] {10, 10},
                 new double[] {0, 10});
 
-            assertThat(PolygonOffsets.insetConvexPolygon(withDuplicate, 2.0)).hasSize(4);
+            assertThat(PolygonOffsets.insetConvexPolygon(withDuplicate, 2.0))
+                .hasSize(4);
         }
 
         @Test
@@ -129,13 +146,16 @@ final class PolygonOffsetsTest {
                 new double[] {10, 1},
                 new double[] {0, 1});
 
-            assertThat(PolygonOffsets.insetConvexPolygon(thin, 2.0)).isEmpty();
+            assertThat(PolygonOffsets.insetConvexPolygon(thin, 2.0))
+                .isEmpty();
         }
 
         @Test
         void inset_returns_empty_for_fewer_than_three_distinct_vertices() {
             assertThat(PolygonOffsets.insetConvexPolygon(
-                Arrays.asList(new double[] {0, 0}, new double[] {10, 0}), 1.0)).isEmpty();
+                    Arrays.asList(new double[] {0, 0}, new double[] {10, 0}),
+                    1.0))
+                .isEmpty();
         }
     }
 
@@ -146,55 +166,86 @@ final class PolygonOffsetsTest {
             // Square side 10; inset every edge but the right one (index 1). The kept
             // right edge stays at x = 10 while the other three pull in by 2, giving
             // the rectangle (2,2)..(10,8).
-            var result = PolygonOffsets.insetSelectedEdges(square(),
-                new boolean[] {true, false, true, true}, 2.0);
+            var result = PolygonOffsets.insetSelectedEdges(
+                square(),
+                new boolean[] {true, false, true, true},
+                2.0);
 
-            assertThat(result.vertices()).hasSize(4);
-            assertThat(result.vertices()).anySatisfy(v -> assertThat(v[0]).isCloseTo(10.0, within()));
-            assertThat(result.vertices()).allMatch(v -> v[0] >= 2 - 1e-6 && v[0] <= 10 + 1e-6
-                    && v[1] >= 2 - 1e-6 && v[1] <= 8 + 1e-6);
+            assertThat(result.vertices())
+                .hasSize(4);
+            assertThat(result.vertices())
+                .anySatisfy(v -> assertThat(v[0])
+                    .isCloseTo(10.0, within()));
+            assertThat(result.vertices())
+                .allMatch(v -> v[0] >= 2 - 1e-6
+                    && v[0] <= 10 + 1e-6
+                    && v[1] >= 2 - 1e-6
+                    && v[1] <= 8 + 1e-6);
         }
 
         @Test
         void inset_selected_edges_flags_the_kept_edge_and_truncates_it_within_the_inset() {
-            var result = PolygonOffsets.insetSelectedEdges(square(),
-                new boolean[] {true, false, true, true}, 2.0);
+
+            var result = PolygonOffsets.insetSelectedEdges(
+                square(),
+                new boolean[] {true, false, true, true},
+                2.0);
 
             // Exactly one edge - the un-inset right edge - is flagged not-inset, and
             // it no longer reaches the raw corners (y = 0 and y = 10): both its ends
             // sit within the 2..8 inset band, so the kept edge stays inside the
             // padding rather than poking out to the corner.
             var kept = listKeptEdgesOf(result);
-            assertThat(kept).hasSize(1);
-            assertThat(kept.get(0)[0][0]).isCloseTo(10.0, within());
-            assertThat(kept.get(0)[1][0]).isCloseTo(10.0, within());
-            assertThat(kept.get(0)[0][1]).isBetween(2.0 - 1e-6, 8.0 + 1e-6);
-            assertThat(kept.get(0)[1][1]).isBetween(2.0 - 1e-6, 8.0 + 1e-6);
+
+            assertThat(kept)
+                .hasSize(1);
+
+            assertThat(kept.get(0)[0][0])
+                .isCloseTo(10.0, within());
+            assertThat(kept.get(0)[1][0])
+                .isCloseTo(10.0, within());
+            assertThat(kept.get(0)[0][1])
+                .isBetween(2.0 - 1e-6, 8.0 + 1e-6);
+            assertThat(kept.get(0)[1][1])
+                .isBetween(2.0 - 1e-6, 8.0 + 1e-6);
         }
 
         @Test
         void inset_selected_edges_matches_the_whole_polygon_inset_when_every_edge_is_flagged() {
-            var selective = PolygonOffsets.insetSelectedEdges(square(),
-                new boolean[] {true, true, true, true}, 2.0);
+
+            var selective = PolygonOffsets.insetSelectedEdges(
+                square(),
+                new boolean[] {true, true, true, true},
+                2.0);
+
             var whole = PolygonOffsets.insetConvexPolygon(square(), 2.0);
 
             // With every edge flagged, the result is the plain inset - and every
             // output edge is flagged as an inset edge.
-            assertThat(selective.vertices()).hasSameSizeAs(whole);
-            assertThat(selective.edgeIsInset()).containsOnly(true);
+            assertThat(selective.vertices())
+                .hasSameSizeAs(whole);
+            assertThat(selective.edgeIsInset())
+                .containsOnly(true);
         }
 
         @Test
         void inset_selected_edges_empties_when_the_inset_consumes_the_polygon() {
+
             var thin = Arrays.asList(
-                new double[] {0, 0}, new double[] {10, 0},
-                new double[] {10, 1}, new double[] {0, 1});
+                new double[] {0, 0},
+                new double[] {10, 0},
+                new double[] {10, 1},
+                new double[] {0, 1});
 
-            var result = PolygonOffsets.insetSelectedEdges(thin,
-                new boolean[] {true, true, true, true}, 2.0);
+            var result = PolygonOffsets.insetSelectedEdges(
+                thin,
+                new boolean[] {true, true, true, true},
+                2.0);
 
-            assertThat(result.vertices()).isEmpty();
-            assertThat(result.edgeIsInset()).isEmpty();
+            assertThat(result.vertices())
+                .isEmpty();
+            assertThat(result.edgeIsInset())
+                .isEmpty();
         }
 
         @Test
@@ -204,11 +255,15 @@ final class PolygonOffsetsTest {
             // coincident points at (5,5) - a non-zero raw vertex count but no area.
             // It normalises to empty, so a non-empty result is always a real
             // polygon a caller can draw without re-checking its size.
-            var result = PolygonOffsets.insetSelectedEdges(square(),
-                new boolean[] {true, true, true, true}, 5.0);
+            var result = PolygonOffsets.insetSelectedEdges(
+                square(),
+                new boolean[] {true, true, true, true},
+                5.0);
 
-            assertThat(result.vertices()).isEmpty();
-            assertThat(result.edgeIsInset()).isEmpty();
+            assertThat(result.vertices())
+                .isEmpty();
+            assertThat(result.edgeIsInset())
+                .isEmpty();
         }
 
         @Test
@@ -222,14 +277,21 @@ final class PolygonOffsetsTest {
             // A per-edge array with every entry equal to one distance is the boolean
             // form flagging every edge with that scalar: same inset square, same
             // all-inset flags.
-            var perEdge = PolygonOffsets.insetSelectedEdges(square(),
+            var perEdge = PolygonOffsets.insetSelectedEdges(
+                square(),
                 new double[] {2.0, 2.0, 2.0, 2.0});
-            var booleanScalar = PolygonOffsets.insetSelectedEdges(square(),
-                new boolean[] {true, true, true, true}, 2.0);
+
+            var booleanScalar = PolygonOffsets.insetSelectedEdges(
+                square(),
+                new boolean[] {true, true, true, true},
+                2.0);
 
             assertVerticesClose(perEdge.vertices(), booleanScalar.vertices());
-            assertThat(perEdge.edgeIsInset()).containsExactly(booleanScalar.edgeIsInset());
-            assertThat(perEdge.edgeIsInset()).containsOnly(true);
+
+            assertThat(perEdge.edgeIsInset())
+                .containsExactly(booleanScalar.edgeIsInset());
+            assertThat(perEdge.edgeIsInset())
+                .containsOnly(true);
         }
 
         @Test
@@ -238,17 +300,29 @@ final class PolygonOffsetsTest {
             // while the other three pull in by their own amounts: bottom by 2 (y ->
             // 2), top by 3 (y -> 7), left by 1 (x -> 1). The result is the rectangle
             // (1,2)..(10,7), each border at its own inset - not one shared channel.
-            var result = PolygonOffsets.insetSelectedEdges(square(),
+            var result = PolygonOffsets.insetSelectedEdges(
+                square(),
                 new double[] {2.0, 0.0, 3.0, 1.0});
 
-            assertThat(result.vertices()).hasSize(4);
-            assertThat(result.vertices()).allMatch(v -> v[0] >= 1 - 1e-6 && v[0] <= 10 + 1e-6
-                    && v[1] >= 2 - 1e-6 && v[1] <= 7 + 1e-6);
+            assertThat(result.vertices())
+                .hasSize(4);
+
+            assertThat(result.vertices())
+                .allMatch(v -> v[0] >= 1 - 1e-6
+                    && v[0] <= 10 + 1e-6
+                    && v[1] >= 2 - 1e-6
+                    && v[1] <= 7 + 1e-6);
+
             // The kept right edge is the only non-inset edge and sits at x = 10.
             var kept = listKeptEdgesOf(result);
-            assertThat(kept).hasSize(1);
-            assertThat(kept.get(0)[0][0]).isCloseTo(10.0, within());
-            assertThat(kept.get(0)[1][0]).isCloseTo(10.0, within());
+
+            assertThat(kept)
+                .hasSize(1);
+
+            assertThat(kept.get(0)[0][0])
+                .isCloseTo(10.0, within());
+            assertThat(kept.get(0)[1][0])
+                .isCloseTo(10.0, within());
         }
 
         @Test
@@ -256,14 +330,21 @@ final class PolygonOffsetsTest {
             // A zero entry is exactly the boolean form's false: the edge is kept on
             // its line and flagged not-inset. {2,0,2,2} matches {true,false,true,true}
             // at distance 2 vertex-for-vertex and flag-for-flag.
-            var perEdge = PolygonOffsets.insetSelectedEdges(square(),
+            var perEdge = PolygonOffsets.insetSelectedEdges(
+                square(),
                 new double[] {2.0, 0.0, 2.0, 2.0});
-            var booleanScalar = PolygonOffsets.insetSelectedEdges(square(),
-                new boolean[] {true, false, true, true}, 2.0);
+
+            var booleanScalar = PolygonOffsets.insetSelectedEdges(
+                square(),
+                new boolean[] {true, false, true, true},
+                2.0);
 
             assertVerticesClose(perEdge.vertices(), booleanScalar.vertices());
-            assertThat(perEdge.edgeIsInset()).containsExactly(booleanScalar.edgeIsInset());
-            assertThat(perEdge.edgeIsInset()).contains(false);
+
+            assertThat(perEdge.edgeIsInset())
+                .containsExactly(booleanScalar.edgeIsInset());
+            assertThat(perEdge.edgeIsInset())
+                .contains(false);
         }
 
         @Test
@@ -275,9 +356,14 @@ final class PolygonOffsetsTest {
         // Asserts two vertex rings match in size and position, so a per-edge result
         // can be pinned against the boolean form it must reproduce.
         private static void assertVerticesClose(List<double[]> actual, List<double[]> expected) {
-            assertThat(actual).hasSameSizeAs(expected);
+
+            assertThat(actual)
+                .hasSameSizeAs(expected);
+
             for (var i = 0; i < expected.size(); i++) {
-                assertThat(actual.get(i)).containsExactly(expected.get(i), within());
+
+                assertThat(actual.get(i))
+                    .containsExactly(expected.get(i), within());
             }
         }
 
@@ -285,13 +371,18 @@ final class PolygonOffsetsTest {
         // endpoints - what a caller strokes as an interior line rather than a
         // border.
         private static List<double[][]> listKeptEdgesOf(PolygonOffsets.SelectiveInset result) {
+
             var kept = new java.util.ArrayList<double[][]>();
             var vertices = result.vertices();
             var flags = result.edgeIsInset();
+
             for (var i = 0; i < vertices.size(); i++) {
+
                 if (!flags[i]) {
+
                     kept.add(new double[][] {
-                        vertices.get(i), vertices.get((i + 1) % vertices.size())});
+                        vertices.get(i),
+                        vertices.get((i + 1) % vertices.size())});
                 }
             }
             return kept;
@@ -299,18 +390,82 @@ final class PolygonOffsetsTest {
     }
 
     @Nested
+    class RemoveReversedLoops {
+        // A bowtie: the square's top two corners are swapped, so the ring crosses itself
+        // in the middle and its upper half comes back wound against the lower one.
+        private List<double[]> bowtie() {
+            return Arrays.asList(
+                new double[] {0, 0},
+                new double[] {10, 0},
+                new double[] {0, 10},
+                new double[] {10, 10});
+        }
+
+        @Test
+        void removal_splices_out_a_loop_wound_against_the_ring() {
+
+            var cleaned = PolygonOffsets.removeReversedLoops(bowtie(), 0);
+
+            // The reversed half collapses to the crossing at (5,5), leaving the triangle
+            // that was wound with the ring.
+            assertThat(cleaned)
+                .hasSize(3);
+
+            assertThat(cleaned.get(0))
+                .containsExactly(new double[] {0, 0}, within());
+            assertThat(cleaned.get(1))
+                .containsExactly(new double[] {10, 0}, within());
+            assertThat(cleaned.get(2))
+                .containsExactly(new double[] {5, 5}, within());
+        }
+
+        @Test
+        void removal_leaves_a_ring_that_does_not_fold_untouched() {
+            assertThat(PolygonOffsets.removeReversedLoops(square(), 0))
+                .containsExactlyElementsOf(square());
+        }
+
+        @Test
+        void removal_leaves_a_fold_outside_the_window_alone() {
+            // Two edges must be at least two apart along the ring to be able to cross -
+            // adjacent ones share a vertex - so a window of one compares no pair at all and
+            // every fold survives. Pinned because the window is the cheap scan's cost, and
+            // a caller who narrows it past this stops cleaning anything rather than
+            // cleaning less.
+            assertThat(PolygonOffsets.removeReversedLoops(bowtie(), 1))
+                .containsExactlyElementsOf(bowtie());
+        }
+
+        @Test
+        void removal_returns_the_input_below_three_vertices() {
+
+            var line = Arrays.asList(new double[] {0, 0}, new double[] {10, 0});
+
+            assertThat(PolygonOffsets.removeReversedLoops(line, 0))
+                .isSameAs(line);
+        }
+    }
+
+    @Nested
     class InsetPolygonByMiter {
+
         @Test
         void miter_inset_matches_the_convex_inset_on_a_square() {
             // On a convex shape the miter join and the half-plane clip agree: the
             // side-10 square insets by 2 to the concentric (2,2)..(8,8) square.
             var inset = PolygonOffsets.insetPolygonByMiter(square(), 2.0, MITER_SPIKE_LIMIT);
 
-            assertThat(inset).hasSize(4);
-            assertThat(inset.get(0)).containsExactly(new double[] {2, 2}, within());
-            assertThat(inset.get(1)).containsExactly(new double[] {8, 2}, within());
-            assertThat(inset.get(2)).containsExactly(new double[] {8, 8}, within());
-            assertThat(inset.get(3)).containsExactly(new double[] {2, 8}, within());
+            assertThat(inset)
+                .hasSize(4);
+
+            assertThat(inset.get(0))
+                .containsExactly(new double[] {2, 2}, within());
+            assertThat(inset.get(1))
+                .containsExactly(new double[] {8, 2}, within());
+            assertThat(inset.get(2))
+                .containsExactly(new double[] {8, 8}, within());
+            assertThat(inset.get(3))
+                .containsExactly(new double[] {2, 8}, within());
         }
 
         @Test
@@ -322,17 +477,29 @@ final class PolygonOffsetsTest {
             // (8,10) - rather than spiking their crossing at (8,8). So the notch
             // survives as a small chamfer: seven output vertices, not six.
             var lShape = Arrays.asList(
-                new double[] {0, 0}, new double[] {30, 0}, new double[] {30, 10},
-                new double[] {10, 10}, new double[] {10, 30}, new double[] {0, 30});
+                new double[] {0, 0},
+                new double[] {30, 0},
+                new double[] {30, 10},
+                new double[] {10, 10},
+                new double[] {10, 30},
+                new double[] {0, 30});
 
             var inset = PolygonOffsets.insetPolygonByMiter(lShape, 2.0, MITER_SPIKE_LIMIT);
 
-            assertThat(inset).hasSize(7);
-            assertThat(inset.get(0)).containsExactly(new double[] {2, 2}, within());
-            assertThat(inset.get(3)).containsExactly(new double[] {10, 8}, within());
-            assertThat(inset.get(4)).containsExactly(new double[] {8, 10}, within());
+            assertThat(inset)
+                .hasSize(7);
+
+            assertThat(inset.get(0))
+                .containsExactly(new double[] {2, 2}, within());
+            assertThat(inset.get(3))
+                .containsExactly(new double[] {10, 8}, within());
+            assertThat(inset.get(4))
+                .containsExactly(new double[] {8, 10}, within());
+
             // The reflex corner never spikes to its miter crossing at (8,8).
-            assertThat(inset).noneSatisfy(v -> assertThat(v).containsExactly(new double[] {8, 8}, within()));
+            assertThat(inset)
+                .noneSatisfy(v -> assertThat(v)
+                    .containsExactly(new double[] {8, 8}, within()));
         }
 
         @Test
@@ -343,23 +510,34 @@ final class PolygonOffsetsTest {
             // stray inward spike. Bevelling it keeps the offset near the bottom band,
             // so no vertex lands in the wide empty mid-height of the square.
             var squareWithSpike = Arrays.asList(
-                new double[] {0, 0}, new double[] {95, 0}, new double[] {100, 15},
-                new double[] {105, 0}, new double[] {200, 0},
-                new double[] {200, 200}, new double[] {0, 200});
+                new double[] {0, 0},
+                new double[] {95, 0},
+                new double[] {100, 15},
+                new double[] {105, 0},
+                new double[] {200, 0},
+                new double[] {200, 200},
+                new double[] {0, 200});
 
             var inset = PolygonOffsets.insetPolygonByMiter(squareWithSpike, 20.0, MITER_SPIKE_LIMIT);
 
-            assertThat(inset).isNotEmpty();
-            assertThat(signedArea(inset)).isPositive();
+            assertThat(inset)
+                .isNotEmpty();
+            assertThat(signedArea(inset))
+                .isPositive();
+
             // The only corners are the inset bottom band (y ~ 20) and the top (y ~
             // 180); a spike would place a vertex in the empty middle.
-            assertThat(inset).noneMatch(v -> v[1] > 30 && v[1] < 150);
+            assertThat(inset)
+                .noneMatch(v -> v[1] > 30
+                    && v[1] < 150);
         }
 
         @Test
         void miter_inset_returns_empty_for_fewer_than_three_distinct_vertices() {
             assertThat(PolygonOffsets.insetPolygonByMiter(
-                Arrays.asList(new double[] {0, 0}, new double[] {10, 0}), 1.0, MITER_SPIKE_LIMIT))
+                    Arrays.asList(new double[] {0, 0}, new double[] {10, 0}),
+                    1.0,
+                    MITER_SPIKE_LIMIT))
                 .isEmpty();
         }
 
@@ -368,14 +546,19 @@ final class PolygonOffsetsTest {
             // Every edge shifted the same distance is the scalar inset: the side-10
             // square insets by 2 to the concentric (2,2)..(8,8) square.
             var uniform = new double[] {2.0, 2.0, 2.0, 2.0};
-
             var inset = PolygonOffsets.insetPolygonByMiter(square(), uniform, MITER_SPIKE_LIMIT);
 
-            assertThat(inset).hasSize(4);
-            assertThat(inset.get(0)).containsExactly(new double[] {2, 2}, within());
-            assertThat(inset.get(1)).containsExactly(new double[] {8, 2}, within());
-            assertThat(inset.get(2)).containsExactly(new double[] {8, 8}, within());
-            assertThat(inset.get(3)).containsExactly(new double[] {2, 8}, within());
+            assertThat(inset)
+                .hasSize(4);
+
+            assertThat(inset.get(0))
+                .containsExactly(new double[] {2, 2}, within());
+            assertThat(inset.get(1))
+                .containsExactly(new double[] {8, 2}, within());
+            assertThat(inset.get(2))
+                .containsExactly(new double[] {8, 8}, within());
+            assertThat(inset.get(3))
+                .containsExactly(new double[] {2, 8}, within());
         }
 
         @Test
@@ -384,14 +567,19 @@ final class PolygonOffsetsTest {
             // three inset inward by 2: the bottom corners drop below the original
             // y=0 line to y=-2, the outward bulge, and the top stays inset.
             var distances = new double[] {-2.0, 2.0, 2.0, 2.0};
-
             var inset = PolygonOffsets.insetPolygonByMiter(square(), distances, MITER_SPIKE_LIMIT);
 
-            assertThat(inset).hasSize(4);
-            assertThat(inset.get(0)).containsExactly(new double[] {2, -2}, within());
-            assertThat(inset.get(1)).containsExactly(new double[] {8, -2}, within());
-            assertThat(inset.get(2)).containsExactly(new double[] {8, 8}, within());
-            assertThat(inset.get(3)).containsExactly(new double[] {2, 8}, within());
+            assertThat(inset)
+                .hasSize(4);
+
+            assertThat(inset.get(0))
+                .containsExactly(new double[] {2, -2}, within());
+            assertThat(inset.get(1))
+                .containsExactly(new double[] {8, -2}, within());
+            assertThat(inset.get(2))
+                .containsExactly(new double[] {8, 8}, within());
+            assertThat(inset.get(3))
+                .containsExactly(new double[] {2, 8}, within());
         }
 
         @Test
@@ -401,13 +589,17 @@ final class PolygonOffsetsTest {
             // a self-intersecting spike; the spike guard bevels the corner instead,
             // so no output vertex lands out at that spike.
             var sharpTriangle = Arrays.asList(
-                new double[] {0, 0}, new double[] {200, -10}, new double[] {200, 10});
-            var distances = new double[] {-5.0, 2.0, -5.0};
+                new double[] {0, 0},
+                new double[] {200, -10},
+                new double[] {200, 10});
 
+            var distances = new double[] {-5.0, 2.0, -5.0};
             var inset = PolygonOffsets.insetPolygonByMiter(sharpTriangle, distances, MITER_SPIKE_LIMIT);
 
-            assertThat(inset).isNotEmpty();
-            assertThat(inset).noneMatch(vertex -> vertex[0] < -20);
+            assertThat(inset)
+                .isNotEmpty();
+            assertThat(inset)
+                .noneMatch(vertex -> vertex[0] < -20);
         }
 
         @Test
@@ -415,17 +607,23 @@ final class PolygonOffsetsTest {
             // A duplicate vertex collapses the "triangle" to two distinct points; the
             // distance-preserving dedup keeps the array parallel and still drops it.
             var collapsed = Arrays.asList(
-                new double[] {0, 0}, new double[] {0, 0}, new double[] {10, 0});
+                new double[] {0, 0},
+                new double[] {0, 0},
+                new double[] {10, 0});
 
             assertThat(PolygonOffsets.insetPolygonByMiter(
-                collapsed, new double[] {1.0, 1.0, 1.0}, MITER_SPIKE_LIMIT))
+                    collapsed,
+                    new double[] {1.0, 1.0, 1.0},
+                    MITER_SPIKE_LIMIT))
                 .isEmpty();
         }
 
         @Test
         void per_edge_rejects_distances_not_parallel_to_the_edges() {
             assertThatThrownBy(() -> PolygonOffsets.insetPolygonByMiter(
-                square(), new double[] {1.0, 1.0}, MITER_SPIKE_LIMIT))
+                    square(),
+                    new double[] {1.0, 1.0},
+                    MITER_SPIKE_LIMIT))
                 .isInstanceOf(IllegalArgumentException.class);
         }
     }
