@@ -28,12 +28,56 @@ final class Lines {
             double[] pointB,
             double dirBX,
             double dirBY) {
+
         var cross = dirAX * dirBY - dirAY * dirBX;
+
         if (Math.abs(cross) < Limits.MIN_EDGE_LENGTH) {
             return null;
         }
+
         var fraction = ((pointB[0] - pointA[0]) * dirBY - (pointB[1] - pointA[1]) * dirBX) / cross;
-        return new double[] {pointA[0] + fraction * dirAX, pointA[1] + fraction * dirAY};
+
+        return new double[] {
+            pointA[0] + fraction * dirAX,
+            pointA[1] + fraction * dirAY};
+    }
+
+    // Where two SEGMENTS cross, or null when they do not. The bounded sibling of
+    // {@link #intersectLines}: that one asks where two infinite lines meet, which is the
+    // question a miter join asks, and answers it even for edges that pass nowhere near
+    // each other. This asks whether the two spans actually touch, which is the question a
+    // self-intersection asks - a ring folds over itself only where real edges cross, not
+    // where their lines would if extended.
+    static double[] intersectSegments(
+            double[] firstFrom,
+            double[] firstTo,
+            double[] secondFrom,
+            double[] secondTo) {
+
+        var firstX = firstTo[0] - firstFrom[0];
+        var firstY = firstTo[1] - firstFrom[1];
+        var secondX = secondTo[0] - secondFrom[0];
+        var secondY = secondTo[1] - secondFrom[1];
+
+        var cross = firstX * secondY - firstY * secondX;
+
+        if (Math.abs(cross) < Limits.MIN_EDGE_LENGTH) {
+            return null;
+        }
+
+        var offsetX = secondFrom[0] - firstFrom[0];
+        var offsetY = secondFrom[1] - firstFrom[1];
+
+        var alongFirst = (offsetX * secondY - offsetY * secondX) / cross;
+        var alongSecond = (offsetX * firstY - offsetY * firstX) / cross;
+
+        if (alongFirst < 0 || alongFirst > 1 || alongSecond < 0 || alongSecond > 1) {
+            return null;
+        }
+
+        return new double[] {
+            firstFrom[0] + firstX * alongFirst,
+            firstFrom[1] + firstY * alongFirst};
     }
 
     // Perpendicular distance from {@code point} to the infinite line through
@@ -42,13 +86,18 @@ final class Lines {
     // over the base length is that height. Falls back to the distance to
     // {@code lineA} when the two line points coincide and give no direction.
     static double computePerpendicularDistance(double[] point, double[] lineA, double[] lineB) {
+
         var baseX = lineB[0] - lineA[0];
         var baseY = lineB[1] - lineA[1];
         var baseLength = Points.computeVectorLength(baseX, baseY);
+
         if (baseLength < Limits.MIN_EDGE_LENGTH) {
             return Points.computeDistance(point, lineA);
         }
-        var twiceArea = (point[0] - lineA[0]) * baseY - (point[1] - lineA[1]) * baseX;
+
+        var twiceArea = (point[0] - lineA[0]) * baseY
+            - (point[1] - lineA[1]) * baseX;
+
         return Math.abs(twiceArea) / baseLength;
     }
 
@@ -60,6 +109,7 @@ final class Lines {
     // offsets (where the shared scale cancels), never on the raw magnitude - the
     // half-plane test the polygon clip keys its keep/discard decision and crossing point on.
     static double computeSignedOffsetFromLine(double[] point, HalfPlane boundary) {
+        
         return Points.projectPointOnto(
             point[0] - boundary.pointX(),
             point[1] - boundary.pointY(),
