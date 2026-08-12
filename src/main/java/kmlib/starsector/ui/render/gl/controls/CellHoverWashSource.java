@@ -1,6 +1,7 @@
 package kmlib.starsector.ui.render.gl.controls;
 
 import kmlib.starsector.ui.controls.ControlHoverSource;
+import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.render.gl.UiElementPaint;
 import kmlib.starsector.ui.render.gl.style.ControlHoverWash;
 
@@ -45,4 +46,17 @@ public interface CellHoverWashSource {
      * @return its wash paint, hidden when nothing is hovering it
      */
     UiElementPaint resolveWashPaintAt(int cell);
+
+    /**
+     * The wash a whole-row control takes - a tick box, a toggle - which has one cell and so one answer.
+     *
+     * <p>Here rather than at each such widget so the cell a single-cell control is numbered by is spelt
+     * once: a widget spelling it for itself is a widget that has to know the hit resolver's numbering to
+     * paint, and two of them spelling it are two places for that number to be got wrong.
+     *
+     * @return its wash paint, hidden when nothing is hovering it
+     */
+    default UiElementPaint resolveSingleCellWashPaint() {
+        return resolveWashPaintAt(ControlSpec.SINGLE_CELL);
+    }
 }

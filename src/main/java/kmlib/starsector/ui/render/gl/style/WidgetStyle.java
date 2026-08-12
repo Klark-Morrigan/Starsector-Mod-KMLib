@@ -18,7 +18,7 @@ import kmlib.starsector.ui.widgets.tabs.style.TabStyle;
  * that are not "look" - the border width, the opacity - stay render parameters.
  *
  * <p>Every field here is a grouped value rather than a loose one, and no two of them share a type. That
- * is deliberate: this record is built positionally from six things a host resolves separately, and four
+ * is deliberate: this record is built positionally from seven things a host resolves separately, and four
  * bare {@code Color}s in a row would be four positions a caller could transpose with nothing to catch
  * it - a frame stroked in the tick colour compiles and paints. Grouped by what each dresses, the same
  * slip is a compile error, and each group is small enough that what remains transposable inside one is

@@ -11,6 +11,7 @@ import kmlib.starsector.ui.sound.VanillaUiSoundPlayer;
 import kmlib.starsector.ui.widgets.scroll.ScrollState;
 import kmlib.starsector.ui.widgets.tabs.TabInteractionSources;
 import kmlib.starsector.ui.widgets.tabs.TabPanelCollapse;
+import kmlib.starsector.ui.widgets.tabs.TabPanelInteractionSources;
 import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
 
 /**
@@ -26,8 +27,8 @@ import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
  * header tabs, the body's own controls, and the collapse handle - and the two triggered motions its tabs
  * carry, a click's pulse and a bound key's blink. A host creates it, reads
  * its {@link #getScrollState()} and {@link #getCollapseFraction()} when it lays the panel out, advances the
- * collapse and the input motions each frame it draws, reads {@link #getTabInteractionSources()}, {@link
- * #getNotchHoverFraction()} and {@link #getBodyHoverSource()} to paint with, and feeds it pointer
+ * collapse and the input motions each frame it draws, reads {@link #getInteractionSources()} and {@link
+ * #getNotchHoverFraction()} to paint with, and feeds it pointer
  * events. That state lives here beside the
  * scroll offset because all of it is the panel's own transient per-session UI state, not the host's; a
  * consumer that lays out a placement and pumps this controller inherits the collapse handle and the live
@@ -201,35 +202,6 @@ public final class TabPanelController {
     }
 
     /**
-     * How far onto its hovered look the body cell at a given slot currently stands, for the render pass to
-     * lift that widget's own chrome by. A bare fraction, so this end holds no colour: what the lift is made
-     * of - a blend, a wash, a brightened frame - is the widget's own paint, resolved where its style is.
-     *
-     * @param slot the body cell being asked about
-     * @return its hover fraction, 0 fully at rest and 1 fully on its hovered look
-     */
-    public float resolveBodyHoverFractionAt(BodyCellSlot slot) {
-        return bodyHoverFades.resolveHoverFractionAt(slot);
-    }
-
-    /**
-     * What the body's controls are currently showing, for the render pass to lift them by: asked for a
-     * control's place in the drawn strip, it answers that control's own cells. The strip walk binds the
-     * position and the widget below passes only the cell it is painting, so the two halves of a slot are
-     * never both loose in one call - a crossed pair would light a cell of the wrong control, which is a
-     * flicker nobody can reproduce rather than a failure anything reports.
-     *
-     * <p>The seam the paint pass takes, over the point read above: a control is drawn cell by cell, so what
-     * it needs is something to ask, not a fraction fetched per cell by a caller that would have to spell the
-     * slot out itself.
-     *
-     * @return the panel's live body hover channel
-     */
-    public BodyHoverSource getBodyHoverSource() {
-        return controlIndex -> cell -> resolveBodyHoverFractionAt(new BodyCellSlot(controlIndex, cell));
-    }
-
-    /**
      * @return true only when the panel is fully expanded and idle - not docked, docking, or undocking -
      *         which is a fact about the fold alone. What a caller gating input on the tabs wants is
      *         {@link #isPresentingTabsOf}, since a panel with no body to fold is presenting its tabs
@@ -258,16 +230,18 @@ public final class TabPanelController {
     }
 
     /**
-     * What the header's tabs are currently showing, for the render pass to paint them at: how far each has
-     * travelled onto the hovered shade, and what momentary lift each carries. The paint pass therefore reads
-     * no cursor and holds no timing - it is handed both channels already resolved.
+     * What the pointer is doing to the whole panel, for the render pass to paint it at - the header's
+     * channels and the body's together. One value rather than an accessor per half, because both are read
+     * off the same frame's resolution against the same placement: a consumer taking them one at a time could
+     * pair a fresh reading with a stale one, and the panel would draw a row and a strip that disagree about
+     * where the pointer is.
      *
-     * @return the panel's live tab interaction channels
+     * @return the panel's live interaction channels
      */
-    public TabInteractionSources getTabInteractionSources() {
-        return new TabInteractionSources(
-            this::resolveHoverFractionAt,
-            tabClickPulses::resolvePulseFractionAt);
+    public TabPanelInteractionSources getInteractionSources() {
+        return new TabPanelInteractionSources(
+            getTabInteractionSources(),
+            getBodyHoverSource());
     }
 
     /**
@@ -443,6 +417,54 @@ public final class TabPanelController {
         // under the pointer to explain itself, so it needs both answers the engine gives a press rather
         // than half of one. Immediately rather than on any release, a key having no held moment to end.
         soundPlayer.playSoundIfPresent(soundScheme.pressSound());
+    }
+
+    /**
+     * What the header's tabs are currently showing, for the render pass to paint them at: how far each has
+     * travelled onto the hovered shade, and what momentary lift each carries. The paint pass therefore reads
+     * no cursor and holds no timing - it is handed both channels already resolved.
+     *
+     * <p>One half of {@link #getInteractionSources()}, which is what a consumer drawing the panel takes; this
+     * is reachable on its own for what pins the half.
+     *
+     * @return the panel's live tab interaction channels
+     */
+    TabInteractionSources getTabInteractionSources() {
+        return new TabInteractionSources(
+            this::resolveHoverFractionAt,
+            tabClickPulses::resolvePulseFractionAt);
+    }
+
+    /**
+     * What the body's controls are currently showing, for the render pass to lift them by: asked for a
+     * control's place in the drawn strip, it answers that control's own cells. The strip walk binds the
+     * position and the widget below passes only the cell it is painting, so the two halves of a slot are
+     * never both loose in one call - a crossed pair would light a cell of the wrong control, which is a
+     * flicker nobody can reproduce rather than a failure anything reports.
+     *
+     * <p>The seam a paint pass takes, over the point read below: a control is drawn cell by cell, so what it
+     * needs is something to ask, not a fraction fetched per cell by a caller that would have to spell the
+     * slot out itself. The other half of {@link #getInteractionSources()}.
+     *
+     * @return the panel's live body hover channel
+     */
+    BodyHoverSource getBodyHoverSource() {
+        return controlIndex -> cell -> resolveBodyHoverFractionAt(new BodyCellSlot(controlIndex, cell));
+    }
+
+    /**
+     * How far onto its hovered look the body cell at a given slot currently stands. A bare fraction, so this
+     * end holds no colour: what the lift is made of - a blend, a wash, a brightened frame - is the widget's
+     * own paint, resolved where its style is.
+     *
+     * <p>The point read the source above is bound over, and the terms the fades are actually keyed in - which
+     * is what makes it the reachable end for pinning that a slot's two halves are not crossed.
+     *
+     * @param slot the body cell being asked about
+     * @return its hover fraction, 0 fully at rest and 1 fully on its hovered look
+     */
+    float resolveBodyHoverFractionAt(BodyCellSlot slot) {
+        return bodyHoverFades.resolveHoverFractionAt(slot);
     }
 
     /**

@@ -19,8 +19,10 @@ import java.util.Map;
  * answer the same fraction. That keeps the set bounded for a row whose keys churn, and costs nothing for one
  * whose keys are stable.
  *
- * @param <K> what tells one element of the row from another - an index for a row that keeps its order, an
- *            identity of its own for a set that can be rebuilt under the pointer
+ * @param <K> what tells one element of the row from another - an index for a row that keeps its order, and
+ *            for a set rebuilt under the pointer the place an element stands in rather than an identity of
+ *            its own (see {@link BodyCellSlot}): a fade belongs to what the pointer is over, so keying it to
+ *            the thing occupying that place would dip the lit element dark whenever the set changed
  */
 public final class HoverFades<K> {
 

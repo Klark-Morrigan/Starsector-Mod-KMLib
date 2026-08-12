@@ -1,7 +1,6 @@
 package kmlib.starsector.ui.render.gl.controls;
 
 import kmlib.math.geometry.Rectangle;
-import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.render.gl.UiBoxes;
 import kmlib.starsector.ui.render.gl.UiElementPaint;
 import kmlib.starsector.ui.render.gl.UiFill;
@@ -46,7 +45,7 @@ public final class CheckboxRenderer {
             UiElementPaint boxPaint,
             UiElementPaint tickPaint) {
 
-        UiFill.renderQuad(bounds, hoverWashes.resolveWashPaintAt(ControlSpec.SINGLE_CELL));
+        UiFill.renderQuad(bounds, hoverWashes.resolveSingleCellWashPaint());
 
         var box = Checkbox.computeTickBox(bounds);
 

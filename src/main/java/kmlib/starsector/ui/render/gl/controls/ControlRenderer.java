@@ -74,23 +74,11 @@ public final class ControlRenderer {
     }
 
     /**
-     * Draws a body control with nothing happening to it - no tabs to be interacting with and no pointer on
-     * any of its cells, so it is drawn as {@link #render(Control, WidgetStyle, float, TabInteractionSources,
-     * ControlHoverSource)} at rest on both channels. What a consumer drawing a strip without an animator
-     * behind it takes.
-     *
-     * @param control the laid-out control to draw
-     * @param style   the look bundle - accents and body font for every kind
-     * @param opacity overall alpha, 0..1
-     */
-    public static void render(Control control, WidgetStyle style, float opacity) {
-        render(control, style, opacity, ControlHoverSource.createRestingHoverSource());
-    }
-
-    /**
      * Draws a body control at whatever point of its hover fades its cells stand - one with no tabs to be
      * interacting with, so it is drawn as {@link #render(Control, WidgetStyle, float, TabInteractionSources,
-     * ControlHoverSource)} with nothing happening to any tab.
+     * ControlHoverSource)} with nothing happening to any tab. A consumer drawing a strip without an animator
+     * behind it passes {@link ControlHoverSource#createRestingHoverSource()}, which says so where it is
+     * called rather than through an overload that says it by omission.
      *
      * @param control the laid-out control to draw
      * @param style   the look bundle - accents, the hovered-cell wash, and body font for every kind
@@ -104,25 +92,6 @@ public final class ControlRenderer {
             ControlHoverSource hovers) {
 
         render(control, style, opacity, TabInteractionSources.RESTING, hovers);
-    }
-
-    /**
-     * Draws a tabs row at whatever point of its hover fades and pulses its tabs stand, its cells otherwise
-     * at rest - the header's call, a tabs row lighting through its own palette rather than through the
-     * body's cell wash.
-     *
-     * @param control         the laid-out control to draw
-     * @param style           the look bundle - tab colours and face for a tabs row
-     * @param opacity         overall alpha, 0..1
-     * @param tabInteractions what each tab of a tabs row is currently showing
-     */
-    public static void render(
-            Control control,
-            WidgetStyle style,
-            float opacity,
-            TabInteractionSources tabInteractions) {
-
-        render(control, style, opacity, tabInteractions, ControlHoverSource.createRestingHoverSource());
     }
 
     /**

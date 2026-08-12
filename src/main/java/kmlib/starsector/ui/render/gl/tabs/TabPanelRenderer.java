@@ -1,6 +1,7 @@
 package kmlib.starsector.ui.render.gl.tabs;
 
 import kmlib.starsector.ui.controls.BodyHoverSource;
+import kmlib.starsector.ui.controls.ControlHoverSource;
 import kmlib.starsector.ui.render.gl.GlStateGuard;
 import kmlib.starsector.ui.render.gl.UiScissor;
 import kmlib.starsector.ui.render.gl.controls.ControlRenderer;
@@ -10,6 +11,7 @@ import kmlib.starsector.ui.render.gl.panel.PanelRenderer;
 import kmlib.starsector.ui.render.gl.style.WidgetStyle;
 import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.tabs.TabInteractionSources;
+import kmlib.starsector.ui.widgets.tabs.TabPanelInteractionSources;
 import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
 
 /**
@@ -64,25 +66,22 @@ public final class TabPanelRenderer {
      * @param style           how the panel looks (fill, frame colour, accents, body font, and the tab
      *                        style for the header)
      * @param border          the outer border width and which edges to stroke; a zero width draws no border
-     * @param tabInteractions what each header tab is currently showing - how far onto the hovered shade it
-     *                        has faded and what pulse it carries - resolved by whoever owns the panel's live
-     *                        state, since this pass reads no cursor and holds no timing
-     * @param bodyHovers      the same channel for the body's own controls: how far onto its hovered look
-     *                        each cell of each of them stands, resolved by the same owner against the same
-     *                        placement, so the row and the strip below it light off one reading of the
-     *                        pointer
-     * @param notchState      how far the body is collapsed (0 lays out full and unclipped, 1 docks to the
-     *                        rail, and it orients the notch's chevron) and how far the handle has lit under
-     *                        the pointer, resolved by the same owner for the same reason
-     * @param opacity         overall alpha, 0..1, fading the body and the collapse handle; the tabs header
-     *                        ignores it and paints opaque
+     * @param interactions what the pointer is doing to the panel - what each header tab is showing and how
+     *                     far each body cell has lit - resolved by whoever owns the panel's live state
+     *                     against this same placement, since this pass reads no cursor and holds no timing.
+     *                     One value rather than a channel per half, so the row and the strip beneath it
+     *                     cannot be drawn from two readings of the pointer
+     * @param notchState   how far the body is collapsed (0 lays out full and unclipped, 1 docks to the
+     *                     rail, and it orients the notch's chevron) and how far the handle has lit under
+     *                     the pointer, resolved by the same owner for the same reason
+     * @param opacity      overall alpha, 0..1, fading the body and the collapse handle; the tabs header
+     *                     ignores it and paints opaque
      */
     public static void render(
             TabPanelPlacement placement,
             WidgetStyle style,
             BoxBorder border,
-            TabInteractionSources tabInteractions,
-            BodyHoverSource bodyHovers,
+            TabPanelInteractionSources interactions,
             NotchState notchState,
             float opacity) {
 
@@ -90,9 +89,9 @@ public final class TabPanelRenderer {
         // the row above is the whole panel. Asked of the placement rather than inferred from the absent
         // handle, so what is skipped here is skipped for the reason it is skipped.
         if (placement.hasBody()) {
-            drawFramedBody(placement, style, border, bodyHovers, notchState, opacity);
+            drawFramedBody(placement, style, border, interactions.bodyControls(), notchState, opacity);
         }
-        drawHeaderBand(placement, style, tabInteractions);
+        drawHeaderBand(placement, style, interactions.headerTabs());
 
         // The handle draws last and unclipped, over the map beyond the frame's right edge, so it stays
         // reachable to expand the panel even when the body has wiped away to the docked rail. A bodyless
@@ -153,6 +152,9 @@ public final class TabPanelRenderer {
                 placement.tabsHeader(),
                 style,
                 HEADER_OPACITY,
-                tabInteractions)));
+                tabInteractions,
+                // The row answers the pointer through its own palette - a tab meets a shade rather than
+                // taking the body's cell wash - so it is drawn with that channel at rest.
+                ControlHoverSource.createRestingHoverSource())));
     }
 }

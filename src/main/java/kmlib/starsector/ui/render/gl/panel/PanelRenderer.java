@@ -34,29 +34,15 @@ public final class PanelRenderer {
     }
 
     /**
-     * Draws the panel with nothing hovered in its body - {@link #render(PanelPlacement, WidgetStyle,
-     * BoxBorder, BodyHoverSource, float)} with every control painting the settled look its spec names.
-     * What a consumer drawing a panel without an animator behind it takes.
-     *
-     * @param placement the laid-out panel to draw
-     * @param style     how the panel looks (fill, frame colour, accents, fonts)
-     * @param border    the outer border width and which edges to stroke; a zero width draws no border
-     * @param opacity   overall alpha, 0..1, fading the whole panel
-     */
-    public static void render(
-            PanelPlacement placement,
-            WidgetStyle style,
-            BoxBorder border,
-            float opacity) {
-
-        render(placement, style, border, BodyHoverSource.createRestingHoverSource(), opacity);
-    }
-
-    /**
      * Draws the panel: the bordered frame, the body controls at whatever point of their hover fades they
      * stand, and the scrollbar when the body is capped, all faded by {@code opacity}. Must run with a
      * current GL context. The {@code border} names which frame edges to stroke, so a panel flush against
      * another's edge can drop the border there; the body controls and scrollbar are unaffected.
+     *
+     * <p>A consumer drawing a panel without an animator behind it passes {@link
+     * BodyHoverSource#createRestingHoverSource()} and every control paints the settled look its spec names.
+     * Named at the call site rather than offered as a shorter overload, so a panel drawn with no hover says
+     * as much where it is drawn.
      *
      * @param placement  the laid-out panel to draw
      * @param style      how the panel looks (fill, frame colour, accents, fonts)

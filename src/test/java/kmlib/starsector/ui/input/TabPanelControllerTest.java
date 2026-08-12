@@ -194,6 +194,32 @@ final class TabPanelControllerTest {
     }
 
     @Nested
+    class GetInteractionSources {
+
+        @Test
+        void getInteractionSourcesCarriesTheLiveChannelsOfBothHalves() {
+            // The pair is what a consumer draws from, so what it hands over has to be the panel's live
+            // state and not a resting stand-in: a half wired to a fresh source would paint a row and a
+            // strip that disagree about where the pointer is, which is the whole reason they travel
+            // together.
+            var controller = new TabPanelController();
+            controller.advanceInputMotionsForFrame(
+                new TabPanelHover(FIRST_TAB_INDEX, MID_STRIP_SEGMENT_SLOT, NOTCH_NOT_HOVERED),
+                FULL_STEP_SECONDS,
+                DURATIONS);
+
+            var interactions = controller.getInteractionSources();
+
+            assertThat(interactions.headerTabs().hoverSource().resolveHoverFractionAt(FIRST_TAB_INDEX))
+                .isCloseTo(1f, within(TOLERANCE));
+            assertThat(interactions.bodyControls()
+                    .resolveControlHoverSourceAt(MID_STRIP_SEGMENT_SLOT.controlIndex())
+                    .resolveHoverFractionAt(MID_STRIP_SEGMENT_SLOT.cell()))
+                .isCloseTo(1f, within(TOLERANCE));
+        }
+    }
+
+    @Nested
     class GetBodyHoverSource {
 
         @Test
