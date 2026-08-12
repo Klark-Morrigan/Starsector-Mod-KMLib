@@ -10,9 +10,16 @@ package kmlib.starsector.ui.sound;
  * than a fact about our widgets, so a role nothing plays would be a guess about what the engine keeps -
  * and a wrong id fails silently, being looked up by name at play time.
  *
- * <p>Volume and pitch are not here. Each id already carries its own in the engine's config - the pressed
- * sound at 0.6 and the mouseover at 0.25 - so a caller naming its own would be overriding a balance
- * vanilla struck across every screen the sample is used on.
+ * <p>Volume is not here, but it is no longer nowhere. Each id carries its own in the engine's config -
+ * the pressed sound at 0.6 and the mouseover at 0.25 - and that balance is still exactly right for one
+ * control drawn among vanilla's own, which is why nothing here overrides it. It stops being right for a
+ * KM panel: a strip of tabs over a column of checkboxes over a list of rows puts more hit targets under
+ * one sweep of the pointer than any vanilla screen does, and at vanilla's mouseover level that sweep
+ * chatters. So how loud a role plays is named per moment, in the {@link UiSoundCue} a look carries, and
+ * scaled over the engine's balance rather than replacing it.
+ *
+ * <p>Pitch stays vanilla's entirely. Nothing here has a reason to bend a sample, and an id played at a
+ * pitch it was not recorded at stops being the engine's sound in the only way that matters.
  */
 public enum StarsectorUiSound {
 

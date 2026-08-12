@@ -9,6 +9,7 @@ import kmlib.starsector.ui.controls.ControlAction;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.LabelledControlSpecs;
 import kmlib.starsector.ui.sound.StarsectorUiSound;
+import kmlib.starsector.ui.sound.UiSoundCue;
 import kmlib.starsector.ui.sound.UiSoundScheme;
 import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.PanelPlacement;
@@ -1187,8 +1188,8 @@ final class TabPanelControllerTest {
         // the look it was handed records the sound the other moment would have made. The vanilla pair could
         // not tell the two apart - it names exactly what the controller used to name for itself.
         private static final UiSoundScheme SWAPPED_SOUNDS = new UiSoundScheme(
-            StarsectorUiSound.BUTTON_MOUSEOVER,
-            StarsectorUiSound.BUTTON_PRESSED);
+            UiSoundCue.createAtFullVolume(StarsectorUiSound.BUTTON_MOUSEOVER),
+            UiSoundCue.createAtFullVolume(StarsectorUiSound.BUTTON_PRESSED));
 
         private final UiSoundPlayerFake soundPlayerFake = new UiSoundPlayerFake();
 
@@ -1277,7 +1278,7 @@ final class TabPanelControllerTest {
             advanceWithPointerOn(controller, buildHoverOnNotch());
             advanceWithPointerOn(controller, buildHoverOnTab(FIRST_TAB_INDEX));
 
-            soundPlayerFake.clearPlayedSounds();
+            soundPlayerFake.clearPlayedCues();
 
             advanceWithPointerOn(controller, buildHoverOnNotch());
 

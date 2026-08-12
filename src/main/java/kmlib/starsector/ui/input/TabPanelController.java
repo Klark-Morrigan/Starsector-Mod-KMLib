@@ -38,7 +38,7 @@ import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
  *
  * <p>Every animation here is timed and nothing here is coloured, and the same line runs through what the
  * panel sounds: this end knows when a control was pressed and when the pointer reached one, and the look
- * it was handed says which sound each of those moments makes. What a fraction lifts a tab toward is the
+ * it was handed says what each of those moments sounds like. What a fraction lifts a tab toward is the
  * strip's paint, resolved where the palette is; this end knows only how far each has run.
  */
 public final class TabPanelController {
@@ -98,9 +98,10 @@ public final class TabPanelController {
     // asserted by recording that it was asked for.
     private final UiSoundPlayer soundPlayer;
 
-    // Which sound each moment this panel's controls answer makes. Taken from the host with the rest of the
-    // panel's look rather than named here, because which role a press makes is a property of how the panel
-    // presents itself: this end owns the moments - it is what detects them - and owns none of the choices.
+    // What each moment this panel's controls answer sounds like - which role, and how loudly. Taken from
+    // the host with the rest of the panel's look rather than named here, because how a press sounds is a
+    // property of how the panel presents itself: this end owns the moments - it is what detects them - and
+    // owns none of the choices.
     // One value for the whole panel, so its notch and its tabs answer alike and a panel is silenced in one
     // place rather than by visiting every control that ever named a sound.
     private final UiSoundScheme soundScheme;
@@ -131,7 +132,7 @@ public final class TabPanelController {
      * scheme - for a host wearing a look of its own, or a test asserting which moments sound.
      *
      * @param soundPlayer where this panel's interface sounds go
-     * @param soundScheme which sound each moment this panel's controls answer makes, the audible half of
+     * @param soundScheme what each moment this panel's controls answer sounds like, the audible half of
      *                    the look the host paints the panel from
      */
     public TabPanelController(UiSoundPlayer soundPlayer, UiSoundScheme soundScheme) {
@@ -167,7 +168,7 @@ public final class TabPanelController {
      * A controller seeded at the docked end that sounds through the given player and by the given scheme.
      *
      * @param soundPlayer where this panel's interface sounds go
-     * @param soundScheme which sound each moment this panel's controls answer makes
+     * @param soundScheme what each moment this panel's controls answer sounds like
      * @return a controller seeded at the docked end
      */
     public static TabPanelController createStartingDocked(
@@ -355,7 +356,7 @@ public final class TabPanelController {
             // actually ended, since every release on the screen reaches here and only the ones that let go
             // of a tab were owed anything - a click on the map behind the panel must not click at the
             // player.
-            soundPlayer.playSoundIfPresent(soundScheme.pressSound());
+            soundPlayer.playCueIfPresent(soundScheme.pressCue());
         }
 
         // A left press on the notch flips the body between expanded and docked. Tested before the header and
@@ -369,7 +370,7 @@ public final class TabPanelController {
             // sound follows the moment the control acts and the handle acts immediately: the fold is
             // already moving. A tab's lift is held until the button comes up, so its press is not over
             // until then; the handle holds nothing and has nothing left to report by the release.
-            soundPlayer.playSoundIfPresent(soundScheme.pressSound());
+            soundPlayer.playCueIfPresent(soundScheme.pressCue());
             event.consume();
             return;
         }
@@ -416,7 +417,7 @@ public final class TabPanelController {
         // Sounded as well as flashed, and for the same reason the flash exists: a keypress puts nothing
         // under the pointer to explain itself, so it needs both answers the engine gives a press rather
         // than half of one. Immediately rather than on any release, a key having no held moment to end.
-        soundPlayer.playSoundIfPresent(soundScheme.pressSound());
+        soundPlayer.playCueIfPresent(soundScheme.pressCue());
     }
 
     /**
@@ -680,7 +681,7 @@ public final class TabPanelController {
         var hasReachedNotch = notchHoverArrival.detectArrival(hover.isNotchHovered());
 
         if (hasReachedTab || hasReachedNotch) {
-            soundPlayer.playSoundIfPresent(soundScheme.pointerArrivalSound());
+            soundPlayer.playCueIfPresent(soundScheme.pointerArrivalCue());
         }
     }
 }

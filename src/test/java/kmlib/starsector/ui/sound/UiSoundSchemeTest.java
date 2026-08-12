@@ -17,14 +17,15 @@ final class UiSoundSchemeTest {
     class CreateVanillaSoundScheme {
 
         @Test
-        void createVanillaSoundSchemeNamesTheEnginesOwnButtonRoles() {
-
+        void createVanillaSoundSchemeNamesTheEnginesOwnButtonRolesUnscaled() {
+            // A vanilla-looking control that sounded at a level of ours would stop matching the chrome
+            // around it, so both cues have to leave the engine's own balance alone.
             var soundScheme = UiSoundScheme.createVanillaSoundScheme();
 
-            assertThat(soundScheme.pressSound())
-                .isEqualTo(StarsectorUiSound.BUTTON_PRESSED);
-            assertThat(soundScheme.pointerArrivalSound())
-                .isEqualTo(StarsectorUiSound.BUTTON_MOUSEOVER);
+            assertThat(soundScheme.pressCue())
+                .isEqualTo(new UiSoundCue(StarsectorUiSound.BUTTON_PRESSED, 1f));
+            assertThat(soundScheme.pointerArrivalCue())
+                .isEqualTo(new UiSoundCue(StarsectorUiSound.BUTTON_MOUSEOVER, 1f));
         }
     }
 
@@ -32,14 +33,15 @@ final class UiSoundSchemeTest {
     class CreateSilentSoundScheme {
 
         @Test
-        void createSilentSoundSchemeNamesNoRoleAtAll() {
-            // A null role is what a consumer skips, so a "silent" scheme that named a role anywhere would
-            // be a panel that still answered where its look said it would not.
+        void createSilentSoundSchemeNamesNoCueAtAll() {
+            // A null cue is what a consumer skips, so a "silent" scheme that named a cue anywhere would
+            // be a panel that still answered where its look said it would not - and a cue at zero volume
+            // would be exactly that, a sound played at nothing rather than a moment left quiet.
             var soundScheme = UiSoundScheme.createSilentSoundScheme();
 
-            assertThat(soundScheme.pressSound())
+            assertThat(soundScheme.pressCue())
                 .isNull();
-            assertThat(soundScheme.pointerArrivalSound())
+            assertThat(soundScheme.pointerArrivalCue())
                 .isNull();
         }
     }

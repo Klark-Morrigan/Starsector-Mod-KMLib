@@ -7,34 +7,37 @@ package kmlib.starsector.ui.sound;
  * cannot. Inverting it is what lets the rules - which moment makes which sound, and which moments make
  * none - be pinned at all.
  *
- * <p>It carries no volume or timing of its own. When a sound plays is the caller's, and how loudly is the
- * engine's config; all that crosses this seam is which role sounded.
+ * <p>What crosses the seam is a {@link UiSoundCue}: which role sounded and how loudly. The volume travels
+ * with the role rather than being left to the engine's per-id balance, because that balance was struck for
+ * vanilla's own density of controls and a KM panel puts more hit targets under one sweep of the pointer
+ * than any vanilla screen does. It is still not this end's to choose - a cue arrives resolved, from the
+ * look that named it - and neither is <em>when</em>, which stays the caller's.
  */
 public interface UiSoundPlayer {
 
     /**
-     * Plays one interface sound, now.
+     * Plays one interface sound, now, at the volume its cue names.
      *
-     * @param sound the role that sounded
+     * @param cue the role that sounded and how loudly
      */
-    void playSound(StarsectorUiSound sound);
+    void playCue(UiSoundCue cue);
 
     /**
-     * Plays a sound there may not be: the given role if there is one, and nothing at all otherwise. The
-     * form a caller wants wherever the role it holds was resolved rather than written down - a lookup
-     * that can come back empty, such as a {@link UiSoundScheme}'s answer for a moment it leaves quiet.
+     * Plays a cue there may not be: the given cue if there is one, and nothing at all otherwise. The form
+     * a caller wants wherever the cue it holds was resolved rather than written down - a lookup that can
+     * come back empty, such as a {@link UiSoundScheme}'s answer for a moment it leaves quiet.
      *
-     * <p>Here rather than at each caller so an absent sound means the same thing everywhere, and beside
-     * {@link #playSound} rather than inside it so no implementation has to think about it. A null
-     * crossing the seam would make every implementation responsible for the same guard - and a recording
-     * one would either log a sound nothing played or need a guard of its own to avoid it.
+     * <p>Here rather than at each caller so an absent cue means the same thing everywhere, and beside
+     * {@link #playCue} rather than inside it so no implementation has to think about it. A null crossing
+     * the seam would make every implementation responsible for the same guard - and a recording one would
+     * either log a sound nothing played or need a guard of its own to avoid it.
      *
-     * @param sound the role that sounded, or null for a moment with no sound to it
+     * @param cue the role that sounded and how loudly, or null for a moment with no sound to it
      */
-    default void playSoundIfPresent(StarsectorUiSound sound) {
+    default void playCueIfPresent(UiSoundCue cue) {
 
-        if (sound != null) {
-            playSound(sound);
+        if (cue != null) {
+            playCue(cue);
         }
     }
 }
