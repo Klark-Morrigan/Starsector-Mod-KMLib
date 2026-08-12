@@ -753,6 +753,8 @@ final class TabPanelControllerTest {
 
             assertThat(hoverFractionAt(controller, FIRST_TAB_INDEX))
                 .isCloseTo(1f, within(TOLERANCE));
+            assertThat(controller.resolveBodyHoverFractionAt(FIRST_BODY_SLOT))
+                .isCloseTo(0f, within(TOLERANCE));
             assertThat(controller.getNotchHoverFraction())
                 .isCloseTo(0f, within(TOLERANCE));
         }
@@ -1393,8 +1395,7 @@ final class TabPanelControllerTest {
             null,
             TABS_SHOWING_FIRST_TAB,
             HEADER_BAND,
-            List.of(buildBodyControl()),
-            DOCKED_RAIL_BOX);
+            buildBody(DOCKED_RAIL_BOX, List.of(buildBodyControl())));
     }
 
     private static TabPanelPlacement buildPlacement(
@@ -1411,22 +1412,29 @@ final class TabPanelControllerTest {
             Rectangle drawnHeaderBand,
             List<Control> bodyControls) {
 
-        return buildPlacement(notch, spec, drawnHeaderBand, bodyControls, BODY_BOX);
+        return buildPlacement(notch, spec, drawnHeaderBand, buildBody(BODY_BOX, bodyControls));
     }
 
     private static TabPanelPlacement buildPlacement(
             Rectangle notch,
             ControlSpec spec,
             Rectangle drawnHeaderBand,
-            List<Control> bodyControls,
-            Rectangle bodyBox) {
+            PanelPlacement body) {
 
         return new TabPanelPlacement(
             new Control(spec, HEADER_BAND, List.of(FIRST_TAB, SECOND_TAB)),
             drawnHeaderBand,
-            new PanelPlacement(bodyBox, bodyBox, bodyControls, bodyBox, 0f, 0f),
+            body,
             new BoxBorder(BORDER_WIDTH),
             notch);
+    }
+
+    // The body beneath the row: the controls, and the box they are drawn inside - which is what a fold
+    // narrows, and so the one part of a body a case here ever varies. Assembled apart from the panel so
+    // the builder above takes a body rather than the pieces of one, two rectangles side by side in a
+    // parameter list being two rectangles that can be handed over the wrong way round.
+    private static PanelPlacement buildBody(Rectangle box, List<Control> bodyControls) {
+        return new PanelPlacement(box, box, bodyControls, box, 0f, 0f);
     }
 
     // A body control, so the placement reads as having a body at all; what it is never matters here, only
