@@ -33,7 +33,25 @@ public final class PolygonOffsets {
      *                    the edge from vertex {@code i} to vertex {@code (i + 1)}
      *                    modulo the count lies on an inset line
      */
-    public record SelectiveInset(List<double[]> vertices, boolean[] edgeIsInset) {
+    public record SelectiveInset(
+        List<double[]> vertices,
+        boolean[] edgeIsInset) {
+
+        /**
+         * The result when nothing is left to draw - the inset consumed the polygon, or it
+         * never had an interior to begin with.
+         *
+         * <p>Named because the pair of empties is a statement, not a construction: a caller
+         * reading {@code SelectiveInset.nothingLeftToDraw()} learns the outcome, where a
+         * caller reading {@code new SelectiveInset(new ArrayList<>(), new boolean[0])} has to
+         * work out that two empty containers mean the shape is gone rather than that the
+         * method gave up part way.
+         *
+         * @return the empty result
+         */
+        public static SelectiveInset nothingLeftToDraw() {
+            return new SelectiveInset(new ArrayList<>(), new boolean[0]);
+        }
     }
 
     /**
@@ -64,6 +82,7 @@ public final class PolygonOffsets {
             List<double[]> polygon,
             boolean[] insetEdge,
             double distance) {
+
         if (insetEdge.length != polygon.size()) {
             throw new IllegalArgumentException(
                 "insetEdge must be parallel to the polygon edges: "
@@ -76,9 +95,11 @@ public final class PolygonOffsets {
         // takes: a flagged edge carries the scalar distance, an unflagged edge
         // carries 0, which the primitive reads as "leave this edge on its line".
         var edgeDistances = new double[insetEdge.length];
+
         for (var i = 0; i < insetEdge.length; i++) {
             edgeDistances[i] = insetEdge[i] ? distance : 0.0;
         }
+
         return insetSelectedEdges(polygon, edgeDistances);
     }
 
@@ -125,7 +146,9 @@ public final class PolygonOffsets {
     public static SelectiveInset insetSelectedEdges(
             List<double[]> polygon,
             double[] edgeDistances) {
+
         var count = polygon.size();
+
         if (edgeDistances.length != count) {
             throw new IllegalArgumentException(
                 "edgeDistances must be parallel to the polygon edges: "
@@ -133,8 +156,9 @@ public final class PolygonOffsets {
                     + " vs "
                     + count);
         }
+
         if (count < Limits.MIN_VERTICES_TO_ENCLOSE_AREA) {
-            return new SelectiveInset(new ArrayList<>(), new boolean[0]);
+            return SelectiveInset.nothingLeftToDraw();
         }
 
         // Labels that let the clips tell an edge pulled onto an inward-offset line
@@ -150,14 +174,19 @@ public final class PolygonOffsets {
         // taken from the original geometry, so a later clip does not shift an
         // earlier one.
         var labels = new int[count];
+
         for (var i = 0; i < count; i++) {
             labels[i] = edgeDistances[i] > 0 ? insetEdgeLabel : keptEdgeLabel;
         }
+
         var working = LabelledPolygon.fromLabelledEdges(polygon, labels);
+
         for (var i = 0; i < count && !working.isEmpty(); i++) {
+
             if (edgeDistances[i] <= 0) {
                 continue;
             }
+
             var line = computeInwardOffsetLine(
                 polygon.get(i),
                 polygon.get((i + 1) % count),
@@ -166,6 +195,7 @@ public final class PolygonOffsets {
             if (line == null) {
                 continue;
             }
+
             working = working.clipToHalfPlane(line, insetEdgeLabel);
         }
 
@@ -177,15 +207,20 @@ public final class PolygonOffsets {
         // before the count test catches that; the vertices themselves are returned
         // as clipped so they stay parallel to the edge flags.
         var vertices = working.getVertices();
+
         if (Rings.removeConsecutiveDuplicates(vertices).size()
                 < Limits.MIN_VERTICES_TO_ENCLOSE_AREA) {
-            return new SelectiveInset(new ArrayList<>(), new boolean[0]);
+
+            return SelectiveInset.nothingLeftToDraw();
         }
+
         var edgeLabels = working.getEdgeLabels();
         var edgeIsInset = new boolean[edgeLabels.length];
+
         for (var i = 0; i < edgeLabels.length; i++) {
             edgeIsInset[i] = edgeLabels[i] == insetEdgeLabel;
         }
+
         return new SelectiveInset(vertices, edgeIsInset);
     }
 
@@ -212,8 +247,10 @@ public final class PolygonOffsets {
     public static List<double[]> insetConvexPolygon(
             List<double[]> polygon,
             double distance) {
+
         var vertices = Rings.removeConsecutiveDuplicates(polygon);
         var count = vertices.size();
+
         if (count < Limits.MIN_VERTICES_TO_ENCLOSE_AREA) {
             return new ArrayList<>();
         }
@@ -225,7 +262,9 @@ public final class PolygonOffsets {
         // per-edge distinction, so every edge takes the same throwaway label and
         // the labels are dropped on the way out.
         var working = LabelledPolygon.fromLabelledEdges(vertices, new int[count]);
+
         for (var i = 0; i < count && !working.isEmpty(); i++) {
+
             var line = computeInwardOffsetLine(
                 vertices.get(i),
                 vertices.get((i + 1) % count),
@@ -234,6 +273,7 @@ public final class PolygonOffsets {
             if (line == null) {
                 continue;
             }
+
             working = working.clipToHalfPlane(line, 0);
         }
         return working.getVertices();
@@ -278,14 +318,18 @@ public final class PolygonOffsets {
             List<double[]> polygon,
             double distance,
             double miterSpikeLimit) {
+
         var vertices = Rings.removeConsecutiveDuplicates(polygon);
         var count = vertices.size();
+
         if (count < Limits.MIN_VERTICES_TO_ENCLOSE_AREA) {
             return new ArrayList<>();
         }
 
         var inset = new ArrayList<double[]>(count);
+
         for (var i = 0; i < count; i++) {
+
             // The whole-polygon inset shifts every edge the same distance, so both
             // of a corner's edges take the one scalar.
             appendInsetCorner(
@@ -344,6 +388,7 @@ public final class PolygonOffsets {
             List<double[]> polygon,
             double[] edgeDistances,
             double miterSpikeLimit) {
+
         if (edgeDistances.length != polygon.size()) {
             throw new IllegalArgumentException(
                 "edgeDistances must be parallel to the polygon edges: "
@@ -359,11 +404,13 @@ public final class PolygonOffsets {
         var vertices = Rings.collectPointsAt(polygon, survivors.pointIndices());
         var distances = collectDistancesAt(edgeDistances, survivors.outgoingEdgeIndices());
         var count = vertices.size();
+
         if (count < Limits.MIN_VERTICES_TO_ENCLOSE_AREA) {
             return new ArrayList<>();
         }
 
         var inset = new ArrayList<double[]>(count);
+
         for (var i = 0; i < count; i++) {
             // The inbound edge (previous -> corner) is edge (i - 1); the outbound
             // edge (corner -> next) is edge i. Each carries its own signed distance.
@@ -396,19 +443,24 @@ public final class PolygonOffsets {
      * @return one {@link Segment} per edge; empty for fewer than two vertices
      */
     public static List<Segment> offsetEdgesInward(List<double[]> polygon, double distance) {
+
         var segments = new ArrayList<Segment>();
         var count = polygon.size();
+
         if (count < 2) {
             return segments;
         }
 
         for (var i = 0; i < count; i++) {
+
             var a = polygon.get(i);
             var b = polygon.get((i + 1) % count);
             var normal = computeInwardUnitNormal(a, b);
+
             if (normal == null) {
                 continue;
             }
+
             segments.add(new Segment(
                 a[0] + normal[0] * distance, a[1] + normal[1] * distance,
                 b[0] + normal[0] * distance, b[1] + normal[1] * distance));
@@ -430,27 +482,39 @@ public final class PolygonOffsets {
             double inboundDistance,
             double outboundDistance,
             double miterSpikeLimit) {
+
         var inboundNormal = computeInwardUnitNormal(previous, corner);
         var outboundNormal = computeInwardUnitNormal(corner, next);
+
         if (inboundNormal == null || outboundNormal == null) {
+
             var normal = inboundNormal == null ? outboundNormal : inboundNormal;
             var distance = inboundNormal == null ? outboundDistance : inboundDistance;
+
             inset.add(normal == null
-                ? new double[] {corner[0], corner[1]}
-                : new double[] {corner[0] + normal[0] * distance, corner[1] + normal[1] * distance});
+                ? new double[] {
+                    corner[0],
+                    corner[1]}
+                : new double[] {
+                    corner[0] + normal[0] * distance,
+                    corner[1] + normal[1] * distance});
+
             return;
         }
 
         var inboundPoint = new double[] {
             corner[0] + inboundNormal[0] * inboundDistance,
             corner[1] + inboundNormal[1] * inboundDistance};
+
         var outboundPoint = new double[] {
             corner[0] + outboundNormal[0] * outboundDistance,
             corner[1] + outboundNormal[1] * outboundDistance};
+
         // Left turn (positive cross) is convex for a CCW ring; a right turn is the
         // reflex corner whose miter would spike, so it bevels.
         var turn = (corner[0] - previous[0]) * (next[1] - corner[1])
             - (corner[1] - previous[1]) * (next[0] - corner[0]);
+
         if (turn > 0) {
             var miter = computeMiterVertex(
                 corner,
@@ -463,12 +527,17 @@ public final class PolygonOffsets {
             // reduces to the scalar case when they match, and, being a magnitude,
             // flags an outward (negative-distance) bulge that spikes past the corner
             // the same way it flags an inward one.
-            var spikeScale = Math.max(Math.abs(inboundDistance), Math.abs(outboundDistance));
+            var spikeScale = Math.max(
+                Math.abs(inboundDistance),
+                Math.abs(outboundDistance));
+
             if (Points.computeDistance(miter, corner) <= miterSpikeLimit * spikeScale) {
+
                 inset.add(miter);
                 return;
             }
         }
+
         inset.add(inboundPoint);
         inset.add(outboundPoint);
     }
@@ -483,6 +552,7 @@ public final class PolygonOffsets {
             double[] outboundNormal,
             double[] inboundPoint,
             double[] outboundPoint) {
+
         // Each edge's direction is its inward normal turned 90 degrees, so a line
         // through the shifted point along it is the shifted edge; where the two
         // shifted edges cross is the miter. Collinear edges never cross - fall back
@@ -494,6 +564,7 @@ public final class PolygonOffsets {
             outboundPoint,
             outboundNormal[1],
             -outboundNormal[0]);
+
         return crossing == null ? outboundPoint : crossing;
     }
 
@@ -501,7 +572,9 @@ public final class PolygonOffsets {
     // of a dedup, gathered through the surviving vertices' outgoing edges so a distance
     // never parts company with the edge it offsets.
     private static double[] collectDistancesAt(double[] edgeDistances, int[] indices) {
+
         var distances = new double[indices.length];
+
         for (var i = 0; i < indices.length; i++) {
             distances[i] = edgeDistances[indices[i]];
         }
@@ -517,10 +590,13 @@ public final class PolygonOffsets {
     // {@link #insetSelectedEdges}, which differ only in which edges they feed it
     // and whether they track the cut edge's label.
     private static HalfPlane computeInwardOffsetLine(double[] a, double[] b, double distance) {
+
         var normal = computeInwardUnitNormal(a, b);
+
         if (normal == null) {
             return null;
         }
+
         return new HalfPlane(
             a[0] + normal[0] * distance,
             a[1] + normal[1] * distance,
@@ -535,12 +611,15 @@ public final class PolygonOffsets {
     // skips it rather than dividing by ~zero. Shared by the inset and edge-offset
     // passes, which both step inward along this normal.
     private static double[] computeInwardUnitNormal(double[] a, double[] b) {
+
         var edgeX = b[0] - a[0];
         var edgeY = b[1] - a[1];
         var unitEdge = Points.computeUnitVector(edgeX, edgeY, Limits.MIN_EDGE_LENGTH);
+
         if (unitEdge == null) {
             return null;
         }
+        
         // Rotate the unit edge 90 degrees left (x, y) -> (-y, x) to face the CCW
         // polygon's interior, which lies to the left of the directed edge.
         return new double[] {-unitEdge[1], unitEdge[0]};
