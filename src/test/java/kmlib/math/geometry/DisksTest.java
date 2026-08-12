@@ -7,8 +7,8 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-import static kmlib.math.geometry.GeometryTestSupport.bigSquare;
-import static kmlib.math.geometry.GeometryTestSupport.signedArea;
+import static kmlib.math.geometry.GeometryTestSupport.buildSquare;
+import static kmlib.math.geometry.GeometryTestSupport.computeSignedArea;
 import static kmlib.math.geometry.GeometryTestSupport.within;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -30,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * what the other drops, with no area lost or double-counted between them.
  */
 final class DisksTest {
+
     // Enough sides that the approximated disk's area lands within a percent of the true
     // circle's, so an area assertion can be stated against pi * r^2 with real tolerance
     // rather than against whatever the polygon happens to enclose.
@@ -55,9 +56,10 @@ final class DisksTest {
     // The total area of a set of pieces - what the difference must add up to, since its
     // pieces are disjoint.
     private static double sumAreas(List<List<double[]>> pieces) {
+
         var total = 0.0;
         for (var piece : pieces) {
-            total += signedArea(piece);
+            total += computeSignedArea(piece);
         }
         return total;
     }
@@ -65,18 +67,22 @@ final class DisksTest {
     // The slack an assertion about a disk's own area allows. Scaled to the disk rather
     // than fixed, since the chord error the approximation carries grows with it.
     private static Offset<Double> computeWithinDiskArea(double radius) {
-        return Offset.offset(Math.PI * radius * radius * AREA_TOLERANCE_FRACTION);
+        return Offset.offset(Math.PI
+            * radius
+            * radius
+            * AREA_TOLERANCE_FRACTION);
     }
 
     // The square subject with each side labelled for itself, so a side the clip left
     // alone can be told apart from one it cut and from the other three sides.
     private static LabelledPolygon buildLabelledSquare(double side, int[] sideLabels) {
-        return LabelledPolygon.fromLabelledEdges(bigSquare(side), sideLabels);
+        return LabelledPolygon.fromLabelledEdges(buildSquare(side), sideLabels);
     }
 
     // Every label appearing on any edge of any piece - what the pieces, between them,
     // claim lies across their boundaries.
     private static List<Integer> collectEdgeLabels(List<LabelledPolygon> pieces) {
+
         var labels = new ArrayList<Integer>();
         for (var piece : pieces) {
             for (var label : piece.getEdgeLabels()) {
@@ -89,14 +95,20 @@ final class DisksTest {
     // The total length of the edges labelled {@code label} across all the pieces - how
     // much boundary the pieces hand to one thing.
     private static double computeLabelledLength(List<LabelledPolygon> pieces, int label) {
+
         var total = 0.0;
         for (var piece : pieces) {
+
             var vertices = piece.getVertices();
             var labels = piece.getEdgeLabels();
+
             for (var i = 0; i < vertices.size(); i++) {
+
                 if (labels[i] == label) {
+
                     total += Points.computeDistance(
-                        vertices.get(i), vertices.get((i + 1) % vertices.size()));
+                        vertices.get(i),
+                        vertices.get((i + 1) % vertices.size()));
                 }
             }
         }
@@ -106,15 +118,24 @@ final class DisksTest {
     // Whether the piece has two edges that run on in the same direction from a shared
     // vertex - one straight line the ring breaks in two - carrying the two given labels.
     private static boolean hasCollinearEdgesLabelledApart(
-            LabelledPolygon piece, int firstLabel, int secondLabel) {
+            LabelledPolygon piece,
+            int firstLabel,
+            int secondLabel) {
+
         var vertices = piece.getVertices();
         var labels = piece.getEdgeLabels();
+
         for (var i = 0; i < vertices.size(); i++) {
+
             var next = (i + 1) % vertices.size();
             var isPair = labels[i] == firstLabel && labels[next] == secondLabel
                     || labels[i] == secondLabel && labels[next] == firstLabel;
-            if (isPair && isCollinear(vertices.get(i), vertices.get(next),
-                vertices.get((next + 1) % vertices.size()))) {
+
+            if (isPair
+                    && isCollinear(
+                        vertices.get(i),
+                        vertices.get(next),
+                        vertices.get((next + 1) % vertices.size()))) {
                 return true;
             }
         }
@@ -125,22 +146,30 @@ final class DisksTest {
     // against the length of the run they span it over - a shape-scale test, so it does
     // not tighten or loosen with the coordinates' magnitude.
     private static boolean isCollinear(double[] first, double[] second, double[] third) {
+
         var cross = (second[0] - first[0]) * (third[1] - first[1])
             - (second[1] - first[1]) * (third[0] - first[0]);
-        var span = Points.computeDistance(first, second) + Points.computeDistance(second, third);
+
+        var span = Points.computeDistance(first, second)
+            + Points.computeDistance(second, third);
+
         return Math.abs(cross) < span * span * COLLINEAR_TOLERANCE_FRACTION;
     }
 
     @Nested
     class IntersectWithDisk {
+
         @Test
         void polygon_is_bounded_to_the_disk_when_it_reaches_past_it() {
             // The square reaches far past a disk centred inside it, so the disk alone
             // survives: the reach bound, not the polygon, decides the result's area.
             var bounded = Disks.intersectWithDisk(
-                bigSquare(100), new double[] {50, 50}, 20, SEGMENTS);
+                buildSquare(100),
+                new double[] {50, 50},
+                20,
+                SEGMENTS);
 
-            assertThat(signedArea(bounded))
+            assertThat(computeSignedArea(bounded))
                 .isCloseTo(Math.PI * 20 * 20, computeWithinDiskArea(20));
         }
 
@@ -149,9 +178,13 @@ final class DisksTest {
             // A bound wider than the polygon clips nothing away - the reach cap only
             // ever removes, never invents, so the square keeps its full area.
             var bounded = Disks.intersectWithDisk(
-                bigSquare(10), new double[] {5, 5}, 1000, SEGMENTS);
+                buildSquare(10),
+                new double[] {5, 5},
+                1000,
+                SEGMENTS);
 
-            assertThat(signedArea(bounded)).isCloseTo(100.0, within());
+            assertThat(computeSignedArea(bounded))
+                .isCloseTo(100.0, within());
         }
 
         @Test
@@ -159,9 +192,13 @@ final class DisksTest {
             // The cap case that must collapse: a wedge past its owner's reach keeps no
             // colour at all, so an empty ring - not a sliver - is the answer.
             var bounded = Disks.intersectWithDisk(
-                bigSquare(10), new double[] {500, 500}, 20, SEGMENTS);
+                buildSquare(10),
+                new double[] {500, 500},
+                20,
+                SEGMENTS);
 
-            assertThat(bounded).isEmpty();
+            assertThat(bounded)
+                .isEmpty();
         }
 
         @Test
@@ -170,24 +207,35 @@ final class DisksTest {
             // carry a normal, so it is reported as enclosing nothing rather than let
             // to decide sides from noise.
             var bounded = Disks.intersectWithDisk(
-                bigSquare(10), new double[] {5, 5}, 0, SEGMENTS);
+                buildSquare(10),
+                new double[] {5, 5},
+                0,
+                SEGMENTS);
 
-            assertThat(bounded).isEmpty();
+            assertThat(bounded)
+                .isEmpty();
         }
 
         @Test
         void nothing_is_kept_when_the_polygon_encloses_no_area() {
+
             var bounded = Disks.intersectWithDisk(
                 List.of(new double[] {0, 0}, new double[] {10, 0}),
-                new double[] {5, 0}, 20, SEGMENTS);
+                new double[] {5, 0},
+                20,
+                SEGMENTS);
 
-            assertThat(bounded).isEmpty();
+            assertThat(bounded)
+                .isEmpty();
         }
 
         @Test
         void a_disk_of_too_few_segments_is_rejected() {
             assertThatThrownBy(() -> Disks.intersectWithDisk(
-                bigSquare(10), new double[] {5, 5}, 2, 2))
+                    buildSquare(10),
+                    new double[] {5, 5},
+                    2,
+                    2))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("segments");
         }
@@ -195,23 +243,26 @@ final class DisksTest {
 
     @Nested
     class SubtractDisk {
+
         @Test
         void a_hole_is_punched_when_the_disk_lies_strictly_inside_the_polygon() {
-            var center = new double[] {50, 50};
 
-            var remainder = Disks.subtractDisk(bigSquare(100), center, 20, SEGMENTS);
+            var center = new double[] {50, 50};
+            var remainder = Disks.subtractDisk(buildSquare(100), center, 20, SEGMENTS);
 
             // The disk's area is gone from the total, and no piece covers the centre -
             // together that is a hole: the pieces surround the withheld disk rather
             // than one of them merely being notched.
             assertThat(sumAreas(remainder))
                 .isCloseTo(100 * 100 - Math.PI * 20 * 20, computeWithinDiskArea(20));
+
             for (var piece : remainder) {
                 // A line through the centre reports the piece's interior as parameter
                 // spans measured from that centre, so a span with ends of opposite sign
                 // is one covering it. None may: the centre is withheld from every piece.
                 assertThat(PolygonRegions.findLineInteriorSpans(
-                    List.of(piece), new DirectedLine(center[0], center[1], 1, 0)))
+                        List.of(piece),
+                        new DirectedLine(center[0], center[1], 1, 0)))
                     .allSatisfy(span -> assertThat(span[0] * span[1])
                         .as("no piece covers the withheld centre")
                         .isGreaterThanOrEqualTo(0.0));
@@ -223,7 +274,10 @@ final class DisksTest {
             // A disk centred on a corner takes a quarter of itself out of the square;
             // the bite leaves a concave remainder, which is why the result is pieces.
             var remainder = Disks.subtractDisk(
-                bigSquare(100), new double[] {0, 0}, 20, SEGMENTS);
+                buildSquare(100),
+                new double[] {0, 0},
+                20,
+                SEGMENTS);
 
             assertThat(sumAreas(remainder))
                 .isCloseTo(100 * 100 - Math.PI * 20 * 20 / 4, computeWithinDiskArea(20));
@@ -234,17 +288,26 @@ final class DisksTest {
             // The pocket case that must collapse: a wedge wholly inside the keep-out
             // is all pocket, so it drops out entirely rather than leaving slivers.
             var remainder = Disks.subtractDisk(
-                bigSquare(10), new double[] {5, 5}, 100, SEGMENTS);
+                buildSquare(10),
+                new double[] {5, 5},
+                100,
+                SEGMENTS);
 
-            assertThat(remainder).isEmpty();
+            assertThat(remainder)
+                .isEmpty();
         }
 
         @Test
         void the_polygon_comes_back_whole_when_the_disk_misses_it() {
-            var remainder = Disks.subtractDisk(
-                bigSquare(10), new double[] {500, 500}, 20, SEGMENTS);
 
-            assertThat(sumAreas(remainder)).isCloseTo(100.0, within());
+            var remainder = Disks.subtractDisk(
+                buildSquare(10),
+                new double[] {500, 500},
+                20,
+                SEGMENTS);
+
+            assertThat(sumAreas(remainder))
+                .isCloseTo(100.0, within());
         }
 
         @Test
@@ -252,24 +315,35 @@ final class DisksTest {
             // Nothing is withheld by a disk with no interior, so a caller that disables
             // its keep-out by zeroing the radius gets the unclipped polygon back.
             var remainder = Disks.subtractDisk(
-                bigSquare(10), new double[] {5, 5}, 0, SEGMENTS);
+                buildSquare(10),
+                new double[] {5, 5},
+                0,
+                SEGMENTS);
 
-            assertThat(sumAreas(remainder)).isCloseTo(100.0, within());
+            assertThat(sumAreas(remainder))
+                .isCloseTo(100.0, within());
         }
 
         @Test
         void nothing_survives_when_the_polygon_encloses_no_area() {
+
             var remainder = Disks.subtractDisk(
                 List.of(new double[] {0, 0}, new double[] {10, 0}),
-                new double[] {50, 50}, 20, SEGMENTS);
+                new double[] {50, 50},
+                20,
+                SEGMENTS);
 
-            assertThat(remainder).isEmpty();
+            assertThat(remainder)
+                .isEmpty();
         }
 
         @Test
         void a_disk_of_too_few_segments_is_rejected() {
             assertThatThrownBy(() -> Disks.subtractDisk(
-                bigSquare(10), new double[] {5, 5}, 2, 2))
+                    buildSquare(10),
+                    new double[] {5, 5},
+                    2,
+                    2))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("segments");
         }
@@ -280,29 +354,44 @@ final class DisksTest {
             // counter-clockwise like the square it came from - the sign a consumer's
             // fold-guard and fill keep on.
             var remainder = Disks.subtractDisk(
-                bigSquare(100), new double[] {50, 50}, 20, SEGMENTS);
+                buildSquare(100),
+                new double[] {50, 50},
+                20,
+                SEGMENTS);
 
-            assertThat(remainder).isNotEmpty();
+            assertThat(remainder)
+                .isNotEmpty();
+
             for (var piece : remainder) {
-                assertThat(signedArea(piece)).isPositive();
+
+                assertThat(computeSignedArea(piece))
+                    .isPositive();
             }
         }
     }
 
     @Nested
     class SubtractDiskWithLabels {
+
         @Test
         void an_edge_the_clip_left_alone_still_names_what_it_arrived_naming() {
             // A disk biting one corner shortens two of the square's sides and leaves the
             // other two untouched; all four must still name the side they always were,
             // since nothing moved to the far side of any of them.
             var pieces = Disks.subtractDiskWithLabels(
-                buildLabelledSquare(100, SQUARE_SIDE_LABELS), new double[] {0, 0}, 20,
-                SEGMENTS, RIM_LABEL, FAN_CUT_LABEL);
+                buildLabelledSquare(100, SQUARE_SIDE_LABELS),
+                new double[] {0, 0},
+                20,
+                SEGMENTS,
+                RIM_LABEL,
+                FAN_CUT_LABEL);
 
             assertThat(collectEdgeLabels(pieces))
-                .contains(SQUARE_SIDE_LABELS[0], SQUARE_SIDE_LABELS[1],
-                    SQUARE_SIDE_LABELS[2], SQUARE_SIDE_LABELS[3]);
+                .contains(
+                    SQUARE_SIDE_LABELS[0],
+                    SQUARE_SIDE_LABELS[1],
+                    SQUARE_SIDE_LABELS[2],
+                    SQUARE_SIDE_LABELS[3]);
         }
 
         @Test
@@ -313,8 +402,12 @@ final class DisksTest {
             var collidingLabels = new int[] {-1, -2, -1, -2};
 
             var pieces = Disks.subtractDiskWithLabels(
-                buildLabelledSquare(100, collidingLabels), new double[] {0, 0}, 20,
-                SEGMENTS, RIM_LABEL, FAN_CUT_LABEL);
+                buildLabelledSquare(100, collidingLabels),
+                new double[] {0, 0},
+                20,
+                SEGMENTS,
+                RIM_LABEL,
+                FAN_CUT_LABEL);
 
             assertThat(collectEdgeLabels(pieces))
                 .contains(-1, -2)
@@ -329,10 +422,16 @@ final class DisksTest {
             // same straight line. The piece must break at the chord's end and call the
             // two parts what they are.
             var pieces = Disks.subtractDiskWithLabels(
-                buildLabelledSquare(100, SQUARE_SIDE_LABELS), new double[] {50, 50}, 20,
-                SEGMENTS, RIM_LABEL, FAN_CUT_LABEL);
+                buildLabelledSquare(100, SQUARE_SIDE_LABELS),
+                new double[] {50, 50},
+                20,
+                SEGMENTS,
+                RIM_LABEL,
+                FAN_CUT_LABEL);
 
-            assertThat(pieces).anyMatch(piece -> hasCollinearEdgesLabelledApart(piece, RIM_LABEL, FAN_CUT_LABEL));
+            assertThat(pieces)
+                .anyMatch(piece ->
+                    hasCollinearEdgesLabelledApart(piece, RIM_LABEL, FAN_CUT_LABEL));
         }
 
         @Test
@@ -342,11 +441,16 @@ final class DisksTest {
             // total past the disk's circumference, and a rim mistaken for a fan cut would
             // leave part of the hole unbordered.
             var pieces = Disks.subtractDiskWithLabels(
-                buildLabelledSquare(100, SQUARE_SIDE_LABELS), new double[] {50, 50}, 20,
-                SEGMENTS, RIM_LABEL, FAN_CUT_LABEL);
+                buildLabelledSquare(100, SQUARE_SIDE_LABELS),
+                new double[] {50, 50},
+                20,
+                SEGMENTS,
+                RIM_LABEL,
+                FAN_CUT_LABEL);
 
             assertThat(computeLabelledLength(pieces, RIM_LABEL))
-                .isCloseTo(2 * Math.PI * 20,
+                .isCloseTo(
+                    2 * Math.PI * 20,
                     Offset.offset(2 * Math.PI * 20 * AREA_TOLERANCE_FRACTION));
         }
 
@@ -357,11 +461,16 @@ final class DisksTest {
             // subject must not be counted rim for the stretch where there is no subject
             // to border it, which the strictly-inside case cannot catch.
             var pieces = Disks.subtractDiskWithLabels(
-                buildLabelledSquare(100, SQUARE_SIDE_LABELS), new double[] {0, 0}, 20,
-                SEGMENTS, RIM_LABEL, FAN_CUT_LABEL);
+                buildLabelledSquare(100, SQUARE_SIDE_LABELS),
+                new double[] {0, 0},
+                20,
+                SEGMENTS,
+                RIM_LABEL,
+                FAN_CUT_LABEL);
 
             assertThat(computeLabelledLength(pieces, RIM_LABEL))
-                .isCloseTo(2 * Math.PI * 20 / 4,
+                .isCloseTo(
+                    2 * Math.PI * 20 / 4,
                     Offset.offset(2 * Math.PI * 20 * AREA_TOLERANCE_FRACTION));
         }
 
@@ -371,12 +480,20 @@ final class DisksTest {
             // untouched - and the labels it handed in, not the ones the walk uses to talk
             // to itself, since this path never reaches the cuts that translate them.
             var pieces = Disks.subtractDiskWithLabels(
-                buildLabelledSquare(100, SQUARE_SIDE_LABELS), new double[] {50, 50}, 0,
-                SEGMENTS, RIM_LABEL, FAN_CUT_LABEL);
+                buildLabelledSquare(100, SQUARE_SIDE_LABELS),
+                new double[] {50, 50},
+                0,
+                SEGMENTS,
+                RIM_LABEL,
+                FAN_CUT_LABEL);
 
-            assertThat(pieces).hasSize(1);
-            assertThat(pieces.get(0).getEdgeLabels()).containsExactly(SQUARE_SIDE_LABELS);
-            assertThat(signedArea(pieces.get(0).getVertices())).isCloseTo(100.0 * 100, within());
+            assertThat(pieces)
+                .hasSize(1);
+            assertThat(pieces.get(0).getEdgeLabels())
+                .containsExactly(SQUARE_SIDE_LABELS);
+
+            assertThat(computeSignedArea(pieces.get(0).getVertices()))
+                .isCloseTo(100.0 * 100, within());
         }
 
         @Test
@@ -384,10 +501,15 @@ final class DisksTest {
             // Every piece is clipped below area here, so the labels have nothing to ride
             // on: an empty list, not a set of labelled slivers.
             var pieces = Disks.subtractDiskWithLabels(
-                buildLabelledSquare(10, SQUARE_SIDE_LABELS), new double[] {5, 5}, 100,
-                SEGMENTS, RIM_LABEL, FAN_CUT_LABEL);
+                buildLabelledSquare(10, SQUARE_SIDE_LABELS),
+                new double[] {5, 5},
+                100,
+                SEGMENTS,
+                RIM_LABEL,
+                FAN_CUT_LABEL);
 
-            assertThat(pieces).isEmpty();
+            assertThat(pieces)
+                .isEmpty();
         }
 
         @Test
@@ -396,18 +518,28 @@ final class DisksTest {
             // disagree about the shape of the remainder - which is the point of having
             // one walk rather than two.
             var center = new double[] {30, 40};
-
-            var plain = Disks.subtractDisk(bigSquare(100), center, 25, SEGMENTS);
+            var plain = Disks.subtractDisk(buildSquare(100), center, 25, SEGMENTS);
             var labelled = Disks.subtractDiskWithLabels(
-                buildLabelledSquare(100, SQUARE_SIDE_LABELS), center, 25, SEGMENTS,
-                RIM_LABEL, FAN_CUT_LABEL);
+                buildLabelledSquare(100, SQUARE_SIDE_LABELS),
+                center,
+                25,
+                SEGMENTS,
+                RIM_LABEL,
+                FAN_CUT_LABEL);
 
-            assertThat(labelled).hasSameSizeAs(plain);
+            assertThat(labelled)
+                .hasSameSizeAs(plain);
+
             for (var i = 0; i < plain.size(); i++) {
+
                 var labelledVertices = labelled.get(i).getVertices();
                 var plainVertices = plain.get(i);
-                assertThat(labelledVertices).hasSameSizeAs(plainVertices);
+
+                assertThat(labelledVertices)
+                    .hasSameSizeAs(plainVertices);
+
                 for (var vertex = 0; vertex < plainVertices.size(); vertex++) {
+
                     assertThat(labelledVertices.get(vertex))
                         .containsExactly(plainVertices.get(vertex), within());
                 }
@@ -417,19 +549,20 @@ final class DisksTest {
 
     @Nested
     class BothSenses {
+        
         @Test
         void the_two_senses_partition_the_polygon_between_them() {
             // The keep-out and the reach bound are the same disk read opposite ways, so
             // what one keeps is exactly what the other drops: their areas must sum to
             // the whole polygon, with no gap left between the two arcs and no strip
             // handed to both.
-            var square = bigSquare(100);
+            var square = buildSquare(100);
             var center = new double[] {30, 40};
 
             var inside = Disks.intersectWithDisk(square, center, 25, SEGMENTS);
             var outside = Disks.subtractDisk(square, center, 25, SEGMENTS);
 
-            assertThat(signedArea(inside) + sumAreas(outside))
+            assertThat(computeSignedArea(inside) + sumAreas(outside))
                 .isCloseTo(100 * 100, within());
         }
     }

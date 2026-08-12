@@ -6,8 +6,8 @@ import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 import java.util.List;
 
-import static kmlib.math.geometry.GeometryTestSupport.signedArea;
-import static kmlib.math.geometry.GeometryTestSupport.square;
+import static kmlib.math.geometry.GeometryTestSupport.buildReferenceSquare;
+import static kmlib.math.geometry.GeometryTestSupport.computeSignedArea;
 import static kmlib.math.geometry.GeometryTestSupport.within;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -54,7 +54,7 @@ final class PolygonOffsetsTest {
 
         @Test
         void offset_returns_one_segment_per_edge() {
-            assertThat(PolygonOffsets.offsetEdgesInward(square(), 2.0))
+            assertThat(PolygonOffsets.offsetEdgesInward(buildReferenceSquare(), 2.0))
                 .hasSize(4);
         }
 
@@ -62,7 +62,7 @@ final class PolygonOffsetsTest {
         void offset_moves_edges_toward_the_interior() {
             // The first edge (0,0)->(10,0) is the bottom edge; offsetting inward by
             // 2 lifts it from y = 0 to y = 2, spanning the same x extent.
-            var segments = PolygonOffsets.offsetEdgesInward(square(), 2.0);
+            var segments = PolygonOffsets.offsetEdgesInward(buildReferenceSquare(), 2.0);
             var bottom = segments.get(0);
 
             assertThat(bottom.startY())
@@ -106,7 +106,7 @@ final class PolygonOffsetsTest {
             // The side-10 square inset by 2 is the side-6 square (2,2)..(8,8): each
             // corner is where two adjacent offset edges meet, so the shape stays
             // closed with clean corners rather than overshooting segments.
-            var inset = PolygonOffsets.insetConvexPolygon(square(), 2.0);
+            var inset = PolygonOffsets.insetConvexPolygon(buildReferenceSquare(), 2.0);
 
             assertThat(inset)
                 .hasSize(4);
@@ -167,7 +167,7 @@ final class PolygonOffsetsTest {
             // right edge stays at x = 10 while the other three pull in by 2, giving
             // the rectangle (2,2)..(10,8).
             var result = PolygonOffsets.insetSelectedEdges(
-                square(),
+                buildReferenceSquare(),
                 new boolean[] {true, false, true, true},
                 2.0);
 
@@ -187,7 +187,7 @@ final class PolygonOffsetsTest {
         void inset_selected_edges_flags_the_kept_edge_and_truncates_it_within_the_inset() {
 
             var result = PolygonOffsets.insetSelectedEdges(
-                square(),
+                buildReferenceSquare(),
                 new boolean[] {true, false, true, true},
                 2.0);
 
@@ -214,11 +214,11 @@ final class PolygonOffsetsTest {
         void inset_selected_edges_matches_the_whole_polygon_inset_when_every_edge_is_flagged() {
 
             var selective = PolygonOffsets.insetSelectedEdges(
-                square(),
+                buildReferenceSquare(),
                 new boolean[] {true, true, true, true},
                 2.0);
 
-            var whole = PolygonOffsets.insetConvexPolygon(square(), 2.0);
+            var whole = PolygonOffsets.insetConvexPolygon(buildReferenceSquare(), 2.0);
 
             // With every edge flagged, the result is the plain inset - and every
             // output edge is flagged as an inset edge.
@@ -256,7 +256,7 @@ final class PolygonOffsetsTest {
             // It normalises to empty, so a non-empty result is always a real
             // polygon a caller can draw without re-checking its size.
             var result = PolygonOffsets.insetSelectedEdges(
-                square(),
+                buildReferenceSquare(),
                 new boolean[] {true, true, true, true},
                 5.0);
 
@@ -268,7 +268,7 @@ final class PolygonOffsetsTest {
 
         @Test
         void inset_selected_edges_rejects_a_mask_not_parallel_to_the_edges() {
-            assertThatThrownBy(() -> PolygonOffsets.insetSelectedEdges(square(), new boolean[] {true}, 2.0))
+            assertThatThrownBy(() -> PolygonOffsets.insetSelectedEdges(buildReferenceSquare(), new boolean[] {true}, 2.0))
                 .isInstanceOf(IllegalArgumentException.class);
         }
 
@@ -278,11 +278,11 @@ final class PolygonOffsetsTest {
             // form flagging every edge with that scalar: same inset square, same
             // all-inset flags.
             var perEdge = PolygonOffsets.insetSelectedEdges(
-                square(),
+                buildReferenceSquare(),
                 new double[] {2.0, 2.0, 2.0, 2.0});
 
             var booleanScalar = PolygonOffsets.insetSelectedEdges(
-                square(),
+                buildReferenceSquare(),
                 new boolean[] {true, true, true, true},
                 2.0);
 
@@ -301,7 +301,7 @@ final class PolygonOffsetsTest {
             // 2), top by 3 (y -> 7), left by 1 (x -> 1). The result is the rectangle
             // (1,2)..(10,7), each border at its own inset - not one shared channel.
             var result = PolygonOffsets.insetSelectedEdges(
-                square(),
+                buildReferenceSquare(),
                 new double[] {2.0, 0.0, 3.0, 1.0});
 
             assertThat(result.vertices())
@@ -331,11 +331,11 @@ final class PolygonOffsetsTest {
             // its line and flagged not-inset. {2,0,2,2} matches {true,false,true,true}
             // at distance 2 vertex-for-vertex and flag-for-flag.
             var perEdge = PolygonOffsets.insetSelectedEdges(
-                square(),
+                buildReferenceSquare(),
                 new double[] {2.0, 0.0, 2.0, 2.0});
 
             var booleanScalar = PolygonOffsets.insetSelectedEdges(
-                square(),
+                buildReferenceSquare(),
                 new boolean[] {true, false, true, true},
                 2.0);
 
@@ -349,7 +349,7 @@ final class PolygonOffsetsTest {
 
         @Test
         void per_edge_rejects_distances_not_parallel_to_the_edges() {
-            assertThatThrownBy(() -> PolygonOffsets.insetSelectedEdges(square(), new double[] {2.0}))
+            assertThatThrownBy(() -> PolygonOffsets.insetSelectedEdges(buildReferenceSquare(), new double[] {2.0}))
                 .isInstanceOf(IllegalArgumentException.class);
         }
 
@@ -393,7 +393,7 @@ final class PolygonOffsetsTest {
     class RemoveReversedLoops {
         // A bowtie: the square's top two corners are swapped, so the ring crosses itself
         // in the middle and its upper half comes back wound against the lower one.
-        private List<double[]> bowtie() {
+        private List<double[]> buildBowtieRing() {
             return Arrays.asList(
                 new double[] {0, 0},
                 new double[] {10, 0},
@@ -404,7 +404,7 @@ final class PolygonOffsetsTest {
         @Test
         void removal_splices_out_a_loop_wound_against_the_ring() {
 
-            var cleaned = PolygonOffsets.removeReversedLoops(bowtie(), 0);
+            var cleaned = PolygonOffsets.removeReversedLoops(buildBowtieRing(), 0);
 
             // The reversed half collapses to the crossing at (5,5), leaving the triangle
             // that was wound with the ring.
@@ -421,8 +421,8 @@ final class PolygonOffsetsTest {
 
         @Test
         void removal_leaves_a_ring_that_does_not_fold_untouched() {
-            assertThat(PolygonOffsets.removeReversedLoops(square(), 0))
-                .containsExactlyElementsOf(square());
+            assertThat(PolygonOffsets.removeReversedLoops(buildReferenceSquare(), 0))
+                .containsExactlyElementsOf(buildReferenceSquare());
         }
 
         @Test
@@ -432,8 +432,8 @@ final class PolygonOffsetsTest {
             // every fold survives. Pinned because the window is the cheap scan's cost, and
             // a caller who narrows it past this stops cleaning anything rather than
             // cleaning less.
-            assertThat(PolygonOffsets.removeReversedLoops(bowtie(), 1))
-                .containsExactlyElementsOf(bowtie());
+            assertThat(PolygonOffsets.removeReversedLoops(buildBowtieRing(), 1))
+                .containsExactlyElementsOf(buildBowtieRing());
         }
 
         @Test
@@ -453,7 +453,7 @@ final class PolygonOffsetsTest {
         void miter_inset_matches_the_convex_inset_on_a_square() {
             // On a convex shape the miter join and the half-plane clip agree: the
             // side-10 square insets by 2 to the concentric (2,2)..(8,8) square.
-            var inset = PolygonOffsets.insetPolygonByMiter(square(), 2.0, MITER_SPIKE_LIMIT);
+            var inset = PolygonOffsets.insetPolygonByMiter(buildReferenceSquare(), 2.0, MITER_SPIKE_LIMIT);
 
             assertThat(inset)
                 .hasSize(4);
@@ -522,7 +522,7 @@ final class PolygonOffsetsTest {
 
             assertThat(inset)
                 .isNotEmpty();
-            assertThat(signedArea(inset))
+            assertThat(computeSignedArea(inset))
                 .isPositive();
 
             // The only corners are the inset bottom band (y ~ 20) and the top (y ~
@@ -546,7 +546,7 @@ final class PolygonOffsetsTest {
             // Every edge shifted the same distance is the scalar inset: the side-10
             // square insets by 2 to the concentric (2,2)..(8,8) square.
             var uniform = new double[] {2.0, 2.0, 2.0, 2.0};
-            var inset = PolygonOffsets.insetPolygonByMiter(square(), uniform, MITER_SPIKE_LIMIT);
+            var inset = PolygonOffsets.insetPolygonByMiter(buildReferenceSquare(), uniform, MITER_SPIKE_LIMIT);
 
             assertThat(inset)
                 .hasSize(4);
@@ -567,7 +567,7 @@ final class PolygonOffsetsTest {
             // three inset inward by 2: the bottom corners drop below the original
             // y=0 line to y=-2, the outward bulge, and the top stays inset.
             var distances = new double[] {-2.0, 2.0, 2.0, 2.0};
-            var inset = PolygonOffsets.insetPolygonByMiter(square(), distances, MITER_SPIKE_LIMIT);
+            var inset = PolygonOffsets.insetPolygonByMiter(buildReferenceSquare(), distances, MITER_SPIKE_LIMIT);
 
             assertThat(inset)
                 .hasSize(4);
@@ -621,7 +621,7 @@ final class PolygonOffsetsTest {
         @Test
         void per_edge_rejects_distances_not_parallel_to_the_edges() {
             assertThatThrownBy(() -> PolygonOffsets.insetPolygonByMiter(
-                    square(),
+                    buildReferenceSquare(),
                     new double[] {1.0, 1.0},
                     MITER_SPIKE_LIMIT))
                 .isInstanceOf(IllegalArgumentException.class);

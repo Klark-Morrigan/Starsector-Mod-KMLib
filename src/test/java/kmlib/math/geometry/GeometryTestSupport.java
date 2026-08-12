@@ -24,7 +24,7 @@ final class GeometryTestSupport {
 
     // CCW square with side 10, the reference shape for the offset and smoothing
     // tests.
-    static List<double[]> square() {
+    static List<double[]> buildReferenceSquare() {
         return Arrays.asList(
             new double[] {0, 0},
             new double[] {10, 0},
@@ -33,7 +33,7 @@ final class GeometryTestSupport {
     }
 
     // CCW square of the given side, anchored at the origin.
-    static List<double[]> bigSquare(double side) {
+    static List<double[]> buildSquare(double side) {
         return Arrays.asList(
             new double[] {0, 0},
             new double[] {side, 0},
@@ -43,7 +43,7 @@ final class GeometryTestSupport {
 
     // The signed area of a closed ring; positive is counter-clockwise. Delegates to
     // the production shoelace so a test never restates it.
-    static double signedArea(List<double[]> ring) {
+    static double computeSignedArea(List<double[]> ring) {
         return PolygonRegions.computeSignedArea(ring);
     }
 }

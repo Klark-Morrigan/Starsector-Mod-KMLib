@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * the vertices they belong to.
  */
 final class RingsTest {
+
     // A point far enough inside the coincidence tolerance to be the same corner
     // recorded twice, but not bit-identical - the rounding whisker two routines that
     // computed the same corner separately actually differ by.
@@ -30,12 +31,16 @@ final class RingsTest {
 
     @Nested
     class FindSurvivingVertices {
+
         @Test
         void every_vertex_survives_a_ring_with_no_duplicates() {
-            var survivors = Rings.findSurvivingVertices(GeometryTestSupport.square());
 
-            assertThat(survivors.pointIndices()).containsExactly(0, 1, 2, 3);
-            assertThat(survivors.outgoingEdgeIndices()).containsExactly(0, 1, 2, 3);
+            var survivors = Rings.findSurvivingVertices(GeometryTestSupport.buildReferenceSquare());
+
+            assertThat(survivors.pointIndices())
+                .containsExactly(0, 1, 2, 3);
+            assertThat(survivors.outgoingEdgeIndices())
+                .containsExactly(0, 1, 2, 3);
         }
 
         @Test
@@ -53,8 +58,10 @@ final class RingsTest {
 
             var survivors = Rings.findSurvivingVertices(ring);
 
-            assertThat(survivors.pointIndices()).containsExactly(0, 1, 4);
-            assertThat(survivors.outgoingEdgeIndices()).containsExactly(0, 3, 4);
+            assertThat(survivors.pointIndices())
+                .containsExactly(0, 1, 4);
+            assertThat(survivors.outgoingEdgeIndices())
+                .containsExactly(0, 3, 4);
         }
 
         @Test
@@ -70,30 +77,39 @@ final class RingsTest {
 
             var survivors = Rings.findSurvivingVertices(ring);
 
-            assertThat(survivors.pointIndices()).containsExactly(0, 1, 2);
-            assertThat(survivors.outgoingEdgeIndices()).containsExactly(0, 1, 2);
+            assertThat(survivors.pointIndices())
+                .containsExactly(0, 1, 2);
+            assertThat(survivors.outgoingEdgeIndices())
+                .containsExactly(0, 1, 2);
         }
 
         @Test
         void nothing_survives_an_empty_ring() {
+
             var survivors = Rings.findSurvivingVertices(List.of());
 
-            assertThat(survivors.pointIndices()).isEmpty();
-            assertThat(survivors.outgoingEdgeIndices()).isEmpty();
+            assertThat(survivors.pointIndices())
+                .isEmpty();
+            assertThat(survivors.outgoingEdgeIndices())
+                .isEmpty();
         }
     }
 
     @Nested
     class RemoveConsecutiveDuplicates {
+
         @Test
         void a_ring_with_no_duplicates_comes_back_whole() {
-            var cleaned = Rings.removeConsecutiveDuplicates(GeometryTestSupport.square());
 
-            assertThat(cleaned).hasSize(4);
+            var cleaned = Rings.removeConsecutiveDuplicates(GeometryTestSupport.buildReferenceSquare());
+
+            assertThat(cleaned)
+                .hasSize(4);
         }
 
         @Test
         void a_duplicated_corner_is_recorded_once() {
+
             var ring = List.of(
                 new double[] {0, 0},
                 new double[] {10, 0},
@@ -102,12 +118,15 @@ final class RingsTest {
 
             var cleaned = Rings.removeConsecutiveDuplicates(ring);
 
-            assertThat(cleaned).hasSize(3);
-            assertThat(cleaned.get(1)).containsExactly(10, 0);
+            assertThat(cleaned)
+                .hasSize(3);
+            assertThat(cleaned.get(1))
+                .containsExactly(10, 0);
         }
 
         @Test
         void the_repeat_of_the_first_corner_closing_the_ring_drops() {
+
             var ring = List.of(
                 new double[] {0, 0},
                 new double[] {10, 0},
@@ -116,18 +135,23 @@ final class RingsTest {
 
             var cleaned = Rings.removeConsecutiveDuplicates(ring);
 
-            assertThat(cleaned).hasSize(3);
+            assertThat(cleaned)
+                .hasSize(3);
         }
     }
 
     @Nested
     class RemoveConsecutiveDuplicatesWithLabels {
+
         @Test
         void a_ring_with_no_duplicates_keeps_every_label_where_it_was() {
-            var cleaned = Rings.removeConsecutiveDuplicates(LabelledPolygon.fromLabelledEdges(
-                GeometryTestSupport.square(), SQUARE_EDGE_LABELS));
 
-            assertThat(cleaned.getEdgeLabels()).containsExactly(SQUARE_EDGE_LABELS);
+            var cleaned = Rings.removeConsecutiveDuplicates(LabelledPolygon.fromLabelledEdges(
+                GeometryTestSupport.buildReferenceSquare(),
+                SQUARE_EDGE_LABELS));
+
+            assertThat(cleaned.getEdgeLabels())
+                .containsExactly(SQUARE_EDGE_LABELS);
         }
 
         @Test
@@ -146,8 +170,10 @@ final class RingsTest {
 
             var cleaned = Rings.removeConsecutiveDuplicates(ring);
 
-            assertThat(cleaned.getVertices().get(1)).containsExactly(10, 0);
-            assertThat(cleaned.getEdgeLabels()).containsExactly(10, 12, 13);
+            assertThat(cleaned.getVertices().get(1))
+                .containsExactly(10, 0);
+            assertThat(cleaned.getEdgeLabels())
+                .containsExactly(10, 12, 13);
         }
 
         @Test
@@ -165,7 +191,8 @@ final class RingsTest {
 
             var cleaned = Rings.removeConsecutiveDuplicates(ring);
 
-            assertThat(cleaned.getEdgeLabels()).containsExactly(10, 11, 12);
+            assertThat(cleaned.getEdgeLabels())
+                .containsExactly(10, 11, 12);
         }
     }
 }
