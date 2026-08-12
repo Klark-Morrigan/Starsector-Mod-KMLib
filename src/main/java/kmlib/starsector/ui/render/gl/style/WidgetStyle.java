@@ -10,7 +10,8 @@ import kmlib.starsector.ui.widgets.tabs.style.TabStyle;
 /**
  * A neutrally-named look bundle both a {@link PanelRenderer} and the generic {@link ControlRenderer}
  * read: the {@link BoxColours} the box is drawn in, the {@link AccentColours} its controls draw from,
- * the body-control font, the {@link TabStyle} a tabs control draws in, the {@link NotchColours} a
+ * the {@link ControlHoverWash} the pointer lifts one of those controls by, the body-control font, the
+ * {@link TabStyle} a tabs control draws in, the {@link NotchColours} a
  * collapse handle draws in, and the {@link UiSoundScheme} every control on the panel answers by. It
  * bundles the look so a consumer builds it once (typically each frame from its live player colours and
  * settings) rather than threading a dozen loose arguments through the render call. The per-frame values
@@ -31,19 +32,22 @@ import kmlib.starsector.ui.widgets.tabs.style.TabStyle;
  * is the one field here no painter reads, sound being a look with no pixels; it travels with the look so
  * a host has one place to state its presentation rather than one for the seen half and one for the heard.
  *
- * @param boxColours    the backdrop and frame shades the box itself is drawn in
- * @param accentColours the accent steps every control on the panel recedes, washes, labels, and ticks
- *                      with
- * @param bodyFont      the atlas the body-control labels draw in
- * @param tabStyle      the tab look a tabs control draws in; only its colours and face are read here,
- *                      its band height being the layout's side of the same value
- * @param notchColours  the chevron shades a collapse handle draws in, read only when one is drawn
- * @param soundScheme   which interface sound each moment a control on this panel answers makes, read by
- *                      whatever detects those moments rather than by a painter
+ * @param boxColours       the backdrop and frame shades the box itself is drawn in
+ * @param accentColours    the accent steps every control on the panel recedes, washes, labels, and ticks
+ *                         with
+ * @param controlHoverWash the wash a body control's cell takes under the pointer - the lift, not its
+ *                         pace, which every element of the panel shares
+ * @param bodyFont         the atlas the body-control labels draw in
+ * @param tabStyle         the tab look a tabs control draws in; only its colours and face are read here,
+ *                         its band height being the layout's side of the same value
+ * @param notchColours     the chevron shades a collapse handle draws in, read only when one is drawn
+ * @param soundScheme      which interface sound each moment a control on this panel answers makes, read
+ *                         by whatever detects those moments rather than by a painter
  */
 public record WidgetStyle(
     BoxColours boxColours,
     AccentColours accentColours,
+    ControlHoverWash controlHoverWash,
     StarsectorFont bodyFont,
     TabStyle tabStyle,
     NotchColours notchColours,

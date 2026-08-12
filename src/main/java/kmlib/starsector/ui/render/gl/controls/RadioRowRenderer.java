@@ -10,7 +10,8 @@ import kmlib.starsector.ui.widgets.RadioRow;
 import java.util.List;
 
 /**
- * Raw-GL paint for a radio group: washes the selected segment, rules the dividers between segments,
+ * Raw-GL paint for a radio group: washes the segments the pointer has lifted, washes the selected one,
+ * rules the dividers between segments,
  * and frames the whole row, all faded by one opacity. The shared segmented-row chrome (the wash and the
  * seam dividers) is drawn through {@link HorizontalSegmentsRenderer} so a radio row and a tab strip
  * cannot drift on it; only the outer frame is the radio's own. The segment geometry lives on the
@@ -43,6 +44,7 @@ public final class RadioRowRenderer {
      * @param segments      the laid-out segment rects, in row order left to right
      * @param selectedIndex the lit segment's index, or a value outside the row to light none
      * @param colours       the frame stroke and selected-wash palette
+     * @param hoverWashes   the wash each segment takes under the pointer
      * @param opacity       overall alpha, 0..1
      */
     public static void renderHorizontalRow(
@@ -50,8 +52,10 @@ public final class RadioRowRenderer {
             List<Rectangle> segments,
             int selectedIndex,
             RadioColours colours,
+            CellHoverWashSource hoverWashes,
             float opacity) {
 
+        washHoveredSegments(segments, hoverWashes);
         washSelectedSegment(segments, selectedIndex, colours, opacity);
         HorizontalSegmentsRenderer.renderSeamDividers(segments, colours.frame(), opacity);
         strokeOuterFrame(bounds, colours, opacity);
@@ -69,6 +73,7 @@ public final class RadioRowRenderer {
      * @param selectedIndex the lit option's index, or a value outside the list to light none
      * @param columnCount   how many columns the options wrap across (one is a single stack)
      * @param colours       the frame stroke and selected-wash palette
+     * @param hoverWashes   the wash each option takes under the pointer
      * @param opacity       overall alpha, 0..1
      */
     public static void renderVerticalGrid(
@@ -77,9 +82,11 @@ public final class RadioRowRenderer {
             int selectedIndex,
             int columnCount,
             RadioColours colours,
+            CellHoverWashSource hoverWashes,
             float opacity) {
 
         var segments = RadioRow.splitIntoGrid(bounds, optionCount, columnCount);
+        washHoveredSegments(segments, hoverWashes);
         washSelectedSegment(segments, selectedIndex, colours, opacity);
 
         // The tallest column, matching the grid split, so the row rules land on the same boundaries
@@ -110,6 +117,23 @@ public final class RadioRowRenderer {
         }
 
         strokeOuterFrame(bounds, colours, opacity);
+    }
+
+    // Washes every segment the pointer has lifted, under the selected wash and the chrome so a hover
+    // reads as light behind the row rather than as a second mark over it. Walked rather than asked for
+    // one hovered segment, because a row settling after a sweep has the segment just left winding down
+    // while the segment reached is rising - one of them is the pointer's, both of them are lit.
+    //
+    // Each segment's wash carries its own alpha, the panel's opacity already spent in it, so a resting
+    // segment answers a hidden paint the fill skips. That is what keeps this walk free on a row nobody
+    // is pointing at.
+    private static void washHoveredSegments(
+            List<Rectangle> segments,
+            CellHoverWashSource hoverWashes) {
+
+        for (var index = 0; index < segments.size(); index++) {
+            UiFill.renderQuad(segments.get(index), hoverWashes.resolveWashPaintAt(index));
+        }
     }
 
     // Washes the lit segment when the selection falls inside the laid segments; a selectedIndex

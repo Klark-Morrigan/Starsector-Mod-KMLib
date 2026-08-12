@@ -107,6 +107,11 @@ final class TabPanelControllerTest {
     // A slot no placement here lays a control at, for the cases reading a cell the pointer is not on.
     private static final BodyCellSlot SECOND_BODY_SLOT = new BodyCellSlot(1, ControlSpec.SINGLE_CELL);
 
+    // A segment part-way down a strip, its two halves deliberately different numbers: the slots above name
+    // a single-cell control, whose cell is zero, so a reading that crossed the place with the cell would
+    // answer the same fade and every case using them would still pass.
+    private static final BodyCellSlot MID_STRIP_SEGMENT_SLOT = new BodyCellSlot(2, 1);
+
     // A whole duration in one step, so an end state is reached without walking frames, and half of one for
     // the part-way reads.
     private static final float FULL_STEP_SECONDS = 1f;
@@ -184,6 +189,57 @@ final class TabPanelControllerTest {
                     .getTabInteractionSources()
                     .pulseSource()
                     .resolvePulseFractionAt(0))
+                .isCloseTo(0f, within(TOLERANCE));
+        }
+    }
+
+    @Nested
+    class GetBodyHoverSource {
+
+        @Test
+        void getBodyHoverSourceHoversNoCellBeforeAnyFrameHasAdvanced() {
+            // A freshly built panel has been pointed at nothing, so its first painted frame must show a
+            // strip at rest rather than a control already part-way lit.
+            assertThat(new TabPanelController()
+                    .getBodyHoverSource()
+                    .resolveControlHoverSourceAt(MID_STRIP_SEGMENT_SLOT.controlIndex())
+                    .resolveHoverFractionAt(MID_STRIP_SEGMENT_SLOT.cell()))
+                .isCloseTo(0f, within(TOLERANCE));
+        }
+
+        @Test
+        void getBodyHoverSourceAnswersTheFadeHeldForThatSlot() {
+            // The two halves of a slot arrive one at a time - the strip walk binds the control's place and
+            // the widget passes the cell it is painting - so the pair the source puts back together has to
+            // be the pair the fade is keyed by.
+            var controller = new TabPanelController();
+            controller.advanceInputMotionsForFrame(
+                new TabPanelHover(NO_TAB_HOVERED, MID_STRIP_SEGMENT_SLOT, NOTCH_NOT_HOVERED),
+                FULL_STEP_SECONDS,
+                DURATIONS);
+
+            assertThat(controller
+                    .getBodyHoverSource()
+                    .resolveControlHoverSourceAt(MID_STRIP_SEGMENT_SLOT.controlIndex())
+                    .resolveHoverFractionAt(MID_STRIP_SEGMENT_SLOT.cell()))
+                .isCloseTo(1f, within(TOLERANCE));
+        }
+
+        @Test
+        void getBodyHoverSourceLeavesTheTransposedSlotUnlit() {
+            // The guard the two-step seam exists for: a control's place and a cell of it are both ints, so
+            // a binding that crossed them would light a cell of the wrong control - and would pass the case
+            // above, which names a slot whose halves differ.
+            var controller = new TabPanelController();
+            controller.advanceInputMotionsForFrame(
+                new TabPanelHover(NO_TAB_HOVERED, MID_STRIP_SEGMENT_SLOT, NOTCH_NOT_HOVERED),
+                FULL_STEP_SECONDS,
+                DURATIONS);
+
+            assertThat(controller
+                    .getBodyHoverSource()
+                    .resolveControlHoverSourceAt(MID_STRIP_SEGMENT_SLOT.cell())
+                    .resolveHoverFractionAt(MID_STRIP_SEGMENT_SLOT.controlIndex()))
                 .isCloseTo(0f, within(TOLERANCE));
         }
     }

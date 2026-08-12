@@ -4,6 +4,7 @@ import com.fs.starfarer.api.input.InputEventAPI;
 
 import kmlib.animation.PulseEnvelopes;
 import kmlib.animation.TraverseDurations;
+import kmlib.starsector.ui.controls.BodyHoverSource;
 import kmlib.starsector.ui.sound.UiSoundPlayer;
 import kmlib.starsector.ui.sound.UiSoundScheme;
 import kmlib.starsector.ui.sound.VanillaUiSoundPlayer;
@@ -26,7 +27,7 @@ import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
  * carry, a click's pulse and a bound key's blink. A host creates it, reads
  * its {@link #getScrollState()} and {@link #getCollapseFraction()} when it lays the panel out, advances the
  * collapse and the input motions each frame it draws, reads {@link #getTabInteractionSources()}, {@link
- * #getNotchHoverFraction()} and {@link #resolveBodyHoverFractionAt} to paint with, and feeds it pointer
+ * #getNotchHoverFraction()} and {@link #getBodyHoverSource()} to paint with, and feeds it pointer
  * events. That state lives here beside the
  * scroll offset because all of it is the panel's own transient per-session UI state, not the host's; a
  * consumer that lays out a placement and pumps this controller inherits the collapse handle and the live
@@ -209,6 +210,23 @@ public final class TabPanelController {
      */
     public float resolveBodyHoverFractionAt(BodyCellSlot slot) {
         return bodyHoverFades.resolveHoverFractionAt(slot);
+    }
+
+    /**
+     * What the body's controls are currently showing, for the render pass to lift them by: asked for a
+     * control's place in the drawn strip, it answers that control's own cells. The strip walk binds the
+     * position and the widget below passes only the cell it is painting, so the two halves of a slot are
+     * never both loose in one call - a crossed pair would light a cell of the wrong control, which is a
+     * flicker nobody can reproduce rather than a failure anything reports.
+     *
+     * <p>The seam the paint pass takes, over the point read above: a control is drawn cell by cell, so what
+     * it needs is something to ask, not a fraction fetched per cell by a caller that would have to spell the
+     * slot out itself.
+     *
+     * @return the panel's live body hover channel
+     */
+    public BodyHoverSource getBodyHoverSource() {
+        return controlIndex -> cell -> resolveBodyHoverFractionAt(new BodyCellSlot(controlIndex, cell));
     }
 
     /**

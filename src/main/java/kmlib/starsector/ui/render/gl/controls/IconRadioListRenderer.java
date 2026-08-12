@@ -46,6 +46,7 @@ public final class IconRadioListRenderer {
      * @param selectedIndex    the lit option's index, or a value outside the list to light none
      * @param columnCount      how many columns the options wrap across (one is a single stack)
      * @param colours          the frame stroke and selected-wash palette
+     * @param hoverWashes      the wash each option takes under the pointer
      * @param opacity          overall alpha, 0..1
      */
     public static void render(
@@ -54,15 +55,21 @@ public final class IconRadioListRenderer {
             int selectedIndex,
             int columnCount,
             RadioColours colours,
+            CellHoverWashSource hoverWashes,
             float opacity) {
 
         var optionCount = leadingRowSlots.size();
+
+        // Straight through to the grid, hover included: an icon list is a vertical radio with a leading
+        // image column, so what the pointer lights is the radio's own cell and not a second thing this
+        // widget would have to place.
         RadioRowRenderer.renderVerticalGrid(
             bounds,
             optionCount,
             selectedIndex,
             columnCount,
             colours,
+            hoverWashes,
             opacity);
 
         var segments = RadioRow.splitIntoGrid(

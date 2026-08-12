@@ -1,6 +1,8 @@
 package kmlib.starsector.ui.render.gl.panel;
 
+import kmlib.starsector.ui.controls.BodyHoverSource;
 import kmlib.starsector.ui.controls.Control;
+import kmlib.starsector.ui.controls.ControlHoverSource;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.render.gl.GlStateGuard;
 import kmlib.starsector.ui.render.gl.UiElementPaint;
@@ -32,10 +34,9 @@ public final class PanelRenderer {
     }
 
     /**
-     * Draws the panel: the bordered frame, the body controls, and the scrollbar when the body is capped,
-     * all faded by {@code opacity}. Must run with a current GL context. The {@code border} names which
-     * frame edges to stroke, so a panel flush against another's edge can drop the border there; the body
-     * controls and scrollbar are unaffected.
+     * Draws the panel with nothing hovered in its body - {@link #render(PanelPlacement, WidgetStyle,
+     * BoxBorder, BodyHoverSource, float)} with every control painting the settled look its spec names.
+     * What a consumer drawing a panel without an animator behind it takes.
      *
      * @param placement the laid-out panel to draw
      * @param style     how the panel looks (fill, frame colour, accents, fonts)
@@ -47,6 +48,30 @@ public final class PanelRenderer {
             WidgetStyle style,
             BoxBorder border,
             float opacity) {
+
+        render(placement, style, border, BodyHoverSource.createRestingHoverSource(), opacity);
+    }
+
+    /**
+     * Draws the panel: the bordered frame, the body controls at whatever point of their hover fades they
+     * stand, and the scrollbar when the body is capped, all faded by {@code opacity}. Must run with a
+     * current GL context. The {@code border} names which frame edges to stroke, so a panel flush against
+     * another's edge can drop the border there; the body controls and scrollbar are unaffected.
+     *
+     * @param placement  the laid-out panel to draw
+     * @param style      how the panel looks (fill, frame colour, accents, fonts)
+     * @param border     the outer border width and which edges to stroke; a zero width draws no border
+     * @param bodyHovers how far onto its hovered look each cell of each body control stands, resolved by
+     *                   whoever owns the panel's live state, since this pass reads no cursor and holds no
+     *                   timing
+     * @param opacity    overall alpha, 0..1, fading the whole panel
+     */
+    public static void render(
+            PanelPlacement placement,
+            WidgetStyle style,
+            BoxBorder border,
+            BodyHoverSource bodyHovers,
+            float opacity) {
         // Belt-and-suspenders around the raw GL: the map chrome and tooltips draw after a UI-overlay
         // pass, so any state the panel touches must be restored. The whole draw shares this one save.
         GlStateGuard.bracket(() -> {
@@ -57,19 +82,32 @@ public final class PanelRenderer {
                 border,
                 new UiElementPaint(style.boxColours().fill(), opacity),
                 new UiElementPaint(style.boxColours().border(), opacity));
-            drawBodyControls(placement, style, opacity);
+            drawBodyControls(placement, style, bodyHovers, opacity);
         });
     }
 
-    // Draws each body control in the lit state its spec carries, then - when the body is capped - the
-    // scrollbar for its scrolling control. The one control marked as the scroll region draws clipped to
-    // its viewport; every other control draws unclipped in its pinned place.
+    // Draws each body control in the lit state its spec carries and at whatever point of its hover fades
+    // its cells stand, then - when the body is capped - the scrollbar for its scrolling control. The one
+    // control marked as the scroll region draws clipped to its viewport; every other control draws
+    // unclipped in its pinned place.
+    //
+    // Walked by index rather than over the list because the index is half of what a fade is held against:
+    // a hover belongs to the place in the strip, so the walk that draws a control is what binds its
+    // position and hands the widget below only the cell it is painting. It is the same numbering the hit
+    // resolver walks, which is what makes the control that lights the control a press would land on.
     private static void drawBodyControls(
             PanelPlacement placement,
             WidgetStyle style,
+            BodyHoverSource bodyHovers,
             float opacity) {
 
-        for (var control : placement.bodyControls()) {
+        var bodyControls = placement.bodyControls();
+
+        for (var controlIndex = 0; controlIndex < bodyControls.size(); controlIndex++) {
+
+            var control = bodyControls.get(controlIndex);
+            var hovers = bodyHovers.resolveControlHoverSourceAt(controlIndex);
+
             if (control.spec() instanceof ControlSpec.VerticalTable table && table.scrolls()) {
 
                 // The scroll clip replaces any outer clip (a raw GL scissor is absolute), so it is
@@ -78,9 +116,9 @@ public final class PanelRenderer {
                 // Uncollapsed the viewport already sits within the box, so the intersection is a no-op.
                 UiScissor.runClippedTo(
                     placement.flexViewport().intersectWith(placement.box()),
-                    () -> drawControl(control, style, opacity));
+                    () -> drawControl(control, style, hovers, opacity));
             } else {
-                drawControl(control, style, opacity);
+                drawControl(control, style, hovers, opacity);
             }
         }
         if (placement.isScrollbarNeeded()) {
@@ -88,8 +126,13 @@ public final class PanelRenderer {
         }
     }
 
-    private static void drawControl(Control control, WidgetStyle style, float opacity) {
-        ControlRenderer.render(control, style, opacity);
+    private static void drawControl(
+            Control control,
+            WidgetStyle style,
+            ControlHoverSource hovers,
+            float opacity) {
+
+        ControlRenderer.render(control, style, opacity, hovers);
     }
 
     // The scrollbar for the capped body: track and thumb come from the placement's scroll region - the

@@ -1,6 +1,7 @@
 package kmlib.starsector.ui.render.gl.controls;
 
 import kmlib.math.geometry.Rectangle;
+import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.render.gl.UiBoxes;
 import kmlib.starsector.ui.render.gl.UiElementPaint;
 import kmlib.starsector.ui.render.gl.UiFill;
@@ -9,8 +10,8 @@ import kmlib.starsector.ui.widgets.BoxBorder;
 import java.awt.Color;
 
 /**
- * A single framed button that reads as on or off: when on it carries a lit wash, always with a
- * border. The consumer owns the on/off state, hit-tests the button through its
+ * A single framed button that reads as on or off: when on it carries a lit wash, under the pointer a
+ * hovered one, always with a border. The consumer owns the on/off state, hit-tests the button through its
  * {@link Rectangle#containsPoint}, and draws the On/Off caption; this owns only the fill and
  * frame, so the button's geometry is just the {@code bounds} it is handed.
  *
@@ -28,13 +29,18 @@ public final class ToggleButton {
     }
 
     /**
-     * Frames {@code bounds} and, when {@code isOn}, washes its interior. Both draws fade by
-     * {@code opacity}.
+     * Frames {@code bounds}, washes its interior when {@code isOn}, and lifts it by however far the
+     * pointer has carried it. Every draw fades by {@code opacity}.
+     *
+     * <p>The hover wash stacks over the lit one rather than replacing it, the two answering different
+     * questions: the lit wash says what the button is set to and the hover says where the pointer is,
+     * so a lit button under the pointer stands above both an unlit one and a lit one left alone.
      *
      * @param bounds      the button's footprint, in UI coordinates
      * @param isOn        whether to draw the lit wash
      * @param frameColour the outline colour
      * @param onColour    the lit-wash colour
+     * @param hoverWashes the wash each cell takes under the pointer; a toggle has the one
      * @param opacity     overall alpha, 0..1
      */
     public static void render(
@@ -42,7 +48,10 @@ public final class ToggleButton {
             boolean isOn,
             Color frameColour,
             Color onColour,
+            CellHoverWashSource hoverWashes,
             float opacity) {
+
+        UiFill.renderQuad(bounds, hoverWashes.resolveWashPaintAt(ControlSpec.SINGLE_CELL));
 
         if (isOn) {
             UiFill.renderQuad(

@@ -1,5 +1,6 @@
 package kmlib.starsector.ui.render.gl.tabs;
 
+import kmlib.starsector.ui.controls.BodyHoverSource;
 import kmlib.starsector.ui.render.gl.GlStateGuard;
 import kmlib.starsector.ui.render.gl.UiScissor;
 import kmlib.starsector.ui.render.gl.controls.ControlRenderer;
@@ -66,6 +67,10 @@ public final class TabPanelRenderer {
      * @param tabInteractions what each header tab is currently showing - how far onto the hovered shade it
      *                        has faded and what pulse it carries - resolved by whoever owns the panel's live
      *                        state, since this pass reads no cursor and holds no timing
+     * @param bodyHovers      the same channel for the body's own controls: how far onto its hovered look
+     *                        each cell of each of them stands, resolved by the same owner against the same
+     *                        placement, so the row and the strip below it light off one reading of the
+     *                        pointer
      * @param notchState      how far the body is collapsed (0 lays out full and unclipped, 1 docks to the
      *                        rail, and it orients the notch's chevron) and how far the handle has lit under
      *                        the pointer, resolved by the same owner for the same reason
@@ -77,6 +82,7 @@ public final class TabPanelRenderer {
             WidgetStyle style,
             BoxBorder border,
             TabInteractionSources tabInteractions,
+            BodyHoverSource bodyHovers,
             NotchState notchState,
             float opacity) {
 
@@ -84,7 +90,7 @@ public final class TabPanelRenderer {
         // the row above is the whole panel. Asked of the placement rather than inferred from the absent
         // handle, so what is skipped here is skipped for the reason it is skipped.
         if (placement.hasBody()) {
-            drawFramedBody(placement, style, border, notchState, opacity);
+            drawFramedBody(placement, style, border, bodyHovers, notchState, opacity);
         }
         drawHeaderBand(placement, style, tabInteractions);
 
@@ -109,12 +115,14 @@ public final class TabPanelRenderer {
             TabPanelPlacement placement,
             WidgetStyle style,
             BoxBorder border,
+            BodyHoverSource bodyHovers,
             NotchState notchState,
             float opacity) {
 
         // Named once and run either way, so the clipped and unclipped paths cannot drift apart in
         // what they draw - only in whether the clip is around it.
-        Runnable drawBody = () -> PanelRenderer.render(placement.body(), style, border, opacity);
+        Runnable drawBody = () ->
+            PanelRenderer.render(placement.body(), style, border, bodyHovers, opacity);
 
         if (notchState.isFolding()) {
             UiScissor.runClippedTo(placement.body().box(), drawBody);
