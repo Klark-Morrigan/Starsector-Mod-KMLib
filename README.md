@@ -154,10 +154,11 @@ src/main/java/kmlib/
                      tabs/ (both tab chromes), panel/ (box, scrollbar,
                      collapse notch), tooltip/
       sound/       - the engine's interface sounds a KM control answers
-                     with, the scheme naming which role each moment
-                     makes - carried in the panel's look, so a control
-                     inherits its sound as it inherits its accent - and
-                     the player port behind them
+                     with, the cue binding one to a volume, and the
+                     scheme naming what each moment sounds like -
+                     carried in the panel's look, so a control inherits
+                     its sound as it inherits its accent - and the
+                     player port behind them
       text/        - substrate-neutral text look: the face, colour,
                      casing, and anchoring a run of text draws with,
                      with each render substrate owning the adapter into

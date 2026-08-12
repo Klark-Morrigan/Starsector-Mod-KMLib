@@ -7,11 +7,10 @@ package kmlib.starsector.ui.sound;
  * cannot. Inverting it is what lets the rules - which moment makes which sound, and which moments make
  * none - be pinned at all.
  *
- * <p>What crosses the seam is a {@link UiSoundCue}: which role sounded and how loudly. The volume travels
- * with the role rather than being left to the engine's per-id balance, because that balance was struck for
- * vanilla's own density of controls and a KM panel puts more hit targets under one sweep of the pointer
- * than any vanilla screen does. It is still not this end's to choose - a cue arrives resolved, from the
- * look that named it - and neither is <em>when</em>, which stays the caller's.
+ * <p>What crosses the seam is a {@link UiSoundCue}: which role sounded and how loudly. Neither is this
+ * end's to choose - a cue arrives already resolved, from the look that named it - and neither is
+ * <em>when</em>, which stays the caller's. Why a volume crosses at all rather than being left to the
+ * engine's per-id balance is in {@link StarsectorUiSound}.
  */
 public interface UiSoundPlayer {
 

@@ -56,6 +56,18 @@ final class UiSoundCueTest {
         }
 
         @Test
+        void constructorAcceptsAVolumeOfNothing() {
+            // The guard stops below zero rather than at it, so a host composing a cue straight from a
+            // slider the player dragged to the bottom gets a silent cue rather than a throw. That it is
+            // legal is not that it is right: silence is a null cue, and a cue at nothing is a sound still
+            // played - which is why the boundary is pinned rather than left to whichever way it was read.
+            var soundCue = new UiSoundCue(StarsectorUiSound.BUTTON_MOUSEOVER, 0f);
+
+            assertThat(soundCue.volume())
+                .isEqualTo(0f);
+        }
+
+        @Test
         void constructorRejectsANegativeVolume() {
             // Below zero the engine has no meaning for the value and simply plays whatever it makes of
             // it, so the fault would be as quiet as a wrong id - caught where the value is written.

@@ -46,7 +46,7 @@ public record UiSoundCue(
     public UiSoundCue {
 
         Objects.requireNonNull(sound, "sound");
-        
+
         if (volume < MINIMUM_VOLUME) {
             throw new IllegalArgumentException("volume must not be negative");
         }
