@@ -427,6 +427,55 @@ public final class PolygonOffsets {
     }
 
     /**
+     * Removes the loops a polygon folds over itself into, keeping only what is wound the
+     * same way as the polygon as a whole - the self-intersection cleanup the miter path
+     * leaves to its caller.
+     *
+     * <p>Offsetting inward past a shape's own local width makes the two sides of a corner
+     * cross, and the run of boundary between the crossings comes back wound against the
+     * rest. {@link #insetPolygonByMiter} produces those rather than preventing them, because
+     * preventing them is a global question and it works corner by corner: it can bevel a
+     * miter that would spike, but it cannot see that two edges nowhere near each other in
+     * the ring have swapped sides. The fold draws as a spur poking out of the shape, and it
+     * survives every local check - the ring still tiles against its neighbours, still
+     * encloses about the right area, and every corner of it is individually sound.
+     *
+     * <p>Offered separately rather than folded into the inset so that callers pinning the
+     * existing behaviour keep it. Splicing a fold out shortens the ring, so this terminates.
+     *
+     * <p>Only crossings within {@code windowVertices} of each other along the ring are
+     * considered. A fold is two sides of ONE corner, so its segments sit close together;
+     * scanning every pair costs quadratically more to find the same folds. A caller who has
+     * offset by more than the shape's own scale, where distant parts of a ring can cross,
+     * should pass a window covering the ring.
+     *
+     * @param polygon        closed polygon vertices as {x, y} pairs
+     * @param windowVertices how far apart along the ring two segments may be and still be
+     *                       compared; non-positive compares every pair
+     * @return the polygon with its reversed loops spliced out; the input when it has fewer
+     *         than three vertices or nothing folds
+     */
+    public static List<double[]> removeReversedLoops(
+            List<double[]> polygon,
+            int windowVertices) {
+
+        if (polygon.size() < Limits.MIN_VERTICES_TO_ENCLOSE_AREA) {
+            return polygon;
+        }
+
+        var cleaned = new ArrayList<>(polygon);
+        var windsPositive = PolygonRegions.computeSignedArea(cleaned) >= 0;
+
+        while (spliceOneReversedLoop(cleaned, windsPositive, windowVertices)) {
+
+            if (cleaned.size() < Limits.MIN_VERTICES_TO_ENCLOSE_AREA) {
+                return polygon;
+            }
+        }
+        return cleaned;
+    }
+
+    /**
      * Offsets every edge of a counter-clockwise convex polygon inward by
      * {@code distance} and returns the offset edges as independent segments.
      *
@@ -474,6 +523,57 @@ public final class PolygonOffsets {
     // bevels, since its miter would spike into the interior; a degenerate
     // (zero-length) edge falls back to the one good offset, or the corner itself when
     // neither edge has a direction.
+    // One splice per call, so the caller's loop stops when a whole pass finds nothing.
+    private static boolean spliceOneReversedLoop(
+            List<double[]> ring,
+            boolean windsPositive,
+            int windowVertices) {
+
+        for (var first = 0; first < ring.size(); first++) {
+
+            var last = windowVertices > 0
+                ? Math.min(first + windowVertices, ring.size() - 1)
+                : ring.size() - 1;
+
+            for (var second = first + 2; second <= last; second++) {
+
+                // The edge from the last vertex back to the first is an edge like any
+                // other, so it is indexed and wrapped rather than left off the end - and
+                // it is adjacent to edge zero, which share a vertex and cannot fold.
+                if (first == 0 && second == ring.size() - 1) {
+                    continue;
+                }
+
+                var crossing = Lines.intersectSegments(
+                    ring.get(first),
+                    ring.get((first + 1) % ring.size()),
+                    ring.get(second),
+                    ring.get((second + 1) % ring.size()));
+
+                if (crossing == null) {
+                    continue;
+                }
+
+                var loop = new ArrayList<double[]>();
+
+                loop.add(crossing);
+                loop.addAll(ring.subList(first + 1, second + 1));
+
+                if (PolygonRegions.computeSignedArea(loop) >= 0 == windsPositive) {
+                    continue;
+                }
+
+                // The fold collapses to the point its two sides met at, which is where a
+                // miter would have put the corner had one been takeable.
+                ring.subList(first + 1, second + 1).clear();
+                ring.add(first + 1, crossing);
+
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static void appendInsetCorner(
             List<double[]> inset,
             double[] previous,

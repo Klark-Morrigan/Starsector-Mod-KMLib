@@ -437,6 +437,36 @@ final class PolygonOffsetsTest {
         }
 
         @Test
+        void removal_leaves_nothing_for_a_second_pass_to_find() {
+            // The method splices one fold per scan and repeats, so "no fold is left" is the
+            // termination condition rather than something the caller checks. Idempotence
+            // pins it without having to hand-build a shape that folds a chosen number of
+            // times - a construction easy to get wrong and hard to read.
+            var once = PolygonOffsets.removeReversedLoops(buildBowtieRing(), 0);
+
+            assertThat(PolygonOffsets.removeReversedLoops(once, 0))
+                .containsExactlyElementsOf(once);
+        }
+
+        @Test
+        void removal_leaves_a_clockwise_ring_clockwise() {
+            // Winding is read from the ring itself rather than assumed counter-clockwise,
+            // so a clockwise input keeps its own sense and only folds against IT are cut.
+            var clockwise = Arrays.asList(
+                new double[] {0, 10},
+                new double[] {10, 10},
+                new double[] {10, 0},
+                new double[] {0, 0});
+
+            var cleaned = PolygonOffsets.removeReversedLoops(clockwise, 0);
+
+            assertThat(computeSignedArea(cleaned))
+                .isLessThan(0.0);
+            assertThat(cleaned)
+                .containsExactlyElementsOf(clockwise);
+        }
+
+        @Test
         void removal_returns_the_input_below_three_vertices() {
 
             var line = Arrays.asList(new double[] {0, 0}, new double[] {10, 0});
