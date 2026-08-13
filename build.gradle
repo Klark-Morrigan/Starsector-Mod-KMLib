@@ -128,6 +128,35 @@ def isVanillaForced = findProperty('vanillaOnly') == 'true'
 def isFastRenderingRequired = findProperty('requireFastRendering') == 'true'
 def isFastRenderingInstalled = fastRenderingJarFile.exists() && !isVanillaForced
 
+// Which Fast Rendering the adapter is type-checked against, read out of the jar itself:
+// fr.jar carries com.genir.renderer.Version.getVersion(). The jar is the only source that
+// exists everywhere the build does - a patched install is patched IN PLACE, so there is no
+// mod folder to read a mod_info.json from, and CI has only the transported core jars.
+//
+// Loaded under a bootstrap-parented loader so the class cannot resolve against the build's
+// own classpath, and closed immediately; the method returns a constant and touches nothing
+// else, so nothing stays loaded. Any failure - an older jar without the class, a renamed
+// method - reports 'unknown version'. Which Fast Rendering was bound is a thing to report,
+// never a reason to fail a build that would otherwise compile.
+def readFastRenderingVersion = { File jar ->
+    if (!jar.exists()) {
+        return null
+    }
+    try {
+        def loader = new URLClassLoader([jar.toURI().toURL()] as URL[], (ClassLoader) null)
+        try {
+            return loader.loadClass('com.genir.renderer.Version')
+                    .getMethod('getVersion')
+                    .invoke(null)
+        } finally {
+            loader.close()
+        }
+    } catch (Exception ignored) {
+        return null
+    }
+}
+def fastRenderingVersion = readFastRenderingVersion(fastRenderingJarFile) ?: 'unknown version'
+
 if (isFastRenderingRequired && isVanillaForced) {
     throw new GradleException('-PrequireFastRendering and -PvanillaOnly select opposite '
             + 'bindings; pass one or neither.')
@@ -154,10 +183,32 @@ sourceSets {
 def bridgeStubsSrcDirs = sourceSets.bridgeStubs.java.srcDirs.join(', ')
 def hasBridgeStubSources = !sourceSets.bridgeStubs.java.files.isEmpty()
 
+// Which binding this build carries, reported at configuration time so it prints on EVERY
+// invocation. It used to be logged from compileJava's doFirst, which is silent whenever that
+// task is up-to-date or served from the build cache - so the one build most likely to be
+// read after the fact, an incremental one, was the one that said nothing.
+//
+// Each branch quotes the resolved srcDirs rather than naming a directory in prose: these are
+// claims about what Gradle read, and a hardcoded spelling can disagree with that - which is
+// exactly the failure the guard below exists for.
+if (isFastRenderingInstalled) {
+    logger.lifecycle("Fast Rendering: ${fastRenderingVersion} (bound from ${fastRenderingJarFile})")
+} else if (!fastRenderingJarFile.exists()) {
+    logger.lifecycle('Fast Rendering: none on this install - vanilla binding, compiling against '
+            + "${bridgeStubsSrcDirs} (stub drift is unverified here)")
+} else {
+    // Patched install, vanilla asked for anyway. The version is named as present-but-unbound
+    // so the line cannot be misread as "this compiled against v0.8.3" - which is the whole
+    // point of the leg.
+    logger.lifecycle('Fast Rendering: vanilla binding forced by -PvanillaOnly - the install has '
+            + "${fastRenderingVersion}, not bound. Compiling against ${bridgeStubsSrcDirs}")
+}
+
 tasks.named('compileJava') {
     doFirst {
+        // Nothing to check on the Fast Rendering binding - the jar either exists or the
+        // build already failed above.
         if (isFastRenderingInstalled) {
-            logger.lifecycle("Fast Rendering bridge: compiling against ${fastRenderingJarFile}")
             return
         }
 
@@ -184,18 +235,6 @@ tasks.named('compileJava') {
                     + "directory for a source set named 'bridgeStubs' is src/bridgeStubs/java, "
                     + 'which is the same path as src/bridgestubs on a case-insensitive '
                     + 'filesystem and a different one on Linux.')
-        }
-
-        // Both messages quote the resolved srcDirs rather than naming the directory in
-        // prose. They are claims about what Gradle read, and a hardcoded spelling can
-        // disagree with that - which is precisely the failure the guard above exists for,
-        // where the log said src/bridgestubs/java while the build read src/bridgeStubs.
-        if (isVanillaForced) {
-            logger.lifecycle("Fast Rendering bridge: compiling against ${bridgeStubsSrcDirs} "
-                    + '(vanilla binding, forced by -PvanillaOnly)')
-        } else {
-            logger.lifecycle('Fast Rendering bridge: no fr.jar on this install, compiling against '
-                    + "${bridgeStubsSrcDirs} (stub drift is unverified on this machine)")
         }
     }
 }
