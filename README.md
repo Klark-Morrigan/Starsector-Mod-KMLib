@@ -327,15 +327,19 @@ built on demand, so neither is only ever exercised on the machine that happens t
 select it:
 
 ```
-./gradlew build -PbridgeStubsOnly=true       # compile as an unpatched install would
+./gradlew build -PvanillaOnly=true           # build as an unpatched install would
 ./gradlew build -PrequireFastRendering=true  # fail unless the real fr.jar is bound
 ```
 
+Each flag names the install it stands in for; the bridge stubs are how the
+vanilla one is arranged, which is why the two words are not interchangeable
+here. The CI legs carry the same two names.
+
 Both flags refuse to degrade quietly, in opposite directions.
-`-PrequireFastRendering` fails rather than falling back to the stubs. The stub
-binding - whether forced by `-PbridgeStubsOnly` or reached because the install
-has no `fr.jar` - fails if the stub source set turns up empty, naming the
-directories Gradle actually read. Without that check an absent stub tree
+`-PrequireFastRendering` fails rather than falling back to the stubs. The
+vanilla binding - whether forced by `-PvanillaOnly` or reached because the
+install has no `fr.jar` - fails if the stub source set turns up empty, naming
+the directories Gradle actually read. Without that check an absent stub tree
 produces four `package com.genir.renderer.bridge.* does not exist` errors that
 point at the file importing the stubs rather than at the stubs that went
 missing. The case that motivated it: a source set named `bridgeStubs` reads

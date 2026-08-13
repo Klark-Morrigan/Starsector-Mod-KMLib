@@ -113,21 +113,23 @@ def fsCommonObfJarFile = file("${project.ext.starsectorRoot}/starsector-core/fs.
 // Two properties make each leg buildable on demand rather than only on the machine that happens to
 // select it, which is what lets CI run both:
 //
-// -PbridgeStubsOnly=true forces the fallback, so the leg an unpatched machine takes can be built on
-// a patched one. Without it that leg is only ever exercised where nobody is watching, which is the
-// failure the stubs are meant to prevent rather than cause.
+// -PvanillaOnly=true builds as an unpatched install would - the vanilla binding, which in practice
+// means compiling against the bridge stubs. Named for the install it stands in for rather than for
+// the stubs that do the standing: a caller is choosing which player's game to prove buildable, and
+// the stubs are how that is arranged. Without it the vanilla leg is only ever exercised where
+// nobody is watching, which is the failure the stubs are meant to prevent rather than cause.
 //
 // -PrequireFastRendering=true refuses to fall back, failing instead. A build that means to check
 // the adapter against genir's real bytes has to be able to insist on them: silently compiling stubs
 // would report success for a check that never ran, which is worse than not running it, since the
 // green tells a reader the signatures were verified.
 def fastRenderingJarFile = file("${project.ext.starsectorRoot}/starsector-core/fr.jar")
-def isBridgeStubsForced = findProperty('bridgeStubsOnly') == 'true'
+def isVanillaForced = findProperty('vanillaOnly') == 'true'
 def isFastRenderingRequired = findProperty('requireFastRendering') == 'true'
-def isFastRenderingInstalled = fastRenderingJarFile.exists() && !isBridgeStubsForced
+def isFastRenderingInstalled = fastRenderingJarFile.exists() && !isVanillaForced
 
-if (isFastRenderingRequired && isBridgeStubsForced) {
-    throw new GradleException('-PrequireFastRendering and -PbridgeStubsOnly select opposite '
+if (isFastRenderingRequired && isVanillaForced) {
+    throw new GradleException('-PrequireFastRendering and -PvanillaOnly select opposite '
             + 'bindings; pass one or neither.')
 }
 if (isFastRenderingRequired && !isFastRenderingInstalled) {
@@ -173,8 +175,8 @@ tasks.named('compileJava') {
             // dies as "No signature of method: java.lang.String.positive()". Every other
             // leading-'+' continuation in this file sits inside a method call's
             // parentheses, where a newline cannot end the expression; this one did not.
-            def selected = isBridgeStubsForced
-                    ? '-PbridgeStubsOnly=true selected the stub binding'
+            def selected = isVanillaForced
+                    ? '-PvanillaOnly=true selected the vanilla binding'
                     : ("no Fast Rendering bridge at ${fastRenderingJarFile}, so the build fell "
                             + 'back to the stub binding')
             throw new GradleException("${selected}, but the bridgeStubs source set has no "
@@ -188,9 +190,9 @@ tasks.named('compileJava') {
         // prose. They are claims about what Gradle read, and a hardcoded spelling can
         // disagree with that - which is precisely the failure the guard above exists for,
         // where the log said src/bridgestubs/java while the build read src/bridgeStubs.
-        if (isBridgeStubsForced) {
+        if (isVanillaForced) {
             logger.lifecycle("Fast Rendering bridge: compiling against ${bridgeStubsSrcDirs} "
-                    + '(forced by -PbridgeStubsOnly)')
+                    + '(vanilla binding, forced by -PvanillaOnly)')
         } else {
             logger.lifecycle('Fast Rendering bridge: no fr.jar on this install, compiling against '
                     + "${bridgeStubsSrcDirs} (stub drift is unverified on this machine)")
