@@ -331,6 +331,17 @@ select it:
 ./gradlew build -PrequireFastRendering=true  # fail unless the real fr.jar is bound
 ```
 
+Both flags refuse to degrade quietly, in opposite directions.
+`-PrequireFastRendering` fails rather than falling back to the stubs. The stub
+binding - whether forced by `-PbridgeStubsOnly` or reached because the install
+has no `fr.jar` - fails if the stub source set turns up empty, naming the
+directories Gradle actually read. Without that check an absent stub tree
+produces four `package com.genir.renderer.bridge.* does not exist` errors that
+point at the file importing the stubs rather than at the stubs that went
+missing. The case that motivated it: a source set named `bridgeStubs` reads
+`src/bridgeStubs/java` by convention, which is the same directory as
+`src/bridgestubs` on Windows and a different one on Linux.
+
 CI runs both on every PR (see
 [.github/workflows/ci-gradle.yml](.github/workflows/ci-gradle.yml)), which is why
 `kmlib-runner`'s install must be Fast-Rendering-patched. `-PrequireFastRendering`

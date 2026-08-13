@@ -141,16 +141,48 @@ sourceSets {
     bridgeStubs
 }
 
+// Read here, at configuration time, so the guard below touches no project state while the task
+// runs, and so the failure can quote the directories Gradle ACTUALLY read rather than the ones
+// the lifecycle messages below name.
+def bridgeStubsSrcDirs = sourceSets.bridgeStubs.java.srcDirs.join(', ')
+def hasBridgeStubSources = !sourceSets.bridgeStubs.java.files.isEmpty()
+
 tasks.named('compileJava') {
     doFirst {
         if (isFastRenderingInstalled) {
             logger.lifecycle("Fast Rendering bridge: compiling against ${fastRenderingJarFile}")
-        } else if (isBridgeStubsForced) {
-            logger.lifecycle('Fast Rendering bridge: compiling against src/bridgestubs/java '
+            return
+        }
+
+        // Both remaining bindings compile against the stubs, so an empty stub source set is not
+        // a degraded build - it is a broken one. sourceSets.bridgeStubs.output lands on
+        // compileJava's classpath as an empty directory, and every com.genir.renderer.bridge.*
+        // import then fails naming the file that imports the stubs rather than the stubs that
+        // went missing. Guarded for the same reason -PrequireFastRendering refuses to fall back:
+        // a binding that is silently absent has to say so itself, or the reader debugs the
+        // wrong file.
+        if (!hasBridgeStubSources) {
+            def selected = isBridgeStubsForced
+                    ? '-PbridgeStubsOnly=true selected the stub binding'
+                    : "no Fast Rendering bridge at ${fastRenderingJarFile}, so the build fell "
+                            + 'back to the stub binding'
+            throw new GradleException("${selected}, but the bridgeStubs source set has no "
+                    + "sources. Gradle read ${bridgeStubsSrcDirs}. Note that the conventional "
+                    + "directory for a source set named 'bridgeStubs' is src/bridgeStubs/java, "
+                    + 'which is the same path as src/bridgestubs on a case-insensitive '
+                    + 'filesystem and a different one on Linux.')
+        }
+
+        // Both messages quote the resolved srcDirs rather than naming the directory in
+        // prose. They are claims about what Gradle read, and a hardcoded spelling can
+        // disagree with that - which is precisely the failure the guard above exists for,
+        // where the log said src/bridgestubs/java while the build read src/bridgeStubs.
+        if (isBridgeStubsForced) {
+            logger.lifecycle("Fast Rendering bridge: compiling against ${bridgeStubsSrcDirs} "
                     + '(forced by -PbridgeStubsOnly)')
         } else {
             logger.lifecycle('Fast Rendering bridge: no fr.jar on this install, compiling against '
-                    + 'src/bridgestubs/java (stub drift is unverified on this machine)')
+                    + "${bridgeStubsSrcDirs} (stub drift is unverified on this machine)")
         }
     }
 }
