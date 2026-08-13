@@ -33,4 +33,35 @@ public record Segment(double startX, double startY, double endX, double endY) {
             start[1] + fraction * (end[1] - start[1]),
         };
     }
+
+    // How far {@code point} lies from the segment start..end - from the segment itself,
+    // not from the infinite line through it, so a point off past either end measures to
+    // that end rather than to a foot of perpendicular the segment never reaches. That
+    // bound is the whole difference from Lines.computePerpendicularDistance, and it is
+    // what "how close is this to that piece of boundary" means: a point beyond the end of
+    // one edge is near whatever edge comes next, not near this one extended. A segment too
+    // short to have a direction measures to the point it sits at.
+    static double computeDistanceToPoint(double[] start, double[] end, double[] point) {
+
+        var spanX = end[0] - start[0];
+        var spanY = end[1] - start[1];
+        var spanLength = Points.computeVectorLength(spanX, spanY);
+
+        // Where the perpendicular from the point lands, as a fraction of the segment,
+        // clamped into it so an overshoot at either end measures to that end instead.
+        var alongSegment = spanLength < Limits.MIN_EDGE_LENGTH
+            ? 0.0
+            : Math.max(0.0, Math.min(1.0,
+                Points.projectPointOnto(
+                    point[0] - start[0],
+                    point[1] - start[1],
+                    spanX,
+                    spanY) / (spanLength * spanLength)));
+
+        return Points.computeDistance(
+            point,
+            new double[] {
+                start[0] + alongSegment * spanX,
+                start[1] + alongSegment * spanY});
+    }
 }
