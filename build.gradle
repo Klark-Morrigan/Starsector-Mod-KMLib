@@ -162,10 +162,16 @@ tasks.named('compileJava') {
         // a binding that is silently absent has to say so itself, or the reader debugs the
         // wrong file.
         if (!hasBridgeStubSources) {
+            // The parentheses around the else-branch are load-bearing. Without them the
+            // ternary is a complete statement at the end of its own line, so the next
+            // line's leading '+' starts a NEW statement - unary plus on a String, which
+            // dies as "No signature of method: java.lang.String.positive()". Every other
+            // leading-'+' continuation in this file sits inside a method call's
+            // parentheses, where a newline cannot end the expression; this one did not.
             def selected = isBridgeStubsForced
                     ? '-PbridgeStubsOnly=true selected the stub binding'
-                    : "no Fast Rendering bridge at ${fastRenderingJarFile}, so the build fell "
-                            + 'back to the stub binding'
+                    : ("no Fast Rendering bridge at ${fastRenderingJarFile}, so the build fell "
+                            + 'back to the stub binding')
             throw new GradleException("${selected}, but the bridgeStubs source set has no "
                     + "sources. Gradle read ${bridgeStubsSrcDirs}. Note that the conventional "
                     + "directory for a source set named 'bridgeStubs' is src/bridgeStubs/java, "
