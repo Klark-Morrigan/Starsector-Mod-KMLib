@@ -161,7 +161,10 @@ def readFastRenderingVersion = { File jar ->
         return null
     }
 }
-def fastRenderingVersion = readFastRenderingVersion(fastRenderingJarFile) ?: 'unknown version'
+def fastRenderingVersion = null
+if (isFastRenderingInstalled) {
+    fastRenderingVersion = readFastRenderingVersion(fastRenderingJarFile) ?: 'unknown version'
+}
 
 if (isFastRenderingRequired && isVanillaForced) {
     throw new GradleException('-PrequireFastRendering and -PvanillaOnly select opposite '
@@ -189,25 +192,18 @@ sourceSets {
 def bridgeStubsSrcDirs = sourceSets.bridgeStubs.java.srcDirs.join(', ')
 def hasBridgeStubSources = !sourceSets.bridgeStubs.java.files.isEmpty()
 
-// Which binding this build carries, reported at configuration time so it prints on EVERY
-// invocation. It used to be logged from compileJava's doFirst, which is silent whenever that
-// task is up-to-date or served from the build cache - so the one build most likely to be
-// read after the fact, an incremental one, was the one that said nothing.
+// Reported at configuration time so it prints on EVERY invocation. It used to be logged from
+// compileJava's doFirst, which is silent whenever that task is up-to-date or served from the
+// build cache - so the build most likely to be read after the fact, an incremental one, was
+// the one that said nothing.
 //
-// Each branch quotes the resolved srcDirs rather than naming a directory in prose: these are
-// claims about what Gradle read, and a hardcoded spelling can disagree with that - which is
-// exactly the failure the guard below exists for.
+// Only when a jar is bound. The vanilla binding has no Fast Rendering to report, and naming
+// the version sitting unused on the machine under a build that asked for vanilla invites the
+// misreading it would exist to prevent. The generic toolchain line (Common-Java's
+// java-conventions.gradle) still prints for both, since Gradle and the JVM are the same
+// question either way.
 if (isFastRenderingInstalled) {
     logger.lifecycle("Fast Rendering: ${fastRenderingVersion} (bound from ${fastRenderingJarFile})")
-} else if (!fastRenderingJarFile.exists()) {
-    logger.lifecycle('Fast Rendering: none on this install - vanilla binding, compiling against '
-            + "${bridgeStubsSrcDirs} (stub drift is unverified here)")
-} else {
-    // Patched install, vanilla asked for anyway. The version is named as present-but-unbound
-    // so the line cannot be misread as "this compiled against v0.8.3" - which is the whole
-    // point of the leg.
-    logger.lifecycle('Fast Rendering: vanilla binding forced by -PvanillaOnly - the install has '
-            + "${fastRenderingVersion}, not bound. Compiling against ${bridgeStubsSrcDirs}")
 }
 
 tasks.named('compileJava') {
