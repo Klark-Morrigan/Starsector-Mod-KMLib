@@ -15,6 +15,7 @@ final class UiSoundSchemeTest {
 
     private static final float LOUD_VOLUME = 0.9f;
     private static final float MIDDLING_VOLUME = 0.6f;
+    private static final float NEGATIVE_VOLUME = -0.5f;
     private static final float QUIET_VOLUME = 0.1f;
 
     @Nested
@@ -38,16 +39,25 @@ final class UiSoundSchemeTest {
         }
 
         @Test
-        void constructorRejectsANegativeArrivalVolume() {
+        void constructorRejectsANegativeArrivalVolumeWhicheverKindNamesIt() {
             // Caught where the look is composed rather than where the cue is built: a scheme is composed
             // once, and a cue is built on the frame the pointer first reaches something - so the same bad
             // number reaches the player as a crash mid-hover if it is left that late.
-            assertThatThrownBy(() -> new UiSoundScheme(
-                    null,
-                    StarsectorUiSound.BUTTON_MOUSEOVER,
-                    LOUD_VOLUME,
-                    MIDDLING_VOLUME,
-                    -0.5f))
+            //
+            // All three positions, not one standing for the rest: the guard is written once per volume, so
+            // a check dropped from one of them is a fault no case about its neighbours can see.
+            assertThatThrownBy(() ->
+                    buildSchemeWithArrivalVolumes(NEGATIVE_VOLUME, MIDDLING_VOLUME, QUIET_VOLUME))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("volume");
+
+            assertThatThrownBy(() ->
+                    buildSchemeWithArrivalVolumes(LOUD_VOLUME, NEGATIVE_VOLUME, QUIET_VOLUME))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("volume");
+                
+            assertThatThrownBy(() ->
+                    buildSchemeWithArrivalVolumes(LOUD_VOLUME, MIDDLING_VOLUME, NEGATIVE_VOLUME))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("volume");
         }
@@ -113,7 +123,7 @@ final class UiSoundSchemeTest {
             // Three distinct volumes rather than the defaults, because a scheme agreeing with the numbers
             // the library ships would pass whether or not the kind was ever read - and the fault worth
             // catching is a kind wired to a neighbour's level, which no default set can show.
-            var soundScheme = buildSchemeWithDistinctVolumes();
+            var soundScheme = buildSchemeWithArrivalVolumes(LOUD_VOLUME, MIDDLING_VOLUME, QUIET_VOLUME);
 
             assertThat(soundScheme.resolvePointerArrivalCueFor(PointerArrivalTarget.PANEL_CHROME))
                 .isEqualTo(new UiSoundCue(StarsectorUiSound.BUTTON_MOUSEOVER, LOUD_VOLUME));
@@ -137,16 +147,21 @@ final class UiSoundSchemeTest {
             assertThat(soundScheme.resolvePointerArrivalCueFor(PointerArrivalTarget.LISTED_ITEM))
                 .isNull();
         }
+    }
 
-        // A look whose three arrival levels are all different, so which kind resolved which can be told
-        // apart at all - the whole subject of these cases.
-        private static UiSoundScheme buildSchemeWithDistinctVolumes() {
-            return new UiSoundScheme(
-                UiSoundCue.createAtFullVolume(StarsectorUiSound.BUTTON_PRESSED),
-                StarsectorUiSound.BUTTON_MOUSEOVER,
-                LOUD_VOLUME,
-                MIDDLING_VOLUME,
-                QUIET_VOLUME);
-        }
+    // A look built from three stated arrival levels, so a case can put a distinct number - or a bad one -
+    // in each position and tell from the answer which position it reached. Shared, the composition being
+    // the same whether the case is about which kind resolves which or about which volumes are refused.
+    private static UiSoundScheme buildSchemeWithArrivalVolumes(
+            float panelChromeArrivalVolume,
+            float singleOptionControlArrivalVolume,
+            float listedItemArrivalVolume) {
+
+        return new UiSoundScheme(
+            UiSoundCue.createAtFullVolume(StarsectorUiSound.BUTTON_PRESSED),
+            StarsectorUiSound.BUTTON_MOUSEOVER,
+            panelChromeArrivalVolume,
+            singleOptionControlArrivalVolume,
+            listedItemArrivalVolume);
     }
 }

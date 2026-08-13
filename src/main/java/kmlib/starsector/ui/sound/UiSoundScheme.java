@@ -21,12 +21,11 @@ package kmlib.starsector.ui.sound;
  * It is also what a host wanting silence states, rather than a cue at zero volume - a sound played at
  * nothing is still a sound played, and reads as wiring that half worked.
  *
- * <p>The arrival is the one moment that answers at more than one level, which is why it is held as a role
- * and a volume per {@link PointerArrivalTarget} rather than as a cue: a panel's chrome, a lone control and
- * one item of a list are all reached the same way and sound alike, but a sweep crosses far more of the
- * third than of the other two. One sample throughout and one level per kind is what keeps that a balance
- * rather than three unrelated sounds - so callers take {@link #resolvePointerArrivalCueFor} and never the
- * role alone, the pair being what a moment is owed.
+ * <p>The arrival is the one moment that answers at more than one level, so it is held as a role and a
+ * volume per {@link PointerArrivalTarget} rather than as a cue. One sample throughout and one level per
+ * kind is what keeps those levels a balance rather than three unrelated sounds; which kinds there are, and
+ * why the axis is kinds rather than widgets, the enum states. Callers take
+ * {@link #resolvePointerArrivalCueFor} and never the role alone, the pair being what a moment is owed.
  *
  * <p>The moments are a control's, for all that the name says only "UI": a press and the pointer arriving
  * are what a thing the player aims at and clicks does, and a scheme naming them describes a row of tabs,

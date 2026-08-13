@@ -41,8 +41,8 @@ import kmlib.starsector.ui.widgets.tabs.style.TabStyle;
  * @param tabStyle         the tab look a tabs control draws in; only its colours and face are read here,
  *                         its band height being the layout's side of the same value
  * @param notchColours     the chevron shades a collapse handle draws in, read only when one is drawn
- * @param soundScheme      which interface sound each moment a control on this panel answers makes, read
- *                         by whatever detects those moments rather than by a painter
+ * @param soundScheme      which interface sound each moment a control on this panel answers makes and how
+ *                         loudly, read by whatever detects those moments rather than by a painter
  */
 public record WidgetStyle(
     BoxColours boxColours,
