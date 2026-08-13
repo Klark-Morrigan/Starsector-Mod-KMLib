@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 import java.util.List;
 
+import static kmlib.math.geometry.GeometryTestSupport.assertThatPointsAre;
 import static kmlib.math.geometry.GeometryTestSupport.buildAssertionSlack;
 import static kmlib.math.geometry.GeometryTestSupport.buildReferenceSquare;
 import static kmlib.math.geometry.GeometryTestSupport.computeSignedArea;
@@ -308,7 +309,7 @@ final class PolygonOffsetsTest {
                 new boolean[] {true, true, true, true},
                 2.0);
 
-            assertVerticesClose(perEdge.vertices(), booleanScalar.vertices());
+            assertThatPointsAre(perEdge.vertices(), booleanScalar.vertices());
 
             assertThat(perEdge.edgeIsInset())
                 .containsExactly(booleanScalar.edgeIsInset());
@@ -361,7 +362,7 @@ final class PolygonOffsetsTest {
                 new boolean[] {true, false, true, true},
                 2.0);
 
-            assertVerticesClose(perEdge.vertices(), booleanScalar.vertices());
+            assertThatPointsAre(perEdge.vertices(), booleanScalar.vertices());
 
             assertThat(perEdge.edgeIsInset())
                 .containsExactly(booleanScalar.edgeIsInset());
@@ -415,20 +416,6 @@ final class PolygonOffsetsTest {
                     && vertex[0] <= 8 + 1e-6
                     && vertex[1] >= 2 - 1e-6
                     && vertex[1] <= 8 + 1e-6);
-        }
-
-        // Asserts two vertex rings match in size and position, so a per-edge result
-        // can be pinned against the boolean form it must reproduce.
-        private static void assertVerticesClose(List<double[]> actual, List<double[]> expected) {
-
-            assertThat(actual)
-                .hasSameSizeAs(expected);
-
-            for (var i = 0; i < expected.size(); i++) {
-
-                assertThat(actual.get(i))
-                    .containsExactly(expected.get(i), buildAssertionSlack());
-            }
         }
 
         // The edges a selective inset left un-inset (kept seams), each as its two

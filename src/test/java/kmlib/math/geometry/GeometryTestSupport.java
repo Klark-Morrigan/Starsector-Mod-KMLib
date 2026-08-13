@@ -5,6 +5,8 @@ import org.assertj.core.data.Offset;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 /**
  * Shared fixtures for the {@code kmlib.math.geometry} tests: the reference shapes,
  * the floating-point tolerance, and the winding check that several suites would
@@ -44,6 +46,23 @@ final class GeometryTestSupport {
             new double[] {side, 0},
             new double[] {side, side},
             new double[] {0, side});
+    }
+
+    // Asserts a list of points matches the expected one in order, size and position, at
+    // the shared slack. The check every suite pinning computed geometry against literal
+    // coordinates makes, held here so the slack it is made at is settled once rather
+    // than once per suite - two suites drifting apart on it would disagree about what
+    // counts as the same point.
+    static void assertThatPointsAre(List<double[]> points, List<double[]> expected) {
+
+        assertThat(points)
+            .hasSameSizeAs(expected);
+
+        for (var i = 0; i < expected.size(); i++) {
+
+            assertThat(points.get(i))
+                .containsExactly(expected.get(i), buildAssertionSlack());
+        }
     }
 
     // The signed area of a closed ring; positive is counter-clockwise. Delegates to

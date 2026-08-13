@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static kmlib.math.geometry.GeometryTestSupport.assertThatPointsAre;
 import static kmlib.math.geometry.GeometryTestSupport.buildAssertionSlack;
 import static kmlib.math.geometry.GeometryTestSupport.buildReferenceSquare;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -244,7 +245,7 @@ final class RingPathTest {
 
         @Test
         void stretch_within_one_edge_is_its_two_ends() {
-            assertThatStretchIs(
+            assertThatPointsAre(
                 traceReferenceSquare().collectPointsBetween(1, 2),
                 List.of(new double[] {6, 8}, new double[] {7, 8}));
         }
@@ -254,7 +255,7 @@ final class RingPathTest {
             // From 1.5 along the top edge to 1.5 down the right-hand one. The corner at 3
             // is where the stretch bends, so it has to survive into the polyline - the
             // straight line between the two ends would cut across it.
-            assertThatStretchIs(
+            assertThatPointsAre(
                 traceReferenceSquare().collectPointsBetween(1.5, 4.5),
                 List.of(
                     new double[] {6.5, 8},
@@ -266,7 +267,7 @@ final class RingPathTest {
         void stretch_ending_on_a_corner_does_not_repeat_it() {
             // The corner is both the last turn and the end point; emitting it twice would
             // leave a zero-length step for whatever gives the stretch girth.
-            assertThatStretchIs(
+            assertThatPointsAre(
                 traceReferenceSquare().collectPointsBetween(1.5, 3),
                 List.of(new double[] {6.5, 8}, new double[] {8, 8}));
         }
@@ -275,14 +276,14 @@ final class RingPathTest {
         void stretch_starting_on_a_corner_walks_forward_from_it() {
             // A start landing exactly on a corner belongs to the edge leaving it, so the
             // walk steps forward down the right-hand edge rather than back along the top.
-            assertThatStretchIs(
+            assertThatPointsAre(
                 traceReferenceSquare().collectPointsBetween(3, 4),
                 List.of(new double[] {8, 8}, new double[] {8, 7}));
         }
 
         @Test
         void stretch_of_no_length_is_the_single_point_it_sits_at() {
-            assertThatStretchIs(
+            assertThatPointsAre(
                 traceReferenceSquare().collectPointsBetween(5, 5),
                 List.of(new double[] {8, 6}));
         }
@@ -291,7 +292,7 @@ final class RingPathTest {
         void stretch_wrapping_past_the_start_carries_on_round() {
             // From 1 before the end to 1 after it. The start point is a listed corner of
             // the path - it split the edge it sits on - so it appears on the way past.
-            assertThatStretchIs(
+            assertThatPointsAre(
                 traceReferenceSquare().collectPointsBetween(23, 25),
                 List.of(
                     new double[] {4, 8},
@@ -304,7 +305,7 @@ final class RingPathTest {
             // The walk only runs forward, and an end behind its start is a caller's
             // arithmetic having gone wrong. Reading it as "almost all the way round" would
             // turn that slip into a nearly complete lap; a point is the safer reading.
-            assertThatStretchIs(
+            assertThatPointsAre(
                 traceReferenceSquare().collectPointsBetween(5, 4),
                 List.of(new double[] {8, 6}));
         }
@@ -314,7 +315,7 @@ final class RingPathTest {
             // Going round twice would only retrace the same geometry, so the walk stops
             // where it began - both ends of the lap kept, since they are the two ends of
             // a polyline rather than a repeated corner.
-            assertThatStretchIs(
+            assertThatPointsAre(
                 traceReferenceSquare().collectPointsBetween(0, 30),
                 List.of(
                     new double[] {5, 8},
@@ -342,14 +343,4 @@ final class RingPathTest {
             SQUARE_CENTRE);
     }
 
-    private static void assertThatStretchIs(List<double[]> stretch, List<double[]> expected) {
-
-        assertThat(stretch)
-            .hasSameSizeAs(expected);
-
-        for (var i = 0; i < expected.size(); i++) {
-            assertThat(stretch.get(i))
-                .containsExactly(expected.get(i), buildAssertionSlack());
-        }
-    }
 }

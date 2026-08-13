@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static kmlib.math.geometry.GeometryTestSupport.assertThatPointsAre;
 import static kmlib.math.geometry.GeometryTestSupport.buildAssertionSlack;
 import static kmlib.math.geometry.GeometryTestSupport.computeSignedArea;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -117,6 +118,33 @@ final class PolylineBandsTest {
         }
 
         @Test
+        void a_turn_the_other_way_bevels_the_outside_of_its_own_turn() {
+            // The mirror of the case above: 10 east then 10 south, so the outside of the
+            // turn is now the left of the band rather than its right. The band has to
+            // read the sides off the turn - a stroker with the sides fixed passes both
+            // the area and the corner assertions above and puts the bevel on the inside
+            // here, cutting the corner out of the band instead of off it.
+            var band = PolylineBands.strokeToTriangles(
+                List.of(
+                    new double[] {0, 0},
+                    new double[] {10, 0},
+                    new double[] {10, -10}),
+                WIDTH,
+                1.0);
+
+            assertThat(computeTotalTriangleArea(band))
+                .isCloseTo(39.5, buildAssertionSlack());
+            assertThat(hasCorner(band, new double[] {9, -1}))
+                .isTrue();
+            assertThat(hasCorner(band, new double[] {10, 1}))
+                .isTrue();
+            assertThat(hasCorner(band, new double[] {11, 0}))
+                .isTrue();
+            assertThat(hasCorner(band, new double[] {11, 1}))
+                .isFalse();
+        }
+
+        @Test
         void inner_rail_pinches_to_the_centreline_where_the_miter_outruns_its_segments() {
             // A one-long segment between two right angles: each miter reaches root-two
             // back along it, and the two of them together reach farther than the segment
@@ -221,14 +249,4 @@ final class PolylineBandsTest {
             .anyMatch(corner -> Points.computeDistance(corner, point) < CORNER_SLACK);
     }
 
-    private static void assertThatPointsAre(List<double[]> points, List<double[]> expected) {
-
-        assertThat(points)
-            .hasSameSizeAs(expected);
-
-        for (var i = 0; i < expected.size(); i++) {
-            assertThat(points.get(i))
-                .containsExactly(expected.get(i), buildAssertionSlack());
-        }
-    }
 }
