@@ -8,6 +8,7 @@ import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlAction;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.LabelledControlSpecs;
+import kmlib.starsector.ui.sound.PointerArrivalVolumes;
 import kmlib.starsector.ui.sound.StarsectorUiSound;
 import kmlib.starsector.ui.sound.UiSoundCue;
 import kmlib.starsector.ui.sound.UiSoundScheme;
@@ -1197,9 +1198,10 @@ final class TabPanelControllerTest {
         private static final UiSoundScheme KIND_DISTINGUISHING_SOUNDS = new UiSoundScheme(
             UiSoundCue.createAtFullVolume(StarsectorUiSound.BUTTON_PRESSED),
             StarsectorUiSound.BUTTON_MOUSEOVER,
-            CHROME_ARRIVAL_VOLUME,
-            BODY_ARRIVAL_VOLUME,
-            BODY_ARRIVAL_VOLUME);
+            new PointerArrivalVolumes(
+                CHROME_ARRIVAL_VOLUME,
+                BODY_ARRIVAL_VOLUME,
+                BODY_ARRIVAL_VOLUME));
 
         // The two roles crossed over, so a moment answered from the controller's own code rather than from
         // the look it was handed records the sound the other moment would have made. The vanilla pair could

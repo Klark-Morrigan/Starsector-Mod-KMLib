@@ -1,5 +1,7 @@
 package kmlib.starsector.ui.sound;
 
+import java.util.Objects;
+
 /**
  * What each moment a control answers sounds like: the press it confirms, and the pointer arriving on it.
  * The middle of this package - {@link StarsectorUiSound} names the roles, {@link UiSoundCue} binds a role
@@ -37,60 +39,38 @@ package kmlib.starsector.ui.sound;
  * that role is left to whatever grows one, on the same rule {@link StarsectorUiSound} follows about not
  * guessing at ids nothing plays.
  *
- * @param pressCue                          what a control makes when a press on it lands, or null to press
- *                                          silently
- * @param pointerArrivalSound               what a control makes as the pointer arrives on it, whatever kind
- *                                          of thing was reached, or null to stay silent under the pointer
- * @param panelChromeArrivalVolume          how loudly an arrival on the panel's own furniture sounds
- * @param singleOptionControlArrivalVolume  how loudly an arrival on a control with one answer to give
- *                                          sounds
- * @param listedItemArrivalVolume           how loudly an arrival on one of many alike sounds
+ * @param pressCue              what a control makes when a press on it lands, or null to press silently
+ * @param pointerArrivalSound   what a control makes as the pointer arrives on it, whatever kind of thing
+ *                              was reached, or null to stay silent under the pointer
+ * @param pointerArrivalVolumes how loudly that arrival sounds at each kind of thing reachable
  */
 public record UiSoundScheme(
     UiSoundCue pressCue,
     StarsectorUiSound pointerArrivalSound,
-    float panelChromeArrivalVolume,
-    float singleOptionControlArrivalVolume,
-    float listedItemArrivalVolume) {
-
-    // The balance a KM panel takes when its host states none: vanilla's own arrival level halved for
-    // anything the player aims at, and halved again for the items a sweep crosses several of on its way
-    // somewhere else. What makes them right is the ratio rather than any one of them - a column of listed
-    // rows answering as loudly as the tab above it is what reads as chatter.
-    private static final float DEFAULT_PANEL_CHROME_ARRIVAL_VOLUME = 0.5f;
-    private static final float DEFAULT_SINGLE_OPTION_CONTROL_ARRIVAL_VOLUME = 0.5f;
-    private static final float DEFAULT_LISTED_ITEM_ARRIVAL_VOLUME = 0.25f;
+    PointerArrivalVolumes pointerArrivalVolumes) {
 
     /**
-     * Rejects a volume the engine has no meaning for at the point the look is composed, rather than leaving
-     * it to the cue built from it - which is built on the frame the moment first sounds, where a throw is a
-     * crash mid-hover instead of a look that refused to compose.
+     * Rejects a look with no levels to answer an arrival at, which is a scheme that cannot resolve the
+     * moment it names a role for. Silence is stated by naming no role rather than by omitting the balance,
+     * so a missing bundle is an omission and never an intent - and one that would otherwise surface on the
+     * frame the pointer first reached something.
      */
     public UiSoundScheme {
 
-        UiSoundCue.requirePlayableVolume(panelChromeArrivalVolume);
-        UiSoundCue.requirePlayableVolume(singleOptionControlArrivalVolume);
-        UiSoundCue.requirePlayableVolume(listedItemArrivalVolume);
+        Objects.requireNonNull(pointerArrivalVolumes, "pointerArrivalVolumes");
     }
 
     /**
      * A scheme naming the two moments and taking the library's own arrival balance - the form a host wants
      * until it has volumes of its own to state, which in practice means until it has a player looking at a
-     * settings screen. Shipping defaults rather than demanding numbers keeps a consuming mod from having to
-     * invent a balance before it has an opinion about one; what it gets by saying nothing is the balance a
-     * KM sidebar was tuned at.
+     * settings screen.
      *
      * @param pressCue            what a control makes when a press on it lands, or null to press silently
      * @param pointerArrivalSound what a control makes as the pointer arrives on it, or null to stay silent
      *                            under the pointer
      */
     public UiSoundScheme(UiSoundCue pressCue, StarsectorUiSound pointerArrivalSound) {
-        this(
-            pressCue,
-            pointerArrivalSound,
-            DEFAULT_PANEL_CHROME_ARRIVAL_VOLUME,
-            DEFAULT_SINGLE_OPTION_CONTROL_ARRIVAL_VOLUME,
-            DEFAULT_LISTED_ITEM_ARRIVAL_VOLUME);
+        this(pressCue, pointerArrivalSound, PointerArrivalVolumes.createDefaultVolumes());
     }
 
     /**
@@ -135,16 +115,6 @@ public record UiSoundScheme(
     public UiSoundCue resolvePointerArrivalCueFor(PointerArrivalTarget arrivalTarget) {
         return pointerArrivalSound == null
             ? null
-            : new UiSoundCue(pointerArrivalSound, resolveArrivalVolumeFor(arrivalTarget));
-    }
-
-    // Which of the three levels a kind answers at. A switch rather than a map, so a kind added to the enum
-    // stops compiling here rather than resolving to a volume nobody chose for it.
-    private float resolveArrivalVolumeFor(PointerArrivalTarget arrivalTarget) {
-        return switch (arrivalTarget) {
-            case PANEL_CHROME -> panelChromeArrivalVolume;
-            case SINGLE_OPTION_CONTROL -> singleOptionControlArrivalVolume;
-            case LISTED_ITEM -> listedItemArrivalVolume;
-        };
+            : new UiSoundCue(pointerArrivalSound, pointerArrivalVolumes.resolveVolumeFor(arrivalTarget));
     }
 }
