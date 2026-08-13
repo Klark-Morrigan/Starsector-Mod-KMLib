@@ -1,7 +1,5 @@
 package kmlib.starsector.ui.input;
 
-import com.fs.starfarer.api.input.InputEventAPI;
-
 import kmlib.animation.TraverseDurations;
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.Control;
@@ -104,9 +102,6 @@ final class TabPanelControllerTest {
     // needs: the reading changes without the pointer having moved at all.
     private static final float ON_TOP_SCROLLING_ROW_Y =
         BODY_BOX.y() + BODY_BOX.height() - SCROLLING_ROW_HEIGHT / 2f;
-
-    // A wheel notch's raw value as the engine reports one turned toward the bottom of a list.
-    private static final int WHEEL_DOWN = -1;
 
     private static final float BORDER_WIDTH = 1f;
 
@@ -357,7 +352,7 @@ final class TabPanelControllerTest {
             // The row is drawn outside the body's box, so without this the surface behind the panel would
             // go on reading a pointer the player has parked on the tabs - and a tab row with no body under
             // it, which is the whole of such a panel, would block nothing at all.
-            var eventMock = buildMouseEventAt(INSIDE_FIRST_TAB_X, ON_TAB_ROW_Y);
+            var eventMock = PointerEventMocks.mockPointerEventAt(INSIDE_FIRST_TAB_X, ON_TAB_ROW_Y);
 
             new TabPanelController().handlePointer(eventMock, buildTwoTabPlacement());
 
@@ -370,7 +365,7 @@ final class TabPanelControllerTest {
         void handlePointerLeavesAnEventOffThePanelAlone() {
             // Off every part of it the panel claims nothing, so the map underneath keeps answering the
             // pointer as it did before the panel was there.
-            var eventMock = buildMouseEventAt(OFF_PANEL_X, OFF_PANEL_Y);
+            var eventMock = PointerEventMocks.mockPointerEventAt(OFF_PANEL_X, OFF_PANEL_Y);
 
             new TabPanelController().handlePointer(eventMock, buildTwoTabPlacement());
 
@@ -383,7 +378,7 @@ final class TabPanelControllerTest {
         void handlePointerLeavesAnEventOverAWipedTabRowAlone() {
             // Mid-fold the drawn band is narrower than the row was laid out; the panel claims only what it
             // still paints, so the screen its tabs have wiped off goes back to whatever is behind.
-            var eventMock = buildMouseEventAt(INSIDE_SECOND_TAB_X, ON_TAB_ROW_Y);
+            var eventMock = PointerEventMocks.mockPointerEventAt(INSIDE_SECOND_TAB_X, ON_TAB_ROW_Y);
 
             new TabPanelController().handlePointer(eventMock, buildPlacementWithDrawnBand(FIRST_TAB));
 
@@ -821,7 +816,7 @@ final class TabPanelControllerTest {
             controller.activateTabAtPoint(placement, INSIDE_SECOND_TAB_X, ON_TAB_ROW_Y);
             advanceAWholeTraverse(controller);
 
-            controller.handlePointer(buildLeftReleaseAt(OFF_PANEL_X, OFF_PANEL_Y), placement);
+            controller.handlePointer(PointerEventMocks.mockLeftReleaseAt(OFF_PANEL_X, OFF_PANEL_Y), placement);
 
             // Two frames, because the release only lets go: the frame after it turns the lift at the peak
             // and the frame after that runs it down. The turn stays in the advance rather than moving into
@@ -846,7 +841,7 @@ final class TabPanelControllerTest {
             
             advanceAWholeTraverse(controller);
 
-            controller.handlePointer(buildLeftReleaseAt(INSIDE_FIRST_TAB_X, ON_TAB_ROW_Y), placement);
+            controller.handlePointer(PointerEventMocks.mockLeftReleaseAt(INSIDE_FIRST_TAB_X, ON_TAB_ROW_Y), placement);
 
             advanceAWholeTraverse(controller);
             advanceAWholeTraverse(controller);
@@ -1273,7 +1268,7 @@ final class TabPanelControllerTest {
                 .as("the button is still down, so nothing has been answered yet")
                 .isEmpty();
 
-            controller.handlePointer(buildLeftReleaseAt(INSIDE_SECOND_TAB_X, ON_TAB_ROW_Y), placement);
+            controller.handlePointer(PointerEventMocks.mockLeftReleaseAt(INSIDE_SECOND_TAB_X, ON_TAB_ROW_Y), placement);
 
             assertThat(soundPlayerFake.getPlayedSounds())
                 .containsExactly(StarsectorUiSound.BUTTON_PRESSED);
@@ -1287,7 +1282,7 @@ final class TabPanelControllerTest {
             var placement = buildTwoTabPlacementShowing(FIRST_TAB_INDEX, tabIndex -> { });
 
             controller.activateTabAtPoint(placement, INSIDE_FIRST_TAB_X, ON_TAB_ROW_Y);
-            controller.handlePointer(buildLeftReleaseAt(INSIDE_FIRST_TAB_X, ON_TAB_ROW_Y), placement);
+            controller.handlePointer(PointerEventMocks.mockLeftReleaseAt(INSIDE_FIRST_TAB_X, ON_TAB_ROW_Y), placement);
 
             assertThat(soundPlayerFake.getPlayedSounds())
                 .containsExactly(StarsectorUiSound.BUTTON_PRESSED);
@@ -1300,7 +1295,7 @@ final class TabPanelControllerTest {
             var controller = buildVanillaSoundingController();
 
             controller.handlePointer(
-                buildLeftReleaseAt(OFF_PANEL_X, OFF_PANEL_Y),
+                PointerEventMocks.mockLeftReleaseAt(OFF_PANEL_X, OFF_PANEL_Y),
                 buildTwoTabPlacementShowing(FIRST_TAB_INDEX, tabIndex -> { }));
 
             assertThat(soundPlayerFake.getPlayedSounds())
@@ -1530,7 +1525,7 @@ final class TabPanelControllerTest {
             var controller = buildVanillaSoundingController();
 
             controller.handlePointer(
-                buildLeftPressAt(INSIDE_NOTCH_X, INSIDE_NOTCH_Y),
+                PointerEventMocks.mockLeftPressAt(INSIDE_NOTCH_X, INSIDE_NOTCH_Y),
                 buildTwoTabPlacementWithNotch());
 
             assertThat(soundPlayerFake.getPlayedSounds())
@@ -1558,7 +1553,7 @@ final class TabPanelControllerTest {
             var controller = buildControllerSounding(SWAPPED_SCROLL_SOUND);
 
             controller.handlePointer(
-                buildWheelDownAt(INSIDE_FIRST_TAB_X, ON_TOP_SCROLLING_ROW_Y),
+                PointerEventMocks.mockWheelDownAt(INSIDE_FIRST_TAB_X, ON_TOP_SCROLLING_ROW_Y),
                 buildScrollingListPlacement(UNSCROLLED_OFFSET));
 
             assertThat(soundPlayerFake.getPlayedSounds())
@@ -1579,7 +1574,7 @@ final class TabPanelControllerTest {
             soundPlayerFake.clearPlayedCues();
 
             controller.handlePointer(
-                buildWheelDownAt(INSIDE_FIRST_TAB_X, ON_TOP_SCROLLING_ROW_Y),
+                PointerEventMocks.mockWheelDownAt(INSIDE_FIRST_TAB_X, ON_TOP_SCROLLING_ROW_Y),
                 restingPlacement);
 
             advanceWithPointerAt(
@@ -1601,7 +1596,7 @@ final class TabPanelControllerTest {
             var scrolledPlacement = buildScrollingListPlacement(SCROLLED_BY_ONE_ROW_OFFSET);
 
             controller.handlePointer(
-                buildWheelDownAt(INSIDE_FIRST_TAB_X, ON_TOP_SCROLLING_ROW_Y),
+                PointerEventMocks.mockWheelDownAt(INSIDE_FIRST_TAB_X, ON_TOP_SCROLLING_ROW_Y),
                 buildScrollingListPlacement(UNSCROLLED_OFFSET));
 
             advanceWithPointerAt(
@@ -1626,7 +1621,7 @@ final class TabPanelControllerTest {
             var controller = buildVanillaSoundingController();
 
             controller.handlePointer(
-                buildWheelDownAt(INSIDE_FIRST_TAB_X, ON_TOP_SCROLLING_ROW_Y),
+                PointerEventMocks.mockWheelDownAt(INSIDE_FIRST_TAB_X, ON_TOP_SCROLLING_ROW_Y),
                 buildScrollingListPlacement(UNSCROLLED_OFFSET));
 
             controller.resetInputMotions();
@@ -1920,64 +1915,4 @@ final class TabPanelControllerTest {
             List.of(leftSegment, rightSegment));
     }
 
-    // A mouse event at a point, carrying nothing else: the cases here are about what the panel claims, not
-    // about what it does with a press, so nothing is stubbed that would make it act. The point is named in
-    // the coordinates every other case here uses and rounded on the way in - an engine event reports whole
-    // pixels, where the placement it is tested against is laid out in floats.
-    private static InputEventAPI buildMouseEventAt(float pointX, float pointY) {
-
-        var eventMock = Mockito.mock(InputEventAPI.class);
-
-        Mockito
-            .when(eventMock.getX())
-            .thenReturn(Math.round(pointX));
-        Mockito
-            .when(eventMock.getY())
-            .thenReturn(Math.round(pointY));
-
-        return eventMock;
-    }
-
-    // A left-button press at a point, for the one part of the panel that acts on the way down: the collapse
-    // handle, which starts folding under the press rather than waiting for the button to come up.
-    private static InputEventAPI buildLeftPressAt(float pointX, float pointY) {
-
-        var eventMock = buildMouseEventAt(pointX, pointY);
-
-        Mockito
-            .when(eventMock.isLMBDownEvent())
-            .thenReturn(true);
-
-        return eventMock;
-    }
-
-    // A left-button release at a point. The point is carried because the panel is handed one - a release
-    // reports where the button came up - even though what the tabs do with it is deliberately blind to it.
-    private static InputEventAPI buildLeftReleaseAt(float pointX, float pointY) {
-
-        var eventMock = buildMouseEventAt(pointX, pointY);
-
-        Mockito
-            .when(eventMock.isLMBUpEvent())
-            .thenReturn(true);
-
-        return eventMock;
-    }
-
-    // A wheel notch turned toward the bottom of the list, at a point. Only the sign of the raw value is
-    // read, so the magnitude is immaterial; the engine reports a wheel down as negative and the panel
-    // scrolls the list the other way from it.
-    private static InputEventAPI buildWheelDownAt(float pointX, float pointY) {
-
-        var eventMock = buildMouseEventAt(pointX, pointY);
-
-        Mockito
-            .when(eventMock.isMouseScrollEvent())
-            .thenReturn(true);
-        Mockito
-            .when(eventMock.getEventValue())
-            .thenReturn(WHEEL_DOWN);
-
-        return eventMock;
-    }
 }

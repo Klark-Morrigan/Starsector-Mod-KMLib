@@ -1,7 +1,5 @@
 package kmlib.starsector.ui.input;
 
-import com.fs.starfarer.api.input.InputEventAPI;
-
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlAction;
@@ -17,7 +15,6 @@ import kmlib.testfixtures.starsector.ui.sound.UiSoundPlayerFake;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.util.Arrays;
 import java.util.List;
@@ -62,9 +59,19 @@ final class PanelControllerTest {
     // move.
     private static final float NO_SCROLL_OVERFLOW = 0f;
 
-    // A wheel notch turned toward the bottom of the list. Only the sign is read, so the magnitude is
-    // immaterial; the engine reports a wheel down as negative and the panel scrolls the list the other way.
-    private static final int WHEEL_DOWN = -1;
+    // How wide a gutter the guttered body leaves right of its list, so a press there lands in the column a
+    // drag grabs the scrollbar by. Wider than the track, which is what the real grab column is.
+    private static final float SCROLLBAR_GUTTER_WIDTH = 20f;
+
+    // A point over the list itself - inside the box and inside the scroll region, the only place a wheel
+    // reaches the list at all.
+    private static final float ON_LIST_X = ROW.x() + ROW.width() / 2f;
+    private static final float ON_LIST_Y = ROW.y() + ROW.height() / 2f;
+
+    // A point in the guttered body's grab column: right of the list and still inside the box, and low in
+    // the row so a drag mapped from it carries the list toward its end rather than leaving it where it was.
+    private static final float IN_GRAB_COLUMN_X = ROW.x() + ROW.width() - SCROLLBAR_GUTTER_WIDTH / 2f;
+    private static final float IN_GRAB_COLUMN_Y = ROW.y() + 1f;
 
     @Nested
     class ActivateBodyControlIfHit {
@@ -604,7 +611,9 @@ final class PanelControllerTest {
             // what lets the rows it carries past the cursor stay quiet.
             var controller = buildVanillaSoundingController();
 
-            controller.handlePointer(buildWheelEventAtRowCentre(WHEEL_DOWN), buildScrollingPlacement());
+            controller.handlePointer(
+                PointerEventMocks.mockWheelDownAt(ON_LIST_X, ON_LIST_Y),
+                buildScrollingPlacement());
 
             assertThat(soundPlayerFake.getPlayedSounds())
                 .containsExactly(StarsectorUiSound.LIST_SCROLLED);
@@ -618,11 +627,11 @@ final class PanelControllerTest {
             var controller = buildVanillaSoundingController();
             var placement = buildScrollingPlacement();
 
-            controller.handlePointer(buildWheelEventAtRowCentre(WHEEL_DOWN), placement);
-            
+            controller.handlePointer(PointerEventMocks.mockWheelDownAt(ON_LIST_X, ON_LIST_Y), placement);
+
             soundPlayerFake.clearPlayedCues();
 
-            controller.handlePointer(buildWheelEventAtRowCentre(WHEEL_DOWN), placement);
+            controller.handlePointer(PointerEventMocks.mockWheelDownAt(ON_LIST_X, ON_LIST_Y), placement);
 
             assertThat(soundPlayerFake.getPlayedSounds())
                 .isEmpty();
@@ -635,7 +644,9 @@ final class PanelControllerTest {
             // turn the player made over it whether or not it had anything to show for it.
             var controller = buildVanillaSoundingController();
 
-            controller.handlePointer(buildWheelEventAtRowCentre(WHEEL_DOWN), buildUnscrollablePlacement());
+            controller.handlePointer(
+                PointerEventMocks.mockWheelDownAt(ON_LIST_X, ON_LIST_Y),
+                buildUnscrollablePlacement());
 
             assertThat(soundPlayerFake.getPlayedSounds())
                 .isEmpty();
@@ -648,10 +659,45 @@ final class PanelControllerTest {
             // not it was ever read.
             var controller = buildControllerSounding(SWAPPED_SOUNDS);
 
-            controller.handlePointer(buildWheelEventAtRowCentre(WHEEL_DOWN), buildScrollingPlacement());
+            controller.handlePointer(
+                PointerEventMocks.mockWheelDownAt(ON_LIST_X, ON_LIST_Y),
+                buildScrollingPlacement());
 
             assertThat(soundPlayerFake.getPlayedSounds())
                 .containsExactly(StarsectorUiSound.BUTTON_PRESSED);
+        }
+
+        @Test
+        void handlePointerStaysSilentForAWheelOffTheScrollRegion() {
+            // The wheel reaches the list only over the list. Off it - over a control pinned above or below
+            // the scrolling strip, or over the scrollbar gutter - the panel still swallows the event so the
+            // surface behind does not pan, and swallowing has nothing to answer for.
+            var controller = buildVanillaSoundingController();
+
+            controller.handlePointer(
+                PointerEventMocks.mockWheelDownAt(IN_GRAB_COLUMN_X, IN_GRAB_COLUMN_Y),
+                buildGutteredPlacement());
+
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .isEmpty();
+        }
+
+        @Test
+        void handlePointerStaysSilentForAScrollbarDragThatMovedTheList() {
+            // A drag is one held act carrying the list continuously, with the pointer off on the scrollbar
+            // rather than on the rows. Sounded per frame it would be exactly the chatter the wheel's single
+            // sound exists to avoid, so the moment belongs to the wheel alone.
+            var controller = buildVanillaSoundingController();
+
+            controller.handlePointer(
+                PointerEventMocks.mockLeftPressAt(IN_GRAB_COLUMN_X, IN_GRAB_COLUMN_Y),
+                buildGutteredPlacement());
+
+            assertThat(controller.getScrollState().getOffset())
+                .as("the drag has to have moved the list for the silence to mean anything")
+                .isEqualTo(SHORT_SCROLL_OVERFLOW);
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .isEmpty();
         }
 
         @Test
@@ -661,44 +707,13 @@ final class PanelControllerTest {
             // notch would change a number and read as a list that moved.
             var controller = buildVanillaSoundingController();
 
-            controller.handlePointer(buildWheelEventAtRowCentre(WHEEL_DOWN), buildScrollingPlacement());
+            controller.handlePointer(
+                PointerEventMocks.mockWheelDownAt(ON_LIST_X, ON_LIST_Y),
+                buildScrollingPlacement());
 
             assertThat(controller.getScrollState().getOffset())
                 .as("one notch is longer than this list's overflow")
                 .isEqualTo(SHORT_SCROLL_OVERFLOW);
-        }
-
-        // A panel whose body has somewhere to scroll: its viewport is the row and its content overruns it by
-        // less than a wheel notch, so one notch takes the list to its end and the next has nowhere to go.
-        private static PanelPlacement buildScrollingPlacement() {
-            return new PanelPlacement(ROW, ROW, List.of(), ROW, 0f, SHORT_SCROLL_OVERFLOW);
-        }
-
-        // The same panel whose content fits, so there is no scrollbar and the wheel moves nothing.
-        private static PanelPlacement buildUnscrollablePlacement() {
-            return new PanelPlacement(ROW, ROW, List.of(), ROW, 0f, NO_SCROLL_OVERFLOW);
-        }
-
-        // A wheel event over the middle of the body, which is inside both the panel's box and its scroll
-        // region - the only place a wheel reaches the list at all.
-        private static InputEventAPI buildWheelEventAtRowCentre(int wheelValue) {
-
-            var eventMock = Mockito.mock(InputEventAPI.class);
-
-            Mockito
-                .when(eventMock.getX())
-                .thenReturn(Math.round(ROW.x() + ROW.width() / 2f));
-            Mockito
-                .when(eventMock.getY())
-                .thenReturn(Math.round(ROW.y() + ROW.height() / 2f));
-            Mockito
-                .when(eventMock.isMouseScrollEvent())
-                .thenReturn(true);
-            Mockito
-                .when(eventMock.getEventValue())
-                .thenReturn(wheelValue);
-
-            return eventMock;
         }
 
         // A controller recording into this case's fake and answering by the engine's own scheme - the look
@@ -711,6 +726,102 @@ final class PanelControllerTest {
         private PanelController buildControllerSounding(UiSoundScheme soundScheme) {
             return new PanelController(soundPlayerFake, soundScheme);
         }
+    }
+
+    @Nested
+    class TakeHasListScrolledSinceLastFrame {
+
+        private final PanelController controller = new PanelController();
+
+        @Test
+        void takeHasListScrolledSinceLastFrameReportsAWheelThatMovedTheList() {
+            // What a per-frame pass reads to tell rows carried under a still pointer from a pointer moving
+            // over rows. Pinned here rather than only through a panel that acts on it, since the fault it
+            // guards against - an arrival announced for a row nobody reached - shows nowhere else.
+            controller.handlePointer(
+                PointerEventMocks.mockWheelDownAt(ON_LIST_X, ON_LIST_Y),
+                buildScrollingPlacement());
+
+            assertThat(controller.takeHasListScrolledSinceLastFrame())
+                .isTrue();
+        }
+
+        @Test
+        void takeHasListScrolledSinceLastFrameReportsAScrollbarDragThatMovedTheList() {
+            // The drag reports through the same latch as the wheel, silent though it is: what the latch
+            // answers is that content moved and not what moved it, and rows carried past a cursor parked
+            // off on the scrollbar were reached by nobody either way.
+            controller.handlePointer(
+                PointerEventMocks.mockLeftPressAt(IN_GRAB_COLUMN_X, IN_GRAB_COLUMN_Y),
+                buildGutteredPlacement());
+
+            assertThat(controller.takeHasListScrolledSinceLastFrame())
+                .isTrue();
+        }
+
+        @Test
+        void takeHasListScrolledSinceLastFrameReportsNothingForAWheelAgainstTheEndOfTheList() {
+            // A list already against its stop shows the same rows afterwards, so nothing was carried under
+            // the pointer and the frame after it is an ordinary frame.
+            var placement = buildScrollingPlacement();
+
+            controller.handlePointer(PointerEventMocks.mockWheelDownAt(ON_LIST_X, ON_LIST_Y), placement);
+            controller.takeHasListScrolledSinceLastFrame();
+            controller.handlePointer(PointerEventMocks.mockWheelDownAt(ON_LIST_X, ON_LIST_Y), placement);
+
+            assertThat(controller.takeHasListScrolledSinceLastFrame())
+                .isFalse();
+        }
+
+        @Test
+        void takeHasListScrolledSinceLastFrameIsClearedByTheReading() {
+            // One movement is answered by the first frame after it and by that frame alone. Left standing,
+            // every later frame would adopt whatever is under the cursor and the panel would go permanently
+            // deaf to the pointer arriving on anything in its body.
+            controller.handlePointer(
+                PointerEventMocks.mockWheelDownAt(ON_LIST_X, ON_LIST_Y),
+                buildScrollingPlacement());
+
+            controller.takeHasListScrolledSinceLastFrame();
+
+            assertThat(controller.takeHasListScrolledSinceLastFrame())
+                .isFalse();
+        }
+
+        @Test
+        void takeHasListScrolledSinceLastFrameReportsNothingOnceTheMovementWasReset() {
+            // A movement no frame ever read is a movement the next session must not answer to: the panel
+            // stopped showing between the scroll and the frame that would have adopted on it, and the
+            // player has been somewhere else since.
+            controller.handlePointer(
+                PointerEventMocks.mockWheelDownAt(ON_LIST_X, ON_LIST_Y),
+                buildScrollingPlacement());
+                
+            controller.resetListScrolled();
+
+            assertThat(controller.takeHasListScrolledSinceLastFrame())
+                .isFalse();
+        }
+    }
+
+    // A panel whose body has somewhere to scroll: its viewport is the row and its content overruns it by
+    // less than a wheel notch, so one notch takes the list to its end and the next has nowhere to go.
+    private static PanelPlacement buildScrollingPlacement() {
+        return new PanelPlacement(ROW, ROW, List.of(), ROW, 0f, SHORT_SCROLL_OVERFLOW);
+    }
+
+    // The same panel whose content fits, so there is no scrollbar and the wheel moves nothing.
+    private static PanelPlacement buildUnscrollablePlacement() {
+        return new PanelPlacement(ROW, ROW, List.of(), ROW, 0f, NO_SCROLL_OVERFLOW);
+    }
+
+    // The same scrolling panel with its list narrowed off the box's right edge, leaving the gutter a drag
+    // grabs the scrollbar by. Every other case here lays the viewport across the whole box, which leaves no
+    // gutter at all - so the drag and the off-the-list wheel need a body shaped like the real one.
+    private static PanelPlacement buildGutteredPlacement() {
+
+        var list = new Rectangle(ROW.x(), ROW.y(), ROW.width() - SCROLLBAR_GUTTER_WIDTH, ROW.height());
+        return new PanelPlacement(ROW, ROW, List.of(), list, 0f, SHORT_SCROLL_OVERFLOW);
     }
 
     // A panel whose body holds the given controls and whose flex viewport covers everything, so the walk
