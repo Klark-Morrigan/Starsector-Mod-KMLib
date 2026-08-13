@@ -12,6 +12,7 @@ import static kmlib.math.geometry.GeometryTestSupport.buildAssertionSlack;
 import static kmlib.math.geometry.GeometryTestSupport.buildSquare;
 import static kmlib.math.geometry.GeometryTestSupport.computeSignedArea;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Pins the contract of {@link PolygonRegions#computeSignedArea}: a counter-clockwise
@@ -24,6 +25,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * inside and one beyond it outside regardless of winding, a concave ring's notch reads
  * as outside while its arms read as inside, and a ring too short to enclose area holds
  * no point.
+ *
+ * <p>And of {@link PolygonRegions#computeDistanceToBoundary}: a point inside measures to
+ * its nearest edge, a point outside measures the same unsigned way, a point past the end
+ * of every edge measures to the corner rather than to an edge's extended line, a point on
+ * the boundary is zero, and a ring with no vertices has no boundary to measure to.
  *
  * <p>And of {@link PolygonRegions#groupRingsIntoRegions}: an outer ring alone is a region
  * with nothing cut out of it, two disjoint bodies each keep their own hole, a hole goes to
@@ -159,6 +165,56 @@ final class PolygonRegionsTest {
 
             assertThat(PolygonRegions.isPointInsideRing(segment, 5, 0))
                 .isFalse();
+        }
+    }
+
+    @Nested
+    class ComputeDistanceToBoundary {
+
+        @Test
+        void distance_to_boundary_is_to_the_nearest_edge_for_a_point_inside() {
+            // (3,5) in the side-10 square is 3 from the left edge and 5, 7 and 7 from the
+            // others - the nearest is the answer, not the first edge walked.
+            assertThat(PolygonRegions.computeDistanceToBoundary(
+                    buildSquare(10),
+                    new double[] {3, 5}))
+                .isCloseTo(3.0, buildAssertionSlack());
+        }
+
+        @Test
+        void distance_to_boundary_measures_the_same_way_for_a_point_outside() {
+            // Unsigned: the measure says how far off the boundary a point is, leaving
+            // which side it is on to isPointInsideRing.
+            assertThat(PolygonRegions.computeDistanceToBoundary(
+                    buildSquare(10),
+                    new double[] {-4, 5}))
+                .isCloseTo(4.0, buildAssertionSlack());
+        }
+
+        @Test
+        void distance_to_boundary_is_to_a_corner_where_no_edge_runs_alongside_the_point() {
+            // (-3,-4) lies past the end of both edges meeting at the origin, so it
+            // measures to that corner. Taking the edges as infinite lines would answer 3.
+            assertThat(PolygonRegions.computeDistanceToBoundary(
+                    buildSquare(10),
+                    new double[] {-3, -4}))
+                .isCloseTo(5.0, buildAssertionSlack());
+        }
+
+        @Test
+        void distance_to_boundary_is_zero_on_the_boundary() {
+            assertThat(PolygonRegions.computeDistanceToBoundary(
+                    buildSquare(10),
+                    new double[] {10, 4}))
+                .isCloseTo(0.0, buildAssertionSlack());
+        }
+
+        @Test
+        void a_ring_with_no_vertices_has_no_boundary_to_measure_to() {
+            assertThatThrownBy(() -> PolygonRegions.computeDistanceToBoundary(
+                    List.of(),
+                    new double[] {0, 0}))
+                .isInstanceOf(IllegalArgumentException.class);
         }
     }
 

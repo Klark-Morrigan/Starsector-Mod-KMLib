@@ -98,6 +98,44 @@ public final class PolygonRegions {
     }
 
     /**
+     * How far a point sits from a ring's boundary - the shortest distance to any of its
+     * edges, whether the point is inside the ring or outside it.
+     *
+     * <p>The measure {@link #isPointInsideRing} deliberately does not give. That one
+     * answers which side of the boundary a point is on, and is arbitrary for a point on
+     * it; this one answers how far from the boundary it is, and is exact there (zero).
+     * Together they say where a point sits; alone, this one settles the questions phrased
+     * as a clearance - whether a point keeps some distance off the boundary, and so
+     * whether a shape offset inward really moved that far in.
+     *
+     * <p>Measured to each edge as a bounded segment, not to the infinite line through it,
+     * so the answer is the distance to the boundary as drawn rather than to a line it
+     * extends along.
+     *
+     * @param ring  closed polygon vertices as {x, y} pairs, in any winding
+     * @param point the {x, y} point to measure from
+     * @return the distance to the nearest point of the ring's boundary
+     * @throws IllegalArgumentException if {@code ring} is empty (there is no boundary to
+     *         measure to)
+     */
+    public static double computeDistanceToBoundary(List<double[]> ring, double[] point) {
+
+        if (ring.isEmpty()) {
+            throw new IllegalArgumentException("Cannot measure a distance to an empty ring");
+        }
+
+        var nearest = Double.POSITIVE_INFINITY;
+        var count = ring.size();
+
+        for (var i = 0; i < count; i++) {
+            nearest = Math.min(
+                nearest,
+                Segment.computeDistanceToPoint(ring.get(i), ring.get((i + 1) % count), point));
+        }
+        return nearest;
+    }
+
+    /**
      * Groups a flat ring soup into the regions it bounds - each outer ring paired with the
      * holes cut out of it.
      *
