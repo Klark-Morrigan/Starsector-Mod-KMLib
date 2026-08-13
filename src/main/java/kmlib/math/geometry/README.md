@@ -12,6 +12,7 @@ Starsector API - the map layers that consume it live in the mods, not in this pa
 - [Shapes and values](#shapes-and-values)
 - [Polygon passes](#polygon-passes)
 - [Laying something out along a ring](#laying-something-out-along-a-ring)
+- [Giving a polyline girth](#giving-a-polyline-girth)
 - [Point, line and span arithmetic](#point-line-and-span-arithmetic)
 - [Partitioning](#partitioning)
 - [One home for the degenerate thresholds](#one-home-for-the-degenerate-thresholds)
@@ -88,6 +89,33 @@ ring, by `PolygonRegions.computeDistanceToBoundary`) rather than a winding or ve
 test. Answered there, so a non-empty path is always one that can be walked.
 `collectPointsBetween` returns a stretch as a polyline including the corners it turns at - a
 stretch spanning a corner bends, and whatever gives it girth has to bend with it.
+
+## Giving a polyline girth
+
+`PolylineBands.strokeToTriangles` is what gives it that girth: a centreline plus a width
+becomes a band of triangles, `{x, y}` points with every three one triangle - so a stretch
+picked off a `RingPath` strokes by handing `collectPointsBetween`'s polyline straight over.
+
+Triangles rather than a wide GL line, which has no join handling at all and whose width is a
+screen quantity where a band along world geometry is a world one. The joins are the whole of
+the work: a corner mitres, carrying both rails on to where they cross, and falls back to a
+bevel in two cases that are asked separately because they answer different halves of it.
+
+- A **spike** - a turn sharp enough that the outer miter stands farther from the corner than
+  `miterSpikeLimit` half-widths - bevels the outer rail only. The inner rail still meets at a
+  point and needs no bevel.
+- A miter **outrunning its segments** bevels both, and pinches the inner rail to the
+  centreline. The reach is what makes this its own case: a miter reaches back along both
+  segments it joins, so a segment short enough for the reaches at its two ends to meet has
+  its rails cross and the band folds into a bowtie. A corner claims half of each adjacent
+  segment; an end of the polyline claims none of its own, since a straight cap reaches back
+  nothing, leaving the whole of that segment to the corner at the far end.
+
+The band comes out gap-free and, where the centreline's turns leave room for the width asked
+of them, without stacking its pieces - which matters because a translucent band draws every
+overlap as a brighter patch. Joins are made within one band, so two bands stroked separately
+butt at their shared end: exact along a straight stretch, a small open wedge where that end
+lands on a corner.
 
 ## Point, line and span arithmetic
 
