@@ -1,5 +1,7 @@
 package kmlib.starsector.ui.input;
 
+import com.fs.starfarer.api.input.InputEventAPI;
+
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlAction;
@@ -7,10 +9,15 @@ import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.LabelledControlSpecs;
 import kmlib.starsector.ui.controls.ReselectBehaviour;
 import kmlib.starsector.ui.controls.VerticalTableSpecs;
+import kmlib.starsector.ui.sound.StarsectorUiSound;
+import kmlib.starsector.ui.sound.UiSoundCue;
+import kmlib.starsector.ui.sound.UiSoundScheme;
 import kmlib.starsector.ui.widgets.PanelPlacement;
+import kmlib.testfixtures.starsector.ui.sound.UiSoundPlayerFake;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import java.util.Arrays;
 import java.util.List;
@@ -31,6 +38,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * under the pointer whether or not pressing it would do anything, which is what lets a hover read the
  * resolver a press reads. The body walk is pinned there too rather than only through the press, since a
  * hover reads the walk and never the firing above it.
+ *
+ * <p>The wheel cases pin the one moment this end answers audibly, and the rule that decides it: the sound
+ * follows the list having moved rather than the wheel having turned, so a notch against the end of a list
+ * is as silent as a notch over a list that fits.
  */
 final class PanelControllerTest {
 
@@ -41,6 +52,19 @@ final class PanelControllerTest {
     // cases below pass their own viewport to exercise the clip.
     private static final Rectangle FULL_VIEWPORT =
         new Rectangle(0f, 0f, 10000f, 10000f);
+
+    // How far the body overruns its viewport in the wheel cases: less than one notch scrolls, so a single
+    // wheel turn takes the list to its end and the one after it has nowhere to go. That pair is what tells a
+    // list that moved from a list already against its stop.
+    private static final float SHORT_SCROLL_OVERFLOW = 20f;
+
+    // A body whose content fits, which is what leaves a panel with no scrollbar and a wheel with nothing to
+    // move.
+    private static final float NO_SCROLL_OVERFLOW = 0f;
+
+    // A wheel notch turned toward the bottom of the list. Only the sign is read, so the magnitude is
+    // immaterial; the engine reports a wheel down as negative and the panel scrolls the list the other way.
+    private static final int WHEEL_DOWN = -1;
 
     @Nested
     class ActivateBodyControlIfHit {
@@ -558,6 +582,134 @@ final class PanelControllerTest {
             assertThat(resolvedCell)
                 .as("the lit tab is under the pointer like any other")
                 .isZero();
+        }
+    }
+
+    @Nested
+    class HandlePointer {
+
+        // A look whose scroll role is not the one the panel would have named for itself, so a wheel answered
+        // from this end's own code rather than from the look records the wrong sound. The vanilla scheme
+        // could not tell the two apart.
+        private static final UiSoundScheme SWAPPED_SOUNDS = new UiSoundScheme(
+            UiSoundCue.createAtFullVolume(StarsectorUiSound.LIST_SCROLLED),
+            StarsectorUiSound.BUTTON_MOUSEOVER,
+            UiSoundCue.createAtFullVolume(StarsectorUiSound.BUTTON_PRESSED));
+
+        private final UiSoundPlayerFake soundPlayerFake = new UiSoundPlayerFake();
+
+        @Test
+        void handlePointerSoundsTheWheelThatMovedTheList() {
+            // One act, one sound. The wheel is the panel's answer to the list moving as a whole, which is
+            // what lets the rows it carries past the cursor stay quiet.
+            var controller = buildVanillaSoundingController();
+
+            controller.handlePointer(buildWheelEventAtRowCentre(WHEEL_DOWN), buildScrollingPlacement());
+
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .containsExactly(StarsectorUiSound.LIST_SCROLLED);
+        }
+
+        @Test
+        void handlePointerStaysSilentForAWheelAgainstTheEndOfTheList() {
+            // Sounded on the list having moved rather than on the wheel having turned, for the reason a
+            // release that let go of nothing must not click at the player: the panel answers what happened,
+            // and at the end of a list nothing did.
+            var controller = buildVanillaSoundingController();
+            var placement = buildScrollingPlacement();
+
+            controller.handlePointer(buildWheelEventAtRowCentre(WHEEL_DOWN), placement);
+            
+            soundPlayerFake.clearPlayedCues();
+
+            controller.handlePointer(buildWheelEventAtRowCentre(WHEEL_DOWN), placement);
+
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .isEmpty();
+        }
+
+        @Test
+        void handlePointerStaysSilentForAWheelOverAListThatFits() {
+            // A body with nothing to scroll swallows the wheel so the surface behind does not act on it,
+            // and swallowing is not an act of its own - a panel that ticked here would answer every wheel
+            // turn the player made over it whether or not it had anything to show for it.
+            var controller = buildVanillaSoundingController();
+
+            controller.handlePointer(buildWheelEventAtRowCentre(WHEEL_DOWN), buildUnscrollablePlacement());
+
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .isEmpty();
+        }
+
+        @Test
+        void handlePointerTakesTheScrollRoleFromTheLookRatherThanNamingOne() {
+            // The point of the seam, at the one moment this end answers audibly: which sound a wheel makes
+            // is the panel's look talking. A scheme agreeing with a hardcoded role would pass whether or
+            // not it was ever read.
+            var controller = buildControllerSounding(SWAPPED_SOUNDS);
+
+            controller.handlePointer(buildWheelEventAtRowCentre(WHEEL_DOWN), buildScrollingPlacement());
+
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .containsExactly(StarsectorUiSound.BUTTON_PRESSED);
+        }
+
+        @Test
+        void handlePointerSettlesAWheeledOffsetWithinWhatTheListCanScroll() {
+            // Settled at the wheel rather than left to the next layout's clamp, which is what makes the
+            // silence above real: an unsettled request runs past the end of the list, so every further
+            // notch would change a number and read as a list that moved.
+            var controller = buildVanillaSoundingController();
+
+            controller.handlePointer(buildWheelEventAtRowCentre(WHEEL_DOWN), buildScrollingPlacement());
+
+            assertThat(controller.getScrollState().getOffset())
+                .as("one notch is longer than this list's overflow")
+                .isEqualTo(SHORT_SCROLL_OVERFLOW);
+        }
+
+        // A panel whose body has somewhere to scroll: its viewport is the row and its content overruns it by
+        // less than a wheel notch, so one notch takes the list to its end and the next has nowhere to go.
+        private static PanelPlacement buildScrollingPlacement() {
+            return new PanelPlacement(ROW, ROW, List.of(), ROW, 0f, SHORT_SCROLL_OVERFLOW);
+        }
+
+        // The same panel whose content fits, so there is no scrollbar and the wheel moves nothing.
+        private static PanelPlacement buildUnscrollablePlacement() {
+            return new PanelPlacement(ROW, ROW, List.of(), ROW, 0f, NO_SCROLL_OVERFLOW);
+        }
+
+        // A wheel event over the middle of the body, which is inside both the panel's box and its scroll
+        // region - the only place a wheel reaches the list at all.
+        private static InputEventAPI buildWheelEventAtRowCentre(int wheelValue) {
+
+            var eventMock = Mockito.mock(InputEventAPI.class);
+
+            Mockito
+                .when(eventMock.getX())
+                .thenReturn(Math.round(ROW.x() + ROW.width() / 2f));
+            Mockito
+                .when(eventMock.getY())
+                .thenReturn(Math.round(ROW.y() + ROW.height() / 2f));
+            Mockito
+                .when(eventMock.isMouseScrollEvent())
+                .thenReturn(true);
+            Mockito
+                .when(eventMock.getEventValue())
+                .thenReturn(wheelValue);
+
+            return eventMock;
+        }
+
+        // A controller recording into this case's fake and answering by the engine's own scheme - the look
+        // every case not about the scheme itself is written against.
+        private PanelController buildVanillaSoundingController() {
+            return buildControllerSounding(UiSoundScheme.createVanillaSoundScheme());
+        }
+
+        // The same, by whichever scheme the case is about.
+        private PanelController buildControllerSounding(UiSoundScheme soundScheme) {
+            return new PanelController(soundPlayerFake, soundScheme);
         }
     }
 

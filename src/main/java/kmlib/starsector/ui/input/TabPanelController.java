@@ -56,8 +56,11 @@ public final class TabPanelController {
     public static final TraverseDurations HOTKEY_BLINK_DURATIONS = new TraverseDurations(0.05f, 0.2f);
 
     // The body's controller, owning the scroll and drag state; this routes everything but a header-tab or
-    // notch press to it, so the panel's scroll and drag behaviour is the plain panel's, unchanged.
-    private final PanelController bodyController = new PanelController();
+    // notch press to it, so the panel's scroll and drag behaviour is the plain panel's, unchanged. Built
+    // with this panel's own player and scheme, the wheel being a moment it answers: a body sounding by the
+    // library's default look while its header sounded by the host's would be one panel presenting itself
+    // two ways.
+    private final PanelController bodyController;
 
     // The collapse animation - how far the body is folded to its docked rail and which way it is heading.
     // Held beside the scroll offset so any tab-panel consumer inherits the handle by pumping this controller.
@@ -159,6 +162,7 @@ public final class TabPanelController {
         this.collapse = collapse;
         this.soundPlayer = soundPlayer;
         this.soundScheme = soundScheme;
+        this.bodyController = new PanelController(soundPlayer, soundScheme);
     }
 
     /**
@@ -334,6 +338,11 @@ public final class TabPanelController {
         tabHoverArrival.resetArrival();
         notchHoverArrival.resetArrival();
         bodyHoverArrival.resetArrival();
+
+        // And the scroll the latch above would otherwise have adopted on. A movement left unread would
+        // make the next session's first frame take its cell in silence, which is the one thing the resets
+        // just above exist to prevent.
+        bodyController.resetListScrolled();
     }
 
     /**
@@ -564,6 +573,10 @@ public final class TabPanelController {
      * the placement: a panel presenting none is a pointer on none, and stating it twice would be two places
      * to keep in step. What arrives here is only where the pointer is.
      *
+     * <p>Whether the body's list moved since the last frame is not handed in with it, being state the
+     * panel already holds rather than a reading of the cursor - it is taken from the body's own controller,
+     * which is the end that moved the list and so the only end that knows it did.
+     *
      * @param hover          what the pointer is on this frame, over both of the panel's hoverable parts
      * @param elapsedSeconds real time since the last frame the host drew
      * @param durations      how long a traverse takes each way; a non-positive one snaps that way
@@ -694,7 +707,7 @@ public final class TabPanelController {
         // frame the pointer did come back to one of them, that stale latch saying it never left.
         var hasReachedTab = tabHoverArrival.detectArrivalAt(hover.tabIndex());
         var hasReachedNotch = notchHoverArrival.detectArrival(hover.isNotchHovered());
-        var hasReachedBodyCell = bodyHoverArrival.detectArrivalAt(hover.resolveBodyCellSlot());
+        var hasReachedBodyCell = detectBodyCellArrivalAt(hover.resolveBodyCellSlot());
 
         // At most one of them can have fired: there is one pointer, and no two of the panel's parts occupy
         // the same point. So this picks the cue of whatever was reached rather than composing an answer out
@@ -707,6 +720,24 @@ public final class TabPanelController {
         if (hasReachedBodyCell) {
             soundArrivalAt(hover.bodyCell().arrivalTarget());
         }
+    }
+
+    // Whether the pointer reached a body cell - which a frame the list moved on answers no to, however the
+    // reading changed. An arrival is the player reaching something, and rows carried under a parked cursor
+    // were reached by nobody; a wheel spun down a long list would otherwise tick once for every row it
+    // swept past, where the scroll answers for the whole movement in one sound. One act, one sound, which
+    // is also the honest reading - the player turned the wheel once.
+    //
+    // The latch still takes what is now under the cursor rather than being skipped, so the frame after a
+    // scroll is an ordinary frame again: the pointer moving onto that same cell later is an arrival like
+    // any other, and the cell it was on before the list moved cannot announce itself as the list settles.
+    private boolean detectBodyCellArrivalAt(BodyCellSlot hoveredSlot) {
+
+        if (bodyController.takeHasListScrolledSinceLastFrame()) {
+            bodyHoverArrival.adoptArrivalAt(hoveredSlot);
+            return false;
+        }
+        return bodyHoverArrival.detectArrivalAt(hoveredSlot);
     }
 
     // Plays what the look says reaching that kind of thing sounds like. Role and level are taken together,

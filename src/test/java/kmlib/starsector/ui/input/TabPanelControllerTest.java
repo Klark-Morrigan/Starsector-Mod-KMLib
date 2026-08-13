@@ -8,6 +8,7 @@ import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlAction;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.LabelledControlSpecs;
+import kmlib.starsector.ui.controls.VerticalTableSpecs;
 import kmlib.starsector.ui.sound.PointerArrivalTarget;
 import kmlib.starsector.ui.sound.PointerArrivalVolumes;
 import kmlib.starsector.ui.sound.StarsectorUiSound;
@@ -23,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -83,6 +85,28 @@ final class TabPanelControllerTest {
     // Off the header, off the body, and off the handle - the pointer resting on none of the panel's parts.
     private static final float OFF_PANEL_X = 900f;
     private static final float OFF_PANEL_Y = 900f;
+
+    // A row of the scrolling list the wheel cases lay in the body, one wheel notch tall. That the two match
+    // is the point: a case hands in the placement the drawn frame would carry after the wheel, so one notch
+    // has to carry exactly one row past the pointer for the before and after to be the layout's own.
+    private static final float SCROLLING_ROW_HEIGHT = 40f;
+
+    // Four such rows against a body showing three, so the list has exactly one row's worth to give.
+    private static final int SCROLLING_ROW_COUNT = 4;
+    private static final float SCROLLING_LIST_OVERFLOW = SCROLLING_ROW_HEIGHT;
+
+    // The list at rest and after one notch, which is also its end - so a second notch has nowhere to go.
+    private static final float UNSCROLLED_OFFSET = 0f;
+    private static final float SCROLLED_BY_ONE_ROW_OFFSET = SCROLLING_ROW_HEIGHT;
+
+    // The middle of the list's top row while it is at rest, and of its second row once one row has gone
+    // past. One point standing for a still cursor, which is what a case about content moving under one
+    // needs: the reading changes without the pointer having moved at all.
+    private static final float ON_TOP_SCROLLING_ROW_Y =
+        BODY_BOX.y() + BODY_BOX.height() - SCROLLING_ROW_HEIGHT / 2f;
+
+    // A wheel notch's raw value as the engine reports one turned toward the bottom of a list.
+    private static final int WHEEL_DOWN = -1;
 
     private static final float BORDER_WIDTH = 1f;
 
@@ -1212,14 +1236,26 @@ final class TabPanelControllerTest {
             new PointerArrivalVolumes(
                 CHROME_ARRIVAL_VOLUME,
                 SINGLE_OPTION_ARRIVAL_VOLUME,
-                LISTED_ITEM_ARRIVAL_VOLUME));
+                LISTED_ITEM_ARRIVAL_VOLUME),
+            UiSoundCue.createAtFullVolume(StarsectorUiSound.LIST_SCROLLED));
 
         // The two roles crossed over, so a moment answered from the controller's own code rather than from
         // the look it was handed records the sound the other moment would have made. The vanilla pair could
-        // not tell the two apart - it names exactly what the controller used to name for itself.
+        // not tell the two apart - it names exactly what the controller used to name for itself. Its wheel
+        // is left at the ordinary role, no case using this scheme turning one.
         private static final UiSoundScheme SWAPPED_SOUNDS = new UiSoundScheme(
             UiSoundCue.createAtFullVolume(StarsectorUiSound.BUTTON_MOUSEOVER),
-            StarsectorUiSound.BUTTON_PRESSED);
+            StarsectorUiSound.BUTTON_PRESSED,
+            UiSoundCue.createAtFullVolume(StarsectorUiSound.LIST_SCROLLED));
+
+        // A look whose wheel answers with a role neither of its other moments uses and which is not the one
+        // a list takes by default. Three ways a scroll could be answered wrongly - by the library's own
+        // scheme, by this look's press, by this look's arrival - and all three record the same other role,
+        // so only a wheel reading this look's own scroll cue passes.
+        private static final UiSoundScheme SWAPPED_SCROLL_SOUND = new UiSoundScheme(
+            UiSoundCue.createAtFullVolume(StarsectorUiSound.LIST_SCROLLED),
+            StarsectorUiSound.LIST_SCROLLED,
+            UiSoundCue.createAtFullVolume(StarsectorUiSound.BUTTON_MOUSEOVER));
 
         private final UiSoundPlayerFake soundPlayerFake = new UiSoundPlayerFake();
 
@@ -1514,6 +1550,99 @@ final class TabPanelControllerTest {
                 .containsExactly(StarsectorUiSound.BUTTON_MOUSEOVER);
         }
 
+        @Test
+        void interfaceSoundsScrollTheBodyByTheLookThePanelWasBuiltWith() {
+            // The body is the panel's own, so it sounds by the panel's own look. Built with a scheme of its
+            // own, the body would answer the wheel from the library's defaults while the header answered
+            // from the host's - one panel presenting itself two ways.
+            var controller = buildControllerSounding(SWAPPED_SCROLL_SOUND);
+
+            controller.handlePointer(
+                buildWheelDownAt(INSIDE_FIRST_TAB_X, ON_TOP_SCROLLING_ROW_Y),
+                buildScrollingListPlacement(UNSCROLLED_OFFSET));
+
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .containsExactly(StarsectorUiSound.BUTTON_MOUSEOVER);
+        }
+
+        @Test
+        void interfaceSoundsAnswerAWheelWithTheScrollAndNotTheRowsItCarriedUnderTheCursor() {
+            // The rule the whole listed-item level is liveable because of. Rows sliding under a parked
+            // pointer are arrivals by the slot key and by nothing the player did, so a wheel down a long
+            // list would tick once per row; the scroll answers for the whole movement in one sound, which
+            // is also the honest reading - the player turned the wheel once.
+            var controller = buildVanillaSoundingController();
+            var restingPlacement = buildScrollingListPlacement(UNSCROLLED_OFFSET);
+
+            advanceWithPointerAt(controller, restingPlacement, INSIDE_FIRST_TAB_X, ON_TOP_SCROLLING_ROW_Y);
+
+            soundPlayerFake.clearPlayedCues();
+
+            controller.handlePointer(
+                buildWheelDownAt(INSIDE_FIRST_TAB_X, ON_TOP_SCROLLING_ROW_Y),
+                restingPlacement);
+
+            advanceWithPointerAt(
+                controller,
+                buildScrollingListPlacement(SCROLLED_BY_ONE_ROW_OFFSET),
+                INSIDE_FIRST_TAB_X,
+                ON_TOP_SCROLLING_ROW_Y);
+
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .containsExactly(StarsectorUiSound.LIST_SCROLLED);
+        }
+
+        @Test
+        void interfaceSoundsAnnounceTheRowAScrollLeftUnderTheCursorOnceThePointerReachesItItself() {
+            // Adopted rather than gone deaf. The latch takes the row the scroll carried under the cursor
+            // without announcing it, so the pointer genuinely arriving on that row afterwards is an arrival
+            // like any other - a latch that had simply stopped tracking would swallow this one too.
+            var controller = buildVanillaSoundingController();
+            var scrolledPlacement = buildScrollingListPlacement(SCROLLED_BY_ONE_ROW_OFFSET);
+
+            controller.handlePointer(
+                buildWheelDownAt(INSIDE_FIRST_TAB_X, ON_TOP_SCROLLING_ROW_Y),
+                buildScrollingListPlacement(UNSCROLLED_OFFSET));
+
+            advanceWithPointerAt(
+                controller, scrolledPlacement, INSIDE_FIRST_TAB_X, ON_TOP_SCROLLING_ROW_Y);
+
+            advanceWithPointerAt(controller, scrolledPlacement, OFF_PANEL_X, OFF_PANEL_Y);
+
+            soundPlayerFake.clearPlayedCues();
+
+            advanceWithPointerAt(
+                controller, scrolledPlacement, INSIDE_FIRST_TAB_X, ON_TOP_SCROLLING_ROW_Y);
+
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .containsExactly(StarsectorUiSound.BUTTON_MOUSEOVER);
+        }
+
+        @Test
+        void interfaceSoundsAnnounceARowAfreshWhenThePanelHidBetweenTheScrollAndTheNextFrame() {
+            // A movement no frame ever read is a movement the next session must not answer to. Left
+            // standing, it would make the re-opened panel take the cell under the cursor in silence - the
+            // one thing dropping the panel's motions exists to prevent.
+            var controller = buildVanillaSoundingController();
+
+            controller.handlePointer(
+                buildWheelDownAt(INSIDE_FIRST_TAB_X, ON_TOP_SCROLLING_ROW_Y),
+                buildScrollingListPlacement(UNSCROLLED_OFFSET));
+
+            controller.resetInputMotions();
+            
+            soundPlayerFake.clearPlayedCues();
+
+            advanceWithPointerAt(
+                controller,
+                buildScrollingListPlacement(SCROLLED_BY_ONE_ROW_OFFSET),
+                INSIDE_FIRST_TAB_X,
+                ON_TOP_SCROLLING_ROW_Y);
+
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .containsExactly(StarsectorUiSound.BUTTON_MOUSEOVER);
+        }
+
         // One frame with the pointer where the given reading puts it - what the panel's own hit-tests
         // would have produced, handed in so these cases need no display to point at.
         private void advanceWithPointerOn(TabPanelController controller, TabPanelHover hover) {
@@ -1664,6 +1793,52 @@ final class TabPanelControllerTest {
             List.of(buildTwoSegmentRadioControl()));
     }
 
+    // The same panel with a scrolling list beneath its tabs, laid at the given scroll offset - the rows
+    // where the layout would have put them for that offset, and the body carrying the offset and the
+    // overflow the scrollbar and the wheel read. Taking the offset rather than holding one, so a case
+    // drives the wheel and then hands in the frame the layout would next have drawn.
+    private static TabPanelPlacement buildScrollingListPlacement(float scrollOffset) {
+
+        return buildPlacement(
+            null,
+            TABS_SHOWING_FIRST_TAB,
+            HEADER_BAND,
+            new PanelPlacement(
+                BODY_BOX,
+                BODY_BOX,
+                List.of(buildScrollingListControl(scrollOffset)),
+                BODY_BOX,
+                scrollOffset,
+                SCROLLING_LIST_OVERFLOW));
+    }
+
+    // The list itself: a scrolling table whose rows are stacked down from the body's top edge and shifted
+    // by the offset, so a row scrolled past the top is laid above the viewport and drawn away exactly as
+    // the real layout leaves it. What each case reads off it is which row the one test point falls in.
+    private static Control buildScrollingListControl(float scrollOffset) {
+
+        var rows = new ArrayList<Rectangle>();
+        var labels = new ArrayList<String>();
+
+        for (var rowIndex = 0; rowIndex < SCROLLING_ROW_COUNT; rowIndex++) {
+
+            rows.add(new Rectangle(
+                BODY_BOX.x(),
+                BODY_BOX.y() + BODY_BOX.height() - (rowIndex + 1) * SCROLLING_ROW_HEIGHT + scrollOffset,
+                BODY_BOX.width(),
+                SCROLLING_ROW_HEIGHT));
+            labels.add("Row " + rowIndex);
+        }
+        var spec = VerticalTableSpecs.buildIconList(
+                labels,
+                Arrays.asList(new String[SCROLLING_ROW_COUNT]),
+                ControlSpec.NO_SELECTION,
+                ControlAction.NONE)
+            .asScrolling();
+
+        return new Control(spec, BODY_BOX, rows);
+    }
+
     // The same panel folded away to the rail a fully docked one leaves: the box narrowed to a border's
     // width while the control beneath the row keeps the place the layout gave it, which is how a fold
     // actually reaches the body - the box is clipped to, and the controls are not moved.
@@ -1785,6 +1960,23 @@ final class TabPanelControllerTest {
         Mockito
             .when(eventMock.isLMBUpEvent())
             .thenReturn(true);
+
+        return eventMock;
+    }
+
+    // A wheel notch turned toward the bottom of the list, at a point. Only the sign of the raw value is
+    // read, so the magnitude is immaterial; the engine reports a wheel down as negative and the panel
+    // scrolls the list the other way from it.
+    private static InputEventAPI buildWheelDownAt(float pointX, float pointY) {
+
+        var eventMock = buildMouseEventAt(pointX, pointY);
+
+        Mockito
+            .when(eventMock.isMouseScrollEvent())
+            .thenReturn(true);
+        Mockito
+            .when(eventMock.getEventValue())
+            .thenReturn(WHEEL_DOWN);
 
         return eventMock;
     }

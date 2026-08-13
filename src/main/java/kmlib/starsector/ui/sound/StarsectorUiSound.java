@@ -30,7 +30,18 @@ public enum StarsectorUiSound {
     BUTTON_PRESSED("ui_button_pressed"),
 
     /** What a vanilla button or tab makes as the pointer arrives on it. Quieter, being unasked for. */
-    BUTTON_MOUSEOVER("ui_button_mouseover");
+    BUTTON_MOUSEOVER("ui_button_mouseover"),
+
+    /**
+     * What a vanilla scrolling readout makes as its content moves. The one role here that answers
+     * something other than a hit target: the player turned a wheel and content slid, which is why it is
+     * neither of the button moments above however much a list looks like a column of them.
+     *
+     * <p>The engine keeps several ids over the one sample and this is the one named for scrolling, so it
+     * is the one a list takes. A wrong id fails silently, being looked up by name at play time, which is
+     * why the choice between them is written down here rather than left to whoever plays it.
+     */
+    LIST_SCROLLED("ui_number_scrolling");
 
     // The engine's own id for this sound, looked up in its sound config at play time.
     private final String soundId;

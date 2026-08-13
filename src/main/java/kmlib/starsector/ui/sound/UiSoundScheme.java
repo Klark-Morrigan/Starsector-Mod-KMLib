@@ -3,7 +3,8 @@ package kmlib.starsector.ui.sound;
 import java.util.Objects;
 
 /**
- * What each moment a control answers sounds like: the press it confirms, and the pointer arriving on it.
+ * What each moment a control answers sounds like: the press it confirms, the pointer arriving on it, and
+ * its list moving under the wheel.
  * The middle of this package - {@link StarsectorUiSound} names the roles, {@link UiSoundCue} binds a role
  * to a volume, this says which cue belongs to which moment, and {@link UiSoundPlayer} is where they go.
  *
@@ -39,15 +40,34 @@ import java.util.Objects;
  * that role is left to whatever grows one, on the same rule {@link StarsectorUiSound} follows about not
  * guessing at ids nothing plays.
  *
+ * <p>The wheel moving a list is a moment of the same order and deliberately not an arrival: what the
+ * player did was turn the wheel once, so one sound answers the whole movement however many rows went past
+ * the cursor. Held as a cue of its own rather than as a fourth kind of thing reached, because a kind names
+ * what the pointer got to and nobody got anywhere here - the content moved instead.
+ *
+ * <p>The two cues never sit beside each other in a constructor, the arrival's pair standing between them.
+ * They are the same type and neither is more obviously first, so adjacent they would be two positions a
+ * caller can transpose with nothing to catch it - a panel whose wheel confirms presses and whose presses
+ * report scrolling compiles and is wrong only to the ear.
+ *
  * @param pressCue              what a control makes when a press on it lands, or null to press silently
  * @param pointerArrivalSound   what a control makes as the pointer arrives on it, whatever kind of thing
  *                              was reached, or null to stay silent under the pointer
  * @param pointerArrivalVolumes how loudly that arrival sounds at each kind of thing reachable
+ * @param listScrollCue         what a control makes as the wheel moves its list, or null to scroll
+ *                              silently
  */
 public record UiSoundScheme(
     UiSoundCue pressCue,
     StarsectorUiSound pointerArrivalSound,
-    PointerArrivalVolumes pointerArrivalVolumes) {
+    PointerArrivalVolumes pointerArrivalVolumes,
+    UiSoundCue listScrollCue) {
+
+    // The library's own level for a list moving under the wheel: vanilla's own balance for the id halved,
+    // on the same argument the arrival levels answer to. A wheel spun down a long list is one act however
+    // far it travels, so what the level is set against is a single tick beside the panel's other moments
+    // rather than a run of them.
+    private static final float DEFAULT_LIST_SCROLL_VOLUME = 0.5f;
 
     /**
      * Rejects a look with no levels to answer an arrival at, which is a scheme that cannot resolve the
@@ -61,16 +81,22 @@ public record UiSoundScheme(
     }
 
     /**
-     * A scheme naming the two moments and taking the library's own arrival balance - the form a host wants
+     * A scheme naming the moments and taking the library's own arrival balance - the form a host wants
      * until it has volumes of its own to state, which in practice means until it has a player looking at a
      * settings screen.
      *
      * @param pressCue            what a control makes when a press on it lands, or null to press silently
      * @param pointerArrivalSound what a control makes as the pointer arrives on it, or null to stay silent
      *                            under the pointer
+     * @param listScrollCue       what a control makes as the wheel moves its list, or null to scroll
+     *                            silently
      */
-    public UiSoundScheme(UiSoundCue pressCue, StarsectorUiSound pointerArrivalSound) {
-        this(pressCue, pointerArrivalSound, PointerArrivalVolumes.createDefaultVolumes());
+    public UiSoundScheme(
+            UiSoundCue pressCue,
+            StarsectorUiSound pointerArrivalSound,
+            UiSoundCue listScrollCue) {
+
+        this(pressCue, pointerArrivalSound, PointerArrivalVolumes.createDefaultVolumes(), listScrollCue);
     }
 
     /**
@@ -83,14 +109,16 @@ public record UiSoundScheme(
      * own balance, being one act the player asked for; the arrivals take the library's defaults, because
      * what vanilla mixed its mouseover for is a screen with a handful of hit targets on it and not a column
      * of them. Matching the engine's chrome means sounding like it under one pointer sweep, which is what
-     * the levels answer for and the ids cannot.
+     * the levels answer for and the ids cannot. The wheel is quietened on the same argument: it lands
+     * among those arrivals rather than on a screen of its own.
      *
      * @return the scheme a vanilla-looking control sounds by
      */
     public static UiSoundScheme createVanillaSoundScheme() {
         return new UiSoundScheme(
             UiSoundCue.createAtFullVolume(StarsectorUiSound.BUTTON_PRESSED),
-            StarsectorUiSound.BUTTON_MOUSEOVER);
+            StarsectorUiSound.BUTTON_MOUSEOVER,
+            new UiSoundCue(StarsectorUiSound.LIST_SCROLLED, DEFAULT_LIST_SCROLL_VOLUME));
     }
 
     /**
@@ -100,7 +128,7 @@ public record UiSoundScheme(
      * @return a scheme every moment of which is quiet
      */
     public static UiSoundScheme createSilentSoundScheme() {
-        return new UiSoundScheme(null, null);
+        return new UiSoundScheme(null, null, null);
     }
 
     /**

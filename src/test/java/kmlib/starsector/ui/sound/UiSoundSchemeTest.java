@@ -28,7 +28,8 @@ final class UiSoundSchemeTest {
             // are pinned as literals where they are declared.
             var soundScheme = new UiSoundScheme(
                 UiSoundCue.createAtFullVolume(StarsectorUiSound.BUTTON_PRESSED),
-                StarsectorUiSound.BUTTON_MOUSEOVER);
+                StarsectorUiSound.BUTTON_MOUSEOVER,
+                UiSoundCue.createAtFullVolume(StarsectorUiSound.LIST_SCROLLED));
 
             assertThat(soundScheme.pointerArrivalVolumes())
                 .isEqualTo(PointerArrivalVolumes.createDefaultVolumes());
@@ -42,7 +43,8 @@ final class UiSoundSchemeTest {
             assertThatThrownBy(() -> new UiSoundScheme(
                     UiSoundCue.createAtFullVolume(StarsectorUiSound.BUTTON_PRESSED),
                     StarsectorUiSound.BUTTON_MOUSEOVER,
-                    null))
+                    null,
+                    UiSoundCue.createAtFullVolume(StarsectorUiSound.LIST_SCROLLED)))
                 .isInstanceOf(NullPointerException.class)
                 .hasMessageContaining("pointerArrivalVolumes");
         }
@@ -72,6 +74,24 @@ final class UiSoundSchemeTest {
         }
 
         @Test
+        void createVanillaSoundSchemeNamesTheEnginesOwnScrollingRoleForAList() {
+            // The engine keeps several ids over the one sample and this is the one named for scrolling, so
+            // a list wearing vanilla's look takes it. A wrong id is looked up by name at play time and
+            // fails in silence, which is why the choice is pinned rather than left to the ear.
+            assertThat(UiSoundScheme.createVanillaSoundScheme().listScrollCue().sound())
+                .isEqualTo(StarsectorUiSound.LIST_SCROLLED);
+        }
+
+        @Test
+        void createVanillaSoundSchemeQuietensTheWheelToAPanelsOwnDensity() {
+            // The wheel lands among the panel's arrivals rather than on a screen of its own, so it is
+            // scaled on the same argument they are - a list ticking at the engine's own level over a strip
+            // whose every other moment was quietened reads as the one part that was missed.
+            assertThat(UiSoundScheme.createVanillaSoundScheme().listScrollCue().volume())
+                .isLessThan(UiSoundCue.FULL_VOLUME);
+        }
+
+        @Test
         void createVanillaSoundSchemeQuietensTheArrivalsToAPanelsOwnDensity() {
             // The reversal this scheme carries: vanilla's mouseover level is right for a screen with a
             // handful of hit targets and chatters across a column of them, so "looks vanilla" stops
@@ -97,6 +117,8 @@ final class UiSoundSchemeTest {
                 .isNull();
             assertThat(soundScheme.pointerArrivalSound())
                 .isNull();
+            assertThat(soundScheme.listScrollCue())
+                .isNull();
         }
     }
 
@@ -111,7 +133,8 @@ final class UiSoundSchemeTest {
             var soundScheme = new UiSoundScheme(
                 UiSoundCue.createAtFullVolume(StarsectorUiSound.BUTTON_PRESSED),
                 StarsectorUiSound.BUTTON_MOUSEOVER,
-                new PointerArrivalVolumes(LOUD_VOLUME, MIDDLING_VOLUME, QUIET_VOLUME));
+                new PointerArrivalVolumes(LOUD_VOLUME, MIDDLING_VOLUME, QUIET_VOLUME),
+                UiSoundCue.createAtFullVolume(StarsectorUiSound.LIST_SCROLLED));
 
             assertThat(soundScheme.resolvePointerArrivalCueFor(PointerArrivalTarget.PANEL_CHROME))
                 .isEqualTo(new UiSoundCue(StarsectorUiSound.BUTTON_MOUSEOVER, LOUD_VOLUME));

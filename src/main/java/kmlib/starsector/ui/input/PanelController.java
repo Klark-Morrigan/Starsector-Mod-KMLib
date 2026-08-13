@@ -6,6 +6,9 @@ import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.ReselectBehaviour;
+import kmlib.starsector.ui.sound.UiSoundPlayer;
+import kmlib.starsector.ui.sound.UiSoundScheme;
+import kmlib.starsector.ui.sound.VanillaUiSoundPlayer;
 import kmlib.starsector.ui.widgets.PanelPlacement;
 import kmlib.starsector.ui.widgets.RadioRow;
 import kmlib.starsector.ui.widgets.scroll.PanelScrollbars;
@@ -24,6 +27,11 @@ import kmlib.starsector.ui.widgets.scroll.ScrollState;
  * fire, and consuming every event over the panel so the surface behind it does not also act. A {@link
  * kmlib.starsector.ui.input.TabPanelController} reuses this for the body and routes the header tabs
  * separately, so a tab switch stays with that controller.
+ *
+ * <p>The wheel is the one moment this end answers audibly, and it is here because the wheel is: a headerless
+ * panel scrolls with a sound of its own rather than only a tab panel's body. What that sound is stays the
+ * look's, handed in with the scheme - this end knows only that the list actually moved, which is the part
+ * neither the event nor the scheme can say.
  */
 public final class PanelController {
 
@@ -44,12 +52,49 @@ public final class PanelController {
     // This panel's scroll position, read by the layout and written by the wheel and by a drag.
     private final ScrollState scrollState = new ScrollState();
 
+    // Where this panel's interface sounds go, held as a seam because a sound leaves no trace in the panel's
+    // state: every other answer to an input can be read back off the scroll offset, and this one can only
+    // be asserted by recording that it was asked for.
+    private final UiSoundPlayer soundPlayer;
+
+    // What each moment this panel answers sounds like, taken from the host with the rest of its look rather
+    // than named here - how a wheel sounds is a property of how the panel presents itself, and this end owns
+    // the moment and none of the choices.
+    private final UiSoundScheme soundScheme;
+
     // A scrollbar-thumb drag in progress, and the pointer's offset from the thumb centre when grabbed. The
     // drag spans frames (press, moves, release), so it lives as state between events: while set, every
     // mouse move maps the pointer to a scroll position; the grab offset holds the thumb under the cursor
     // so it does not jump when grabbed off-centre.
     private boolean isDraggingThumb;
     private float thumbGrabOffsetY;
+
+    // Whether the list has moved since a frame last asked. Latched rather than worked out from the offset,
+    // because the offset a frame reads says where the list is and never how it got there - and the only end
+    // that knows a move happened at all is the one that made it.
+    private boolean hasListScrolledSinceLastFrame;
+
+    /**
+     * A panel that answers like a vanilla control - the scheme a panel scrolls by unless a host asks
+     * otherwise.
+     */
+    public PanelController() {
+        this(new VanillaUiSoundPlayer(), UiSoundScheme.createVanillaSoundScheme());
+    }
+
+    /**
+     * A panel that sounds through the given player and answers by the given scheme - for a host wearing a
+     * look of its own, or a test asserting which moments sound.
+     *
+     * @param soundPlayer where this panel's interface sounds go
+     * @param soundScheme what each moment this panel answers sounds like, the audible half of the look the
+     *                    host paints the panel from
+     */
+    public PanelController(UiSoundPlayer soundPlayer, UiSoundScheme soundScheme) {
+
+        this.soundPlayer = soundPlayer;
+        this.soundScheme = soundScheme;
+    }
 
     /**
      * @return this panel's scroll position, for the layout to read (the requested offset) and settle
@@ -106,6 +151,34 @@ public final class PanelController {
             }
         }
         event.consume();
+    }
+
+    /**
+     * Reports whether the list has moved since this was last asked, and forgets it - for a per-frame pass
+     * that has to tell rows carried under a still pointer from a pointer moving over rows. Cleared by the
+     * reading, so one movement is answered by the first frame after it and by that frame alone; a movement
+     * made while nothing is drawing waits for the next frame rather than being dropped.
+     *
+     * <p>The wheel and a scrollbar drag both report through it, because what it answers is that content
+     * moved and not what moved it - rows sliding past a parked cursor were reached by nobody either way.
+     * Only the wheel sounds, that being the one act with a moment to it.
+     *
+     * @return whether the list's offset changed since the last frame read this
+     */
+    boolean takeHasListScrolledSinceLastFrame() {
+
+        var hasScrolled = hasListScrolledSinceLastFrame;
+        hasListScrolledSinceLastFrame = false;
+        return hasScrolled;
+    }
+
+    /**
+     * Drops a movement no frame has read yet, for a panel that stops showing - so the next session's first
+     * frame answers the pointer where it is rather than silently taking whatever is under it on the
+     * strength of a scroll from a session the player has since left.
+     */
+    void resetListScrolled() {
+        hasListScrolledSinceLastFrame = false;
     }
 
     /**
@@ -355,21 +428,51 @@ public final class PanelController {
     // thumb the grab offset below the cursor so it tracks the drag rather than snapping its centre to the
     // pointer.
     private void updateDragOffset(PanelPlacement placement, float pointerY) {
+
+        var offsetBeforeDrag = scrollState.getOffset();
         scrollState.setOffset(
             PanelScrollbars.resolveOffsetForPointer(placement, pointerY - thumbGrabOffsetY));
+
+        // Noted and not sounded. A drag is one held act carrying the list continuously, with the pointer
+        // off on the scrollbar - so the rows it sweeps past the cursor must reach whatever answers
+        // arrivals, while the sound belongs to the wheel alone; a drag ticking per frame would be the
+        // chatter the wheel's single sound exists to avoid.
+        recordListMovedFrom(offsetBeforeDrag);
     }
 
-    // Scrolls the flex list when the wheel turns over its scroll region and it has somewhere to scroll.
-    // Only the wheel's sign is read (like the vanilla scroll lists): a wheel up scrolls toward the list
-    // top, so it decreases the offset, and a wheel down increases it, each by one fixed step. Off the
-    // scroll region (over a pinned control, or a list that fits) the wheel does nothing, though the caller
-    // still consumes it so the surface behind does not act.
+    // Scrolls the flex list when the wheel turns over its scroll region and it has somewhere to scroll, and
+    // sounds the movement. Only the wheel's sign is read (like the vanilla scroll lists): a wheel up scrolls
+    // toward the list top, so it decreases the offset, and a wheel down increases it, each by one fixed
+    // step. Off the scroll region (over a pinned control, or a list that fits) the wheel does nothing,
+    // though the caller still consumes it so the surface behind does not act.
     private void scrollListUnderPointer(InputEventAPI event, PanelPlacement placement) {
         if (!placement.isScrollbarNeeded()
                 || !placement.flexViewport().containsPoint(event.getX(), event.getY())) {
             return;
         }
+        var offsetBeforeWheel = scrollState.getOffset();
         scrollState.scrollBy(-Math.signum((float) event.getEventValue()) * SCROLL_STEP_PX);
+
+        // Settled here against the overflow the drawn frame resolved, rather than left to the next layout's
+        // clamp as the stored request otherwise is. It is what makes the question below "did the list move"
+        // instead of "did a request change": a wheel at the end of a list pushes the raw offset past
+        // anything that can be shown, and would sound for a list that never budged.
+        scrollState.clampTo(placement.scrollOverflow());
+
+        if (recordListMovedFrom(offsetBeforeWheel)) {
+            soundPlayer.playCueIfPresent(soundScheme.listScrollCue());
+        }
+    }
+
+    // Notes whether the list actually went anywhere, having just been moved from the given offset, and
+    // holds that for the next frame to read. One place the movement is judged, so the wheel and the drag
+    // cannot come to disagree about what counts as the list having moved - and one place the frame-facing
+    // latch is written, so neither can move the list without the arrivals hearing of it.
+    private boolean recordListMovedFrom(float offsetBeforeMove) {
+
+        var hasMoved = Float.compare(scrollState.getOffset(), offsetBeforeMove) != 0;
+        hasListScrolledSinceLastFrame |= hasMoved;
+        return hasMoved;
     }
 
     // Whether a press on an already-resolved cell reaches the control's action. Only a segmented control

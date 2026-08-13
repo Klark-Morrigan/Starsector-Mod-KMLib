@@ -8,6 +8,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Pins {@link KeyedHoverArrival} over a row: an arrival is the element under the pointer changing to an
  * element, so crossing straight from one to its neighbour counts and leaving the row does not.
+ *
+ * <p>And the other way a frame steps it - taking what is under the pointer without announcing it, for a
+ * row that moved rather than a pointer that did. What those cases pin is that it stays a latch: silent for
+ * the element it took, and answering the pointer's own moves afterwards.
  */
 final class KeyedHoverArrivalTest {
 
@@ -61,6 +65,43 @@ final class KeyedHoverArrivalTest {
             // than a continuation of the last one.
             hoverArrival.detectArrivalAt(FIRST_ELEMENT);
             hoverArrival.detectArrivalAt(NO_ELEMENT_HOVERED);
+
+            assertThat(hoverArrival.detectArrivalAt(FIRST_ELEMENT))
+                .isTrue();
+        }
+    }
+
+    @Nested
+    class AdoptArrivalAt {
+
+        @Test
+        void adoptArrivalAtReportsNothingForTheElementItTook() {
+            // The row moved under a still pointer, so what is now under it was reached by nobody - and the
+            // very next frame must not report it either, the adoption being what stops the moment coming
+            // one frame late instead of not at all.
+            hoverArrival.adoptArrivalAt(FIRST_ELEMENT);
+
+            assertThat(hoverArrival.detectArrivalAt(FIRST_ELEMENT))
+                .isFalse();
+        }
+
+        @Test
+        void adoptArrivalAtLeavesTheLatchAnsweringThePointersOwnMoves() {
+            // Adopted rather than gone deaf: the pointer genuinely moving on to what the row carried under
+            // it is an arrival like any other, so the element has to be reachable again once left.
+            hoverArrival.adoptArrivalAt(FIRST_ELEMENT);
+            hoverArrival.detectArrivalAt(NO_ELEMENT_HOVERED);
+
+            assertThat(hoverArrival.detectArrivalAt(FIRST_ELEMENT))
+                .isTrue();
+        }
+
+        @Test
+        void adoptArrivalAtDropsTheElementThePointerWasOnBeforeTheRowMoved() {
+            // A row that moves away from under the pointer leaves it on nothing, and the element it was on
+            // must not stay latched - coming back to that element afterwards is an arrival.
+            hoverArrival.detectArrivalAt(FIRST_ELEMENT);
+            hoverArrival.adoptArrivalAt(NO_ELEMENT_HOVERED);
 
             assertThat(hoverArrival.detectArrivalAt(FIRST_ELEMENT))
                 .isTrue();
