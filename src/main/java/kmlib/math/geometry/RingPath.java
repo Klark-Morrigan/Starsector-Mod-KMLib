@@ -1,6 +1,7 @@
 package kmlib.math.geometry;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -98,7 +99,10 @@ public final class RingPath {
         if (!hasRoomForInset(counterClockwise, cleaned, insetDistance)) {
             return nothingLeftToTrace();
         }
-        return traceRing(reverseRing(cleaned), topAnchor);
+
+        var traced = rotateToTopCentre(reverseRing(cleaned), topAnchor);
+
+        return new RingPath(traced, measureArcLengths(traced));
     }
 
     /**
@@ -184,13 +188,17 @@ public final class RingPath {
      * gives the stretch girth has to bend with it, so the corners have to survive into
      * what is handed on rather than being flattened away here.
      *
-     * <p>The walk runs forward from the start, so an end before the start continues round
-     * the ring to reach it. It never laps: a stretch longer than the perimeter is cut to
-     * one full lap, since going round twice would only retrace the same geometry.
+     * <p>The walk only ever runs forward. A stretch reaching past the perimeter carries on
+     * round the ring, so a layout running off the end needs no splitting by its caller; a
+     * stretch longer than the whole perimeter is cut to one lap, since going round twice
+     * would only retrace the same geometry; and an end <em>behind</em> its start is a
+     * stretch of no length rather than a walk almost all the way round to reach it - which
+     * is the safer reading of what is, at that point, a caller's arithmetic having gone
+     * wrong.
      *
      * @param startArcLength how far along the path the stretch begins
-     * @param endArcLength   how far along it ends; taken as forward from the start, so
-     *                       wrapping past the perimeter is expected rather than an error
+     * @param endArcLength   how far along it ends, measured from the same origin as the
+     *                       start; past the perimeter is expected rather than an error
      * @return the stretch as {x, y} points in traversal order, with no two consecutive
      *         points coincident - a stretch of no length is the single point it sits at
      * @throws IllegalStateException when the path is empty and has no points to walk
@@ -221,21 +229,6 @@ public final class RingPath {
         appendUnlessCoincident(walked, computePointAt(start + span));
 
         return walked;
-    }
-
-    // Traces a ring already wound the way it is to be walked, from the top centre above
-    // the anchor. The half of the trace that is pure bookkeeping - where to begin and how
-    // far each corner sits from there - with the shaping left to the caller.
-    private static RingPath traceRing(List<double[]> ring, double[] topAnchor) {
-
-        var started = rotateToTopCentre(ring, topAnchor);
-
-        // Splitting an edge at the start point can leave a ring one corner shorter than it
-        // looks, when the split lands on a corner already there and the duplicate goes.
-        if (started.size() < Limits.MIN_VERTICES_TO_ENCLOSE_AREA) {
-            return nothingLeftToTrace();
-        }
-        return new RingPath(started, measureArcLengths(started));
     }
 
     // Whether the offset really moved the whole ring the distance it was asked to: every
@@ -288,7 +281,10 @@ public final class RingPath {
 
         // The walk ends back at the corner the start's edge leaves, and the start itself
         // may sit exactly on a corner at either end of that edge. Both leave a zero-length
-        // edge the dedup takes out.
+        // edge the dedup takes out - one of them, never both, since that would need the
+        // edge's two ends to coincide, which a deduplicated ring has none of. So the
+        // rotation hands back at least as many corners as it was given, and a ring that
+        // enclosed area still does.
         return Rings.removeConsecutiveDuplicates(rotated);
     }
 
@@ -359,11 +355,10 @@ public final class RingPath {
     // since nothing here moves one.
     private static List<double[]> reverseRing(List<double[]> ring) {
 
-        var reversed = new ArrayList<double[]>(ring.size());
+        var reversed = new ArrayList<>(ring);
 
-        for (var i = ring.size() - 1; i >= 0; i--) {
-            reversed.add(ring.get(i));
-        }
+        Collections.reverse(reversed);
+
         return reversed;
     }
 

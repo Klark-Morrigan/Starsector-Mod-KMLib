@@ -17,8 +17,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * centre above the anchor, runs clockwise whatever winding the ring arrived in, and
  * insets inward from a clockwise ring rather than outward; it falls back to the ring's
  * own top corner when the anchor sits beside the shape rather than within its span; and
- * it leaves nothing to trace when the inset outruns the ring or the ring encloses no
- * area.
+ * it leaves nothing to trace when the inset outruns the ring on every side at once, when
+ * it outruns a ring thin in one direction only, or when the ring encloses no area.
  *
  * <p>And of {@link RingPath#getPerimeter}: the traced inset ring's own length, and zero
  * where there is no path.
@@ -30,7 +30,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * <p>And of {@link RingPath#collectPointsBetween}: a stretch within one edge is its two
  * ends, a stretch spanning a corner keeps that corner, a stretch landing on a corner does
  * not repeat it, a stretch of no length is the single point it sits at, a stretch wrapping
- * past the start carries on round, and one longer than the perimeter is cut to a lap.
+ * past the start carries on round, one ending behind its start has no length, and one
+ * longer than the perimeter is cut to a lap.
  */
 final class RingPathTest {
 
@@ -131,6 +132,29 @@ final class RingPathTest {
                 6.0,
                 MITER_SPIKE_LIMIT,
                 SQUARE_CENTRE);
+
+            assertThat(traced.isEmpty())
+                .isTrue();
+        }
+
+        @Test
+        void nothing_is_left_to_trace_when_the_ring_is_too_thin_in_one_direction_only() {
+            // A 20-by-4 ring has length to spare and no width: inset by 3, its long sides
+            // cross while its ends do not, and what comes back is a tidy 14-by-2 rectangle
+            // whose corners stand 1 from the ring rather than 3. A ring thin in one
+            // direction is the shape a cell is most likely to be when it has no room, and
+            // it loses the whole path, not the thin part of it.
+            var thin = Arrays.asList(
+                new double[] {0, 0},
+                new double[] {20, 0},
+                new double[] {20, 4},
+                new double[] {0, 4});
+
+            var traced = RingPath.traceInsetRing(
+                thin,
+                3.0,
+                MITER_SPIKE_LIMIT,
+                new double[] {10, 2});
 
             assertThat(traced.isEmpty())
                 .isTrue();
@@ -273,6 +297,16 @@ final class RingPathTest {
                     new double[] {4, 8},
                     new double[] {5, 8},
                     new double[] {6, 8}));
+        }
+
+        @Test
+        void stretch_ending_behind_its_start_is_of_no_length() {
+            // The walk only runs forward, and an end behind its start is a caller's
+            // arithmetic having gone wrong. Reading it as "almost all the way round" would
+            // turn that slip into a nearly complete lap; a point is the safer reading.
+            assertThatStretchIs(
+                traceReferenceSquare().collectPointsBetween(5, 4),
+                List.of(new double[] {8, 6}));
         }
 
         @Test

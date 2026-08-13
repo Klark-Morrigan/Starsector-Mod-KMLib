@@ -52,7 +52,10 @@ seam between two pieces of the same shape.
   out the folds a self-crossing inset leaves.
 - **`PolygonSmoothing`** - `removeSpikes` drops needles and cusps too thin to round, then
   `roundCorners` arcs or chamfers what remains. Run in that order.
-- **`PolygonRegions`** - signed area, point-in-ring, and the interior spans a line crosses.
+- **`PolygonRegions`** - signed area, point-in-ring, distance to the boundary, and the
+  interior spans a line crosses. The point tests split by question: `isPointInsideRing`
+  says which side of the boundary a point is on and is arbitrary on it,
+  `computeDistanceToBoundary` says how far off it is and is exact there.
 - **`Rings`** - ring hygiene: which vertices survive a dedup, and where each half of a
   surviving corner came from.
 - **`EdgeRings`** - chains loose edges back into rings, welding shared vertices, so a set
