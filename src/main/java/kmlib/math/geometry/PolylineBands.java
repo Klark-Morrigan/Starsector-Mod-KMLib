@@ -114,26 +114,26 @@ public final class PolylineBands {
         var last = points.size() - 1;
         var joins = new ArrayList<BandJoin>(points.size());
 
-        joins.add(buildCap(points.get(0), points.get(0), points.get(1), halfWidth));
+        joins.add(buildCap(
+            points.get(0),
+            computeLeftUnitNormal(points.get(0), points.get(1)),
+            halfWidth));
 
         for (var corner = 1; corner < last; corner++) {
             joins.add(buildCorner(points, corner, halfWidth, miterSpikeLimit));
         }
 
-        joins.add(buildCap(points.get(last), points.get(last - 1), points.get(last), halfWidth));
+        joins.add(buildCap(
+            points.get(last),
+            computeLeftUnitNormal(points.get(last - 1), points.get(last)),
+            halfWidth));
 
         return joins;
     }
 
-    // The join where the band stops: the two rail points square across the end, taken
-    // from the direction of the one segment reaching it.
-    private static BandJoin buildCap(
-            double[] end,
-            double[] segmentFrom,
-            double[] segmentTo,
-            double halfWidth) {
-
-        var normal = computeLeftUnitNormal(segmentFrom, segmentTo);
+    // The join where the band stops: the two rail points square across the end, on the
+    // normal of the one segment reaching it.
+    private static BandJoin buildCap(double[] end, double[] normal, double halfWidth) {
 
         return BandJoin.ofSharedRails(
             offsetPoint(end, normal, halfWidth),
@@ -167,7 +167,11 @@ public final class PolylineBands {
         // through this point - where the two pairs of rail points already coincide, so
         // butting them is seamless - or it doubles back on itself, where there is no
         // outside of the turn to close and the band is bound to lie over itself anyway.
-        if (leftMiter == null || rightMiter == null) {
+        //
+        // One rail decides for both: the two rails on a side are the segments' own
+        // directions, offset, so whether they converge is a fact about the corner rather
+        // than about which side of it the offset went.
+        if (leftMiter == null) {
             return new BandJoin(arrivingLeft, arrivingRight, leavingLeft, leavingRight, List.of());
         }
 
@@ -180,9 +184,12 @@ public final class PolylineBands {
         var outerMiter = turnsLeft ? rightMiter : leftMiter;
         var overshoot = Points.computeDistance(outerMiter, at);
 
+        var arrivesFromCorner = corner - 1 > 0;
+        var leavesToCorner = corner + 1 < points.size() - 1;
+
         var fitsOnItsSegments = overshoot <= Math.min(
-            computeAvailableReach(previous, at, corner - 1 > 0),
-            computeAvailableReach(at, next, corner + 1 < points.size() - 1));
+            computeAvailableReach(previous, at, arrivesFromCorner),
+            computeAvailableReach(at, next, leavesToCorner));
 
         // The two failures are asked separately because they answer different halves of
         // the join. A miter that cannot fit is dropped on both rails, since either would
