@@ -5,6 +5,7 @@ import com.fs.starfarer.api.input.InputEventAPI;
 import kmlib.animation.PulseEnvelopes;
 import kmlib.animation.TraverseDurations;
 import kmlib.starsector.ui.controls.BodyHoverSource;
+import kmlib.starsector.ui.sound.PointerArrivalTarget;
 import kmlib.starsector.ui.sound.UiSoundPlayer;
 import kmlib.starsector.ui.sound.UiSoundScheme;
 import kmlib.starsector.ui.sound.VanillaUiSoundPlayer;
@@ -666,8 +667,9 @@ public final class TabPanelController {
     }
 
     // Answers the pointer reaching either of the panel's two hoverable parts, once per arrival. Both parts
-    // sound alike because both are controls the player aims at, and the handle needed no new detection -
-    // its hover was already being found for its fade.
+    // sound alike because both are the panel's own furniture rather than anything in its body - a tab and
+    // the handle each move the player between whole views - so both answer at the chrome's level. The
+    // handle needed no new detection: its hover was already being found for its fade.
     //
     // A moment rather than a position, which is why neither is read off a fade: the pointer resting on a
     // part holds its fade at the top for as long as it stays, and a sound taken from that would be a tone
@@ -681,7 +683,8 @@ public final class TabPanelController {
         var hasReachedNotch = notchHoverArrival.detectArrival(hover.isNotchHovered());
 
         if (hasReachedTab || hasReachedNotch) {
-            soundPlayer.playCueIfPresent(soundScheme.pointerArrivalCue());
+            soundPlayer.playCueIfPresent(
+                soundScheme.resolvePointerArrivalCueFor(PointerArrivalTarget.PANEL_CHROME));
         }
     }
 }

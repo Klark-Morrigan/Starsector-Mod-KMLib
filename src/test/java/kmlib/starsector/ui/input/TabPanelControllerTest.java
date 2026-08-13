@@ -1184,12 +1184,29 @@ final class TabPanelControllerTest {
     @Nested
     class InterfaceSounds {
 
+        // The levels the body's kinds answer at, named only so the chrome's can be told from them - both
+        // are the same number, this panel having nothing yet that sounds at either.
+        private static final float BODY_ARRIVAL_VOLUME = 0.2f;
+
+        // The level the panel's own furniture answers at, distinct from the two above so which kind the
+        // controller named for a tab and its handle can be read off what sounded.
+        private static final float CHROME_ARRIVAL_VOLUME = 0.75f;
+
+        // A look whose arrival levels differ by kind. The vanilla scheme cannot tell them apart, its three
+        // being a pair and a half rather than three distinct numbers.
+        private static final UiSoundScheme KIND_DISTINGUISHING_SOUNDS = new UiSoundScheme(
+            UiSoundCue.createAtFullVolume(StarsectorUiSound.BUTTON_PRESSED),
+            StarsectorUiSound.BUTTON_MOUSEOVER,
+            CHROME_ARRIVAL_VOLUME,
+            BODY_ARRIVAL_VOLUME,
+            BODY_ARRIVAL_VOLUME);
+
         // The two roles crossed over, so a moment answered from the controller's own code rather than from
         // the look it was handed records the sound the other moment would have made. The vanilla pair could
         // not tell the two apart - it names exactly what the controller used to name for itself.
         private static final UiSoundScheme SWAPPED_SOUNDS = new UiSoundScheme(
             UiSoundCue.createAtFullVolume(StarsectorUiSound.BUTTON_MOUSEOVER),
-            UiSoundCue.createAtFullVolume(StarsectorUiSound.BUTTON_PRESSED));
+            StarsectorUiSound.BUTTON_PRESSED);
 
         private final UiSoundPlayerFake soundPlayerFake = new UiSoundPlayerFake();
 
@@ -1308,6 +1325,21 @@ final class TabPanelControllerTest {
 
             assertThat(soundPlayerFake.getPlayedSounds())
                 .containsExactly(StarsectorUiSound.BUTTON_PRESSED);
+        }
+
+        @Test
+        void interfaceSoundsAnswerAnArrivalOnTheHeaderAtThePanelChromeLevel() {
+            // Which kind of thing was reached is the one part of an arrival this end names, the look owning
+            // the rest - so a controller that named the wrong kind would answer a tab at a body control's
+            // level, silently. A tab and its handle are the panel's own furniture, not its contents.
+            var controller = buildControllerSounding(KIND_DISTINGUISHING_SOUNDS);
+
+            advanceWithPointerOn(controller, buildHoverOnTab(FIRST_TAB_INDEX));
+
+            assertThat(soundPlayerFake.getPlayedCues())
+                .containsExactly(new UiSoundCue(
+                    StarsectorUiSound.BUTTON_MOUSEOVER,
+                    CHROME_ARRIVAL_VOLUME));
         }
 
         @Test

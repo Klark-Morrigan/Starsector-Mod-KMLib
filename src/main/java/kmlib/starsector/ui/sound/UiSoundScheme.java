@@ -21,6 +21,13 @@ package kmlib.starsector.ui.sound;
  * It is also what a host wanting silence states, rather than a cue at zero volume - a sound played at
  * nothing is still a sound played, and reads as wiring that half worked.
  *
+ * <p>The arrival is the one moment that answers at more than one level, which is why it is held as a role
+ * and a volume per {@link PointerArrivalTarget} rather than as a cue: a panel's chrome, a lone control and
+ * one item of a list are all reached the same way and sound alike, but a sweep crosses far more of the
+ * third than of the other two. One sample throughout and one level per kind is what keeps that a balance
+ * rather than three unrelated sounds - so callers take {@link #resolvePointerArrivalCueFor} and never the
+ * role alone, the pair being what a moment is owed.
+ *
  * <p>The moments are a control's, for all that the name says only "UI": a press and the pointer arriving
  * are what a thing the player aims at and clicks does, and a scheme naming them describes a row of tabs,
  * a collapse handle, or a checkbox alike. The name stays broad because the seam is - what a moment is
@@ -31,27 +38,80 @@ package kmlib.starsector.ui.sound;
  * that role is left to whatever grows one, on the same rule {@link StarsectorUiSound} follows about not
  * guessing at ids nothing plays.
  *
- * @param pressCue          what a control makes when a press on it lands, or null to press silently
- * @param pointerArrivalCue what a control makes as the pointer arrives on it, or null to stay silent
- *                          under the pointer
+ * @param pressCue                          what a control makes when a press on it lands, or null to press
+ *                                          silently
+ * @param pointerArrivalSound               what a control makes as the pointer arrives on it, whatever kind
+ *                                          of thing was reached, or null to stay silent under the pointer
+ * @param panelChromeArrivalVolume          how loudly an arrival on the panel's own furniture sounds
+ * @param singleOptionControlArrivalVolume  how loudly an arrival on a control with one answer to give
+ *                                          sounds
+ * @param listedItemArrivalVolume           how loudly an arrival on one of many alike sounds
  */
 public record UiSoundScheme(
     UiSoundCue pressCue,
-    UiSoundCue pointerArrivalCue) {
+    StarsectorUiSound pointerArrivalSound,
+    float panelChromeArrivalVolume,
+    float singleOptionControlArrivalVolume,
+    float listedItemArrivalVolume) {
+
+    // The balance a KM panel takes when its host states none: vanilla's own arrival level halved for
+    // anything the player aims at, and halved again for the items a sweep crosses several of on its way
+    // somewhere else. What makes them right is the ratio rather than any one of them - a column of listed
+    // rows answering as loudly as the tab above it is what reads as chatter.
+    private static final float DEFAULT_PANEL_CHROME_ARRIVAL_VOLUME = 0.5f;
+    private static final float DEFAULT_SINGLE_OPTION_CONTROL_ARRIVAL_VOLUME = 0.5f;
+    private static final float DEFAULT_LISTED_ITEM_ARRIVAL_VOLUME = 0.25f;
 
     /**
-     * The engine's own scheme, for a control drawn to look like a vanilla one: a vanilla button's press
-     * and a vanilla button's mouseover, both at the level the engine already mixes them at. The default a
-     * host wants unless it has a reason not to - a KM control that looks like the chrome around it and
-     * answers differently reads as a foreign widget however closely it is painted, and that goes for how
-     * loudly as much as for which sample.
+     * Rejects a volume the engine has no meaning for at the point the look is composed, rather than leaving
+     * it to the cue built from it - which is built on the frame the moment first sounds, where a throw is a
+     * crash mid-hover instead of a look that refused to compose.
+     */
+    public UiSoundScheme {
+
+        UiSoundCue.requirePlayableVolume(panelChromeArrivalVolume);
+        UiSoundCue.requirePlayableVolume(singleOptionControlArrivalVolume);
+        UiSoundCue.requirePlayableVolume(listedItemArrivalVolume);
+    }
+
+    /**
+     * A scheme naming the two moments and taking the library's own arrival balance - the form a host wants
+     * until it has volumes of its own to state, which in practice means until it has a player looking at a
+     * settings screen. Shipping defaults rather than demanding numbers keeps a consuming mod from having to
+     * invent a balance before it has an opinion about one; what it gets by saying nothing is the balance a
+     * KM sidebar was tuned at.
+     *
+     * @param pressCue            what a control makes when a press on it lands, or null to press silently
+     * @param pointerArrivalSound what a control makes as the pointer arrives on it, or null to stay silent
+     *                            under the pointer
+     */
+    public UiSoundScheme(UiSoundCue pressCue, StarsectorUiSound pointerArrivalSound) {
+        this(
+            pressCue,
+            pointerArrivalSound,
+            DEFAULT_PANEL_CHROME_ARRIVAL_VOLUME,
+            DEFAULT_SINGLE_OPTION_CONTROL_ARRIVAL_VOLUME,
+            DEFAULT_LISTED_ITEM_ARRIVAL_VOLUME);
+    }
+
+    /**
+     * The engine's own roles, for a control drawn to look like a vanilla one: a vanilla button's press and a
+     * vanilla button's mouseover. The default a host wants unless it has a reason not to - a KM control that
+     * looks like the chrome around it and answers with different samples reads as a foreign widget however
+     * closely it is painted.
+     *
+     * <p>Vanilla's roles at a KM panel's levels, though, and deliberately so. The press keeps the engine's
+     * own balance, being one act the player asked for; the arrivals take the library's defaults, because
+     * what vanilla mixed its mouseover for is a screen with a handful of hit targets on it and not a column
+     * of them. Matching the engine's chrome means sounding like it under one pointer sweep, which is what
+     * the levels answer for and the ids cannot.
      *
      * @return the scheme a vanilla-looking control sounds by
      */
     public static UiSoundScheme createVanillaSoundScheme() {
         return new UiSoundScheme(
             UiSoundCue.createAtFullVolume(StarsectorUiSound.BUTTON_PRESSED),
-            UiSoundCue.createAtFullVolume(StarsectorUiSound.BUTTON_MOUSEOVER));
+            StarsectorUiSound.BUTTON_MOUSEOVER);
     }
 
     /**
@@ -62,5 +122,30 @@ public record UiSoundScheme(
      */
     public static UiSoundScheme createSilentSoundScheme() {
         return new UiSoundScheme(null, null);
+    }
+
+    /**
+     * What the pointer reaching the given kind of thing sounds like, role and level together. One accessor
+     * over the kinds rather than a cue apiece, so a caller answers an arrival by saying what was arrived at
+     * - which is the only question it can answer - and the look decides the rest.
+     *
+     * @param arrivalTarget what kind of thing the pointer reached
+     * @return the role and volume that arrival sounds at, or null for a look that stays silent under the
+     *         pointer
+     */
+    public UiSoundCue resolvePointerArrivalCueFor(PointerArrivalTarget arrivalTarget) {
+        return pointerArrivalSound == null
+            ? null
+            : new UiSoundCue(pointerArrivalSound, resolveArrivalVolumeFor(arrivalTarget));
+    }
+
+    // Which of the three levels a kind answers at. A switch rather than a map, so a kind added to the enum
+    // stops compiling here rather than resolving to a volume nobody chose for it.
+    private float resolveArrivalVolumeFor(PointerArrivalTarget arrivalTarget) {
+        return switch (arrivalTarget) {
+            case PANEL_CHROME -> panelChromeArrivalVolume;
+            case SINGLE_OPTION_CONTROL -> singleOptionControlArrivalVolume;
+            case LISTED_ITEM -> listedItemArrivalVolume;
+        };
     }
 }

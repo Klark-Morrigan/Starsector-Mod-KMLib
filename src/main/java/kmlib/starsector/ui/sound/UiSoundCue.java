@@ -46,10 +46,7 @@ public record UiSoundCue(
     public UiSoundCue {
 
         Objects.requireNonNull(sound, "sound");
-
-        if (volume < MINIMUM_VOLUME) {
-            throw new IllegalArgumentException("volume must not be negative");
-        }
+        requirePlayableVolume(volume);
     }
 
     /**
@@ -62,5 +59,23 @@ public record UiSoundCue(
      */
     public static UiSoundCue createAtFullVolume(StarsectorUiSound sound) {
         return new UiSoundCue(sound, FULL_VOLUME);
+    }
+
+    /**
+     * The volume rule itself, for a look holding a volume before it has a role to pair it with. A scheme
+     * that names one level per kind of arrival carries loose numbers until the moment it answers for, and a
+     * bad one caught only when the cue is finally built would throw on the frame the moment first sounded -
+     * a fault that reaches the player as a crash mid-hover rather than as a look that refused to compose.
+     *
+     * <p>Here rather than repeated there so the two ends cannot disagree about what a volume may be.
+     *
+     * @param volume how loudly, as a multiplier over the engine's configured volume for a role
+     * @throws IllegalArgumentException if the volume is below silence
+     */
+    static void requirePlayableVolume(float volume) {
+
+        if (volume < MINIMUM_VOLUME) {
+            throw new IllegalArgumentException("volume must not be negative");
+        }
     }
 }
