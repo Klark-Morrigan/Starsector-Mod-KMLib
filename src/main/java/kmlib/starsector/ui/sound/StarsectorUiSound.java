@@ -6,9 +6,13 @@ package kmlib.starsector.ui.sound;
  * the engine's, declared in {@code data/config/sounds.json}, so a control drawn to look like a vanilla
  * one sounds like one too and follows a restyled install's own samples.
  *
- * <p>Only the roles a KM widget actually makes are listed. An id is a piece of vanilla's content rather
+ * <p>Only the roles KM code actually plays are listed. An id is a piece of vanilla's content rather
  * than a fact about our widgets, so a role nothing plays would be a guess about what the engine keeps -
  * and a wrong id fails silently, being looked up by name at play time.
+ *
+ * <p>"Widget" is the common case and not the boundary: what a role names is a moment the interface
+ * answers, and an overlay drawn onto the sector map answers moments no control has - so a role is listed
+ * here on something playing it rather than on a control playing it.
  *
  * <p>Volume is not here, but it is no longer nowhere. Each id carries its own in the engine's config -
  * the pressed sound at 0.6 and the mouseover at 0.25 - and that balance is still exactly right for one
@@ -41,7 +45,20 @@ public enum StarsectorUiSound {
      * is the one a list takes. A wrong id fails silently, being looked up by name at play time, which is
      * why the choice between them is written down here rather than left to whoever plays it.
      */
-    LIST_SCROLLED("ui_number_scrolling");
+    LIST_SCROLLED("ui_number_scrolling"),
+
+    /**
+     * What a vanilla readout makes as it types a character out: a short tick with none of a button's
+     * body to it. The role for a moment that is not a hit target being reached - a cell of the sector
+     * map arriving under the cursor - where a button's mouseover would claim a control the surface
+     * underneath does not have.
+     *
+     * <p>The one id here whose name has to be looked up rather than guessed. {@code ui_type.ogg} is the
+     * file, and the ids the engine keeps over it are this one, {@link #LIST_SCROLLED}'s
+     * {@code ui_number_scrolling}, and {@code ui_typer_buzz} at half pitch - so the sample a caller
+     * means and the id it must ask for do not share a name, and the plausible spelling is not a sound.
+     */
+    TEXT_TYPED("ui_typer_type");
 
     // The engine's own id for this sound, looked up in its sound config at play time.
     private final String soundId;

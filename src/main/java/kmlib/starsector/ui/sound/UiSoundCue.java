@@ -33,9 +33,17 @@ public record UiSoundCue(
      */
     public static final float FULL_VOLUME = 1f;
 
-    // The quietest a cue can name. Below this the engine has no meaning for the value, so a negative
-    // volume would fail as quietly as a wrong id does - which is why it is caught where it is written.
-    private static final float MINIMUM_VOLUME = 0f;
+    /**
+     * The quietest a cue can name, and so the level at which a look composing one from a slider stops
+     * naming a cue at all: a moment asked for at nothing is still a moment played, which reads as wiring
+     * that half worked rather than as something deliberately quiet. Public because that comparison is
+     * made wherever a host builds a cue from a level the player set, and two spellings of the floor is
+     * two places for it to be read differently.
+     *
+     * <p>Below it the engine has no meaning for the value, so a negative volume would fail as quietly as
+     * a wrong id does - which is why it is also what {@link #requirePlayableVolume} guards against.
+     */
+    public static final float SILENT_VOLUME = 0f;
 
     /**
      * Rejects a cue that names no role, since silence is a null cue rather than a cue with nothing in it -
@@ -74,7 +82,7 @@ public record UiSoundCue(
      */
     static void requirePlayableVolume(float volume) {
 
-        if (volume < MINIMUM_VOLUME) {
+        if (volume < SILENT_VOLUME) {
             throw new IllegalArgumentException("volume must not be negative");
         }
     }
