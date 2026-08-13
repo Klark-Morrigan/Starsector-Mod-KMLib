@@ -11,6 +11,7 @@ Starsector API - the map layers that consume it live in the mods, not in this pa
 - [Two conventions](#two-conventions)
 - [Shapes and values](#shapes-and-values)
 - [Polygon passes](#polygon-passes)
+- [Laying something out along a ring](#laying-something-out-along-a-ring)
 - [Point, line and span arithmetic](#point-line-and-span-arithmetic)
 - [Partitioning](#partitioning)
 - [One home for the degenerate thresholds](#one-home-for-the-degenerate-thresholds)
@@ -33,6 +34,7 @@ they are handed.
 | `CornerRounding` | the radius, segment count and bevel threshold a rounding pass uses |
 | `LabelledPolygon` | a ring whose every edge carries an int naming what lies across it |
 | `RingRegion` | one filled region: an outer ring plus the holes cut from it |
+| `RingPath` | a ring walked as a path: one direction, one start, positions as arc length |
 | `PrincipalAxis` | the fitted major/minor axes of a point cloud |
 | `RegionChord` | a chord across a region, with the span it clears |
 
@@ -59,6 +61,30 @@ seam between two pieces of the same shape.
   `intersectWithDisk` keeps what is inside, `subtractDisk` keeps what is outside as
   disjoint convex pieces, and `subtractDiskWithLabels` names what lies across each edge of
   those pieces.
+
+## Laying something out along a ring
+
+A ring says nothing about where a walk of it begins or which way it goes: the winding is
+whatever the pass that built it produced, and the first vertex is wherever that pass
+started. `RingPath` settles both, plus the third thing a layout needs - a position stated
+as one number rather than as an edge and a fraction of it.
+
+- **Direction** - clockwise (negative signed area), whatever winding arrived.
+- **Start** - the ring's top centre: the highest crossing of the vertical line through a
+  caller-supplied anchor, falling back to the ring's topmost corner when that line misses
+  the ring entirely.
+- **Position** - arc length from that start, wrapping past the perimeter, so a layout that
+  runs off the end continues round instead of having to be split.
+
+`traceInsetRing` traces an inset of the ring rather than the ring itself, because the inset
+carries a verdict: a shape narrower than twice the inset has no room for it, and what comes
+back is not obviously wrong to look at. A square inset past half its width returns a smaller
+square, correctly wound and self-intersecting nowhere, built entirely of backwards edges - so
+the verdict is a measurement (every corner must stand its inset distance off the original
+ring, by `PolygonRegions.computeDistanceToBoundary`) rather than a winding or vertex-count
+test. Answered there, so a non-empty path is always one that can be walked.
+`collectPointsBetween` returns a stretch as a polyline including the corners it turns at - a
+stretch spanning a corner bends, and whatever gives it girth has to bend with it.
 
 ## Point, line and span arithmetic
 
