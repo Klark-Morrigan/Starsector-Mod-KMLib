@@ -138,7 +138,12 @@ if (isFastRenderingRequired && !isFastRenderingInstalled) {
 }
 
 sourceSets {
-    bridgeStubs
+    bridgeStubs {
+        // Declared explicitly to match the path used in the repo. If undeclared,
+        // Gradle derives the same path in camel case, which causes case-sensitive
+        // operating systems to look in the wrong place.
+        java.srcDirs = ['src/bridgestubs/java']
+    }
 }
 
 // Read here, at configuration time, so the guard below touches no project state while the task
