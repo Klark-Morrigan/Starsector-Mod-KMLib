@@ -1363,12 +1363,7 @@ final class TabPanelControllerTest {
             // pass this and every case below it.
             var controller = buildControllerSounding(KIND_DISTINGUISHING_SOUNDS);
 
-            controller.advanceInputMotionsAtPoint(
-                buildTwoTabPlacement(),
-                INSIDE_FIRST_TAB_X,
-                BELOW_TABS_Y,
-                FULL_STEP_SECONDS,
-                DURATIONS);
+            advanceWithPointerAt(controller, buildTwoTabPlacement(), INSIDE_FIRST_TAB_X, BELOW_TABS_Y);
 
             assertThat(soundPlayerFake.getPlayedCues())
                 .containsExactly(new UiSoundCue(
@@ -1383,12 +1378,11 @@ final class TabPanelControllerTest {
             // somewhere, which is what the quieter level is for.
             var controller = buildControllerSounding(KIND_DISTINGUISHING_SOUNDS);
 
-            controller.advanceInputMotionsAtPoint(
+            advanceWithPointerAt(
+                controller,
                 buildPlacementWithTwoSegmentBody(),
                 INSIDE_FIRST_TAB_X,
-                BELOW_TABS_Y,
-                FULL_STEP_SECONDS,
-                DURATIONS);
+                BELOW_TABS_Y);
 
             assertThat(soundPlayerFake.getPlayedCues())
                 .containsExactly(new UiSoundCue(
@@ -1404,19 +1398,8 @@ final class TabPanelControllerTest {
             var controller = buildControllerSounding(KIND_DISTINGUISHING_SOUNDS);
             var placement = buildPlacementWithTwoSegmentBody();
 
-            controller.advanceInputMotionsAtPoint(
-                placement,
-                INSIDE_FIRST_TAB_X,
-                BELOW_TABS_Y,
-                FULL_STEP_SECONDS,
-                DURATIONS);
-
-            controller.advanceInputMotionsAtPoint(
-                placement,
-                INSIDE_SECOND_TAB_X,
-                BELOW_TABS_Y,
-                FULL_STEP_SECONDS,
-                DURATIONS);
+            advanceWithPointerAt(controller, placement, INSIDE_FIRST_TAB_X, BELOW_TABS_Y);
+            advanceWithPointerAt(controller, placement, INSIDE_SECOND_TAB_X, BELOW_TABS_Y);
 
             assertThat(soundPlayerFake.getPlayedSounds())
                 .containsExactly(
@@ -1464,15 +1447,28 @@ final class TabPanelControllerTest {
             // screen lights for nobody, so it announces itself to nobody either.
             var controller = buildVanillaSoundingController();
 
-            controller.advanceInputMotionsAtPoint(
-                buildDockedRailPlacement(),
-                INSIDE_FIRST_TAB_X,
-                BELOW_TABS_Y,
-                FULL_STEP_SECONDS,
-                DURATIONS);
+            advanceWithPointerAt(
+                controller, buildDockedRailPlacement(), INSIDE_FIRST_TAB_X, BELOW_TABS_Y);
 
             assertThat(soundPlayerFake.getPlayedSounds())
                 .isEmpty();
+        }
+
+        @Test
+        void interfaceSoundsAnnounceABodyCellAgainOnceTheMotionsWereReset() {
+            // The panel dropping its motions drops what it announced with them, so a panel re-opened with
+            // the cursor already over a cell answers it. It is an arrival to the player - the strip was not
+            // there a moment ago - and the latch left standing would call it a cell they never left.
+            var controller = buildVanillaSoundingController();
+
+            advanceWithPointerOn(controller, buildHoverOnBodyCell(FIRST_BODY_CELL));
+            controller.resetInputMotions();
+            soundPlayerFake.clearPlayedCues();
+
+            advanceWithPointerOn(controller, buildHoverOnBodyCell(FIRST_BODY_CELL));
+
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .containsExactly(StarsectorUiSound.BUTTON_MOUSEOVER);
         }
 
         @Test
@@ -1522,6 +1518,22 @@ final class TabPanelControllerTest {
         // would have produced, handed in so these cases need no display to point at.
         private void advanceWithPointerOn(TabPanelController controller, TabPanelHover hover) {
             controller.advanceInputMotionsForFrame(hover, FULL_STEP_SECONDS, DURATIONS);
+        }
+
+        // One frame with the pointer at a point, letting the panel run its own hit-tests - what the cases
+        // about the kind of thing reached take, that kind being the part the panel works out for itself.
+        private void advanceWithPointerAt(
+                TabPanelController controller,
+                TabPanelPlacement placement,
+                float pointX,
+                float pointY) {
+
+            controller.advanceInputMotionsAtPoint(
+                placement,
+                pointX,
+                pointY,
+                FULL_STEP_SECONDS,
+                DURATIONS);
         }
 
         // The pointer on one tab and off the handle.

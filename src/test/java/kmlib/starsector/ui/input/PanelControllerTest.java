@@ -49,7 +49,7 @@ final class PanelControllerTest {
         void activateBodyControlIfHitPassesOverACaptionLabelWithoutActing() {
             // A caption row is drawn but never clickable - a Label is not Interactive - so a press over
             // it hits nothing and falls through rather than being swallowed as if it acted.
-            var label = new Control(LabelledControlSpecs.buildLabel("Caption"), ROW, List.of());
+            var label = buildCaptionControl();
             var activatedCell = PanelController.activateBodyControlIfHit(
                 buildBodyPlacement(label),
                 ROW.x() + ROW.width() / 2f,
@@ -261,10 +261,43 @@ final class PanelControllerTest {
             // A caption carries no action to reach, so a cell named on one goes nowhere rather than throwing
             // on the cast that would reach it. Nothing resolves a cell on a label today, which is exactly
             // why this is stated here rather than left to whichever caller first hands one over.
-            var label = new Control(LabelledControlSpecs.buildLabel("Caption"), ROW, List.of());
+            var label = buildCaptionControl();
 
             assertThat(PanelController.activateCellIfActionable(label, ControlSpec.SINGLE_CELL))
                 .isNull();
+        }
+    }
+
+    @Nested
+    class IsSegmentedControl {
+
+        @Test
+        void isSegmentedControlIsTrueForARowOfOptionSegments() {
+            // The rule the hit-test turns on, and the one a hover reads to say what kind of thing it
+            // reached: a control whose cells are laid side by side is a row of things alike.
+            var radio = buildTwoSegmentHorizontalRadioAtRow(ControlSpec.HorizontalRadio.of(
+                List.of("Left", "Right"),
+                ControlSpec.NO_SELECTION,
+                ControlAction.NONE));
+
+            assertThat(PanelController.isSegmentedControl(radio))
+                .isTrue();
+        }
+
+        @Test
+        void isSegmentedControlIsFalseForAWholeRowCheckbox() {
+            // Hit anywhere on its bounds rather than by segment, which is the other side of the same rule.
+            assertThat(PanelController.isSegmentedControl(buildCheckboxControl("Muted", ControlAction.NONE)))
+                .isFalse();
+        }
+
+        @Test
+        void isSegmentedControlIsFalseForChrome() {
+            // A caption has no cells at all, so nothing about it is one of many alike. Nothing resolves a
+            // cell on one today, which is why the answer is stated here rather than left to whichever
+            // reader first asks it of something that was never a hit target.
+            assertThat(PanelController.isSegmentedControl(buildCaptionControl()))
+                .isFalse();
         }
     }
 
@@ -363,7 +396,7 @@ final class PanelControllerTest {
             var checkbox = buildCheckboxControl("Muted", ControlAction.NONE);
             var resolvedCell = PanelController.resolveHitBodyCell(
                 buildBodyPlacement(
-                    new Control(LabelledControlSpecs.buildLabel("Caption"), ROW, List.of()),
+                    buildCaptionControl(),
                     new Control(new ControlSpec.Divider(), ROW, List.of()),
                     checkbox),
                 ROW.x() + ROW.width() / 2f,
@@ -582,6 +615,12 @@ final class PanelControllerTest {
     // distinguish its case rather than repeating the spec-and-bounds construction.
     private static Control buildCheckboxControl(String label, ControlAction action) {
         return new Control(LabelledControlSpecs.buildCheckbox(label, false, action), ROW, List.of());
+    }
+
+    // A caption occupying ROW - chrome, drawn but never clickable, and so what every case about a control
+    // that is not a hit target reads. Its label says nothing, no case here turning on the words.
+    private static Control buildCaptionControl() {
+        return new Control(LabelledControlSpecs.buildLabel("Caption"), ROW, List.of());
     }
 
     // A one-option scrolling list laid out at ROW: a vertical icon table marked as the scroll region, its
