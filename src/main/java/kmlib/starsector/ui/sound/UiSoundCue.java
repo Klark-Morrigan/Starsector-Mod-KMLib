@@ -70,6 +70,33 @@ public record UiSoundCue(
     }
 
     /**
+     * A moment's cue composed straight from a level somebody set, or no cue at all once that level reaches
+     * silence. The form a host wants wherever a volume arrives from outside the code - a settings slider,
+     * a config file - which is every level a look does not write down itself.
+     *
+     * <p>The null is the point of it. A look states a quiet moment by naming no cue, a sound asked for at
+     * nothing still being a sound played and reading as wiring that half worked, so the comparison against
+     * {@link #SILENT_VOLUME} belongs beside the floor it tests rather than at each host that composes from
+     * a slider - a second copy of it is a second chance to read the boundary differently, and both would be
+     * wrong only to the ear.
+     *
+     * <p>Below silence is answered the same way rather than thrown at, which is where this parts from the
+     * constructor deliberately: what the constructor guards is a level a look <em>stated</em>, where a bad
+     * number means a look that meant to sound and got it wrong. Here the number is the player's, and a
+     * stored value that arrives under zero is still a moment nobody wants heard - answered by a quiet panel
+     * rather than by a throw out of the composition every frame rebuilds.
+     *
+     * @param sound  the role that would sound
+     * @param volume how loudly, as a multiplier over the engine's configured volume for that role
+     * @return that role at that level, or null once the level is at or below silence
+     */
+    public static UiSoundCue createIfAudible(StarsectorUiSound sound, float volume) {
+        return volume <= SILENT_VOLUME
+            ? null
+            : new UiSoundCue(sound, volume);
+    }
+
+    /**
      * The volume rule itself, for a look holding a volume before it has a role to pair it with. A scheme
      * that names one level per kind of arrival carries loose numbers until the moment it answers for, and a
      * bad one caught only when the cue is finally built would throw on the frame the moment first sounded -

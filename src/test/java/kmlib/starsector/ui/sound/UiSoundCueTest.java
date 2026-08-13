@@ -33,6 +33,39 @@ final class UiSoundCueTest {
     }
 
     @Nested
+    class CreateIfAudible {
+
+        @Test
+        void createIfAudibleBindsTheRoleToTheLevelItWasHandedIn() {
+            // The ordinary case: a level somebody set, above silence, reaching the player bound to the
+            // role it was set for rather than to whatever a call site paired with it.
+            var soundCue = UiSoundCue.createIfAudible(StarsectorUiSound.BUTTON_MOUSEOVER, QUIETER_VOLUME);
+
+            assertThat(soundCue)
+                .isEqualTo(new UiSoundCue(StarsectorUiSound.BUTTON_MOUSEOVER, QUIETER_VOLUME));
+        }
+
+        @Test
+        void createIfAudibleNamesNoCueAtAllAtSilence() {
+            // The whole reason the factory exists: a slider at the bottom composes a moment that is not
+            // named, not one named at nothing. The boundary is at silence rather than below it, a level
+            // arriving from a stored double having no business turning on how the narrowing landed.
+            assertThat(UiSoundCue.createIfAudible(StarsectorUiSound.BUTTON_MOUSEOVER, 0f))
+                .isNull();
+        }
+
+        @Test
+        void createIfAudibleNamesNoCueBelowSilenceRatherThanRefusing() {
+            // Where this parts from the constructor, and deliberately: the level here is the player's,
+            // so one that arrives under zero is a moment nobody wants heard rather than a look that
+            // stated a volume it had no meaning for - answered by a quiet panel, not by a throw out of
+            // the composition every frame rebuilds.
+            assertThat(UiSoundCue.createIfAudible(StarsectorUiSound.BUTTON_PRESSED, -0.5f))
+                .isNull();
+        }
+    }
+
+    @Nested
     class Constructor {
 
         @Test
