@@ -8,6 +8,7 @@ import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlAction;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.LabelledControlSpecs;
+import kmlib.starsector.ui.sound.PointerArrivalTarget;
 import kmlib.starsector.ui.sound.PointerArrivalVolumes;
 import kmlib.starsector.ui.sound.StarsectorUiSound;
 import kmlib.starsector.ui.sound.UiSoundCue;
@@ -97,7 +98,7 @@ final class TabPanelControllerTest {
     // What the hit-tests report when the pointer is on none of the panel's parts, named so an advance reads
     // as a pointer position rather than as two nulls and a false.
     private static final Integer NO_TAB_HOVERED = null;
-    private static final BodyCellSlot NO_BODY_CELL_HOVERED = null;
+    private static final HoveredBodyCell NO_BODY_CELL_HOVERED = null;
     private static final boolean NOTCH_HOVERED = true;
     private static final boolean NOTCH_NOT_HOVERED = false;
 
@@ -113,6 +114,17 @@ final class TabPanelControllerTest {
     // a single-cell control, whose cell is zero, so a reading that crossed the place with the cell would
     // answer the same fade and every case using them would still pass.
     private static final BodyCellSlot MID_STRIP_SEGMENT_SLOT = new BodyCellSlot(2, 1);
+
+    // Those slots as the pointer reads them - the place a fade is held against, and the kind of thing the
+    // player reached. The kinds match the slots they are paired with, a whole-row control's single cell
+    // being what the first two name and a segment what the third does, so a case reading either half sees
+    // the pairing the panel's own walk would have produced.
+    private static final HoveredBodyCell FIRST_BODY_CELL =
+        new HoveredBodyCell(FIRST_BODY_SLOT, PointerArrivalTarget.SINGLE_OPTION_CONTROL);
+    private static final HoveredBodyCell SECOND_BODY_CELL =
+        new HoveredBodyCell(SECOND_BODY_SLOT, PointerArrivalTarget.SINGLE_OPTION_CONTROL);
+    private static final HoveredBodyCell MID_STRIP_SEGMENT_CELL =
+        new HoveredBodyCell(MID_STRIP_SEGMENT_SLOT, PointerArrivalTarget.LISTED_ITEM);
 
     // A whole duration in one step, so an end state is reached without walking frames, and half of one for
     // the part-way reads.
@@ -206,7 +218,7 @@ final class TabPanelControllerTest {
             // together.
             var controller = new TabPanelController();
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(FIRST_TAB_INDEX, MID_STRIP_SEGMENT_SLOT, NOTCH_NOT_HOVERED),
+                new TabPanelHover(FIRST_TAB_INDEX, MID_STRIP_SEGMENT_CELL, NOTCH_NOT_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
 
@@ -242,7 +254,7 @@ final class TabPanelControllerTest {
             // be the pair the fade is keyed by.
             var controller = new TabPanelController();
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(NO_TAB_HOVERED, MID_STRIP_SEGMENT_SLOT, NOTCH_NOT_HOVERED),
+                new TabPanelHover(NO_TAB_HOVERED, MID_STRIP_SEGMENT_CELL, NOTCH_NOT_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
 
@@ -260,7 +272,7 @@ final class TabPanelControllerTest {
             // above, which names a slot whose halves differ.
             var controller = new TabPanelController();
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(NO_TAB_HOVERED, MID_STRIP_SEGMENT_SLOT, NOTCH_NOT_HOVERED),
+                new TabPanelHover(NO_TAB_HOVERED, MID_STRIP_SEGMENT_CELL, NOTCH_NOT_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
 
@@ -663,7 +675,7 @@ final class TabPanelControllerTest {
             // slot at rest.
             var controller = new TabPanelController();
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(NO_TAB_HOVERED, FIRST_BODY_SLOT, NOTCH_NOT_HOVERED),
+                new TabPanelHover(NO_TAB_HOVERED, FIRST_BODY_CELL, NOTCH_NOT_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
 
@@ -679,12 +691,12 @@ final class TabPanelControllerTest {
             var controller = new TabPanelController();
 
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(NO_TAB_HOVERED, FIRST_BODY_SLOT, NOTCH_NOT_HOVERED),
+                new TabPanelHover(NO_TAB_HOVERED, FIRST_BODY_CELL, NOTCH_NOT_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
 
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(NO_TAB_HOVERED, SECOND_BODY_SLOT, NOTCH_NOT_HOVERED),
+                new TabPanelHover(NO_TAB_HOVERED, SECOND_BODY_CELL, NOTCH_NOT_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
 
@@ -701,7 +713,7 @@ final class TabPanelControllerTest {
             // control 0 and tab 0 would light together and every case above would still pass.
             var controller = new TabPanelController();
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(NO_TAB_HOVERED, FIRST_BODY_SLOT, NOTCH_NOT_HOVERED),
+                new TabPanelHover(NO_TAB_HOVERED, FIRST_BODY_CELL, NOTCH_NOT_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
 
@@ -1013,7 +1025,7 @@ final class TabPanelControllerTest {
             var controller = new TabPanelController();
 
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(NO_TAB_HOVERED, FIRST_BODY_SLOT, NOTCH_NOT_HOVERED),
+                new TabPanelHover(NO_TAB_HOVERED, FIRST_BODY_CELL, NOTCH_NOT_HOVERED),
                 HALF_STEP_SECONDS,
                 DURATIONS);
 
@@ -1185,13 +1197,12 @@ final class TabPanelControllerTest {
     @Nested
     class InterfaceSounds {
 
-        // The levels the body's kinds answer at, named only so the chrome's can be told from them - both
-        // are the same number, this panel having nothing yet that sounds at either.
-        private static final float BODY_ARRIVAL_VOLUME = 0.2f;
-
-        // The level the panel's own furniture answers at, distinct from the two above so which kind the
-        // controller named for a tab and its handle can be read off what sounded.
+        // The three levels, each a number of its own, so which kind the controller named for a moment can
+        // be read straight off what sounded. Sharing any two of them would let a cell answered as the wrong
+        // kind pass unnoticed, which is the fault these cases exist to catch.
         private static final float CHROME_ARRIVAL_VOLUME = 0.75f;
+        private static final float LISTED_ITEM_ARRIVAL_VOLUME = 0.1f;
+        private static final float SINGLE_OPTION_ARRIVAL_VOLUME = 0.2f;
 
         // A look whose arrival levels differ by kind. The vanilla scheme cannot tell them apart, its three
         // being a pair and a half rather than three distinct numbers.
@@ -1200,8 +1211,8 @@ final class TabPanelControllerTest {
             StarsectorUiSound.BUTTON_MOUSEOVER,
             new PointerArrivalVolumes(
                 CHROME_ARRIVAL_VOLUME,
-                BODY_ARRIVAL_VOLUME,
-                BODY_ARRIVAL_VOLUME));
+                SINGLE_OPTION_ARRIVAL_VOLUME,
+                LISTED_ITEM_ARRIVAL_VOLUME));
 
         // The two roles crossed over, so a moment answered from the controller's own code rather than from
         // the look it was handed records the sound the other moment would have made. The vanilla pair could
@@ -1345,6 +1356,126 @@ final class TabPanelControllerTest {
         }
 
         @Test
+        void interfaceSoundsAnswerAnArrivalOnAWholeRowControlAtTheSingleOptionLevel() {
+            // Driven through the point rather than through a handed-in reading, because the kind is the one
+            // part of a body arrival the panel works out for itself: the walk has the control in hand and
+            // reads what it is off that. Handed in, a controller naming one kind for every body cell would
+            // pass this and every case below it.
+            var controller = buildControllerSounding(KIND_DISTINGUISHING_SOUNDS);
+
+            controller.advanceInputMotionsAtPoint(
+                buildTwoTabPlacement(),
+                INSIDE_FIRST_TAB_X,
+                BELOW_TABS_Y,
+                FULL_STEP_SECONDS,
+                DURATIONS);
+
+            assertThat(soundPlayerFake.getPlayedCues())
+                .containsExactly(new UiSoundCue(
+                    StarsectorUiSound.BUTTON_MOUSEOVER,
+                    SINGLE_OPTION_ARRIVAL_VOLUME));
+        }
+
+        @Test
+        void interfaceSoundsAnswerAnArrivalOnOneSegmentOfARowAtTheListedItemLevel() {
+            // The other half of the same rule, over a body laying a row of segments where the case above
+            // lays one whole-row control. A sweep down a strip crosses several of these on its way
+            // somewhere, which is what the quieter level is for.
+            var controller = buildControllerSounding(KIND_DISTINGUISHING_SOUNDS);
+
+            controller.advanceInputMotionsAtPoint(
+                buildPlacementWithTwoSegmentBody(),
+                INSIDE_FIRST_TAB_X,
+                BELOW_TABS_Y,
+                FULL_STEP_SECONDS,
+                DURATIONS);
+
+            assertThat(soundPlayerFake.getPlayedCues())
+                .containsExactly(new UiSoundCue(
+                    StarsectorUiSound.BUTTON_MOUSEOVER,
+                    LISTED_ITEM_ARRIVAL_VOLUME));
+        }
+
+        @Test
+        void interfaceSoundsAnnounceEachSegmentOfOneRowTheCursorCrossesInto() {
+            // Crossing straight from one segment to its neighbour is an arrival like any other: the pointer
+            // never left the control, and on abutting segments that is the ordinary way to reach one. Keyed
+            // by the control rather than by the cell, the second segment would be reached in silence.
+            var controller = buildControllerSounding(KIND_DISTINGUISHING_SOUNDS);
+            var placement = buildPlacementWithTwoSegmentBody();
+
+            controller.advanceInputMotionsAtPoint(
+                placement,
+                INSIDE_FIRST_TAB_X,
+                BELOW_TABS_Y,
+                FULL_STEP_SECONDS,
+                DURATIONS);
+
+            controller.advanceInputMotionsAtPoint(
+                placement,
+                INSIDE_SECOND_TAB_X,
+                BELOW_TABS_Y,
+                FULL_STEP_SECONDS,
+                DURATIONS);
+
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .containsExactly(
+                    StarsectorUiSound.BUTTON_MOUSEOVER,
+                    StarsectorUiSound.BUTTON_MOUSEOVER);
+        }
+
+        @Test
+        void interfaceSoundsPlayTheMouseoverOnceWhileThePointerRestsOnABodyCell() {
+            // A moment, not a position, and the reason a body cell needs its own latch: its fade stands at
+            // the top for as long as the pointer stays, so a sound read off the fade would be a tone.
+            var controller = buildVanillaSoundingController();
+
+            advanceWithPointerOn(controller, buildHoverOnBodyCell(FIRST_BODY_CELL));
+            advanceWithPointerOn(controller, buildHoverOnBodyCell(FIRST_BODY_CELL));
+            advanceWithPointerOn(controller, buildHoverOnBodyCell(FIRST_BODY_CELL));
+
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .containsExactly(StarsectorUiSound.BUTTON_MOUSEOVER);
+        }
+
+        @Test
+        void interfaceSoundsAnnounceABodyCellAgainOnceThePointerHasBeenBackOnTheTabs() {
+            // The third latch joins the rule the other two already answer to: every one is stepped each
+            // frame, not only whichever one sounds. Left unstepped while a tab answered, the body's would
+            // hold a stale reading saying the pointer never left this cell - and then say nothing on the
+            // frame it came back to it.
+            var controller = buildVanillaSoundingController();
+
+            advanceWithPointerOn(controller, buildHoverOnBodyCell(FIRST_BODY_CELL));
+            advanceWithPointerOn(controller, buildHoverOnTab(FIRST_TAB_INDEX));
+
+            soundPlayerFake.clearPlayedCues();
+
+            advanceWithPointerOn(controller, buildHoverOnBodyCell(FIRST_BODY_CELL));
+
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .containsExactly(StarsectorUiSound.BUTTON_MOUSEOVER);
+        }
+
+        @Test
+        void interfaceSoundsStaySilentForABodyCellBehindADockedPanelsRail() {
+            // The gate is the walk's, not a test of this end's own: the box a fully docked panel leaves is
+            // the rail, and the control is laid where it always was. A cell the fold has wiped off the
+            // screen lights for nobody, so it announces itself to nobody either.
+            var controller = buildVanillaSoundingController();
+
+            controller.advanceInputMotionsAtPoint(
+                buildDockedRailPlacement(),
+                INSIDE_FIRST_TAB_X,
+                BELOW_TABS_Y,
+                FULL_STEP_SECONDS,
+                DURATIONS);
+
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .isEmpty();
+        }
+
+        @Test
         void interfaceSoundsStaySilentThroughoutForALookThatNamesNone() {
             // Silence is something a look states, so a panel is quietened by the value it is built from
             // rather than by visiting every moment that ever asked for a sound. Both moments in one case,
@@ -1396,6 +1527,12 @@ final class TabPanelControllerTest {
         // The pointer on one tab and off the handle.
         private static TabPanelHover buildHoverOnTab(Integer tabIndex) {
             return new TabPanelHover(tabIndex, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED);
+        }
+
+        // The pointer on one body cell and off both the row and the handle, so what sounds can only have
+        // come from the body.
+        private static TabPanelHover buildHoverOnBodyCell(HoveredBodyCell bodyCell) {
+            return new TabPanelHover(NO_TAB_HOVERED, bodyCell, NOTCH_NOT_HOVERED);
         }
 
         // The pointer on the handle and off every tab, so what sounds can only have come from the handle.
@@ -1504,6 +1641,17 @@ final class TabPanelControllerTest {
         return new ControlSpec.Tabs(List.of("First", "Second"), List.of(), selectedIndex, onTabFired);
     }
 
+    // The same panel with a row of segments beneath its tabs in place of the whole-row control every other
+    // case lays there, for the cases about a cell that is one of many alike. Its two segments split the
+    // body box left and right, so the x of either tab above reaches the segment under that tab.
+    private static TabPanelPlacement buildPlacementWithTwoSegmentBody() {
+        return buildPlacement(
+            null,
+            TABS_SHOWING_FIRST_TAB,
+            HEADER_BAND,
+            List.of(buildTwoSegmentRadioControl()));
+    }
+
     // The same panel folded away to the rail a fully docked one leaves: the box narrowed to a border's
     // width while the control beneath the row keeps the place the layout gave it, which is how a fold
     // actually reaches the body - the box is clipped to, and the controls are not moved.
@@ -1561,6 +1709,28 @@ final class TabPanelControllerTest {
             LabelledControlSpecs.buildCheckbox("X", false, ControlAction.NONE),
             BODY_BOX,
             List.of());
+    }
+
+    // A two-option row filling the body, its segments splitting the box left and right. Segments are what
+    // make a control one of many alike, so this is the body a case about a listed item lays - the checkbox
+    // above is hit anywhere on its row and is the single-option kind for exactly that reason.
+    private static Control buildTwoSegmentRadioControl() {
+
+        var segmentWidth = BODY_BOX.width() / 2f;
+        var leftSegment = new Rectangle(BODY_BOX.x(), BODY_BOX.y(), segmentWidth, BODY_BOX.height());
+        var rightSegment = new Rectangle(
+            BODY_BOX.x() + segmentWidth,
+            BODY_BOX.y(),
+            segmentWidth,
+            BODY_BOX.height());
+
+        return new Control(
+            ControlSpec.HorizontalRadio.of(
+                List.of("Left", "Right"),
+                ControlSpec.NO_SELECTION,
+                ControlAction.NONE),
+            BODY_BOX,
+            List.of(leftSegment, rightSegment));
     }
 
     // A mouse event at a point, carrying nothing else: the cases here are about what the panel claims, not

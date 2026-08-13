@@ -15,17 +15,17 @@ package kmlib.starsector.ui.input;
  * panel moves under a still cursor: a scroll, a fold, or a relayout otherwise leaves a part answering for
  * a pointer no longer over it.
  *
- * @param tabIndex        the header tab the pointer is on, in row order, or null when it is on none -
- *                        which is also what a panel not presenting its tabs reports, whatever is laid
- *                        out under the cursor
- * @param bodyCellSlot    the body cell the pointer is on, or null when it is on none - which is also what
- *                        a point outside the box the body is drawn inside reports, whatever is laid out
- *                        under the cursor
- * @param isNotchHovered  whether the pointer is on the collapse handle
+ * @param tabIndex       the header tab the pointer is on, in row order, or null when it is on none -
+ *                       which is also what a panel not presenting its tabs reports, whatever is laid
+ *                       out under the cursor
+ * @param bodyCell       the body cell the pointer is on and what kind of thing it is, or null when it is
+ *                       on none - which is also what a point outside the box the body is drawn inside
+ *                       reports, whatever is laid out under the cursor
+ * @param isNotchHovered whether the pointer is on the collapse handle
  */
 public record TabPanelHover(
     Integer tabIndex,
-    BodyCellSlot bodyCellSlot,
+    HoveredBodyCell bodyCell,
     boolean isNotchHovered) {
 
     /**
@@ -34,4 +34,17 @@ public record TabPanelHover(
      * something other than hover.
      */
     public static final TabPanelHover NOTHING_HOVERED = new TabPanelHover(null, null, false);
+
+    /**
+     * Where on the strip the hovered cell sits, for the readers that hold a cell against its place and
+     * nothing else - the fade it travels on, and the latch that answers reaching it. Stated once here
+     * rather than unwrapped at each of them, a pointer on no cell being on no slot either.
+     *
+     * @return the hovered cell's slot, or null when the pointer is on no body cell
+     */
+    public BodyCellSlot resolveBodyCellSlot() {
+        return bodyCell == null
+            ? null
+            : bodyCell.slot();
+    }
 }

@@ -176,6 +176,22 @@ public final class PanelController {
     }
 
     /**
+     * Whether a laid-out control is one of the segmented kinds - a radio, a table, or a tabs row - as
+     * opposed to a whole-row control hit anywhere on its bounds. The same rule the hit-tests below turn on,
+     * asked of the control rather than of its spec, for a reader holding one and nothing to narrow.
+     *
+     * <p>Chrome answers no. A caption or a divider has no cells at all, so nothing about it is one of many
+     * alike - and nothing about it ever resolves to a cell to ask this of in the first place.
+     *
+     * @param control the laid-out control
+     * @return whether its cells are segments laid side by side
+     */
+    static boolean isSegmentedControl(Control control) {
+        return control.spec() instanceof ControlSpec.Interactive interactive
+            && isSegmented(interactive);
+    }
+
+    /**
      * Resolves which cell of which body control a point lands on - the one hit-test the panel answers its
      * body with, read by the press that fires a control and by whatever lights one under the pointer. Two
      * readers of one walk rather than two walks that happen to agree, so the control that lights and the

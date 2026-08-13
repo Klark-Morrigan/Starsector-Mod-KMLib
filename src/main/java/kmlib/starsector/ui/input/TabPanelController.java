@@ -117,6 +117,15 @@ public final class TabPanelController {
     // cannot clear one and leave the other latched.
     private final HoverArrival notchHoverArrival = new HoverArrival();
 
+    // When the pointer reaches a body cell, keyed by the slot its fade is held against. One latch for the
+    // whole strip rather than one per control, only one cell of a body being under the pointer at a time -
+    // so crossing from one segment of a row to the next replaces the key and reads as the arrival it is.
+    //
+    // Keyed by the slot alone, which is why a widget swapped into a slot under a still pointer announces
+    // nothing: an arrival is the player reaching something, and a strip rebuilt beneath a parked cursor was
+    // reached by nobody.
+    private final KeyedHoverArrival<BodyCellSlot> bodyHoverArrival = new KeyedHoverArrival<>();
+
     /**
      * A controller whose panel opens expanded and answers like a vanilla control - the fold and the scheme
      * a tab panel starts at unless a host asks otherwise.
@@ -324,6 +333,7 @@ public final class TabPanelController {
         // for the one case where the panel came to the cursor rather than the other way about.
         tabHoverArrival.resetArrival();
         notchHoverArrival.resetArrival();
+        bodyHoverArrival.resetArrival();
     }
 
     /**
@@ -537,7 +547,7 @@ public final class TabPanelController {
         advanceInputMotionsForFrame(
             new TabPanelHover(
                 resolveTabIndexAtPoint(placement, pointX, pointY),
-                resolveBodyCellSlotAtPoint(placement, pointX, pointY),
+                resolveHoveredBodyCellAtPoint(placement, pointX, pointY),
                 placement.containsPointInNotch(pointX, pointY)),
             elapsedSeconds,
             durations);
@@ -572,7 +582,7 @@ public final class TabPanelController {
         // The body's cells travel on the same pair of paces as the row above them, which is the whole of
         // what the panel shares between its parts: what a fraction lifts a checkbox toward is that widget's
         // own paint, and a panel answering the pointer at two speeds reads as two panels.
-        bodyHoverFades.advanceTowardHoveredKey(hover.bodyCellSlot(), elapsedSeconds, durations);
+        bodyHoverFades.advanceTowardHoveredKey(hover.resolveBodyCellSlot(), elapsedSeconds, durations);
 
         notchHoverFade.advanceTowardHover(hover.isNotchHovered(), elapsedSeconds, durations);
         tabClickPulses.advanceByElapsedTime(elapsedSeconds, durations);
@@ -632,9 +642,11 @@ public final class TabPanelController {
     // so the cell that lights and the cell a press lands on are the same cell because they are the same
     // answer, and the viewport and box gates that walk carries are inherited rather than restated.
     //
-    // A hit is reduced to where it landed, the control it names being the press's business alone: a fade is
-    // held against the slot, and a hover that also carried the widget could come to be keyed by it.
-    private static BodyCellSlot resolveBodyCellSlotAtPoint(
+    // A hit is reduced to where it landed and what kind of thing was reached, the control it names being
+    // the press's business alone: a fade is held against the slot, and a hover that carried the widget on
+    // could come to be keyed by it. The kind is settled here, while the walk still has the control, so
+    // nothing downstream has to ask a second time.
+    private static HoveredBodyCell resolveHoveredBodyCellAtPoint(
             TabPanelPlacement placement,
             float pointX,
             float pointY) {
@@ -643,7 +655,7 @@ public final class TabPanelController {
 
         return hitCell == null
             ? null
-            : hitCell.slot();
+            : new HoveredBodyCell(hitCell.slot(), hitCell.resolveArrivalTarget());
     }
 
     /**
@@ -666,25 +678,41 @@ public final class TabPanelController {
             tabHotkeyBlinks.resolvePulseFractionAt(tabIndex));
     }
 
-    // Answers the pointer reaching either of the panel's two hoverable parts, once per arrival. Both parts
-    // sound alike because both are the panel's own furniture rather than anything in its body - a tab and
-    // the handle each move the player between whole views - so both answer at the chrome's level. The
-    // handle needed no new detection: its hover was already being found for its fade.
+    // Answers the pointer reaching any of the panel's hoverable parts, once per arrival, at the level its
+    // own kind of thing is owed. A tab and the handle answer alike because both are the panel's own
+    // furniture - each moves the player between whole views - while a body cell answers as whatever it is,
+    // which the walk that found it settled. No part needed a detection of its own: every one of them is
+    // already resolved once a frame for its fade.
     //
-    // A moment rather than a position, which is why neither is read off a fade: the pointer resting on a
-    // part holds its fade at the top for as long as it stays, and a sound taken from that would be a tone
-    // rather than a tick.
+    // A moment rather than a position, which is why none is read off a fade: the pointer resting on a part
+    // holds its fade at the top for as long as it stays, and a sound taken from that would be a tone rather
+    // than a tick.
     private void soundArrivalsAt(TabPanelHover hover) {
 
-        // Both stepped before either is read. Each latches what the pointer is on this frame, so a
-        // short-circuit would leave the unread one holding a stale reading - and then stay silent on the
-        // frame the pointer did come back to it, that stale latch saying it never left.
+        // Every latch stepped before any is read. Each latches what the pointer is on this frame, so a
+        // short-circuit would leave the unread ones holding a stale reading - and then stay silent on the
+        // frame the pointer did come back to one of them, that stale latch saying it never left.
         var hasReachedTab = tabHoverArrival.detectArrivalAt(hover.tabIndex());
         var hasReachedNotch = notchHoverArrival.detectArrival(hover.isNotchHovered());
+        var hasReachedBodyCell = bodyHoverArrival.detectArrivalAt(hover.resolveBodyCellSlot());
 
+        // At most one of them can have fired: there is one pointer, and no two of the panel's parts occupy
+        // the same point. So this picks the cue of whatever was reached rather than composing an answer out
+        // of several, and a second arrival in one frame would be a hit-test fault rather than a moment two
+        // sounds are owed for.
         if (hasReachedTab || hasReachedNotch) {
-            soundPlayer.playCueIfPresent(
-                soundScheme.resolvePointerArrivalCueFor(PointerArrivalTarget.PANEL_CHROME));
+            soundArrivalAt(PointerArrivalTarget.PANEL_CHROME);
+            return;
         }
+        if (hasReachedBodyCell) {
+            soundArrivalAt(hover.bodyCell().arrivalTarget());
+        }
+    }
+
+    // Plays what the look says reaching that kind of thing sounds like. Role and level are taken together,
+    // which is the point of a cue: resolved apart, a moment could sound at a level meant for another kind
+    // and nothing on screen would show it.
+    private void soundArrivalAt(PointerArrivalTarget arrivalTarget) {
+        soundPlayer.playCueIfPresent(soundScheme.resolvePointerArrivalCueFor(arrivalTarget));
     }
 }
