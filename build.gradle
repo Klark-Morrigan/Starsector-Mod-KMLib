@@ -45,9 +45,15 @@ def lazyLibJarFile = file("${project.ext.starsectorRoot}/mods/lw_lazylib/jars/La
 // initialiser calls kotlin.enums.EnumEntriesKt, which lives in the Kotlin runtime LazyLib ships
 // beside its own jar and declares in its mod_info. In-game the game classloader has both loaded, so
 // nothing else in KMLib has to know; under test the enum fails to initialise without it, which is
-// how a test that merely names a LazyFont anchor dies on NoClassDefFoundError. testRuntimeOnly for
-// exactly that reason - no KMLib source names a Kotlin type, so it is never a compile input, and
-// like the rest of the soft dependencies it stays out of the produced artifact.
+// how a test that merely names a LazyFont anchor dies on NoClassDefFoundError.
+//
+// It is a compile input too, despite no KMLib source naming a Kotlin type. LazyFont's
+// DrawableString carries Kotlin @Deprecated annotations whose level is a kotlin.DeprecationLevel
+// constant, and javac reads the annotations on every member it resolves. Off the compile
+// classpath the enum cannot be resolved and each one warns "unknown enum constant
+// DeprecationLevel.HIDDEN" - noise that reads like a real problem and is not one.
+//
+// compileOnly like the other soft dependencies, so it stays out of the produced artifact.
 def lazyLibKotlinRuntimeJarFile = file(
         "${project.ext.starsectorRoot}/mods/lw_lazylib/jars/internal/Kotlin-Runtime.jar")
 
@@ -265,6 +271,8 @@ dependencies {
     compileOnly files(lazyLibJarFile)
     testCompileOnly files(lazyLibJarFile)
     testRuntimeOnly files(lazyLibJarFile)
+    compileOnly files(lazyLibKotlinRuntimeJarFile)
+    testCompileOnly files(lazyLibKotlinRuntimeJarFile)
     testRuntimeOnly files(lazyLibKotlinRuntimeJarFile)
 
     compileOnly files(jsonJarFile)
