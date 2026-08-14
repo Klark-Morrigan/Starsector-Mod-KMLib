@@ -1,5 +1,6 @@
 package kmlib.starsector.ui.input;
 
+import kmlib.animation.TraverseDurations;
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlAction;
@@ -20,6 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
 /**
  * Pins the panel controller's click-to-control resolution: a press maps to the control under it and fires
@@ -41,6 +43,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * list is as silent as a notch over a list that fits. The press cases pin the other, and the rule that
  * decides it: the sound follows the press having reached a control rather than having fired one, so an inert
  * cell sounds like the press it was and chrome stays silent.
+ *
+ * <p>The press lift is pinned off that same rule and against the slot it is keyed by, both halves of which
+ * carry a fault nothing else would report: a lift keyed off the walk's start rather than off where the hit
+ * landed, or off the control rather than the cell, would light a place the player did not press - which
+ * shows as a flicker on a control nobody can press twice the same way.
  */
 final class PanelControllerTest {
 
@@ -82,6 +89,33 @@ final class PanelControllerTest {
     // the row so a drag mapped from it carries the list toward its end rather than leaving it where it was.
     private static final float IN_GRAB_COLUMN_X = ROW.x() + ROW.width() - SCROLLBAR_GUTTER_WIDTH / 2f;
     private static final float IN_GRAB_COLUMN_Y = ROW.y() + 1f;
+
+    private static final float TOLERANCE = 0.0001f;
+
+    // A whole traverse in one step, so a lift reaches an end without walking frames, and half of one for the
+    // readings taken part-way through a cycle.
+    private static final float FULL_STEP_SECONDS = 1f;
+    private static final float HALF_STEP_SECONDS = 0.5f;
+    private static final float PRESS_DURATION_SECONDS = 1f;
+
+    // The same pace each way, so a step reads as a fraction of one duration whichever way the lift it charges
+    // is heading. Which way a lift travels at which pace is pinned on the envelope itself; what this end owes
+    // is only that a frame's time reaches the lifts it holds.
+    private static final TraverseDurations PRESS_DURATIONS =
+        TraverseDurations.createSymmetric(PRESS_DURATION_SECONDS);
+
+    // Where a press on ROW lands for each of the bodies the lift cases lay: the strip's first control, taken
+    // anywhere on its row; its second, when a caption stands above it; and the two segments of a row split in
+    // half. Named rather than built at each use, a slot being what a lift is keyed by - two cases spelling
+    // one place differently would pass while agreeing about nothing.
+    //
+    // The first row and the left segment are the same pair of numbers because a whole-row control's cell and
+    // a first segment are both zero. That is exactly why both are named: a lift keyed by the wrong half of a
+    // slot reads correctly at either of them, so a case has to press somewhere neither number covers.
+    private static final BodyCellSlot FIRST_ROW_SLOT = new BodyCellSlot(0, ControlSpec.SINGLE_CELL);
+    private static final BodyCellSlot SECOND_ROW_SLOT = new BodyCellSlot(1, ControlSpec.SINGLE_CELL);
+    private static final BodyCellSlot LEFT_SEGMENT_SLOT = new BodyCellSlot(0, 0);
+    private static final BodyCellSlot RIGHT_SEGMENT_SLOT = new BodyCellSlot(0, 1);
 
     @Nested
     class PressBodyControlAtPoint {
@@ -364,6 +398,145 @@ final class PanelControllerTest {
 
             assertThat(soundPlayerFake.getPlayedSounds())
                 .containsExactly(StarsectorUiSound.LIST_SCROLLED);
+        }
+
+        @Test
+        void pressBodyControlAtPointStartsThePressLiftOfTheRowItLandedOn() {
+            // A caption above the checkbox, so the press lands at the strip's second slot: a lift keyed off
+            // the walk's start rather than off where the hit landed would read at the first and still pass.
+            controller.pressBodyControlAtPoint(
+                buildBodyPlacement(
+                    buildCaptionControl(),
+                    buildCheckboxControl("Muted", ControlAction.NONE)),
+                ROW.x() + ROW.width() / 2f,
+                ROW.y() + ROW.height() / 2f);
+
+            controller.advanceBodyPressPulses(FULL_STEP_SECONDS, PRESS_DURATIONS);
+
+            assertThat(controller.resolveBodyPressFractionAt(SECOND_ROW_SLOT))
+                .as("the lift is held against the place the press landed on")
+                .isCloseTo(1f, within(TOLERANCE));
+            assertThat(controller.resolveBodyPressFractionAt(FIRST_ROW_SLOT))
+                .as("the caption the walk passed over was pressed by nobody")
+                .isCloseTo(0f, within(TOLERANCE));
+        }
+
+        @Test
+        void pressBodyControlAtPointStartsThePressLiftOfTheSegmentItLandedOn() {
+            // The other half of the slot. A press on the right segment lifts that segment alone, so a lift
+            // keyed by the control rather than by the cell would light a whole row the player pressed one
+            // end of - which is the same fault the other way about.
+            var radio = buildTwoSegmentHorizontalRadioAtRow(ControlSpec.HorizontalRadio.of(
+                List.of("Short", "Full"),
+                0,
+                ControlAction.NONE));
+
+            controller.pressBodyControlAtPoint(
+                buildBodyPlacement(radio),
+                ROW.x() + 3f * ROW.width() / 4f,
+                ROW.y() + ROW.height() / 2f);
+
+            controller.advanceBodyPressPulses(FULL_STEP_SECONDS, PRESS_DURATIONS);
+
+            assertThat(controller.resolveBodyPressFractionAt(RIGHT_SEGMENT_SLOT))
+                .isCloseTo(1f, within(TOLERANCE));
+            assertThat(controller.resolveBodyPressFractionAt(LEFT_SEGMENT_SLOT))
+                .as("the segment beside the one pressed carries nothing")
+                .isCloseTo(0f, within(TOLERANCE));
+        }
+
+        @Test
+        void pressBodyControlAtPointAimsALiftAlreadyRunningBackAtItsPeak() {
+            // One lift per cell, retriggered where it stands. A player clicking repeatedly is answered from
+            // wherever the last press had got to, rather than by a second lift stacking beside the first or
+            // by the first dropping to nothing and climbing again - the second reads as a dip in the
+            // opposite direction to the one the click asked for.
+            var placement = buildBodyPlacement(buildCheckboxControl("Muted", ControlAction.NONE));
+            var pointX = ROW.x() + ROW.width() / 2f;
+            var pointY = ROW.y() + ROW.height() / 2f;
+
+            controller.pressBodyControlAtPoint(placement, pointX, pointY);
+            controller.advanceBodyPressPulses(FULL_STEP_SECONDS, PRESS_DURATIONS);
+            controller.advanceBodyPressPulses(HALF_STEP_SECONDS, PRESS_DURATIONS);
+
+            controller.pressBodyControlAtPoint(placement, pointX, pointY);
+            controller.advanceBodyPressPulses(HALF_STEP_SECONDS, PRESS_DURATIONS);
+
+            // Half a traverse from half way is the whole of what is left, so this reads at the peak only for
+            // a lift that climbed from where it stood; one restarted from rest would be half way up.
+            assertThat(controller.resolveBodyPressFractionAt(FIRST_ROW_SLOT))
+                .isCloseTo(1f, within(TOLERANCE));
+        }
+
+        @Test
+        void pressBodyControlAtPointStartsNoPressLiftForAPressOnBlankBody() {
+            // The rule the sound already answers to, on the seen channel: a press that reached no cell has
+            // nothing to light, so blank body swallows the click without the strip showing anything for it.
+            controller.pressBodyControlAtPoint(
+                buildBodyPlacement(buildCheckboxControl("Muted", ControlAction.NONE)),
+                ROW.x() - 10f,
+                ROW.y() + ROW.height() / 2f);
+
+            controller.advanceBodyPressPulses(FULL_STEP_SECONDS, PRESS_DURATIONS);
+
+            assertThat(controller.resolveBodyPressFractionAt(FIRST_ROW_SLOT))
+                .isCloseTo(0f, within(TOLERANCE));
+        }
+    }
+
+    @Nested
+    class AdvanceBodyPressPulses {
+
+        private final PanelController controller = new PanelController();
+
+        @Test
+        void advanceBodyPressPulsesLeavesASpentLiftAtRest() {
+            // A press is an act already over, so its lift times its own fall and is gone: nothing else lets
+            // go of it, and one left standing would mark a click the player made minutes ago.
+            controller.pressBodyControlAtPoint(
+                buildBodyPlacement(buildCheckboxControl("Muted", ControlAction.NONE)),
+                ROW.x() + ROW.width() / 2f,
+                ROW.y() + ROW.height() / 2f);
+
+            controller.advanceBodyPressPulses(FULL_STEP_SECONDS, PRESS_DURATIONS);
+            controller.advanceBodyPressPulses(FULL_STEP_SECONDS, PRESS_DURATIONS);
+
+            assertThat(controller.resolveBodyPressFractionAt(FIRST_ROW_SLOT))
+                .isCloseTo(0f, within(TOLERANCE));
+        }
+    }
+
+    @Nested
+    class ResolveBodyPressFractionAt {
+
+        @Test
+        void resolveBodyPressFractionAtReadsAtRestBeforeAnyPressHasLanded() {
+            // A freshly built panel has been pressed nowhere, so its first painted frame must show a strip
+            // at rest rather than a cell already part-way lit.
+            assertThat(new PanelController().resolveBodyPressFractionAt(FIRST_ROW_SLOT))
+                .isCloseTo(0f, within(TOLERANCE));
+        }
+    }
+
+    @Nested
+    class ResetBodyPressPulses {
+
+        private final PanelController controller = new PanelController();
+
+        @Test
+        void resetBodyPressPulsesDropsALiftLeftPartWayThroughItsCycle() {
+            // A panel that stops showing drops what it was mid-way through, so the next session does not
+            // open painting the tail of a press the player never saw made.
+            controller.pressBodyControlAtPoint(
+                buildBodyPlacement(buildCheckboxControl("Muted", ControlAction.NONE)),
+                ROW.x() + ROW.width() / 2f,
+                ROW.y() + ROW.height() / 2f);
+
+            controller.advanceBodyPressPulses(HALF_STEP_SECONDS, PRESS_DURATIONS);
+            controller.resetBodyPressPulses();
+
+            assertThat(controller.resolveBodyPressFractionAt(FIRST_ROW_SLOT))
+                .isCloseTo(0f, within(TOLERANCE));
         }
     }
 

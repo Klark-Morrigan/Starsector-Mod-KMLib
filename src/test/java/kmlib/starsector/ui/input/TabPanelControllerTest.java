@@ -849,6 +849,23 @@ final class TabPanelControllerTest {
             assertThat(pulseFractionAt(controller, SECOND_TAB_INDEX))
                 .isCloseTo(0f, within(TOLERANCE));
         }
+
+        @Test
+        void advanceInputMotionsForFrameChargesAPressLiftRunningOnABodyCell() {
+            // The body's lifts are held where a body press lands - on its own controller - and charged from
+            // here with the row's, so a pass that stepped only the motions this end holds would leave a
+            // press that sounded standing still on screen, and standing still for the rest of the session.
+            var controller = new TabPanelController();
+
+            controller.handlePointer(
+                PointerEventMocks.mockLeftPressAt(INSIDE_FIRST_TAB_X, BELOW_TABS_Y),
+                buildTwoTabPlacement());
+
+            advanceAWholeTraverse(controller);
+
+            assertThat(controller.resolveBodyPressFractionAt(FIRST_BODY_SLOT))
+                .isCloseTo(1f, within(TOLERANCE));
+        }
     }
 
     @Nested
@@ -1051,6 +1068,28 @@ final class TabPanelControllerTest {
             controller.resetInputMotions();
 
             assertThat(controller.resolveBodyHoverFractionAt(FIRST_BODY_SLOT))
+                .isCloseTo(0f, within(TOLERANCE));
+        }
+
+        @Test
+        void resetInputMotionsDropsABodyCellsPressLiftLeftPartWayThroughItsCycle() {
+            // The body's lifts are dropped with the panel's own and in the same call, though they are held
+            // one level down: a lift left standing there would be inherited by whatever the next session's
+            // rebuilt strip puts in that slot, showing a press made on a control that is no longer there.
+            var controller = new TabPanelController();
+
+            controller.handlePointer(
+                PointerEventMocks.mockLeftPressAt(INSIDE_FIRST_TAB_X, BELOW_TABS_Y),
+                buildTwoTabPlacement());
+
+            controller.advanceInputMotionsForFrame(
+                new TabPanelHover(NO_TAB_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
+                HALF_STEP_SECONDS,
+                DURATIONS);
+
+            controller.resetInputMotions();
+
+            assertThat(controller.resolveBodyPressFractionAt(FIRST_BODY_SLOT))
                 .isCloseTo(0f, within(TOLERANCE));
         }
 

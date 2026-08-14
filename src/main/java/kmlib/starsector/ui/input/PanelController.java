@@ -2,6 +2,8 @@ package kmlib.starsector.ui.input;
 
 import com.fs.starfarer.api.input.InputEventAPI;
 
+import kmlib.animation.PulseEnvelopes;
+import kmlib.animation.TraverseDurations;
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlSpec;
@@ -17,7 +19,8 @@ import kmlib.starsector.ui.widgets.scroll.ScrollState;
 /**
  * Drives one headerless panel's pointer input, owning the runtime state a panel's input needs across
  * frames: its {@link ScrollState} (read by the layout to place the scrolling list, written by the wheel
- * and by a drag) and the in-progress scrollbar-thumb drag. It stays agnostic to what a body control
+ * and by a drag), the in-progress scrollbar-thumb drag, and the lift each body cell carries in answer to a
+ * press landing on it. It stays agnostic to what a body control
  * means: a press on a control fires the control's own {@link kmlib.starsector.ui.controls.ControlAction},
  * so the controller dispatches a checkbox toggle and a radio pick the same way without learning either.
  *
@@ -33,6 +36,11 @@ import kmlib.starsector.ui.widgets.scroll.ScrollState;
  * its own rather than only a tab panel's body. What either sounds like stays the look's, handed in with the
  * scheme - this end knows only that a press reached a control and that the list actually moved, which is the
  * part neither the event nor the scheme can say.
+ *
+ * <p>A press is also the one of those the panel goes on showing after the moment has passed, so this end
+ * holds its lift as well as sounding it. Both hang off the same resolved cell, which is what keeps the cell
+ * that sounds and the cell that lights from ever parting. What the lift is made of stays the widget's own
+ * paint and the pace stays the caller's, handed in with the frame: this end times a lift and draws nothing.
  */
 public final class PanelController {
 
@@ -49,6 +57,17 @@ public final class PanelController {
     // Shared with the tab panel rather than restated there, this being the answer its header resolver hands
     // straight back - a second name for one null is a second place to explain why it is not an index.
     static final Integer NO_CELL_RESOLVED = null;
+
+    // The lift each body cell is carrying in answer to a press that landed on it, keyed by the slot that
+    // cell occupies in the strip. Held on this end rather than beside a header's own click lifts because
+    // this is where a body press is detected, so a headerless panel lifts under a press as well as sounding
+    // one - the same reason the press sounds from here.
+    //
+    // Keyed by the slot for the reason the body's fades are: a host rebuilds its strip every frame, so a
+    // press belongs to the place under the pointer rather than to the widget standing in it. Unheld, unlike
+    // a tab's, because a body control acts on the way down and has nothing left to hold by the time the
+    // button comes up.
+    private final PulseEnvelopes<BodyCellSlot> bodyPressPulses = new PulseEnvelopes<>();
 
     // This panel's scroll position, read by the layout and written by the wheel and by a drag.
     private final ScrollState scrollState = new ScrollState();
@@ -188,22 +207,59 @@ public final class PanelController {
     }
 
     /**
-     * Answers a left press on the body: sounds it where it reached a control, fires that control's action
-     * when the cell is one worth acting on, and reports which cell fired. Resolves the press through {@link
-     * #resolveHitBodyCell} and offers what comes back to {@link #activateCellIfActionable}, so the geometry
-     * a press acts on is the geometry the panel's one body resolver answers, and the narrowing that decides
-     * whether it acts is stated once, beside the action it gates.
+     * Steps every press lift the body is carrying by a frame's worth of time, for the pass that already
+     * steps the panel's other motions to call once it has resolved the placement being drawn. Ungated,
+     * unlike a fade: a press is an event already seen, so its cycle runs out wherever the pointer went
+     * afterwards and whatever the panel did next.
      *
-     * <p>The sound hangs off the resolve and not off the firing, so a press that lands on an inert cell
-     * sounds like the press it was. That case - a re-press on a lit segment - is the one press with nothing
-     * else to show for it, the screen answering it with no change at all, so hanging the sound on the action
-     * would leave the panel's only unexplained press as its only silent one. Chrome stays quiet by the same
-     * rule rather than by a second one: the resolver reports no cell on a border, on blank body, on a
-     * caption or on a divider, and a press that reached nothing has nothing to answer for.
+     * <p>The pace arrives with the frame rather than being named here, so a body's presses run at whatever
+     * rhythm the rest of the panel does - a panel answering input at two speeds reads as two panels.
+     *
+     * @param elapsedSeconds real time since the last frame the host drew
+     * @param durations      how long the rise and the fall each take; a non-positive one snaps that way
+     */
+    void advanceBodyPressPulses(float elapsedSeconds, TraverseDurations durations) {
+        bodyPressPulses.advanceByElapsedTime(elapsedSeconds, durations);
+    }
+
+    /**
+     * How far through its press lift the body cell at a given slot currently stands. A bare fraction, so
+     * this end holds no colour: what the lift is made of - a light added over whatever the cell already
+     * shows - is the widget's own paint, resolved where its style is.
+     *
+     * @param slot the body cell being asked about
+     * @return its press fraction, 0 with no lift running on it and 1 at a lift's peak
+     */
+    float resolveBodyPressFractionAt(BodyCellSlot slot) {
+        return bodyPressPulses.resolvePulseFractionAt(slot);
+    }
+
+    /**
+     * Drops every press lift the body is carrying, for a panel that stops showing - so a lift left part-way
+     * through its cycle cannot be the first thing the next session paints, decaying from a peak the player
+     * never saw rise.
+     */
+    void resetBodyPressPulses() {
+        bodyPressPulses.resetPulses();
+    }
+
+    /**
+     * Answers a left press on the body: sounds and lifts it where it reached a control, fires that control's
+     * action when the cell is one worth acting on, and reports which cell fired. Resolves the press through
+     * {@link #resolveHitBodyCell} and offers what comes back to {@link #activateCellIfActionable}, so the
+     * geometry a press acts on is the geometry the panel's one body resolver answers, and the narrowing that
+     * decides whether it acts is stated once, beside the action it gates.
+     *
+     * <p>Both answers hang off the resolve and not off the firing, so a press that lands on an inert cell
+     * sounds and lifts like the press it was. That case - a re-press on a lit segment - is the one press with
+     * nothing else to show for it, the screen answering it with no change at all, so hanging either answer on
+     * the action would leave the panel's only unexplained press as its only unanswered one. Chrome stays
+     * quiet by the same rule rather than by a second one: the resolver reports no cell on a border, on blank
+     * body, on a caption or on a divider, and a press that reached nothing has nothing to answer for.
      *
      * <p>On the way down, the body's controls acting on the way down - a box is ticked and a fold is already
      * moving by the time the button comes up. A tab's lift is held until the release and so sounds there;
-     * this end holds nothing, so there is no release to plumb.
+     * this end holds nothing, so there is no release to plumb and the lift times its own fall.
      *
      * <p>The walk stops at the control the point is over rather than at the first control willing to act. A
      * press on an inert cell has landed on that cell, and looking past it for something further down the
@@ -231,6 +287,10 @@ public final class PanelController {
             return null;
         }
         soundPlayer.playCueIfPresent(soundScheme.pressCue());
+
+        // The seen half of the same answer, off the same cell and beside the heard one. Started rather than
+        // held: the control has already acted, so there is nothing for a release to end.
+        bodyPressPulses.startPulseAt(hitCell.slot());
 
         if (activateCellIfActionable(hitCell.control(), hitCell.slot().cell()) == NO_CELL_RESOLVED) {
             return null;

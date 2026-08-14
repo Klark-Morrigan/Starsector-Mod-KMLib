@@ -26,7 +26,9 @@ import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
  * <p>One controller per panel, since it holds that panel's runtime state across frames: the body's scroll
  * and drag state, the collapse animation, the hover fades of the parts that light under the pointer - the
  * header tabs, the body's own controls, and the collapse handle - and the two triggered motions its tabs
- * carry, a click's pulse and a bound key's blink. A host creates it, reads
+ * carry, a click's pulse and a bound key's blink. A press on a body cell carries a lift of its own, held
+ * with the scroll state on the body's controller - the end a body press actually lands on - and charged by
+ * the same per-frame pass as everything above. A host creates it, reads
  * its {@link #getScrollState()} and {@link #getCollapseFraction()} when it lays the panel out, advances the
  * collapse and the input motions each frame it draws, reads {@link #getInteractionSources()} and {@link
  * #getNotchHoverFraction()} to paint with, and feeds it pointer
@@ -274,8 +276,9 @@ public final class TabPanelController {
 
     /**
      * Steps every motion the panel makes in answer to input - the hover fades of its header tabs, its body
-     * controls, and its collapse handle, and the click pulses and hotkey blinks running on its tabs - by a
-     * frame's worth of time, for the host to call each frame it draws, after it has resolved the placement.
+     * controls, and its collapse handle, the click pulses and hotkey blinks running on its tabs, and the
+     * press lifts running on its body cells - by a frame's worth of time, for the host to call each frame it
+     * draws, after it has resolved the placement.
      * One call rather than one per motion, so the panel's parts cannot be advanced against different
      * placements or charged different slices of the same frame.
      *
@@ -330,6 +333,10 @@ public final class TabPanelController {
         notchHoverFade.resetFade();
         tabClickPulses.resetPulses();
         tabHotkeyBlinks.resetPulses();
+
+        // The body's presses go with them, held on its own controller and dropped in the same call - a lift
+        // left standing there would open the next session on whatever the rebuilt strip put in that slot.
+        bodyController.resetBodyPressPulses();
 
         // Forgetting what was announced, so a panel re-opening under a still pointer sounds that tab's - or
         // that handle's - arrival afresh. It is an arrival to the player - the row was not there a moment
@@ -489,6 +496,23 @@ public final class TabPanelController {
     }
 
     /**
+     * How far through its press lift the body cell at a given slot currently stands - the second channel a
+     * body cell answers on, beside the hover above it. Read from the body's own controller, which is where
+     * a press lands and so where its lift is held; this end only charges it with the panel's other motions.
+     *
+     * <p>A channel of its own rather than a reading composed into the hover, the two answering different
+     * questions about the same cell: the hover says where the pointer is standing and the press says what it
+     * just did there. A press is always made on a cell the pointer is already holding fully lit, so a lift
+     * that only reached the hovered look would show nothing on every press a player actually makes.
+     *
+     * @param slot the body cell being asked about
+     * @return its press fraction, 0 with no lift running on it and 1 at a lift's peak
+     */
+    float resolveBodyPressFractionAt(BodyCellSlot slot) {
+        return bodyController.resolveBodyPressFractionAt(slot);
+    }
+
+    /**
      * Fires the header tab a press landed on and starts that tab's click pulse, reporting whether it acted.
      * Split from the event above so the pairing this seam exists for - the tab that fires is the tab that
      * pulses - can be checked without an engine input event to raise.
@@ -599,6 +623,11 @@ public final class TabPanelController {
 
         notchHoverFade.advanceTowardHover(hover.isNotchHovered(), elapsedSeconds, durations);
         tabClickPulses.advanceByElapsedTime(elapsedSeconds, durations);
+
+        // The body's presses are charged the same frame's time, from the end that detected them: a press
+        // lands on the body's own controller, so that is where its lift is held and this pass reaches for
+        // it rather than holding a second set of envelopes over the same cells.
+        bodyController.advanceBodyPressPulses(elapsedSeconds, durations);
 
         // Ungated, like the clicks and unlike the fades: a blink is an event already seen, so its cycle runs
         // out wherever the panel goes afterwards rather than being cut short by a fold it did not ask for.
