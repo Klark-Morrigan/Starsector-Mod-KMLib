@@ -11,7 +11,7 @@ import java.util.List;
 
 /**
  * Raw-GL paint for a radio group: washes the segments the pointer has lifted, washes the selected one,
- * rules the dividers between segments,
+ * lights the segments a press is still falling on, rules the dividers between segments,
  * and frames the whole row, all faded by one opacity. The shared segmented-row chrome (the wash and the
  * seam dividers) is drawn through {@link HorizontalSegmentsRenderer} so a radio row and a tab strip
  * cannot drift on it; only the outer frame is the radio's own. The segment geometry lives on the
@@ -44,7 +44,7 @@ public final class RadioRowRenderer {
      * @param segments      the laid-out segment rects, in row order left to right
      * @param selectedIndex the lit segment's index, or a value outside the row to light none
      * @param colours       the frame stroke and selected-wash palette
-     * @param hoverWashes   the wash each segment takes under the pointer
+     * @param cellPaints    the wash and press light each segment takes
      * @param opacity       overall alpha, 0..1
      */
     public static void renderHorizontalRow(
@@ -52,11 +52,12 @@ public final class RadioRowRenderer {
             List<Rectangle> segments,
             int selectedIndex,
             RadioColours colours,
-            CellHoverWashSource hoverWashes,
+            CellPaintSources cellPaints,
             float opacity) {
 
-        washHoveredSegments(segments, hoverWashes);
+        washHoveredSegments(segments, cellPaints);
         washSelectedSegment(segments, selectedIndex, colours, opacity);
+        lightPressedSegments(segments, cellPaints);
         HorizontalSegmentsRenderer.renderSeamDividers(segments, colours.frame(), opacity);
         strokeOuterFrame(bounds, colours, opacity);
     }
@@ -73,7 +74,7 @@ public final class RadioRowRenderer {
      * @param selectedIndex the lit option's index, or a value outside the list to light none
      * @param columnCount   how many columns the options wrap across (one is a single stack)
      * @param colours       the frame stroke and selected-wash palette
-     * @param hoverWashes   the wash each option takes under the pointer
+     * @param cellPaints    the wash and press light each option takes
      * @param opacity       overall alpha, 0..1
      */
     public static void renderVerticalGrid(
@@ -82,12 +83,13 @@ public final class RadioRowRenderer {
             int selectedIndex,
             int columnCount,
             RadioColours colours,
-            CellHoverWashSource hoverWashes,
+            CellPaintSources cellPaints,
             float opacity) {
 
         var segments = RadioRow.splitIntoGrid(bounds, optionCount, columnCount);
-        washHoveredSegments(segments, hoverWashes);
+        washHoveredSegments(segments, cellPaints);
         washSelectedSegment(segments, selectedIndex, colours, opacity);
+        lightPressedSegments(segments, cellPaints);
 
         // The tallest column, matching the grid split, so the row rules land on the same boundaries
         // the cells abut on. The grid's column and row rules are the vertical list's own (a flat seam
@@ -129,10 +131,26 @@ public final class RadioRowRenderer {
     // is pointing at.
     private static void washHoveredSegments(
             List<Rectangle> segments,
-            CellHoverWashSource hoverWashes) {
+            CellPaintSources cellPaints) {
 
         for (var index = 0; index < segments.size(); index++) {
-            UiFill.renderQuad(segments.get(index), hoverWashes.resolveWashPaintAt(index));
+            UiFill.renderQuad(segments.get(index), cellPaints.hoverWashes().resolveWashPaintAt(index));
+        }
+    }
+
+    // Lights every segment still carrying a press, over the hover and selected washes and under the chrome:
+    // a press lands on a segment the pointer is already holding washed, so it is added to what is there
+    // rather than blended toward it - a lift that only reached the hovered shade would show nothing on
+    // every press a player actually makes.
+    //
+    // Walked like the washes above, and for a reason of its own: a press decays on its own clock, so the
+    // segment clicked a moment ago is still falling while the pointer has moved on to the next.
+    private static void lightPressedSegments(
+            List<Rectangle> segments,
+            CellPaintSources cellPaints) {
+
+        for (var index = 0; index < segments.size(); index++) {
+            UiFill.renderQuad(segments.get(index), cellPaints.pressLights().resolveLightPaintAt(index));
         }
     }
 

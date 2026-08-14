@@ -10,7 +10,8 @@ import kmlib.starsector.ui.widgets.tabs.style.TabStyle;
 /**
  * A neutrally-named look bundle both a {@link PanelRenderer} and the generic {@link ControlRenderer}
  * read: the {@link BoxColours} the box is drawn in, the {@link AccentColours} its controls draw from,
- * the {@link ControlHoverWash} the pointer lifts one of those controls by, the body-control font, the
+ * the {@link ControlHoverWash} the pointer lifts one of those controls by, the {@link ControlPressLight}
+ * a press lights it with, the body-control font, the
  * {@link TabStyle} a tabs control draws in, the {@link NotchColours} a
  * collapse handle draws in, and the {@link UiSoundScheme} every control on the panel answers by. It
  * bundles the look so a consumer builds it once (typically each frame from its live player colours and
@@ -18,7 +19,7 @@ import kmlib.starsector.ui.widgets.tabs.style.TabStyle;
  * that are not "look" - the border width, the opacity - stay render parameters.
  *
  * <p>Every field here is a grouped value rather than a loose one, and no two of them share a type. That
- * is deliberate: this record is built positionally from seven things a host resolves separately, and four
+ * is deliberate: this record is built positionally from eight things a host resolves separately, and four
  * bare {@code Color}s in a row would be four positions a caller could transpose with nothing to catch
  * it - a frame stroked in the tick colour compiles and paints. Grouped by what each dresses, the same
  * slip is a compile error, and each group is small enough that what remains transposable inside one is
@@ -37,6 +38,8 @@ import kmlib.starsector.ui.widgets.tabs.style.TabStyle;
  *                         with
  * @param controlHoverWash the wash a body control's cell takes under the pointer - the lift, not its
  *                         pace, which every element of the panel shares
+ * @param controlPressLight the light a body control's cell takes for a press, laid over that wash rather
+ *                         than blended into it, a press always landing on a cell already fully washed
  * @param bodyFont         the atlas the body-control labels draw in
  * @param tabStyle         the tab look a tabs control draws in; only its colours and face are read here,
  *                         its band height being the layout's side of the same value
@@ -48,6 +51,7 @@ public record WidgetStyle(
     BoxColours boxColours,
     AccentColours accentColours,
     ControlHoverWash controlHoverWash,
+    ControlPressLight controlPressLight,
     StarsectorFont bodyFont,
     TabStyle tabStyle,
     NotchColours notchColours,

@@ -3,7 +3,7 @@ package kmlib.starsector.ui.render.gl.controls;
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.colour.StarsectorUiColour;
 import kmlib.starsector.ui.controls.Control;
-import kmlib.starsector.ui.controls.ControlHoverSource;
+import kmlib.starsector.ui.controls.ControlInteractionSources;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.RowGeometry;
 import kmlib.starsector.ui.font.LazyFontSpanMeasurer;
@@ -46,10 +46,10 @@ import java.util.List;
  * a sort selector the same way without learning either.
  *
  * <p>What the pointer is doing to the control arrives as fractions rather than as a hovered index, and is
- * bound to the look's hovered wash here - the one place holding both a fade's progress and the shade it
- * travels toward. Each widget below is handed finished paint per cell, so no renderer reads a cursor, holds
- * a timing, or learns that a fade exists; what a cell's lift is made of stays the widget's own, and only its
- * pace is the panel's.
+ * bound to the look's hovered wash and press light here - the one place holding both a motion's progress and
+ * the shade it travels toward. Each widget below is handed finished paint per cell, so no renderer reads a
+ * cursor, holds a timing, or learns that a fade exists; what a cell's lift is made of stays the widget's own,
+ * and only its pace is the panel's.
  *
  * <p>A label a control authored as several runs is drawn run by run, each in its own colour, so a
  * caller picking a stretch of a label out gets it picked out here. Text that is not authored as spans -
@@ -74,24 +74,25 @@ public final class ControlRenderer {
     }
 
     /**
-     * Draws a body control at whatever point of its hover fades its cells stand - one with no tabs to be
-     * interacting with, so it is drawn as {@link #render(Control, WidgetStyle, float, TabInteractionSources,
-     * ControlHoverSource)} with nothing happening to any tab. A consumer drawing a strip without an animator
-     * behind it passes {@link ControlHoverSource#createRestingHoverSource()}, which says so where it is
-     * called rather than through an overload that says it by omission.
+     * Draws a body control at whatever point of its hover fades and press lifts its cells stand - one with no
+     * tabs to be interacting with, so it is drawn as {@link #render(Control, WidgetStyle, float,
+     * TabInteractionSources, ControlInteractionSources)} with nothing happening to any tab. A consumer drawing
+     * a strip without an animator behind it passes {@link ControlInteractionSources#RESTING}, which says so
+     * where it is called rather than through an overload that says it by omission.
      *
-     * @param control the laid-out control to draw
-     * @param style   the look bundle - accents, the hovered-cell wash, and body font for every kind
-     * @param opacity overall alpha, 0..1
-     * @param hovers  how far onto its hovered look each of this control's cells stands
+     * @param control      the laid-out control to draw
+     * @param style        the look bundle - accents, the cell treatments, and body font for every kind
+     * @param opacity      overall alpha, 0..1
+     * @param interactions how far onto its hovered look, and how far through its press lift, each of this
+     *                     control's cells stands
      */
     public static void render(
             Control control,
             WidgetStyle style,
             float opacity,
-            ControlHoverSource hovers) {
+            ControlInteractionSources interactions) {
 
-        render(control, style, opacity, TabInteractionSources.RESTING, hovers);
+        render(control, style, opacity, TabInteractionSources.RESTING, interactions);
     }
 
     /**
@@ -101,8 +102,9 @@ public final class ControlRenderer {
      * tabs row draws in the tab chrome the style names, in its tab colours and face, lighting the selected
      * tab and painting each tab at whatever point of its hover fade and pulse {@code tabInteractions}
      * reports. Every cell a body control hits by washes over that lit state at whatever point of its own
-     * hover fade {@code hovers} reports, so what the pointer is on lights whether or not pressing it would
-     * do anything. Must run with a current GL context, like any immediate-mode GL call.
+     * hover fade {@code interactions} reports, so what the pointer is on lights whether or not pressing it
+     * would do anything, and lights again over that wash for as long as a press it answered is still
+     * falling. Must run with a current GL context, like any immediate-mode GL call.
      *
      * @param control         the laid-out control to draw
      * @param style           the look bundle - accents and body font for every kind, tab colours and face
@@ -110,26 +112,32 @@ public final class ControlRenderer {
      * @param opacity         overall alpha, 0..1
      * @param tabInteractions what each tab of a tabs row is currently showing; unread by every other kind,
      *                        since only a tabs row has tabs to interact with
-     * @param hovers          how far onto its hovered look each of this control's cells stands; unread by a
-     *                        tabs row, which answers the pointer through its own palette, and by a caption
-     *                        or a divider, which are not hit targets at all
+     * @param interactions    how far onto its hovered look, and how far through its press lift, each of this
+     *                        control's cells stands; unread by a tabs row, which answers the pointer through
+     *                        its own palette, and by a caption or a divider, which are not hit targets at all
      */
     public static void render(
             Control control,
             WidgetStyle style,
             float opacity,
             TabInteractionSources tabInteractions,
-            ControlHoverSource hovers) {
+            ControlInteractionSources interactions) {
 
-        // The fades are bound to the look's hovered wash once here, the one place holding both, so each
-        // widget below is handed finished paint rather than a fraction and a colour to combine for itself.
+        // Both channels are bound to the look's own treatments once here, the one place holding a motion's
+        // progress and the shade it travels toward, so each widget below is handed finished paint rather
+        // than a fraction and a colour to combine for itself.
         var paint = new ControlPaint(
             style,
             opacity,
-            CellHoverWashSource.createHoverFadedWashSource(
-                style.controlHoverWash(),
-                hovers,
-                opacity));
+            new CellPaintSources(
+                CellHoverWashSource.createHoverFadedWashSource(
+                    style.controlHoverWash(),
+                    interactions.hovers(),
+                    opacity),
+                CellPressLightSource.createPressLitLightSource(
+                    style.controlPressLight(),
+                    interactions.presses(),
+                    opacity)));
 
         var spec = control.spec();
         if (spec instanceof ControlSpec.Checkbox) {
@@ -210,7 +218,7 @@ public final class ControlRenderer {
         CheckboxRenderer.render(
             bounds,
             spec.isLit(),
-            paint.hoverWashes(),
+            paint.cellPaints(),
             new UiElementPaint(style.accentColours().base(), paint.opacity()),
             new UiElementPaint(style.accentColours().bright(), paint.opacity()));
 
@@ -249,7 +257,7 @@ public final class ControlRenderer {
                 selectedIndex,
                 table.columnCount(),
                 colours,
-                paint.hoverWashes(),
+                paint.cellPaints(),
                 paint.opacity());
         } else {
             RadioRowRenderer.renderHorizontalRow(
@@ -257,7 +265,7 @@ public final class ControlRenderer {
                 segments,
                 selectedIndex,
                 colours,
-                paint.hoverWashes(),
+                paint.cellPaints(),
                 paint.opacity());
         }
         for (var index = 0; index < segments.size() && index < labels.size(); index++) {
@@ -303,7 +311,7 @@ public final class ControlRenderer {
             spec.selectedIndex(),
             spec.columnCount(),
             new RadioColours(accent, accent),
-            paint.hoverWashes(),
+            paint.cellPaints(),
             paint.opacity());
 
         var segments = control.segments();
@@ -385,7 +393,7 @@ public final class ControlRenderer {
             spec.isLit(),
             accent,
             accent,
-            paint.hoverWashes(),
+            paint.cellPaints(),
             paint.opacity());
 
         drawCentredBodyLabelRuns(
@@ -559,13 +567,13 @@ public final class ControlRenderer {
         LabelRenderer.render(labelStyle, textSpan.text(), x, y, anchor);
     }
 
-    // The look bundle plus the frame's alpha and the control's live hover washes, threaded together through
+    // The look bundle plus the frame's alpha and the control's live cell paints, threaded together through
     // every draw so a helper takes one paint rather than unpacking the accents, body font, opacity, and
-    // fades into loose arguments each time.
+    // resolved washes and lights into loose arguments each time.
     private record ControlPaint(
         WidgetStyle style,
         float opacity,
-        CellHoverWashSource hoverWashes) {
+        CellPaintSources cellPaints) {
 
         // The face every control's text is measured and drawn at. Asked of the paint rather than built
         // where it is wanted, so the measurement and the draw cannot end up naming a different pair -

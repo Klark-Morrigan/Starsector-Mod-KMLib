@@ -246,8 +246,28 @@ final class TabPanelControllerTest {
             assertThat(interactions.headerTabs().hoverSource().resolveHoverFractionAt(FIRST_TAB_INDEX))
                 .isCloseTo(1f, within(TOLERANCE));
             assertThat(interactions.bodyControls()
+                    .bodyHovers()
                     .resolveControlHoverSourceAt(MID_STRIP_SEGMENT_SLOT.controlIndex())
                     .resolveHoverFractionAt(MID_STRIP_SEGMENT_SLOT.cell()))
+                .isCloseTo(1f, within(TOLERANCE));
+        }
+
+        @Test
+        void getInteractionSourcesCarriesTheBodysPressChannelBesideItsHover() {
+            // The channel a body widget paints its press from. Wired to a resting stand-in it would leave
+            // every press invisible while the lift ran on unseen, which is the failure the whole second
+            // channel exists to prevent.
+            var controller = new TabPanelController();
+            controller.handlePointer(
+                PointerEventMocks.mockLeftPressAt(INSIDE_FIRST_TAB_X, BELOW_TABS_Y),
+                buildTwoTabPlacement());
+            advanceAWholeTraverse(controller);
+
+            assertThat(controller.getInteractionSources()
+                    .bodyControls()
+                    .bodyPresses()
+                    .resolveControlPressSourceAt(FIRST_BODY_SLOT.controlIndex())
+                    .resolvePressFractionAt(FIRST_BODY_SLOT.cell()))
                 .isCloseTo(1f, within(TOLERANCE));
         }
     }
@@ -299,6 +319,57 @@ final class TabPanelControllerTest {
                     .getBodyHoverSource()
                     .resolveControlHoverSourceAt(MID_STRIP_SEGMENT_SLOT.cell())
                     .resolveHoverFractionAt(MID_STRIP_SEGMENT_SLOT.controlIndex()))
+                .isCloseTo(0f, within(TOLERANCE));
+        }
+    }
+
+    @Nested
+    class GetBodyPressSource {
+
+        @Test
+        void getBodyPressSourceLiftsNoCellBeforeAnyPressHasLanded() {
+            // A freshly built panel has been pressed nowhere, so its first painted frame must show a strip
+            // at rest rather than a control already carrying a lift.
+            assertThat(new TabPanelController()
+                    .getBodyPressSource()
+                    .resolveControlPressSourceAt(FIRST_BODY_SLOT.controlIndex())
+                    .resolvePressFractionAt(FIRST_BODY_SLOT.cell()))
+                .isCloseTo(0f, within(TOLERANCE));
+        }
+
+        @Test
+        void getBodyPressSourceAnswersTheLiftHeldForThatSlot() {
+            // The two halves of a slot arrive one at a time - the strip walk binds the control's place and
+            // the widget passes the cell it is painting - so the pair the source puts back together has to
+            // be the pair the lift is keyed by.
+            var controller = new TabPanelController();
+            controller.handlePointer(
+                PointerEventMocks.mockLeftPressAt(INSIDE_FIRST_TAB_X, BELOW_TABS_Y),
+                buildTwoTabPlacement());
+            advanceAWholeTraverse(controller);
+
+            assertThat(controller
+                    .getBodyPressSource()
+                    .resolveControlPressSourceAt(FIRST_BODY_SLOT.controlIndex())
+                    .resolvePressFractionAt(FIRST_BODY_SLOT.cell()))
+                .isCloseTo(1f, within(TOLERANCE));
+        }
+
+        @Test
+        void getBodyPressSourceLeavesACellOfAnotherControlUnlifted() {
+            // The guard the two-step seam exists for: a control's place and a cell of it are both ints, so a
+            // binding that crossed them would lift a cell of the wrong control while the pressed one showed
+            // nothing.
+            var controller = new TabPanelController();
+            controller.handlePointer(
+                PointerEventMocks.mockLeftPressAt(INSIDE_FIRST_TAB_X, BELOW_TABS_Y),
+                buildTwoTabPlacement());
+            advanceAWholeTraverse(controller);
+
+            assertThat(controller
+                    .getBodyPressSource()
+                    .resolveControlPressSourceAt(SECOND_BODY_SLOT.controlIndex())
+                    .resolvePressFractionAt(SECOND_BODY_SLOT.cell()))
                 .isCloseTo(0f, within(TOLERANCE));
         }
     }

@@ -1,8 +1,8 @@
 package kmlib.starsector.ui.render.gl.panel;
 
-import kmlib.starsector.ui.controls.BodyHoverSource;
+import kmlib.starsector.ui.controls.BodyInteractionSources;
 import kmlib.starsector.ui.controls.Control;
-import kmlib.starsector.ui.controls.ControlHoverSource;
+import kmlib.starsector.ui.controls.ControlInteractionSources;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.render.gl.GlStateGuard;
 import kmlib.starsector.ui.render.gl.UiElementPaint;
@@ -40,23 +40,23 @@ public final class PanelRenderer {
      * another's edge can drop the border there; the body controls and scrollbar are unaffected.
      *
      * <p>A consumer drawing a panel without an animator behind it passes {@link
-     * BodyHoverSource#createRestingHoverSource()} and every control paints the settled look its spec names.
-     * Named at the call site rather than offered as a shorter overload, so a panel drawn with no hover says
-     * as much where it is drawn.
+     * BodyInteractionSources#RESTING} and every control paints the settled look its spec names. Named at the
+     * call site rather than offered as a shorter overload, so a panel drawn with no hover says as much where
+     * it is drawn.
      *
-     * @param placement  the laid-out panel to draw
-     * @param style      how the panel looks (fill, frame colour, accents, fonts)
-     * @param border     the outer border width and which edges to stroke; a zero width draws no border
-     * @param bodyHovers how far onto its hovered look each cell of each body control stands, resolved by
-     *                   whoever owns the panel's live state, since this pass reads no cursor and holds no
-     *                   timing
-     * @param opacity    overall alpha, 0..1, fading the whole panel
+     * @param placement        the laid-out panel to draw
+     * @param style            how the panel looks (fill, frame colour, accents, fonts)
+     * @param border           the outer border width and which edges to stroke; a zero width draws no border
+     * @param bodyInteractions how far onto its hovered look, and how far through its press lift, each cell of
+     *                         each body control stands, resolved by whoever owns the panel's live state,
+     *                         since this pass reads no cursor and holds no timing
+     * @param opacity          overall alpha, 0..1, fading the whole panel
      */
     public static void render(
             PanelPlacement placement,
             WidgetStyle style,
             BoxBorder border,
-            BodyHoverSource bodyHovers,
+            BodyInteractionSources bodyInteractions,
             float opacity) {
         // Belt-and-suspenders around the raw GL: the map chrome and tooltips draw after a UI-overlay
         // pass, so any state the panel touches must be restored. The whole draw shares this one save.
@@ -68,13 +68,13 @@ public final class PanelRenderer {
                 border,
                 new UiElementPaint(style.boxColours().fill(), opacity),
                 new UiElementPaint(style.boxColours().border(), opacity));
-            drawBodyControls(placement, style, bodyHovers, opacity);
+            drawBodyControls(placement, style, bodyInteractions, opacity);
         });
     }
 
-    // Draws each body control in the lit state its spec carries and at whatever point of its hover fades
-    // its cells stand, then - when the body is capped - the scrollbar for its scrolling control. The one
-    // control marked as the scroll region draws clipped to its viewport; every other control draws
+    // Draws each body control in the lit state its spec carries and at whatever point of its hover fades and
+    // press lifts its cells stand, then - when the body is capped - the scrollbar for its scrolling control.
+    // The one control marked as the scroll region draws clipped to its viewport; every other control draws
     // unclipped in its pinned place.
     //
     // Walked by index rather than over the list because the index is half of what a fade is held against:
@@ -84,7 +84,7 @@ public final class PanelRenderer {
     private static void drawBodyControls(
             PanelPlacement placement,
             WidgetStyle style,
-            BodyHoverSource bodyHovers,
+            BodyInteractionSources bodyInteractions,
             float opacity) {
 
         var bodyControls = placement.bodyControls();
@@ -92,7 +92,10 @@ public final class PanelRenderer {
         for (var controlIndex = 0; controlIndex < bodyControls.size(); controlIndex++) {
 
             var control = bodyControls.get(controlIndex);
-            var hovers = bodyHovers.resolveControlHoverSourceAt(controlIndex);
+
+            // Both of the control's channels bound in one step, so the walk cannot pick its hover from one
+            // strip position and its press from another.
+            var interactions = bodyInteractions.resolveControlInteractionSourcesAt(controlIndex);
 
             if (control.spec() instanceof ControlSpec.VerticalTable table && table.scrolls()) {
 
@@ -102,9 +105,9 @@ public final class PanelRenderer {
                 // Uncollapsed the viewport already sits within the box, so the intersection is a no-op.
                 UiScissor.runClippedTo(
                     placement.flexViewport().intersectWith(placement.box()),
-                    () -> drawControl(control, style, hovers, opacity));
+                    () -> drawControl(control, style, interactions, opacity));
             } else {
-                drawControl(control, style, hovers, opacity);
+                drawControl(control, style, interactions, opacity);
             }
         }
         if (placement.isScrollbarNeeded()) {
@@ -115,10 +118,10 @@ public final class PanelRenderer {
     private static void drawControl(
             Control control,
             WidgetStyle style,
-            ControlHoverSource hovers,
+            ControlInteractionSources interactions,
             float opacity) {
 
-        ControlRenderer.render(control, style, opacity, hovers);
+        ControlRenderer.render(control, style, opacity, interactions);
     }
 
     // The scrollbar for the capped body: track and thumb come from the placement's scroll region - the

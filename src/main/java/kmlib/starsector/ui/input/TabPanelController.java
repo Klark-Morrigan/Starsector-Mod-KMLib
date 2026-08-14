@@ -5,6 +5,8 @@ import com.fs.starfarer.api.input.InputEventAPI;
 import kmlib.animation.PulseEnvelopes;
 import kmlib.animation.TraverseDurations;
 import kmlib.starsector.ui.controls.BodyHoverSource;
+import kmlib.starsector.ui.controls.BodyInteractionSources;
+import kmlib.starsector.ui.controls.BodyPressSource;
 import kmlib.starsector.ui.sound.PointerArrivalTarget;
 import kmlib.starsector.ui.sound.UiSoundPlayer;
 import kmlib.starsector.ui.sound.UiSoundScheme;
@@ -258,7 +260,9 @@ public final class TabPanelController {
     public TabPanelInteractionSources getInteractionSources() {
         return new TabPanelInteractionSources(
             getTabInteractionSources(),
-            getBodyHoverSource());
+            new BodyInteractionSources(
+                getBodyHoverSource(),
+                getBodyPressSource()));
     }
 
     /**
@@ -481,6 +485,21 @@ public final class TabPanelController {
     }
 
     /**
+     * What the body's controls are showing for the presses they answered, bound the same two steps the hover
+     * channel above is: the strip walk binds a control's place and the widget below passes only the cell it
+     * is painting, so the two halves of a slot are never both loose in one call.
+     *
+     * <p>A channel beside that one rather than folded into it - the panel's other half of {@link
+     * #getInteractionSources()} for the body - because the two say different things about one cell: where the
+     * pointer is standing, and what it just did there.
+     *
+     * @return the panel's live body press channel
+     */
+    BodyPressSource getBodyPressSource() {
+        return controlIndex -> cell -> resolveBodyPressFractionAt(new BodyCellSlot(controlIndex, cell));
+    }
+
+    /**
      * How far onto its hovered look the body cell at a given slot currently stands. A bare fraction, so this
      * end holds no colour: what the lift is made of - a blend, a wash, a brightened frame - is the widget's
      * own paint, resolved where its style is.
@@ -500,10 +519,9 @@ public final class TabPanelController {
      * body cell answers on, beside the hover above it. Read from the body's own controller, which is where
      * a press lands and so where its lift is held; this end only charges it with the panel's other motions.
      *
-     * <p>A channel of its own rather than a reading composed into the hover, the two answering different
-     * questions about the same cell: the hover says where the pointer is standing and the press says what it
-     * just did there. A press is always made on a cell the pointer is already holding fully lit, so a lift
-     * that only reached the hovered look would show nothing on every press a player actually makes.
+     * <p>The point read {@link #getBodyPressSource()} is bound over, and the terms the lifts are actually
+     * keyed in - which is what makes it the reachable end for pinning that a slot's two halves are not
+     * crossed.
      *
      * @param slot the body cell being asked about
      * @return its press fraction, 0 with no lift running on it and 1 at a lift's peak

@@ -1,7 +1,7 @@
 package kmlib.starsector.ui.render.gl.tabs;
 
-import kmlib.starsector.ui.controls.BodyHoverSource;
-import kmlib.starsector.ui.controls.ControlHoverSource;
+import kmlib.starsector.ui.controls.BodyInteractionSources;
+import kmlib.starsector.ui.controls.ControlInteractionSources;
 import kmlib.starsector.ui.render.gl.GlStateGuard;
 import kmlib.starsector.ui.render.gl.UiScissor;
 import kmlib.starsector.ui.render.gl.controls.ControlRenderer;
@@ -66,8 +66,9 @@ public final class TabPanelRenderer {
      * @param style           how the panel looks (fill, frame colour, accents, body font, and the tab
      *                        style for the header)
      * @param border          the outer border width and which edges to stroke; a zero width draws no border
-     * @param interactions what the pointer is doing to the panel - what each header tab is showing and how
-     *                     far each body cell has lit - resolved by whoever owns the panel's live state
+     * @param interactions what the pointer is doing to the panel - what each header tab is showing, and how
+     *                     far each body cell has lit and how far through a press it stands - resolved by
+     *                     whoever owns the panel's live state
      *                     against this same placement, since this pass reads no cursor and holds no timing.
      *                     One value rather than a channel per half, so the row and the strip beneath it
      *                     cannot be drawn from two readings of the pointer
@@ -114,14 +115,14 @@ public final class TabPanelRenderer {
             TabPanelPlacement placement,
             WidgetStyle style,
             BoxBorder border,
-            BodyHoverSource bodyHovers,
+            BodyInteractionSources bodyInteractions,
             NotchState notchState,
             float opacity) {
 
         // Named once and run either way, so the clipped and unclipped paths cannot drift apart in
         // what they draw - only in whether the clip is around it.
         Runnable drawBody = () ->
-            PanelRenderer.render(placement.body(), style, border, bodyHovers, opacity);
+            PanelRenderer.render(placement.body(), style, border, bodyInteractions, opacity);
 
         if (notchState.isFolding()) {
             UiScissor.runClippedTo(placement.body().box(), drawBody);
@@ -153,8 +154,8 @@ public final class TabPanelRenderer {
                 style,
                 HEADER_OPACITY,
                 tabInteractions,
-                // The row answers the pointer through its own palette - a tab meets a shade rather than
-                // taking the body's cell wash - so it is drawn with that channel at rest.
-                ControlHoverSource.createRestingHoverSource())));
+                // The row answers the pointer and a press through its own palette - a tab meets a shade
+                // rather than taking the body's cell wash - so it is drawn with those channels at rest.
+                ControlInteractionSources.RESTING)));
     }
 }
