@@ -50,6 +50,8 @@ stub_git() {
 }
 
 @test "version_updated=true when version differs from latest tag" {
+    # A patch bump, the smallest release the scheme allows and so the case
+    # most at risk of being compared as equal.
     stub_jq  "1.2.4"
     stub_git "1.2.3"
     run bash "$SCRIPT"

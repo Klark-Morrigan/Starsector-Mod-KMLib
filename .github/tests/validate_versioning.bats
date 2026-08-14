@@ -59,6 +59,13 @@ EOF
     fi
 }
 
+# Writes a changelog whose only section is the given version, so a test can
+# exercise a version format without the shared fixture's headings deciding
+# whether rule 1 or rule 3 fires first.
+write_changelog_for() {
+    printf '## [Unreleased]\n\n## [%s]\nEntry.\n' "$1" > CHANGELOG.md
+}
+
 @test "passes when changelog section, version, and no kmlib dep" {
     printf '%s' "$CHANGELOG_WITH_SECTION" > CHANGELOG.md
     write_mod_info "1.2.0"
@@ -89,6 +96,30 @@ EOF
     echo "$output" | grep -q "does not match released version"
 }
 
+@test "fails when the released version has only two components" {
+    write_changelog_for "1.2"
+    write_mod_info "1.2"
+    run bash "$SCRIPT" "1.2"
+    [ "$status" -ne 0 ]
+    echo "$output" | grep -q "version '1.2' is not well-formed"
+}
+
+@test "fails when the released version has a fourth component" {
+    write_changelog_for "1.2.0.4"
+    write_mod_info "1.2.0.4"
+    run bash "$SCRIPT" "1.2.0.4"
+    [ "$status" -ne 0 ]
+    echo "$output" | grep -q "version '1.2.0.4' is not well-formed"
+}
+
+@test "fails when the released version carries a letter suffix" {
+    write_changelog_for "1.2.0a"
+    write_mod_info "1.2.0a"
+    run bash "$SCRIPT" "1.2.0a"
+    [ "$status" -ne 0 ]
+    echo "$output" | grep -q "version '1.2.0a' is not well-formed"
+}
+
 @test "passes when kmlib dep version is well-formed SemVer" {
     printf '%s' "$CHANGELOG_WITH_SECTION" > CHANGELOG.md
     write_mod_info "1.2.0" '{ "id": "kmlib", "name": "KMLib", "version": "1.0.0" }'
@@ -109,7 +140,7 @@ EOF
     write_mod_info "1.2.0" '{ "id": "kmlib", "name": "KMLib", "version": "1.0" }'
     run bash "$SCRIPT" "1.2.0"
     [ "$status" -ne 0 ]
-    echo "$output" | grep -q "not well-formed SemVer"
+    echo "$output" | grep -q "kmlib dependency version '1.0' is not well-formed"
 }
 
 @test "passes when only a non-kmlib dependency is declared" {

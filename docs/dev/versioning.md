@@ -1,14 +1,11 @@
 # Versioning Policy
 
-Authoritative versioning rules for KMLib and every mod that consumes it
-(KMU, KMO, KMP, ...). Consumer repositories should link here from their own
-release docs rather than restate the rules.
-
 ## Index
 
 - [Scheme](#scheme)
 - [KMLib version](#kmlib-version)
 - [Consumer mod versions](#consumer-mod-versions)
+- [What the game does with a version](#what-the-game-does-with-a-version)
 - [Pinning KMLib from a consumer](#pinning-kmlib-from-a-consumer)
 - [Pre-1.0 phase](#pre-10-phase)
 - [Tag format](#tag-format)
@@ -16,10 +13,26 @@ release docs rather than restate the rules.
 
 ## Scheme
 
-Every repository in this family follows [Semantic Versioning 2.0.0](https://semver.org/):
-`MAJOR.MINOR.PATCH`. KMLib's MAJOR/MINOR/PATCH triggers and consumer mod
-triggers differ because they have different consumers (other mods vs.
-players), but the structure is identical.
+[Semantic Versioning 2.0.0](https://semver.org/): `MAJOR.MINOR.PATCH`,
+digits only.
+
+```
+0.1.0
+```
+
+KMLib's MAJOR/MINOR/PATCH triggers and consumer mod triggers differ because
+they have different consumers (other mods vs. players), but the structure is
+identical.
+
+MAJOR is meant to be expensive. Holding it still is the discipline that
+resists changing a public contract on a whim - if a change would force MAJOR,
+that is the signal to find a compatible way to make it instead.
+
+**No letters, ever.** A suffixed version like `1.2.3a` is not rejected by
+anything downstream, it is silently mangled: the game's own parser splits a
+version on the letter `a` as well as on `.`, and TriOS strips letters out of
+a `mod_info.json` version entirely, so two releases differing only by a
+letter look identical to it. The release gate enforces digits-only.
 
 ## KMLib version
 
@@ -29,7 +42,7 @@ into two version axes forces consumers to track two numbers for one upstream.
 
 | Bump  | Trigger                                                                                                                |
 | ----- | ---------------------------------------------------------------------------------------------------------------------- |
-| MAJOR | Public Java class/method removed or renamed; workflow input added or its behavior changed in a way callers must adapt to; required `mod_info.json` shape changed (e.g., new mandatory field). |
+| MAJOR | Public Java class/method removed or renamed; workflow input added or its behaviour changed in a way callers must adapt to; required `mod_info.json` shape changed (e.g., new mandatory field). |
 | MINOR | New public Java API; new optional workflow input; new reusable workflow file.                                          |
 | PATCH | Bug fix in script logic, internal refactor, documentation change, dependency bump that does not change the contract.   |
 
@@ -44,6 +57,29 @@ matters to players, not just code shape.
 | MINOR | New features that loaded saves cope with cleanly (new conditions, new UI panels, new commands).                        |
 | PATCH | Bug fix, balance tweak, text correction.                                                                               |
 
+## What the game does with a version
+
+Starsector parses the version in `mod_info.json` with
+`com.fs.starfarer.launcher.ModManager$VersionInfo`, and its behaviour is
+narrower than it looks:
+
+- **Comparison is string equality, component by component - not ordering.**
+  There is no numeric parse and no "or newer" anywhere. The result is a
+  compatibility level chosen by which component first differs, which the
+  launcher displays; a *newer* dependency than the pin is flagged exactly
+  like an older one.
+- **The parser splits on `.`, `a-RC` and `a`.** The letter cases exist for
+  the game's own `0.98a-RC8` format and apply to mod versions too - the
+  reason the scheme is digits-only.
+- **Only 2, 3 or 4 components are handled.** Anything else leaves the parsed
+  major empty, and an empty major makes the dependency check skip itself
+  without a word.
+- **A leading `0` fuses the first two components into the parsed major**, so
+  `0.1.0` reaches the game as major `0.1`, minor `0`, empty patch, while
+  `1.2.3` arrives as the three components you would expect. This only shifts
+  which severity the launcher renders, since every comparison is equality
+  regardless.
+
 ## Pinning KMLib from a consumer
 
 Two places pin KMLib and they must agree:
@@ -56,13 +92,14 @@ Two places pin KMLib and they must agree:
     ]
     ```
 
-    Starsector treats `version` as a *minimum* - the mod loads if the installed
-    KMLib reports the listed version or newer.
+    This is an exact-match check, not a minimum - see above. The pin names
+    the precise KMLib the consumer was built against, and any other installed
+    KMLib is reported as a mismatch.
 
 2. **Workflow pin** in `.github/workflows/*.yml`:
 
     ```yaml
-    uses: <owner>/KMLib/.github/workflows/mod-release.yml@1.0.0
+    uses: <owner>/Starsector-Mod-KMLib/.github/workflows/mod-release.yml@1.0.0
     ```
 
     GitHub Actions resolves this to the exact tag at the moment the workflow
@@ -70,7 +107,11 @@ Two places pin KMLib and they must agree:
 
 **Rule:** when a consumer bumps its KMLib pin in either place, bump it in the
 other in the same commit. The consumer's own version does **not** need to
-bump just because KMLib did - only if the consumer's own behavior changed.
+bump just because KMLib did - only if the consumer's own behaviour changed.
+
+Note the cost the equality check imposes: because the runtime pin matches
+exactly, any KMLib bump leaves every consumer reporting a mismatch until its
+pin is updated too.
 
 **Do not pin to `@master`.** A pin to `master` lets an unrelated KMLib commit
 break a consumer release retroactively. Always pin a tag.
@@ -80,7 +121,7 @@ break a consumer release retroactively. Always pin a tag.
 While a repository is on `0.x.y`, MINOR is the breaking-change line:
 `0.1.0 -> 0.2.0` may break consumers; `0.1.0 -> 0.1.1` must not. This is the
 conventional reading of pre-1.0 SemVer and avoids spending MAJOR before APIs
-have stabilized.
+have stabilised.
 
 KMU starts at `0.1.0`. KMLib's first stable tag is `1.0.0`, cut once it has
 at least one external consumer pinning it - which KMU does, through the

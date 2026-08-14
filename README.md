@@ -214,7 +214,7 @@ scripts/
     the latest git tag; gates the release pipeline
   actions/validate-versioning/ - enforces the versioning policy at
     release time (changelog section, mod_info.json version match,
-    kmlib dep SemVer pin)
+    version shape, kmlib dep SemVer pin)
   tests/                       - bats-core tests for the action scripts
   workflows/ci-gradle.yml      - the Gradle gate, on the self-hosted
     kmlib-runner; built twice, with and without Fast Rendering's jar
@@ -286,9 +286,11 @@ Starsector binaries and so runs on the self-hosted `kmlib-runner`.
 - [validate-versioning](.github/actions/validate-versioning/action.yml)
   takes a `version` input and fails the release if the caller's
   `CHANGELOG.md` has no `## [<version>]` section, `mod_info.json`
-  `.version` does not equal the input, or a declared `kmlib` dependency
-  lacks a well-formed `MAJOR.MINOR.PATCH` `version`. Policy itself
-  lives in [docs/dev/versioning.md](docs/dev/versioning.md).
+  `.version` does not equal the input, or either that version or a
+  declared `kmlib` dependency pin is not well-formed `MAJOR.MINOR.PATCH`.
+  The shape is enforced here because every downstream consumer of a
+  malformed version degrades in silence rather than erroring. Policy
+  itself lives in [docs/dev/versioning.md](docs/dev/versioning.md).
 
 Cutting the GitHub release itself - extracting the `## [<version>]`
 section for the body and attaching the built mod zip - is delegated to

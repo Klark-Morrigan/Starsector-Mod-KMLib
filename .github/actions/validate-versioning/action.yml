@@ -10,8 +10,8 @@ name: Validate versioning
 description: >-
   Validates the caller checkout against KMLib's versioning policy: the
   CHANGELOG section for the released version must exist, mod_info.json's
-  .version must equal the released version, and any kmlib dependency entry
-  must declare a well-formed SemVer version pin.
+  .version must equal the released version, and that version and any kmlib
+  dependency pin must be well-formed SemVer (MAJOR.MINOR.PATCH).
 
 inputs:
   version:
