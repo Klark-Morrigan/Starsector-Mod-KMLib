@@ -8,6 +8,7 @@ import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.RadioRow;
 
 import java.util.List;
+import java.util.function.IntFunction;
 
 /**
  * Raw-GL paint for a radio group: washes the segments the pointer has lifted, washes the selected one,
@@ -55,9 +56,11 @@ public final class RadioRowRenderer {
             CellPaintSources cellPaints,
             float opacity) {
 
-        washHoveredSegments(segments, cellPaints);
+        // The hover wash goes under the selected one so a pointed-at segment reads as light behind the row,
+        // and the press light over both so a click reads whatever the segment was already showing.
+        fillSegments(segments, cellPaints.hoverWashes()::resolveWashPaintAt);
         washSelectedSegment(segments, selectedIndex, colours, opacity);
-        lightPressedSegments(segments, cellPaints);
+        fillSegments(segments, cellPaints.pressLights()::resolveLightPaintAt);
         HorizontalSegmentsRenderer.renderSeamDividers(segments, colours.frame(), opacity);
         strokeOuterFrame(bounds, colours, opacity);
     }
@@ -87,9 +90,11 @@ public final class RadioRowRenderer {
             float opacity) {
 
         var segments = RadioRow.splitIntoGrid(bounds, optionCount, columnCount);
-        washHoveredSegments(segments, cellPaints);
+
+        // Same order as the row above: the pointer's wash under the selection, the press's light over both.
+        fillSegments(segments, cellPaints.hoverWashes()::resolveWashPaintAt);
         washSelectedSegment(segments, selectedIndex, colours, opacity);
-        lightPressedSegments(segments, cellPaints);
+        fillSegments(segments, cellPaints.pressLights()::resolveLightPaintAt);
 
         // The tallest column, matching the grid split, so the row rules land on the same boundaries
         // the cells abut on. The grid's column and row rules are the vertical list's own (a flat seam
@@ -121,36 +126,24 @@ public final class RadioRowRenderer {
         strokeOuterFrame(bounds, colours, opacity);
     }
 
-    // Washes every segment the pointer has lifted, under the selected wash and the chrome so a hover
-    // reads as light behind the row rather than as a second mark over it. Walked rather than asked for
-    // one hovered segment, because a row settling after a sweep has the segment just left winding down
-    // while the segment reached is rising - one of them is the pointer's, both of them are lit.
+    // Fills every segment with whatever paint the given channel answers for it. Walked rather than asked
+    // for the one segment something is happening to, because either channel can have several segments
+    // part-way at once: a row settling after a sweep has the segment just left winding down while the one
+    // reached is rising, and a press decays on its own clock, so the segment clicked a moment ago is still
+    // falling while the pointer has moved on.
     //
-    // Each segment's wash carries its own alpha, the panel's opacity already spent in it, so a resting
-    // segment answers a hidden paint the fill skips. That is what keeps this walk free on a row nobody
-    // is pointing at.
-    private static void washHoveredSegments(
+    // Each answer carries its own alpha, the panel's opacity already spent in it, so a segment with nothing
+    // happening to it answers a hidden paint the fill skips. That is what keeps this walk free on a row
+    // nobody is touching.
+    //
+    // One walk for both channels because they differ only in which paint they ask for; where each is spent
+    // in the draw order is the caller's, and that is the part that actually differs.
+    private static void fillSegments(
             List<Rectangle> segments,
-            CellPaintSources cellPaints) {
+            IntFunction<UiElementPaint> paintAt) {
 
         for (var index = 0; index < segments.size(); index++) {
-            UiFill.renderQuad(segments.get(index), cellPaints.hoverWashes().resolveWashPaintAt(index));
-        }
-    }
-
-    // Lights every segment still carrying a press, over the hover and selected washes and under the chrome:
-    // a press lands on a segment the pointer is already holding washed, so it is added to what is there
-    // rather than blended toward it - a lift that only reached the hovered shade would show nothing on
-    // every press a player actually makes.
-    //
-    // Walked like the washes above, and for a reason of its own: a press decays on its own clock, so the
-    // segment clicked a moment ago is still falling while the pointer has moved on to the next.
-    private static void lightPressedSegments(
-            List<Rectangle> segments,
-            CellPaintSources cellPaints) {
-
-        for (var index = 0; index < segments.size(); index++) {
-            UiFill.renderQuad(segments.get(index), cellPaints.pressLights().resolveLightPaintAt(index));
+            UiFill.renderQuad(segments.get(index), paintAt.apply(index));
         }
     }
 

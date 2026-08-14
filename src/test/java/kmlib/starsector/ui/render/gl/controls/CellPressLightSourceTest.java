@@ -1,6 +1,7 @@
 package kmlib.starsector.ui.render.gl.controls;
 
 import kmlib.starsector.ui.controls.ControlPressSource;
+import kmlib.starsector.ui.render.gl.UiElementPaint;
 import kmlib.starsector.ui.render.gl.style.ControlPressLight;
 
 import org.junit.jupiter.api.Nested;
@@ -30,6 +31,11 @@ final class CellPressLightSourceTest {
     // the case can tell apart.
     private static final int PEAKING_CELL = 1;
     private static final int FALLING_CELL = 2;
+
+    // The cell a checkbox or a toggle is numbered by, spelt as the literal the hit resolver uses rather than
+    // read off the constant the seam itself reads - a case taking that constant would agree with the code
+    // whatever the number became, which is the one thing it exists to catch.
+    private static final int THE_ONLY_CELL_OF_A_WHOLE_ROW_CONTROL = 0;
 
     private static final ControlPressSource PRESSES = cell -> switch (cell) {
         case PEAKING_CELL -> 1f;
@@ -68,6 +74,23 @@ final class CellPressLightSourceTest {
 
             assertThat(lights.resolveLightPaintAt(PEAKING_CELL).alpha())
                 .isCloseTo(0.2f, within(TOLERANCE));
+        }
+    }
+
+    @Nested
+    class ResolveSingleCellLightPaint {
+
+        @Test
+        void resolveSingleCellLightPaintAnswersTheCellAWholeRowControlIsNumberedBy() {
+            // The whole point of the default: a tick box and a toggle have one hit target, numbered zero by
+            // the hit resolver, and a widget spelling that out for itself is a widget that has to know the
+            // resolver's numbering to paint.
+            CellPressLightSource lights = cell -> cell == THE_ONLY_CELL_OF_A_WHOLE_ROW_CONTROL
+                ? new UiElementPaint(Color.WHITE, 0.4f)
+                : new UiElementPaint(Color.WHITE, 0f);
+
+            assertThat(lights.resolveSingleCellLightPaint().alpha())
+                .isCloseTo(0.4f, within(TOLERANCE));
         }
     }
 }
