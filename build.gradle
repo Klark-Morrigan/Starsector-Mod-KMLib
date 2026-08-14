@@ -356,12 +356,13 @@ def releaseRepository = originRemoteUrl.map { remoteUrl ->
 // installed resolves to the WSL launcher, whose paths are not these. Resolved when
 // the task runs rather than while the build configures, so a machine without Git
 // Bash still runs every other task.
-def bashRelativePaths = ['bin/bash.exe', 'usr/bin/bash.exe']
 def resolveBashExecutablePath = {
 
     if (!System.getProperty('os.name').toLowerCase().startsWith('windows')) {
         return 'bash'
     }
+
+    def bashRelativePaths = ['bin/bash.exe', 'usr/bin/bash.exe']
 
     def gitExecutable = (System.getenv('PATH') ?: '')
         .split(File.pathSeparator)
@@ -384,10 +385,8 @@ def resolveBashExecutablePath = {
 
     while (searchDirectory != null && bashExecutable == null) {
 
-        def candidateDirectory = searchDirectory
-
         bashExecutable = bashRelativePaths
-            .collect { relativePath -> new File(candidateDirectory, relativePath) }
+            .collect { relativePath -> new File(searchDirectory, relativePath) }
             .find { candidate -> candidate.isFile() }
 
         searchDirectory = searchDirectory.parentFile
@@ -438,9 +437,19 @@ def writeVersionFileTask = tasks.register('writeVersionFile', Exec) {
     }
 }
 
-// Hung off assemble rather than off jar: a dev install is only complete once the
-// version file sits beside the jar, and assemble is the lifecycle task that means
-// "produce what this project ships".
-tasks.named('assemble') {
+// Hung off jar rather than off the assemble lifecycle above it, because refreshing
+// a dev install is what `gradlew jar` IS: a checkout symlinked into mods/ picks up
+// the new jar the moment that task writes it, and a version file left behind then
+// reports the version the install no longer has - the very disagreement generating
+// it locally exists to prevent. assemble would be the tidier owner of "produce what
+// this project ships" and reach neither of the two commands that actually refresh
+// an install.
+//
+// It puts the task on the release runner too, since packaging runs `gradlew jar`
+// there. Harmless: that runner already has the bash and jq the release's own
+// version-file step needs, and the dist payload is assembled from named files, so
+// a generated file at the checkout root cannot reach the zip. The release's copies
+// come from the action, as before.
+tasks.named('jar') {
     dependsOn writeVersionFileTask
 }

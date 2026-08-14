@@ -49,9 +49,9 @@ Compatibility coded in:
 ```
 mod_info.json
 kmlib.version.template  - VersionChecker template; filled into kmlib.version
-                          by a release and by `gradlew assemble`, generated
-                          output that is never committed (see Build & Test,
-                          and Reusable CI / release actions)
+                          by a release and by `gradlew jar`, generated output
+                          that is never committed (see Build & Test, and
+                          Reusable CI / release actions)
 data/
   config/LunaSettings.csv          - LunaLib settings declarations
   config/version/version_files.csv - names the .version file
@@ -376,21 +376,22 @@ on whichever JDK is already installed.
 ```
 ./gradlew test       # JUnit 5 unit tests
 ./gradlew coverage   # tests + JaCoCo HTML/XML report in build/reports/
-./gradlew jar        # writes jars/KMLib.jar
-./gradlew assemble   # jar + kmlib.version (writeVersionFile)
+./gradlew jar        # writes jars/KMLib.jar and kmlib.version
 ```
 
-`writeVersionFile` fills `kmlib.version.template` into `kmlib.version` at the
-repo root, running the same
+The version file comes from `writeVersionFile`, which `jar` depends on: it fills
+`kmlib.version.template` into `kmlib.version` at the repo root by running the same
 [fill-version-file-template](.github/actions/fill-version-file-template/action.yml)
-script the release pipeline runs - so a checkout symlinked into `mods/` as a
-dev install reports to VersionChecker exactly what a published zip would. It
-needs a bash, which on Windows is located from the git on `PATH`, and it reads
-the repository half of the download URL out of the checkout's own `origin`
-remote rather than from anything restated in the build, so a local build cannot
-name a repository this clone does not push to. `mod_info.json`, the template and
-the script are its inputs, so it re-runs only when one of them (or the remote)
-changes.
+script the release pipeline runs, so a checkout symlinked into `mods/` as a dev
+install reports to VersionChecker exactly what a published zip would. Tied to the
+jar rather than to `assemble` because refreshing a dev install is what building
+the jar is: the install picks up the new jar immediately, and a version file left
+behind would report a version that is no longer there. It needs a bash, which on
+Windows is located from the git on `PATH`, and it reads the repository half of the
+download URL out of the checkout's own `origin` remote rather than from anything
+restated in the build, so a local build cannot name a repository this clone does
+not push to. `mod_info.json`, the template and the script are its inputs, so it
+re-runs only when one of them (or the remote) changes.
 
 The Starsector install root is discovered in this order:
 `-PstarsectorRoot=<path>` -> `STARSECTOR_HOME` env -> `../..` from this
