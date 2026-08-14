@@ -19,6 +19,9 @@ setup() {
     # The script builds the download URL from the publishing repository,
     # which the Actions runtime exports; the tests supply it the same way.
     export GITHUB_REPOSITORY="Klark-Morrigan/Starsector-Mod-KMU"
+    # The well-formed pair, so each case below states only what it varies.
+    write_mod_info "kmu" "Klark Morrigan's Universe" "1.2.3" "0.98a-RC8"
+    write_template "kmu"
 }
 
 teardown() {
@@ -63,8 +66,6 @@ read_generated() {
 }
 
 @test "substitutes every token from mod_info.json" {
-    write_mod_info "kmu" "Klark Morrigan's Universe" "1.2.3" "0.98a-RC8"
-    write_template "kmu"
     cd "$WORK_DIR"
     run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
     [ "$status" -eq 0 ]
@@ -76,8 +77,6 @@ read_generated() {
 }
 
 @test "substitutes the version components as JSON numbers, not strings" {
-    write_mod_info "kmu" "Klark Morrigan's Universe" "1.2.3" "0.98a-RC8"
-    write_template "kmu"
     cd "$WORK_DIR"
     run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
     [ "$status" -eq 0 ]
@@ -90,8 +89,6 @@ read_generated() {
 }
 
 @test "leaves values that are not tokens untouched" {
-    write_mod_info "kmu" "Klark Morrigan's Universe" "1.2.3" "0.98a-RC8"
-    write_template "kmu"
     cd "$WORK_DIR"
     run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
     [ "$status" -eq 0 ]
@@ -100,7 +97,6 @@ read_generated() {
 }
 
 @test "carries keys this script knows nothing about" {
-    write_mod_info "kmu" "Klark Morrigan's Universe" "1.2.3" "0.98a-RC8"
     cat > "$WORK_DIR/kmu.version" <<EOF
 {
   "masterVersionFile": "https://example.invalid/master/kmu.version",
@@ -118,8 +114,6 @@ EOF
 }
 
 @test "builds the download URL from the publishing repo, version, and zip name" {
-    write_mod_info "kmu" "Klark Morrigan's Universe" "1.2.3" "0.98a-RC8"
-    write_template "kmu"
     cd "$WORK_DIR"
     run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
     [ "$status" -eq 0 ]
@@ -137,8 +131,6 @@ EOF
 }
 
 @test "creates the output directory when it does not exist" {
-    write_mod_info "kmu" "Klark Morrigan's Universe" "1.2.3" "0.98a-RC8"
-    write_template "kmu"
     cd "$WORK_DIR"
     run bash "$SCRIPT" "dist/KMU/$OUTPUT_FILE" "$ZIP_NAME"
     [ "$status" -eq 0 ]
@@ -146,7 +138,6 @@ EOF
 }
 
 @test "fails on a token this script does not substitute" {
-    write_mod_info "kmu" "Klark Morrigan's Universe" "1.2.3" "0.98a-RC8"
     cat > "$WORK_DIR/kmu.version" <<EOF
 {
   "masterVersionFile": "https://example.invalid/master/kmu.version",
@@ -163,7 +154,7 @@ EOF
 }
 
 @test "fails when the template is absent" {
-    write_mod_info "kmu" "Klark Morrigan's Universe" "1.2.3" "0.98a-RC8"
+    rm "$WORK_DIR/kmu.version"
     cd "$WORK_DIR"
     run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
     [ "$status" -ne 0 ]
@@ -171,7 +162,6 @@ EOF
 }
 
 @test "fails when the template is missing masterVersionFile" {
-    write_mod_info "kmu" "Klark Morrigan's Universe" "1.2.3" "0.98a-RC8"
     cat > "$WORK_DIR/kmu.version" <<EOF
 { "modName": "{{modName}}" }
 EOF
@@ -183,7 +173,6 @@ EOF
 
 @test "fails when the version does not split into three numeric parts" {
     write_mod_info "kmu" "Klark Morrigan's Universe" "1.2.3a" "0.98a-RC8"
-    write_template "kmu"
     cd "$WORK_DIR"
     run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
     [ "$status" -ne 0 ]
@@ -194,7 +183,6 @@ EOF
     cat > "$WORK_DIR/mod_info.json" <<EOF
 { "id": "kmu", "version": "1.2.3", "gameVersion": "0.98a-RC8" }
 EOF
-    write_template "kmu"
     cd "$WORK_DIR"
     run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
     [ "$status" -ne 0 ]
@@ -205,16 +193,97 @@ EOF
     cat > "$WORK_DIR/mod_info.json" <<EOF
 { "id": "kmu", "name": "Klark Morrigan's Universe", "version": "1.2.3" }
 EOF
-    write_template "kmu"
     cd "$WORK_DIR"
     run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
     [ "$status" -ne 0 ]
     [[ "$output" == *"missing required field 'gameVersion'"* ]]
 }
 
+@test "fails when mod_info.json is missing .id" {
+    cat > "$WORK_DIR/mod_info.json" <<EOF
+{ "name": "Klark Morrigan's Universe", "version": "1.2.3", "gameVersion": "0.98a-RC8" }
+EOF
+    cd "$WORK_DIR"
+    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
+    # The id is what names the template, so an absent one would otherwise
+    # be reported as a missing ".version" file rather than as the real fault.
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"missing required field 'id'"* ]]
+}
+
 @test "fails when mod_info.json is absent" {
+    rm "$WORK_DIR/mod_info.json"
     cd "$WORK_DIR"
     run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
     [ "$status" -ne 0 ]
     [[ "$output" == *"mod_info.json not found"* ]]
+}
+
+@test "fails when no output path is given" {
+    cd "$WORK_DIR"
+    run bash "$SCRIPT"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"output path argument required"* ]]
+}
+
+@test "fails when no zip name is given" {
+    cd "$WORK_DIR"
+    run bash "$SCRIPT" "$OUTPUT_FILE"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"zip name argument required"* ]]
+}
+
+@test "fails when GITHUB_REPOSITORY is unset" {
+    cd "$WORK_DIR"
+    # The download URL has no other source, and a run outside Actions is
+    # exactly where it would otherwise be built against an empty owner/repo.
+    run env -u GITHUB_REPOSITORY bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"<owner>/<repo>"* ]]
+}
+
+@test "drops leading zeros from a version component" {
+    write_mod_info "kmu" "Klark Morrigan's Universe" "1.02.3" "0.98a-RC8"
+    cd "$WORK_DIR"
+    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
+    [ "$status" -eq 0 ]
+    # "02" is a legal thing to write in a version string but not legal JSON,
+    # so the component is canonicalised rather than emitted verbatim.
+    [ "$(read_generated '.modVersion.minor')" = "2" ]
+    [ "$(read_generated '.modVersion.minor | type')" = "number" ]
+}
+
+@test "fails on a token embedded in a longer value" {
+    cat > "$WORK_DIR/kmu.version" <<EOF
+{
+  "masterVersionFile": "https://example.invalid/master/kmu.version",
+  "modName": "KMU v{{major}}"
+}
+EOF
+    cd "$WORK_DIR"
+    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
+    # Substitution is by whole value, which is what lets a token carry a
+    # non-string type. A partial one cannot be honoured, so it is refused
+    # rather than left in place for a player to read.
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"unreplaced token(s): KMU v{{major}}"* ]]
+}
+
+@test "escapes a mod name holding quotes and backslashes" {
+    # Written literally rather than through write_mod_info, whose heredoc
+    # expands its arguments - the point here is the exact bytes in the file.
+    cat > "$WORK_DIR/mod_info.json" <<'EOF'
+{
+  "id": "kmu",
+  "name": "He said \"hi\" C:\\x",
+  "version": "1.2.3",
+  "gameVersion": "0.98a-RC8"
+}
+EOF
+    cd "$WORK_DIR"
+    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
+    # Substituting through jq rather than sed is what keeps a name like this
+    # from breaking the JSON it lands in.
+    [ "$status" -eq 0 ]
+    [ "$(read_generated '.modName')" = 'He said "hi" C:\x' ]
 }

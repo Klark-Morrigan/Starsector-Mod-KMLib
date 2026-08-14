@@ -18,7 +18,15 @@
 # in isolation - composite actions are not unit-testable directly.
 set -euo pipefail
 
-MOD_INFO_FILE="mod_info.json"
+SCRIPT_NAME="read_mod_info"
+
+# Resolved from this script's own location, not from $PWD: these scripts run
+# against the caller's checkout, which is never where they live.
+LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/_lib"
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=../../_lib/mod_info.sh
+source "${LIB_DIR}/mod_info.sh"
+
 RUNNER_SUFFIX="-runner"
 DIST_ROOT="dist"
 ZIP_EXTENSION=".zip"
@@ -33,10 +41,7 @@ COMMON_JAVA_PATH="Common-Java"
 KMLIB_REPO="Klark-Morrigan/Starsector-Mod-KMLib"
 KMLIB_PATH="Starsector-Mod-KMLib"
 
-if [[ ! -f "${MOD_INFO_FILE}" ]]; then
-  echo "read_mod_info: ${MOD_INFO_FILE} not found in working directory" >&2
-  exit 1
-fi
+mod_info_require_file
 
 MOD_ID=$(jq -r '.id' "${MOD_INFO_FILE}")
 VERSION=$(jq -r '.version' "${MOD_INFO_FILE}")
@@ -44,14 +49,7 @@ JAR_SOURCE=$(jq -r '.jars[0]' "${MOD_INFO_FILE}")
 
 # Fail loudly on missing required fields so callers do not silently emit
 # malformed downstream values like "dist/null/".
-for pair in "id:${MOD_ID}" "version:${VERSION}" "jars[0]:${JAR_SOURCE}"; do
-  field="${pair%%:*}"
-  value="${pair#*:}"
-  if [[ -z "${value}" ]] || [[ "${value}" == "null" ]]; then
-    echo "read_mod_info: ${MOD_INFO_FILE} is missing required field '${field}'" >&2
-    exit 1
-  fi
-done
+mod_info_require_fields "id:${MOD_ID}" "version:${VERSION}" "jars[0]:${JAR_SOURCE}"
 
 RUNNER_LABEL="${MOD_ID}${RUNNER_SUFFIX}"
 

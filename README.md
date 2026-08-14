@@ -218,6 +218,8 @@ scripts/
   actions/fill-version-file-template/ - fills the caller's
     committed <mod-id>.version template from mod_info.json, producing
     the VersionChecker file for the release being cut
+  actions/_lib/mod_info.sh    - what mod_info.json contains and what
+    shape its fields take; sourced by the four scripts above
   tests/                       - bats-core tests for the action scripts
   workflows/ci-gradle.yml      - the Gradle gate, on the self-hosted
     kmlib-runner; built twice, with and without Fast Rendering's jar
@@ -306,6 +308,15 @@ Starsector binaries and so runs on the self-hosted `kmlib-runner`.
   digits; every other key is carried through untouched, so the template
   states the published shape. A token left unsubstituted fails the release
   rather than shipping literal braces to players.
+
+All four read `mod_info.json`, so what that file contains and what shape
+its fields take live once in
+[_lib/mod_info.sh](.github/actions/_lib/mod_info.sh), which they source: the
+filename, the SemVer shape, and the "this field is present" check. It sits
+under `actions/` rather than beside it because `mod-release.yml`
+sparse-checkouts KMLib with `sparse-checkout: .github/actions`, and a lib
+outside that path would be missing at run time. The leading underscore marks
+it as not-an-action.
 
 Cutting the GitHub release itself - extracting the `## [<version>]`
 section for the body and attaching the built mod zip - is delegated to

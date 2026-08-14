@@ -23,16 +23,16 @@ set -euo pipefail
 
 VERSION="${1:?version argument required}"
 
-CHANGELOG_FILE="CHANGELOG.md"
-MOD_INFO_FILE="mod_info.json"
-KMLIB_DEP_ID="kmlib"
+# Supplies MOD_INFO_FILE and SEMVER_REGEX. Resolved from this script's own
+# location, not from $PWD: these scripts run against the caller's checkout,
+# which is never where they live.
+LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/_lib"
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=../../_lib/mod_info.sh
+source "${LIB_DIR}/mod_info.sh"
 
-# Plain SemVer, digits only. The digits-only part is not decoration: the
-# game's own parser splits a version on the letter "a" as well as ".", and
-# TriOS strips letters out of a mod_info.json version entirely, so a
-# suffixed version like 1.2.3a is silently mangled by both rather than
-# rejected by either.
-SEMVER_REGEX='^[0-9]+\.[0-9]+\.[0-9]+$'
+CHANGELOG_FILE="CHANGELOG.md"
+KMLIB_DEP_ID="kmlib"
 
 # Rule 1: changelog section must exist for this version. A literal-string
 # match on "## [<version>]" is sufficient because the date suffix is

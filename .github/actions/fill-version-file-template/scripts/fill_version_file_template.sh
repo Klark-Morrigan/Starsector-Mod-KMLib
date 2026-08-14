@@ -36,7 +36,15 @@
 # in isolation - composite actions are not unit-testable directly.
 set -euo pipefail
 
-MOD_INFO_FILE="mod_info.json"
+SCRIPT_NAME="fill_version_file_template"
+
+# Resolved from this script's own location, not from $PWD: these scripts run
+# against the caller's checkout, which is never where they live.
+LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/_lib"
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=../../_lib/mod_info.sh
+source "${LIB_DIR}/mod_info.sh"
+
 TEMPLATE_EXTENSION=".version"
 GITHUB_BASE_URL="https://github.com"
 RELEASE_DOWNLOAD_PATH="releases/download"
@@ -46,12 +54,6 @@ RELEASE_DOWNLOAD_PATH="releases/download"
 # to be caught here because nothing downstream reads this file until a
 # player's update checker does.
 TOKEN_REGEX='\{\{[^}]*\}\}'
-
-# Plain SemVer, digits only - the same shape validate-versioning enforces
-# before a release gets this far. Repeated rather than shared because the
-# split below has to be total: every part this script emits as a JSON
-# number must be one, and a version that does not match cannot be split.
-SEMVER_REGEX='^[0-9]+\.[0-9]+\.[0-9]+$'
 
 OUTPUT_PATH="${1:?output path argument required}"
 # Taken as an argument rather than derived, so the name in the download URL
@@ -65,10 +67,7 @@ ZIP_NAME="${2:?zip name argument required}"
 # it.
 REPOSITORY="${GITHUB_REPOSITORY:?must be set to <owner>/<repo>}"
 
-if [[ ! -f "${MOD_INFO_FILE}" ]]; then
-  echo "fill_version_file_template: ${MOD_INFO_FILE} not found in ${PWD}" >&2
-  exit 1
-fi
+mod_info_require_file
 
 MOD_ID=$(jq -r '.id' "${MOD_INFO_FILE}")
 MOD_NAME=$(jq -r '.name' "${MOD_INFO_FILE}")
@@ -77,15 +76,8 @@ GAME_VERSION=$(jq -r '.gameVersion' "${MOD_INFO_FILE}")
 
 # Fail loudly on missing required fields rather than emitting a file that
 # reports the mod as "null" to every update checker that reads it.
-for pair in "id:${MOD_ID}" "name:${MOD_NAME}" "version:${VERSION}" \
-            "gameVersion:${GAME_VERSION}"; do
-  field="${pair%%:*}"
-  value="${pair#*:}"
-  if [[ -z "${value}" ]] || [[ "${value}" == "null" ]]; then
-    echo "fill_version_file_template: ${MOD_INFO_FILE} is missing required field '${field}'" >&2
-    exit 1
-  fi
-done
+mod_info_require_fields "id:${MOD_ID}" "name:${MOD_NAME}" "version:${VERSION}" \
+                        "gameVersion:${GAME_VERSION}"
 
 # The template is named after the mod id, so no caller has to state a
 # path that mod_info.json already determines.

@@ -25,6 +25,13 @@ inputs:
       the URL and the uploaded asset cannot name different files.
     required: true
 
+# The other half of directDownloadURL is the publishing repository, taken
+# from the GITHUB_REPOSITORY variable the Actions runtime exports rather than
+# from an input: an owner/repo passed by hand could name a repository other
+# than the one the release is being cut in, and the URL would 404 for every
+# player. Stated here because it is a required input in every sense except
+# the declared one - the action fails without it.
+
 runs:
   using: composite
   steps:

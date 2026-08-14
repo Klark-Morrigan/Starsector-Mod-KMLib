@@ -12,7 +12,15 @@
 # when this script is invoked from a composite action.
 set -euo pipefail
 
-VERSION=$(jq -r .version mod_info.json)
+# Supplies MOD_INFO_FILE. Resolved from this script's own location, not from
+# $PWD: these scripts run against the caller's checkout, which is never where
+# they live.
+LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/_lib"
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=../../_lib/mod_info.sh
+source "${LIB_DIR}/mod_info.sh"
+
+VERSION=$(jq -r .version "${MOD_INFO_FILE}")
 LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "none")
 
 if [[ "${VERSION}" == "${LATEST_TAG}" ]]; then
