@@ -383,8 +383,14 @@ The version file comes from `writeVersionFile`, which `jar` depends on: it fills
 `kmlib.version.template` into `kmlib.version` at the repo root by running the same
 [fill-version-file-template](.github/actions/fill-version-file-template/action.yml)
 script the release pipeline runs, so a checkout symlinked into `mods/` as a dev
-install reports to VersionChecker exactly what a published zip would. Tied to the
-jar rather than to `assemble` because refreshing a dev install is what building
+install reports to VersionChecker exactly what a published zip would. The task is
+registered by the shared Starsector conventions in
+[gradle/starsector-mod.gradle](gradle/starsector-mod.gradle) rather than by this
+repo's `build.gradle`, so every mod applying those conventions gets it; KMLib is one
+consumer of its own conventions among several. A mod opts in by committing a
+`<mod-id>.version.template` - no template, no task, which is where the KM mods that
+publish no update information stay. Tied to the jar rather than to `assemble`
+because refreshing a dev install is what building
 the jar is: the install picks up the new jar immediately, and a version file left
 behind would report a version that is no longer there. It needs a bash, which on
 Windows is located from the git on `PATH`, and it reads the repository half of the

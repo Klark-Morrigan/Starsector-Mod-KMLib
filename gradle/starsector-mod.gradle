@@ -124,8 +124,11 @@ ext.findModJars = { String jarName ->
 // a consumer already spells in its `apply from`: this file sits at
 // <KMLib>/gradle/, so its grandparent is the KMLib whose classes are being
 // compiled against, and there is no second copy of the path to keep in step.
+// The version-file task at the bottom of this file locates its script the same
+// way.
 def kmlibModId = 'kmlib'
-def kmlibModInfoFile = new File(buildscript.sourceFile.parentFile.parentFile, 'mod_info.json')
+def kmlibCheckoutDirectory = buildscript.sourceFile.parentFile.parentFile
+def kmlibModInfoFile = new File(kmlibCheckoutDirectory, 'mod_info.json')
 
 // Segments compare as text, so no numeric parse is wanted here: a version may
 // carry a letter (Starsector mods ship versions like 0.12.2b) and equality has
@@ -202,4 +205,167 @@ tasks.withType(JavaCompile).configureEach {
 jar {
     archiveFileName = "${project.name}.jar"
     destinationDirectory = file("$projectDir/jars")
+}
+
+// VersionChecker reads <mod-id>.version, and nothing commits a file under that
+// name: the committed copy carries a .template suffix, because a checkout used as
+// a dev install is symlinked into mods/ and a committed file under the bare name
+// would hand the checker quoted tokens where it expects numbers. So something has
+// to fill the template locally, and the build is that something. It runs the very
+// script the release pipeline runs, so the version a dev install reports and the
+// version a published zip carries cannot come out differently.
+def versionFileName = "${modInfo.id}.version"
+def versionFileTemplateName = "${versionFileName}.template"
+
+// Committing the template IS the opt-in to publishing update information, so it is
+// also what decides whether this mod gets the local fill. Most mods applying these
+// conventions publish none, and a task registered for them would declare a
+// template they do not have as a task input - a build failure over a file whose
+// absence is the intended state.
+if (file(versionFileTemplateName).isFile()) {
+
+    // Located from this file rather than from the consumer's own root, since only
+    // the KMLib checkout holds the script and every other consumer would otherwise
+    // have to restate an absolute path into it. Forward slashes because the path
+    // is handed to bash, which reads a Windows backslash as an escape.
+    def fillVersionFileScriptPath = new File(kmlibCheckoutDirectory,
+        '.github/actions/fill-version-file-template/scripts/fill_version_file_template.sh')
+        .absolutePath
+        .replace('\\', '/')
+
+    // The zip name composed the way the release pipeline composes it,
+    // <jar-basename>-<version>.zip: the jar is named after the project and the
+    // version comes from mod_info.json. Restated here only in the sense that both
+    // sides read the same two values - it feeds the download URL, which a locally
+    // generated file should point at the same asset a release would publish.
+    def releaseZipName = "${project.name}-${project.version}.zip"
+
+    // <owner>/<repo>, the shape the Actions runtime exports as GITHUB_REPOSITORY
+    // and the script requires. Read from the checkout's own origin remote rather
+    // than stated in a build file, so a local build cannot name a repository this
+    // clone does not push to.
+    def originRemoteUrl = providers.exec {
+        commandLine 'git', 'remote', 'get-url', 'origin'
+        workingDir projectDir
+    }.standardOutput.asText
+
+    // Split on both separators so either remote shape yields the same answer:
+    // https://host/owner/repo(.git) and git@host:owner/repo(.git) differ only in
+    // what separates the host from the owner, and the repository is the last two
+    // segments either way.
+    def releaseRepository = originRemoteUrl.map { remoteUrl ->
+
+        def urlWithoutGitSuffix = remoteUrl.trim().replaceFirst(/\.git$/, '')
+        def segments = urlWithoutGitSuffix.split('[/:]')
+
+        if (segments.length < 2) {
+            throw new GradleException("Cannot read <owner>/<repo> out of the origin remote "
+                + "'${urlWithoutGitSuffix}', so ${versionFileName} cannot state a download URL.")
+        }
+        return "${segments[-2]}/${segments[-1]}".toString()
+    }
+
+    // The script is bash, and on Windows the shell that both exists on a
+    // development machine and sees the same filesystem as the checkout is Git's.
+    // Located from git itself rather than by asking PATH for 'bash', which on a
+    // machine with WSL installed resolves to the WSL launcher, whose paths are not
+    // these. Resolved when the task runs rather than while the build configures,
+    // so a machine without Git Bash still runs every other task.
+    def resolveBashExecutablePath = {
+
+        if (!System.getProperty('os.name').toLowerCase().startsWith('windows')) {
+            return 'bash'
+        }
+
+        def bashRelativePaths = ['bin/bash.exe', 'usr/bin/bash.exe']
+
+        def gitExecutable = (System.getenv('PATH') ?: '')
+            .split(File.pathSeparator)
+            .collect { pathEntry -> new File(pathEntry, 'git.exe') }
+            .find { candidate -> candidate.isFile() }
+
+        if (gitExecutable == null) {
+            throw new GradleException("Cannot generate ${versionFileName}: no git.exe on PATH to "
+                + 'locate Git Bash from. Install Git for Windows, or run '
+                + "${fillVersionFileScriptPath} under a bash of your own.")
+        }
+
+        // Which directory under the install PATH offers git from varies - <git>/cmd
+        // on a plain Windows shell, <git>/mingw64/bin under Git Bash itself - so the
+        // shell is searched for by walking up from wherever git was found rather
+        // than by assuming a fixed hop count. Both bash locations the installer lays
+        // down are tried at each level.
+        def searchDirectory = gitExecutable.parentFile
+        def bashExecutable = null
+
+        while (searchDirectory != null && bashExecutable == null) {
+
+            bashExecutable = bashRelativePaths
+                .collect { relativePath -> new File(searchDirectory, relativePath) }
+                .find { candidate -> candidate.isFile() }
+
+            searchDirectory = searchDirectory.parentFile
+        }
+        if (bashExecutable == null) {
+            throw new GradleException("Cannot generate ${versionFileName}: found git at "
+                + "${gitExecutable} but no ${bashRelativePaths.join(' or ')} above it, so this "
+                + 'Git ships no bash.')
+        }
+        return bashExecutable.absolutePath
+    }
+
+    def writeVersionFileTask = tasks.register('writeVersionFile', Exec) {
+
+        group = 'build'
+
+        // Parenthesised because without them the assignment is a complete statement
+        // at the end of its line, and the next line's leading '+' becomes unary plus
+        // on a String.
+        description = ("Fills ${versionFileName} from ${versionFileTemplateName}, so a checkout "
+            + 'used as a dev install reports its version to VersionChecker.')
+
+        // The script reads mod_info.json and the template from its mod-root
+        // argument, which defaults to the working directory, and resolves the output
+        // path from where the caller stands. Standing in the project directory is
+        // what makes the plain names below - no mod-root argument, an output path of
+        // one filename - land on the consumer's own checkout.
+        workingDir projectDir
+
+        inputs.file "${projectDir}/mod_info.json"
+        inputs.file "${projectDir}/${versionFileTemplateName}"
+        inputs.file fillVersionFileScriptPath
+
+        // As much an input as the files are: the remote is baked into the generated
+        // download URL, so a re-pointed clone has to regenerate rather than keep a
+        // URL aimed at the repository it used to push to.
+        inputs.property 'releaseRepository', releaseRepository
+        outputs.file "${projectDir}/${versionFileName}"
+
+        // Set here rather than at configuration time so locating Git Bash - which
+        // can fail - happens only for a build that actually generates the file.
+        doFirst {
+            commandLine resolveBashExecutablePath(),
+                fillVersionFileScriptPath,
+                versionFileName,
+                releaseZipName
+            environment 'GITHUB_REPOSITORY', releaseRepository.get()
+        }
+    }
+
+    // Hung off jar rather than off the assemble lifecycle above it, because
+    // refreshing a dev install is what `gradlew jar` IS: a checkout symlinked into
+    // mods/ picks up the new jar the moment that task writes it, and a version file
+    // left behind then reports the version the install no longer has - the very
+    // disagreement generating it locally exists to prevent. assemble would be the
+    // tidier owner of "produce what this project ships" and reach neither of the two
+    // commands that actually refresh an install.
+    //
+    // It puts the task on the release runner too, since packaging runs `gradlew jar`
+    // there. Harmless: that runner already has the bash and jq the release's own
+    // version-file step needs, and the dist payload is assembled from named files,
+    // so a generated file at the checkout root cannot reach the zip. The release's
+    // copies come from the action, as before.
+    tasks.named('jar') {
+        dependsOn writeVersionFileTask
+    }
 }
