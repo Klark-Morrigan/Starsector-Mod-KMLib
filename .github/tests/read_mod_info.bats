@@ -51,6 +51,49 @@ read_output_value() {
     grep -qx "dist-dir=dist/KMU/"                "$GITHUB_OUTPUT"
     grep -qx "zip-name=KMU-0.1.0.zip"            "$GITHUB_OUTPUT"
     grep -qx "jar-source=jars/KMU.jar"           "$GITHUB_OUTPUT"
+    grep -qx "prerelease=false"                  "$GITHUB_OUTPUT"
+}
+
+@test "defaults prerelease to false when the key is absent" {
+    write_mod_info "kmu" "0.1.0" "jars/KMU.jar"
+    cd "$WORK_DIR"
+    run bash "$SCRIPT"
+    [ "$status" -eq 0 ]
+    # The fixture writes no .prerelease, which is the shape every mod has
+    # today - the release must stay a normal one without any opt-out.
+    grep -qx "prerelease=false"                  "$GITHUB_OUTPUT"
+}
+
+@test "emits prerelease=true when the mod opts in" {
+    cat > "$WORK_DIR/mod_info.json" <<EOF
+{ "id": "kmu", "version": "0.1.0", "jars": ["jars/KMU.jar"], "prerelease": true }
+EOF
+    cd "$WORK_DIR"
+    run bash "$SCRIPT"
+    [ "$status" -eq 0 ]
+    grep -qx "prerelease=true"                   "$GITHUB_OUTPUT"
+}
+
+@test "accepts prerelease as a quoted string, matching Starsector's style" {
+    # mod_info.json states booleans as strings ("utility": "true"), so a mod
+    # author following the file's own convention has to work too.
+    cat > "$WORK_DIR/mod_info.json" <<EOF
+{ "id": "kmu", "version": "0.1.0", "jars": ["jars/KMU.jar"], "prerelease": "true" }
+EOF
+    cd "$WORK_DIR"
+    run bash "$SCRIPT"
+    [ "$status" -eq 0 ]
+    grep -qx "prerelease=true"                   "$GITHUB_OUTPUT"
+}
+
+@test "emits prerelease=false when the mod opts out explicitly" {
+    cat > "$WORK_DIR/mod_info.json" <<EOF
+{ "id": "kmu", "version": "0.1.0", "jars": ["jars/KMU.jar"], "prerelease": false }
+EOF
+    cd "$WORK_DIR"
+    run bash "$SCRIPT"
+    [ "$status" -eq 0 ]
+    grep -qx "prerelease=false"                  "$GITHUB_OUTPUT"
 }
 
 @test "names the shipped folder after the jar, not after the mod id" {
@@ -117,7 +160,7 @@ read_output_value() {
     run bash "$SCRIPT"
     [ "$status" -eq 0 ]
     [ "$(grep -c '^sibling-checkouts=' "$GITHUB_OUTPUT")" -eq 1 ]
-    [ "$(wc -l < "$GITHUB_OUTPUT")" -eq 8 ]
+    [ "$(wc -l < "$GITHUB_OUTPUT")" -eq 9 ]
 }
 
 @test "fails when mod_info.json is absent" {

@@ -61,6 +61,9 @@ jobs:
       dist-dir: ${{ steps.read.outputs.dist-dir }}
       zip-name: ${{ steps.read.outputs.zip-name }}
       jar-source: ${{ steps.read.outputs.jar-source }}
+      # Opt-in per mod via mod_info.json, so the same version bump commit that
+      # triggers the release also states whether it ships as a prerelease.
+      prerelease: ${{ steps.read.outputs.prerelease }}
       # JSON label set for self-hosted jobs: a mod builds on its own runner
       # (<mod-id>-runner) which carries STARSECTOR_HOME and the install.
       runner-json: ${{ steps.runner.outputs.json }}
@@ -311,3 +314,4 @@ jobs:
         with:
           version: ${{ needs.config.outputs.version }}
           files: ${{ needs.config.outputs.zip-name }}
+          prerelease: ${{ needs.config.outputs.prerelease }}

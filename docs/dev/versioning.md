@@ -72,7 +72,7 @@ Two places pin KMLib and they must agree:
 other in the same commit. The consumer's own version does **not** need to
 bump just because KMLib did - only if the consumer's own behavior changed.
 
-**Do not pin to `@main`.** A pin to `main` lets an unrelated KMLib commit
+**Do not pin to `@master`.** A pin to `master` lets an unrelated KMLib commit
 break a consumer release retroactively. Always pin a tag.
 
 ## Pre-1.0 phase

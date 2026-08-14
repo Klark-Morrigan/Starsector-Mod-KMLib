@@ -35,6 +35,12 @@ outputs:
   jar-source:
     description: "First jar path from mod_info.json (.jars[0])."
     value: ${{ steps.read.outputs.jar-source }}
+  prerelease:
+    description: >-
+      Whether the release is cut as a GitHub prerelease, from
+      mod_info.json (.prerelease). 'false' when the key is absent, so a mod
+      that never opts in releases exactly as it did before.
+    value: ${{ steps.read.outputs.prerelease }}
   sibling-checkouts:
     description: >-
       JSON array of { repo, path } entries to clone beside the caller's
