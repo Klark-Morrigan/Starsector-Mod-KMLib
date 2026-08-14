@@ -142,8 +142,8 @@ public final class PanelController {
             return;
         }
         // A wheel over the panel scrolls its flex list rather than acting on the surface behind it; a press
-        // on the scrollbar's grab column starts a drag; any other left press fires the control under it.
-        // Either way the event is consumed below.
+        // on the scrollbar's grab column starts a drag; any other left press is answered by the control
+        // under it. Every other event only consumes (below), which is why nothing but these two sounds.
         if (event.isMouseScrollEvent()) {
             scrollListUnderPointer(event, placement);
         } else if (event.isLMBDownEvent()) {

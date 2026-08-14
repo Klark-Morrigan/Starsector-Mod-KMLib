@@ -105,6 +105,9 @@ final class PanelControllerTest {
 
             assertThat(activatedCell).as("a caption is not a hit target")
                 .isNull();
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .as("a press that reached no cell has nothing to answer for")
+                .isEmpty();
         }
 
         @Test
@@ -847,6 +850,21 @@ final class PanelControllerTest {
                 buildBodyPlacementBoxedTo(
                     buildDockedRailBox(),
                     buildCheckboxControl("Muted", ControlAction.NONE)));
+
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .isEmpty();
+        }
+
+        @Test
+        void handlePointerStaysSilentForAPointerMovedOverABodyControl() {
+            // A press is what a control answers, and the pointer merely being over one is not that. The
+            // panel claims every event it covers, so the branch that tells them apart is the only thing
+            // between a control and a sound for each frame the cursor rests on it.
+            var controller = buildVanillaSoundingController();
+
+            controller.handlePointer(
+                PointerEventMocks.mockPointerEventAt(ON_LIST_X, ON_LIST_Y),
+                buildScrollingPlacementOver(buildCheckboxControl("Muted", ControlAction.NONE)));
 
             assertThat(soundPlayerFake.getPlayedSounds())
                 .isEmpty();
