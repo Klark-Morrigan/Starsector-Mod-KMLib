@@ -26,7 +26,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>The span cases are about one thing the single-stroke ones cannot state: a boundary
  * between two spans is a join rather than two square ends butted together, which is the
- * whole reason for stroking a multi-coloured band once instead of a piece at a time.
+ * whole reason for stroking a multi-coloured band once instead of a piece at a time. The
+ * rest of them are the questions two spans raise that one band never does - which of them a
+ * bevelled corner's wedge falls to, and whether their shared point is stated once or twice.
  *
  * <p>Area carries most of the assertions: the corners a join produces are stated
  * exactly where a case is about one join, but whether the band covers what it should
@@ -310,6 +312,57 @@ final class PolylineBandsTest {
                 new double[] {5, 1},
                 new double[] {10, -1},
                 new double[] {10, 1}));
+        }
+
+        @Test
+        void a_boundary_landing_on_a_bevelled_corner_gives_the_wedge_to_the_span_arriving() {
+            // The same corner at a limit tight enough to bevel it. The wedge the bevel holds
+            // open belongs to the corner rather than to either span, so the two have to
+            // differ over it: it goes to the span arriving, whose 19 units of quad it takes
+            // to 20.5, leaving the span leaving the corner its 19 alone.
+            var spans = PolylineBands.strokeSpansToTriangles(
+                List.of(
+                    List.of(new double[] {0, 0}, new double[] {10, 0}),
+                    List.of(new double[] {10, 0}, new double[] {10, 10})),
+                WIDTH,
+                1.0);
+
+            assertThat(computeTotalTriangleArea(spans.get(0)))
+                .isCloseTo(20.5, buildAssertionSlack());
+            assertThat(computeTotalTriangleArea(spans.get(1)))
+                .isCloseTo(19.0, buildAssertionSlack());
+            assertThat(hasCorner(spans.get(0), new double[] {10, -1}))
+                .isTrue();
+            assertThat(hasCorner(spans.get(1), new double[] {10, -1}))
+                .isFalse();
+        }
+
+        @Test
+        void a_span_may_open_on_the_point_after_the_one_its_predecessor_ended_on() {
+            // The boundary point is where one span ended, so stating it again at the head of
+            // the next is a courtesy rather than a requirement - a caller cutting a path into
+            // stretches has it either way round, and the band is the same band.
+            var boundaryGivenOnce = PolylineBands.strokeSpansToTriangles(
+                List.of(
+                    List.of(new double[] {0, 0}, new double[] {10, 0}),
+                    List.of(new double[] {10, 10})),
+                WIDTH,
+                MITER_SPIKE_LIMIT);
+
+            var boundaryGivenTwice = PolylineBands.strokeSpansToTriangles(
+                List.of(
+                    List.of(new double[] {0, 0}, new double[] {10, 0}),
+                    List.of(new double[] {10, 0}, new double[] {10, 10})),
+                WIDTH,
+                MITER_SPIKE_LIMIT);
+
+            assertThatPointsAre(
+                boundaryGivenOnce.get(0),
+                boundaryGivenTwice.get(0));
+
+            assertThatPointsAre(
+                boundaryGivenOnce.get(1),
+                boundaryGivenTwice.get(1));
         }
 
         @Test

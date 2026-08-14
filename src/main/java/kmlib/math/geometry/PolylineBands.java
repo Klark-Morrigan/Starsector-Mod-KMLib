@@ -91,9 +91,17 @@ public final class PolylineBands {
      * to join to.
      *
      * <p>The spans are consecutive stretches of one centreline, so each begins where its
-     * predecessor ended. That shared point may be given twice, once per span, or once in
-     * either of them - a point landing on its predecessor is one point, exactly as within a
-     * single span.
+     * predecessor ended. A span may state that shared point or open on the one after it,
+     * since its predecessor already ended there - a point landing on its predecessor is one
+     * point, exactly as within a single span. Leaving it out of the <em>earlier</em> span is
+     * a different statement rather than the same one: that span then ends where its own last
+     * point is, and the stretch to the boundary belongs to the later one.
+     *
+     * <p>Where a boundary lands on a corner too sharp to miter, the bevel's wedge goes to the
+     * span arriving at the corner, so the outgoing piece paints the outside of that turn. The
+     * two pieces have to differ over a wedge that belongs to the corner rather than to either
+     * of them, and giving it to the arriving span keeps a band's colour changing only at
+     * boundaries the caller asked for.
      *
      * @param spans           the centreline's stretches in order, each as {x, y} points and
      *                        each carrying every corner the centreline turns at within it -
