@@ -19,6 +19,63 @@ public record Segment(
     double endY) {
 
     /**
+     * Where two segments cross, or null when they do not.
+     *
+     * <p>The bounded sibling of an infinite-line intersection, which answers where two
+     * lines would meet even for spans that pass nowhere near each other. This asks whether
+     * the two spans actually touch - the question a self-intersection asks, since a ring
+     * folds over itself only where real edges cross and not where their lines would if
+     * extended.
+     *
+     * <p>Two segments meeting at a shared endpoint count as crossing, because they do. A
+     * caller walking a ring, whose consecutive edges always touch that way, has to exclude
+     * its own neighbours rather than expect this to.
+     *
+     * <p>Two that lie along the same line and overlap report nothing, which is the one case
+     * where null does not mean "these do not touch". They touch along a whole span, and a
+     * span has no single crossing point to return. A caller that has to tell an overlap from
+     * a miss cannot learn it here.
+     *
+     * @param firstFrom  where the first segment starts
+     * @param firstTo    where the first segment ends
+     * @param secondFrom where the second starts
+     * @param secondTo   where the second ends
+     * @return the crossing point, or null when the spans miss each other or run parallel
+     */
+    public static double[] intersectSegments(
+            double[] firstFrom,
+            double[] firstTo,
+            double[] secondFrom,
+            double[] secondTo) {
+
+        var firstX = firstTo[0] - firstFrom[0];
+        var firstY = firstTo[1] - firstFrom[1];
+
+        var secondX = secondTo[0] - secondFrom[0];
+        var secondY = secondTo[1] - secondFrom[1];
+
+        var cross = firstX * secondY - firstY * secondX;
+
+        if (Math.abs(cross) < Limits.MIN_EDGE_LENGTH) {
+            return null;
+        }
+
+        var offsetX = secondFrom[0] - firstFrom[0];
+        var offsetY = secondFrom[1] - firstFrom[1];
+
+        var alongFirst = (offsetX * secondY - offsetY * secondX) / cross;
+        var alongSecond = (offsetX * firstY - offsetY * firstX) / cross;
+
+        if (alongFirst < 0 || alongFirst > 1 || alongSecond < 0 || alongSecond > 1) {
+            return null;
+        }
+
+        return new double[] {
+            firstFrom[0] + firstX * alongFirst,
+            firstFrom[1] + firstY * alongFirst};
+    }
+
+    /**
      * How far a point lies from the segment start..end.
      *
      * <p>From the segment itself, not from the infinite line through it, so a point off

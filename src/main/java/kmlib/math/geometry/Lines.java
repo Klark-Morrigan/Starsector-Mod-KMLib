@@ -42,44 +42,6 @@ final class Lines {
             pointA[1] + fraction * dirAY};
     }
 
-    // Where two SEGMENTS cross, or null when they do not. The bounded sibling of
-    // {@link #intersectLines}: that one asks where two infinite lines meet, which is the
-    // question a miter join asks, and answers it even for edges that pass nowhere near
-    // each other. This asks whether the two spans actually touch, which is the question a
-    // self-intersection asks - a ring folds over itself only where real edges cross, not
-    // where their lines would if extended.
-    static double[] intersectSegments(
-            double[] firstFrom,
-            double[] firstTo,
-            double[] secondFrom,
-            double[] secondTo) {
-
-        var firstX = firstTo[0] - firstFrom[0];
-        var firstY = firstTo[1] - firstFrom[1];
-        var secondX = secondTo[0] - secondFrom[0];
-        var secondY = secondTo[1] - secondFrom[1];
-
-        var cross = firstX * secondY - firstY * secondX;
-
-        if (Math.abs(cross) < Limits.MIN_EDGE_LENGTH) {
-            return null;
-        }
-
-        var offsetX = secondFrom[0] - firstFrom[0];
-        var offsetY = secondFrom[1] - firstFrom[1];
-
-        var alongFirst = (offsetX * secondY - offsetY * secondX) / cross;
-        var alongSecond = (offsetX * firstY - offsetY * firstX) / cross;
-
-        if (alongFirst < 0 || alongFirst > 1 || alongSecond < 0 || alongSecond > 1) {
-            return null;
-        }
-
-        return new double[] {
-            firstFrom[0] + firstX * alongFirst,
-            firstFrom[1] + firstY * alongFirst};
-    }
-
     // Perpendicular distance from {@code point} to the infinite line through
     // {@code lineA} and {@code lineB} - the height a corner rises above the chord
     // joining its neighbours. Twice the triangle's signed area (the cross product)

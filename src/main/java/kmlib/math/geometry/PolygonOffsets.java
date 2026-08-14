@@ -544,7 +544,7 @@ public final class PolygonOffsets {
                     continue;
                 }
 
-                var crossing = Lines.intersectSegments(
+                var crossing = Segment.intersectSegments(
                     ring.get(first),
                     ring.get((first + 1) % ring.size()),
                     ring.get(second),
