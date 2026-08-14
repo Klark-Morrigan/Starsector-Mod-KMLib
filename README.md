@@ -293,7 +293,7 @@ Starsector binaries and so runs on the self-hosted `kmlib-runner`.
   layout - the shipped folder name, the `dist/<mod-folder-name>/`
   directory, and the `<mod-folder-name>-<version>.zip` release name.
   `version-file-name` goes the other way, `<mod-id>.version`, because
-  `version_files.csv` points at it and a mod writes that file by hand.
+  the hand-written `version_files.csv` points at it by that name.
   The action's own `outputs:` block is the statement of that convention.
 - [check-version](.github/actions/check-version/action.yml) compares
   `mod_info.json`'s `.version` to the latest git tag in the caller
