@@ -12,36 +12,29 @@ package kmlib.math.geometry;
  * consistently to one side, and the chainer follows each segment's end to the
  * next segment's start.
  */
-public record Segment(double startX, double startY, double endX, double endY) {
+public record Segment(
+    double startX,
+    double startY,
+    double endX,
+    double endY) {
 
-    // The point on segment start..end where a value that is signedStart at start
-    // and signedEnd at end crosses zero, at parameter signedStart / (signedStart -
-    // signedEnd) along the segment - bounded interpolation between the endpoints,
-    // not an infinite-line intersection. The single home for the half-plane clip
-    // crossing computation behind LabelledPolygon.clipToHalfPlane. The two signs
-    // must straddle zero (opposite signs) - each clip establishes that before
-    // asking, so the denominator is never zero. Takes the endpoints loose rather
-    // than a Segment instance so the clip walk, which already holds them as
-    // {x, y} arrays, need not allocate a Segment per edge.
-    static double[] computeCrossingPoint(
-            double[] start, double[] end,
-            double signedStart,
-            double signedEnd) {
-        var fraction = signedStart / (signedStart - signedEnd);
-        return new double[] {
-            start[0] + fraction * (end[0] - start[0]),
-            start[1] + fraction * (end[1] - start[1]),
-        };
-    }
-
-    // How far {@code point} lies from the segment start..end - from the segment itself,
-    // not from the infinite line through it, so a point off past either end measures to
-    // that end rather than to a foot of perpendicular the segment never reaches. That
-    // bound is the whole difference from Lines.computePerpendicularDistance, and it is
-    // what "how close is this to that piece of boundary" means: a point beyond the end of
-    // one edge is near whatever edge comes next, not near this one extended. A segment too
-    // short to have a direction measures to the point it sits at.
-    static double computeDistanceToPoint(double[] start, double[] end, double[] point) {
+    /**
+     * How far a point lies from the segment start..end.
+     *
+     * <p>From the segment itself, not from the infinite line through it, so a point off
+     * past either end measures to that end rather than to a foot of perpendicular the
+     * segment never reaches. That bound is the whole difference from a perpendicular
+     * distance, and it is what "how close is this to that piece of boundary" means: a point
+     * beyond the end of one edge is near whatever edge comes next, not near this one
+     * extended.
+     *
+     * @param start the segment's start
+     * @param end   its end; a segment too short to have a direction measures to the point
+     *              it sits at
+     * @param point the point to measure
+     * @return the distance from the point to the nearest place on the segment
+     */
+    public static double computeDistanceToPoint(double[] start, double[] end, double[] point) {
 
         var spanX = end[0] - start[0];
         var spanY = end[1] - start[1];
@@ -63,5 +56,27 @@ public record Segment(double startX, double startY, double endX, double endY) {
             new double[] {
                 start[0] + alongSegment * spanX,
                 start[1] + alongSegment * spanY});
+    }
+
+    // The point on segment start..end where a value that is signedStart at start
+    // and signedEnd at end crosses zero, at parameter signedStart / (signedStart -
+    // signedEnd) along the segment - bounded interpolation between the endpoints,
+    // not an infinite-line intersection. The single home for the half-plane clip
+    // crossing computation behind LabelledPolygon.clipToHalfPlane. The two signs
+    // must straddle zero (opposite signs) - each clip establishes that before
+    // asking, so the denominator is never zero. Takes the endpoints loose rather
+    // than a Segment instance so the clip walk, which already holds them as
+    // {x, y} arrays, need not allocate a Segment per edge.
+    static double[] computeCrossingPoint(
+            double[] start, double[] end,
+            double signedStart,
+            double signedEnd) {
+
+        var fraction = signedStart / (signedStart - signedEnd);
+        
+        return new double[] {
+            start[0] + fraction * (end[0] - start[0]),
+            start[1] + fraction * (end[1] - start[1]),
+        };
     }
 }
