@@ -12,7 +12,6 @@
 #   dist-dir           - dist/<mod-folder-name>/
 #   zip-name           - <mod-folder-name>-<version>.zip
 #   jar-source         - jars[0]
-#   prerelease         - .prerelease, defaulting to false when absent
 #   sibling-checkouts  - JSON array of repos to clone beside the checkout
 #
 # A thin script (rather than inline action steps) so bats can exercise it
@@ -24,9 +23,6 @@ RUNNER_SUFFIX="-runner"
 DIST_ROOT="dist"
 ZIP_EXTENSION=".zip"
 JAR_EXTENSION=".jar"
-# A mod that omits .prerelease releases as a normal release, so every existing
-# mod keeps its current behaviour without touching its mod_info.json.
-PRERELEASE_DEFAULT=false
 
 # The repos hosting the shared Gradle scripts a mod's build applies. Both are
 # reached by a path relative to the checkout's parent, so they have to be
@@ -56,15 +52,6 @@ for pair in "id:${MOD_ID}" "version:${VERSION}" "jars[0]:${JAR_SOURCE}"; do
     exit 1
   fi
 done
-
-# Optional, so it is read after the required-field loop rather than inside it.
-# jq's // fires on both null and false, and the fallback is false either way,
-# so an absent key and an explicit "prerelease": false both yield false.
-# Accepts the JSON boolean and Starsector's quoted-string style alike - this
-# file already writes "utility": "true" - because jq -r prints either as the
-# bare text the downstream 'true' comparison expects.
-PRERELEASE=$(jq -r --argjson fallback "${PRERELEASE_DEFAULT}" \
-  '.prerelease // $fallback' "${MOD_INFO_FILE}")
 
 RUNNER_LABEL="${MOD_ID}${RUNNER_SUFFIX}"
 
@@ -114,6 +101,5 @@ SIBLING_CHECKOUTS=$(jq -cn \
   echo "dist-dir=${DIST_DIR}"
   echo "zip-name=${ZIP_NAME}"
   echo "jar-source=${JAR_SOURCE}"
-  echo "prerelease=${PRERELEASE}"
   echo "sibling-checkouts=${SIBLING_CHECKOUTS}"
 } >> "${GITHUB_OUTPUT}"
