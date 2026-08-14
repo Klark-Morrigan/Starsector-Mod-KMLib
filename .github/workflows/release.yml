@@ -6,8 +6,8 @@
 # that tag exists, and a local ref always runs the pipeline as it stands on
 # the commit being released - exactly what a self-release wants.
 #
-# Consumer mods (KMU, KMO, ...) instead pin Klark-Morrigan/KMLib/.github/
-# workflows/mod-release.yml@<tag>. See docs/dev/versioning.md.
+# Consumer mods (KMU, KMO, ...) instead pin this repository's
+# .github/workflows/mod-release.yml@<tag>. See docs/dev/versioning.md.
 name: Release
 
 on:

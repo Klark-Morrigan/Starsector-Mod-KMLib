@@ -291,6 +291,8 @@ Starsector binaries and so runs on the self-hosted `kmlib-runner`.
   mod id, so a zip install and a hand-deployed one share one folder
   layout - the shipped folder name, the `dist/<mod-folder-name>/`
   directory, and the `<mod-folder-name>-<version>.zip` release name.
+  `version-file-name` goes the other way, `<mod-id>.version`, because
+  `version_files.csv` points at it and a mod writes that file by hand.
   The action's own `outputs:` block is the statement of that convention.
 - [check-version](.github/actions/check-version/action.yml) compares
   `mod_info.json`'s `.version` to the latest git tag in the caller
@@ -332,10 +334,16 @@ All four read `mod_info.json`, so what that file contains and what shape
 its fields take live once in
 [_lib/mod_info.sh](.github/actions/_lib/mod_info.sh), which they source: the
 filename, the SemVer shape, and the "this field is present" check. It sits
-under `actions/` rather than beside it because `mod-release.yml`
-sparse-checkouts KMLib with `sparse-checkout: .github/actions`, and a lib
-outside that path would be missing at run time. The leading underscore marks
-it as not-an-action.
+under `actions/` rather than beside it so it is where the scripts sourcing
+it look, each reaching it relative to its own location. The leading
+underscore marks it as not-an-action.
+
+`mod-release.yml` names these four in registry form
+(`Klark-Morrigan/Starsector-Mod-KMLib/.github/actions/<name>@master`), which
+the runner resolves without checking this repo out into the consumer's
+workspace. That form accepts no token, so a consumer's release can only
+reach them once this repository is public or shared for Actions use; KMLib's
+own release is unaffected, a workflow always reaching its own repository.
 
 Cutting the GitHub release itself - extracting the `## [<version>]`
 section for the body and attaching the assets - is delegated to

@@ -50,6 +50,7 @@ read_output_value() {
     grep -qx "mod-folder-name=KMU"               "$GITHUB_OUTPUT"
     grep -qx "dist-dir=dist/KMU/"                "$GITHUB_OUTPUT"
     grep -qx "zip-name=KMU-0.1.0.zip"            "$GITHUB_OUTPUT"
+    grep -qx "version-file-name=kmu.version"     "$GITHUB_OUTPUT"
     grep -qx "jar-source=jars/KMU.jar"           "$GITHUB_OUTPUT"
 }
 
@@ -63,6 +64,18 @@ read_output_value() {
     # case-sensitive filesystem as much as on Windows.
     grep -qx "mod-id=kmu"                        "$GITHUB_OUTPUT"
     grep -qx "mod-folder-name=KMU"               "$GITHUB_OUTPUT"
+}
+
+@test "names the version file after the mod id, not after the jar" {
+    write_mod_info "kmu" "0.1.0" "jars/KMU.jar"
+    cd "$WORK_DIR"
+    run bash "$SCRIPT"
+    [ "$status" -eq 0 ]
+    # The opposite convention to the folder and zip on either side of it.
+    # VersionChecker finds this file through version_files.csv, which a mod
+    # writes by hand, so it is named with the string a mod author states.
+    grep -qx "mod-folder-name=KMU"               "$GITHUB_OUTPUT"
+    grep -qx "version-file-name=kmu.version"     "$GITHUB_OUTPUT"
 }
 
 @test "strips only the jar extension from a nested jar path" {
@@ -85,6 +98,7 @@ read_output_value() {
     grep -qx "mod-folder-name=KMLib"             "$GITHUB_OUTPUT"
     grep -qx "dist-dir=dist/KMLib/"              "$GITHUB_OUTPUT"
     grep -qx "zip-name=KMLib-1.0.0.zip"          "$GITHUB_OUTPUT"
+    grep -qx "version-file-name=kmlib.version"   "$GITHUB_OUTPUT"
     grep -qx "jar-source=jars/KMLib.jar"         "$GITHUB_OUTPUT"
 }
 
@@ -117,7 +131,7 @@ read_output_value() {
     run bash "$SCRIPT"
     [ "$status" -eq 0 ]
     [ "$(grep -c '^sibling-checkouts=' "$GITHUB_OUTPUT")" -eq 1 ]
-    [ "$(wc -l < "$GITHUB_OUTPUT")" -eq 8 ]
+    [ "$(wc -l < "$GITHUB_OUTPUT")" -eq 9 ]
 }
 
 @test "fails when mod_info.json is absent" {

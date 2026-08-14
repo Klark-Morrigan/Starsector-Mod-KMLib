@@ -32,6 +32,12 @@ outputs:
   zip-name:
     description: "Release zip filename: <mod-folder-name>-<version>.zip."
     value: ${{ steps.read.outputs.zip-name }}
+  version-file-name:
+    description: >-
+      VersionChecker file: <mod-id>.version. Named after the mod id, not the
+      jar, because version_files.csv - which a mod writes by hand - is what
+      points at it.
+    value: ${{ steps.read.outputs.version-file-name }}
   jar-source:
     description: "First jar path from mod_info.json (.jars[0])."
     value: ${{ steps.read.outputs.jar-source }}

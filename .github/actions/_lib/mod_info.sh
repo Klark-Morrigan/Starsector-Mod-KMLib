@@ -8,13 +8,10 @@
 # take effect.
 #
 # Lives under .github/actions/ rather than beside Common-Automation's
-# .github/lib/ helpers because mod-release.yml sparse-checkouts KMLib with
-# `sparse-checkout: .github/actions`. A lib outside that path would be absent
-# at run time, and worse, only for releases running an older pinned workflow -
-# the action scripts track master while the workflow contract is pinned by the
-# caller's tag. Sitting inside the already-checked-out path removes the skew
-# entirely. The leading underscore marks it as not-an-action, matching the
-# _ci-gradle.yml convention.
+# .github/lib/ helpers so it sits with the four scripts that source it, each
+# of which reaches it by a path relative to its own location. The leading
+# underscore marks it as not-an-action, matching the _ci-gradle.yml
+# convention.
 #
 # Sourced, not executed: defines mod_info_require_file and
 # mod_info_require_fields. Both report through the sourcing script's own

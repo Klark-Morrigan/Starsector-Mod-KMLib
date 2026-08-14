@@ -11,6 +11,7 @@
 #   mod-folder-name    - jars[0] basename without .jar
 #   dist-dir           - dist/<mod-folder-name>/
 #   zip-name           - <mod-folder-name>-<version>.zip
+#   version-file-name  - <mod-id>.version
 #   jar-source         - jars[0]
 #   sibling-checkouts  - JSON array of repos to clone beside the checkout
 #
@@ -31,6 +32,7 @@ RUNNER_SUFFIX="-runner"
 DIST_ROOT="dist"
 ZIP_EXTENSION=".zip"
 JAR_EXTENSION=".jar"
+VERSION_FILE_EXTENSION=".version"
 
 # The repos hosting the shared Gradle scripts a mod's build applies. Both are
 # reached by a path relative to the checkout's parent, so they have to be
@@ -52,6 +54,15 @@ JAR_SOURCE=$(jq -r '.jars[0]' "${MOD_INFO_FILE}")
 mod_info_require_fields "id:${MOD_ID}" "version:${VERSION}" "jars[0]:${JAR_SOURCE}"
 
 RUNNER_LABEL="${MOD_ID}${RUNNER_SUFFIX}"
+
+# Named after the mod id rather than the jar, unlike the folder and zip
+# below: VersionChecker locates it through data/config/version/
+# version_files.csv, which a mod writes by hand, and the mod id is the string
+# a mod author has in front of them. The release pipeline names four things
+# with it - the file it generates, the artifact it passes between jobs, and
+# the release asset the masterVersionFile URL resolves to - so it is derived
+# once here rather than reassembled at each of them.
+VERSION_FILE_NAME="${MOD_ID}${VERSION_FILE_EXTENSION}"
 
 # The shipped folder is named after the mod's jar, not after its id. Starsector
 # itself does not care what a mod folder is called, but a build that compiles
@@ -98,6 +109,7 @@ SIBLING_CHECKOUTS=$(jq -cn \
   echo "mod-folder-name=${MOD_FOLDER_NAME}"
   echo "dist-dir=${DIST_DIR}"
   echo "zip-name=${ZIP_NAME}"
+  echo "version-file-name=${VERSION_FILE_NAME}"
   echo "jar-source=${JAR_SOURCE}"
   echo "sibling-checkouts=${SIBLING_CHECKOUTS}"
 } >> "${GITHUB_OUTPUT}"

@@ -8,7 +8,7 @@
 #
 #   jobs:
 #     release:
-#       uses: Klark-Morrigan/KMLib/.github/workflows/mod-release.yml@<tag>
+#       uses: Klark-Morrigan/Starsector-Mod-KMLib/.github/workflows/mod-release.yml@<tag>
 #       permissions:
 #         contents: write
 #       secrets: inherit
@@ -60,6 +60,11 @@ jobs:
       mod-folder-name: ${{ steps.read.outputs.mod-folder-name }}
       dist-dir: ${{ steps.read.outputs.dist-dir }}
       zip-name: ${{ steps.read.outputs.zip-name }}
+      # <mod-id>.version, named once here because four steps across two jobs
+      # refer to it: the file generated into the payload, the one generated
+      # for the release, the artifact carrying it between the jobs, and the
+      # asset attached to the release.
+      version-file-name: ${{ steps.read.outputs.version-file-name }}
       jar-source: ${{ steps.read.outputs.jar-source }}
       # JSON label set for self-hosted jobs: a mod builds on its own runner
       # (<mod-id>-runner) which carries STARSECTOR_HOME and the install.
@@ -75,26 +80,20 @@ jobs:
         with:
           fetch-tags: true
 
-      # KMLib's composite actions live in this workflow's home repo, not in
-      # the consumer checkout, so a local ./ ref would not resolve. Pull them
-      # into .kmlib/ and reference them from there. Pinned to master, matching
-      # the convention Common-Automation's ci-bash.yml uses for the same
-      # situation. Known tradeoff: the action LOGIC tracks KMLib master while
-      # the workflow CONTRACT is pinned by the caller's @tag. Acceptable -
-      # the actions are stable bash + jq; tighten to the workflow ref later
-      # if reproducibility of the scripts themselves ever matters.
-      - name: Check out KMLib actions
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
-        with:
-          repository: Klark-Morrigan/KMLib
-          ref: master
-          path: .kmlib
-          sparse-checkout: .github/actions
-          sparse-checkout-cone-mode: false
-
+      # KMLib's composite actions live in this workflow's home repo, not in the
+      # consumer checkout, so a local ./ ref would not resolve. They are named
+      # in registry form instead, which the runner resolves without a checkout
+      # of its own - the same way the cleanup step in prepare-artifact reaches
+      # Common-Automation. That form takes no token, so it requires this repo
+      # to be public (or shared for Actions use) by the time a release runs.
+      #
+      # Known tradeoff, unchanged by the form: the action LOGIC tracks KMLib
+      # master while the workflow CONTRACT is pinned by the caller's @tag.
+      # Acceptable - the actions are stable bash + jq; tighten to the workflow
+      # ref later if reproducibility of the scripts themselves ever matters.
       - name: Derive mod values from mod_info.json
         id: read
-        uses: ./.kmlib/.github/actions/read-mod-info
+        uses: Klark-Morrigan/Starsector-Mod-KMLib/.github/actions/read-mod-info@master
 
       - name: Compose self-hosted runner label set
         id: runner
@@ -107,7 +106,7 @@ jobs:
 
       - name: Compare version to latest tag
         id: check
-        uses: ./.kmlib/.github/actions/check-version
+        uses: Klark-Morrigan/Starsector-Mod-KMLib/.github/actions/check-version@master
 
       # Enforce the versioning policy only when a release is actually due:
       # changelog section present, mod_info version matches, kmlib pin (if
@@ -115,7 +114,7 @@ jobs:
       # downstream job, so a drifted release can never publish.
       - name: Validate versioning policy
         if: steps.check.outputs.version-updated == 'true'
-        uses: ./.kmlib/.github/actions/validate-versioning
+        uses: Klark-Morrigan/Starsector-Mod-KMLib/.github/actions/validate-versioning@master
         with:
           version: ${{ steps.check.outputs.version }}
 
@@ -170,20 +169,6 @@ jobs:
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
           path: ${{ needs.config.outputs.mod-id }}
-
-      # Second copy of the config job's step, for the same reason and with the
-      # same master-vs-tag tradeoff: this job also runs a KMLib action
-      # (fill-version-file-template) that is not in the consumer checkout.
-      # It goes at the workspace root while the mod sits one level down, so
-      # .kmlib cannot collide with a sibling clone.
-      - name: Check out KMLib actions
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
-        with:
-          repository: Klark-Morrigan/KMLib
-          ref: master
-          path: .kmlib
-          sparse-checkout: .github/actions
-          sparse-checkout-cone-mode: false
 
       # Mirrors the clone step inside Common-Java's _ci-gradle and consumes the
       # identical { repo, path } shape, so both build jobs see one workspace
@@ -255,11 +240,12 @@ jobs:
         env:
           MOD_ID: ${{ needs.config.outputs.mod-id }}
           DIST: ${{ needs.config.outputs.dist-dir }}
+          VERSION_FILE: ${{ needs.config.outputs.version-file-name }}
         run: |
           set -euo pipefail
           # dist-dir is emitted with a trailing slash, trimmed here so the
           # path reads as one in the log rather than carrying an empty segment.
-          echo "dist-path=${MOD_ID}/${DIST%/}/${MOD_ID}.version" >> "$GITHUB_OUTPUT"
+          echo "dist-path=${MOD_ID}/${DIST%/}/${VERSION_FILE}" >> "$GITHUB_OUTPUT"
 
       # Two copies of one generated file, written by two runs of the same
       # action rather than one run and a copy, so neither path is stated
@@ -267,7 +253,7 @@ jobs:
       # mod_info.json after unzipping; VersionChecker reads it to learn what
       # version is installed. It has to exist before the zip step below.
       - name: Write the VersionChecker file into the dist payload
-        uses: ./.kmlib/.github/actions/fill-version-file-template
+        uses: Klark-Morrigan/Starsector-Mod-KMLib/.github/actions/fill-version-file-template@master
         with:
           mod-root: ${{ needs.config.outputs.mod-id }}
           output-path: ${{ steps.version-file.outputs.dist-path }}
@@ -279,10 +265,10 @@ jobs:
       # zip cannot serve that: an update checker polls the URL without
       # downloading the mod.
       - name: Write the VersionChecker file for the release asset
-        uses: ./.kmlib/.github/actions/fill-version-file-template
+        uses: Klark-Morrigan/Starsector-Mod-KMLib/.github/actions/fill-version-file-template@master
         with:
           mod-root: ${{ needs.config.outputs.mod-id }}
-          output-path: ${{ needs.config.outputs.mod-id }}.version
+          output-path: ${{ needs.config.outputs.version-file-name }}
           zip-name: ${{ needs.config.outputs.zip-name }}
 
       - name: Create release zip
@@ -312,8 +298,8 @@ jobs:
       - name: Upload version file artifact
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
-          name: ${{ needs.config.outputs.mod-id }}.version
-          path: ${{ needs.config.outputs.mod-id }}.version
+          name: ${{ needs.config.outputs.version-file-name }}
+          path: ${{ needs.config.outputs.version-file-name }}
           if-no-files-found: error
 
   # Tag the released commit. Separate from create-release so the tag exists
@@ -372,7 +358,7 @@ jobs:
       - name: Download version file artifact
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
-          name: ${{ needs.config.outputs.mod-id }}.version
+          name: ${{ needs.config.outputs.version-file-name }}
           path: version-file
 
       # Cut the release with the body taken from the matching CHANGELOG.md
@@ -387,4 +373,4 @@ jobs:
           version: ${{ needs.config.outputs.version }}
           files: |
             ${{ needs.config.outputs.zip-name }}
-            version-file/${{ needs.config.outputs.mod-id }}.version
+            version-file/${{ needs.config.outputs.version-file-name }}
