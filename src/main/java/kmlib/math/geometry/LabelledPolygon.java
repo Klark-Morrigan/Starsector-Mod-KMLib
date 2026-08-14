@@ -97,7 +97,7 @@ public final class LabelledPolygon {
      *
      * <p>Sutherland-Hodgman against a single edge - the one half-plane clip walk,
      * with its point geometry in {@link Lines#computeSignedOffsetFromLine} and
-     * {@link Segment#computeCrossingPoint} and the label bookkeeping threaded
+     * {@link Segments#computeCrossingPoint} and the label bookkeeping threaded
      * through on top. A whole-polygon inset that needs no per-edge labels drives
      * this with a single throwaway label ({@link PolygonOffsets#insetConvexPolygon}). A
      * surviving inside vertex keeps its
@@ -131,7 +131,7 @@ public final class LabelledPolygon {
             }
             if ((currentOffset >= 0) != (nextOffset >= 0)) {
 
-                var crossing = Segment.computeCrossingPoint(
+                var crossing = Segments.computeCrossingPoint(
                     current.point(),
                     next.point(),
                     currentOffset,

@@ -407,7 +407,7 @@ final class VoronoiCellBuilderTest {
                 }
                 if ((currentOffset >= 0) != (nextOffset >= 0)) {
                     result.add(
-                        Segment.computeCrossingPoint(current, next, currentOffset, nextOffset));
+                        Segments.computeCrossingPoint(current, next, currentOffset, nextOffset));
                 }
             }
             return result;

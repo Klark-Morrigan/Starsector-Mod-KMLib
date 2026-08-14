@@ -130,7 +130,7 @@ public final class PolygonRegions {
         for (var i = 0; i < count; i++) {
             nearest = Math.min(
                 nearest,
-                Segment.computeDistanceToPoint(ring.get(i), ring.get((i + 1) % count), point));
+                Segments.computeDistanceToPoint(ring.get(i), ring.get((i + 1) % count), point));
         }
         return nearest;
     }
@@ -401,7 +401,7 @@ public final class PolygonRegions {
                 if ((offsetStart > 0) == (offsetEnd > 0)) {
                     continue;
                 }
-                var crossing = Segment.computeCrossingPoint(
+                var crossing = Segments.computeCrossingPoint(
                     edgeStart,
                     edgeEnd,
                     offsetStart,

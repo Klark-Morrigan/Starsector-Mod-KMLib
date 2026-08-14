@@ -122,7 +122,9 @@ lands on a corner.
 `Points` holds the vector arithmetic every measure above is built from - distances,
 bearings, projections onto an axis, unit vectors. Most take either four loose doubles or
 two `{x, y}` arrays. `Lines` and `Spans` work on intervals along a line: what a line
-crosses, and the longest run of it left clear by a set of obstacles. `PixelGrid` snaps to
+crosses, and the longest run of it left clear by a set of obstacles. `Segments` answers the
+same questions bounded by two endpoints rather than running on without end - whether two
+spans really cross, and how far a point lies from the nearest place on one. `PixelGrid` snaps to
 a pixel lattice.
 
 ## Partitioning
