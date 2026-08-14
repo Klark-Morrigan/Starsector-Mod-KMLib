@@ -3,6 +3,7 @@ package kmlib.math.geometry;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static kmlib.math.geometry.GeometryTestSupport.assertThatPointsAre;
@@ -11,13 +12,21 @@ import static kmlib.math.geometry.GeometryTestSupport.computeSignedArea;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Pins the contract of {@link PolylineBands#strokeToTriangles}: a straight centreline
+ * Pins the contract of {@link PolylineBands#strokeToTriangles}, and of
+ * {@link PolylineBands#strokeSpansToTriangles} splitting one such band between the spans it
+ * was asked for.
+ *
+ * <p>The single-stroke cases: a straight centreline
  * strokes the rectangle around it, a corner mitres so the band covers both its arms
  * once, a corner past the spike limit bevels the outside of the turn away, a corner
  * whose miter would outrun the segments it joins pinches to the centreline instead of
  * folding the band into a bowtie, a point the centreline runs straight through leaves
  * the band unbroken, repeated points are one point, and a centreline with nothing to
  * stroke - one distinct point, or no width - strokes nothing.
+ *
+ * <p>The span cases are about one thing the single-stroke ones cannot state: a boundary
+ * between two spans is a join rather than two square ends butted together, which is the
+ * whole reason for stroking a multi-coloured band once instead of a piece at a time.
  *
  * <p>Area carries most of the assertions: the corners a join produces are stated
  * exactly where a case is about one join, but whether the band covers what it should
@@ -225,6 +234,132 @@ final class PolylineBandsTest {
             assertThat(band)
                 .isEmpty();
         }
+    }
+
+    @Nested
+    class StrokeSpansToTriangles {
+
+        @Test
+        void spans_of_a_centreline_stroke_the_band_the_whole_of_it_strokes() {
+            // The spans are stretches of one centreline, so their pieces put back together
+            // are that centreline's own band - nothing is added at a boundary and nothing is
+            // lost there. Which makes every case pinned above hold of a split band too.
+            var spans = PolylineBands.strokeSpansToTriangles(
+                List.of(
+                    List.of(new double[] {0, 0}, new double[] {10, 0}),
+                    List.of(new double[] {10, 0}, new double[] {10, 10})),
+                WIDTH,
+                MITER_SPIKE_LIMIT);
+
+            assertThatPointsAre(
+                concatenate(spans),
+                PolylineBands.strokeToTriangles(RIGHT_ANGLE, WIDTH, MITER_SPIKE_LIMIT));
+        }
+
+        @Test
+        void a_boundary_landing_on_a_corner_turns_with_the_corner() {
+            // The boundary between the two spans sits exactly on the centreline's corner,
+            // which is where stroking each span on its own would leave the band's worst
+            // artefact: the first span ending square at (10,1) and (10,-1), the second
+            // starting square at (9,0) and (11,0), and an open wedge between the two. Stroked
+            // as one band the boundary takes the corner's own miter, so both spans end on the
+            // miter points and the two meet along the line between them.
+            var spans = PolylineBands.strokeSpansToTriangles(
+                List.of(
+                    List.of(new double[] {0, 0}, new double[] {10, 0}),
+                    List.of(new double[] {10, 0}, new double[] {10, 10})),
+                WIDTH,
+                MITER_SPIKE_LIMIT);
+
+            assertThat(hasCorner(spans.get(0), new double[] {9, 1}))
+                .isTrue();
+            assertThat(hasCorner(spans.get(0), new double[] {11, -1}))
+                .isTrue();
+            assertThat(hasCorner(spans.get(0), new double[] {10, 1}))
+                .isFalse();
+            assertThat(hasCorner(spans.get(0), new double[] {10, -1}))
+                .isFalse();
+            assertThat(hasCorner(spans.get(1), new double[] {9, 1}))
+                .isTrue();
+        }
+
+        @Test
+        void each_span_takes_the_triangles_of_its_own_stretch() {
+            // A straight centreline cut in half: each span is the rectangle around its own
+            // half and nothing of the other's, so a caller colouring the spans separately
+            // colours exactly the stretch it asked about.
+            var spans = PolylineBands.strokeSpansToTriangles(
+                List.of(
+                    List.of(new double[] {0, 0}, new double[] {5, 0}),
+                    List.of(new double[] {5, 0}, new double[] {10, 0})),
+                WIDTH,
+                MITER_SPIKE_LIMIT);
+
+            assertThatPointsAre(spans.get(0), List.of(
+                new double[] {0, 1},
+                new double[] {0, -1},
+                new double[] {5, -1},
+                new double[] {0, 1},
+                new double[] {5, -1},
+                new double[] {5, 1}));
+
+            assertThatPointsAre(spans.get(1), List.of(
+                new double[] {5, 1},
+                new double[] {5, -1},
+                new double[] {10, -1},
+                new double[] {5, 1},
+                new double[] {10, -1},
+                new double[] {10, 1}));
+        }
+
+        @Test
+        void a_span_that_covers_no_distance_strokes_nothing_and_keeps_its_place() {
+            // A span standing where its predecessor ended covers no stretch of the band, so
+            // it has nothing to stroke. It comes back empty rather than being dropped - the
+            // spans answer by position, and a caller reading a colour off each would
+            // otherwise start colouring the wrong stretches from there on.
+            var spans = PolylineBands.strokeSpansToTriangles(
+                List.of(
+                    List.of(new double[] {0, 0}, new double[] {5, 0}),
+                    List.of(new double[] {5, 0}, new double[] {5, 0}),
+                    List.of(new double[] {5, 0}, new double[] {10, 0})),
+                WIDTH,
+                MITER_SPIKE_LIMIT);
+
+            assertThat(spans)
+                .hasSize(3);
+            assertThat(spans.get(1))
+                .isEmpty();
+            assertThat(spans.get(2))
+                .isNotEmpty();
+        }
+
+        @Test
+        void a_band_of_no_width_strokes_nothing_for_any_span() {
+            // The degenerate band still answers per span, so a caller need not tell the two
+            // reasons a span is empty apart.
+            var spans = PolylineBands.strokeSpansToTriangles(
+                List.of(
+                    List.of(new double[] {0, 0}, new double[] {5, 0}),
+                    List.of(new double[] {5, 0}, new double[] {10, 0})),
+                0.0,
+                MITER_SPIKE_LIMIT);
+
+            assertThat(spans)
+                .hasSize(2)
+                .allSatisfy(span -> assertThat(span).isEmpty());
+        }
+    }
+
+    // The spans' triangles back in one list, in span order - the band they were cut from.
+    private static List<double[]> concatenate(List<List<double[]>> spans) {
+
+        var triangles = new ArrayList<double[]>();
+
+        for (var span : spans) {
+            triangles.addAll(span);
+        }
+        return triangles;
     }
 
     // The area the band covers, as the sum of its triangles' own areas. The band is built

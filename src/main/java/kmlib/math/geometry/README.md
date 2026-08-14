@@ -113,9 +113,16 @@ bevel in two cases that are asked separately because they answer different halve
 
 The band comes out gap-free and, where the centreline's turns leave room for the width asked
 of them, without stacking its pieces - which matters because a translucent band draws every
-overlap as a brighter patch. Joins are made within one band, so two bands stroked separately
+overlap as a brighter patch. Joins are made within one stroke, so two bands stroked separately
 butt at their shared end: exact along a straight stretch, a small open wedge where that end
 lands on a corner.
+
+A band drawn in pieces - different colours along its length - therefore uses
+`strokeSpansToTriangles`, which takes the centreline as its consecutive stretches and hands
+back each stretch's own triangles out of one stroke. A boundary between two pieces is then a
+point the band turns at like any other, rather than two square ends and the wedge between them,
+and only the band's two outer ends are left open. A stretch covering no distance comes back
+empty rather than dropped, so the answers stay readable by position.
 
 ## Point, line and span arithmetic
 

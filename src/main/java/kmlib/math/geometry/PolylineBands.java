@@ -35,9 +35,13 @@ import java.util.List;
  * translucent band draws every overlap as a brighter patch, so overlap is visible in a
  * way it is not for an opaque fill.
  *
- * <p>Joins are made within one band only. Two bands stroked separately butt at their
- * shared end rather than joining, which is exact where that end sits along a straight
- * stretch and leaves a small wedge open where it lands on a corner.
+ * <p>Joins are made within one stroke. Two bands stroked separately butt at their shared
+ * end rather than joining, which is exact where that end sits along a straight stretch and
+ * leaves a small wedge open where it lands on a corner. So a band that changes colour along
+ * its length is stroked once and cut into its pieces afterwards
+ * ({@link #strokeSpansToTriangles}) rather than stroked a piece at a time - otherwise every
+ * colour change landing on a corner opens that wedge, and on a centreline traced round a
+ * rounded shape most of them do.
  */
 public final class PolylineBands {
 
@@ -72,20 +76,66 @@ public final class PolylineBands {
             double width,
             double miterSpikeLimit) {
 
-        var points = removeRepeatedPoints(polyline);
-        var triangles = new ArrayList<double[]>();
+        return strokeSpansToTriangles(List.of(polyline), width, miterSpikeLimit).get(0);
+    }
+
+    /**
+     * Strokes the consecutive spans of one centreline into a single band of {@code width},
+     * handing back each span's own share of it.
+     *
+     * <p>For a band drawn in more than one piece - different colours along its length, say.
+     * Stroking each piece on its own would leave every boundary between two of them a butt
+     * rather than a join, so a boundary landing on a corner of the centreline opens a wedge
+     * there; stroking once and cutting the result up makes each boundary a point the one
+     * band turns at like any other. Only the band's two outer ends stay open, having nothing
+     * to join to.
+     *
+     * <p>The spans are consecutive stretches of one centreline, so each begins where its
+     * predecessor ended. That shared point may be given twice, once per span, or once in
+     * either of them - a point landing on its predecessor is one point, exactly as within a
+     * single span.
+     *
+     * @param spans           the centreline's stretches in order, each as {x, y} points and
+     *                        each carrying every corner the centreline turns at within it -
+     *                        two ends alone describe a straight stretch cutting across
+     *                        whatever lies between them
+     * @param width           the band's full width, half of it either side of the centreline
+     * @param miterSpikeLimit a corner whose miter would stand farther than this multiple of
+     *                        the half-width from the corner is bevelled instead, as
+     *                        {@link PolygonOffsets#insetPolygonByMiter} bevels one
+     * @return one triangle list per span, in the order the spans were given, every three
+     *         consecutive {x, y} points one triangle. A span holding no distinct step of its
+     *         own comes back empty rather than being dropped, so a caller can read its spans
+     *         off by position
+     */
+    public static List<List<double[]>> strokeSpansToTriangles(
+            List<List<double[]>> spans,
+            double width,
+            double miterSpikeLimit) {
+
+        var centreline = joinSpans(spans);
+        var points = centreline.points();
+        var trianglesPerSpan = new ArrayList<List<double[]>>(spans.size());
+
+        for (var span = 0; span < spans.size(); span++) {
+            trianglesPerSpan.add(new ArrayList<double[]>());
+        }
 
         // A band needs two distinct points to have a direction and a width to have area.
         // The width is measured against the length below which two points are one, since
         // a band thinner than that is a line the rails of which have collapsed together.
         if (points.size() < 2 || width < Limits.MIN_EDGE_LENGTH) {
-            return triangles;
+            return trianglesPerSpan;
         }
 
         var joins = buildJoins(points, width / 2, miterSpikeLimit);
 
         for (var segment = 0; segment + 1 < points.size(); segment++) {
 
+            // The joins were built over the whole centreline, so a segment ending at a span
+            // boundary closes on the miter that boundary's corner takes rather than on a
+            // square end - which is the whole of what stroking once buys.
+            var triangles = trianglesPerSpan.get(centreline.spanOfSegment()[segment]);
             var from = joins.get(segment);
             var to = joins.get(segment + 1);
 
@@ -101,7 +151,7 @@ public final class PolylineBands {
 
             triangles.addAll(to.bevelTriangle());
         }
-        return triangles;
+        return trianglesPerSpan;
     }
 
     // One join per point of the centreline: a straight cap at each end, where the band
@@ -248,19 +298,44 @@ public final class PolylineBands {
         return Points.computeDistance(from, to) * (otherEndIsCorner ? 0.5 : 1.0);
     }
 
-    // The centreline with each point that lands on its predecessor dropped. Such a step
-    // has no direction, and so no rails to offset along it; dropping it leaves the same
-    // centreline stated in steps that all have one.
-    private static List<double[]> removeRepeatedPoints(List<double[]> polyline) {
+    // The spans laid end to end as the one centreline they are stretches of, plus the span
+    // each of its segments belongs to - which is what lets one set of joins be cut back up
+    // into the pieces it was asked for.
+    //
+    // Points landing on their predecessor are dropped throughout, which covers the shared
+    // ends the spans meet at as much as a repeat within one of them: such a step has no
+    // direction, and so no rails to offset along it, and dropping it leaves the same
+    // centreline stated in steps that all have one. A span left with no step of its own
+    // therefore owns no segment, and strokes to nothing.
+    private static SpannedCentreline joinSpans(List<List<double[]>> spans) {
 
-        var points = new ArrayList<double[]>(polyline.size());
+        var totalPoints = 0;
 
-        for (var point : polyline) {
-            if (points.isEmpty() || !Rings.isSamePoint(points.get(points.size() - 1), point)) {
+        for (var span : spans) {
+            totalPoints += span.size();
+        }
+
+        var points = new ArrayList<double[]>(totalPoints);
+        var spanOfSegment = new int[totalPoints];
+
+        for (var span = 0; span < spans.size(); span++) {
+            for (var point : spans.get(span)) {
+
+                if (points.isEmpty()) {
+                    points.add(point);
+                    continue;
+                }
+                if (Rings.isSamePoint(points.get(points.size() - 1), point)) {
+                    continue;
+                }
+
+                // The point about to be added closes the segment leaving the one before it,
+                // and that segment is walked by the span the new point came from.
+                spanOfSegment[points.size() - 1] = span;
                 points.add(point);
             }
         }
-        return points;
+        return new SpannedCentreline(points, spanOfSegment);
     }
 
     // The left-hand unit normal of the directed segment a -> b: its direction turned 90
@@ -336,5 +411,21 @@ public final class PolylineBands {
         static BandJoin ofSharedRails(double[] left, double[] right) {
             return new BandJoin(left, right, left, right, List.of());
         }
+    }
+
+    /**
+     * Several spans read as the one centreline they make up, without losing which span each
+     * step of it came from.
+     *
+     * @param points        the spans' points laid end to end, each distinct from the one
+     *                      before it
+     * @param spanOfSegment the span walking the segment from {@code points[i]} to
+     *                      {@code points[i + 1]}, at index {@code i}. Entries past the last
+     *                      segment are unwritten, the list being sized before the repeated
+     *                      points were dropped
+     */
+    private record SpannedCentreline(
+        List<double[]> points,
+        int[] spanOfSegment) {
     }
 }
