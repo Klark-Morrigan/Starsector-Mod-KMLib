@@ -215,6 +215,9 @@ scripts/
   actions/validate-versioning/ - enforces the versioning policy at
     release time (changelog section, mod_info.json version match,
     version shape, kmlib dep SemVer pin)
+  actions/fill-version-file-template/ - fills the caller's
+    committed <mod-id>.version template from mod_info.json, producing
+    the VersionChecker file for the release being cut
   tests/                       - bats-core tests for the action scripts
   workflows/ci-gradle.yml      - the Gradle gate, on the self-hosted
     kmlib-runner; built twice, with and without Fast Rendering's jar
@@ -291,11 +294,23 @@ Starsector binaries and so runs on the self-hosted `kmlib-runner`.
   The shape is enforced here because every downstream consumer of a
   malformed version degrades in silence rather than erroring. Policy
   itself lives in [docs/dev/versioning.md](docs/dev/versioning.md).
+- [fill-version-file-template](.github/actions/fill-version-file-template/action.yml)
+  takes an `output-path` and a `zip-name` and writes the mod's
+  VersionChecker `.version` file there. The caller commits a complete
+  `<mod-id>.version` template whose release-varying values are written as
+  tokens - `{{modName}}`, `{{major}}` / `{{minor}}` / `{{patch}}`,
+  `{{starsectorVersion}}`, `{{directDownloadURL}}` - and the action
+  substitutes each from `mod_info.json`, so no version number is restated
+  by hand outside that file. Substitution is by whole value, which is how
+  the version components come out as JSON numbers rather than quoted
+  digits; every other key is carried through untouched, so the template
+  states the published shape. A token left unsubstituted fails the release
+  rather than shipping literal braces to players.
 
 Cutting the GitHub release itself - extracting the `## [<version>]`
 section for the body and attaching the built mod zip - is delegated to
 Common-Automation's stack-agnostic `create-github-release` action.
-Only the three `mod_info.json`-coupled actions above live in KMLib.
+Only the four `mod_info.json`-coupled actions above live in KMLib.
 
 ## Build & Test
 

@@ -1,0 +1,37 @@
+# Fills the caller's committed VersionChecker template from its
+# mod_info.json, so the version an update checker reads is the same string
+# the game reads and is never restated by hand.
+#
+# The action shells out to scripts/fill_version_file_template.sh so the
+# logic is unit-tested with bats. Composite actions are not unit-testable.
+name: Fill version file template
+description: >-
+  Substitutes the tokens in the caller's committed <mod-id>.version template
+  from mod_info.json - mod name, version components, game version, and the
+  direct download URL for the release being cut - and writes the result to
+  the given path.
+
+inputs:
+  output-path:
+    description: >-
+      Where to write the filled file. Parent directories are created if
+      absent, so a path inside the assembled dist payload is as valid as one
+      at the workspace root.
+    required: true
+  zip-name:
+    description: >-
+      Filename of the release zip the generated directDownloadURL points at.
+      Supplied by mod-release.yml from the read-mod-info action's output so
+      the URL and the uploaded asset cannot name different files.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - id: fill
+      shell: bash
+      # GITHUB_ACTION_PATH points at this action's directory regardless of
+      # the caller's working directory, so the script path is stable.
+      run: |
+        "$GITHUB_ACTION_PATH/scripts/fill_version_file_template.sh" \
+          "${{ inputs.output-path }}" "${{ inputs.zip-name }}"
