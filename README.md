@@ -319,7 +319,14 @@ Starsector binaries and so runs on the self-hosted `kmlib-runner`.
   the version components come out as JSON numbers rather than quoted
   digits; every other key is carried through untouched, so the template
   states the published shape. A token left unsubstituted fails the release
-  rather than shipping literal braces to players.
+  rather than shipping literal braces to players. `mod-root` says where to
+  read `mod_info.json` and the template from and defaults to the working
+  directory, which is where a job with the mod checked out at the workspace
+  root already stands; the release pipeline sets it because its checkout is
+  one level down and Actions permits no `working-directory` on a `uses:`
+  step. `output-path` is unaffected by it - always relative to the job, so
+  a caller writing into the checkout and one writing beside it each state
+  the path they would state anyway.
 
 All four read `mod_info.json`, so what that file contains and what shape
 its fields take live once in
@@ -331,9 +338,19 @@ outside that path would be missing at run time. The leading underscore marks
 it as not-an-action.
 
 Cutting the GitHub release itself - extracting the `## [<version>]`
-section for the body and attaching the built mod zip - is delegated to
+section for the body and attaching the assets - is delegated to
 Common-Automation's stack-agnostic `create-github-release` action.
 Only the four `mod_info.json`-coupled actions above live in KMLib.
+
+A release carries two assets. The mod zip is what a player downloads, and
+the generated `.version` file rides inside it as well, so an install knows
+which version it is. The same file is attached in its own right because
+that is the only form an update checker can reach: it polls
+`releases/latest/download/<mod-id>.version` without downloading the mod,
+and a copy sealed inside the zip answers nothing. GitHub excludes
+prereleases from `releases/latest`, so a mod marked prerelease publishes a
+URL that resolves to an earlier release or to nothing - which is why
+nothing in this pipeline can mark one.
 
 ## Build & Test
 

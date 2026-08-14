@@ -8,11 +8,15 @@
 # at release time keeps the number stated once, in the file the game itself
 # reads, instead of in three that drift apart the moment one is forgotten.
 #
-# Usage: fill_version_file_template.sh <output-path> <zip-name>
+# Usage: fill_version_file_template.sh <output-path> <zip-name> [mod-root]
 #
-# Reads from the current working directory:
+# Reads from the mod root, which defaults to the working directory:
 #   mod_info.json     - .id, .name, .version, .gameVersion
 #   <mod-id>.version  - the committed template
+#
+# The output path is always resolved from where the caller stands, never
+# from the mod root, so a caller writing into the checkout and one writing
+# beside it each state the path they would state anyway.
 #
 # The template is a complete VersionChecker file whose release-varying
 # values are written as tokens. It is the shape the mod publishes: whatever
@@ -60,12 +64,28 @@ OUTPUT_PATH="${1:?output path argument required}"
 # and the name of the zip actually uploaded come from one place: the
 # read-mod-info action that already emits it.
 ZIP_NAME="${2:?zip name argument required}"
+# Directory holding mod_info.json and the template. Optional because a
+# caller already standing in the mod root - which is every caller running
+# against a plain checkout - has nothing to say. The release pipeline is the
+# exception: it checks the mod out one level down so the sibling repos can
+# sit beside it, and Actions permits no working-directory on a `uses:` step.
+MOD_ROOT="${3:-.}"
 
 # Set by the Actions runtime to <owner>/<repo>. Using it rather than a URL
 # restated in each mod's template means the download link points at
 # whichever repository is publishing the release, and cannot disagree with
 # it.
 REPOSITORY="${GITHUB_REPOSITORY:?must be set to <owner>/<repo>}"
+
+# Kept before the move below, so the output path resolves against the
+# directory the caller stated it from.
+CALLER_DIR="${PWD}"
+
+if [[ ! -d "${MOD_ROOT}" ]]; then
+  echo "fill_version_file_template: mod root ${MOD_ROOT} not found in ${PWD}" >&2
+  exit 1
+fi
+cd "${MOD_ROOT}"
 
 mod_info_require_file
 
@@ -152,6 +172,10 @@ if [[ -n "${UNREPLACED}" ]]; then
   echo "fill_version_file_template: ${TEMPLATE_FILE} has unreplaced token(s): ${UNREPLACED}" >&2
   exit 1
 fi
+
+# Back to where the caller stood, because that is what the output path was
+# written against. Everything above needed the mod root; nothing below does.
+cd "${CALLER_DIR}"
 
 # Callers write both a copy inside the assembled dist payload and a copy for
 # the release asset, so the parent directory is not always one that already

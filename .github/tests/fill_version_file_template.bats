@@ -130,6 +130,30 @@ EOF
     [ "$(read_generated '.masterVersionFile')" = "https://example.invalid/master/kmlib.version" ]
 }
 
+@test "reads the mod root given to it, and writes from where the caller stands" {
+    # The release pipeline's shape: the mod checked out one level down, the
+    # caller standing above it. Both paths below are stated the way that
+    # caller states them - the template found under the mod root, the output
+    # written relative to the caller, not to the root it was read from.
+    mkdir -p "$WORK_DIR/checkout"
+    mv "$WORK_DIR/mod_info.json" "$WORK_DIR/kmu.version" "$WORK_DIR/checkout/"
+    cd "$WORK_DIR"
+    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME" "checkout"
+    [ "$status" -eq 0 ]
+    [ -f "$WORK_DIR/$OUTPUT_FILE" ]
+    [ ! -f "$WORK_DIR/checkout/$OUTPUT_FILE" ]
+    [ "$(read_generated '.modName')" = "Klark Morrigan's Universe" ]
+}
+
+@test "fails when the mod root does not exist" {
+    cd "$WORK_DIR"
+    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME" "absent"
+    # Named as the wrong directory rather than reported as a missing
+    # mod_info.json, which is the same symptom from a different cause.
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"mod root absent not found"* ]]
+}
+
 @test "creates the output directory when it does not exist" {
     cd "$WORK_DIR"
     run bash "$SCRIPT" "dist/KMU/$OUTPUT_FILE" "$ZIP_NAME"

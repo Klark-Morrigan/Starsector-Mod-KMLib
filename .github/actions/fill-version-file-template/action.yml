@@ -14,9 +14,10 @@ description: >-
 inputs:
   output-path:
     description: >-
-      Where to write the filled file. Parent directories are created if
-      absent, so a path inside the assembled dist payload is as valid as one
-      at the workspace root.
+      Where to write the filled file, relative to the job's working directory
+      rather than to mod-root. Parent directories are created if absent, so a
+      path inside the assembled dist payload is as valid as one at the
+      workspace root.
     required: true
   zip-name:
     description: >-
@@ -24,6 +25,15 @@ inputs:
       Supplied by mod-release.yml from the read-mod-info action's output so
       the URL and the uploaded asset cannot name different files.
     required: true
+  mod-root:
+    description: >-
+      Directory holding mod_info.json and the <mod-id>.version template.
+      Defaults to the working directory, which is where a job checking the
+      mod out at the workspace root already stands. Set it when the checkout
+      is elsewhere: Actions permits no working-directory on a `uses:` step,
+      so an action cannot be positioned the way a `run:` step can.
+    required: false
+    default: '.'
 
 # The other half of directDownloadURL is the publishing repository, taken
 # from the GITHUB_REPOSITORY variable the Actions runtime exports rather than
@@ -41,4 +51,5 @@ runs:
       # the caller's working directory, so the script path is stable.
       run: |
         "$GITHUB_ACTION_PATH/scripts/fill_version_file_template.sh" \
-          "${{ inputs.output-path }}" "${{ inputs.zip-name }}"
+          "${{ inputs.output-path }}" "${{ inputs.zip-name }}" \
+          "${{ inputs.mod-root }}"
