@@ -48,6 +48,12 @@ Compatibility coded in:
 
 ```
 mod_info.json
+kmlib.version           - VersionChecker template; the release pipeline
+                          fills its {{tokens}} from mod_info.json, ships
+                          the filled copy in the mod folder, and publishes
+                          the same file as a release asset
+data/config/version/
+  version_files.csv     - names the .version file VersionChecker reads
 build.gradle / settings.gradle / gradlew[.bat]
 src/main/java/kmlib/
   Game-agnostic helpers (no Starsector API on the signature):
