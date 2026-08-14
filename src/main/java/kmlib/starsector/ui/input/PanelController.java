@@ -28,10 +28,11 @@ import kmlib.starsector.ui.widgets.scroll.ScrollState;
  * kmlib.starsector.ui.input.TabPanelController} reuses this for the body and routes the header tabs
  * separately, so a tab switch stays with that controller.
  *
- * <p>The wheel is the one moment this end answers audibly, and it is here because the wheel is: a headerless
- * panel scrolls with a sound of its own rather than only a tab panel's body. What that sound is stays the
- * look's, handed in with the scheme - this end knows only that the list actually moved, which is the part
- * neither the event nor the scheme can say.
+ * <p>Two moments this end answers audibly, both because it is where they happen: a press landing on a body
+ * control, and the wheel moving the list. A headerless panel therefore presses and scrolls with sounds of
+ * its own rather than only a tab panel's body. What either sounds like stays the look's, handed in with the
+ * scheme - this end knows only that a press reached a control and that the list actually moved, which is the
+ * part neither the event nor the scheme can say.
  */
 public final class PanelController {
 
@@ -115,8 +116,12 @@ public final class PanelController {
     /**
      * Handles one pointer event over the panel: continues a thumb drag wherever the pointer is, else -
      * over the panel box - scrolls the flex list on a wheel, starts a drag on a press in the scrollbar
-     * grab column, or fires the control under a left press. Every event over the panel is consumed, so the
-     * surface behind it does not also act on it.
+     * grab column, or sounds and fires the control under a left press. Every event over the panel is
+     * consumed, so the surface behind it does not also act on it.
+     *
+     * <p>The order the branches are tried in is what keeps the scrollbar quiet: a press in the grab column
+     * is taken as a drag before a control is ever offered it, so the gutter answers with the list moving and
+     * never with a control's press.
      *
      * @param event     the pointer event
      * @param placement the laid-out panel the renderer drew this frame
@@ -145,9 +150,10 @@ public final class PanelController {
             if (!beginThumbDragIfPressed(event, placement)) {
 
                 // A press on the border or on blank body resolves to no control and only consumes (below),
-                // so empty chrome swallows the click without acting. What fired is immaterial here - the
-                // action carries its own cell - so the answer is dropped; a header tab is what needs it.
-                activateBodyControlIfHit(placement, event.getX(), event.getY());
+                // so empty chrome swallows the click silently and without acting. What fired is immaterial
+                // here - the action carries its own cell, and the press has already been answered where the
+                // cell resolved - so the answer is dropped; a header tab is what needs it.
+                pressBodyControlAtPoint(placement, event.getX(), event.getY());
             }
         }
         event.consume();
@@ -182,11 +188,22 @@ public final class PanelController {
     }
 
     /**
-     * Fires the action of the body control a press lands on, and reports which cell of it fired. Resolves
-     * the press through {@link #resolveHitBodyCell} and offers what comes back to {@link
-     * #activateCellIfActionable}, so the geometry a press acts on is the geometry the panel's one body
-     * resolver answers, and the narrowing that decides whether it acts is stated once, beside the action it
-     * gates.
+     * Answers a left press on the body: sounds it where it reached a control, fires that control's action
+     * when the cell is one worth acting on, and reports which cell fired. Resolves the press through {@link
+     * #resolveHitBodyCell} and offers what comes back to {@link #activateCellIfActionable}, so the geometry
+     * a press acts on is the geometry the panel's one body resolver answers, and the narrowing that decides
+     * whether it acts is stated once, beside the action it gates.
+     *
+     * <p>The sound hangs off the resolve and not off the firing, so a press that lands on an inert cell
+     * sounds like the press it was. That case - a re-press on a lit segment - is the one press with nothing
+     * else to show for it, the screen answering it with no change at all, so hanging the sound on the action
+     * would leave the panel's only unexplained press as its only silent one. Chrome stays quiet by the same
+     * rule rather than by a second one: the resolver reports no cell on a border, on blank body, on a
+     * caption or on a divider, and a press that reached nothing has nothing to answer for.
+     *
+     * <p>On the way down, the body's controls acting on the way down - a box is ticked and a fold is already
+     * moving by the time the button comes up. A tab's lift is held until the release and so sounds there;
+     * this end holds nothing, so there is no release to plumb.
      *
      * <p>The walk stops at the control the point is over rather than at the first control willing to act. A
      * press on an inert cell has landed on that cell, and looking past it for something further down the
@@ -204,7 +221,7 @@ public final class PanelController {
      * @param pointY    the press y, in UI coordinates
      * @return the control and cell that fired, or {@code null} when the press acted on nothing
      */
-    static ResolvedBodyCell activateBodyControlIfHit(
+    ResolvedBodyCell pressBodyControlAtPoint(
             PanelPlacement placement,
             float pointX,
             float pointY) {
@@ -213,6 +230,8 @@ public final class PanelController {
         if (hitCell == null) {
             return null;
         }
+        soundPlayer.playCueIfPresent(soundScheme.pressCue());
+
         if (activateCellIfActionable(hitCell.control(), hitCell.slot().cell()) == NO_CELL_RESOLVED) {
             return null;
         }

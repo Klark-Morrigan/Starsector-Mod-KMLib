@@ -36,11 +36,21 @@ import static org.assertj.core.api.Assertions.assertThat;
  * resolver a press reads. The body walk is pinned there too rather than only through the press, since a
  * hover reads the walk and never the firing above it.
  *
- * <p>The wheel cases pin the one moment this end answers audibly, and the rule that decides it: the sound
- * follows the list having moved rather than the wheel having turned, so a notch against the end of a list
- * is as silent as a notch over a list that fits.
+ * <p>The wheel cases pin one of the two moments this end answers audibly, and the rule that decides it: the
+ * sound follows the list having moved rather than the wheel having turned, so a notch against the end of a
+ * list is as silent as a notch over a list that fits. The press cases pin the other, and the rule that
+ * decides it: the sound follows the press having reached a control rather than having fired one, so an inert
+ * cell sounds like the press it was and chrome stays silent.
  */
 final class PanelControllerTest {
+
+    // A look whose press and scroll roles are each the other's, so a moment answered from this end's own
+    // code rather than from the look records the wrong sound. The vanilla scheme could not tell the two
+    // apart, its roles being the ones a hardcoding would have reached for.
+    private static final UiSoundScheme SWAPPED_SOUNDS = new UiSoundScheme(
+        UiSoundCue.createAtFullVolume(StarsectorUiSound.LIST_SCROLLED),
+        StarsectorUiSound.BUTTON_MOUSEOVER,
+        UiSoundCue.createAtFullVolume(StarsectorUiSound.BUTTON_PRESSED));
 
     private static final Rectangle ROW =
         new Rectangle(100f, 200f, 120f, 20f);
@@ -74,14 +84,21 @@ final class PanelControllerTest {
     private static final float IN_GRAB_COLUMN_Y = ROW.y() + 1f;
 
     @Nested
-    class ActivateBodyControlIfHit {
+    class PressBodyControlAtPoint {
+
+        private final UiSoundPlayerFake soundPlayerFake = new UiSoundPlayerFake();
+
+        // The controller every case here presses through: it answers by the engine's own scheme, so the
+        // role a press sounds at is the one a player hears on a vanilla control.
+        private final PanelController controller =
+            new PanelController(soundPlayerFake, UiSoundScheme.createVanillaSoundScheme());
 
         @Test
-        void activateBodyControlIfHitPassesOverACaptionLabelWithoutActing() {
+        void pressBodyControlAtPointPassesOverACaptionLabelWithoutActing() {
             // A caption row is drawn but never clickable - a Label is not Interactive - so a press over
             // it hits nothing and falls through rather than being swallowed as if it acted.
             var label = buildCaptionControl();
-            var activatedCell = PanelController.activateBodyControlIfHit(
+            var activatedCell = controller.pressBodyControlAtPoint(
                 buildBodyPlacement(label),
                 ROW.x() + ROW.width() / 2f,
                 ROW.y() + ROW.height() / 2f);
@@ -91,11 +108,11 @@ final class PanelControllerTest {
         }
 
         @Test
-        void activateBodyControlIfHitFiresACheckboxHitAnywhereOnItsRow() {
+        void pressBodyControlAtPointFiresACheckboxHitAnywhereOnItsRow() {
 
             var firedCell = new int[] {-1};
             var checkbox = buildCheckboxControl("Muted", cell -> firedCell[0] = cell);
-            var activatedCell = PanelController.activateBodyControlIfHit(
+            var activatedCell = controller.pressBodyControlAtPoint(
                 buildBodyPlacement(checkbox),
                 ROW.x() + ROW.width() / 2f,
                 ROW.y() + ROW.height() / 2f);
@@ -109,10 +126,10 @@ final class PanelControllerTest {
         }
 
         @Test
-        void activateBodyControlIfHitReportsNoHitForAPressOutsideACheckboxRow() {
+        void pressBodyControlAtPointReportsNoHitForAPressOutsideACheckboxRow() {
 
             var checkbox = buildCheckboxControl("Muted", ControlAction.NONE);
-            var activatedCell = PanelController.activateBodyControlIfHit(
+            var activatedCell = controller.pressBodyControlAtPoint(
                 buildBodyPlacement(checkbox),
                 ROW.x() - 10f,
                 ROW.y() + ROW.height() / 2f);
@@ -122,14 +139,14 @@ final class PanelControllerTest {
         }
 
         @Test
-        void activateBodyControlIfHitFiresAScrollingListOptionInsideItsViewport() {
+        void pressBodyControlAtPointFiresAScrollingListOptionInsideItsViewport() {
 
             var firedCell = new int[] {-1};
             var list = buildScrollingListAtRow(cell -> firedCell[0] = cell);
 
             // The press lands on the list's one option and inside a viewport that covers the row, so the
             // option fires as a normal radio hit.
-            var activatedCell = PanelController.activateBodyControlIfHit(
+            var activatedCell = controller.pressBodyControlAtPoint(
                 buildBodyPlacement(ROW, list),
                 ROW.x() + ROW.width() / 2f,
                 ROW.y() + ROW.height() / 2f);
@@ -141,14 +158,14 @@ final class PanelControllerTest {
         }
 
         @Test
-        void activateBodyControlIfHitRejectsAScrollingListOptionScrolledOutOfItsViewport() {
+        void pressBodyControlAtPointRejectsAScrollingListOptionScrolledOutOfItsViewport() {
 
             var fired = new boolean[1];
             var list = buildScrollingListAtRow(cell -> fired[0] = true);
 
             // The option's segment sits at ROW, but the viewport is a strip well above it - as if the row
             // scrolled up under the header - so the press over the clipped-out row must not fire it.
-            var activatedCell = PanelController.activateBodyControlIfHit(
+            var activatedCell = controller.pressBodyControlAtPoint(
                 buildBodyPlacement(buildViewportAboveRow(), list),
                 ROW.x() + ROW.width() / 2f,
                 ROW.y() + ROW.height() / 2f);
@@ -162,13 +179,13 @@ final class PanelControllerTest {
         }
 
         @Test
-        void activateBodyControlIfHitFiresATabHitReportedAsThatTabIndex() {
+        void pressBodyControlAtPointFiresATabHitReportedAsThatTabIndex() {
 
             var firedCell = new int[] {-1};
 
             // The lit tab is the left one, so a press on the right (non-lit) tab fires it by its index.
             var tabs = buildTwoTabRowAtRow(0, cell -> firedCell[0] = cell);
-            var activatedCell = PanelController.activateBodyControlIfHit(
+            var activatedCell = controller.pressBodyControlAtPoint(
                 buildBodyPlacement(tabs),
                 ROW.x() + 3f * ROW.width() / 4f,
                 ROW.y() + ROW.height() / 2f);
@@ -182,14 +199,14 @@ final class PanelControllerTest {
         }
 
         @Test
-        void activateBodyControlIfHitTreatsAPressOnTheLitTabAsInert() {
+        void pressBodyControlAtPointTreatsAPressOnTheLitTabAsInert() {
 
             var fired = new boolean[1];
 
             // A tabs row is always inert on its lit tab (INERT reselect), so a press on the left, lit tab
             // reaches no action - matching a vanilla tab strip, where clicking the active tab does nothing.
             var tabs = buildTwoTabRowAtRow(0, cell -> fired[0] = true);
-            var activatedCell = PanelController.activateBodyControlIfHit(
+            var activatedCell = controller.pressBodyControlAtPoint(
                 buildBodyPlacement(tabs),
                 ROW.x() + ROW.width() / 4f,
                 ROW.y() + ROW.height() / 2f);
@@ -203,10 +220,10 @@ final class PanelControllerTest {
         }
 
         @Test
-        void activateBodyControlIfHitReportsNoHitForAPressOutsideEveryTab() {
+        void pressBodyControlAtPointReportsNoHitForAPressOutsideEveryTab() {
 
             var tabs = buildTwoTabRowAtRow(0, ControlAction.NONE);
-            var activatedCell = PanelController.activateBodyControlIfHit(
+            var activatedCell = controller.pressBodyControlAtPoint(
                 buildBodyPlacement(tabs),
                 ROW.x() - 10f,
                 ROW.y() + ROW.height() / 2f);
@@ -216,7 +233,7 @@ final class PanelControllerTest {
         }
 
         @Test
-        void activateBodyControlIfHitFiresADeselectableHorizontalRadioOnARepickOfItsLitSegment() {
+        void pressBodyControlAtPointFiresADeselectableHorizontalRadioOnARepickOfItsLitSegment() {
 
             var firedCell = new int[] {-1};
 
@@ -228,7 +245,7 @@ final class PanelControllerTest {
                     cell -> firedCell[0] = cell)
                 .handlesReselect(ReselectBehaviour.DESELECT));
 
-            var activatedCell = PanelController.activateBodyControlIfHit(
+            var activatedCell = controller.pressBodyControlAtPoint(
                 buildBodyPlacement(radio),
                 ROW.x() + ROW.width() / 4f,
                 ROW.y() + ROW.height() / 2f);
@@ -242,7 +259,7 @@ final class PanelControllerTest {
         }
 
         @Test
-        void activateBodyControlIfHitTreatsAPressOnAnInertHorizontalRadiosLitSegmentAsInert() {
+        void pressBodyControlAtPointTreatsAPressOnAnInertHorizontalRadiosLitSegmentAsInert() {
 
             var fired = new boolean[1];
 
@@ -253,7 +270,7 @@ final class PanelControllerTest {
                 0,
                 cell -> fired[0] = true));
 
-            var activatedCell = PanelController.activateBodyControlIfHit(
+            var activatedCell = controller.pressBodyControlAtPoint(
                 buildBodyPlacement(radio),
                 ROW.x() + ROW.width() / 4f,
                 ROW.y() + ROW.height() / 2f);
@@ -264,6 +281,86 @@ final class PanelControllerTest {
             assertThat(fired[0])
                 .as("the lit segment's action must not fire")
                 .isFalse();
+        }
+
+        @Test
+        void pressBodyControlAtPointSoundsThePressThatReachedAControl() {
+            // The moment the panel answers, and the smallest statement of it: one press on one control,
+            // one sound. Everything below is about which presses do not get it.
+            controller.pressBodyControlAtPoint(
+                buildBodyPlacement(buildCheckboxControl("Muted", ControlAction.NONE)),
+                ROW.x() + ROW.width() / 2f,
+                ROW.y() + ROW.height() / 2f);
+
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .containsExactly(StarsectorUiSound.BUTTON_PRESSED);
+        }
+
+        @Test
+        void pressBodyControlAtPointSoundsAPressOnAnInertSegmentThatFiresNothing() {
+            // The rule the sound hangs on the resolve for. A re-press on a lit segment changes nothing on
+            // screen, so it is the one press the player has only the sound to go by for - and hanging the
+            // sound on the firing would make it the panel's only silent press.
+            var fired = new boolean[1];
+            var radio = buildTwoSegmentHorizontalRadioAtRow(ControlSpec.HorizontalRadio.of(
+                List.of("Short", "Full"),
+                0,
+                cell -> fired[0] = true));
+
+            controller.pressBodyControlAtPoint(
+                buildBodyPlacement(radio),
+                ROW.x() + ROW.width() / 4f,
+                ROW.y() + ROW.height() / 2f);
+
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .as("a press that landed on a cell sounds like the press it was")
+                .containsExactly(StarsectorUiSound.BUTTON_PRESSED);
+            assertThat(fired[0])
+                .as("the silence of the action is what makes the sound the only answer")
+                .isFalse();
+        }
+
+        @Test
+        void pressBodyControlAtPointStaysSilentForAPressOnADivider() {
+            // Chrome answers no cell, so a press over it reached nothing to press. A divider is the case
+            // worth pinning because it spans the whole body width, so it is what a press between two
+            // controls actually lands on.
+            controller.pressBodyControlAtPoint(
+                buildBodyPlacement(new Control(new ControlSpec.Divider(), ROW, List.of())),
+                ROW.x() + ROW.width() / 2f,
+                ROW.y() + ROW.height() / 2f);
+
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .isEmpty();
+        }
+
+        @Test
+        void pressBodyControlAtPointStaysSilentForAPressOnBlankBody() {
+            // The same rule where there is no control at all: blank body swallows the click so the surface
+            // behind does not act, and swallowing is not an act of its own.
+            controller.pressBodyControlAtPoint(
+                buildBodyPlacement(buildCheckboxControl("Muted", ControlAction.NONE)),
+                ROW.x() - 10f,
+                ROW.y() + ROW.height() / 2f);
+
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .isEmpty();
+        }
+
+        @Test
+        void pressBodyControlAtPointTakesThePressRoleFromTheLookRatherThanNamingOne() {
+            // The point of the seam: which sound a press makes is the panel's look talking. A scheme
+            // agreeing with a hardcoded role would pass whether or not it was ever read, and the vanilla
+            // press role is exactly what a hardcoding would have named.
+            var swappedController = new PanelController(soundPlayerFake, SWAPPED_SOUNDS);
+
+            swappedController.pressBodyControlAtPoint(
+                buildBodyPlacement(buildCheckboxControl("Muted", ControlAction.NONE)),
+                ROW.x() + ROW.width() / 2f,
+                ROW.y() + ROW.height() / 2f);
+
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .containsExactly(StarsectorUiSound.LIST_SCROLLED);
         }
     }
 
@@ -340,7 +437,7 @@ final class PanelControllerTest {
 
             var fired = new boolean[1];
 
-            // The walk answers geometry alone: the same press that fires through activateBodyControlIfHit
+            // The walk answers geometry alone: the same press that fires through pressBodyControlAtPoint
             // reports its control here with the action untouched, which is what lets a hover - a reader that
             // only wants to know what is under a point - share the walk with the press.
             var checkbox = buildCheckboxControl("Muted", cell -> fired[0] = true);
@@ -478,7 +575,7 @@ final class PanelControllerTest {
 
             var fired = new boolean[1];
 
-            // Resolution answers geometry alone: the same press that fires through activateControlIfHit
+            // Resolution answers geometry alone: the same press that fires through pressBodyControlAtPoint
             // reports its cell here while the control's action stays untouched, which is what lets a
             // reader that only wants to know what is under a point share this path with the press.
             var checkbox = buildCheckboxControl("Muted", cell -> fired[0] = true);
@@ -595,14 +692,6 @@ final class PanelControllerTest {
     @Nested
     class HandlePointer {
 
-        // A look whose scroll role is not the one the panel would have named for itself, so a wheel answered
-        // from this end's own code rather than from the look records the wrong sound. The vanilla scheme
-        // could not tell the two apart.
-        private static final UiSoundScheme SWAPPED_SOUNDS = new UiSoundScheme(
-            UiSoundCue.createAtFullVolume(StarsectorUiSound.LIST_SCROLLED),
-            StarsectorUiSound.BUTTON_MOUSEOVER,
-            UiSoundCue.createAtFullVolume(StarsectorUiSound.BUTTON_PRESSED));
-
         private final UiSoundPlayerFake soundPlayerFake = new UiSoundPlayerFake();
 
         @Test
@@ -716,6 +805,67 @@ final class PanelControllerTest {
                 .isEqualTo(SHORT_SCROLL_OVERFLOW);
         }
 
+        @Test
+        void handlePointerSoundsThePressThatLandedOnABodyControl() {
+            // The routing, which is the half of the press the method above cannot show: a left press over
+            // the body reaches the control under it rather than being swallowed as an event the panel only
+            // consumes.
+            var controller = buildVanillaSoundingController();
+
+            controller.handlePointer(
+                PointerEventMocks.mockLeftPressAt(ON_LIST_X, ON_LIST_Y),
+                buildScrollingPlacementOver(buildCheckboxControl("Muted", ControlAction.NONE)));
+
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .containsExactly(StarsectorUiSound.BUTTON_PRESSED);
+        }
+
+        @Test
+        void handlePointerStaysSilentForAPressInTheScrollbarGrabColumn() {
+            // The order the branches are tried in, stated as a sound. The grab column is laid over the body,
+            // so a control sits under this press - and the drag takes it before any control is offered it,
+            // which is what keeps the scrollbar from answering like a control.
+            var controller = buildVanillaSoundingController();
+
+            controller.handlePointer(
+                PointerEventMocks.mockLeftPressAt(IN_GRAB_COLUMN_X, IN_GRAB_COLUMN_Y),
+                buildGutteredPlacementOver(buildCheckboxControl("Muted", ControlAction.NONE)));
+
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .isEmpty();
+        }
+
+        @Test
+        void handlePointerStaysSilentForAPressOnAControlTheFoldHasWipedOffTheScreen() {
+            // A press outside the box the body is drawn in never reaches the body at all. The checkbox is
+            // laid where it always was and the box has narrowed to a docked panel's rail, so the control
+            // under this press is on screen nowhere - and a control nobody can see must not answer.
+            var controller = buildVanillaSoundingController();
+
+            controller.handlePointer(
+                PointerEventMocks.mockLeftPressAt(ON_LIST_X, ON_LIST_Y),
+                buildBodyPlacementBoxedTo(
+                    buildDockedRailBox(),
+                    buildCheckboxControl("Muted", ControlAction.NONE)));
+
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .isEmpty();
+        }
+
+        @Test
+        void handlePointerSoundsOnlyTheWheelForAWheelOverABodyControl() {
+            // The wheel is not a press, however squarely it lands on a control. Pinned because both moments
+            // are answered from this end now, and a panel that sounded both would tick twice for one turn.
+            var controller = buildVanillaSoundingController();
+
+            controller.handlePointer(
+                PointerEventMocks.mockWheelDownAt(ON_LIST_X, ON_LIST_Y),
+                buildScrollingPlacementOver(buildCheckboxControl("Muted", ControlAction.NONE)));
+
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .containsExactly(StarsectorUiSound.LIST_SCROLLED);
+        }
+
         // A controller recording into this case's fake and answering by the engine's own scheme - the look
         // every case not about the scheme itself is written against.
         private PanelController buildVanillaSoundingController() {
@@ -804,10 +954,17 @@ final class PanelControllerTest {
         }
     }
 
-    // A panel whose body has somewhere to scroll: its viewport is the row and its content overruns it by
-    // less than a wheel notch, so one notch takes the list to its end and the next has nowhere to go.
+    // A panel whose body has somewhere to scroll and nothing laid in it: its viewport is the row and its
+    // content overruns it by less than a wheel notch, so one notch takes the list to its end and the next
+    // has nowhere to go.
     private static PanelPlacement buildScrollingPlacement() {
-        return new PanelPlacement(ROW, ROW, List.of(), ROW, 0f, SHORT_SCROLL_OVERFLOW);
+        return buildScrollingPlacementOver();
+    }
+
+    // The same panel with the given controls laid in it, for a case that has to tell what the wheel and the
+    // scrollbar answer from what a control does - a body with nothing in it would be silent either way.
+    private static PanelPlacement buildScrollingPlacementOver(Control... bodyControls) {
+        return new PanelPlacement(ROW, ROW, List.of(bodyControls), ROW, 0f, SHORT_SCROLL_OVERFLOW);
     }
 
     // The same panel whose content fits, so there is no scrollbar and the wheel moves nothing.
@@ -819,9 +976,16 @@ final class PanelControllerTest {
     // grabs the scrollbar by. Every other case here lays the viewport across the whole box, which leaves no
     // gutter at all - so the drag and the off-the-list wheel need a body shaped like the real one.
     private static PanelPlacement buildGutteredPlacement() {
+        return buildGutteredPlacementOver();
+    }
+
+    // The guttered panel with the given controls laid across the whole row, gutter included - which is where
+    // the real ones sit, the grab column being drawn over the body rather than beside it. What a press in
+    // that column answers is then a question the placement can actually pose.
+    private static PanelPlacement buildGutteredPlacementOver(Control... bodyControls) {
 
         var list = new Rectangle(ROW.x(), ROW.y(), ROW.width() - SCROLLBAR_GUTTER_WIDTH, ROW.height());
-        return new PanelPlacement(ROW, ROW, List.of(), list, 0f, SHORT_SCROLL_OVERFLOW);
+        return new PanelPlacement(ROW, ROW, List.of(bodyControls), list, 0f, SHORT_SCROLL_OVERFLOW);
     }
 
     // A panel whose body holds the given controls and whose flex viewport covers everything, so the walk
