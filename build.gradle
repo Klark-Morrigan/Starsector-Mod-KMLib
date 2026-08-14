@@ -55,7 +55,7 @@ def lazyLibJarFile = file("${project.ext.starsectorRoot}/mods/lw_lazylib/jars/La
 //
 // compileOnly like the other soft dependencies, so it stays out of the produced artifact.
 def lazyLibKotlinRuntimeJarFile = file(
-        "${project.ext.starsectorRoot}/mods/lw_lazylib/jars/internal/Kotlin-Runtime.jar")
+    "${project.ext.starsectorRoot}/mods/lw_lazylib/jars/internal/Kotlin-Runtime.jar")
 
 // Random Assortment of Things backs RandomAssortmentOfThingsMatcher (and, through
 // it, StarSystems' reachability read): compiling against RAT's Abyssal Fracture
@@ -152,8 +152,8 @@ def readFastRenderingVersion = { File jar ->
         def loader = new URLClassLoader([jar.toURI().toURL()] as URL[], (ClassLoader) null)
         try {
             return loader.loadClass('com.genir.renderer.Version')
-                    .getMethod('getVersion')
-                    .invoke(null)
+                .getMethod('getVersion')
+                .invoke(null)
         } finally {
             loader.close()
         }
@@ -168,13 +168,13 @@ if (isFastRenderingInstalled) {
 
 if (isFastRenderingRequired && isVanillaForced) {
     throw new GradleException('-PrequireFastRendering and -PvanillaOnly select opposite '
-            + 'bindings; pass one or neither.')
+        + 'bindings; pass one or neither.')
 }
 if (isFastRenderingRequired && !isFastRenderingInstalled) {
     throw new GradleException(
-            "-PrequireFastRendering=true, but no Fast Rendering bridge at ${fastRenderingJarFile}. "
-                    + 'This build machine needs a Fast-Rendering-patched Starsector install to '
-                    + "verify KMLib's bridge adapter against the real jar.")
+        "-PrequireFastRendering=true, but no Fast Rendering bridge at ${fastRenderingJarFile}. "
+            + 'This build machine needs a Fast-Rendering-patched Starsector install to '
+            + "verify KMLib's bridge adapter against the real jar.")
 }
 
 sourceSets {
@@ -208,6 +208,7 @@ if (isFastRenderingInstalled) {
 
 tasks.named('compileJava') {
     doFirst {
+
         // Nothing to check on the Fast Rendering binding - the jar either exists or the
         // build already failed above.
         if (isFastRenderingInstalled) {
@@ -222,6 +223,7 @@ tasks.named('compileJava') {
         // a binding that is silently absent has to say so itself, or the reader debugs the
         // wrong file.
         if (!hasBridgeStubSources) {
+
             // The parentheses around the else-branch are load-bearing. Without them the
             // ternary is a complete statement at the end of its own line, so the next
             // line's leading '+' starts a NEW statement - unary plus on a String, which
@@ -229,14 +231,15 @@ tasks.named('compileJava') {
             // leading-'+' continuation in this file sits inside a method call's
             // parentheses, where a newline cannot end the expression; this one did not.
             def selected = isVanillaForced
-                    ? '-PvanillaOnly=true selected the vanilla binding'
-                    : ("no Fast Rendering bridge at ${fastRenderingJarFile}, so the build fell "
-                            + 'back to the stub binding')
+                ? '-PvanillaOnly=true selected the vanilla binding'
+                : ("no Fast Rendering bridge at ${fastRenderingJarFile}, so the build fell "
+                    + 'back to the stub binding')
+
             throw new GradleException("${selected}, but the bridgeStubs source set has no "
-                    + "sources. Gradle read ${bridgeStubsSrcDirs}. Note that the conventional "
-                    + "directory for a source set named 'bridgeStubs' is src/bridgeStubs/java, "
-                    + 'which is the same path as src/bridgestubs on a case-insensitive '
-                    + 'filesystem and a different one on Linux.')
+                + "sources. Gradle read ${bridgeStubsSrcDirs}. Note that the conventional "
+                + "directory for a source set named 'bridgeStubs' is src/bridgeStubs/java, "
+                + 'which is the same path as src/bridgestubs on a case-insensitive '
+                + 'filesystem and a different one on Linux.')
         }
     }
 }
@@ -302,4 +305,142 @@ jacocoTestReport {
             fileTree(dir: it, exclude: ['kmlib/testfixtures/**'])
         })
     )
+}
+
+// VersionChecker reads kmlib.version, and nothing commits a file under that name:
+// the committed copy carries a .template suffix, because a checkout used as a dev
+// install is symlinked into mods/ and a committed file under the bare name would
+// hand the checker quoted tokens where it expects numbers. So something has to fill
+// the template locally, and the build is that something. It runs the very script the
+// release pipeline runs, so the version a dev install reports and the version a
+// published zip carries cannot come out differently.
+def versionFileName = 'kmlib.version'
+def versionFileTemplateName = "${versionFileName}.template"
+def fillVersionFileScriptPath =
+    '.github/actions/fill-version-file-template/scripts/fill_version_file_template.sh'
+
+// The zip name composed the way the release pipeline composes it,
+// <jar-basename>-<version>.zip: the jar is named after the project and the version
+// comes from mod_info.json. Restated here only in the sense that both sides read the
+// same two values - it feeds the download URL, which a locally generated file should
+// point at the same asset a release would publish.
+def releaseZipName = "${project.name}-${project.version}.zip"
+
+// <owner>/<repo>, the shape the Actions runtime exports as GITHUB_REPOSITORY and the
+// script requires. Read from the checkout's own origin remote rather than stated in
+// this file, so a local build cannot name a repository this clone does not push to.
+def originRemoteUrl = providers.exec {
+    commandLine 'git', 'remote', 'get-url', 'origin'
+    workingDir projectDir
+}.standardOutput.asText
+
+// Split on both separators so either remote shape yields the same answer:
+// https://host/owner/repo(.git) and git@host:owner/repo(.git) differ only in what
+// separates the host from the owner, and the repository is the last two segments
+// either way.
+def releaseRepository = originRemoteUrl.map { remoteUrl ->
+
+    def urlWithoutGitSuffix = remoteUrl.trim().replaceFirst(/\.git$/, '')
+    def segments = urlWithoutGitSuffix.split('[/:]')
+
+    if (segments.length < 2) {
+        throw new GradleException("Cannot read <owner>/<repo> out of the origin remote "
+            + "'${urlWithoutGitSuffix}', so ${versionFileName} cannot state a download URL.")
+    }
+    return "${segments[-2]}/${segments[-1]}".toString()
+}
+
+// The script is bash, and on Windows the shell that both exists on a development
+// machine and sees the same filesystem as the checkout is Git's. Located from git
+// itself rather than by asking PATH for 'bash', which on a machine with WSL
+// installed resolves to the WSL launcher, whose paths are not these. Resolved when
+// the task runs rather than while the build configures, so a machine without Git
+// Bash still runs every other task.
+def bashRelativePaths = ['bin/bash.exe', 'usr/bin/bash.exe']
+def resolveBashExecutablePath = {
+
+    if (!System.getProperty('os.name').toLowerCase().startsWith('windows')) {
+        return 'bash'
+    }
+
+    def gitExecutable = (System.getenv('PATH') ?: '')
+        .split(File.pathSeparator)
+        .collect { pathEntry -> new File(pathEntry, 'git.exe') }
+        .find { candidate -> candidate.isFile() }
+
+    if (gitExecutable == null) {
+        throw new GradleException("Cannot generate ${versionFileName}: no git.exe on PATH to "
+            + 'locate Git Bash from. Install Git for Windows, or run '
+            + "${fillVersionFileScriptPath} under a bash of your own.")
+    }
+
+    // Which directory under the install PATH offers git from varies - <git>/cmd on a
+    // plain Windows shell, <git>/mingw64/bin under Git Bash itself - so the shell is
+    // searched for by walking up from wherever git was found rather than by assuming
+    // a fixed hop count. Both bash locations the installer lays down are tried at
+    // each level.
+    def searchDirectory = gitExecutable.parentFile
+    def bashExecutable = null
+
+    while (searchDirectory != null && bashExecutable == null) {
+
+        def candidateDirectory = searchDirectory
+
+        bashExecutable = bashRelativePaths
+            .collect { relativePath -> new File(candidateDirectory, relativePath) }
+            .find { candidate -> candidate.isFile() }
+
+        searchDirectory = searchDirectory.parentFile
+    }
+    if (bashExecutable == null) {
+        throw new GradleException("Cannot generate ${versionFileName}: found git at "
+            + "${gitExecutable} but no ${bashRelativePaths.join(' or ')} above it, so this "
+            + 'Git ships no bash.')
+    }
+    return bashExecutable.absolutePath
+}
+
+def writeVersionFileTask = tasks.register('writeVersionFile', Exec) {
+
+    group = 'build'
+
+    // Parenthesised for the reason compileJava's guard above is: without them the
+    // assignment is a complete statement at the end of its line, and the next line's
+    // leading '+' becomes unary plus on a String.
+    description = ("Fills ${versionFileName} from ${versionFileTemplateName}, so a checkout "
+        + 'used as a dev install reports its version to VersionChecker.')
+
+    // The script reads mod_info.json and the template from its mod-root argument,
+    // which defaults to the working directory, and resolves the output path from
+    // where the caller stands. Standing in the project directory is what makes the
+    // plain names below - no mod-root argument, an output path of one filename -
+    // land on this checkout.
+    workingDir projectDir
+
+    inputs.file "${projectDir}/mod_info.json"
+    inputs.file "${projectDir}/${versionFileTemplateName}"
+    inputs.file "${projectDir}/${fillVersionFileScriptPath}"
+
+    // As much an input as the files are: the remote is baked into the generated
+    // download URL, so a re-pointed clone has to regenerate rather than keep a URL
+    // aimed at the repository it used to push to.
+    inputs.property 'releaseRepository', releaseRepository
+    outputs.file "${projectDir}/${versionFileName}"
+
+    // Set here rather than at configuration time so locating Git Bash - which can
+    // fail - happens only for a build that actually generates the file.
+    doFirst {
+        commandLine resolveBashExecutablePath(),
+            fillVersionFileScriptPath,
+            versionFileName,
+            releaseZipName
+        environment 'GITHUB_REPOSITORY', releaseRepository.get()
+    }
+}
+
+// Hung off assemble rather than off jar: a dev install is only complete once the
+// version file sits beside the jar, and assemble is the lifecycle task that means
+// "produce what this project ships".
+tasks.named('assemble') {
+    dependsOn writeVersionFileTask
 }
