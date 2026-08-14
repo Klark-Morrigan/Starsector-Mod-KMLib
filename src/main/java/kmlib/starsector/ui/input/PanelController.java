@@ -60,8 +60,9 @@ public final class PanelController {
 
     // The lift each body cell is carrying in answer to a press that landed on it, keyed by the slot that
     // cell occupies in the strip. Held on this end rather than beside a header's own click lifts because
-    // this is where a body press is detected, so a headerless panel lifts under a press as well as sounding
-    // one - the same reason the press sounds from here.
+    // this is where a body press is detected - the same reason the press sounds from here. Driving it is
+    // whatever pumps the panel's frame, which is a tab panel today; a holder that never steps these has
+    // no lift to read and none to drop, since only the advance spends one.
     //
     // Keyed by the slot for the reason the body's fades are: a host rebuilds its strip every frame, so a
     // press belongs to the place under the pointer rather than to the widget standing in it. Unheld, unlike
@@ -214,6 +215,10 @@ public final class PanelController {
      *
      * <p>The pace arrives with the frame rather than being named here, so a body's presses run at whatever
      * rhythm the rest of the panel does - a panel answering input at two speeds reads as two panels.
+     *
+     * <p>A lift is spent only by being advanced, so a holder that never calls this keeps every lift its
+     * presses started. That is the obligation this end cannot check for itself, and the reason a panel
+     * whose presses are never stepped shows none of them rather than showing them stuck.
      *
      * @param elapsedSeconds real time since the last frame the host drew
      * @param durations      how long the rise and the fall each take; a non-positive one snaps that way
