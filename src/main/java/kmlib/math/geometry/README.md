@@ -90,6 +90,17 @@ test. Answered there, so a non-empty path is always one that can be walked.
 `collectPointsBetween` returns a stretch as a polyline including the corners it turns at - a
 stretch spanning a corner bends, and whatever gives it girth has to bend with it.
 
+A layout rarely has the whole ring to itself, so `findClearArcs` answers which stretches of the
+path a set of keep-out shapes leaves free, as arc-length intervals in the path's own frame. The
+answer is intervals rather than geometry because a caller measuring its layout in distances
+already reads the path that way: it sums what is left, resizes against that, and lays its pieces
+along the intervals. Every shape handed over is tested, whoever it belongs to, and a shape
+covering several edges in a row comes back as one covered stretch rather than as a gap at every
+corner it crosses. The intervals never wrap - a shape over the start leaves the pieces before and
+after it stated separately, which is what "the layout begins at the start" means.
+`Segment.computeBandCorners` builds one such shape from a centreline and a girth, so what is
+drawn as a band and what keeps clear of it are one rectangle rather than two derivations of it.
+
 ## Giving a polyline girth
 
 `PolylineBands.strokeToTriangles` is what gives it that girth: a centreline plus a width

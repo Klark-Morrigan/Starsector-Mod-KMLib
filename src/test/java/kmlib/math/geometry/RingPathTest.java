@@ -333,8 +333,94 @@ final class RingPathTest {
         }
     }
 
+    @Nested
+    class FindClearArcs {
+
+        @Test
+        void whole_path_is_clear_when_no_shape_covers_it() {
+            // The ordinary case, and the one every layout that asks for nothing to be kept
+            // clear of lands in: one interval, the path from end to end.
+            assertThatArcsAre(
+                traceReferenceSquare().findClearArcs(List.of()),
+                List.of(new double[] {0, 24}));
+        }
+
+        @Test
+        void shape_over_the_path_leaves_the_stretches_either_side_of_it() {
+            // A box over the top right corner, covering the top edge from x=6 and the right
+            // edge down to y=7. The path reaches x=6 one along and leaves y=7 four along, so
+            // what is left is the run up to the box and the run from it back round.
+            assertThatArcsAre(
+                traceReferenceSquare().findClearArcs(List.of(buildBox(6, 7, 9, 9))),
+                List.of(
+                    new double[] {0, 1},
+                    new double[] {4, 24}));
+        }
+
+        @Test
+        void cover_spanning_several_edges_comes_back_as_one_stretch() {
+            // The same box states the point on its own: it covers the end of one edge and the
+            // start of the next, and the corner between them is under it too. Reported as two
+            // intervals meeting at the corner, a layout would read a gap where the shape is
+            // continuous, and could lay a run in it.
+            assertThat(traceReferenceSquare().findClearArcs(List.of(buildBox(6, 7, 9, 9))))
+                .hasSize(2);
+        }
+
+        @Test
+        void shape_over_the_start_leaves_the_stretch_between_its_two_sides() {
+            // A box across the top centre covers the first stretch of the path and the last -
+            // they meet at the start, but the intervals do not wrap, so the pieces before and
+            // after the origin are stated separately and only the middle survives.
+            assertThatArcsAre(
+                traceReferenceSquare().findClearArcs(List.of(buildBox(4, 7, 6, 9))),
+                List.of(new double[] {1, 23}));
+        }
+
+        @Test
+        void several_shapes_over_the_path_each_take_their_own_stretch() {
+            // Every shape is tested, not just the nearest: two names over one cell take two
+            // bites out of its ring, which is the case a single-shape carve would half-answer.
+            assertThatArcsAre(
+                traceReferenceSquare().findClearArcs(List.of(
+                    buildBox(6, 7, 9, 9),
+                    buildBox(1, 3, 3, 5))),
+                List.of(
+                    new double[] {0, 1},
+                    new double[] {4, 16},
+                    new double[] {18, 24}));
+        }
+
+        @Test
+        void shape_covering_the_whole_path_leaves_nothing_clear() {
+            // A name across the whole shape. Nothing can be laid along what is left, and
+            // saying so is what lets a caller answer "then draw none" rather than draw a
+            // sliver somewhere.
+            assertThat(traceReferenceSquare().findClearArcs(List.of(buildBox(0, 0, 10, 10))))
+                .isEmpty();
+        }
+
+        @Test
+        void shape_lying_elsewhere_covers_nothing() {
+            // The whole map's shapes are handed over, so most of them are nowhere near any one
+            // path - and a shape that misses must leave the path exactly as it found it.
+            assertThatArcsAre(
+                traceReferenceSquare().findClearArcs(List.of(buildBox(100, 100, 120, 120))),
+                List.of(new double[] {0, 24}));
+        }
+
+        @Test
+        void an_empty_path_has_no_stretches_to_offer() {
+            // A ring that left nothing to trace has nothing to carve either, and answering
+            // with a stretch of a path that does not exist would be worse than answering none.
+            assertThat(RingPath.nothingLeftToTrace().findClearArcs(List.of(buildBox(0, 0, 1, 1))))
+                .isEmpty();
+        }
+    }
+
     // The path around the reference square inset by 2, anchored at its centre: the square
-    // from (2,2) to (8,8), traced clockwise from (5,8).
+    // from (2,2) to (8,8), traced clockwise from (5,8) - a 24-long path whose corners fall at
+    // 3, 9, 15 and 21.
     private static RingPath traceReferenceSquare() {
         return RingPath.traceInsetRing(
             buildReferenceSquare(),
@@ -343,4 +429,32 @@ final class RingPathTest {
             SQUARE_CENTRE);
     }
 
+    // An axis-aligned keep-out box by its two opposite corners.
+    private static List<double[]> buildBox(
+            double fromX,
+            double fromY,
+            double toX,
+            double toY) {
+
+        return List.of(
+            new double[] {fromX, fromY},
+            new double[] {toX, fromY},
+            new double[] {toX, toY},
+            new double[] {fromX, toY});
+    }
+
+    // Asserts the arcs match the expected {start, end} intervals in order, at the shared
+    // slack. The points helper cannot stand in: these are parameters along a path rather
+    // than points, and reading them as coordinates would make a failure say the wrong thing.
+    private static void assertThatArcsAre(List<double[]> arcs, List<double[]> expected) {
+
+        assertThat(arcs)
+            .hasSameSizeAs(expected);
+
+        for (var i = 0; i < expected.size(); i++) {
+
+            assertThat(arcs.get(i))
+                .containsExactly(expected.get(i), buildAssertionSlack());
+        }
+    }
 }

@@ -2,6 +2,7 @@ package kmlib.math.geometry;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -31,6 +32,12 @@ import java.util.List;
  * obviously wrong to look at - it can be a tidy, correctly wound ring that simply is
  * not the inset that was asked for. Answering that here means a non-empty path is
  * always one that can be walked.
+ *
+ * <p>What is laid out along a path rarely has the whole of it to itself, so the path also
+ * answers which stretches of it something else has claimed ({@link #findClearArcs}). That
+ * answer is in the same arc lengths a layout is measured in, which is why it belongs here
+ * rather than beside the shapes doing the claiming: a caller subtracts room from its layout
+ * without ever leaving the one coordinate it laid the layout out in.
  */
 public final class RingPath {
 
@@ -179,6 +186,39 @@ public final class RingPath {
     }
 
     /**
+     * The stretches of the path no keep-out shape covers, as {@code {startArcLength,
+     * endArcLength}} intervals in this path's own arc lengths.
+     *
+     * <p>What a layout runs along once something else has claimed part of the ring. A shape
+     * lying over the path splits it, and the pieces either side are what is left to lay
+     * anything out on - so they come back as intervals rather than as geometry, since a
+     * caller measuring its layout in distances already reads the path that way.
+     *
+     * <p>Every shape is tested, whether or not it belongs to whatever this ring belongs to:
+     * a keep-out is a fact about the plane, so one reaching in from outside covers the path
+     * exactly as much as one raised over it.
+     *
+     * <p>The intervals do not wrap: a shape covering the path's start leaves the pieces
+     * before and after it as the first and last intervals rather than fusing them into one
+     * that straddles the origin. A layout beginning at the start therefore begins at the
+     * first interval, which is what a start point means.
+     *
+     * @param keepOutRings the shapes to keep clear of, each a closed ring of {x, y} vertices
+     *                     in either winding; concave rings are handled, and an empty list
+     *                     leaves the whole path clear
+     * @return the uncovered intervals, ascending and disjoint; the whole path as one
+     *         interval when nothing covers it, and empty when the path is empty or the
+     *         shapes cover all of it
+     */
+    public List<double[]> findClearArcs(List<List<double[]>> keepOutRings) {
+
+        if (isEmpty()) {
+            return new ArrayList<>();
+        }
+        return invertToClearArcs(mergeOverlappingArcs(collectCoveredArcs(keepOutRings)));
+    }
+
+    /**
      * The stretch of path between two distances along it, as a polyline: the point at
      * {@code startArcLength}, every corner the path turns at on the way, and the point at
      * {@code endArcLength}.
@@ -229,6 +269,137 @@ public final class RingPath {
         appendUnlessCoincident(walked, computePointAt(start + span));
 
         return walked;
+    }
+
+    // Where the keep-out shapes lie over the path, as intervals in its own arc lengths - one
+    // per stretch of one edge one shape covers, in no order and free to overlap each other.
+    //
+    // Each edge is crossed against each shape rather than the whole ring being clipped by it,
+    // because the crossing already answers which parts of the line through an edge lie inside
+    // the shape; cutting that answer back to the edge's own length is what turns it into a
+    // stretch of path, and offsetting it by where the edge starts states it in arc lengths.
+    private List<double[]> collectCoveredArcs(List<List<double[]>> keepOutRings) {
+
+        var covered = new ArrayList<double[]>();
+        var nearbyRings = selectRingsOverlappingBounds(keepOutRings, computeBounds(points));
+
+        for (var edge = 0; edge < points.size(); edge++) {
+
+            var from = points.get(edge);
+            var to = points.get((edge + 1) % points.size());
+            var line = new DirectedLine(from[0], from[1], to[0] - from[0], to[1] - from[1]);
+            var edgeLength = arcLengthAtPoint[edge + 1] - arcLengthAtPoint[edge];
+
+            for (var ring : nearbyRings) {
+                for (var span : PolygonRegions.findLineInteriorSpans(List.of(ring), line)) {
+                    appendCoveredArc(covered, arcLengthAtPoint[edge], edgeLength, span);
+                }
+            }
+        }
+        return covered;
+    }
+
+    // The stretches between the covered ones: from the start of the path to the first, between
+    // each consecutive pair, and from the last to the perimeter.
+    private List<double[]> invertToClearArcs(List<double[]> coveredArcs) {
+
+        var clear = new ArrayList<double[]>(coveredArcs.size() + 1);
+        var cursor = 0.0;
+
+        for (var arc : coveredArcs) {
+            appendClearArc(clear, cursor, arc[0]);
+            cursor = arc[1];
+        }
+        appendClearArc(clear, cursor, getPerimeter());
+
+        return clear;
+    }
+
+    // One shape's cover of one edge, cut back to that edge and stated in arc lengths. The span
+    // measures along the whole infinite line the edge lies on, so the part of it beyond either
+    // end of the edge covers no point of the path and is dropped.
+    private static void appendCoveredArc(
+            List<double[]> covered,
+            double arcLengthAtEdgeStart,
+            double edgeLength,
+            double[] span) {
+
+        var start = Math.max(span[0], 0.0);
+        var end = Math.min(span[1], edgeLength);
+
+        if (end - start > Limits.MIN_EDGE_LENGTH) {
+            covered.add(new double[] {
+                arcLengthAtEdgeStart + start,
+                arcLengthAtEdgeStart + end});
+        }
+    }
+
+    // A clear stretch, unless it is too short to lay anything along - which is what a shape
+    // ending exactly where the next begins, or covering the path from its very start, leaves.
+    private static void appendClearArc(List<double[]> clear, double start, double end) {
+
+        if (end - start > Limits.MIN_EDGE_LENGTH) {
+            clear.add(new double[] {start, end});
+        }
+    }
+
+    // The covered intervals sorted and fused into disjoint ones, so that what lies between them
+    // is exactly what is clear. Both a shape covering several edges in a row and two shapes
+    // overlapping each other arrive as separate intervals describing one covered stretch, and
+    // intervals merely touching are fused too - a path pinched between two of them has no
+    // stretch left there to lay anything along.
+    private static List<double[]> mergeOverlappingArcs(List<double[]> coveredArcs) {
+
+        coveredArcs.sort(Comparator.comparingDouble(arc -> arc[0]));
+
+        var merged = new ArrayList<double[]>(coveredArcs.size());
+
+        for (var arc : coveredArcs) {
+
+            var last = merged.isEmpty() ? null : merged.get(merged.size() - 1);
+
+            if (last != null && arc[0] <= last[1] + Limits.MIN_EDGE_LENGTH) {
+                last[1] = Math.max(last[1], arc[1]);
+            } else {
+                merged.add(new double[] {arc[0], arc[1]});
+            }
+        }
+        return merged;
+    }
+
+    // The shapes near enough to the path to be worth crossing its every edge against, by a
+    // plain bounds overlap. A shape costs one crossing per edge of the path, so a caller
+    // handing over every keep-out on a whole map would otherwise pay for the ones lying
+    // somewhere else entirely - which, for a path around one small shape, is most of them.
+    private static List<List<double[]>> selectRingsOverlappingBounds(
+            List<List<double[]>> rings,
+            Bounds pathBounds) {
+
+        var overlapping = new ArrayList<List<double[]>>(rings.size());
+
+        for (var ring : rings) {
+            if (!ring.isEmpty() && pathBounds.overlaps(computeBounds(ring))) {
+                overlapping.add(ring);
+            }
+        }
+        return overlapping;
+    }
+
+    // The axis-aligned bounds a point list fits within.
+    private static Bounds computeBounds(List<double[]> ring) {
+
+        var minX = Double.MAX_VALUE;
+        var minY = Double.MAX_VALUE;
+        var maxX = -Double.MAX_VALUE;
+        var maxY = -Double.MAX_VALUE;
+
+        for (var point : ring) {
+            minX = Math.min(minX, point[0]);
+            minY = Math.min(minY, point[1]);
+            maxX = Math.max(maxX, point[0]);
+            maxY = Math.max(maxY, point[1]);
+        }
+        return new Bounds(minX, minY, maxX, maxY);
     }
 
     // Whether the offset really moved the whole ring the distance it was asked to: every
@@ -421,5 +592,23 @@ public final class RingPath {
     private record TopCentre(
         double[] point,
         int edgeIndex) {
+    }
+
+    // The axis-aligned extent of a shape, for deciding what is near enough to measure properly.
+    private record Bounds(
+        double minX,
+        double minY,
+        double maxX,
+        double maxY) {
+
+        // Whether two bounds share any area. Touching counts as overlapping: the shapes inside
+        // them may still meet, and this only decides what is worth measuring at all.
+        boolean overlaps(Bounds other) {
+
+            return minX <= other.maxX()
+                && other.minX() <= maxX
+                && minY <= other.maxY()
+                && other.minY() <= maxY;
+        }
     }
 }
