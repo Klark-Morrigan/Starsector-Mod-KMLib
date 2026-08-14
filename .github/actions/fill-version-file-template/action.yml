@@ -6,7 +6,7 @@
 # logic is unit-tested with bats. Composite actions are not unit-testable.
 name: Fill version file template
 description: >-
-  Substitutes the tokens in the caller's committed <mod-id>.version template
+  Substitutes the tokens in the caller's committed <mod-id>.version.template
   from mod_info.json - mod name, version components, game version, and the
   direct download URL for the release being cut - and writes the result to
   the given path.
@@ -27,7 +27,7 @@ inputs:
     required: true
   mod-root:
     description: >-
-      Directory holding mod_info.json and the <mod-id>.version template.
+      Directory holding mod_info.json and the <mod-id>.version.template file.
       Defaults to the working directory, which is where a job checking the
       mod out at the workspace root already stands. Set it when the checkout
       is elsewhere: Actions permits no working-directory on a `uses:` step,

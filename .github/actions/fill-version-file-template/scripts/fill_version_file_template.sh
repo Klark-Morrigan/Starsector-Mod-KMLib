@@ -11,8 +11,8 @@
 # Usage: fill_version_file_template.sh <output-path> <zip-name> [mod-root]
 #
 # Reads from the mod root, which defaults to the working directory:
-#   mod_info.json     - .id, .name, .version, .gameVersion
-#   <mod-id>.version  - the committed template
+#   mod_info.json              - .id, .name, .version, .gameVersion
+#   <mod-id>.version.template  - the committed template
 #
 # The output path is always resolved from where the caller stands, never
 # from the mod root, so a caller writing into the checkout and one writing
@@ -49,7 +49,11 @@ LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/_lib"
 # shellcheck source=../../_lib/mod_info.sh
 source "${LIB_DIR}/mod_info.sh"
 
-TEMPLATE_EXTENSION=".version"
+# The suffix keeps the committed template distinct from the generated
+# <mod-id>.version: a dev install symlinks the repo into mods/, and a
+# committed file under the generated name would have version_files.csv
+# point VersionChecker at quoted tokens instead of numbers.
+TEMPLATE_EXTENSION=".version.template"
 GITHUB_BASE_URL="https://github.com"
 RELEASE_DOWNLOAD_PATH="releases/download"
 

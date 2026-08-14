@@ -48,8 +48,9 @@ Compatibility coded in:
 
 ```
 mod_info.json
-kmlib.version           - VersionChecker template, filled at release time
-                          (see Reusable CI / release actions)
+kmlib.version.template  - VersionChecker template; filling it produces
+                          kmlib.version, generated output that is never
+                          committed (see Reusable CI / release actions)
 data/
   config/LunaSettings.csv          - LunaLib settings declarations
   config/version/version_files.csv - names the .version file
@@ -224,7 +225,7 @@ scripts/
     release time (changelog section, mod_info.json version match,
     version shape, kmlib dep SemVer pin)
   actions/fill-version-file-template/ - fills the caller's
-    committed <mod-id>.version template from mod_info.json, producing
+    committed <mod-id>.version.template from mod_info.json, producing
     the VersionChecker file for the release being cut
   actions/_lib/mod_info.sh    - what mod_info.json contains and what
     shape its fields take; sourced by the four scripts above
@@ -309,7 +310,7 @@ Starsector binaries and so runs on the self-hosted `kmlib-runner`.
 - [fill-version-file-template](.github/actions/fill-version-file-template/action.yml)
   takes an `output-path` and a `zip-name` and writes the mod's
   VersionChecker `.version` file there. The caller commits a complete
-  `<mod-id>.version` template whose release-varying values are written as
+  `<mod-id>.version.template` whose release-varying values are written as
   tokens - `{{modName}}`, `{{major}}` / `{{minor}}` / `{{patch}}`,
   `{{starsectorVersion}}`, `{{directDownloadURL}}` - and the action
   substitutes each from `mod_info.json`, so no version number is restated
@@ -321,7 +322,12 @@ Starsector binaries and so runs on the self-hosted `kmlib-runner`.
   the version components come out as JSON numbers rather than quoted
   digits; every other key is carried through untouched, so the template
   states the published shape. A token left unsubstituted fails the release
-  rather than shipping literal braces to players. `mod-root` says where to
+  rather than shipping literal braces to players. The committed name carries
+  the `.template` suffix because a dev install symlinks the repo into
+  `mods/`: `version_files.csv` names the bare `<mod-id>.version`, and under
+  one name the committed file would hand VersionChecker quoted tokens where
+  it expects numbers. The bare name exists only where something generated
+  it. `mod-root` says where to
   read `mod_info.json` and the template from and defaults to the working
   directory, which is where a job with the mod checked out at the workspace
   root already stands; the release pipeline sets it because its checkout is

@@ -41,9 +41,10 @@ EOF
 }
 
 # Writes a template in the shape a mod commits: every release-varying
-# value a token, every fixed value stated outright.
+# value a token, every fixed value stated outright. The .template suffix
+# is the committed name; the bare .version name is generated output only.
 write_template() {
-    cat > "$WORK_DIR/$1.version" <<EOF
+    cat > "$WORK_DIR/$1.version.template" <<EOF
 {
   "masterVersionFile": "https://example.invalid/master/$1.version",
   "modName": "{{modName}}",
@@ -97,7 +98,7 @@ read_generated() {
 }
 
 @test "carries keys this script knows nothing about" {
-    cat > "$WORK_DIR/kmu.version" <<EOF
+    cat > "$WORK_DIR/kmu.version.template" <<EOF
 {
   "masterVersionFile": "https://example.invalid/master/kmu.version",
   "modName": "{{modName}}",
@@ -136,7 +137,7 @@ EOF
     # caller states them - the template found under the mod root, the output
     # written relative to the caller, not to the root it was read from.
     mkdir -p "$WORK_DIR/checkout"
-    mv "$WORK_DIR/mod_info.json" "$WORK_DIR/kmu.version" "$WORK_DIR/checkout/"
+    mv "$WORK_DIR/mod_info.json" "$WORK_DIR/kmu.version.template" "$WORK_DIR/checkout/"
     cd "$WORK_DIR"
     run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME" "checkout"
     [ "$status" -eq 0 ]
@@ -162,7 +163,7 @@ EOF
 }
 
 @test "fails on a token this script does not substitute" {
-    cat > "$WORK_DIR/kmu.version" <<EOF
+    cat > "$WORK_DIR/kmu.version.template" <<EOF
 {
   "masterVersionFile": "https://example.invalid/master/kmu.version",
   "modName": "{{modname}}"
@@ -178,15 +179,15 @@ EOF
 }
 
 @test "fails when the template is absent" {
-    rm "$WORK_DIR/kmu.version"
+    rm "$WORK_DIR/kmu.version.template"
     cd "$WORK_DIR"
     run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
     [ "$status" -ne 0 ]
-    [[ "$output" == *"template kmu.version not found"* ]]
+    [[ "$output" == *"template kmu.version.template not found"* ]]
 }
 
 @test "fails when the template is missing masterVersionFile" {
-    cat > "$WORK_DIR/kmu.version" <<EOF
+    cat > "$WORK_DIR/kmu.version.template" <<EOF
 { "modName": "{{modName}}" }
 EOF
     cd "$WORK_DIR"
@@ -278,7 +279,7 @@ EOF
 }
 
 @test "fails on a token embedded in a longer value" {
-    cat > "$WORK_DIR/kmu.version" <<EOF
+    cat > "$WORK_DIR/kmu.version.template" <<EOF
 {
   "masterVersionFile": "https://example.invalid/master/kmu.version",
   "modName": "KMU v{{major}}"
