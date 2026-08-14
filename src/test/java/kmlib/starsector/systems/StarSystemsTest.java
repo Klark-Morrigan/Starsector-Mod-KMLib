@@ -26,6 +26,7 @@ import java.util.List;
 import assortment_of_things.abyss.entities.hyper.AbyssalFracture;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
@@ -275,6 +276,36 @@ final class StarSystemsTest {
             // needed - a blank query matches nothing rather than the first system by accident.
             assertThat(StarSystems.findById(mock(SectorAPI.class), " "))
                 .isNull();
+        }
+    }
+
+    @Nested
+    class IndexById {
+
+        @Test
+        void keys_every_system_by_its_own_id_in_the_sectors_order() {
+            // The bulk lookup a pass resolving many ids reaches for instead of walking the system
+            // list once per id. The sector's own order is kept, so a caller iterating the index
+            // sees the systems in the order the sector lists them rather than a hash's.
+            var corvus = buildSystemAt("corvus", 1, 1);
+            var yma = buildSystemAt("yma", 2, 2);
+            var sectorMock = mock(SectorAPI.class);
+
+            when(sectorMock.getStarSystems())
+                .thenReturn(List.of(yma, corvus));
+
+            var indexed = StarSystems.indexById(sectorMock);
+
+            assertThat(indexed)
+                .containsExactly(
+                    entry("yma", yma),
+                    entry("corvus", corvus));
+        }
+
+        @Test
+        void returns_an_empty_index_for_a_null_sector() {
+            assertThat(StarSystems.indexById(null))
+                .isEmpty();
         }
     }
 

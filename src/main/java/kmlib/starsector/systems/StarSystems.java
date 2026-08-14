@@ -123,6 +123,31 @@ public final class StarSystems {
     }
 
     /**
+     * Every star system in the sector keyed by its {@code getId}, for a caller resolving many ids
+     * rather than one.
+     *
+     * <p>The bulk counterpart of {@link #findById}, which walks the system list per lookup: a pass
+     * resolving an id for each of a few hundred systems would otherwise walk that list once per
+     * system. Keyed on {@code getId} for the same reason {@link #findById} matches on it - vanilla's
+     * own {@code SectorAPI#getStarSystem} matches the optional unique id first and silently misses a
+     * system whose base name is what every system-keyed map is built on.
+     *
+     * @param sector the sector to index; null yields an empty map
+     * @return each system keyed by its id, in the sector's star-system order
+     */
+    public static Map<String, StarSystemAPI> indexById(SectorAPI sector) {
+
+        var systemById = new LinkedHashMap<String, StarSystemAPI>();
+        if (sector == null) {
+            return systemById;
+        }
+        for (var system : sector.getStarSystems()) {
+            systemById.put(system.getId(), system);
+        }
+        return systemById;
+    }
+
+    /**
      * The star system whose {@code getId} equals {@code id} - the reliable id lookup vanilla's own
      * {@code SectorAPI#getStarSystem} does not provide. That one matches the optional unique id
      * before the base name, so a system keyed by its base name (which is what {@code getId}
