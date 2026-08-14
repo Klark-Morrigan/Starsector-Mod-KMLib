@@ -48,12 +48,14 @@ Compatibility coded in:
 
 ```
 mod_info.json
-kmlib.version           - VersionChecker template; the release pipeline
-                          fills its {{tokens}} from mod_info.json, ships
-                          the filled copy in the mod folder, and publishes
-                          the same file as a release asset
-data/config/version/
-  version_files.csv     - names the .version file VersionChecker reads
+kmlib.version           - VersionChecker template, filled at release time
+                          (see Reusable CI / release actions)
+data/
+  config/LunaSettings.csv          - LunaLib settings declarations
+  config/version/version_files.csv - names the .version file
+                                     VersionChecker reads
+  console/commands.csv             - Console Commands registrations
+  strings/strings.json             - localisation lookups
 build.gradle / settings.gradle / gradlew[.bat]
 src/main/java/kmlib/
   Game-agnostic helpers (no Starsector API on the signature):
@@ -309,7 +311,11 @@ Starsector binaries and so runs on the self-hosted `kmlib-runner`.
   tokens - `{{modName}}`, `{{major}}` / `{{minor}}` / `{{patch}}`,
   `{{starsectorVersion}}`, `{{directDownloadURL}}` - and the action
   substitutes each from `mod_info.json`, so no version number is restated
-  by hand outside that file. Substitution is by whole value, which is how
+  by hand outside that file. `{{directDownloadURL}}` is the one token not
+  read from there: it is built from the version, the `zip-name` input, and
+  the publishing repository the Actions runtime exports, so the link cannot
+  name a repository or an asset other than the one being released.
+  Substitution is by whole value, which is how
   the version components come out as JSON numbers rather than quoted
   digits; every other key is carried through untouched, so the template
   states the published shape. A token left unsubstituted fails the release

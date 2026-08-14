@@ -87,8 +87,12 @@ if [[ ! -f "${TEMPLATE_FILE}" ]]; then
   exit 1
 fi
 
-# The one field no release can derive, so the template has to state it:
-# without an address to poll, the generated file is inert.
+# Where a mod serves its master copy is a policy choice rather than
+# something a release can work out - a release asset, a raw branch path, or
+# a host that is not GitHub at all are all valid answers - so the template
+# states it. Checked because without an address to poll, the generated file
+# is inert, and nothing downstream reads it until a player's update checker
+# does.
 MASTER_VERSION_FILE=$(jq -r '.masterVersionFile' "${TEMPLATE_FILE}")
 if [[ -z "${MASTER_VERSION_FILE}" ]] || [[ "${MASTER_VERSION_FILE}" == "null" ]]; then
   echo "fill_version_file_template: ${TEMPLATE_FILE} is missing required field 'masterVersionFile'" >&2
