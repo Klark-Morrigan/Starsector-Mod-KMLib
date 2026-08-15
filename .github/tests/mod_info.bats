@@ -125,3 +125,100 @@ run_in_lib() {
     # file points a download URL at it, so both read the rule from here.
     [ "$output" = "KMLib-0.1.0.zip" ]
 }
+
+# Writes a mod_info.json whose dependencies array is the given raw JSON
+# fragment, so a case can state the entries it needs without templating jq
+# from inside bats. No argument writes a file carrying no dependencies key.
+write_mod_info_with_dependencies() {
+    local dependenciesBody="${1:-}"
+    if [ -n "$dependenciesBody" ]; then
+        cat > "$WORK_DIR/mod_info.json" <<EOF
+{ "id": "consumer", "version": "1.2.0", "dependencies": [ $dependenciesBody ] }
+EOF
+    else
+        cat > "$WORK_DIR/mod_info.json" <<EOF
+{ "id": "consumer", "version": "1.2.0" }
+EOF
+    fi
+}
+
+@test "mod_info_has_dependency finds a declared dependency by id" {
+    write_mod_info_with_dependencies '{ "id": "kmlib", "version": "1.0.0" }'
+    cd "$WORK_DIR"
+    run_in_lib "read_mod_info" "mod_info_has_dependency 'kmlib'"
+    [ "$status" -eq 0 ]
+    [ "$output" = "true" ]
+}
+
+@test "mod_info_has_dependency reports false for an undeclared id" {
+    write_mod_info_with_dependencies '{ "id": "lw_lazylib", "name": "LazyLib" }'
+    cd "$WORK_DIR"
+    run_in_lib "read_mod_info" "mod_info_has_dependency 'kmlib'"
+    [ "$status" -eq 0 ]
+    [ "$output" = "false" ]
+}
+
+@test "mod_info_has_dependency reports false when there is no dependencies key" {
+    # KMLib's own mod_info.json is this shape. Without jq's `// []` guard the
+    # missing key is an error rather than an empty result, which would fail
+    # the one release that legitimately declares no dependency.
+    write_mod_info_with_dependencies
+    cd "$WORK_DIR"
+    run_in_lib "read_mod_info" "mod_info_has_dependency 'kmlib'"
+    [ "$status" -eq 0 ]
+    [ "$output" = "false" ]
+}
+
+@test "mod_info_has_dependency finds an entry that states no version" {
+    # The state validate-versioning fails on: declared but unpinned. It has
+    # to read as present here, or that rule never fires.
+    write_mod_info_with_dependencies '{ "id": "kmlib", "name": "KMLib" }'
+    cd "$WORK_DIR"
+    run_in_lib "read_mod_info" "mod_info_has_dependency 'kmlib'"
+    [ "$status" -eq 0 ]
+    [ "$output" = "true" ]
+}
+
+@test "mod_info_read_dependency_version echoes the pinned version" {
+    write_mod_info_with_dependencies '{ "id": "kmlib", "version": "1.0.0" }'
+    cd "$WORK_DIR"
+    run_in_lib "read_mod_info" "mod_info_read_dependency_version 'kmlib'"
+    [ "$status" -eq 0 ]
+    [ "$output" = "1.0.0" ]
+}
+
+@test "mod_info_read_dependency_version picks the entry matching the id" {
+    write_mod_info_with_dependencies \
+        '{ "id": "lw_lazylib", "version": "2.9.0" },
+         { "id": "kmlib", "version": "1.0.0" }'
+    cd "$WORK_DIR"
+    run_in_lib "read_mod_info" "mod_info_read_dependency_version 'kmlib'"
+    [ "$status" -eq 0 ]
+    [ "$output" = "1.0.0" ]
+}
+
+@test "mod_info_read_dependency_version echoes nothing for an undeclared id" {
+    write_mod_info_with_dependencies '{ "id": "lw_lazylib", "name": "LazyLib" }'
+    cd "$WORK_DIR"
+    run_in_lib "read_mod_info" "mod_info_read_dependency_version 'kmlib'"
+    [ "$status" -eq 0 ]
+    [ "$output" = "" ]
+}
+
+@test "mod_info_read_dependency_version echoes nothing when there is no dependencies key" {
+    write_mod_info_with_dependencies
+    cd "$WORK_DIR"
+    run_in_lib "read_mod_info" "mod_info_read_dependency_version 'kmlib'"
+    [ "$status" -eq 0 ]
+    [ "$output" = "" ]
+}
+
+@test "mod_info_read_dependency_version echoes empty, not jq's null, for a versionless entry" {
+    write_mod_info_with_dependencies '{ "id": "kmlib", "name": "KMLib" }'
+    cd "$WORK_DIR"
+    run_in_lib "read_mod_info" "mod_info_read_dependency_version 'kmlib'"
+    [ "$status" -eq 0 ]
+    # "null" would sail through an emptiness check and reach the release body
+    # as a version string, so the `// ""` fallback is the tested behaviour.
+    [ "$output" = "" ]
+}

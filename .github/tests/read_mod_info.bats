@@ -33,6 +33,20 @@ write_mod_info() {
 EOF
 }
 
+# Writes a fixture that also pins KMLib, for the cases exercising the
+# dependency read. Separate from write_mod_info so the cases above keep
+# stating the no-dependency shape they are about.
+write_mod_info_with_kmlib() {
+    cat > "$WORK_DIR/mod_info.json" <<EOF
+{
+  "id": "$1",
+  "version": "$2",
+  "jars": ["$3"],
+  "dependencies": [ { "id": "kmlib", "name": "KMLib", "version": "$4" } ]
+}
+EOF
+}
+
 # Reads one emitted key back out of $GITHUB_OUTPUT, for values whose exact
 # text is awkward to assert with grep -qx (JSON carrying quotes and braces).
 read_output_value() {
@@ -131,7 +145,43 @@ read_output_value() {
     run bash "$SCRIPT"
     [ "$status" -eq 0 ]
     [ "$(grep -c '^sibling-checkouts=' "$GITHUB_OUTPUT")" -eq 1 ]
-    [ "$(wc -l < "$GITHUB_OUTPUT")" -eq 9 ]
+    [ "$(wc -l < "$GITHUB_OUTPUT")" -eq 10 ]
+}
+
+@test "emits the kmlib dependency version a consumer pins" {
+    write_mod_info_with_kmlib "kmu" "0.1.0" "jars/KMU.jar" "1.0.0"
+    cd "$WORK_DIR"
+    run bash "$SCRIPT"
+    [ "$status" -eq 0 ]
+    grep -qx "kmlib-dependency-version=1.0.0" "$GITHUB_OUTPUT"
+}
+
+@test "emits an empty kmlib dependency version when none is declared" {
+    write_mod_info "kmlib" "0.1.0" "jars/KMLib.jar"
+    cd "$WORK_DIR"
+    run bash "$SCRIPT"
+    [ "$status" -eq 0 ]
+    # KMLib's own release takes this path. The key is still emitted so the
+    # pipeline reads one absent-or-present value rather than an absent key.
+    grep -qx "kmlib-dependency-version=" "$GITHUB_OUTPUT"
+}
+
+@test "reads the kmlib pin past an unrelated dependency" {
+    cat > "$WORK_DIR/mod_info.json" <<EOF
+{
+  "id": "kmu",
+  "version": "0.1.0",
+  "jars": ["jars/KMU.jar"],
+  "dependencies": [
+    { "id": "lw_lazylib", "name": "LazyLib" },
+    { "id": "kmlib", "name": "KMLib", "version": "1.0.0" }
+  ]
+}
+EOF
+    cd "$WORK_DIR"
+    run bash "$SCRIPT"
+    [ "$status" -eq 0 ]
+    grep -qx "kmlib-dependency-version=1.0.0" "$GITHUB_OUTPUT"
 }
 
 @test "fails when mod_info.json is absent" {

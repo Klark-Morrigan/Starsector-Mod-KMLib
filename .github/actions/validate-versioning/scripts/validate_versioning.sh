@@ -32,7 +32,6 @@ LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/_lib"
 source "${LIB_DIR}/mod_info.sh"
 
 CHANGELOG_FILE="CHANGELOG.md"
-KMLIB_DEP_ID="kmlib"
 
 # Rule 1: changelog section must exist for this version. A literal-string
 # match on "## [<version>]" is sufficient because the date suffix is
@@ -72,15 +71,11 @@ fi
 # Rule 4: if a kmlib dependency entry exists, its .version must be in that
 # same shape. The game compares dependency versions component-by-component
 # as strings, so a pin written in a different shape than the KMLib it names
-# never matches it. jq returns "null" (the string) when the field is
-# missing, which we treat as malformed.
-HAS_KMLIB_DEP="$(jq --arg id "${KMLIB_DEP_ID}" \
-  '[.dependencies // [] | .[] | select(.id == $id)] | length > 0' \
-  "${MOD_INFO_FILE}")"
+# never matches it. An entry stating no version reads as empty here, which
+# is what the first branch below treats as malformed.
+HAS_KMLIB_DEP="$(mod_info_has_dependency "${KMLIB_MOD_ID}")"
 if [[ "${HAS_KMLIB_DEP}" == "true" ]]; then
-  KMLIB_DEP_VERSION="$(jq -r --arg id "${KMLIB_DEP_ID}" \
-    '[.dependencies[] | select(.id == $id)][0].version // ""' \
-    "${MOD_INFO_FILE}")"
+  KMLIB_DEP_VERSION="$(mod_info_read_dependency_version "${KMLIB_MOD_ID}")"
   if [[ -z "${KMLIB_DEP_VERSION}" ]]; then
     echo "ERROR: ${MOD_INFO_FILE} kmlib dependency is missing a 'version' field" >&2
     exit 1

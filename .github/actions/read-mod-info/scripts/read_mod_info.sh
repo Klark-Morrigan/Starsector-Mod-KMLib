@@ -14,6 +14,8 @@
 #   version-file-name  - <mod-id>.version
 #   jar-source         - jars[0]
 #   sibling-checkouts  - JSON array of repos to clone beside the checkout
+#   kmlib-dependency-version - the kmlib dependency's pinned version, or
+#                        empty when the mod declares no such dependency
 #
 # A thin script (rather than inline action steps) so bats can exercise it
 # in isolation - composite actions are not unit-testable directly.
@@ -34,8 +36,8 @@ VERSION_FILE_EXTENSION=".version"
 
 # The repos hosting the shared Gradle scripts a mod's build applies. Both are
 # reached by a path relative to the checkout's parent, so they have to be
-# cloned as its neighbours before the build runs.
-KMLIB_MOD_ID="kmlib"
+# cloned as its neighbours before the build runs. KMLIB_MOD_ID comes from the
+# shared lib, which the dependency read below uses it against too.
 COMMON_JAVA_REPO="Klark-Morrigan/Common-Java"
 COMMON_JAVA_PATH="Common-Java"
 KMLIB_REPO="Klark-Morrigan/Starsector-Mod-KMLib"
@@ -79,6 +81,13 @@ if [[ "${MOD_ID}" == "${KMLIB_MOD_ID}" ]]; then
   IS_KMLIB_SIBLING_NEEDED=false
 fi
 
+# Which KMLib a mod pins, emitted so the release pipeline can check that such
+# a release exists before building anything and link to it from the release
+# body. Empty for a mod declaring no KMLib dependency - KMLib's own release -
+# which is what the pipeline gates both of those on. Whether a stated pin is
+# well-formed is not asked here; validate-versioning owns that rule.
+KMLIB_DEPENDENCY_VERSION=$(mod_info_read_dependency_version "${KMLIB_MOD_ID}")
+
 # Built with jq rather than by string concatenation so the emitted array is
 # valid JSON whatever the constants above hold - the consuming workflows decode
 # it with fromJSON / jq.
@@ -106,4 +115,5 @@ SIBLING_CHECKOUTS=$(jq -cn \
   echo "version-file-name=${VERSION_FILE_NAME}"
   echo "jar-source=${JAR_SOURCE}"
   echo "sibling-checkouts=${SIBLING_CHECKOUTS}"
+  echo "kmlib-dependency-version=${KMLIB_DEPENDENCY_VERSION}"
 } >> "${GITHUB_OUTPUT}"

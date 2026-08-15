@@ -305,6 +305,9 @@ Starsector binaries and so runs on the self-hosted `kmlib-runner`.
   directory, and the `<mod-folder-name>-<version>.zip` release name.
   `version-file-name` goes the other way, `<mod-id>.version`, because
   the hand-written `version_files.csv` points at it by that name.
+  `kmlib-dependency-version` reports which KMLib the caller pins, or
+  nothing when it declares no such dependency, which is how the release
+  pipeline tells a consumer apart from KMLib releasing itself.
   The action's own `outputs:` block is the statement of that convention.
 - [check-version](.github/actions/check-version/action.yml) compares
   `mod_info.json`'s `.version` to the latest git tag in the caller

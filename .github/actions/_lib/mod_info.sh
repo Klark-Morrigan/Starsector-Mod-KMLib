@@ -14,10 +14,11 @@
 # convention.
 #
 # Sourced, not executed: defines mod_info_require_file,
-# mod_info_require_fields, mod_info_derive_mod_folder_name and
-# mod_info_derive_zip_name. The two checks report through the sourcing
-# script's own SCRIPT_NAME, so a message still names the step a reader saw
-# fail.
+# mod_info_require_fields, mod_info_derive_mod_folder_name,
+# mod_info_derive_zip_name, mod_info_has_dependency and
+# mod_info_read_dependency_version. The two checks report through the
+# sourcing script's own SCRIPT_NAME, so a message still names the step a
+# reader saw fail.
 
 # Read by the scripts that source this file, which shellcheck cannot see when
 # it checks this one on its own.
@@ -40,6 +41,13 @@ SEMVER_REGEX='^[0-9]+\.[0-9]+\.[0-9]+$'
 
 JAR_EXTENSION=".jar"
 ZIP_EXTENSION=".zip"
+
+# KMLib's mod id, as it appears both as .id in KMLib's own mod_info.json and
+# as a dependency entry's .id in every consumer's. One string here because
+# the scripts sourcing this file test it for opposite reasons - one asks "am
+# I KMLib?", the others ask "do I depend on KMLib?" - and a rename that
+# reached only one of them would leave the pipeline quietly half-right.
+KMLIB_MOD_ID="kmlib"
 
 # Fails the run unless mod_info.json is in the working directory, which is
 # the caller's checkout root when a composite action invokes these scripts.
@@ -97,4 +105,34 @@ mod_info_derive_zip_name() {
   local modFolderName
   modFolderName=$(mod_info_derive_mod_folder_name "${jarSource}")
   printf '%s\n' "${modFolderName}-${version}${ZIP_EXTENSION}"
+}
+
+# Echoes "true" when mod_info.json declares a dependency with the given id,
+# "false" otherwise.
+#
+# Separate from reading the version below because the two answers are not
+# interchangeable: a mod that declares no KMLib dependency is a normal case
+# (KMLib releasing itself), while one that declares the dependency without a
+# version is a mistake worth failing on. A single "empty means absent" read
+# would flatten those into one state and lose the error.
+mod_info_has_dependency() {
+  local dependencyId="${1}"
+  # `.dependencies // []` covers a mod_info.json with no dependencies key at
+  # all, which is otherwise a jq error rather than an empty result.
+  jq --arg id "${dependencyId}" \
+    '[.dependencies // [] | .[] | select(.id == $id)] | length > 0' \
+    "${MOD_INFO_FILE}"
+}
+
+# Echoes the version a dependency entry pins, or nothing when that entry is
+# absent or states no version.
+#
+# Emits the first match should a file list the same dependency twice. That
+# is malformed input either way, and picking a match keeps this a pure read -
+# the callers decide what an unusable answer means for them.
+mod_info_read_dependency_version() {
+  local dependencyId="${1}"
+  jq -r --arg id "${dependencyId}" \
+    '[.dependencies // [] | .[] | select(.id == $id)][0].version // ""' \
+    "${MOD_INFO_FILE}"
 }

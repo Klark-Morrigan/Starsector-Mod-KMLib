@@ -48,6 +48,12 @@ outputs:
       takes: the repos hosting the shared Gradle scripts the build applies -
       Common-Java always, plus KMLib for any mod that is not KMLib itself.
     value: ${{ steps.read.outputs.sibling-checkouts }}
+  kmlib-dependency-version:
+    description: >-
+      Version the caller's kmlib dependency pins, or empty when it declares
+      none - the case for KMLib releasing itself. Empty is the signal to skip
+      both the release-exists check and the release-body link that consume it.
+    value: ${{ steps.read.outputs.kmlib-dependency-version }}
 
 runs:
   using: composite
