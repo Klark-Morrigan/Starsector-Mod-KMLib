@@ -270,21 +270,18 @@ public final class PolylineBands {
         // a translucent band and nothing at all on an opaque one. Neither quad can fold:
         // both ends of a segment offset perpendicular to that same segment, so the quad
         // between them is its rectangle however short the segment or sharp its corners.
-        var innerArriving = fitsOnItsSegments
-            ? innerMiter
-            : (turnsLeft ? arrivingLeft : arrivingRight);
+        // Which of a segment's two rails is the inside of this turn, asked once for all four
+        // rather than at each of them: it is one fact about the corner, and four spellings of it
+        // are four chances to spell one backwards.
+        var arrivingInnerRail = turnsLeft ? arrivingLeft : arrivingRight;
+        var arrivingOuterRail = turnsLeft ? arrivingRight : arrivingLeft;
+        var leavingInnerRail = turnsLeft ? leavingLeft : leavingRight;
+        var leavingOuterRail = turnsLeft ? leavingRight : leavingLeft;
 
-        var innerLeaving = fitsOnItsSegments
-            ? innerMiter
-            : (turnsLeft ? leavingLeft : leavingRight);
-
-        var outerArriving = isOuterMitred
-            ? outerMiter
-            : (turnsLeft ? arrivingRight : arrivingLeft);
-
-        var outerLeaving = isOuterMitred
-            ? outerMiter
-            : (turnsLeft ? leavingRight : leavingLeft);
+        var innerArriving = fitsOnItsSegments ? innerMiter : arrivingInnerRail;
+        var innerLeaving = fitsOnItsSegments ? innerMiter : leavingInnerRail;
+        var outerArriving = isOuterMitred ? outerMiter : arrivingOuterRail;
+        var outerLeaving = isOuterMitred ? outerMiter : leavingOuterRail;
 
         // The bevel leaves the two segments' outer rail ends apart, and the wedge back
         // into the band is exactly the gap between the quads either side. It closes on
