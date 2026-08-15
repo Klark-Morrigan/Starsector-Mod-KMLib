@@ -1,6 +1,7 @@
-# Surgical line-ending pins for a game mod: only the executable text
-# surfaces are normalised, leaving data and binary assets to git's own
-# detection. bash and shellcheck reject CRLF, so every shell surface
+# Surgical line-ending pins for a game mod: only the text surfaces whose
+# own tooling cares about line endings are normalised, leaving data and
+# binary assets to git's own detection. bash and shellcheck reject CRLF,
+# so every shell surface
 # must be LF on disk - the run-lint / fix-permissions shims under
 # scripts/, Gradle's gradlew launcher, and any composite-action scripts
 # under .github/. A stray CR on a shebang line otherwise yields
@@ -8,6 +9,14 @@
 # on a Linux CI runner.
 *.sh    text eol=lf
 gradlew text eol=lf
+
+# yamllint's new-lines rule reports CRLF as an error. A Linux CI runner
+# checks these out as LF whatever the repository holds, so without a pin
+# the rule passes in CI and fails on a Windows working copy - the same
+# command disagreeing with itself by platform. Pinned so the local run
+# and the gate see one file.
+*.yml   text eol=lf
+*.yaml  text eol=lf
 
 # cmd.exe requires CRLF in batch files.
 *.bat       text eol=crlf
