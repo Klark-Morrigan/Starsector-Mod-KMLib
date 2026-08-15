@@ -235,6 +235,9 @@ scripts/
   actions/validate-versioning/ - enforces the versioning policy at
     release time (changelog section, mod_info.json version match,
     version shape, kmlib dep SemVer pin)
+  actions/check-dependency-release/ - confirms a pinned dependency
+    version exists as a published release of the repo shipping it,
+    and emits that release's URL
   actions/fill-version-file-template/ - fills the caller's
     committed <mod-id>.version.template from mod_info.json, producing
     the VersionChecker file for the release being cut

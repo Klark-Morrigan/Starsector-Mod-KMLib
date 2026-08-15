@@ -87,6 +87,18 @@ stub_release_missing() {
     grep -qx "api" "$GH_ARGS_FILE"
 }
 
+@test "asks for the browser URL, not another of the response's URL fields" {
+    stub_release_found
+    run_check
+    [ "$status" -eq 0 ]
+    # A release response carries url (the API endpoint), html_url (the page
+    # a player can open) and tarball_url. The stub cannot tell them apart -
+    # it replays one string whatever was asked for - so without this the
+    # suite would pass just as happily on the wrong field.
+    grep -qx -- "--jq" "$GH_ARGS_FILE"
+    grep -qx -- ".html_url" "$GH_ARGS_FILE"
+}
+
 @test "takes the URL from the response rather than assembling it from the tag" {
     # The API is the authority on where a release lives; a URL built from the
     # tag would be a second guess at the same answer, and would still look
