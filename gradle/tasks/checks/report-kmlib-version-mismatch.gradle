@@ -1,0 +1,73 @@
+// Reports when the KMLib a mod COMPILES against is not the KMLib its
+// mod_info.json asks a player to INSTALL.
+//
+// Which KMLib a consumer compiles against is the checkout beside it; which one a
+// player installs is whatever its mod_info.json asks for. Nothing ties those two
+// together on its own, so the two manifests are the one place the gap is visible
+// before release rather than after it, in someone's game.
+//
+// Reported, never enforced. The thing that actually decides a mismatch is the
+// player's launcher, which reads both manifests itself and needs no help from a
+// build to do it; failing here would only stop a mod compiling because of a number
+// in a JSON file, and a KMLib version bump would take every consumer's CI red until
+// someone edited it. So this says what it sees and gets out of the way.
+//
+// What the launcher does with the same pair, since that is what a player will
+// report: Starsector compares version segments by string EQUALITY, never by
+// ordering - a declared version is not a floor, so "newer than declared" is a
+// mismatch exactly like "older" is. For a 0.x mod its parser folds the leading
+// "0.<minor>" into what it calls the major, so a minor bump reaches the player as
+// "Error: this mod requires a different version of a mod that you have installed"
+// and blocks the mod, while a patch bump only warns and still enables. The two
+// messages below name which of those a mismatch will become.
+//
+// Applied from the Starsector conventions, which publish kmlibCheckoutDirectory as
+// the location of the KMLib whose classes a consumer compiles against.
+
+import groovy.json.JsonSlurper
+
+def kmlibModId = 'kmlib'
+def modInfo = new JsonSlurper().parse(file('mod_info.json'))
+def kmlibModInfoFile = new File(project.ext.kmlibCheckoutDirectory, 'mod_info.json')
+
+// Segments compare as text, so no numeric parse is wanted here: a version may
+// carry a letter (Starsector mods ship versions like 0.12.2b) and equality has
+// to survive it. Padded to three so 1.2 and 1.2.0 read as the same version.
+def readVersionSegments = { String version ->
+    def segments = version.tokenize('.')
+    return (0..2).collect { index -> index < segments.size() ? segments[index] : '0' }
+}
+
+// Skipped for two shapes that have nothing to compare: KMLib's own build, which
+// cannot depend on itself, and the ports, which apply these conventions for the
+// API classpath without depending on KMLib at all.
+def declaredKmlibDependency = modInfo.dependencies?.find { it.id == kmlibModId }
+if (modInfo.id != kmlibModId && declaredKmlibDependency != null) {
+    def builtKmlibVersion = new JsonSlurper().parse(kmlibModInfoFile).version
+
+    // A dependency declared without a version is Starsector's supported way to
+    // say "any release", and it is left to stand. Warned about rather than
+    // accepted in silence: it also switches the launcher's own check off, so a
+    // player carrying a KMLib without these classes gets no word of it either.
+    if (!declaredKmlibDependency.version) {
+        logger.warn("Warning: ${modInfo.id} declares ${kmlibModId} with no version while " +
+            "compiling against KMLib ${builtKmlibVersion}. Neither this build nor the " +
+            "launcher will tell a player when their KMLib is too old for it.")
+    } else {
+        def declaredSegments = readVersionSegments(declaredKmlibDependency.version)
+        def builtSegments = readVersionSegments(builtKmlibVersion)
+
+        if (declaredSegments[0] != builtSegments[0] || declaredSegments[1] != builtSegments[1]) {
+            logger.warn("Warning: ${modInfo.id} compiles against KMLib " +
+                "${builtKmlibVersion} but declares ${kmlibModId} " +
+                "${declaredKmlibDependency.version}. The launcher blocks a mod outright " +
+                "on a mismatch this size, so a player would not be able to enable " +
+                "${modInfo.id} at all.")
+        } else if (declaredSegments[2] != builtSegments[2]) {
+            logger.warn("Warning: ${modInfo.id} compiles against KMLib " +
+                "${builtKmlibVersion} but declares ${kmlibModId} " +
+                "${declaredKmlibDependency.version}. A patch carries no contract change, " +
+                "so this still links; the launcher shows the player a version warning.")
+        }
+    }
+}

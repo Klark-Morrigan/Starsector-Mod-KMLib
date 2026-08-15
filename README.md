@@ -63,8 +63,12 @@ gradle/
   starsector-mod.gradle - Starsector build conventions every KM mod applies
                           by path: the game's API jars on the compile/test
                           classpath, mod_info.json as the version source,
-                          the jar output location the launcher expects, and
-                          writeVersionFile (see Build & Test)
+                          the jar output location the launcher expects
+  tasks/checks/report-kmlib-version-mismatch.gradle - warns when a mod
+                          compiles against one KMLib and asks players for
+                          another
+  tasks/release/write-version-file.gradle - registers writeVersionFile for
+                          a mod that commits a template (see Build & Test)
 src/main/java/kmlib/
   Game-agnostic helpers (no Starsector API on the signature):
   animation/       - positions between two ends that time moves: a linear
@@ -390,9 +394,10 @@ The version file comes from `writeVersionFile`, which `jar` depends on: it fills
 [fill-version-file-template](.github/actions/fill-version-file-template/action.yml)
 script the release pipeline runs, so a checkout symlinked into `mods/` as a dev
 install reports to VersionChecker exactly what a published zip would. The task is
-registered by the shared Starsector conventions in
-[gradle/starsector-mod.gradle](gradle/starsector-mod.gradle) rather than by this
-repo's `build.gradle`, so every mod applying those conventions gets it; KMLib is one
+registered by
+[gradle/tasks/release/write-version-file.gradle](gradle/tasks/release/write-version-file.gradle),
+which the shared Starsector conventions apply, rather than by this repo's
+`build.gradle`, so every mod applying those conventions gets it; KMLib is one
 consumer of its own conventions among several. A mod opts in by committing a
 `<mod-id>.version.template` - no template, no task, which is where the KM mods that
 publish no update information stay. Tied to the jar rather than to `assemble`

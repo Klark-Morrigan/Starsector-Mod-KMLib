@@ -66,6 +66,15 @@ ext.starsectorRoot = configuredStarsectorRoot
 ext.apiJarFile = apiJarFile
 ext.starsectorCoreJars = starsectorCoreJars
 
+// The KMLib whose classes a consumer compiles against, and which holds the shell
+// scripts the release pipeline and the task scripts below both run. Located from
+// this file rather than from the relative path a consumer already spells in its
+// `apply from`: this file sits at <KMLib>/gradle/, so its grandparent is that
+// checkout, and there is no second copy of the path to keep in step. Published
+// because the task scripts sit two directories further down and must not each
+// count parentFile hops of their own.
+ext.kmlibCheckoutDirectory = buildscript.sourceFile.parentFile.parentFile
+
 // Locate a dependency mod's jar without spelling out its folder name, which is
 // version-stamped for several mods (Nexerelin-0.12.0a, ...). Looks exactly one
 // level down - <mods>/<anyModFolder>/jars/<jarName>, the layout the launcher
@@ -98,79 +107,6 @@ ext.findModJars = { String jarName ->
 // offer a second, weaker answer to a question the checkout already settles -
 // and let a build compile against a release that no longer matches the
 // conventions it is being built with.
-
-// Which KMLib a consumer COMPILES against is the checkout beside it; which one
-// a player INSTALLS is whatever its mod_info.json asks for. Nothing ties those
-// two together on its own, so the two manifests are the one place the gap is
-// visible before release rather than after it, in someone's game.
-//
-// Reported, never enforced. The thing that actually decides a mismatch is the
-// player's launcher, which reads both manifests itself and needs no help from
-// a build to do it; failing here would only stop a mod compiling because of a
-// number in a JSON file, and a KMLib version bump would take every consumer's
-// CI red until someone edited it. So this says what it sees and gets out of
-// the way.
-//
-// What the launcher does with the same pair, since that is what a player will
-// report: Starsector compares version segments by string EQUALITY, never by
-// ordering - a declared version is not a floor, so "newer than declared" is a
-// mismatch exactly like "older" is. For a 0.x mod its parser folds the leading
-// "0.<minor>" into what it calls the major, so a minor bump reaches the player
-// as "Error: this mod requires a different version of a mod that you have
-// installed" and blocks the mod, while a patch bump only warns and still
-// enables. The two messages below name which of those a mismatch will become.
-//
-// The script locates its own checkout rather than restating the relative path
-// a consumer already spells in its `apply from`: this file sits at
-// <KMLib>/gradle/, so its grandparent is the KMLib whose classes are being
-// compiled against, and there is no second copy of the path to keep in step.
-// The version-file task at the bottom of this file locates its script the same
-// way.
-def kmlibModId = 'kmlib'
-def kmlibCheckoutDirectory = buildscript.sourceFile.parentFile.parentFile
-def kmlibModInfoFile = new File(kmlibCheckoutDirectory, 'mod_info.json')
-
-// Segments compare as text, so no numeric parse is wanted here: a version may
-// carry a letter (Starsector mods ship versions like 0.12.2b) and equality has
-// to survive it. Padded to three so 1.2 and 1.2.0 read as the same version.
-def readVersionSegments = { String version ->
-    def segments = version.tokenize('.')
-    return (0..2).collect { index -> index < segments.size() ? segments[index] : '0' }
-}
-
-// Skipped for two shapes that have nothing to compare: KMLib's own build, which
-// cannot depend on itself, and the ports, which apply these conventions for the
-// API classpath without depending on KMLib at all.
-def declaredKmlibDependency = modInfo.dependencies?.find { it.id == kmlibModId }
-if (modInfo.id != kmlibModId && declaredKmlibDependency != null) {
-    def builtKmlibVersion = new JsonSlurper().parse(kmlibModInfoFile).version
-
-    // A dependency declared without a version is Starsector's supported way to
-    // say "any release", and it is left to stand. Warned about rather than
-    // accepted in silence: it also switches the launcher's own check off, so a
-    // player carrying a KMLib without these classes gets no word of it either.
-    if (!declaredKmlibDependency.version) {
-        logger.warn("Warning: ${modInfo.id} declares ${kmlibModId} with no version while " +
-            "compiling against KMLib ${builtKmlibVersion}. Neither this build nor the " +
-            "launcher will tell a player when their KMLib is too old for it.")
-    } else {
-        def declaredSegments = readVersionSegments(declaredKmlibDependency.version)
-        def builtSegments = readVersionSegments(builtKmlibVersion)
-
-        if (declaredSegments[0] != builtSegments[0] || declaredSegments[1] != builtSegments[1]) {
-            logger.warn("Warning: ${modInfo.id} compiles against KMLib " +
-                "${builtKmlibVersion} but declares ${kmlibModId} " +
-                "${declaredKmlibDependency.version}. The launcher blocks a mod outright " +
-                "on a mismatch this size, so a player would not be able to enable " +
-                "${modInfo.id} at all.")
-        } else if (declaredSegments[2] != builtSegments[2]) {
-            logger.warn("Warning: ${modInfo.id} compiles against KMLib " +
-                "${builtKmlibVersion} but declares ${kmlibModId} " +
-                "${declaredKmlibDependency.version}. A patch carries no contract change, " +
-                "so this still links; the launcher shows the player a version warning.")
-        }
-    }
-}
 
 dependencies {
     // Starsector ships the API in starsector-core. compileOnly because the
@@ -207,183 +143,12 @@ jar {
     destinationDirectory = file("$projectDir/jars")
 }
 
-// VersionChecker reads <mod-id>.version, and nothing commits a file under that
-// name: the committed copy carries a .template suffix, because a checkout used as
-// a dev install is symlinked into mods/ and a committed file under the bare name
-// would hand the checker quoted tokens where it expects numbers. So something has
-// to fill the template locally, and the build is that something. It runs the very
-// script the release pipeline runs, so the version a dev install reports and the
-// version a published zip carries cannot come out differently.
-def versionFileName = "${modInfo.id}.version"
-def versionFileTemplateName = "${versionFileName}.template"
-
-// Committing the template IS the opt-in to publishing update information, so it is
-// also what decides whether this mod gets the local fill. Most mods applying these
-// conventions publish none, and a task registered for them would declare a
-// template they do not have as a task input - a build failure over a file whose
-// absence is the intended state.
-if (file(versionFileTemplateName).isFile()) {
-
-    // Located from this file rather than from the consumer's own root, since only
-    // the KMLib checkout holds these scripts and every other consumer would
-    // otherwise have to restate an absolute path into it.
-    def actionsDirectory = new File(kmlibCheckoutDirectory, '.github/actions')
-    def fillVersionFileScript = new File(actionsDirectory,
-        'fill-version-file-template/scripts/fill_version_file_template.sh')
-
-    // Sourced by the script above for the shared mod_info.json helpers, so it is as
-    // much an input as the script is: undeclared, an edit to the helpers would leave
-    // the task up to date over a file the new code writes differently.
-    def modInfoLibraryScript = new File(actionsDirectory, '_lib/mod_info.sh')
-
-    // Forward slashes because this one is handed to bash, which reads a Windows
-    // backslash as an escape. The input declarations below take the File as it is.
-    def fillVersionFileScriptPath = fillVersionFileScript.absolutePath.replace('\\', '/')
-
-    // A release publishes <jar-basename>-<version>.zip, naming the zip after the
-    // mod's jar rather than after the Gradle project. Derived from mod_info.json's
-    // jars[0], the same value read_mod_info.sh derives it from, so both sides read
-    // one string: project.name matches that basename only by convention, and would
-    // diverge in the one place the mistake is silent - the case of a name inside a
-    // download URL, which GitHub resolves case-sensitively.
-    def releaseJarSource = modInfo.jars ? modInfo.jars[0] : null
-
-    if (!releaseJarSource) {
-        throw new GradleException("${modInfo.id} commits ${versionFileTemplateName}, so it "
-            + 'publishes update information, but mod_info.json lists no jar to name the '
-            + 'release zip its download URL points at.')
-    }
-
-    def releaseJarBaseName = new File(releaseJarSource.toString()).name.replaceFirst(/\.jar$/, '')
-    def releaseZipName = "${releaseJarBaseName}-${project.version}.zip"
-
-    // <owner>/<repo>, the shape the Actions runtime exports as GITHUB_REPOSITORY
-    // and the script requires. Read from the checkout's own origin remote rather
-    // than stated in a build file, so a local build cannot name a repository this
-    // clone does not push to.
-    def originRemoteUrl = providers.exec {
-        commandLine 'git', 'remote', 'get-url', 'origin'
-        workingDir projectDir
-    }.standardOutput.asText
-
-    // Split on both separators so either remote shape yields the same answer:
-    // https://host/owner/repo(.git) and git@host:owner/repo(.git) differ only in
-    // what separates the host from the owner, and the repository is the last two
-    // segments either way.
-    def releaseRepository = originRemoteUrl.map { remoteUrl ->
-
-        def urlWithoutGitSuffix = remoteUrl.trim().replaceFirst(/\.git$/, '')
-        def segments = urlWithoutGitSuffix.split('[/:]')
-
-        if (segments.length < 2) {
-            throw new GradleException("Cannot read <owner>/<repo> out of the origin remote "
-                + "'${urlWithoutGitSuffix}', so ${versionFileName} cannot state a download URL.")
-        }
-        return "${segments[-2]}/${segments[-1]}".toString()
-    }
-
-    // The script is bash, and on Windows the shell that both exists on a
-    // development machine and sees the same filesystem as the checkout is Git's.
-    // Located from git itself rather than by asking PATH for 'bash', which on a
-    // machine with WSL installed resolves to the WSL launcher, whose paths are not
-    // these. Resolved when the task runs rather than while the build configures,
-    // so a machine without Git Bash still runs every other task.
-    def resolveBashExecutablePath = {
-
-        if (!System.getProperty('os.name').toLowerCase().startsWith('windows')) {
-            return 'bash'
-        }
-
-        def bashRelativePaths = ['bin/bash.exe', 'usr/bin/bash.exe']
-
-        def gitExecutable = (System.getenv('PATH') ?: '')
-            .split(File.pathSeparator)
-            .collect { pathEntry -> new File(pathEntry, 'git.exe') }
-            .find { candidate -> candidate.isFile() }
-
-        if (gitExecutable == null) {
-            throw new GradleException("Cannot generate ${versionFileName}: no git.exe on PATH to "
-                + 'locate Git Bash from. Install Git for Windows, or run '
-                + "${fillVersionFileScriptPath} under a bash of your own.")
-        }
-
-        // Which directory under the install PATH offers git from varies - <git>/cmd
-        // on a plain Windows shell, <git>/mingw64/bin under Git Bash itself - so the
-        // shell is searched for by walking up from wherever git was found rather
-        // than by assuming a fixed hop count. Both bash locations the installer lays
-        // down are tried at each level.
-        def searchDirectory = gitExecutable.parentFile
-        def bashExecutable = null
-
-        while (searchDirectory != null && bashExecutable == null) {
-
-            bashExecutable = bashRelativePaths
-                .collect { relativePath -> new File(searchDirectory, relativePath) }
-                .find { candidate -> candidate.isFile() }
-
-            searchDirectory = searchDirectory.parentFile
-        }
-        if (bashExecutable == null) {
-            throw new GradleException("Cannot generate ${versionFileName}: found git at "
-                + "${gitExecutable} but no ${bashRelativePaths.join(' or ')} above it, so this "
-                + 'Git ships no bash.')
-        }
-        return bashExecutable.absolutePath
-    }
-
-    def writeVersionFileTask = tasks.register('writeVersionFile', Exec) {
-
-        group = 'build'
-
-        // Parenthesised because without them the assignment is a complete statement
-        // at the end of its line, and the next line's leading '+' becomes unary plus
-        // on a String.
-        description = ("Fills ${versionFileName} from ${versionFileTemplateName}, so a checkout "
-            + 'used as a dev install reports its version to VersionChecker.')
-
-        // The script reads mod_info.json and the template from its mod-root
-        // argument, which defaults to the working directory, and resolves the output
-        // path from where the caller stands. Standing in the project directory is
-        // what makes the plain names below - no mod-root argument, an output path of
-        // one filename - land on the consumer's own checkout.
-        workingDir projectDir
-
-        inputs.file "${projectDir}/mod_info.json"
-        inputs.file "${projectDir}/${versionFileTemplateName}"
-        inputs.file fillVersionFileScript
-        inputs.file modInfoLibraryScript
-
-        // As much an input as the files are: the remote is baked into the generated
-        // download URL, so a re-pointed clone has to regenerate rather than keep a
-        // URL aimed at the repository it used to push to.
-        inputs.property 'releaseRepository', releaseRepository
-        outputs.file "${projectDir}/${versionFileName}"
-
-        // Set here rather than at configuration time so locating Git Bash - which
-        // can fail - happens only for a build that actually generates the file.
-        doFirst {
-            commandLine resolveBashExecutablePath(),
-                fillVersionFileScriptPath,
-                versionFileName,
-                releaseZipName
-            environment 'GITHUB_REPOSITORY', releaseRepository.get()
-        }
-    }
-
-    // Hung off jar rather than off the assemble lifecycle above it, because
-    // refreshing a dev install is what `gradlew jar` IS: a checkout symlinked into
-    // mods/ picks up the new jar the moment that task writes it, and a version file
-    // left behind then reports the version the install no longer has - the very
-    // disagreement generating it locally exists to prevent. assemble would be the
-    // tidier owner of "produce what this project ships" and reach neither of the two
-    // commands that actually refresh an install.
-    //
-    // It puts the task on the release runner too, since packaging runs `gradlew jar`
-    // there. Harmless: that runner already has the bash and jq the release's own
-    // version-file step needs, and the dist payload is assembled from named files,
-    // so a generated file at the checkout root cannot reach the zip. The release's
-    // copies come from the action, as before.
-    tasks.named('jar') {
-        dependsOn writeVersionFileTask
-    }
-}
+// Per-concern task scripts, each self-contained enough to read on its own: the
+// manifest-pair report a consumer gets warned by, and the local fill of its
+// VersionChecker template (registered only for a mod that commits one). Kept out
+// of this file so it stays what its header claims - classpath, version source and
+// jar location - and resolved relative to THIS script's own gradle/ dir, the same
+// sibling-checkout convention Common-Java's lint tasks use.
+def starsectorTasksDir = new File(buildscript.sourceFile.parentFile, 'tasks')
+apply from: new File(starsectorTasksDir, 'checks/report-kmlib-version-mismatch.gradle')
+apply from: new File(starsectorTasksDir, 'release/write-version-file.gradle')
