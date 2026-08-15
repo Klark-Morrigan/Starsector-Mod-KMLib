@@ -225,20 +225,37 @@ def versionFileTemplateName = "${versionFileName}.template"
 if (file(versionFileTemplateName).isFile()) {
 
     // Located from this file rather than from the consumer's own root, since only
-    // the KMLib checkout holds the script and every other consumer would otherwise
-    // have to restate an absolute path into it. Forward slashes because the path
-    // is handed to bash, which reads a Windows backslash as an escape.
-    def fillVersionFileScriptPath = new File(kmlibCheckoutDirectory,
-        '.github/actions/fill-version-file-template/scripts/fill_version_file_template.sh')
-        .absolutePath
-        .replace('\\', '/')
+    // the KMLib checkout holds these scripts and every other consumer would
+    // otherwise have to restate an absolute path into it.
+    def actionsDirectory = new File(kmlibCheckoutDirectory, '.github/actions')
+    def fillVersionFileScript = new File(actionsDirectory,
+        'fill-version-file-template/scripts/fill_version_file_template.sh')
 
-    // The zip name composed the way the release pipeline composes it,
-    // <jar-basename>-<version>.zip: the jar is named after the project and the
-    // version comes from mod_info.json. Restated here only in the sense that both
-    // sides read the same two values - it feeds the download URL, which a locally
-    // generated file should point at the same asset a release would publish.
-    def releaseZipName = "${project.name}-${project.version}.zip"
+    // Sourced by the script above for the shared mod_info.json helpers, so it is as
+    // much an input as the script is: undeclared, an edit to the helpers would leave
+    // the task up to date over a file the new code writes differently.
+    def modInfoLibraryScript = new File(actionsDirectory, '_lib/mod_info.sh')
+
+    // Forward slashes because this one is handed to bash, which reads a Windows
+    // backslash as an escape. The input declarations below take the File as it is.
+    def fillVersionFileScriptPath = fillVersionFileScript.absolutePath.replace('\\', '/')
+
+    // A release publishes <jar-basename>-<version>.zip, naming the zip after the
+    // mod's jar rather than after the Gradle project. Derived from mod_info.json's
+    // jars[0], the same value read_mod_info.sh derives it from, so both sides read
+    // one string: project.name matches that basename only by convention, and would
+    // diverge in the one place the mistake is silent - the case of a name inside a
+    // download URL, which GitHub resolves case-sensitively.
+    def releaseJarSource = modInfo.jars ? modInfo.jars[0] : null
+
+    if (!releaseJarSource) {
+        throw new GradleException("${modInfo.id} commits ${versionFileTemplateName}, so it "
+            + 'publishes update information, but mod_info.json lists no jar to name the '
+            + 'release zip its download URL points at.')
+    }
+
+    def releaseJarBaseName = new File(releaseJarSource.toString()).name.replaceFirst(/\.jar$/, '')
+    def releaseZipName = "${releaseJarBaseName}-${project.version}.zip"
 
     // <owner>/<repo>, the shape the Actions runtime exports as GITHUB_REPOSITORY
     // and the script requires. Read from the checkout's own origin remote rather
@@ -333,7 +350,8 @@ if (file(versionFileTemplateName).isFile()) {
 
         inputs.file "${projectDir}/mod_info.json"
         inputs.file "${projectDir}/${versionFileTemplateName}"
-        inputs.file fillVersionFileScriptPath
+        inputs.file fillVersionFileScript
+        inputs.file modInfoLibraryScript
 
         // As much an input as the files are: the remote is baked into the generated
         // download URL, so a re-pointed clone has to regenerate rather than keep a

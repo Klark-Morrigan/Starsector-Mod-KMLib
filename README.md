@@ -59,6 +59,12 @@ data/
   console/commands.csv             - Console Commands registrations
   strings/strings.json             - localisation lookups
 build.gradle / settings.gradle / gradlew[.bat]
+gradle/
+  starsector-mod.gradle - Starsector build conventions every KM mod applies
+                          by path: the game's API jars on the compile/test
+                          classpath, mod_info.json as the version source,
+                          the jar output location the launcher expects, and
+                          writeVersionFile (see Build & Test)
 src/main/java/kmlib/
   Game-agnostic helpers (no Starsector API on the signature):
   animation/       - positions between two ends that time moves: a linear
