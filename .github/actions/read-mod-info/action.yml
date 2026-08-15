@@ -54,6 +54,12 @@ outputs:
       none - the case for KMLib releasing itself. Empty is the signal to skip
       both the release-exists check and the release-body link that consume it.
     value: ${{ steps.read.outputs.kmlib-dependency-version }}
+  kmlib-repo:
+    description: >-
+      Repository publishing KMLib, emitted from the same constant the sibling
+      checkout set is built from so a release check and the build that
+      compiles against it name one repository.
+    value: ${{ steps.read.outputs.kmlib-repo }}
 
 runs:
   using: composite

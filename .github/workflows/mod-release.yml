@@ -72,6 +72,11 @@ jobs:
       # Repos the mod's Gradle build applies shared scripts from by relative
       # path, so they must be cloned beside its checkout - see the build jobs.
       sibling-checkouts: ${{ steps.read.outputs.sibling-checkouts }}
+      # Which KMLib this mod pins and where that release lives. Both are
+      # empty for KMLib's own release, which pins no KMLib; create-release
+      # reads that emptiness as "add no dependency line to the body".
+      kmlib-version: ${{ steps.read.outputs.kmlib-dependency-version }}
+      kmlib-release-url: ${{ steps.kmlib-release.outputs.release-url }}
     steps:
       # Default checkout pulls the CONSUMER repo (the one that triggered the
       # release), so mod_info.json and CHANGELOG.md below are the consumer's.
@@ -117,6 +122,29 @@ jobs:
         uses: Klark-Morrigan/Starsector-Mod-KMLib/.github/actions/validate-versioning@master
         with:
           version: ${{ steps.check.outputs.version }}
+
+      # The game refuses to load a mod whose declared dependency version is
+      # not installed, and a player installs KMLib from its release page - so
+      # a pin naming a KMLib that was never released ships a mod nobody can
+      # run. Checked here, in the same cheap gate as the rules above, because
+      # the answer costs one API call and a failure should cost no build.
+      #
+      # After validate-versioning deliberately: that step rules on the pin's
+      # SHAPE, and asking the API about a malformed version would report it
+      # as an absent release - the true problem named as the wrong one.
+      #
+      # Skipped when the mod pins no KMLib, which is KMLib releasing itself.
+      # The step's own outputs then go empty, which is what the release body
+      # keys off later.
+      - name: Check the pinned KMLib release exists
+        id: kmlib-release
+        if: >-
+          steps.check.outputs.version-updated == 'true'
+          && steps.read.outputs.kmlib-dependency-version != ''
+        uses: Klark-Morrigan/Starsector-Mod-KMLib/.github/actions/check-dependency-release@master
+        with:
+          repo: ${{ steps.read.outputs.kmlib-repo }}
+          version: ${{ steps.read.outputs.kmlib-dependency-version }}
 
   # Re-run the same PR gates before publishing. The merge that triggered this
   # push already passed them, but re-gating the exact commit being released

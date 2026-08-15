@@ -145,7 +145,30 @@ read_output_value() {
     run bash "$SCRIPT"
     [ "$status" -eq 0 ]
     [ "$(grep -c '^sibling-checkouts=' "$GITHUB_OUTPUT")" -eq 1 ]
-    [ "$(wc -l < "$GITHUB_OUTPUT")" -eq 10 ]
+    [ "$(wc -l < "$GITHUB_OUTPUT")" -eq 11 ]
+}
+
+@test "emits the KMLib repository the sibling checkout set names" {
+    write_mod_info "kmu" "0.1.0" "jars/KMU.jar"
+    cd "$WORK_DIR"
+    run bash "$SCRIPT"
+    [ "$status" -eq 0 ]
+    siblings="$(read_output_value "sibling-checkouts")"
+    kmlibRepo="$(read_output_value "kmlib-repo")"
+    # One constant behind both, so the release a consumer is checked against
+    # is the same repository its build compiles the mod against.
+    [ "$kmlibRepo" = "$(jq -r '.[1].repo' <<< "$siblings")" ]
+    [ "$kmlibRepo" = "Klark-Morrigan/Starsector-Mod-KMLib" ]
+}
+
+@test "emits the KMLib repository even for KMLib itself" {
+    write_mod_info "kmlib" "0.1.0" "jars/KMLib.jar"
+    cd "$WORK_DIR"
+    run bash "$SCRIPT"
+    [ "$status" -eq 0 ]
+    # KMLib drops the sibling checkout but the key is still emitted, so no
+    # consumer of this output has to handle it being absent for one mod.
+    grep -qx "kmlib-repo=Klark-Morrigan/Starsector-Mod-KMLib" "$GITHUB_OUTPUT"
 }
 
 @test "emits the kmlib dependency version a consumer pins" {

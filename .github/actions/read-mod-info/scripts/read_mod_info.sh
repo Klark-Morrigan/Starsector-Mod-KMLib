@@ -16,6 +16,7 @@
 #   sibling-checkouts  - JSON array of repos to clone beside the checkout
 #   kmlib-dependency-version - the kmlib dependency's pinned version, or
 #                        empty when the mod declares no such dependency
+#   kmlib-repo         - the repository publishing KMLib
 #
 # A thin script (rather than inline action steps) so bats can exercise it
 # in isolation - composite actions are not unit-testable directly.
@@ -116,4 +117,8 @@ SIBLING_CHECKOUTS=$(jq -cn \
   echo "jar-source=${JAR_SOURCE}"
   echo "sibling-checkouts=${SIBLING_CHECKOUTS}"
   echo "kmlib-dependency-version=${KMLIB_DEPENDENCY_VERSION}"
+  # Emitted from the same constant the sibling clone above is built from, so
+  # the repository a release is checked against cannot drift from the one the
+  # build actually compiles the mod against.
+  echo "kmlib-repo=${KMLIB_REPO}"
 } >> "${GITHUB_OUTPUT}"
