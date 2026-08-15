@@ -93,8 +93,8 @@ stretch spanning a corner bends, and whatever gives it girth has to bend with it
 A layout rarely has the whole ring to itself, so `findClearArcs` answers which stretches of the
 path a set of keep-out shapes leaves free, as arc-length intervals in the path's own frame. The
 answer is intervals rather than geometry because a caller measuring its layout in distances
-already reads the path that way: it sums what is left, resizes against that, and lays its pieces
-along the intervals. Every shape handed over is tested, whoever it belongs to, and a shape
+already reads the path that way, and what it then makes of them - one interval or several,
+resized or not - is its own. Every shape handed over is tested, whoever it belongs to, and a shape
 covering several edges in a row comes back as one covered stretch rather than as a gap at every
 corner it crosses. The intervals never wrap - a shape over the start leaves the pieces before and
 after it stated separately, which is what "the layout begins at the start" means.
@@ -115,12 +115,19 @@ bevel in two cases that are asked separately because they answer different halve
 - A **spike** - a turn sharp enough that the outer miter stands farther from the corner than
   `miterSpikeLimit` half-widths - bevels the outer rail only. The inner rail still meets at a
   point and needs no bevel.
-- A miter **outrunning its segments** bevels both, and pinches the inner rail to the
-  centreline. The reach is what makes this its own case: a miter reaches back along both
-  segments it joins, so a segment short enough for the reaches at its two ends to meet has
-  its rails cross and the band folds into a bowtie. A corner claims half of each adjacent
-  segment; an end of the polyline claims none of its own, since a straight cap reaches back
-  nothing, leaving the whole of that segment to the corner at the far end.
+- A miter **outrunning its segments** bevels both rails. The reach is what makes this its own
+  case: a miter reaches back along both segments it joins, so a segment short enough for the
+  reaches at its two ends to meet has its rails cross and the band folds into a bowtie. A
+  corner claims half of each adjacent segment; an end of the polyline claims none of its own,
+  since a straight cap reaches back nothing, leaving the whole of that segment to the corner
+  at the far end.
+
+A bevelled rail falls back to the plain offset of its own segment, never to the centreline
+point. A rail brought in to the centreline necks the band to half its width at that corner,
+so a centreline turning every few widths - a traced outline, say - comes out strung with
+necks; and since both ends of a segment offset perpendicular to that same segment, the quad
+between them is its rectangle however short the segment or sharp its corners. What the
+fallback costs instead is the two quads lying over each other across the inside of the turn.
 
 The band comes out gap-free and, where the centreline's turns leave room for the width asked
 of them, without stacking its pieces - which matters because a translucent band draws every

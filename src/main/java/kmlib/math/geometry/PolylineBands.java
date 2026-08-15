@@ -29,6 +29,12 @@ import java.util.List;
  *       its segments leave it, whatever the angle.
  * </ul>
  *
+ * <p>A bevel keeps the band's full width: both rails fall back to the plain offset of
+ * the segment each belongs to, never to the centreline. That is what a band drawn along
+ * a turning centreline needs - a rail brought in to the centreline would neck the band
+ * to half its width at that corner, and a centreline that turns every few widths would
+ * be strung with such necks.
+ *
  * <p>The band comes out gap-free, and free of self-overlap wherever the polyline's own
  * turns leave room for the width asked of them - a centreline doubling back within its
  * own band width has nowhere to put the band but over itself. That matters because a
@@ -253,8 +259,24 @@ public final class PolylineBands {
         // the join. A miter that cannot fit is dropped on both rails, since either would
         // cross; one that fits but spikes is dropped only on the outer rail, where the
         // spike is - the inner rail still meets at a point and needs no bevel.
-        var inner = fitsOnItsSegments ? innerMiter : at;
         var isOuterMitred = fitsOnItsSegments && overshoot <= miterSpikeLimit * halfWidth;
+
+        // A dropped miter falls back to the plain offset each segment has of its own,
+        // never to the centreline point. A rail put on the centreline necks the band to
+        // half its width at that corner, and on a centreline turning every few widths -
+        // a traced outline, say - that reads as the band being chewed through rather
+        // than as a join being given up. Held at its offset, the two quads instead lie
+        // over each other across the inside of the turn, which costs a brighter patch on
+        // a translucent band and nothing at all on an opaque one. Neither quad can fold:
+        // both ends of a segment offset perpendicular to that same segment, so the quad
+        // between them is its rectangle however short the segment or sharp its corners.
+        var innerArriving = fitsOnItsSegments
+            ? innerMiter
+            : (turnsLeft ? arrivingLeft : arrivingRight);
+
+        var innerLeaving = fitsOnItsSegments
+            ? innerMiter
+            : (turnsLeft ? leavingLeft : leavingRight);
 
         var outerArriving = isOuterMitred
             ? outerMiter
@@ -264,15 +286,18 @@ public final class PolylineBands {
             ? outerMiter
             : (turnsLeft ? leavingRight : leavingLeft);
 
-        // The bevel leaves the two segments' outer rail ends apart, and the wedge back to
-        // the shared inner vertex is exactly the gap between the quads either side.
+        // The bevel leaves the two segments' outer rail ends apart, and the wedge back
+        // into the band is exactly the gap between the quads either side. It closes on
+        // the miter where the rails meet at one, and on the centreline corner where they
+        // did not - the inner half of the wedge is then already under both quads, so the
+        // triangle covers what is genuinely open and no more.
         var bevelTriangle = isOuterMitred
             ? List.<double[]>of()
-            : List.of(inner, outerArriving, outerLeaving);
+            : List.of(fitsOnItsSegments ? innerMiter : at, outerArriving, outerLeaving);
 
         return turnsLeft
-            ? new BandJoin(inner, outerArriving, inner, outerLeaving, bevelTriangle)
-            : new BandJoin(outerArriving, inner, outerLeaving, inner, bevelTriangle);
+            ? new BandJoin(innerArriving, outerArriving, innerLeaving, outerLeaving, bevelTriangle)
+            : new BandJoin(outerArriving, innerArriving, outerLeaving, innerLeaving, bevelTriangle);
     }
 
     // Where the two rails on one side of the band cross - the miter point that corner

@@ -19,10 +19,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>The single-stroke cases: a straight centreline
  * strokes the rectangle around it, a corner mitres so the band covers both its arms
  * once, a corner past the spike limit bevels the outside of the turn away, a corner
- * whose miter would outrun the segments it joins pinches to the centreline instead of
- * folding the band into a bowtie, a point the centreline runs straight through leaves
- * the band unbroken, repeated points are one point, and a centreline with nothing to
- * stroke - one distinct point, or no width - strokes nothing.
+ * whose miter would outrun the segments it joins keeps the band's full width across the
+ * turn rather than either folding into a bowtie or necking to the centreline, a point
+ * the centreline runs straight through leaves the band unbroken, repeated points are one
+ * point, and a centreline with nothing to stroke - one distinct point, or no width -
+ * strokes nothing.
  *
  * <p>The span cases are about one thing the single-stroke ones cannot state: a boundary
  * between two spans is a join rather than two square ends butted together, which is the
@@ -156,12 +157,20 @@ final class PolylineBandsTest {
         }
 
         @Test
-        void inner_rail_pinches_to_the_centreline_where_the_miter_outruns_its_segments() {
+        void corner_whose_miter_outruns_its_segments_keeps_the_bands_full_width() {
             // A one-long segment between two right angles: each miter reaches root-two
             // back along it, and the two of them together reach farther than the segment
             // is long, so their rails would cross and the band would fold into a bowtie.
-            // Both corners give the miter up and take the centreline point itself, which
-            // no rail can cross past.
+            // Both corners give the miter up - and give it up to the plain offset each
+            // segment has of its own, not to the centreline. So the short segment carries
+            // the full-width rectangle from (9,0) to (11,1), where a rail brought in to
+            // the centreline would have left it a unit wide and tapered the two long arms
+            // into it.
+            //
+            // The area is the three rectangles - 20, 2 and 20 - plus a half-unit wedge
+            // holding each bevelled corner open. It counts the two arms' overlap across
+            // the inside of each turn twice, which is what a band with nowhere to put its
+            // width but over itself is: brighter there when translucent, and whole.
             var hairpin = List.of(
                 new double[] {0, 0},
                 new double[] {10, 0},
@@ -170,9 +179,11 @@ final class PolylineBandsTest {
 
             var band = PolylineBands.strokeToTriangles(hairpin, WIDTH, MITER_SPIKE_LIMIT);
 
-            assertThat(hasCorner(band, new double[] {10, 0}))
+            assertThat(computeTotalTriangleArea(band))
+                .isCloseTo(43.0, buildAssertionSlack());
+            assertThat(hasCorner(band, new double[] {9, 0}))
                 .isTrue();
-            assertThat(hasCorner(band, new double[] {10, 1}))
+            assertThat(hasCorner(band, new double[] {9, 1}))
                 .isTrue();
         }
 
