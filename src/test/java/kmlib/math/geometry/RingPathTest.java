@@ -33,6 +33,17 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * not repeat it, a stretch of no length is the single point it sits at, a stretch wrapping
  * past the start carries on round, one ending behind its start has no length, and one
  * longer than the perimeter is cut to a lap.
+ *
+ * <p>And of {@link RingPath#fuseStretchAcrossStart}: the pair reaching the path's two ends
+ * comes back as the one stretch it is, closing past the perimeter, while stretches falling
+ * short of either end and a lone stretch are left exactly as they arrived.
+ *
+ * <p>And of {@link RingPath#placeSpanNearestStart}: a span sits as near the path's start as
+ * its stretch allows, which is on the start itself where there is room after it, backed up
+ * where the stretch closes too soon, at the stretch's own opening where a shape covers the
+ * start, and at whichever end of a far-off stretch puts the span's start nearer - ties
+ * taking the stretch's start. A span outrunning its stretch opens where the stretch does,
+ * and an empty path has no lap to place within.
  */
 final class RingPathTest {
 
@@ -49,6 +60,11 @@ final class RingPathTest {
     // 24-long ring whose corners and arc lengths are whole numbers, so every position
     // assertion below is a literal rather than a computation.
     private static final double INSET_DISTANCE = 2.0;
+
+    // A layout a sixth of the path long. Short enough against the stretches it is placed on
+    // that where it sits is a decision rather than the only place it fits, which is the
+    // question the placement exists to answer.
+    private static final double SPAN_LENGTH = 4.0;
 
     @Nested
     class TraceInsetRing {
@@ -418,6 +434,160 @@ final class RingPathTest {
         }
     }
 
+    @Nested
+    class FuseStretchAcrossStart {
+
+        @Test
+        void stretches_meeting_at_the_start_come_back_as_the_one_stretch_they_are() {
+            // A shape on the far side of the path leaves one run, stated by the carve as the
+            // piece before the origin and the piece after it. Fused, it is the 20-long run it
+            // actually is, closing past the perimeter; read as carved, a caller comparing the
+            // two would take the longer half and give up the rest.
+            assertThatArcsAre(
+                traceReferenceSquare().fuseStretchAcrossStart(List.of(
+                    new RingStretch(0, 8),
+                    new RingStretch(12, 24))),
+                List.of(new double[] {12, 32}));
+        }
+
+        @Test
+        void stretches_between_the_two_ends_are_left_where_they_are() {
+            // Only the pair reaching the two ends is fused. A stretch in the middle of the path
+            // neither moves nor changes order, so the fuse costs a caller nothing it did not
+            // ask for.
+            assertThatArcsAre(
+                traceReferenceSquare().fuseStretchAcrossStart(List.of(
+                    new RingStretch(0, 4),
+                    new RingStretch(8, 12),
+                    new RingStretch(16, 24))),
+                List.of(
+                    new double[] {8, 12},
+                    new double[] {16, 28}));
+        }
+
+        @Test
+        void stretch_falling_short_of_the_start_is_not_fused_with_the_one_opening_it() {
+            // The two nearly meet, and nearly is not meeting: the path's start is covered, so
+            // there is one stretch either side of it rather than one stretch through it. Fused
+            // regardless, a layout would be laid straight over the shape at the origin.
+            assertThatArcsAre(
+                traceReferenceSquare().fuseStretchAcrossStart(List.of(
+                    new RingStretch(0, 8),
+                    new RingStretch(12, 23))),
+                List.of(
+                    new double[] {0, 8},
+                    new double[] {12, 23}));
+        }
+
+        @Test
+        void stretch_opening_past_the_start_is_not_fused_with_the_one_closing_the_path() {
+            // The same rule read from the other end, and worth posing separately: the pair is
+            // fused for reaching the start, so a stretch reaching only the perimeter is no more
+            // fusable than one reaching only the origin.
+            assertThatArcsAre(
+                traceReferenceSquare().fuseStretchAcrossStart(List.of(
+                    new RingStretch(1, 8),
+                    new RingStretch(12, 24))),
+                List.of(
+                    new double[] {1, 8},
+                    new double[] {12, 24}));
+        }
+
+        @Test
+        void a_single_stretch_is_never_fused_with_itself() {
+            // The whole path uncovered is one stretch reaching both ends, and it is already the
+            // run it describes. Fused with itself it would come back twice as long as the path
+            // it lies on.
+            assertThatArcsAre(
+                traceReferenceSquare().fuseStretchAcrossStart(List.of(new RingStretch(0, 24))),
+                List.of(new double[] {0, 24}));
+        }
+    }
+
+    @Nested
+    class PlaceSpanNearestStart {
+
+        @Test
+        void span_starts_at_the_path_start_where_the_stretch_has_room_after_it() {
+            // The ordinary case: the path's start lies on the stretch with room clockwise of it,
+            // so the layout opens exactly on the landmark. The stretch is one fused across the
+            // start, so the landmark within it is the perimeter rather than the zero it would
+            // otherwise be measured back to.
+            assertThat(traceReferenceSquare()
+                    .placeSpanNearestStart(new RingStretch(20, 30), SPAN_LENGTH))
+                .isEqualTo(24.0);
+        }
+
+        @Test
+        void span_backs_up_where_the_stretch_closes_too_soon_after_the_path_start() {
+            // The path's start is on the stretch, but the stretch closes one after it and the
+            // span reaches four. The start backs up to the latest the stretch allows, so the
+            // landmark still falls on the span and only which part of it lands there moves.
+            assertThat(traceReferenceSquare()
+                    .placeSpanNearestStart(new RingStretch(20, 25), SPAN_LENGTH))
+                .isEqualTo(21.0);
+        }
+
+        @Test
+        void span_opens_where_the_stretch_does_where_a_shape_covers_the_path_start() {
+            // A shape over the start and one unit of path clockwise of it. The span begins as
+            // near the landmark as the shape allows rather than being thrown to the stretch's
+            // far end - which is what makes this a clamp rather than a preference with a
+            // fallback.
+            assertThat(traceReferenceSquare()
+                    .placeSpanNearestStart(new RingStretch(1, 18), SPAN_LENGTH))
+                .isEqualTo(1.0);
+        }
+
+        @Test
+        void span_ends_near_the_path_start_where_the_stretch_closes_just_behind_it() {
+            // The stretch closes one short of the landmark and opens six the other side of it,
+            // so the span's start is nearer at the closing end: it sits at 19 and runs to 23.
+            assertThat(traceReferenceSquare()
+                    .placeSpanNearestStart(new RingStretch(6, 23), SPAN_LENGTH))
+                .isEqualTo(19.0);
+        }
+
+        @Test
+        void span_takes_the_one_position_an_exact_fit_stretch_allows() {
+            // A stretch the span exactly fills has one position, and the clamp reaches it
+            // however far off the landmark lies.
+            assertThat(traceReferenceSquare()
+                    .placeSpanNearestStart(new RingStretch(8, 12), SPAN_LENGTH))
+                .isEqualTo(8.0);
+        }
+
+        @Test
+        void span_takes_the_stretchs_own_start_where_both_its_ends_are_equally_far() {
+            // A stretch lying opposite the landmark: six of path from it round to where the
+            // stretch opens, and six from the latest start the stretch allows back to it. The
+            // tie takes the stretch's start, so such a stretch places the same way every call.
+            assertThat(traceReferenceSquare()
+                    .placeSpanNearestStart(new RingStretch(6, 22), SPAN_LENGTH))
+                .isEqualTo(6.0);
+        }
+
+        @Test
+        void span_longer_than_its_stretch_opens_where_the_stretch_does() {
+            // Sizing a layout to its stretch is the caller's, so a span that outruns the one it
+            // was handed is a length question asked of a placement. It opens where the stretch
+            // does and overruns the far end, rather than being refused an answer it cannot give.
+            assertThat(traceReferenceSquare()
+                    .placeSpanNearestStart(new RingStretch(8, 10), SPAN_LENGTH))
+                .isEqualTo(8.0);
+        }
+
+        @Test
+        void an_empty_path_has_no_lap_to_place_within() {
+            // A path that was never traced has no perimeter, and nearness the short way round is
+            // measured within one. Answering with a position on a path that does not exist would
+            // be worse than answering none.
+            assertThatThrownBy(() -> RingPath.nothingLeftToTrace()
+                    .placeSpanNearestStart(new RingStretch(0, 1), SPAN_LENGTH))
+                .isInstanceOf(IllegalStateException.class);
+        }
+    }
+
     // The path around the reference square inset by 2, anchored at its centre: the square
     // from (2,2) to (8,8), traced clockwise from (5,8) - a 24-long path whose corners fall at
     // 3, 9, 15 and 21.
@@ -443,17 +613,20 @@ final class RingPathTest {
             new double[] {fromX, toY});
     }
 
-    // Asserts the arcs match the expected {start, end} intervals in order, at the shared
-    // slack. The points helper cannot stand in: these are parameters along a path rather
-    // than points, and reading them as coordinates would make a failure say the wrong thing.
-    private static void assertThatArcsAre(List<double[]> arcs, List<double[]> expected) {
+    // Asserts the stretches match the expected {start, end} intervals in order, at the
+    // shared slack. The points helper cannot stand in: these are parameters along a path
+    // rather than points, and reading them as coordinates would make a failure say the
+    // wrong thing.
+    private static void assertThatArcsAre(List<RingStretch> arcs, List<double[]> expected) {
 
         assertThat(arcs)
             .hasSameSizeAs(expected);
 
         for (var i = 0; i < expected.size(); i++) {
 
-            assertThat(arcs.get(i))
+            assertThat(new double[] {
+                    arcs.get(i).startArcLength(),
+                    arcs.get(i).endArcLength()})
                 .containsExactly(expected.get(i), buildAssertionSlack());
         }
     }

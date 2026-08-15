@@ -34,10 +34,15 @@ import java.util.List;
  * always one that can be walked.
  *
  * <p>What is laid out along a path rarely has the whole of it to itself, so the path also
- * answers which stretches of it something else has claimed ({@link #findClearArcs}). That
- * answer is in the same arc lengths a layout is measured in, which is why it belongs here
- * rather than beside the shapes doing the claiming: a caller subtracts room from its layout
- * without ever leaving the one coordinate it laid the layout out in.
+ * answers which stretches of it something else has claimed ({@link #findClearArcs}), reads
+ * the pair of those meeting at its start as the one stretch they are
+ * ({@link #fuseStretchAcrossStart}), and settles where along a stretch a layout of a given
+ * length sits ({@link #placeSpanNearestStart}). All three are in the same arc lengths a
+ * layout is measured in, which is why they belong here rather than beside the shapes doing
+ * the claiming or the layout being laid: a caller subtracts room and places what is left
+ * without ever leaving the one coordinate it laid the layout out in - and the two facts a
+ * placement turns on, that the start is at zero and that distances wrap at the perimeter,
+ * are this path's own.
  */
 public final class RingPath {
 
@@ -206,11 +211,11 @@ public final class RingPath {
      * @param keepOutRings the shapes to keep clear of, each a closed ring of {x, y} vertices
      *                     in either winding; concave rings are handled, and an empty list
      *                     leaves the whole path clear
-     * @return the uncovered intervals, ascending and disjoint; the whole path as one
-     *         interval when nothing covers it, and empty when the path is empty or the
+     * @return the uncovered stretches, ascending and disjoint; the whole path as one
+     *         stretch when nothing covers it, and empty when the path is empty or the
      *         shapes cover all of it
      */
-    public List<double[]> findClearArcs(List<List<double[]>> keepOutRings) {
+    public List<RingStretch> findClearArcs(List<List<double[]>> keepOutRings) {
 
         if (isEmpty()) {
             return new ArrayList<>();
@@ -271,6 +276,132 @@ public final class RingPath {
         return walked;
     }
 
+    /**
+     * The same stretches with the one crossing the path's start read as the single stretch it
+     * is: the last and the first fused into one running on past the perimeter.
+     *
+     * <p>{@link #findClearArcs} deliberately does not wrap, which is what makes "a layout
+     * beginning at the path's start begins at the first stretch" true and is worth keeping.
+     * But a shape lying anywhere but over the start leaves the path's longest run stated as
+     * two of those stretches, so a caller choosing between them - the longest, the first that
+     * fits - judges that run on whichever half happened to be bigger. Fusing is that caller's
+     * to ask for, so only the one needing a wrapping stretch pays for one.
+     *
+     * <p>Two stretches meet across the start only by reaching it: one opening the path and one
+     * closing it. Anything else leaves the start itself covered, where there is nothing to
+     * fuse, and a single stretch is either the whole path or one with covered path at both
+     * ends - neither crosses the start, and fusing one with itself would double it.
+     *
+     * @param clearArcs the stretches to read, ascending and disjoint as
+     *                  {@link #findClearArcs} hands them back
+     * @return the same stretches with any pair meeting at the start fused into one closing
+     *         past the perimeter, that one last; the list unchanged where none do
+     */
+    public List<RingStretch> fuseStretchAcrossStart(List<RingStretch> clearArcs) {
+
+        if (clearArcs.size() < 2) {
+            return clearArcs;
+        }
+        var first = clearArcs.get(0);
+        var last = clearArcs.get(clearArcs.size() - 1);
+
+        if (first.startArcLength() > Limits.MIN_EDGE_LENGTH
+                || last.endArcLength() < getPerimeter() - Limits.MIN_EDGE_LENGTH) {
+
+            return clearArcs;
+        }
+        var fused = new ArrayList<>(clearArcs.subList(1, clearArcs.size() - 1));
+
+        fused.add(new RingStretch(
+            last.startArcLength(),
+            first.endArcLength() + getPerimeter()));
+
+        return fused;
+    }
+
+    /**
+     * Where along {@code stretch} a layout of {@code spanLength} begins if it is to sit as near
+     * the path's start as the stretch allows.
+     *
+     * <p>A layout shorter than the stretch it was given has room to slide, and where it sits is
+     * a decision rather than an accident of where that stretch happened to open. The path's own
+     * start is the one position every path shares - it is where a layout begins when nothing is
+     * in its way - so a layout that could sit there and instead sits wherever the room opened
+     * costs a reader the landmark to read it from.
+     *
+     * <p>Near is measured on the layout's <em>start</em>, not on its centre or its nearest end,
+     * because a layout along a path is ordered from its start: pulled toward the landmark by its
+     * middle it would straddle it and put the middle of itself where its opening belongs.
+     *
+     * <p>One clamp states the whole rule - the layout starts at the path's start, pulled into
+     * {@code [stretchStart, stretchEnd - spanLength]} by the shortest way round. That range is
+     * empty only if the span outruns the stretch, which a caller sizing its layout to fit has
+     * already ruled out; asked anyway, the span is placed at the stretch's own start rather than
+     * refused, since a placement cannot answer a length question. Where the path's start lies
+     * off the stretch entirely, the two candidates are the stretch's start and the latest start
+     * it allows, and the nearer wins with a tie taking the stretch's start - so a stretch lying
+     * exactly opposite the path's start places the same way every call rather than on whichever
+     * way the last of the rounding fell.
+     *
+     * @param stretch    the stretch the layout may occupy, from {@link #findClearArcs} or fused
+     *                   across the start; one closing past the perimeter is expected rather
+     *                   than an error
+     * @param spanLength how far along the path the layout reaches
+     * @return the arc length the layout begins at, in this path's own arc lengths and past the
+     *         perimeter where the stretch it was placed on runs past it
+     * @throws IllegalStateException when the path is empty and has no lap to place within
+     */
+    public double placeSpanNearestStart(RingStretch stretch, double spanLength) {
+
+        requireSomethingToWalk();
+
+        var latestStart = Math.max(
+            stretch.startArcLength(),
+            stretch.endArcLength() - spanLength);
+
+        var pathStart = alignStartWithStretch(stretch.startArcLength());
+
+        if (pathStart <= latestStart) {
+            return pathStart;
+        }
+        if (pathStart <= stretch.endArcLength()) {
+            return latestStart;
+        }
+        return selectNearerEndOfStretch(stretch, latestStart, pathStart);
+    }
+
+    // The path's start stated on the stretch's own lap: the first one at or after the stretch
+    // opens.
+    //
+    // The start is at zero, but a stretch fused across it runs past the perimeter, so the start
+    // such a stretch holds is the one a lap on. Measured back to zero instead, the start would
+    // sit behind every fused stretch rather than within it - and a stretch crossing the origin
+    // is exactly the one whose layout wants placing against it.
+    private double alignStartWithStretch(double startArcLength) {
+        return Math.ceil(startArcLength / getPerimeter()) * getPerimeter();
+    }
+
+    // Which end of the stretch a layout goes to when the path's start lies off the stretch
+    // entirely. The two candidate starts are the stretch's own start and the latest start it
+    // allows, and the layout takes whichever of them the path's start is nearer to going round.
+    //
+    // Measured to those two starts rather than to the stretch's two ends, because nearness is
+    // nearness of the layout's start: a stretch closing just behind the path's start can still
+    // hold a long layout reaching far back round the ring, and aligning to that end would throw
+    // the layout's opening to the far side of the path for the sake of a sliver of cover.
+    private double selectNearerEndOfStretch(
+            RingStretch stretch,
+            double latestStart,
+            double pathStart) {
+
+        var forwardToStretchStart = stretch.startArcLength() + getPerimeter() - pathStart;
+        var backwardToLatestStart = pathStart - latestStart;
+
+        return forwardToStretchStart <= backwardToLatestStart
+            ? stretch.startArcLength()
+            : latestStart;
+    }
+
     // Where the keep-out shapes lie over the path, as intervals in its own arc lengths - one
     // per stretch of one edge one shape covers, in no order and free to overlap each other.
     //
@@ -301,9 +432,9 @@ public final class RingPath {
 
     // The stretches between the covered ones: from the start of the path to the first, between
     // each consecutive pair, and from the last to the perimeter.
-    private List<double[]> invertToClearArcs(List<double[]> coveredArcs) {
+    private List<RingStretch> invertToClearArcs(List<double[]> coveredArcs) {
 
-        var clear = new ArrayList<double[]>(coveredArcs.size() + 1);
+        var clear = new ArrayList<RingStretch>(coveredArcs.size() + 1);
         var cursor = 0.0;
 
         for (var arc : coveredArcs) {
@@ -336,10 +467,10 @@ public final class RingPath {
 
     // A clear stretch, unless it is too short to lay anything along - which is what a shape
     // ending exactly where the next begins, or covering the path from its very start, leaves.
-    private static void appendClearArc(List<double[]> clear, double start, double end) {
+    private static void appendClearArc(List<RingStretch> clear, double start, double end) {
 
         if (end - start > Limits.MIN_EDGE_LENGTH) {
-            clear.add(new double[] {start, end});
+            clear.add(new RingStretch(start, end));
         }
     }
 

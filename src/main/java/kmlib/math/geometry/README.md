@@ -36,6 +36,7 @@ they are handed.
 | `LabelledPolygon` | a ring whose every edge carries an int naming what lies across it |
 | `RingRegion` | one filled region: an outer ring plus the holes cut from it |
 | `RingPath` | a ring walked as a path: one direction, one start, positions as arc length |
+| `RingStretch` | a stretch of a path, as the arc lengths it opens and closes at |
 | `PrincipalAxis` | the fitted major/minor axes of a point cloud |
 | `RegionChord` | a chord across a region, with the span it clears |
 
@@ -100,6 +101,26 @@ corner it crosses. The intervals never wrap - a shape over the start leaves the 
 after it stated separately, which is what "the layout begins at the start" means.
 `Segment.computeBandCorners` builds one such shape from a centreline and a girth, so what is
 drawn as a band and what keeps clear of it are one rectangle rather than two derivations of it.
+
+Each stretch is a `RingStretch`, a named start and end rather than a bare pair of distances: the
+two are not interchangeable, and a caller reading them the wrong way round lays every layout
+backwards and compiles cleanly. An end past the perimeter is expected - that is how a stretch
+crossing the start is stated, and `collectPointsBetween` walks one as it stands.
+
+Two answers sit on top of the carve, both opt-in so a caller pays only for what it asks:
+
+- `fuseStretchAcrossStart` reads the pair of stretches meeting at the path's start as the one
+  stretch they are. The carve deliberately does not wrap, so a caller choosing between stretches
+  - the longest, the first that fits - would otherwise judge the run through the origin on
+  whichever half happened to be bigger.
+- `placeSpanNearestStart` settles where along a stretch a layout of a given length sits: **as
+  near the path's start as the stretch allows**. That start is the one position every path
+  shares, so a layout sitting wherever the room happened to open costs a reader the landmark to
+  read it from. Nearness is measured on the layout's *start*, since a layout is ordered from
+  there - pulled in by its middle it would straddle the landmark and put its middle where its
+  opening belongs. One clamp says it all: start at the path's start, pulled into
+  `[stretchStart, stretchEnd - spanLength]` the shortest way round, ties taking the stretch's
+  start so an opposite-lying stretch places the same way every call.
 
 ## Giving a polyline girth
 
