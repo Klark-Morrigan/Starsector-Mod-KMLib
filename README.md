@@ -291,6 +291,11 @@ logic stays unit-testable with bats-core; the matching tests live in
 from the KMLib root (requires `bats-core` and `jq`).
 [ci-bash.yml](.github/workflows/ci-bash.yml) runs the same bats suite on
 every pull request, through Common-Automation's reusable bash workflow.
+[action_outputs.bats](.github/tests/action_outputs.bats) covers the seam
+between the two halves of an action rather than either one's logic: an
+action.yml and the script behind it declare and emit their outputs in
+separate files, and a key present in only one of them costs a consumer a
+blank string rather than an error.
 The Gradle build is gated separately in
 [ci-gradle.yml](.github/workflows/ci-gradle.yml), because it needs
 Starsector binaries and so runs on the self-hosted `kmlib-runner`.
