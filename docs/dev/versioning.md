@@ -113,6 +113,20 @@ Note the cost the equality check imposes: because the runtime pin matches
 exactly, any KMLib bump leaves every consumer reporting a mismatch until its
 pin is updated too.
 
+**The runtime pin must name a KMLib that has already been released.** A player
+installs KMLib from its release page, so a pin naming a version that was never
+published leaves the game refusing to load a mod nobody can obtain the
+dependency for. The release pipeline checks this before it builds anything, in
+the same cheap gate that enforces the rules above, via
+[check-dependency-release](../../.github/actions/check-dependency-release/action.yml).
+
+This makes the two releases sequential where they used to be independent:
+bumping a consumer's `kmlib` pin fails that consumer's release until the
+matching KMLib release exists. Release KMLib first, then the consumers that
+pin the new version. The check reports an absent release separately from a
+lookup it could not complete - the first is a verdict on the pin, the second
+explicitly is not, and only the first means the pin needs changing.
+
 **Do not pin to `@master`.** A pin to `master` lets an unrelated KMLib commit
 break a consumer release retroactively. Always pin a tag.
 

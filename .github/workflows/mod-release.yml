@@ -75,7 +75,7 @@ jobs:
       # Which KMLib this mod pins and where that release lives. Both are
       # empty for KMLib's own release, which pins no KMLib; create-release
       # reads that emptiness as "add no dependency line to the body".
-      kmlib-version: ${{ steps.read.outputs.kmlib-dependency-version }}
+      kmlib-dependency-version: ${{ steps.read.outputs.kmlib-dependency-version }}
       kmlib-release-url: ${{ steps.kmlib-release.outputs.release-url }}
     steps:
       # Default checkout pulls the CONSUMER repo (the one that triggered the
