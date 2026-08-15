@@ -21,7 +21,7 @@
 
 # Every action declaring an outputs: block, stated once. The second test below
 # is what keeps this list honest as actions are added.
-ACTIONS_WITH_OUTPUTS=(check-version read-mod-info)
+ACTIONS_WITH_OUTPUTS=(check-dependency-release check-version read-mod-info)
 
 ACTIONS_DIR_NAME="actions"
 

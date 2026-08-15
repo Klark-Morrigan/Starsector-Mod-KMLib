@@ -326,7 +326,17 @@ Starsector binaries and so runs on the self-hosted `kmlib-runner`.
   The shape is enforced here because every downstream consumer of a
   malformed version degrades in silence rather than erroring. Policy
   itself lives in [docs/dev/versioning.md](docs/dev/versioning.md).
-- [fill-version-file-template](.github/actions/fill-version-file-template/action.yml)
+- [check-dependency-release](.github/actions/check-dependency-release/action.yml)
+  takes a `repo` and a `version` and fails unless that version exists as a
+  published release of that repository, emitting the release's
+  `release-url`. The release pipeline runs it against a consumer's `kmlib`
+  pin before building anything, so a pin bumped ahead of the KMLib it names
+  stops the release instead of publishing a mod the game refuses to load.
+  One API call answers both questions, and the URL is read from the
+  response rather than assembled from the tag, so the link the release body
+  carries cannot name a release nothing confirmed. An absent release and a
+  lookup that could not be completed both fail, with different messages:
+  the first is a verdict on the pin, the second explicitly is not.
   takes an `output-path` and a `zip-name` and writes the mod's
   VersionChecker `.version` file there. The caller commits a complete
   `<mod-id>.version.template` whose release-varying values are written as
