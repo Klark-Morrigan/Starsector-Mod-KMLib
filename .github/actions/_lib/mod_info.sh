@@ -13,9 +13,11 @@
 # underscore marks it as not-an-action, matching the _ci-gradle.yml
 # convention.
 #
-# Sourced, not executed: defines mod_info_require_file and
-# mod_info_require_fields. Both report through the sourcing script's own
-# SCRIPT_NAME, so a message still names the step a reader saw fail.
+# Sourced, not executed: defines mod_info_require_file,
+# mod_info_require_fields, mod_info_derive_mod_folder_name and
+# mod_info_derive_zip_name. The two checks report through the sourcing
+# script's own SCRIPT_NAME, so a message still names the step a reader saw
+# fail.
 
 # Read by the scripts that source this file, which shellcheck cannot see when
 # it checks this one on its own.
@@ -35,6 +37,9 @@ MOD_INFO_FILE="mod_info.json"
 # suffixed version like 1.2.3a is silently mangled by both rather than
 # rejected by either.
 SEMVER_REGEX='^[0-9]+\.[0-9]+\.[0-9]+$'
+
+JAR_EXTENSION=".jar"
+ZIP_EXTENSION=".zip"
 
 # Fails the run unless mod_info.json is in the working directory, which is
 # the caller's checkout root when a composite action invokes these scripts.
@@ -62,4 +67,34 @@ mod_info_require_fields() {
       exit 1
     fi
   done
+}
+
+# Emits the shipped folder name for a jars[0] value: its basename without
+# the .jar extension.
+#
+# The shipped folder is named after the mod's jar, not after its id.
+# Starsector itself does not care what a mod folder is called, but a build
+# that compiles against an installed mod locates it at
+# <mods>/<folder>/jars/<Jar>.jar, and such installs are laid out with the
+# jar's own name (mods/KMLib, mods/LazyLib). Deriving the folder from the
+# same string keeps a zip install and a hand-deployed one on a single
+# layout, including on case-sensitive filesystems where mods/kmlib and
+# mods/KMLib are two different directories.
+mod_info_derive_mod_folder_name() {
+  local jarSource="${1}"
+  basename "${jarSource}" "${JAR_EXTENSION}"
+}
+
+# Emits the release zip name for a jars[0] value and a version.
+#
+# Here rather than in one script because two of them need this string and
+# neither may guess it: the release pipeline names the asset it uploads,
+# and the version file's directDownloadURL points at that asset. A rule
+# stated twice would give a working download link and a 404 the same
+# spelling, and only a player following the link would find out.
+mod_info_derive_zip_name() {
+  local jarSource="${1}" version="${2}"
+  local modFolderName
+  modFolderName=$(mod_info_derive_mod_folder_name "${jarSource}")
+  printf '%s\n' "${modFolderName}-${version}${ZIP_EXTENSION}"
 }

@@ -28,16 +28,27 @@ teardown() {
     rm -rf "$WORK_DIR"
 }
 
-# Writes a mod_info.json fixture into the temp working dir.
+# Writes a mod_info.json fixture into the temp working dir. The jar path is
+# what the zip name is derived from when no zip name is passed, so it is
+# stated separately by the cases that exercise that derivation.
 write_mod_info() {
     cat > "$WORK_DIR/mod_info.json" <<EOF
 {
   "id": "$1",
   "name": "$2",
   "version": "$3",
-  "gameVersion": "$4"
+  "gameVersion": "$4",
+  "jars": ["${5:-jars/KMU.jar}"]
 }
 EOF
+}
+
+# Makes the temp working dir a git checkout with the given origin remote,
+# which is where the script reads the publishing repository from when
+# GITHUB_REPOSITORY is unset - a local build rather than an Actions run.
+init_git_origin() {
+    git -C "$WORK_DIR" init --quiet
+    git -C "$WORK_DIR" remote add origin "$1"
 }
 
 # Writes a template in the shape a mod commits: every release-varying
@@ -251,20 +262,86 @@ EOF
     [[ "$output" == *"output path argument required"* ]]
 }
 
-@test "fails when no zip name is given" {
+@test "derives the zip name from mod_info.json when none is given" {
+    # The local build has no read-mod-info output to pass, so the name comes
+    # from the jar the mod ships, by the rule the release reads it by.
+    write_mod_info "kmu" "Klark Morrigan's Universe" "1.2.3" "0.98a-RC8" "jars/DerivedName.jar"
+    cd "$WORK_DIR"
+    run bash "$SCRIPT" "$OUTPUT_FILE"
+    [ "$status" -eq 0 ]
+    expected="https://github.com/Klark-Morrigan/Starsector-Mod-KMU/releases/download/1.2.3/DerivedName-1.2.3.zip"
+    [ "$(read_generated '.directDownloadURL')" = "$expected" ]
+}
+
+@test "prefers the zip name it is given over the one it would derive" {
+    write_mod_info "kmu" "Klark Morrigan's Universe" "1.2.3" "0.98a-RC8" "jars/DerivedName.jar"
+    cd "$WORK_DIR"
+    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
+    [ "$status" -eq 0 ]
+    # The release states the name of the asset it is about to upload, and that
+    # name wins: the URL has to point at what is published, not at what the
+    # jar implies.
+    [[ "$(read_generated '.directDownloadURL')" == *"/KMU-1.2.3.zip" ]]
+}
+
+@test "fails when no zip name is given and mod_info.json lists no jar" {
+    cat > "$WORK_DIR/mod_info.json" <<EOF
+{ "id": "kmu", "name": "Klark Morrigan's Universe", "version": "1.2.3", "gameVersion": "0.98a-RC8" }
+EOF
     cd "$WORK_DIR"
     run bash "$SCRIPT" "$OUTPUT_FILE"
     [ "$status" -ne 0 ]
-    [[ "$output" == *"zip name argument required"* ]]
+    [[ "$output" == *"missing required field 'jars[0]'"* ]]
 }
 
-@test "fails when GITHUB_REPOSITORY is unset" {
+@test "reads the publishing repository from the origin remote when GITHUB_REPOSITORY is unset" {
+    init_git_origin "https://github.com/Klark-Morrigan/Starsector-Mod-KMU.git"
     cd "$WORK_DIR"
-    # The download URL has no other source, and a run outside Actions is
-    # exactly where it would otherwise be built against an empty owner/repo.
+    # A local build has no Actions runtime to export the variable, and the
+    # checkout's own remote is the only answer that cannot name a repository
+    # this clone does not push to.
+    run env -u GITHUB_REPOSITORY bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
+    [ "$status" -eq 0 ]
+    expected="https://github.com/Klark-Morrigan/Starsector-Mod-KMU/releases/download/1.2.3/KMU-1.2.3.zip"
+    [ "$(read_generated '.directDownloadURL')" = "$expected" ]
+}
+
+@test "reads an ssh origin remote the same way as an https one" {
+    init_git_origin "git@github.com:Klark-Morrigan/Starsector-Mod-KMU.git"
+    cd "$WORK_DIR"
+    run env -u GITHUB_REPOSITORY bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
+    [ "$status" -eq 0 ]
+    expected="https://github.com/Klark-Morrigan/Starsector-Mod-KMU/releases/download/1.2.3/KMU-1.2.3.zip"
+    [ "$(read_generated '.directDownloadURL')" = "$expected" ]
+}
+
+@test "prefers GITHUB_REPOSITORY over the origin remote" {
+    init_git_origin "https://github.com/someone-else/a-fork.git"
+    cd "$WORK_DIR"
+    # A release runs against a checkout whose remote is whatever the runner
+    # cloned; the variable is what states which repository is publishing.
+    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
+    [ "$status" -eq 0 ]
+    [[ "$(read_generated '.directDownloadURL')" == *"/Klark-Morrigan/Starsector-Mod-KMU/"* ]]
+}
+
+@test "fails when GITHUB_REPOSITORY is unset and there is no origin remote" {
+    cd "$WORK_DIR"
+    # The download URL has no third source, and a run outside both Actions and
+    # a checkout is exactly where it would otherwise be built against an empty
+    # owner/repo.
     run env -u GITHUB_REPOSITORY bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
     [ "$status" -ne 0 ]
     [[ "$output" == *"<owner>/<repo>"* ]]
+    [ ! -f "$WORK_DIR/$OUTPUT_FILE" ]
+}
+
+@test "fails when the origin remote names no owner" {
+    init_git_origin "a-local-clone"
+    cd "$WORK_DIR"
+    run env -u GITHUB_REPOSITORY bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"cannot read <owner>/<repo> out of the origin remote"* ]]
 }
 
 @test "drops leading zeros from a version component" {

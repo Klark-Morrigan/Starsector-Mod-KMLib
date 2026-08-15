@@ -42,47 +42,23 @@ if (file(versionFileTemplateName).isFile()) {
     // backslash as an escape. The input declarations below take the File as it is.
     def fillVersionFileScriptPath = fillVersionFileScript.absolutePath.replace('\\', '/')
 
-    // A release publishes <jar-basename>-<version>.zip, naming the zip after the
-    // mod's jar rather than after the Gradle project. Derived from mod_info.json's
-    // jars[0], the same value read_mod_info.sh derives it from, so both sides read
-    // one string: project.name matches that basename only by convention, and would
-    // diverge in the one place the mistake is silent - the case of a name inside a
-    // download URL, which GitHub resolves case-sensitively.
-    def releaseJarSource = modInfo.jars ? modInfo.jars[0] : null
-
-    if (!releaseJarSource) {
-        throw new GradleException("${modInfo.id} commits ${versionFileTemplateName}, so it "
-            + 'publishes update information, but mod_info.json lists no jar to name the '
-            + 'release zip its download URL points at.')
-    }
-
-    def releaseJarBaseName = new File(releaseJarSource.toString()).name.replaceFirst(/\.jar$/, '')
-    def releaseZipName = "${releaseJarBaseName}-${project.version}.zip"
-
-    // <owner>/<repo>, the shape the Actions runtime exports as GITHUB_REPOSITORY
-    // and the script requires. Read from the checkout's own origin remote rather
-    // than stated in a build file, so a local build cannot name a repository this
-    // clone does not push to.
+    // Two things the generated file's download URL is built from - the release
+    // zip's name and the publishing <owner>/<repo> - are derived by the script
+    // rather than restated here: it derives the zip name from mod_info.json's
+    // jars[0] when given none, and reads the repository from the checkout's own
+    // origin remote when GITHUB_REPOSITORY is absent, which outside Actions it
+    // always is. Both rules therefore have one implementation, under bats, rather
+    // than a shell copy for releases and a Groovy copy for local builds that agree
+    // until one of them changes.
+    //
+    // The remote is still read here, unparsed, to be declared as a task input
+    // below: the URL is baked into the generated file, so a re-pointed clone has
+    // to regenerate rather than keep one aimed at the repository it used to push
+    // to. Reading it is not the same as knowing how to read a repository out of it.
     def originRemoteUrl = providers.exec {
         commandLine 'git', 'remote', 'get-url', 'origin'
         workingDir projectDir
     }.standardOutput.asText
-
-    // Split on both separators so either remote shape yields the same answer:
-    // https://host/owner/repo(.git) and git@host:owner/repo(.git) differ only in
-    // what separates the host from the owner, and the repository is the last two
-    // segments either way.
-    def releaseRepository = originRemoteUrl.map { remoteUrl ->
-
-        def urlWithoutGitSuffix = remoteUrl.trim().replaceFirst(/\.git$/, '')
-        def segments = urlWithoutGitSuffix.split('[/:]')
-
-        if (segments.length < 2) {
-            throw new GradleException("Cannot read <owner>/<repo> out of the origin remote "
-                + "'${urlWithoutGitSuffix}', so ${versionFileName} cannot state a download URL.")
-        }
-        return "${segments[-2]}/${segments[-1]}".toString()
-    }
 
     // The script is bash, and on Windows the shell that both exists on a
     // development machine and sees the same filesystem as the checkout is Git's.
@@ -155,10 +131,7 @@ if (file(versionFileTemplateName).isFile()) {
         inputs.file fillVersionFileScript
         inputs.file modInfoLibraryScript
 
-        // As much an input as the files are: the remote is baked into the generated
-        // download URL, so a re-pointed clone has to regenerate rather than keep a
-        // URL aimed at the repository it used to push to.
-        inputs.property 'releaseRepository', releaseRepository
+        inputs.property 'originRemoteUrl', originRemoteUrl
         outputs.file "${projectDir}/${versionFileName}"
 
         // Set here rather than at configuration time so locating Git Bash - which
@@ -166,9 +139,7 @@ if (file(versionFileTemplateName).isFile()) {
         doFirst {
             commandLine resolveBashExecutablePath(),
                 fillVersionFileScriptPath,
-                versionFileName,
-                releaseZipName
-            environment 'GITHUB_REPOSITORY', releaseRepository.get()
+                versionFileName
         }
     }
 

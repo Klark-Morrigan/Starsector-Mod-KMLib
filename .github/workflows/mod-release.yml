@@ -247,29 +247,30 @@ jobs:
           # path reads as one in the log rather than carrying an empty segment.
           echo "dist-path=${MOD_ID}/${DIST%/}/${VERSION_FILE}" >> "$GITHUB_OUTPUT"
 
-      # Two copies of one generated file, written by two runs of the same
-      # action rather than one run and a copy, so neither path is stated
-      # anywhere but here. The dist copy is what a player finds beside
-      # mod_info.json after unzipping; VersionChecker reads it to learn what
-      # version is installed. It has to exist before the zip step below.
-      - name: Write the VersionChecker file into the dist payload
-        uses: Klark-Morrigan/Starsector-Mod-KMLib/.github/actions/fill-version-file-template@master
-        with:
-          mod-root: ${{ needs.config.outputs.mod-id }}
-          output-path: ${{ steps.version-file.outputs.dist-path }}
-          zip-name: ${{ needs.config.outputs.zip-name }}
-
-      # The release copy is the same file attached to the release as its own
-      # asset, which is what makes the template's masterVersionFile URL
-      # (releases/latest/download/<mod-id>.version) resolve. A copy inside the
-      # zip cannot serve that: an update checker polls the URL without
-      # downloading the mod.
-      - name: Write the VersionChecker file for the release asset
+      # Written at the workspace root, which is where the release asset is
+      # uploaded from. That copy is what makes the template's masterVersionFile
+      # URL (releases/latest/download/<mod-id>.version) resolve: an update
+      # checker polls it without downloading the mod, so a copy sealed inside
+      # the zip cannot serve it.
+      - name: Write the VersionChecker file
         uses: Klark-Morrigan/Starsector-Mod-KMLib/.github/actions/fill-version-file-template@master
         with:
           mod-root: ${{ needs.config.outputs.mod-id }}
           output-path: ${{ needs.config.outputs.version-file-name }}
           zip-name: ${{ needs.config.outputs.zip-name }}
+
+      # The player's copy, found beside mod_info.json after unzipping, which
+      # VersionChecker reads to learn what version is installed. Copied rather
+      # than generated a second time because the two are the same file by
+      # definition - generating twice states that only as long as both calls
+      # keep being given the same inputs. It has to land before the zip step.
+      - name: Copy the VersionChecker file into the dist payload
+        env:
+          VERSION_FILE: ${{ needs.config.outputs.version-file-name }}
+          DIST_PATH: ${{ steps.version-file.outputs.dist-path }}
+        run: |
+          set -euo pipefail
+          cp "${VERSION_FILE}" "${DIST_PATH}"
 
       - name: Create release zip
         working-directory: ${{ needs.config.outputs.mod-id }}

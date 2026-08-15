@@ -30,8 +30,6 @@ source "${LIB_DIR}/mod_info.sh"
 
 RUNNER_SUFFIX="-runner"
 DIST_ROOT="dist"
-ZIP_EXTENSION=".zip"
-JAR_EXTENSION=".jar"
 VERSION_FILE_EXTENSION=".version"
 
 # The repos hosting the shared Gradle scripts a mod's build applies. Both are
@@ -64,16 +62,12 @@ RUNNER_LABEL="${MOD_ID}${RUNNER_SUFFIX}"
 # once here rather than reassembled at each of them.
 VERSION_FILE_NAME="${MOD_ID}${VERSION_FILE_EXTENSION}"
 
-# The shipped folder is named after the mod's jar, not after its id. Starsector
-# itself does not care what a mod folder is called, but a build that compiles
-# against an installed mod locates it at <mods>/<folder>/jars/<Jar>.jar, and
-# such installs are laid out with the jar's own name (mods/KMLib, mods/LazyLib).
-# Deriving the folder from the same string keeps a zip install and a hand-
-# deployed one on a single layout, including on case-sensitive filesystems
-# where mods/kmlib and mods/KMLib are two different directories.
-MOD_FOLDER_NAME=$(basename "${JAR_SOURCE}" "${JAR_EXTENSION}")
+# Both names follow from jars[0], and the rules for deriving them live in the
+# shared lib: the version file the release generates carries the zip name in
+# its download URL, so that name cannot be spelled once here and once there.
+MOD_FOLDER_NAME=$(mod_info_derive_mod_folder_name "${JAR_SOURCE}")
 DIST_DIR="${DIST_ROOT}/${MOD_FOLDER_NAME}/"
-ZIP_NAME="${MOD_FOLDER_NAME}-${VERSION}${ZIP_EXTENSION}"
+ZIP_NAME=$(mod_info_derive_zip_name "${JAR_SOURCE}" "${VERSION}")
 
 # Which neighbours a build needs follows from the mod id alone, so no caller
 # has to restate the list: a mod applies KMLib's gradle/starsector-mod.gradle,

@@ -8,10 +8,11 @@
 # at release time keeps the number stated once, in the file the game itself
 # reads, instead of in three that drift apart the moment one is forgotten.
 #
-# Usage: fill_version_file_template.sh <output-path> <zip-name> [mod-root]
+# Usage: fill_version_file_template.sh <output-path> [zip-name] [mod-root]
 #
 # Reads from the mod root, which defaults to the working directory:
-#   mod_info.json              - .id, .name, .version, .gameVersion
+#   mod_info.json              - .id, .name, .version, .gameVersion, and
+#                                .jars[0] when no zip name is given
 #   <mod-id>.version.template  - the committed template
 #
 # The output path is always resolved from where the caller stands, never
@@ -64,10 +65,13 @@ RELEASE_DOWNLOAD_PATH="releases/download"
 TOKEN_REGEX='\{\{[^}]*\}\}'
 
 OUTPUT_PATH="${1:?output path argument required}"
-# Taken as an argument rather than derived, so the name in the download URL
-# and the name of the zip actually uploaded come from one place: the
-# read-mod-info action that already emits it.
-ZIP_NAME="${2:?zip name argument required}"
+# Optional because only a release has a zip name to state. The pipeline
+# passes read-mod-info's output, so the name in the download URL and the
+# name of the asset actually uploaded are one string rather than two
+# derivations that agree until one changes. A caller with no such name -
+# the local build - leaves it empty and gets the same derivation, taken
+# from the shared lib both sides read it from.
+ZIP_NAME="${2:-}"
 # Directory holding mod_info.json and the template. Optional because a
 # caller already standing in the mod root - which is every caller running
 # against a plain checkout - has nothing to say. The release pipeline is the
@@ -75,18 +79,12 @@ ZIP_NAME="${2:?zip name argument required}"
 # sit beside it, and Actions permits no working-directory on a `uses:` step.
 MOD_ROOT="${3:-.}"
 
-# Set by the Actions runtime to <owner>/<repo>. Using it rather than a URL
-# restated in each mod's template means the download link points at
-# whichever repository is publishing the release, and cannot disagree with
-# it.
-REPOSITORY="${GITHUB_REPOSITORY:?must be set to <owner>/<repo>}"
-
 # Kept before the move below, so the output path resolves against the
 # directory the caller stated it from.
 CALLER_DIR="${PWD}"
 
 if [[ ! -d "${MOD_ROOT}" ]]; then
-  echo "fill_version_file_template: mod root ${MOD_ROOT} not found in ${PWD}" >&2
+  echo "${SCRIPT_NAME}: mod root ${MOD_ROOT} not found in ${PWD}" >&2
   exit 1
 fi
 cd "${MOD_ROOT}"
@@ -103,12 +101,51 @@ GAME_VERSION=$(jq -r '.gameVersion' "${MOD_INFO_FILE}")
 mod_info_require_fields "id:${MOD_ID}" "name:${MOD_NAME}" "version:${VERSION}" \
                         "gameVersion:${GAME_VERSION}"
 
+if [[ -z "${ZIP_NAME}" ]]; then
+  JAR_SOURCE=$(jq -r '.jars[0]' "${MOD_INFO_FILE}")
+  # Required only on this path: a caller that stated the zip name needs no
+  # jar to work it out from, and refusing one for a field it never reads
+  # would fail mods that publish no jar at all.
+  mod_info_require_fields "jars[0]:${JAR_SOURCE}"
+  ZIP_NAME=$(mod_info_derive_zip_name "${JAR_SOURCE}" "${VERSION}")
+fi
+
 # The template is named after the mod id, so no caller has to state a
 # path that mod_info.json already determines.
 TEMPLATE_FILE="${MOD_ID}${TEMPLATE_EXTENSION}"
 if [[ ! -f "${TEMPLATE_FILE}" ]]; then
-  echo "fill_version_file_template: template ${TEMPLATE_FILE} not found in ${PWD}" >&2
+  echo "${SCRIPT_NAME}: template ${TEMPLATE_FILE} not found in ${PWD}" >&2
   exit 1
+fi
+
+# Half of the download URL is the publishing repository. The Actions runtime
+# exports it, so a release states nothing; a local build has no such variable
+# and the checkout's own origin remote is the honest answer, because a URL
+# built from anything else would point at a repository this clone does not
+# push to. Read here, inside the mod root, so the remote consulted is the
+# mod's own rather than that of whatever checkout the caller stood in.
+REPOSITORY="${GITHUB_REPOSITORY:-}"
+if [[ -z "${REPOSITORY}" ]]; then
+
+  if ! ORIGIN_REMOTE_URL=$(git remote get-url origin 2>/dev/null); then
+    echo "${SCRIPT_NAME}: GITHUB_REPOSITORY is unset and ${PWD} has no origin" \
+         "remote to read <owner>/<repo> from" >&2
+    exit 1
+  fi
+
+  # https://host/owner/repo(.git) and git@host:owner/repo(.git) differ only in
+  # what separates the host from the owner, so both are read by taking the last
+  # two segments and treating ":" as another separator.
+  ORIGIN_REMOTE_URL="${ORIGIN_REMOTE_URL%.git}"
+  if [[ "${ORIGIN_REMOTE_URL}" != */* ]]; then
+    echo "${SCRIPT_NAME}: cannot read <owner>/<repo> out of the origin remote" \
+         "'${ORIGIN_REMOTE_URL}'" >&2
+    exit 1
+  fi
+  REPOSITORY_NAME="${ORIGIN_REMOTE_URL##*/}"
+  REPOSITORY_OWNER="${ORIGIN_REMOTE_URL%/*}"
+  REPOSITORY_OWNER="${REPOSITORY_OWNER##*[:/]}"
+  REPOSITORY="${REPOSITORY_OWNER}/${REPOSITORY_NAME}"
 fi
 
 # Where a mod serves its master copy is a policy choice rather than
@@ -119,12 +156,12 @@ fi
 # does.
 MASTER_VERSION_FILE=$(jq -r '.masterVersionFile' "${TEMPLATE_FILE}")
 if [[ -z "${MASTER_VERSION_FILE}" ]] || [[ "${MASTER_VERSION_FILE}" == "null" ]]; then
-  echo "fill_version_file_template: ${TEMPLATE_FILE} is missing required field 'masterVersionFile'" >&2
+  echo "${SCRIPT_NAME}: ${TEMPLATE_FILE} is missing required field 'masterVersionFile'" >&2
   exit 1
 fi
 
 if ! [[ "${VERSION}" =~ ${SEMVER_REGEX} ]]; then
-  echo "fill_version_file_template: version '${VERSION}' does not split into three numeric parts (MAJOR.MINOR.PATCH)" >&2
+  echo "${SCRIPT_NAME}: version '${VERSION}' does not split into three numeric parts (MAJOR.MINOR.PATCH)" >&2
   exit 1
 fi
 IFS='.' read -r MAJOR MINOR PATCH <<< "${VERSION}"
@@ -173,7 +210,7 @@ UNREPLACED=$(jq -r --arg tokenRegex "${TOKEN_REGEX}" \
   '[.. | strings | select(test($tokenRegex))] | unique | join(", ")' \
   <<< "${GENERATED}")
 if [[ -n "${UNREPLACED}" ]]; then
-  echo "fill_version_file_template: ${TEMPLATE_FILE} has unreplaced token(s): ${UNREPLACED}" >&2
+  echo "${SCRIPT_NAME}: ${TEMPLATE_FILE} has unreplaced token(s): ${UNREPLACED}" >&2
   exit 1
 fi
 

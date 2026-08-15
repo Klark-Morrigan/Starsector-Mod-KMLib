@@ -23,8 +23,13 @@ inputs:
     description: >-
       Filename of the release zip the generated directDownloadURL points at.
       Supplied by mod-release.yml from the read-mod-info action's output so
-      the URL and the uploaded asset cannot name different files.
-    required: true
+      the URL and the uploaded asset cannot name different files. Optional
+      because a caller with no release to name - a local build filling the
+      template for a dev install - has nothing to state; left empty, the name
+      is derived from mod_info.json jars[0] by the rule read-mod-info derives
+      it by, so the two cannot disagree.
+    required: false
+    default: ''
   mod-root:
     description: >-
       Directory holding mod_info.json and the <mod-id>.version.template file.

@@ -328,7 +328,12 @@ Starsector binaries and so runs on the self-hosted `kmlib-runner`.
   by hand outside that file. `{{directDownloadURL}}` is the one token not
   read from there: it is built from the version, the `zip-name` input, and
   the publishing repository the Actions runtime exports, so the link cannot
-  name a repository or an asset other than the one being released.
+  name a repository or an asset other than the one being released. Both of
+  those have a fallback for callers outside Actions, which is what lets the
+  local Gradle task run this same script rather than a second implementation
+  of it: an omitted `zip-name` is derived from `mod_info.json` `jars[0]` by
+  the same lib rule `read-mod-info` derives it by, and an absent
+  `GITHUB_REPOSITORY` falls back to the checkout's `origin` remote.
   Substitution is by whole value, which is how
   the version components come out as JSON numbers rather than quoted
   digits; every other key is carried through untouched, so the template
@@ -350,7 +355,12 @@ Starsector binaries and so runs on the self-hosted `kmlib-runner`.
 All four read `mod_info.json`, so what that file contains and what shape
 its fields take live once in
 [_lib/mod_info.sh](.github/actions/_lib/mod_info.sh), which they source: the
-filename, the SemVer shape, and the "this field is present" check. It sits
+filename, the SemVer shape, the "this field is present" check, and the names
+that follow from `jars[0]` - the shipped mod folder and the release zip. The
+zip name is there rather than in one script because two of them need it and
+neither may guess: the pipeline uploads an asset under that name while the
+version file points a download URL at it, so a rule spelled twice would give
+a working link and a 404 the same spelling. It sits
 under `actions/` rather than beside it so it is where the scripts sourcing
 it look, each reaching it relative to its own location. The leading
 underscore marks it as not-an-action.
@@ -404,10 +414,13 @@ publish no update information stay. Tied to the jar rather than to `assemble`
 because refreshing a dev install is what building
 the jar is: the install picks up the new jar immediately, and a version file left
 behind would report a version that is no longer there. It needs a bash, which on
-Windows is located from the git on `PATH`, and it reads the repository half of the
-download URL out of the checkout's own `origin` remote rather than from anything
-restated in the build, so a local build cannot name a repository this clone does
-not push to. `mod_info.json`, the template and the script are its inputs, so it
+Windows is located from the git on `PATH`. Everything else the generated file
+states is the script's to work out: with no release to name the zip and no
+`GITHUB_REPOSITORY` outside Actions, it derives the zip name from
+`mod_info.json` and reads the repository half of the download URL out of the
+checkout's own `origin` remote, so a local build cannot name a repository this
+clone does not push to and the build restates neither rule.
+`mod_info.json`, the template and the script are its inputs, so it
 re-runs only when one of them (or the remote) changes.
 
 The Starsector install root is discovered in this order:

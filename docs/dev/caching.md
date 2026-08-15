@@ -9,7 +9,7 @@ may change between two frames.
 Consumer repositories (KMU, KMO, ...) should link here rather than restate any of
 it. KMU's own caches, which are a different problem (derived draw state over a
 live sector), are documented in
-[KMU's caching notes](https://github.com/<owner>/KMU/blob/main/docs/dev/caching.md).
+[KMU's caching notes](https://github.com/Klark-Morrigan/Starsector-Mod-KMU/blob/master/docs/dev/caching.md).
 
 ## Index
 

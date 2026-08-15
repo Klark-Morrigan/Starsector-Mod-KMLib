@@ -105,3 +105,23 @@ run_in_lib() {
     # go straight to it, rather than as the shell variable holding it.
     [[ "$output" == *"missing required field 'jars[0]'"* ]]
 }
+
+@test "mod_info_derive_mod_folder_name strips the jar extension from a nested path" {
+    run_in_lib "read_mod_info" "mod_info_derive_mod_folder_name 'jars/KMLib.jar'"
+    [ "$status" -eq 0 ]
+    [ "$output" = "KMLib" ]
+}
+
+@test "mod_info_derive_mod_folder_name keeps a name that carries no extension" {
+    run_in_lib "read_mod_info" "mod_info_derive_mod_folder_name 'jars/KMLib'"
+    [ "$status" -eq 0 ]
+    [ "$output" = "KMLib" ]
+}
+
+@test "mod_info_derive_zip_name joins the folder name and the version" {
+    run_in_lib "read_mod_info" "mod_info_derive_zip_name 'jars/KMLib.jar' '0.1.0'"
+    [ "$status" -eq 0 ]
+    # The release uploads an asset under this name and the generated version
+    # file points a download URL at it, so both read the rule from here.
+    [ "$output" = "KMLib-0.1.0.zip" ]
+}
