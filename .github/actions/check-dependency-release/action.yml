@@ -28,13 +28,6 @@ inputs:
       releases here are tagged with the bare version. See
       docs/dev/versioning.md.
     required: true
-  token:
-    description: >-
-      Token gh authenticates with. Defaults to the workflow's GITHUB_TOKEN,
-      which can read the releases of any public repository, including one
-      other than its own.
-    required: false
-    default: ${{ github.token }}
 
 outputs:
   release-url:
@@ -51,10 +44,16 @@ runs:
       shell: bash
       # Passed as environment rather than interpolated into the run body, so
       # an input cannot break out of the command and run as shell.
+      #
+      # The workflow's own GITHUB_TOKEN, with no input to override it: this
+      # action only reads the releases of a public repository, which any
+      # valid token may do, so there is no identity a caller could need
+      # instead. gh still requires the variable to be set even for a public
+      # read, which is why it is named here rather than left off.
       env:
         REPO: ${{ inputs.repo }}
         VERSION: ${{ inputs.version }}
-        GH_TOKEN: ${{ inputs.token }}
+        GH_TOKEN: ${{ github.token }}
       # GITHUB_ACTION_PATH points at this action's directory regardless
       # of the caller's working directory, so the script path is stable.
       run: "$GITHUB_ACTION_PATH/scripts/check_dependency_release.sh"
