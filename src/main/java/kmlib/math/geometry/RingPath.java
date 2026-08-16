@@ -275,6 +275,30 @@ public final class RingPath {
     }
 
     /**
+     * The stretches of the path that failed the inset it was traced at - the carve itself,
+     * and so the exact complement of {@link #findStretchesHoldingItsInset}.
+     *
+     * <p>Offered because a caller reporting on the ring needs the part a layout may not have
+     * as much as the part it may: the two together are the whole path, and a reader shown only
+     * what survived cannot tell a ring that was carved from one that was always that short.
+     *
+     * <p>A carve reaching across the path's start arrives as the two stretches it was split
+     * into, one at each end, for the reason {@link #findClearArcs} states.
+     *
+     * @return the carved stretches, ascending and disjoint; empty when the whole path held its
+     *         inset, and empty for a path that was never traced
+     */
+    public List<RingStretch> findStretchesFailingItsInset() {
+
+        var failing = new ArrayList<RingStretch>(overrunArcs.size());
+
+        for (var arc : overrunArcs) {
+            failing.add(new RingStretch(arc[0], arc[1]));
+        }
+        return failing;
+    }
+
+    /**
      * Whether any of the path held the inset it was traced at.
      *
      * <p>The refusal a trace used to answer with, derived rather than pronounced. A ring
