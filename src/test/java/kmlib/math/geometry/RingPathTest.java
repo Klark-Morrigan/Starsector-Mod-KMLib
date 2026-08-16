@@ -20,11 +20,21 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * own top corner when the anchor sits beside the shape rather than within its span; and
  * it leaves nothing to trace when the ring encloses no area.
  *
- * <p>And of {@link RingPath#hasStretchHoldingItsInset}, which reads what
- * {@link RingPath#findStretchesHoldingItsInset} leaves: a ring with room for the inset holds
- * it, a ring pinched in one place holds the rest of itself, and a ring overrun on every side
- * at once or thin in one direction only holds none of it - which is where the whole-ring
- * refusal a trace used to pronounce now comes from. An empty path holds nothing.
+ * <p>And of {@link RingPath#findStretchesHoldingItsInset}: a ring with room for its inset holds
+ * the whole path, a pinch is carved from the corner before the failing one to the corner after
+ * it, a pinch lying across the path's start is carved off both ends of it, and an empty path
+ * holds nothing.
+ *
+ * <p>And of {@link RingPath#findStretchesFailingItsInset}, the same measurement read from the
+ * other side: the carve is the stretch between the corners either side of a failing one, a ring
+ * with room gives nothing up, a carve across the start comes back as the two pieces it was split
+ * into, and an empty path carves nothing.
+ *
+ * <p>And of {@link RingPath#hasStretchHoldingItsInset}, which reads whether the first of those
+ * left anything: a ring with room for the inset holds it, a ring pinched in one place holds the
+ * rest of itself, and a ring overrun on every side at once or thin in one direction only holds
+ * none of it - which is where the whole-ring refusal a trace used to pronounce now comes from.
+ * An empty path holds nothing.
  *
  * <p>And of {@link RingPath#getPerimeter}: the traced inset ring's own length, and zero
  * where there is no path.
@@ -43,10 +53,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * a shape over it leaves the stretches either side, a cover spanning several edges is one
  * stretch rather than one per edge, a shape over the start leaves what lies between its two
  * sides, several shapes each take their own bite, a shape covering everything leaves nothing,
- * and a shape lying elsewhere costs nothing. The stretch a pinch failed the inset on is carved
- * the same way a shape's cover is - from the corner before the failing one to the corner after
- * it - a pinch lying across the path's own start is carved off both ends of it, since these
- * intervals do not wrap, and a shape and a pinch carve the one ring between them.
+ * and a shape lying elsewhere costs nothing. A shape and a pinch carve the one ring between them,
+ * since a stretch with no room for the inset is as unusable as a stretch something covers.
  *
  * <p>And of {@link RingPath#fuseStretchAcrossStart}: the pair reaching the path's two ends
  * comes back as the one stretch it is, closing past the perimeter, while stretches falling
@@ -171,6 +179,137 @@ final class RingPathTest {
 
             assertThat(traced.isEmpty())
                 .isTrue();
+        }
+    }
+
+    @Nested
+    class FindStretchesHoldingItsInset {
+
+        @Test
+        void ring_with_room_for_its_inset_holds_the_whole_path() {
+            // Nothing carved, so the answer is the path itself as one stretch - the ordinary
+            // cell, and what every case below is a departure from.
+            assertThatArcsAre(
+                traceReferenceSquare().findStretchesHoldingItsInset(),
+                List.of(new double[] {0, 24}));
+        }
+
+        @Test
+        void stretch_that_failed_the_inset_is_carved_between_the_corners_either_side_of_it() {
+            // The tab's mouth stands 1.58 off the ring rather than the 2 it was built from,
+            // and what is given up for it is the mouth and the two edges reaching it - from
+            // the corner before it at (18,11) to the corner after it at (18,8). Clearance is
+            // sampled at corners, so the carve has to reach the neighbours: a point midway
+            // along an edge can stand nearer the ring than either end of it.
+            var path = traceTabbedSquare(TABBED_SQUARE_CENTRE);
+            var held = path.findStretchesHoldingItsInset();
+
+            assertThat(held)
+                .hasSize(2);
+
+            assertThatPointsAre(
+                List.of(
+                    path.computePointAt(held.get(0).endArcLength()),
+                    path.computePointAt(held.get(1).startArcLength())),
+                List.of(
+                    new double[] {18, 11},
+                    new double[] {18, 8}));
+        }
+
+        @Test
+        void pinch_lying_across_the_path_s_start_is_carved_off_both_ends_of_it() {
+            // The same tab, anchored so the path opens on the mouth itself. The carve around a
+            // path's first corner reaches back before the start, and these intervals do not
+            // wrap - so it is split there and taken off the path's end as well as its
+            // beginning. Left unsplit, the piece before the start is dropped and the tail of
+            // the path comes back held, which is the pinch offered as ring to lay a band on.
+            var path = traceTabbedSquare(TABBED_SQUARE_MOUTH);
+            var held = path.findStretchesHoldingItsInset();
+
+            assertThat(held)
+                .hasSize(1);
+
+            assertThatPointsAre(
+                List.of(
+                    path.computePointAt(held.get(0).startArcLength()),
+                    path.computePointAt(held.get(0).endArcLength())),
+                List.of(
+                    new double[] {18, 8},
+                    new double[] {18, 11}));
+        }
+
+        @Test
+        void an_empty_path_holds_no_stretches() {
+            // A ring that left nothing to trace held nothing, which is the same answer a ring
+            // overrun everywhere gives - one shape of "no room" for a caller to read.
+            assertThat(RingPath.nothingLeftToTrace().findStretchesHoldingItsInset())
+                .isEmpty();
+        }
+    }
+
+    @Nested
+    class FindStretchesFailingItsInset {
+
+        @Test
+        void carve_is_the_stretch_between_the_corners_either_side_of_the_failing_one() {
+            // The exact complement of the case above, stated from the other side: what the
+            // mouth cost is one stretch running from (18,11) round the mouth to (18,8). Pinned
+            // in its own right because a caller reporting on a ring draws this, and a carve
+            // that came back as the two edges without the mouth between them would look the
+            // same in every other test here.
+            var path = traceTabbedSquare(TABBED_SQUARE_CENTRE);
+            var failing = path.findStretchesFailingItsInset();
+
+            assertThat(failing)
+                .hasSize(1);
+
+            assertThatPointsAre(
+                List.of(
+                    path.computePointAt(failing.get(0).startArcLength()),
+                    path.computePointAt(failing.get(0).endArcLength())),
+                List.of(
+                    new double[] {18, 11},
+                    new double[] {18, 8}));
+        }
+
+        @Test
+        void nothing_is_carved_from_a_ring_with_room_for_its_inset() {
+            // The ordinary cell gives nothing up, so a caller drawing the carve draws nothing
+            // rather than a ring stated twice.
+            assertThat(traceReferenceSquare().findStretchesFailingItsInset())
+                .isEmpty();
+        }
+
+        @Test
+        void carve_across_the_path_s_start_comes_back_as_the_two_pieces_it_was_split_into() {
+            // The split the intervals' not wrapping forces, seen from the carve's own side: the
+            // piece closing the path and the piece opening it, rather than one stretch running
+            // past the perimeter. Both are drawn, so both have to be stated.
+            var path = traceTabbedSquare(TABBED_SQUARE_MOUTH);
+            var failing = path.findStretchesFailingItsInset();
+
+            assertThat(failing)
+                .hasSize(2);
+
+            assertThatPointsAre(
+                List.of(
+                    path.computePointAt(failing.get(0).startArcLength()),
+                    path.computePointAt(failing.get(0).endArcLength()),
+                    path.computePointAt(failing.get(1).startArcLength()),
+                    path.computePointAt(failing.get(1).endArcLength())),
+                List.of(
+                    new double[] {19.4, 9.6},
+                    new double[] {18, 8},
+                    new double[] {18, 11},
+                    new double[] {19.4, 9.6}));
+        }
+
+        @Test
+        void an_empty_path_carves_nothing() {
+            // A path that was never traced failed no inset, so the carve is empty rather than
+            // the whole of a ring that does not exist.
+            assertThat(RingPath.nothingLeftToTrace().findStretchesFailingItsInset())
+                .isEmpty();
         }
     }
 
@@ -476,50 +615,6 @@ final class RingPathTest {
             assertThatArcsAre(
                 traceReferenceSquare().findClearArcs(List.of(buildBox(100, 100, 120, 120))),
                 List.of(new double[] {0, 24}));
-        }
-
-        @Test
-        void stretch_that_failed_the_inset_is_carved_between_the_corners_either_side_of_it() {
-            // The tab's mouth stands 1.58 off the ring rather than the 2 it was built from,
-            // and what is given up for it is the mouth and the two edges reaching it - from
-            // the corner before it at (18,11) to the corner after it at (18,8). Clearance is
-            // sampled at corners, so the carve has to reach the neighbours: a point midway
-            // along an edge can stand nearer the ring than either end of it.
-            var path = traceTabbedSquare(TABBED_SQUARE_CENTRE);
-            var clear = path.findClearArcs(List.of());
-
-            assertThat(clear)
-                .hasSize(2);
-
-            assertThatPointsAre(
-                List.of(
-                    path.computePointAt(clear.get(0).endArcLength()),
-                    path.computePointAt(clear.get(1).startArcLength())),
-                List.of(
-                    new double[] {18, 11},
-                    new double[] {18, 8}));
-        }
-
-        @Test
-        void pinch_lying_across_the_path_s_start_is_carved_off_both_ends_of_it() {
-            // The same tab, anchored so the path opens on the mouth itself. The carve around a
-            // path's first corner reaches back before the start, and these intervals do not
-            // wrap - so it is split there and taken off the path's end as well as its
-            // beginning. Left unsplit, the piece before the start is dropped and the tail of
-            // the path comes back clear, which is the pinch offered as ring to lay a band on.
-            var path = traceTabbedSquare(TABBED_SQUARE_MOUTH);
-            var clear = path.findClearArcs(List.of());
-
-            assertThat(clear)
-                .hasSize(1);
-
-            assertThatPointsAre(
-                List.of(
-                    path.computePointAt(clear.get(0).startArcLength()),
-                    path.computePointAt(clear.get(0).endArcLength())),
-                List.of(
-                    new double[] {18, 8},
-                    new double[] {18, 11}));
         }
 
         @Test
