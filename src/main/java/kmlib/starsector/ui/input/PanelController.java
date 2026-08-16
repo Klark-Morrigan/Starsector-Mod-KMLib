@@ -163,20 +163,23 @@ public final class PanelController {
         }
         // A wheel over the panel scrolls its flex list rather than acting on the surface behind it; a press
         // on the scrollbar's grab column starts a drag; any other left press is answered by the control
-        // under it. Every other event only consumes (below), which is why nothing but these two sounds.
+        // under it. Every other event is only claimed (below), which is why nothing but these two sounds.
         if (event.isMouseScrollEvent()) {
             scrollListUnderPointer(event, placement);
         } else if (event.isLMBDownEvent()) {
             if (!beginThumbDragIfPressed(event, placement)) {
 
-                // A press on the border or on blank body resolves to no control and only consumes (below),
+                // A press on the border or on blank body resolves to no control and is only claimed (below),
                 // so empty chrome swallows the click silently and without acting. What fired is immaterial
                 // here - the action carries its own cell, and the press has already been answered where the
                 // cell resolved - so the answer is dropped; a header tab is what needs it.
                 pressBodyControlAtPoint(placement, event.getX(), event.getY());
             }
         }
-        event.consume();
+        // Claimed rather than consumed outright, which for a move means the pointer is parked instead: the
+        // screen underneath has to hear that the pointer left the control it lit, and a consumed event
+        // tells it nothing. Last, so everything above reads the pointer where the player actually put it.
+        PointerParking.claimEvent(event);
     }
 
     /**

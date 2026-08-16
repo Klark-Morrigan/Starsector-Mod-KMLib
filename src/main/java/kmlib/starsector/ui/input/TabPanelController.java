@@ -412,13 +412,19 @@ public final class TabPanelController {
             event.consume();
             return;
         }
+        // Where the player actually put the pointer, read before the body can claim it: claiming a move
+        // parks the pointer rather than consuming the event, so the position is no longer the player's to
+        // read afterwards and the header test below would be answering about somewhere nobody pointed.
+        var pointerX = event.getX();
+        var pointerY = event.getY();
+
         bodyController.handlePointer(event, placement.body());
 
         // Last, so an in-progress scrollbar drag - which the body owns wherever the pointer has wandered,
         // the tab row included - keeps the event it is following.
         if (!event.isConsumed()
-                && placement.drawnHeaderBand().containsPoint(event.getX(), event.getY())) {
-            event.consume();
+                && placement.drawnHeaderBand().containsPoint(pointerX, pointerY)) {
+            PointerParking.claimEvent(event);
         }
     }
 
