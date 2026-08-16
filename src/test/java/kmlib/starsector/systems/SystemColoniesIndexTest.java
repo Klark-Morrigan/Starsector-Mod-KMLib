@@ -11,14 +11,37 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 /**
- * Pins the contracts of {@link SystemColoniesIndex#readColoniesIn} and
- * {@link SystemColoniesIndex#readColoniesById}: that the index answers exactly what the direct
- * read answers, and that it pays for a system's walk once however it is asked. Each method's
+ * Pins the contracts of {@link SystemColoniesIndex#readColoniesIn},
+ * {@link SystemColoniesIndex#readColoniesById} and {@link SystemColoniesIndex#getSector}: that
+ * the index answers exactly what the direct read answers, that it pays for a system's walk once
+ * however it is asked, and that it names the sector it answers out of. Each method's
  * cases live in a {@link Nested} group so the suite reports as a per-method tree; the world they
  * are posed against is {@link SystemColonyFixture}, shared with the direct read's suite - which
  * is what lets the two answers be compared at all.
  */
 final class SystemColoniesIndexTest {
+
+    @Nested
+    class GetSector {
+
+        @Test
+        void names_the_sector_the_index_was_opened_over() {
+            // A caller holding an index holds no sector beside it, so the index has to be able to
+            // name the one its answers came out of.
+            var fixture = new SystemColonyFixture("galatia");
+
+            assertThat(new SystemColoniesIndex(fixture.getSector()).getSector())
+                .isSameAs(fixture.getSector());
+        }
+
+        @Test
+        void names_no_sector_when_the_index_was_opened_over_none() {
+            // The unreachable-sector case answers an empty set for every system, and it reports
+            // the absence rather than inventing a sector to name.
+            assertThat(new SystemColoniesIndex(null).getSector())
+                .isNull();
+        }
+    }
 
     @Nested
     class ReadColoniesIn {

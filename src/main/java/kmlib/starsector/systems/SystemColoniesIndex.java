@@ -49,6 +49,19 @@ public final class SystemColoniesIndex {
     }
 
     /**
+     * The sector every read below is made against.
+     *
+     * <p>Named here so a caller holding an index needs no sector of its own beside it. Two
+     * fields for one fact are two things to keep in step, and the pair that drifted would have
+     * one surface reading a system out of one sector while another priced it against a second.
+     *
+     * @return the sector this index was opened over; null when it was opened over none
+     */
+    public SectorAPI getSector() {
+        return sector;
+    }
+
+    /**
      * The colonies in {@code system}, walked on the first ask and remembered thereafter.
      *
      * @param system the system to read; null yields {@link SystemColonies#NONE}
