@@ -22,6 +22,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
+import static org.mockito.Mockito.verify;
 
 /**
  * Pins the panel controller's click-to-control resolution: a press maps to the control under it and fires
@@ -481,6 +482,69 @@ final class PanelControllerTest {
 
             assertThat(controller.resolveBodyPressFractionAt(FIRST_ROW_SLOT))
                 .isCloseTo(0f, within(TOLERANCE));
+        }
+    }
+
+    @Nested
+    class HandlePointerClaims {
+
+        private final PanelController controller = new PanelController();
+
+        @Test
+        void handlePointerParksAMoveOverThePanelRatherThanConsumingIt() {
+            // What the screen underneath is owed. A consumed move is invisible to it, and a vanilla control
+            // lets go of its hover only on hearing a move that is not on it - so consuming here would leave
+            // whatever was lit when the pointer crossed onto the panel lit for as long as it rests here.
+            // Moved instead, and left unconsumed, the screen hears the move and finds nothing under it.
+            var moveFake = RelocatableEventFake.createMoveAt(Math.round(ON_LIST_X), Math.round(ON_LIST_Y));
+
+            controller.handlePointer(moveFake, buildScrollingPlacement());
+
+            assertThat(moveFake.isConsumed())
+                .isFalse();
+            assertThat(moveFake.getX())
+                .isNotEqualTo(Math.round(ON_LIST_X));
+        }
+
+        @Test
+        void handlePointerConsumesAPressOverThePanel() {
+            // A press is an act the panel answers, which is exactly why the surface behind it must not.
+            // Moving the pointer instead of consuming would hand the press to whatever now sits under it.
+            var pressFake =
+                RelocatableEventFake.createLeftPressAt(Math.round(ON_LIST_X), Math.round(ON_LIST_Y));
+
+            controller.handlePointer(pressFake, buildScrollingPlacement());
+
+            assertThat(pressFake.isConsumed())
+                .isTrue();
+        }
+
+        @Test
+        void handlePointerConsumesAWheelOverThePanel() {
+            // The wheel scrolls this panel's list, so the list behind it must not scroll too - a claim that
+            // only consuming makes.
+            var wheelMock = PointerEventMocks.mockWheelDownAt(ON_LIST_X, ON_LIST_Y);
+
+            controller.handlePointer(wheelMock, buildScrollingPlacement());
+
+            verify(wheelMock)
+                .consume();
+        }
+
+        @Test
+        void handlePointerLeavesAMoveClearOfThePanelAlone() {
+            // Off the panel the event is not the panel's to claim at all: neither consumed nor moved, since
+            // a move the panel never touched is already the screen's to read where the player made it.
+            var moveFake = RelocatableEventFake.createMoveAt(
+                Math.round(ROW.x() + ROW.width() + 1f),
+                Math.round(ROW.y()));
+
+            controller.handlePointer(moveFake, buildScrollingPlacement());
+
+            assertThat(moveFake.isConsumed())
+                .isFalse();
+            assertThat(moveFake.getX())
+                .isEqualTo(Math.round(ROW.x() + ROW.width() + 1f));
         }
     }
 

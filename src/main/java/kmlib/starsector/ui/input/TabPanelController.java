@@ -360,7 +360,10 @@ public final class TabPanelController {
      * Handles one pointer event over the tab panel: a left press on the collapse notch flips the fold and a
      * left press on a fully expanded panel's header tab fires that tab's own action and pulses it (each
      * consumed); every other event - body control hits, the scrollbar drag, the wheel - is the body's,
-     * delegated to its {@link PanelController}. Hover is none of its business: the fades are resolved per
+     * delegated to its {@link PanelController}. What claiming means differs by the kind of event: a press
+     * or a wheel is consumed, while a move is claimed by {@linkplain PointerParking parking the pointer},
+     * so the screen behind hears that the pointer left whatever it had lit. Hover is none of its own
+     * business either: the fades are resolved per
      * frame against the drawn placement by {@link #advanceInputMotions}, so nothing here has to be latched
      * for the render pass.
      *
@@ -407,7 +410,7 @@ public final class TabPanelController {
         }
         // A left press on a header tab fires that tab's action and pulses it. Only a left press hits a tab -
         // a wheel or an in-progress drag over the header falls through to the body, which simply finds
-        // nothing there and consumes it, the same as any chrome.
+        // nothing there and claims it, the same as any chrome.
         if (event.isLMBDownEvent() && activateTabAtPoint(placement, event.getX(), event.getY())) {
             event.consume();
             return;

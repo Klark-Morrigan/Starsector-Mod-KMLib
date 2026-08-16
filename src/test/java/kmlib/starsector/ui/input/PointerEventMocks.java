@@ -49,6 +49,28 @@ final class PointerEventMocks {
     }
 
     /**
+     * A pointer move at a point, which a panel claims by moving the pointer rather than by consuming.
+     *
+     * <p>A mock cannot actually be moved - the setters that do it are on the game's own event type and
+     * not on the interface a mock reproduces - so this is the move a claim has to fall back on consuming.
+     * A case about a move that is really parked wants {@link RelocatableEventFake#createMoveAt} instead.
+     *
+     * @param pointX the pointer's x, in UI coordinates
+     * @param pointY the pointer's y, in UI coordinates
+     * @return the event
+     */
+    static InputEventAPI mockMoveAt(float pointX, float pointY) {
+
+        var eventMock = mockPointerEventAt(pointX, pointY);
+
+        Mockito
+            .when(eventMock.isMouseMoveEvent())
+            .thenReturn(true);
+
+        return eventMock;
+    }
+
+    /**
      * A left-button press at a point, for the parts of a panel that act on the way down - the collapse
      * handle, a body control, the scrollbar's grab column.
      *

@@ -60,19 +60,13 @@ public final class PointerParking {
         event.consume();
     }
 
-    /**
-     * Moves an event to where no widget is.
-     *
-     * <p>The reach is by method name and guarded whole, because the game's event type cannot be named
-     * from here and a version that no longer offers these setters has to read as "cannot park" rather
-     * than as a crash. A partial move - the first setter taking and the second not - reports failure
-     * like any other, and the caller consumes, which puts the half-moved event out of the screen's
-     * sight anyway.
-     *
-     * @param event the event to move
-     * @return whether it was actually moved
-     */
-    public static boolean parkPointerOf(InputEventAPI event) {
+    // Moves an event to where no widget is, reporting whether it could.
+    //
+    // The reach is by method name and guarded whole, because the game's event type cannot be named from
+    // here and a version that no longer offers these setters has to read as "cannot park" rather than as
+    // a crash. A partial move - the first setter taking and the second not - reports failure like any
+    // other, and the caller consumes, which puts the half-moved event out of the screen's sight anyway.
+    private static boolean parkPointerOf(InputEventAPI event) {
         try {
             CoreUiTree.invokeWithArgs(event, SET_X_METHOD, PARKED_POSITION);
             CoreUiTree.invokeWithArgs(event, SET_Y_METHOD, PARKED_POSITION);

@@ -17,19 +17,48 @@ import com.fs.starfarer.api.input.InputEventType;
  * <p>Public, and that is part of what it reproduces rather than an oversight: a public method on a
  * non-public class is not reachable by reflection from another package, so a package-private stand-in
  * would fail the reach for a reason the game's own event - a public class - never would.
+ *
+ * <p>Which kind of event each factory below builds is spelt the way {@link PointerEventMocks} spells it,
+ * that being one fact about the input API rather than one per fixture. This exists beside those mocks
+ * only because a mock carries the interface and nothing else, and what is under test here is a reach for
+ * methods the interface does not declare.
  */
 public final class RelocatableEventFake implements InputEventAPI {
 
     private final boolean isMouseMove;
+    private final boolean isLeftPress;
 
     private boolean isConsumed;
     private int x;
     private int y;
 
-    public RelocatableEventFake(int x, int y, boolean isMouseMove) {
+    private RelocatableEventFake(int x, int y, boolean isMouseMove, boolean isLeftPress) {
         this.x = x;
         this.y = y;
         this.isMouseMove = isMouseMove;
+        this.isLeftPress = isLeftPress;
+    }
+
+    /**
+     * A pointer move at a point - the one kind of event a panel claims by moving rather than consuming.
+     *
+     * @param x the pointer's x, in UI coordinates
+     * @param y the pointer's y, in UI coordinates
+     * @return the event
+     */
+    public static RelocatableEventFake createMoveAt(int x, int y) {
+        return new RelocatableEventFake(x, y, true, false);
+    }
+
+    /**
+     * A left-button press at a point, which a panel claims by consuming.
+     *
+     * @param x the press x, in UI coordinates
+     * @param y the press y, in UI coordinates
+     * @return the event
+     */
+    public static RelocatableEventFake createLeftPressAt(int x, int y) {
+        return new RelocatableEventFake(x, y, false, true);
     }
 
     @Override
@@ -131,7 +160,7 @@ public final class RelocatableEventFake implements InputEventAPI {
 
     @Override
     public boolean isLMBDownEvent() {
-        return false;
+        return isLeftPress;
     }
 
     @Override

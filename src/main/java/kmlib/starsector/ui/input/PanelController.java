@@ -137,7 +137,9 @@ public final class PanelController {
      * Handles one pointer event over the panel: continues a thumb drag wherever the pointer is, else -
      * over the panel box - scrolls the flex list on a wheel, starts a drag on a press in the scrollbar
      * grab column, or sounds and fires the control under a left press. Every event over the panel is
-     * consumed, so the surface behind it does not also act on it.
+     * claimed, so the surface behind it does not also act on it - a press or a wheel by being consumed,
+     * and a move by {@linkplain PointerParking parking the pointer} instead, the surface having to hear
+     * that the pointer left the control it had lit.
      *
      * <p>The order the branches are tried in is what keeps the scrollbar quiet: a press in the grab column
      * is taken as a drag before a control is ever offered it, so the gutter answers with the list moving and

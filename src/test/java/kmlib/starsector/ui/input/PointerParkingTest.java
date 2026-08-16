@@ -1,7 +1,5 @@
 package kmlib.starsector.ui.input;
 
-import com.fs.starfarer.api.input.InputEventAPI;
-
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -10,7 +8,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Pins how a panel takes an event for itself, which differs by the kind of event and matters to the
- * screen underneath.
+ * screen the panel is drawn over.
  *
  * <p>A move is taken by moving the pointer away rather than by consuming, because a consumed event is
  * invisible to the screen and a vanilla control only lets go of its hover on hearing a move that is not
@@ -37,7 +35,7 @@ final class PointerParkingTest {
             // what it concludes from it is that the pointer is on nothing of its own - so a control lit
             // before the pointer crossed onto the panel lets go, and nothing behind the panel takes its
             // place.
-            var eventFake = new RelocatableEventFake(REAL_X, REAL_Y, true);
+            var eventFake = RelocatableEventFake.createMoveAt(REAL_X, REAL_Y);
 
             PointerParking.claimEvent(eventFake);
 
@@ -53,7 +51,7 @@ final class PointerParkingTest {
         void PointerParking_claimEvent_consumesAPressRatherThanParkingIt() {
             // A press is an act, and the panel answering it is the reason the screen must not also answer
             // it. Moving the pointer would let the press through to whatever now sits under it.
-            var eventFake = new RelocatableEventFake(REAL_X, REAL_Y, false);
+            var eventFake = RelocatableEventFake.createLeftPressAt(REAL_X, REAL_Y);
 
             PointerParking.claimEvent(eventFake);
 
@@ -67,36 +65,15 @@ final class PointerParkingTest {
         void PointerParking_claimEvent_consumesAMoveItCannotPark() {
             // A game build that no longer offers the setters leaves the screen with the stale hover it had
             // before any of this existed, which is a worse look and not a crash. Consuming is what keeps a
-            // failed reach from handing the screen a live pointer at its real position.
-            var unparkableEventMock = Mockito.mock(InputEventAPI.class);
+            // failed reach from handing the screen a live pointer at its real position, so the fallback is
+            // the whole of what this case is about.
+            var unparkableMoveMock = PointerEventMocks.mockMoveAt(REAL_X, REAL_Y);
+
+            PointerParking.claimEvent(unparkableMoveMock);
 
             Mockito
-                .when(unparkableEventMock.isMouseMoveEvent())
-                .thenReturn(true);
-
-            PointerParking.claimEvent(unparkableEventMock);
-
-            Mockito
-                .verify(unparkableEventMock)
+                .verify(unparkableMoveMock)
                 .consume();
-        }
-    }
-
-    @Nested
-    class ParkPointerOf {
-
-        @Test
-        void PointerParking_parkPointerOf_reportsAMoveItCouldNotMake() {
-            // Reported rather than thrown: the caller's fallback depends on knowing, and every other
-            // reach into the game's own types here answers a failure the same way.
-            assertThat(PointerParking.parkPointerOf(Mockito.mock(InputEventAPI.class)))
-                .isFalse();
-        }
-
-        @Test
-        void PointerParking_parkPointerOf_reportsAMoveItMade() {
-            assertThat(PointerParking.parkPointerOf(new RelocatableEventFake(REAL_X, REAL_Y, true)))
-                .isTrue();
         }
     }
 }

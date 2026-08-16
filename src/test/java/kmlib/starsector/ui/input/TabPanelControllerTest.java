@@ -433,6 +433,39 @@ final class TabPanelControllerTest {
         }
 
         @Test
+        void handlePointerParksAMoveOverTheDrawnTabRow() {
+            // The row claims a move the same way the body does, and for the same reason: swallowing it
+            // would leave a vanilla control lit behind the panel for as long as the pointer rests on the
+            // tabs, that control letting go only on hearing a move that is not on it.
+            var moveFake = RelocatableEventFake.createMoveAt(
+                Math.round(INSIDE_FIRST_TAB_X),
+                Math.round(ON_TAB_ROW_Y));
+
+            new TabPanelController().handlePointer(moveFake, buildTwoTabPlacement());
+
+            assertThat(moveFake.isConsumed())
+                .isFalse();
+            assertThat(moveFake.getX())
+                .isNotEqualTo(Math.round(INSIDE_FIRST_TAB_X));
+        }
+
+        @Test
+        void handlePointerParksAMoveOverTheBody() {
+            // Delegated to the body's own controller, which claims it the same way - so a move anywhere on
+            // the panel reads alike to the screen behind, rather than the row and the body differing.
+            var moveFake = RelocatableEventFake.createMoveAt(
+                Math.round(BODY_BOX.x() + BODY_BOX.width() / 2f),
+                Math.round(BODY_BOX.y() + BODY_BOX.height() / 2f));
+
+            new TabPanelController().handlePointer(moveFake, buildTwoTabPlacement());
+
+            assertThat(moveFake.isConsumed())
+                .isFalse();
+            assertThat(moveFake.getY())
+                .isNotEqualTo(Math.round(BODY_BOX.y() + BODY_BOX.height() / 2f));
+        }
+
+        @Test
         void handlePointerLeavesAnEventOffThePanelAlone() {
             // Off every part of it the panel claims nothing, so the map underneath keeps answering the
             // pointer as it did before the panel was there.
