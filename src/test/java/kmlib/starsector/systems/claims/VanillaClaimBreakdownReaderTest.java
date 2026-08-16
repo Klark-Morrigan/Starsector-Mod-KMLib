@@ -420,6 +420,39 @@ final class VanillaClaimBreakdownReaderTest {
             assertThat(breakdown.scores().get(0).readHeldMarkets())
                 .extracting(market -> market.marketNameplate().displayName())
                 .containsExactly("Tigra City", "Kanta's Den");
+            assertThat(breakdown.claimantFactionId())
+                .isNull();
+        }
+
+        @Test
+        void ranksPresenceOnlyStandingsBeneathEveryScoreInListingOrder() {
+
+            var hegemony = claimContest.buildFaction("hegemony", true);
+            var pirates = claimContest.buildFaction("pirates", false);
+            var independent = claimContest.buildFaction("independent", true);
+
+            claimContest.placeMarketsInSystem(
+                claimContest.buildHiddenMarket(pirates, 9),
+                claimContest.buildMarket(hegemony, 1));
+            claimContest.placeOffEconomyMarketsInSystem(claimContest.buildMarket(independent, 9));
+
+            var breakdown =
+                new VanillaClaimBreakdownReader().readBreakdown(claimContest.getSystem());
+
+            // The size-1 colony is the only thing anybody was weighed on, so it leads however large
+            // the two unweighed holdings are, and it takes the system on a score of one. The pair
+            // behind it share a nought and settle between themselves the way every other tie does -
+            // in the order the listing reached them, the economy's own market ahead of what it does
+            // not list. Territoriality rides each of them, read off the faction as it is for a
+            // scored standing, and claims nothing either way.
+            assertThat(breakdown.scores())
+                .extracting(FactionClaimStanding::factionId, FactionClaimStanding::isTerritorial)
+                .containsExactly(
+                    tuple("hegemony", true),
+                    tuple("pirates", false),
+                    tuple("independent", true));
+            assertThat(breakdown.claimantFactionId())
+                .isEqualTo("hegemony");
         }
 
         @Test
