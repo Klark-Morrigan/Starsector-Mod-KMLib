@@ -94,8 +94,9 @@ before it to the corner after it is subtracted from what `findClearArcs` offers,
 of the ring stands. A shape pinched in one place is the ordinary case, and giving up its whole
 outline for one narrow spot loses ring that was several times wide enough. The refusal
 survives as what the carve leaves - a ring overrun everywhere fails at every corner, so every
-stretch goes and `hasStretchHoldingItsInset` comes back false, which is the one question a
-caller choosing between insets asks. The carve reaches the failing corner's neighbours
+stretch goes and `findStretchesHoldingItsInset` comes back empty. That pair is what a caller
+choosing between insets asks: `hasStretchHoldingItsInset` to pick a ring, the list itself to
+fall back on when its own keep-outs left nothing. The carve reaches the failing corner's neighbours
 deliberately: clearance is sampled at corners, and a point midway along an edge can stand
 nearer the ring than either end of it. `collectPointsBetween` returns a stretch as a polyline
 including the corners it turns at - a stretch spanning a corner bends, and whatever gives it

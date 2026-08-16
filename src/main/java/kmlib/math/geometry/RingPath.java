@@ -258,23 +258,35 @@ public final class RingPath {
     }
 
     /**
-     * Whether any of the path held the inset it was traced at - that is, whether there is a
-     * stretch of it a layout could go on before anything else is kept clear of.
+     * The stretches of the path that held the inset it was traced at, before anything else is
+     * kept clear of them - the ring the traced shape's own width leaves.
+     *
+     * <p>Named rather than left as {@link #findClearArcs} over an empty list, because it is a
+     * different question with a different answer: this one is about the shape the path was
+     * traced inside, where a clear-arc search is about what a caller has put on it. A caller
+     * choosing between insets, or falling back when its keep-outs left nothing, is asking about
+     * the ring rather than about the keep-outs.
+     *
+     * @return the stretches that stood at the inset, ascending and disjoint; empty when the
+     *         path is empty or was overrun the whole way round
+     */
+    public List<RingStretch> findStretchesHoldingItsInset() {
+        return findClearArcs(NOTHING_KEPT_OUT);
+    }
+
+    /**
+     * Whether any of the path held the inset it was traced at.
      *
      * <p>The refusal a trace used to answer with, derived rather than pronounced. A ring
      * overrun in one place carves that place and keeps the rest, and a ring overrun
      * everywhere carves every stretch and so has none - one rule covering both, where a
      * verdict on the whole ring gave the second answer to the first case.
      *
-     * <p>Asked of the path rather than of a clear-arc search because the two are different
-     * questions: this one is about the shape the path was traced inside, and a caller falling
-     * back to a shallower inset is choosing between rings, not between keep-outs.
-     *
      * @return true when at least one stretch of the path stood at the inset it was asked for;
      *         false for an empty path, which held none
      */
     public boolean hasStretchHoldingItsInset() {
-        return !findClearArcs(NOTHING_KEPT_OUT).isEmpty();
+        return !findStretchesHoldingItsInset().isEmpty();
     }
 
     /**

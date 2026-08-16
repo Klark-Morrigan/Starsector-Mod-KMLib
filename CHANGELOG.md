@@ -11,5 +11,3 @@ version into the GitHub release body, so every released version must have a
 section here.
 
 ## [Unreleased]
-
-## [0.1.0]

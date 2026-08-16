@@ -20,10 +20,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * own top corner when the anchor sits beside the shape rather than within its span; and
  * it leaves nothing to trace when the ring encloses no area.
  *
- * <p>And of {@link RingPath#hasStretchHoldingItsInset}: a ring with room for the inset
- * holds it, a ring pinched in one place holds the rest of itself, and a ring overrun on
- * every side at once or thin in one direction only holds none of it - which is where the
- * whole-ring refusal a trace used to pronounce now comes from. An empty path holds nothing.
+ * <p>And of {@link RingPath#hasStretchHoldingItsInset}, which reads what
+ * {@link RingPath#findStretchesHoldingItsInset} leaves: a ring with room for the inset holds
+ * it, a ring pinched in one place holds the rest of itself, and a ring overrun on every side
+ * at once or thin in one direction only holds none of it - which is where the whole-ring
+ * refusal a trace used to pronounce now comes from. An empty path holds nothing.
  *
  * <p>And of {@link RingPath#getPerimeter}: the traced inset ring's own length, and zero
  * where there is no path.
@@ -44,7 +45,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * sides, several shapes each take their own bite, a shape covering everything leaves nothing,
  * and a shape lying elsewhere costs nothing. The stretch a pinch failed the inset on is carved
  * the same way a shape's cover is - from the corner before the failing one to the corner after
- * it - and a shape and a pinch carve the one ring between them.
+ * it - a pinch lying across the path's own start is carved off both ends of it, since these
+ * intervals do not wrap, and a shape and a pinch carve the one ring between them.
  *
  * <p>And of {@link RingPath#fuseStretchAcrossStart}: the pair reaching the path's two ends
  * comes back as the one stretch it is, closing past the perimeter, while stretches falling
@@ -72,6 +74,13 @@ final class RingPathTest {
     // 24-long ring whose corners and arc lengths are whole numbers, so every position
     // assertion below is a literal rather than a computation.
     private static final double INSET_DISTANCE = 2.0;
+
+    // The tabbed square's own centre, which puts the pinch well clear of where the path opens.
+    private static final double[] TABBED_SQUARE_CENTRE = new double[] {10, 10};
+
+    // An anchor beside the tab's mouth, so the path's own start lands within the pinch: the
+    // vertical line through it crosses the mouth's two edges rather than the square's sides.
+    private static final double[] TABBED_SQUARE_MOUTH = new double[] {19.4, 10};
 
     // A layout a sixth of the path long. Short enough against the stretches it is placed on
     // that where it sits is a decision rather than the only place it fits, which is the
@@ -182,7 +191,7 @@ final class RingPathTest {
             // three sides of the square it hangs off have room several times over. A verdict
             // on the whole ring answers this shape the same way it answers a shape with no
             // room anywhere, which is the reading the carve exists to replace.
-            assertThat(traceTabbedSquare().hasStretchHoldingItsInset())
+            assertThat(traceTabbedSquare(TABBED_SQUARE_CENTRE).hasStretchHoldingItsInset())
                 .isTrue();
         }
 
@@ -476,7 +485,7 @@ final class RingPathTest {
             // the corner before it at (18,11) to the corner after it at (18,8). Clearance is
             // sampled at corners, so the carve has to reach the neighbours: a point midway
             // along an edge can stand nearer the ring than either end of it.
-            var path = traceTabbedSquare();
+            var path = traceTabbedSquare(TABBED_SQUARE_CENTRE);
             var clear = path.findClearArcs(List.of());
 
             assertThat(clear)
@@ -492,13 +501,35 @@ final class RingPathTest {
         }
 
         @Test
+        void pinch_lying_across_the_path_s_start_is_carved_off_both_ends_of_it() {
+            // The same tab, anchored so the path opens on the mouth itself. The carve around a
+            // path's first corner reaches back before the start, and these intervals do not
+            // wrap - so it is split there and taken off the path's end as well as its
+            // beginning. Left unsplit, the piece before the start is dropped and the tail of
+            // the path comes back clear, which is the pinch offered as ring to lay a band on.
+            var path = traceTabbedSquare(TABBED_SQUARE_MOUTH);
+            var clear = path.findClearArcs(List.of());
+
+            assertThat(clear)
+                .hasSize(1);
+
+            assertThatPointsAre(
+                List.of(
+                    path.computePointAt(clear.get(0).startArcLength()),
+                    path.computePointAt(clear.get(0).endArcLength())),
+                List.of(
+                    new double[] {18, 8},
+                    new double[] {18, 11}));
+        }
+
+        @Test
         void shape_over_the_path_and_a_pinch_in_it_carve_the_one_ring_between_them() {
             // Both are stretches the layout may not use, and a caller taking the longest of
             // what is left has to see them in one list: read separately, the longest run
             // clear of the shapes would be judged without knowing the pinch cuts it in two.
             // The box takes 2 to 4 along the top edge and the mouth takes 15 to 19.24.
             assertThatArcsAre(
-                traceTabbedSquare().findClearArcs(List.of(buildBox(12, 17, 14, 19))),
+                traceTabbedSquare(TABBED_SQUARE_CENTRE).findClearArcs(List.of(buildBox(12, 17, 14, 19))),
                 List.of(
                     new double[] {0, 2},
                     new double[] {4, 15},
@@ -679,15 +710,19 @@ final class RingPathTest {
             SQUARE_CENTRE);
     }
 
-    // The path around a side-20 square with a tab hanging off its right side, inset by 2 and
-    // anchored at the square's centre: the shape a ring pinched in one place is posed with.
+    // The path around a side-20 square with a tab hanging off its right side, inset by 2: the
+    // shape a ring pinched in one place is posed with.
     //
     // The tab is 3 across against an inset of 2, so the two offset walls of it cross and the
     // fold splice leaves the crossing as a single corner at (19.5,9.5) - a mouth standing 1.58
     // off the ring it came from. The square itself has room several times over, so everything
-    // but the mouth and its two edges is ring a layout may go on: a 65.24-long path whose
-    // corners fall at 8, 15, 17.12, 19.24, 25.24, 41.24 and 57.24.
-    private static RingPath traceTabbedSquare() {
+    // but the mouth and its two edges is ring a layout may go on.
+    //
+    // The anchor is the parameter because where the path opens decides whether the pinch is a
+    // stretch in the middle of it or one straddling its two ends: from the square's centre the
+    // path opens at (10,18) and the mouth sits 15 to 19.24 along, while from beside the mouth
+    // the path opens on the pinch itself.
+    private static RingPath traceTabbedSquare(double[] topAnchor) {
         return RingPath.traceInsetRing(
             List.of(
                 new double[] {0, 0},
@@ -700,7 +735,7 @@ final class RingPathTest {
                 new double[] {0, 20}),
             INSET_DISTANCE,
             MITER_SPIKE_LIMIT,
-            new double[] {10, 10});
+            topAnchor);
     }
 
     // An axis-aligned keep-out box by its two opposite corners.
