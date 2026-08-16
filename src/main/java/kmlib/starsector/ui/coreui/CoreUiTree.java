@@ -135,12 +135,29 @@ public final class CoreUiTree {
      *                          policy to a genuinely broken reach rather than to an empty screen
      */
     public static Object resolveCurrentTab() {
+        var core = resolveActiveCoreUi();
+        return core == null ? null : invokeNoArg(core, GET_CURRENT_TAB_METHOD);
+    }
+
+    /**
+     * The core UI the screens are being drawn from, above any one tab.
+     *
+     * <p>Published beside the tab read for the walks that must not start at a tab: a tab is one
+     * screen's subtree, while things drawn over the campaign - the HUD and whatever it raises -
+     * hang elsewhere under this. A walk rooted at the tab cannot see them at all, so it would
+     * report their absence rather than their contents.
+     *
+     * @return the core UI in force, or null when there is no campaign UI yet or the hop answered
+     *         null
+     * @throws RuntimeException when a hop is absent or fails outright, so a caller applies its own
+     *                          policy to a genuinely broken reach rather than to an empty screen
+     */
+    public static Object resolveActiveCoreUi() {
         var sector = Global.getSector();
         if (sector == null || sector.getCampaignUI() == null) {
             return null;
         }
-        var core = resolveActiveCore(sector.getCampaignUI());
-        return core == null ? null : invokeNoArg(core, GET_CURRENT_TAB_METHOD);
+        return resolveActiveCore(sector.getCampaignUI());
     }
 
     // The core UI the screens are actually being drawn from. An interaction dialog stands up its
