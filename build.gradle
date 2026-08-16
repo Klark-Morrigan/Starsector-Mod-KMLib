@@ -19,6 +19,14 @@ enforcePackageVocabulary {
     forbidWords under: 'kmlib', words: ['ground']
 }
 
+enforcePackageLayering {
+    // A star system is described in terms of the markets in it, so systems sits above markets
+    // and the arrow only ever points that way. Closing the reverse edge is what keeps the two
+    // separable: one import back would make them a single unit nothing could split again, and
+    // the compiler accepts that direction as readily as this one.
+    forbidImport under: 'kmlib.starsector.markets', of: 'kmlib.starsector.systems'
+}
+
 // LunaLib backs KmLogging's in-game log-level binding. compileOnly, and
 // declared in mod_info.json so a consumer can call into kmlib.logging and
 // kmlib.settings unconditionally; the game classloader provides the jar at

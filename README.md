@@ -134,7 +134,13 @@ src/main/java/kmlib/
                      malformed entries), plus the number-to-copy
                      shaping that fills their numeric slots
                      (StarsectorFormat's truncating percent)
-    systems/       - star system queries and motion tracking;
+    systems/       - star system queries and motion tracking, plus the
+                     shared colony set every "who is in this system"
+                     read selects through - one rule, one entry per
+                     place and owner, unfogged with the visibility
+                     filter as one named projection over it, and a
+                     per-pass index so a system is walked once however
+                     many readers ask about it;
                      claims/ reads vanilla system claims behind a port,
                      with a second port for the scored contest behind
                      one - down to the terms each market's score is the
