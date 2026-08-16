@@ -1,0 +1,61 @@
+# Composes the line a release body carries to tell a player which dependency
+# release the mod requires, and where to get it.
+#
+# An action rather than a `run:` block in the release workflow, for the reason
+# every other action here exists: a workflow's inline bash cannot be unit
+# tested, and this line is player-facing copy with a condition attached. The
+# condition is the substance - a mod that pins no dependency must produce no
+# line at all, and a version arriving without a URL must produce no line
+# either, rather than a link that goes nowhere.
+#
+# Delegates to scripts/compose_dependency_note.sh so the logic is unit-tested
+# with bats. Composite actions themselves are not unit-testable.
+name: Compose dependency note
+description: >-
+  Composes a markdown line naming a required dependency release and linking
+  it, for appending to a release body. Emits nothing when the version or the
+  URL is absent, so a caller may pass values that are legitimately empty.
+
+inputs:
+  dependency-name:
+    description: >-
+      Dependency's display name as a player knows it, e.g. KMLib. Display
+      copy, so it is stated by the caller rather than read from a manifest -
+      the short name a release body wants is not the long one mod_info.json
+      carries.
+    required: true
+  version:
+    description: >-
+      Version the mod pins. Empty produces no line, which is the case for a
+      mod that declares no such dependency.
+    required: false
+    default: ''
+  release-url:
+    description: >-
+      URL of the release that version was found at. Empty produces no line:
+      a version named without a working link is worse than no line, because
+      the link is the half a reader acts on.
+    required: false
+    default: ''
+
+outputs:
+  note:
+    description: >-
+      The composed markdown line, or empty when no line is due. Empty is the
+      value create-github-release's notes-suffix input treats as absent.
+    value: ${{ steps.compose.outputs.note }}
+
+runs:
+  using: composite
+  steps:
+    - id: compose
+      shell: bash
+      # Passed as environment rather than interpolated into the run body, so
+      # an input cannot break out of the command and run as shell.
+      env:
+        DEPENDENCY_NAME: ${{ inputs.dependency-name }}
+        VERSION: ${{ inputs.version }}
+        RELEASE_URL: ${{ inputs.release-url }}
+      # GITHUB_ACTION_PATH points at this action's directory regardless
+      # of the caller's working directory, so the script path is stable.
+      run: "$GITHUB_ACTION_PATH/scripts/compose_dependency_note.sh"

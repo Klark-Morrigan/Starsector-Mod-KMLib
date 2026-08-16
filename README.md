@@ -238,6 +238,8 @@ scripts/
   actions/check-dependency-release/ - confirms a pinned dependency
     version exists as a published release of the repo shipping it,
     and emits that release's URL
+  actions/compose-dependency-note/ - composes the release-body line
+    naming that dependency release and linking it
   actions/fill-version-file-template/ - fills the caller's
     committed <mod-id>.version.template from mod_info.json, producing
     the VersionChecker file for the release being cut
@@ -343,6 +345,14 @@ Starsector binaries and so runs on the self-hosted `kmlib-runner`.
   carries cannot name a release nothing confirmed. An absent release and a
   lookup that could not be completed both fail, with different messages:
   the first is a verdict on the pin, the second explicitly is not.
+- [compose-dependency-note](.github/actions/compose-dependency-note/action.yml)
+  takes a `dependency-name`, a `version` and a `release-url` and emits the
+  `note` the release body carries below its changelog section: a markdown
+  line naming that dependency release and linking it. An action rather than
+  an inline step in the release workflow because the line is player-facing
+  copy with a condition attached - an absent version emits no line, which
+  is the case for KMLib releasing itself, and an absent URL emits no line
+  either, a dropped line beating one whose link goes nowhere.
   takes an `output-path` and a `zip-name` and writes the mod's
   VersionChecker `.version` file there. The caller commits a complete
   `<mod-id>.version.template` whose release-varying values are written as
