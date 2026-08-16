@@ -390,6 +390,35 @@ jobs:
           name: ${{ needs.config.outputs.version-file-name }}
           path: version-file
 
+      # A player reading the release has to install the pinned KMLib to run
+      # the mod at all - the game refuses to load it otherwise - so the body
+      # names that version and links the release it comes from. The link is
+      # the URL config verified, not one built from the tag here, so it
+      # cannot point at a release nothing confirmed exists.
+      #
+      # Composed in its own step rather than inline in the `with:` block
+      # below, matching how prepare-artifact composes its dist path: markdown
+      # carrying two interpolations does not read as a workflow expression.
+      #
+      # Both values are empty for KMLib's own release, which pins no KMLib,
+      # and the suffix then stays empty - create-github-release treats that
+      # as absent and publishes the changelog section alone. Guarded on the
+      # URL as well as the version so a version without one omits the line
+      # rather than publishing "[KMLib 1.0.0]()"; config's gating means that
+      # cannot arise today, but a link is the half a reader would trust.
+      - name: Compose the dependency line for the release body
+        id: notes-suffix
+        env:
+          KMLIB_VERSION: ${{ needs.config.outputs.kmlib-dependency-version }}
+          KMLIB_RELEASE_URL: ${{ needs.config.outputs.kmlib-release-url }}
+        run: |
+          set -euo pipefail
+          suffix=""
+          if [[ -n "${KMLIB_VERSION}" ]] && [[ -n "${KMLIB_RELEASE_URL}" ]]; then
+            suffix="Requires [KMLib ${KMLIB_VERSION}](${KMLIB_RELEASE_URL})."
+          fi
+          echo "suffix=${suffix}" >> "$GITHUB_OUTPUT"
+
       # Cut the release with the body taken from the matching CHANGELOG.md
       # section and two assets: the built mod zip (the mod's actual
       # distribution channel) and the generated .version file that update
@@ -400,6 +429,7 @@ jobs:
         uses: ./.common-automation/.github/actions/create-github-release
         with:
           version: ${{ needs.config.outputs.version }}
+          notes-suffix: ${{ steps.notes-suffix.outputs.suffix }}
           files: |
             ${{ needs.config.outputs.zip-name }}
             version-file/${{ needs.config.outputs.version-file-name }}
