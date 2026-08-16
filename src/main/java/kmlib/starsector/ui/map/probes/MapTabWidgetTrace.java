@@ -184,7 +184,7 @@ public final class MapTabWidgetTrace {
 
         return "d" + depth
             + " " + widget.getClass().getName()
-            + "[" + describeBox(box)
+            + "[" + ProbeDescriptions.describeBox(box)
             + " opacity=" + widget.getOpacity()
             + " parent=" + (parent == null ? "none" : parent.getClass().getName())
             + "]";
@@ -195,28 +195,15 @@ public final class MapTabWidgetTrace {
             ? DrawnWidgets.resolveBoxOf(tab)
             : null;
         return currentTab.getClass().getName()
-            + "[" + (tabBox == null ? "unpositioned" : describeBox(tabBox)) + "]";
+            + "[" + (tabBox == null ? "unpositioned" : ProbeDescriptions.describeBox(tabBox))
+            + "]";
     }
 
     // Every direct child with the box it occupies, drawn or not - a child faded out or never
     // positioned is named too, since a rule that skipped it is only checkable against a list that
     // says it was there to skip.
     private static List<String> describeDirectChildren(List<?> children) {
-        return ProbeDescriptions.describeUpToCap(children, MapTabWidgetTrace::describeDirectChild);
-    }
-
-    private static String describeDirectChild(Object child) {
-        if (!(child instanceof UIComponentAPI widget)) {
-            // Not a component, so it has neither box nor opacity to report - and cannot be the
-            // surface. Named anyway so the list is the tab's real children rather than a filtered
-            // view of them.
-            return child.getClass().getName() + "[not a component]";
-        }
-        var box = DrawnWidgets.resolveBoxOf(widget);
-        return widget.getClass().getName()
-            + "[" + (box == null ? "unpositioned" : describeBox(box))
-            + " opacity=" + widget.getOpacity()
-            + "]";
+        return ProbeDescriptions.describeUpToCap(children, ProbeDescriptions::describeComponent);
     }
 
     // What the surface rule makes of the map tab's children. Re-derived here rather than read back
@@ -237,18 +224,9 @@ public final class MapTabWidgetTrace {
 
         return surfaceArea == null
             ? "none"
-            : "[" + describeBox(surfaceArea.box())
+            : "[" + ProbeDescriptions.describeBox(surfaceArea.box())
                 + " chrome=" + ProbeDescriptions.describeUpToCap(
-                    surfaceArea.chromeBoxes(), MapTabWidgetTrace::describeBox) + "]";
-    }
-
-    // Rounded to whole units: these are read off a log by eye against the game's own pixel grid, and
-    // a fractional layout coordinate is noise at that resolution.
-    private static String describeBox(Rectangle box) {
-        return "x=" + Math.round(box.x())
-            + " y=" + Math.round(box.y())
-            + " w=" + Math.round(box.width())
-            + " h=" + Math.round(box.height());
+                    surfaceArea.chromeBoxes(), ProbeDescriptions::describeBox) + "]";
     }
 
     // Warns on this library's own logger rather than the caller's, since a reach that broke is the

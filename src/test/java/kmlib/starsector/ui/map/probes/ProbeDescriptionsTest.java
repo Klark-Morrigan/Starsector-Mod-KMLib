@@ -1,5 +1,8 @@
 package kmlib.starsector.ui.map.probes;
 
+import com.fs.starfarer.api.ui.PositionAPI;
+import com.fs.starfarer.api.ui.UIComponentAPI;
+
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -7,6 +10,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Pins the cap every probe's diagnostic line is held to, and the order it leaves what it names in.
@@ -48,6 +53,74 @@ class ProbeDescriptionsTest {
                 .startsWith("item0", "item1");
             assertThat(describedItems)
                 .endsWith("item23");
+        }
+    }
+
+    @Nested
+    class DescribeComponent {
+
+        @Test
+        void describeComponentNamesTheBoxAndOpacityOfADrawnWidget() {
+
+            assertThat(ProbeDescriptions.describeComponent(buildWidgetMock(10f, 20f, 30f, 40f, 1f)))
+                .contains("x=10 y=20 w=30 h=40")
+                .contains("opacity=1.0");
+        }
+
+        @Test
+        void describeComponentStillNamesTheOpacityOfAWidgetFadedToNothing() {
+            // The reading that explains a host nobody can see: it renders its whole subtree at zero
+            // opacity exactly as it does at one, so "there but invisible" has to be sayable.
+            assertThat(ProbeDescriptions.describeComponent(buildWidgetMock(5f, 6f, 7f, 8f, 0f)))
+                .contains("opacity=0.0");
+        }
+
+        @Test
+        void describeComponentSaysSoWhenTheLayoutNeverPositionedTheWidget() {
+
+            var unpositionedWidgetMock = mock(UIComponentAPI.class);
+
+            when(unpositionedWidgetMock.getPosition())
+                .thenReturn(null);
+
+            assertThat(ProbeDescriptions.describeComponent(unpositionedWidgetMock))
+                .contains("unpositioned");
+        }
+
+        @Test
+        void describeComponentNamesAnEntryThatIsNotAComponentAtAll() {
+            // A children list promises nothing about what is in it, and an entry with no box is
+            // still part of the tree the line is describing.
+            assertThat(ProbeDescriptions.describeComponent("not a widget"))
+                .isEqualTo("java.lang.String[not a component]");
+        }
+
+        private UIComponentAPI buildWidgetMock(
+                float x,
+                float y,
+                float width,
+                float height,
+                float opacity) {
+
+            var positionMock = mock(PositionAPI.class);
+
+            when(positionMock.getX())
+                .thenReturn(x);
+            when(positionMock.getY())
+                .thenReturn(y);
+            when(positionMock.getWidth())
+                .thenReturn(width);
+            when(positionMock.getHeight())
+                .thenReturn(height);
+
+            var widgetMock = mock(UIComponentAPI.class);
+
+            when(widgetMock.getPosition())
+                .thenReturn(positionMock);
+            when(widgetMock.getOpacity())
+                .thenReturn(opacity);
+
+            return widgetMock;
         }
     }
 

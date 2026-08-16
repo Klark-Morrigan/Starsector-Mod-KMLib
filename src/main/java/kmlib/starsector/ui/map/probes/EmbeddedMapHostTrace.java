@@ -158,8 +158,13 @@ public final class EmbeddedMapHostTrace {
         collectModOwnedClassesIn(host, 0, modOwnedClasses);
         collectModOwnedClassesOf(ancestors, modOwnedClasses);
 
-        return "[map=" + map.getClass().getName()
-            + " host=" + host.getClass().getName()
+        // Box and opacity on both, because where a host is and whether it is drawn at all is the
+        // reading that explains one nobody can see. A widget renders its whole subtree at zero
+        // opacity exactly as it does at one, so a host can drive this pass every frame while
+        // showing the player nothing - and a host that does have a visible box is one the player
+        // can go and hover deliberately to find out what it is.
+        return "[map=" + ProbeDescriptions.describeComponent(map)
+            + " host=" + ProbeDescriptions.describeComponent(host)
             + " under=" + describeAncestors(ancestors)
             + " modOwned=" + modOwnedClasses
             + "]";
@@ -224,7 +229,9 @@ public final class EmbeddedMapHostTrace {
         }
     }
 
-    // Outermost first, so the line reads down from the screen to the map.
+    // Outermost first, so the line reads down from the screen to the map. Class names alone here,
+    // where the map and its host carry boxes: the chain is for the shape of the tree, and a box per
+    // level would bury that in coordinates nobody is going to compare.
     private static List<String> describeAncestors(List<Object> ancestors) {
         return ProbeDescriptions.describeUpToCap(
             ancestors, ancestor -> ancestor.getClass().getName());
