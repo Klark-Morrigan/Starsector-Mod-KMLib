@@ -18,8 +18,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * centre above the anchor, runs clockwise whatever winding the ring arrived in, and
  * insets inward from a clockwise ring rather than outward; it falls back to the ring's
  * own top corner when the anchor sits beside the shape rather than within its span; and
- * it leaves nothing to trace when the inset outruns the ring on every side at once, when
- * it outruns a ring thin in one direction only, or when the ring encloses no area.
+ * it leaves nothing to trace when the ring encloses no area.
+ *
+ * <p>And of {@link RingPath#hasStretchHoldingItsInset}: a ring with room for the inset
+ * holds it, a ring pinched in one place holds the rest of itself, and a ring overrun on
+ * every side at once or thin in one direction only holds none of it - which is where the
+ * whole-ring refusal a trace used to pronounce now comes from. An empty path holds nothing.
  *
  * <p>And of {@link RingPath#getPerimeter}: the traced inset ring's own length, and zero
  * where there is no path.
@@ -33,6 +37,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * not repeat it, a stretch of no length is the single point it sits at, a stretch wrapping
  * past the start carries on round, one ending behind its start has no length, and one
  * longer than the perimeter is cut to a lap.
+ *
+ * <p>And of {@link RingPath#findClearArcs}: the whole path is clear where nothing covers it,
+ * a shape over it leaves the stretches either side, a cover spanning several edges is one
+ * stretch rather than one per edge, a shape over the start leaves what lies between its two
+ * sides, several shapes each take their own bite, a shape covering everything leaves nothing,
+ * and a shape lying elsewhere costs nothing. The stretch a pinch failed the inset on is carved
+ * the same way a shape's cover is - from the corner before the failing one to the corner after
+ * it - and a shape and a pinch carve the one ring between them.
  *
  * <p>And of {@link RingPath#fuseStretchAcrossStart}: the pair reaching the path's two ends
  * comes back as the one stretch it is, closing past the perimeter, while stretches falling
@@ -140,27 +152,63 @@ final class RingPathTest {
         }
 
         @Test
-        void nothing_is_left_to_trace_when_the_inset_outruns_the_ring() {
-            // A side-10 square cannot hold an inset of 6: the four offset edges cross
-            // past one another and the ring folds through itself. The fold is a shape a
-            // caller would otherwise walk and draw as a spur.
+        void nothing_is_left_to_trace_when_the_ring_encloses_no_area() {
+            // Two vertices bound nothing, so there is no interior to inset into.
+            var traced = RingPath.traceInsetRing(
+                Arrays.asList(new double[] {0, 0}, new double[] {10, 0}),
+                1.0,
+                MITER_SPIKE_LIMIT,
+                new double[] {5, 0});
+
+            assertThat(traced.isEmpty())
+                .isTrue();
+        }
+    }
+
+    @Nested
+    class HasStretchHoldingItsInset {
+
+        @Test
+        void ring_with_room_for_the_inset_holds_it() {
+            // The ordinary case: every corner of the inset square stands its full 2 off the
+            // ring it came from, so the whole path is ring a layout may go on.
+            assertThat(traceReferenceSquare().hasStretchHoldingItsInset())
+                .isTrue();
+        }
+
+        @Test
+        void ring_pinched_in_one_place_holds_the_rest_of_itself() {
+            // The tab's mouth is the one place this ring has no room for the inset, and the
+            // three sides of the square it hangs off have room several times over. A verdict
+            // on the whole ring answers this shape the same way it answers a shape with no
+            // room anywhere, which is the reading the carve exists to replace.
+            assertThat(traceTabbedSquare().hasStretchHoldingItsInset())
+                .isTrue();
+        }
+
+        @Test
+        void no_stretch_holds_the_inset_when_it_outruns_the_ring() {
+            // A side-10 square cannot hold an inset of 6: the four offset edges cross past
+            // one another and what comes back is a tidy side-2 square standing 4 off the
+            // ring rather than 6. Every corner of it fails, so every stretch is carved and
+            // the refusal a caller reads is the carve leaving nothing.
             var traced = RingPath.traceInsetRing(
                 buildReferenceSquare(),
                 6.0,
                 MITER_SPIKE_LIMIT,
                 SQUARE_CENTRE);
 
-            assertThat(traced.isEmpty())
-                .isTrue();
+            assertThat(traced.hasStretchHoldingItsInset())
+                .isFalse();
         }
 
         @Test
-        void nothing_is_left_to_trace_when_the_ring_is_too_thin_in_one_direction_only() {
+        void no_stretch_holds_the_inset_when_the_ring_is_too_thin_in_one_direction_only() {
             // A 20-by-4 ring has length to spare and no width: inset by 3, its long sides
             // cross while its ends do not, and what comes back is a tidy 14-by-2 rectangle
             // whose corners stand 1 from the ring rather than 3. A ring thin in one
             // direction is the shape a cell is most likely to be when it has no room, and
-            // it loses the whole path, not the thin part of it.
+            // no part of it is wide enough to rescue.
             var thin = Arrays.asList(
                 new double[] {0, 0},
                 new double[] {20, 0},
@@ -173,21 +221,17 @@ final class RingPathTest {
                 MITER_SPIKE_LIMIT,
                 new double[] {10, 2});
 
-            assertThat(traced.isEmpty())
-                .isTrue();
+            assertThat(traced.hasStretchHoldingItsInset())
+                .isFalse();
         }
 
         @Test
-        void nothing_is_left_to_trace_when_the_ring_encloses_no_area() {
-            // Two vertices bound nothing, so there is no interior to inset into.
-            var traced = RingPath.traceInsetRing(
-                Arrays.asList(new double[] {0, 0}, new double[] {10, 0}),
-                1.0,
-                MITER_SPIKE_LIMIT,
-                new double[] {5, 0});
-
-            assertThat(traced.isEmpty())
-                .isTrue();
+        void an_empty_path_holds_nothing() {
+            // A ring that left nothing to trace has no stretch to offer, which is the same
+            // answer a ring overrun everywhere gives - and the reason a caller choosing
+            // between insets can ask one question rather than two.
+            assertThat(RingPath.nothingLeftToTrace().hasStretchHoldingItsInset())
+                .isFalse();
         }
     }
 
@@ -426,6 +470,42 @@ final class RingPathTest {
         }
 
         @Test
+        void stretch_that_failed_the_inset_is_carved_between_the_corners_either_side_of_it() {
+            // The tab's mouth stands 1.58 off the ring rather than the 2 it was built from,
+            // and what is given up for it is the mouth and the two edges reaching it - from
+            // the corner before it at (18,11) to the corner after it at (18,8). Clearance is
+            // sampled at corners, so the carve has to reach the neighbours: a point midway
+            // along an edge can stand nearer the ring than either end of it.
+            var path = traceTabbedSquare();
+            var clear = path.findClearArcs(List.of());
+
+            assertThat(clear)
+                .hasSize(2);
+
+            assertThatPointsAre(
+                List.of(
+                    path.computePointAt(clear.get(0).endArcLength()),
+                    path.computePointAt(clear.get(1).startArcLength())),
+                List.of(
+                    new double[] {18, 11},
+                    new double[] {18, 8}));
+        }
+
+        @Test
+        void shape_over_the_path_and_a_pinch_in_it_carve_the_one_ring_between_them() {
+            // Both are stretches the layout may not use, and a caller taking the longest of
+            // what is left has to see them in one list: read separately, the longest run
+            // clear of the shapes would be judged without knowing the pinch cuts it in two.
+            // The box takes 2 to 4 along the top edge and the mouth takes 15 to 19.24.
+            assertThatArcsAre(
+                traceTabbedSquare().findClearArcs(List.of(buildBox(12, 17, 14, 19))),
+                List.of(
+                    new double[] {0, 2},
+                    new double[] {4, 15},
+                    new double[] {19.2426407, 65.2426407}));
+        }
+
+        @Test
         void an_empty_path_has_no_stretches_to_offer() {
             // A ring that left nothing to trace has nothing to carve either, and answering
             // with a stretch of a path that does not exist would be worse than answering none.
@@ -597,6 +677,30 @@ final class RingPathTest {
             INSET_DISTANCE,
             MITER_SPIKE_LIMIT,
             SQUARE_CENTRE);
+    }
+
+    // The path around a side-20 square with a tab hanging off its right side, inset by 2 and
+    // anchored at the square's centre: the shape a ring pinched in one place is posed with.
+    //
+    // The tab is 3 across against an inset of 2, so the two offset walls of it cross and the
+    // fold splice leaves the crossing as a single corner at (19.5,9.5) - a mouth standing 1.58
+    // off the ring it came from. The square itself has room several times over, so everything
+    // but the mouth and its two edges is ring a layout may go on: a 65.24-long path whose
+    // corners fall at 8, 15, 17.12, 19.24, 25.24, 41.24 and 57.24.
+    private static RingPath traceTabbedSquare() {
+        return RingPath.traceInsetRing(
+            List.of(
+                new double[] {0, 0},
+                new double[] {20, 0},
+                new double[] {20, 8},
+                new double[] {34, 8},
+                new double[] {34, 11},
+                new double[] {20, 11},
+                new double[] {20, 20},
+                new double[] {0, 20}),
+            INSET_DISTANCE,
+            MITER_SPIKE_LIMIT,
+            new double[] {10, 10});
     }
 
     // An axis-aligned keep-out box by its two opposite corners.

@@ -82,17 +82,31 @@ as one number rather than as an edge and a fraction of it.
   runs off the end continues round instead of having to be split.
 
 `traceInsetRing` traces an inset of the ring rather than the ring itself, because the inset
-carries a verdict: a shape narrower than twice the inset has no room for it, and what comes
-back is not obviously wrong to look at. A square inset past half its width returns a smaller
-square, correctly wound and self-intersecting nowhere, built entirely of backwards edges - so
-the verdict is a measurement (every corner must stand its inset distance off the original
-ring, by `PolygonRegions.computeDistanceToBoundary`) rather than a winding or vertex-count
-test. Answered there, so a non-empty path is always one that can be walked.
-`collectPointsBetween` returns a stretch as a polyline including the corners it turns at - a
-stretch spanning a corner bends, and whatever gives it girth has to bend with it.
+carries a fact the caller cannot see: where a shape is narrower than twice the inset, what
+comes back is not obviously wrong to look at. A square inset past half its width returns a
+smaller square, correctly wound and self-intersecting nowhere, built entirely of backwards
+edges - so the check is a measurement (each corner must stand its inset distance off the
+original ring, by `PolygonRegions.computeDistanceToBoundary`) rather than a winding or
+vertex-count test.
+
+What it does with a corner that fails is carve, not refuse: the stretch from the corner
+before it to the corner after it is subtracted from what `findClearArcs` offers, and the rest
+of the ring stands. A shape pinched in one place is the ordinary case, and giving up its whole
+outline for one narrow spot loses ring that was several times wide enough. The refusal
+survives as what the carve leaves - a ring overrun everywhere fails at every corner, so every
+stretch goes and `hasStretchHoldingItsInset` comes back false, which is the one question a
+caller choosing between insets asks. The carve reaches the failing corner's neighbours
+deliberately: clearance is sampled at corners, and a point midway along an edge can stand
+nearer the ring than either end of it. `collectPointsBetween` returns a stretch as a polyline
+including the corners it turns at - a stretch spanning a corner bends, and whatever gives it
+girth has to bend with it.
 
 A layout rarely has the whole ring to itself, so `findClearArcs` answers which stretches of the
-path a set of keep-out shapes leaves free, as arc-length intervals in the path's own frame. The
+path a set of keep-out shapes - and the path's own carved stretches - leave free, as arc-length
+intervals in the path's own frame. Both are subtracted in the one answer, since a stretch with no
+room for the inset is as unusable as a stretch something else covers, and a caller taking the
+longest of what is left would otherwise have to remember there were two reasons a stretch might be
+missing. The
 answer is intervals rather than geometry because a caller measuring its layout in distances
 already reads the path that way, and what it then makes of them - one interval or several,
 resized or not - is its own. Every shape handed over is tested, whoever it belongs to, and a shape

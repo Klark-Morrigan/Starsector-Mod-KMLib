@@ -27,11 +27,11 @@ import java.util.List;
  *
  * <p>Tracing an inset of the ring rather than the ring itself is the same operation
  * on a smaller shape, and it is bundled ({@link #traceInsetRing}) because the inset
- * carries a verdict the caller would otherwise have to reach for itself: a shape
- * narrower than twice the inset has no room for it, and what comes back then is not
- * obviously wrong to look at - it can be a tidy, correctly wound ring that simply is
- * not the inset that was asked for. Answering that here means a non-empty path is
- * always one that can be walked.
+ * carries a fact the caller would otherwise have to reach for itself: where a shape is
+ * narrower than twice the inset, what comes back is not obviously wrong to look at - it
+ * can be a tidy, correctly wound stretch of ring that simply stands nearer the shape than
+ * the inset it was built from. Measuring that here means the stretches a caller is offered
+ * are always ones that held the inset they were asked for.
  *
  * <p>What is laid out along a path rarely has the whole of it to itself, so the path also
  * answers which stretches of it something else has claimed ({@link #findClearArcs}), reads
@@ -54,6 +54,10 @@ public final class RingPath {
     // quadratic scan costs nothing worth saving.
     private static final int COMPARE_EVERY_EDGE_PAIR = 0;
 
+    // A clear-arc search claiming nothing of its own, which leaves the path's own overrun
+    // stretches as the only thing carved from it.
+    private static final List<List<double[]>> NOTHING_KEPT_OUT = List.of();
+
     private final List<double[]> points;
 
     // Entry i is the distance from the start to points[i], so entry 0 is zero and the
@@ -62,9 +66,20 @@ public final class RingPath {
     // is a search through it.
     private final double[] arcLengthAtPoint;
 
-    private RingPath(List<double[]> points, double[] arcLengthAtPoint) {
+    // The stretches of this path that failed the inset they were traced at, as {start, end}
+    // arc lengths - sorted, disjoint, and within [0, perimeter]. Held because a layout may
+    // no more lie on them than on a stretch some other shape covers, so every clear-arc
+    // search subtracts them alongside its caller's keep-outs.
+    private final List<double[]> overrunArcs;
+
+    private RingPath(
+            List<double[]> points,
+            double[] arcLengthAtPoint,
+            List<double[]> overrunArcs) {
+
         this.points = points;
         this.arcLengthAtPoint = arcLengthAtPoint;
+        this.overrunArcs = overrunArcs;
     }
 
     /**
@@ -87,9 +102,9 @@ public final class RingPath {
      * @param topAnchor       the {x, y} the start is found above: the path begins at the
      *                        highest crossing of the vertical line through it, or at the
      *                        inset ring's own topmost corner where that line misses it
-     * @return the traced path, or {@link #nothingLeftToTrace()} when the ring had no room
-     *         for the inset - it shrank past enclosing any area, or came back with a
-     *         corner standing nearer the ring than the inset it was built from
+     * @return the traced path, with the stretches that failed the inset already carved out
+     *         of what {@link #findClearArcs} offers; or {@link #nothingLeftToTrace()} when
+     *         the inset shrank the ring past enclosing any area at all
      */
     public static RingPath traceInsetRing(
             List<double[]> ring,
@@ -108,13 +123,22 @@ public final class RingPath {
 
         var cleaned = Rings.removeConsecutiveDuplicates(inset);
 
-        if (!hasRoomForInset(counterClockwise, cleaned, insetDistance)) {
+        if (cleaned.size() < Limits.MIN_VERTICES_TO_ENCLOSE_AREA) {
             return nothingLeftToTrace();
         }
 
         var traced = rotateToTopCentre(reverseRing(cleaned), topAnchor);
+        var arcLengths = measureArcLengths(traced);
 
-        return new RingPath(traced, measureArcLengths(traced));
+        // Measured on the traced ring rather than during the offset, so an overrun stretch
+        // is stated in the arc lengths a layout is measured in. Measured before the winding
+        // was normalised and the ring rotated, every index would have to be carried through
+        // both to mean anything.
+        return new RingPath(
+            traced,
+            arcLengths,
+            mergeOverlappingArcs(
+                collectOverrunArcs(counterClockwise, traced, arcLengths, insetDistance)));
     }
 
     /**
@@ -128,7 +152,7 @@ public final class RingPath {
      * @return the empty path
      */
     public static RingPath nothingLeftToTrace() {
-        return new RingPath(new ArrayList<>(), new double[] {0});
+        return new RingPath(new ArrayList<>(), new double[] {0}, new ArrayList<>());
     }
 
     /**
@@ -203,6 +227,12 @@ public final class RingPath {
      * a keep-out is a fact about the plane, so one reaching in from outside covers the path
      * exactly as much as one raised over it.
      *
+     * <p>The path's own overrun stretches are subtracted too, so what comes back is clear of
+     * both. A stretch standing nearer the ring than the inset it was traced at is room a
+     * layout may not use for the same reason a covered stretch is, and answering with both in
+     * one list is what lets a caller take the longest of what is left without knowing there
+     * were two reasons a stretch could be missing - or forgetting one of them.
+     *
      * <p>The intervals do not wrap: a shape covering the path's start leaves the pieces
      * before and after it as the first and last intervals rather than fusing them into one
      * that straddles the origin. A layout beginning at the start therefore begins at the
@@ -210,17 +240,41 @@ public final class RingPath {
      *
      * @param keepOutRings the shapes to keep clear of, each a closed ring of {x, y} vertices
      *                     in either winding; concave rings are handled, and an empty list
-     *                     leaves the whole path clear
+     *                     leaves the path clear but for its own overrun stretches
      * @return the uncovered stretches, ascending and disjoint; the whole path as one
      *         stretch when nothing covers it, and empty when the path is empty or the
-     *         shapes cover all of it
+     *         shapes and the overruns cover all of it
      */
     public List<RingStretch> findClearArcs(List<List<double[]>> keepOutRings) {
 
         if (isEmpty()) {
             return new ArrayList<>();
         }
-        return invertToClearArcs(mergeOverlappingArcs(collectCoveredArcs(keepOutRings)));
+        var covered = collectCoveredArcs(keepOutRings);
+
+        covered.addAll(overrunArcs);
+
+        return invertToClearArcs(mergeOverlappingArcs(covered));
+    }
+
+    /**
+     * Whether any of the path held the inset it was traced at - that is, whether there is a
+     * stretch of it a layout could go on before anything else is kept clear of.
+     *
+     * <p>The refusal a trace used to answer with, derived rather than pronounced. A ring
+     * overrun in one place carves that place and keeps the rest, and a ring overrun
+     * everywhere carves every stretch and so has none - one rule covering both, where a
+     * verdict on the whole ring gave the second answer to the first case.
+     *
+     * <p>Asked of the path rather than of a clear-arc search because the two are different
+     * questions: this one is about the shape the path was traced inside, and a caller falling
+     * back to a shallower inset is choosing between rings, not between keep-outs.
+     *
+     * @return true when at least one stretch of the path stood at the inset it was asked for;
+     *         false for an empty path, which held none
+     */
+    public boolean hasStretchHoldingItsInset() {
+        return !findClearArcs(NOTHING_KEPT_OUT).isEmpty();
     }
 
     /**
@@ -533,37 +587,73 @@ public final class RingPath {
         return new Bounds(minX, minY, maxX, maxY);
     }
 
-    // Whether the offset really moved the whole ring the distance it was asked to: every
-    // corner of the result stands at least that far off the ring it came from.
+    // Where the offset failed to move the ring the distance it was asked to, as intervals in
+    // the traced path's own arc lengths - one per corner standing nearer the ring than the
+    // inset it was built from, in no order and free to overlap each other.
     //
-    // The check has to be a measurement, because an offset that overruns the shape does
-    // not always announce itself. A shape narrower than twice the inset has its two sides
-    // cross over, and while that shows up as a self-intersection where it happens locally
-    // - which the fold splice takes out - a shape overrun on every side at once simply
-    // turns inside out: a square inset past half its width comes back as a smaller square,
-    // correctly wound, self-intersecting nowhere, made of every edge running backwards.
-    // Nothing about its shape is wrong; what is wrong is that its corners sit nearer the
-    // original ring than the inset they were built from, and only measuring says so.
+    // The failure has to be measured, because an offset that overruns the shape does not
+    // always announce itself. A shape narrower than twice the inset has its two sides cross
+    // over, and while that shows up as a self-intersection where it happens locally - which
+    // the fold splice takes out - a shape overrun on every side at once simply turns inside
+    // out: a square inset past half its width comes back as a smaller square, correctly
+    // wound, self-intersecting nowhere, made of every edge running backwards. Nothing about
+    // its shape is wrong; what is wrong is that its corners sit nearer the original ring than
+    // the inset they were built from, and only measuring says so.
+    //
+    // Carved rather than answered as a verdict on the whole ring, because a ring pinched in
+    // one place is the ordinary case and its wide part is perfectly good to lay a layout on.
+    // The verdict survives as what the carve leaves: a ring overrun everywhere fails at every
+    // corner, so every stretch is carved and nothing is left.
     //
     // The slack is the shared minimum edge length: the offset arithmetic is exact bar
     // rounding, so a corner is either at its distance to within a whisker or nowhere near.
-    private static boolean hasRoomForInset(
+    private static List<double[]> collectOverrunArcs(
             List<double[]> ring,
-            List<double[]> inset,
+            List<double[]> traced,
+            double[] arcLengthAtPoint,
             double insetDistance) {
 
-        if (inset.size() < Limits.MIN_VERTICES_TO_ENCLOSE_AREA) {
-            return false;
-        }
+        var overrun = new ArrayList<double[]>();
+        var count = traced.size();
 
-        for (var corner : inset) {
-            if (PolygonRegions.computeDistanceToBoundary(ring, corner)
-                    < insetDistance - Limits.MIN_EDGE_LENGTH) {
+        for (var corner = 0; corner < count; corner++) {
 
-                return false;
+            if (PolygonRegions.computeDistanceToBoundary(ring, traced.get(corner))
+                    >= insetDistance - Limits.MIN_EDGE_LENGTH) {
+
+                continue;
             }
+
+            // From the corner before the failing one to the corner after it. Clearance is
+            // sampled at corners, and a mid-edge point can stand nearer the ring than either
+            // end of its edge - a spur poking at the middle of a long edge does exactly that
+            // - so the carve is deliberately wider than the sample it is drawn from.
+            appendOverrunArc(
+                overrun,
+                corner == 0
+                    ? arcLengthAtPoint[count - 1] - arcLengthAtPoint[count]
+                    : arcLengthAtPoint[corner - 1],
+                arcLengthAtPoint[corner + 1],
+                arcLengthAtPoint[count]);
         }
-        return true;
+        return overrun;
+    }
+
+    // One failing corner's carve, stated within [0, perimeter]. The carve around the path's
+    // first corner reaches back past the start, and the intervals a clear-arc search inverts
+    // do not wrap, so such a carve is split at the start into the two pieces it is.
+    private static void appendOverrunArc(
+            List<double[]> overrun,
+            double startArcLength,
+            double endArcLength,
+            double perimeter) {
+
+        if (startArcLength < 0) {
+            overrun.add(new double[] {startArcLength + perimeter, perimeter});
+            overrun.add(new double[] {0, endArcLength});
+            return;
+        }
+        overrun.add(new double[] {startArcLength, endArcLength});
     }
 
     // The ring re-listed to begin at its top centre, in the same order it arrived in: the
