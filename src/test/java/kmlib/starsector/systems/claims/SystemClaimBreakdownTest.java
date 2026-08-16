@@ -22,14 +22,14 @@ final class SystemClaimBreakdownTest {
     class Construct {
         @Test
         void keepsTheStandingsItWasBuiltWithWhenTheSourceListChangesLater() {
-            var scores = new ArrayList<FactionClaimScore>();
+            var scores = new ArrayList<FactionClaimStanding>();
             scores.add(ClaimStandingFixture.buildStandingOnOneMarket("hegemony", 6, true));
             var breakdown = new SystemClaimBreakdown(null, "hegemony", scores);
 
             scores.clear();
 
             assertThat(breakdown.scores())
-                .extracting(FactionClaimScore::factionId)
+                .extracting(FactionClaimStanding::factionId)
                 .containsExactly("hegemony");
         }
 

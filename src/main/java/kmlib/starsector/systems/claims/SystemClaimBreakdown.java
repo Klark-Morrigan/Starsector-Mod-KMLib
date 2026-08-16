@@ -19,17 +19,19 @@ import java.util.List;
  * @param claimantFactionId the id of the faction claiming the system: the override when one is
  *                          set, else the top-scoring territorial faction, else null when
  *                          nobody claims it
- * @param scores            every faction whose presence can be scored, ordered by score
- *                          descending. Ties keep economy iteration order, which is the order
- *                          the mechanic itself settles a tied contest on. A standing is not a
- *                          candidacy: a faction barred from claiming is scored like any other
- *                          and marked non-territorial, so a caller reading this as a shortlist
- *                          of contenders has to filter on that flag.
+ * @param scores            every faction present, ordered by score descending. Ties keep economy
+ *                          iteration order, which is the order the mechanic itself settles a tied
+ *                          contest on, so the factions the mechanic weighed nothing for settle at
+ *                          the foot at their shared nought. A standing is not a candidacy: a
+ *                          faction barred from claiming is scored like any other and marked
+ *                          non-territorial, so a caller reading this as a shortlist of contenders
+ *                          has to filter on that flag - and on the standing's kind, a faction the
+ *                          contest never weighed being no contender whatever its flag says.
  */
 public record SystemClaimBreakdown(
         String overrideFactionId,
         String claimantFactionId,
-        List<FactionClaimScore> scores) {
+        List<FactionClaimStanding> scores) {
 
     /** An unreadable or wholly empty system: nobody present, nobody claiming, no override. */
     public static final SystemClaimBreakdown NONE =

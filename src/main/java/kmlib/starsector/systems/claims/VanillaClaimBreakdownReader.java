@@ -9,14 +9,16 @@ import com.fs.starfarer.api.util.Misc;
 import kmlib.starsector.factions.FactionFlags;
 import kmlib.starsector.markets.Markets;
 import kmlib.starsector.systems.StarSystems;
+import kmlib.starsector.systems.SystemColonies;
+import kmlib.starsector.systems.SystemColony;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalInt;
+import java.util.Set;
 
 /**
  * {@link ClaimBreakdownReader} binding that recomputes vanilla's claim mechanic
@@ -36,7 +38,7 @@ import java.util.OptionalInt;
  * never be territorial cannot move the winner - while dropping it, as vanilla does, would
  * report a system the player holds a colony in as one they have no presence in.
  *
- * <p>A hidden market gets no standing of its own, as in vanilla, and that exclusion is not the
+ * <p>A hidden market carries no score of its own, as in vanilla, and that exclusion is not the
  * same call: hidden markets already enter the contest through the sibling count, so scoring one
  * separately would count it twice, and since a faction stands on its strongest market alone a
  * large hidden base would displace the visible colony actually contesting the system. Note that
@@ -51,7 +53,20 @@ import java.util.OptionalInt;
  * reaches it, which is the same reason it is kept out of the sibling count: admitting it there
  * would raise a real colony's score above the one the game scores it at.
  *
- * <p>Scoring walks every market present in a system, so it is the expensive read of the two; the
+ * <p>A faction holding nothing but such markets still takes a standing - a
+ * {@link PresenceOnlyClaimStanding} at nought - rather than dropping out of the contest for want
+ * of anything to stand on. That is the last step of the same widening: a station drawn on the map
+ * in a faction's colours has to reach the account of who is in the system, and the faction it
+ * belongs to is what carries it there. The nought is what keeps the widening off the mechanic,
+ * the lead changing only on a score strictly greater than nought.
+ *
+ * <p>The markets themselves come from {@link SystemColonies} rather than from a walk of this
+ * class's own, so what counts as a colony here is what counts as one everywhere else reading the
+ * same system - and the condition-only market every uninhabited planet carries, which a widening
+ * to off-economy markets would otherwise admit on every surveyed rock, is excluded by that shared
+ * rule rather than by a test repeated here.
+ *
+ * <p>That read walks the whole system, so it is the expensive half of the two reads below; the
  * override is a bare memory read and stays cheap.
  */
 public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
@@ -67,11 +82,6 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
     // The place the first market in a system's listing takes. Counted from one because the number
     // is stated to the player, who reads a list of markets as first, second, third.
     private static final int FIRST_LISTED = 1;
-
-    // Which of the two reads a run of markets came out of. Named at the call sites rather than
-    // worked out per market, the read that answered a market being the whole of what settles it.
-    private static final boolean IS_LISTED_BY_ECONOMY = false;
-    private static final boolean IS_OFF_ECONOMY = true;
 
     @Override
     public SystemClaimBreakdown readBreakdown(StarSystemAPI system) {
@@ -100,64 +110,55 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
         return StarSystems.readFactionClaimOverride(system);
     }
 
-    // Every market in the system that belongs to somebody, scored, in the order the economy
-    // lists them - the order a tied contest is settled in, so it is the order kept throughout -
-    // followed by the markets the economy does not list at all.
+    // The system's colonies as the contest meets them: the shared set, each numbered by where it
+    // falls in it, paired with the faction that owns it.
     //
-    // Two reads rather than one, because the two answer different questions. Every market present
-    // is walked, so the account names a colony the player can see on the map; but only the
-    // economy's own may feed an arithmetic vanilla runs off the economy, which is why the sibling
-    // count below is handed the narrower list at both calls. Widening that count instead would
-    // raise a real colony's score over what the game scores it at, and could hand the system to a
-    // different faction - a mechanic change wearing a display fix's clothes.
+    // The set already answers what the walk used to work out for itself - which colonies belong to
+    // somebody, which of two markets on one entity speaks for the place, and the economy's own
+    // order ahead of what the economy does not list - so all that is left here is the fact the set
+    // carries but does not apply: only the economy's own markets may feed an arithmetic vanilla
+    // runs off the economy, which is why the sibling count below is handed the narrower list.
+    // Widening that count instead would raise a real colony's score over what the game scores it
+    // at, and could hand the system to a different faction - a mechanic change wearing a display
+    // fix's clothes.
+    //
+    // The whole set is read rather than the known projection over it, because vanilla scores
+    // colonies the player has never found: fogging the input here would resolve a claimant the
+    // game itself would not report. Whether the player knows of a colony rides each market instead,
+    // for a display to withhold.
     private static List<ClaimedMarket> readClaimedMarkets(StarSystemAPI system) {
 
-        var sector = Global.getSector();
-        var economyMarkets = StarSystems.readMarkets(sector, system);
-        var claimedMarkets = new ArrayList<ClaimedMarket>();
+        var colonies = SystemColonies.readColoniesIn(Global.getSector(), system).colonies();
+        var economyMarkets = selectEconomyListedMarkets(colonies);
+        var claimedMarkets = new ArrayList<ClaimedMarket>(colonies.size());
 
-        appendClaimedMarkets(claimedMarkets, economyMarkets, economyMarkets, IS_LISTED_BY_ECONOMY);
-        appendClaimedMarkets(
-            claimedMarkets,
-            StarSystems.readMarketsUnlistedByEconomy(sector, system),
-            economyMarkets,
-            IS_OFF_ECONOMY);
-
+        for (var colony : colonies) {
+            // The place a colony takes counts from one across the whole set, since the contest is
+            // settled on relative order alone and a run with no gaps in it leaves the player
+            // nothing to wonder about when the number is stated back to them.
+            claimedMarkets.add(new ClaimedMarket(
+                colony.market().getFaction(),
+                computeMarketClaim(
+                    colony,
+                    economyMarkets,
+                    claimedMarkets.size() + FIRST_LISTED)));
+        }
         return claimedMarkets;
     }
 
-    // One walk's worth of markets folded onto the end of the run, each numbered by where it lands
-    // in it. Called once per read rather than over a merged list, so which of the two a market came
-    // from is settled by the read that answered it - a merged list would have to be compared back
-    // against the economy's to recover the same fact, which is that comparison written twice.
-    //
-    // An unowned market belongs to nobody's standing and the mechanic would throw on one, so it is
-    // dropped here rather than guarded against at each later read.
-    private static void appendClaimedMarkets(
-            List<ClaimedMarket> claimedMarkets,
-            List<MarketAPI> markets,
-            List<MarketAPI> economyMarkets,
-            boolean isOffEconomyMarket) {
+    // The half of the set the economy itself lists - the only markets vanilla's sibling term is
+    // counted over. Taken off the set rather than read from the economy a second time, so the
+    // markets counted are exactly the ones numbered above them.
+    private static List<MarketAPI> selectEconomyListedMarkets(List<SystemColony> colonies) {
 
-        for (var market : markets) {
-            var faction = market == null ? null : market.getFaction();
+        var economyMarkets = new ArrayList<MarketAPI>(colonies.size());
 
-            if (faction == null) {
-                continue;
+        for (var colony : colonies) {
+            if (colony.isListedByEconomy()) {
+                economyMarkets.add(colony.market());
             }
-            // The place a market takes is its place among the owned ones, counting from one, rather
-            // than its raw index in the listing. The two order every market identically - dropping
-            // the unowned ones takes nothing out of order - and the contest is settled on relative
-            // order alone, so numbering the markets that take part leaves a run with no gaps in it
-            // for a reader to wonder about.
-            claimedMarkets.add(new ClaimedMarket(
-                faction,
-                computeMarketClaim(
-                    market,
-                    economyMarkets,
-                    claimedMarkets.size() + FIRST_LISTED,
-                    isOffEconomyMarket)));
         }
+        return economyMarkets;
     }
 
     // Vanilla's own pass, market by market in economy order: the running maximum only ever
@@ -187,10 +188,15 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
         return topFactionId;
     }
 
-    // One standing per faction holding a market scored on its own account, in the order those
-    // markets first appear - which is the order a tie between two equal standings is settled
-    // in, so the ranking agrees with the claimant resolved above it.
-    private static List<FactionClaimScore> collectStandings(List<ClaimedMarket> claimedMarkets) {
+    // Every faction present, weighed ones first: one standing per faction holding a market scored
+    // on its own account, in the order those markets first appear - which is the order a tie
+    // between two equal standings is settled in, so the ranking agrees with the claimant resolved
+    // above it - then one apiece for the factions no market was scored for.
+    //
+    // The two folds are kept in that order because the ranking below sorts stably on the score
+    // alone: a presence-only standing is worth nought, so putting them after the weighed ones is
+    // what settles them at the foot without the comparison having to know the kinds apart.
+    private static List<FactionClaimStanding> collectStandings(List<ClaimedMarket> claimedMarkets) {
 
         var standingByFactionId = new LinkedHashMap<String, ClaimedMarket>();
 
@@ -199,14 +205,55 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
                 recordBestStanding(standingByFactionId, claimedMarket);
             }
         }
-        var standings = new ArrayList<FactionClaimScore>(standingByFactionId.size());
+        var standings = new ArrayList<FactionClaimStanding>();
 
         for (var standing : standingByFactionId.values()) {
-            standings.add(new FactionClaimScore(
+            standings.add(new WeighedClaimStanding(
                 standing.faction().getId(),
                 isEligibleToClaim(standing.faction()),
                 standing.claim(),
                 selectOtherMarketClaims(claimedMarkets, standing)));
+        }
+        standings.addAll(
+            collectPresenceOnlyStandings(claimedMarkets, standingByFactionId.keySet()));
+
+        return standings;
+    }
+
+    // One standing per faction the fold above found no scored market for: present in the system
+    // through concealed or unregistered colonies alone, which the mechanic carries without ever
+    // weighing. Such a faction has nothing that could stand for it, so it is listed for what it
+    // holds - a station the map draws in its colours has to reach the account of the system.
+    //
+    // Grouped in listing order, so the markets beneath a standing read in the order the contest
+    // walked them and two such factions settle between themselves the way every other tie does.
+    private static List<PresenceOnlyClaimStanding> collectPresenceOnlyStandings(
+            List<ClaimedMarket> claimedMarkets,
+            Set<String> weighedFactionIds) {
+
+        var marketsByFactionId = new LinkedHashMap<String, List<ClaimedMarket>>();
+
+        for (var claimedMarket : claimedMarkets) {
+            var factionId = claimedMarket.faction().getId();
+
+            if (!weighedFactionIds.contains(factionId)) {
+                marketsByFactionId
+                    .computeIfAbsent(factionId, id -> new ArrayList<>())
+                    .add(claimedMarket);
+            }
+        }
+        var standings = new ArrayList<PresenceOnlyClaimStanding>(marketsByFactionId.size());
+
+        for (var factionMarkets : marketsByFactionId.values()) {
+            // Read off the first of the faction's markets rather than carried alongside the group:
+            // the game holds one faction instance per id, so every market in a group names the
+            // same object and a second source for it could only ever be a way to disagree.
+            var faction = factionMarkets.get(0).faction();
+
+            standings.add(new PresenceOnlyClaimStanding(
+                faction.getId(),
+                isEligibleToClaim(faction),
+                factionMarkets.stream().map(ClaimedMarket::claim).toList()));
         }
         return standings;
     }
@@ -255,12 +302,13 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
     // Strongest first, which is the order any reader wants to see a contest in. The sort is
     // stable, so equally-scored factions stay in economy order and the ranking agrees with the
     // tie rule that picked the winner.
-    private static List<FactionClaimScore> rankStandings(Collection<FactionClaimScore> standings) {
+    private static List<FactionClaimStanding> rankStandings(
+            List<FactionClaimStanding> standings) {
 
         var ranked = new ArrayList<>(standings);
 
         ranked.sort(Comparator
-            .comparingInt(FactionClaimScore::score)
+            .comparingInt(FactionClaimStanding::score)
             .reversed());
 
         return ranked;
@@ -282,23 +330,23 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
     // recorded here rather than looked up by whatever lists it: reading the pair on the walk that
     // met the market is what stops a second lookup answering for a different one.
     private static MarketClaimBreakdown computeMarketClaim(
-            MarketAPI market,
+            SystemColony colony,
             List<MarketAPI> economyMarkets,
-            int listingPosition,
-            boolean isOffEconomyMarket) {
+            int listingPosition) {
 
+        var market = colony.market();
         var siblingMarketCount = 0;
 
         for (var other : economyMarkets) {
-            if (other != null && other != market && other.getFaction() == market.getFaction()) {
+            if (other != market && other.getFaction() == market.getFaction()) {
                 siblingMarketCount++;
             }
         }
         return new MarketClaimBreakdown(
             Markets.readNameplate(market),
             listingPosition,
-            Markets.isKnownToPlayer(market),
-            new ContestAdmission(market.isHidden(), isOffEconomyMarket),
+            colony.isKnownToPlayer(),
+            new ContestAdmission(colony.isHidden(), !colony.isListedByEconomy()),
             market.getSize(),
             siblingMarketCount,
             Markets.isMilitary(market)

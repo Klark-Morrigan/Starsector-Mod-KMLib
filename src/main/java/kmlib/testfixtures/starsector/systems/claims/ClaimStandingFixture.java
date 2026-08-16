@@ -2,8 +2,9 @@ package kmlib.testfixtures.starsector.systems.claims;
 
 import kmlib.starsector.entities.EntityNameplate;
 import kmlib.starsector.systems.claims.ContestAdmission;
-import kmlib.starsector.systems.claims.FactionClaimScore;
 import kmlib.starsector.systems.claims.MarketClaimBreakdown;
+import kmlib.starsector.systems.claims.PresenceOnlyClaimStanding;
+import kmlib.starsector.systems.claims.WeighedClaimStanding;
 
 import java.util.List;
 import java.util.OptionalInt;
@@ -16,6 +17,10 @@ import java.util.OptionalInt;
  * <p>A standing is a market breakdown plus the faction it belongs to, so a test that cares only
  * about a score would otherwise have to invent a colony to carry it - and every such test would
  * invent a slightly different one. Stating the score directly keeps those cases about the score.
+ *
+ * <p>Both kinds of standing are built here, since a case posing a contest usually wants the
+ * distinction between them and nothing else about either - who was weighed, and who was merely
+ * there.
  */
 public final class ClaimStandingFixture {
 
@@ -25,6 +30,20 @@ public final class ClaimStandingFixture {
     // put a mark on every box built from this fixture.
     private static final EntityNameplate STANDING_MARKET =
         EntityNameplate.createUnmarkedNameplate("Standing Colony");
+
+    // The one colony a presence-only standing is present through, named apart from the scored one
+    // so a box listing both kinds can be read line by line.
+    private static final EntityNameplate UNWEIGHED_MARKET =
+        EntityNameplate.createUnmarkedNameplate("Unweighed Colony");
+
+    // How the mechanic passed that colony over. Concealment rather than an absence from the
+    // economy's listing, arbitrarily: the two suppress scoring identically and a test posing a
+    // faction that was never weighed is not about which of them did it.
+    private static final ContestAdmission PASSED_OVER = new ContestAdmission(true, false);
+
+    // What a colony the contest never weighed is worth. Its size is never read - the standing
+    // reports a nought of its own - so it is stated once here rather than invented per case.
+    private static final int UNWEIGHED_MARKET_SIZE = 3;
 
     // The market carries the whole score on its size, which is the shape with the fewest moving
     // parts: no siblings beside it and no garrison bonus folded into it.
@@ -50,12 +69,12 @@ public final class ClaimStandingFixture {
      * @param isTerritorial whether the faction may claim a system at all
      * @return the standing
      */
-    public static FactionClaimScore buildStandingOnOneMarket(
+    public static WeighedClaimStanding buildStandingOnOneMarket(
             String factionId,
             int score,
             boolean isTerritorial) {
 
-        return new FactionClaimScore(
+        return new WeighedClaimStanding(
             factionId,
             isTerritorial,
             new MarketClaimBreakdown(
@@ -69,5 +88,35 @@ public final class ClaimStandingFixture {
                 NO_SIBLING_MARKETS,
                 OptionalInt.empty()),
             List.of());
+    }
+
+    /**
+     * A faction present in a system through one colony the contest never weighed, and so standing
+     * at nought however large that colony is.
+     *
+     * <p>Takes no score, unlike its scored counterpart: a presence-only standing reports a nought
+     * of its own, and a builder offering one to state would be offering a number that goes
+     * nowhere.
+     *
+     * @param factionId     the faction the standing belongs to
+     * @param isTerritorial whether the faction may claim a system at all - carried, and claiming
+     *                      nothing here, since a nought passes no gate either way
+     * @return the standing
+     */
+    public static PresenceOnlyClaimStanding buildPresenceOnlyStanding(
+            String factionId,
+            boolean isTerritorial) {
+
+        return new PresenceOnlyClaimStanding(
+            factionId,
+            isTerritorial,
+            List.of(new MarketClaimBreakdown(
+                UNWEIGHED_MARKET,
+                FIRST_LISTED,
+                IS_KNOWN_TO_PLAYER,
+                PASSED_OVER,
+                UNWEIGHED_MARKET_SIZE,
+                NO_SIBLING_MARKETS,
+                OptionalInt.empty())));
     }
 }

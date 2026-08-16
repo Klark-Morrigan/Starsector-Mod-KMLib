@@ -64,7 +64,7 @@ final class VanillaClaimBreakdownReaderTest {
             // (3 + 1 sibling + 10 against 5 + 1), and the faction stands on that one market -
             // holdings are never summed.
             assertThat(breakdown.scores())
-                .extracting(FactionClaimScore::factionId, FactionClaimScore::score)
+                .extracting(FactionClaimStanding::factionId, FactionClaimStanding::score)
                 .containsExactly(tuple("hegemony", 14));
             assertThat(breakdown.claimantFactionId())
                 .isEqualTo("hegemony");
@@ -81,10 +81,8 @@ final class VanillaClaimBreakdownReaderTest {
             claimContest.nameMarket(outpost, "Kazeron");
             claimContest.placeMarketsInSystem(capital, outpost);
 
-            var standing = new VanillaClaimBreakdownReader()
-                .readBreakdown(claimContest.getSystem())
-                .scores()
-                .get(0);
+            var standing = readTopStanding(
+                new VanillaClaimBreakdownReader().readBreakdown(claimContest.getSystem()));
 
             // The standing rests on the one strongest market, and the rest are carried beside
             // it: the sibling point inside its score is exactly the one market listed under it,
@@ -117,10 +115,8 @@ final class VanillaClaimBreakdownReaderTest {
 
             claimContest.placeMarketsInSystem(ancyra);
 
-            var standing = new VanillaClaimBreakdownReader()
-                .readBreakdown(claimContest.getSystem())
-                .scores()
-                .get(0);
+            var standing = readTopStanding(
+                new VanillaClaimBreakdownReader().readBreakdown(claimContest.getSystem()));
 
             assertThat(standing.standingMarket().marketNameplate().mapIcon())
                 .contains(new EntityMapIcon(
@@ -136,10 +132,8 @@ final class VanillaClaimBreakdownReaderTest {
 
             claimContest.placeMarketsInSystem(claimContest.buildMarket(hegemony, 4));
 
-            var standing = new VanillaClaimBreakdownReader()
-                .readBreakdown(claimContest.getSystem())
-                .scores()
-                .get(0);
+            var standing = readTopStanding(
+                new VanillaClaimBreakdownReader().readBreakdown(claimContest.getSystem()));
 
             assertThat(standing.standingMarket().marketNameplate().mapIcon())
                 .isEmpty();
@@ -164,7 +158,7 @@ final class VanillaClaimBreakdownReaderTest {
                 new VanillaClaimBreakdownReader().readBreakdown(claimContest.getSystem());
 
             assertThat(breakdown.scores())
-                .extracting(FactionClaimScore::factionId, FactionClaimScore::score)
+                .extracting(FactionClaimStanding::factionId, FactionClaimStanding::score)
                 .containsExactly(tuple("tritachyon", 7), tuple("hegemony", 4));
             assertThat(breakdown.claimantFactionId())
                 .isEqualTo("tritachyon");
@@ -183,10 +177,8 @@ final class VanillaClaimBreakdownReaderTest {
             claimContest.nameMarket(outpost, "Kazeron");
             claimContest.placeMarketsInSystem(relay, capital, outpost);
 
-            var standing = new VanillaClaimBreakdownReader()
-                .readBreakdown(claimContest.getSystem())
-                .scores()
-                .get(0);
+            var standing = readTopStanding(
+                new VanillaClaimBreakdownReader().readBreakdown(claimContest.getSystem()));
 
             // Economy order, not score order: the weakest colony leads because that is where
             // the economy put it. A caller wanting them ranked sorts them itself, and one that
@@ -266,9 +258,9 @@ final class VanillaClaimBreakdownReaderTest {
             // The bonus is what turns a small garrison into a claimant, so the box explaining a
             // border has to be able to name it as the term that did it - and an ordinary colony
             // must carry no bonus at all rather than one worth nothing.
-            assertThat(breakdown.scores().get(0).standingMarket().militaryBonus())
+            assertThat(readStanding(breakdown, "hegemony").standingMarket().militaryBonus())
                 .hasValue(10);
-            assertThat(breakdown.scores().get(1).standingMarket().militaryBonus())
+            assertThat(readStanding(breakdown, "tritachyon").standingMarket().militaryBonus())
                 .isEmpty();
         }
 
@@ -287,7 +279,7 @@ final class VanillaClaimBreakdownReaderTest {
             // A hidden market cannot claim on its own account but still counts as presence for
             // the faction holding it, so the visible colony scores 3 + 1 rather than 3.
             assertThat(breakdown.scores())
-                .extracting(FactionClaimScore::factionId, FactionClaimScore::score)
+                .extracting(FactionClaimStanding::factionId, FactionClaimStanding::score)
                 .containsExactly(tuple("hegemony", 4));
         }
 
@@ -302,10 +294,8 @@ final class VanillaClaimBreakdownReaderTest {
             claimContest.nameMarket(base, "Tigra City");
             claimContest.placeMarketsInSystem(haven, base);
 
-            var standing = new VanillaClaimBreakdownReader()
-                .readBreakdown(claimContest.getSystem())
-                .scores()
-                .get(0);
+            var standing = readTopStanding(
+                new VanillaClaimBreakdownReader().readBreakdown(claimContest.getSystem()));
 
             // The larger base never stands for the faction, yet it is what the sibling point is
             // made of, so it is listed with the rest: dropping it would leave a count with
@@ -330,19 +320,136 @@ final class VanillaClaimBreakdownReaderTest {
         void excludesHiddenMarketsFromTheContest() {
 
             var pirates = claimContest.buildFaction("pirates", true);
+            var base = claimContest.buildHiddenMarket(pirates, 6);
 
-            claimContest.placeMarketsInSystem(claimContest.buildHiddenMarket(pirates, 6));
+            claimContest.nameMarket(base, "Tigra City");
+            claimContest.placeMarketsInSystem(base);
 
             var breakdown =
                 new VanillaClaimBreakdownReader().readBreakdown(claimContest.getSystem());
 
-            // A standing of its own would count the base twice - it already reaches the contest
-            // through the sibling count - and would let it displace whatever visible colony its
-            // faction actually contests the system with.
+            // A scoring standing of its own would count the base twice - it already reaches the
+            // contest through the sibling count - and would let it displace whatever visible colony
+            // its faction actually contests the system with. So it takes no score, and nothing it
+            // is worth reaches the claimant.
             assertThat(breakdown.scores())
-                .isEmpty();
+                .extracting(FactionClaimStanding::factionId, FactionClaimStanding::score)
+                .containsExactly(tuple("pirates", 0));
             assertThat(breakdown.claimantFactionId())
                 .isNull();
+
+            // The faction is present all the same, through the very colony that took no part: a
+            // system whose account named nobody would be emptier than what the map draws in it.
+            assertThat(breakdown.scores().get(0))
+                .isInstanceOf(PresenceOnlyClaimStanding.class);
+            assertThat(breakdown.scores().get(0).readHeldMarkets())
+                .extracting(market -> market.marketNameplate().displayName())
+                .containsExactly("Tigra City");
+        }
+
+        @Test
+        void leavesASurveyedRocksConditionMarketOutOfTheContestEntirely() {
+            // The one case the presence widening would otherwise be catastrophic on: a
+            // condition-only market is owned - by `neutral` - and sits off the economy, so a walk
+            // admitting off-economy markets on ownership alone would stand a faction on every
+            // surveyed rock in the sector. It is the shared colony set that rules them out, which
+            // is what makes reading through that set rather than walking here load-bearing.
+            var hegemony = claimContest.buildFaction("hegemony", true);
+            var neutral = claimContest.buildFaction("neutral", false);
+
+            claimContest.placeMarketsInSystem(claimContest.buildMarket(hegemony, 3));
+            claimContest.placeOffEconomyMarketsInSystem(
+                claimContest.buildConditionOnlyMarket(neutral, 0));
+
+            var breakdown =
+                new VanillaClaimBreakdownReader().readBreakdown(claimContest.getSystem());
+
+            assertThat(breakdown.scores())
+                .extracting(FactionClaimStanding::factionId)
+                .containsExactly("hegemony");
+            assertThat(readTopStanding(breakdown).otherMarkets())
+                .isEmpty();
+        }
+
+        @Test
+        void standsAFactionHoldingOnlyAnUnlistedColonyOnItsPresenceAlone() {
+
+            var independent = claimContest.buildFaction("independent", true);
+            var academy = claimContest.buildMarket(independent, 6);
+
+            claimContest.nameMarket(academy, "Galatia Academy");
+            claimContest.placeOffEconomyMarketsInSystem(academy);
+
+            var breakdown =
+                new VanillaClaimBreakdownReader().readBreakdown(claimContest.getSystem());
+
+            // The other way a colony goes unweighed, and it lands the same way: the walk never
+            // reached the station at all, so its owner is present at nought rather than absent.
+            assertThat(breakdown.scores())
+                .singleElement()
+                .isInstanceOf(PresenceOnlyClaimStanding.class);
+            assertThat(breakdown.scores().get(0).score())
+                .isZero();
+            assertThat(breakdown.scores().get(0).readHeldMarkets())
+                .extracting(market -> market.marketNameplate().displayName())
+                .containsExactly("Galatia Academy");
+            assertThat(breakdown.claimantFactionId())
+                .isNull();
+        }
+
+        @Test
+        void standsAFactionHoldingBothKindsOfUnweighedColonyOnOnePresence() {
+
+            var pirates = claimContest.buildFaction("pirates", true);
+            var base = claimContest.buildHiddenMarket(pirates, 6);
+            var cache = claimContest.buildMarket(pirates, 4);
+
+            claimContest.nameMarket(base, "Tigra City");
+            claimContest.nameMarket(cache, "Kanta's Den");
+            claimContest.placeMarketsInSystem(base);
+            claimContest.placeOffEconomyMarketsInSystem(cache);
+
+            var breakdown =
+                new VanillaClaimBreakdownReader().readBreakdown(claimContest.getSystem());
+
+            // One standing per faction whatever mixture of unweighed colonies it holds, listed in
+            // the order the walk met them - the economy's own ahead of what it does not list.
+            assertThat(breakdown.scores())
+                .singleElement()
+                .isInstanceOf(PresenceOnlyClaimStanding.class);
+            assertThat(breakdown.scores().get(0).readHeldMarkets())
+                .extracting(market -> market.marketNameplate().displayName())
+                .containsExactly("Tigra City", "Kanta's Den");
+        }
+
+        @Test
+        void keepsAFactionWithAScoredMarketOnOneWeighedStandingHoweverElseItIsPresent() {
+
+            var independent = claimContest.buildFaction("independent", true);
+            var ancyra = claimContest.buildMarket(independent, 5);
+            var base = claimContest.buildHiddenMarket(independent, 6);
+            var academy = claimContest.buildMarket(independent, 7);
+
+            claimContest.nameMarket(ancyra, "Ancyra");
+            claimContest.nameMarket(base, "Tigra City");
+            claimContest.nameMarket(academy, "Galatia Academy");
+            claimContest.placeMarketsInSystem(ancyra, base);
+            claimContest.placeOffEconomyMarketsInSystem(academy);
+
+            var breakdown =
+                new VanillaClaimBreakdownReader().readBreakdown(claimContest.getSystem());
+
+            // A faction takes one standing or the other, never both: the scored market carries it,
+            // and the two unweighed colonies ride along as the holdings behind that standing. A
+            // second, presence-only standing for the same faction would name it twice in every box.
+            assertThat(breakdown.scores())
+                .singleElement()
+                .isInstanceOf(WeighedClaimStanding.class);
+            assertThat(readTopStanding(breakdown).standingMarket().marketNameplate().displayName())
+                .isEqualTo("Ancyra");
+            assertThat(readTopStanding(breakdown).otherMarkets())
+                .extracting(market -> market.marketNameplate().displayName())
+                .containsExactly("Tigra City", "Galatia Academy");
         }
 
         @Test
@@ -357,10 +464,8 @@ final class VanillaClaimBreakdownReaderTest {
             claimContest.placeMarketsInSystem(ancyra);
             claimContest.placeOffEconomyMarketsInSystem(academy);
 
-            var standing = new VanillaClaimBreakdownReader()
-                .readBreakdown(claimContest.getSystem())
-                .scores()
-                .get(0);
+            var standing = readTopStanding(
+                new VanillaClaimBreakdownReader().readBreakdown(claimContest.getSystem()));
 
             // The station is on the map in the faction's colours, so an account of the system that
             // never mentions it says less than the player can already see. It takes no standing all
@@ -392,10 +497,8 @@ final class VanillaClaimBreakdownReaderTest {
             claimContest.placeMarketsInSystem(capital, outpost);
             claimContest.placeOffEconomyMarketsInSystem(academy);
 
-            var standing = new VanillaClaimBreakdownReader()
-                .readBreakdown(claimContest.getSystem())
-                .scores()
-                .get(0);
+            var standing = readTopStanding(
+                new VanillaClaimBreakdownReader().readBreakdown(claimContest.getSystem()));
 
             assertThat(standing.standingMarket().listingPosition())
                 .isEqualTo(1);
@@ -419,9 +522,9 @@ final class VanillaClaimBreakdownReaderTest {
                 new VanillaClaimBreakdownReader().readBreakdown(claimContest.getSystem());
 
             assertThat(breakdown.scores())
-                .extracting(FactionClaimScore::factionId)
+                .extracting(FactionClaimStanding::factionId)
                 .containsExactly("hegemony");
-            assertThat(breakdown.scores().get(0).otherMarkets())
+            assertThat(readStanding(breakdown, "hegemony").otherMarkets())
                 .isEmpty();
         }
 
@@ -440,7 +543,7 @@ final class VanillaClaimBreakdownReaderTest {
             // one would raise a real colony above the score the game scores it at - and could hand
             // the system to a different faction, which is a mechanic change, not a fuller account.
             assertThat(breakdown.scores())
-                .extracting(FactionClaimScore::factionId, FactionClaimScore::score)
+                .extracting(FactionClaimStanding::factionId, FactionClaimStanding::score)
                 .containsExactly(tuple("independent", 5));
         }
 
@@ -456,11 +559,12 @@ final class VanillaClaimBreakdownReaderTest {
             var breakdown =
                 new VanillaClaimBreakdownReader().readBreakdown(claimContest.getSystem());
 
-            // The unlisted colony out-sizes everything present and still takes nothing: it never
-            // reaches a standing at all, so the claimant is the one vanilla itself would name.
+            // The unlisted colony out-sizes everything present and still takes nothing: its owner
+            // is listed for being there, at a nought that can neither win a tie nor take a system,
+            // so the claimant is the one vanilla itself would name.
             assertThat(breakdown.scores())
-                .extracting(FactionClaimScore::factionId)
-                .containsExactly("hegemony");
+                .extracting(FactionClaimStanding::factionId, FactionClaimStanding::score)
+                .containsExactly(tuple("hegemony", 3), tuple("independent", 0));
             assertThat(breakdown.claimantFactionId())
                 .isEqualTo("hegemony");
         }
@@ -481,9 +585,9 @@ final class VanillaClaimBreakdownReaderTest {
             // mechanic bars a player colony from claiming outright.
             assertThat(breakdown.scores())
                 .extracting(
-                    FactionClaimScore::factionId,
-                    FactionClaimScore::score,
-                    FactionClaimScore::isTerritorial)
+                    FactionClaimStanding::factionId,
+                    FactionClaimStanding::score,
+                    FactionClaimStanding::isTerritorial)
                 .containsExactly(tuple("player", 8, false));
             assertThat(breakdown.claimantFactionId())
                 .isNull();
@@ -506,7 +610,7 @@ final class VanillaClaimBreakdownReaderTest {
             // The player tops the standings and still loses the system: scoring it widens what
             // the breakdown reports without touching the winner vanilla would name.
             assertThat(breakdown.scores())
-                .extracting(FactionClaimScore::factionId, FactionClaimScore::score)
+                .extracting(FactionClaimStanding::factionId, FactionClaimStanding::score)
                 .containsExactly(tuple("player", 8), tuple("hegemony", 3));
             assertThat(breakdown.claimantFactionId())
                 .isEqualTo("hegemony");
@@ -526,7 +630,7 @@ final class VanillaClaimBreakdownReaderTest {
                 new VanillaClaimBreakdownReader().readBreakdown(claimContest.getSystem());
 
             assertThat(breakdown.scores())
-                .extracting(FactionClaimScore::factionId, FactionClaimScore::score)
+                .extracting(FactionClaimStanding::factionId, FactionClaimStanding::score)
                 .containsExactly(tuple("tritachyon", 7), tuple("hegemony", 4));
             assertThat(breakdown.claimantFactionId())
                 .isEqualTo("tritachyon");
@@ -548,7 +652,7 @@ final class VanillaClaimBreakdownReaderTest {
             // The pirates out-score everyone and still cannot take the system: territoriality
             // is a gate on claiming, not a discount on the score.
             assertThat(breakdown.scores())
-                .extracting(FactionClaimScore::factionId, FactionClaimScore::isTerritorial)
+                .extracting(FactionClaimStanding::factionId, FactionClaimStanding::isTerritorial)
                 .containsExactly(tuple("pirates", false), tuple("hegemony", true));
             assertThat(breakdown.claimantFactionId())
                 .isEqualTo("hegemony");
@@ -604,7 +708,7 @@ final class VanillaClaimBreakdownReaderTest {
             // standings instead would hand the system to the Hegemony, whose first market comes
             // earlier in the listing but scores lower: the same ranking, the wrong claimant.
             assertThat(breakdown.scores())
-                .extracting(FactionClaimScore::factionId, FactionClaimScore::score)
+                .extracting(FactionClaimStanding::factionId, FactionClaimStanding::score)
                 .containsExactly(tuple("hegemony", 6), tuple("tritachyon", 6));
             assertThat(breakdown.claimantFactionId())
                 .isEqualTo("tritachyon");
@@ -627,7 +731,7 @@ final class VanillaClaimBreakdownReaderTest {
             // must read in the order the tie was decided in, or the ranking would contradict
             // the claimant sitting above it.
             assertThat(breakdown.scores())
-                .extracting(FactionClaimScore::factionId)
+                .extracting(FactionClaimStanding::factionId)
                 .containsExactly("tritachyon", "hegemony");
         }
 
@@ -646,7 +750,7 @@ final class VanillaClaimBreakdownReaderTest {
             // An unowned market belongs to nobody's standing, and the mechanic would throw on
             // one; skipping it keeps a malformed economy from taking down a hover read.
             assertThat(breakdown.scores())
-                .extracting(FactionClaimScore::factionId)
+                .extracting(FactionClaimStanding::factionId)
                 .containsExactly("hegemony");
             assertThat(breakdown.claimantFactionId())
                 .isEqualTo("hegemony");
@@ -670,7 +774,7 @@ final class VanillaClaimBreakdownReaderTest {
             assertThat(breakdown.claimantFactionId())
                 .isEqualTo("luddic_church");
             assertThat(breakdown.scores())
-                .extracting(FactionClaimScore::factionId, FactionClaimScore::score)
+                .extracting(FactionClaimStanding::factionId, FactionClaimStanding::score)
                 .containsExactly(tuple("hegemony", 6));
         }
 
@@ -729,14 +833,25 @@ final class VanillaClaimBreakdownReaderTest {
         }
     }
 
-    // One faction's place in a resolved contest, for a case posing several factions at once and
-    // asserting on each - reaching by rank would tie the case to an ordering it is not about.
-    private static FactionClaimScore readStanding(
+    // The top-ranked standing, as the weighed kind every case reaching for it goes on to read a
+    // market off. A contest that ranked a presence-only standing first fails the cast, which is
+    // the finding those cases want rather than a null they would have to check for.
+    private static WeighedClaimStanding readTopStanding(SystemClaimBreakdown breakdown) {
+        return (WeighedClaimStanding) breakdown.scores().get(0);
+    }
+
+    // One faction's weighed place in a resolved contest, for a case posing several factions at once
+    // and asserting on each - reaching by rank would tie the case to an ordering it is not about.
+    // Narrowed to the weighed kind because every case reaching for it goes on to read the market
+    // the standing rests on, which is the one thing only that kind has.
+    private static WeighedClaimStanding readStanding(
             SystemClaimBreakdown breakdown,
             String factionId) {
         return breakdown
             .scores()
             .stream()
+            .filter(WeighedClaimStanding.class::isInstance)
+            .map(WeighedClaimStanding.class::cast)
             .filter(score -> score.factionId().equals(factionId))
             .findFirst()
             .orElseThrow();

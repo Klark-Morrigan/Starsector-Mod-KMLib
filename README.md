@@ -145,7 +145,11 @@ src/main/java/kmlib/
                      with a second port for the scored contest behind
                      one - down to the terms each market's score is the
                      sum of - for callers that must justify a claim
-                     rather than merely colour by it
+                     rather than merely colour by it. A standing in that
+                     contest states its own kind: weighed, resting on the
+                     market the mechanic scored, or presence-only at a
+                     nought, for a faction holding nothing the mechanic
+                     ever reached
     time/          - campaign clock wrapper
     ui/            - UI toolkit, tiered by render substrate: a spec
                      names content (controls, built out of widgets'

@@ -169,6 +169,23 @@ final class ClaimContestFixture implements AutoCloseable {
         return createMarket(faction, size, true);
     }
 
+    /**
+     * The condition-only market every uninhabited planet carries to hold its hazard and atmosphere
+     * conditions - owned by a real faction, hung on the entity, never registered with the economy.
+     * A survey therefore puts one of these in reach of any read that walks a system's entities, and
+     * they outnumber real colonies by a wide margin, so admitting one is how a system reports a
+     * faction that is not there at all.
+     */
+    MarketAPI buildConditionOnlyMarket(FactionAPI faction, int size) {
+
+        var marketMock = createMarket(faction, size, false);
+
+        when(marketMock.isPlanetConditionMarketOnly())
+            .thenReturn(true);
+
+        return marketMock;
+    }
+
     FactionAPI buildFaction(String id, boolean isTerritorial) {
 
         var factionMock = mock(FactionAPI.class);
