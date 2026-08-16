@@ -3,6 +3,8 @@ package kmlib.starsector.systems.claims;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.util.Misc;
 
+import kmlib.starsector.systems.SystemColoniesIndex;
+
 /**
  * {@link ClaimReader} binding backed by vanilla's claim mechanic - the same claim the colony
  * survey panel warns a player about when they settle in another faction's space, so claims
@@ -13,10 +15,30 @@ import com.fs.starfarer.api.util.Misc;
  * both "who claims this" and "why", so a map coloured by this reader and a tooltip explaining
  * that colour cannot contradict each other - not on the override, and not on the
  * iteration-order tie the mechanic resolves ties by.
+ *
+ * <p>The two constructors carry the breakdown reader's own choice about where its colonies come
+ * from, since that is the whole of what this adds to it: a reader built for one pass shares that
+ * pass's walk of each system, and one built to outlive any pass walks afresh rather than answering
+ * off a snapshot nothing refreshes.
  */
 public final class VanillaClaimReader implements ClaimReader {
 
-    private final ClaimBreakdownReader breakdownReader = new VanillaClaimBreakdownReader();
+    private final ClaimBreakdownReader breakdownReader;
+
+    /** A reader with no pass behind it, walking each system afresh on every ask. */
+    public VanillaClaimReader() {
+        this(null);
+    }
+
+    /**
+     * A reader sharing one pass's colony walk.
+     *
+     * @param coloniesIndex the pass's colony index, discarded with the pass that opened it;
+     *                      null reads each system afresh, as the no-index reader does
+     */
+    public VanillaClaimReader(SystemColoniesIndex coloniesIndex) {
+        breakdownReader = new VanillaClaimBreakdownReader(coloniesIndex);
+    }
 
     @Override
     public String readClaimingFactionId(StarSystemAPI system) {

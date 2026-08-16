@@ -1,6 +1,9 @@
 package kmlib.starsector.systems.claims;
 
+import com.fs.starfarer.api.Global;
+
 import kmlib.starsector.entities.EntityMapIcon;
+import kmlib.starsector.systems.SystemColoniesIndex;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -827,6 +830,38 @@ final class VanillaClaimBreakdownReaderTest {
                 .isNull();
             assertThat(breakdown.scores())
                 .hasSize(1);
+        }
+
+        @Test
+        void resolvesTheSameContestThroughAPassIndexAsWithoutOne() {
+            // Sharing a pass's colony walk is a cost decision and has to stay one. A contest that
+            // came out differently through an index would let the map and a box over it disagree
+            // about who claims a system on nothing but which of them was built inside a pass.
+            var hegemony = claimContest.buildFaction("hegemony", true);
+            var pirates = claimContest.buildFaction("pirates", false);
+
+            claimContest.placeMarketsInSystem(
+                claimContest.buildMarket(hegemony, 5),
+                claimContest.buildMarket(pirates, 4));
+
+            var throughIndex = new VanillaClaimBreakdownReader(
+                    new SystemColoniesIndex(Global.getSector()))
+                .readBreakdown(claimContest.getSystem());
+            var throughOwnWalk =
+                new VanillaClaimBreakdownReader().readBreakdown(claimContest.getSystem());
+
+            // Both stated against the same literals rather than against each other, so a pair that
+            // drifted together still fails.
+            assertThat(throughIndex.claimantFactionId())
+                .isEqualTo("hegemony");
+            assertThat(throughIndex.scores())
+                .extracting(FactionClaimStanding::factionId, FactionClaimStanding::score)
+                .containsExactly(tuple("hegemony", 5), tuple("pirates", 4));
+            assertThat(throughOwnWalk.claimantFactionId())
+                .isEqualTo("hegemony");
+            assertThat(throughOwnWalk.scores())
+                .extracting(FactionClaimStanding::factionId, FactionClaimStanding::score)
+                .containsExactly(tuple("hegemony", 5), tuple("pirates", 4));
         }
 
         @Test

@@ -10,6 +10,7 @@ import kmlib.starsector.factions.FactionFlags;
 import kmlib.starsector.markets.Markets;
 import kmlib.starsector.systems.StarSystems;
 import kmlib.starsector.systems.SystemColonies;
+import kmlib.starsector.systems.SystemColoniesIndex;
 import kmlib.starsector.systems.SystemColony;
 
 import java.util.ArrayList;
@@ -67,7 +68,16 @@ import java.util.Set;
  * rule rather than by a test repeated here.
  *
  * <p>That read walks the whole system, so it is the expensive half of the two reads below; the
- * override is a bare memory read and stays cheap.
+ * override is a bare memory read and stays cheap. A caller that walks a sector reads several
+ * surfaces off each system and would pay that walk once per surface, so a reader built for such a
+ * pass takes the pass's {@link SystemColoniesIndex} and shares the one walk with everything else
+ * the pass reads.
+ *
+ * <p>A reader built without one walks afresh on every ask, and that is the case the second
+ * constructor exists for rather than an oversight. An index is a snapshot of the sector the pass
+ * that opened it saw; a reader outliving any one pass - the shared instance a hover box holds, for
+ * one - would go on answering off a sector that has since moved on. Paying the walk is the honest
+ * price of having no pass to belong to.
  */
 public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
 
@@ -83,6 +93,33 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
     // is stated to the player, who reads a list of markets as first, second, third.
     private static final int FIRST_LISTED = 1;
 
+    // The pass's shared colony walk, or null for a reader no pass owns. Nullable rather than
+    // split into two types because the two readers differ in nothing a caller can see: same
+    // contest, same claimant, same standings, off a walk that is either shared or repeated.
+    private final SystemColoniesIndex coloniesIndex;
+
+    /**
+     * A reader with no pass behind it, walking each system afresh on every ask.
+     *
+     * <p>What a long-lived reader has to take: an instance kept past the pass that built it
+     * would answer off a snapshot nothing refreshes, so one that cannot be discarded with a
+     * pass must not hold one.
+     */
+    public VanillaClaimBreakdownReader() {
+        this(null);
+    }
+
+    /**
+     * A reader sharing one pass's colony walk, so a system this pass has already read costs
+     * nothing to read again.
+     *
+     * @param coloniesIndex the pass's colony index, discarded with the pass that opened it;
+     *                      null reads each system afresh, as the no-index reader does
+     */
+    public VanillaClaimBreakdownReader(SystemColoniesIndex coloniesIndex) {
+        this.coloniesIndex = coloniesIndex;
+    }
+
     @Override
     public SystemClaimBreakdown readBreakdown(StarSystemAPI system) {
 
@@ -90,7 +127,7 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
             return SystemClaimBreakdown.NONE;
         }
         var overrideFactionId = readCoreFactionId(system);
-        var claimedMarkets = readClaimedMarkets(system);
+        var claimedMarkets = readClaimedMarkets(readColonies(system));
 
         // An override answers the question before any market is weighed, so it stands as the
         // claimant even where the scores point elsewhere; those scores stay on as context.
@@ -126,9 +163,9 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
     // colonies the player has never found: fogging the input here would resolve a claimant the
     // game itself would not report. Whether the player knows of a colony rides each market instead,
     // for a display to withhold.
-    private static List<ClaimedMarket> readClaimedMarkets(StarSystemAPI system) {
+    private static List<ClaimedMarket> readClaimedMarkets(SystemColonies systemColonies) {
 
-        var colonies = SystemColonies.readColoniesIn(Global.getSector(), system).colonies();
+        var colonies = systemColonies.colonies();
         var economyMarkets = selectEconomyListedMarkets(colonies);
         var claimedMarkets = new ArrayList<ClaimedMarket>(colonies.size());
 
@@ -360,6 +397,17 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
     // mechanic will not honour.
     private static boolean isEligibleToClaim(FactionAPI faction) {
         return !faction.isPlayerFaction() && FactionFlags.isTerritorial(faction);
+    }
+
+    // The system's colonies, off the pass's index where a pass owns this reader and by a walk of
+    // its own where none does. The whole set either way, so which of the two answered it can
+    // change nothing but what the answer cost: an index memoises the very read below it.
+    private SystemColonies readColonies(StarSystemAPI system) {
+
+        if (coloniesIndex == null) {
+            return SystemColonies.readColoniesIn(Global.getSector(), system);
+        }
+        return coloniesIndex.readColoniesIn(system);
     }
 
     /**
