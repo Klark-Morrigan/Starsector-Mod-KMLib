@@ -502,7 +502,9 @@ public final class RingPath {
     private List<double[]> collectCoveredArcs(List<List<double[]>> keepOutRings) {
 
         var covered = new ArrayList<double[]>();
-        var nearbyRings = selectRingsOverlappingBounds(keepOutRings, computeBounds(points));
+        var nearbyRings = selectRingsOverlappingBounds(
+            keepOutRings,
+            Bounds.computeEnclosingBounds(points));
 
         for (var edge = 0; edge < points.size(); edge++) {
 
@@ -599,28 +601,12 @@ public final class RingPath {
         var overlapping = new ArrayList<List<double[]>>(rings.size());
 
         for (var ring : rings) {
-            if (!ring.isEmpty() && pathBounds.overlaps(computeBounds(ring))) {
+            if (!ring.isEmpty()
+                    && pathBounds.overlaps(Bounds.computeEnclosingBounds(ring))) {
                 overlapping.add(ring);
             }
         }
         return overlapping;
-    }
-
-    // The axis-aligned bounds a point list fits within.
-    private static Bounds computeBounds(List<double[]> ring) {
-
-        var minX = Double.MAX_VALUE;
-        var minY = Double.MAX_VALUE;
-        var maxX = -Double.MAX_VALUE;
-        var maxY = -Double.MAX_VALUE;
-
-        for (var point : ring) {
-            minX = Math.min(minX, point[0]);
-            minY = Math.min(minY, point[1]);
-            maxX = Math.max(maxX, point[0]);
-            maxY = Math.max(maxY, point[1]);
-        }
-        return new Bounds(minX, minY, maxX, maxY);
     }
 
     // Where the offset failed to move the ring the distance it was asked to, as intervals in
@@ -849,23 +835,5 @@ public final class RingPath {
     private record TopCentre(
         double[] point,
         int edgeIndex) {
-    }
-
-    // The axis-aligned extent of a shape, for deciding what is near enough to measure properly.
-    private record Bounds(
-        double minX,
-        double minY,
-        double maxX,
-        double maxY) {
-
-        // Whether two bounds share any area. Touching counts as overlapping: the shapes inside
-        // them may still meet, and this only decides what is worth measuring at all.
-        boolean overlaps(Bounds other) {
-
-            return minX <= other.maxX()
-                && other.minX() <= maxX
-                && minY <= other.maxY()
-                && other.minY() <= maxY;
-        }
     }
 }

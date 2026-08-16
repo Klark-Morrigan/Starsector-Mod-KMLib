@@ -29,7 +29,8 @@ they are handed.
 
 | Type | Holds |
 | --- | --- |
-| `Rectangle`, `Rectangles` | an axis-aligned box, and lookup across a collection of them |
+| `Rectangle`, `Rectangles` | an axis-aligned box as a corner and a size, and lookup across a collection of them |
+| `Bounds` | an axis-aligned box as its two extreme corners: what a point cloud fits inside |
 | `Segment`, `DirectedLine`, `HalfPlane`, `BoxEdge` | a finite edge, an infinite oriented line, a clip side, a box's side |
 | `Disk` | a centre, a radius, and the segment count it is approximated at |
 | `CornerRounding` | the radius, segment count and bevel threshold a rounding pass uses |
@@ -39,6 +40,13 @@ they are handed.
 | `RingStretch` | a stretch of a path, as the arc lengths it opens and closes at |
 | `PrincipalAxis` | the fitted major/minor axes of a point cloud |
 | `RegionChord` | a chord across a region, with the span it clears |
+
+Two of those are the same shape stated for different substrates, and the split is deliberate.
+`Rectangle` is float, corner-plus-size, and laid out for drawing and hit-testing; `Bounds` is
+double, corner-to-corner, and measured off the points it encloses. `Bounds` is what answers the
+cheap half of "do these two shapes meet" - boxes that miss cannot meet, so an edge-against-edge
+crossing is only paid where it can change an answer, and a touch counts as an overlap so the
+test never discards a pair it cannot rule out.
 
 `LabelledPolygon` is what lets a clip answer "what is across this edge" rather than only
 "where is this edge". A pass that cuts it stamps the new edge with a caller-chosen label
