@@ -172,4 +172,41 @@ public final class Angles {
         }
         return shared;
     }
+
+    /**
+     * Overlapping spans joined into the runs they make up.
+     *
+     * <p>Placed in the turn beginning half a turn before {@code about} first, so that spans
+     * built about different axes are comparable at all. Taking the direction they gather
+     * around as the middle of that window is what keeps a run from being split across its
+     * edge and handed back as two.
+     *
+     * @param spans what to join
+     * @param about the direction the runs are expected to gather around
+     * @return the maximal runs, in ascending order within that window
+     */
+    public static List<double[]> mergeSpans(List<double[]> spans, double about) {
+
+        var placed = new ArrayList<double[]>(spans.size());
+
+        for (var span : spans) {
+            placed.add(new double[] {placeAfter(span[0], about - HALF_TURN), span[1]});
+        }
+        placed.sort(Comparator.comparingDouble(span -> span[0]));
+
+        var merged = new ArrayList<double[]>();
+
+        for (var span : placed) {
+
+            var last = merged.isEmpty() ? null : merged.get(merged.size() - 1);
+
+            if (last != null && span[0] <= last[0] + last[1]) {
+
+                last[1] = Math.max(last[1], span[0] + span[1] - last[0]);
+                continue;
+            }
+            merged.add(new double[] {span[0], span[1]});
+        }
+        return merged;
+    }
 }

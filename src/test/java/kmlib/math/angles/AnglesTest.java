@@ -357,4 +357,114 @@ final class AnglesTest {
                 .isEmpty();
         }
     }
+
+    @Nested
+    class MergeSpans {
+
+        @Test
+        void two_overlapping_spans_become_one_run() {
+            // [1, 3] and [2, 5] make [1, 5].
+            var merged = Angles.mergeSpans(
+                List.of(new double[] {1.0, 2.0}, new double[] {2.0, 3.0}),
+                2.0);
+
+            assertThat(merged)
+                .hasSize(1);
+            assertThat(merged.get(0)[1])
+                .isCloseTo(4.0, within());
+        }
+
+        @Test
+        void a_span_wholly_inside_another_leaves_the_outer_one_as_it_was() {
+
+            var merged = Angles.mergeSpans(
+                List.of(new double[] {1.0, 4.0}, new double[] {2.0, 1.0}),
+                2.0);
+
+            assertThat(merged)
+                .hasSize(1);
+            assertThat(merged.get(0)[1])
+                .isCloseTo(4.0, within());
+        }
+
+        @Test
+        void spans_that_only_touch_still_join() {
+            // Ends meeting exactly is one run, not two - a wall handing on to the next
+            // leaves no circle between them.
+            var merged = Angles.mergeSpans(
+                List.of(new double[] {1.0, 1.0}, new double[] {2.0, 1.0}),
+                2.0);
+
+            assertThat(merged)
+                .hasSize(1);
+            assertThat(merged.get(0)[1])
+                .isCloseTo(2.0, within());
+        }
+
+        @Test
+        void disjoint_spans_stay_apart() {
+
+            var merged = Angles.mergeSpans(
+                List.of(new double[] {1.0, 0.5}, new double[] {3.0, 0.5}),
+                2.0);
+
+            assertThat(merged)
+                .hasSize(2);
+        }
+
+        @Test
+        void the_runs_come_back_in_ascending_order_whatever_order_they_went_in() {
+
+            var merged = Angles.mergeSpans(
+                List.of(new double[] {3.0, 0.5}, new double[] {1.0, 0.5}),
+                2.0);
+
+            assertThat(merged)
+                .hasSize(2);
+
+            assertThat(merged.get(0)[0])
+                .isCloseTo(1.0, within());
+            assertThat(merged.get(1)[0])
+                .isCloseTo(3.0, within());
+        }
+
+        @Test
+        void spans_built_a_turn_apart_are_gathered_into_one_run() {
+            // The second is the first's neighbour, written a turn further round. Sorted as
+            // raw numbers they are a turn apart and would never be joined.
+            var merged = Angles.mergeSpans(
+                List.of(new double[] {1.0, 1.0}, new double[] {2.0 + 2 * Math.PI, 1.0}),
+                2.0);
+
+            assertThat(merged)
+                .hasSize(1);
+            assertThat(merged.get(0)[1])
+                .isCloseTo(2.0, within());
+        }
+
+        @Test
+        void a_run_gathered_around_the_window_edge_is_not_split_across_it() {
+            // Two spans either side of zero, gathered about zero: read in the first turn
+            // they sit at opposite ends and come back as two, but the window is centred on
+            // what they gather around, so they are one.
+            var merged = Angles.mergeSpans(
+                List.of(new double[] {2 * Math.PI - 0.5, 0.5}, new double[] {0.0, 0.5}),
+                0.0);
+
+            assertThat(merged)
+                .hasSize(1);
+            assertThat(merged.get(0)[1])
+                .isCloseTo(1.0, within());
+        }
+
+        @Test
+        void nothing_merges_to_nothing() {
+            assertThat(Angles.mergeSpans(List.of(), 0.0))
+                .isEmpty();
+        }
+    }
+
+    private static org.assertj.core.data.Offset<Double> within() {
+        return org.assertj.core.data.Offset.offset(SLACK);
+    }
 }
