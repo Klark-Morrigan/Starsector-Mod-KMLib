@@ -3,9 +3,9 @@ package kmlib.starsector.ui.map.transform;
 import com.fs.starfarer.api.Global;
 
 import kmlib.opengl.GlRuns;
+import kmlib.opengl.GlViewport;
 
 import org.lwjgl.BufferUtils;
-import org.lwjgl.opengl.GL11;
 import org.lwjgl.util.glu.GLU;
 import org.lwjgl.util.vector.Vector2f;
 
@@ -49,12 +49,6 @@ public record CampaignMapTransform(
 
     private static final int MATRIX_FLOAT_COUNT = 16;
     private static final int VIEWPORT_INT_COUNT = 4;
-
-    // LWJGL sizes its glGetInteger check against the largest result any pname can return rather
-    // than against the one being asked for, so every read must hand over a 16-int buffer however
-    // few ints it actually fills. A viewport-sized buffer is rejected outright, which is a crash
-    // and not a short read.
-    private static final int GL_GET_INTEGER_MIN_BUFFER_INTS = 16;
 
     // The matrix that transforms nothing, held to recognise a modelview that describes no pass.
     private static final float[] IDENTITY_MATRIX = {
@@ -141,15 +135,10 @@ public record CampaignMapTransform(
             return null;
         }
 
-        // glGet* only writes into direct buffers, so the read lands in one and is then copied into
-        // a plain array: the snapshot must own its data rather than alias a scratch buffer, and an
-        // array keeps unprojectToWorld free of any native-buffer setup. The buffer is sized for
-        // LWJGL's check rather than for the four ints a viewport fills, and only those four are
-        // copied back out.
-        var viewportBuffer = BufferUtils.createIntBuffer(GL_GET_INTEGER_MIN_BUFFER_INTS);
-        GL11.glGetInteger(GL11.GL_VIEWPORT, viewportBuffer);
-        var viewport = new int[VIEWPORT_INT_COUNT];
-        viewportBuffer.get(viewport);
+        // Whatever rectangle the pass in force left bound, which is what gluUnProject maps the
+        // cursor pixel through - so a pass that narrowed it and did not restore it is measured
+        // against here, not the screen.
+        var viewport = GlViewport.readViewport();
         var settings = Global.getSettings();
         return new CampaignMapTransform(
             modelviewMatrix,
@@ -195,6 +184,30 @@ public record CampaignMapTransform(
         return new Vector2f(
             worldPoint.get(0) / factor,
             worldPoint.get(1) / factor);
+    }
+
+    /**
+     * Words this snapshot for a diagnostic line: the two inputs a wrong cursor mapping comes from,
+     * and the scale that undoes the pass's own zoom.
+     *
+     * <p>The viewport is the one worth reading first. It is not this mod's to set - it is whatever
+     * the pass in force left bound - so a rectangle that is not the screen means the cursor pixel
+     * is being mapped through somebody else's frame, and every point resolved from it is wrong by
+     * however far that rectangle sits from the one the player is pointing at.
+     *
+     * <p>The modelview is reported as its translation and scale rather than all sixteen floats: a
+     * map transform is a scale and an offset, and the twelve floats that are always the same say
+     * nothing a reader of a log would use.
+     *
+     * @return the viewport, the modelview's placement, and the per-vertex scale
+     */
+    public String describeSnapshot() {
+        return "viewport=" + GlViewport.describeViewport(viewport)
+            + " factor=" + factor
+            + " modelviewTranslate=(" + modelviewMatrix[TRANSLATE_X_SLOT]
+            + "," + modelviewMatrix[TRANSLATE_Y_SLOT] + ")"
+            + " modelviewScale=(" + modelviewMatrix[SCALE_X_SLOT]
+            + "," + modelviewMatrix[SCALE_Y_SLOT] + ")";
     }
 
     /**

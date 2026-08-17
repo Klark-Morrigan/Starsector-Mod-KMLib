@@ -58,4 +58,41 @@ public final class MapCursor {
         }
         return transform.unprojectToWorld(Mouse.getX(), Mouse.getY());
     }
+
+    /**
+     * The same read, described rather than resolved: the cursor pixel it would map, the snapshot it
+     * would map it through, and where that lands.
+     *
+     * <p>Separate from the resolve above so the per-frame path costs nothing to build a string it
+     * would not print. A caller reports this only when it means to log, and logs it on its own
+     * logger - a line written here would answer to no mod's verbosity setting.
+     *
+     * <p>Every part of it is worth having together, because a wrong hover is a disagreement between
+     * them: the pixel is what the player pointed at, the viewport and modelview are what that pixel
+     * was mapped through, and the world point is what came out. Read apart, none of the three says
+     * which of them is wrong.
+     *
+     * @param factor                the scale the render pass applies per vertex
+     * @param modelviewMatrixReader the source of the modelview in force
+     * @return a one-line description, or null when there is nothing to describe - the cursor is off
+     *         the window or the transform could not be captured
+     */
+    public static String describeCursorReadDuringMapPass(
+            float factor,
+            ModelviewMatrixReader modelviewMatrixReader) {
+
+        if (!Mouse.isInsideWindow()) {
+            return null;
+        }
+        var transform = CampaignMapTransform.captureFromMapPass(factor, modelviewMatrixReader);
+        if (transform == null) {
+            return null;
+        }
+        var worldPoint = transform.unprojectToWorld(Mouse.getX(), Mouse.getY());
+        return "cursorPixel=(" + Mouse.getX() + "," + Mouse.getY() + ")"
+            + " " + transform.describeSnapshot()
+            + " worldPoint=" + (worldPoint == null
+                ? "uninvertible"
+                : "(" + worldPoint.x + "," + worldPoint.y + ")");
+    }
 }
