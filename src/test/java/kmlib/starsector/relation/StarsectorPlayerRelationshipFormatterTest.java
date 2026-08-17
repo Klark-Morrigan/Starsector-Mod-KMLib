@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import java.awt.Color;
 
 import static kmlib.starsector.relation.StarsectorPlayerRelationshipFormatter.formatPlayerRelationship;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;

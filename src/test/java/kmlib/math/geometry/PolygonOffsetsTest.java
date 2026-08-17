@@ -10,6 +10,7 @@ import static kmlib.math.geometry.GeometryTestSupport.assertThatPointsAre;
 import static kmlib.math.geometry.GeometryTestSupport.buildAssertionSlack;
 import static kmlib.math.geometry.GeometryTestSupport.buildReferenceSquare;
 import static kmlib.math.geometry.GeometryTestSupport.computeSignedArea;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 

@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static kmlib.math.geometry.GeometryTestSupport.buildAssertionSlack;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**

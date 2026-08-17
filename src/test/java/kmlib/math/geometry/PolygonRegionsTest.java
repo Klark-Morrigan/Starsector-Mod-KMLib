@@ -11,6 +11,7 @@ import java.util.List;
 import static kmlib.math.geometry.GeometryTestSupport.buildAssertionSlack;
 import static kmlib.math.geometry.GeometryTestSupport.buildSquare;
 import static kmlib.math.geometry.GeometryTestSupport.computeSignedArea;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 

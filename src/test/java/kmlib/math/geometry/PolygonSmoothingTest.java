@@ -7,6 +7,7 @@ import java.util.Arrays;
 
 import static kmlib.math.geometry.GeometryTestSupport.buildReferenceSquare;
 import static kmlib.math.geometry.GeometryTestSupport.buildSquare;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
