@@ -271,4 +271,90 @@ final class AnglesTest {
                 .isCloseTo(1.570796, within());
         }
     }
+
+    @Nested
+    class IntersectSpans {
+
+        @Test
+        void two_overlapping_spans_leave_the_stretch_they_share() {
+            // [1, 3] against [2, 5] shares [2, 3].
+            var shared = Angles.intersectSpans(
+                List.of(new double[] {1.0, 2.0}),
+                List.of(new double[] {2.0, 3.0}));
+
+            assertThat(shared)
+                .hasSize(1);
+
+            assertThat(shared.get(0)[0])
+                .isCloseTo(2.0, within());
+            assertThat(shared.get(0)[1])
+                .isCloseTo(1.0, within());
+        }
+
+        @Test
+        void spans_built_a_turn_apart_still_meet() {
+            // The same two spans as above, the second built a turn further round. Compared
+            // as raw numbers they miss entirely.
+            var shared = Angles.intersectSpans(
+                List.of(new double[] {1.0, 2.0}),
+                List.of(new double[] {2.0 + 2 * Math.PI, 3.0}));
+
+            assertThat(shared)
+                .hasSize(1);
+
+            assertThat(shared.get(0)[0])
+                .isCloseTo(2.0, within());
+            assertThat(shared.get(0)[1])
+                .isCloseTo(1.0, within());
+        }
+
+        @Test
+        void the_answer_is_given_in_the_turn_the_first_set_was_built_in() {
+
+            var shared = Angles.intersectSpans(
+                List.of(new double[] {1.0 + 2 * Math.PI, 2.0}),
+                List.of(new double[] {2.0, 3.0}));
+
+            assertThat(shared)
+                .hasSize(1);
+            assertThat(shared.get(0)[0])
+                .isCloseTo(8.283185, within());
+        }
+
+        @Test
+        void a_span_most_of_a_turn_long_can_meet_another_at_both_of_its_ends() {
+            // A span of 6 radians starting at 0 wraps nearly all the way round, so a short
+            // span at 5.8 meets it both before it wraps and after.
+            var shared = Angles.intersectSpans(
+                List.of(new double[] {0.0, 6.0}),
+                List.of(new double[] {5.8, 0.6}));
+
+            assertThat(shared)
+                .hasSize(2);
+        }
+
+        @Test
+        void spans_that_only_touch_share_nothing() {
+
+            assertThat(Angles.intersectSpans(
+                    List.of(new double[] {1.0, 1.0}),
+                    List.of(new double[] {2.0, 1.0})))
+                .isEmpty();
+        }
+
+        @Test
+        void spans_that_miss_share_nothing() {
+
+            assertThat(Angles.intersectSpans(
+                    List.of(new double[] {1.0, 0.5}),
+                    List.of(new double[] {3.0, 0.5})))
+                .isEmpty();
+        }
+
+        @Test
+        void nothing_shares_nothing() {
+            assertThat(Angles.intersectSpans(List.of(), List.of(new double[] {1.0, 1.0})))
+                .isEmpty();
+        }
+    }
 }

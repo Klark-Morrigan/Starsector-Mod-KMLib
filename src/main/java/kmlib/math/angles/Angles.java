@@ -139,4 +139,37 @@ public final class Angles {
         var apart = Math.abs(foldToHalfTurn(first) - foldToHalfTurn(second));
         return Math.min(apart, HALF_TURN - apart);
     }
+
+    /**
+     * The spans two sets of them have in common.
+     *
+     * <p>Each pair is tried in the turn before, the same turn and the turn after, because two
+     * spans built about different axes need not have been built in the same turn and a
+     * comparison of raw angles would miss an overlap that is there. One pair can leave two
+     * pieces, which is a genuine answer rather than a duplicate: a long span can meet another
+     * at both of its ends.
+     *
+     * @param first  one set
+     * @param second the other
+     * @return what they share, in the turn the first set was built in
+     */
+    public static List<double[]> intersectSpans(List<double[]> first, List<double[]> second) {
+
+        var shared = new ArrayList<double[]>();
+
+        for (var one : first) {
+            for (var other : second) {
+                for (var turn = -1; turn <= 1; turn++) {
+
+                    var from = Math.max(one[0], other[0] + turn * FULL_TURN);
+                    var to = Math.min(one[0] + one[1], other[0] + other[1] + turn * FULL_TURN);
+
+                    if (to > from) {
+                        shared.add(new double[] {from, to - from});
+                    }
+                }
+            }
+        }
+        return shared;
+    }
 }
