@@ -1,5 +1,6 @@
 package kmlib.starsector.ui.map.transform;
 
+import kmlib.opengl.FastRendering;
 import kmlib.opengl.GlScissor;
 
 import org.lwjgl.util.vector.Vector2f;
@@ -31,6 +32,12 @@ public record MapCursorRead(
     CampaignMapTransform transform,
     Vector2f worldPoint) {
 
+    // What the clip reads as when it was not read at all. The two fields stay in the line whichever
+    // renderer is underneath, so a description keeps one shape and a reader is told the clip is
+    // missing rather than being left to notice that it is.
+    private static final String UNREAD_CLIP = "unread under Fast Rendering";
+    private static final String UNKNOWN_CONTAINMENT = "unknown";
+
     /**
      * Words this reading for a diagnostic line: the pixel it started from, the snapshot it was
      * mapped through, the clip the pass was drawing under, and the point it landed on.
@@ -44,19 +51,44 @@ public record MapCursorRead(
      * pixel being asked about at all - a pass that may not paint there cannot be the one that knows
      * what is under it.
      *
+     * <p>Under Fast Rendering the clip is left unread and the line says so, which is why the
+     * renderer is the one thing a description branches on. That mod's bridge shadows the scissor
+     * <em>enable</em> flag on the caller's side but not the box, so asking for the box stalls the
+     * render pipeline - and it counts stalls, taking the game down once a caller stalls on half of
+     * any sixty frames. A hover prints on consecutive frames, so the read that is merely slow under
+     * stock LWJGL is fatal there, and a diagnostic must not be able to end a session it was turned
+     * on to explain. KMLib's {@code docs/dev/rendering-environment.md} records which reads the
+     * bridge answers inline and which stall.
+     *
      * @return a one-line description of this reading
      */
     public String describeRead() {
+        return describeReadUnderRenderer(FastRendering.isFastRenderingActive());
+    }
 
-        var scissorBox = GlScissor.readScissorBox();
-        
+    // Split from the live renderer read so a description can be worded against a stated renderer.
+    // Which stack is underneath is fixed for the life of a process and cannot be stood up either
+    // way, so a caller reading it directly would leave the branch that keeps the read off Fast
+    // Rendering the one part of this class nothing exercises.
+    String describeReadUnderRenderer(boolean isFastRenderingActive) {
         return "cursorPixel=(" + cursorPixelX + "," + cursorPixelY + ")"
             + " " + transform.describeSnapshot()
-            + " scissor=[" + GlScissor.describeScissorBox(scissorBox) + "]"
+            + " " + describeClipUnderRenderer(isFastRenderingActive)
+            + " worldPoint=(" + worldPoint.x + "," + worldPoint.y + ")";
+    }
+
+    private String describeClipUnderRenderer(boolean isFastRenderingActive) {
+
+        if (isFastRenderingActive) {
+            return "scissor=[" + UNREAD_CLIP + "] scissorHoldsCursor=" + UNKNOWN_CONTAINMENT;
+        }
+
+        var scissorBox = GlScissor.readScissorBox();
+
+        return "scissor=[" + GlScissor.describeScissorBox(scissorBox) + "]"
             // An unclipped pass owns every pixel, which is what a null clip reads as here rather
             // than through a rule of this end's own.
             + " scissorHoldsCursor="
-            + (scissorBox == null || scissorBox.containsPoint(cursorPixelX, cursorPixelY))
-            + " worldPoint=(" + worldPoint.x + "," + worldPoint.y + ")";
+            + (scissorBox == null || scissorBox.containsPoint(cursorPixelX, cursorPixelY));
     }
 }

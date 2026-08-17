@@ -419,7 +419,10 @@ detector. Two consequences for KM code. Whether a given read is fatal depends on
 the Fast Rendering version, so "it worked on my install" proves less than it looks;
 and the scissor **box** is still not shadowed - only the enable flag is - so the
 current clip rectangle remains unreadable without a stall, which is why clip
-composition is the caller's job (`kmlib.starsector.ui.render.gl.UiScissor`).
+composition is the caller's job (`kmlib.starsector.ui.render.gl.UiScissor`) and
+why the one place KMLib does read the box back - the clip a map hover is
+diagnosed against, in `MapCursorRead.describeRead` - is gated off under this
+renderer rather than merely used sparingly.
 
 `glGetInteger(int, IntBuffer)` switches on exactly one pname - `2978`, which is
 `GL_VIEWPORT` - answering it from `attribTracker.getViewport()` and returning
