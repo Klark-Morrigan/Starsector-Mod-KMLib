@@ -1,9 +1,6 @@
 package kmlib.starsector.ui.map.transform;
 
-import kmlib.opengl.GlScissor;
-
 import org.lwjgl.input.Mouse;
-import org.lwjgl.util.vector.Vector2f;
 
 /**
  * Answers "what world point is the cursor over?" from inside the campaign map's render pass.
@@ -28,21 +25,28 @@ public final class MapCursor {
     }
 
     /**
-     * The world point under the cursor, for a caller inside the map's render pass.
+     * The cursor's reading for a caller inside the map's render pass: where the pointer was, what it
+     * was mapped through, and the world point under it.
      *
      * <p>Must be called from inside that pass, for {@link CampaignMapTransform#captureFromMapPass}'s
      * reason: the modelview describes the map only while the pass runs, so calling this anywhere
      * else resolves a point against whatever unrelated transform is in force.
      *
+     * <p>Answers the whole reading rather than the point alone so that a caller which both acts on
+     * a hover and reports it does both from one capture. Two captures can differ - the transform is
+     * read live and a frame can hold more than one map pass - and a report taken separately would
+     * then describe a reading the caller never acted on.
+     *
      * @param factor                the scale the same render pass applies per vertex, needed to
      *                              undo the map's zoom
      * @param modelviewMatrixReader the source of the modelview in force, from
      *                              {@link ModelviewMatrixReaders#selectForActiveRenderer}
-     * @return the world point under the cursor, or {@code null} when there is no trustworthy
-     *         answer - the cursor has left the window, the transform read back cannot be the
-     *         map's, or the snapshot will not invert
+     * @return the reading, or {@code null} when there is no trustworthy answer - the cursor has left
+     *         the window, the transform read back cannot be the map's, or the snapshot will not
+     *         invert. Which of the three it was is not distinguished, because a caller must park on
+     *         any of them
      */
-    public static Vector2f resolveWorldPointDuringMapPass(
+    public static MapCursorRead readCursorDuringMapPass(
             float factor,
             ModelviewMatrixReader modelviewMatrixReader) {
 
@@ -51,62 +55,19 @@ public final class MapCursor {
         if (!Mouse.isInsideWindow()) {
             return null;
         }
-        var transform = CampaignMapTransform.captureFromMapPass(
-            factor,
-            modelviewMatrixReader);
-            
-        if (transform == null) {
-            return null;
-        }
-        return transform.unprojectToWorld(Mouse.getX(), Mouse.getY());
-    }
-
-    /**
-     * The same read, described rather than resolved: the cursor pixel it would map, the snapshot it
-     * would map it through, and where that lands.
-     *
-     * <p>Separate from the resolve above so the per-frame path costs nothing to build a string it
-     * would not print. A caller reports this only when it means to log, and logs it on its own
-     * logger - a line written here would answer to no mod's verbosity setting.
-     *
-     * <p>Every part of it is worth having together, because a wrong hover is a disagreement between
-     * them: the pixel is what the player pointed at, the viewport and modelview are what that pixel
-     * was mapped through, and the world point is what came out. Read apart, none of the three says
-     * which of them is wrong.
-     *
-     * @param factor                the scale the render pass applies per vertex
-     * @param modelviewMatrixReader the source of the modelview in force
-     * @return a one-line description, or null when there is nothing to describe - the cursor is off
-     *         the window or the transform could not be captured
-     */
-    public static String describeCursorReadDuringMapPass(
-            float factor,
-            ModelviewMatrixReader modelviewMatrixReader) {
-
-        if (!Mouse.isInsideWindow()) {
-            return null;
-        }
+        
         var transform = CampaignMapTransform.captureFromMapPass(factor, modelviewMatrixReader);
         if (transform == null) {
             return null;
         }
-        var worldPoint = transform.unprojectToWorld(Mouse.getX(), Mouse.getY());
 
-        // The clip is reported beside the cursor because together they answer whether this pass
-        // owns the pixel being asked about at all - a pass that may not paint there cannot be the
-        // one that knows what is under it. Two passes in a frame reporting different clips is what
-        // would make that rule usable; both reporting none is what would make it useless.
-        var scissorBox = GlScissor.readScissorBox();
+        var cursorPixelX = Mouse.getX();
+        var cursorPixelY = Mouse.getY();
+        var worldPoint = transform.unprojectToWorld(cursorPixelX, cursorPixelY);
 
-        return "cursorPixel=(" + Mouse.getX() + "," + Mouse.getY() + ")"
-            + " " + transform.describeSnapshot()
-            + " scissor=[" + GlScissor.describeScissorBox(scissorBox) + "]"
-            // An unclipped pass owns every pixel, which is what a null clip reads as here rather
-            // than through a rule of this end's own.
-            + " scissorHoldsCursor="
-            + (scissorBox == null || scissorBox.containsPoint(Mouse.getX(), Mouse.getY()))
-            + " worldPoint=" + (worldPoint == null
-                ? "uninvertible"
-                : "(" + worldPoint.x + "," + worldPoint.y + ")");
+        if (worldPoint == null) {
+            return null;
+        }
+        return new MapCursorRead(cursorPixelX, cursorPixelY, transform, worldPoint);
     }
 }

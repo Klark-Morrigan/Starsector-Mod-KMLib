@@ -63,7 +63,7 @@ class MapCursorTest {
     private static final float TOLERANCE = 1e-4f;
 
     @Nested
-    class ResolveWorldPointDuringMapPass {
+    class ReadCursorDuringMapPass {
 
         private MockedStatic<Global> globalMock;
         private MockedStatic<GL11> glMock;
@@ -71,7 +71,9 @@ class MapCursorTest {
 
         @BeforeEach
         void setUp() {
+
             var settingsMock = mock(SettingsAPI.class);
+
             when(settingsMock.getScreenWidth())
                 .thenReturn(SCREEN_WIDTH);
             when(settingsMock.getScreenHeight())
@@ -115,50 +117,60 @@ class MapCursorTest {
         }
 
         @Test
-        void resolvesTheWorldPointTheCursorSitsOver() {
-            var worldPoint = MapCursor.resolveWorldPointDuringMapPass(
+        void readsTheWorldPointTheCursorSitsOver() {
+
+            var cursorRead = MapCursor.readCursorDuringMapPass(
                 MAP_ZOOM,
                 buildReaderOnALiveMap());
 
-            assertThat(worldPoint.x).isCloseTo(EXPECTED_WORLD_X, within(TOLERANCE));
-            assertThat(worldPoint.y).isCloseTo(EXPECTED_WORLD_Y, within(TOLERANCE));
+            assertThat(cursorRead.worldPoint().x)
+                .isCloseTo(EXPECTED_WORLD_X, within(TOLERANCE));
+            assertThat(cursorRead.worldPoint().y)
+                .isCloseTo(EXPECTED_WORLD_Y, within(TOLERANCE));
         }
 
         @Test
-        void reportsNoPointWhenTheCursorHasLeftTheWindow() {
+        void readsTheCursorPixelTheReadingWasTakenAt() {
+            // Carried rather than re-read, so a description of this reading cannot quote a pixel
+            // the pointer has since moved off.
+            var cursorRead = MapCursor.readCursorDuringMapPass(
+                MAP_ZOOM,
+                buildReaderOnALiveMap());
+
+            assertThat(cursorRead.cursorPixelX())
+                .isEqualTo(CURSOR_X);
+            assertThat(cursorRead.cursorPixelY())
+                .isEqualTo(CURSOR_Y);
+        }
+
+        @Test
+        void reportsNoReadingWhenTheCursorHasLeftTheWindow() {
             // The cursor goes on reporting the last position it held inside the window, so without
             // this check a caller would keep resolving a point it is no longer over.
             mouseMock
                 .when(Mouse::isInsideWindow)
                 .thenReturn(false);
 
-            assertThat(MapCursor.resolveWorldPointDuringMapPass(MAP_ZOOM, buildReaderOnALiveMap()))
+            assertThat(MapCursor.readCursorDuringMapPass(MAP_ZOOM, buildReaderOnALiveMap()))
                 .isNull();
         }
 
         @Test
-        void reportsNoPointWhenTheTransformCannotBeCaptured() {
+        void reportsNoReadingWhenTheTransformCannotBeCaptured() {
             // A reader that serves no matrix is the reading a degraded binding gives: there is no
-            // snapshot to invert, so there is no point to report.
-            mouseMock
-                .when(Mouse::isInsideWindow)
-                .thenReturn(false);
-
-            assertThat(MapCursor.resolveWorldPointDuringMapPass(
+            // snapshot to invert, so there is no point to report. Asserted with the cursor inside
+            // the window, or the guard above would answer first and this path go untried.
+            assertThat(MapCursor.readCursorDuringMapPass(
                     MAP_ZOOM,
                     new ModelviewMatrixReaderFake(null)))
                 .isNull();
         }
 
         @Test
-        void reportsNoPointWhenTheSnapshotWillNotInvert() {
+        void reportsNoReadingWhenTheSnapshotWillNotInvert() {
             // A zoom of zero is what the world point would be divided by, so the snapshot captures
             // but resolves nothing - and a cursor sitting over a real place still gets no answer.
-            mouseMock
-                .when(Mouse::isInsideWindow)
-                .thenReturn(false);
-
-            assertThat(MapCursor.resolveWorldPointDuringMapPass(
+            assertThat(MapCursor.readCursorDuringMapPass(
                     UNUSABLE_ZOOM,
                     buildReaderOnALiveMap()))
                 .isNull();
@@ -168,6 +180,7 @@ class MapCursorTest {
     // A reader serving back exactly what the map's pass would have left bound, so a test that is
     // not about a degraded binding gets one that captures.
     private static ModelviewMatrixReaderFake buildReaderOnALiveMap() {
+        
         // Column-major, the layout gluUnProject expects, carrying the pass's pan in the last
         // column. Identity is refused by the capture as a reading that cannot be the map's.
         var matrix = new float[] {
@@ -176,8 +189,10 @@ class MapCursorTest {
             0f, 0f, 1f, 0f,
             0f, 0f, 0f, 1f,
         };
+
         matrix[12] = PAN_X;
         matrix[13] = PAN_Y;
+
         return new ModelviewMatrixReaderFake(matrix);
     }
 }

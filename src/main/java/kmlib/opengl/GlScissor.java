@@ -59,6 +59,8 @@ public final class GlScissor {
      *         a clip that could not be measured, and says so
      */
     public static String describeScissorBox(Rectangle scissorBox) {
-        return scissorBox == null ? "unclipped" : Rectangles.describe(scissorBox);
+        return scissorBox == null
+            ? "unclipped"
+            : Rectangles.describe(scissorBox);
     }
 }
