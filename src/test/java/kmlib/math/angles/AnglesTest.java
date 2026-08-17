@@ -192,4 +192,47 @@ final class AnglesTest {
                 .isCloseTo(3.141593, within());
         }
     }
+
+    @Nested
+    class FoldToHalfTurn {
+
+        @Test
+        void a_line_near_level_is_left_where_it_is() {
+            assertThat(Angles.foldToHalfTurn(0.3))
+                .isCloseTo(0.3, within());
+        }
+
+        @Test
+        void a_line_at_a_quarter_turn_is_left_there_rather_than_folded_to_its_negative() {
+            // Both ends of the range are directions in their own right, so a caller that
+            // asks with one does not get the other back.
+            assertThat(Angles.foldToHalfTurn(Math.PI / 2))
+                .isCloseTo(1.570796, within());
+        }
+
+        @Test
+        void a_line_at_minus_a_quarter_turn_is_left_there_too() {
+            assertThat(Angles.foldToHalfTurn(-Math.PI / 2))
+                .isCloseTo(-1.570796, within());
+        }
+
+        @Test
+        void a_line_past_the_range_folds_by_a_half_turn_rather_than_a_whole_one() {
+            // Two radians is past a quarter turn, so it folds to 2 - pi.
+            assertThat(Angles.foldToHalfTurn(2.0))
+                .isCloseTo(-1.141593, within());
+        }
+
+        @Test
+        void a_direction_and_its_opposite_fold_to_the_same_line() {
+            assertThat(Angles.foldToHalfTurn(0.3 + Math.PI))
+                .isCloseTo(0.3, within());
+        }
+
+        @Test
+        void a_line_several_half_turns_out_still_folds_into_range() {
+            assertThat(Angles.foldToHalfTurn(0.3 - 3 * Math.PI))
+                .isCloseTo(0.3, within());
+        }
+    }
 }

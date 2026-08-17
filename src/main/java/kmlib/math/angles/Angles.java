@@ -93,4 +93,33 @@ public final class Angles {
         var turned = normalise(angle);
         return turned > HALF_TURN ? turned - FULL_TURN : turned;
     }
+
+    /**
+     * The same direction taken as an UNDIRECTED line, which folds a turn onto a half turn.
+     *
+     * <p>A line and its opposite are one line, so both fold to a single representative angle
+     * within a quarter turn of level. What a slant, a lean or an axis direction wants:
+     * without it a fitted axis reads as level or vertical depending on which end of itself
+     * it happened to be measured from.
+     *
+     * <p>An angle already within the range is left exactly as it is, so both ends of the
+     * range are directions in their own right rather than one folding onto the other. A
+     * quarter turn is the same line as its negative, and which of the two a caller gets is
+     * therefore the one it asked with.
+     *
+     * @param angle any angle
+     * @return the same undirected line, from minus a quarter turn to a quarter turn
+     */
+    public static double foldToHalfTurn(double angle) {
+
+        var folded = angle;
+
+        while (folded > QUARTER_TURN) {
+            folded -= HALF_TURN;
+        }
+        while (folded < -QUARTER_TURN) {
+            folded += HALF_TURN;
+        }
+        return folded;
+    }
 }
