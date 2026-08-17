@@ -1,5 +1,7 @@
 package kmlib.math.geometry;
 
+import kmlib.math.angles.Angles;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,7 +45,7 @@ public final class LabelledPolygon {
 
         for (var i = 0; i < segments; i++) {
 
-            var angle = 2.0 * Math.PI * i / segments;
+            var angle = Angles.FULL_TURN * i / segments;
             
             vertices.add(new LabelledVertex(
                 new double[] {
