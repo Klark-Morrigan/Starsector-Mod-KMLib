@@ -34,16 +34,18 @@ against anything else.
 | What | Version | Identity |
 | --- | --- | --- |
 | Starsector | `0.98a-RC8` | - |
-| Fast Rendering | `v0.8.2` | `fr.jar` SHA-256 `55c8cc3b9a1da7c257edfa822b772a3b6db06aadb82a0d110f6a256f503eaa4a`, 635887 bytes; `fr.agent.jar` 14762 bytes |
+| Fast Rendering | `v0.8.3` | `fr.jar` SHA-256 `85896242dc0c1a69a822d516122db49d6f8cde77d4b8486a629e4770f5e560f8`, 634576 bytes; `fr.agent.jar` 14762 bytes |
 
-That row is the installed jar, and it is not the newest release. `v0.8.3` is
-published and has been read out of its release zip, but it is **not** dropped
-in, so nothing on this page is verified against a running copy of it. Its
-`fr.jar` is 634576 bytes, SHA-256
-`85896242dc0c1a69a822d516122db49d6f8cde77d4b8486a629e4770f5e560f8`; its
-`fr.agent.jar` is 14762 bytes and its entries are byte-identical to `v0.8.2`'s,
-so the rewrite tables that decide the bridge package name are unchanged. Read
-statically, nothing else KM binds to moved either: the whole
+That row is the installed jar, and it is now the newest release: `v0.8.3` has been
+dropped in, and the size and hash above are the ones this page had already
+recorded for it while it was still only read out of its release zip. What follows
+was written against `v0.8.2` and compared statically to `v0.8.3` before the
+upgrade; the inline-versus-stalling split below has since been re-read out of the
+installed jar and holds, but the rest of the page has not been re-verified read by
+read against a running copy, so treat it as carried forward rather than freshly
+confirmed. Its `fr.agent.jar` is 14762 bytes and its entries are byte-identical
+to `v0.8.2`'s, so the rewrite tables that decide the bridge package name are
+unchanged. Read statically, nothing else KM binds to moved either: the whole
 `com.genir.renderer.bridge.**` tree is byte-identical bar `GL11.glGetTexImage`,
 which gained a compressed-texture path for an AMD driver crash; the `glGet*`
 and `glIsEnabled` signature sets are identical, so the inline-versus-stalling
@@ -58,16 +60,17 @@ Fast Rendering names itself only coarsely. `fr.jar` carries no manifest and the
 `fr.readme.txt` beside it names no release. From `v0.8.2` it does carry a version
 constant, `com.genir.renderer.Version.getVersion()`
 (`starsector-core/fr/com/genir/renderer/Version.java:7`), which returns the
-release string - `"v0.8.2"` on the installed jar, `"v0.8.3"` on the newest. But
+release string - `"v0.8.3"` on the installed jar. But
 nothing in either jar calls it, so it identifies the artifact rather than
 anything a running game reports, and it is absent from every earlier release.
 The older signal is a display string in its shadowed copy of the game's own
-version class - `"Starsector 0.98a-RC8 FR8.2"`
-(`starsector-core/fr/com/fs/starfarer/Version.java:36`, `:51`), which is what
-puts `FR8.2` on the launcher and main menu. That is a two-component release
-number baked into a string literal, so it identifies a minor line and not a
-build: it cannot separate `v0.7.1` from `v0.7.1b`, and it changes only when
-genir bumps the literal (`v0.8.3` reads `FR8.3`). So the version above was
+version class - `"Starsector 0.98a-RC8 FR7.7"` on the installed `v0.8.3`
+(`starsector-core/fr/com/fs/starfarer/Version.java:27`, `:42`), which is what
+puts `FR7.7` on the launcher and main menu. That string does not track the
+release at all, which is worth knowing before trusting it: the installed jar is
+`v0.8.3` and still reads `FR7.7`, so genir has left the literal untouched across
+at least a minor line, and it cannot separate `v0.7.1` from `v0.7.1b` either. So
+the version above was
 established by hashing `fr.jar` against the release assets, and the SHA-256 is
 what actually identifies the bytes these citations were read from.
 
@@ -395,6 +398,18 @@ Rendering version, so "it worked on my install" proves less than it looks; and t
 scissor **box** is still not shadowed - only the enable flag is - so the current
 clip rectangle remains unreadable without a stall, which is why clip composition
 is the caller's job (`kmlib.starsector.ui.render.gl.UiScissor`).
+
+Re-verified against `v0.8.3`, and unchanged. `glGetInteger(int, IntBuffer)`
+switches on exactly one pname - `2978`, which is `GL_VIEWPORT` - answering it from
+`attribTracker.getViewport()` and returning before the executor is reached; every
+other pname falls past the switch to `context.exec.wait`
+(`.../bridge/commands/GL11.java:1307-1328`). `GL_SCISSOR_BOX` is `3088`, so it
+takes that second path and stalls.
+
+The neighbouring pair is what makes this easy to get wrong from memory: the
+scissor **enable flag** is inline while the scissor **box** is not, so a clip read
+written as "is it on, and what is it" is half safe and half fatal. Two lines, two
+different answers.
 
 Matrix reads are best avoided outright rather than worked around: the campaign
 UI's projection is derivable arithmetically (below), and the modelview is
