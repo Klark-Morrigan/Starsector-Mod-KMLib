@@ -1,6 +1,5 @@
 package kmlib.starsector.rat;
 
-import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 
 import assortment_of_things.abyss.entities.hyper.AbyssalFracture;
@@ -20,8 +19,6 @@ import assortment_of_things.abyss.entities.hyper.AbyssalFracture;
  */
 public final class RandomAssortmentOfThingsMatcher {
 
-    private static final String RAT_MOD_ID = "assortment_of_things";
-
     private RandomAssortmentOfThingsMatcher() {
     }
 
@@ -32,8 +29,7 @@ public final class RandomAssortmentOfThingsMatcher {
     public static boolean isAbyssalFracture(SectorEntityToken entity) {
         // Short-circuit before touching RatTypes so a RAT-free install never
         // loads the class that names AbyssalFracture.
-        if (entity == null
-                || !Global.getSettings().getModManager().isModEnabled(RAT_MOD_ID)) {
+        if (entity == null || !RandomAssortmentOfThingsPresence.isModEnabled()) {
             return false;
         }
         return RatTypes.isAbyssalFracture(entity);

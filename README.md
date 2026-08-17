@@ -42,7 +42,8 @@ Soft dependencies:
 
 Compatibility coded in:
 
-- **Random Assortment of Things** - KMLib recognises RAT's Abyssal Fractures.
+- **Random Assortment of Things** - KMLib recognises RAT's Abyssal Fractures, and
+  reports whether its mini-map has replaced the campaign radar.
 
 ## Layout
 
@@ -126,7 +127,8 @@ src/main/java/kmlib/
     map/           - which systems the sector map marks
     markets/       - market queries, decivilised markets, patrol counts
     memory/        - typed sector-memory accessors (flag, string)
-    rat/           - Random Assortment of Things entity matching
+    rat/           - Random Assortment of Things: Abyssal Fracture matching,
+                     and the campaign-minimap role answered for its mini-map
     relation/      - player relationship formatting
     scripts/       - sector script registration helpers
     strings/       - defensive wrapper around settings.json
@@ -175,6 +177,8 @@ src/main/java/kmlib/
                      panel and tab-panel layout
       map/         - obf-cast seam onto the campaign map: view state,
                      the cross-host "is a starscape map up" fold-in,
+                     the campaign-minimap role for the surface that
+                     replaces the radar rather than opening as a screen,
                      screen/world transform, modelview matrix readers,
                      vanilla map tooltip
       render/gl/   - the GL paint layer. The root is the drawing surface
@@ -206,7 +210,8 @@ src/main/java/kmlib/
                      the memo a consumer holds its list in - holding no
                      store of its own
   testfixtures/    - Fakes for KMLib's own ports (claims, fonts, intel
-                     screen, modelview, console output) and for the core
+                     screen, modelview, campaign minimap, console
+                     output) and for the core
                      UI - the hops down to the screen that is up, and the
                      widget tree a layout rule walks once there - plus
                      builders for the values those ports report. Ships in
