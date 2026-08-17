@@ -84,4 +84,40 @@ final class AnglesTest {
                 .isCloseTo(1.0, within());
         }
     }
+
+    @Nested
+    class MeasureGap {
+
+        @Test
+        void two_directions_a_hair_apart_are_a_hair_apart() {
+            assertThat(Angles.measureGap(1.0, 1.25))
+                .isCloseTo(0.25, within());
+        }
+
+        @Test
+        void the_gap_reads_the_same_whichever_order_the_two_are_given_in() {
+            assertThat(Angles.measureGap(1.25, 1.0))
+                .isCloseTo(0.25, within());
+        }
+
+        @Test
+        void a_pair_either_side_of_zero_measure_across_it_rather_than_round() {
+            // A tenth before a turn and a tenth after zero are a fifth apart, not a turn less.
+            assertThat(Angles.measureGap(2 * Math.PI - 0.1, 0.1))
+                .isCloseTo(0.2, within());
+        }
+
+        @Test
+        void opposite_directions_are_a_half_turn_apart_which_is_the_most_there_is() {
+            assertThat(Angles.measureGap(0.0, Math.PI))
+                .isCloseTo(3.141593, within());
+        }
+
+        @Test
+        void more_than_a_half_turn_round_is_reported_as_the_shorter_way_back() {
+            // Three quarters of a turn forward is a quarter of a turn back.
+            assertThat(Angles.measureGap(0.0, 3 * Math.PI / 2))
+                .isCloseTo(1.570796, within());
+        }
+    }
 }

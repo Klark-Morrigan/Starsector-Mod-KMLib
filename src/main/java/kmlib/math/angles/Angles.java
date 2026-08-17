@@ -49,4 +49,17 @@ public final class Angles {
         return turned < 0 ? turned + FULL_TURN : turned;
     }
 
+    /**
+     * How far apart two directions are, whichever way round is shorter.
+     *
+     * @param from one direction
+     * @param to   the other
+     * @return the angle between them, never more than a half turn
+     */
+    public static double measureGap(double from, double to) {
+
+        var turned = normalise(to - from);
+        return turned > HALF_TURN ? FULL_TURN - turned : turned;
+    }
+
 }
