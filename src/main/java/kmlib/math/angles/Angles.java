@@ -62,4 +62,20 @@ public final class Angles {
         return turned > HALF_TURN ? FULL_TURN - turned : turned;
     }
 
+    /**
+     * The same direction, moved into the turn that begins at {@code origin}.
+     *
+     * <p>What makes an angle comparable to an interval. An interval is carried as a pair of
+     * angles that may run past a full turn, so an angle taken fresh from {@code atan2} is in
+     * the wrong turn as often as not, and comparing the two directly puts a direction outside
+     * an interval that in fact contains it.
+     *
+     * @param angle  the direction to move
+     * @param origin where the turn begins
+     * @return the same direction, at or after {@code origin} and less than a turn past it
+     */
+    public static double placeAfter(double angle, double origin) {
+        return origin + normalise(angle - origin);
+    }
+
 }

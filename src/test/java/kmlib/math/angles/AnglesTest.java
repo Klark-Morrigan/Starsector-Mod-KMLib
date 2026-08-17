@@ -120,4 +120,41 @@ final class AnglesTest {
                 .isCloseTo(1.570796, within());
         }
     }
+
+    @Nested
+    class PlaceAfter {
+
+        @Test
+        void a_direction_at_the_origin_stays_at_the_origin() {
+            assertThat(Angles.placeAfter(1.0, 1.0))
+                .isCloseTo(1.0, within());
+        }
+
+        @Test
+        void a_direction_just_past_the_origin_stays_just_past_it() {
+            assertThat(Angles.placeAfter(1.5, 1.0))
+                .isCloseTo(1.5, within());
+        }
+
+        @Test
+        void a_direction_just_before_the_origin_moves_a_whole_turn_on() {
+            // 0.5 sits before an origin of 1, so it is placed at 0.5 + 2pi - which is what
+            // lets an interval running from 1 to 1.2 past a turn be tested against it.
+            assertThat(Angles.placeAfter(0.5, 1.0))
+                .isCloseTo(6.783185, within());
+        }
+
+        @Test
+        void a_direction_a_turn_out_is_placed_as_though_it_never_was() {
+            assertThat(Angles.placeAfter(1.5 + 2 * Math.PI, 1.0))
+                .isCloseTo(1.5, within());
+        }
+
+        @Test
+        void an_origin_past_a_turn_keeps_the_result_beside_it_rather_than_in_the_first_turn() {
+            // The point of the operation: the answer is in the origin's turn, not in turn one.
+            assertThat(Angles.placeAfter(0.5, 7.0))
+                .isCloseTo(13.066371, within());
+        }
+    }
 }
