@@ -157,4 +157,39 @@ final class AnglesTest {
                 .isCloseTo(13.066371, within());
         }
     }
+
+    @Nested
+    class MeasureSignedTurn {
+
+        @Test
+        void a_small_turn_forward_keeps_its_sign() {
+            assertThat(Angles.measureSignedTurn(0.5))
+                .isCloseTo(0.5, within());
+        }
+
+        @Test
+        void a_small_turn_back_keeps_its_sign() {
+            assertThat(Angles.measureSignedTurn(-0.5))
+                .isCloseTo(-0.5, within());
+        }
+
+        @Test
+        void the_long_way_forward_becomes_the_short_way_back() {
+            // Three quarters of a turn anticlockwise is a quarter turn clockwise.
+            assertThat(Angles.measureSignedTurn(3 * Math.PI / 2))
+                .isCloseTo(-1.570796, within());
+        }
+
+        @Test
+        void a_half_turn_resolves_forward_so_the_range_is_closed_at_one_end() {
+            assertThat(Angles.measureSignedTurn(Math.PI))
+                .isCloseTo(3.141593, within());
+        }
+
+        @Test
+        void a_half_turn_back_resolves_forward_onto_the_same_answer() {
+            assertThat(Angles.measureSignedTurn(-Math.PI))
+                .isCloseTo(3.141593, within());
+        }
+    }
 }

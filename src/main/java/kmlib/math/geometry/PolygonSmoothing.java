@@ -1,5 +1,7 @@
 package kmlib.math.geometry;
 
+import kmlib.math.angles.Angles;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -202,17 +204,9 @@ public final class PolygonSmoothing {
         var startAngle = Math.atan2(arcStart[1] - center[1], arcStart[0] - center[0]);
         var endAngle = Math.atan2(arcEnd[1] - center[1], arcEnd[0] - center[0]);
 
-        // Sweep the short way (normalise to (-PI, PI]); that arc is the one on the
-        // corner's side, so the rounded corner bulges toward the original vertex.
-        var sweep = endAngle - startAngle;
-
-        while (sweep <= -Math.PI) {
-            sweep += 2.0 * Math.PI;
-        }
-
-        while (sweep > Math.PI) {
-            sweep -= 2.0 * Math.PI;
-        }
+        // Sweep the short way; that arc is the one on the corner's side, so the rounded
+        // corner bulges toward the original vertex.
+        var sweep = Angles.measureSignedTurn(endAngle - startAngle);
 
         for (var step = 0; step <= segments; step++) {
 

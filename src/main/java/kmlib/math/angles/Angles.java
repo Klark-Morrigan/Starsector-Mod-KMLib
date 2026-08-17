@@ -78,4 +78,19 @@ public final class Angles {
         return origin + normalise(angle - origin);
     }
 
+    /**
+     * A turn as the shorter way round, signed: positive anticlockwise, negative clockwise.
+     *
+     * <p>What a sweep between two directions wants. The difference of two angles taken raw
+     * can be most of two turns, and taking it at face value sweeps the long way round the
+     * circle - which for anything drawn along that sweep is the arc on the wrong side.
+     *
+     * @param angle the turn to shorten
+     * @return the same turn, more than a half turn back and at most a half turn on
+     */
+    public static double measureSignedTurn(double angle) {
+
+        var turned = normalise(angle);
+        return turned > HALF_TURN ? turned - FULL_TURN : turned;
+    }
 }
