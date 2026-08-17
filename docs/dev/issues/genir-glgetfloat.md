@@ -12,27 +12,27 @@ compiled fine against real LWJGL binds to the bridge at runtime and dies with a
 `NoSuchMethodError` the first time it reads a matrix back - from inside its render pass, so it
 takes the screen down with it rather than failing at load.
 
-Verified against **v0.8.2** (`fr.jar`, SHA-256
-`55c8cc3b9a1da7c257edfa822b772a3b6db06aadb82a0d110f6a256f503eaa4a`, 635887 bytes) on Starsector
-0.98a-RC8, and re-read against **v0.8.3** (`fr.jar`, SHA-256
-`85896242dc0c1a69a822d516122db49d6f8cde77d4b8486a629e4770f5e560f8`, 634576 bytes), where it is
-unchanged. It was first written against v0.7.2 and re-read on every release since: the `glGet*`
-surface has not changed across any of them. `bridge/commands/GL11.java` is byte-identical between
-v0.7.7 and v0.8.2, and its only v0.8.3 change is inside `glGetTexImage`, which added a
-compressed-texture path. What has moved around it is everything else - v0.7.4 moved the bridge
-from `com.genir.renderer.bridge` to `com.genir.renderer.bridge.commands` and the command
-interfaces to `com.genir.renderer.bridge.interfaces`, and v0.8.0 replaced the system classloader
-with a Java agent, moving the rewriting itself into a second jar (`fr.agent.jar`,
-`com.genir.renderer.agent`).
+Verified against **v0.8.4** (`fr.jar`, SHA-256
+`dea3ea3d0fd7437d4a7945fee65f741d9b72d3fec565b9c4807aea479ce56144`, 639820 bytes) on Starsector
+0.98a-RC8. It was first written against v0.7.2 and re-read on every release since: the `glGet*`
+surface has not changed across any of them, while everything around it has - v0.7.4 moved the
+bridge from `com.genir.renderer.bridge` to `com.genir.renderer.bridge.commands` and the command
+interfaces to `com.genir.renderer.bridge.interfaces`; v0.8.0 replaced the system classloader with
+a Java agent, moving the rewriting itself into a second jar (`fr.agent.jar`,
+`com.genir.renderer.agent`); v0.8.3 added a compressed-texture path inside `glGetTexImage`; and
+v0.8.4 repacked `VertexInterceptor`'s vertex arrays and moved program tracking from
+`AttribTracker` to a `ShaderTracker`. None of that touches which state a caller can read back.
 
 ## Details
 
 The bridge's entire `glGet*` surface is `glGetInteger(int)`, `glGetInteger(int, IntBuffer)`,
 `glGetString(int)`, `glGetFloat(int)`, `glGetError()`, `glGetTexLevelParameteri`, and two
-`glGetTexImage` overloads (`GL11.java`, the `glGet*` block; in the shipped v0.8.2 jar it
-decompiles to L1264-L1462). `glGetFloat` exists only in its scalar form, which cannot take a
+`glGetTexImage` overloads (`GL11.java`, the `glGet*` block; in the shipped v0.8.4 jar it
+decompiles to L1278-L1474). `glGetFloat` exists only in its scalar form, which cannot take a
 matrix - and it answers `GL_LINE_WIDTH` inline, so the shape for serving a value from tracked
-state without a stall is already there.
+state without a stall is already there. `glIsTexture` is the most recent example of it: v0.8.4
+answers it from a caller-side `TextureTracker` and demotes the real GL call to a deferred
+assertion, turning a read that used to stall into one that cannot.
 
 The affected pattern is the standard one for turning a cursor into world coordinates:
 
