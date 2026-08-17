@@ -235,4 +235,40 @@ final class AnglesTest {
                 .isCloseTo(0.3, within());
         }
     }
+
+    @Nested
+    class MeasureUndirectedGap {
+
+        @Test
+        void a_line_is_no_distance_from_itself() {
+            assertThat(Angles.measureUndirectedGap(0.4, 0.4))
+                .isCloseTo(0.0, within());
+        }
+
+        @Test
+        void a_line_is_no_distance_from_its_own_opposite() {
+            assertThat(Angles.measureUndirectedGap(0.4, 0.4 + Math.PI))
+                .isCloseTo(0.0, within());
+        }
+
+        @Test
+        void two_lines_a_hair_apart_are_a_hair_apart() {
+            assertThat(Angles.measureUndirectedGap(0.4, 0.6))
+                .isCloseTo(0.2, within());
+        }
+
+        @Test
+        void two_lines_either_side_of_vertical_are_near_parallel_rather_than_opposite() {
+            // A tenth short of a quarter turn and a tenth past it are a fifth apart as
+            // lines, though as directions they are nearly a half turn apart.
+            assertThat(Angles.measureUndirectedGap(Math.PI / 2 - 0.1, Math.PI / 2 + 0.1))
+                .isCloseTo(0.2, within());
+        }
+
+        @Test
+        void perpendicular_lines_are_a_quarter_turn_apart_which_is_the_most_there_is() {
+            assertThat(Angles.measureUndirectedGap(0.0, Math.PI / 2))
+                .isCloseTo(1.570796, within());
+        }
+    }
 }

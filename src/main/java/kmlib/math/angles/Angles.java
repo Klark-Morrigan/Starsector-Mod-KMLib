@@ -122,4 +122,21 @@ public final class Angles {
         }
         return folded;
     }
+
+    /**
+     * How far apart two UNDIRECTED lines are, which is never more than a quarter turn.
+     *
+     * <p>The counterpart of {@link #measureGap} for lines rather than directions. Two lines a
+     * hair either side of level are nearly parallel however their directions were measured,
+     * and a gap that can reach a half turn would call one of those pairs opposite.
+     *
+     * @param first  one line's angle
+     * @param second the other's
+     * @return the angle between them, never more than a quarter turn
+     */
+    public static double measureUndirectedGap(double first, double second) {
+
+        var apart = Math.abs(foldToHalfTurn(first) - foldToHalfTurn(second));
+        return Math.min(apart, HALF_TURN - apart);
+    }
 }
