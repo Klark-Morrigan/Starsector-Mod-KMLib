@@ -55,7 +55,7 @@ public final class MapCursor {
         if (!Mouse.isInsideWindow()) {
             return null;
         }
-        
+
         var transform = CampaignMapTransform.captureFromMapPass(factor, modelviewMatrixReader);
         if (transform == null) {
             return null;

@@ -23,7 +23,8 @@ import static org.mockito.Mockito.never;
  *
  * <p>The clip is the part with two readings rather than one. A pass drawing unclipped owns every
  * pixel and a pass drawing inside a box owns only that box, and whether the cursor is in it is what
- * says if the pass could be the one that knows what is under the pointer.
+ * says whether the pass this line is being built in could have painted the pixel it is about - the
+ * one field describing the printing pass rather than the reading, which is why it is named for it.
  *
  * <p>It is also the part with a renderer behind it. Reading the clip box stalls Fast Rendering's
  * pipeline hard enough to end the session, so the read has to be provably absent there rather than
@@ -51,6 +52,16 @@ class MapCursorReadTest {
     private static final boolean UNDER_FAST_RENDERING = true;
     private static final boolean UNDER_STOCK_LWJGL = false;
 
+    // The line either side of the clip: what the reading itself was. Named so that a whole-line
+    // assertion states only the part the case is about and the clip fields are what visibly differ
+    // between two of them, rather than being two shorter fields inside two long strings.
+    private static final String READING_FIELDS = "cursorPixel=(410,320)"
+        + " viewport=x=0 y=0 w=800 h=600"
+        + " factor=2.0"
+        + " modelviewTranslate=(10.0,20.0)"
+        + " modelviewScale=(1.0,1.0)";
+    private static final String WORLD_POINT_FIELD = "worldPoint=(200.0,150.0)";
+
     private MockedStatic<GL11> glMock;
 
     @BeforeEach
@@ -77,14 +88,10 @@ class MapCursorReadTest {
             stubScissorTestOff();
 
             assertThat(buildRead().describeRead())
-                .isEqualTo("cursorPixel=(410,320)"
-                    + " viewport=x=0 y=0 w=800 h=600"
-                    + " factor=2.0"
-                    + " modelviewTranslate=(10.0,20.0)"
-                    + " modelviewScale=(1.0,1.0)"
-                    + " scissor=[unclipped]"
-                    + " scissorHoldsCursor=true"
-                    + " worldPoint=(200.0,150.0)");
+                .isEqualTo(READING_FIELDS
+                    + " printingPassScissor=[unclipped]"
+                    + " printingPassHoldsCursor=true"
+                    + " " + WORLD_POINT_FIELD);
         }
     }
 
@@ -98,8 +105,8 @@ class MapCursorReadTest {
             stubScissorBoxAt(CLIP_AROUND_THE_CURSOR);
 
             assertThat(buildRead().describeReadUnderRenderer(UNDER_STOCK_LWJGL))
-                .contains("scissor=[x=400 y=300 w=100 h=100]")
-                .contains("scissorHoldsCursor=true");
+                .contains("printingPassScissor=[x=400 y=300 w=100 h=100]")
+                .contains("printingPassHoldsCursor=true");
         }
 
         @Test
@@ -109,8 +116,8 @@ class MapCursorReadTest {
             stubScissorBoxAt(CLIP_AWAY_FROM_THE_CURSOR);
 
             assertThat(buildRead().describeReadUnderRenderer(UNDER_STOCK_LWJGL))
-                .contains("scissor=[x=0 y=0 w=100 h=100]")
-                .contains("scissorHoldsCursor=false");
+                .contains("printingPassScissor=[x=0 y=0 w=100 h=100]")
+                .contains("printingPassHoldsCursor=false");
         }
 
         @Test
@@ -120,14 +127,10 @@ class MapCursorReadTest {
             stubScissorBoxAt(CLIP_AROUND_THE_CURSOR);
 
             assertThat(buildRead().describeReadUnderRenderer(UNDER_FAST_RENDERING))
-                .isEqualTo("cursorPixel=(410,320)"
-                    + " viewport=x=0 y=0 w=800 h=600"
-                    + " factor=2.0"
-                    + " modelviewTranslate=(10.0,20.0)"
-                    + " modelviewScale=(1.0,1.0)"
-                    + " scissor=[unread under Fast Rendering]"
-                    + " scissorHoldsCursor=unknown"
-                    + " worldPoint=(200.0,150.0)");
+                .isEqualTo(READING_FIELDS
+                    + " printingPassScissor=[unread under Fast Rendering]"
+                    + " printingPassHoldsCursor=unknown"
+                    + " " + WORLD_POINT_FIELD);
         }
 
         @Test

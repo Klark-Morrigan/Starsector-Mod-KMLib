@@ -40,16 +40,20 @@ public record MapCursorRead(
 
     /**
      * Words this reading for a diagnostic line: the pixel it started from, the snapshot it was
-     * mapped through, the clip the pass was drawing under, and the point it landed on.
+     * mapped through, the clip in force where the line is being built, and the point it landed on.
      *
-     * <p>Must be called from inside the same render pass the reading was taken in, because the clip
-     * is read live rather than carried in the value. It is left out of the value deliberately: the
-     * clip is wanted only on the frames that print, while the reading itself is taken on every
-     * frame that hovers.
+     * <p>Must be called from inside a render pass, because the clip is read live rather than carried
+     * in the value. It is left out of the value deliberately: the clip is wanted only on the frames
+     * that print, while the reading itself is taken on every frame that hovers.
      *
-     * <p>The clip is reported beside the cursor because together they say whether the pass owns the
-     * pixel being asked about at all - a pass that may not paint there cannot be the one that knows
-     * what is under it.
+     * <p>That makes the clip the one field describing the <em>printing</em> pass rather than the
+     * reading, and the fields say so, because the two are routinely different passes: a frame can be
+     * painted by several, and a caller printing on a frame's arrival prints from wherever it steps
+     * its own once-a-frame work rather than from the pass whose reading won. So the clip answers
+     * "could the pass building this line have painted the cursor's pixel", which is worth having -
+     * it is how a foreign map's box is spotted at all - and does not answer whether the pass that
+     * resolved the reading owned that pixel. Nothing here can answer the second question: a clip
+     * belongs to a pass, and the pass that read has ended by the time anything reports on it.
      *
      * <p>Under Fast Rendering the clip is left unread and the line says so, which is why the
      * renderer is the one thing a description branches on. That mod's bridge shadows the scissor
@@ -80,15 +84,23 @@ public record MapCursorRead(
     private String describeClipUnderRenderer(boolean isFastRenderingActive) {
 
         if (isFastRenderingActive) {
-            return "scissor=[" + UNREAD_CLIP + "] scissorHoldsCursor=" + UNKNOWN_CONTAINMENT;
+            return describeClipFields(UNREAD_CLIP, UNKNOWN_CONTAINMENT);
         }
 
         var scissorBox = GlScissor.readScissorBox();
 
-        return "scissor=[" + GlScissor.describeScissorBox(scissorBox) + "]"
+        return describeClipFields(
+            GlScissor.describeScissorBox(scissorBox),
             // An unclipped pass owns every pixel, which is what a null clip reads as here rather
             // than through a rule of this end's own.
-            + " scissorHoldsCursor="
-            + (scissorBox == null || scissorBox.containsPoint(cursorPixelX, cursorPixelY));
+            String.valueOf(
+                scissorBox == null || scissorBox.containsPoint(cursorPixelX, cursorPixelY)));
+    }
+
+    // The two clip fields worded in one place, so a reading that could not be taken and one that
+    // was keep the same shape in a log - which is the whole of what makes the unread case legible
+    // beside an ordinary one rather than a line with something missing from it.
+    private static String describeClipFields(String clip, String containment) {
+        return "printingPassScissor=[" + clip + "] printingPassHoldsCursor=" + containment;
     }
 }
