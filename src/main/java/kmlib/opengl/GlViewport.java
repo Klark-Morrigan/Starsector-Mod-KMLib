@@ -1,37 +1,23 @@
 package kmlib.opengl;
 
-import org.lwjgl.BufferUtils;
+import kmlib.math.geometry.Rectangles;
+
 import org.lwjgl.opengl.GL11;
 
 /**
- * The pixel rectangle GL is currently drawing into.
+ * The pixel rectangle GL maps normalised coordinates into - what a projection's {@code -1..1} is
+ * stretched across.
  *
- * <p>Held apart from the callers that want it because more than one does, and because the read has
- * a quirk worth stating once: LWJGL sizes its {@code glGetInteger} check against the largest result
- * any {@code pname} can return rather than against the one being asked for, so the buffer must hold
- * sixteen ints however few the viewport fills. A viewport-sized buffer is rejected outright, which
- * is a crash rather than a short read - a mistake each caller would otherwise be free to make on
- * its own.
+ * <p>Worth reading rather than assuming, which is why it is published: the viewport is whatever the
+ * pass in force left bound. Anything mapping a screen pixel through it - unprojecting a cursor, for
+ * instance - is measuring against that rectangle and not against the screen, so a pass that
+ * narrowed it and did not restore it changes the answer for every pass after it.
  *
- * <p>Worth reading rather than assuming, and that is the other reason it is published: the viewport
- * is whatever the pass in force left bound. A panel that narrows it for its own drawing and does
- * not restore it leaves every later pass measuring against that rectangle, so anything mapping
- * pixels through it is mapping through someone else's frame.
+ * <p>Distinct from {@link GlScissor}, which is about where a pass may <em>write</em> rather than
+ * how its coordinates are stretched. The two are frequently the same rectangle and mean different
+ * things, so they are named apart even though both read as four ints.
  */
 public final class GlViewport {
-
-    private static final int VIEWPORT_INT_COUNT = 4;
-
-    // The order GL reports a viewport in. Named because the four are read back as a bare int array,
-    // where a bracketed index says nothing about which of the four it reaches.
-    private static final int ORIGIN_X_SLOT = 0;
-    private static final int ORIGIN_Y_SLOT = 1;
-    private static final int WIDTH_SLOT = 2;
-    private static final int HEIGHT_SLOT = 3;
-
-    // Sized for LWJGL's check rather than for the four ints a viewport fills; only those four are
-    // copied back out.
-    private static final int GL_GET_INTEGER_MIN_BUFFER_INTS = 16;
 
     private GlViewport() {
     }
@@ -42,17 +28,10 @@ public final class GlViewport {
      * <p>Must be called with a GL context current, which for this library's callers means from
      * inside a render pass.
      *
-     * @return the four ints, freshly copied so the caller owns them rather than aliasing a scratch
-     *         buffer
+     * @return its four ints
      */
     public static int[] readViewport() {
-
-        var viewportBuffer = BufferUtils.createIntBuffer(GL_GET_INTEGER_MIN_BUFFER_INTS);
-        GL11.glGetInteger(GL11.GL_VIEWPORT, viewportBuffer);
-
-        var viewport = new int[VIEWPORT_INT_COUNT];
-        viewportBuffer.get(viewport);
-        return viewport;
+        return GlPixelRectangle.readFrom(GL11.GL_VIEWPORT);
     }
 
     /**
@@ -62,14 +41,6 @@ public final class GlViewport {
      * @return its origin and size, or a note that it is not a viewport at all
      */
     public static String describeViewport(int[] viewport) {
-
-        if (viewport == null || viewport.length != VIEWPORT_INT_COUNT) {
-            return "unreadable";
-        }
-        return "[x=" + viewport[ORIGIN_X_SLOT]
-            + " y=" + viewport[ORIGIN_Y_SLOT]
-            + " w=" + viewport[WIDTH_SLOT]
-            + " h=" + viewport[HEIGHT_SLOT]
-            + "]";
+        return Rectangles.describe(GlPixelRectangle.toRectangle(viewport));
     }
 }

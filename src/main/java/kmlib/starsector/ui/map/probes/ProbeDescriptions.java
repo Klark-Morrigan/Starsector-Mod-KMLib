@@ -2,7 +2,7 @@ package kmlib.starsector.ui.map.probes;
 
 import com.fs.starfarer.api.ui.UIComponentAPI;
 
-import kmlib.math.geometry.Rectangle;
+import kmlib.math.geometry.Rectangles;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -73,24 +73,9 @@ final class ProbeDescriptions {
         }
         var box = DrawnWidgets.resolveBoxOf(widget);
         return widget.getClass().getName()
-            + "[" + (box == null ? "unpositioned" : describeBox(box))
+            + "[" + (box == null ? "unpositioned" : Rectangles.describe(box))
             + " opacity=" + widget.getOpacity()
             + "]";
     }
 
-    /**
-     * Describes a box in the coordinates the player sees it in.
-     *
-     * <p>Rounded to whole units: these are read off a log by eye against the game's own pixel grid,
-     * where a fractional layout coordinate is noise.
-     *
-     * @param box the box to word
-     * @return its position and size
-     */
-    static String describeBox(Rectangle box) {
-        return "x=" + Math.round(box.x())
-            + " y=" + Math.round(box.y())
-            + " w=" + Math.round(box.width())
-            + " h=" + Math.round(box.height());
-    }
 }

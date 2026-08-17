@@ -1,5 +1,7 @@
 package kmlib.starsector.ui.map.transform;
 
+import kmlib.opengl.GlScissor;
+
 import org.lwjgl.input.Mouse;
 import org.lwjgl.util.vector.Vector2f;
 
@@ -89,8 +91,20 @@ public final class MapCursor {
             return null;
         }
         var worldPoint = transform.unprojectToWorld(Mouse.getX(), Mouse.getY());
+
+        // The clip is reported beside the cursor because together they answer whether this pass
+        // owns the pixel being asked about at all - a pass that may not paint there cannot be the
+        // one that knows what is under it. Two passes in a frame reporting different clips is what
+        // would make that rule usable; both reporting none is what would make it useless.
+        var scissorBox = GlScissor.readScissorBox();
+
         return "cursorPixel=(" + Mouse.getX() + "," + Mouse.getY() + ")"
             + " " + transform.describeSnapshot()
+            + " scissor=[" + GlScissor.describeScissorBox(scissorBox) + "]"
+            // An unclipped pass owns every pixel, which is what a null clip reads as here rather
+            // than through a rule of this end's own.
+            + " scissorHoldsCursor="
+            + (scissorBox == null || scissorBox.containsPoint(Mouse.getX(), Mouse.getY()))
             + " worldPoint=" + (worldPoint == null
                 ? "uninvertible"
                 : "(" + worldPoint.x + "," + worldPoint.y + ")");

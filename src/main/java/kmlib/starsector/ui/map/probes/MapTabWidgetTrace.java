@@ -5,6 +5,7 @@ import com.fs.starfarer.api.ui.UIComponentAPI;
 
 import kmlib.logging.SessionWarning;
 import kmlib.math.geometry.Rectangle;
+import kmlib.math.geometry.Rectangles;
 import kmlib.starsector.ui.coreui.CoreUiTree;
 import kmlib.starsector.ui.input.UiCursor;
 
@@ -184,7 +185,7 @@ public final class MapTabWidgetTrace {
 
         return "d" + depth
             + " " + widget.getClass().getName()
-            + "[" + ProbeDescriptions.describeBox(box)
+            + "[" + Rectangles.describe(box)
             + " opacity=" + widget.getOpacity()
             + " parent=" + (parent == null ? "none" : parent.getClass().getName())
             + "]";
@@ -195,7 +196,7 @@ public final class MapTabWidgetTrace {
             ? DrawnWidgets.resolveBoxOf(tab)
             : null;
         return currentTab.getClass().getName()
-            + "[" + (tabBox == null ? "unpositioned" : ProbeDescriptions.describeBox(tabBox))
+            + "[" + (tabBox == null ? "unpositioned" : Rectangles.describe(tabBox))
             + "]";
     }
 
@@ -224,9 +225,9 @@ public final class MapTabWidgetTrace {
 
         return surfaceArea == null
             ? "none"
-            : "[" + ProbeDescriptions.describeBox(surfaceArea.box())
+            : "[" + Rectangles.describe(surfaceArea.box())
                 + " chrome=" + ProbeDescriptions.describeUpToCap(
-                    surfaceArea.chromeBoxes(), ProbeDescriptions::describeBox) + "]";
+                    surfaceArea.chromeBoxes(), Rectangles::describe) + "]";
     }
 
     // Warns on this library's own logger rather than the caller's, since a reach that broke is the
