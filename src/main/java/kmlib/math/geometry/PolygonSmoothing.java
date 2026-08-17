@@ -1,7 +1,5 @@
 package kmlib.math.geometry;
 
-import kmlib.math.angles.Angles;
-
 import java.util.ArrayList;
 import java.util.List;
 

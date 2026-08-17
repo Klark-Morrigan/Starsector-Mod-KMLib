@@ -193,7 +193,14 @@ empty rather than dropped, so the answers stay readable by position.
 `Points` holds the vector arithmetic every measure above is built from - distances,
 bearings, projections onto an axis, unit vectors. Most take either four loose doubles or
 two `{x, y}` arrays. `Lines` and `Spans` work on intervals along a line: what a line
-crosses, and the longest run of it left clear by a set of obstacles. `Segments` answers the
+crosses, and the longest run of it left clear by a set of obstacles. `Angles` does the
+same one turn round: it puts an angle in a known range so two computed separately are
+comparable at all, and joins and intersects spans OF angle.
+
+Those two span kinds do not share a convention, deliberately. `Spans` carries
+`{tStart, tEnd}`, because along a line an end is unambiguous and a width is redundant.
+`Angles` carries `{start, width}`, because on a circle an end is ambiguous - `0.1` is both
+before and after `6.2` - and only a width says which way round the span was meant. `Segments` answers the
 same questions bounded by two endpoints rather than running on without end - whether two
 spans really cross, and how far a point lies from the nearest place on one. `PixelGrid` snaps to
 a pixel lattice.

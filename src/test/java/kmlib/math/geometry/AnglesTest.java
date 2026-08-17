@@ -1,4 +1,4 @@
-package kmlib.math.angles;
+package kmlib.math.geometry;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

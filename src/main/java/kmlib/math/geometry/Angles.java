@@ -1,4 +1,4 @@
-package kmlib.math.angles;
+package kmlib.math.geometry;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -15,13 +15,14 @@ import java.util.List;
  * open end of the range disagree about whether a point is inside an interval.
  *
  * <p>Spans of angle too, as {@code {start, width}} pairs. The width rather than an end,
- * which is the opposite of {@link kmlib.math.geometry.Spans} and deliberately so: along a
+ * which is the opposite of {@link Spans} and deliberately so: along a
  * line an end is unambiguous and a width is redundant, while on a circle an end is
  * ambiguous - 0.1 is both before and after 6.2 - and only a width says which way round the
  * span was meant. The two are not the same operation and must not be made to look like it.
  *
- * <p>Nothing shape-like belongs here. A span is not an arc until something pairs it with a
- * circle, and that pairing belongs to whatever owns the circle.
+ * <p>Shape operations do not belong IN here, for all that it sits among them. A span is not
+ * an arc until something pairs it with a circle, and that pairing belongs to whatever owns
+ * the circle.
  */
 public final class Angles {
 
