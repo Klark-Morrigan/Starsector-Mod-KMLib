@@ -71,4 +71,32 @@ final class ContestAdmissionTest {
                 .isTrue();
         }
     }
+
+    @Nested
+    class Hidden {
+
+        @Test
+        void namesTheConcealedColonyTheEconomyStillLists() {
+            // Concealed and nothing else: a shorthand that also read as unregistered would keep such
+            // a market out of the sibling term, which is the one part of the contest it does reach.
+            assertThat(ContestAdmission.HIDDEN.isHiddenMarket())
+                .isTrue();
+            assertThat(ContestAdmission.HIDDEN.isOffEconomyMarket())
+                .isFalse();
+        }
+    }
+
+    @Nested
+    class OffEconomy {
+
+        @Test
+        void namesTheOpenColonyTheEconomyDoesNotList() {
+            // Unregistered and nothing else: a shorthand that also read as concealed would say the
+            // walk skipped a market it never reached, which are two different findings.
+            assertThat(ContestAdmission.OFF_ECONOMY.isHiddenMarket())
+                .isFalse();
+            assertThat(ContestAdmission.OFF_ECONOMY.isOffEconomyMarket())
+                .isTrue();
+        }
+    }
 }

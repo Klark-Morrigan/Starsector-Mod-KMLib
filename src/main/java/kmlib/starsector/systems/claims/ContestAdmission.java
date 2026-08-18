@@ -33,6 +33,19 @@ public record ContestAdmission(
     public static final ContestAdmission WEIGHED = new ContestAdmission(false, false);
 
     /**
+     * A colony held in concealment, which the economy nonetheless lists - a pirate or Path base,
+     * as the intels build one. The walk skips it before scoring and it reaches the contest through
+     * the sibling term alone.
+     */
+    public static final ContestAdmission HIDDEN = new ContestAdmission(true, false);
+
+    /**
+     * A colony held in the open that the economy does not list - Galatia Academy, as vanilla
+     * builds it. The walk never reaches it at all, so it takes no part in even the sibling term.
+     */
+    public static final ContestAdmission OFF_ECONOMY = new ContestAdmission(false, true);
+
+    /**
      * Whether the mechanic weighed the market as a competitor in its own right.
      *
      * <p>Nothing reading a finished contest needs to tell the two exclusions apart - both counted

@@ -36,13 +36,6 @@ final class PresenceOnlyClaimStandingTest {
     // the terms beneath it say, which is the whole point of the record.
     private static final int NO_SIBLING_MARKETS = 0;
 
-    // A colony the mechanic passed over for being concealed, which is one of the two ways a market
-    // reaches a contest without ever being weighed.
-    private static final ContestAdmission HIDDEN = new ContestAdmission(true, false);
-
-    // A colony the mechanic never reached at all, the economy not listing it - the other way.
-    private static final ContestAdmission OFF_ECONOMY = new ContestAdmission(false, true);
-
     @Nested
     class Score {
 
@@ -52,7 +45,7 @@ final class PresenceOnlyClaimStandingTest {
             var standing = new PresenceOnlyClaimStanding(
                 CRUSADER_PLAN,
                 IS_TERRITORIAL,
-                List.of(buildMarket("Cinis Beta", FIRST_LISTED, 9, HIDDEN)));
+                List.of(buildMarket("Cinis Beta", FIRST_LISTED, 9, ContestAdmission.HIDDEN)));
 
             // A size-9 base out-sizes anything the sector holds and still counts for nothing: the
             // walk never weighed it, so there is no sum to report and printing what it would have
@@ -68,8 +61,8 @@ final class PresenceOnlyClaimStandingTest {
                 CRUSADER_PLAN,
                 IS_TERRITORIAL,
                 List.of(
-                    buildMarket("Cinis Beta", FIRST_LISTED, 6, HIDDEN),
-                    buildMarket("Galatia Academy", SECOND_LISTED, 6, OFF_ECONOMY)));
+                    buildMarket("Cinis Beta", FIRST_LISTED, 6, ContestAdmission.HIDDEN),
+                    buildMarket("Galatia Academy", SECOND_LISTED, 6, ContestAdmission.OFF_ECONOMY)));
 
             // Concealment and an absence from the economy's listing suppress scoring in different
             // ways, and neither is a discount: both leave the faction at the same nought.
@@ -88,8 +81,8 @@ final class PresenceOnlyClaimStandingTest {
                 CRUSADER_PLAN,
                 IS_TERRITORIAL,
                 List.of(
-                    buildMarket("Cinis Beta", FIRST_LISTED, 6, HIDDEN),
-                    buildMarket("Galatia Academy", SECOND_LISTED, 4, OFF_ECONOMY)));
+                    buildMarket("Cinis Beta", FIRST_LISTED, 6, ContestAdmission.HIDDEN),
+                    buildMarket("Galatia Academy", SECOND_LISTED, 4, ContestAdmission.OFF_ECONOMY)));
 
             assertThat(standing.readHeldMarkets())
                 .extracting(market -> market.marketNameplate().displayName())
@@ -102,7 +95,7 @@ final class PresenceOnlyClaimStandingTest {
             var standing = new PresenceOnlyClaimStanding(
                 CRUSADER_PLAN,
                 IS_TERRITORIAL,
-                List.of(buildMarket("Cinis Beta", FIRST_LISTED, 6, HIDDEN)));
+                List.of(buildMarket("Cinis Beta", FIRST_LISTED, 6, ContestAdmission.HIDDEN)));
 
             assertThatThrownBy(() -> standing.readHeldMarkets().clear())
                 .isInstanceOf(UnsupportedOperationException.class);
@@ -116,7 +109,7 @@ final class PresenceOnlyClaimStandingTest {
         void keepsTheColoniesItWasBuiltWithWhenTheSourceListChangesLater() {
 
             var unweighedMarkets = new ArrayList<MarketClaimBreakdown>();
-            unweighedMarkets.add(buildMarket("Cinis Beta", FIRST_LISTED, 6, HIDDEN));
+            unweighedMarkets.add(buildMarket("Cinis Beta", FIRST_LISTED, 6, ContestAdmission.HIDDEN));
 
             var standing =
                 new PresenceOnlyClaimStanding(CRUSADER_PLAN, IS_TERRITORIAL, unweighedMarkets);

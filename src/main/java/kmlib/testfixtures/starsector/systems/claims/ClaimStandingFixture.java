@@ -36,11 +36,6 @@ public final class ClaimStandingFixture {
     private static final EntityNameplate UNWEIGHED_MARKET =
         EntityNameplate.createUnmarkedNameplate("Unweighed Colony");
 
-    // How the mechanic passed that colony over. Concealment rather than an absence from the
-    // economy's listing, arbitrarily: the two suppress scoring identically and a test posing a
-    // faction that was never weighed is not about which of them did it.
-    private static final ContestAdmission PASSED_OVER = new ContestAdmission(true, false);
-
     // What a colony the contest never weighed is worth. Its size is never read - the standing
     // reports a nought of its own - so it is stated once here rather than invented per case.
     private static final int UNWEIGHED_MARKET_SIZE = 3;
@@ -114,7 +109,10 @@ public final class ClaimStandingFixture {
                 UNWEIGHED_MARKET,
                 FIRST_LISTED,
                 IS_KNOWN_TO_PLAYER,
-                PASSED_OVER,
+                // Concealment rather than an absence from the economy's listing, arbitrarily: the
+                // two suppress scoring identically, and a test posing a faction that was never
+                // weighed is not about which of them did it.
+                ContestAdmission.HIDDEN,
                 UNWEIGHED_MARKET_SIZE,
                 NO_SIBLING_MARKETS,
                 OptionalInt.empty())));
