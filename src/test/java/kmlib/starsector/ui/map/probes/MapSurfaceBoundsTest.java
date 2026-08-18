@@ -1,9 +1,8 @@
 package kmlib.starsector.ui.map.probes;
 
-import com.fs.starfarer.api.ui.PositionAPI;
-
 import kmlib.math.geometry.Rectangle;
 import kmlib.testfixtures.starsector.ui.coreui.CoreUiWidgetFake;
+import kmlib.testfixtures.starsector.ui.layout.PositionFake;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -11,8 +10,6 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 /**
  * Pins the two rules that tell the map surface from the tab's chrome: which children are candidates
@@ -64,24 +61,9 @@ class MapSurfaceBoundsTest {
             Object... children) {
 
         return new CoreUiWidgetFake(
-            box == null ? null : createPositionMock(box),
+            box == null ? null : new PositionFake(box),
             opacity,
             children);
-    }
-
-    private static PositionAPI createPositionMock(Rectangle box) {
-        var positionMock = mock(PositionAPI.class);
-
-        when(positionMock.getX())
-            .thenReturn(box.x());
-        when(positionMock.getY())
-            .thenReturn(box.y());
-        when(positionMock.getWidth())
-            .thenReturn(box.width());
-        when(positionMock.getHeight())
-            .thenReturn(box.height());
-
-        return positionMock;
     }
 
     @Nested

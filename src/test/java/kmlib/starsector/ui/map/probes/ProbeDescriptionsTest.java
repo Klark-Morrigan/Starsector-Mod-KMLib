@@ -1,7 +1,9 @@
 package kmlib.starsector.ui.map.probes;
 
-import com.fs.starfarer.api.ui.PositionAPI;
 import com.fs.starfarer.api.ui.UIComponentAPI;
+
+import kmlib.math.geometry.Rectangle;
+import kmlib.testfixtures.starsector.ui.layout.PositionFake;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -102,21 +104,10 @@ class ProbeDescriptionsTest {
                 float height,
                 float opacity) {
 
-            var positionMock = mock(PositionAPI.class);
-
-            when(positionMock.getX())
-                .thenReturn(x);
-            when(positionMock.getY())
-                .thenReturn(y);
-            when(positionMock.getWidth())
-                .thenReturn(width);
-            when(positionMock.getHeight())
-                .thenReturn(height);
-
             var widgetMock = mock(UIComponentAPI.class);
 
             when(widgetMock.getPosition())
-                .thenReturn(positionMock);
+                .thenReturn(new PositionFake(new Rectangle(x, y, width, height)));
             when(widgetMock.getOpacity())
                 .thenReturn(opacity);
 

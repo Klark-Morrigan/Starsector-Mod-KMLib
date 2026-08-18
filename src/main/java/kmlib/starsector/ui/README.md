@@ -460,4 +460,8 @@ is the thing to look twice at.
 
 `layout.VanillaPositions` is the one deliberate exception in a neutral package: it holds
 vanilla screen coordinates, which are a fact about the game's own layout rather than
-about any KM content.
+about any KM content. Its counterpart on the test side is
+[`PositionFake`](../../testfixtures/starsector/ui/layout/PositionFake.java), a widget position
+already laid out at a given [`Rectangle`](../../math/geometry/Rectangle.java) - anything that reads
+where a widget is takes one of those instead of stubbing six of `PositionAPI`'s thirty-odd methods,
+and a consuming mod's tests can lay a widget out without a mocking framework to describe a box.

@@ -1,8 +1,7 @@
 package kmlib.starsector.ui.map.probes;
 
-import com.fs.starfarer.api.ui.PositionAPI;
-
 import kmlib.math.geometry.Rectangle;
+import kmlib.testfixtures.starsector.ui.layout.PositionFake;
 import kmlib.testfixtures.starsector.ui.map.probes.PlacedSectorMapWidgetFake;
 import kmlib.testfixtures.starsector.ui.map.probes.SectorMapWidgetFake;
 
@@ -12,8 +11,6 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 /**
  * Pins what a found map answers about where it is drawn, which is the reading a rule confining the
@@ -26,8 +23,10 @@ import static org.mockito.Mockito.when;
  */
 class EmbeddedMapTest {
 
+    private static final float FADED_TO_NOTHING = 0f;
     private static final float FULLY_DRAWN = 1f;
     private static final List<Object> NO_ANCESTORS = List.of();
+    private static final Rectangle PLACED_BOX = new Rectangle(20f, 30f, 200f, 150f);
 
     @Nested
     class ResolveDrawnBox {
@@ -37,7 +36,7 @@ class EmbeddedMapTest {
             // The ordinary case: a mod's minimap, placed and visible, which is the only state its
             // box is worth comparing a cursor against.
             var mapFake = new PlacedSectorMapWidgetFake(
-                createPositionMock(20f, 30f, 200f, 150f), FULLY_DRAWN);
+                new PositionFake(PLACED_BOX), FULLY_DRAWN);
 
             assertThat(new EmbeddedMap(mapFake, NO_ANCESTORS).resolveDrawnBox())
                 .isEqualTo(new Rectangle(20f, 30f, 200f, 150f));
@@ -64,29 +63,10 @@ class EmbeddedMapTest {
             // A panel keeps its box and its place in the tree while it fades away, so the box
             // outlives what the player can see - and only what they can see is pointable.
             var mapFake = new PlacedSectorMapWidgetFake(
-                createPositionMock(20f, 30f, 200f, 150f), 0f);
+                new PositionFake(PLACED_BOX), FADED_TO_NOTHING);
 
             assertThat(new EmbeddedMap(mapFake, NO_ANCESTORS).resolveDrawnBox())
                 .isNull();
         }
-    }
-
-    // The engine's position is a wide interface of which only the four layout numbers are read, so
-    // it is mocked rather than stood up.
-    private static PositionAPI createPositionMock(float x, float y, float width, float height) {
-
-        var positionMock = mock(PositionAPI.class);
-
-        when(positionMock.getX())
-            .thenReturn(x);
-        when(positionMock.getY())
-            .thenReturn(y);
-
-        when(positionMock.getWidth())
-            .thenReturn(width);
-        when(positionMock.getHeight())
-            .thenReturn(height);
-            
-        return positionMock;
     }
 }
