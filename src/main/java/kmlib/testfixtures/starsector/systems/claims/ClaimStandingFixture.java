@@ -48,9 +48,15 @@ public final class ClaimStandingFixture {
     // not posing a tie, so every standing built here takes the head of the list.
     private static final int FIRST_LISTED = 1;
 
-    // The market is one the player has found. A test posing standings by score alone is posing no
-    // fog-of-war case.
+    // The one colony an unfound presence stands on, named apart again so a case about the fog can
+    // be read against the found kinds above it.
+    private static final EntityNameplate UNFOUND_MARKET =
+        EntityNameplate.createUnmarkedNameplate("Undiscovered Colony");
+
+    // Whether the player has found the colony. Found is what a case posing standings by score alone
+    // wants; unfound is the one thing the fog-of-war builder below varies.
     private static final boolean IS_KNOWN_TO_PLAYER = true;
+    private static final boolean IS_UNFOUND_BY_PLAYER = false;
 
     private ClaimStandingFixture() {
     }
@@ -112,6 +118,39 @@ public final class ClaimStandingFixture {
                 // Concealment rather than an absence from the economy's listing, arbitrarily: the
                 // two suppress scoring identically, and a test posing a faction that was never
                 // weighed is not about which of them did it.
+                ContestAdmission.HIDDEN,
+                UNWEIGHED_MARKET_SIZE,
+                NO_SIBLING_MARKETS,
+                OptionalInt.empty())));
+    }
+
+    /**
+     * The same faction, present through one colony the player has not found - so a presence a
+     * display reading the whole contest knows about and may not name.
+     *
+     * <p>The one standing a fog-of-war filter ever removes, which is what it is here for: a weighed
+     * standing rests on a market held in the open, and one held in the open is one the player knows
+     * of, so a case posing "a standing the projection drops" cannot be posed with the scored
+     * builder at all.
+     *
+     * @param factionId     the faction the standing belongs to
+     * @param isTerritorial whether the faction may claim a system at all - carried, and claiming
+     *                      nothing here, since a nought passes no gate either way
+     * @return the standing
+     */
+    public static PresenceOnlyClaimStanding buildUnfoundPresenceOnlyStanding(
+            String factionId,
+            boolean isTerritorial) {
+
+        return new PresenceOnlyClaimStanding(
+            factionId,
+            isTerritorial,
+            List.of(new MarketClaimBreakdown(
+                UNFOUND_MARKET,
+                FIRST_LISTED,
+                IS_UNFOUND_BY_PLAYER,
+                // Concealed as well as unfound, which is the ordinary pairing: a colony held in the
+                // open is one the player has found, so an unfound market is a concealed one.
                 ContestAdmission.HIDDEN,
                 UNWEIGHED_MARKET_SIZE,
                 NO_SIBLING_MARKETS,
