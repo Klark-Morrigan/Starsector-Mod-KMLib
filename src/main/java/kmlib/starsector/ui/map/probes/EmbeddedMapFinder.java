@@ -1,0 +1,189 @@
+package kmlib.starsector.ui.map.probes;
+
+import com.fs.starfarer.api.Global;
+import com.fs.starfarer.api.ui.SectorMapAPI;
+
+import kmlib.logging.SessionWarning;
+import kmlib.starsector.ui.coreui.CoreUiTree;
+
+import org.apache.log4j.Logger;
+
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Supplier;
+
+/**
+ * Where the sector maps that are not the screen's own stand in the live widget tree.
+ *
+ * <p>A map widget renders terrain, and terrain rendering is a hook any mod's map can drive, so a
+ * mod that composites a map into a panel of its own puts a second map surface on screen that
+ * nothing running inside that hook can see. Anything having to reason about such a surface - what
+ * is drawn where, and whether the pointer is on it - needs the widget itself, which is what this
+ * hands back.
+ *
+ * <p>Identification is structural and never by class name. An embedded map is a
+ * {@link SectorMapAPI} that is not the map tab on screen and does not hang under it. That keeps the
+ * rule working for the next mod that embeds one, and it is the only rule available in any case: a
+ * minimap built entirely out of vanilla API carries no mod-owned class to match on, so a walk
+ * looking for a name would find nothing to look at.
+ *
+ * <p>The map on screen is pruned rather than filtered out afterwards, so its whole subtree goes
+ * unwalked. That is most of the tree - the map's own content hangs below it - and none of it can
+ * hold an embedded map by the rule above.
+ *
+ * <p>Rooted at the core UI rather than at the current tab, since the thing being looked for is by
+ * definition not in a tab: it hangs off the campaign HUD or whatever that raises. A walk rooted at
+ * a tab would come back empty and read as "there is none" rather than "looked in the wrong place".
+ *
+ * <p>An answer is remembered against the tree it was walked out of, because a caller asking per
+ * frame cannot pay for a walk of the core UI per frame, while a widget a mod built once stays where
+ * it was put. The tree is what the memo is keyed on rather than a load or an elapsed time: the core
+ * UI in force changes when an interaction dialog stands up its own, so keying on it re-walks
+ * exactly when the tree being described is a different one, and never merely because time passed.
+ * It is held weakly, so a remembered answer cannot pin one save's widget tree past the load that
+ * replaced it.
+ *
+ * <p>Only a walk that found something is remembered, and a walk that found nothing is taken again.
+ * Nothing orders a mod's widget building against ours, so a first walk can legitimately run before
+ * the widget it is looking for exists - and remembering that emptiness would answer "there is no
+ * embedded map" for the rest of the session on precisely the installs this exists for.
+ *
+ * <p>Both live reads arrive as injected ports rather than being taken statically here. What is kept
+ * and when it is taken again is a rule with behaviour of its own, and a walk that reached into a
+ * running game for its own root could not be stood up to pin any of it.
+ *
+ * <p>Answers nothing rather than throwing. A caller is typically in the middle of a frame, and a
+ * read taken to refine what that frame draws must not be able to take the frame down; the reach it
+ * rests on is by-name reflection into classes no game build is obliged to keep, so that it can fail
+ * is a fact about the reach rather than a remote possibility.
+ */
+public final class EmbeddedMapFinder {
+
+    private static final Logger LOG = Global.getLogger(EmbeddedMapFinder.class);
+
+    private final Supplier<Object> readShownMapTab;
+    private final Supplier<Object> readTreeRoot;
+
+    // Says once per session that the reach stopped working, since a caller handed an empty list
+    // cannot tell a tree with no embedded map in it from a walk that never ran.
+    private final SessionWarning warning = new SessionWarning(LOG);
+
+    private List<EmbeddedMap> foundMaps = List.of();
+
+    // The tree the answer above was walked out of. Identity rather than equality: two roots are the
+    // same tree only by being the same object, and a widget's equals is the obfuscated class's
+    // business.
+    private WeakReference<Object> walkedTreeRoot = new WeakReference<>(null);
+
+    /** Reads the live core UI and the live map tab - the pairing outside a test. */
+    public EmbeddedMapFinder() {
+        this(CoreUiTree::resolveActiveCoreUi, ShownMapTab::resolveShownMapTab);
+    }
+
+    /**
+     * @param readTreeRoot    the widget tree to search, above any one tab
+     * @param readShownMapTab the map tab the game is showing, which is the one map that is not
+     *                        embedded - and null on every screen showing none
+     */
+    EmbeddedMapFinder(Supplier<Object> readTreeRoot, Supplier<Object> readShownMapTab) {
+        this.readShownMapTab = readShownMapTab;
+        this.readTreeRoot = readTreeRoot;
+    }
+
+    /**
+     * Every sector map in the live tree that is not the one the player has open.
+     *
+     * <p>Walks once per tree and reuses the answer after, so a caller in a render pass can ask per
+     * frame. A tree with nothing embedded in it is the exception, being walked again at every ask
+     * for the reason this class states.
+     *
+     * @return the maps found, or an empty list when there is no tree to walk, nothing is embedded
+     *         in it, or the reach into it failed - none of which a caller can act on differently
+     */
+    public List<EmbeddedMap> findEmbeddedMaps() {
+        try {
+
+            var treeRoot = readTreeRoot.get();
+
+            // No tree is the ordinary state before a campaign is stood up. Answered as nothing
+            // rather than with what a previous tree held, since what was found was found in there.
+            if (treeRoot == null) {
+                return List.of();
+            }
+            if (walkedTreeRoot.get() == treeRoot && !foundMaps.isEmpty()) {
+                return foundMaps;
+            }
+            var embeddedMaps = collectEmbeddedMapsUnder(treeRoot, readShownMapTab.get());
+
+            rememberIfFound(treeRoot, embeddedMaps);
+            return embeddedMaps;
+
+        } catch (Throwable failure) {
+            // Swallowed rather than raised: a caller is in the middle of a frame, and a read taken
+            // to refine what that frame draws must not take the frame down with it.
+            warnOnce(failure);
+            return List.of();
+        }
+    }
+
+    /**
+     * The rule the live read applies, over a tree read elsewhere.
+     *
+     * @param treeRoot    the widget to search from
+     * @param shownMapTab the map tab on screen, pruned along with everything under it, or null when
+     *                    no screen is showing one
+     * @return the maps found, in the order the walk met them, each with the chain it hangs under
+     */
+    static List<EmbeddedMap> collectEmbeddedMapsUnder(Object treeRoot, Object shownMapTab) {
+
+        var embeddedMaps = new ArrayList<EmbeddedMap>();
+
+        collectEmbeddedMaps(treeRoot, shownMapTab, new ArrayList<>(), 0, embeddedMaps);
+        return List.copyOf(embeddedMaps);
+    }
+
+    // Walks depth-first, carrying the path down so a map that is found can report what it hangs
+    // under. The path is the point of the walk rather than a by-product: a flat hit says a map
+    // exists somewhere, which is already known by the time anything asks.
+    private static void collectEmbeddedMaps(
+            Object component,
+            Object shownMapTab,
+            List<Object> ancestors,
+            int depth,
+            List<EmbeddedMap> embeddedMaps) {
+
+        if (component == null
+                || component == shownMapTab
+                || depth > ProbeLimits.MAX_SEARCH_DEPTH
+                || embeddedMaps.size() >= ProbeLimits.MAX_DESCRIBED_ITEMS) {
+            return;
+        }
+        if (component instanceof SectorMapAPI map) {
+            embeddedMaps.add(new EmbeddedMap(map, ancestors));
+        }
+        ancestors.add(component);
+        for (var child : CoreUiTree.readChildrenOf(component)) {
+            collectEmbeddedMaps(child, shownMapTab, ancestors, depth + 1, embeddedMaps);
+        }
+        ancestors.remove(ancestors.size() - 1);
+    }
+
+    // Records a walk for reuse, and only one that found something - see the retry this class states.
+    private void rememberIfFound(Object treeRoot, List<EmbeddedMap> embeddedMaps) {
+        if (embeddedMaps.isEmpty()) {
+            return;
+        }
+        foundMaps = embeddedMaps;
+        walkedTreeRoot = new WeakReference<>(treeRoot);
+    }
+
+    // Warns on this library's own logger rather than the caller's, since a reach that broke is the
+    // library's news to report.
+    private void warnOnce(Throwable failure) {
+        warning.warnOnce(
+            "Could not walk the core UI tree by reflection; maps embedded outside the "
+                + "game's own map screens will go unfound this session.",
+            failure);
+    }
+}

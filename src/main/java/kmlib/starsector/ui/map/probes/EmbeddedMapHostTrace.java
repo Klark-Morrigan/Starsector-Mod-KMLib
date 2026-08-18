@@ -1,14 +1,12 @@
 package kmlib.starsector.ui.map.probes;
 
 import com.fs.starfarer.api.Global;
-import com.fs.starfarer.api.ui.SectorMapAPI;
 
 import kmlib.logging.SessionWarning;
 import kmlib.starsector.ui.coreui.CoreUiTree;
 
 import org.apache.log4j.Logger;
 
-import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -23,15 +21,18 @@ import java.util.Set;
  * time the hook fires every frame between it and the game loop belongs to the engine.
  *
  * <p>What does answer it is the tree. The widget the mod built is still in it, and so is whatever it
- * was built into, so a walk that finds the map and reports what surrounds it names the owner where
- * a stack cannot. Vanilla's own classes are filtered out of that report because they are the part
- * that is never the answer - every host is made of them, and one mod-owned name among them is the
- * whole finding.
+ * was built into, so the map's own surroundings name the owner where a stack cannot. Vanilla's own
+ * classes are filtered out of that report because they are the part that is never the answer -
+ * every host is made of them, and one mod-owned name among them is the whole finding.
  *
- * <p>Rooted at the core UI rather than at the current tab, since the thing being looked for is by
- * definition not in a tab: it hangs off the campaign HUD or whatever that raises. A walk rooted at
- * a tab would report an empty tree and read as "nothing found" rather than "looked in the wrong
- * place".
+ * <p>Finding the maps is {@link EmbeddedMapFinder}'s, and this is the wording of what it found.
+ * The split is the ordinary one between a reading and a report on it, and it matters here because
+ * the two are wanted at different moments: a rule about an embedded map has to act on the widget
+ * every frame, where a line about who owns it is worth saying once.
+ *
+ * <p>That walk is taken afresh rather than read back from the finder's memo, since the point of the
+ * line is what the tree holds as it stands - a remembered answer describes a tree that was, which
+ * is the one thing a diagnostic must not quietly do.
  *
  * <p>Panel plugins are reported beside the widgets because that is where a mod's own class most
  * often is. A custom panel is a vanilla component holding a mod-supplied plugin, so a tree walk
@@ -69,8 +70,8 @@ public final class EmbeddedMapHostTrace {
     }
 
     /**
-     * Every sector map in the live tree, each with the chain of widgets it hangs under and the
-     * mod-owned classes found around it.
+     * Every sector map in the live tree bar the one the player has open, each with the chain of
+     * widgets it hangs under and the mod-owned classes found around it.
      *
      * <p>Costs a full walk of the core UI and builds a string, so a caller in a render pass should
      * ask only while it intends to report the answer.
@@ -80,17 +81,21 @@ public final class EmbeddedMapHostTrace {
      */
     public static String describeEmbeddedMapHosts() {
         try {
+
             var root = CoreUiTree.resolveActiveCoreUi();
             if (root == null) {
                 return null;
             }
-            var describedHosts = new ArrayList<String>();
-            collectMapHosts(root, new ArrayList<>(), 0, describedHosts);
+            var embeddedMaps = EmbeddedMapFinder.collectEmbeddedMapsUnder(
+                root,
+                ShownMapTab.resolveShownMapTab());
 
             // An empty list is worth saying rather than suppressing: it separates "walked the tree
             // and no map is in it" from a walk that never ran, and the first of those means the map
             // hangs somewhere this root does not reach.
-            return "mapHosts=" + describedHosts;
+            return "mapHosts=" + ProbeDescriptions.describeUpToCap(
+                embeddedMaps,
+                EmbeddedMapHostTrace::describeMapHost);
 
         } catch (Throwable failure) {
             // Swallowed rather than raised: this is a diagnostic, and one that cannot read the tree
@@ -120,32 +125,11 @@ public final class EmbeddedMapHostTrace {
         return true;
     }
 
-    // Walks depth-first, carrying the path down so a map that is found can report what it hangs
-    // under. The path is the point of the walk rather than a by-product: a flat hit says a map
-    // exists somewhere, which is already known by the time anything asks.
-    private static void collectMapHosts(
-            Object component,
-            List<Object> ancestors,
-            int depth,
-            List<String> describedHosts) {
-
-        if (component == null
-                || depth > ProbeLimits.MAX_SEARCH_DEPTH
-                || describedHosts.size() >= ProbeLimits.MAX_DESCRIBED_ITEMS) {
-            return;
-        }
-        if (component instanceof SectorMapAPI) {
-            describedHosts.add(describeMapHost(component, ancestors));
-        }
-        ancestors.add(component);
-        for (var child : CoreUiTree.readChildrenOf(component)) {
-            collectMapHosts(child, ancestors, depth + 1, describedHosts);
-        }
-        ancestors.remove(ancestors.size() - 1);
-    }
-
     // One found map: what it hangs under, and every mod-owned name among its surroundings.
-    private static String describeMapHost(Object map, List<Object> ancestors) {
+    private static String describeMapHost(EmbeddedMap embeddedMap) {
+
+        var map = embeddedMap.widget();
+        var ancestors = embeddedMap.ancestors();
 
         // The host to search around it: the tooltip it sits in where there is one, since that is
         // the whole of what a mod built, and its immediate parent otherwise - which at least bounds
@@ -155,6 +139,7 @@ public final class EmbeddedMapHostTrace {
             host = ancestors.isEmpty() ? map : ancestors.get(ancestors.size() - 1);
         }
         var modOwnedClasses = new LinkedHashSet<String>();
+
         collectModOwnedClassesIn(host, 0, modOwnedClasses);
         collectModOwnedClassesOf(ancestors, modOwnedClasses);
 
@@ -172,7 +157,9 @@ public final class EmbeddedMapHostTrace {
 
     // The innermost ancestor that looks like a tooltip, or null when the map hangs under none.
     private static Object resolveNearestTooltipAncestor(List<Object> ancestors) {
+
         for (var index = ancestors.size() - 1; index >= 0; index--) {
+            
             if (ancestors.get(index).getClass().getName().contains(TOOLTIP_CLASS_MARKER)) {
                 return ancestors.get(index);
             }

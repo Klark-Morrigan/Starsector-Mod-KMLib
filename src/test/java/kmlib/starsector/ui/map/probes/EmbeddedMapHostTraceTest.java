@@ -14,9 +14,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * identifies an owner in a list of wrappers - and a filter that dropped too much would report an
  * empty set for a host that was found, which reads as "nobody owns this".
  *
- * <p>The walk around it is not pinned here: it reads the live campaign UI through by-name hops that
- * cannot be stood up outside a running game, and what it does with what it finds is only meaningful
- * against a real tree.
+ * <p>The walk that feeds it is pinned beside {@link EmbeddedMapFinder} instead, that being where it
+ * lives. What is left here is the wording, which reads the live campaign UI through by-name hops
+ * that cannot be stood up outside a running game.
  */
 final class EmbeddedMapHostTraceTest {
 
