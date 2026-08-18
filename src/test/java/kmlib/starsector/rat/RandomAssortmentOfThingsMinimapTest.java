@@ -1,5 +1,7 @@
 package kmlib.starsector.rat;
 
+import kmlib.testfixtures.starsector.settings.ModStateScopes;
+
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -22,6 +24,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * and nothing about this class.
  */
 final class RandomAssortmentOfThingsMinimapTest {
+
+    // Stated as a literal rather than read off the production constant, so a rename of that
+    // constant is a failing case here rather than a pair of readers agreeing with each other about
+    // an id the game does not have.
+    private static final String RAT_MOD_ID = "assortment_of_things";
 
     @Nested
     class IsReplacingRadar {
@@ -67,7 +74,7 @@ final class RandomAssortmentOfThingsMinimapTest {
             // The live pairing rather than a stood-in one: the presence gate is what keeps an
             // install without the mod from asking LunaLib about that mod's fields, and nothing
             // else here exercises the constructor that binds the two live reads.
-            ModEnabledScopes.runWithModEnabled(false, () ->
+            ModStateScopes.runWithModEnabled(RAT_MOD_ID, false, () ->
                 assertThat(new RandomAssortmentOfThingsMinimap().isReplacingRadar())
                     .isFalse());
         }
@@ -75,7 +82,7 @@ final class RandomAssortmentOfThingsMinimapTest {
         @Test
         void reportsNoMinimapThroughTheLiveReadsBeforeTheGameSettingsAreUp() {
 
-            ModEnabledScopes.runWithoutGameSettings(() ->
+            ModStateScopes.runWithoutGameSettings(() ->
                 assertThat(new RandomAssortmentOfThingsMinimap().isReplacingRadar())
                     .isFalse());
         }

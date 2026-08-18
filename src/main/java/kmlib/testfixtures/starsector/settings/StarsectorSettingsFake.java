@@ -1,6 +1,7 @@
 package kmlib.testfixtures.starsector.settings;
 
 import com.fs.starfarer.api.Global;
+import com.fs.starfarer.api.ModManagerAPI;
 import com.fs.starfarer.api.SettingsAPI;
 
 import java.awt.Color;
@@ -61,6 +62,17 @@ public final class StarsectorSettingsFake {
     /** {@link SettingsColourSource} that leaves every key to the default shade. */
     public static final SettingsColourSource DEFAULT_COLOURS = key -> null;
 
+    /**
+     * Pluggable adapter for {@link com.fs.starfarer.api.ModManagerAPI#isModEnabled(String)}, for a
+     * test whose subject gates on another mod being installed. Implementations answer for the mod
+     * ids they know and {@code false} for the rest, which is what an install without those mods
+     * reports.
+     */
+    @FunctionalInterface
+    public interface EnabledModsSource {
+        boolean isEnabled(String modId);
+    }
+
     // What an unnamed colour key answers with. Opaque and unmistakable: a test that did not mean to read
     // a colour sees white rather than a plausible shade it might have asserted against by accident.
     private static final Color DEFAULT_COLOUR = Color.WHITE;
@@ -93,18 +105,41 @@ public final class StarsectorSettingsFake {
     public static void installSettings(
             SettingsStringSource stringSource,
             SettingsColourSource colourSource) {
-        Global.setSettings(settings(stringSource, colourSource));
+        installSettings(stringSource, colourSource, null);
+    }
+
+    /**
+     * Installs the proxy carrying a mod manager, which the overloads above deliberately leave off:
+     * a settings object whose {@code getModManager} answers null is the state a read taken before
+     * the game is fully up meets, and a fixture that always supplied one could not stand for it.
+     * Use this overload for a subject that gates on another mod being installed.
+     */
+    public static void installSettingsWithEnabledMods(EnabledModsSource enabledMods) {
+        installSettings(EMPTY_STRINGS, DEFAULT_COLOURS, enabledMods);
     }
 
     public static void clearSettings() {
         Global.setSettings(null);
     }
 
+    private static void installSettings(
+            SettingsStringSource stringSource,
+            SettingsColourSource colourSource,
+            EnabledModsSource enabledMods) {
+        Global.setSettings(settings(stringSource, colourSource, enabledMods));
+    }
+
     private static SettingsAPI settings(
             SettingsStringSource stringSource,
-            SettingsColourSource colourSource) {
+            SettingsColourSource colourSource,
+            EnabledModsSource enabledMods) {
 
         return proxy(SettingsAPI.class, (proxy, method, args) -> {
+            // Null unless a caller asked for one, so the no-mod-manager state stays reachable -
+            // see installSettingsWithEnabledMods.
+            if ("getModManager".equals(method.getName())) {
+                return enabledMods == null ? null : modManager(enabledMods);
+            }
             // Misc.<clinit> reads several floats and a colour before any
             // test code runs; returning safe defaults keeps it quiet.
             if ("getFloat".equals(method.getName())) {
@@ -118,6 +153,18 @@ public final class StarsectorSettingsFake {
                     return stringSource.get((String) args[0], (String) args[1]);
                 }
                 return null;
+            }
+            return defaultValue(method.getReturnType());
+        });
+    }
+
+    // A mod manager answering the caller's enablement rule and defaults for everything else, so a
+    // subject asking one question of the mod set does not have to be handed a whole one.
+    private static ModManagerAPI modManager(EnabledModsSource enabledMods) {
+
+        return proxy(ModManagerAPI.class, (proxy, method, args) -> {
+            if ("isModEnabled".equals(method.getName()) && args != null && args.length == 1) {
+                return enabledMods.isEnabled((String) args[0]);
             }
             return defaultValue(method.getReturnType());
         });

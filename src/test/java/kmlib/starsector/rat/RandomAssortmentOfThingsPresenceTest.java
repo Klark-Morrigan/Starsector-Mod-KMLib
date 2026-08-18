@@ -1,5 +1,7 @@
 package kmlib.starsector.rat;
 
+import kmlib.testfixtures.starsector.settings.ModStateScopes;
+
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -13,13 +15,18 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 final class RandomAssortmentOfThingsPresenceTest {
 
+    // Stated as a literal rather than read off the class under test, so a rename of that constant
+    // is a failing case here rather than a pair of readers agreeing with each other about an id
+    // the game does not have.
+    private static final String RAT_MOD_ID = "assortment_of_things";
+
     @Nested
     class IsModEnabled {
 
         @Test
         void reportsEnabledWhileTheModManagerSaysSo() {
 
-            ModEnabledScopes.runWithModEnabled(true, () ->
+            ModStateScopes.runWithModEnabled(RAT_MOD_ID, true, () ->
                 assertThat(RandomAssortmentOfThingsPresence.isModEnabled())
                     .isTrue());
         }
@@ -27,7 +34,7 @@ final class RandomAssortmentOfThingsPresenceTest {
         @Test
         void reportsNotEnabledWhileTheModManagerSaysSo() {
 
-            ModEnabledScopes.runWithModEnabled(false, () ->
+            ModStateScopes.runWithModEnabled(RAT_MOD_ID, false, () ->
                 assertThat(RandomAssortmentOfThingsPresence.isModEnabled())
                     .isFalse());
         }
@@ -35,7 +42,7 @@ final class RandomAssortmentOfThingsPresenceTest {
         @Test
         void reportsNotEnabledBeforeTheGameSettingsAreUp() {
 
-            ModEnabledScopes.runWithoutGameSettings(() ->
+            ModStateScopes.runWithoutGameSettings(() ->
                 assertThat(RandomAssortmentOfThingsPresence.isModEnabled())
                     .isFalse());
         }
@@ -43,7 +50,7 @@ final class RandomAssortmentOfThingsPresenceTest {
         @Test
         void reportsNotEnabledWhileTheSettingsCarryNoModManager() {
 
-            ModEnabledScopes.runWithoutModManager(() ->
+            ModStateScopes.runWithoutModManager(() ->
                 assertThat(RandomAssortmentOfThingsPresence.isModEnabled())
                     .isFalse());
         }
