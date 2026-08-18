@@ -5,6 +5,8 @@ import kmlib.testfixtures.starsector.settings.ModStateScopes;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import static kmlib.starsector.rat.StubbedModIds.RANDOM_ASSORTMENT_OF_THINGS;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -15,18 +17,13 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 final class RandomAssortmentOfThingsPresenceTest {
 
-    // Stated as a literal rather than read off the class under test, so a rename of that constant
-    // is a failing case here rather than a pair of readers agreeing with each other about an id
-    // the game does not have.
-    private static final String RAT_MOD_ID = "assortment_of_things";
-
     @Nested
     class IsModEnabled {
 
         @Test
         void reportsEnabledWhileTheModManagerSaysSo() {
 
-            ModStateScopes.runWithModEnabled(RAT_MOD_ID, true, () ->
+            ModStateScopes.runWithModEnabled(RANDOM_ASSORTMENT_OF_THINGS, true, () ->
                 assertThat(RandomAssortmentOfThingsPresence.isModEnabled())
                     .isTrue());
         }
@@ -34,7 +31,7 @@ final class RandomAssortmentOfThingsPresenceTest {
         @Test
         void reportsNotEnabledWhileTheModManagerSaysSo() {
 
-            ModStateScopes.runWithModEnabled(RAT_MOD_ID, false, () ->
+            ModStateScopes.runWithModEnabled(RANDOM_ASSORTMENT_OF_THINGS, false, () ->
                 assertThat(RandomAssortmentOfThingsPresence.isModEnabled())
                     .isFalse());
         }

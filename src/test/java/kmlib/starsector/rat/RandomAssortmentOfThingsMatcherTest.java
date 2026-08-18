@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Test;
 
 import assortment_of_things.abyss.entities.hyper.AbyssalFracture;
 
+import static kmlib.starsector.rat.StubbedModIds.RANDOM_ASSORTMENT_OF_THINGS;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -24,11 +26,6 @@ import static org.mockito.Mockito.when;
  */
 final class RandomAssortmentOfThingsMatcherTest {
 
-    // Stated as a literal rather than read off the production constant, so a rename of that
-    // constant is a failing case here rather than a pair of readers agreeing with each other about
-    // an id the game does not have.
-    private static final String RAT_MOD_ID = "assortment_of_things";
-
     @Nested
     class IsAbyssalFracture {
         @Test
@@ -42,7 +39,7 @@ final class RandomAssortmentOfThingsMatcherTest {
         void returns_false_when_rat_disabled() {
             var entityMock = buildEntityWithPlugin(mock(AbyssalFracture.class));
 
-            ModStateScopes.runWithModEnabled(RAT_MOD_ID, false, () ->
+            ModStateScopes.runWithModEnabled(RANDOM_ASSORTMENT_OF_THINGS, false, () ->
                 assertThat(RandomAssortmentOfThingsMatcher.isAbyssalFracture(entityMock))
                     .isFalse());
         }
@@ -51,7 +48,7 @@ final class RandomAssortmentOfThingsMatcherTest {
         void returns_false_when_the_plugin_is_not_a_fracture() {
             var entityMock = buildEntityWithPlugin(mock(CustomCampaignEntityPlugin.class));
 
-            ModStateScopes.runWithModEnabled(RAT_MOD_ID, true, () ->
+            ModStateScopes.runWithModEnabled(RANDOM_ASSORTMENT_OF_THINGS, true, () ->
                 assertThat(RandomAssortmentOfThingsMatcher.isAbyssalFracture(entityMock))
                     .isFalse());
         }
@@ -60,7 +57,7 @@ final class RandomAssortmentOfThingsMatcherTest {
         void returns_true_for_a_fracture_plugin_when_rat_enabled() {
             var entityMock = buildEntityWithPlugin(mock(AbyssalFracture.class));
 
-            ModStateScopes.runWithModEnabled(RAT_MOD_ID, true, () ->
+            ModStateScopes.runWithModEnabled(RANDOM_ASSORTMENT_OF_THINGS, true, () ->
                 assertThat(RandomAssortmentOfThingsMatcher.isAbyssalFracture(entityMock))
                     .isTrue());
         }
