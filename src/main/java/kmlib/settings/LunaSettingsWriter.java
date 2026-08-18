@@ -31,6 +31,11 @@ import java.util.concurrent.ConcurrentHashMap;
  * a session's edits into one disk write. The immediate path puts and saves in one call, for a
  * write that must be durable the moment it is made.
  *
+ * <p>Shedding a key is the third path, and it is a write in the same sense the others are - the
+ * store is edited and the file rewritten. It is here rather than beside the reads because LunaLib
+ * offers no removal at all: the loader seeds defaults and never prunes, so a field the shipped
+ * table stopped declaring keeps its stored value forever unless something takes it out.
+ *
  * <p>Precondition: the calling mod must depend on LunaLib (these touch {@code lunalib.*} types)
  * and the store is only present once LunaLib has loaded the mod's settings - which happens the
  * first time any setting is read. Before then the store is absent and a write is a logged no-op
@@ -132,6 +137,49 @@ public final class LunaSettingsWriter {
     public static void flush() {
         for (var modId : modsWithUnsavedWrites) {
             flush(modId);
+        }
+    }
+
+    /**
+     * Drops a retired field's stored value and saves at once, so a key whose CSV row and reader
+     * are both gone stops travelling in the player's settings file.
+     *
+     * <p>LunaLib only ever adds: on load it seeds a default for each row the shipped table
+     * declares and never prunes a key the table stopped declaring. A retired field's value
+     * therefore outlives the feature it belonged to, and would be handed straight back to any
+     * later field that reused the id. Shedding it is the settings-side counterpart of unsetting a
+     * dead save key.
+     *
+     * <p>No listener is told. A retired field is by definition one nothing reads, so announcing
+     * its removal would only make every consumer rebuild over a value that changed for nobody.
+     *
+     * <p>A no-op where the key is absent, which is a fresh install and every load after the sweep
+     * has run once - so the common case pays no disk write.
+     *
+     * @param modId   the mod's LunaLib settings id
+     * @param fieldId the retired field's id
+     */
+    public static void removeSetting(String modId, String fieldId) {
+        var store = LunaSettingsLoader.getSettings().get(modId);
+        if (store == null || !store.has(fieldId)) {
+            return;
+        }
+        store.remove(fieldId);
+        try {
+            store.save();
+            // The save wrote the whole store, deferred edits included, so any pending mark it was
+            // carrying is now settled - left set, the next flush would rewrite an unchanged file.
+            modsWithUnsavedWrites.remove(modId);
+        } catch (JSONException | IOException exception) {
+            // Logged rather than propagated, as a write failure is: the key is already gone from
+            // the live store, so only its absence across restarts is at stake, and a later sweep
+            // repeats the removal.
+            LOG.error("Failed to remove retired LunaLib setting '"
+                + fieldId
+                + "' for mod '"
+                + modId
+                + "'",
+                exception);
         }
     }
 
