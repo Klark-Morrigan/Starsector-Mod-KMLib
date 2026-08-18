@@ -6,12 +6,9 @@ import kmlib.logging.SessionWarning;
 import kmlib.starsector.ui.coreui.CoreUiTree;
 
 import org.apache.log4j.Logger;
-import org.magiclib.ReflectionUtils;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Answers "which tooltip is the vanilla map screen showing right now?" for an overlay that must
@@ -30,12 +27,11 @@ import java.util.concurrent.ConcurrentHashMap;
  * {@code getTooltip()} returns a live {@code StandardTooltipV2}. That is the same read the core UI does
  * itself to render a child's tooltip, so it tracks exactly when a tooltip is up.
  *
- * <p>The private core-UI methods and the private tooltip host are reached through MagicLib's {@link
- * ReflectionUtils}, the ecosystem's proven bypass of the game's script-classloader reflection ban (it
- * drives {@code java.lang.reflect} through method handles so no reflect type is named in mod code). The
- * tooltip is matched by the returned value's runtime class <em>name</em> walked up its hierarchy, not by
- * a field name or {@code Class} identity, so an obfuscated rename or a classloader mismatch cannot make a
- * real tooltip read as foreign.
+ * <p>The private core-UI methods and the private tooltip host are reached through {@link CoreUiTree},
+ * which is where the by-name reach and the library behind it are answered for; nothing here names that
+ * library itself. The tooltip is matched by the returned value's runtime class <em>name</em> walked up
+ * its hierarchy, not by a field name or {@code Class} identity, so an obfuscated rename or a classloader
+ * mismatch cannot make a real tooltip read as foreign.
  *
  * <p>The whole read is best-effort, since reflecting into obfuscated internals can fail on any game
  * build. On any failure it reports no tooltip - the overlay then draws, so a broken read costs a
@@ -70,16 +66,6 @@ public final class VanillaMapTooltipProbe {
     private static final String GET_TOOLTIP_METHOD = "getTooltip";
     private static final String GET_FADER_METHOD = "getFader";
     private static final String IS_FADED_OUT_METHOD = "isFadedOut";
-
-    // Which component shapes carry the tooltip accessor at all, remembered by class so the walk pays
-    // the by-name resolution once per shape instead of once per node on every frame - the walk's
-    // dominant cost, and the reason a second per-frame consumer would otherwise be a doubled one.
-    // Held here rather than left to whatever the reach caches internally, so the walk's per-frame
-    // cost is this probe's own property and not a library's. Whether a class carries the accessor is
-    // fixed for the run, so the answer belongs to the shape rather than to the moment. Per class
-    // rather than per probe: two consumers walk the same tree, so a per-instance memo would learn
-    // the same tree twice.
-    private static final Map<Class<?>, Boolean> TOOLTIP_HOSTING_SHAPES = new ConcurrentHashMap<>();
 
     // Says once per session that this read broke, rather than every frame. Per instance rather than
     // per class, since each consumer holds its own probe and a shared flag would let one consumer's
@@ -134,30 +120,13 @@ public final class VanillaMapTooltipProbe {
     // a component that is not a tooltip host (no such method - the common leaf) or that shows none now. A
     // host clears this to null when its tooltip hides, so a non-null value means one is up.
     //
-    // Only a shape carrying no such name is condemned to the memo, and the memo is filled by asking
-    // whether it carries the name rather than by reading a failed call for the reason it failed. A
-    // host whose accessor resolves and then throws is still a host, and remembering it as a leaf
-    // would blind the walk to that widget's tooltip for the rest of the run over one bad frame - the
-    // failures the reach raises do not separate the two cleanly enough to tell them apart after the
-    // fact, so the question is put before the call rather than reconstructed from it.
+    // The forgiving hop, because both ways it comes back empty are ordinary here: most components
+    // carry no getTooltip and are simply not hosts, and a host failing from inside its own accessor
+    // shows nothing this frame while staying a host on the next one. Neither is remembered against
+    // the widget, so one bad frame cannot blind the walk to that widget's tooltips for the rest of
+    // the run.
     static Object findTooltipShownBy(Object component) {
-
-        var isTooltipHost = TOOLTIP_HOSTING_SHAPES.computeIfAbsent(
-            component.getClass(),
-            unmemoisedShape -> CoreUiTree.hasMethodNamed(component, GET_TOOLTIP_METHOD));
-
-        // Most components carry no getTooltip: not a host, so it shows no tooltip to step aside for.
-        if (!isTooltipHost) {
-            return null;
-        }
-        try {
-            return CoreUiTree.invokeNoArg(component, GET_TOOLTIP_METHOD);
-
-        } catch (Throwable cannotReadTooltip) {
-            // A host failing from inside its own accessor shows nothing this frame, and is still a
-            // host on the next one.
-            return null;
-        }
+        return CoreUiTree.readHopIfOffered(component, GET_TOOLTIP_METHOD);
     }
 
     // Whether the tooltip is actually on screen rather than merely configured on a widget: its fader is
@@ -182,7 +151,7 @@ public final class VanillaMapTooltipProbe {
     // make a real widget read as foreign, and the game's own subclass of a type reads as that type. The
     // walk stops at Object, which every class reaches and none is identified by.
     static boolean isNamedInHierarchy(Class<?> type, String className) {
-        
+
         for (var clazz = type;
                 clazz != null && clazz != Object.class;
                 clazz = clazz.getSuperclass()) {
@@ -303,7 +272,7 @@ public final class VanillaMapTooltipProbe {
         // tree logs a readable sample. The visibility is what separates "found a tooltip but it was
         // faded out" from "found a shown one", the distinction a wrong suppression is diagnosed against.
         private void recordShownTooltip(Object tooltip, boolean visible) {
-            
+
             if (shownTooltips.size() < ProbeLimits.MAX_REPORTED_ITEMS) {
                 shownTooltips.add(tooltip.getClass().getName() + "(visible=" + visible + ")");
             }

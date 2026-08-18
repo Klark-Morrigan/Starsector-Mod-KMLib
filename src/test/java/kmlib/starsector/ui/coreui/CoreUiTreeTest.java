@@ -46,7 +46,14 @@ import static org.mockito.Mockito.when;
  *
  * <p>The presence question is pinned beside them because it is what a caller reaches for once those
  * two halves stop being separable by type: it answers whether a shape carries a name without taking
- * the hop, so a walk can tell a leaf from a broken read without provoking either.
+ * the hop, so a walk can tell a leaf from a broken read without provoking either. The forgiving hop
+ * built over it is pinned as its own contract rather than only through the reads that use it, both
+ * ways of coming back empty being ones a caller has to be able to rely on.
+ *
+ * <p>A third failure is pinned alongside the two: a name that fits more than one method is refused
+ * rather than resolved to one of them. It arrives as the same type as an unreachable hop, so no
+ * caller can tell them apart at runtime - which makes the test the only place the distinction is
+ * written down, and the overload pairs it fires on are ordinary in the core UI.
  *
  * <p>Alongside them, the one thing about the argument-taking invoke a caller cannot see from its
  * signature: a boxed argument resolves the primitive parameter, which is what makes the core UI's
@@ -101,6 +108,45 @@ class CoreUiTreeTest {
             // it then invokes with arguments can still find that nothing takes them.
             assertThat(CoreUiTree.hasMethodNamed(new ArgumentTakingTargetFake(), "recordAlpha"))
                 .isTrue();
+        }
+
+        @Test
+        void hasMethodNamedIsTrueForANameCarriedByASuperclass() {
+            // The core UI's shapes are deep hierarchies and the accessors a walk asks for are
+            // declared well above the leaf classes it meets, so a check that saw only the runtime
+            // class's own methods would call almost every real widget a leaf.
+            assertThat(CoreUiTree.hasMethodNamed(new InheritingTargetFake(), "getChildrenCopy"))
+                .isTrue();
+        }
+    }
+
+    @Nested
+    class ReadHopIfOffered {
+
+        @Test
+        void readHopIfOfferedReturnsWhatTheNamedMethodAnswers() {
+
+            var childFake = new CoreUiComponentFake();
+
+            assertThat(CoreUiTree
+                .readHopIfOffered(new CoreUiComponentFake(childFake), "getChildrenCopy"))
+                .isEqualTo(List.of(childFake));
+        }
+
+        @Test
+        void readHopIfOfferedIsNullForAShapeCarryingNoSuchName() {
+
+            assertThat(CoreUiTree.readHopIfOffered(new Object(), "getChildrenCopy"))
+                .isNull();
+        }
+
+        @Test
+        void readHopIfOfferedIsNullWhenTheHopResolvesAndThenThrows() {
+            // The half that separates this from asking whether the name is carried: the name is
+            // there, the call is the thing that failed, and a walk wants both answered the same way
+            // so one misbehaving widget does not end it.
+            assertThat(CoreUiTree.readHopIfOffered(new RefusingTargetFake(), "getChildrenCopy"))
+                .isNull();
         }
     }
 
@@ -160,6 +206,18 @@ class CoreUiTreeTest {
             // is the only thing separating "the reach is broken" from "the target refused".
             assertThatThrownBy(() -> CoreUiTree
                 .invokeWithArgs(new ArgumentTakingTargetFake(), "recordAlpha", "not a float"))
+                .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        void invokeWithArgsThrowsWhenTheArgumentFitsMoreThanOneMethodOfThatName() {
+            // The arguments are matched by assignment compatibility, not by identity, so one boxed
+            // int fits both a (int) and a (float) overload and the name stops identifying a single
+            // method. Nothing is picked in that case, which matters because the core UI's setters
+            // and draw entry points are exactly where such pairs occur: a caller naming a hop is
+            // asserting the name is unique on the target, and this is where it learns it is not.
+            assertThatThrownBy(() -> CoreUiTree
+                .invokeWithArgs(new OverloadedTargetFake(), "recordReading", 1))
                 .isInstanceOf(IllegalArgumentException.class);
         }
 
@@ -300,7 +358,7 @@ class CoreUiTreeTest {
     // Public because that is the shape a real core-UI widget presents. The reach makes the resolved
     // member accessible before calling it, so visibility is not what the resolution turns on.
     public static final class ArgumentTakingTargetFake {
-        
+
         private float recordedAlpha = Float.NaN;
 
         public float readRecordedAlpha() {
@@ -317,6 +375,41 @@ class CoreUiTreeTest {
         // distinct from a hop that was never reachable, and surfacing differently.
         public String refuseAlpha(float alphaMult) {
             throw new IllegalStateException("A target that refuses the call.");
+        }
+    }
+
+    // Stands for a widget that carries the name and fails from inside it - a component misbehaving
+    // rather than a component of a different shape, which the forgiving read answers alike and the
+    // raising one does not.
+    public static final class RefusingTargetFake {
+
+        public List<?> getChildrenCopy() {
+            throw new IllegalStateException("A component that refuses to list its children.");
+        }
+    }
+
+    // Stands for a widget whose accessor is declared above it, which is the ordinary shape of the
+    // core UI's tree rather than an edge of it: the names a walk asks for live on base classes and
+    // the objects it meets are leaves several levels down.
+    public static class InheritedAccessorBaseFake {
+
+        public List<?> getChildrenCopy() {
+            return List.of();
+        }
+    }
+
+    public static final class InheritingTargetFake extends InheritedAccessorBaseFake {
+    }
+
+    // Stands for a core-UI shape carrying one name over two numeric widths - the pairing the game's
+    // own setters and draw entry points are full of, and the one an argument matched by assignment
+    // compatibility rather than by identity cannot choose between.
+    public static final class OverloadedTargetFake {
+
+        public void recordReading(float reading) {
+        }
+
+        public void recordReading(int reading) {
         }
     }
 

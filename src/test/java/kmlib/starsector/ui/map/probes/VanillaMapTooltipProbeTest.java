@@ -48,9 +48,9 @@ class VanillaMapTooltipProbeTest {
 
         @Test
         void findTooltipShownByStillReadsAHostWhoseAccessorThrewOnce() {
-            // The memo remembers which shapes host a tooltip so the walk stops re-resolving a name
-            // per node per frame, and this is the case it must not learn wrong: a host that threw
-            // from inside its own accessor is still a host. Were the shape condemned on any failure,
+            // Nothing about a widget is remembered from a *failed call*, only from whether its shape
+            // carries the name, and this is the case that distinguishes the two: a host that threw
+            // from inside its own accessor is still a host. Were a failure enough to condemn it,
             // that widget's tooltips would be invisible to the probe for the rest of the run - and
             // the one bad frame that caused it is long gone by the time anyone notices.
             var hostFake = new ThrowingOnceTooltipHostFake();
@@ -151,8 +151,8 @@ class VanillaMapTooltipProbeTest {
     }
 
     // A host whose accessor fails once and then answers, which is the shape that separates "this class
-    // has no such method" from "this call went wrong" - the distinction the shape memo turns on and the
-    // only way to observe from outside that it drew the line in the right place.
+    // has no such method" from "this call went wrong" - the distinction the read turns on, and the only
+    // way to observe from outside that it drew the line in the right place.
     public static final class ThrowingOnceTooltipHostFake {
 
         public static final Object TOOLTIP = new Object();

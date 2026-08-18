@@ -6,29 +6,34 @@ import com.fs.starfarer.api.campaign.CampaignUIAPI;
 import org.magiclib.ReflectionUtils;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * The reach into the live core-UI widget tree: the hops from the campaign UI down to the tab that
- * is up, and one component's children once there.
+ * is up, one component's children once there, and the question of whether a shape carries a given
+ * hop at all.
  *
  * <p>None of it is published API. The core's own accessors are reached by name through MagicLib's
  * {@link ReflectionUtils}, the ecosystem's proven bypass of the game's script-classloader
  * reflection ban - it drives {@code java.lang.reflect} through method handles, so no reflect type
  * is named in mod code. Names rather than casts because the tab classes carry illegal member names
- * an obfuscated build leaves unwritable in Java source.
+ * an obfuscated build leaves unwritable in Java source. This is the only place in the library that
+ * names that dependency, so a breaking change in it is answered here rather than at each probe.
  *
  * <p>Names no tab and no screen. Every hop it takes is one the core UI offers whatever tab is up,
  * which is why it sits in a package of its own rather than beside any one screen's probes: a probe
  * for a second screen would otherwise have to reach through the first screen's package to get at
- * the same three method names.
+ * the same handful of method names.
  *
- * <p>Deliberately policy-free. Every hop either answers or throws, and what a failed read *means*
- * is the caller's to decide: a probe that suppresses an overlay wants a failure to read one way, a
- * probe that draws one wants the opposite, and baking either here would force both to live with
- * one. The one judgement made is that an object not answering a name is a different shape rather
- * than a broken one: most components are leaves with no children to offer, and most dialogs host no
- * core UI, so reading either absence as a failure would abort a walk at its first leaf and take
- * down every read attempted while a scripted dialog is up.
+ * <p>Deliberately policy-free about what a failure <em>means</em>. A hop is offered both ways -
+ * raising, or answering null - and which of the two a caller takes is the caller's decision: a probe
+ * that suppresses an overlay wants a failed read to count one way, a probe that draws one wants the
+ * opposite, and offering only one of them would force both to live with it. The one judgement made
+ * is that an object not answering a name is a different shape rather than a broken one: most
+ * components are leaves with no children to offer, and most dialogs host no core UI, so reading
+ * either absence as a failure would abort a walk at its first leaf and take down every read
+ * attempted while a scripted dialog is up.
  */
 public final class CoreUiTree {
 
@@ -40,10 +45,19 @@ public final class CoreUiTree {
     private static final String GET_CHILDREN_METHOD = "getChildrenCopy";
 
     // ReflectionUtils.invoke resolves a method matching the argument types it is handed - none, for
-    // the reads this class takes itself. Passed as an explicit shared array rather than left to the
-    // varargs call, which would allocate a fresh empty one at each hop of every tree walk, and those
-    // run per frame.
+    // the reads this class takes itself. Shared rather than left to the varargs call so a tree walk
+    // does not allocate a fresh empty array at each hop; the reach allocates per invoke regardless,
+    // so this trims that cost rather than avoiding it.
     private static final Object[] NO_ARGS = new Object[0];
+
+    // Which shapes carry which names, so a walk pays the by-name resolution once per question
+    // instead of once per node on every frame. Held here rather than left to whatever the reach
+    // caches internally, so the cost of a walk is this library's own property and not a
+    // dependency's - and held once here rather than per caller, since every walk asks about the
+    // same handful of names over the same tree. Whether a class carries a name is fixed for the
+    // run, so the answer belongs to the shape rather than to the moment, and the map is bounded by
+    // the classes met times the few names this library asks about.
+    private static final Map<MethodNameQuery, Boolean> SHAPES_CARRYING_NAME = new ConcurrentHashMap<>();
 
     private CoreUiTree() {
     }
@@ -77,14 +91,53 @@ public final class CoreUiTree {
      * <p>Answers the name only, not the argument shape. A caller that goes on to invoke with
      * arguments can still find that nothing takes them.
      *
+     * <p>Answered from a memo, since a class carries a name or does not for the whole run. A walk
+     * asking per node per frame therefore resolves each shape once rather than each time it meets
+     * one.
+     *
      * @param instance   the object whose class to look in
      * @param methodName the method name to look for
      * @return whether the class declares or inherits any method of that name
      */
     public static boolean hasMethodNamed(Object instance, String methodName) {
-        return !ReflectionUtils
-            .getMethodsMatching(instance, methodName)
-            .isEmpty();
+        return SHAPES_CARRYING_NAME.computeIfAbsent(
+            new MethodNameQuery(instance.getClass(), methodName),
+            query -> !ReflectionUtils
+                .getMethodsMatching(instance, query.methodName())
+                .isEmpty());
+    }
+
+    /**
+     * Takes a no-arg hop and answers null rather than raising when it cannot be taken, for the reads
+     * where a shape not carrying the name is an ordinary answer.
+     *
+     * <p>The forgiving counterpart to {@link #invokeNoArg}, and the one most walks want: a widget
+     * tree is mostly leaves, so a walk that treated an absent name as a failure would abort at the
+     * first ordinary component it met. What is *not* decided here is what the null means - a caller
+     * reading a leaf and a caller reading a broken reach both get one, and each is left to say which
+     * it was expecting.
+     *
+     * <p>The name is asked for before the hop is taken, so the common case costs a memo lookup
+     * rather than a thrown exception on a path that runs per node per frame. The swallow behind it
+     * covers the other way a hop fails - resolving and then throwing - which is a different thing
+     * and equally not this class's to interpret.
+     *
+     * @param instance   the object to call on
+     * @param methodName the no-arg method to resolve
+     * @return whatever the method returned, or null when the shape carries no such name or the call
+     *         itself failed
+     */
+    public static Object readHopIfOffered(Object instance, String methodName) {
+
+        if (!hasMethodNamed(instance, methodName)) {
+            return null;
+        }
+        try {
+            return invokeNoArg(instance, methodName);
+
+        } catch (Throwable cannotReadHop) {
+            return null;
+        }
     }
 
     /**
@@ -211,25 +264,8 @@ public final class CoreUiTree {
             : invokeNoArg(campaignUi, GET_CORE_METHOD);
     }
 
-    // A hop where not answering the name is a shape rather than a failure, so the absence comes
-    // back as null. Both such reads differ in what they do with that null, not in how they read it,
-    // which is why the swallow is stated here once instead of at each of them.
-    //
-    // The name is asked for before the hop is taken, so the common case - a leaf carrying no such
-    // name - costs a lookup rather than a thrown exception, on a path that runs per node per frame.
-    // The catch stays behind it for the hop that resolves and then fails, which is a different thing
-    // and equally not this class's to interpret.
-    private static Object readHopIfOffered(Object instance, String methodName) {
-
-        if (!hasMethodNamed(instance, methodName)) {
-            return null;
-        }
-        
-        try {
-            return invokeNoArg(instance, methodName);
-            
-        } catch (Throwable cannotReadHop) {
-            return null;
-        }
+    // The one thing that keys the memo: a shape and a name are what decide the answer together, and
+    // neither alone identifies the question being asked.
+    private record MethodNameQuery(Class<?> shape, String methodName) {
     }
 }
