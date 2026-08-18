@@ -40,9 +40,9 @@ import static org.mockito.Mockito.when;
  * component that answers the method name, which is what the fixture is.
  *
  * <p>Its two halves are named by type rather than asserted loosely, because the types are what a
- * guard is written against and neither is what a reader would assume: an unreachable hop raises a
- * *checked* exception from methods that declare none, and a hop that resolves and then throws
- * arrives wrapped rather than as itself. A guard shaped for either one alone lets the other past.
+ * guard is written against and neither is what a reader would assume: an unreachable hop raises an
+ * unchecked argument failure, and a hop that resolves and then throws arrives wrapped in a *checked*
+ * exception from methods that declare none. A guard shaped for either one alone lets the other past.
  *
  * <p>Alongside them, the one thing about the argument-taking invoke a caller cannot see from its
  * signature: a boxed argument resolves the primitive parameter, which is what makes the core UI's
@@ -124,12 +124,12 @@ class CoreUiTreeTest {
             // as unreachable as one that does not exist at all. Both are raised rather than
             // answered null, so a caller drawing through this class learns it drew nothing.
             //
-            // Named exactly, because the type is the contract: a checked exception arrives from a
-            // method that declares none, so a guard written as catch (Exception) around a hop that
-            // can also fail the way below does would compile and still let the frame die.
+            // Named exactly, because the type is what a caller distinguishes on: an unreachable hop
+            // and a hop that resolves and then throws (below) arrive as different types, and that
+            // is the only thing separating "the reach is broken" from "the target refused".
             assertThatThrownBy(() -> CoreUiTree
                 .invokeWithArgs(new ArgumentTakingTargetFake(), "recordAlpha", "not a float"))
-                .isInstanceOf(NoSuchMethodException.class);
+                .isInstanceOf(IllegalArgumentException.class);
         }
 
         @Test
@@ -266,8 +266,8 @@ class CoreUiTreeTest {
     //
     // Local rather than a shipped fixture because nothing outside this test needs it - a consuming
     // mod invoking with arguments does so against a real widget, not against a shape KMLib made up.
-    // Public because a by-name invoke resolves a public method and then calls it, which an
-    // enclosing class's package-private visibility does not affect but the nested type's own does.
+    // Public because that is the shape a real core-UI widget presents. The reach makes the resolved
+    // member accessible before calling it, so visibility is not what the resolution turns on.
     public static final class ArgumentTakingTargetFake {
         
         private float recordedAlpha = Float.NaN;

@@ -39,12 +39,11 @@ public final class CoreUiTree {
     private static final String GET_CURRENT_TAB_METHOD = "getCurrentTab";
     private static final String GET_CHILDREN_METHOD = "getChildrenCopy";
 
-    // ReflectionUtils.invoke resolves a public method (declared=false) matching the argument types
-    // it is handed - none, for the reads this class takes itself. Passed as an explicit shared array
-    // rather than left to the varargs call, which would allocate a fresh empty one at each hop of
-    // every tree walk, and those run per frame.
+    // ReflectionUtils.invoke resolves a method matching the argument types it is handed - none, for
+    // the reads this class takes itself. Passed as an explicit shared array rather than left to the
+    // varargs call, which would allocate a fresh empty one at each hop of every tree walk, and those
+    // run per frame.
     private static final Object[] NO_ARGS = new Object[0];
-    private static final boolean PUBLIC_METHOD = false;
 
     private CoreUiTree() {
     }
@@ -66,14 +65,14 @@ public final class CoreUiTree {
     }
 
     /**
-     * Invokes a public no-arg method by name, so a caller can take a hop this class does not name.
+     * Invokes a no-arg method by name, so a caller can take a hop this class does not name.
      *
      * <p>Fails exactly as {@link #invokeWithArgs} does, being the same call with nothing to pass -
      * see there for what comes back out, which a caller either expects (a leaf that exposes no such
      * method) or treats as its own kind of read failure.
      *
      * @param instance   the object to call on
-     * @param methodName the public no-arg method to resolve
+     * @param methodName the no-arg method to resolve
      * @return whatever the method returned
      */
     public static Object invokeNoArg(Object instance, String methodName) {
@@ -81,7 +80,7 @@ public final class CoreUiTree {
     }
 
     /**
-     * Invokes a public method by name with arguments, for the hops that take them.
+     * Invokes a method by name with arguments, for the hops that take them.
      *
      * <p>Separate from {@link #invokeNoArg} rather than replacing it, because the two say different
      * things at a call site: the no-arg name asserts the hop takes nothing, where this one would
@@ -90,23 +89,32 @@ public final class CoreUiTree {
      * <p>The parameter types the method is resolved against come from the arguments' own classes,
      * with a boxed primitive unwrapping to the primitive - so a {@code Float} handed in here
      * resolves a {@code (float)} parameter, which is the shape the core UI's draw and input entry
-     * points take. The consequence is that an argument must be non-null and of the method's exact
-     * declared type: a supertype or an interface the parameter is declared as will not resolve.
+     * points take. Matching from there is assignment compatibility rather than identity: a
+     * parameter declared as a supertype or an interface of the argument resolves, as do the
+     * widening and boxing conversions a direct call would make, and a null argument matches any
+     * parameter that is not primitive. Resolution reaches the target's private methods as well as
+     * its public ones, so a name is answered by more shapes than a direct call could reach.
      *
-     * <p>Every failure - no method of that name and shape, or the call itself throwing - comes back
-     * out, leaving the caller to decide what a failed hop means. It arrives undeclared and not
-     * necessarily as a {@link RuntimeException}: the bypass is Kotlin, which lets the checked
-     * exceptions of the lookup and of the target's own throw escape unannounced. A caller guarding
-     * this has to catch {@link Throwable}, the way the reads in this class do.
+     * <p>That leniency is what lets more than one method match a single name and argument shape,
+     * and an ambiguous name fails rather than one of the matches being picked. So a caller naming
+     * a hop is asserting the name is unique on the target, not merely present.
+     *
+     * <p>Every failure - no method of that name and shape, more than one, or the call itself
+     * throwing - comes back out, leaving the caller to decide what a failed hop means. It arrives
+     * undeclared and not necessarily as a {@link RuntimeException}: the bypass is Kotlin, which
+     * lets the checked exception wrapping the target's own throw escape unannounced. A caller
+     * guarding this has to catch {@link Throwable}, the way the reads in this class do.
      *
      * @param instance   the object to call on
-     * @param methodName the public method to resolve
+     * @param methodName the method to resolve
      * @param arguments  the arguments to pass, which also select the overload
      * @return whatever the method returned, or null for a void one
      */
     public static Object invokeWithArgs(Object instance, String methodName, Object... arguments) {
-        // invoke is an instance method on the ReflectionUtils singleton; only set/get are static.
-        return ReflectionUtils.INSTANCE.invoke(methodName, instance, arguments, PUBLIC_METHOD);
+        // The target stays declared as Object deliberately: a Class-typed argument in that position
+        // selects the overload that invokes a static method on that class rather than one on the
+        // object, and the two differ only in the static type at the call site.
+        return ReflectionUtils.invoke(instance, methodName, arguments);
     }
 
     /**
