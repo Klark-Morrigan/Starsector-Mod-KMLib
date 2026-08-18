@@ -2,6 +2,8 @@ package kmlib.starsector.ui.map.probes;
 
 import com.fs.starfarer.api.ui.SectorMapAPI;
 
+import kmlib.math.geometry.Rectangle;
+
 import java.util.List;
 
 /**
@@ -34,5 +36,25 @@ public record EmbeddedMap(
      */
     public EmbeddedMap {
         ancestors = List.copyOf(ancestors);
+    }
+
+    /**
+     * Where this map is drawn on screen, in UI units.
+     *
+     * <p>The further question the note above leaves to whoever holds one, answered here rather than
+     * at each holder so the sifting - a map that is not a component, one faded out, one the layout
+     * never positioned - is stated once and the same way the tree walks state it.
+     *
+     * <p>Read afresh at every ask and never kept, because an embedded map is not furniture. A panel
+     * a mod slides on and off screen is created somewhere the player cannot see it and walks to its
+     * resting place over many frames, so a box held even for the length of that walk describes where
+     * the map has been rather than where it is - and a rule comparing the cursor against the stale
+     * one answers about a surface that is no longer there.
+     *
+     * @return its box in UI units, or null when the map is not something the player can currently
+     *         point at - not a placed component, or drawn to nothing
+     */
+    public Rectangle resolveDrawnBox() {
+        return DrawnWidgets.resolveDrawnBoxOf(widget);
     }
 }
