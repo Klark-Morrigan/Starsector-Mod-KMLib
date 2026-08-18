@@ -271,7 +271,7 @@ public final class VanillaMapTooltipProbe {
         // tree logs a readable sample. The visibility is what separates "found a tooltip but it was
         // faded out" from "found a shown one", the distinction a wrong suppression is diagnosed against.
         private void recordShownTooltip(Object tooltip, boolean visible) {
-            if (shownTooltips.size() < ProbeLimits.MAX_DESCRIBED_ITEMS) {
+            if (shownTooltips.size() < ProbeLimits.MAX_REPORTED_ITEMS) {
                 shownTooltips.add(tooltip.getClass().getName() + "(visible=" + visible + ")");
             }
         }

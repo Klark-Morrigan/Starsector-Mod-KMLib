@@ -1,11 +1,7 @@
 package kmlib.starsector.ui.map.probes;
 
-import com.fs.starfarer.api.campaign.SectorEntityToken;
-import com.fs.starfarer.api.campaign.comm.IntelInfoPlugin;
-import com.fs.starfarer.api.impl.campaign.procgen.Constellation;
-import com.fs.starfarer.api.ui.SectorMapAPI;
-
 import kmlib.testfixtures.starsector.ui.coreui.CoreUiComponentFake;
+import kmlib.testfixtures.starsector.ui.map.probes.SectorMapWidgetFake;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -134,7 +130,7 @@ class EmbeddedMapFinderTest {
             // What makes this askable from a render pass. A widget a mod built once stays where it
             // was put, so a second walk of the same tree would pay a full descent for the answer
             // already in hand.
-            var rootFake = new WalkCountingComponentFake(new SectorMapWidgetFake());
+            var rootFake = new CoreUiComponentFake(new SectorMapWidgetFake());
             var finder = new EmbeddedMapFinder(() -> rootFake, () -> NO_MAP_TAB_ON_SCREEN);
 
             finder.findEmbeddedMaps();
@@ -167,7 +163,7 @@ class EmbeddedMapFinderTest {
         void findEmbeddedMapsWalksAgainWhileNothingIsFound() {
             // Nothing orders a mod's widget building against ours, so an empty first walk can mean
             // "not built yet" rather than "not there". Remembered, it would answer for the session.
-            var rootFake = new WalkCountingComponentFake();
+            var rootFake = new CoreUiComponentFake();
             var finder = new EmbeddedMapFinder(() -> rootFake, () -> NO_MAP_TAB_ON_SCREEN);
 
             finder.findEmbeddedMaps();
@@ -190,60 +186,6 @@ class EmbeddedMapFinderTest {
 
             assertThat(finder.findEmbeddedMaps())
                 .isEmpty();
-        }
-    }
-
-    // A sector map that is also a parent in the tree, which is what an embedded map is: a widget
-    // composed into somebody's panel with content of its own below it. Public because a by-name
-    // invoke resolves a public method and then calls it, which the nested type's own visibility
-    // affects and the enclosing class's does not.
-    //
-    // Local rather than a shipped fixture because nothing outside this test builds a tree with a map
-    // in it - the rule this fixture exercises answers a value, and a consuming mod's tests stand up
-    // that value rather than the tree it was read from.
-    public static final class SectorMapWidgetFake implements SectorMapAPI {
-        private final List<Object> children;
-
-        public SectorMapWidgetFake(Object... children) {
-            this.children = List.of(children);
-        }
-
-        public List<Object> getChildrenCopy() {
-            return children;
-        }
-
-        // The published half of a map is two entity lookups a tree walk never takes. They throw
-        // rather than answering null, so a walk that strayed into one fails here instead of passing
-        // on a fixture that cannot stand for what it asked.
-        @Override
-        public SectorEntityToken getConstellationLabelEntity(Constellation constellation) {
-            throw new UnsupportedOperationException("A fixture for tree walks holds no entities.");
-        }
-
-        @Override
-        public SectorEntityToken getIntelIconEntity(IntelInfoPlugin intel) {
-            throw new UnsupportedOperationException("A fixture for tree walks holds no entities.");
-        }
-    }
-
-    // A parent that counts how often its children were asked for, which is how a walk is observed
-    // from outside: a memo that answered without walking never reaches the root's children.
-    public static final class WalkCountingComponentFake {
-        private final List<Object> children;
-
-        private int childrenReadCount;
-
-        public WalkCountingComponentFake(Object... children) {
-            this.children = List.of(children);
-        }
-
-        public int countChildrenReads() {
-            return childrenReadCount;
-        }
-
-        public List<Object> getChildrenCopy() {
-            childrenReadCount++;
-            return children;
         }
     }
 }

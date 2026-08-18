@@ -32,7 +32,7 @@ final class ProbeDescriptions {
      * @param items        what the probe found, in the order it found it
      * @param describeItem how one item is worded
      * @param <T>          the kind of item, which this neither inspects nor constrains
-     * @return the first {@code ProbeLimits.MAX_DESCRIBED_ITEMS} of them, described
+     * @return the first {@code ProbeLimits.MAX_REPORTED_ITEMS} of them, described
      */
     static <T> List<String> describeUpToCap(
             List<T> items,
@@ -40,7 +40,7 @@ final class ProbeDescriptions {
 
         var describedItems = new ArrayList<String>();
         for (var item : items) {
-            if (describedItems.size() >= ProbeLimits.MAX_DESCRIBED_ITEMS) {
+            if (describedItems.size() >= ProbeLimits.MAX_REPORTED_ITEMS) {
                 break;
             }
             describedItems.add(describeItem.apply(item));

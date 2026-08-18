@@ -82,17 +82,13 @@ public final class EmbeddedMapHostTrace {
     public static String describeEmbeddedMapHosts() {
         try {
 
-            var root = CoreUiTree.resolveActiveCoreUi();
-            if (root == null) {
+            var embeddedMaps = EmbeddedMapFinder.collectLiveEmbeddedMaps();
+            if (embeddedMaps == null) {
                 return null;
             }
-            var embeddedMaps = EmbeddedMapFinder.collectEmbeddedMapsUnder(
-                root,
-                ShownMapTab.resolveShownMapTab());
-
             // An empty list is worth saying rather than suppressing: it separates "walked the tree
             // and no map is in it" from a walk that never ran, and the first of those means the map
-            // hangs somewhere this root does not reach.
+            // hangs somewhere that root does not reach.
             return "mapHosts=" + ProbeDescriptions.describeUpToCap(
                 embeddedMaps,
                 EmbeddedMapHostTrace::describeMapHost);
@@ -125,8 +121,18 @@ public final class EmbeddedMapHostTrace {
         return true;
     }
 
-    // One found map: what it hangs under, and every mod-owned name among its surroundings.
-    private static String describeMapHost(EmbeddedMap embeddedMap) {
+    /**
+     * One found map: what it hangs under, and every mod-owned name among its surroundings.
+     *
+     * <p>The wording of a finding rather than a reading of the screen, which is what makes it
+     * answerable over a tree that was handed in - the ancestry arrives on the finding, and the
+     * subtree below the host is reached the same way any walk reaches one.
+     *
+     * @param embeddedMap a map the walk found, with the chain it hangs under
+     * @return the map, its host, that chain and the mod-owned classes around it, as one item of a
+     *         diagnostic line
+     */
+    static String describeMapHost(EmbeddedMap embeddedMap) {
 
         var map = embeddedMap.widget();
         var ancestors = embeddedMap.ancestors();
@@ -176,7 +182,7 @@ public final class EmbeddedMapHostTrace {
 
         if (component == null
                 || depth > ProbeLimits.MAX_SEARCH_DEPTH
-                || modOwnedClasses.size() >= ProbeLimits.MAX_DESCRIBED_ITEMS) {
+                || modOwnedClasses.size() >= ProbeLimits.MAX_REPORTED_ITEMS) {
             return;
         }
         addIfModOwned(component.getClass().getName(), modOwnedClasses);
@@ -198,7 +204,7 @@ public final class EmbeddedMapHostTrace {
     }
 
     private static void addIfModOwned(String className, Set<String> modOwnedClasses) {
-        if (isModOwnedClass(className) && modOwnedClasses.size() < ProbeLimits.MAX_DESCRIBED_ITEMS) {
+        if (isModOwnedClass(className) && modOwnedClasses.size() < ProbeLimits.MAX_REPORTED_ITEMS) {
             modOwnedClasses.add(className);
         }
     }

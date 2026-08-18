@@ -166,7 +166,7 @@ public final class MapTabWidgetTrace {
         if (component instanceof UIComponentAPI widget) {
             var box = DrawnWidgets.resolveBoxOf(widget);
             if (isWidgetUnderCursor(box, widget.getOpacity(), cursorX, cursorY)
-                    && widgetsUnderCursor.size() < ProbeLimits.MAX_DESCRIBED_ITEMS) {
+                    && widgetsUnderCursor.size() < ProbeLimits.MAX_REPORTED_ITEMS) {
 
                 widgetsUnderCursor.add(describeWidget(widget, box, depth, parent));
             }

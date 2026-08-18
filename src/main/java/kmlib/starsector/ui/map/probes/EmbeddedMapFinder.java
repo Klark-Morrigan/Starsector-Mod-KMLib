@@ -8,7 +8,6 @@ import kmlib.starsector.ui.coreui.CoreUiTree;
 
 import org.apache.log4j.Logger;
 
-import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -41,8 +40,12 @@ import java.util.function.Supplier;
  * it was put. The tree is what the memo is keyed on rather than a load or an elapsed time: the core
  * UI in force changes when an interaction dialog stands up its own, so keying on it re-walks
  * exactly when the tree being described is a different one, and never merely because time passed.
- * It is held weakly, so a remembered answer cannot pin one save's widget tree past the load that
- * replaced it.
+ *
+ * <p>What bounds how long a remembered answer holds a widget tree alive is that replacement and
+ * nothing else. Every find carries its map and the whole chain it hangs under, and the outermost of
+ * those ancestors is the root itself, so the memo pins the tree it came from for as long as it
+ * stands - which lasts until the first ask after that tree changed, and for a caller asking per
+ * frame is a frame.
  *
  * <p>Only a walk that found something is remembered, and a walk that found nothing is taken again.
  * Nothing orders a mod's widget building against ours, so a first walk can legitimately run before
@@ -74,7 +77,11 @@ public final class EmbeddedMapFinder {
     // The tree the answer above was walked out of. Identity rather than equality: two roots are the
     // same tree only by being the same object, and a widget's equals is the obfuscated class's
     // business.
-    private WeakReference<Object> walkedTreeRoot = new WeakReference<>(null);
+    //
+    // Held plainly rather than weakly, since a weak reference here would buy nothing it appears to:
+    // the finds beside it hold every widget on each map's chain, this root among them, so the memo
+    // pins the tree whatever this field does. Replacement is what releases it - see the class note.
+    private Object walkedTreeRoot;
 
     /** Reads the live core UI and the live map tab - the pairing outside a test. */
     public EmbeddedMapFinder() {
@@ -111,7 +118,7 @@ public final class EmbeddedMapFinder {
             if (treeRoot == null) {
                 return List.of();
             }
-            if (walkedTreeRoot.get() == treeRoot && !foundMaps.isEmpty()) {
+            if (walkedTreeRoot == treeRoot && !foundMaps.isEmpty()) {
                 return foundMaps;
             }
             var embeddedMaps = collectEmbeddedMapsUnder(treeRoot, readShownMapTab.get());
@@ -125,6 +132,25 @@ public final class EmbeddedMapFinder {
             warnOnce(failure);
             return List.of();
         }
+    }
+
+    /**
+     * The live tree walked afresh, for a caller that must see it as it stands rather than as it was
+     * remembered.
+     *
+     * <p>Beside the memoised read rather than in whatever wants it, so which tree is searched and
+     * which map is excluded are stated once. A second statement of that pairing could only drift
+     * from this one, and would do it silently - the two would go on answering, about different
+     * trees.
+     *
+     * @return the maps found, or null when there is no tree to walk - which a caller reporting on
+     *         the tree can tell apart from a walk that found nothing in it
+     */
+    static List<EmbeddedMap> collectLiveEmbeddedMaps() {
+        var treeRoot = CoreUiTree.resolveActiveCoreUi();
+        return treeRoot == null
+            ? null
+            : collectEmbeddedMapsUnder(treeRoot, ShownMapTab.resolveShownMapTab());
     }
 
     /**
@@ -156,7 +182,7 @@ public final class EmbeddedMapFinder {
         if (component == null
                 || component == shownMapTab
                 || depth > ProbeLimits.MAX_SEARCH_DEPTH
-                || embeddedMaps.size() >= ProbeLimits.MAX_DESCRIBED_ITEMS) {
+                || embeddedMaps.size() >= ProbeLimits.MAX_REPORTED_ITEMS) {
             return;
         }
         if (component instanceof SectorMapAPI map) {
@@ -175,7 +201,7 @@ public final class EmbeddedMapFinder {
             return;
         }
         foundMaps = embeddedMaps;
-        walkedTreeRoot = new WeakReference<>(treeRoot);
+        walkedTreeRoot = treeRoot;
     }
 
     // Warns on this library's own logger rather than the caller's, since a reach that broke is the

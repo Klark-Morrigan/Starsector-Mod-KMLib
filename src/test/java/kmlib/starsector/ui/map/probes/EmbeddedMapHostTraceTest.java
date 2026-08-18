@@ -1,7 +1,12 @@
 package kmlib.starsector.ui.map.probes;
 
+import kmlib.testfixtures.starsector.ui.coreui.CoreUiComponentFake;
+import kmlib.testfixtures.starsector.ui.map.probes.SectorMapWidgetFake;
+
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -72,5 +77,108 @@ final class EmbeddedMapHostTraceTest {
             assertThat(EmbeddedMapHostTrace.isModOwnedClass("org.example.com.fs.starfarer.Panel"))
                 .isTrue();
         }
+    }
+
+    @Nested
+    class DescribeMapHost {
+
+        @Test
+        void describeMapHostNamesTheTooltipTheMapSitsInAsItsHost() {
+            // The host is what the search for an owner is bounded to, and a tooltip is the whole of
+            // what a mod built - so picking the immediate parent instead would bound the search to
+            // one panel inside somebody's widget and miss the class that names them.
+            var mapFake = new SectorMapWidgetFake();
+            var panelFake = new CoreUiComponentFake(mapFake);
+            var tooltipHostFake = new TooltipHostFake(panelFake);
+
+            var describedHost = EmbeddedMapHostTrace.describeMapHost(new EmbeddedMap(
+                mapFake, List.of(new CoreUiComponentFake(tooltipHostFake), tooltipHostFake,
+                    panelFake)));
+
+            assertThat(describedHost)
+                .contains("host=" + TooltipHostFake.class.getName());
+        }
+
+        @Test
+        void describeMapHostNamesTheImmediateParentWhenNoTooltipIsAboveTheMap() {
+            // The fallback, and it is a narrowing rather than a guess: it bounds the search to the
+            // map's own siblings instead of the whole screen, which is the most that can be said
+            // when nothing in the chain announces itself as a host.
+            var mapFake = new SectorMapWidgetFake();
+            var panelFake = new CoreUiComponentFake(mapFake);
+
+            var describedHost = EmbeddedMapHostTrace.describeMapHost(new EmbeddedMap(
+                mapFake, List.of(new CoreUiComponentFake(panelFake), panelFake)));
+
+            assertThat(describedHost)
+                .contains("host=" + CoreUiComponentFake.class.getName());
+        }
+
+        @Test
+        void describeMapHostNamesTheMapItselfWhenItHangsUnderNothing() {
+            // A map found at the root of the walk. There is no host to search around, and naming
+            // the map is what keeps the line's shape the same rather than leaving a field empty.
+            var mapFake = new SectorMapWidgetFake();
+
+            assertThat(EmbeddedMapHostTrace.describeMapHost(new EmbeddedMap(mapFake, List.of())))
+                .contains("host=" + SectorMapWidgetFake.class.getName());
+        }
+
+        @Test
+        void describeMapHostNamesAModOwnedPluginCarriedInsideTheHost() {
+            // The finding this line exists for. A custom panel is a vanilla component holding a
+            // mod-supplied plugin, so a walk reading component classes alone crosses the mod's own
+            // object and reports the engine's wrapper around it.
+            var mapFake = new SectorMapWidgetFake();
+            var tooltipHostFake = new TooltipHostFake(new PluginCarryingPanelFake(), mapFake);
+
+            var describedHost = EmbeddedMapHostTrace.describeMapHost(new EmbeddedMap(
+                mapFake, List.of(tooltipHostFake)));
+
+            assertThat(describedHost)
+                .contains(MapPanelPluginFake.class.getName());
+        }
+
+        @Test
+        void describeMapHostNamesAModOwnedClassStandingAboveTheHost() {
+            // Searched over the ancestry as well as below the host, because a mod that builds no
+            // tooltip of its own leaves its own class further up the chain than any host bound.
+            var mapFake = new SectorMapWidgetFake();
+
+            var describedHost = EmbeddedMapHostTrace.describeMapHost(new EmbeddedMap(
+                mapFake, List.of(new PluginCarryingPanelFake(), new CoreUiComponentFake(mapFake))));
+
+            assertThat(describedHost)
+                .contains(PluginCarryingPanelFake.class.getName());
+        }
+    }
+
+    // A host whose class name announces it as a tooltip, which is how one is recognised - the class
+    // is unpublished, so the marker is the name. Public because a by-name invoke resolves a public
+    // method and then calls it, which the nested type's own visibility affects.
+    public static final class TooltipHostFake {
+        private final List<Object> children;
+
+        public TooltipHostFake(Object... children) {
+            this.children = List.of(children);
+        }
+
+        public List<Object> getChildrenCopy() {
+            return children;
+        }
+    }
+
+    // A component of the engine's kind holding a mod's own object, which is the shape a custom panel
+    // has and the one case a walk over component classes alone cannot report.
+    public static final class PluginCarryingPanelFake {
+
+        public Object getPlugin() {
+            return new MapPanelPluginFake();
+        }
+    }
+
+    // Stands for whatever a mod hangs off its panel. Carries nothing: being reachable and having a
+    // name of its own is the whole of what the line reports about it.
+    public static final class MapPanelPluginFake {
     }
 }
