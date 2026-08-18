@@ -213,7 +213,8 @@ src/main/java/kmlib/
                      screen, modelview, campaign minimap, console
                      output), the settings proxy every mod installs into
                      Global - with the three mod-set states an optional
-                     dependency is read against - and for the core
+                     dependency is read against, and the third-party mod
+                     ids those states are named with - and for the core
                      UI - the hops down to the screen that is up, and the
                      widget tree a layout rule walks once there - plus
                      builders for the values those ports report. Ships in

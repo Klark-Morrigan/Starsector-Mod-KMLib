@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 
 import assortment_of_things.abyss.entities.hyper.AbyssalFracture;
 
-import static kmlib.starsector.rat.StubbedModIds.RANDOM_ASSORTMENT_OF_THINGS;
+import static kmlib.testfixtures.starsector.settings.StubbedModIds.RANDOM_ASSORTMENT_OF_THINGS;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;

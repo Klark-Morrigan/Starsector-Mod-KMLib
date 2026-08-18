@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 
-import static kmlib.starsector.rat.StubbedModIds.RANDOM_ASSORTMENT_OF_THINGS;
+import static kmlib.testfixtures.starsector.settings.StubbedModIds.RANDOM_ASSORTMENT_OF_THINGS;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
