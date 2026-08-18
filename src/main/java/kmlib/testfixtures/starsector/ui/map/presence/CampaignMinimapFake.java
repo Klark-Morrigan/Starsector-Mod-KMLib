@@ -21,16 +21,10 @@ public final class CampaignMinimapFake implements CampaignMinimap {
 
     /**
      * Puts a minimap in the campaign radar's place, as if a mod were enabled with its own minimap
-     * switched on.
+     * switched on. The vanilla radar is what a fresh fixture already stands for, so there is no
+     * counterpart to put it back: a case wanting one asks for a fixture it has not spoken to.
      */
     public void replaceRadarWithMinimap() {
         isReplacingRadar = true;
-    }
-
-    /**
-     * Leaves the campaign radar in place, as if no mod supplied a minimap.
-     */
-    public void restoreRadar() {
-        isReplacingRadar = false;
     }
 }

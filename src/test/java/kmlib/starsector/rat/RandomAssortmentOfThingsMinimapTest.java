@@ -1,20 +1,12 @@
 package kmlib.starsector.rat;
 
-import com.fs.starfarer.api.Global;
-import com.fs.starfarer.api.ModManagerAPI;
-import com.fs.starfarer.api.SettingsAPI;
-
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.when;
 
 /**
  * Pins that the mod and its own minimap switch are both required, and that everything unreadable
@@ -24,10 +16,12 @@ import static org.mockito.Mockito.when;
  * <p>The mod-absent case additionally pins that the switch is never read, since that read is the
  * only thing here that reaches LunaLib - which logs an error for a mod id it does not know, once
  * per read, on an install that simply does not have the mod.
+ *
+ * <p>The read behind that switch is a passthrough to LunaLib and is exercised in-engine rather
+ * than here, so no case drives it: standing LunaLib up would pin that Mockito can stub a static
+ * and nothing about this class.
  */
 final class RandomAssortmentOfThingsMinimapTest {
-
-    private static final String RAT_MOD_ID = "assortment_of_things";
 
     @Nested
     class IsReplacingRadar {
@@ -73,45 +67,17 @@ final class RandomAssortmentOfThingsMinimapTest {
             // The live pairing rather than a stood-in one: the presence gate is what keeps an
             // install without the mod from asking LunaLib about that mod's fields, and nothing
             // else here exercises the constructor that binds the two live reads.
-            try (var globalMock = mockStatic(Global.class)) {
-
-                stubGlobalWithModEnabled(globalMock, false);
-
+            ModEnabledScopes.runWithModEnabled(false, () ->
                 assertThat(new RandomAssortmentOfThingsMinimap().isReplacingRadar())
-                    .isFalse();
-            }
+                    .isFalse());
         }
 
         @Test
         void reportsNoMinimapThroughTheLiveReadsBeforeTheGameSettingsAreUp() {
 
-            try (var globalMock = mockStatic(Global.class)) {
-
-                globalMock
-                    .when(Global::getSettings)
-                    .thenReturn(null);
-
+            ModEnabledScopes.runWithoutGameSettings(() ->
                 assertThat(new RandomAssortmentOfThingsMinimap().isReplacingRadar())
-                    .isFalse();
-            }
+                    .isFalse());
         }
-    }
-
-    private static void stubGlobalWithModEnabled(
-            MockedStatic<Global> globalMock,
-            boolean isModEnabled) {
-
-        var settingsMock = mock(SettingsAPI.class);
-        var modManagerMock = mock(ModManagerAPI.class);
-
-        globalMock
-            .when(Global::getSettings)
-            .thenReturn(settingsMock);
-
-        when(settingsMock.getModManager())
-            .thenReturn(modManagerMock);
-
-        when(modManagerMock.isModEnabled(RAT_MOD_ID))
-            .thenReturn(isModEnabled);
     }
 }
