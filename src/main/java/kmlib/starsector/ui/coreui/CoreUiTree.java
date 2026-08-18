@@ -65,6 +65,29 @@ public final class CoreUiTree {
     }
 
     /**
+     * Whether the object's class carries a method of this name at all, so a caller can tell a shape
+     * that does not offer a hop from one whose hop failed.
+     *
+     * <p>Worth asking rather than inferring from a failed call, on both counts a walk cares about.
+     * The reach reports "no such name" and "more than one match" as the same type, so a caller
+     * catching that type cannot tell which it got. And a name that does not resolve costs a thrown
+     * exception where this costs a lookup, which is the difference between the two on every leaf a
+     * per-frame walk meets - and most of a widget tree is leaves.
+     *
+     * <p>Answers the name only, not the argument shape. A caller that goes on to invoke with
+     * arguments can still find that nothing takes them.
+     *
+     * @param instance   the object whose class to look in
+     * @param methodName the method name to look for
+     * @return whether the class declares or inherits any method of that name
+     */
+    public static boolean hasMethodNamed(Object instance, String methodName) {
+        return !ReflectionUtils
+            .getMethodsMatching(instance, methodName)
+            .isEmpty();
+    }
+
+    /**
      * Invokes a no-arg method by name, so a caller can take a hop this class does not name.
      *
      * <p>Fails exactly as {@link #invokeWithArgs} does, being the same call with nothing to pass -
@@ -143,6 +166,7 @@ public final class CoreUiTree {
      *                          policy to a genuinely broken reach rather than to an empty screen
      */
     public static Object resolveCurrentTab() {
+
         var core = resolveActiveCoreUi();
         return core == null ? null : invokeNoArg(core, GET_CURRENT_TAB_METHOD);
     }
@@ -161,7 +185,9 @@ public final class CoreUiTree {
      *                          policy to a genuinely broken reach rather than to an empty screen
      */
     public static Object resolveActiveCoreUi() {
+
         var sector = Global.getSector();
+
         if (sector == null || sector.getCampaignUI() == null) {
             return null;
         }
@@ -178,17 +204,31 @@ public final class CoreUiTree {
     // is up: a caller that gates on the tab id and then walks to its widgets is answered about one
     // core UI, not two.
     private static Object resolveActiveCore(CampaignUIAPI campaignUi) {
+
         var dialogCore = readCoreUiOf(campaignUi.getCurrentInteractionDialog());
-        return dialogCore != null ? dialogCore : invokeNoArg(campaignUi, GET_CORE_METHOD);
+        return dialogCore != null
+            ? dialogCore
+            : invokeNoArg(campaignUi, GET_CORE_METHOD);
     }
 
     // A hop where not answering the name is a shape rather than a failure, so the absence comes
     // back as null. Both such reads differ in what they do with that null, not in how they read it,
     // which is why the swallow is stated here once instead of at each of them.
+    //
+    // The name is asked for before the hop is taken, so the common case - a leaf carrying no such
+    // name - costs a lookup rather than a thrown exception, on a path that runs per node per frame.
+    // The catch stays behind it for the hop that resolves and then fails, which is a different thing
+    // and equally not this class's to interpret.
     private static Object readHopIfOffered(Object instance, String methodName) {
+
+        if (!hasMethodNamed(instance, methodName)) {
+            return null;
+        }
+        
         try {
             return invokeNoArg(instance, methodName);
-        } catch (Throwable offersNoSuchName) {
+            
+        } catch (Throwable cannotReadHop) {
             return null;
         }
     }

@@ -44,6 +44,10 @@ import static org.mockito.Mockito.when;
  * unchecked argument failure, and a hop that resolves and then throws arrives wrapped in a *checked*
  * exception from methods that declare none. A guard shaped for either one alone lets the other past.
  *
+ * <p>The presence question is pinned beside them because it is what a caller reaches for once those
+ * two halves stop being separable by type: it answers whether a shape carries a name without taking
+ * the hop, so a walk can tell a leaf from a broken read without provoking either.
+ *
  * <p>Alongside them, the one thing about the argument-taking invoke a caller cannot see from its
  * signature: a boxed argument resolves the primitive parameter, which is what makes the core UI's
  * {@code (float)} entry points reachable at all from mod code that can only hand over a
@@ -70,6 +74,33 @@ class CoreUiTreeTest {
             // that as a failure would end every walk at the first leaf it reached.
             assertThat(CoreUiTree.readChildrenOf(new Object()))
                 .isEmpty();
+        }
+    }
+
+    @Nested
+    class HasMethodNamed {
+
+        @Test
+        void hasMethodNamedIsTrueForAComponentCarryingTheName() {
+
+            assertThat(CoreUiTree.hasMethodNamed(new CoreUiComponentFake(), "getChildrenCopy"))
+                .isTrue();
+        }
+
+        @Test
+        void hasMethodNamedIsFalseForAComponentCarryingNoSuchName() {
+            // The common leaf, and what this exists for: answered without invoking, so a per-frame
+            // walk stays off the thrown-exception path at every ordinary component it meets.
+            assertThat(CoreUiTree.hasMethodNamed(new Object(), "getChildrenCopy"))
+                .isFalse();
+        }
+
+        @Test
+        void hasMethodNamedIsTrueWhateverArgumentsTheMethodTakes() {
+            // Names only, so this cannot stand in for a hop resolving: a caller asking about a name
+            // it then invokes with arguments can still find that nothing takes them.
+            assertThat(CoreUiTree.hasMethodNamed(new ArgumentTakingTargetFake(), "recordAlpha"))
+                .isTrue();
         }
     }
 

@@ -71,13 +71,14 @@ public final class VanillaMapTooltipProbe {
     private static final String GET_FADER_METHOD = "getFader";
     private static final String IS_FADED_OUT_METHOD = "isFadedOut";
 
-    // Which component shapes answer the tooltip accessor at all, remembered by class so the walk pays
-    // the by-name resolution once per shape instead of once per node on every frame. Most nodes are
-    // leaves exposing no such method, and a name that does not resolve comes back as a thrown
-    // exception - the walk's dominant cost, and the reason a second per-frame consumer would otherwise
-    // be a doubled one. Whether a class declares the accessor is fixed for the run, so the answer is a
-    // property of the shape rather than of the moment. Per class rather than per probe: two consumers
-    // walk the same tree, so a per-instance memo would learn the same tree twice.
+    // Which component shapes carry the tooltip accessor at all, remembered by class so the walk pays
+    // the by-name resolution once per shape instead of once per node on every frame - the walk's
+    // dominant cost, and the reason a second per-frame consumer would otherwise be a doubled one.
+    // Held here rather than left to whatever the reach caches internally, so the walk's per-frame
+    // cost is this probe's own property and not a library's. Whether a class carries the accessor is
+    // fixed for the run, so the answer belongs to the shape rather than to the moment. Per class
+    // rather than per probe: two consumers walk the same tree, so a per-instance memo would learn
+    // the same tree twice.
     private static final Map<Class<?>, Boolean> TOOLTIP_HOSTING_SHAPES = new ConcurrentHashMap<>();
 
     // Says once per session that this read broke, rather than every frame. Per instance rather than
@@ -96,18 +97,26 @@ public final class VanillaMapTooltipProbe {
      */
     public Object findShownTooltip() {
         try {
+
             var currentTab = CoreUiTree.resolveCurrentTab();
+
             if (currentTab == null) {
                 reportReachFailure("no current tab");
                 return null;
             }
             // Build the diagnostic trace only when DEBUG is on, so a normal frame is a bare tree walk
             // with no per-node string work.
-            var trace = LOG.isDebugEnabled() ? new WalkTrace(currentTab.getClass().getName()) : null;
+            var trace = LOG.isDebugEnabled()
+                ? new WalkTrace(currentTab.getClass().getName())
+                : null;
+
             var tooltip = searchSubtreeForShownTooltip(currentTab, ProbeLimits.MAX_SEARCH_DEPTH, trace);
+
             reportWalkOutcome(tooltip != null, trace);
             return tooltip;
+
         } catch (Throwable failure) {
+
             warnOnce(failure);
             return null;
         }
@@ -125,25 +134,28 @@ public final class VanillaMapTooltipProbe {
     // a component that is not a tooltip host (no such method - the common leaf) or that shows none now. A
     // host clears this to null when its tooltip hides, so a non-null value means one is up.
     //
-    // Only an unresolvable name condemns the shape to the memo. A host whose accessor resolves and then
-    // throws is still a host, and remembering it as a leaf would blind the walk to that widget's tooltip
-    // for the rest of the run over one bad frame. The two arrive as different types, which is the
-    // by-name reach's stated contract; the instance test rather than a second catch clause because the
-    // reach declares neither, so naming the checked one in a catch would not compile.
+    // Only a shape carrying no such name is condemned to the memo, and the memo is filled by asking
+    // whether it carries the name rather than by reading a failed call for the reason it failed. A
+    // host whose accessor resolves and then throws is still a host, and remembering it as a leaf
+    // would blind the walk to that widget's tooltip for the rest of the run over one bad frame - the
+    // failures the reach raises do not separate the two cleanly enough to tell them apart after the
+    // fact, so the question is put before the call rather than reconstructed from it.
     static Object findTooltipShownBy(Object component) {
-        var shape = component.getClass();
-        if (Boolean.FALSE.equals(TOOLTIP_HOSTING_SHAPES.get(shape))) {
+
+        var isTooltipHost = TOOLTIP_HOSTING_SHAPES.computeIfAbsent(
+            component.getClass(),
+            unmemoisedShape -> CoreUiTree.hasMethodNamed(component, GET_TOOLTIP_METHOD));
+
+        // Most components carry no getTooltip: not a host, so it shows no tooltip to step aside for.
+        if (!isTooltipHost) {
             return null;
         }
         try {
-            var tooltip = CoreUiTree.invokeNoArg(component, GET_TOOLTIP_METHOD);
-            TOOLTIP_HOSTING_SHAPES.put(shape, Boolean.TRUE);
-            return tooltip;
-        } catch (Throwable notATooltipHost) {
-            if (notATooltipHost instanceof NoSuchMethodException) {
-                TOOLTIP_HOSTING_SHAPES.put(shape, Boolean.FALSE);
-            }
-            // Most components expose no getTooltip: not a host, so it shows no tooltip to step aside for.
+            return CoreUiTree.invokeNoArg(component, GET_TOOLTIP_METHOD);
+
+        } catch (Throwable cannotReadTooltip) {
+            // A host failing from inside its own accessor shows nothing this frame, and is still a
+            // host on the next one.
             return null;
         }
     }
@@ -155,9 +167,11 @@ public final class VanillaMapTooltipProbe {
     static boolean isTooltipVisible(Object tooltip) {
         try {
             var fader = CoreUiTree.invokeNoArg(tooltip, GET_FADER_METHOD);
+
             return fader != null
                 && CoreUiTree.invokeNoArg(fader, IS_FADED_OUT_METHOD) instanceof Boolean fadedOut
                 && !fadedOut;
+
         } catch (Throwable cannotReadFader) {
             return false;
         }
@@ -168,7 +182,11 @@ public final class VanillaMapTooltipProbe {
     // make a real widget read as foreign, and the game's own subclass of a type reads as that type. The
     // walk stops at Object, which every class reaches and none is identified by.
     static boolean isNamedInHierarchy(Class<?> type, String className) {
-        for (var clazz = type; clazz != null && clazz != Object.class; clazz = clazz.getSuperclass()) {
+        
+        for (var clazz = type;
+                clazz != null && clazz != Object.class;
+                clazz = clazz.getSuperclass()) {
+
             if (clazz.getName().equals(className)) {
                 return true;
             }
@@ -180,20 +198,27 @@ public final class VanillaMapTooltipProbe {
     // children by depth, stopping at the bound so a malformed tree cannot loop the walk. Records every
     // shown tooltip into the trace (when one is given, i.e. DEBUG is on) so a walk that finds no vanilla
     // tooltip still says what it saw.
-    private static Object searchSubtreeForShownTooltip(Object component, int depthRemaining,
+    private static Object searchSubtreeForShownTooltip(
+            Object component,
+            int depthRemaining,
             WalkTrace trace) {
+
         if (component == null || depthRemaining < 0) {
             return null;
         }
         if (trace != null) {
             trace.nodesVisited++;
         }
+
         var tooltip = findTooltipShownBy(component);
+
         if (tooltip != null && isStandardTooltip(tooltip)) {
+
             // A widget can hold a configured tooltip whose fader sits idle at zero (never hovered), which
             // must not suppress our overlay - only a tooltip actually faded in should. So gate on the
             // fader, the same read vanilla does before it renders a child's tooltip.
             var visible = isTooltipVisible(tooltip);
+
             if (trace != null) {
                 trace.recordShownTooltip(tooltip, visible);
             }
@@ -202,7 +227,9 @@ public final class VanillaMapTooltipProbe {
             }
         }
         for (var child : CoreUiTree.readChildrenOf(component)) {
+
             var found = searchSubtreeForShownTooltip(child, depthRemaining - 1, trace);
+
             if (found != null) {
                 return found;
             }
@@ -222,6 +249,7 @@ public final class VanillaMapTooltipProbe {
     // material - one names a hop, the other describes a completed walk - and a single reporter taking
     // both would take one of them as null at each of its call sites.
     private void reportReachFailure(String reachFailure) {
+
         // Guarded before the line is composed rather than inside the emit, because this runs per frame
         // and the composition is the only cost either reporter has when nobody is listening.
         if (LOG.isDebugEnabled()) {
@@ -231,8 +259,10 @@ public final class VanillaMapTooltipProbe {
 
     // The walk ran: the verdict, and what it saw on the way when the trace was built.
     private void reportWalkOutcome(boolean verdict, WalkTrace trace) {
+
         if (LOG.isDebugEnabled()) {
-            logOutcomeChange("verdict=" + verdict + " " + (trace == null ? "" : trace.describeWalk()));
+            logOutcomeChange("verdict=" + verdict
+                + " " + (trace == null ? "" : trace.describeWalk()));
         }
     }
 
@@ -240,6 +270,7 @@ public final class VanillaMapTooltipProbe {
     // logs once; a tooltip appearing or disappearing logs the transition, so the log shows what the
     // probe saw without a per-frame flood.
     private void logOutcomeChange(String outcome) {
+
         if (outcome.equals(lastLoggedOutcome)) {
             return;
         }
@@ -259,6 +290,7 @@ public final class VanillaMapTooltipProbe {
     // found shown - so a walk that finds no vanilla tooltip can still say whether it reached the map's
     // host at all and what it held.
     private static final class WalkTrace {
+
         private final String tabClassName;
         private final List<String> shownTooltips = new ArrayList<>();
         private int nodesVisited;
@@ -271,6 +303,7 @@ public final class VanillaMapTooltipProbe {
         // tree logs a readable sample. The visibility is what separates "found a tooltip but it was
         // faded out" from "found a shown one", the distinction a wrong suppression is diagnosed against.
         private void recordShownTooltip(Object tooltip, boolean visible) {
+            
             if (shownTooltips.size() < ProbeLimits.MAX_REPORTED_ITEMS) {
                 shownTooltips.add(tooltip.getClass().getName() + "(visible=" + visible + ")");
             }
