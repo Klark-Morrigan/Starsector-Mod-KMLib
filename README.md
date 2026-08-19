@@ -106,8 +106,10 @@ src/main/java/kmlib/
 
   Starsector-facing wrappers and seams:
   console/         - Console Commands base class and KMLib's own
-                     commands, with input/, output/, parsing/, and
-                     validation/ behind them
+                     commands, with input/, output/, parsing/,
+                     validation/, and markets/ - which market a command
+                     was pointed at, named by id or the nearest one
+                     meeting what the command needs of it - behind them
   settings/        - LunaLib settings read / write + labelled choices
   starsector/
     colonies/      - the shared colony set every "who is here" read
@@ -126,14 +128,20 @@ src/main/java/kmlib/
                      display-name normaliser; handles vanilla + Nex
                      defaults), faction colours, crests, flags
     fleet/         - player fleet proximity
-    geometry/      - distance and bearing between campaign entities,
-                     the game-typed sibling of kmlib.math.geometry
+    geometry/      - distance and bearing between campaign entities, and
+                     how a nearest search settles an equal distance, the
+                     game-typed sibling of kmlib.math.geometry
     graphics/      - sprite lookup
     intel/         - intel-plugin base classes (BaseTaggedIntelPlugin
                      for tab-tag mix-in; BaseExpiringIntelPlugin layers
                      auto-removal on top)
     map/           - which systems the sector map marks
-    markets/       - market queries, decivilised markets, patrol counts
+    markets/       - market queries, decivilised markets, patrol counts,
+                     the nearest-market search a targeted operation is
+                     pointed with, and the two changes of state a colony
+                     turns on: founding one on a body that carries only
+                     survey data, and moving one that exists to another
+                     owner
     memory/        - typed sector-memory accessors (flag, string)
     rat/           - Random Assortment of Things: Abyssal Fracture matching,
                      and the campaign-minimap role answered for its mini-map
