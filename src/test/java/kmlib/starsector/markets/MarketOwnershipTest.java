@@ -1,9 +1,16 @@
 package kmlib.starsector.markets;
 
+import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Factions;
+
+import kmlib.testfixtures.starsector.settings.ModStateScopes;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+
+import java.util.concurrent.atomic.AtomicReference;
+
+import static kmlib.testfixtures.starsector.settings.StubbedModIds.NEXERELIN;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -17,6 +24,11 @@ import static org.mockito.Mockito.verify;
  * <p>The round trip - player, faction, player again - is the case the rest exist around. An
  * ownership rule written as a sequence of additions passes every one-way case and still leaves a
  * colony carrying the last owner's counters, so a direction is only proven by being reversed.
+ *
+ * <p>The counters an installed mod may decide instead are posed through the seam rather than by
+ * installing one, so both branches run on a machine holding whichever mods it happens to hold. What
+ * the mod's own rule then does to a colony is verified in play, that rule being reached only once
+ * the presence gate has passed.
  */
 final class MarketOwnershipTest {
 
@@ -254,6 +266,113 @@ final class MarketOwnershipTest {
                 .isEqualTo("player");
             assertThat(MarketOwnershipFixture.readSubmarketIds(market))
                 .containsExactlyInAnyOrder("local_resources", "storage");
+        }
+
+        @Test
+        void hands_the_counters_to_a_submarket_rule_the_install_supplies() {
+            // A mod running its own diplomacy knows which modded markets trade without a black
+            // market and which faction ships a military counter of its own, so where such a rule is
+            // present it decides the counters whole and none of this library's verdicts apply.
+            var market = MarketOwnershipFixture.buildColonyTradingThrough(
+                Factions.PLAYER,
+                "local_resources");
+
+            var offeredMarket = new AtomicReference<MarketAPI>();
+            var offeredOldOwnerId = new AtomicReference<String>();
+            var offeredNewOwnerId = new AtomicReference<String>();
+
+            MarketOwnership.applyOwnership(
+                market,
+                MarketOwnershipFixture.FACTION_OWNER_ID,
+                (ruleMarket, ruleOldOwnerId, ruleNewOwnerId) -> {
+                    offeredMarket.set(ruleMarket);
+                    offeredOldOwnerId.set(ruleOldOwnerId);
+                    offeredNewOwnerId.set(ruleNewOwnerId);
+                    return true;
+                });
+
+            assertThat(offeredMarket.get())
+                .isSameAs(market);
+            assertThat(offeredNewOwnerId.get())
+                .isEqualTo("hegemony");
+            assertThat(MarketOwnershipFixture.readSubmarketIds(market))
+                .containsExactly("local_resources");
+        }
+
+        @Test
+        void names_the_outgoing_owner_to_the_installed_rule_as_well_as_the_incoming_one() {
+            // A rule may restock the counters only where the colony has actually changed hands, and
+            // the outgoing owner is the only thing that says whether it has - so it is read before
+            // the incoming id lands rather than after, when it is gone.
+            var market = MarketOwnershipFixture.buildColonyHeldBy(
+                MarketOwnershipFixture.FACTION_OWNER_ID);
+
+            var offeredOldOwnerId = new AtomicReference<String>();
+
+            MarketOwnership.applyOwnership(
+                market,
+                Factions.PLAYER,
+                (ruleMarket, ruleOldOwnerId, ruleNewOwnerId) -> {
+                    offeredOldOwnerId.set(ruleOldOwnerId);
+                    return true;
+                });
+
+            assertThat(offeredOldOwnerId.get())
+                .isEqualTo("hegemony");
+        }
+
+        @Test
+        void opens_storage_for_the_player_even_where_the_installed_rule_takes_the_counters() {
+            // Storage is the one counter no owner's rule names, this library's included, so it is
+            // applied whichever rule decided the rest - a colony handed to the player through a
+            // mod's rule would otherwise be left with no hold they can reach.
+            var market = MarketOwnershipFixture.buildColonyHeldBy(
+                MarketOwnershipFixture.FACTION_OWNER_ID);
+
+            MarketOwnership.applyOwnership(
+                market,
+                Factions.PLAYER,
+                (ruleMarket, ruleOldOwnerId, ruleNewOwnerId) -> true);
+
+            assertThat(MarketOwnershipFixture.readSubmarketIds(market))
+                .containsExactly("storage");
+            verify(MarketOwnershipFixture.readStoragePlugin(market))
+                .setPlayerPaidToUnlock(true);
+        }
+
+        @Test
+        void applies_its_own_verdicts_when_the_installed_rule_declines_the_counters() {
+            // The answer on every install without such a mod, so the colony still trades over the
+            // counters its new owner should have.
+            var market = MarketOwnershipFixture.buildColonyTradingThrough(
+                Factions.PLAYER,
+                "local_resources");
+
+            MarketOwnership.applyOwnership(
+                market,
+                MarketOwnershipFixture.FACTION_OWNER_ID,
+                (ruleMarket, ruleOldOwnerId, ruleNewOwnerId) -> false);
+
+            assertThat(MarketOwnershipFixture.readSubmarketIds(market))
+                .containsExactlyInAnyOrder("open_market", "black_market");
+        }
+
+        @Test
+        void applies_its_own_verdicts_through_the_live_binding_when_no_such_mod_is_installed() {
+            // The public entry point rather than the seam beneath it: nothing else here exercises
+            // the rule the library actually binds, and an install without that mod is what the
+            // fallback exists for.
+            var market = MarketOwnershipFixture.buildColonyTradingThrough(
+                Factions.PLAYER,
+                "local_resources");
+
+            ModStateScopes.runWithModEnabled(NEXERELIN, false, () ->
+                MarketOwnership.applyOwnership(
+                    market,
+                    MarketOwnershipFixture.FACTION_OWNER_ID));
+
+            assertThat(MarketOwnershipFixture.readSubmarketIds(market))
+                .containsExactlyInAnyOrder("open_market", "black_market");
         }
 
         @Test
