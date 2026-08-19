@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.map.suppression;
+package kmlib.starsector.ui.suppression;
 
 import com.fs.starfarer.api.EveryFrameScript;
 import com.fs.starfarer.api.Global;
@@ -12,36 +12,35 @@ import org.apache.log4j.Logger;
 import java.util.function.Supplier;
 
 /**
- * Stops a map widget parked off screen from rendering, by writing its own opacity to zero, and puts
- * that opacity back when the widget returns.
+ * Stops a widget parked off screen from rendering, by writing its own opacity to zero, and puts that
+ * opacity back when the widget returns.
  *
- * <p>A map widget that nobody can see still renders a whole sector map every frame, and drives every
- * terrain pass registered in the sector while it does. That costs the work, and it costs more than
- * the work: a hidden pass contributes a transform to a frame that also carries a visible map's, and
- * whichever of the two draws last is the one a cursor read resolves through. A widget rendering
- * nothing contributes no pass, so a frame showing one map carries one transform and there is nothing
- * left to arbitrate.
+ * <p>A widget nobody can see goes on rendering its whole subtree every frame, and everything that
+ * subtree does to the rest of the game happens with it. The work alone is reason enough, and where
+ * the subtree is something the game answers questions from, a hidden one answers them too: a sector
+ * map composited into a panel, say, iterates the sector's terrain and binds a transform of its own,
+ * so a frame that also draws a map the player opened carries two transforms and a cursor read has
+ * to pick between them. A widget rendering nothing contributes neither.
  *
  * <p>Opacity is the lever because it is a real one rather than a fade. The engine's component render
  * multiplies the incoming alpha by the component's own opacity and returns before drawing its
- * subtree once the product reaches zero, so a zeroed widget renders no subtree at all - the map
- * inside it never draws and never iterates terrain.
+ * subtree once the product reaches zero, so a zeroed widget renders no subtree at all.
  *
- * <p><b>Parked means the widget's box does not meet the screen at all.</b> Nothing about how any
- * particular mod parks its panel is read - not resting positions, not step sizes, not which shape
- * setting it was built at - so a panel parked by any arithmetic reads the same way. Partial overlap
- * counts as present, which is what leaves a panel sliding on or off screen alone: those frames were
- * already frames where the player could see part of it.
+ * <p><b>Parked means the widget's box does not meet the screen at all.</b> Nothing about how it got
+ * there is read - not resting positions, not step sizes, not whatever setting sized it - so a widget
+ * parked by any arithmetic reads the same way. Partial overlap counts as present, which is what
+ * leaves a panel sliding on or off screen alone: those frames were already frames where the player
+ * could see part of it.
  *
  * <p><b>The reading is where the widget is, never what shows of it</b>, and the two are different
- * questions here for a reason of this script's own making: the moment it zeroes a map, any read that
- * sifts out widgets drawn to nothing would stop reporting that map - and the box that would say when
- * to restore it is exactly what would be gone. So the position is read straight, whatever the widget
- * is drawn at.
+ * questions here for a reason of this script's own making: the moment it zeroes a widget, any read
+ * that sifts out widgets drawn to nothing would stop reporting that one - and what would say when to
+ * restore it is exactly what would be gone. So the position is read straight, whatever the widget is
+ * drawn at.
  *
  * <p>Which widget may be suppressed at all is a port, asked afresh every frame and free to answer
- * nothing. A widget belongs to whoever built it, so suppressing one is a decision about another
- * mod's screen that only the caller can take - and answering nothing is how that caller withdraws
+ * nothing. A widget belongs to whoever built it, so suppressing one is a decision about somebody
+ * else's screen that only the caller can take - and answering nothing is how that caller withdraws
  * the decision, which restores the widget on the next frame rather than at the next rebuild.
  *
  * <p>The opacity put back is the one the widget carried when it went off screen rather than a flat
@@ -60,14 +59,14 @@ import java.util.function.Supplier;
  * must not take the campaign's frame with it; a failure is recorded once and the widget left as it
  * stands.
  */
-public final class OffScreenMapSuppressor implements EveryFrameScript {
+public final class OffScreenWidgetSuppressor implements EveryFrameScript {
 
-    private static final Logger LOG = Global.getLogger(OffScreenMapSuppressor.class);
+    private static final Logger LOG = Global.getLogger(OffScreenWidgetSuppressor.class);
 
     // Drawn to nothing, which is what makes the engine return before rendering the subtree.
     private static final float SUPPRESSED_OPACITY = 0f;
 
-    private final Supplier<UIComponentAPI> findSuppressibleMap;
+    private final Supplier<UIComponentAPI> findSuppressibleWidget;
     private final Supplier<Rectangle> readScreenBox;
 
     // One-shot guard: this runs every frame, so a recurring fault would flood the log.
@@ -75,27 +74,27 @@ public final class OffScreenMapSuppressor implements EveryFrameScript {
 
     // What the suppressed widget was drawn at before it was suppressed, held beside the widget it
     // was read from. Meaningless without that widget, which is why nothing reads it while
-    // suppressedMap is null.
+    // suppressedWidget is null.
     private float opacityBeforeSuppression;
 
     // The widget this has written to, or null while it has written to none. Identity is the whole of
     // what it is compared by: two widgets are the same one only by being the same object, and a
     // core-UI widget's equals is the obfuscated class's business.
-    private UIComponentAPI suppressedMap;
+    private UIComponentAPI suppressedWidget;
 
     /**
-     * @param findSuppressibleMap the map widget this may switch off, or null for none - asked
-     *                            afresh every frame, since which widget is suppressible is the
-     *                            caller's decision and one it may withdraw
-     * @param readScreenBox       the screen the widget's box is compared against, in the UI units
-     *                            that box is laid out in; {@link VanillaScreenBox} answers it for a
-     *                            running game
+     * @param findSuppressibleWidget the widget this may switch off, or null for none - asked afresh
+     *                               every frame, since which widget is suppressible is the caller's
+     *                               decision and one it may withdraw
+     * @param readScreenBox          the screen the widget's box is compared against, in the UI units
+     *                               that box is laid out in; {@link VanillaScreenBox} answers it for
+     *                               a running game
      */
-    public OffScreenMapSuppressor(
-            Supplier<UIComponentAPI> findSuppressibleMap,
+    public OffScreenWidgetSuppressor(
+            Supplier<UIComponentAPI> findSuppressibleWidget,
             Supplier<Rectangle> readScreenBox) {
 
-        this.findSuppressibleMap = findSuppressibleMap;
+        this.findSuppressibleWidget = findSuppressibleWidget;
         this.readScreenBox = readScreenBox;
     }
 
@@ -119,7 +118,7 @@ public final class OffScreenMapSuppressor implements EveryFrameScript {
         } catch (RuntimeException exception) {
             if (!hasLoggedSuppressionError) {
                 hasLoggedSuppressionError = true;
-                LOG.error("Could not suppress or restore an off-screen map widget; it is left as it "
+                LOG.error("Could not suppress or restore an off-screen widget; it is left as it "
                     + "stands for the rest of this session.", exception);
             }
         }
@@ -127,31 +126,31 @@ public final class OffScreenMapSuppressor implements EveryFrameScript {
 
     private void applySuppression() {
 
-        var map = findSuppressibleMap.get();
+        var widget = findSuppressibleWidget.get();
 
         // Any change of widget ends the suppression being held, the widget going away entirely
         // included: the opacity kept is that widget's own, so it goes back to that widget and to
         // nothing else. A widget its owner has since rebuilt is written to for nothing, which costs
         // one field on an object nobody draws.
-        if (map != suppressedMap) {
-            restoreSuppressedMap();
+        if (widget != suppressedWidget) {
+            restoreSuppressedWidget();
         }
-        if (map == null) {
+        if (widget == null) {
             return;
         }
-        if (isMapOnScreen(map)) {
-            restoreSuppressedMap();
+        if (isWidgetOnScreen(widget)) {
+            restoreSuppressedWidget();
             return;
         }
-        suppressMap(map);
+        suppressWidget(widget);
     }
 
     // Whether any part of the widget stands on the screen. A widget the layout never placed answers
     // yes, which is this script failing open: nothing can say a widget is parked without a box to
-    // say it of, and leaving a map drawn is the state the caller had before this ran.
-    private boolean isMapOnScreen(UIComponentAPI map) {
+    // say it of, and leaving it drawn is the state the caller had before this ran.
+    private boolean isWidgetOnScreen(UIComponentAPI widget) {
 
-        var position = map.getPosition();
+        var position = widget.getPosition();
         if (position == null) {
             return true;
         }
@@ -160,38 +159,38 @@ public final class OffScreenMapSuppressor implements EveryFrameScript {
 
     // Writes the widget down to nothing, and remembers what it was drawn at the first time. The
     // write repeats for as long as the widget stays parked, so an opacity its owner sets in the
-    // meantime is answered on the next frame rather than leaving a hidden map rendering again; only
-    // the reading is not repeated, a second one landing on this script's own zero.
-    private void suppressMap(UIComponentAPI map) {
+    // meantime is answered on the next frame rather than leaving a hidden widget rendering again;
+    // only the reading is not repeated, a second one landing on this script's own zero.
+    private void suppressWidget(UIComponentAPI widget) {
 
-        if (suppressedMap != map) {
-            opacityBeforeSuppression = map.getOpacity();
-            suppressedMap = map;
+        if (suppressedWidget != widget) {
+            opacityBeforeSuppression = widget.getOpacity();
+            suppressedWidget = widget;
 
-            LOG.debug("Off-screen map suppression: " + describeMap(map)
+            LOG.debug("Off-screen widget suppression: " + describeWidget(widget)
                 + " is parked off screen, so its opacity is held at zero and it renders nothing");
         }
-        map.setOpacity(SUPPRESSED_OPACITY);
+        widget.setOpacity(SUPPRESSED_OPACITY);
     }
 
     // Hands the widget back the opacity it had, and forgets it. A no-op while nothing is suppressed,
     // which is most frames.
-    private void restoreSuppressedMap() {
+    private void restoreSuppressedWidget() {
 
-        if (suppressedMap == null) {
+        if (suppressedWidget == null) {
             return;
         }
-        suppressedMap.setOpacity(opacityBeforeSuppression);
+        suppressedWidget.setOpacity(opacityBeforeSuppression);
 
-        LOG.debug("Off-screen map suppression: " + describeMap(suppressedMap)
+        LOG.debug("Off-screen widget suppression: " + describeWidget(suppressedWidget)
             + " is back, so its opacity returns to " + opacityBeforeSuppression);
 
-        suppressedMap = null;
+        suppressedWidget = null;
     }
 
     // Names the widget by its class, which is what a reader can match against a tree trace. There is
     // no id on a core-UI widget to name it by.
-    private static String describeMap(UIComponentAPI map) {
-        return map.getClass().getSimpleName();
+    private static String describeWidget(UIComponentAPI widget) {
+        return widget.getClass().getSimpleName();
     }
 }

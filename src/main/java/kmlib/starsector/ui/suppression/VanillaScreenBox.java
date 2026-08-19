@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.map.suppression;
+package kmlib.starsector.ui.suppression;
 
 import com.fs.starfarer.api.Global;
 
