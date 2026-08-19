@@ -8,6 +8,8 @@ import com.fs.starfarer.api.impl.campaign.ids.Conditions;
 import com.fs.starfarer.api.impl.campaign.ids.Factions;
 import com.fs.starfarer.api.impl.campaign.ids.Industries;
 
+import kmlib.starsector.nexerelin.NexerelinColoniser;
+
 /**
  * Founding a colony on a body that so far carries only survey data.
  *
@@ -22,6 +24,11 @@ import com.fs.starfarer.api.impl.campaign.ids.Industries;
  * ends up holding the place, so what they share is {@link #foundColony} and what they differ
  * over is {@link MarketOwnership#applyOwnership}. Neither owner's sequence is written out in
  * full here, which is what keeps the two from drifting apart.
+ *
+ * <p>All of which is what founding a colony means where nothing else has an opinion about it. An
+ * install running a mod with a colonisation of its own hands that mod the whole founding instead,
+ * since a colony there has to be the shape the rest of that mod expects - see
+ * {@link #establishColony}.
  *
  * <p>Final class with a private constructor: pure-function utility, no instance state, and
  * null-defensive like the rest of the library.
@@ -41,6 +48,13 @@ public final class MarketColoniser {
     // inhabited, and the game asks for them on every colony founded on a fresh body - the one
     // routine that declines them is re-registering markets that were already lived in.
     private static final boolean WITH_ORBITAL_JUNK_AND_CHATTER = true;
+
+    // The colonisation routine this install supplies, offered every founding before the sequence
+    // below is composed. Bound to the one mod this library knows how to defer to, and reached
+    // through the seam rather than named at the call site so the branch can be posed both ways
+    // under test - an install whose mod takes the founding, and one where nothing does.
+    private static final ColonisationRoutine INSTALLED_COLONISATION_ROUTINE =
+        NexerelinColoniser::establishColony;
 
     private MarketColoniser() {
         // utility class, no instances.
@@ -135,6 +149,11 @@ public final class MarketColoniser {
      * a colony founded on a planet, that being what the report carries - a colony founded on
      * anything else is founded silently rather than refused.
      *
+     * <p>Where the install runs a mod with a colonisation of its own, that mod founds the colony
+     * and none of the above happens: a colony on such an install has to be the shape that mod
+     * builds, which nothing can arrange after the fact. What a caller is promised either way is a
+     * colony founded under the owner it named, not the particular sequence that produced it.
+     *
      * @param sector    the sector whose economy the colony is registered with; null, or a sector
      *                  with no economy, leaves the market alone
      * @param market    the survey data to found on; null, or a market that is already a colony,
@@ -144,12 +163,32 @@ public final class MarketColoniser {
      *                  colony
      */
     public static void establishColony(SectorAPI sector, MarketAPI market, String factionId) {
+        establishColony(sector, market, factionId, INSTALLED_COLONISATION_ROUTINE);
+    }
+
+    // The same founding against a stated routine rather than the installed one, which is what lets
+    // both branches be posed on a machine that has whichever mods it happens to have.
+    static void establishColony(
+            SectorAPI sector,
+            MarketAPI market,
+            String factionId,
+            ColonisationRoutine colonisationRoutine) {
 
         // The founding conditions are asked before the owner is applied, not only inside the
         // founding that follows: an owner applied to a market that then cannot be founded would
         // leave survey data flying a flag and trading over counters, holding an ownership change
-        // that no colony was ever built under.
+        // that no colony was ever built under. They are asked before the routine below is offered
+        // the founding too, so a market this library would refuse is not one a mod is handed.
         if (factionId == null || !canFoundColony(sector, market)) {
+            return;
+        }
+
+        // A mod that founds its own colonies takes the whole founding rather than having this
+        // sequence run under it, so a colony on that install is the shape the rest of that mod
+        // expects to find. A routine that declines leaves the market untouched for the sequence
+        // below - which is the answer on every install without such a mod, and on a body its
+        // routine cannot found on.
+        if (colonisationRoutine.establishColony(sector, market, factionId)) {
             return;
         }
 

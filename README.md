@@ -158,6 +158,9 @@ src/main/java/kmlib/
                      and the campaign-minimap role answered for its mini-map
     relation/      - player relationship formatting
     scripts/       - sector script registration helpers
+    settings/      - the game's own settings: whether a mod is enabled,
+                     answered the same way for every optional-mod gate
+                     and answering "not installed" before the game is up
     strings/       - defensive wrapper around settings.json
                      localisation lookups (loud REDACTED on missing /
                      malformed entries), plus the number-to-copy

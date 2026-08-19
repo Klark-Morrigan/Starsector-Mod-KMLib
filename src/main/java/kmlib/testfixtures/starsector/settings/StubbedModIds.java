@@ -20,6 +20,9 @@ package kmlib.testfixtures.starsector.settings;
  */
 public final class StubbedModIds {
 
+    /** Nexerelin, whose own colonisation KMLib hands a founding to rather than composing one. */
+    public static final String NEXERELIN = "nexerelin";
+
     /** Random Assortment of Things, whose Abyssal Fracture and mini-map KMLib both read. */
     public static final String RANDOM_ASSORTMENT_OF_THINGS = "assortment_of_things";
 

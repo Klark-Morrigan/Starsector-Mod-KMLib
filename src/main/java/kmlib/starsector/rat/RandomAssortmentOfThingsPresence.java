@@ -1,6 +1,6 @@
 package kmlib.starsector.rat;
 
-import com.fs.starfarer.api.Global;
+import kmlib.starsector.settings.ModPresence;
 
 /**
  * Whether Random Assortment of Things is enabled this run - the gate every read of that mod
@@ -11,8 +11,9 @@ import com.fs.starfarer.api.Global;
  * a settings read that logs loudly on an unknown mod id from being made at all. A mod that renames
  * its id, or a guard that turns out to be needed, is then one edit rather than one per reader.
  *
- * <p>Fails to "not enabled" while the game's settings are not stood up, which is the answer that
- * leaves every caller behaving as it does on an install without the mod.
+ * <p>What is left here is the id and the name for it. How the mod set is asked, and what a read
+ * taken before the game has stood one up answers, is {@link ModPresence}'s - the same manner of
+ * asking every optional-mod gate in the library uses.
  */
 final class RandomAssortmentOfThingsPresence {
 
@@ -22,12 +23,6 @@ final class RandomAssortmentOfThingsPresence {
     }
 
     static boolean isModEnabled() {
-
-        var settings = Global.getSettings();
-
-        if (settings == null || settings.getModManager() == null) {
-            return false;
-        }
-        return settings.getModManager().isModEnabled(MOD_ID);
+        return ModPresence.isModEnabled(MOD_ID);
     }
 }

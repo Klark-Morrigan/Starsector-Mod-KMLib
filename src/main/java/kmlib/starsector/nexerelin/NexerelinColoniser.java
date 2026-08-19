@@ -33,9 +33,10 @@ import exerelin.campaign.intel.colony.ColonyExpeditionIntel;
  * {@link NexerelinTypes} holder, which the classloader does not resolve until the presence gate has
  * passed. That keeps an install without the mod from ever seeking a class it does not have.
  *
- * <p>Nothing here names a type of this library's own. The routine is wrapped as the mod states it,
- * and which of the two colonisation paths an install takes is decided where the choice belongs -
- * beside the composed sequence that is the other half of it.
+ * <p>Nothing outside this package is named here. The routine is wrapped as the mod states it, and
+ * which of the two colonisation paths an install takes is decided where that choice belongs -
+ * beside the composed sequence that is the other half of it - so the two sides depend on this one
+ * rather than on each other.
  */
 public final class NexerelinColoniser {
 
@@ -70,40 +71,36 @@ public final class NexerelinColoniser {
      */
     public static boolean establishColony(SectorAPI sector, MarketAPI market, String factionId) {
 
-        if (!canEstablishColony(sector, market, factionId)) {
+        // The presence gate is asked first and alone, so an install without the mod reads nothing
+        // else and never reaches the holder below.
+        if (!NexerelinPresence.isModEnabled()) {
             return false;
         }
 
-        NexerelinTypes.createColony(
-            market,
-            (PlanetAPI) market.getPrimaryEntity(),
-            sector.getFaction(factionId),
-            Factions.PLAYER.equals(factionId));
+        if (sector == null || market == null || factionId == null) {
+            return false;
+        }
+
+        // The body has to be a planet: the routine dereferences it to rename a world still carrying
+        // its star system's name, and to read the system that name came from. A colonisable market
+        // whose body is something else - which a modded body can be - is a decline rather than a
+        // crash, and the caller founds the colony itself.
+        if (!(market.getPrimaryEntity() instanceof PlanetAPI planet)) {
+            return false;
+        }
+
+        // The faction is looked up rather than passed on as an id: the routine reads that mod's
+        // own configuration and tariffs off the faction object, so an id the sector does not know
+        // is a decline rather than a founding that dies partway through.
+        var faction = sector.getFaction(factionId);
+
+        if (faction == null) {
+            return false;
+        }
+
+        NexerelinTypes.createColony(market, planet, faction, Factions.PLAYER.equals(factionId));
 
         return true;
-    }
-
-    // What the mod's routine needs before it is worth calling. The presence gate comes first, so an
-    // install without the mod asks nothing else and never reaches the holder below.
-    //
-    // The body has to be a planet: the routine dereferences it to rename a world still carrying its
-    // star system's name, and to read the system that name came from. A colonisable market whose
-    // body is something else - which modded bodies can be - is a decline rather than a crash, and
-    // the caller founds the colony itself.
-    //
-    // The faction has to resolve for the same reason: the routine reads its settings and its
-    // tariffs off the faction object rather than off an id.
-    private static boolean canEstablishColony(
-            SectorAPI sector,
-            MarketAPI market,
-            String factionId) {
-
-        return NexerelinPresence.isModEnabled()
-            && sector != null
-            && market != null
-            && market.getPrimaryEntity() instanceof PlanetAPI
-            && factionId != null
-            && sector.getFaction(factionId) != null;
     }
 
     // Isolates the only reference to a Nexerelin type. The classloader resolves this holder on

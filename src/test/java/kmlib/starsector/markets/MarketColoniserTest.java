@@ -8,11 +8,15 @@ import com.fs.starfarer.api.impl.campaign.ids.Conditions;
 import com.fs.starfarer.api.impl.campaign.ids.Factions;
 import com.fs.starfarer.api.impl.campaign.ids.Industries;
 
+import kmlib.testfixtures.starsector.settings.ModStateScopes;
+
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+
+import static kmlib.testfixtures.starsector.settings.StubbedModIds.NEXERELIN;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -430,6 +434,25 @@ final class MarketColoniserTest {
                 .isFalse();
             assertThat(market.getFactionId())
                 .isEqualTo(MarketColonisationFixture.FACTION_OWNER_ID);
+            verify(economy)
+                .addMarket(market, WITH_ORBITAL_JUNK_AND_CHATTER);
+        }
+
+        @Test
+        void founds_the_colony_itself_through_the_live_binding_when_no_such_mod_is_installed() {
+            // The public entry point rather than the seam beneath it: nothing else here exercises
+            // the routine the library actually binds, and an install without that mod is what the
+            // fallback exists for.
+            var market = MarketColonisationFixture.buildColonisableWorld();
+
+            ModStateScopes.runWithModEnabled(NEXERELIN, false, () ->
+                MarketColoniser.establishColony(
+                    sector,
+                    market,
+                    MarketColonisationFixture.FACTION_OWNER_ID));
+
+            assertThat(market.isPlanetConditionMarketOnly())
+                .isFalse();
             verify(economy)
                 .addMarket(market, WITH_ORBITAL_JUNK_AND_CHATTER);
         }
