@@ -2,6 +2,11 @@ package kmlib.starsector.systems;
 
 import com.fs.starfarer.api.campaign.SectorAPI;
 
+import kmlib.starsector.colonies.Colonies;
+import kmlib.starsector.colonies.Colony;
+import kmlib.starsector.colonies.ColonyFixture;
+import kmlib.starsector.colonies.SystemColonies;
+
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -16,7 +21,7 @@ import static org.mockito.Mockito.verify;
  * the index answers exactly what the direct read answers, that it pays for a system's walk once
  * however it is asked, and that it names the sector it answers out of. Each method's
  * cases live in a {@link Nested} group so the suite reports as a per-method tree; the world they
- * are posed against is {@link SystemColonyFixture}, shared with the direct read's suite - which
+ * are posed against is {@link ColonyFixture}, shared with the direct read's suite - which
  * is what lets the two answers be compared at all.
  */
 final class SystemColoniesIndexTest {
@@ -28,7 +33,7 @@ final class SystemColoniesIndexTest {
         void names_the_sector_the_index_was_opened_over() {
             // A caller holding an index holds no sector beside it, so the index has to be able to
             // name the one its answers came out of.
-            var fixture = new SystemColonyFixture("galatia");
+            var fixture = new ColonyFixture("galatia");
 
             assertThat(new SystemColoniesIndex(fixture.getSector()).getSector())
                 .isSameAs(fixture.getSector());
@@ -50,7 +55,7 @@ final class SystemColoniesIndexTest {
         void answers_a_system_exactly_as_the_direct_read_does() {
             // The whole point of the index is that a reader handed it is not reading anything
             // narrower than a reader handed the sector, so the two answers have to be the same.
-            var fixture = new SystemColonyFixture("galatia");
+            var fixture = new ColonyFixture("galatia");
             var listedColony = fixture.buildVisibleColony("independent");
             var unlistedColony = fixture.buildVisibleColony("independent");
 
@@ -83,7 +88,7 @@ final class SystemColoniesIndexTest {
             // There is nothing to key the memo on, so the walk is paid again - which is the
             // honest price of an unkeyable system, pooling every one of them under a shared key
             // being the alternative, and that hands one system's colonies to another.
-            var fixture = new SystemColonyFixture(null);
+            var fixture = new ColonyFixture(null);
             var colony = fixture.buildVisibleColony("hegemony");
 
             fixture.placeColoniesInSystem(colony);
@@ -92,7 +97,7 @@ final class SystemColoniesIndexTest {
             var index = new SystemColoniesIndex(fixture.getSector());
 
             assertThat(index.readColoniesIn(fixture.getSystem()).colonies())
-                .containsExactly(new SystemColony(colony, true));
+                .containsExactly(new Colony(colony, true));
 
             index.readColoniesIn(fixture.getSystem());
 
@@ -102,7 +107,7 @@ final class SystemColoniesIndexTest {
         @Test
         void yields_nothing_for_a_null_system() {
             assertThat(new SystemColoniesIndex(mock(SectorAPI.class)).readColoniesIn(null))
-                .isEqualTo(SystemColonies.NONE);
+                .isEqualTo(Colonies.NONE);
         }
 
         @Test
@@ -111,7 +116,7 @@ final class SystemColoniesIndexTest {
             var fixture = buildCorvusHoldingOneColony();
 
             assertThat(new SystemColoniesIndex(null).readColoniesIn(fixture.getSystem()))
-                .isEqualTo(SystemColonies.NONE);
+                .isEqualTo(Colonies.NONE);
         }
     }
 
@@ -121,7 +126,7 @@ final class SystemColoniesIndexTest {
         @Test
         void answers_the_system_carrying_that_id() {
 
-            var fixture = new SystemColonyFixture("corvus");
+            var fixture = new ColonyFixture("corvus");
             var colony = fixture.buildVisibleColony("hegemony");
 
             fixture.placeColoniesInSystem(colony);
@@ -130,7 +135,7 @@ final class SystemColoniesIndexTest {
             assertThat(new SystemColoniesIndex(fixture.getSector())
                     .readColoniesById("corvus")
                     .colonies())
-                .containsExactly(new SystemColony(colony, true));
+                .containsExactly(new Colony(colony, true));
         }
 
         @Test
@@ -152,7 +157,7 @@ final class SystemColoniesIndexTest {
             var fixture = buildCorvusHoldingOneColony();
 
             assertThat(new SystemColoniesIndex(fixture.getSector()).readColoniesById("askonia"))
-                .isEqualTo(SystemColonies.NONE);
+                .isEqualTo(Colonies.NONE);
         }
 
         @Test
@@ -172,15 +177,15 @@ final class SystemColoniesIndexTest {
         @Test
         void yields_nothing_for_a_blank_id() {
             assertThat(new SystemColoniesIndex(mock(SectorAPI.class)).readColoniesById(" "))
-                .isEqualTo(SystemColonies.NONE);
+                .isEqualTo(Colonies.NONE);
         }
     }
 
     // The plainest system the index can be posed with: one ordinary colony, both sited and
     // listed, for the cases about how often a walk is paid rather than about what it finds.
-    private static SystemColonyFixture buildCorvusHoldingOneColony() {
+    private static ColonyFixture buildCorvusHoldingOneColony() {
 
-        var fixture = new SystemColonyFixture("corvus");
+        var fixture = new ColonyFixture("corvus");
         var colony = fixture.buildVisibleColony("hegemony");
 
         fixture.placeColoniesInSystem(colony);

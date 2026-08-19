@@ -3,6 +3,8 @@ package kmlib.starsector.systems;
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 
+import kmlib.starsector.colonies.Colonies;
+import kmlib.starsector.colonies.SystemColonies;
 import kmlib.text.KmlibStrings;
 
 import java.util.HashMap;
@@ -30,7 +32,7 @@ import java.util.Map;
  */
 public final class SystemColoniesIndex {
 
-    private final Map<String, SystemColonies> coloniesBySystemId = new HashMap<>();
+    private final Map<String, Colonies> coloniesBySystemId = new HashMap<>();
     private final SectorAPI sector;
 
     // Built on the first ask made by id alone, and only then: a pass that always asks with the
@@ -64,13 +66,13 @@ public final class SystemColoniesIndex {
     /**
      * The colonies in {@code system}, walked on the first ask and remembered thereafter.
      *
-     * @param system the system to read; null yields {@link SystemColonies#NONE}
+     * @param system the system to read; null yields {@link Colonies#NONE}
      * @return the system's colony set
      */
-    public SystemColonies readColoniesIn(StarSystemAPI system) {
+    public Colonies readColoniesIn(StarSystemAPI system) {
 
         if (system == null) {
-            return SystemColonies.NONE;
+            return Colonies.NONE;
         }
         var systemId = system.getId();
 
@@ -93,13 +95,13 @@ public final class SystemColoniesIndex {
      * {@link #readColoniesIn} is never walked again for having been asked about the other way.
      *
      * @param systemId the system id, as {@code StarSystemAPI#getId} reports it; null or blank
-     *                 yields {@link SystemColonies#NONE}
-     * @return the system's colony set, or {@link SystemColonies#NONE} when no system has that id
+     *                 yields {@link Colonies#NONE}
+     * @return the system's colony set, or {@link Colonies#NONE} when no system has that id
      */
-    public SystemColonies readColoniesById(String systemId) {
+    public Colonies readColoniesById(String systemId) {
 
         if (!KmlibStrings.hasText(systemId)) {
-            return SystemColonies.NONE;
+            return Colonies.NONE;
         }
         var memoisedColonies = coloniesBySystemId.get(systemId);
 

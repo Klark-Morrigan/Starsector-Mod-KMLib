@@ -1,0 +1,119 @@
+package kmlib.starsector.markets;
+
+import com.fs.starfarer.api.campaign.LocationAPI;
+import com.fs.starfarer.api.campaign.SectorAPI;
+import com.fs.starfarer.api.campaign.econ.MarketAPI;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Finding the markets that sit in one place, whatever kind of place it is.
+ *
+ * <p>The search underneath every "what is in here" read. A market sits in a location - a star
+ * system, or hyperspace - and neither half of finding one is system-specific: the economy is
+ * asked per location, and the entities hung with markets are a location's own. Stating the
+ * search once here leaves the star-system and hyperspace readers above it as the thin,
+ * separately-named things they should be, rather than one read taking a kind of place as an
+ * argument and each caller having to know which kinds are legal.
+ *
+ * <p>Final class with a private constructor: pure-function utility, no instance state, and
+ * null-defensive like the rest of the library.
+ */
+public final class LocationMarkets {
+
+    private LocationMarkets() {
+        // utility class, no instances.
+    }
+
+    /**
+     * The markets the economy places in {@code location}, in the order it lists them.
+     *
+     * <p>A location does not hold its own markets - the economy owns that mapping - so every
+     * "what is in here" read has to go through the sector. Centralised so callers share one
+     * traversal, and so an unreachable economy is handled once: outside a running game (or
+     * before the economy exists) the read yields an empty list rather than throwing, which
+     * reads as an empty place.
+     *
+     * <p>Economy order is preserved and load-bearing for some callers: vanilla's own claim
+     * mechanic settles a tied contest on whichever market it meets first, so a caller mirroring
+     * that rule depends on this order being the economy's, not one imposed here.
+     *
+     * @param sector   the sector whose economy is read; null (or a null economy) yields an
+     *                 empty list
+     * @param location the location to read; null yields an empty list
+     * @return the location's markets in economy order; never null
+     */
+    public static List<MarketAPI> readMarkets(SectorAPI sector, LocationAPI location) {
+        if (sector == null || location == null || sector.getEconomy() == null) {
+            return List.of();
+        }
+        var markets = sector.getEconomy().getMarkets(location);
+        return markets == null ? List.of() : markets;
+    }
+
+    /**
+     * The markets hung on {@code location}'s own entities that the economy does not list, in
+     * entity order - what {@link #readMarkets} cannot see, and nothing it can.
+     *
+     * <p>A colony can sit on a real entity, owned by a real faction, and never be registered
+     * with the economy - vanilla builds Galatia Academy that way on purpose. A caller
+     * <em>describing</em> what is in a place has to see it, or it reports a station flying a
+     * faction's colours as belonging to nobody. A caller <em>computing</em> a mechanic vanilla
+     * feeds off the economy must not, which is why this is a second read rather than a widening
+     * of {@link #readMarkets}: that one's "the economy's list, in the economy's order" contract
+     * is what a mirrored mechanic depends on.
+     *
+     * <p>Answering only what the economy leaves out, rather than the whole of what is present,
+     * is what leaves a caller that needs both able to tell them apart by which read they came
+     * from. A combined answer would have every such caller re-deriving that split against the
+     * economy's list, which is a second implementation of the very comparison made here.
+     *
+     * <p>Sameness is the market object itself first and {@link Markets#isSamePlaceAndOwner}
+     * after, taken against the economy's markets and against the ones already found, so a mod
+     * hanging its own market beside vanilla's on one station yields nothing here rather than a
+     * duplicate of the colony the economy already lists.
+     *
+     * @param sector   the sector whose economy is read; null (or a null economy) yields an empty
+     *                 list - with no economy to compare against there is no telling a listed
+     *                 market from an unlisted one
+     * @param location the location to read; null yields an empty list
+     * @return the location's markets the economy does not list, in entity order; never null
+     */
+    public static List<MarketAPI> readMarketsUnlistedByEconomy(
+            SectorAPI sector,
+            LocationAPI location) {
+
+        if (sector == null || location == null || sector.getEconomy() == null) {
+            return List.of();
+        }
+        // Seeded with the economy's own markets so one scan answers both halves of sameness - a
+        // market the economy lists, and one an earlier entity already yielded - then dropped from
+        // the answer, the caller having read those from the economy itself.
+        var listedMarkets = readMarkets(sector, location);
+        var seenMarkets = new ArrayList<>(listedMarkets);
+        var unlistedMarkets = new ArrayList<MarketAPI>();
+
+        for (var entity : location.getAllEntities()) {
+            var market = entity == null ? null : entity.getMarket();
+
+            if (market != null && !isAlreadyPresent(seenMarkets, market)) {
+                seenMarkets.add(market);
+                unlistedMarkets.add(market);
+            }
+        }
+        return unlistedMarkets;
+    }
+
+    // Whether one of the markets already found stands for the same colony under the same owner,
+    // which is what makes a mod's supplementary market on a listed station not a second colony.
+    private static boolean isAlreadyPresent(List<MarketAPI> presentMarkets, MarketAPI market) {
+
+        for (var present : presentMarkets) {
+            if (Markets.isSamePlaceAndOwner(present, market)) {
+                return true;
+            }
+        }
+        return false;
+    }
+}

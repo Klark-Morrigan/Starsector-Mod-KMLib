@@ -1,8 +1,7 @@
-package kmlib.starsector.systems;
+package kmlib.starsector.colonies;
 
 import com.fs.starfarer.api.campaign.LocationAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
-import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.campaign.econ.EconomyAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
@@ -22,19 +21,15 @@ import static org.mockito.Mockito.when;
  * group so the suite reports as a per-method tree.
  *
  * <p>What is under test here is the walk - which locations it reaches and in what order - and
- * little else. What counts as a colony in one location belongs to {@link SystemColonies} and is
+ * little else. What counts as a colony in one location belongs to {@link Colonies} and is
  * pinned by its own suite; one case is posed here only to show the selection is inherited from
  * it rather than re-derived.
  *
- * <p>Colonies are built through {@link SystemColonyFixture}, so a colony posed here is the same
- * shape as one posed against the colony set. The sector is not: this suite needs one spanning
- * several locations, which the single-system fixture cannot express.
+ * <p>Colonies are built through {@link ColonyMarketFixture}, so a colony posed here is the same
+ * shape as one posed against a single location's set. The world is this suite's own: a sector
+ * spanning several locations, which the single-system fixture cannot express.
  */
 final class SectorColoniesTest {
-
-    // Used for its colony builders alone. The system and sector it opens go unread - this suite
-    // poses its own sector, and a colony's shape is all that is wanted from here.
-    private final SystemColonyFixture colonies = new SystemColonyFixture("unused");
 
     @Nested
     class ReadColonies {
@@ -43,45 +38,46 @@ final class SectorColoniesTest {
         void yields_every_star_system_s_colonies_in_the_sector_s_own_order() {
 
             var sector = new SectorFixture();
-            var jangala = colonies.buildVisibleColony("hegemony");
-            var kazeron = colonies.buildVisibleColony("persean");
+            var jangala = ColonyMarketFixture.buildVisibleColony("hegemony");
+            var kazeron = ColonyMarketFixture.buildVisibleColony("persean");
 
             sector.addSystemHolding(jangala);
             sector.addSystemHolding(kazeron);
 
             assertThat(SectorColonies.readColonies(sector.getSector()))
                 .containsExactly(
-                    new SystemColony(jangala, true),
-                    new SystemColony(kazeron, true));
+                    new Colony(jangala, true),
+                    new Colony(kazeron, true));
         }
 
         @Test
         void yields_the_colonies_sitting_in_hyperspace() {
             // Vanilla builds none, but mods put markets out there, and getStarSystems() does not
             // reach them - so a walk that only looped the systems would drop them silently.
+            // What hyperspace itself yields is HyperspaceColoniesTest's; this is the composition.
             var sector = new SectorFixture();
-            var deepSpaceStation = colonies.buildVisibleColony("independent");
+            var deepSpaceStation = ColonyMarketFixture.buildVisibleColony("independent");
 
             sector.setHyperspaceHolding(deepSpaceStation);
 
             assertThat(SectorColonies.readColonies(sector.getSector()))
-                .containsExactly(new SystemColony(deepSpaceStation, true));
+                .containsExactly(new Colony(deepSpaceStation, true));
         }
 
         @Test
         void yields_hyperspace_s_colonies_after_every_system_s() {
 
             var sector = new SectorFixture();
-            var jangala = colonies.buildVisibleColony("hegemony");
-            var deepSpaceStation = colonies.buildVisibleColony("independent");
+            var jangala = ColonyMarketFixture.buildVisibleColony("hegemony");
+            var deepSpaceStation = ColonyMarketFixture.buildVisibleColony("independent");
 
             sector.addSystemHolding(jangala);
             sector.setHyperspaceHolding(deepSpaceStation);
 
             assertThat(SectorColonies.readColonies(sector.getSector()))
                 .containsExactly(
-                    new SystemColony(jangala, true),
-                    new SystemColony(deepSpaceStation, true));
+                    new Colony(jangala, true),
+                    new Colony(deepSpaceStation, true));
         }
 
         @Test
@@ -89,25 +85,25 @@ final class SectorColoniesTest {
             // The condition-only market a bare planet carries is rejected by the colony set's
             // ownership rule. Its absence here is the tell that the walk goes through the set.
             var sector = new SectorFixture();
-            var jangala = colonies.buildVisibleColony("hegemony");
-            var barePlanet = colonies.buildConditionOnlyMarket();
+            var jangala = ColonyMarketFixture.buildVisibleColony("hegemony");
+            var barePlanet = ColonyMarketFixture.buildConditionOnlyMarket();
 
             sector.addSystemHolding(jangala, barePlanet);
 
             assertThat(SectorColonies.readColonies(sector.getSector()))
-                .containsExactly(new SystemColony(jangala, true));
+                .containsExactly(new Colony(jangala, true));
         }
 
         @Test
         void yields_the_systems_colonies_for_a_sector_with_no_hyperspace() {
 
             var sector = new SectorFixture();
-            var jangala = colonies.buildVisibleColony("hegemony");
+            var jangala = ColonyMarketFixture.buildVisibleColony("hegemony");
 
             sector.addSystemHolding(jangala);
 
             assertThat(SectorColonies.readColonies(sector.getSector()))
-                .containsExactly(new SystemColony(jangala, true));
+                .containsExactly(new Colony(jangala, true));
         }
 
         @Test
@@ -117,15 +113,18 @@ final class SectorColoniesTest {
         }
 
         @Test
-        void yields_nothing_for_a_sector_with_no_star_systems() {
+        void still_reads_hyperspace_for_a_sector_listing_no_systems() {
+            // The two are separate places, so an unreadable system list says nothing about
+            // hyperspace - and treating it as "the sector holds nothing" would drop exactly the
+            // colonies this read exists to catch.
+            var sector = new SectorFixture();
+            var deepSpaceStation = ColonyMarketFixture.buildVisibleColony("independent");
 
-            var sectorMock = mock(SectorAPI.class);
+            sector.setHyperspaceHolding(deepSpaceStation);
+            sector.listNoStarSystems();
 
-            when(sectorMock.getStarSystems())
-                .thenReturn(null);
-
-            assertThat(SectorColonies.readColonies(sectorMock))
-                .isEmpty();
+            assertThat(SectorColonies.readColonies(sector.getSector()))
+                .containsExactly(new Colony(deepSpaceStation, true));
         }
 
         @Test
@@ -166,6 +165,14 @@ final class SectorColoniesTest {
             return sectorMock;
         }
 
+        // A sector that cannot answer for its systems at all - the malformed shape that must not
+        // be read as "and therefore holds nothing anywhere".
+        private void listNoStarSystems() {
+
+            when(sectorMock.getStarSystems())
+                .thenReturn(null);
+        }
+
         private void addSystemHolding(MarketAPI... locationColonies) {
 
             var systemMock = mock(StarSystemAPI.class);
@@ -185,20 +192,12 @@ final class SectorColoniesTest {
         }
 
         // Sites the colonies in one location: the economy lists them, and the location carries
-        // the entity each sits on.
+        // the entity each sits on. Both halves, since every case here poses ordinary registered
+        // colonies - the listed-versus-unlisted split is the colony set's own suites' business.
         private void placeColoniesIn(LocationAPI location, MarketAPI[] locationColonies) {
 
-            // The entities are read off the colonies before either stubbing opens, so calling a
-            // mock does not land inside a stubbing in progress.
-            var entities = new ArrayList<SectorEntityToken>();
-
-            for (var colony : locationColonies) {
-                entities.add(colony.getPrimaryEntity());
-            }
-            when(location.getAllEntities())
-                .thenReturn(entities);
-            when(economyMock.getMarkets(location))
-                .thenReturn(List.of(locationColonies));
+            ColonyPlacementFixture.placeColonies(location, locationColonies);
+            ColonyPlacementFixture.listColonies(economyMock, location, locationColonies);
         }
     }
 }

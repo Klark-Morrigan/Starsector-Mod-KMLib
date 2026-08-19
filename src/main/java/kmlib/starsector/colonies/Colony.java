@@ -1,12 +1,18 @@
-package kmlib.starsector.systems;
+package kmlib.starsector.colonies;
 
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
 import kmlib.starsector.markets.Markets;
 
 /**
- * One colony in a star system, paired with the single fact about it that cannot be recovered
- * from the market alone: whether the sector's economy lists it.
+ * One colony: its market, paired with the single fact about it that cannot be recovered from
+ * that market alone - whether the sector's economy lists it.
+ *
+ * <p>Carries no location. Where a colony was found is the caller's own knowledge, because the
+ * caller is what asked - it named a star system, or hyperspace, or the whole sector, and got
+ * back what was there. Storing the place here would be a second copy of that, free to disagree
+ * with it, and would make a colony unusable in any listing that spans more than one place. A
+ * caller that does need the location asks the market for it.
  *
  * <p>A colony can sit on a real entity under a real faction and never be registered with the
  * economy - vanilla builds Galatia Academy that way. Which listing a market was found in is
@@ -24,9 +30,9 @@ import kmlib.starsector.markets.Markets;
  * @param market            the colony's market; mandatory, a colony with no market being no
  *                          colony at all
  * @param isListedByEconomy whether the sector's economy lists this market, as opposed to it
- *                          hanging on one of the system's entities unregistered
+ *                          hanging on one of its location's entities unregistered
  */
-public record SystemColony(
+public record Colony(
     MarketAPI market,
     boolean isListedByEconomy) {
 

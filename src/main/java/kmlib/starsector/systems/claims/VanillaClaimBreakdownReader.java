@@ -6,12 +6,13 @@ import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.util.Misc;
 
+import kmlib.starsector.colonies.Colonies;
+import kmlib.starsector.colonies.Colony;
+import kmlib.starsector.colonies.SystemColonies;
 import kmlib.starsector.factions.FactionFlags;
 import kmlib.starsector.markets.Markets;
 import kmlib.starsector.systems.StarSystems;
-import kmlib.starsector.systems.SystemColonies;
 import kmlib.starsector.systems.SystemColoniesIndex;
-import kmlib.starsector.systems.SystemColony;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -61,7 +62,7 @@ import java.util.Set;
  * belongs to is what carries it there. The nought is what keeps the widening off the mechanic,
  * the lead changing only on a score strictly greater than nought.
  *
- * <p>The markets themselves come from {@link SystemColonies} rather than from a walk of this
+ * <p>The markets themselves come from {@link Colonies} rather than from a walk of this
  * class's own, so what counts as a colony here is what counts as one everywhere else reading the
  * same system - and the condition-only market every uninhabited planet carries, which a widening
  * to off-economy markets would otherwise admit on every surveyed rock, is excluded by that shared
@@ -163,7 +164,7 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
     // colonies the player has never found: fogging the input here would resolve a claimant the
     // game itself would not report. Whether the player knows of a colony rides each market instead,
     // for a display to withhold.
-    private static List<ClaimedMarket> readClaimedMarkets(SystemColonies systemColonies) {
+    private static List<ClaimedMarket> readClaimedMarkets(Colonies systemColonies) {
 
         var colonies = systemColonies.colonies();
         var economyMarkets = selectEconomyListedMarkets(colonies);
@@ -186,7 +187,7 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
     // The half of the set the economy itself lists - the only markets vanilla's sibling term is
     // counted over. Taken off the set rather than read from the economy a second time, so the
     // markets counted are exactly the ones numbered above them.
-    private static List<MarketAPI> selectEconomyListedMarkets(List<SystemColony> colonies) {
+    private static List<MarketAPI> selectEconomyListedMarkets(List<Colony> colonies) {
 
         var economyMarkets = new ArrayList<MarketAPI>(colonies.size());
 
@@ -367,7 +368,7 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
     // recorded here rather than looked up by whatever lists it: reading the pair on the walk that
     // met the market is what stops a second lookup answering for a different one.
     private static MarketClaimBreakdown computeMarketClaim(
-            SystemColony colony,
+            Colony colony,
             List<MarketAPI> economyMarkets,
             int listingPosition) {
 
@@ -402,7 +403,7 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
     // The system's colonies, off the pass's index where a pass owns this reader and by a walk of
     // its own where none does. The whole set either way, so which of the two answered it can
     // change nothing but what the answer cost: an index memoises the very read below it.
-    private SystemColonies readColonies(StarSystemAPI system) {
+    private Colonies readColonies(StarSystemAPI system) {
 
         if (coloniesIndex == null) {
             return SystemColonies.readColoniesIn(Global.getSector(), system);

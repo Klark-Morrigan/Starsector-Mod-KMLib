@@ -25,6 +25,13 @@ enforcePackageLayering {
     // separable: one import back would make them a single unit nothing could split again, and
     // the compiler accepts that direction as readily as this one.
     forbidImport under: 'kmlib.starsector.markets', of: 'kmlib.starsector.systems'
+
+    // Colonies are selected out of markets and know nothing of the systems that hold them - a
+    // colony read takes the location it is asked about as a vanilla type. Closing this edge is
+    // what lets a star system be described in terms of its colonies without the reverse
+    // becoming possible, which is the shape that would collapse the two into one unit again.
+    forbidImport under: 'kmlib.starsector.colonies', of: 'kmlib.starsector.systems'
+    forbidImport under: 'kmlib.starsector.markets', of: 'kmlib.starsector.colonies'
 }
 
 // LunaLib backs KmLogging's in-game log-level binding. compileOnly, and
