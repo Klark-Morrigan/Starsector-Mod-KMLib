@@ -82,6 +82,25 @@ final class MarketOwnershipTest {
         }
 
         @Test
+        void keeps_a_counter_the_incoming_owner_already_trades_over() {
+            // Opening a counter builds a new one, and whatever was stocked in the old one goes
+            // with it. So a submarket already in the state the owner calls for is left where it
+            // is rather than closed and opened again - which is why the rule asks each submarket
+            // for a verdict and acts only on the ones whose answer it does not already match.
+            var market = MarketOwnershipFixture.buildColonyTradingThrough(
+                MarketOwnershipFixture.FACTION_OWNER_ID,
+                "open_market",
+                "black_market");
+
+            var openMarketBefore = market.getSubmarket("open_market");
+
+            MarketOwnership.applyOwnership(market, MarketOwnershipFixture.FACTION_OWNER_ID);
+
+            assertThat(market.getSubmarket("open_market"))
+                .isSameAs(openMarketBefore);
+        }
+
+        @Test
         void charges_the_incoming_owner_s_tariff_on_every_change() {
             // Written to the one key on every leg rather than added to, so the rate on the market
             // is the current owner's rather than the sum of everyone who has held the place.

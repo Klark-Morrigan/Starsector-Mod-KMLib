@@ -91,11 +91,13 @@ public final class MarketOwnership {
             primaryEntity.setFaction(factionId);
         }
 
-        if (market.getConnectedEntities() == null) {
+        var connectedEntities = market.getConnectedEntities();
+
+        if (connectedEntities == null) {
             return;
         }
 
-        for (var entity : market.getConnectedEntities()) {
+        for (var entity : connectedEntities) {
 
             if (entity != null) {
                 entity.setFaction(factionId);
@@ -187,14 +189,12 @@ public final class MarketOwnership {
 
     // Storage on a player colony comes already paid for. Vanilla charges the fee at the counter
     // for storage the player did not build, and a colony the player holds is theirs - so the flag
-    // is set rather than the player being billed to reach their own hold. Storage is added when
-    // the colony has none, which is the case of a market that changed hands from a faction that
-    // never opened one.
+    // is set rather than the player being billed to reach their own hold. The counter is asked for
+    // through the same presence rule as the rest, since a market that changed hands from a faction
+    // that never opened one has none to set the flag on.
     private static void unlockStorageForPlayer(MarketAPI market) {
 
-        if (!market.hasSubmarket(Submarkets.SUBMARKET_STORAGE)) {
-            market.addSubmarket(Submarkets.SUBMARKET_STORAGE);
-        }
+        applySubmarketPresence(market, Submarkets.SUBMARKET_STORAGE, true);
 
         var storage = market.getSubmarket(Submarkets.SUBMARKET_STORAGE);
 
@@ -216,13 +216,12 @@ public final class MarketOwnership {
     private static void applyOwnerTariff(MarketAPI market) {
 
         var faction = market.getFaction();
+        var tariff = market.getTariff();
 
-        if (faction == null || market.getTariff() == null) {
+        if (faction == null || tariff == null) {
             return;
         }
 
-        market
-            .getTariff()
-            .modifyFlat(DEFAULT_TARIFF_MODIFIER_ID, faction.getTariffFraction());
+        tariff.modifyFlat(DEFAULT_TARIFF_MODIFIER_ID, faction.getTariffFraction());
     }
 }

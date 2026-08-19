@@ -149,15 +149,43 @@ public final class MarketOwnershipFixture {
             submarkets.put(submarketId, buildSubmarket(submarketId));
         }
 
-        var ownerId = new AtomicReference<>(factionId);
-        var isPlayerOwned = new AtomicBoolean(false);
-        var tariff = new MutableStat(0f);
         var marketMock = mock(MarketAPI.class);
+
+        stubEntities(marketMock, ownBody, connectedEntities);
+        stubOwner(marketMock, factionsById, factionId);
+        stubIndustries(marketMock, industryIds);
+        stubSubmarkets(marketMock, submarkets);
+        stubTariff(marketMock);
+
+        return marketMock;
+    }
+
+    // Where the colony sits: the body it stands on, and everything flying its flag alongside.
+    // Both are fixed for the colony's life - an ownership change re-flags them rather than
+    // exchanging them - so these are the one part of the market that answers a plain value.
+    private static void stubEntities(
+            MarketAPI marketMock,
+            SectorEntityToken ownBody,
+            Set<SectorEntityToken> connectedEntities) {
 
         when(marketMock.getPrimaryEntity())
             .thenReturn(ownBody);
         when(marketMock.getConnectedEntities())
             .thenReturn(connectedEntities);
+    }
+
+    // Who holds the colony, as the two reads that have to move together: the id it was last
+    // given, and the mark saying that id is the player's. Held apart in the market's own state
+    // rather than derived from each other, so a rule that sets one and forgets the other is
+    // visible to a case instead of being papered over here.
+    private static void stubOwner(
+            MarketAPI marketMock,
+            Map<String, FactionAPI> factionsById,
+            String factionId) {
+
+        var ownerId = new AtomicReference<>(factionId);
+        var isPlayerOwned = new AtomicBoolean(false);
+
         when(marketMock.getFaction())
             .thenAnswer(invocation -> factionsById.get(ownerId.get()));
         when(marketMock.getFactionId())
@@ -179,9 +207,22 @@ public final class MarketOwnershipFixture {
             })
             .when(marketMock)
             .setPlayerOwned(anyBoolean());
+    }
 
+    // What the colony runs, which is read-only here: no ownership change builds or closes an
+    // industry, it only reads them to decide which counters the new owner trades over.
+    private static void stubIndustries(MarketAPI marketMock, Set<String> industryIds) {
         when(marketMock.hasIndustry(anyString()))
             .thenAnswer(invocation -> industryIds.contains(invocation.getArgument(0)));
+    }
+
+    // The counters the colony trades over, opened and closed as it changes hands. A counter
+    // opened twice yields the same one back, because the map is keyed by submarket id - which is
+    // what lets a case tell a counter left alone from one closed and opened again.
+    private static void stubSubmarkets(
+            MarketAPI marketMock,
+            Map<String, SubmarketAPI> submarkets) {
+
         when(marketMock.hasSubmarket(anyString()))
             .thenAnswer(invocation -> submarkets.containsKey(invocation.getArgument(0)));
 
@@ -204,10 +245,13 @@ public final class MarketOwnershipFixture {
             .thenAnswer(invocation -> submarkets.get(invocation.getArgument(0)));
         when(marketMock.getSubmarketsCopy())
             .thenAnswer(invocation -> new ArrayList<>(submarkets.values()));
-        when(marketMock.getTariff())
-            .thenReturn(tariff);
+    }
 
-        return marketMock;
+    // The tax rate, as the engine's own stat rather than a stubbed number: what a case reads back
+    // is then what the modifier arithmetic produced, including a rate written over an earlier one.
+    private static void stubTariff(MarketAPI marketMock) {
+        when(marketMock.getTariff())
+            .thenReturn(new MutableStat(0f));
     }
 
     // An entity that remembers the flag it was last given, so a case reads what it flies rather
@@ -253,13 +297,10 @@ public final class MarketOwnershipFixture {
 
         var factionsById = new LinkedHashMap<String, FactionAPI>();
 
-        for (var owner : TARIFF_FRACTIONS_BY_OWNER.entrySet()) {
-            
-            factionsById.put(
-                owner.getKey(),
-                buildFaction(owner.getKey(),
-                owner.getValue()));
-        }
+        TARIFF_FRACTIONS_BY_OWNER.forEach(
+            (ownerId, tariffFraction) ->
+                factionsById.put(ownerId, buildFaction(ownerId, tariffFraction)));
+
         return factionsById;
     }
 
