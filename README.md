@@ -110,6 +110,14 @@ src/main/java/kmlib/
                      validation/ behind them
   settings/        - LunaLib settings read / write + labelled choices
   starsector/
+    colonies/      - the shared colony set every "who is here" read
+                     selects through - one rule, one entry per place and
+                     owner, unfogged with the visibility filter as one
+                     named projection over it - with the selection
+                     itself stated once over a location and a
+                     separately-named reader per kind of place above it:
+                     a star system, hyperspace, and the whole sector as
+                     the composition of the two
     entities/      - spawning custom campaign entities, their orbits,
                      name generation, and how an entity is identified to
                      a reader - its name paired with the map glyph it is
@@ -137,12 +145,8 @@ src/main/java/kmlib/
                      shaping that fills their numeric slots
                      (StarsectorFormat's truncating percent)
     systems/       - star system queries and motion tracking, plus the
-                     shared colony set every "who is in this system"
-                     read selects through - one rule, one entry per
-                     place and owner, unfogged with the visibility
-                     filter as one named projection over it, and a
-                     per-pass index so a system is walked once however
-                     many readers ask about it;
+                     per-pass index over the colony set so a system is
+                     walked once however many readers ask about it;
                      claims/ reads vanilla system claims behind a port,
                      with a second port for the scored contest behind
                      one - down to the terms each market's score is the
