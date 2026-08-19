@@ -9,25 +9,230 @@ import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * Pins the contract of {@link LocationMarkets#findNearestMarket}, the search itself, at the
- * layer that owns it. The cases live in a {@link Nested} group so the suite reports as a
- * per-method tree; the shared wiring stays on the outer class.
+ * Pins the contracts of {@link LocationMarkets#readMarkets},
+ * {@link LocationMarkets#readMarketsUnlistedByEconomy} and
+ * {@link LocationMarkets#findNearestMarket} - the searches themselves, at the layer that owns
+ * them. Each method's cases live in a {@link Nested} group so the suite reports as a per-method
+ * tree; the shared wiring stays on the outer class.
  *
  * <p>Posed against a plain {@link LocationAPI} rather than a star system, which is the point of
- * the search sitting here: nothing about ranking markets by distance is system-specific, and a
- * caller searching hyperspace gets the same answers. What the star-system surface adds - that a
- * system is searched by a read accepting nothing else - is
- * {@code StarSystemsTest.FindNearestMarket}'s.
+ * the searches sitting here: nothing about reading or ranking a place's markets is
+ * system-specific, and a caller asking about hyperspace gets the same answers. What the
+ * star-system readers add - that a system is asked by reads accepting nothing else - is
+ * {@code StarSystemsTest}'s, in groups holding one case each.
  *
- * <p>The markets themselves come from {@link MarketPlacementFixture}, so a market posed here is
- * the same shape as one posed against a system.
+ * <p>The markets themselves come from {@link MarketPlacementFixture} and
+ * {@link MarketStateFixture}, so a market posed here is the same shape as one posed anywhere
+ * else.
  */
 final class LocationMarketsTest {
+
+    @Nested
+    class ReadMarkets {
+
+        @Test
+        void returns_the_locations_markets_in_economy_order() {
+            // Order is the economy's, and the listing unfiltered: a caller mirroring vanilla's
+            // tie rule resolves on which market comes first, so the traversal must not reorder,
+            // and a bare planet's placeholder comes back beside a colony rather than being
+            // weeded out by a read that was only asked what is present.
+            var colony = MarketStateFixture.buildColony("hegemony");
+            var placeholder = MarketStateFixture.buildColonisableBody();
+            var locationMock = mock(LocationAPI.class);
+
+            assertThat(LocationMarkets.readMarkets(
+                    buildSectorListing(locationMock, colony, placeholder),
+                    locationMock))
+                .containsExactly(colony, placeholder);
+        }
+
+        @Test
+        void returns_empty_for_a_location_with_no_markets() {
+
+            var locationMock = mock(LocationAPI.class);
+
+            assertThat(LocationMarkets.readMarkets(buildSectorListing(locationMock), locationMock))
+                .isEmpty();
+        }
+
+        @Test
+        void returns_empty_for_a_null_sector() {
+            assertThat(LocationMarkets.readMarkets(null, mock(LocationAPI.class)))
+                .isEmpty();
+        }
+
+        @Test
+        void returns_empty_for_a_null_location() {
+            assertThat(LocationMarkets.readMarkets(mock(SectorAPI.class), null))
+                .isEmpty();
+        }
+
+        @Test
+        void returns_empty_when_the_sector_has_no_economy() {
+
+            var sectorMock = mock(SectorAPI.class);
+
+            when(sectorMock.getEconomy())
+                .thenReturn(null);
+
+            assertThat(LocationMarkets.readMarkets(sectorMock, mock(LocationAPI.class)))
+                .isEmpty();
+        }
+
+        @Test
+        void returns_empty_when_the_economy_reports_no_market_list() {
+
+            var economyMock = mock(EconomyAPI.class);
+            var locationMock = mock(LocationAPI.class);
+
+            when(economyMock.getMarkets(locationMock))
+                .thenReturn(null);
+
+            var sectorMock = mock(SectorAPI.class);
+
+            when(sectorMock.getEconomy())
+                .thenReturn(economyMock);
+
+            assertThat(LocationMarkets.readMarkets(sectorMock, locationMock))
+                .isEmpty();
+        }
+    }
+
+    @Nested
+    class ReadMarketsUnlistedByEconomy {
+
+        @Test
+        void yields_the_market_the_economy_does_not_list_and_not_the_ones_it_does() {
+            // Vanilla builds Galatia Academy as a real market on a real station and deliberately
+            // never registers it, so a read of the economy alone reports the station as nobody's.
+            // Only that market comes back: a caller wanting the listed ones has already read
+            // them, and handing them over again would leave it comparing the two lists to tell
+            // them apart.
+            var listed = MarketPlacementFixture.buildMarketOnBody("ancyra");
+            var academy = MarketPlacementFixture.buildMarketOnBody("academy_station");
+            var locationMock = mock(LocationAPI.class);
+            var sector = buildSectorListing(locationMock, listed);
+
+            MarketPlacementFixture.placeMarketsIn(locationMock, listed, academy);
+
+            assertThat(LocationMarkets.readMarketsUnlistedByEconomy(sector, locationMock))
+                .containsExactly(academy);
+        }
+
+        @Test
+        void yields_nothing_for_a_location_the_economy_lists_whole() {
+            // The ordinary system: every market on a body is one the economy already hands over,
+            // so the read that exists to find what it left out finds nothing to add.
+            var first = MarketPlacementFixture.buildMarketOnBody("ancyra");
+            var second = MarketPlacementFixture.buildMarketOnBody("tibicena");
+            var locationMock = mock(LocationAPI.class);
+            var sector = buildSectorListing(locationMock, first, second);
+
+            MarketPlacementFixture.placeMarketsIn(locationMock, first, second);
+
+            assertThat(LocationMarkets.readMarketsUnlistedByEconomy(sector, locationMock))
+                .isEmpty();
+        }
+
+        @Test
+        void yields_unlisted_markets_in_entity_order() {
+
+            var first = MarketPlacementFixture.buildMarketOnBody("first");
+            var second = MarketPlacementFixture.buildMarketOnBody("second");
+            var locationMock = mock(LocationAPI.class);
+            var sector = buildSectorListing(locationMock);
+
+            MarketPlacementFixture.placeMarketsIn(locationMock, first, second);
+
+            assertThat(LocationMarkets.readMarketsUnlistedByEconomy(sector, locationMock))
+                .containsExactly(first, second);
+        }
+
+        @Test
+        void yields_one_unlisted_market_once_though_two_bodies_carry_it() {
+            // Vanilla hangs a station's market on the station and on what it orbits alike, so
+            // one colony can be reached twice down the entity walk.
+            var academy = MarketPlacementFixture.buildMarketOnBody("academy_station");
+            var locationMock = mock(LocationAPI.class);
+            var sector = buildSectorListing(locationMock);
+
+            MarketPlacementFixture.placeMarketsIn(locationMock, academy, academy);
+
+            assertThat(LocationMarkets.readMarketsUnlistedByEconomy(sector, locationMock))
+                .containsExactly(academy);
+        }
+
+        @Test
+        void resolves_two_markets_on_one_body_under_one_owner_to_one() {
+            // A mod supersedes a market by adding rather than replacing, so the station ends up
+            // carrying two market objects for the one place - counted twice, it would read as
+            // two holdings where the player sees one.
+            var listed = MarketPlacementFixture.buildOwnedMarketOnBody("station", "independent");
+
+            MarketPlacementFixture.buildSupplementaryMarketOn(listed);
+
+            var locationMock = mock(LocationAPI.class);
+            var sector = buildSectorListing(locationMock, listed);
+
+            MarketPlacementFixture.placeMarketsIn(locationMock, listed);
+
+            assertThat(LocationMarkets.readMarketsUnlistedByEconomy(sector, locationMock))
+                .isEmpty();
+        }
+
+        @Test
+        void ignores_a_body_carrying_no_market() {
+
+            var locationMock = mock(LocationAPI.class);
+            var sector = buildSectorListing(
+                locationMock,
+                MarketPlacementFixture.buildMarketOnBody("ancyra"));
+
+            // The bare body finishes its own stubbing before the location's opens, so the two
+            // do not nest into an unfinished-stubbing error.
+            var gate = MarketPlacementFixture.buildBodyAt("corvus_gate", 0, 0);
+
+            when(locationMock.getAllEntities())
+                .thenReturn(List.of(gate));
+
+            assertThat(LocationMarkets.readMarketsUnlistedByEconomy(sector, locationMock))
+                .isEmpty();
+        }
+
+        @Test
+        void returns_empty_for_a_null_sector() {
+            assertThat(LocationMarkets.readMarketsUnlistedByEconomy(null, mock(LocationAPI.class)))
+                .isEmpty();
+        }
+
+        @Test
+        void returns_empty_for_a_null_location() {
+            assertThat(LocationMarkets.readMarketsUnlistedByEconomy(mock(SectorAPI.class), null))
+                .isEmpty();
+        }
+
+        @Test
+        void returns_empty_when_the_sector_has_no_economy() {
+            // With no listing to compare against there is no telling a listed market from an
+            // unlisted one, so the read reports nothing rather than every market it can reach.
+            var sectorMock = mock(SectorAPI.class);
+
+            when(sectorMock.getEconomy())
+                .thenReturn(null);
+
+            assertThat(LocationMarkets.readMarketsUnlistedByEconomy(
+                    sectorMock,
+                    mock(LocationAPI.class)))
+                .isEmpty();
+        }
+    }
 
     @Nested
     class FindNearestMarket {
@@ -144,7 +349,7 @@ final class LocationMarketsTest {
             var locationMock = mock(LocationAPI.class);
             var sector = buildSectorListing(
                 locationMock,
-                MarketPlacementFixture.buildMarketOnPlacelessBody("adrift"));
+                MarketPlacementFixture.buildMarketOnBody("adrift"));
 
             assertThat(LocationMarkets.findNearestMarket(
                     sector,

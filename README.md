@@ -138,10 +138,8 @@ src/main/java/kmlib/
     map/           - which systems the sector map marks
     markets/       - market queries, decivilised markets, patrol counts,
                      the nearest-market search a targeted operation is
-                     pointed with, and the two changes of state a colony
-                     turns on: founding one on a body that carries only
-                     survey data, and moving one that exists to another
-                     owner
+                     pointed with, and founding a colony on a body that
+                     carries only survey data
     memory/        - typed sector-memory accessors (flag, string)
     rat/           - Random Assortment of Things: Abyssal Fracture matching,
                      and the campaign-minimap role answered for its mini-map

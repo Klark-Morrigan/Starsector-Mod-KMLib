@@ -1,6 +1,7 @@
 package kmlib.starsector.markets;
 
 import com.fs.starfarer.api.campaign.CampaignFleetAPI;
+import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.LocationAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.econ.EconomyAPI;
@@ -42,39 +43,58 @@ public final class MarketPlacementFixture {
      * reachable whether a read meets it through the economy or by walking the location.
      */
     public static MarketAPI buildMarketOnBodyAt(String bodyId, float x, float y) {
-
-        // The body finishes its own stubbing before the market's opens, so the two do not nest
-        // into an unfinished-stubbing error.
-        var bodyMock = buildBodyAt(bodyId, x, y);
-        var marketMock = mock(MarketAPI.class);
-
-        when(marketMock.getPrimaryEntity())
-            .thenReturn(bodyMock);
-        when(bodyMock.getMarket())
-            .thenReturn(marketMock);
-
-        return marketMock;
+        return hangMarketOn(buildBodyAt(bodyId, x, y));
     }
 
     /**
-     * A market standing for a body that is nowhere in particular: an entity with an id and no
-     * location, which a distance cannot be taken to.
+     * A market on a body that sits nowhere in particular: an entity with an id and no location,
+     * which is every case about what is present rather than what is nearest.
      */
-    public static MarketAPI buildMarketOnPlacelessBody(String bodyId) {
+    public static MarketAPI buildMarketOnBody(String bodyId) {
 
         var bodyMock = mock(SectorEntityToken.class);
 
         when(bodyMock.getId())
             .thenReturn(bodyId);
 
-        var marketMock = mock(MarketAPI.class);
+        return hangMarketOn(bodyMock);
+    }
 
-        when(marketMock.getPrimaryEntity())
-            .thenReturn(bodyMock);
-        when(bodyMock.getMarket())
-            .thenReturn(marketMock);
+    /**
+     * A market on a body of its own under a named owner - the pair
+     * {@link Markets#isSamePlaceAndOwner} keys on, so two of them can be posed as one place or
+     * as two.
+     */
+    public static MarketAPI buildOwnedMarketOnBody(String bodyId, String factionId) {
+
+        // The faction finishes its own stubbing before the market's opens, so the two do not
+        // nest into an unfinished-stubbing error.
+        var factionMock = buildFaction(factionId);
+        var marketMock = buildMarketOnBody(bodyId);
+
+        when(marketMock.getFaction())
+            .thenReturn(factionMock);
 
         return marketMock;
+    }
+
+    /**
+     * A second market object on an existing market's body under the same owner, hung on that
+     * body in the first one's place - the shape a mod builds when it supersedes a market by
+     * adding beside vanilla's rather than replacing it.
+     */
+    public static MarketAPI buildSupplementaryMarketOn(MarketAPI market) {
+
+        // Both halves are read off the existing market before the new one's stubbing opens, so
+        // the two do not nest into an unfinished-stubbing error.
+        var faction = market.getFaction();
+        var body = market.getPrimaryEntity();
+        var supplementaryMock = hangMarketOn(body);
+
+        when(supplementaryMock.getFaction())
+            .thenReturn(faction);
+
+        return supplementaryMock;
     }
 
     /** A body with nothing on it - a gate, a beacon, a bare rock. */
@@ -126,5 +146,31 @@ public final class MarketPlacementFixture {
 
         when(economyMock.getMarkets(location))
             .thenReturn(List.of(markets));
+    }
+
+    // A market and the body it sits on, wired both ways: the market names the body as its place
+    // and the body carries the market, which is how an unregistered market is found at all. The
+    // body's own stubbing is finished before the market's opens, so the two do not nest into an
+    // unfinished-stubbing error.
+    private static MarketAPI hangMarketOn(SectorEntityToken bodyMock) {
+
+        var marketMock = mock(MarketAPI.class);
+
+        when(marketMock.getPrimaryEntity())
+            .thenReturn(bodyMock);
+        when(bodyMock.getMarket())
+            .thenReturn(marketMock);
+
+        return marketMock;
+    }
+
+    private static FactionAPI buildFaction(String id) {
+
+        var factionMock = mock(FactionAPI.class);
+
+        when(factionMock.getId())
+            .thenReturn(id);
+
+        return factionMock;
     }
 }

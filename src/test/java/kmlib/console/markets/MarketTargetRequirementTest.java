@@ -43,6 +43,24 @@ final class MarketTargetRequirementTest {
         }
 
         @Test
+        void admits_a_colony_the_economy_does_not_list_as_transferable() {
+            // Galatia Academy is a real colony under a real faction that vanilla never
+            // registers, and moving it to another owner is as much a transfer as any other -
+            // which is why registration is no part of the rule.
+            assertThat(MarketTargetRequirement.EXISTING_COLONY.isMetBy(
+                    MarketStateFixture.buildColonyUnlistedByEconomy("independent")))
+                .isTrue();
+        }
+
+        @Test
+        void refuses_a_market_no_faction_holds_as_transferable() {
+
+            assertThat(MarketTargetRequirement.EXISTING_COLONY.isMetBy(
+                    MarketStateFixture.buildUnownedMarket()))
+                .isFalse();
+        }
+
+        @Test
         void refuses_a_body_carrying_only_survey_data_as_transferable() {
             // The two requirements are complements over the same market, which is what lets one
             // resolver serve both commands: whatever one admits, the other refuses.

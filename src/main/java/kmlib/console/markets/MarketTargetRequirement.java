@@ -3,7 +3,7 @@ package kmlib.console.markets;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
 import kmlib.starsector.markets.MarketColoniser;
-import kmlib.starsector.markets.MarketOwnershipTransfer;
+import kmlib.starsector.markets.Markets;
 
 import java.util.function.Predicate;
 
@@ -31,9 +31,13 @@ public record MarketTargetRequirement(
         MarketColoniser::isReadyForColonisation,
         "a body ready for colonisation");
 
-    /** A colony a faction already holds, which can be moved to another owner. */
+    /**
+     * A colony a faction already holds, which can be moved to another owner. Ownership is the
+     * whole of it: registration with the economy is no part of the rule, vanilla building
+     * Galatia Academy as a real colony it never lists.
+     */
     public static final MarketTargetRequirement EXISTING_COLONY = new MarketTargetRequirement(
-        MarketOwnershipTransfer::isReadyForTransfer,
+        Markets::isOwnedColony,
         "an existing colony");
 
     /**
