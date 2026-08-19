@@ -11,6 +11,9 @@ import com.fs.starfarer.api.impl.campaign.ids.Industries;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.Mockito.inOrder;
@@ -379,6 +382,76 @@ final class MarketColoniserTest {
 
             assertThat(market.isPlanetConditionMarketOnly())
                 .isFalse();
+        }
+
+        @Test
+        void hands_the_whole_founding_to_a_colonisation_routine_the_install_supplies() {
+            // A mod that founds its own colonies records things about one that nothing can add
+            // afterwards, so its routine takes the founding whole and none of this sequence runs
+            // under it - the market is left exactly as that routine found it.
+            var market = MarketColonisationFixture.buildColonisableWorld();
+            var offeredMarket = new AtomicReference<MarketAPI>();
+            var offeredFactionId = new AtomicReference<String>();
+
+            MarketColoniser.establishColony(
+                sector,
+                market,
+                MarketColonisationFixture.FACTION_OWNER_ID,
+                (routineSector, routineMarket, routineFactionId) -> {
+                    offeredMarket.set(routineMarket);
+                    offeredFactionId.set(routineFactionId);
+                    return true;
+                });
+
+            assertThat(offeredMarket.get())
+                .isSameAs(market);
+            assertThat(offeredFactionId.get())
+                .isEqualTo(MarketColonisationFixture.FACTION_OWNER_ID);
+            assertThat(market.isPlanetConditionMarketOnly())
+                .isTrue();
+            assertThat(MarketOwnershipFixture.readSubmarketIds(market))
+                .isEmpty();
+            verifyNoInteractions(economy);
+        }
+
+        @Test
+        void founds_the_colony_itself_when_the_installed_routine_declines_it() {
+            // The answer on every install without such a mod, and on a body its routine cannot
+            // found on - so the composed sequence runs in its place and the colony still arrives.
+            var market = MarketColonisationFixture.buildColonisableWorld();
+
+            MarketColoniser.establishColony(
+                sector,
+                market,
+                MarketColonisationFixture.FACTION_OWNER_ID,
+                (routineSector, routineMarket, routineFactionId) -> false);
+
+            assertThat(market.isPlanetConditionMarketOnly())
+                .isFalse();
+            assertThat(market.getFactionId())
+                .isEqualTo(MarketColonisationFixture.FACTION_OWNER_ID);
+            verify(economy)
+                .addMarket(market, WITH_ORBITAL_JUNK_AND_CHATTER);
+        }
+
+        @Test
+        void offers_nothing_to_the_installed_routine_when_there_is_no_colony_to_found() {
+            // The founding conditions are asked first, so a market this library would refuse is
+            // not one a mod is handed - a colony founded a second time being the outcome either
+            // sequence has to avoid.
+            var routineOfferCount = new AtomicInteger();
+
+            MarketColoniser.establishColony(
+                sector,
+                MarketStateFixture.buildColony(MarketColonisationFixture.FACTION_OWNER_ID),
+                Factions.PLAYER,
+                (routineSector, routineMarket, routineFactionId) -> {
+                    routineOfferCount.incrementAndGet();
+                    return true;
+                });
+
+            assertThat(routineOfferCount.get())
+                .isZero();
         }
 
         @Test

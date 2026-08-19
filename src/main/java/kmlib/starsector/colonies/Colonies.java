@@ -1,6 +1,6 @@
 package kmlib.starsector.colonies;
 
-import kmlib.starsector.markets.Markets;
+import kmlib.starsector.markets.MarketVisibility;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -54,7 +54,8 @@ public record Colonies(
      * @param shouldIncludeUndiscoveredMarkets whether an undiscovered colony still counts (the
      *                                         "show all factions" dev reveal); false applies
      *                                         the normal known-to-player filter
-     * @return the colonies passing {@link Markets#isCountedAsColony}, in the set's own order
+     * @return the colonies passing {@link MarketVisibility#isCountedAsColony}, in the set's own
+     *         order
      */
     public List<Colony> readKnownColonies(boolean shouldIncludeUndiscoveredMarkets) {
 
@@ -105,7 +106,9 @@ public record Colonies(
             Colony colony,
             boolean shouldIncludeUndiscoveredMarkets) {
 
-        return Markets.isCountedAsColony(colony.market(), shouldIncludeUndiscoveredMarkets);
+        return MarketVisibility.isCountedAsColony(
+            colony.market(),
+            shouldIncludeUndiscoveredMarkets);
     }
 
 }

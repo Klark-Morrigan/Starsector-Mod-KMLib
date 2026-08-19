@@ -187,7 +187,7 @@ public final class LocationMarkets {
     private static boolean isAlreadyPresent(List<MarketAPI> presentMarkets, MarketAPI market) {
 
         for (var present : presentMarkets) {
-            if (Markets.isSamePlaceAndOwner(present, market)) {
+            if (MarketColocation.isSamePlaceAndOwner(present, market)) {
                 return true;
             }
         }

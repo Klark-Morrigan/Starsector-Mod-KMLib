@@ -102,7 +102,7 @@ final class MarketPatrolsTest {
 
     @Nested
     class FieldsPatrols {
-        
+
         @Test
         void returns_true_when_the_patrol_flag_is_set() {
 

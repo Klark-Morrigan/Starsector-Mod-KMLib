@@ -5,6 +5,7 @@ import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
 import kmlib.starsector.markets.LocationMarkets;
+import kmlib.starsector.markets.MarketColocation;
 import kmlib.starsector.markets.Markets;
 
 import java.util.ArrayList;
@@ -62,7 +63,7 @@ public final class LocationColonies {
 
         var colonies = new ArrayList<Colony>();
 
-        for (var market : Markets.readLargestMarketsPerFaction(ownedMarkets)) {
+        for (var market : MarketColocation.readLargestMarketsPerFaction(ownedMarkets)) {
 
             colonies.add(new Colony(market, isListedByEconomy(listedMarkets, market)));
         }

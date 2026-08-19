@@ -84,7 +84,31 @@ public final class ColonyFixture {
         ColonyPlacementFixture.listColonies(economyMock, systemMock, colonies);
     }
 
-    /** An ordinary colony: owned, open, on an entity the player has found. */
+    // Each colony builder below forwards to the one named for it on ColonyMarketFixture, which
+    // is where the shape is described. Restating those descriptions here would put two accounts
+    // of one colony a rename apart, and a suite reading this fixture is one hop from the real
+    // one either way.
+
+    public MarketAPI buildConditionOnlyMarket() {
+        return ColonyMarketFixture.buildConditionOnlyMarket();
+    }
+
+    public MarketAPI buildFoundConcealedColony(String factionId) {
+        return ColonyMarketFixture.buildFoundConcealedColony(factionId);
+    }
+
+    public MarketAPI buildSiblingMarketOn(MarketAPI colony, int size) {
+        return ColonyMarketFixture.buildSiblingMarketOn(colony, size);
+    }
+
+    public MarketAPI buildUnfoundConcealedColony(String factionId) {
+        return ColonyMarketFixture.buildUnfoundConcealedColony(factionId);
+    }
+
+    public MarketAPI buildUnfoundOpenColony(String factionId) {
+        return ColonyMarketFixture.buildUnfoundOpenColony(factionId);
+    }
+
     public MarketAPI buildVisibleColony(String factionId) {
         return ColonyMarketFixture.buildVisibleColony(factionId);
     }
@@ -92,44 +116,4 @@ public final class ColonyFixture {
     public MarketAPI buildVisibleColonyOfSize(String factionId, int size) {
         return ColonyMarketFixture.buildVisibleColonyOfSize(factionId, size);
     }
-
-    /** A base once raided: its entity is discovered, its market stays hidden for good. */
-    public MarketAPI buildFoundConcealedColony(String factionId) {
-        return ColonyMarketFixture.buildFoundConcealedColony(factionId);
-    }
-
-    /**
-     * A base still to be found: concealed, and on an entity the player has not discovered.
-     * Concealment and discovery agree here, so nothing whatever about it reaches the player.
-     */
-    public MarketAPI buildUnfoundConcealedColony(String factionId) {
-        return ColonyMarketFixture.buildUnfoundConcealedColony(factionId);
-    }
-
-    /**
-     * A derelict station's shape, and the sector's most common undiscovered one: nothing
-     * conceals it, and its entity is still to be found. Concealment and discovery disagree here,
-     * and the fog answers on discovery - declaring itself to an economy the player has no sight
-     * of is not being seen.
-     */
-    public MarketAPI buildUnfoundOpenColony(String factionId) {
-        return ColonyMarketFixture.buildUnfoundOpenColony(factionId);
-    }
-
-    /**
-     * A bare planet's placeholder, the condition-only market every uninhabited world carries to
-     * hold its hazard and atmosphere. Owned by nobody in particular, and rejected on that arm.
-     */
-    public MarketAPI buildConditionOnlyMarket() {
-        return ColonyMarketFixture.buildConditionOnlyMarket();
-    }
-
-    /**
-     * A second market object on an existing colony's entity, under the same owner - the shape a
-     * mod builds when it supersedes a colony by adding beside vanilla's rather than replacing.
-     */
-    public MarketAPI buildSiblingMarketOn(MarketAPI colony, int size) {
-        return ColonyMarketFixture.buildSiblingMarketOn(colony, size);
-    }
-
 }

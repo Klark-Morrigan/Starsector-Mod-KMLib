@@ -2,7 +2,6 @@ package kmlib.starsector.markets;
 
 import com.fs.starfarer.api.campaign.CampaignFleetAPI;
 import com.fs.starfarer.api.campaign.CustomEntitySpecAPI;
-import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.campaign.rules.MemoryAPI;
@@ -19,8 +18,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.awt.Color;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -29,118 +26,21 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * Pins the contracts of {@link Markets#isOwnedColony}, {@link Markets#readNameplate},
- * {@link Markets#findAttachedStation}, {@link Markets#hasAttachedStation},
- * {@link Markets#getStabilityFraction},
- * {@link Markets#isKnownToPlayer}, {@link Markets#isCountedAsColony},
- * {@link Markets#isDiscoveredByPlayer},
- * {@link Markets#readLargestMarketsPerFaction} and
- * {@link Markets#isMilitary}. The cases live in a {@link Nested} group per method so
- * the suite reports as a per-method tree; the shared mock builders stay on the outer
- * class.
+ * Pins the contracts of {@link Markets#findAttachedStation},
+ * {@link Markets#getStabilityFraction}, {@link Markets#hasAttachedStation},
+ * {@link Markets#isMilitary}, {@link Markets#isOwnedColony} and
+ * {@link Markets#readNameplate} - the reads that answer what one market is. The cases live
+ * in a {@link Nested} group per method so the suite reports as a per-method tree; the shared
+ * mock builders stay on the outer class.
+ *
+ * <p>What may be said about a market is pinned by {@link MarketVisibilityTest}, and which of
+ * several markets speaks for a place by {@link MarketColocationTest}.
  */
 final class MarketsTest {
 
     @Nested
-    class IsOwnedColony {
-
-        @Test
-        void returns_true_for_a_faction_owned_non_condition_market() {
-
-            var market = buildOwnedColony(buildFaction("hegemony"), false);
-
-            assertThat(Markets.isOwnedColony(market))
-                .isTrue();
-        }
-
-        @Test
-        void returns_false_for_a_condition_only_market() {
-
-            var market = buildOwnedColony(buildFaction("hegemony"), true);
-
-            assertThat(Markets.isOwnedColony(market))
-                .isFalse();
-        }
-
-        @Test
-        void returns_false_when_no_faction_owns_the_market() {
-            
-            var market = buildOwnedColony(null, false);
-
-            assertThat(Markets.isOwnedColony(market))
-                .isFalse();
-        }
-
-        @Test
-        void returns_false_for_a_null_market() {
-            assertThat(Markets.isOwnedColony(null))
-                .isFalse();
-        }
-    }
-
-    @Nested
-    class ReadNameplate {
-
-        @Test
-        void reads_the_market_s_own_name_with_its_primary_entity_s_glyph() {
-            // The pairing is the whole of the read: a market is named in its own right while the
-            // glyph belongs to the entity it sits on, and joining the two here is what stops a
-            // surface pairing one colony's name with another's mark.
-            // The entity is built before the market's own stubbing opens, so the two do not nest
-            // into an unfinished-stubbing error.
-            var entity = buildEntityWithMapIcon(
-                "graphics/icons/station0.png",
-                new Color(200, 200, 255));
-
-            var market = buildMarketNamed("Ancyra");
-
-            when(market.getPrimaryEntity())
-                .thenReturn(entity);
-
-            assertThat(Markets.readNameplate(market))
-                .isEqualTo(new EntityNameplate(
-                    "Ancyra",
-                    Optional.of(new EntityMapIcon(
-                        "graphics/icons/station0.png",
-                        new Color(200, 200, 255)))));
-        }
-
-        @Test
-        void names_a_market_whose_entity_carries_no_glyph() {
-
-            var entityMock = mock(SectorEntityToken.class);
-            var market = buildMarketNamed("Jangala");
-
-            when(market.getPrimaryEntity())
-                .thenReturn(entityMock);
-
-            assertThat(Markets.readNameplate(market))
-                .isEqualTo(EntityNameplate.createUnmarkedNameplate("Jangala"));
-        }
-
-        @Test
-        void reads_a_market_with_no_primary_entity_as_named_and_unmarked() {
-            // A market the game has not sited yet answers no entity, which is the absence the icon
-            // read already handles - the name still identifies it.
-            var market = buildMarketNamed("Kazeron");
-
-            when(market.getPrimaryEntity())
-                .thenReturn(null);
-
-            assertThat(Markets.readNameplate(market))
-                .isEqualTo(EntityNameplate.createUnmarkedNameplate("Kazeron"));
-        }
-
-        @Test
-        void reads_a_null_market_as_blank_and_unmarked() {
-            assertThat(Markets.readNameplate(null))
-                .isEqualTo(EntityNameplate.BLANK);
-        }
-    }
-
-    @Nested
     class FindAttachedStation {
-        
+
         @Test
         void yields_the_station_a_market_owns() {
 
@@ -230,6 +130,46 @@ final class MarketsTest {
         }
     }
 
+    @Nested
+    class GetStabilityFraction {
+
+        @Test
+        void full_stability_is_one() {
+            assertThat(Markets.getStabilityFraction(buildMarketAtStability(10.0f)))
+                .isEqualTo(1.0);
+        }
+
+        @Test
+        void half_stability_is_a_half() {
+            assertThat(Markets.getStabilityFraction(buildMarketAtStability(5.0f)))
+                .isEqualTo(0.5);
+        }
+
+        @Test
+        void no_stability_is_zero() {
+            assertThat(Markets.getStabilityFraction(buildMarketAtStability(0.0f)))
+                .isEqualTo(0.0);
+        }
+
+        @Test
+        void above_band_clamps_to_one() {
+            assertThat(Markets.getStabilityFraction(buildMarketAtStability(12.0f)))
+                .isEqualTo(1.0);
+        }
+
+        @Test
+        void below_band_clamps_to_zero() {
+            assertThat(Markets.getStabilityFraction(buildMarketAtStability(-3.0f)))
+                .isEqualTo(0.0);
+        }
+
+        @Test
+        void null_market_is_zero() {
+            assertThat(Markets.getStabilityFraction(null))
+                .isEqualTo(0.0);
+        }
+    }
+
     // The presence verdict is the entity read taken as a boolean, so this group pins that
     // pairing - a found station reads true, an unfound one false - plus the null contract
     // its own Javadoc states. The scan's edge cases (the NO_ORBITAL_STATION opt-out, absent
@@ -258,426 +198,6 @@ final class MarketsTest {
         @Test
         void returns_false_for_a_null_market() {
             assertThat(Markets.hasAttachedStation(null))
-                .isFalse();
-        }
-    }
-
-    @Nested
-    class GetStabilityFraction {
-
-        @Test
-        void full_stability_is_one() {
-            assertThat(Markets.getStabilityFraction(buildMarketAtStability(10.0f)))
-                .isEqualTo(1.0);
-        }
-
-        @Test
-        void half_stability_is_one_half() {
-            assertThat(Markets.getStabilityFraction(buildMarketAtStability(5.0f)))
-                .isEqualTo(0.5);
-        }
-
-        @Test
-        void zero_stability_is_zero() {
-            assertThat(Markets.getStabilityFraction(buildMarketAtStability(0.0f)))
-                .isEqualTo(0.0);
-        }
-
-        @Test
-        void above_band_clamps_to_one() {
-            assertThat(Markets.getStabilityFraction(buildMarketAtStability(12.0f)))
-                .isEqualTo(1.0);
-        }
-
-        @Test
-        void below_band_clamps_to_zero() {
-            assertThat(Markets.getStabilityFraction(buildMarketAtStability(-3.0f)))
-                .isEqualTo(0.0);
-        }
-
-        @Test
-        void null_market_is_zero() {
-            assertThat(Markets.getStabilityFraction(null))
-                .isEqualTo(0.0);
-        }
-    }
-
-    @Nested
-    class IsKnownToPlayer {
-
-        @Test
-        void returns_true_when_the_entity_is_discovered() {
-
-            var market = buildMarket(buildDiscoveredEntity(), true);
-
-            assertThat(Markets.isKnownToPlayer(market))
-                .isTrue();
-        }
-
-        @Test
-        void returns_false_when_the_market_is_un_hidden_but_the_entity_is_still_discoverable() {
-            // The whole of the leak this fog closes. A market that merely omits to hide itself
-            // is listed in an economy the player has no sight of, and every derelict station in
-            // the sector takes that shape - so listing is not an arm of the rule.
-            var market = buildMarket(buildDiscoverableEntity(), false);
-
-            assertThat(Markets.isKnownToPlayer(market))
-                .isFalse();
-        }
-
-        @Test
-        void returns_true_when_the_primary_entity_is_null() {
-
-            var market = buildMarket(null, true);
-
-            assertThat(Markets.isKnownToPlayer(market))
-                .isTrue();
-        }
-
-        @Test
-        void returns_false_when_the_market_is_hidden_on_a_discoverable_entity() {
-
-            var market = buildMarket(buildDiscoverableEntity(), true);
-
-            assertThat(Markets.isKnownToPlayer(market))
-                .isFalse();
-        }
-
-        @Test
-        void returns_false_for_a_null_market() {
-            assertThat(Markets.isKnownToPlayer(null))
-                .isFalse();
-        }
-    }
-
-    @Nested
-    class IsCountedAsColony {
-
-        @Test
-        void returns_true_for_a_known_owned_colony() {
-
-            var market = buildVisibleColony();
-
-            assertThat(Markets.isCountedAsColony(market, false))
-                .isTrue();
-        }
-
-        @Test
-        void returns_false_for_a_condition_only_market() {
-
-            var market = buildConditionOnlyColony();
-
-            assertThat(Markets.isCountedAsColony(market, false))
-                .isFalse();
-        }
-
-        @Test
-        void returns_false_for_an_undiscovered_concealed_colony() {
-
-            var market = buildConcealedStation();
-
-            assertThat(Markets.isCountedAsColony(market, false))
-                .isFalse();
-        }
-
-        @Test
-        void returns_true_for_an_undiscovered_concealed_colony_when_including_undiscovered() {
-
-            var market = buildConcealedStation();
-
-            assertThat(Markets.isCountedAsColony(market, true))
-                .isTrue();
-        }
-
-        @Test
-        void returns_false_for_an_un_hidden_colony_whose_entity_is_undiscovered() {
-            // The composed filter inherits the fog's own reading, so a colony that is merely
-            // listed does not reach a surface that reports its system as settled before the
-            // player has been anywhere near it.
-            var market = buildUnfoundListedColony();
-
-            assertThat(Markets.isCountedAsColony(market, false))
-                .isFalse();
-        }
-
-        @Test
-        void returns_true_for_a_concealed_colony_the_player_has_found() {
-            // A raided pirate base stays hidden for good, and stays known for good with it -
-            // concealment is not what the fog reads.
-            var market = buildFoundConcealedBase();
-
-            assertThat(Markets.isCountedAsColony(market, false))
-                .isTrue();
-        }
-
-        @Test
-        void returns_true_for_a_colony_with_no_entity_to_find() {
-
-            var market = buildEntitylessColony();
-
-            assertThat(Markets.isCountedAsColony(market, false))
-                .isTrue();
-        }
-
-        @Test
-        void returns_false_for_a_null_market() {
-            assertThat(Markets.isCountedAsColony(null, true))
-                .isFalse();
-        }
-    }
-
-    @Nested
-    class IsDiscoveredByPlayer {
-
-        @Test
-        void returns_true_when_the_entity_is_discovered() {
-
-            var market = buildMarket(buildDiscoveredEntity(), true);
-
-            assertThat(Markets.isDiscoveredByPlayer(market))
-                .isTrue();
-        }
-
-        @Test
-        void returns_true_when_the_primary_entity_is_null() {
-
-            var market = buildMarket(null, true);
-
-            assertThat(Markets.isDiscoveredByPlayer(market))
-                .isTrue();
-        }
-
-        @Test
-        void returns_false_when_the_entity_is_undiscovered_though_the_market_is_un_hidden() {
-
-            var market = buildMarket(buildDiscoverableEntity(), false);
-
-            // The two axes pulled apart: being publicly listed is not having been there, so an
-            // un-hidden market whose entity is still to be found reads undiscovered.
-            assertThat(Markets.isDiscoveredByPlayer(market))
-                .isFalse();
-        }
-
-        @Test
-        void returns_false_for_a_null_market() {
-            assertThat(Markets.isDiscoveredByPlayer(null))
-                .isFalse();
-        }
-    }
-
-    @Nested
-    class ReadLargestMarketsPerFaction {
-
-        @Test
-        void keeps_only_the_larger_of_two_markets_sharing_an_entity_and_owner() {
-
-            var station = buildDiscoveredEntity();
-            var independent = buildFaction("independent");
-            var vanillaAcademy = buildMarketAtPlace(station, independent, 3);
-            var moddedAcademy = buildMarketAtPlace(station, independent, 5);
-
-            assertThat(Markets.readLargestMarketsPerFaction(
-                    List.of(vanillaAcademy, moddedAcademy)))
-                .containsExactly(moddedAcademy);
-        }
-
-        @Test
-        void keeps_a_market_of_each_owner_when_one_entity_carries_two() {
-
-            var station = buildDiscoveredEntity();
-            var hegemony = buildMarketAtPlace(station, buildFaction("hegemony"), 3);
-            var pirates = buildMarketAtPlace(station, buildFaction("pirates"), 5);
-
-            assertThat(Markets.readLargestMarketsPerFaction(List.of(hegemony, pirates)))
-                .containsExactly(hegemony, pirates);
-        }
-
-        @Test
-        void keeps_both_markets_of_one_owner_on_separate_entities() {
-
-            var independent = buildFaction("independent");
-            var academy = buildMarketAtPlace(buildDiscoveredEntity(), independent, 3);
-            var ancyra = buildMarketAtPlace(buildDiscoveredEntity(), independent, 5);
-
-            assertThat(Markets.readLargestMarketsPerFaction(List.of(academy, ancyra)))
-                .containsExactly(academy, ancyra);
-        }
-
-        @Test
-        void keeps_the_first_of_two_equal_sized_markets_sharing_a_place() {
-
-            var station = buildDiscoveredEntity();
-            var independent = buildFaction("independent");
-            var first = buildMarketAtPlace(station, independent, 3);
-            var second = buildMarketAtPlace(station, independent, 3);
-
-            assertThat(Markets.readLargestMarketsPerFaction(List.of(first, second)))
-                .containsExactly(first);
-        }
-
-        @Test
-        void yields_a_place_where_it_was_first_named_though_its_winner_arrives_later() {
-
-            var station = buildDiscoveredEntity();
-            var independent = buildFaction("independent");
-            var small = buildMarketAtPlace(station, independent, 3);
-            var elsewhere = buildMarketAtPlace(buildDiscoveredEntity(), independent, 4);
-            var large = buildMarketAtPlace(station, independent, 6);
-
-            assertThat(Markets.readLargestMarketsPerFaction(List.of(small, elsewhere, large)))
-                .containsExactly(large, elsewhere);
-        }
-
-        @Test
-        void passes_through_markets_of_one_owner_that_have_no_entity() {
-
-            var independent = buildFaction("independent");
-            var first = buildMarketAtPlace(null, independent, 3);
-            var second = buildMarketAtPlace(null, independent, 5);
-
-            assertThat(Markets.readLargestMarketsPerFaction(List.of(first, second)))
-                .containsExactly(first, second);
-        }
-
-        @Test
-        void passes_through_markets_on_one_entity_that_have_no_owner() {
-
-            var station = buildDiscoveredEntity();
-            var first = buildMarketAtPlace(station, null, 3);
-            var second = buildMarketAtPlace(station, null, 5);
-
-            assertThat(Markets.readLargestMarketsPerFaction(List.of(first, second)))
-                .containsExactly(first, second);
-        }
-
-        @Test
-        void passes_through_markets_on_one_entity_whose_owner_has_no_id() {
-            // An owner with no id cannot be told apart from any other, so keying on it
-            // would merge places that share nothing but an unreadable faction.
-            var station = buildDiscoveredEntity();
-            var unnamedOwner = buildFaction(null);
-            var first = buildMarketAtPlace(station, unnamedOwner, 3);
-            var second = buildMarketAtPlace(station, unnamedOwner, 5);
-
-            assertThat(Markets.readLargestMarketsPerFaction(List.of(first, second)))
-                .containsExactly(first, second);
-        }
-
-        @Test
-        void drops_null_markets() {
-
-            var market = buildMarketAtPlace(
-                buildDiscoveredEntity(), buildFaction("hegemony"), 4);
-
-            assertThat(Markets.readLargestMarketsPerFaction(
-                    Arrays.asList(null, market, null)))
-                .containsExactly(market);
-        }
-
-        @Test
-        void yields_an_empty_list_for_no_markets() {
-            assertThat(Markets.readLargestMarketsPerFaction(List.of()))
-                .isEmpty();
-        }
-
-        @Test
-        void yields_an_empty_list_for_a_null_collection() {
-            assertThat(Markets.readLargestMarketsPerFaction(null))
-                .isEmpty();
-        }
-    }
-
-    @Nested
-    class IsSamePlaceAndOwner {
-
-        @Test
-        void reports_two_markets_on_one_entity_under_one_owner_as_one_place() {
-            // The shape a merged listing has to collapse: IndEvo hangs its own Galatia Academy
-            // market on the station that already carries vanilla's, both independent-owned.
-            var station = buildDiscoveredEntity();
-            var independent = buildFaction("independent");
-
-            assertThat(Markets.isSamePlaceAndOwner(
-                    buildMarketAtPlace(station, independent, 3),
-                    buildMarketAtPlace(station, independent, 5)))
-                .isTrue();
-        }
-
-        @Test
-        void reports_a_market_as_its_own_place() {
-
-            var market = buildMarketAtPlace(
-                buildDiscoveredEntity(), buildFaction("hegemony"), 4);
-
-            assertThat(Markets.isSamePlaceAndOwner(market, market))
-                .isTrue();
-        }
-
-        @Test
-        void reports_a_market_with_no_entity_as_its_own_place() {
-            // Identity settles it before the key is ever built, so a market that answers for
-            // nothing but itself still answers for itself.
-            var market = buildMarketAtPlace(null, buildFaction("hegemony"), 4);
-
-            assertThat(Markets.isSamePlaceAndOwner(market, market))
-                .isTrue();
-        }
-
-        @Test
-        void reports_two_markets_on_one_entity_under_different_owners_as_two_places() {
-
-            var station = buildDiscoveredEntity();
-
-            assertThat(Markets.isSamePlaceAndOwner(
-                    buildMarketAtPlace(station, buildFaction("hegemony"), 3),
-                    buildMarketAtPlace(station, buildFaction("pirates"), 5)))
-                .isFalse();
-        }
-
-        @Test
-        void reports_two_markets_of_one_owner_on_separate_entities_as_two_places() {
-
-            var independent = buildFaction("independent");
-
-            assertThat(Markets.isSamePlaceAndOwner(
-                    buildMarketAtPlace(buildDiscoveredEntity(), independent, 3),
-                    buildMarketAtPlace(buildDiscoveredEntity(), independent, 5)))
-                .isFalse();
-        }
-
-        @Test
-        void reports_two_distinct_markets_with_no_entity_as_two_places() {
-            // A missing key is not a key two markets can share, so each answers for itself alone.
-            var independent = buildFaction("independent");
-
-            assertThat(Markets.isSamePlaceAndOwner(
-                    buildMarketAtPlace(null, independent, 3),
-                    buildMarketAtPlace(null, independent, 5)))
-                .isFalse();
-        }
-
-        @Test
-        void reports_two_distinct_markets_with_no_owner_as_two_places() {
-
-            var station = buildDiscoveredEntity();
-
-            assertThat(Markets.isSamePlaceAndOwner(
-                    buildMarketAtPlace(station, null, 3),
-                    buildMarketAtPlace(station, null, 5)))
-                .isFalse();
-        }
-
-        @Test
-        void reports_a_null_market_as_the_same_place_as_nothing() {
-
-            var market = buildMarketAtPlace(
-                buildDiscoveredEntity(), buildFaction("hegemony"), 4);
-
-            assertThat(Markets.isSamePlaceAndOwner(null, market))
-                .isFalse();
-            assertThat(Markets.isSamePlaceAndOwner(market, null))
-                .isFalse();
-            assertThat(Markets.isSamePlaceAndOwner(null, null))
                 .isFalse();
         }
     }
@@ -735,110 +255,92 @@ final class MarketsTest {
         }
     }
 
-    // A market whose memory carries the $military flag at the given value - the signal a
-    // military industry raises, and the one vanilla's own classification reads.
-    private static MarketAPI buildMarketWithMilitaryFlag(boolean isMilitary) {
+    @Nested
+    class IsOwnedColony {
 
-        var memoryMock = mock(MemoryAPI.class);
+        @Test
+        void returns_true_for_a_faction_owned_non_condition_market() {
+            assertThat(Markets.isOwnedColony(MarketStateFixture.buildColony("hegemony")))
+                .isTrue();
+        }
 
-        when(memoryMock.getBoolean(MemFlags.MARKET_MILITARY))
-            .thenReturn(isMilitary);
+        @Test
+        void returns_false_for_a_condition_only_market() {
+            assertThat(Markets.isOwnedColony(MarketStateFixture.buildColonisableBody()))
+                .isFalse();
+        }
 
-        var marketMock = mock(MarketAPI.class);
+        @Test
+        void returns_false_when_no_faction_owns_the_market() {
+            assertThat(Markets.isOwnedColony(MarketStateFixture.buildUnownedMarket()))
+                .isFalse();
+        }
 
-        when(marketMock.getMemoryWithoutUpdate())
-            .thenReturn(memoryMock);
-
-        return marketMock;
+        @Test
+        void returns_false_for_a_null_market() {
+            assertThat(Markets.isOwnedColony(null))
+                .isFalse();
+        }
     }
 
-    // An ordinary colony: publicly listed on an entity the player has found. The plain case both
-    // colony filters admit.
-    private static MarketAPI buildVisibleColony() {
-        return buildColonyMarket(false, false, false);
-    }
+    @Nested
+    class ReadNameplate {
 
-    // A bare planet's condition-only placeholder: owned, but not a colony, so it fails the
-    // ownership arm before either visibility rule is consulted.
-    private static MarketAPI buildConditionOnlyColony() {
-        return buildColonyMarket(true, false, false);
-    }
+        @Test
+        void reads_the_market_s_own_name_with_its_primary_entity_s_glyph() {
+            // The pairing is the whole of the read: a market is named in its own right while the
+            // glyph belongs to the entity it sits on, and joining the two here is what stops a
+            // surface pairing one colony's name with another's mark.
+            // The entity is built before the market's own stubbing opens, so the two do not nest
+            // into an unfinished-stubbing error.
+            var entity = buildEntityWithMapIcon(
+                "graphics/icons/station0.png",
+                new Color(200, 200, 255));
 
-    // A base still to be found: hidden and on a discoverable entity, so it fails both rules.
-    private static MarketAPI buildConcealedStation() {
-        return buildColonyMarket(false, true, true);
-    }
+            var market = buildMarketNamed("Ancyra");
 
-    // A raided pirate base: permanently hidden, on an entity the player has found. Concealment
-    // and the fog disagree here, and the fog is what the filter reads.
-    private static MarketAPI buildFoundConcealedBase() {
-        return buildColonyMarket(false, true, false);
-    }
+            when(market.getPrimaryEntity())
+                .thenReturn(entity);
 
-    // A market that declares itself to the economy while its entity is still to be found - the
-    // shape every derelict station in the sector takes, and the one the fog withholds.
-    private static MarketAPI buildUnfoundListedColony() {
-        return buildColonyMarket(false, false, true);
-    }
+            assertThat(Markets.readNameplate(market))
+                .isEqualTo(new EntityNameplate(
+                    "Ancyra",
+                    Optional.of(new EntityMapIcon(
+                        "graphics/icons/station0.png",
+                        new Color(200, 200, 255)))));
+        }
 
-    // An owned colony with no entity at all: nothing is left to find, so the fog has nothing to
-    // withhold. Built apart from the colony builder below, which sites every colony on an entity
-    // precisely so its discoverability can be posed.
-    private static MarketAPI buildEntitylessColony() {
+        @Test
+        void names_a_market_whose_entity_carries_no_glyph() {
 
-        var factionMock = buildFaction("hegemony");
-        var marketMock = mock(MarketAPI.class);
+            var entityMock = mock(SectorEntityToken.class);
+            var market = buildMarketNamed("Jangala");
 
-        when(marketMock.getFaction())
-            .thenReturn(factionMock);
-        when(marketMock.isPlanetConditionMarketOnly())
-            .thenReturn(false);
-        when(marketMock.getPrimaryEntity())
-            .thenReturn(null);
+            when(market.getPrimaryEntity())
+                .thenReturn(entityMock);
 
-        return marketMock;
-    }
+            assertThat(Markets.readNameplate(market))
+                .isEqualTo(EntityNameplate.createUnmarkedNameplate("Jangala"));
+        }
 
-    // An owned colony wired for both filter arms: ownership (a faction owns it, not
-    // condition-only) and visibility (its entity's discoverability and the hidden flag). Reached
-    // through the named builders above - three positional booleans say nothing at a call site.
-    private static MarketAPI buildColonyMarket(
-            boolean isConditionOnly,
-            boolean isHidden,
-            boolean isEntityDiscoverable) {
+        @Test
+        void reads_a_market_with_no_primary_entity_as_named_and_unmarked() {
+            // A market the game has not sited yet answers no entity, which is the absence the icon
+            // read already handles - the name still identifies it.
+            var market = buildMarketNamed("Kazeron");
 
-        // Build the entity and faction (each stubs its own mock) before opening the market's
-        // stubbing, so the two do not nest into an unfinished-stubbing error.
-        var entityMock = mock(SectorEntityToken.class);
+            when(market.getPrimaryEntity())
+                .thenReturn(null);
 
-        when(entityMock.isDiscoverable())
-            .thenReturn(isEntityDiscoverable);
+            assertThat(Markets.readNameplate(market))
+                .isEqualTo(EntityNameplate.createUnmarkedNameplate("Kazeron"));
+        }
 
-        var factionMock = buildFaction("hegemony");
-        var marketMock = mock(MarketAPI.class);
-
-        when(marketMock.getFaction())
-            .thenReturn(factionMock);
-        when(marketMock.isPlanetConditionMarketOnly())
-            .thenReturn(isConditionOnly);
-        when(marketMock.isHidden())
-            .thenReturn(isHidden);
-        when(marketMock.getPrimaryEntity())
-            .thenReturn(entityMock);
-
-        return marketMock;
-    }
-
-    // A market answering only its display name, which is the one half of an identity the market
-    // itself supplies - the other belongs to whatever entity a case goes on to site it on.
-    private static MarketAPI buildMarketNamed(String name) {
-
-        var marketMock = mock(MarketAPI.class);
-
-        when(marketMock.getName())
-            .thenReturn(name);
-
-        return marketMock;
+        @Test
+        void reads_a_null_market_as_blank_and_unmarked() {
+            assertThat(Markets.readNameplate(null))
+                .isEqualTo(EntityNameplate.BLANK);
+        }
     }
 
     // An entity the map marks with the given glyph, authored on a custom-entity spec - where
@@ -858,80 +360,11 @@ final class MarketsTest {
         return entityMock;
     }
 
-    private static MarketAPI buildOwnedColony(FactionAPI faction, boolean isConditionOnly) {
-
-        var marketMock = mock(MarketAPI.class);
-
-        when(marketMock.getFaction())
-            .thenReturn(faction);
-        when(marketMock.isPlanetConditionMarketOnly())
-            .thenReturn(isConditionOnly);
-
-        return marketMock;
-    }
-
-    // A market sited on an entity, owned by a faction, at a size - the three reads the
-    // per-place resolution groups and picks winners by. Either half may be null to build
-    // a market the resolution cannot key.
-    private static MarketAPI buildMarketAtPlace(
-            SectorEntityToken entity,
-            FactionAPI faction,
-            int size) {
-
-        var marketMock = mock(MarketAPI.class);
-
-        when(marketMock.getPrimaryEntity())
-            .thenReturn(entity);
-        when(marketMock.getFaction())
-            .thenReturn(faction);
-        when(marketMock.getSize())
-            .thenReturn(size);
-
-        return marketMock;
-    }
-
-    private static FactionAPI buildFaction(String id) {
-
-        var factionMock = mock(FactionAPI.class);
-
-        when(factionMock.getId())
-            .thenReturn(id);
-
-        return factionMock;
-    }
-
-    private static MarketAPI buildMarket(SectorEntityToken primaryEntity, boolean isHidden) {
-
-        var marketMock = mock(MarketAPI.class);
-
-        when(marketMock.getPrimaryEntity())
-            .thenReturn(primaryEntity);
-        when(marketMock.isHidden())
-            .thenReturn(isHidden);
-
-        return marketMock;
-    }
-
-    // An entity the player has already found: no longer flagged discoverable.
-    private static SectorEntityToken buildDiscoveredEntity() {
-
-        var entityMock = mock(SectorEntityToken.class);
-
-        when(entityMock.isDiscoverable())
-            .thenReturn(false);
-
-        return entityMock;
-    }
-
-    // An entity still awaiting physical discovery: flagged discoverable.
-    private static SectorEntityToken buildDiscoverableEntity() {
-
-        var entityMock = mock(SectorEntityToken.class);
-
-        when(entityMock.isDiscoverable())
-            .thenReturn(true);
-
-        return entityMock;
+    // A "station"-tagged entity with no station fleet in memory - the shape a market's own
+    // primary entity takes when the place is itself a station. It says what the entity is,
+    // not that it defends anything, so the scan must pass over it.
+    private static SectorEntityToken buildFleetlessStationEntity() {
+        return buildStationTaggedEntity(null);
     }
 
     private static MarketAPI buildMarketAtStability(float stability) {
@@ -954,17 +387,38 @@ final class MarketsTest {
         return marketMock;
     }
 
-    // A station entity: carries the "station" tag, no opt-out, and the station fleet an
-    // orbital-station industry raises - the shape the scan admits.
-    private static SectorEntityToken buildStationEntity() {
-        return buildStationTaggedEntity(mock(CampaignFleetAPI.class));
+    // A market answering only its display name, which is the one half of an identity the market
+    // itself supplies - the other belongs to whatever entity a case goes on to site it on.
+    private static MarketAPI buildMarketNamed(String name) {
+
+        var marketMock = mock(MarketAPI.class);
+
+        when(marketMock.getName())
+            .thenReturn(name);
+
+        return marketMock;
     }
 
-    // A "station"-tagged entity with no station fleet in memory - the shape a market's own
-    // primary entity takes when the place is itself a station. It says what the entity is,
-    // not that it defends anything, so the scan must pass over it.
-    private static SectorEntityToken buildFleetlessStationEntity() {
-        return buildStationTaggedEntity(null);
+    // A market whose memory carries the $military flag at the given value - the signal a
+    // military industry raises, and the one vanilla's own classification reads.
+    private static MarketAPI buildMarketWithMilitaryFlag(boolean isMilitary) {
+
+        var memoryMock = mock(MemoryAPI.class);
+
+        when(memoryMock.getBoolean(MemFlags.MARKET_MILITARY))
+            .thenReturn(isMilitary);
+
+        var marketMock = mock(MarketAPI.class);
+
+        when(marketMock.getMemoryWithoutUpdate())
+            .thenReturn(memoryMock);
+
+        return marketMock;
+    }
+
+    // A connected entity that is not a station (e.g. the market's planet).
+    private static SectorEntityToken buildNonStationEntity() {
+        return mock(SectorEntityToken.class);
     }
 
     // A "station"-tagged entity flagged NO_ORBITAL_STATION, vanilla's own opt-out.
@@ -976,6 +430,12 @@ final class MarketsTest {
             .thenReturn(true);
 
         return entityMock;
+    }
+
+    // A station entity: carries the "station" tag, no opt-out, and the station fleet an
+    // orbital-station industry raises - the shape the scan admits.
+    private static SectorEntityToken buildStationEntity() {
+        return buildStationTaggedEntity(mock(CampaignFleetAPI.class));
     }
 
     // The shared wiring behind the two station shapes: the tag, plus whatever the entity's
@@ -996,10 +456,5 @@ final class MarketsTest {
             .thenReturn(memoryMock);
 
         return entityMock;
-    }
-
-    // A connected entity that is not a station (e.g. the market's planet).
-    private static SectorEntityToken buildNonStationEntity() {
-        return mock(SectorEntityToken.class);
     }
 }

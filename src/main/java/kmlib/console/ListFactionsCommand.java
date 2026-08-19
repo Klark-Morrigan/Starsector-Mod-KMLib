@@ -12,7 +12,7 @@ import kmlib.starsector.colonies.Colony;
 import kmlib.starsector.colonies.SectorColonies;
 import kmlib.starsector.factions.FactionFlags;
 import kmlib.starsector.factions.StarsectorPlayerFactionResolver;
-import kmlib.starsector.markets.Markets;
+import kmlib.starsector.markets.MarketVisibility;
 import kmlib.starsector.relation.StarsectorPlayerRelationshipFormatter;
 
 import java.util.ArrayList;
@@ -297,7 +297,7 @@ public final class ListFactionsCommand extends KmlibBaseConsoleCommand {
     // discovery read rather than a read of the entity's own flag, so a colony with
     // no entity at all - nothing left to find - is not reported as findable.
     private static boolean isStillDiscoverable(Colony colony) {
-        return !Markets.isDiscoveredByPlayer(colony.market());
+        return !MarketVisibility.isDiscoveredByPlayer(colony.market());
     }
 
     private static String readPlayerFactionId(SectorAPI sector) {

@@ -2,7 +2,7 @@ package kmlib.starsector.colonies;
 
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
-import kmlib.starsector.markets.Markets;
+import kmlib.starsector.markets.MarketVisibility;
 
 /**
  * One colony: its market, paired with the single fact about it that cannot be recovered from
@@ -22,8 +22,8 @@ import kmlib.starsector.markets.Markets;
  * counts or names one does not. Carrying it lets both read one set rather than each walking
  * the listing that suits it and then disagreeing about what is present.
  *
- * <p>Concealment and discovery are answered through {@link Markets} rather than stored beside
- * the market, so a colony can never report a state its own market contradicts. Listing
+ * <p>Concealment and discovery are answered through {@link MarketVisibility} rather than stored
+ * beside the market, so a colony can never report a state its own market contradicts. Listing
  * membership has no such source to defer to - it is a property of where the market was found,
  * not of the market - which is exactly why it is the one fact stored here.
  *
@@ -56,6 +56,6 @@ public record Colony(
      * @return true when the player has found the market's entity
      */
     public boolean isKnownToPlayer() {
-        return Markets.isKnownToPlayer(market);
+        return MarketVisibility.isKnownToPlayer(market);
     }
 }
