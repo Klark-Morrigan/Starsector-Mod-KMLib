@@ -1,0 +1,277 @@
+package kmlib.starsector.markets;
+
+import com.fs.starfarer.api.campaign.FactionAPI;
+import com.fs.starfarer.api.campaign.SectorEntityToken;
+import com.fs.starfarer.api.campaign.SubmarketPlugin;
+import com.fs.starfarer.api.campaign.econ.MarketAPI;
+import com.fs.starfarer.api.campaign.econ.SubmarketAPI;
+import com.fs.starfarer.api.combat.MutableStat;
+import com.fs.starfarer.api.impl.campaign.ids.Factions;
+import com.fs.starfarer.api.impl.campaign.ids.Submarkets;
+import com.fs.starfarer.api.impl.campaign.submarkets.StoragePlugin;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+/**
+ * The colonies an ownership change is posed against, and the reads that say what one became.
+ *
+ * <p>Stateful where its neighbours are not, and that is the point: an ownership rule is judged by
+ * what the market reads as afterwards, so a colony here answers from what has been done to it
+ * rather than from what a case stubbed in advance. A colony that kept answering its original owner
+ * would let a rule that changed nothing pass, and a colony that could not be asked twice would
+ * leave the round trip - player, faction, player again - unwritable, which is the run an asymmetry
+ * shows up in.
+ *
+ * <p>Two owners exist here, the player and one faction, and their tariff rates differ. Equal rates
+ * would let a run that never recomputed the tariff pass, since the number already on the market
+ * would be the number expected of it. A colony posed under any other id has no faction to read.
+ *
+ * <p>Separate from {@link MarketStateFixture}, which poses what kind of market a state read is
+ * asked about, and from {@link MarketPlacementFixture}, which poses where one sits. Neither is
+ * mutable, and neither carries the submarkets, entities and tariff an ownership change touches.
+ */
+public final class MarketOwnershipFixture {
+
+    /** The faction a colony is posed under whenever the case is not about the player. */
+    public static final String FACTION_OWNER_ID = "hegemony";
+
+    // What each owner levies, as the fraction a colony's tariff modifier is set to. Distinct per
+    // owner so a case can tell whose rate is on the market.
+    private static final Map<String, Float> TARIFF_FRACTIONS_BY_OWNER = Map.of(
+        Factions.PLAYER,
+        0.3f,
+        FACTION_OWNER_ID,
+        0.2f);
+
+    private MarketOwnershipFixture() {
+        // fixture of static builders, no instances.
+    }
+
+    /** A colony under an owner, trading through nothing and running no industry. */
+    public static MarketAPI buildColonyHeldBy(String factionId) {
+        return buildColony(factionId, Set.of(), List.of(), true);
+    }
+
+    /** A colony whose one industry is the given one - what a submarket verdict turns on. */
+    public static MarketAPI buildColonyRunning(String factionId, String industryId) {
+        return buildColony(factionId, Set.of(industryId), List.of(), true);
+    }
+
+    /** A colony already trading through the given submarkets, which is the state to change from. */
+    public static MarketAPI buildColonyTradingThrough(String factionId, String... submarketIds) {
+        return buildColony(factionId, Set.of(), List.of(submarketIds), true);
+    }
+
+    /**
+     * A colony that does not list its own body among its connected entities - the case that tells
+     * whether the body is re-flagged in its own right or only by being swept up with the rest.
+     */
+    public static MarketAPI buildColonyNotListingItsOwnBody(String factionId) {
+        return buildColony(factionId, Set.of(), List.of(), false);
+    }
+
+    /**
+     * A colony with no body and nothing connected to it - the shape a market carries when it
+     * stands for a place the game never gave an entity, which is what the flag half of an
+     * ownership change has nothing to say to.
+     */
+    public static MarketAPI buildColonyWithNothingAttached(String factionId) {
+
+        var market = buildColony(factionId, Set.of(), List.of(), true);
+
+        // Re-stubbed rather than built absent, so the one shape that differs from every other
+        // colony here says so in one place instead of threading a flag through the builder.
+        doReturn(null)
+            .when(market)
+            .getPrimaryEntity();
+
+        doReturn(null)
+            .when(market)
+            .getConnectedEntities();
+
+        return market;
+    }
+
+    /** The submarkets the colony trades through now, in the order it opened them. */
+    public static List<String> readSubmarketIds(MarketAPI market) {
+        return market.getSubmarketsCopy().stream()
+            .map(SubmarketAPI::getSpecId)
+            .toList();
+    }
+
+    /** The storage counter's plugin, which is what records that the player has paid to open it. */
+    public static StoragePlugin readStoragePlugin(MarketAPI market) {
+        return (StoragePlugin) market.getSubmarket(Submarkets.SUBMARKET_STORAGE).getPlugin();
+    }
+
+    /** The flag an entity flies now, as the faction id, or null while it flies none. */
+    public static String readFactionId(SectorEntityToken entity) {
+        return entity.getFaction() == null
+            ? null
+            : entity.getFaction().getId();
+    }
+
+    // A colony wired to answer from its own state: the owner it was last given, the submarkets it
+    // has been left with, and a tariff that carries whatever was last written to it.
+    private static MarketAPI buildColony(
+            String factionId,
+            Set<String> industryIds,
+            Collection<String> submarketIds,
+            boolean isOwnBodyListedAsConnected) {
+
+        // Everything the market answers with finishes its own stubbing before the market's opens,
+        // so the two do not nest into an unfinished-stubbing error.
+        var factionsById = buildFactions();
+        var ownBody = buildEntity(factionsById);
+        var orbitalStation = buildEntity(factionsById);
+        var connectedEntities = isOwnBodyListedAsConnected
+            ? new LinkedHashSet<>(List.of(ownBody, orbitalStation))
+            : new LinkedHashSet<>(List.of(orbitalStation));
+
+        var submarkets = new LinkedHashMap<String, SubmarketAPI>();
+
+        for (var submarketId : submarketIds) {
+            submarkets.put(submarketId, buildSubmarket(submarketId));
+        }
+
+        var ownerId = new AtomicReference<>(factionId);
+        var isPlayerOwned = new AtomicBoolean(false);
+        var tariff = new MutableStat(0f);
+        var marketMock = mock(MarketAPI.class);
+
+        when(marketMock.getPrimaryEntity())
+            .thenReturn(ownBody);
+        when(marketMock.getConnectedEntities())
+            .thenReturn(connectedEntities);
+        when(marketMock.getFaction())
+            .thenAnswer(invocation -> factionsById.get(ownerId.get()));
+        when(marketMock.getFactionId())
+            .thenAnswer(invocation -> ownerId.get());
+
+        doAnswer(invocation -> {
+                ownerId.set(invocation.getArgument(0));
+                return null;
+            })
+            .when(marketMock)
+            .setFactionId(anyString());
+
+        when(marketMock.isPlayerOwned())
+            .thenAnswer(invocation -> isPlayerOwned.get());
+
+        doAnswer(invocation -> {
+                isPlayerOwned.set(invocation.getArgument(0));
+                return null;
+            })
+            .when(marketMock)
+            .setPlayerOwned(anyBoolean());
+
+        when(marketMock.hasIndustry(anyString()))
+            .thenAnswer(invocation -> industryIds.contains(invocation.getArgument(0)));
+        when(marketMock.hasSubmarket(anyString()))
+            .thenAnswer(invocation -> submarkets.containsKey(invocation.getArgument(0)));
+
+        doAnswer(invocation -> {
+                String submarketId = invocation.getArgument(0);
+                submarkets.computeIfAbsent(submarketId, MarketOwnershipFixture::buildSubmarket);
+                return null;
+            })
+            .when(marketMock)
+            .addSubmarket(anyString());
+
+        doAnswer(invocation -> {
+                submarkets.remove(invocation.<String>getArgument(0));
+                return null;
+            })
+            .when(marketMock)
+            .removeSubmarket(anyString());
+
+        when(marketMock.getSubmarket(anyString()))
+            .thenAnswer(invocation -> submarkets.get(invocation.getArgument(0)));
+        when(marketMock.getSubmarketsCopy())
+            .thenAnswer(invocation -> new ArrayList<>(submarkets.values()));
+        when(marketMock.getTariff())
+            .thenReturn(tariff);
+
+        return marketMock;
+    }
+
+    // An entity that remembers the flag it was last given, so a case reads what it flies rather
+    // than counting the times it was told to change.
+    private static SectorEntityToken buildEntity(Map<String, FactionAPI> factionsById) {
+
+        var flownFactionId = new AtomicReference<String>();
+        var entityMock = mock(SectorEntityToken.class);
+
+        doAnswer(invocation -> {
+                flownFactionId.set(invocation.getArgument(0));
+                return null;
+            })
+            .when(entityMock)
+            .setFaction(anyString());
+
+        when(entityMock.getFaction())
+            .thenAnswer(invocation -> factionsById.get(flownFactionId.get()));
+
+        return entityMock;
+    }
+
+    // A trading counter, named by the submarket it is. Storage carries vanilla's own plugin
+    // because it is the one counter whose plugin an ownership change speaks to.
+    private static SubmarketAPI buildSubmarket(String submarketId) {
+
+        SubmarketPlugin pluginMock = Submarkets.SUBMARKET_STORAGE.equals(submarketId)
+            ? mock(StoragePlugin.class)
+            : mock(SubmarketPlugin.class);
+
+        var submarketMock = mock(SubmarketAPI.class);
+
+        when(submarketMock.getSpecId())
+            .thenReturn(submarketId);
+        when(submarketMock.getPlugin())
+            .thenReturn(pluginMock);
+
+        return submarketMock;
+    }
+
+    // The owners a colony can be posed under, each carrying the tariff fraction it levies.
+    private static Map<String, FactionAPI> buildFactions() {
+
+        var factionsById = new LinkedHashMap<String, FactionAPI>();
+
+        for (var owner : TARIFF_FRACTIONS_BY_OWNER.entrySet()) {
+            
+            factionsById.put(
+                owner.getKey(),
+                buildFaction(owner.getKey(),
+                owner.getValue()));
+        }
+        return factionsById;
+    }
+
+    private static FactionAPI buildFaction(String id, float tariffFraction) {
+
+        var factionMock = mock(FactionAPI.class);
+
+        when(factionMock.getId())
+            .thenReturn(id);
+        when(factionMock.getTariffFraction())
+            .thenReturn(tariffFraction);
+
+        return factionMock;
+    }
+}
