@@ -3,7 +3,6 @@ package kmlib.starsector.systems;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.ModManagerAPI;
 import com.fs.starfarer.api.SettingsAPI;
-import com.fs.starfarer.api.campaign.CampaignFleetAPI;
 import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.PlanetAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
@@ -20,23 +19,20 @@ import org.junit.jupiter.api.Test;
 import org.lwjgl.util.vector.Vector2f;
 import org.mockito.MockedStatic;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import assortment_of_things.abyss.entities.hyper.AbyssalFracture;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 /**
- * Pins the contracts of {@link StarSystems#getHyperspacePositions},
- * {@link StarSystems#getPlayerStarSystem}, {@link StarSystems#getStars},
+ * Pins the contracts of {@link StarSystems#getStars},
  * {@link StarSystems#getCentremostStar},
- * {@link StarSystems#getOrbitalDistanceTo}, {@link StarSystems#isReachable},
- * {@link StarSystems#find}, {@link StarSystems#findById}, {@link StarSystems#readMarkets},
+ * {@link StarSystems#isReachable},
+ * {@link StarSystems#find}, {@link StarSystems#readMarkets},
  * {@link StarSystems#readMarketsUnlistedByEconomy}, {@link StarSystems#readDisplayName} and
  * {@link StarSystems#readFactionClaimOverride}. Each method's cases live in a
  * {@link Nested} group so
@@ -48,266 +44,6 @@ final class StarSystemsTest {
     // The vanilla memory key a decreed claim is set under, spelled out rather than read from
     // MemFlags so a read pointed at another key fails here.
     private static final String CLAIMING_FACTION_FLAG = "$claimingFaction";
-
-    @Nested
-    class GetHyperspacePositions {
-
-        @Test
-        void collects_each_system_position_as_xy() {
-
-            var sector = buildSectorWithSystemsAt(new float[] {10, 20}, new float[] {-5, 7});
-            var positions = StarSystems.getHyperspacePositions(sector);
-
-            assertThat(positions)
-                .hasSize(2);
-            assertThat(positions.get(0))
-                .containsExactly(10.0, 20.0);
-            assertThat(positions.get(1))
-                .containsExactly(-5.0, 7.0);
-        }
-
-        @Test
-        void null_sector_yields_no_positions() {
-            assertThat(StarSystems.getHyperspacePositions(null))
-                .isEmpty();
-        }
-
-        @Test
-        void systems_without_a_location_are_skipped() {
-
-            var locatedMock = mock(StarSystemAPI.class);
-
-            when(locatedMock.getLocation())
-                .thenReturn(new Vector2f(1, 2));
-
-            var unlocatedMock = mock(StarSystemAPI.class);
-
-            when(unlocatedMock.getLocation())
-                .thenReturn(null);
-
-            var sectorMock = mock(SectorAPI.class);
-
-            when(sectorMock.getStarSystems())
-                .thenReturn(List.of(locatedMock, unlocatedMock));
-
-            assertThat(StarSystems.getHyperspacePositions(sectorMock))
-                .hasSize(1);
-        }
-    }
-
-    @Nested
-    class CollectPositionsById {
-
-        @Test
-        void keys_each_selected_system_by_id_with_its_position() {
-
-            var a = buildSystemAt("a", 10, 20);
-            var b = buildSystemAt("b", -5, 7);
-            var sectorMock = mock(SectorAPI.class);
-
-            when(sectorMock.getStarSystems())
-                .thenReturn(List.of(a, b));
-
-            var positions = StarSystems.collectPositionsById(sectorMock, system -> true);
-
-            assertThat(positions.get("a"))
-                .containsExactly(10.0, 20.0);
-            assertThat(positions.get("b"))
-                .containsExactly(-5.0, 7.0);
-        }
-
-        @Test
-        void excludes_systems_the_predicate_rejects() {
-
-            var kept = buildSystemAt("kept", 1, 1);
-            var rejected = buildSystemAt("rejected", 2, 2);
-            var sectorMock = mock(SectorAPI.class);
-
-            when(sectorMock.getStarSystems())
-                .thenReturn(List.of(kept, rejected));
-
-            var positions = StarSystems.collectPositionsById(
-                sectorMock,
-                system -> system.getId().equals("kept"));
-
-            assertThat(positions)
-                .containsOnlyKeys("kept");
-        }
-
-        @Test
-        void skips_a_selected_system_without_a_location() {
-
-            var located = buildSystemAt("located", 1, 1);
-            var unlocatedMock = mock(StarSystemAPI.class);
-
-            when(unlocatedMock.getLocation())
-                .thenReturn(null);
-
-            var sectorMock = mock(SectorAPI.class);
-
-            when(sectorMock.getStarSystems())
-                .thenReturn(List.of(located, unlocatedMock));
-
-            var positions = StarSystems.collectPositionsById(sectorMock, system -> true);
-
-            assertThat(positions)
-                .containsOnlyKeys("located");
-        }
-
-        @Test
-        void a_null_predicate_keeps_every_located_system() {
-
-            var a = buildSystemAt("a", 1, 1);
-            var b = buildSystemAt("b", 2, 2);
-            var sectorMock = mock(SectorAPI.class);
-
-            when(sectorMock.getStarSystems())
-                .thenReturn(List.of(a, b));
-
-            var positions = StarSystems.collectPositionsById(sectorMock, null);
-
-            assertThat(positions)
-                .containsOnlyKeys("a", "b");
-        }
-
-        @Test
-        void null_sector_yields_no_positions() {
-            assertThat(StarSystems.collectPositionsById(null, system -> true))
-                .isEmpty();
-        }
-    }
-
-    @Nested
-    class GetPlayerStarSystem {
-
-        @Test
-        void returns_the_fleets_system() {
-
-            var systemMock = mock(StarSystemAPI.class);
-            var fleetMock = mock(CampaignFleetAPI.class);
-
-            when(fleetMock.getStarSystem())
-                .thenReturn(systemMock);
-
-            var sectorMock = mock(SectorAPI.class);
-
-            when(sectorMock.getPlayerFleet())
-                .thenReturn(fleetMock);
-
-            assertThat(StarSystems.getPlayerStarSystem(sectorMock))
-                .isSameAs(systemMock);
-        }
-
-        @Test
-        void returns_null_for_a_null_sector() {
-            assertThat(StarSystems.getPlayerStarSystem(null))
-                .isNull();
-        }
-
-        @Test
-        void returns_null_without_a_player_fleet() {
-
-            var sectorMock = mock(SectorAPI.class);
-
-            when(sectorMock.getPlayerFleet())
-                .thenReturn(null);
-
-            assertThat(StarSystems.getPlayerStarSystem(sectorMock))
-                .isNull();
-        }
-
-        @Test
-        void returns_null_when_the_fleet_is_in_hyperspace() {
-
-            var fleetMock = mock(CampaignFleetAPI.class);
-
-            when(fleetMock.getStarSystem())
-                .thenReturn(null);
-
-            var sectorMock = mock(SectorAPI.class);
-
-            when(sectorMock.getPlayerFleet())
-                .thenReturn(fleetMock);
-
-            assertThat(StarSystems.getPlayerStarSystem(sectorMock))
-                .isNull();
-        }
-    }
-
-    @Nested
-    class FindById {
-
-        @Test
-        void returns_the_system_whose_id_matches() {
-
-            var wanted = buildSystemAt("corvus", 1, 1);
-            var other = buildSystemAt("yma", 2, 2);
-            var sectorMock = mock(SectorAPI.class);
-
-            when(sectorMock.getStarSystems())
-                .thenReturn(List.of(other, wanted));
-
-            assertThat(StarSystems.findById(sectorMock, "corvus"))
-                .isSameAs(wanted);
-        }
-
-        @Test
-        void returns_null_when_no_system_has_that_id() {
-
-            var only = buildSystemAt("corvus", 1, 1);
-            var sectorMock = mock(SectorAPI.class);
-
-            when(sectorMock.getStarSystems())
-                .thenReturn(List.of(only));
-
-            assertThat(StarSystems.findById(sectorMock, "nowhere"))
-                .isNull();
-        }
-
-        @Test
-        void returns_null_for_a_null_sector() {
-            assertThat(StarSystems.findById(null, "corvus"))
-                .isNull();
-        }
-
-        @Test
-        void returns_null_for_a_blank_id() {
-            // A blank id short-circuits before the walk, so a stubbed system list is not even
-            // needed - a blank query matches nothing rather than the first system by accident.
-            assertThat(StarSystems.findById(mock(SectorAPI.class), " "))
-                .isNull();
-        }
-    }
-
-    @Nested
-    class IndexById {
-
-        @Test
-        void keys_every_system_by_its_own_id_in_the_sectors_order() {
-            // The bulk lookup a pass resolving many ids reaches for instead of walking the system
-            // list once per id. The sector's own order is kept, so a caller iterating the index
-            // sees the systems in the order the sector lists them rather than a hash's.
-            var corvus = buildSystemAt("corvus", 1, 1);
-            var yma = buildSystemAt("yma", 2, 2);
-            var sectorMock = mock(SectorAPI.class);
-
-            when(sectorMock.getStarSystems())
-                .thenReturn(List.of(yma, corvus));
-
-            var indexed = StarSystems.indexById(sectorMock);
-
-            assertThat(indexed)
-                .containsExactly(
-                    entry("yma", yma),
-                    entry("corvus", corvus));
-        }
-
-        @Test
-        void returns_an_empty_index_for_a_null_sector() {
-            assertThat(StarSystems.indexById(null))
-                .isEmpty();
-        }
-    }
 
     @Nested
     class GetStars {
@@ -398,47 +134,6 @@ final class StarSystemsTest {
         void returns_null_for_a_null_system() {
             assertThat(StarSystems.getCentremostStar(null))
                 .isNull();
-        }
-    }
-
-    @Nested
-    class GetOrbitalDistanceTo {
-
-        @Test
-        void sums_a_planets_own_orbit_to_its_star() {
-
-            var starMock = mock(SectorEntityToken.class);
-            var planet = buildOrbiting(300, starMock);
-
-            assertThat(StarSystems.getOrbitalDistanceTo(planet, starMock))
-                .isEqualTo(300.0);
-        }
-
-        @Test
-        void sums_the_whole_orbit_chain_for_a_moon() {
-
-            var starMock = mock(SectorEntityToken.class);
-            var planet = buildOrbiting(300, starMock);
-            var moon = buildOrbiting(50, planet);
-
-            assertThat(StarSystems.getOrbitalDistanceTo(moon, starMock))
-                .isEqualTo(350.0);
-        }
-
-        @Test
-        void does_not_add_the_references_own_orbit() {
-
-            var starMock = buildOrbiting(9999, mock(SectorEntityToken.class));
-            var planet = buildOrbiting(300, starMock);
-
-            assertThat(StarSystems.getOrbitalDistanceTo(planet, starMock))
-                .isEqualTo(300.0);
-        }
-
-        @Test
-        void yields_infinity_for_a_null_body() {
-            assertThat(StarSystems.getOrbitalDistanceTo(null, mock(SectorEntityToken.class)))
-                .isEqualTo(Double.POSITIVE_INFINITY);
         }
     }
 
@@ -955,17 +650,6 @@ final class StarSystemsTest {
 
     // A body on a circular orbit of the given radius around a focus, the unit an orbit-chain
     // distance sums.
-    private static SectorEntityToken buildOrbiting(float radius, SectorEntityToken focus) {
-
-        var bodyMock = mock(SectorEntityToken.class);
-
-        when(bodyMock.getCircularOrbitRadius())
-            .thenReturn(radius);
-        when(bodyMock.getOrbitFocus())
-            .thenReturn(focus);
-
-        return bodyMock;
-    }
 
     // A system with a centre token and its stars, the two a central-star search reads.
     private static StarSystemAPI buildSystemWithCentreAndStars(
@@ -1226,37 +910,4 @@ final class StarSystemsTest {
         return systemMock;
     }
 
-    private static StarSystemAPI buildSystemAt(String id, float x, float y) {
-
-        var systemMock = mock(StarSystemAPI.class);
-
-        when(systemMock.getId())
-            .thenReturn(id);
-        when(systemMock.getLocation())
-            .thenReturn(new Vector2f(x, y));
-
-        return systemMock;
-    }
-
-    private static SectorAPI buildSectorWithSystemsAt(float[]... points) {
-
-        var systems = new ArrayList<StarSystemAPI>();
-
-        for (float[] point : points) {
-
-            var systemMock = mock(StarSystemAPI.class);
-
-            when(systemMock.getLocation())
-                .thenReturn(new Vector2f(point[0], point[1]));
-
-            systems.add(systemMock);
-        }
-
-        var sectorMock = mock(SectorAPI.class);
-
-        when(sectorMock.getStarSystems())
-            .thenReturn(systems);
-
-        return sectorMock;
-    }
 }

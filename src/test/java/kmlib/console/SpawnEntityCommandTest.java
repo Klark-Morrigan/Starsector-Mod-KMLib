@@ -12,6 +12,7 @@ import com.fs.starfarer.api.impl.campaign.ids.Entities;
 import kmlib.starsector.entities.EntityNameGenerator;
 import kmlib.starsector.entities.EntityOrbits;
 import kmlib.starsector.entities.EntitySpawner;
+import kmlib.starsector.systems.SectorStarSystems;
 import kmlib.starsector.systems.StarSystems;
 import kmlib.testfixtures.console.output.CommandOutputFake;
 
@@ -71,6 +72,7 @@ final class SpawnEntityCommandTest {
     private static final float JITTERED_SPEED = 9f;
 
     private MockedStatic<Global> globalMock;
+    private MockedStatic<SectorStarSystems> sectorStarSystemsMock;
     private MockedStatic<StarSystems> starSystemsMock;
     private MockedStatic<EntityNameGenerator> nameGeneratorMock;
     private MockedStatic<EntitySpawner> spawnerMock;
@@ -111,10 +113,14 @@ final class SpawnEntityCommandTest {
             .when(Global::getSector)
             .thenReturn(sectorMock);
 
-        starSystemsMock = mockStatic(StarSystems.class);
-        starSystemsMock
-            .when(() -> StarSystems.getPlayerStarSystem(any()))
+        // Two utilities, so two static mocks: which system the player is in belongs to the
+        // sector-wide reads, while its name and its stars belong to the per-system ones.
+        sectorStarSystemsMock = mockStatic(SectorStarSystems.class);
+        sectorStarSystemsMock
+            .when(() -> SectorStarSystems.getPlayerStarSystem(any()))
             .thenReturn(systemMock);
+
+        starSystemsMock = mockStatic(StarSystems.class);
 
         // The whole utility is mocked, so every read on it answers null until stubbed -
         // including the one the report titles the system by, which would otherwise leave
@@ -149,6 +155,7 @@ final class SpawnEntityCommandTest {
         spawnerMock.close();
         nameGeneratorMock.close();
         starSystemsMock.close();
+        sectorStarSystemsMock.close();
         globalMock.close();
     }
 

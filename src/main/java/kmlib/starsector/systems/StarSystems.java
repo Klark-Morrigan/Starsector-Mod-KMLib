@@ -15,17 +15,16 @@ import kmlib.starsector.rat.RandomAssortmentOfThingsMatcher;
 import kmlib.text.KmlibStrings;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Predicate;
 
 /**
- * Queries over a sector's star systems.
+ * Queries over one star system: what it is called, what is in it, and whether it can be
+ * reached.
  *
- * <p>Centralises the common "walk {@code getStarSystems()} and pull something
- * off each" loops so KM* mods (and any external caller) share one
- * implementation rather than re-walking the system list each time.
+ * <p>Every read here takes the system it is about. Questions posed of the sector's whole set of
+ * systems - indexing them, locating them, finding the player's - are {@link SectorStarSystems}'
+ * instead, because the two are asked by different callers at different moments and a class
+ * answering both grows with no rule for what else belongs in it.
  *
  * <p>Final class with a private constructor: pure-function utility, no
  * instance state. Matches {@link kmlib.starsector.scripts.SectorScripts}'s
@@ -33,142 +32,8 @@ import java.util.function.Predicate;
  */
 public final class StarSystems {
 
-    // A hang guard for a malformed cyclic orbit chain, not a domain limit: a real chain nests
-    // only a few links (station -> planet -> star), so the walk always halts on the reference or
-    // a null focus long before this. The value is generous headroom above any real nesting,
-    // chosen only to bound a pathological cycle rather than to model one.
-    private static final int MAX_ORBIT_CHAIN_DEPTH = 32;
-
     private StarSystems() {
         // utility class, no instances.
-    }
-
-    /**
-     * Collects every star system's hyperspace position as an {x, y} point -
-     * the sector's spatial layout, for callers that need it (e.g.
-     * partitioning the sector geometrically).
-     *
-     * @param sector the sector to read; null yields an empty list.
-     * @return one {x, y} pair per star system with a non-null location, in
-     *         the sector's star-system order.
-     */
-    public static List<double[]> getHyperspacePositions(SectorAPI sector) {
-
-        var positions = new ArrayList<double[]>();
-        if (sector == null) {
-            return positions;
-        }
-        for (var system : sector.getStarSystems()) {
-            var location = system.getLocation();
-            if (location != null) {
-                positions.add(new double[] {location.x, location.y});
-            }
-        }
-        return positions;
-    }
-
-    /**
-     * Collects the live hyperspace position of every star system the predicate
-     * selects, keyed by system id - the id-addressed counterpart of
-     * {@link #getHyperspacePositions}, for callers that must match a position back to
-     * the system it belongs to (tracking motion, diffing a layout).
-     *
-     * @param sector        the sector to read; null yields an empty map
-     * @param shouldInclude which systems to keep; a system it rejects is left out.
-     *                      Null applies no filter - every located system is kept,
-     *                      making this the id-keyed twin of
-     *                      {@link #getHyperspacePositions}
-     * @return each selected system's {x, y} position keyed by id, in the sector's
-     *         star-system order; a system with no location is skipped, having no
-     *         position to record
-     */
-    public static Map<String, double[]> collectPositionsById(
-            SectorAPI sector,
-            Predicate<StarSystemAPI> shouldInclude) {
-                
-        var positions = new LinkedHashMap<String, double[]>();
-        if (sector == null) {
-            return positions;
-        }
-        for (var system : sector.getStarSystems()) {
-            var location = system.getLocation();
-            if (location == null) {
-                continue;
-            }
-            // A null predicate means no scoping was asked for, so every located
-            // system is kept rather than the walk failing on the missing filter.
-            if (shouldInclude != null && !shouldInclude.test(system)) {
-                continue;
-            }
-            positions.put(
-                system.getId(),
-                new double[] {location.x, location.y});
-        }
-        return positions;
-    }
-
-    /**
-     * The star system the player's fleet is currently in, for callers (e.g.
-     * in-system-only console commands) that must act on the current system.
-     *
-     * @param sector the sector to read; null yields null
-     * @return the player's current star system, or null when the fleet is in
-     *         hyperspace or unavailable
-     */
-    public static StarSystemAPI getPlayerStarSystem(SectorAPI sector) {
-        if (sector == null || sector.getPlayerFleet() == null) {
-            return null;
-        }
-        return sector.getPlayerFleet().getStarSystem();
-    }
-
-    /**
-     * Every star system in the sector keyed by its {@code getId}, for a caller resolving many ids
-     * rather than one.
-     *
-     * <p>The bulk counterpart of {@link #findById}, which walks the system list per lookup: a pass
-     * resolving an id for each of a few hundred systems would otherwise walk that list once per
-     * system. Keyed on {@code getId} for the same reason {@link #findById} matches on it - vanilla's
-     * own {@code SectorAPI#getStarSystem} matches the optional unique id first and silently misses a
-     * system whose base name is what every system-keyed map is built on.
-     *
-     * @param sector the sector to index; null yields an empty map
-     * @return each system keyed by its id, in the sector's star-system order
-     */
-    public static Map<String, StarSystemAPI> indexById(SectorAPI sector) {
-
-        var systemById = new LinkedHashMap<String, StarSystemAPI>();
-        if (sector == null) {
-            return systemById;
-        }
-        for (var system : sector.getStarSystems()) {
-            systemById.put(system.getId(), system);
-        }
-        return systemById;
-    }
-
-    /**
-     * The star system whose {@code getId} equals {@code id} - the reliable id lookup vanilla's own
-     * {@code SectorAPI#getStarSystem} does not provide. That one matches the optional unique id
-     * before the base name, so a system keyed by its base name (which is what {@code getId}
-     * returns) is silently missed whenever it also carries a unique id. This matches {@code getId}
-     * directly, the id every system-keyed map is built on.
-     *
-     * @param sector the sector to search; null yields null
-     * @param id     the system id to match, as {@code StarSystemAPI#getId} reports it; null or
-     *               blank yields null
-     * @return the system with that id, or null when none matches
-     */
-    public static StarSystemAPI findById(SectorAPI sector, String id) {
-        if (sector == null || !KmlibStrings.hasText(id)) {
-            return null;
-        }
-        for (var system : sector.getStarSystems()) {
-            if (id.equals(system.getId())) {
-                return system;
-            }
-        }
-        return null;
     }
 
     /**
@@ -331,38 +196,6 @@ public final class StarSystems {
             }
         }
         return nearestStar != null ? nearestStar : centre;
-    }
-
-    /**
-     * How far a body sits from a reference along its orbit, summing the circular-orbit radii up
-     * the body's orbit-focus chain until the chain reaches the reference - typically the
-     * system's {@link #getCentremostStar centremost star}.
-     *
-     * <p>Reads the orbit rather than the body's live position, so the value does not drift as
-     * the body revolves: a planet is as far out as its orbit, a moon adds its planet's orbit, a
-     * station on a planet adds the planet's too. A body that never reaches the reference sums
-     * its whole chain - still a stable depth - and a malformed cyclic chain is capped rather
-     * than looped forever. The reference's own orbit is not added, so a body sitting on the
-     * reference reads zero.
-     *
-     * @param body      the body to measure; null yields {@link Double#POSITIVE_INFINITY}, since
-     *                  a body with no orbit to read sits at no measurable distance
-     * @param reference the body the chain is summed up to; null sums the whole chain to its root
-     * @return the summed orbit-chain distance, or positive infinity when {@code body} is null
-     */
-    public static double getOrbitalDistanceTo(SectorEntityToken body, SectorEntityToken reference) {
-        if (body == null) {
-            return Double.POSITIVE_INFINITY;
-        }
-        var distance = 0.0;
-        var orbiter = body;
-        for (var depth = 0;
-                orbiter != null && orbiter != reference && depth < MAX_ORBIT_CHAIN_DEPTH;
-                depth++) {
-            distance += orbiter.getCircularOrbitRadius();
-            orbiter = orbiter.getOrbitFocus();
-        }
-        return distance;
     }
 
     /**

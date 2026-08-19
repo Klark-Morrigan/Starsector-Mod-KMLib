@@ -49,7 +49,7 @@ public final class SystemMotionTracker {
         if (sector == null) {
             return false;
         }
-        return motionTracker.observe(StarSystems.collectPositionsById(sector, shouldInclude));
+        return motionTracker.observe(SectorStarSystems.collectPositionsById(sector, shouldInclude));
     }
 
     /**

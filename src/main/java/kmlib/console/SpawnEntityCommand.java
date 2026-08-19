@@ -15,6 +15,7 @@ import kmlib.math.geometry.Points;
 import kmlib.starsector.entities.EntityNameGenerator;
 import kmlib.starsector.entities.EntityOrbits;
 import kmlib.starsector.entities.EntitySpawner;
+import kmlib.starsector.systems.SectorStarSystems;
 import kmlib.starsector.systems.StarSystems;
 import kmlib.text.KmlibStrings;
 
@@ -106,7 +107,7 @@ public final class SpawnEntityCommand extends KmlibBaseConsoleCommand {
             return parsed.getResult();
         }
 
-        var system = StarSystems.getPlayerStarSystem(Global.getSector());
+        var system = SectorStarSystems.getPlayerStarSystem(Global.getSector());
         // resolveOrbitFocus returns null (having printed why) when the focus is
         // ambiguous in a multi-star system or the supplied id matches no entity,
         // so we surface that as bad syntax too.

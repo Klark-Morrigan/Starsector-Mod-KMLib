@@ -3,7 +3,7 @@ package kmlib.console.validation;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.SectorAPI;
 
-import kmlib.starsector.systems.StarSystems;
+import kmlib.starsector.systems.SectorStarSystems;
 import kmlib.testfixtures.console.output.CommandOutputFake;
 
 import org.junit.jupiter.api.Nested;
@@ -75,10 +75,11 @@ final class CommandContextValidationTest {
             // requireStarSystem is the one guard that reads the live sector, so
             // stub the lookup it makes rather than reach for a running game.
             try (var globalMock = mockStatic(Global.class);
-                var starSystemsMock = mockStatic(StarSystems.class)) {
+                var sectorStarSystemsMock = mockStatic(SectorStarSystems.class)) {
                 var sectorMock = mock(SectorAPI.class);
                 globalMock.when(Global::getSector).thenReturn(sectorMock);
-                starSystemsMock.when(() -> StarSystems.getPlayerStarSystem(sectorMock))
+                sectorStarSystemsMock
+                    .when(() -> SectorStarSystems.getPlayerStarSystem(sectorMock))
                     .thenReturn(null);
 
                 var result =

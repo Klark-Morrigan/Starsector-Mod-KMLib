@@ -144,4 +144,57 @@ final class EntityOrbitsTest {
             verify(entityMock, never()).setCircularOrbit(focusMock, 0f, 50f, 0f);
         }
     }
+
+    @Nested
+    class GetOrbitalDistanceTo {
+
+        @Test
+        void sums_a_planets_own_orbit_to_its_star() {
+
+            var starMock = mock(SectorEntityToken.class);
+            var planet = buildOrbiting(300, starMock);
+
+            assertThat(EntityOrbits.computeOrbitalDistanceTo(planet, starMock))
+                .isEqualTo(300.0);
+        }
+
+        @Test
+        void sums_the_whole_orbit_chain_for_a_moon() {
+
+            var starMock = mock(SectorEntityToken.class);
+            var planet = buildOrbiting(300, starMock);
+            var moon = buildOrbiting(50, planet);
+
+            assertThat(EntityOrbits.computeOrbitalDistanceTo(moon, starMock))
+                .isEqualTo(350.0);
+        }
+
+        @Test
+        void does_not_add_the_references_own_orbit() {
+
+            var starMock = buildOrbiting(9999, mock(SectorEntityToken.class));
+            var planet = buildOrbiting(300, starMock);
+
+            assertThat(EntityOrbits.computeOrbitalDistanceTo(planet, starMock))
+                .isEqualTo(300.0);
+        }
+
+        @Test
+        void yields_infinity_for_a_null_body() {
+            assertThat(EntityOrbits.computeOrbitalDistanceTo(null, mock(SectorEntityToken.class)))
+                .isEqualTo(Double.POSITIVE_INFINITY);
+        }
+    }
+
+    private static SectorEntityToken buildOrbiting(float radius, SectorEntityToken focus) {
+
+        var bodyMock = mock(SectorEntityToken.class);
+
+        when(bodyMock.getCircularOrbitRadius())
+            .thenReturn(radius);
+        when(bodyMock.getOrbitFocus())
+            .thenReturn(focus);
+
+        return bodyMock;
+    }
 }

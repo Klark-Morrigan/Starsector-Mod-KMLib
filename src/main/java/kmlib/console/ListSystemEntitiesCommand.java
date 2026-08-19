@@ -9,7 +9,9 @@ import com.fs.starfarer.api.impl.campaign.ids.Tags;
 import kmlib.console.output.CommandOutput;
 import kmlib.console.parsing.Parameter;
 import kmlib.console.parsing.ParameterSpec;
+import kmlib.starsector.entities.EntityOrbits;
 import kmlib.starsector.geometry.StarsectorPoints;
+import kmlib.starsector.systems.SectorStarSystems;
 import kmlib.starsector.systems.StarSystems;
 
 import java.util.ArrayList;
@@ -37,7 +39,6 @@ public final class ListSystemEntitiesCommand extends KmlibBaseConsoleCommand {
     private static final ListSystemEntitiesSpec SPEC = new ListSystemEntitiesSpec();
     // One full revolution; an orbital period (in days) divides into this to give
     // the entity's angular speed in degrees per day.
-    private static final double DEGREES_PER_CIRCLE = 360.0;
 
     public ListSystemEntitiesCommand() {
     }
@@ -55,7 +56,7 @@ public final class ListSystemEntitiesCommand extends KmlibBaseConsoleCommand {
         if (!parsed.isValid()) {
             return parsed.getResult();
         }
-        var system = StarSystems.getPlayerStarSystem(Global.getSector());
+        var system = SectorStarSystems.getPlayerStarSystem(Global.getSector());
         output.showMessage(buildReport(system, parsed.get(SPEC.gatesOnly)));
         return CommandResult.SUCCESS;
     }
@@ -121,12 +122,9 @@ public final class ListSystemEntitiesCommand extends KmlibBaseConsoleCommand {
             SectorEntityToken center) {
         var keep = new HashSet<SectorEntityToken>();
         for (var entity : entities) {
-            if (!entity.hasTag(Tags.GATE)) {
-                continue;
-            }
-            for (var node = entity; node != null && keep.add(node);
-                node = node.getOrbitFocus()) {
-                // walk up the orbit chain, stopping when a node is already kept
+            if (entity.hasTag(Tags.GATE)) {
+                // The gate and everything it hangs off, so the tree can be drawn down to it.
+                keep.addAll(EntityOrbits.readFocusChain(entity));
             }
         }
         if (!keep.isEmpty()) {
@@ -220,7 +218,7 @@ public final class ListSystemEntitiesCommand extends KmlibBaseConsoleCommand {
             Locale.ROOT,
             "  dist=%.0f  speed=%.2f deg/day",
             StarsectorPoints.computeDistanceBetween(entity, focus),
-            computeOrbitalSpeedDegPerDay(entity));
+            EntityOrbits.readSpeedDegPerDay(entity));
     }
 
     private static String describe(SectorEntityToken entity) {
@@ -228,14 +226,6 @@ public final class ListSystemEntitiesCommand extends KmlibBaseConsoleCommand {
             ? entity.getName()
             : "(unnamed)";
         return name + " [" + entity.getId() + ']';
-    }
-
-    private static double computeOrbitalSpeedDegPerDay(SectorEntityToken entity) {
-        var orbit = entity.getOrbit();
-        if (orbit == null || orbit.getOrbitalPeriod() <= 0f) {
-            return 0.0;
-        }
-        return DEGREES_PER_CIRCLE / orbit.getOrbitalPeriod();
     }
 
     /**

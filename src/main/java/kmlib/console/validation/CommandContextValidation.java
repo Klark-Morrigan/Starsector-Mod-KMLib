@@ -4,7 +4,7 @@ import com.fs.starfarer.api.Global;
 
 import kmlib.console.output.CommandOutput;
 import kmlib.console.output.ConsoleCommandOutput;
-import kmlib.starsector.systems.StarSystems;
+import kmlib.starsector.systems.SectorStarSystems;
 
 import org.lazywizard.console.BaseCommand.CommandContext;
 import org.lazywizard.console.BaseCommand.CommandResult;
@@ -67,7 +67,7 @@ public final class CommandContextValidation {
     }
 
     public CommandContextValidation requireStarSystem() {
-        checks.add(() -> StarSystems.getPlayerStarSystem(Global.getSector()) != null
+        checks.add(() -> SectorStarSystems.getPlayerStarSystem(Global.getSector()) != null
             ? null
             : new Failure(
                 "This command must be run inside a star system.",

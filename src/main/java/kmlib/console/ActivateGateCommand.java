@@ -7,6 +7,7 @@ import kmlib.console.output.CommandOutput;
 import kmlib.console.parsing.Parameter;
 import kmlib.console.parsing.ParameterSpec;
 import kmlib.starsector.entities.Gates;
+import kmlib.starsector.systems.SectorStarSystems;
 import kmlib.starsector.systems.StarSystems;
 
 import static kmlib.console.parsing.ParameterValues.text;
@@ -42,7 +43,7 @@ public final class ActivateGateCommand extends KmlibBaseConsoleCommand {
             return parsed.getResult();
         }
 
-        var system = StarSystems.getPlayerStarSystem(Global.getSector());
+        var system = SectorStarSystems.getPlayerStarSystem(Global.getSector());
         var id = parsed.get(SPEC.id);
         var gate = StarSystems.find(system, Tags.GATE, id);
         if (gate == null) {

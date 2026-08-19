@@ -8,6 +8,7 @@ import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
 
+import kmlib.starsector.systems.SectorStarSystems;
 import kmlib.starsector.systems.StarSystems;
 import kmlib.testfixtures.console.output.CommandOutputFake;
 
@@ -96,6 +97,7 @@ final class ListSystemEntitiesCommandTest {
     class RunCommand {
 
         private MockedStatic<Global> globalMock;
+        private MockedStatic<SectorStarSystems> sectorStarSystemsMock;
         private MockedStatic<StarSystems> starSystemsMock;
         private CommandOutputFake outputFake;
         private ListSystemEntitiesCommand command;
@@ -112,10 +114,14 @@ final class ListSystemEntitiesCommandTest {
                 .when(Global::getSector)
                 .thenReturn(mock(SectorAPI.class));
 
-            starSystemsMock = mockStatic(StarSystems.class);
-            starSystemsMock
-                .when(() -> StarSystems.getPlayerStarSystem(any()))
+            // Two utilities, so two static mocks: which system the player is in belongs to
+            // the sector-wide reads, what it is called to the per-system ones.
+            sectorStarSystemsMock = mockStatic(SectorStarSystems.class);
+            sectorStarSystemsMock
+                .when(() -> SectorStarSystems.getPlayerStarSystem(any()))
                 .thenReturn(systemMock);
+
+            starSystemsMock = mockStatic(StarSystems.class);
 
             // The whole utility is mocked, so every read on it answers null until stubbed -
             // including the one the report titles the system by, which would otherwise leave
@@ -131,6 +137,7 @@ final class ListSystemEntitiesCommandTest {
         @AfterEach
         void tearDown() {
             starSystemsMock.close();
+            sectorStarSystemsMock.close();
             globalMock.close();
         }
 

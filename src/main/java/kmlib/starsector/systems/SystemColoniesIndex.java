@@ -112,12 +112,12 @@ public final class SystemColoniesIndex {
     }
 
     // The system carrying this id, resolving the sector's systems once and keeping the result.
-    // Matched on getId for the same reason StarSystems.indexById is: vanilla's own lookup
+    // Matched on getId for the same reason SectorStarSystems.indexById is: vanilla's own lookup
     // matches the optional unique id first and silently misses a system keyed by its base name.
     private StarSystemAPI findSystemById(String systemId) {
 
         if (systemById == null) {
-            systemById = StarSystems.indexById(sector);
+            systemById = SectorStarSystems.indexById(sector);
         }
         return systemById.get(systemId);
     }

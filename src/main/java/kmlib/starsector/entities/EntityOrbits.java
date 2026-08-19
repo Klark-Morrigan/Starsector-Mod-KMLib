@@ -2,6 +2,8 @@ package kmlib.starsector.entities;
 
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -18,6 +20,13 @@ import java.util.Random;
  * degrees-per-day rate (or pins it when the rate is non-positive). Speed is in
  * degrees per day throughout, the intuitive knob; the orbital period
  * {@code setCircularOrbit} wants is derived from it (period = 360 / speed).
+ *
+ * <p>The reads sit here beside the writes on purpose. {@link #readSpeedDegPerDay}
+ * inverts the very arithmetic {@link #applyCircularOrbit} performs, and a reader
+ * that stated that inverse for itself would be free to disagree with the writer
+ * about what 360 means. {@link #readFocusChain} and
+ * {@link #computeOrbitalDistanceTo} walk the orbit-focus chain, which is the one
+ * traversal any question about where a body sits relative to another has to make.
  */
 public final class EntityOrbits {
     private static final float DEGREES_PER_CIRCLE = 360f;
@@ -30,6 +39,12 @@ public final class EntityOrbits {
     // Vanilla jitters the divisor up by up to a quarter (20 + random*5), so this
     // is the default spread for an unspecified jitter.
     public static final float VANILLA_JITTER_FRACTION = 0.25f;
+
+    // A hang guard for a malformed cyclic orbit chain, not a domain limit: a real
+    // chain nests only a few links (station -> planet -> star), so a walk halts on a
+    // null focus long before this. The value is generous headroom above any real
+    // nesting, chosen only to bound a pathological cycle rather than to model one.
+    private static final int MAX_ORBIT_CHAIN_DEPTH = 32;
 
     private EntityOrbits() {
     }
@@ -113,5 +128,87 @@ public final class EntityOrbits {
             startAngleDegrees,
             orbitDistance,
             orbitalPeriodDays);
+    }
+
+    /**
+     * The chain of bodies a body orbits through, itself first, then its orbit focus, that
+     * body's focus, and so on until nothing is orbited.
+     *
+     * <p>The one traversal every orbit-relative question makes - how far out a body sits, what
+     * it hangs off, which bodies a tree has to keep to show it. Stated once so the cycle guard
+     * is stated once too: a malformed chain that orbits itself is bounded here rather than at
+     * each call site, where one site guarding by depth and another by a visited set is two
+     * answers to a question with one.
+     *
+     * @param body the body to walk up from; null yields an empty chain
+     * @return the body and everything it orbits through, outermost first; never null
+     */
+    public static List<SectorEntityToken> readFocusChain(SectorEntityToken body) {
+
+        var chain = new ArrayList<SectorEntityToken>();
+
+        for (var orbiter = body;
+                orbiter != null && chain.size() < MAX_ORBIT_CHAIN_DEPTH;
+                orbiter = orbiter.getOrbitFocus()) {
+
+            chain.add(orbiter);
+        }
+        return chain;
+    }
+
+    /**
+     * How far a body sits from a reference along its orbit, summing the circular-orbit radii up
+     * the body's orbit-focus chain until the chain reaches the reference - typically the
+     * system's centremost star.
+     *
+     * <p>Reads the orbit rather than the body's live position, so the value does not drift as
+     * the body revolves: a planet is as far out as its orbit, a moon adds its planet's orbit, a
+     * station on a planet adds the planet's too. A body that never reaches the reference sums
+     * its whole chain - still a stable depth. The reference's own orbit is not added, so a body
+     * sitting on the reference reads zero.
+     *
+     * @param body      the body to measure; null yields {@link Double#POSITIVE_INFINITY}, since
+     *                  a body with no orbit to read sits at no measurable distance
+     * @param reference the body the chain is summed up to; null sums the whole chain to its root
+     * @return the summed orbit-chain distance, or positive infinity when {@code body} is null
+     */
+    public static double computeOrbitalDistanceTo(
+            SectorEntityToken body,
+            SectorEntityToken reference) {
+
+        if (body == null) {
+            return Double.POSITIVE_INFINITY;
+        }
+        var distance = 0.0;
+
+        for (var orbiter : readFocusChain(body)) {
+            if (orbiter == reference) {
+                break;
+            }
+            distance += orbiter.getCircularOrbitRadius();
+        }
+        return distance;
+    }
+
+    /**
+     * How fast a body actually circles its focus, in degrees per day - the orbit it is on,
+     * rather than the one {@link #deriveBaseSpeedDegPerDay} would have given it.
+     *
+     * <p>The inverse of what {@link #applyCircularOrbit} writes, which is why it lives beside
+     * it: both turn on the same 360 degrees, and a reader stating that conversion for itself
+     * could drift from the writer it is meant to undo.
+     *
+     * @param entity the body to read; null, or one on no orbit, yields {@code 0} - the same
+     *               reading a pinned body has
+     * @return the body's orbital speed in degrees per day
+     */
+    public static float readSpeedDegPerDay(SectorEntityToken entity) {
+
+        var orbit = entity == null ? null : entity.getOrbit();
+
+        if (orbit == null || orbit.getOrbitalPeriod() <= 0f) {
+            return 0f;
+        }
+        return DEGREES_PER_CIRCLE / orbit.getOrbitalPeriod();
     }
 }
