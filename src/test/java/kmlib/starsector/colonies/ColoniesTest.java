@@ -17,8 +17,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 /**
- * Pins the contracts of {@link Colonies#readKnownColonies} and
- * {@link Colonies#hasKnownColony}, and the fixed-set guarantee its construction makes.
+ * Pins the contracts of the two projections over a colony set - {@link Colonies#readKnownColonies}
+ * and {@link Colonies#readInhabitingColonies}, each beside the emptiness question asked of it -
+ * and the fixed-set guarantee its construction makes.
  * Each method's cases live in a {@link Nested} group so the suite reports as a per-method tree;
  * the world they are posed against is {@link ColonyFixture}, shared with the readers' suites.
  *
@@ -459,6 +460,208 @@ final class ColoniesTest {
                 .containsExactly(buildDerelict(derelict), buildColony(colony));
             assertThat(colonies.hasKnownColony(BOTH_GATES_ON))
                 .isTrue();
+        }
+    }
+
+    @Nested
+    class ReadInhabitingColonies {
+
+        @Test
+        void excludes_a_derelict_the_player_has_seen() {
+            // The whole of the projection's reason for existing: the listing may name a hulk the
+            // player has been past, and the place it orbits is still nobody's home.
+            var fixture = new ColonyFixture("kumari_kandam");
+            var derelict = fixture.buildDerelictStation("neutral");
+
+            fixture.placeColoniesInSystem(derelict);
+            fixture.markSystemAsEntered();
+
+            var colonies = buildColoniesOf(buildDerelict(derelict));
+
+            assertThat(colonies.readKnownColonies(BOTH_GATES_ON))
+                .containsExactly(buildDerelict(derelict));
+            assertThat(colonies.readInhabitingColonies(BOTH_GATES_ON))
+                .isEmpty();
+        }
+
+        @Test
+        void keeps_a_colony_the_derelict_beside_it_does_not_join() {
+            // Both projections speak about one system and say different things: the listing names
+            // the derelict the colony's own inhabitants can see, and habitation counts only the
+            // colony.
+            var fixture = new ColonyFixture("kumari_kandam");
+            var colony = fixture.buildVisibleColony("hegemony");
+            var derelict = fixture.buildDerelictStation("neutral");
+
+            fixture.placeColoniesInSystem(colony, derelict);
+
+            var colonies = buildColoniesOf(buildColony(colony), buildDerelict(derelict));
+
+            assertThat(colonies.readKnownColonies(BOTH_GATES_ON))
+                .containsExactly(buildColony(colony), buildDerelict(derelict));
+            assertThat(colonies.readInhabitingColonies(BOTH_GATES_ON))
+                .containsExactly(buildColony(colony));
+        }
+
+        @Test
+        void keeps_every_known_colony_where_no_derelict_is_present() {
+            // Nothing is removed where nothing was ever a hulk, so a system of ordinary colonies
+            // reads alike under either projection - in the set's own order.
+            var fixture = new ColonyFixture("galatia");
+            var ancyra = fixture.buildVisibleColony("hegemony");
+            var academy = fixture.buildFoundConcealedColony("independent");
+
+            fixture.placeColoniesInSystem(ancyra, academy);
+
+            assertThat(buildColoniesOf(buildColony(ancyra), buildColony(academy))
+                    .readInhabitingColonies(BOTH_GATES_ON))
+                .containsExactly(buildColony(ancyra), buildColony(academy));
+        }
+
+        @Test
+        void excludes_a_derelict_its_own_gate_has_let_through() {
+            // Kind and gate answer separate questions. Turning the station gate off says the
+            // player may be told about a hulk they have found; it does not put anybody aboard it.
+            var fixture = new ColonyFixture("kumari_kandam");
+            var derelict = fixture.buildDerelictStation("neutral");
+
+            fixture.placeColoniesInSystem(derelict);
+
+            var colonies = buildColoniesOf(buildDerelict(derelict));
+
+            assertThat(colonies.readKnownColonies(ONLY_HIDDEN_GATED))
+                .containsExactly(buildDerelict(derelict));
+            assertThat(colonies.readInhabitingColonies(ONLY_HIDDEN_GATED))
+                .isEmpty();
+        }
+
+        @Test
+        void follows_the_gate_that_holds_a_concealed_colony_back() {
+            // Habitation is the known set with a kind removed and no second reading of the rule,
+            // so a colony the hidden gate withholds is absent from both and present in both once
+            // the gate is off.
+            var fixture = new ColonyFixture("kumari_kandam");
+            var exoship = fixture.buildFoundConcealedColony("rat_exotech");
+
+            fixture.placeColoniesInSystem(exoship);
+
+            var colonies = buildColoniesOf(buildColony(exoship));
+
+            assertThat(colonies.readInhabitingColonies(BOTH_GATES_ON))
+                .isEmpty();
+            assertThat(colonies.readInhabitingColonies(ONLY_STATIONS_GATED))
+                .containsExactly(buildColony(exoship));
+        }
+
+        @Test
+        void reads_an_unstated_rule_as_the_fog_alone() {
+
+            var fixture = new ColonyFixture("corvus");
+            var colony = fixture.buildVisibleColony("hegemony");
+            var unfoundColony = fixture.buildUnfoundOpenColony("tritachyon");
+
+            fixture.placeColoniesInSystem(colony, unfoundColony);
+
+            assertThat(buildColoniesOf(buildColony(colony), buildColony(unfoundColony))
+                    .readInhabitingColonies(null))
+                .containsExactly(buildColony(colony));
+        }
+    }
+
+    @Nested
+    class HasInhabitingColony {
+
+        @Test
+        void answers_false_for_a_system_holding_nothing() {
+            assertThat(Colonies.NONE.hasInhabitingColony(ColonyVisibility.BASE_FOG))
+                .isFalse();
+        }
+
+        @Test
+        void answers_true_for_an_ordinary_colony() {
+
+            var fixture = new ColonyFixture("corvus");
+
+            assertThat(buildColoniesOf(buildColony(fixture.buildVisibleColony("hegemony")))
+                    .hasInhabitingColony(ColonyVisibility.BASE_FOG))
+                .isTrue();
+        }
+
+        @Test
+        void answers_false_for_a_system_holding_only_a_derelict_the_player_has_seen() {
+            // The reading the map turns on: a system the listing has something to say about, and
+            // which is still empty space with a hulk in it.
+            var fixture = new ColonyFixture("kumari_kandam");
+            var derelict = fixture.buildDerelictStation("neutral");
+
+            fixture.placeColoniesInSystem(derelict);
+            fixture.markSystemAsEntered();
+
+            var colonies = buildColoniesOf(buildDerelict(derelict));
+
+            assertThat(colonies.hasKnownColony(BOTH_GATES_ON))
+                .isTrue();
+            assertThat(colonies.hasInhabitingColony(BOTH_GATES_ON))
+                .isFalse();
+        }
+
+        @Test
+        void answers_true_for_a_system_a_derelict_shares_with_a_colony() {
+            // The set the short-circuit settles on its first pass, where the derelict must not be
+            // what carries the answer.
+            var fixture = new ColonyFixture("kumari_kandam");
+            var derelict = fixture.buildDerelictStation("neutral");
+            var colony = fixture.buildVisibleColony("hegemony");
+
+            fixture.placeColoniesInSystem(derelict, colony);
+
+            assertThat(buildColoniesOf(buildDerelict(derelict), buildColony(colony))
+                    .hasInhabitingColony(BOTH_GATES_ON))
+                .isTrue();
+        }
+
+        @Test
+        void follows_the_gate_that_holds_a_concealed_colony_back() {
+            // A concealed colony settles nothing, so this is also the set the short-circuit
+            // cannot answer on its first pass - the gate has to be consulted for the emptiness
+            // question exactly as it is for the listing.
+            var fixture = new ColonyFixture("kumari_kandam");
+            var exoship = fixture.buildFoundConcealedColony("rat_exotech");
+
+            fixture.placeColoniesInSystem(exoship);
+
+            var colonies = buildColoniesOf(buildColony(exoship));
+
+            assertThat(colonies.hasInhabitingColony(BOTH_GATES_ON))
+                .isFalse();
+            assertThat(colonies.hasInhabitingColony(ONLY_STATIONS_GATED))
+                .isTrue();
+        }
+
+        @Test
+        void agrees_with_the_projection_it_asks_the_emptiness_of() {
+            // The claim the short-circuit rests on: skipping the list must not change the answer,
+            // and a set mixing a derelict with a colony the fog withholds is where a short-circuit
+            // that had drifted from the projection would show it.
+            var fixture = new ColonyFixture("kumari_kandam");
+            var derelict = fixture.buildDerelictStation("neutral");
+            var unfoundColony = fixture.buildUnfoundOpenColony("hegemony");
+
+            fixture.placeColoniesInSystem(derelict, unfoundColony);
+            fixture.markSystemAsEntered();
+
+            var derelictOnly = buildColoniesOf(buildDerelict(derelict));
+            var mixed = buildColoniesOf(buildDerelict(derelict), buildColony(unfoundColony));
+
+            assertThat(derelictOnly.readInhabitingColonies(BOTH_GATES_ON))
+                .isEmpty();
+            assertThat(derelictOnly.hasInhabitingColony(BOTH_GATES_ON))
+                .isFalse();
+
+            assertThat(mixed.readInhabitingColonies(BOTH_GATES_ON))
+                .isEmpty();
+            assertThat(mixed.hasInhabitingColony(BOTH_GATES_ON))
+                .isFalse();
         }
     }
 

@@ -25,8 +25,9 @@ import java.util.List;
  * <p>The set is unfogged: it holds every owned colony present, found or not. That is
  * deliberate, because a mechanic mirrored from vanilla has to see what vanilla sees - claim
  * scoring weighs colonies the player has never found, and a fogged input would resolve a
- * different claimant. What the player may be shown is {@link #readKnownColonies}, one named
- * projection over the set rather than a filter each display reader applies for itself.
+ * different claimant. What the player may be shown is {@link #readKnownColonies}, and what
+ * amounts to people living here is {@link #readInhabitingColonies} - named projections over the
+ * set rather than filters each display reader applies for itself.
  */
 public record Colonies(
     List<Colony> colonies) {
@@ -118,6 +119,73 @@ public record Colonies(
         return false;
     }
 
+    /**
+     * The colonies that amount to people living here - the known projection minus the derelicts
+     * nobody was ever aboard, and the one every reader answering a question about habitation is
+     * meant to take.
+     *
+     * <p>A second named projection rather than a flag on the first, because what may be
+     * <em>said</em> about a place and what constitutes <em>habitation</em> of it are different
+     * questions with different answers. A derelict is named in a listing once somebody has seen
+     * it and settles nothing whatever, so a reader handed the wrong one of these makes a claim
+     * about the sector rather than a formatting mistake.
+     *
+     * <p>Taken from the known projection rather than resolved beside it, so the two cannot
+     * disagree about visibility: this is that set with one kind removed, never a second reading
+     * of the rule. A derelict a settled place reveals is therefore admitted to the listing alone,
+     * and goes on settling nothing - which is what keeps one derelict from vouching for another.
+     *
+     * @param rule what the player may be shown of the set; null reads as
+     *             {@link ColonyVisibility#BASE_FOG}
+     * @return the known colonies somebody lives on, in the set's own order
+     */
+    public List<Colony> readInhabitingColonies(ColonyVisibility rule) {
+
+        var inhabitingColonies = new ArrayList<Colony>();
+
+        for (var colony : readKnownColonies(rule)) {
+
+            if (isInhabitingColony(colony)) {
+                inhabitingColonies.add(colony);
+            }
+        }
+        return List.copyOf(inhabitingColonies);
+    }
+
+    /**
+     * Whether anybody the player knows of lives here - the emptiness of
+     * {@link #readInhabitingColonies} asked without materialising it.
+     *
+     * <p>Offered for the same reason its known counterpart is: the cell that paints a place and
+     * the scan that decides whether to draw it at all ask only whether the projection has any,
+     * per system and per frame.
+     *
+     * <p>Short-circuits on the first colony that settles the place, which answers this question
+     * twice over - a settling colony is somewhere people live as well as the thing that would
+     * reveal anything gated, so no second pass could take back the yes it has given.
+     *
+     * @param rule what the player may be shown of the set; null reads as
+     *             {@link ColonyVisibility#BASE_FOG}
+     * @return true when at least one colony passes the habitation projection
+     */
+    public boolean hasInhabitingColony(ColonyVisibility rule) {
+
+        var resolvedRule = resolveRule(rule);
+
+        if (hasSettlingColony(resolvedRule)) {
+            return true;
+        }
+        // Nothing settles the place, so nothing gated can be revealed by it: the rest resolves
+        // exactly as the projection does, derelicts excepted.
+        for (var colony : colonies) {
+
+            if (isInhabitingColony(colony) && isKnownColony(colony, resolvedRule, false)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // The first pass: whether the ungated colonies the fog admits amount to somewhere people
     // live, and so to somewhere with inhabitants who would have seen whatever else is here.
     //
@@ -168,6 +236,17 @@ public record Colonies(
         return rule.shouldIncludeUndiscoveredMarkets()
             || !isGatedOnRevelation(colony, rule)
             || isRevealedToPlayer(colony, isSettledPlace);
+    }
+
+    // Whether a colony amounts to people living where it stands - the one thing that separates
+    // the habitation projection from the known one.
+    //
+    // Stated as the exclusion of the kind nobody was ever aboard rather than as an admission of
+    // the ordinary one, so a kind added later inhabits its place unless it says otherwise.
+    // Overstating a place by one hulk is the cheaper mistake; erasing a settlement that is really
+    // there takes its people with it.
+    private static boolean isInhabitingColony(Colony colony) {
+        return colony.kind() != ColonyKind.ABANDONED_STATION;
     }
 
     // The base fog, plus the ownership arm the composed filter carries with it.
