@@ -5,6 +5,7 @@ import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.SubmarketPlugin;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.campaign.econ.SubmarketAPI;
+import com.fs.starfarer.api.campaign.listeners.EconomyTickListener;
 import com.fs.starfarer.api.combat.MutableStat;
 import com.fs.starfarer.api.impl.campaign.ids.Factions;
 import com.fs.starfarer.api.impl.campaign.ids.Submarkets;
@@ -26,6 +27,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
 
 /**
  * The colonies an ownership change is posed against, and the reads that say what one became.
@@ -192,7 +194,13 @@ public final class MarketOwnershipFixture {
             String factionId) {
 
         var ownerId = new AtomicReference<>(factionId);
-        var isPlayerOwned = new AtomicBoolean(false);
+
+        // Posed in step with the owner the colony is built under, and moved only by the setter
+        // afterwards. A colony built as the player's that read as nobody's until something set the
+        // flag would stand for a state no save holds, and any rule keying on player ownership
+        // before it changes hands - the account its outgoing owner is billed for, among them -
+        // would be posed against the wrong colony.
+        var isPlayerOwned = new AtomicBoolean(Factions.PLAYER.equals(factionId));
 
         when(marketMock.getFaction())
             .thenAnswer(invocation -> factionsById.get(ownerId.get()));
@@ -282,14 +290,15 @@ public final class MarketOwnershipFixture {
         return entityMock;
     }
 
-    // A trading counter, named by the submarket it is. Storage carries vanilla's own plugin
-    // because it is the one counter whose plugin an ownership change speaks to.
+    // A trading counter, named by the submarket it is. Two of them carry more than a bare plugin,
+    // those being the counters whose plugin an operation on a colony speaks to: storage records
+    // that the player has paid to open it, and local resources keeps the account a colony's
+    // outgoing owner is billed for. The account is posed through the listener interface the billing
+    // step is declared on rather than through the engine's own plugin class, which reads several
+    // game settings while it loads and would have every case here standing a game up to have one.
     private static SubmarketAPI buildSubmarket(String submarketId) {
 
-        SubmarketPlugin pluginMock = Submarkets.SUBMARKET_STORAGE.equals(submarketId)
-            ? mock(StoragePlugin.class)
-            : mock(SubmarketPlugin.class);
-
+        var pluginMock = buildSubmarketPlugin(submarketId);
         var submarketMock = mock(SubmarketAPI.class);
 
         when(submarketMock.getSpecId())
@@ -298,6 +307,22 @@ public final class MarketOwnershipFixture {
             .thenReturn(pluginMock);
 
         return submarketMock;
+    }
+
+    // The plugin behind one counter, carrying whatever that counter is spoken to about.
+    private static SubmarketPlugin buildSubmarketPlugin(String submarketId) {
+
+        if (Submarkets.SUBMARKET_STORAGE.equals(submarketId)) {
+            return mock(StoragePlugin.class);
+        }
+
+        if (Submarkets.LOCAL_RESOURCES.equals(submarketId)) {
+            return mock(
+                SubmarketPlugin.class,
+                withSettings().extraInterfaces(EconomyTickListener.class));
+        }
+
+        return mock(SubmarketPlugin.class);
     }
 
     // The owners a colony can be posed under, each carrying the tariff fraction it levies.
