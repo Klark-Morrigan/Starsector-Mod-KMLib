@@ -40,4 +40,37 @@ public final class StarsectorPoints {
     public static double computeAngleDegreesBetween(SectorEntityToken from, SectorEntityToken to) {
         return Points.computeAngleDegrees(from.getLocation(), to.getLocation());
     }
+
+    /**
+     * Whether {@code candidate}, that far from whatever is being measured from, is a nearer
+     * answer than the best found so far - strictly closer, or exactly as close and carrying
+     * the lower id.
+     *
+     * <p>The tie-break is what makes a nearest search answer the same entity twice running.
+     * Equidistant bodies are ordinary in a star system - a shared orbit, a mirrored pair -
+     * and with distance alone the winner is whichever the traversal happened to meet first,
+     * which is a listing order that differs between installs and between passes. An id is
+     * stable, so it settles the tie rather than leaving it to be settled arbitrarily.
+     *
+     * <p>Stated here, beside the distance the search ranks by, so every nearest search
+     * settles a tie the same way instead of each deciding for itself.
+     *
+     * @param candidateDistance how far the candidate sits from the point measured from
+     * @param incumbentDistance how far the best answer so far sits from it
+     * @param candidate         the entity being weighed
+     * @param incumbent         the best answer so far; null - nothing found yet - is beaten
+     *                          by anything
+     * @return true when the candidate should displace the incumbent
+     */
+    public static boolean isNearerThan(
+            double candidateDistance,
+            double incumbentDistance,
+            SectorEntityToken candidate,
+            SectorEntityToken incumbent) {
+
+        if (candidateDistance != incumbentDistance) {
+            return candidateDistance < incumbentDistance;
+        }
+        return incumbent == null || candidate.getId().compareTo(incumbent.getId()) < 0;
+    }
 }
