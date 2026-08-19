@@ -1,5 +1,6 @@
 package kmlib.console.markets;
 
+import com.fs.starfarer.api.campaign.CampaignFleetAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
@@ -20,6 +21,10 @@ import static org.mockito.Mockito.when;
  * ends up acting on, and - where it ends up acting on none - what the player is told and why.
  * The cases live in a {@link Nested} group so the suite reports as a per-method tree; the shared
  * mock builders stay on the outer class.
+ *
+ * <p>The reach of each of the two ways to name a place is pinned here as much as the outcome is:
+ * an id resolves across the whole sector, hyperspace included, while the nearest search is
+ * confined to the system the fleet is in and refuses outright when there is none.
  *
  * <p>Posed against a requirement of the suite's own rather than one the console ships, so the
  * cases are about resolution - naming, searching, refusing - and not about what makes a market
@@ -46,7 +51,7 @@ final class MarketTargetResolverTest {
         void resolves_the_market_on_the_entity_the_id_names() {
 
             var systemMock = buildSystemNamed(SYSTEM_NAME);
-            var jangala = buildMarketOnBodyIn(systemMock, "jangala", 500, 0);
+            var jangala = MarketPlacementFixture.buildMarketOnBodyAt("jangala", 500, 0);
             var sectorMock = buildSectorAround(systemMock, jangala);
 
             assertThat(MarketTargetResolver.resolveTargetMarket(
@@ -60,9 +65,10 @@ final class MarketTargetResolverTest {
         void resolves_a_named_entity_the_economy_does_not_list() {
             // The named place is found on the entity itself, so a body carrying only survey data
             // - which the economy never lists - can still be pointed at by id.
-            var systemMock = buildSystemNamed(SYSTEM_NAME);
-            var surveyData = buildMarketOnBodyIn(systemMock, "corvus_iii", 500, 0);
-            var sectorMock = buildSectorAround(systemMock);
+            var sectorMock = buildSectorAround(buildSystemNamed(SYSTEM_NAME));
+            var surveyData = MarketPlacementFixture.buildMarketOnBodyAt("corvus_iii", 500, 0);
+
+            answerForEntityById(sectorMock, surveyData.getPrimaryEntity());
 
             assertThat(MarketTargetResolver.resolveTargetMarket(
                     sectorMock,
@@ -72,12 +78,29 @@ final class MarketTargetResolverTest {
         }
 
         @Test
+        void resolves_a_named_place_from_outside_every_star_system() {
+            // An id names one place in the whole sector, so it is reachable from hyperspace,
+            // where there is no system to be scoped to at all. Nothing about naming a place
+            // depends on where the player is standing - only "nearest" does.
+            var sectorMock = buildSectorInHyperspace();
+            var jangala = MarketPlacementFixture.buildMarketOnBodyAt("jangala", 500, 0);
+
+            answerForEntityById(sectorMock, jangala.getPrimaryEntity());
+
+            assertThat(MarketTargetResolver.resolveTargetMarket(
+                    sectorMock,
+                    "jangala",
+                    ANY_MARKET))
+                .isEqualTo(new ResolvedMarketTarget(jangala));
+        }
+
+        @Test
         void takes_the_named_place_over_a_nearer_one() {
             // Naming a place is the player overriding the search, not narrowing it: the nearest
             // qualifying place is what a bare invocation means, and this invocation is not bare.
             var systemMock = buildSystemNamed(SYSTEM_NAME);
-            var named = buildMarketOnBodyIn(systemMock, "jangala", 5000, 0);
-            var nearer = buildMarketOnBodyIn(systemMock, "gilead", 100, 0);
+            var named = MarketPlacementFixture.buildMarketOnBodyAt("jangala", 5000, 0);
+            var nearer = MarketPlacementFixture.buildMarketOnBodyAt("gilead", 100, 0);
             var sectorMock = buildSectorAround(systemMock, named, nearer);
 
             assertThat(MarketTargetResolver.resolveTargetMarket(
@@ -88,29 +111,30 @@ final class MarketTargetResolverTest {
         }
 
         @Test
-        void refuses_an_id_no_entity_here_carries() {
+        void refuses_an_id_no_entity_in_the_sector_carries() {
             // Named rather than searched: the player asked for one place, so the answer is that
-            // it is not here, not the nearest thing that happens to qualify.
-            var systemMock = buildSystemNamed(SYSTEM_NAME);
-            var sectorMock = buildSectorAround(systemMock);
+            // there is no such place, not the nearest thing that happens to qualify.
+            var sectorMock = buildSectorAround(buildSystemNamed(SYSTEM_NAME));
 
             assertThat(MarketTargetResolver.resolveTargetMarket(
                     sectorMock,
                     "jangala",
                     ANY_MARKET))
                 .isEqualTo(new UnresolvedMarketTarget(
-                    "No entity with id 'jangala' in Corvus."));
+                    "No entity with id 'jangala' in the sector."));
         }
 
         @Test
         void refuses_an_entity_with_no_market_on_it() {
 
-            var systemMock = buildSystemNamed(SYSTEM_NAME);
+            var sectorMock = buildSectorAround(buildSystemNamed(SYSTEM_NAME));
 
-            buildBodyWithoutMarketIn(systemMock, "corvus_gate");
+            answerForEntityById(
+                sectorMock,
+                MarketPlacementFixture.buildBodyAt("corvus_gate", 0, 0));
 
             assertThat(MarketTargetResolver.resolveTargetMarket(
-                    buildSectorAround(systemMock),
+                    sectorMock,
                     "corvus_gate",
                     ANY_MARKET))
                 .isEqualTo(new UnresolvedMarketTarget("Entity 'corvus_gate' has no market."));
@@ -118,10 +142,10 @@ final class MarketTargetResolverTest {
 
         @Test
         void refuses_a_named_market_of_the_wrong_kind() {
-            // Told apart from "not here" on purpose: the place exists and the player pointed at
-            // it, so the correction is a different one.
+            // Told apart from "no such place" on purpose: the place exists and the player pointed
+            // at it, so the correction is a different one.
             var systemMock = buildSystemNamed(SYSTEM_NAME);
-            var jangala = buildMarketOnBodyIn(systemMock, "jangala", 500, 0);
+            var jangala = MarketPlacementFixture.buildMarketOnBodyAt("jangala", 500, 0);
 
             assertThat(MarketTargetResolver.resolveTargetMarket(
                     buildSectorAround(systemMock, jangala),
@@ -135,8 +159,8 @@ final class MarketTargetResolverTest {
         void takes_the_nearest_qualifying_market_when_no_id_is_given() {
 
             var systemMock = buildSystemNamed(SYSTEM_NAME);
-            var far = buildMarketOnBodyIn(systemMock, "far", 5000, 0);
-            var near = buildMarketOnBodyIn(systemMock, "near", 100, 0);
+            var far = MarketPlacementFixture.buildMarketOnBodyAt("far", 5000, 0);
+            var near = MarketPlacementFixture.buildMarketOnBodyAt("near", 100, 0);
             var sectorMock = buildSectorAround(systemMock, far, near);
 
             assertThat(MarketTargetResolver.resolveTargetMarket(
@@ -151,7 +175,7 @@ final class MarketTargetResolverTest {
             // The console hands over whatever the player typed, and a run of spaces is a bare
             // invocation - searching for an entity named by them would find nothing at all.
             var systemMock = buildSystemNamed(SYSTEM_NAME);
-            var jangala = buildMarketOnBodyIn(systemMock, "jangala", 500, 0);
+            var jangala = MarketPlacementFixture.buildMarketOnBodyAt("jangala", 500, 0);
 
             assertThat(MarketTargetResolver.resolveTargetMarket(
                     buildSectorAround(systemMock, jangala),
@@ -164,7 +188,7 @@ final class MarketTargetResolverTest {
         void refuses_a_search_that_turns_nothing_up() {
 
             var systemMock = buildSystemNamed(SYSTEM_NAME);
-            var jangala = buildMarketOnBodyIn(systemMock, "jangala", 500, 0);
+            var jangala = MarketPlacementFixture.buildMarketOnBodyAt("jangala", 500, 0);
 
             assertThat(MarketTargetResolver.resolveTargetMarket(
                     buildSectorAround(systemMock, jangala),
@@ -174,15 +198,23 @@ final class MarketTargetResolverTest {
         }
 
         @Test
-        void refuses_a_run_made_from_outside_any_system() {
-            // A fleet in hyperspace is in no system, so there is nowhere to look an id up in and
-            // nothing to search. The context guard turns such a run away first, so this is the
-            // answer to a caller that skipped it - never a sector-wide search.
+        void refuses_a_bare_run_made_from_outside_every_star_system() {
+            // A fleet in hyperspace has nowhere to measure "nearest" from, so the refusal names
+            // the way out rather than only the obstacle: an id reaches a place from here.
             assertThat(MarketTargetResolver.resolveTargetMarket(
-                    mock(SectorAPI.class),
-                    "jangala",
+                    buildSectorInHyperspace(),
+                    null,
                     ANY_MARKET))
-                .isEqualTo(new UnresolvedMarketTarget("No star system to search."));
+                .isEqualTo(new UnresolvedMarketTarget(
+                    "Not in a star system - name an entity id to point at a place directly."));
+        }
+
+        @Test
+        void refuses_a_run_made_without_a_sector() {
+            // Nothing to look an id up in and nowhere to search from, so neither way of naming a
+            // place is open.
+            assertThat(MarketTargetResolver.resolveTargetMarket(null, "jangala", ANY_MARKET))
+                .isEqualTo(new UnresolvedMarketTarget("No sector to search."));
         }
     }
 
@@ -200,9 +232,11 @@ final class MarketTargetResolverTest {
         return systemMock;
     }
 
-    // The sector a run is made against: an economy listing the given markets in the system, and
-    // the player's fleet sitting in that system at the origin - which is both where the search
-    // measures from and how the resolution learns which system "here" is.
+    // The sector a run is made against: an economy listing the given markets in the system, the
+    // player's fleet sitting in that system at the origin - which is both where the search
+    // measures from and how the resolution learns which system "here" is - and the sector
+    // answering for each listed market's body by id, which is the other way a resolution reaches
+    // one.
     private static SectorAPI buildSectorAround(StarSystemAPI systemMock, MarketAPI... markets) {
 
         // Each collaborator finishes its own stubbing before the sector's opens, so the calls do
@@ -216,51 +250,42 @@ final class MarketTargetResolverTest {
         when(fleetMock.getStarSystem())
             .thenReturn(systemMock);
 
-        var sectorMock = mock(SectorAPI.class);
+        var sectorMock = buildSectorWithFleet(fleetMock);
 
         when(sectorMock.getEconomy())
             .thenReturn(economyMock);
+
+        for (var market : markets) {
+            answerForEntityById(sectorMock, market.getPrimaryEntity());
+        }
+        return sectorMock;
+    }
+
+    // A sector whose fleet is in no star system - hyperspace, where an id still names a place and
+    // a nearest search has nowhere to start.
+    private static SectorAPI buildSectorInHyperspace() {
+        return buildSectorWithFleet(MarketPlacementFixture.buildFleetAt(0, 0));
+    }
+
+    private static SectorAPI buildSectorWithFleet(CampaignFleetAPI fleetMock) {
+
+        var sectorMock = mock(SectorAPI.class);
+
         when(sectorMock.getPlayerFleet())
             .thenReturn(fleetMock);
 
         return sectorMock;
     }
 
-    // A market on a body of its own that the system answers for by id - the second of the two
-    // ways a resolution reaches one, beside the distance a search ranks it at.
-    private static MarketAPI buildMarketOnBodyIn(
-            StarSystemAPI systemMock,
-            String bodyId,
-            float x,
-            float y) {
+    // Makes the sector answer for the entity under its id, which is what an id-named resolution
+    // looks one up through - the sector rather than a system, ids being unique sector-wide.
+    private static void answerForEntityById(SectorAPI sectorMock, SectorEntityToken entityMock) {
 
-        var market = MarketPlacementFixture.buildMarketOnBodyAt(bodyId, x, y);
+        // The id is read off the entity before the sector's stubbing opens, so calling one mock
+        // does not land inside a stubbing in progress on another.
+        var entityId = entityMock.getId();
 
-        answerForBodyById(systemMock, bodyId, market.getPrimaryEntity());
-
-        return market;
-    }
-
-    // A body the system answers for by id with nothing on it - a gate, a beacon, a bare rock.
-    private static SectorEntityToken buildBodyWithoutMarketIn(
-            StarSystemAPI systemMock,
-            String bodyId) {
-
-        var bodyMock = MarketPlacementFixture.buildBodyAt(bodyId, 0, 0);
-
-        answerForBodyById(systemMock, bodyId, bodyMock);
-
-        return bodyMock;
-    }
-
-    // Makes the system answer for the body under its id, which is what an id-named resolution
-    // looks one up through.
-    private static void answerForBodyById(
-            StarSystemAPI systemMock,
-            String bodyId,
-            SectorEntityToken bodyMock) {
-
-        when(systemMock.getEntityById(bodyId))
-            .thenReturn(bodyMock);
+        when(sectorMock.getEntityById(entityId))
+            .thenReturn(entityMock);
     }
 }
