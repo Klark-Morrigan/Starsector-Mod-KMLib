@@ -12,10 +12,15 @@ import kmlib.math.geometry.Rectangle;
  * what the layout runs in: a widget reports its position in them, the campaign's ortho projection
  * spans them, and anything comparing a widget against the screen compares here. Screen pixels are
  * what the framebuffer is addressed in: the mouse reports them and a scissor clip is stated in
- * them. The two coincide only at a pixel scale of 1, so a number taken from the wrong pair is
- * right on the developer's monitor and wrong on a scaled one. The methods are named for their
- * space rather than for the settings call behind them, so that a mismatched pair cannot read as a
- * matched one. How the two spaces relate is set out in {@code docs/dev/rendering-environment.md}.
+ * them. The two coincide only at a pixel scale of 1, so a number taken from the wrong one is right
+ * on the developer's monitor and wrong on a scaled display. How they relate is set out in
+ * {@code docs/dev/rendering-environment.md}.
+ *
+ * <p>A pixel length is reachable only as part of a {@link ScreenAxis}, never on its own, because on
+ * its own it is not an answer to anything: every caller wanting one is converting between the
+ * spaces and needs the UI partner in the same breath. Handing the pair over bound is what leaves no
+ * arrangement of the two floats for a caller to get wrong. A UI length is offered loose beside
+ * that, since a widget's own box is measured against it with no conversion in sight.
  *
  * <p>The box is cornered at the origin with its extent in UI units, the same frame of reference a
  * laid-out widget reports its position in, so a widget's box and this compare with no conversion
@@ -64,18 +69,20 @@ public final class VanillaScreen {
     }
 
     /**
-     * @return the screen's width in framebuffer pixels - what the mouse and a GL clip are measured
-     *         in
+     * @return the horizontal axis in both spaces at once, for converting an x between them
      */
-    public static float resolvePixelWidth() {
-        return Global.getSettings().getScreenWidthPixels();
+    public static ScreenAxis resolveXAxis() {
+
+        var settings = Global.getSettings();
+        return new ScreenAxis(settings.getScreenWidth(), settings.getScreenWidthPixels());
     }
 
     /**
-     * @return the screen's height in framebuffer pixels - what the mouse and a GL clip are measured
-     *         in
+     * @return the vertical axis in both spaces at once, for converting a y between them
      */
-    public static float resolvePixelHeight() {
-        return Global.getSettings().getScreenHeightPixels();
+    public static ScreenAxis resolveYAxis() {
+
+        var settings = Global.getSettings();
+        return new ScreenAxis(settings.getScreenHeight(), settings.getScreenHeightPixels());
     }
 }

@@ -75,10 +75,10 @@ import java.util.function.ToDoubleFunction;
  * its spans are measured on are both read per row rather than threaded once through the whole layout,
  * and a heading is measured on exactly the face it will be painted in.
  *
- * <p>Cursor-follow placement is the counterpart to {@link kmlib.starsector.ui.layout.BoxPlacement}'s
- * fixed screen-anchor placement: a docked panel pins to an edge, a tooltip trails the pointer and
- * clamps, and both size and place a box off the same {@code kmlib.starsector.ui.layout} geometry
- * rather than each re-deriving it.
+ * <p>Cursor-follow placement is what parts this from a docked panel: a panel pins to an edge and its
+ * content is laid out to fit, where a tooltip is sized by its content and then trails the pointer,
+ * clamping at whichever screen edge it would otherwise run past. The sizing and the clamp are
+ * {@code kmlib.starsector.ui.layout} geometry rather than derived here.
  */
 public final class CursorTooltip {
 

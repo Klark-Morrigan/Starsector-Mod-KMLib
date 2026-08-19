@@ -517,10 +517,14 @@ and `getScreenHeightPixels()` are the API-side equivalents
 
 KM code reaches all four of those through
 [`VanillaScreen`](../../src/main/java/kmlib/starsector/ui/screen/VanillaScreen.java)
-rather than through `SettingsAPI` directly. Its methods are named for the space
-they answer in rather than for the settings call behind them, so the mix-up this
-section warns about - which is invisible at a pixel scale of 1 and therefore on
-the machine it is written on - has to be spelled out to be made.
+rather than through `SettingsAPI` directly, and converts between the two spaces
+through
+[`ScreenAxis`](../../src/main/java/kmlib/starsector/ui/screen/ScreenAxis.java),
+which holds one axis's two lengths together. That is what makes the mix-up this
+section warns about - invisible at a pixel scale of 1, and therefore on the
+machine the code is written on - impossible to express rather than merely
+discouraged: a pixel length cannot be obtained apart from the UI length it
+belongs with.
 
 ### The modelview around a map render
 

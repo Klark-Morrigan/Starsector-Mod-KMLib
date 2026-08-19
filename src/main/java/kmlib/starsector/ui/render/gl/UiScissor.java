@@ -1,7 +1,7 @@
 package kmlib.starsector.ui.render.gl;
 
 import kmlib.math.geometry.Rectangle;
-import kmlib.starsector.ui.input.UiCursor;
+import kmlib.starsector.ui.screen.ScreenAxis;
 import kmlib.starsector.ui.screen.VanillaScreen;
 
 import org.lwjgl.opengl.GL11;
@@ -11,10 +11,10 @@ import org.lwjgl.opengl.GL11;
  * coordinates can confine one element - a scrolling list within its viewport - to a region and let its
  * overrun fall outside rather than paint over its neighbours. The scissor test operates in raw
  * framebuffer pixels, not the UI projection the layout works in, so this rescales the rectangle from UI
- * units to pixels (through {@link UiCursor#convertUiToPixel}, the inverse of the mouse's pixel-to-UI
- * mapping) before handing it to {@link GL11#glScissor}. Touches the GL surface and the live screen
- * ({@link VanillaScreen}), so it is exercised in-engine like the other draw helpers; the rescale itself
- * is the unit-tested pure conversion.
+ * units to pixels - each edge along its own {@link ScreenAxis}, the inverse of the mapping the mouse
+ * arrives through - before handing it to {@link GL11#glScissor}. Touches the GL surface and the live
+ * screen ({@link VanillaScreen}), so it is exercised in-engine like the other draw helpers; the rescale
+ * itself is the axis's own unit-tested arithmetic.
  *
  * <p>{@link #runClippedTo} is how a caller brackets a draw: it pairs the two halves below and ends the
  * clip whichever way the draw leaves, which matters because a clip left enabled does not fail loudly -
@@ -64,17 +64,15 @@ public final class UiScissor {
      * @param uiRegion the clip rectangle, in UI coordinates
      */
     public static void push(Rectangle uiRegion) {
-        var uiWidth = VanillaScreen.resolveUiWidth();
-        var uiHeight = VanillaScreen.resolveUiHeight();
-        var pixelWidth = VanillaScreen.resolvePixelWidth();
-        var pixelHeight = VanillaScreen.resolvePixelHeight();
+        var xAxis = VanillaScreen.resolveXAxis();
+        var yAxis = VanillaScreen.resolveYAxis();
 
         // The scissor box is the UI rectangle in framebuffer pixels: both spaces share the bottom-left
         // origin, so the lower-left corner and the size each rescale on their own axis.
-        var pixelX = UiCursor.convertUiToPixel(uiRegion.x(), uiWidth, pixelWidth);
-        var pixelY = UiCursor.convertUiToPixel(uiRegion.y(), uiHeight, pixelHeight);
-        var pixelBoxWidth = UiCursor.convertUiToPixel(uiRegion.width(), uiWidth, pixelWidth);
-        var pixelBoxHeight = UiCursor.convertUiToPixel(uiRegion.height(), uiHeight, pixelHeight);
+        var pixelX = xAxis.convertUiToPixel(uiRegion.x());
+        var pixelY = yAxis.convertUiToPixel(uiRegion.y());
+        var pixelBoxWidth = xAxis.convertUiToPixel(uiRegion.width());
+        var pixelBoxHeight = yAxis.convertUiToPixel(uiRegion.height());
 
         // GL_SCISSOR_BIT carries both the enable flag and the box, so a plain push/pop restores whatever
         // scissor state the surrounding pass held without this needing to read it back.

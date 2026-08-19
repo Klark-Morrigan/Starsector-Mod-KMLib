@@ -8,9 +8,9 @@ import kmlib.math.geometry.Rectangle;
  * no GL, no engine reads - so the sizing and the edge clamp stand on plain numbers, and the caller
  * feeds in the measured widths and the live screen and cursor coordinates.
  *
- * <p>The cursor-relative counterpart to {@link BoxPlacement}, which pins a fixed-size box to a screen
- * anchor: this one follows the pointer and clamps, the placement a tooltip needs rather than a docked
- * panel.
+ * <p>Cursor-relative rather than anchored, which is the placement a tooltip needs and a docked panel
+ * does not: a panel's corner is fixed and its content laid out to fit, where this is sized by its
+ * content and then placed wherever the pointer happens to be.
  */
 public final class TooltipBoxLayout {
     // Interior padding around the text, the gap stacked between text lines, and the offset from the
