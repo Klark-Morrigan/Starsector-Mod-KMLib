@@ -1,5 +1,6 @@
 package kmlib.starsector.colonies;
 
+import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
 import kmlib.starsector.markets.MarketVisibility;
@@ -50,7 +51,11 @@ public record Colony(
      *
      * <p>Independent of whether the player has found it: a raided pirate base stays
      * permanently hidden while being perfectly well known. Callers that want the visibility
-     * question want {@link #isKnownToPlayer} instead.
+     * question want {@link Colonies#readKnownColonies} instead.
+     *
+     * <p>Concealment is also one of the two things that put a colony behind a revelation gate,
+     * the other being its kind - a place hiding itself is one the fog alone would show the
+     * moment its entity turned out never to have been discoverable.
      *
      * @return true when the market is hidden
      */
@@ -59,12 +64,35 @@ public record Colony(
     }
 
     /**
-     * Whether the player knows this colony exists - the fog question the known projection over
-     * a colony set is built on.
+     * Whether the player has found this colony's market - the entity's own fact, and the base
+     * every rule about showing a colony is built on.
+     *
+     * <p>Not the whole of what the player may be told. An abandoned station or a concealed
+     * colony has to have been revealed as well, and that question needs the place the colony
+     * stands in - so it is answered over a colony set rather than here.
      *
      * @return true when the player has found the market's entity
      */
-    public boolean isKnownToPlayer() {
-        return MarketVisibility.isKnownToPlayer(market);
+    public boolean isDiscoveredByPlayer() {
+        return MarketVisibility.isDiscoveredByPlayer(market);
+    }
+
+    /**
+     * Whether the player has been where this colony stands - their own route to having heard of
+     * it, beside the one that runs through the place's own inhabitants.
+     *
+     * <p>Read off the containing star system's memory of having been entered, which vanilla
+     * sets when the player fleet arrives and keeps in the save. Nothing here is tracked,
+     * listened for or migrated: the fact already exists on the object the question is asked of.
+     *
+     * <p>A colony in no star system - hyperspace, where mods put a few - reads sighted. There is
+     * no system to have been in and none to be settled, so a gate answering otherwise would hold
+     * such a colony back for good rather than until somebody saw it.
+     *
+     * @return true when the colony's system has been entered, or it stands in no system at all
+     */
+    public boolean isSightedByPlayer() {
+        return !(market.getContainingLocation() instanceof StarSystemAPI system)
+            || system.isEnteredByPlayer();
     }
 }

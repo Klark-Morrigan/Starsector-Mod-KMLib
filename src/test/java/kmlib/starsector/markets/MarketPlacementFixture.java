@@ -124,6 +124,10 @@ public final class MarketPlacementFixture {
     /**
      * Sites the markets in {@code location}, each on the body it was built with - what the
      * entity walk finds, whether or not the economy also lists them.
+     *
+     * <p>Wired both ways, as siting always is here: the location lists the bodies, and each
+     * market names the location back. A read asking a market where it stands would otherwise get
+     * nothing out of a world that had plainly just put it somewhere.
      */
     public static void placeMarketsIn(LocationAPI location, MarketAPI... markets) {
 
@@ -136,6 +140,11 @@ public final class MarketPlacementFixture {
         }
         when(location.getAllEntities())
             .thenReturn(bodies);
+
+        for (var market : markets) {
+            when(market.getContainingLocation())
+                .thenReturn(location);
+        }
     }
 
     /** Registers the markets with the economy as sitting in {@code location}, in listing order. */

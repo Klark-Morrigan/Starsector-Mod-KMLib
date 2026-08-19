@@ -84,6 +84,18 @@ public final class ColonyFixture {
         ColonyPlacementFixture.listColonies(economyMock, systemMock, colonies);
     }
 
+    /**
+     * Records the player as having been in the system, the way vanilla does when their fleet
+     * arrives - the player's own route to having seen whatever stands here.
+     *
+     * <p>Stated rather than defaulted, because an unentered system is the interesting half: it
+     * is where a colony that would otherwise leak has to be held back.
+     */
+    public void markSystemAsEntered() {
+        when(systemMock.isEnteredByPlayer())
+            .thenReturn(true);
+    }
+
     // Each colony builder below forwards to the one named for it on ColonyMarketFixture, which
     // is where the shape is described. Restating those descriptions here would put two accounts
     // of one colony a rename apart, and a suite reading this fixture is one hop from the real

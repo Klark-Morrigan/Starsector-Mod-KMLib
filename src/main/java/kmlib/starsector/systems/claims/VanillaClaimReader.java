@@ -3,6 +3,7 @@ package kmlib.starsector.systems.claims;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.util.Misc;
 
+import kmlib.starsector.colonies.ColonyVisibility;
 import kmlib.starsector.systems.SystemColoniesIndex;
 
 /**
@@ -37,7 +38,12 @@ public final class VanillaClaimReader implements ClaimReader {
      *                      null reads each system afresh, as the no-index reader does
      */
     public VanillaClaimReader(SystemColoniesIndex coloniesIndex) {
-        breakdownReader = new VanillaClaimBreakdownReader(coloniesIndex);
+        // The breakdown reader's visibility rule decides only what its breakdowns report about
+        // the player's knowledge of each market, and no breakdown leaves this class - only the
+        // claimant does, resolved off the unfogged set. So the rule that adds nothing is the
+        // honest one to state here: any other would imply this reader had a fog to apply.
+        breakdownReader =
+            new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG, coloniesIndex);
     }
 
     @Override

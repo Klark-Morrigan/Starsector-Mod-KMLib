@@ -196,7 +196,7 @@ public final class Markets {
      * must own it, and it must not be the condition-only market every uninhabited
      * planet carries to hold its hazard and atmosphere conditions. This is
      * ownership alone - it says nothing about whether the player has found the
-     * colony yet; compose it with {@link MarketVisibility#isKnownToPlayer} when
+     * colony yet; compose it with {@link MarketVisibility#isDiscoveredByPlayer} when
      * visibility matters.
      *
      * @param market the market to test; null (or one with no owning faction) yields

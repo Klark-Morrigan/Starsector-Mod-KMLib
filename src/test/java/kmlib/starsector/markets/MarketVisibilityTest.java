@@ -12,9 +12,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * Pins the contracts of {@link MarketVisibility#isCountedAsColony},
- * {@link MarketVisibility#isDiscoveredByPlayer} and
- * {@link MarketVisibility#isKnownToPlayer}. The cases live in a {@link Nested} group per
+ * Pins the contracts of {@link MarketVisibility#isCountedAsColony} and
+ * {@link MarketVisibility#isDiscoveredByPlayer}. The cases live in a {@link Nested} group per
  * method so the suite reports as a per-method tree; the shared mock builders stay on the
  * outer class.
  *
@@ -133,56 +132,18 @@ final class MarketVisibilityTest {
         }
 
         @Test
-        void returns_false_for_a_null_market() {
-            assertThat(MarketVisibility.isDiscoveredByPlayer(null))
-                .isFalse();
-        }
-    }
-
-    @Nested
-    class IsKnownToPlayer {
-
-        @Test
-        void returns_true_when_the_entity_is_discovered() {
-
-            var market = buildFoundConcealedColony();
-
-            assertThat(MarketVisibility.isKnownToPlayer(market))
-                .isTrue();
-        }
-
-        @Test
-        void returns_false_when_the_market_is_un_hidden_but_the_entity_is_still_discoverable() {
-            // The whole of the leak this fog closes. A market that merely omits to hide itself
-            // is listed in an economy the player has no sight of, and every derelict station in
-            // the sector takes that shape - so listing is not an arm of the rule.
-            var market = buildUnfoundOpenColony();
-
-            assertThat(MarketVisibility.isKnownToPlayer(market))
-                .isFalse();
-        }
-
-        @Test
-        void returns_true_when_the_primary_entity_is_null() {
-
-            var market = buildEntitylessColony();
-
-            assertThat(MarketVisibility.isKnownToPlayer(market))
-                .isTrue();
-        }
-
-        @Test
         void returns_false_when_the_market_is_hidden_on_a_discoverable_entity() {
-
+            // Concealment is not read here, so it neither rescues nor condemns: the answer is
+            // the entity's alone, and this entity is still to be found.
             var market = buildUnfoundConcealedColony();
 
-            assertThat(MarketVisibility.isKnownToPlayer(market))
+            assertThat(MarketVisibility.isDiscoveredByPlayer(market))
                 .isFalse();
         }
 
         @Test
         void returns_false_for_a_null_market() {
-            assertThat(MarketVisibility.isKnownToPlayer(null))
+            assertThat(MarketVisibility.isDiscoveredByPlayer(null))
                 .isFalse();
         }
     }

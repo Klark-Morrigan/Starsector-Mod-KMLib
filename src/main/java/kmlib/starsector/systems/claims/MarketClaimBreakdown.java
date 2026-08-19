@@ -31,15 +31,18 @@ import java.util.OptionalInt;
  *                           greater score, so two markets that tie are separated by nothing but
  *                           this - the earlier-listed one wins - and an explanation with no way to
  *                           state it can only report a tied outcome as arbitrary
- * @param isKnownToPlayer    whether the player knows this colony exists at all. The mechanic
- *                           itself never asks - it settles a contest over colonies nobody has
- *                           found - so the answer is carried rather than applied, leaving an
- *                           explanation free to withhold what the map has no business naming
- *                           while the claim it explains stays vanilla's
+ * @param isKnownToPlayer    whether the player knows this colony exists at all - the composed
+ *                           answer, discovery and the revelation the containing system decides,
+ *                           not the entity's flag alone. The mechanic itself never asks, since it
+ *                           settles a contest over colonies nobody has found, so the answer is
+ *                           carried rather than applied: an explanation is left free to withhold
+ *                           what the map has no business naming while the claim it explains stays
+ *                           vanilla's
  * @param admission          how the mechanic's walk met the market - as a competitor it weighed,
  *                           or as one it carried without weighing. Independent of
  *                           {@link #isKnownToPlayer}, which is about the player rather than the
- *                           mechanic: a discovered base is known and concealed at once
+ *                           mechanic: an open colony in a system nobody has been to is weighed
+ *                           and unknown at once, and a raided base is concealed and known
  * @param marketSize         the colony's own size rating, the term the score starts from
  * @param siblingMarketCount how many other markets the same faction holds in the system, each
  *                           worth a point - so the count is the term. Taken over every market
