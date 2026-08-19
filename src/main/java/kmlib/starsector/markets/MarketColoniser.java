@@ -99,27 +99,21 @@ public final class MarketColoniser {
      */
     public static void foundColony(SectorAPI sector, MarketAPI market) {
 
-        if (sector == null || sector.getEconomy() == null || !isReadyForColonisation(market)) {
+        if (!canFoundColony(sector, market)) {
             return;
         }
 
         markEveryConditionSurveyed(market);
         adoptBodyName(market);
 
+        // The two marks that are colonisation itself: an age starting now, and the flag whose
+        // clearing turns survey data into a colony. Every read that tells the two apart - this
+        // class's own eligibility read included - keys on that flag rather than on the
+        // population that follows it.
         market.setDaysInExistence(0f);
-
-        // The flag that is colonisation: survey data with it cleared is a colony, and every
-        // read that tells the two apart - this class's own eligibility read included - keys on
-        // it rather than on the population that follows.
         market.setPlanetConditionMarketOnly(false);
 
-        market.addCondition(Conditions.POPULATION_3);
-        market.addIndustry(Industries.POPULATION);
-
-        replaceDecivilisationWithSubpopulation(market);
-
-        market.setSize(BASELINE_COLONY_SIZE);
-
+        settleBaselinePopulation(market);
         bindMarketToBody(market);
         registerMarketWithEconomy(sector, market);
         queueFirstSpaceport(market);
@@ -151,7 +145,11 @@ public final class MarketColoniser {
      */
     public static void establishColony(SectorAPI sector, MarketAPI market, String factionId) {
 
-        if (sector == null || factionId == null || !isReadyForColonisation(market)) {
+        // The founding conditions are asked before the owner is applied, not only inside the
+        // founding that follows: an owner applied to a market that then cannot be founded would
+        // leave survey data flying a flag and trading over counters, holding an ownership change
+        // that no colony was ever built under.
+        if (factionId == null || !canFoundColony(sector, market)) {
             return;
         }
 
@@ -162,6 +160,28 @@ public final class MarketColoniser {
         if (Factions.PLAYER.equals(factionId)) {
             reportPlayerColonisation(market);
         }
+    }
+
+    // Whether there is a colony to found here at all: survey data to found on, and an economy to
+    // register the result with. Stated once because both entry points need the same answer, and
+    // an entry point that asked only half of it would mutate a market it could not finish.
+    private static boolean canFoundColony(SectorAPI sector, MarketAPI market) {
+        return sector != null
+            && sector.getEconomy() != null
+            && isReadyForColonisation(market);
+    }
+
+    // The people the colony starts with and the room they take up: the population every colony
+    // runs as a condition and an industry alike, the ruins of a previous colony swapped for their
+    // descendants where the body carries any, and the size that population amounts to.
+    private static void settleBaselinePopulation(MarketAPI market) {
+
+        market.addCondition(Conditions.POPULATION_3);
+        market.addIndustry(Industries.POPULATION);
+
+        replaceDecivilisationWithSubpopulation(market);
+
+        market.setSize(BASELINE_COLONY_SIZE);
     }
 
     // Every condition the body carries, marked as looked at, and the body itself as fully

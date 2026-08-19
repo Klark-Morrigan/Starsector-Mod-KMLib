@@ -57,7 +57,8 @@ public final class MarketColonisationFixture {
     public static final String BODY_NAME = "Hesperus";
 
     // What a placeholder market reads as before anyone settles the body: no size of its own, and
-    // an age nobody has ever set, the market not having existed as a colony to have one.
+    // an age no founding could produce. Neither is a value a founding sets, which is what keeps a
+    // case asserting the size and age founding produced from passing on the state it started in.
     private static final int UNCOLONISED_SIZE = 0;
     private static final float UNCOLONISED_AGE = Float.NaN;
 
@@ -189,16 +190,24 @@ public final class MarketColonisationFixture {
             .thenReturn(body);
     }
 
-    // What tells survey data from a colony, and what a colony gains by being founded: the flag
-    // itself, the name, the age and the size. The economy's own listing is held fixed at
-    // unregistered - a case that wants a registered market poses one, rather than reaching this
-    // one after a founding has moved it.
+    // What tells survey data from a colony, and what a colony gains by being founded. One wiring
+    // per read, each pairing a getter with the setter that moves it, so a case reads back what
+    // founding left rather than what the fixture decided. The economy's own listing is not among
+    // them: it is held fixed at unregistered, and a case that wants a registered market poses one
+    // rather than reaching this one after a founding has moved it.
     private static void stubColonisationState(MarketAPI marketMock) {
 
+        stubConditionOnlyFlag(marketMock);
+        stubName(marketMock);
+        stubAge(marketMock);
+        stubSize(marketMock);
+        stubSurveyLevel(marketMock);
+    }
+
+    // The flag whose clearing is colonisation itself, set here from survey data's own answer.
+    private static void stubConditionOnlyFlag(MarketAPI marketMock) {
+
         var isConditionMarketOnly = new AtomicBoolean(true);
-        var name = new AtomicReference<String>();
-        var daysInExistence = new AtomicReference<>(UNCOLONISED_AGE);
-        var size = new AtomicInteger(UNCOLONISED_SIZE);
 
         when(marketMock.isPlanetConditionMarketOnly())
             .thenAnswer(invocation -> isConditionMarketOnly.get());
@@ -209,6 +218,13 @@ public final class MarketColonisationFixture {
             })
             .when(marketMock)
             .setPlanetConditionMarketOnly(anyBoolean());
+    }
+
+    // What the place is called. Unnamed to begin with, so a case reading the body's name off the
+    // market afterwards is reading what founding put there.
+    private static void stubName(MarketAPI marketMock) {
+
+        var name = new AtomicReference<String>();
 
         when(marketMock.getName())
             .thenAnswer(invocation -> name.get());
@@ -219,6 +235,13 @@ public final class MarketColonisationFixture {
             })
             .when(marketMock)
             .setName(anyString());
+    }
+
+    // How long the colony has existed. It starts at a value no founding produces, so a case
+    // asserting the age founding set cannot pass on the state the market started in.
+    private static void stubAge(MarketAPI marketMock) {
+
+        var daysInExistence = new AtomicReference<>(UNCOLONISED_AGE);
 
         when(marketMock.getDaysInExistence())
             .thenAnswer(invocation -> daysInExistence.get());
@@ -229,6 +252,12 @@ public final class MarketColonisationFixture {
             })
             .when(marketMock)
             .setDaysInExistence(anyFloat());
+    }
+
+    // How many people the place holds, which survey data has no answer to until it is settled.
+    private static void stubSize(MarketAPI marketMock) {
+
+        var size = new AtomicInteger(UNCOLONISED_SIZE);
 
         when(marketMock.getSize())
             .thenAnswer(invocation -> size.get());
@@ -239,8 +268,6 @@ public final class MarketColonisationFixture {
             })
             .when(marketMock)
             .setSize(anyInt());
-
-        stubSurveyLevel(marketMock);
     }
 
     // How much of the body is known. Held as state rather than verified as a call, since what a

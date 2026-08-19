@@ -1,5 +1,7 @@
 package kmlib.starsector.markets;
 
+import com.fs.starfarer.api.campaign.SectorAPI;
+import com.fs.starfarer.api.campaign.econ.EconomyAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.campaign.listeners.ListenerUtil;
 import com.fs.starfarer.api.impl.campaign.ids.Conditions;
@@ -83,11 +85,17 @@ final class MarketColoniserTest {
     @Nested
     class FoundColony {
 
+        // Where the colonies these cases found are founded, and the economy they are registered
+        // with. Held as fields rather than arranged case by case: every case but the two posing
+        // their absence founds into the same running game, and what a case is about is what
+        // founding did to the market, not where it was founded.
+        private final SectorAPI sector = MarketColonisationFixture.buildSectorWithEconomy();
+        private final EconomyAPI economy = MarketColonisationFixture.readEconomy(sector);
+
         @Test
         void turns_survey_data_into_a_settled_colony_of_the_baseline_size() {
             // The whole of what founding means, read off the market afterwards: no longer the
             // placeholder it was, populated, sized, and as old as a colony founded this moment.
-            var sector = MarketColonisationFixture.buildSectorWithEconomy();
             var market = MarketColonisationFixture.buildColonisableWorld();
 
             MarketColoniser.foundColony(sector, market);
@@ -107,7 +115,6 @@ final class MarketColoniserTest {
         @Test
         void names_the_colony_after_the_body_it_stands_on() {
 
-            var sector = MarketColonisationFixture.buildSectorWithEconomy();
             var market = MarketColonisationFixture.buildColonisableWorld();
 
             MarketColoniser.foundColony(sector, market);
@@ -123,7 +130,6 @@ final class MarketColoniserTest {
             // living with - so founding surveys what it settles. The population the colony gains
             // afterwards is not among them, arriving after the survey exactly as it does in the
             // game's own routine, and carrying nothing a survey would have revealed.
-            var sector = MarketColonisationFixture.buildSectorWithEconomy();
             var market = MarketColonisationFixture.buildColonisableWorldCarrying(
                 Conditions.HABITABLE,
                 Conditions.ORE_MODERATE);
@@ -140,7 +146,6 @@ final class MarketColoniserTest {
         void resettles_a_ruined_world_as_the_descendants_of_who_was_left() {
             // The ruins condition and the colony standing on them cannot both be true, so one
             // replaces the other rather than being added beside it.
-            var sector = MarketColonisationFixture.buildSectorWithEconomy();
             var market = MarketColonisationFixture.buildColonisableWorldCarrying(
                 Conditions.DECIVILIZED);
 
@@ -156,7 +161,6 @@ final class MarketColoniserTest {
         void leaves_a_world_that_was_never_settled_carrying_no_ruins() {
             // The swap is conditional on ruins being there: an untouched world must not come out
             // of founding carrying the descendants of a colony it never had.
-            var sector = MarketColonisationFixture.buildSectorWithEconomy();
             var market = MarketColonisationFixture.buildColonisableWorld();
 
             MarketColoniser.foundColony(sector, market);
@@ -169,15 +173,13 @@ final class MarketColoniserTest {
         void registers_the_colony_with_the_economy_and_steps_it() {
             // Registration alone leaves a colony the economy lists and never feeds until the next
             // monthly tick, so the steps that derive its supply and demand go with it.
-            var sector = MarketColonisationFixture.buildSectorWithEconomy();
-            var economyMock = MarketColonisationFixture.readEconomy(sector);
             var market = MarketColonisationFixture.buildColonisableWorld();
 
             MarketColoniser.foundColony(sector, market);
 
-            verify(economyMock)
+            verify(economy)
                 .addMarket(market, WITH_ORBITAL_JUNK_AND_CHATTER);
-            verify(economyMock)
+            verify(economy)
                 .tripleStep();
             verify(market)
                 .advance(0f);
@@ -188,7 +190,6 @@ final class MarketColoniserTest {
             // Queued rather than built: a colony with no spaceport is cut off from everything
             // that reaches it by ship, and both of the game's own colonisation routines leave the
             // same one waiting.
-            var sector = MarketColonisationFixture.buildSectorWithEconomy();
             var market = MarketColonisationFixture.buildColonisableWorld();
 
             MarketColoniser.foundColony(sector, market);
@@ -200,30 +201,28 @@ final class MarketColoniserTest {
         @Test
         void points_the_colony_and_its_body_at_each_other() {
 
-            var sector = MarketColonisationFixture.buildSectorWithEconomy();
             var market = MarketColonisationFixture.buildColonisableWorld();
-            var bodyMock = MarketColonisationFixture.readBody(market);
+            var body = MarketColonisationFixture.readBody(market);
 
             MarketColoniser.foundColony(sector, market);
 
-            verify(bodyMock)
+            verify(body)
                 .setMarket(market);
             verify(market)
-                .setPrimaryEntity(bodyMock);
+                .setPrimaryEntity(body);
         }
 
         @Test
         void founds_a_colony_on_a_place_the_game_gave_no_body() {
             // A market can stand for a place with no entity: there is no name to take and no link
             // to state, and the colony is still founded and registered.
-            var sector = MarketColonisationFixture.buildSectorWithEconomy();
             var market = MarketColonisationFixture.buildColonisablePlaceWithNoBody();
 
             MarketColoniser.foundColony(sector, market);
 
             assertThat(market.isPlanetConditionMarketOnly())
                 .isFalse();
-            verify(MarketColonisationFixture.readEconomy(sector))
+            verify(economy)
                 .addMarket(market, WITH_ORBITAL_JUNK_AND_CHATTER);
         }
 
@@ -231,23 +230,22 @@ final class MarketColoniserTest {
         void leaves_a_market_that_is_already_a_colony_alone() {
             // Founding on a colony would enter it in the economy a second time, so a market that
             // is not survey data is passed over rather than founded again.
-            var sector = MarketColonisationFixture.buildSectorWithEconomy();
-
             MarketColoniser.foundColony(
                 sector,
                 MarketStateFixture.buildColony(MarketColonisationFixture.FACTION_OWNER_ID));
 
-            verifyNoInteractions(MarketColonisationFixture.readEconomy(sector));
+            verifyNoInteractions(economy);
         }
 
         @Test
         void leaves_survey_data_alone_when_there_is_no_economy_to_register_it_with() {
             // Half a founding is worse than none - a settled market the economy never feeds - so
             // the whole sequence is withheld rather than run up to the registration.
-            var sector = MarketColonisationFixture.buildSectorWithoutEconomy();
             var market = MarketColonisationFixture.buildColonisableWorld();
 
-            MarketColoniser.foundColony(sector, market);
+            MarketColoniser.foundColony(
+                MarketColonisationFixture.buildSectorWithoutEconomy(),
+                market);
 
             assertThat(market.isPlanetConditionMarketOnly())
                 .isTrue();
@@ -255,9 +253,7 @@ final class MarketColoniserTest {
 
         @Test
         void leaves_a_null_market_alone() {
-            assertThatCode(() -> MarketColoniser.foundColony(
-                    MarketColonisationFixture.buildSectorWithEconomy(),
-                    null))
+            assertThatCode(() -> MarketColoniser.foundColony(sector, null))
                 .doesNotThrowAnyException();
         }
 
@@ -276,10 +272,13 @@ final class MarketColoniserTest {
     @Nested
     class EstablishColony {
 
+        // The same running game the founding cases pose, for the same reason - see FoundColony.
+        private final SectorAPI sector = MarketColonisationFixture.buildSectorWithEconomy();
+        private final EconomyAPI economy = MarketColonisationFixture.readEconomy(sector);
+
         @Test
         void founds_the_colony_and_hands_it_to_the_player() {
 
-            var sector = MarketColonisationFixture.buildSectorWithEconomy();
             var market = MarketColonisationFixture.buildColonisableWorld();
 
             try (var listenerUtilMock = mockStatic(ListenerUtil.class)) {
@@ -297,7 +296,6 @@ final class MarketColoniserTest {
         @Test
         void founds_the_colony_and_hands_it_to_a_faction() {
 
-            var sector = MarketColonisationFixture.buildSectorWithEconomy();
             var market = MarketColonisationFixture.buildColonisableWorld();
 
             MarketColoniser.establishColony(
@@ -320,8 +318,6 @@ final class MarketColoniserTest {
             // The order both of the game's own colonisation routines take: the economy is stepped
             // against a colony already flying its flag and trading over its owner's counters,
             // rather than against an ownerless one that is re-flagged afterwards.
-            var sector = MarketColonisationFixture.buildSectorWithEconomy();
-            var economyMock = MarketColonisationFixture.readEconomy(sector);
             var market = MarketColonisationFixture.buildColonisableWorld();
 
             MarketColoniser.establishColony(
@@ -329,26 +325,25 @@ final class MarketColoniserTest {
                 market,
                 MarketColonisationFixture.FACTION_OWNER_ID);
 
-            var order = inOrder(market, economyMock);
+            var order = inOrder(market, economy);
 
             order.verify(market)
                 .setFactionId(MarketColonisationFixture.FACTION_OWNER_ID);
-            order.verify(economyMock)
+            order.verify(economy)
                 .addMarket(market, WITH_ORBITAL_JUNK_AND_CHATTER);
         }
 
         @Test
         void reports_the_player_s_colonisation_of_a_planet() {
 
-            var sector = MarketColonisationFixture.buildSectorWithEconomy();
             var market = MarketColonisationFixture.buildColonisableWorld();
-            var worldMock = MarketColonisationFixture.readWorld(market);
+            var world = MarketColonisationFixture.readWorld(market);
 
             try (var listenerUtilMock = mockStatic(ListenerUtil.class)) {
 
                 MarketColoniser.establishColony(sector, market, Factions.PLAYER);
 
-                listenerUtilMock.verify(() -> ListenerUtil.reportPlayerColonizedPlanet(worldMock));
+                listenerUtilMock.verify(() -> ListenerUtil.reportPlayerColonizedPlanet(world));
             }
         }
 
@@ -356,7 +351,6 @@ final class MarketColoniserTest {
         void reports_nothing_when_a_faction_founds_the_colony() {
             // The report is named for the player colonising and its listeners file it as the
             // player's doing, so a faction's colony must not raise it.
-            var sector = MarketColonisationFixture.buildSectorWithEconomy();
             var market = MarketColonisationFixture.buildColonisableWorld();
 
             try (var listenerUtilMock = mockStatic(ListenerUtil.class)) {
@@ -374,7 +368,6 @@ final class MarketColoniserTest {
         void founds_the_colony_silently_when_its_body_is_not_a_planet() {
             // The report carries a planet, so a colony founded on anything else has nothing to
             // report with - which is a colony founded quietly rather than one refused.
-            var sector = MarketColonisationFixture.buildSectorWithEconomy();
             var market = MarketColonisationFixture.buildColonisableStation();
 
             try (var listenerUtilMock = mockStatic(ListenerUtil.class)) {
@@ -392,33 +385,49 @@ final class MarketColoniserTest {
         void leaves_survey_data_alone_when_no_owner_is_named() {
             // Naming nobody would found a colony no faction holds, which is neither what a
             // colonisable body is nor what a colony is.
-            var sector = MarketColonisationFixture.buildSectorWithEconomy();
             var market = MarketColonisationFixture.buildColonisableWorld();
 
             MarketColoniser.establishColony(sector, market, null);
 
             assertThat(market.isPlanetConditionMarketOnly())
                 .isTrue();
-            verifyNoInteractions(MarketColonisationFixture.readEconomy(sector));
+            verifyNoInteractions(economy);
+        }
+
+        @Test
+        void leaves_survey_data_unowned_when_there_is_no_economy_to_found_into() {
+            // The owner has to be withheld along with the founding, or a body that could not be
+            // colonised is left flying a flag and trading over an owner's counters with no colony
+            // under them - which is why the founding conditions are asked before the hand-over
+            // rather than only inside the founding it precedes.
+            var market = MarketColonisationFixture.buildColonisableWorld();
+
+            MarketColoniser.establishColony(
+                MarketColonisationFixture.buildSectorWithoutEconomy(),
+                market,
+                Factions.PLAYER);
+
+            assertThat(market.isPlanetConditionMarketOnly())
+                .isTrue();
+            assertThat(market.isPlayerOwned())
+                .isFalse();
+            assertThat(MarketOwnershipFixture.readSubmarketIds(market))
+                .isEmpty();
         }
 
         @Test
         void leaves_a_market_that_is_already_a_colony_alone() {
 
-            var sector = MarketColonisationFixture.buildSectorWithEconomy();
             var market = MarketStateFixture.buildColony(MarketColonisationFixture.FACTION_OWNER_ID);
 
             MarketColoniser.establishColony(sector, market, Factions.PLAYER);
 
-            verifyNoInteractions(MarketColonisationFixture.readEconomy(sector));
+            verifyNoInteractions(economy);
         }
 
         @Test
         void leaves_a_null_market_alone() {
-            assertThatCode(() -> MarketColoniser.establishColony(
-                    MarketColonisationFixture.buildSectorWithEconomy(),
-                    null,
-                    Factions.PLAYER))
+            assertThatCode(() -> MarketColoniser.establishColony(sector, null, Factions.PLAYER))
                 .doesNotThrowAnyException();
         }
     }
