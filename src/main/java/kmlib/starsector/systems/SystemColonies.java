@@ -104,12 +104,37 @@ public record SystemColonies(
         var knownColonies = new ArrayList<SystemColony>();
 
         for (var colony : colonies) {
-            
-            if (Markets.isCountedAsColony(colony.market(), shouldIncludeUndiscoveredMarkets)) {
+
+            if (isKnownColony(colony, shouldIncludeUndiscoveredMarkets)) {
                 knownColonies.add(colony);
             }
         }
         return List.copyOf(knownColonies);
+    }
+
+    /**
+     * Whether anyone the player knows of lives here - the emptiness of
+     * {@link #readKnownColonies} asked without materialising it.
+     *
+     * <p>Offered because "does anyone live in this system" is asked of every system in the
+     * sector on a scan, and per cell while the map is drawn, where the projection's contents
+     * are never wanted - only whether it has any. Short-circuiting on the first colony that
+     * passes is what keeps that ask the cost of a test rather than of a list.
+     *
+     * @param shouldIncludeUndiscoveredMarkets whether an undiscovered colony still counts (the
+     *                                         "show all factions" dev reveal); false applies the
+     *                                         normal known-to-player filter
+     * @return true when at least one colony passes the projection
+     */
+    public boolean hasKnownColony(boolean shouldIncludeUndiscoveredMarkets) {
+
+        for (var colony : colonies) {
+
+            if (isKnownColony(colony, shouldIncludeUndiscoveredMarkets)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // Appends the owned colonies among a listing, in the order the listing gives them. Kept as
@@ -123,6 +148,20 @@ public record SystemColonies(
                 ownedMarkets.add(market);
             }
         }
+    }
+
+    // The projection's rule for one colony, stated once so the read that materialises the
+    // projection and the emptiness question about it cannot answer under different filters -
+    // which is the very drift naming the projection here exists to prevent.
+    //
+    // Ownership is re-asked through the composed filter although the set is already selected on
+    // it: the composition is what the rule is, and unpicking it here to save a test would leave a
+    // second, narrower statement of "counts as a known colony" living in this class.
+    private static boolean isKnownColony(
+            SystemColony colony,
+            boolean shouldIncludeUndiscoveredMarkets) {
+
+        return Markets.isCountedAsColony(colony.market(), shouldIncludeUndiscoveredMarkets);
     }
 
     // Whether this very market object is one the economy listed. Identity rather than equality:

@@ -15,8 +15,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 /**
- * Pins the contracts of {@link SystemColonies#readColoniesIn} and
- * {@link SystemColonies#readKnownColonies}, and the fixed-set guarantee its construction makes.
+ * Pins the contracts of {@link SystemColonies#readColoniesIn},
+ * {@link SystemColonies#readKnownColonies} and {@link SystemColonies#hasKnownColony}, and the
+ * fixed-set guarantee its construction makes.
  * Each method's cases live in a {@link Nested} group so the suite reports as a per-method tree;
  * the world they are posed against is {@link SystemColonyFixture}, shared with the index's suite.
  */
@@ -214,6 +215,80 @@ final class SystemColoniesTest {
                 .containsExactly(
                     new SystemColony(first, true),
                     new SystemColony(second, true));
+        }
+    }
+
+    @Nested
+    class HasKnownColony {
+
+        @Test
+        void answers_false_for_a_system_holding_nothing() {
+            assertThat(SystemColonies.NONE.hasKnownColony(false))
+                .isFalse();
+        }
+
+        @Test
+        void answers_true_for_an_ordinary_colony() {
+
+            var fixture = new SystemColonyFixture("corvus");
+
+            assertThat(buildColoniesOf(fixture.buildVisibleColony("hegemony")).hasKnownColony(false))
+                .isTrue();
+        }
+
+        @Test
+        void answers_true_for_a_concealed_colony_the_player_has_found() {
+            // A raided base is concealed for good and plainly known, so an emptiness read gated on
+            // public listing would call its system empty while the player is standing in it.
+            var fixture = new SystemColonyFixture("kumari_kandam");
+            var base = fixture.buildFoundConcealedColony("pirates");
+
+            assertThat(buildColoniesOf(base).hasKnownColony(false))
+                .isTrue();
+        }
+
+        @Test
+        void answers_false_for_a_colony_the_player_has_not_found() {
+            // The one shape the fog keeps back. Reporting its system as occupied is itself the
+            // tell that something is hiding there.
+            var fixture = new SystemColonyFixture("kumari_kandam");
+            var base = fixture.buildUnfoundConcealedColony("pirates");
+
+            assertThat(buildColoniesOf(base).hasKnownColony(false))
+                .isFalse();
+        }
+
+        @Test
+        void answers_true_for_a_colony_the_player_has_not_found_under_the_reveal() {
+
+            var fixture = new SystemColonyFixture("kumari_kandam");
+            var base = fixture.buildUnfoundConcealedColony("pirates");
+
+            assertThat(buildColoniesOf(base).hasKnownColony(true))
+                .isTrue();
+        }
+
+        @Test
+        void agrees_with_the_projection_it_asks_the_emptiness_of() {
+            // The claim the short-circuit rests on: skipping the list must not change the answer,
+            // and a set mixing a fogged colony with a visible one is where a filter that had
+            // drifted between the two reads would show it.
+            var fixture = new SystemColonyFixture("kumari_kandam");
+            var fogged = fixture.buildUnfoundConcealedColony("pirates");
+            var visible = fixture.buildVisibleColony("independent");
+
+            var foggedOnly = buildColoniesOf(fogged);
+            var mixed = buildColoniesOf(fogged, visible);
+
+            assertThat(foggedOnly.readKnownColonies(false))
+                .isEmpty();
+            assertThat(foggedOnly.hasKnownColony(false))
+                .isFalse();
+
+            assertThat(mixed.readKnownColonies(false))
+                .containsExactly(new SystemColony(visible, true));
+            assertThat(mixed.hasKnownColony(false))
+                .isTrue();
         }
     }
 
