@@ -10,6 +10,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,22 +29,24 @@ import static org.mockito.Mockito.mock;
  */
 final class ColoniesTest {
 
-    // The rule as it ships: both leaking kinds held back until somebody has seen them, and
+    // The rule as it ships: both leaking shapes held back until somebody has seen them, and
     // nothing admitted that the player has not found.
-    private static final ColonyVisibility BOTH_GATES_ON =
-        new ColonyVisibility(false, true, true);
+    private static final ColonyVisibility BOTH_GATES_ON = new ColonyVisibility(
+        false,
+        Set.of(RevelationGate.ABANDONED_STATIONS, RevelationGate.HIDDEN_COLONIES));
 
     // One gate apiece, which is how a case shows the two are independent of each other.
     private static final ColonyVisibility ONLY_STATIONS_GATED =
-        new ColonyVisibility(false, true, false);
+        new ColonyVisibility(false, Set.of(RevelationGate.ABANDONED_STATIONS));
 
     private static final ColonyVisibility ONLY_HIDDEN_GATED =
-        new ColonyVisibility(false, false, true);
+        new ColonyVisibility(false, Set.of(RevelationGate.HIDDEN_COLONIES));
 
     // The reveal, stated with both gates on so a case shows it overriding them rather than
     // merely running where they were off anyway.
-    private static final ColonyVisibility REVEAL_EVERYTHING =
-        new ColonyVisibility(true, true, true);
+    private static final ColonyVisibility REVEAL_EVERYTHING = new ColonyVisibility(
+        true,
+        Set.of(RevelationGate.ABANDONED_STATIONS, RevelationGate.HIDDEN_COLONIES));
 
     @Nested
     class Construct {

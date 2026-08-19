@@ -263,14 +263,18 @@ public record Colonies(
             rule.shouldIncludeUndiscoveredMarkets());
     }
 
-    // The two kinds of colony a bare fog leaks, each behind its own gate. A derelict is admitted
-    // by the fog the moment its entity is found - and most modded ones are never discoverable at
-    // all - while a colony hiding itself is admitted on that same technicality.
+    // Whether any gate the rule carries is about this colony. Asked of the gates themselves
+    // rather than branched on here, so what a gate covers is stated where the gate is named and
+    // a third one needs no edit in this class.
     private static boolean isGatedOnRevelation(Colony colony, ColonyVisibility rule) {
 
-        return (rule.shouldGateAbandonedStations()
-                && colony.kind() == ColonyKind.ABANDONED_STATION)
-            || (rule.shouldGateHiddenColonies() && colony.isHidden());
+        for (var gate : rule.revelationGates()) {
+
+            if (gate.coversColony(colony)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // Somebody has seen this colony where it now stands, and word of it has reached the player.

@@ -3,6 +3,7 @@ package kmlib.starsector.systems.claims;
 import com.fs.starfarer.api.Global;
 
 import kmlib.starsector.colonies.ColonyVisibility;
+import kmlib.starsector.colonies.RevelationGate;
 import kmlib.starsector.entities.EntityMapIcon;
 import kmlib.starsector.systems.SystemColoniesIndex;
 
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.awt.Color;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -37,8 +39,9 @@ final class VanillaClaimBreakdownReaderTest {
 
     // The rule as it ships, posed where a case is about what the reader reports of the player's
     // knowledge. Everything else runs under the fog alone, which is the rule that adds nothing.
-    private static final ColonyVisibility BOTH_GATES_ON =
-        new ColonyVisibility(false, true, true);
+    private static final ColonyVisibility BOTH_GATES_ON = new ColonyVisibility(
+        false,
+        Set.of(RevelationGate.ABANDONED_STATIONS, RevelationGate.HIDDEN_COLONIES));
 
     private ClaimContestFixture claimContest;
 
