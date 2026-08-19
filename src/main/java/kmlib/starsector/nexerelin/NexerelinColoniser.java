@@ -1,0 +1,128 @@
+package kmlib.starsector.nexerelin;
+
+import com.fs.starfarer.api.campaign.FactionAPI;
+import com.fs.starfarer.api.campaign.PlanetAPI;
+import com.fs.starfarer.api.campaign.SectorAPI;
+import com.fs.starfarer.api.campaign.econ.MarketAPI;
+import com.fs.starfarer.api.impl.campaign.ids.Factions;
+
+import exerelin.campaign.intel.colony.ColonyExpeditionIntel;
+
+/**
+ * Founding a colony the way Nexerelin founds one, on an install running it.
+ *
+ * <p>Nexerelin does far more than settle a body. A colony it founds carries the record that it was
+ * founded rather than generated with the sector, the faction that founded it, that faction's own
+ * tariffs and free-port stance, trading counters chosen by that mod's rules rather than the game's,
+ * an administrator, and the condition its diplomacy reads a colony through. None of that can be
+ * added to a colony afterwards by anything that does not already know the mod, so on such an
+ * install its routine takes the whole founding and the sequence this library composes is skipped
+ * entirely rather than run underneath it.
+ *
+ * <p>Whose colony it is decided by the faction id alone, matching how ownership is stated
+ * everywhere else here. The mod's routine draws the same distinction the game's two colonisation
+ * routines do - the player's colony is flagged as theirs, gets a spaceport underway and a storage
+ * hold already paid for, while a faction's arrives with industries and immigration incentives.
+ *
+ * <p>Nothing extra is announced. The mod's routine tells its own colony listener and stops, raising
+ * neither the game's player-colonisation report nor the mod's own transfer fan-out - so a colony
+ * founded through here is announced exactly as one founded by that mod's colony fleet, which is
+ * what a caller on that install is entitled to expect.
+ *
+ * <p>The mod is optional, so the sole reference to a type of its own lives in the nested
+ * {@link NexerelinTypes} holder, which the classloader does not resolve until the presence gate has
+ * passed. That keeps an install without the mod from ever seeking a class it does not have.
+ *
+ * <p>Nothing here names a type of this library's own. The routine is wrapped as the mod states it,
+ * and which of the two colonisation paths an install takes is decided where the choice belongs -
+ * beside the composed sequence that is the other half of it.
+ */
+public final class NexerelinColoniser {
+
+    // The size the mod founds a colony at. Read off its own callers rather than chosen here: every
+    // one of them - a colony expedition, a player-spawned one, the recolonisation of a ruined
+    // world - passes three, which is also the size the game's own routines found at.
+    private static final int NEXERELIN_COLONY_SIZE = 3;
+
+    // Whether the colony is a ruined world being resettled, which is a founding this routine is
+    // never asked for: that branch skips the administrator and forces a spaceport up rather than
+    // queueing one, being about a place that was lived in before.
+    private static final boolean FOUNDING_RATHER_THAN_RESETTLING = false;
+
+    private NexerelinColoniser() {
+        // utility class, no instances.
+    }
+
+    /**
+     * Founds the colony through Nexerelin's own routine where this install can take that path.
+     *
+     * <p>Declining is a normal answer rather than a failure: the mod may not be installed, and its
+     * routine needs a planet and a faction it can resolve. Every decline leaves the market
+     * untouched, so the caller is free to found the colony itself.
+     *
+     * @param sector    the sector holding the faction the colony is founded under
+     * @param market    the survey data to found on; the mod's routine renames a body still carrying
+     *                  the name its star system gave it, so the colony may not keep its old name
+     * @param factionId the owner the colony is founded under, {@link Factions#PLAYER} for the
+     *                  player
+     * @return true when Nexerelin founded the colony; false when this install cannot take that
+     *         path, with the market left exactly as it was
+     */
+    public static boolean establishColony(SectorAPI sector, MarketAPI market, String factionId) {
+
+        if (!canEstablishColony(sector, market, factionId)) {
+            return false;
+        }
+
+        NexerelinTypes.createColony(
+            market,
+            (PlanetAPI) market.getPrimaryEntity(),
+            sector.getFaction(factionId),
+            Factions.PLAYER.equals(factionId));
+
+        return true;
+    }
+
+    // What the mod's routine needs before it is worth calling. The presence gate comes first, so an
+    // install without the mod asks nothing else and never reaches the holder below.
+    //
+    // The body has to be a planet: the routine dereferences it to rename a world still carrying its
+    // star system's name, and to read the system that name came from. A colonisable market whose
+    // body is something else - which modded bodies can be - is a decline rather than a crash, and
+    // the caller founds the colony itself.
+    //
+    // The faction has to resolve for the same reason: the routine reads its settings and its
+    // tariffs off the faction object rather than off an id.
+    private static boolean canEstablishColony(
+            SectorAPI sector,
+            MarketAPI market,
+            String factionId) {
+
+        return NexerelinPresence.isModEnabled()
+            && sector != null
+            && market != null
+            && market.getPrimaryEntity() instanceof PlanetAPI
+            && factionId != null
+            && sector.getFaction(factionId) != null;
+    }
+
+    // Isolates the only reference to a Nexerelin type. The classloader resolves this holder on
+    // first call, which the presence gate defers until the mod is known to be present.
+    private static final class NexerelinTypes {
+
+        private static void createColony(
+                MarketAPI market,
+                PlanetAPI planet,
+                FactionAPI faction,
+                boolean isPlayerColony) {
+
+            ColonyExpeditionIntel.createColonyStatic(
+                market,
+                planet,
+                faction,
+                FOUNDING_RATHER_THAN_RESETTLING,
+                isPlayerColony,
+                NEXERELIN_COLONY_SIZE);
+        }
+    }
+}

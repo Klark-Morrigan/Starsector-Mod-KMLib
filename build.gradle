@@ -82,6 +82,15 @@ def lazyLibKotlinRuntimeJarFile = file(
 // is version-stamped; testRuntimeOnly so the matcher's tests can load under test.
 def ratJars = findModJars('RandomAssortmentofThings.jar')
 
+// Nexerelin backs NexerelinColoniser: on an install running it, a colony has to be founded by
+// Nexerelin's own routine or the rest of that mod never fully recognises the place, so compiling
+// against its colony-expedition entry point is what lets KMLib defer to it. Soft dependency, the
+// same stance as RAT above - KMLib declares no Nexerelin mod dependency, the presence gate keeps
+// an install without it from resolving the type, and the game classloader supplies the jar at
+// runtime for installs that ship it. Located by jar name since the install folder is
+// version-stamped; testRuntimeOnly so the wrapper's tests can load under test.
+def nexerelinJars = findModJars('ExerelinCore.jar')
+
 // MagicLib backs CoreUiTree, the one place that reflects into the live core-UI widget tree: its
 // ReflectionUtils drives the java.lang.reflect ops through method handles, the sanctioned bypass
 // of the script classloader's reflection ban. Every probe that walks that tree goes through it, so
@@ -284,6 +293,10 @@ dependencies {
     compileOnly ratJars
     testCompileOnly ratJars
     testRuntimeOnly ratJars
+
+    compileOnly nexerelinJars
+    testCompileOnly nexerelinJars
+    testRuntimeOnly nexerelinJars
 
     compileOnly magicLibJars
     testCompileOnly magicLibJars

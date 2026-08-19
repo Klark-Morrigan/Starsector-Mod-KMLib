@@ -42,6 +42,9 @@ Soft dependencies:
 
 Compatibility coded in:
 
+- **Nexerelin** - a colony founded on an install running Nexerelin is founded by
+  Nexerelin's own routine, since the records it writes about a colony cannot be
+  added to one afterwards.
 - **Random Assortment of Things** - KMLib recognises RAT's Abyssal Fractures, and
   reports whether its mini-map has replaced the campaign radar.
 
@@ -140,12 +143,17 @@ src/main/java/kmlib/
                      the nearest-market search a targeted operation is
                      pointed with, founding a colony on a body that
                      carries only survey data (whether it can be, the
-                     owner-neutral sequence that settles it, and the
-                     owner it is founded under), and what holding one
+                     owner-neutral sequence that settles it, the owner it
+                     is founded under, and the seam a mod's own
+                     colonisation takes the founding through instead),
+                     and what holding one
                      makes true of it - flag, submarkets and tariff,
                      stated so that either owner can be applied over the
                      other
     memory/        - typed sector-memory accessors (flag, string)
+    nexerelin/     - Nexerelin: founding a colony through that mod's own
+                     colonisation, which a founding is offered to before
+                     the composed sequence in markets/ is run
     rat/           - Random Assortment of Things: Abyssal Fracture matching,
                      and the campaign-minimap role answered for its mini-map
     relation/      - player relationship formatting
