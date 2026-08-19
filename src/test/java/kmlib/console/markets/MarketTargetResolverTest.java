@@ -51,7 +51,6 @@ final class MarketTargetResolverTest {
 
             assertThat(MarketTargetResolver.resolveTargetMarket(
                     sectorMock,
-                    systemMock,
                     "jangala",
                     ANY_MARKET))
                 .isEqualTo(new ResolvedMarketTarget(jangala));
@@ -67,7 +66,6 @@ final class MarketTargetResolverTest {
 
             assertThat(MarketTargetResolver.resolveTargetMarket(
                     sectorMock,
-                    systemMock,
                     "corvus_iii",
                     ANY_MARKET))
                 .isEqualTo(new ResolvedMarketTarget(surveyData));
@@ -84,7 +82,6 @@ final class MarketTargetResolverTest {
 
             assertThat(MarketTargetResolver.resolveTargetMarket(
                     sectorMock,
-                    systemMock,
                     "jangala",
                     ANY_MARKET))
                 .isEqualTo(new ResolvedMarketTarget(named));
@@ -99,7 +96,6 @@ final class MarketTargetResolverTest {
 
             assertThat(MarketTargetResolver.resolveTargetMarket(
                     sectorMock,
-                    systemMock,
                     "jangala",
                     ANY_MARKET))
                 .isEqualTo(new UnresolvedMarketTarget(
@@ -115,7 +111,6 @@ final class MarketTargetResolverTest {
 
             assertThat(MarketTargetResolver.resolveTargetMarket(
                     buildSectorAround(systemMock),
-                    systemMock,
                     "corvus_gate",
                     ANY_MARKET))
                 .isEqualTo(new UnresolvedMarketTarget("Entity 'corvus_gate' has no market."));
@@ -130,7 +125,6 @@ final class MarketTargetResolverTest {
 
             assertThat(MarketTargetResolver.resolveTargetMarket(
                     buildSectorAround(systemMock, jangala),
-                    systemMock,
                     "jangala",
                     NO_MARKET))
                 .isEqualTo(new UnresolvedMarketTarget(
@@ -147,7 +141,6 @@ final class MarketTargetResolverTest {
 
             assertThat(MarketTargetResolver.resolveTargetMarket(
                     sectorMock,
-                    systemMock,
                     null,
                     ANY_MARKET))
                 .isEqualTo(new ResolvedMarketTarget(near));
@@ -162,7 +155,6 @@ final class MarketTargetResolverTest {
 
             assertThat(MarketTargetResolver.resolveTargetMarket(
                     buildSectorAround(systemMock, jangala),
-                    systemMock,
                     "   ",
                     ANY_MARKET))
                 .isEqualTo(new ResolvedMarketTarget(jangala));
@@ -176,19 +168,18 @@ final class MarketTargetResolverTest {
 
             assertThat(MarketTargetResolver.resolveTargetMarket(
                     buildSectorAround(systemMock, jangala),
-                    systemMock,
                     null,
                     NO_MARKET))
                 .isEqualTo(new UnresolvedMarketTarget("Nothing in Corvus is a suitable target."));
         }
 
         @Test
-        void refuses_a_run_with_no_system_to_search() {
-            // The context guard turns a hyperspace invocation away before this is reached, so
-            // this is the answer to a caller that skipped it - not a sector-wide search.
+        void refuses_a_run_made_from_outside_any_system() {
+            // A fleet in hyperspace is in no system, so there is nowhere to look an id up in and
+            // nothing to search. The context guard turns such a run away first, so this is the
+            // answer to a caller that skipped it - never a sector-wide search.
             assertThat(MarketTargetResolver.resolveTargetMarket(
                     mock(SectorAPI.class),
-                    null,
                     "jangala",
                     ANY_MARKET))
                 .isEqualTo(new UnresolvedMarketTarget("No star system to search."));
@@ -210,7 +201,8 @@ final class MarketTargetResolverTest {
     }
 
     // The sector a run is made against: an economy listing the given markets in the system, and
-    // a fleet at the origin for a search to measure from.
+    // the player's fleet sitting in that system at the origin - which is both where the search
+    // measures from and how the resolution learns which system "here" is.
     private static SectorAPI buildSectorAround(StarSystemAPI systemMock, MarketAPI... markets) {
 
         // Each collaborator finishes its own stubbing before the sector's opens, so the calls do
@@ -220,6 +212,10 @@ final class MarketTargetResolverTest {
         MarketPlacementFixture.listMarketsIn(economyMock, systemMock, markets);
 
         var fleetMock = MarketPlacementFixture.buildFleetAt(0, 0);
+
+        when(fleetMock.getStarSystem())
+            .thenReturn(systemMock);
+
         var sectorMock = mock(SectorAPI.class);
 
         when(sectorMock.getEconomy())

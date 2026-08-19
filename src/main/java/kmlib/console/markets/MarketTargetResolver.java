@@ -3,6 +3,7 @@ package kmlib.console.markets;
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 
+import kmlib.starsector.systems.SectorStarSystems;
 import kmlib.starsector.systems.StarSystems;
 import kmlib.text.KmlibStrings;
 
@@ -16,8 +17,10 @@ import kmlib.text.KmlibStrings;
  * searches at all, whether an id is looked for beyond the system the fleet is in, and how a
  * place that does not qualify is told apart from one that is not there.
  *
- * <p>The search is confined to the given system on purpose. A dev command acts where the player
- * is standing, and an id resolved sector-wide would silently act on a same-named place on the
+ * <p>Where "here" is is settled here rather than asked of the caller: the system is the one the
+ * player's fleet is in, and a command that has already guarded on being in one does not hand it
+ * over again. Confined to that system on purpose - a dev command acts where the player is
+ * standing, and an id resolved sector-wide would silently act on a same-named place on the
  * other side of the map.
  *
  * <p>Final class with a private constructor: pure-function utility, no instance state, and free
@@ -34,17 +37,15 @@ public final class MarketTargetResolver {
     }
 
     /**
-     * Resolves the market a command should act on within {@code system}.
+     * Resolves the market a command should act on, in the system the player's fleet is in.
      *
-     * <p>An id names the place outright; without one the qualifying place nearest the player's
-     * fleet is taken, which is what makes the bare invocation useful at all. Either way the
-     * market has to meet {@code requirement}, so a command never acts on a place of the wrong
-     * kind merely because it was named.
+     * <p>An id names the place outright; without one the qualifying place nearest the fleet is
+     * taken, which is what makes the bare invocation useful at all. Either way the market has to
+     * meet {@code requirement}, so a command never acts on a place of the wrong kind merely
+     * because it was named.
      *
-     * @param sector      the sector the run is made against; null leaves nothing to measure
-     *                    from, so a bare invocation finds nothing
-     * @param system      the system to search, the one the player's fleet is in; null yields an
-     *                    unresolved target rather than a search of the sector
+     * @param sector      the sector the run is made against; a fleet outside any star system -
+     *                    or no sector at all - leaves nowhere to search
      * @param entityId    the id of the entity to act on; null or blank asks for the nearest
      *                    qualifying place instead
      * @param requirement what makes a market a candidate, and the phrase a refusal names it by
@@ -52,9 +53,10 @@ public final class MarketTargetResolver {
      */
     public static MarketTargetResolution resolveTargetMarket(
             SectorAPI sector,
-            StarSystemAPI system,
             String entityId,
             MarketTargetRequirement requirement) {
+
+        var system = SectorStarSystems.getPlayerStarSystem(sector);
 
         if (system == null) {
             return new UnresolvedMarketTarget(NO_SYSTEM_MESSAGE);
@@ -97,16 +99,15 @@ public final class MarketTargetResolver {
     }
 
     // The qualifying place nearest the player's fleet, that being where a player acting without
-    // naming anything means. A sector with no fleet to measure from finds nothing, which reads
-    // the same as a system holding nothing of the kind - and, for a command, is.
+    // naming anything means. The fleet is there to measure from by construction: a system was
+    // only found at all by reading which one the fleet is in.
     private static MarketTargetResolution resolveNearestMarket(
             SectorAPI sector,
             StarSystemAPI system,
             MarketTargetRequirement requirement) {
 
-        var playerFleet = sector == null ? null : sector.getPlayerFleet();
         var nearestMarket = StarSystems
-            .findNearestMarket(sector, system, playerFleet, requirement::isMetBy);
+            .findNearestMarket(sector, system, sector.getPlayerFleet(), requirement::isMetBy);
 
         if (nearestMarket.isEmpty()) {
             return new UnresolvedMarketTarget("Nothing in "
