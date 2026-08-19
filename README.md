@@ -139,9 +139,12 @@ src/main/java/kmlib/
     markets/       - market queries, decivilised markets, patrol counts,
                      the nearest-market search a targeted operation is
                      pointed with, founding a colony on a body that
-                     carries only survey data, and what holding one makes
-                     true of it - flag, submarkets and tariff, stated so
-                     that either owner can be applied over the other
+                     carries only survey data (whether it can be, the
+                     owner-neutral sequence that settles it, and the
+                     owner it is founded under), and what holding one
+                     makes true of it - flag, submarkets and tariff,
+                     stated so that either owner can be applied over the
+                     other
     memory/        - typed sector-memory accessors (flag, string)
     rat/           - Random Assortment of Things: Abyssal Fracture matching,
                      and the campaign-minimap role answered for its mini-map

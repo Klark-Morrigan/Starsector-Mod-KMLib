@@ -178,7 +178,12 @@ public final class MarketOwnershipFixture {
     // given, and the mark saying that id is the player's. Held apart in the market's own state
     // rather than derived from each other, so a rule that sets one and forgets the other is
     // visible to a case instead of being papered over here.
-    private static void stubOwner(
+    //
+    // Package-visible, as are the submarket, tariff and faction wirings below: an ownership
+    // change is not the only mutation posed against a market in this package, and a second
+    // fixture stubbing these by hand would be a second answer to what changing hands does to a
+    // market - free to disagree with this one.
+    static void stubOwner(
             MarketAPI marketMock,
             Map<String, FactionAPI> factionsById,
             String factionId) {
@@ -219,7 +224,7 @@ public final class MarketOwnershipFixture {
     // The counters the colony trades over, opened and closed as it changes hands. A counter
     // opened twice yields the same one back, because the map is keyed by submarket id - which is
     // what lets a case tell a counter left alone from one closed and opened again.
-    private static void stubSubmarkets(
+    static void stubSubmarkets(
             MarketAPI marketMock,
             Map<String, SubmarketAPI> submarkets) {
 
@@ -249,7 +254,7 @@ public final class MarketOwnershipFixture {
 
     // The tax rate, as the engine's own stat rather than a stubbed number: what a case reads back
     // is then what the modifier arithmetic produced, including a rate written over an earlier one.
-    private static void stubTariff(MarketAPI marketMock) {
+    static void stubTariff(MarketAPI marketMock) {
         when(marketMock.getTariff())
             .thenReturn(new MutableStat(0f));
     }
@@ -293,7 +298,7 @@ public final class MarketOwnershipFixture {
     }
 
     // The owners a colony can be posed under, each carrying the tariff fraction it levies.
-    private static Map<String, FactionAPI> buildFactions() {
+    static Map<String, FactionAPI> buildFactions() {
 
         var factionsById = new LinkedHashMap<String, FactionAPI>();
 
