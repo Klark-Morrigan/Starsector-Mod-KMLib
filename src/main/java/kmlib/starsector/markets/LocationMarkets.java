@@ -13,7 +13,8 @@ import java.util.Optional;
 import java.util.function.Predicate;
 
 /**
- * Finding the markets that sit in one place, whatever kind of place it is.
+ * Finding the markets that sit in one place, whatever kind of place it is - all of them, or the
+ * one nearest something.
  *
  * <p>The search underneath every "what is in here" read. A market sits in a location - a star
  * system, or hyperspace - and neither half of finding one is system-specific: the economy is
@@ -145,36 +146,29 @@ public final class LocationMarkets {
         if (from == null || from.getLocation() == null || eligibility == null) {
             return Optional.empty();
         }
-        var candidates = new ArrayList<>(readMarkets(sector, location));
-        candidates.addAll(readMarketsUnlistedByEconomy(sector, location));
+        var presentMarkets = new ArrayList<>(readMarkets(sector, location));
+        presentMarkets.addAll(readMarketsUnlistedByEconomy(sector, location));
 
-        MarketAPI nearestMarket = null;
-        SectorEntityToken nearestBody = null;
-        var nearestDistance = Double.POSITIVE_INFINITY;
+        RankedMarket nearest = null;
 
-        for (var market : candidates) {
+        for (var market : presentMarkets) {
 
-            var body = readRankableBody(market, eligibility);
+            var candidate = rankMarket(market, from, eligibility);
 
-            if (body == null) {
-                continue;
-            }
-            var distance = StarsectorPoints.computeDistanceBetween(body, from);
-
-            if (StarsectorPoints.isNearerThan(distance, nearestDistance, body, nearestBody)) {
-                nearestDistance = distance;
-                nearestMarket = market;
-                nearestBody = body;
+            if (candidate != null && candidate.isNearerThan(nearest)) {
+                nearest = candidate;
             }
         }
-        return Optional.ofNullable(nearestMarket);
+        return nearest == null ? Optional.empty() : Optional.of(nearest.market());
     }
 
-    // The body a candidate market is ranked by, or null when it is not a candidate at all -
-    // rejected by the caller's rule, or standing for no place a distance can be taken to. One
-    // read rather than three guards in the loop, so what disqualifies a market is stated once.
-    private static SectorEntityToken readRankableBody(
+    // A market with what it takes to rank it, or null when it does not rank at all - rejected by
+    // the caller's rule, or standing for no place a distance can be taken to. The market, its
+    // body and its distance travel together so a pass cannot advance one of the three and leave
+    // the others behind.
+    private static RankedMarket rankMarket(
             MarketAPI market,
+            SectorEntityToken from,
             Predicate<MarketAPI> eligibility) {
 
         if (market == null || !eligibility.test(market)) {
@@ -182,7 +176,10 @@ public final class LocationMarkets {
         }
         var body = market.getPrimaryEntity();
 
-        return body == null || body.getLocation() == null ? null : body;
+        if (body == null || body.getLocation() == null) {
+            return null;
+        }
+        return new RankedMarket(market, body, StarsectorPoints.computeDistanceBetween(body, from));
     }
 
     // Whether one of the markets already found stands for the same colony under the same owner,
@@ -195,5 +192,23 @@ public final class LocationMarkets {
             }
         }
         return false;
+    }
+
+    // One candidate in a nearest search: the market, the body its distance was taken to, and
+    // that distance.
+    private record RankedMarket(
+        MarketAPI market,
+        SectorEntityToken body,
+        double distance) {
+
+        // Whether this candidate displaces the best found so far, nothing found yet included.
+        private boolean isNearerThan(RankedMarket incumbent) {
+            return incumbent == null
+                || StarsectorPoints.isNearerThan(
+                    distance,
+                    incumbent.distance,
+                    body,
+                    incumbent.body);
+        }
     }
 }

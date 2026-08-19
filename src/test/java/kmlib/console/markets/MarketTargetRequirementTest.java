@@ -1,20 +1,17 @@
 package kmlib.console.markets;
 
-import com.fs.starfarer.api.campaign.FactionAPI;
-import com.fs.starfarer.api.campaign.econ.MarketAPI;
+import kmlib.starsector.markets.MarketStateFixture;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 /**
  * Pins the two requirements the console offers - what each admits, and the phrase a refusal
  * names it by, that phrase being what every message about a rejected target is worded from. The
- * cases live in {@link Nested} groups so the suite reports as a per-method tree; the shared mock
- * builder stays on the outer class.
+ * cases live in {@link Nested} groups so the suite reports as a per-method tree; the markets
+ * they are posed against are {@link MarketStateFixture}'s.
  */
 final class MarketTargetRequirementTest {
 
@@ -22,10 +19,10 @@ final class MarketTargetRequirementTest {
     class IsMetBy {
 
         @Test
-        void admits_a_body_still_carrying_only_survey_data_as_colonisable() {
+        void admits_a_body_carrying_only_survey_data_as_colonisable() {
 
             assertThat(MarketTargetRequirement.COLONISABLE_BODY.isMetBy(
-                    buildMarket(mock(FactionAPI.class), true, false)))
+                    MarketStateFixture.buildColonisableBody()))
                 .isTrue();
         }
 
@@ -33,7 +30,7 @@ final class MarketTargetRequirementTest {
         void refuses_an_existing_colony_as_colonisable() {
 
             assertThat(MarketTargetRequirement.COLONISABLE_BODY.isMetBy(
-                    buildMarket(mock(FactionAPI.class), false, true)))
+                    MarketStateFixture.buildColony("hegemony")))
                 .isFalse();
         }
 
@@ -41,16 +38,16 @@ final class MarketTargetRequirementTest {
         void admits_a_colony_a_faction_holds_as_transferable() {
 
             assertThat(MarketTargetRequirement.EXISTING_COLONY.isMetBy(
-                    buildMarket(mock(FactionAPI.class), false, true)))
+                    MarketStateFixture.buildColony("hegemony")))
                 .isTrue();
         }
 
         @Test
-        void refuses_a_body_still_carrying_only_survey_data_as_transferable() {
+        void refuses_a_body_carrying_only_survey_data_as_transferable() {
             // The two requirements are complements over the same market, which is what lets one
             // resolver serve both commands: whatever one admits, the other refuses.
             assertThat(MarketTargetRequirement.EXISTING_COLONY.isMetBy(
-                    buildMarket(mock(FactionAPI.class), true, false)))
+                    MarketStateFixture.buildColonisableBody()))
                 .isFalse();
         }
     }
@@ -72,24 +69,5 @@ final class MarketTargetRequirementTest {
             assertThat(MarketTargetRequirement.EXISTING_COLONY.requirementPhrase())
                 .isEqualTo("an existing colony");
         }
-    }
-
-    // A market posed by the three states the two requirements read: who holds it, whether it is
-    // a planet's condition-only placeholder, and whether the economy has it registered.
-    private static MarketAPI buildMarket(
-            FactionAPI faction,
-            boolean isConditionOnly,
-            boolean isInEconomy) {
-
-        var marketMock = mock(MarketAPI.class);
-
-        when(marketMock.getFaction())
-            .thenReturn(faction);
-        when(marketMock.isPlanetConditionMarketOnly())
-            .thenReturn(isConditionOnly);
-        when(marketMock.isInEconomy())
-            .thenReturn(isInEconomy);
-
-        return marketMock;
     }
 }

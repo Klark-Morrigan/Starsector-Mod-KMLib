@@ -1,17 +1,15 @@
 package kmlib.console.markets;
 
-import com.fs.starfarer.api.campaign.CampaignFleetAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.campaign.econ.EconomyAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
+import kmlib.starsector.markets.MarketPlacementFixture;
+
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.lwjgl.util.vector.Vector2f;
-
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -73,6 +71,23 @@ final class MarketTargetResolverTest {
                     "corvus_iii",
                     ANY_MARKET))
                 .isEqualTo(new ResolvedMarketTarget(surveyData));
+        }
+
+        @Test
+        void takes_the_named_place_over_a_nearer_one() {
+            // Naming a place is the player overriding the search, not narrowing it: the nearest
+            // qualifying place is what a bare invocation means, and this invocation is not bare.
+            var systemMock = buildSystemNamed(SYSTEM_NAME);
+            var named = buildMarketOnBodyIn(systemMock, "jangala", 5000, 0);
+            var nearer = buildMarketOnBodyIn(systemMock, "gilead", 100, 0);
+            var sectorMock = buildSectorAround(systemMock, named, nearer);
+
+            assertThat(MarketTargetResolver.resolveTargetMarket(
+                    sectorMock,
+                    systemMock,
+                    "jangala",
+                    ANY_MARKET))
+                .isEqualTo(new ResolvedMarketTarget(named));
         }
 
         @Test
@@ -202,14 +217,9 @@ final class MarketTargetResolverTest {
         // not nest into an unfinished-stubbing error.
         var economyMock = mock(EconomyAPI.class);
 
-        when(economyMock.getMarkets(systemMock))
-            .thenReturn(List.of(markets));
+        MarketPlacementFixture.listMarketsIn(economyMock, systemMock, markets);
 
-        var fleetMock = mock(CampaignFleetAPI.class);
-
-        when(fleetMock.getLocation())
-            .thenReturn(new Vector2f(0, 0));
-
+        var fleetMock = MarketPlacementFixture.buildFleetAt(0, 0);
         var sectorMock = mock(SectorAPI.class);
 
         when(sectorMock.getEconomy())
@@ -220,27 +230,19 @@ final class MarketTargetResolverTest {
         return sectorMock;
     }
 
-    // A market on a body of its own in the system, reachable both ways a resolution reaches one:
-    // by the id the body answers to, and by the distance a search ranks it at.
+    // A market on a body of its own that the system answers for by id - the second of the two
+    // ways a resolution reaches one, beside the distance a search ranks it at.
     private static MarketAPI buildMarketOnBodyIn(
             StarSystemAPI systemMock,
             String bodyId,
             float x,
             float y) {
 
-        var bodyMock = buildBodyWithoutMarketIn(systemMock, bodyId);
+        var market = MarketPlacementFixture.buildMarketOnBodyAt(bodyId, x, y);
 
-        when(bodyMock.getLocation())
-            .thenReturn(new Vector2f(x, y));
+        answerForBodyById(systemMock, bodyId, market.getPrimaryEntity());
 
-        var marketMock = mock(MarketAPI.class);
-
-        when(marketMock.getPrimaryEntity())
-            .thenReturn(bodyMock);
-        when(bodyMock.getMarket())
-            .thenReturn(marketMock);
-
-        return marketMock;
+        return market;
     }
 
     // A body the system answers for by id with nothing on it - a gate, a beacon, a bare rock.
@@ -248,13 +250,21 @@ final class MarketTargetResolverTest {
             StarSystemAPI systemMock,
             String bodyId) {
 
-        var bodyMock = mock(SectorEntityToken.class);
+        var bodyMock = MarketPlacementFixture.buildBodyAt(bodyId, 0, 0);
 
-        when(bodyMock.getId())
-            .thenReturn(bodyId);
-        when(systemMock.getEntityById(bodyId))
-            .thenReturn(bodyMock);
+        answerForBodyById(systemMock, bodyId, bodyMock);
 
         return bodyMock;
+    }
+
+    // Makes the system answer for the body under its id, which is what an id-named resolution
+    // looks one up through.
+    private static void answerForBodyById(
+            StarSystemAPI systemMock,
+            String bodyId,
+            SectorEntityToken bodyMock) {
+
+        when(systemMock.getEntityById(bodyId))
+            .thenReturn(bodyMock);
     }
 }

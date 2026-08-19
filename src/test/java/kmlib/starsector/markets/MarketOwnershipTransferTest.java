@@ -1,19 +1,14 @@
 package kmlib.starsector.markets;
 
-import com.fs.starfarer.api.campaign.FactionAPI;
-import com.fs.starfarer.api.campaign.econ.MarketAPI;
-
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 /**
  * Pins the contract of {@link MarketOwnershipTransfer#isReadyForTransfer}. The cases live in a
- * {@link Nested} group so the suite reports as a per-method tree; the shared mock builder stays
- * on the outer class.
+ * {@link Nested} group so the suite reports as a per-method tree; the markets they are posed
+ * against are {@link MarketStateFixture}'s, named for the shape each one is.
  */
 final class MarketOwnershipTransferTest {
 
@@ -22,11 +17,19 @@ final class MarketOwnershipTransferTest {
 
         @Test
         void accepts_a_colony_a_faction_holds() {
-            // The market says nothing about being registered with the economy, and is accepted
-            // anyway: Galatia Academy is a real colony under a real faction that vanilla never
-            // registers, and moving it to another owner is as much a transfer as any other.
+
             assertThat(MarketOwnershipTransfer.isReadyForTransfer(
-                    buildMarket(mock(FactionAPI.class), false)))
+                    MarketStateFixture.buildColony("hegemony")))
+                .isTrue();
+        }
+
+        @Test
+        void accepts_a_colony_the_economy_does_not_list() {
+            // Galatia Academy is a real colony under a real faction that vanilla never
+            // registers, and moving it to another owner is as much a transfer as any other -
+            // which is why registration is no part of this read.
+            assertThat(MarketOwnershipTransfer.isReadyForTransfer(
+                    MarketStateFixture.buildColonyUnlistedByEconomy("independent")))
                 .isTrue();
         }
 
@@ -34,14 +37,15 @@ final class MarketOwnershipTransferTest {
         void rejects_a_body_carrying_only_survey_data() {
             // The complement of colonisation readiness: there is no owner here to move.
             assertThat(MarketOwnershipTransfer.isReadyForTransfer(
-                    buildMarket(mock(FactionAPI.class), true)))
+                    MarketStateFixture.buildColonisableBody()))
                 .isFalse();
         }
 
         @Test
         void rejects_a_market_no_faction_holds() {
 
-            assertThat(MarketOwnershipTransfer.isReadyForTransfer(buildMarket(null, false)))
+            assertThat(MarketOwnershipTransfer.isReadyForTransfer(
+                    MarketStateFixture.buildUnownedMarket()))
                 .isFalse();
         }
 
@@ -50,19 +54,5 @@ final class MarketOwnershipTransferTest {
             assertThat(MarketOwnershipTransfer.isReadyForTransfer(null))
                 .isFalse();
         }
-    }
-
-    // A market posed by the two states transfer readiness is decided on: who holds it, and
-    // whether it is a planet's condition-only placeholder rather than a colony.
-    private static MarketAPI buildMarket(FactionAPI faction, boolean isConditionOnly) {
-
-        var marketMock = mock(MarketAPI.class);
-
-        when(marketMock.getFaction())
-            .thenReturn(faction);
-        when(marketMock.isPlanetConditionMarketOnly())
-            .thenReturn(isConditionOnly);
-
-        return marketMock;
     }
 }
