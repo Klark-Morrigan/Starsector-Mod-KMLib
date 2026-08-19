@@ -1,9 +1,8 @@
 package kmlib.starsector.ui.map.transform;
 
-import com.fs.starfarer.api.Global;
-
 import kmlib.opengl.GlRuns;
 import kmlib.opengl.GlViewport;
+import kmlib.starsector.ui.screen.VanillaScreen;
 
 import org.lwjgl.BufferUtils;
 import org.lwjgl.util.glu.GLU;
@@ -139,10 +138,13 @@ public record CampaignMapTransform(
         // cursor pixel through - so a pass that narrowed it and did not restore it is measured
         // against here, not the screen.
         var viewport = GlViewport.readViewport();
-        var settings = Global.getSettings();
         return new CampaignMapTransform(
             modelviewMatrix,
-            buildUiOrthoProjectionMatrix(settings.getScreenWidth(), settings.getScreenHeight()),
+            // The UI axes rather than the pixel ones: the campaign's ortho projection spans the UI
+            // units the layout runs in, which is what the modelview above was composed against.
+            buildUiOrthoProjectionMatrix(
+                VanillaScreen.resolveUiWidth(),
+                VanillaScreen.resolveUiHeight()),
             viewport,
             factor);
     }
@@ -217,11 +219,11 @@ public record CampaignMapTransform(
      * screen size alone and the read would only ask GL to repeat what the caller can already
      * derive - see {@code docs/dev/rendering-environment.md} for the setup and its citations.
      *
-     * @param screenWidth  the UI's virtual width, {@code SettingsAPI#getScreenWidth}. Note this is
-     *                     UI units, not the physical pixels the viewport is measured in; the two
+     * @param screenWidth  the UI's virtual width, {@link VanillaScreen#resolveUiWidth}. Note this
+     *                     is UI units, not the physical pixels the viewport is measured in; the two
      *                     differ whenever the display applies a pixel scale, and reconciling them
      *                     is the viewport's job inside {@code gluUnProject}
-     * @param screenHeight the UI's virtual height, {@code SettingsAPI#getScreenHeight}
+     * @param screenHeight the UI's virtual height, {@link VanillaScreen#resolveUiHeight}
      * @return the ortho as 16 floats, column-major, the layout {@code gluUnProject} expects
      */
     static float[] buildUiOrthoProjectionMatrix(float screenWidth, float screenHeight) {

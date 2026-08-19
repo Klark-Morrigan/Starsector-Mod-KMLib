@@ -5,6 +5,7 @@ import com.fs.starfarer.api.Global;
 import kmlib.logging.SessionWarning;
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.coreui.CoreUiTree;
+import kmlib.starsector.ui.screen.VanillaScreen;
 
 import org.apache.log4j.Logger;
 
@@ -114,8 +115,10 @@ public final class MapSurfaceBounds {
             if (mapTab == null) {
                 return null;
             }
-            var screenWidth = Global.getSettings().getScreenWidth();
-            var screenHeight = Global.getSettings().getScreenHeight();
+            // The axes rather than the whole box: the memo's guard compares the screen it was
+            // measured on against this one, and a screen's origin never moves to compare.
+            var screenWidth = VanillaScreen.resolveUiWidth();
+            var screenHeight = VanillaScreen.resolveUiHeight();
             if (isMemoisedFor(mapTab, screenWidth, screenHeight)) {
                 return memoisedSurfaceArea;
             }

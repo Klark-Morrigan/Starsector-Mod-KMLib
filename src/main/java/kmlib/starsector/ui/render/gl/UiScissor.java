@@ -1,9 +1,8 @@
 package kmlib.starsector.ui.render.gl;
 
-import com.fs.starfarer.api.Global;
-
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.input.UiCursor;
+import kmlib.starsector.ui.screen.VanillaScreen;
 
 import org.lwjgl.opengl.GL11;
 
@@ -13,9 +12,9 @@ import org.lwjgl.opengl.GL11;
  * overrun fall outside rather than paint over its neighbours. The scissor test operates in raw
  * framebuffer pixels, not the UI projection the layout works in, so this rescales the rectangle from UI
  * units to pixels (through {@link UiCursor#convertUiToPixel}, the inverse of the mouse's pixel-to-UI
- * mapping) before handing it to {@link GL11#glScissor}. Touches the GL surface and the settings statics,
- * so it is exercised in-engine like the other draw helpers; the rescale itself is the unit-tested pure
- * conversion.
+ * mapping) before handing it to {@link GL11#glScissor}. Touches the GL surface and the live screen
+ * ({@link VanillaScreen}), so it is exercised in-engine like the other draw helpers; the rescale itself
+ * is the unit-tested pure conversion.
  *
  * <p>{@link #runClippedTo} is how a caller brackets a draw: it pairs the two halves below and ends the
  * clip whichever way the draw leaves, which matters because a clip left enabled does not fail loudly -
@@ -65,11 +64,10 @@ public final class UiScissor {
      * @param uiRegion the clip rectangle, in UI coordinates
      */
     public static void push(Rectangle uiRegion) {
-        var settings = Global.getSettings();
-        var uiWidth = settings.getScreenWidth();
-        var uiHeight = settings.getScreenHeight();
-        var pixelWidth = settings.getScreenWidthPixels();
-        var pixelHeight = settings.getScreenHeightPixels();
+        var uiWidth = VanillaScreen.resolveUiWidth();
+        var uiHeight = VanillaScreen.resolveUiHeight();
+        var pixelWidth = VanillaScreen.resolvePixelWidth();
+        var pixelHeight = VanillaScreen.resolvePixelHeight();
 
         // The scissor box is the UI rectangle in framebuffer pixels: both spaces share the bottom-left
         // origin, so the lower-left corner and the size each rescale on their own axis.

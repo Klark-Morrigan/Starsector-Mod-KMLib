@@ -1,6 +1,6 @@
 package kmlib.starsector.ui.input;
 
-import com.fs.starfarer.api.Global;
+import kmlib.starsector.ui.screen.VanillaScreen;
 
 import org.lwjgl.input.Mouse;
 
@@ -11,9 +11,10 @@ import org.lwjgl.input.Mouse;
  * coordinates and hit-tests the raw mouse needs this so the region it draws is the region it
  * tests.
  *
- * <p>{@link #getUiX()} / {@link #getUiY()} touch the LWJGL and settings statics and are
- * exercised in-engine; the scaling itself is {@link #convertPixelToUi}, kept pure so the
- * conversion (including the no-display guard) is verifiable on its own.
+ * <p>{@link #getUiX()} / {@link #getUiY()} touch the LWJGL mouse and the live screen
+ * ({@link VanillaScreen}, which states which of its two axis pairs is which) and are exercised
+ * in-engine; the scaling itself is {@link #convertPixelToUi}, kept pure so the conversion
+ * (including the no-display guard) is verifiable on its own.
  */
 public final class UiCursor {
     private UiCursor() {
@@ -25,11 +26,10 @@ public final class UiCursor {
      *         zero
      */
     public static float getUiX() {
-        var settings = Global.getSettings();
         return convertPixelToUi(
             Mouse.getX(),
-            settings.getScreenWidth(),
-            settings.getScreenWidthPixels());
+            VanillaScreen.resolveUiWidth(),
+            VanillaScreen.resolvePixelWidth());
     }
 
     /**
@@ -37,11 +37,10 @@ public final class UiCursor {
      *         (zero pixel height)
      */
     public static float getUiY() {
-        var settings = Global.getSettings();
         return convertPixelToUi(
             Mouse.getY(),
-            settings.getScreenHeight(),
-            settings.getScreenHeightPixels());
+            VanillaScreen.resolveUiHeight(),
+            VanillaScreen.resolvePixelHeight());
     }
 
     /**

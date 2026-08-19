@@ -515,6 +515,13 @@ viewport is worth reading from GL rather than deriving. `getScreenWidthPixels()`
 and `getScreenHeightPixels()` are the API-side equivalents
 (`.../settings/StarfarerSettings.java:1913-1919`).
 
+KM code reaches all four of those through
+[`VanillaScreen`](../../src/main/java/kmlib/starsector/ui/screen/VanillaScreen.java)
+rather than through `SettingsAPI` directly. Its methods are named for the space
+they answer in rather than for the settings call behind them, so the mix-up this
+section warns about - which is invisible at a pixel scale of 1 and therefore on
+the machine it is written on - has to be spelled out to be made.
+
 ### The modelview around a map render
 
 The campaign UI's base modelview is `identity + translate(0.01, 0.01)`

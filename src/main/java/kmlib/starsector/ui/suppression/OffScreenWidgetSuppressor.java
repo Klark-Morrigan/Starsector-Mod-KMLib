@@ -6,6 +6,7 @@ import com.fs.starfarer.api.ui.UIComponentAPI;
 
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.layout.VanillaPositions;
+import kmlib.starsector.ui.screen.VanillaScreen;
 
 import org.apache.log4j.Logger;
 
@@ -87,8 +88,8 @@ public final class OffScreenWidgetSuppressor implements EveryFrameScript {
      *                               every frame, since which widget is suppressible is the caller's
      *                               decision and one it may withdraw
      * @param readScreenBox          the screen the widget's box is compared against, in the UI units
-     *                               that box is laid out in; {@link VanillaScreenBox} answers it for
-     *                               a running game
+     *                               that box is laid out in; {@link VanillaScreen#resolveScreenBox}
+     *                               answers it for a running game
      */
     public OffScreenWidgetSuppressor(
             Supplier<UIComponentAPI> findSuppressibleWidget,

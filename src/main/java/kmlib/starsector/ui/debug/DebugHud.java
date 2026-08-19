@@ -1,7 +1,5 @@
 package kmlib.starsector.ui.debug;
 
-import com.fs.starfarer.api.Global;
-
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.font.LazyFontCache;
 import kmlib.starsector.ui.font.LazyFontMeasurer;
@@ -13,6 +11,7 @@ import kmlib.starsector.ui.render.gl.LabelRenderer;
 import kmlib.starsector.ui.render.gl.LabelStyle;
 import kmlib.starsector.ui.render.gl.UiElementPaint;
 import kmlib.starsector.ui.render.gl.UiFill;
+import kmlib.starsector.ui.screen.VanillaScreen;
 
 import org.lazywizard.lazylib.ui.LazyFont;
 
@@ -90,9 +89,10 @@ public final class DebugHud {
      * @param edgePadding how far in from each screen edge a corner's block sits
      */
     public void renderAtCorners(float edgePadding) {
-        var settings = Global.getSettings();
-        var screenWidth = settings.getScreenWidth();
-        var screenHeight = settings.getScreenHeight();
+        // The axes rather than the whole box: a corner is placed by insetting from an edge length,
+        // and the screen's origin is not part of that arithmetic.
+        var screenWidth = VanillaScreen.resolveUiWidth();
+        var screenHeight = VanillaScreen.resolveUiHeight();
         drawAndClear(quadrant -> DebugHudLayout.layOutAtCorner(
             quadrant,
             entriesByQuadrant.get(quadrant),

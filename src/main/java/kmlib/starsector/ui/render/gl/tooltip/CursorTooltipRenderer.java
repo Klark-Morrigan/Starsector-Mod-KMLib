@@ -1,7 +1,5 @@
 package kmlib.starsector.ui.render.gl.tooltip;
 
-import com.fs.starfarer.api.Global;
-
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.font.LazyFontCache;
 import kmlib.starsector.ui.font.LazyFontSpanMeasurer;
@@ -12,6 +10,7 @@ import kmlib.starsector.ui.render.gl.LabelStyle;
 import kmlib.starsector.ui.render.gl.UiElementPaint;
 import kmlib.starsector.ui.render.gl.UiSprite;
 import kmlib.starsector.ui.render.gl.panel.BorderedBoxRenderer;
+import kmlib.starsector.ui.screen.VanillaScreen;
 import kmlib.starsector.ui.text.ImageSpan;
 import kmlib.starsector.ui.text.LabelRun;
 import kmlib.starsector.ui.text.TextSpan;
@@ -46,10 +45,6 @@ import java.util.List;
  */
 public final class CursorTooltipRenderer {
 
-    // The screen's own lower-left corner, which is where UI coordinates start: the box clamps inside the
-    // whole screen rather than inside a region of it, so the bound handed over is the screen itself.
-    private static final float SCREEN_ORIGIN = 0f;
-
     private CursorTooltipRenderer() {
     }
 
@@ -67,18 +62,15 @@ public final class CursorTooltipRenderer {
         if (LazyFontCache.loadByFace(style.typography().paragraphStyle().face().font()) == null) {
             return;
         }
-        var settings = Global.getSettings();
         var layout = CursorTooltip.layOut(
             sections,
             style.typography(),
             LazyFontSpanMeasurer::measureSpanWidth,
             UiCursor.getUiX(),
             UiCursor.getUiY(),
-            new Rectangle(
-                SCREEN_ORIGIN,
-                SCREEN_ORIGIN,
-                settings.getScreenWidth(),
-                settings.getScreenHeight()));
+            // The bound the box clamps inside is the whole screen rather than a region of it, so
+            // the screen's own box goes over as it stands.
+            VanillaScreen.resolveScreenBox());
 
         // Painted off the flat run of lines the layout anchored, in the same order: how those lines were
         // grouped was spent settling the spacing, and the draw has nothing left to do with it.
