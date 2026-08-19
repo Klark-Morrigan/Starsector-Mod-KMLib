@@ -2,6 +2,7 @@ package kmlib.starsector.markets;
 
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
+import com.fs.starfarer.api.impl.campaign.ids.Conditions;
 import com.fs.starfarer.api.impl.campaign.ids.MemFlags;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
 import com.fs.starfarer.api.util.Misc;
@@ -130,6 +131,30 @@ public final class Markets {
      */
     public static boolean hasAttachedStation(MarketAPI market) {
         return findAttachedStation(market).isPresent();
+    }
+
+    /**
+     * Whether a market is an abandoned station - a derelict hulk with a storage locker
+     * bolted on, rather than a place anybody lives.
+     *
+     * <p>Reads the {@code abandoned_station} condition
+     * ({@link Conditions#ABANDONED_STATION}) that vanilla's own station abandonment adds,
+     * rather than the {@code $abandonedStation} flag it sets on the entity in the same
+     * breath. The condition is the better of the two readings on both counts: it travels
+     * with the market, so a market moved onto another entity is still what it was, and it
+     * is the test the game's own market panel makes when deciding a place has nothing to
+     * show for itself.
+     *
+     * <p>Says nothing about ownership or about the fog. A derelict is owned by whatever
+     * faction the station belonged to and is not condition-only, so it passes
+     * {@link #isOwnedColony} exactly as a settlement does - which is why what a market is
+     * has to be asked separately from whether somebody holds it.
+     *
+     * @param market the market to test; null yields false
+     * @return true when the market carries vanilla's abandoned-station condition
+     */
+    public static boolean isAbandonedStation(MarketAPI market) {
+        return market != null && market.hasCondition(Conditions.ABANDONED_STATION);
     }
 
     /**

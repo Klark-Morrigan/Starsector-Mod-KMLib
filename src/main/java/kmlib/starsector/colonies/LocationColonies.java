@@ -65,7 +65,13 @@ public final class LocationColonies {
 
         for (var market : MarketColocation.readLargestMarketsPerFaction(ownedMarkets)) {
 
-            colonies.add(new Colony(market, isListedByEconomy(listedMarkets, market)));
+            // Kind is resolved off the market that won the place, so a colony superseded by a
+            // larger market on its entity is classified as whatever the winner is - not as
+            // whatever the loser was.
+            colonies.add(new Colony(
+                market,
+                ColonyKind.resolveKind(market),
+                isListedByEconomy(listedMarkets, market)));
         }
         return new Colonies(colonies);
     }

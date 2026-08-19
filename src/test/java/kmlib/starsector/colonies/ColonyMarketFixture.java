@@ -3,6 +3,7 @@ package kmlib.starsector.colonies;
 import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
+import com.fs.starfarer.api.impl.campaign.ids.Conditions;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -59,6 +60,23 @@ public final class ColonyMarketFixture {
      */
     public static MarketAPI buildUnfoundOpenColony(String factionId) {
         return buildColonyOnItsOwnEntity(factionId, DEFAULT_COLONY_SIZE, false, true, false);
+    }
+
+    /**
+     * A derelict station: owned, open and on an entity the player has found, exactly as an
+     * ordinary colony is - and marked out only by the condition vanilla hangs on an abandoned
+     * station. Every read but that condition takes it for a settlement, which is the whole
+     * reason the kind is resolved at all.
+     */
+    public static MarketAPI buildDerelictStation(String factionId) {
+
+        var marketMock = buildColonyOnItsOwnEntity(
+            factionId, DEFAULT_COLONY_SIZE, false, false, false);
+
+        when(marketMock.hasCondition(Conditions.ABANDONED_STATION))
+            .thenReturn(true);
+
+        return marketMock;
     }
 
     /**

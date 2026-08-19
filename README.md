@@ -122,7 +122,10 @@ src/main/java/kmlib/
                      itself stated once over a location and a
                      separately-named reader per kind of place above it:
                      a star system, hyperspace, and the whole sector as
-                     the composition of the two
+                     the composition of the two. Each colony carries
+                     what kind of place it is, resolved once where it is
+                     selected, so a derelict station is never taken for
+                     a settlement downstream
     entities/      - spawning custom campaign entities, their orbits,
                      name generation, and how an entity is identified to
                      a reader - its name paired with the map glyph it is

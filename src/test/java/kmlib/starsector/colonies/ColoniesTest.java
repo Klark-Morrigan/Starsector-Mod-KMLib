@@ -36,7 +36,7 @@ final class ColoniesTest {
         void keeps_the_colonies_it_was_built_with_when_the_source_list_changes_later() {
 
             var colonies = new ArrayList<Colony>();
-            colonies.add(new Colony(mock(MarketAPI.class), true));
+            colonies.add(new Colony(mock(MarketAPI.class), ColonyKind.COLONY, true));
 
             var set = new Colonies(colonies);
 
@@ -50,7 +50,7 @@ final class ColoniesTest {
         void rejects_an_attempt_to_change_the_colonies() {
             // A set is memoised for a whole pass and handed to every reader in it, so one reader
             // able to change it would be rewriting the system underneath all the others.
-            var set = new Colonies(List.of(new Colony(mock(MarketAPI.class), true)));
+            var set = new Colonies(List.of(new Colony(mock(MarketAPI.class), ColonyKind.COLONY, true)));
 
             assertThatThrownBy(() -> set.colonies().clear())
                 .isInstanceOf(UnsupportedOperationException.class);
@@ -92,7 +92,7 @@ final class ColoniesTest {
             var base = fixture.buildUnfoundConcealedColony("pirates");
 
             assertThat(buildColoniesOf(base).readKnownColonies(true))
-                .containsExactly(new Colony(base, true));
+                .containsExactly(new Colony(base, ColonyKind.COLONY, true));
         }
 
         @Test
@@ -103,7 +103,7 @@ final class ColoniesTest {
             var base = fixture.buildFoundConcealedColony("pirates");
 
             assertThat(buildColoniesOf(base).readKnownColonies(false))
-                .containsExactly(new Colony(base, true));
+                .containsExactly(new Colony(base, ColonyKind.COLONY, true));
         }
 
         @Test
@@ -115,8 +115,8 @@ final class ColoniesTest {
 
             assertThat(buildColoniesOf(first, second).readKnownColonies(false))
                 .containsExactly(
-                    new Colony(first, true),
-                    new Colony(second, true));
+                    new Colony(first, ColonyKind.COLONY, true),
+                    new Colony(second, ColonyKind.COLONY, true));
         }
     }
 
@@ -199,7 +199,7 @@ final class ColoniesTest {
                 .isFalse();
 
             assertThat(mixed.readKnownColonies(false))
-                .containsExactly(new Colony(visible, true));
+                .containsExactly(new Colony(visible, ColonyKind.COLONY, true));
             assertThat(mixed.hasKnownColony(false))
                 .isTrue();
         }
@@ -211,7 +211,7 @@ final class ColoniesTest {
 
         var colonies = new ArrayList<Colony>();
         for (var market : markets) {
-            colonies.add(new Colony(market, true));
+            colonies.add(new Colony(market, ColonyKind.COLONY, true));
         }
         return new Colonies(colonies);
     }

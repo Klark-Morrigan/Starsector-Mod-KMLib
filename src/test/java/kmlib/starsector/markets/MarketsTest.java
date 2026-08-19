@@ -28,7 +28,8 @@ import static org.mockito.Mockito.when;
 /**
  * Pins the contracts of {@link Markets#findAttachedStation},
  * {@link Markets#getStabilityFraction}, {@link Markets#hasAttachedStation},
- * {@link Markets#isMilitary}, {@link Markets#isOwnedColony} and
+ * {@link Markets#isAbandonedStation}, {@link Markets#isMilitary},
+ * {@link Markets#isOwnedColony} and
  * {@link Markets#readNameplate} - the reads that answer what one market is. The cases live
  * in a {@link Nested} group per method so the suite reports as a per-method tree; the shared
  * mock builders stay on the outer class.
@@ -198,6 +199,36 @@ final class MarketsTest {
         @Test
         void returns_false_for_a_null_market() {
             assertThat(Markets.hasAttachedStation(null))
+                .isFalse();
+        }
+    }
+
+    @Nested
+    class IsAbandonedStation {
+
+        @Test
+        void returns_true_for_a_market_carrying_the_abandoned_station_condition() {
+            assertThat(Markets.isAbandonedStation(MarketStateFixture.buildAbandonedStation()))
+                .isTrue();
+        }
+
+        @Test
+        void returns_false_for_a_colony() {
+            assertThat(Markets.isAbandonedStation(MarketStateFixture.buildColony("hegemony")))
+                .isFalse();
+        }
+
+        @Test
+        void returns_false_for_a_decivilised_world() {
+            // The other unlisted neutral market a condition marks. Both are derelict in the
+            // plain sense, and only the condition read tells the ruins from the hulk.
+            assertThat(Markets.isAbandonedStation(MarketStateFixture.buildDecivilisedWorld()))
+                .isFalse();
+        }
+
+        @Test
+        void returns_false_for_a_null_market() {
+            assertThat(Markets.isAbandonedStation(null))
                 .isFalse();
         }
     }

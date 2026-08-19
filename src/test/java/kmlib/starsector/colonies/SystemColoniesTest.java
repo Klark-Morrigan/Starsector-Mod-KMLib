@@ -26,6 +26,9 @@ final class SystemColoniesTest {
     // loose numbers. Its partner is the fixture's own default size.
     private static final int LARGER_COLONY_SIZE = 6;
 
+    // The smaller of a colliding pair, for the cases posing the loser rather than the winner.
+    private static final int SMALLER_COLONY_SIZE = 1;
+
     @Nested
     class ReadColoniesIn {
 
@@ -43,8 +46,8 @@ final class SystemColoniesTest {
 
             assertThat(readColonies(fixture))
                 .containsExactly(
-                    new Colony(ancyra, true),
-                    new Colony(academy, false));
+                    new Colony(ancyra, ColonyKind.COLONY, true),
+                    new Colony(academy, ColonyKind.COLONY, false));
         }
 
         @Test
@@ -58,7 +61,7 @@ final class SystemColoniesTest {
             fixture.placeColoniesInSystem(academy);
 
             assertThat(readColonies(fixture))
-                .containsExactly(new Colony(academy, false));
+                .containsExactly(new Colony(academy, ColonyKind.COLONY, false));
         }
 
         @Test
@@ -85,7 +88,7 @@ final class SystemColoniesTest {
             var colonies = readColonies(fixture);
 
             assertThat(colonies)
-                .containsExactly(new Colony(base, true));
+                .containsExactly(new Colony(base, ColonyKind.COLONY, true));
             assertThat(colonies.get(0).isHidden())
                 .isTrue();
         }
@@ -103,7 +106,36 @@ final class SystemColoniesTest {
             fixture.listColoniesInEconomy(vanillaMarket, moddedMarket);
 
             assertThat(readColonies(fixture))
-                .containsExactly(new Colony(moddedMarket, true));
+                .containsExactly(new Colony(moddedMarket, ColonyKind.COLONY, true));
+        }
+
+        @Test
+        void marks_a_derelict_station_as_an_abandoned_station() {
+            // The set admits it like any other owned market - what changes is that the colony
+            // says what it is, so a reader downstream is not left to take a hulk for a town.
+            var fixture = new ColonyFixture("corvus");
+            var derelict = fixture.buildDerelictStation("neutral");
+
+            fixture.placeColoniesInSystem(derelict);
+
+            assertThat(readColonies(fixture))
+                .containsExactly(new Colony(derelict, ColonyKind.ABANDONED_STATION, false));
+        }
+
+        @Test
+        void takes_a_colliding_pair_s_kind_from_the_market_that_wins_the_place() {
+            // Kind and place have to be settled by the same market. The loser is named first
+            // here, so a resolution reading the kind off anything but the winner reports the
+            // derelict as a settlement.
+            var fixture = new ColonyFixture("corvus");
+            var derelict = fixture.buildDerelictStation("neutral");
+            var supersededMarket = fixture.buildSiblingMarketOn(derelict, SMALLER_COLONY_SIZE);
+
+            fixture.placeColoniesInSystem(derelict);
+            fixture.listColoniesInEconomy(supersededMarket, derelict);
+
+            assertThat(readColonies(fixture))
+                .containsExactly(new Colony(derelict, ColonyKind.ABANDONED_STATION, true));
         }
 
         @Test
@@ -117,7 +149,7 @@ final class SystemColoniesTest {
             fixture.listColoniesInEconomy(base);
 
             assertThat(readColonies(fixture))
-                .containsExactly(new Colony(base, true));
+                .containsExactly(new Colony(base, ColonyKind.COLONY, true));
         }
 
         @Test

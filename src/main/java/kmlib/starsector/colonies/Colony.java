@@ -5,8 +5,8 @@ import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import kmlib.starsector.markets.MarketVisibility;
 
 /**
- * One colony: its market, paired with the single fact about it that cannot be recovered from
- * that market alone - whether the sector's economy lists it.
+ * One colony: its market, what kind of place that market stands for, and whether the sector's
+ * economy lists it.
  *
  * <p>Carries no location. Where a colony was found is the caller's own knowledge, because the
  * caller is what asked - it named a star system, or hyperspace, or the whole sector, and got
@@ -25,15 +25,24 @@ import kmlib.starsector.markets.MarketVisibility;
  * <p>Concealment and discovery are answered through {@link MarketVisibility} rather than stored
  * beside the market, so a colony can never report a state its own market contradicts. Listing
  * membership has no such source to defer to - it is a property of where the market was found,
- * not of the market - which is exactly why it is the one fact stored here.
+ * not of the market - which is exactly why it is stored here.
+ *
+ * <p>Kind is stored for the other reason: it is recoverable from the market, but every reader
+ * routes on it, and one resolving it for itself is a second statement of what an abandoned
+ * station is, free to disagree with this one. Resolving it where the colony is selected also
+ * settles it on the market that won its place, rather than on whichever market a later reader
+ * happens to hold.
  *
  * @param market            the colony's market; mandatory, a colony with no market being no
  *                          colony at all
+ * @param kind              what kind of place the market stands for - somewhere people live, or
+ *                          a derelict nobody ever lived on
  * @param isListedByEconomy whether the sector's economy lists this market, as opposed to it
  *                          hanging on one of its location's entities unregistered
  */
 public record Colony(
     MarketAPI market,
+    ColonyKind kind,
     boolean isListedByEconomy) {
 
     /**

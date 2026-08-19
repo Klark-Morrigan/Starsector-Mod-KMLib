@@ -24,7 +24,7 @@ final class ColonyTest {
         @Test
         void reports_a_concealed_market_as_hidden() {
 
-            var colony = new Colony(buildMarket(true, false), true);
+            var colony = new Colony(buildMarket(true, false), ColonyKind.COLONY, true);
 
             assertThat(colony.isHidden())
                 .isTrue();
@@ -33,7 +33,7 @@ final class ColonyTest {
         @Test
         void reports_a_publicly_listed_market_as_not_hidden() {
 
-            var colony = new Colony(buildMarket(false, false), true);
+            var colony = new Colony(buildMarket(false, false), ColonyKind.COLONY, true);
 
             assertThat(colony.isHidden())
                 .isFalse();
@@ -47,7 +47,7 @@ final class ColonyTest {
         void reports_a_concealed_colony_on_a_found_entity_as_known() {
             // A raided pirate base: permanently hidden, and perfectly well known. Concealment is
             // not the fog, which is why the colony asks the market rather than reading isHidden.
-            var colony = new Colony(buildMarket(true, false), true);
+            var colony = new Colony(buildMarket(true, false), ColonyKind.COLONY, true);
 
             assertThat(colony.isKnownToPlayer())
                 .isTrue();
@@ -56,7 +56,7 @@ final class ColonyTest {
         @Test
         void reports_a_concealed_colony_on_an_unfound_entity_as_unknown() {
 
-            var colony = new Colony(buildMarket(true, true), true);
+            var colony = new Colony(buildMarket(true, true), ColonyKind.COLONY, true);
 
             assertThat(colony.isKnownToPlayer())
                 .isFalse();
@@ -67,7 +67,7 @@ final class ColonyTest {
             // The case concealment and the fog part company on. Being publicly listed is not
             // being seen: a derelict station declares itself to an economy the player has no
             // sight of, so listing alone must not carry a colony past the fog.
-            var colony = new Colony(buildMarket(false, true), true);
+            var colony = new Colony(buildMarket(false, true), ColonyKind.COLONY, true);
 
             assertThat(colony.isKnownToPlayer())
                 .isFalse();

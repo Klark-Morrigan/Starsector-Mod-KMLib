@@ -46,8 +46,8 @@ final class SectorColoniesTest {
 
             assertThat(SectorColonies.readColonies(sector.getSector()))
                 .containsExactly(
-                    new Colony(jangala, true),
-                    new Colony(kazeron, true));
+                    new Colony(jangala, ColonyKind.COLONY, true),
+                    new Colony(kazeron, ColonyKind.COLONY, true));
         }
 
         @Test
@@ -61,7 +61,7 @@ final class SectorColoniesTest {
             sector.setHyperspaceHolding(deepSpaceStation);
 
             assertThat(SectorColonies.readColonies(sector.getSector()))
-                .containsExactly(new Colony(deepSpaceStation, true));
+                .containsExactly(new Colony(deepSpaceStation, ColonyKind.COLONY, true));
         }
 
         @Test
@@ -76,8 +76,8 @@ final class SectorColoniesTest {
 
             assertThat(SectorColonies.readColonies(sector.getSector()))
                 .containsExactly(
-                    new Colony(jangala, true),
-                    new Colony(deepSpaceStation, true));
+                    new Colony(jangala, ColonyKind.COLONY, true),
+                    new Colony(deepSpaceStation, ColonyKind.COLONY, true));
         }
 
         @Test
@@ -91,7 +91,7 @@ final class SectorColoniesTest {
             sector.addSystemHolding(jangala, barePlanet);
 
             assertThat(SectorColonies.readColonies(sector.getSector()))
-                .containsExactly(new Colony(jangala, true));
+                .containsExactly(new Colony(jangala, ColonyKind.COLONY, true));
         }
 
         @Test
@@ -103,7 +103,7 @@ final class SectorColoniesTest {
             sector.addSystemHolding(jangala);
 
             assertThat(SectorColonies.readColonies(sector.getSector()))
-                .containsExactly(new Colony(jangala, true));
+                .containsExactly(new Colony(jangala, ColonyKind.COLONY, true));
         }
 
         @Test
@@ -124,7 +124,7 @@ final class SectorColoniesTest {
             sector.listNoStarSystems();
 
             assertThat(SectorColonies.readColonies(sector.getSector()))
-                .containsExactly(new Colony(deepSpaceStation, true));
+                .containsExactly(new Colony(deepSpaceStation, ColonyKind.COLONY, true));
         }
 
         @Test
