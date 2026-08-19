@@ -2,10 +2,15 @@ package kmlib.starsector.markets;
 
 import com.fs.starfarer.api.campaign.LocationAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
+import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
+
+import kmlib.starsector.geometry.StarsectorPoints;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.function.Predicate;
 
 /**
  * Finding the markets that sit in one place, whatever kind of place it is.
@@ -103,6 +108,81 @@ public final class LocationMarkets {
             }
         }
         return unlistedMarkets;
+    }
+
+    /**
+     * The market in {@code location} that {@code eligibility} admits whose body sits closest to
+     * {@code from} - the "act on the one by me" resolution a targeted operation is pointed at
+     * with, rather than a listing to pick out of.
+     *
+     * <p>Both listings are searched, and which one a market came from is not part of the answer.
+     * That is not thoroughness: a body carrying only survey data is never registered with the
+     * economy, so a search of the economy's own listing could not find one to colonise at all,
+     * and vanilla builds real colonies off the economy too. What a caller is looking for is
+     * stated by the predicate it hands over, which is the only thing that decides.
+     *
+     * <p>A market with no primary entity, or one whose entity has no location, cannot be ranked
+     * and is passed over - there is no place to measure to, so admitting it would make the
+     * answer "nearest" only by default. Ties settle by
+     * {@link StarsectorPoints#isNearerThan}'s rule, so one pass over one place answers the same
+     * market every time.
+     *
+     * @param sector      the sector whose economy is read; null (or a null economy) yields empty
+     * @param location    the location to search; null yields empty
+     * @param from        what nearness is measured from, the entity a caller is acting out of;
+     *                    null (or one with no location) yields empty, there being nothing to
+     *                    measure against
+     * @param eligibility what makes a market a candidate at all; null yields empty rather than
+     *                    admitting every market present
+     * @return the nearest admitted market, or empty when the location holds none
+     */
+    public static Optional<MarketAPI> findNearestMarket(
+            SectorAPI sector,
+            LocationAPI location,
+            SectorEntityToken from,
+            Predicate<MarketAPI> eligibility) {
+
+        if (from == null || from.getLocation() == null || eligibility == null) {
+            return Optional.empty();
+        }
+        var candidates = new ArrayList<>(readMarkets(sector, location));
+        candidates.addAll(readMarketsUnlistedByEconomy(sector, location));
+
+        MarketAPI nearestMarket = null;
+        SectorEntityToken nearestBody = null;
+        var nearestDistance = Double.POSITIVE_INFINITY;
+
+        for (var market : candidates) {
+
+            var body = readRankableBody(market, eligibility);
+
+            if (body == null) {
+                continue;
+            }
+            var distance = StarsectorPoints.computeDistanceBetween(body, from);
+
+            if (StarsectorPoints.isNearerThan(distance, nearestDistance, body, nearestBody)) {
+                nearestDistance = distance;
+                nearestMarket = market;
+                nearestBody = body;
+            }
+        }
+        return Optional.ofNullable(nearestMarket);
+    }
+
+    // The body a candidate market is ranked by, or null when it is not a candidate at all -
+    // rejected by the caller's rule, or standing for no place a distance can be taken to. One
+    // read rather than three guards in the loop, so what disqualifies a market is stated once.
+    private static SectorEntityToken readRankableBody(
+            MarketAPI market,
+            Predicate<MarketAPI> eligibility) {
+
+        if (market == null || !eligibility.test(market)) {
+            return null;
+        }
+        var body = market.getPrimaryEntity();
+
+        return body == null || body.getLocation() == null ? null : body;
     }
 
     // Whether one of the markets already found stands for the same colony under the same owner,
