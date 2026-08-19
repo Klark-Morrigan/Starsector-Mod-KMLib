@@ -341,6 +341,33 @@ final class MarketOwnershipTest {
         }
 
         @Test
+        void changes_every_other_aspect_itself_where_the_installed_rule_takes_the_counters() {
+            // The rule stands in for one aspect of the change rather than for the change. Nothing
+            // an install supplies decides whose flag the colony flies, whether it is the player's,
+            // what its outlying entities fly or what its goods are taxed at - so all four land
+            // whichever rule decided the counters.
+            var market = MarketOwnershipFixture.buildColonyHeldBy(
+                MarketOwnershipFixture.FACTION_OWNER_ID);
+
+            MarketOwnership.applyOwnership(
+                market,
+                Factions.PLAYER,
+                (ruleMarket, ruleOldOwnerId, ruleNewOwnerId) -> true);
+
+            assertThat(market.getFactionId())
+                .isEqualTo("player");
+            assertThat(market.isPlayerOwned())
+                .isTrue();
+            assertThat(MarketOwnershipFixture.readFactionId(market.getPrimaryEntity()))
+                .isEqualTo("player");
+            assertThat(market.getConnectedEntities())
+                .allSatisfy(entity -> assertThat(MarketOwnershipFixture.readFactionId(entity))
+                    .isEqualTo("player"));
+            assertThat(market.getTariff().getFlatStatMod(DEFAULT_TARIFF_MODIFIER_ID).value)
+                .isEqualTo(0.3f);
+        }
+
+        @Test
         void applies_its_own_verdicts_when_the_installed_rule_declines_the_counters() {
             // The answer on every install without such a mod, so the colony still trades over the
             // counters its new owner should have.

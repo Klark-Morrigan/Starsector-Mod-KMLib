@@ -59,9 +59,12 @@ public final class MarketOwnership {
      * Restates a market as held by the given faction: its flag, its submarkets and its tariff all
      * set from that owner.
      *
-     * <p>The faction id lands first and everything downstream reads the market rather than the
-     * argument, so the market is coherent from the first mutation onwards and the tariff is
-     * charged at the incoming owner's rate rather than the outgoing one's.
+     * <p>The outgoing owner is read first and nothing else is: an installed submarket rule may
+     * treat a colony that has actually changed hands differently from one restated under the owner
+     * it already had, and the one thing that says which this is stops being readable the moment the
+     * incoming id lands. Everything after that reads the market rather than the argument, so the
+     * market is coherent from the first mutation onwards and the tariff is charged at the incoming
+     * owner's rate rather than the outgoing one's.
      *
      * <p>Who counts as the player is decided by the id alone. Nexerelin's own submarket rule
      * additionally accepts a market that already reports itself player-owned, which serves its
@@ -90,24 +93,25 @@ public final class MarketOwnership {
             return;
         }
 
-        var isPlayerHeld = Factions.PLAYER.equals(factionId);
-
         // Read before the incoming id lands, because it is gone the moment it does. A rule an
         // install supplies may restock the counters only where the colony has actually changed
         // hands, and the outgoing owner is the only thing that says whether it has.
         var outgoingFactionId = market.getFactionId();
 
         market.setFactionId(factionId);
-        market.setPlayerOwned(isPlayerHeld);
+        market.setPlayerOwned(isHeldByPlayer(factionId));
 
         applyOwnerToEntities(market, factionId);
-        applyOwnerSubmarkets(
-            market,
-            outgoingFactionId,
-            factionId,
-            isPlayerHeld,
-            ownerSubmarketRule);
+        applyOwnerSubmarkets(market, outgoingFactionId, factionId, ownerSubmarketRule);
         applyOwnerTariff(market);
+    }
+
+    // Whether the id names the player, which is the whole of the axis every aspect below turns on.
+    // Asked of the id at each point of use rather than worked out once and handed down: a colony is
+    // the player's because of who owns it, so an aspect deciding otherwise from a flag it was
+    // passed is an aspect free to disagree with the id the change was made under.
+    private static boolean isHeldByPlayer(String factionId) {
+        return Factions.PLAYER.equals(factionId);
     }
 
     // Flies the owner's flag over the whole holding rather than over the colony alone. A market's
@@ -149,8 +153,9 @@ public final class MarketOwnership {
             MarketAPI market,
             String outgoingFactionId,
             String factionId,
-            boolean isPlayerHeld,
             OwnerSubmarketRule ownerSubmarketRule) {
+
+        var isPlayerHeld = isHeldByPlayer(factionId);
 
         if (!ownerSubmarketRule.applySubmarkets(market, outgoingFactionId, factionId)) {
             applySubmarketVerdicts(market, isPlayerHeld);
