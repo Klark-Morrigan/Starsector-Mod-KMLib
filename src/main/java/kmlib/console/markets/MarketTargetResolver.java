@@ -1,7 +1,6 @@
 package kmlib.console.markets;
 
 import com.fs.starfarer.api.campaign.SectorAPI;
-import com.fs.starfarer.api.campaign.StarSystemAPI;
 
 import kmlib.starsector.systems.SectorStarSystems;
 import kmlib.starsector.systems.StarSystems;
@@ -111,7 +110,9 @@ public final class MarketTargetResolver {
     // The qualifying place nearest the player's fleet, that being where a player acting without
     // naming anything means. Confined to the system the fleet is in: a sector-wide "nearest"
     // would answer with a place several jumps away that the player never had in mind, and a
-    // fleet in hyperspace is in no system at all, so there is nothing to search.
+    // fleet in hyperspace is in no system at all, so there is nothing to search. The fleet is
+    // there to measure from by construction, a system having been found at all only by reading
+    // which one the fleet is in.
     private static MarketTargetResolution resolveNearestMarket(
             SectorAPI sector,
             MarketTargetRequirement requirement) {
@@ -121,16 +122,6 @@ public final class MarketTargetResolver {
         if (system == null) {
             return new UnresolvedMarketTarget(NO_SYSTEM_MESSAGE);
         }
-        return findNearestMarketIn(sector, system, requirement);
-    }
-
-    // The search itself, once there is a system to make it in. The fleet is there to measure from
-    // by construction: a system was only found at all by reading which one the fleet is in.
-    private static MarketTargetResolution findNearestMarketIn(
-            SectorAPI sector,
-            StarSystemAPI system,
-            MarketTargetRequirement requirement) {
-
         var nearestMarket = StarSystems
             .findNearestMarket(sector, system, sector.getPlayerFleet(), requirement::isMetBy);
 

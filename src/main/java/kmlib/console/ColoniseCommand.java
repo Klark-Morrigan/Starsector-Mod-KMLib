@@ -1,6 +1,8 @@
 package kmlib.console;
 
 import com.fs.starfarer.api.Global;
+import com.fs.starfarer.api.campaign.FactionAPI;
+import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
 import kmlib.console.factions.FactionTargetResolver;
 import kmlib.console.factions.ResolvedFactionTarget;
@@ -100,18 +102,24 @@ public final class ColoniseCommand extends KmlibBaseConsoleCommand {
 
         MarketColoniser.establishColony(sector, market, faction.getId());
 
-        // Read back after the founding rather than before it: survey data goes by whatever name
-        // its placeholder happened to hold, and the colony takes the body's - or, where a mod
-        // founded it, whatever name that mod gave the place.
-        output.showMessage("Founded a colony on "
+        output.showMessage(describeFoundedColony(market, faction));
+        return CommandResult.SUCCESS;
+    }
+
+    // What the player is told about the colony that now exists. Built from the market only after
+    // the founding, never before it: survey data goes by whatever name its placeholder happened
+    // to hold, and the colony takes the body's - or, where a mod founded it, whatever name that
+    // mod gave the place.
+    private static String describeFoundedColony(MarketAPI market, FactionAPI faction) {
+
+        return "Founded a colony on "
             + market.getName()
             + " for "
             // Through the resolver rather than getDisplayName(), because the player faction
             // reports a placeholder until it has an identity of its own - "Independent" before
             // the first colony, and the literal "player" on a stock Nexerelin setup.
             + StarsectorPlayerFactionResolver.resolveDisplayName(faction, faction.getId())
-            + '.');
-        return CommandResult.SUCCESS;
+            + '.';
     }
 
     /**

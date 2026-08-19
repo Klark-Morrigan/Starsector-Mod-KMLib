@@ -198,6 +198,26 @@ final class ColoniseCommandTest {
         }
 
         @Test
+        void reports_the_place_rather_than_the_owner_when_both_are_wrong() {
+            // A run with two mistakes in it has to report one of them, and the place is the
+            // argument a player is likelier to have got wrong - so the target is resolved first
+            // and its refusal is the one that gets said.
+            marketTargetResolverMock
+                .when(() -> MarketTargetResolver.resolveTargetMarket(any(), any(), any()))
+                .thenReturn(new UnresolvedMarketTarget("No entity with id 'corvus_iv' in the "
+                    + "sector."));
+            factionTargetResolverMock
+                .when(() -> FactionTargetResolver.resolveOwningFaction(any(), any()))
+                .thenReturn(new UnresolvedFactionTarget("No faction with id 'hegmony'."));
+
+            command.runCommand("corvus_iv hegmony", CommandContext.CAMPAIGN_MAP);
+
+            assertThat(outputFake.getMessages())
+                .anyMatch(message -> message.contains("No entity with id 'corvus_iv'"))
+                .noneMatch(message -> message.contains("No faction"));
+        }
+
+        @Test
         void reports_a_surplus_argument_as_bad_syntax_and_resolves_nothing() {
 
             var result = command.runCommand(
