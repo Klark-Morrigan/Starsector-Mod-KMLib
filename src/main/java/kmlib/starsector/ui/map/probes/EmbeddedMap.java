@@ -1,6 +1,7 @@
 package kmlib.starsector.ui.map.probes;
 
 import com.fs.starfarer.api.ui.SectorMapAPI;
+import com.fs.starfarer.api.ui.UIComponentAPI;
 
 import kmlib.math.geometry.Rectangle;
 
@@ -56,5 +57,26 @@ public record EmbeddedMap(
      */
     public Rectangle resolveDrawnBox() {
         return DrawnWidgets.resolveDrawnBoxOf(widget);
+    }
+
+    /**
+     * This map as a component of the screen it stands on, for a caller whose subject is the widget
+     * itself rather than a box - where it is placed whatever it is drawn at, or what it is drawn at
+     * to begin with.
+     *
+     * <p>The same sifting {@link #resolveDrawnBox} opens with, answered on its own because the two
+     * questions come apart: a box is what the player can point at, and this is the widget that is
+     * there whether or not anything of it shows. Stated here rather than as an {@code instanceof} at
+     * each holder, so what counts as a component is one answer across the reads of a map.
+     *
+     * <p>Handing the component back is still a read, and this package only reads. What a caller
+     * does with it afterwards is that caller's, and a write into a widget belongs with the packages
+     * that write.
+     *
+     * @return the map as a UI component, or null when it is not one - which is every map that is
+     *         not a placed widget at all, and nothing about where it is or how it is drawn
+     */
+    public UIComponentAPI resolveComponent() {
+        return widget instanceof UIComponentAPI component ? component : null;
     }
 }

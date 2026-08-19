@@ -20,6 +20,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * at all, one the layout never placed, and one faded out of sight. All three describe a map the
  * player cannot point at, and a caller that took any of them for a box would confine the cursor to a
  * surface that is not on screen.
+ *
+ * <p>Beside them the widget read, pinned where it parts from the box: a map drawn to nothing is
+ * still a component, so a caller whose subject is the widget rather than what shows of it gets an
+ * answer where the box read gives none.
  */
 class EmbeddedMapTest {
 
@@ -66,6 +70,39 @@ class EmbeddedMapTest {
                 new PositionFake(PLACED_BOX), FADED_TO_NOTHING);
 
             assertThat(new EmbeddedMap(mapFake, NO_ANCESTORS).resolveDrawnBox())
+                .isNull();
+        }
+    }
+
+    @Nested
+    class ResolveComponent {
+
+        @Test
+        void resolveComponentAnswersTheWidgetOfAMapThatIsOne() {
+
+            var mapFake = new PlacedSectorMapWidgetFake(
+                new PositionFake(PLACED_BOX),
+                FULLY_DRAWN);
+
+            assertThat(new EmbeddedMap(mapFake, NO_ANCESTORS).resolveComponent())
+                .isSameAs(mapFake);
+        }
+
+        @Test
+        void resolveComponentAnswersAMapFadedOutOfSight() {
+            // Where this parts from the box read: a widget drawn to nothing is still a component
+            // standing somewhere, which is what a caller asking about the widget itself is after.
+            var mapFake = new PlacedSectorMapWidgetFake(
+                new PositionFake(PLACED_BOX),
+                FADED_TO_NOTHING);
+
+            assertThat(new EmbeddedMap(mapFake, NO_ANCESTORS).resolveComponent())
+                .isSameAs(mapFake);
+        }
+
+        @Test
+        void resolveComponentAnswersNothingForAMapThatIsNotAComponent() {
+            assertThat(new EmbeddedMap(new SectorMapWidgetFake(), NO_ANCESTORS).resolveComponent())
                 .isNull();
         }
     }
