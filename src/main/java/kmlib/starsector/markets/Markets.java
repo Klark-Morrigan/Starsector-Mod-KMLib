@@ -16,10 +16,12 @@ import java.util.Optional;
  * Queries over what one market is.
  *
  * <p>Centralises reads a market only answers indirectly - walking its connected
- * entities, or normalising a raw stat against its vanilla band - so KM* mods (and
+ * entities, normalising a raw stat against its vanilla band, or picking the more
+ * durable of the several markings vanilla leaves for one fact - so KM* mods (and
  * any external caller) share one implementation of a check like "does this colony
- * have a station" or "how stable is it, as a fraction" rather than re-deriving the
- * scan or the band arithmetic each time.
+ * have a station", "how stable is it, as a fraction" or "is anybody actually aboard"
+ * rather than re-deriving the scan, the band arithmetic or the choice of marking each
+ * time.
  *
  * <p>What may be <em>said</em> about a market is {@link MarketVisibility}'s, and which
  * of several markets speaks for a place is {@link MarketColocation}'s. Both were once

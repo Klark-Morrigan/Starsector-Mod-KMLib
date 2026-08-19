@@ -142,7 +142,9 @@ src/main/java/kmlib/
                      for tab-tag mix-in; BaseExpiringIntelPlugin layers
                      auto-removal on top)
     map/           - which systems the sector map marks
-    markets/       - market queries, decivilised markets, patrol counts,
+    markets/       - market queries (including whether a market is a
+                     derelict station rather than a place anybody
+                     lives), decivilised markets, patrol counts,
                      the nearest-market search a targeted operation is
                      pointed with, founding a colony on a body that
                      carries only survey data (whether it can be, the

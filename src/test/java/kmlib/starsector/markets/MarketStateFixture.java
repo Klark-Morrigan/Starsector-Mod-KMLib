@@ -34,8 +34,11 @@ public final class MarketStateFixture {
      * as an owned colony on every other axis, which is exactly why the condition has to be asked.
      */
     public static MarketAPI buildAbandonedStation() {
-        return buildMarketWithCondition(
-            buildMarket(buildFaction("neutral"), false, false),
+        // Built from the unlisted-colony shape rather than from the flags, because that is
+        // precisely what a derelict is on every axis but the condition: an owned market the
+        // economy never registered. The composition is the point the doc above makes.
+        return stubConditionOn(
+            buildColonyUnlistedByEconomy("neutral"),
             Conditions.ABANDONED_STATION);
     }
 
@@ -66,9 +69,10 @@ public final class MarketStateFixture {
      * markets marked by a condition - so a read keying on the wrong one admits both.
      */
     public static MarketAPI buildDecivilisedWorld() {
-        return buildMarketWithCondition(
-            buildMarket(buildFaction("neutral"), true, false),
-            Conditions.DECIVILIZED);
+        // A dead world is a bare world's placeholder with the condition on it - the colony that
+        // stood there is gone, and what stayed behind is the market holding the planet's own
+        // conditions. Composed for that reason rather than to save the two flags.
+        return stubConditionOn(buildColonisableBody(), Conditions.DECIVILIZED);
     }
 
     /**
@@ -101,9 +105,10 @@ public final class MarketStateFixture {
         return marketMock;
     }
 
-    // Hangs one condition on an already-built market. Only the named condition answers true, so
+    // Hangs one condition on an already-built market - named for what it does to a market it is
+    // given, rather than as a builder, which it is not. Only the named condition answers true, so
     // a read keying on a different one has to fail rather than passing on "carries something".
-    private static MarketAPI buildMarketWithCondition(MarketAPI marketMock, String conditionId) {
+    private static MarketAPI stubConditionOn(MarketAPI marketMock, String conditionId) {
 
         when(marketMock.hasCondition(conditionId))
             .thenReturn(true);

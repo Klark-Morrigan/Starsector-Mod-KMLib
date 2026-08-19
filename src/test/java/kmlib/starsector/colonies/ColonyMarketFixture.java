@@ -70,8 +70,10 @@ public final class ColonyMarketFixture {
      */
     public static MarketAPI buildDerelictStation(String factionId) {
 
-        var marketMock = buildColonyOnItsOwnEntity(
-            factionId, DEFAULT_COLONY_SIZE, false, false, false);
+        // Built from the ordinary colony rather than from its flags, because the two shapes are
+        // the same shape: repeating the flag triple here would leave a second statement of what
+        // an open, found colony is, free to drift from the one above.
+        var marketMock = buildVisibleColony(factionId);
 
         when(marketMock.hasCondition(Conditions.ABANDONED_STATION))
             .thenReturn(true);

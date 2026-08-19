@@ -28,9 +28,8 @@ import static org.mockito.Mockito.when;
 /**
  * Pins the contracts of {@link Markets#findAttachedStation},
  * {@link Markets#getStabilityFraction}, {@link Markets#hasAttachedStation},
- * {@link Markets#isAbandonedStation}, {@link Markets#isMilitary},
- * {@link Markets#isOwnedColony} and
- * {@link Markets#readNameplate} - the reads that answer what one market is. The cases live
+ * {@link Markets#isAbandonedStation}, {@link Markets#isMilitary}, {@link Markets#isOwnedColony}
+ * and {@link Markets#readNameplate} - the reads that answer what one market is. The cases live
  * in a {@link Nested} group per method so the suite reports as a per-method tree; the shared
  * mock builders stay on the outer class.
  *
