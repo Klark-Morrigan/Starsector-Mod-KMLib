@@ -5,6 +5,8 @@ import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
 import kmlib.starsector.markets.MarketVisibility;
 
+import java.util.Objects;
+
 /**
  * One colony: its market, what kind of place that market stands for, and whether the sector's
  * economy lists it.
@@ -23,10 +25,15 @@ import kmlib.starsector.markets.MarketVisibility;
  * counts or names one does not. Carrying it lets both read one set rather than each walking
  * the listing that suits it and then disagreeing about what is present.
  *
- * <p>Concealment and discovery are answered through {@link MarketVisibility} rather than stored
- * beside the market, so a colony can never report a state its own market contradicts. Listing
- * membership has no such source to defer to - it is a property of where the market was found,
- * not of the market - which is exactly why it is stored here.
+ * <p>Concealment, discovery and where the colony stands are all read back off the market rather
+ * than stored beside it, so a colony can never report a state its own market contradicts.
+ * Listing membership has no such source to defer to - it is a property of where the market was
+ * found, not of the market - which is exactly why it is stored here.
+ *
+ * <p>Those reads are why the market is required rather than absorbed when absent. A colony with
+ * no market has no concealment, no discovery and nowhere to stand, so every one of them would
+ * have to invent an answer; refusing the colony at construction fails where the mistake is
+ * instead of three reads downstream, each free to invent a different one.
  *
  * <p>Kind is stored for the other reason: it is recoverable from the market, but every reader
  * routes on it, and one resolving it for itself is a second statement of what an abandoned
@@ -35,7 +42,7 @@ import kmlib.starsector.markets.MarketVisibility;
  * happens to hold.
  *
  * @param market            the colony's market; mandatory, a colony with no market being no
- *                          colony at all
+ *                          colony at all - a null one is refused rather than absorbed
  * @param kind              what kind of place the market stands for - somewhere people live, or
  *                          a derelict nobody ever lived on
  * @param isListedByEconomy whether the sector's economy lists this market, as opposed to it
@@ -45,6 +52,11 @@ public record Colony(
     MarketAPI market,
     ColonyKind kind,
     boolean isListedByEconomy) {
+
+    /** Refuses a colony with no market, there being nothing for its own reads to answer off. */
+    public Colony {
+        Objects.requireNonNull(market, "A colony needs a market: it has no facts without one.");
+    }
 
     /**
      * Whether the colony is concealed - present and owned, but not publicly listed.

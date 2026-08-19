@@ -67,7 +67,7 @@ public record Colonies(
     public List<Colony> readKnownColonies(ColonyVisibility rule) {
 
         var resolvedRule = resolveRule(rule);
-        var isSettledPlace = isSettledPlace(resolvedRule);
+        var isSettledPlace = hasSettlingColony(resolvedRule);
         var knownColonies = new ArrayList<Colony>();
 
         // Walked in the set's own order rather than gated colonies after ungated ones, since a
@@ -102,11 +102,10 @@ public record Colonies(
 
         var resolvedRule = resolveRule(rule);
 
-        for (var colony : colonies) {
-
-            if (isSettlingColony(colony, resolvedRule)) {
-                return true;
-            }
+        // The first pass is the short-circuit: a settling colony is known on its own account, so
+        // the very read that would settle the place answers the question outright.
+        if (hasSettlingColony(resolvedRule)) {
+            return true;
         }
         // Nothing settles the place, so nothing gated can be revealed by it: the rest resolves
         // exactly as the projection does, which is what keeps the two reads in agreement.
@@ -126,7 +125,7 @@ public record Colonies(
     // the player through colonies the player knows are inhabited. A place whose only ordinary
     // colony is itself undiscovered has no grapevine the player is party to, and letting it
     // reveal anything would have the map act on a fact the player has no means of holding.
-    private boolean isSettledPlace(ColonyVisibility rule) {
+    private boolean hasSettlingColony(ColonyVisibility rule) {
 
         for (var colony : colonies) {
 

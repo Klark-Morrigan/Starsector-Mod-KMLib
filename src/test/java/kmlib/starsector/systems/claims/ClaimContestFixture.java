@@ -9,6 +9,7 @@ import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.campaign.econ.EconomyAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.campaign.rules.MemoryAPI;
+import com.fs.starfarer.api.impl.campaign.ids.Conditions;
 import com.fs.starfarer.api.impl.campaign.ids.MemFlags;
 
 import kmlib.starsector.factions.FactionCustomFixture;
@@ -77,10 +78,20 @@ final class ClaimContestFixture implements AutoCloseable {
         return systemMock;
     }
 
-    /** Hands the economy the markets present in the system, in the order it will list them. */
+    /**
+     * Hands the economy the markets present in the system, in the order it will list them, and
+     * has each market name the system back - a colony that could not say where it stands would
+     * be unreachable to any rule asking who else is in its system.
+     */
     void placeMarketsInSystem(MarketAPI... markets) {
+
         when(economyMock.getMarkets(systemMock))
             .thenReturn(List.of(markets));
+
+        for (var market : markets) {
+            when(market.getContainingLocation())
+                .thenReturn(systemMock);
+        }
     }
 
     /**
@@ -142,6 +153,26 @@ final class ClaimContestFixture implements AutoCloseable {
     /** Raises a market's military flag, the condition behind vanilla's flat garrison bonus. */
     void markMarketAsMilitary(MarketAPI market) {
         when(market.getMemoryWithoutUpdate().getBoolean(MemFlags.MARKET_MILITARY))
+            .thenReturn(true);
+    }
+
+    /**
+     * Hangs vanilla's abandoned-station condition on a market - a derelict nobody has ever lived
+     * on. The mechanic weighs it like any other colony; what the condition changes is only
+     * whether a surface is entitled to name it.
+     */
+    void markMarketAsAbandonedStation(MarketAPI market) {
+        when(market.hasCondition(Conditions.ABANDONED_STATION))
+            .thenReturn(true);
+    }
+
+    /**
+     * Records the player as having been in the system, the way vanilla does when their fleet
+     * arrives. Left unset otherwise, since an unvisited system is where a colony that would
+     * leak has to be held back.
+     */
+    void markSystemAsEntered() {
+        when(systemMock.isEnteredByPlayer())
             .thenReturn(true);
     }
 

@@ -5,9 +5,12 @@ import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -288,11 +291,13 @@ final class ColoniesTest {
                 .containsExactly(buildColony(colony));
         }
 
-        @Test
-        void excludes_an_undiscovered_colony_in_a_settled_system_under_every_rule() {
+        @ParameterizedTest
+        @MethodSource("kmlib.starsector.colonies.ColoniesTest#buildEveryGateCombination")
+        void excludes_an_undiscovered_colony_in_a_settled_system(ColonyVisibility rule) {
             // The conjunction's own case. Revelation is a second condition on top of the fog and
-            // never an alternative to it, so a system full of witnesses still shows nothing the
-            // player has not found.
+            // never an alternative to it, so a system full of witnesses - entered by the player,
+            // and holding a colony that settles it - still shows nothing the player has not
+            // found, whichever way the gates are set.
             var fixture = new ColonyFixture("kumari_kandam");
             var unfoundBase = fixture.buildUnfoundConcealedColony("pirates");
             var colony = fixture.buildVisibleColony("hegemony");
@@ -300,15 +305,8 @@ final class ColoniesTest {
             fixture.placeColoniesInSystem(unfoundBase, colony);
             fixture.markSystemAsEntered();
 
-            var colonies = buildColoniesOf(buildColony(unfoundBase), buildColony(colony));
-
-            assertThat(colonies.readKnownColonies(BOTH_GATES_ON))
-                .containsExactly(buildColony(colony));
-            assertThat(colonies.readKnownColonies(ONLY_STATIONS_GATED))
-                .containsExactly(buildColony(colony));
-            assertThat(colonies.readKnownColonies(ONLY_HIDDEN_GATED))
-                .containsExactly(buildColony(colony));
-            assertThat(colonies.readKnownColonies(ColonyVisibility.BASE_FOG))
+            assertThat(buildColoniesOf(buildColony(unfoundBase), buildColony(colony))
+                    .readKnownColonies(rule))
                 .containsExactly(buildColony(colony));
         }
 
@@ -462,6 +460,17 @@ final class ColoniesTest {
             assertThat(colonies.hasKnownColony(BOTH_GATES_ON))
                 .isTrue();
         }
+    }
+
+    // Every setting of the two gates, the reveal left off throughout. What a case poses when it
+    // is claiming the answer does not depend on the gates at all - which is the shape of the
+    // conjunction, where the fog refuses before a gate is ever consulted.
+    static Stream<ColonyVisibility> buildEveryGateCombination() {
+        return Stream.of(
+            BOTH_GATES_ON,
+            ONLY_STATIONS_GATED,
+            ONLY_HIDDEN_GATED,
+            ColonyVisibility.BASE_FOG);
     }
 
     // A colony set built straight from colonies, for a case about the projection rather than
