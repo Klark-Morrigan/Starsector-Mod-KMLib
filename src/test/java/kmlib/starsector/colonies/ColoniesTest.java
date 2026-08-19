@@ -62,13 +62,26 @@ final class ColoniesTest {
 
         @Test
         void excludes_a_colony_the_player_has_not_found() {
-            // Concealed and on an undiscovered entity: the one shape that fails both arms of the
-            // known read, and the one the fog has to keep back - naming its owner in a box would
-            // tell the player exactly what is hiding out there.
+            // Concealed and on an undiscovered entity: the shape the fog has to keep back on both
+            // counts - naming its owner in a box would tell the player exactly what is hiding out
+            // there.
             var fixture = new ColonyFixture("kumari_kandam");
             var base = fixture.buildUnfoundConcealedColony("pirates");
 
             assertThat(buildColoniesOf(base).readKnownColonies(false))
+                .isEmpty();
+        }
+
+        @Test
+        void excludes_an_open_colony_on_an_entity_the_player_has_not_found() {
+            // A derelict station: the sector's most common undiscovered colony, and the one shape
+            // whose concealment and discovery disagree. Nothing hides it, so a projection reading
+            // concealment would paint its system as settled from the first frame of a campaign,
+            // for a place no fleet has been near.
+            var fixture = new ColonyFixture("kumari_kandam");
+            var derelict = fixture.buildUnfoundOpenColony("neutral");
+
+            assertThat(buildColoniesOf(derelict).readKnownColonies(false))
                 .isEmpty();
         }
 
@@ -128,7 +141,7 @@ final class ColoniesTest {
         @Test
         void answers_true_for_a_concealed_colony_the_player_has_found() {
             // A raided base is concealed for good and plainly known, so an emptiness read gated on
-            // public listing would call its system empty while the player is standing in it.
+            // concealment would call its system empty while the player is standing in it.
             var fixture = new ColonyFixture("kumari_kandam");
             var base = fixture.buildFoundConcealedColony("pirates");
 
@@ -138,12 +151,23 @@ final class ColoniesTest {
 
         @Test
         void answers_false_for_a_colony_the_player_has_not_found() {
-            // The one shape the fog keeps back. Reporting its system as occupied is itself the
-            // tell that something is hiding there.
+            // Reporting its system as occupied is itself the tell that something is hiding there.
             var fixture = new ColonyFixture("kumari_kandam");
             var base = fixture.buildUnfoundConcealedColony("pirates");
 
             assertThat(buildColoniesOf(base).hasKnownColony(false))
+                .isFalse();
+        }
+
+        @Test
+        void answers_false_for_an_open_colony_on_an_entity_the_player_has_not_found() {
+            // The derelict-station shape again, asked of the emptiness read. A system holding
+            // nothing but an undiscovered derelict reads as empty, which is what the player has
+            // any means of knowing about it.
+            var fixture = new ColonyFixture("kumari_kandam");
+            var derelict = fixture.buildUnfoundOpenColony("neutral");
+
+            assertThat(buildColoniesOf(derelict).hasKnownColony(false))
                 .isFalse();
         }
 

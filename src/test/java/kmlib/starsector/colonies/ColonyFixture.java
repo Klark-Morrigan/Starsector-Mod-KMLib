@@ -99,11 +99,21 @@ public final class ColonyFixture {
     }
 
     /**
-     * A base still to be found: concealed and on a discoverable entity, so it fails both arms of
-     * the known read - the one shape the fog has to keep back.
+     * A base still to be found: concealed, and on an entity the player has not discovered.
+     * Concealment and discovery agree here, so nothing whatever about it reaches the player.
      */
     public MarketAPI buildUnfoundConcealedColony(String factionId) {
         return ColonyMarketFixture.buildUnfoundConcealedColony(factionId);
+    }
+
+    /**
+     * A derelict station's shape, and the sector's most common undiscovered one: nothing
+     * conceals it, and its entity is still to be found. Concealment and discovery disagree here,
+     * and the fog answers on discovery - declaring itself to an economy the player has no sight
+     * of is not being seen.
+     */
+    public MarketAPI buildUnfoundOpenColony(String factionId) {
+        return ColonyMarketFixture.buildUnfoundOpenColony(factionId);
     }
 
     /**
