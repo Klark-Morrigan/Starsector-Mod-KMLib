@@ -40,11 +40,6 @@ import exerelin.campaign.intel.colony.ColonyExpeditionIntel;
  */
 public final class NexerelinColoniser {
 
-    // The size the mod founds a colony at. Read off its own callers rather than chosen here: every
-    // one of them - a colony expedition, a player-spawned one, the recolonisation of a ruined
-    // world - passes three, which is also the size the game's own routines found at.
-    private static final int NEXERELIN_COLONY_SIZE = 3;
-
     // Whether the colony is a ruined world being resettled, which is a founding this routine is
     // never asked for: that branch skips the administrator and forces a spaceport up rather than
     // queueing one, being about a place that was lived in before.
@@ -64,12 +59,20 @@ public final class NexerelinColoniser {
      * @param sector    the sector holding the faction the colony is founded under
      * @param market    the survey data to found on; the mod's routine renames a body still carrying
      *                  the name its star system gave it, so the colony may not keep its old name
-     * @param factionId the owner the colony is founded under, {@link Factions#PLAYER} for the
-     *                  player
+     * @param factionId  the owner the colony is founded under, {@link Factions#PLAYER} for the
+     *                   player
+     * @param colonySize the size the colony is founded at, which the caller states rather than
+     *                   this wrapper: a colony has one size however it was founded, so the number
+     *                   is the caller's to keep in step with whatever it founds at otherwise. The
+     *                   mod's own callers all pass three
      * @return true when Nexerelin founded the colony; false when this install cannot take that
      *         path, with the market left exactly as it was
      */
-    public static boolean establishColony(SectorAPI sector, MarketAPI market, String factionId) {
+    public static boolean establishColony(
+            SectorAPI sector,
+            MarketAPI market,
+            String factionId,
+            int colonySize) {
 
         // The presence gate is asked first and alone, so an install without the mod reads nothing
         // else and never reaches the holder below.
@@ -98,7 +101,12 @@ public final class NexerelinColoniser {
             return false;
         }
 
-        NexerelinTypes.createColony(market, planet, faction, Factions.PLAYER.equals(factionId));
+        NexerelinTypes.createColony(
+            market,
+            planet,
+            faction,
+            Factions.PLAYER.equals(factionId),
+            colonySize);
 
         return true;
     }
@@ -111,7 +119,8 @@ public final class NexerelinColoniser {
                 MarketAPI market,
                 PlanetAPI planet,
                 FactionAPI faction,
-                boolean isPlayerColony) {
+                boolean isPlayerColony,
+                int colonySize) {
 
             ColonyExpeditionIntel.createColonyStatic(
                 market,
@@ -119,7 +128,7 @@ public final class NexerelinColoniser {
                 faction,
                 FOUNDING_RATHER_THAN_RESETTLING,
                 isPlayerColony,
-                NEXERELIN_COLONY_SIZE);
+                colonySize);
         }
     }
 }

@@ -31,12 +31,17 @@ interface ColonisationRoutine {
     /**
      * Founds the colony if this routine is the one that should, and says whether it did.
      *
-     * @param sector    the sector the colony is founded in
-     * @param market    the survey data to found on
-     * @param factionId the owner the colony is founded under
+     * <p>The size is stated by the caller rather than by the routine, so a colony is the same size
+     * whichever routine founded it - the one property of a founding that would otherwise be
+     * decided twice, once here and once by the sequence this stands in for.
+     *
+     * @param sector     the sector the colony is founded in
+     * @param market     the survey data to found on
+     * @param factionId  the owner the colony is founded under
+     * @param colonySize the size the colony is founded at
      * @return true when this routine founded the colony and nothing further is to be done to the
      *         market; false when it declined, leaving the market exactly as it was for the caller
      *         to found itself
      */
-    boolean establishColony(SectorAPI sector, MarketAPI market, String factionId);
+    boolean establishColony(SectorAPI sector, MarketAPI market, String factionId, int colonySize);
 }

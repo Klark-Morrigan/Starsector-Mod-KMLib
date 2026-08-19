@@ -35,6 +35,10 @@ final class NexerelinColoniserTest {
     // The owner a founding is posed under whenever the case is not about who holds the colony.
     private static final String FACTION_OWNER_ID = "hegemony";
 
+    // The size a founding is posed at. Every case here is a decline, so it never reaches the mod
+    // and the number stands only for a caller having stated one.
+    private static final int COLONY_SIZE = 3;
+
     @Nested
     class EstablishColony {
 
@@ -48,7 +52,8 @@ final class NexerelinColoniserTest {
                 assertThat(NexerelinColoniser.establishColony(
                         buildSectorHolding(FACTION_OWNER_ID),
                         market,
-                        FACTION_OWNER_ID))
+                        FACTION_OWNER_ID,
+                        COLONY_SIZE))
                     .isFalse());
 
             verifyNoInteractions(market);
@@ -62,7 +67,8 @@ final class NexerelinColoniserTest {
                 assertThat(NexerelinColoniser.establishColony(
                         buildSectorHolding(FACTION_OWNER_ID),
                         buildWorldMarket(),
-                        FACTION_OWNER_ID))
+                        FACTION_OWNER_ID,
+                        COLONY_SIZE))
                     .isFalse());
         }
 
@@ -75,7 +81,8 @@ final class NexerelinColoniserTest {
                 assertThat(NexerelinColoniser.establishColony(
                         buildSectorHolding(FACTION_OWNER_ID),
                         buildStationMarket(),
-                        FACTION_OWNER_ID))
+                        FACTION_OWNER_ID,
+                        COLONY_SIZE))
                     .isFalse());
         }
 
@@ -86,7 +93,8 @@ final class NexerelinColoniserTest {
                 assertThat(NexerelinColoniser.establishColony(
                         buildSectorHolding(FACTION_OWNER_ID),
                         buildMarketWithoutBody(),
-                        FACTION_OWNER_ID))
+                        FACTION_OWNER_ID,
+                        COLONY_SIZE))
                     .isFalse());
         }
 
@@ -99,7 +107,8 @@ final class NexerelinColoniserTest {
                 assertThat(NexerelinColoniser.establishColony(
                         buildSectorHolding(FACTION_OWNER_ID),
                         buildWorldMarket(),
-                        "a_faction_this_sector_does_not_have"))
+                        "a_faction_this_sector_does_not_have",
+                        COLONY_SIZE))
                     .isFalse());
         }
 
@@ -110,7 +119,8 @@ final class NexerelinColoniserTest {
                 assertThat(NexerelinColoniser.establishColony(
                         buildSectorHolding(FACTION_OWNER_ID),
                         buildWorldMarket(),
-                        null))
+                        null,
+                        COLONY_SIZE))
                     .isFalse());
         }
 
@@ -121,7 +131,8 @@ final class NexerelinColoniserTest {
                 assertThat(NexerelinColoniser.establishColony(
                         buildSectorHolding(Factions.PLAYER),
                         null,
-                        Factions.PLAYER))
+                        Factions.PLAYER,
+                        COLONY_SIZE))
                     .isFalse());
         }
 
@@ -132,7 +143,8 @@ final class NexerelinColoniserTest {
                 assertThat(NexerelinColoniser.establishColony(
                         null,
                         buildWorldMarket(),
-                        Factions.PLAYER))
+                        Factions.PLAYER,
+                        COLONY_SIZE))
                     .isFalse());
         }
     }

@@ -396,14 +396,16 @@ final class MarketColoniserTest {
             var market = MarketColonisationFixture.buildColonisableWorld();
             var offeredMarket = new AtomicReference<MarketAPI>();
             var offeredFactionId = new AtomicReference<String>();
+            var offeredSize = new AtomicInteger();
 
             MarketColoniser.establishColony(
                 sector,
                 market,
                 MarketColonisationFixture.FACTION_OWNER_ID,
-                (routineSector, routineMarket, routineFactionId) -> {
+                (routineSector, routineMarket, routineFactionId, routineColonySize) -> {
                     offeredMarket.set(routineMarket);
                     offeredFactionId.set(routineFactionId);
+                    offeredSize.set(routineColonySize);
                     return true;
                 });
 
@@ -411,6 +413,10 @@ final class MarketColoniserTest {
                 .isSameAs(market);
             assertThat(offeredFactionId.get())
                 .isEqualTo(MarketColonisationFixture.FACTION_OWNER_ID);
+            // The size a routine is handed is the one the composed sequence founds at, so a colony
+            // is the same size whichever of the two produced it.
+            assertThat(offeredSize.get())
+                .isEqualTo(BASELINE_COLONY_SIZE);
             assertThat(market.isPlanetConditionMarketOnly())
                 .isTrue();
             assertThat(MarketOwnershipFixture.readSubmarketIds(market))
@@ -428,7 +434,7 @@ final class MarketColoniserTest {
                 sector,
                 market,
                 MarketColonisationFixture.FACTION_OWNER_ID,
-                (routineSector, routineMarket, routineFactionId) -> false);
+                (routineSector, routineMarket, routineFactionId, routineColonySize) -> false);
 
             assertThat(market.isPlanetConditionMarketOnly())
                 .isFalse();
@@ -468,7 +474,7 @@ final class MarketColoniserTest {
                 sector,
                 MarketStateFixture.buildColony(MarketColonisationFixture.FACTION_OWNER_ID),
                 Factions.PLAYER,
-                (routineSector, routineMarket, routineFactionId) -> {
+                (routineSector, routineMarket, routineFactionId, routineColonySize) -> {
                     routineOfferCount.incrementAndGet();
                     return true;
                 });

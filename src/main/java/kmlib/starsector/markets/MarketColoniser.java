@@ -36,7 +36,9 @@ import kmlib.starsector.nexerelin.NexerelinColoniser;
 public final class MarketColoniser {
 
     // What a colony starts at: three, the smallest size the game's own two colonisation
-    // routines both found at, and the size the population_3 condition names.
+    // routines both found at, and the size the population_3 condition names. Stated once for both
+    // paths - a routine an install supplies is founded at this size too rather than at one of its
+    // own, so a colony is the same size however it came to be.
     private static final int BASELINE_COLONY_SIZE = 3;
 
     // What has been spent so far towards the queued spaceport, which on a colony founded a
@@ -188,7 +190,7 @@ public final class MarketColoniser {
         // expects to find. A routine that declines leaves the market untouched for the sequence
         // below - which is the answer on every install without such a mod, and on a body its
         // routine cannot found on.
-        if (colonisationRoutine.establishColony(sector, market, factionId)) {
+        if (colonisationRoutine.establishColony(sector, market, factionId, BASELINE_COLONY_SIZE)) {
             return;
         }
 
