@@ -63,13 +63,14 @@ final class ColonyTest {
         }
 
         @Test
-        void reports_an_open_colony_on_an_unfound_entity_as_known() {
-            // Surfaced by a story reveal ahead of a fleet reaching it: public knowledge, listed
-            // on the star's own map tooltip, so the discovery arm alone must not fog it out.
+        void reports_an_open_colony_on_an_unfound_entity_as_unknown() {
+            // The case concealment and the fog part company on. Being publicly listed is not
+            // being seen: a derelict station declares itself to an economy the player has no
+            // sight of, so listing alone must not carry a colony past the fog.
             var colony = new Colony(buildMarket(false, true), true);
 
             assertThat(colony.isKnownToPlayer())
-                .isTrue();
+                .isFalse();
         }
     }
 

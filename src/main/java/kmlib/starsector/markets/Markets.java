@@ -175,45 +175,47 @@ public final class Markets {
     }
 
     /**
-     * Whether the player knows this market exists.
+     * Whether the player knows this market exists - the base fog every display of a
+     * colony asks permission of.
      *
-     * <p>Known has two arms: the market's entity has been discovered (no longer
-     * flagged discoverable) OR the market has been un-hidden, surfaced into the
-     * open by a story reveal. Neither arm reads the owner or the intel directory,
-     * so a faction hidden from the directory is not barred, and a concealed base on
-     * an always-visible entity (Galatia-Academy style) still reads known via the
-     * discovery arm.
+     * <p>Knowledge is discovery and nothing besides: the player has found the market's
+     * entity. A market's public listing is not an arm of the rule, because a colony
+     * listed in an economy the player has no sight of is not something the player has
+     * any way of knowing about, and admitting it shows every undiscovered market that
+     * merely omits to hide itself - every derelict station in the sector among them -
+     * from the first frame of a campaign. The case the listing would be admitting for,
+     * a colony surfaced by a story reveal ahead of a fleet reaching it, is one vanilla
+     * marks found by clearing the entity's discoverable flag, which this rule already
+     * reads.
      *
-     * <p>The un-hidden arm catches a colony surfaced ahead of its entity being
-     * physically found - un-hidden on first entry yet still {@code setDiscoverable(true)}
-     * until a fleet closes to sensor range. It is public knowledge in that window,
-     * listed on the star's map tooltip, so it reads known at once. A still-concealed
-     * station (a hidden market on a discoverable entity) fails both arms and stays
-     * unknown until found.
+     * <p>Named apart from {@link #isDiscoveredByPlayer} because the two answer
+     * different questions: this is the fog a display asks permission of, that is the
+     * fact about the entity the fog is made of. A caller weighing whether it may show
+     * something reads this; a caller wanting the entity's own state reads that.
+     *
+     * <p>Neither reads the owner or the intel directory, so a faction hidden from the
+     * directory is not barred, and a concealed base on an entity the player has found
+     * (a raided pirate base) reads known.
      *
      * @param market the market to test; null yields false
      * @return true when the player knows the market exists
      */
     public static boolean isKnownToPlayer(MarketAPI market) {
-        if (market == null) {
-            return false;
-        }
-        return isDiscoveredByPlayer(market) || !market.isHidden();
+        return isDiscoveredByPlayer(market);
     }
 
     /**
-     * Whether the player has physically found this market's entity - the narrower of the two
-     * arms {@link #isKnownToPlayer} accepts, on its own.
-     *
-     * <p>Separate because hiddenness and discovery are independent axes, and a caller asking
-     * "has the player been here" must not be answered by the hiddenness arm. A concealed base
-     * the player has raided is discovered and permanently hidden; a colony surfaced by a story
-     * reveal is un-hidden and still undiscovered. Reading the pair as one boolean conflates
-     * them, and a caller that only ever wanted the discovery half silently gets both.
+     * Whether the player has physically found this market's entity.
      *
      * <p>Discovery lives on the entity, not the market: an entity stops being
      * {@code discoverable} once found. A market with no entity reads discovered - there is
      * nothing left to find, so nothing to withhold.
+     *
+     * <p>Hiddenness is a separate axis and is deliberately not read here. A concealed base
+     * the player has raided is discovered and permanently hidden; a colony surfaced by a
+     * story reveal is un-hidden while its entity may be either. A caller asking what the
+     * player has found must get that answer alone, and a caller weighing concealment reads
+     * {@code isHidden} for itself.
      *
      * @param market the market to test; null yields false
      * @return true when the market's entity has been found, or it has no entity

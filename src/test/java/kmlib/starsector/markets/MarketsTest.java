@@ -315,12 +315,14 @@ final class MarketsTest {
         }
 
         @Test
-        void returns_true_when_the_market_is_un_hidden_but_the_entity_is_still_discoverable() {
-
+        void returns_false_when_the_market_is_un_hidden_but_the_entity_is_still_discoverable() {
+            // The whole of the leak this fog closes. A market that merely omits to hide itself
+            // is listed in an economy the player has no sight of, and every derelict station in
+            // the sector takes that shape - so listing is not an arm of the rule.
             var market = buildMarket(buildDiscoverableEntity(), false);
 
             assertThat(Markets.isKnownToPlayer(market))
-                .isTrue();
+                .isFalse();
         }
 
         @Test
@@ -388,11 +390,30 @@ final class MarketsTest {
         }
 
         @Test
-        void returns_true_for_an_un_hidden_colony_whose_entity_is_undiscovered() {
-            // The un-hidden arm on its own. The game lists such a colony publicly, so every
-            // surface reading this filter reports its system as settled before the player has
-            // been anywhere near it - which is what makes the two arms worth keeping apart.
+        void returns_false_for_an_un_hidden_colony_whose_entity_is_undiscovered() {
+            // The composed filter inherits the fog's own reading, so a colony that is merely
+            // listed does not reach a surface that reports its system as settled before the
+            // player has been anywhere near it.
             var market = buildUnfoundListedColony();
+
+            assertThat(Markets.isCountedAsColony(market, false))
+                .isFalse();
+        }
+
+        @Test
+        void returns_true_for_a_concealed_colony_the_player_has_found() {
+            // A raided pirate base stays hidden for good, and stays known for good with it -
+            // concealment is not what the fog reads.
+            var market = buildFoundConcealedBase();
+
+            assertThat(Markets.isCountedAsColony(market, false))
+                .isTrue();
+        }
+
+        @Test
+        void returns_true_for_a_colony_with_no_entity_to_find() {
+
+            var market = buildEntitylessColony();
 
             assertThat(Markets.isCountedAsColony(market, false))
                 .isTrue();
@@ -431,8 +452,8 @@ final class MarketsTest {
 
             var market = buildMarket(buildDiscoverableEntity(), false);
 
-            // The arm that carries this market past isKnownToPlayer is exactly the one this
-            // read must not have: being publicly listed is not having been there.
+            // The two axes pulled apart: being publicly listed is not having been there, so an
+            // un-hidden market whose entity is still to be found reads undiscovered.
             assertThat(Markets.isDiscoveredByPlayer(market))
                 .isFalse();
         }
@@ -748,10 +769,34 @@ final class MarketsTest {
         return buildColonyMarket(false, true, true);
     }
 
-    // A colony surfaced into the open ahead of being reached: publicly listed, entity still
-    // undiscovered - the shape that passes on the un-hidden arm alone.
+    // A raided pirate base: permanently hidden, on an entity the player has found. Concealment
+    // and the fog disagree here, and the fog is what the filter reads.
+    private static MarketAPI buildFoundConcealedBase() {
+        return buildColonyMarket(false, true, false);
+    }
+
+    // A market that declares itself to the economy while its entity is still to be found - the
+    // shape every derelict station in the sector takes, and the one the fog withholds.
     private static MarketAPI buildUnfoundListedColony() {
         return buildColonyMarket(false, false, true);
+    }
+
+    // An owned colony with no entity at all: nothing is left to find, so the fog has nothing to
+    // withhold. Built apart from the colony builder below, which sites every colony on an entity
+    // precisely so its discoverability can be posed.
+    private static MarketAPI buildEntitylessColony() {
+
+        var factionMock = buildFaction("hegemony");
+        var marketMock = mock(MarketAPI.class);
+
+        when(marketMock.getFaction())
+            .thenReturn(factionMock);
+        when(marketMock.isPlanetConditionMarketOnly())
+            .thenReturn(false);
+        when(marketMock.getPrimaryEntity())
+            .thenReturn(null);
+
+        return marketMock;
     }
 
     // An owned colony wired for both filter arms: ownership (a faction owns it, not

@@ -53,7 +53,7 @@ public record Colony(
      * Whether the player knows this colony exists - the fog question the known projection over
      * a colony set is built on.
      *
-     * @return true when the market is discovered or has been surfaced into the open
+     * @return true when the player has found the market's entity
      */
     public boolean isKnownToPlayer() {
         return Markets.isKnownToPlayer(market);
