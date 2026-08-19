@@ -34,7 +34,7 @@ import static org.mockito.Mockito.when;
 /**
  * Pins the contracts of {@link StarSystems#getHyperspacePositions},
  * {@link StarSystems#getPlayerStarSystem}, {@link StarSystems#getStars},
- * {@link StarSystems#hasKnownOwnedMarket}, {@link StarSystems#getCentremostStar},
+ * {@link StarSystems#getCentremostStar},
  * {@link StarSystems#getOrbitalDistanceTo}, {@link StarSystems#isReachable},
  * {@link StarSystems#find}, {@link StarSystems#findById}, {@link StarSystems#readMarkets},
  * {@link StarSystems#readMarketsUnlistedByEconomy}, {@link StarSystems#readDisplayName} and
@@ -439,173 +439,6 @@ final class StarSystemsTest {
         void yields_infinity_for_a_null_body() {
             assertThat(StarSystems.getOrbitalDistanceTo(null, mock(SectorEntityToken.class)))
                 .isEqualTo(Double.POSITIVE_INFINITY);
-        }
-    }
-
-    @Nested
-    class HasKnownOwnedMarket {
-
-        @Test
-        void returns_true_for_a_visible_owned_market() {
-
-            var sector = buildSectorWithMarkets(buildVisibleColony());
-
-            assertThat(StarSystems.hasKnownOwnedMarket(sector, buildOnlySystem(sector)))
-                .isTrue();
-        }
-
-        @Test
-        void returns_true_when_one_of_several_markets_qualifies() {
-
-            var sector = buildSectorWithMarkets(buildConditionOnlyMarket(), buildVisibleColony());
-
-            assertThat(StarSystems.hasKnownOwnedMarket(sector, buildOnlySystem(sector)))
-                .isTrue();
-        }
-
-        @Test
-        void returns_false_for_a_condition_only_market() {
-
-            var sector = buildSectorWithMarkets(buildConditionOnlyMarket());
-
-            assertThat(StarSystems.hasKnownOwnedMarket(sector, buildOnlySystem(sector)))
-                .isFalse();
-        }
-
-        @Test
-        void returns_false_for_an_undiscovered_concealed_station() {
-
-            var sector = buildSectorWithMarkets(buildConcealedStation());
-
-            assertThat(StarSystems.hasKnownOwnedMarket(sector, buildOnlySystem(sector)))
-                .isFalse();
-        }
-
-        @Test
-        void returns_true_for_a_concealed_station_when_including_undiscovered_markets() {
-
-            var sector = buildSectorWithMarkets(buildConcealedStation());
-
-            assertThat(StarSystems.hasKnownOwnedMarket(sector, buildOnlySystem(sector), true))
-                .isTrue();
-        }
-
-        @Test
-        void returns_false_for_a_system_with_no_markets() {
-
-            var sector = buildSectorWithMarkets();
-
-            assertThat(StarSystems.hasKnownOwnedMarket(sector, buildOnlySystem(sector)))
-                .isFalse();
-        }
-
-        @Test
-        void returns_false_for_a_null_sector() {
-            assertThat(StarSystems.hasKnownOwnedMarket(null, mock(StarSystemAPI.class)))
-                .isFalse();
-        }
-
-        @Test
-        void returns_false_for_a_null_system() {
-            assertThat(StarSystems.hasKnownOwnedMarket(mock(SectorAPI.class), null))
-                .isFalse();
-        }
-
-        @Test
-        void returns_false_when_the_sector_has_no_economy() {
-
-            var sectorMock = mock(SectorAPI.class);
-
-            when(sectorMock.getEconomy())
-                .thenReturn(null);
-
-            assertThat(StarSystems.hasKnownOwnedMarket(sectorMock, mock(StarSystemAPI.class)))
-                .isFalse();
-        }
-    }
-
-    @Nested
-    class HasFoundOwnedMarket {
-
-        @Test
-        void returns_true_for_a_visible_owned_market() {
-
-            var sector = buildSectorWithMarkets(buildVisibleColony());
-
-            assertThat(StarSystems.hasFoundOwnedMarket(sector, buildOnlySystem(sector), false))
-                .isTrue();
-        }
-
-        @Test
-        void returns_true_for_a_found_station_that_stays_concealed() {
-
-            var sector = buildSectorWithMarkets(buildFoundConcealedStation());
-
-            // Raiding a base does not un-hide it, and the system is inhabited either way.
-            assertThat(StarSystems.hasFoundOwnedMarket(sector, buildOnlySystem(sector), false))
-                .isTrue();
-        }
-
-        @Test
-        void returns_false_for_an_undiscovered_concealed_station() {
-
-            var sector = buildSectorWithMarkets(buildConcealedStation());
-
-            // The read the claims layer leaked through: reporting the system as inhabited is
-            // itself the tell that a base is hiding in it.
-            assertThat(StarSystems.hasFoundOwnedMarket(sector, buildOnlySystem(sector), false))
-                .isFalse();
-        }
-
-        @Test
-        void returns_true_for_a_concealed_station_when_including_undiscovered_markets() {
-
-            var sector = buildSectorWithMarkets(buildConcealedStation());
-
-            assertThat(StarSystems.hasFoundOwnedMarket(sector, buildOnlySystem(sector), true))
-                .isTrue();
-        }
-
-        @Test
-        void returns_false_for_a_condition_only_market() {
-
-            var sector = buildSectorWithMarkets(buildConditionOnlyMarket());
-
-            assertThat(StarSystems.hasFoundOwnedMarket(sector, buildOnlySystem(sector), false))
-                .isFalse();
-        }
-
-        @Test
-        void returns_false_for_a_system_with_no_markets() {
-
-            var sector = buildSectorWithMarkets();
-
-            assertThat(StarSystems.hasFoundOwnedMarket(sector, buildOnlySystem(sector), false))
-                .isFalse();
-        }
-
-        @Test
-        void returns_false_for_a_null_sector() {
-            assertThat(StarSystems.hasFoundOwnedMarket(null, mock(StarSystemAPI.class), false))
-                .isFalse();
-        }
-
-        @Test
-        void returns_false_for_a_null_system() {
-            assertThat(StarSystems.hasFoundOwnedMarket(mock(SectorAPI.class), null, false))
-                .isFalse();
-        }
-
-        @Test
-        void returns_false_when_the_sector_has_no_economy() {
-
-            var sectorMock = mock(SectorAPI.class);
-
-            when(sectorMock.getEconomy())
-                .thenReturn(null);
-
-            assertThat(StarSystems.hasFoundOwnedMarket(sectorMock, mock(StarSystemAPI.class), false))
-                .isFalse();
         }
     }
 
@@ -1226,18 +1059,6 @@ final class StarSystemsTest {
     // filtered out by the ownership arm.
     private static MarketAPI buildConditionOnlyMarket() {
         return buildColony(true, false, false);
-    }
-
-    // A concealed station: a hidden market on a still-discoverable entity, failing
-    // the known-to-player gate until the player finds it.
-    private static MarketAPI buildConcealedStation() {
-        return buildColony(false, true, true);
-    }
-
-    // The same station once the player has found it: discovery is the entity's, so the market
-    // stays hidden - the pair that separates a discovery gate from a known-to-player one.
-    private static MarketAPI buildFoundConcealedStation() {
-        return buildColony(false, true, false);
     }
 
     private static MarketAPI buildColony(

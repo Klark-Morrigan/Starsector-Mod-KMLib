@@ -33,7 +33,7 @@ import static org.mockito.Mockito.when;
  * {@link Markets#findAttachedStation}, {@link Markets#hasAttachedStation},
  * {@link Markets#getStabilityFraction},
  * {@link Markets#isKnownToPlayer}, {@link Markets#isCountedAsColony},
- * {@link Markets#isDiscoveredByPlayer}, {@link Markets#isFoundColony},
+ * {@link Markets#isDiscoveredByPlayer},
  * {@link Markets#readLargestMarketsPerFaction} and
  * {@link Markets#isMilitary}. The cases live in a {@link Nested} group per method so
  * the suite reports as a per-method tree; the shared mock builders stay on the outer
@@ -388,6 +388,17 @@ final class MarketsTest {
         }
 
         @Test
+        void returns_true_for_an_un_hidden_colony_whose_entity_is_undiscovered() {
+            // The un-hidden arm on its own. The game lists such a colony publicly, so every
+            // surface reading this filter reports its system as settled before the player has
+            // been anywhere near it - which is what makes the two arms worth keeping apart.
+            var market = buildUnfoundListedColony();
+
+            assertThat(Markets.isCountedAsColony(market, false))
+                .isTrue();
+        }
+
+        @Test
         void returns_false_for_a_null_market() {
             assertThat(Markets.isCountedAsColony(null, true))
                 .isFalse();
@@ -429,66 +440,6 @@ final class MarketsTest {
         @Test
         void returns_false_for_a_null_market() {
             assertThat(Markets.isDiscoveredByPlayer(null))
-                .isFalse();
-        }
-    }
-
-    @Nested
-    class IsFoundColony {
-        
-        @Test
-        void returns_true_for_a_found_colony_that_stays_concealed() {
-
-            var market = buildFoundConcealedStation();
-
-            // A raided base is hidden forever and its system plainly holds people.
-            assertThat(Markets.isFoundColony(market, false))
-                .isTrue();
-        }
-
-        @Test
-        void returns_false_for_an_un_hidden_colony_whose_entity_is_undiscovered() {
-
-            var market = buildUnfoundListedColony();
-
-            // The one case parting this filter from isCountedAsColony, which admits the market
-            // on its un-hidden arm.
-            assertThat(Markets.isFoundColony(market, false))
-                .isFalse();
-            assertThat(Markets.isCountedAsColony(market, false))
-                .isTrue();
-        }
-
-        @Test
-        void returns_false_for_an_undiscovered_concealed_colony() {
-
-            var market = buildConcealedStation();
-
-            assertThat(Markets.isFoundColony(market, false))
-                .isFalse();
-        }
-
-        @Test
-        void returns_true_for_an_undiscovered_colony_when_including_undiscovered() {
-
-            var market = buildConcealedStation();
-
-            assertThat(Markets.isFoundColony(market, true))
-                .isTrue();
-        }
-
-        @Test
-        void returns_false_for_a_condition_only_market() {
-
-            var market = buildConditionOnlyColony();
-
-            assertThat(Markets.isFoundColony(market, false))
-                .isFalse();
-        }
-
-        @Test
-        void returns_false_for_a_null_market() {
-            assertThat(Markets.isFoundColony(null, true))
                 .isFalse();
         }
     }
@@ -797,13 +748,8 @@ final class MarketsTest {
         return buildColonyMarket(false, true, true);
     }
 
-    // The same base once raided: the entity is discovered, the market stays hidden for good.
-    private static MarketAPI buildFoundConcealedStation() {
-        return buildColonyMarket(false, true, false);
-    }
-
     // A colony surfaced into the open ahead of being reached: publicly listed, entity still
-    // undiscovered. Paired with the raided base above, this is where the two rules disagree.
+    // undiscovered - the shape that passes on the un-hidden arm alone.
     private static MarketAPI buildUnfoundListedColony() {
         return buildColonyMarket(false, false, true);
     }

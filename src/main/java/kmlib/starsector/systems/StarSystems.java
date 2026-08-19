@@ -241,20 +241,6 @@ public final class StarSystems {
     }
 
     /**
-     * Whether the player knows of at least one owned colony in {@code system},
-     * under the normal known-to-player filter - the faction-presence read a map or
-     * territory rule uses to admit a system as inhabited.
-     *
-     * @param sector the sector whose economy is read; null (or a null economy)
-     *               yields false
-     * @param system the system to test; null yields false
-     * @return true when a known faction colony exists in the system
-     */
-    public static boolean hasKnownOwnedMarket(SectorAPI sector, StarSystemAPI system) {
-        return hasKnownOwnedMarket(sector, system, false);
-    }
-
-    /**
      * The markets the economy places in {@code system}, in the order it lists them.
      *
      * <p>A system does not hold its own markets - the economy owns that mapping - so
@@ -352,57 +338,6 @@ public final class StarSystems {
             return null;
         }
         return system.getMemoryWithoutUpdate().getString(MemFlags.CLAIMING_FACTION);
-    }
-
-    /**
-     * Whether at least one owned colony exists in {@code system}. Composes the
-     * ownership filter {@link Markets#isOwnedColony} with the visibility filter
-     * {@link Markets#isKnownToPlayer}, so "counts as a known colony" means one thing
-     * across every caller. Short-circuits on the first qualifying market.
-     *
-     * @param sector                           the sector whose economy is read; null
-     *                                         (or a null economy) yields false
-     * @param system                           the system to test; null yields false
-     * @param shouldIncludeUndiscoveredMarkets whether an undiscovered colony still
-     *                                         counts (the "show all factions" dev
-     *                                         reveal); false applies the normal
-     *                                         known-to-player filter, true drops it so
-     *                                         an unfound colony counts too
-     * @return true when a qualifying faction colony exists in the system
-     */
-    public static boolean hasKnownOwnedMarket(
-            SectorAPI sector,
-            StarSystemAPI system,
-            boolean shouldIncludeUndiscoveredMarkets) {
-        return hasMarketMatching(
-            sector,
-            system,
-            market -> Markets.isCountedAsColony(market, shouldIncludeUndiscoveredMarkets));
-    }
-
-    /**
-     * Whether the player has found anyone living in {@code system} - the inhabited read, as
-     * opposed to {@link #hasKnownOwnedMarket}'s "does a colony count on the map". Composes
-     * {@link Markets#isFoundColony}, so a colony the player has physically found counts however
-     * concealed it remains. Short-circuits on the first qualifying market.
-     *
-     * @param sector                           the sector whose economy is read; null (or a null
-     *                                         economy) yields false
-     * @param system                           the system to test; null yields false
-     * @param shouldIncludeUndiscoveredMarkets whether an unfound colony still counts (the "show
-     *                                         all factions" dev reveal); false applies the
-     *                                         normal discovery filter, true drops it so an
-     *                                         unfound colony counts too
-     * @return true when a colony the player has found exists in the system
-     */
-    public static boolean hasFoundOwnedMarket(
-            SectorAPI sector,
-            StarSystemAPI system,
-            boolean shouldIncludeUndiscoveredMarkets) {
-        return hasMarketMatching(
-            sector,
-            system,
-            market -> Markets.isFoundColony(market, shouldIncludeUndiscoveredMarkets));
     }
 
     /**
@@ -536,22 +471,6 @@ public final class StarSystems {
             }
         }
         return null;
-    }
-
-    // The shape every "is there a market like this here" read shares: walk the system's economy
-    // and stop at the first match. Shared so those reads differ only in the filter they name,
-    // which is the whole of what separates them, and so an unreachable economy is handled once.
-    private static boolean hasMarketMatching(
-            SectorAPI sector,
-            StarSystemAPI system,
-            Predicate<MarketAPI> isWantedMarket) {
-
-        for (var market : readMarkets(sector, system)) {
-            if (isWantedMarket.test(market)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     // Whether a market already stands among those collected - either as that very object, or as

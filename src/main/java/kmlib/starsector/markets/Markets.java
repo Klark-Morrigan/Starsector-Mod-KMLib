@@ -252,33 +252,6 @@ public final class Markets {
     }
 
     /**
-     * Whether a market counts as a colony the player has actually found - the filter behind
-     * "does anyone live here", as opposed to {@link #isCountedAsColony}'s "does anyone hold
-     * this".
-     *
-     * <p>Gated on discovery alone. Whether a colony is publicly listed says nothing about
-     * whether the system is inhabited: a raided pirate base is a permanently hidden market in a
-     * system that plainly holds people. Admitting it on {@link #isKnownToPlayer} instead would
-     * also answer the question for an unfound base - reporting a system as inhabited is itself
-     * the tell that something is hiding in it, which is a leak a fog-of-war read cannot make.
-     *
-     * @param market                           the market to test; null yields false
-     * @param shouldIncludeUndiscoveredMarkets whether an unfound colony still counts (the "show
-     *                                         all factions" dev reveal); false applies the
-     *                                         normal discovery filter
-     * @return true when a faction owns the market and it is either found or the reveal is on
-     */
-    public static boolean isFoundColony(
-            MarketAPI market,
-            boolean shouldIncludeUndiscoveredMarkets) {
-
-        if (!isOwnedColony(market)) {
-            return false;
-        }
-        return shouldIncludeUndiscoveredMarkets || isDiscoveredByPlayer(market);
-    }
-
-    /**
      * The markets that speak for their places once several share one entity: the
      * largest per owning faction, in the order the input first names each place.
      *
