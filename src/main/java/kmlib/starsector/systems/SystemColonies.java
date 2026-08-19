@@ -1,7 +1,7 @@
 package kmlib.starsector.systems;
 
+import com.fs.starfarer.api.campaign.LocationAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
-import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
 import kmlib.starsector.markets.Markets;
@@ -10,13 +10,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Every owned colony in one star system, selected by one rule, one entry per place and owner.
+ * Every owned colony in one location, selected by one rule, one entry per place and owner.
  *
- * <p>The set exists because "what colonies are in this system" was being answered
- * independently by every reader that asked it - one walking the economy, one walking the
- * entities, one doing both and concatenating - so two surfaces drawn from the same system
- * could disagree about who is present in it. Selecting once and handing the result down means
- * a disagreement is no longer expressible.
+ * <p>The set exists because "what colonies are here" was being answered independently by every
+ * reader that asked it - one walking the economy, one walking the entities, one doing both and
+ * concatenating - so two surfaces drawn from the same system could disagree about who is
+ * present in it. Selecting once and handing the result down means a disagreement is no longer
+ * expressible.
+ *
+ * <p>A location rather than a star system, because a colony does not have to sit in one:
+ * hyperspace holds markets too, and mods put them there. Nothing about the selection rule is
+ * system-specific, so confining it to systems would only leave a caller that has to see those
+ * colonies restating the rule somewhere else.
  *
  * <p>Both listings are read: the economy's, then the markets hung on the system's entities
  * that it does not list. Economy order is preserved ahead of the rest, because a caller
@@ -49,7 +54,7 @@ public record SystemColonies(
     }
 
     /**
-     * Reads {@code system}'s colonies out of the sector - the single walk every reader below
+     * Reads {@code location}'s colonies out of the sector - the single walk every reader below
      * is meant to share rather than repeat.
      *
      * <p>Both listings are filtered for ownership before they are resolved per place, so a
@@ -61,19 +66,20 @@ public record SystemColonies(
      * cannot collide today; resolving jointly makes the "one entry per place and owner"
      * guarantee this read's own rather than one inherited from that exclusion holding.
      *
-     * @param sector the sector whose economy and systems are read; null yields an empty set,
-     *               there being no listing to select from
-     * @param system the system to read; null yields an empty set
-     * @return the system's colonies, economy-listed ones first in economy order
+     * @param sector   the sector whose economy and locations are read; null yields an empty set,
+     *                 there being no listing to select from
+     * @param location the location to read - a star system, or hyperspace; null yields an empty
+     *                 set
+     * @return the location's colonies, economy-listed ones first in economy order
      */
-    public static SystemColonies readColoniesIn(SectorAPI sector, StarSystemAPI system) {
+    public static SystemColonies readColoniesIn(SectorAPI sector, LocationAPI location) {
 
-        var listedMarkets = StarSystems.readMarkets(sector, system);
+        var listedMarkets = StarSystems.readMarkets(sector, location);
         var ownedMarkets = new ArrayList<MarketAPI>();
 
         collectOwnedColonies(listedMarkets, ownedMarkets);
         collectOwnedColonies(
-            StarSystems.readMarketsUnlistedByEconomy(sector, system),
+            StarSystems.readMarketsUnlistedByEconomy(sector, location),
             ownedMarkets);
 
         var colonies = new ArrayList<SystemColony>();

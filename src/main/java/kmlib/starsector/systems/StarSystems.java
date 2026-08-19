@@ -1,5 +1,6 @@
 package kmlib.starsector.systems;
 
+import com.fs.starfarer.api.campaign.LocationAPI;
 import com.fs.starfarer.api.campaign.PlanetAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
@@ -254,22 +255,28 @@ public final class StarSystems {
      * caller mirroring that rule depends on this order being the economy's, not one
      * imposed here.
      *
-     * @param sector the sector whose economy is read; null (or a null economy) yields
-     *               an empty list
-     * @param system the system to read; null yields an empty list
-     * @return the system's markets in economy order; never null
+     * <p>Taken as a location rather than as a star system, because a market does not have
+     * to sit in one. Hyperspace is a location the economy places markets in just the same,
+     * and mods put colonies out there; a star-system-only read cannot express the question,
+     * let alone answer it.
+     *
+     * @param sector   the sector whose economy is read; null (or a null economy) yields
+     *                 an empty list
+     * @param location the location to read - a star system, or hyperspace; null yields an
+     *                 empty list
+     * @return the location's markets in economy order; never null
      */
-    public static List<MarketAPI> readMarkets(SectorAPI sector, StarSystemAPI system) {
-        if (sector == null || system == null || sector.getEconomy() == null) {
+    public static List<MarketAPI> readMarkets(SectorAPI sector, LocationAPI location) {
+        if (sector == null || location == null || sector.getEconomy() == null) {
             return List.of();
         }
-        var markets = sector.getEconomy().getMarkets(system);
+        var markets = sector.getEconomy().getMarkets(location);
         return markets == null ? List.of() : markets;
     }
 
     /**
-     * The markets hung on {@code system}'s own entities that the economy does not list, in entity
-     * order - what {@link #readMarkets} cannot see, and nothing it can.
+     * The markets hung on {@code location}'s own entities that the economy does not list, in
+     * entity order - what {@link #readMarkets} cannot see, and nothing it can.
      *
      * <p>A colony can sit on a real entity, owned by a real faction, and never be registered with
      * the economy - vanilla builds Galatia Academy that way on purpose. A caller <em>describing</em>
@@ -289,27 +296,28 @@ public final class StarSystems {
      * own market beside vanilla's on one station yields nothing here rather than a duplicate of the
      * colony the economy already lists.
      *
-     * @param sector the sector whose economy is read; null (or a null economy) yields an empty
-     *               list - with no economy to compare against there is no telling a listed market
-     *               from an unlisted one
-     * @param system the system to read; null yields an empty list
-     * @return the system's markets the economy does not list, in entity order; never null
+     * @param sector   the sector whose economy is read; null (or a null economy) yields an empty
+     *                 list - with no economy to compare against there is no telling a listed
+     *                 market from an unlisted one
+     * @param location the location to read - a star system, or hyperspace; null yields an empty
+     *                 list
+     * @return the location's markets the economy does not list, in entity order; never null
      */
     public static List<MarketAPI> readMarketsUnlistedByEconomy(
             SectorAPI sector,
-            StarSystemAPI system) {
+            LocationAPI location) {
 
-        if (sector == null || system == null || sector.getEconomy() == null) {
+        if (sector == null || location == null || sector.getEconomy() == null) {
             return List.of();
         }
         // Seeded with the economy's own markets so one scan answers both halves of sameness - a
         // market the economy lists, and one an earlier entity already yielded - then dropped from
         // the answer, the caller having read those from the economy itself.
-        var listedMarkets = readMarkets(sector, system);
+        var listedMarkets = readMarkets(sector, location);
         var seenMarkets = new ArrayList<>(listedMarkets);
         var unlistedMarkets = new ArrayList<MarketAPI>();
 
-        for (var entity : system.getAllEntities()) {
+        for (var entity : location.getAllEntities()) {
             var market = entity == null ? null : entity.getMarket();
 
             if (market != null && !isAlreadyPresent(seenMarkets, market)) {
