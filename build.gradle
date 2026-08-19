@@ -274,6 +274,30 @@ tasks.named('checkstyleBridgeStubs') {
     enabled = false
 }
 
+// Nothing KMLib compiles against ships inside its jar - the game classloader supplies every one of
+// them at runtime - so each lands on the same few configurations, and which of the two shapes a jar
+// takes is the only thing about that a reader has to know. Named rather than spelt out per jar, so
+// adding a dependency is a decision between two documented answers instead of three lines to copy
+// and one to forget.
+//
+// A mod's jar lives outside the game's own install and nothing else puts it on the test runtime, so
+// it is added there as well as to both compile classpaths - which is what lets a test load a class
+// that names one of that mod's types.
+def dependOnModJars = { Object jars ->
+    ['compileOnly', 'testCompileOnly', 'testRuntimeOnly'].each { configurationName ->
+        dependencies.add(configurationName, jars)
+    }
+}
+
+// A jar from the game's own install (or the stubs standing in for one) reaches the test runtime
+// already, through the starsectorCoreJars set the shared conventions put there, so only the two
+// compile classpaths are added and the runtime is left with a single copy of it.
+def dependOnGameJars = { Object jars ->
+    ['compileOnly', 'testCompileOnly'].each { configurationName ->
+        dependencies.add(configurationName, jars)
+    }
+}
+
 dependencies {
     // The suite implements a launcher SPI (see kmlib.testbootstrap), which has to be compiled
     // against. The shared Java conventions put the launcher on testRuntimeOnly - enough to run the
@@ -282,53 +306,29 @@ dependencies {
     // testImplementation supplies it, so the family still bumps JUnit in one place.
     testImplementation 'org.junit.platform:junit-platform-launcher'
 
-    compileOnly files(lunaLibJarFile)
-    testCompileOnly files(lunaLibJarFile)
-    testRuntimeOnly files(lunaLibJarFile)
-
-    compileOnly consoleCommandsJars
-    testCompileOnly consoleCommandsJars
-    testRuntimeOnly consoleCommandsJars
-
-    compileOnly ratJars
-    testCompileOnly ratJars
-    testRuntimeOnly ratJars
-
-    compileOnly nexerelinJars
-    testCompileOnly nexerelinJars
-    testRuntimeOnly nexerelinJars
-
-    compileOnly magicLibJars
-    testCompileOnly magicLibJars
-    testRuntimeOnly magicLibJars
-
-    compileOnly files(lazyLibJarFile)
-    testCompileOnly files(lazyLibJarFile)
-    testRuntimeOnly files(lazyLibJarFile)
-    compileOnly files(lazyLibKotlinRuntimeJarFile)
-    testCompileOnly files(lazyLibKotlinRuntimeJarFile)
-    testRuntimeOnly files(lazyLibKotlinRuntimeJarFile)
-
-    compileOnly files(jsonJarFile)
-    testCompileOnly files(jsonJarFile)
-
-    compileOnly files(starfarerObfJarFile)
-    testCompileOnly files(starfarerObfJarFile)
-
-    compileOnly files(fsCommonObfJarFile)
-    testCompileOnly files(fsCommonObfJarFile)
-
     // The stubs name Matrix4f in the one signature they mirror, so they need the jar it lives in.
     bridgeStubsCompileOnly files("${project.ext.starsectorRoot}/starsector-core/lwjgl_util.jar")
-
-    if (isFastRenderingInstalled) {
-        compileOnly files(fastRenderingJarFile)
-        testCompileOnly files(fastRenderingJarFile)
-    } else {
-        compileOnly sourceSets.bridgeStubs.output
-        testCompileOnly sourceSets.bridgeStubs.output
-    }
 }
+
+dependOnModJars(files(lunaLibJarFile))
+dependOnModJars(consoleCommandsJars)
+dependOnModJars(ratJars)
+dependOnModJars(nexerelinJars)
+dependOnModJars(magicLibJars)
+dependOnModJars(files(lazyLibJarFile))
+dependOnModJars(files(lazyLibKotlinRuntimeJarFile))
+
+dependOnGameJars(files(jsonJarFile))
+dependOnGameJars(files(starfarerObfJarFile))
+dependOnGameJars(files(fsCommonObfJarFile))
+
+// Which Fast Rendering binding this build took is settled above; here it is only a matter of which
+// of the two the compiler is pointed at. The stubs take the game-jar shape for the same reason the
+// real jar does - they stand in for a jar the game provides, and must never reach the test runtime,
+// where they would shadow the real classes on a patched install.
+dependOnGameJars(isFastRenderingInstalled
+    ? files(fastRenderingJarFile)
+    : sourceSets.bridgeStubs.output)
 
 jacocoTestReport {
     // The 'testfixtures' package ships fakes in main so downstream mods can reuse
