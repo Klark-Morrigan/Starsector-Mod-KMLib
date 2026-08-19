@@ -107,6 +107,48 @@ class RectangleTest {
     }
 
     @Nested
+    class OverlapsBox {
+
+        // The surface a box is tested against - a screen, a panel, a viewport.
+        private final Rectangle surface = new Rectangle(0f, 0f, 800f, 600f);
+
+        @Test
+        void reportsABoxWhollyInsideAsOverlapping() {
+            assertThat(surface.overlapsBox(new Rectangle(100f, 100f, 200f, 150f)))
+                .isTrue();
+        }
+
+        @Test
+        void reportsABoxPartlyOverhangingAsOverlapping() {
+            // The state a panel sliding on or off screen passes through: part of it is visible, so
+            // it counts as present rather than as having arrived or gone.
+            assertThat(surface.overlapsBox(new Rectangle(-100f, 100f, 200f, 150f)))
+                .isTrue();
+        }
+
+        @Test
+        void reportsABoxWhollyOutsideAsNotOverlapping() {
+            assertThat(surface.overlapsBox(new Rectangle(-400f, 100f, 200f, 150f)))
+                .isFalse();
+        }
+
+        @Test
+        void reportsABoxAbuttingAnEdgeAsNotOverlapping() {
+            // Edge-to-edge shares a line rather than an area, and a line of a widget is nothing the
+            // player can see.
+            assertThat(surface.overlapsBox(new Rectangle(-200f, 100f, 200f, 150f)))
+                .isFalse();
+        }
+
+        @Test
+        void reportsABoxWithNoExtentAsNotOverlapping() {
+            // A collapsed box sits inside the surface and still occupies none of it.
+            assertThat(surface.overlapsBox(new Rectangle(400f, 300f, 0f, 0f)))
+                .isFalse();
+        }
+    }
+
+    @Nested
     class UnionWith {
 
         @Test

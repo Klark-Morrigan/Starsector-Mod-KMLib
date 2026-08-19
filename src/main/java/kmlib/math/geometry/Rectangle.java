@@ -48,6 +48,27 @@ public record Rectangle(
     }
 
     /**
+     * Whether this rectangle and {@code other} share any area at all - the question behind "is this
+     * box on that surface", asked wherever a box placed by somebody else has to be told apart from
+     * one placed off the surface entirely.
+     *
+     * <p>Stated over {@link #intersectWith} rather than as its own corner arithmetic, so the two
+     * cannot disagree about what an overlap is.
+     *
+     * <p>Touching edges do not overlap, the shared region then having no area. A box abutting the
+     * edge of what it is tested against occupies none of it, and answering otherwise would report a
+     * sliver nobody can see as present.
+     *
+     * @param other the rectangle to test against
+     * @return whether the two share an area of non-zero extent on both axes
+     */
+    public boolean overlapsBox(Rectangle other) {
+
+        var overlap = intersectWith(other);
+        return overlap.width() > 0f && overlap.height() > 0f;
+    }
+
+    /**
      * Unions this rectangle with {@code other} into the smallest rectangle enclosing both. A widget
      * painted as several rects sitting outside one another has no single box of its own; this is how
      * one is composed, so a clip, a bound, or a backdrop covering the whole of it is stated once from
