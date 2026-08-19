@@ -26,8 +26,8 @@ import java.util.List;
  */
 public final class CoreUiWidgetFake implements UIComponentAPI {
     private final List<Object> children;
-    private final PositionAPI position;
     private float opacity;
+    private PositionAPI position;
 
     public CoreUiWidgetFake(PositionAPI position, float opacity, Object... children) {
         this.position = position;
@@ -47,6 +47,20 @@ public final class CoreUiWidgetFake implements UIComponentAPI {
     @Override
     public PositionAPI getPosition() {
         return position;
+    }
+
+    /**
+     * Puts the widget somewhere else, for a case about a widget that moves - a panel sliding on or
+     * off screen, which is a state some rules exist entirely to read.
+     *
+     * <p>Here rather than on the position, which stays immutable on purpose: a laid-out box that
+     * could be moved through {@link PositionAPI}'s own layout methods would let a test stray into a
+     * layout path and pass. Moving the widget is the engine's own doing, and is stated as such.
+     *
+     * @param position where it stands now
+     */
+    public void moveWidgetTo(PositionAPI position) {
+        this.position = position;
     }
 
     @Override
