@@ -4,6 +4,7 @@ import kmlib.starsector.markets.MarketVisibility;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 
 /**
  * A set of owned colonies, selected by one rule, one entry per place and owner.
@@ -34,6 +35,10 @@ public record Colonies(
 
     /** A place with nobody in it, and the answer for one that cannot be read at all. */
     public static final Colonies NONE = new Colonies(List.of());
+
+    // The kind test of a projection that turns nothing away for what it is - the known reading,
+    // where the visibility rule is the whole of the filter.
+    private static final Predicate<Colony> EVERY_KIND = colony -> true;
 
     /**
      * Takes an immutable copy of the colonies, and reads a null list as an empty one, so a set
@@ -66,20 +71,7 @@ public record Colonies(
      * @return the colonies the rule admits, in the set's own order
      */
     public List<Colony> readKnownColonies(ColonyVisibility rule) {
-
-        var resolvedRule = resolveRule(rule);
-        var isSettledPlace = hasSettlingColony(resolvedRule);
-        var knownColonies = new ArrayList<Colony>();
-
-        // Walked in the set's own order rather than gated colonies after ungated ones, since a
-        // caller mirroring vanilla's tie rules reads that order and would resolve differently.
-        for (var colony : colonies) {
-
-            if (isKnownColony(colony, resolvedRule, isSettledPlace)) {
-                knownColonies.add(colony);
-            }
-        }
-        return List.copyOf(knownColonies);
+        return readColoniesPassing(rule, EVERY_KIND);
     }
 
     /**
@@ -90,33 +82,16 @@ public record Colonies(
      * sector on a scan, and per cell while the map is drawn, where the projection's contents
      * are never wanted - only whether it has any.
      *
-     * <p>Short-circuits on the first colony that settles the place rather than on the first
-     * that passes at all. A settling colony is known on its own account and is also what would
-     * reveal anything gated, so no second pass could change a yes it has already given; a set
-     * holding none is resolved in full, with the place unsettled.
+     * <p>Stops at the first colony that passes, the place's settled reading having been taken
+     * for the whole set beforehand - so the answer cannot differ from the listing's own
+     * emptiness, whichever way a gate falls.
      *
      * @param rule what the player may be shown of the set; null reads as
      *             {@link ColonyVisibility#BASE_FOG}
      * @return true when at least one colony passes the projection
      */
     public boolean hasKnownColony(ColonyVisibility rule) {
-
-        var resolvedRule = resolveRule(rule);
-
-        // The first pass is the short-circuit: a settling colony is known on its own account, so
-        // the very read that would settle the place answers the question outright.
-        if (hasSettlingColony(resolvedRule)) {
-            return true;
-        }
-        // Nothing settles the place, so nothing gated can be revealed by it: the rest resolves
-        // exactly as the projection does, which is what keeps the two reads in agreement.
-        for (var colony : colonies) {
-
-            if (isKnownColony(colony, resolvedRule, false)) {
-                return true;
-            }
-        }
-        return false;
+        return hasColonyPassing(rule, EVERY_KIND);
     }
 
     /**
@@ -130,26 +105,17 @@ public record Colonies(
      * it and settles nothing whatever, so a reader handed the wrong one of these makes a claim
      * about the sector rather than a formatting mistake.
      *
-     * <p>Taken from the known projection rather than resolved beside it, so the two cannot
-     * disagree about visibility: this is that set with one kind removed, never a second reading
-     * of the rule. A derelict a settled place reveals is therefore admitted to the listing alone,
-     * and goes on settling nothing - which is what keeps one derelict from vouching for another.
+     * <p>Resolved by the same walk under the same rule, differing from the known listing in its
+     * kind test alone, so the two cannot disagree about what has been found or revealed. A
+     * derelict a settled place reveals is therefore admitted to the listing only, and goes on
+     * settling nothing - which is what keeps one derelict from vouching for another.
      *
      * @param rule what the player may be shown of the set; null reads as
      *             {@link ColonyVisibility#BASE_FOG}
      * @return the known colonies somebody lives on, in the set's own order
      */
     public List<Colony> readInhabitingColonies(ColonyVisibility rule) {
-
-        var inhabitingColonies = new ArrayList<Colony>();
-
-        for (var colony : readKnownColonies(rule)) {
-
-            if (isInhabitingColony(colony)) {
-                inhabitingColonies.add(colony);
-            }
-        }
-        return List.copyOf(inhabitingColonies);
+        return readColoniesPassing(rule, Colonies::isInhabitingColony);
     }
 
     /**
@@ -160,26 +126,62 @@ public record Colonies(
      * the scan that decides whether to draw it at all ask only whether the projection has any,
      * per system and per frame.
      *
-     * <p>Short-circuits on the first colony that settles the place, which answers this question
-     * twice over - a settling colony is somewhere people live as well as the thing that would
-     * reveal anything gated, so no second pass could take back the yes it has given.
+     * <p>Stops at the first colony that passes, on the same terms its known counterpart does -
+     * one walk, the settled reading taken for the whole set beforehand, and a derelict passed
+     * over however plainly the player can see it.
      *
      * @param rule what the player may be shown of the set; null reads as
      *             {@link ColonyVisibility#BASE_FOG}
      * @return true when at least one colony passes the habitation projection
      */
     public boolean hasInhabitingColony(ColonyVisibility rule) {
+        return hasColonyPassing(rule, Colonies::isInhabitingColony);
+    }
+
+    // Materialises one projection: the place's settled reading taken once for the whole set,
+    // then every colony the rule admits whose kind this projection wants.
+    //
+    // The two projections are one walk with two kind tests rather than a walk each, so the only
+    // thing that can differ between them is the kind - a second statement of the visibility rule
+    // is what would let the listing and habitation disagree about what has been found.
+    //
+    // Walked in the set's own order rather than gated colonies after ungated ones, since a
+    // caller mirroring vanilla's tie rules reads that order and would resolve differently.
+    private List<Colony> readColoniesPassing(
+            ColonyVisibility rule,
+            Predicate<Colony> isWantedColony) {
 
         var resolvedRule = resolveRule(rule);
+        var isSettledPlace = hasSettlingColony(resolvedRule);
+        var passingColonies = new ArrayList<Colony>();
 
-        if (hasSettlingColony(resolvedRule)) {
-            return true;
-        }
-        // Nothing settles the place, so nothing gated can be revealed by it: the rest resolves
-        // exactly as the projection does, derelicts excepted.
         for (var colony : colonies) {
 
-            if (isInhabitingColony(colony) && isKnownColony(colony, resolvedRule, false)) {
+            if (isWantedColony.test(colony)
+                    && isKnownColony(colony, resolvedRule, isSettledPlace)) {
+                passingColonies.add(colony);
+            }
+        }
+        return List.copyOf(passingColonies);
+    }
+
+    // The emptiness of one projection, asked without materialising it - the same settled reading
+    // and the same per-colony rule as the listing, stopped at the first colony that passes.
+    //
+    // Its own walk rather than the listing's isEmpty, because the cell that paints a place and
+    // the scan that decides whether to draw it at all ask this per system and per frame, and
+    // never want the contents.
+    private boolean hasColonyPassing(
+            ColonyVisibility rule,
+            Predicate<Colony> isWantedColony) {
+
+        var resolvedRule = resolveRule(rule);
+        var isSettledPlace = hasSettlingColony(resolvedRule);
+
+        for (var colony : colonies) {
+
+            if (isWantedColony.test(colony)
+                    && isKnownColony(colony, resolvedRule, isSettledPlace)) {
                 return true;
             }
         }

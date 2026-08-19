@@ -62,8 +62,9 @@ public record Colony(
      * Whether the colony is concealed - present and owned, but not publicly listed.
      *
      * <p>Independent of whether the player has found it: a raided pirate base stays
-     * permanently hidden while being perfectly well known. Callers that want the visibility
-     * question want {@link Colonies#readKnownColonies} instead.
+     * permanently hidden while being perfectly well known. Callers asking what the player may
+     * be told want {@link Colonies#readKnownColonies}, and callers asking whether anybody lives
+     * somewhere want {@link Colonies#readInhabitingColonies}.
      *
      * <p>Concealment is also one of the two things that put a colony behind a revelation gate,
      * the other being its kind - a place hiding itself is one the fog alone would show the

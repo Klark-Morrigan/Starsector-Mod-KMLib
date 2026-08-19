@@ -25,8 +25,13 @@ import kmlib.starsector.markets.Markets;
 public enum ColonyKind {
 
     /**
-     * Somebody lives here. The ordinary case, and the only kind that makes its location
-     * inhabited.
+     * Somebody lives here. The ordinary case, and the only kind that settles its location for
+     * the sector's own word-of-mouth - a place with people in it now is a place whose people
+     * would have seen whatever else stands there.
+     *
+     * <p>Not the only kind that <em>inhabits</em> one. Habitation is read as everything but the
+     * derelict, so a decivilised world - people once, nobody now - joins it without this line
+     * changing.
      */
     COLONY,
 

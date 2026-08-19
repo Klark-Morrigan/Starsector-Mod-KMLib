@@ -401,9 +401,9 @@ final class ColoniesTest {
 
         @Test
         void agrees_with_the_projection_it_asks_the_emptiness_of() {
-            // The claim the short-circuit rests on: skipping the list must not change the answer,
-            // and a set mixing a fogged colony with a visible one is where a filter that had
-            // drifted between the two reads would show it.
+            // The claim the second read rests on: not materialising the list must not change the
+            // answer, and a set mixing a fogged colony with a visible one is where a filter that
+            // had drifted between the two reads would show it.
             var fixture = new ColonyFixture("kumari_kandam");
             var fogged = fixture.buildUnfoundConcealedColony("pirates");
             var visible = fixture.buildVisibleColony("independent");
@@ -424,8 +424,8 @@ final class ColoniesTest {
 
         @Test
         void agrees_with_the_projection_over_a_set_holding_only_derelicts() {
-            // The set the short-circuit cannot settle on its first pass: nothing here settles the
-            // place, so the answer has to come from the same resolution the projection makes.
+            // Nothing here settles the place, so both reads have to reach their answer through
+            // the gate itself rather than through anything an ordinary colony vouched for.
             var fixture = new ColonyFixture("kumari_kandam");
             var derelict = fixture.buildDerelictStation("neutral");
 
@@ -446,8 +446,8 @@ final class ColoniesTest {
 
         @Test
         void agrees_with_the_projection_over_a_derelict_a_colony_vouches_for() {
-            // The set the short-circuit settles on its first pass, where a wrong short-circuit
-            // would answer before the gate had been consulted at all.
+            // A settled place, where the derelict is admitted only by the colony beside it. Both
+            // reads must take that settled reading before judging the gate, or they diverge.
             var fixture = new ColonyFixture("kumari_kandam");
             var derelict = fixture.buildDerelictStation("neutral");
             var colony = fixture.buildVisibleColony("hegemony");
@@ -536,6 +536,24 @@ final class ColoniesTest {
         }
 
         @Test
+        void excludes_a_derelict_the_reveal_has_let_through() {
+            // The reveal is about the fog and the gates, not about who is aboard. Posed on an
+            // entity the player has not found, so it is the reveal alone putting the hulk in the
+            // listing - and habitation still declines it.
+            var fixture = new ColonyFixture("kumari_kandam");
+            var derelict = fixture.buildUnfoundOpenColony("neutral");
+
+            fixture.placeColoniesInSystem(derelict);
+
+            var colonies = buildColoniesOf(buildDerelict(derelict));
+
+            assertThat(colonies.readKnownColonies(REVEAL_EVERYTHING))
+                .containsExactly(buildDerelict(derelict));
+            assertThat(colonies.readInhabitingColonies(REVEAL_EVERYTHING))
+                .isEmpty();
+        }
+
+        @Test
         void follows_the_gate_that_holds_a_concealed_colony_back() {
             // Habitation is the known set with a kind removed and no second reading of the rule,
             // so a colony the hidden gate withholds is absent from both and present in both once
@@ -607,8 +625,8 @@ final class ColoniesTest {
 
         @Test
         void answers_true_for_a_system_a_derelict_shares_with_a_colony() {
-            // The set the short-circuit settles on its first pass, where the derelict must not be
-            // what carries the answer.
+            // A settled place, where the derelict must not be what carries the answer - the
+            // colony beside it is.
             var fixture = new ColonyFixture("kumari_kandam");
             var derelict = fixture.buildDerelictStation("neutral");
             var colony = fixture.buildVisibleColony("hegemony");
@@ -621,10 +639,39 @@ final class ColoniesTest {
         }
 
         @Test
+        void answers_false_for_a_derelict_the_reveal_has_let_through() {
+            // The emptiness question asked of the same case: the reveal admits the hulk to the
+            // listing without making its place anybody's home.
+            var fixture = new ColonyFixture("kumari_kandam");
+            var derelict = fixture.buildUnfoundOpenColony("neutral");
+
+            fixture.placeColoniesInSystem(derelict);
+
+            var colonies = buildColoniesOf(buildDerelict(derelict));
+
+            assertThat(colonies.hasKnownColony(REVEAL_EVERYTHING))
+                .isTrue();
+            assertThat(colonies.hasInhabitingColony(REVEAL_EVERYTHING))
+                .isFalse();
+        }
+
+        @Test
+        void reads_an_unstated_rule_as_the_fog_alone() {
+            // No reveal appears out of a missing argument: a colony the player has not found does
+            // not inhabit its place for the rule having gone unstated.
+            var fixture = new ColonyFixture("corvus");
+            var unfoundColony = fixture.buildUnfoundOpenColony("tritachyon");
+
+            fixture.placeColoniesInSystem(unfoundColony);
+
+            assertThat(buildColoniesOf(buildColony(unfoundColony)).hasInhabitingColony(null))
+                .isFalse();
+        }
+
+        @Test
         void follows_the_gate_that_holds_a_concealed_colony_back() {
-            // A concealed colony settles nothing, so this is also the set the short-circuit
-            // cannot answer on its first pass - the gate has to be consulted for the emptiness
-            // question exactly as it is for the listing.
+            // A concealed colony settles nothing, so the gate is the whole of the answer here -
+            // and the emptiness question has to consult it exactly as the listing does.
             var fixture = new ColonyFixture("kumari_kandam");
             var exoship = fixture.buildFoundConcealedColony("rat_exotech");
 
