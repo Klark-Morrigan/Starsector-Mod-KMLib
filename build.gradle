@@ -259,6 +259,13 @@ tasks.named('checkstyleBridgeStubs') {
 }
 
 dependencies {
+    // The suite implements a launcher SPI (see kmlib.testbootstrap), which has to be compiled
+    // against. The shared Java conventions put the launcher on testRuntimeOnly - enough to run the
+    // platform, not to implement it - so this raises it to the compile classpath here rather than
+    // for every repo on those conventions. No version: the JUnit BOM the conventions apply to
+    // testImplementation supplies it, so the family still bumps JUnit in one place.
+    testImplementation 'org.junit.platform:junit-platform-launcher'
+
     compileOnly files(lunaLibJarFile)
     testCompileOnly files(lunaLibJarFile)
     testRuntimeOnly files(lunaLibJarFile)
