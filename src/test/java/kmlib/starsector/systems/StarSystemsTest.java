@@ -33,7 +33,8 @@ import static org.mockito.Mockito.when;
  * {@link StarSystems#getCentremostStar},
  * {@link StarSystems#isReachable},
  * {@link StarSystems#find}, {@link StarSystems#readMarkets},
- * {@link StarSystems#readMarketsUnlistedByEconomy}, {@link StarSystems#readDisplayName} and
+ * {@link StarSystems#readMarketsUnlistedByEconomy}, {@link StarSystems#findNearestMarket},
+ * {@link StarSystems#readDisplayName} and
  * {@link StarSystems#readFactionClaimOverride}. Each method's cases live in a
  * {@link Nested} group so
  * the suite reports as a per-method tree; the shared mock builders stay on the
@@ -342,6 +343,150 @@ final class StarSystemsTest {
                 .thenReturn(null);
 
             assertThat(StarSystems.readMarketsUnlistedByEconomy(sectorMock, mock(StarSystemAPI.class)))
+                .isEmpty();
+        }
+    }
+
+    @Nested
+    class FindNearestMarket {
+
+        @Test
+        void returns_the_admitted_market_whose_body_sits_closest() {
+
+            var near = buildMarketOnBodyAt("near", 100, 0);
+            var far = buildMarketOnBodyAt("far", 5000, 0);
+
+            // Listed far-first so the pick is shown to come from distance, not economy order.
+            var sector = buildSectorWithMarkets(far, near);
+
+            assertThat(StarSystems.findNearestMarket(
+                    sector,
+                    buildOnlySystem(sector),
+                    buildFleetAt(0, 0),
+                    market -> true))
+                .contains(near);
+        }
+
+        @Test
+        void passes_over_a_closer_market_the_eligibility_rejects() {
+            // What a caller is looking for decides, not proximity alone: the nearest place is
+            // routinely the wrong kind of place, which is the whole reason for the predicate.
+            var wanted = buildMarketOnBodyAt("wanted", 500, 0);
+            var unwanted = buildMarketOnBodyAt("unwanted", 100, 0);
+            var sector = buildSectorWithMarkets(unwanted, wanted);
+
+            assertThat(StarSystems.findNearestMarket(
+                    sector,
+                    buildOnlySystem(sector),
+                    buildFleetAt(0, 0),
+                    market -> market == wanted))
+                .contains(wanted);
+        }
+
+        @Test
+        void reaches_a_market_the_economy_does_not_list() {
+            // A body still carrying only survey data is never registered, so a search of the
+            // economy's own listing could not find one to colonise at all.
+            var surveyData = buildMarketOnBodyAt("planet", 100, 0);
+            var sector = buildSectorWithMarkets();
+
+            placeEntitiesInOnlySystem(sector, surveyData.getPrimaryEntity());
+
+            assertThat(StarSystems.findNearestMarket(
+                    sector,
+                    buildOnlySystem(sector),
+                    buildFleetAt(0, 0),
+                    market -> true))
+                .contains(surveyData);
+        }
+
+        @Test
+        void settles_an_equal_distance_on_the_lowest_body_id() {
+            // Listed high-id first, so the lower id is shown to be the deterministic pick
+            // rather than the order the economy happened to list them in.
+            var beta = buildMarketOnBodyAt("beta", 0, 100);
+            var alpha = buildMarketOnBodyAt("alpha", 0, -100);
+            var sector = buildSectorWithMarkets(beta, alpha);
+
+            assertThat(StarSystems.findNearestMarket(
+                    sector,
+                    buildOnlySystem(sector),
+                    buildFleetAt(0, 0),
+                    market -> true))
+                .contains(alpha);
+        }
+
+        @Test
+        void ignores_a_market_standing_for_no_place() {
+            // Nothing to measure to, so it cannot be nearest - only nearest by default, which
+            // would have a command act on a market the player cannot point at.
+            var sector = buildSectorWithMarkets(mock(MarketAPI.class));
+
+            assertThat(StarSystems.findNearestMarket(
+                    sector,
+                    buildOnlySystem(sector),
+                    buildFleetAt(0, 0),
+                    market -> true))
+                .isEmpty();
+        }
+
+        @Test
+        void returns_empty_when_nothing_in_the_system_is_admitted() {
+
+            var sector = buildSectorWithMarkets(buildMarketOnBodyAt("planet", 100, 0));
+
+            assertThat(StarSystems.findNearestMarket(
+                    sector,
+                    buildOnlySystem(sector),
+                    buildFleetAt(0, 0),
+                    market -> false))
+                .isEmpty();
+        }
+
+        @Test
+        void returns_empty_without_anything_to_measure_from() {
+
+            var sector = buildSectorWithMarkets(buildMarketOnBodyAt("planet", 100, 0));
+
+            assertThat(StarSystems.findNearestMarket(
+                    sector,
+                    buildOnlySystem(sector),
+                    null,
+                    market -> true))
+                .isEmpty();
+        }
+
+        @Test
+        void returns_empty_without_an_eligibility_rule() {
+            // No rule is not "every market": a caller that forgot to say what it wants must
+            // not be handed the nearest place of any kind to act on.
+            var sector = buildSectorWithMarkets(buildMarketOnBodyAt("planet", 100, 0));
+
+            assertThat(StarSystems.findNearestMarket(
+                    sector,
+                    buildOnlySystem(sector),
+                    buildFleetAt(0, 0),
+                    null))
+                .isEmpty();
+        }
+
+        @Test
+        void returns_empty_for_a_null_sector() {
+            assertThat(StarSystems.findNearestMarket(
+                    null,
+                    mock(StarSystemAPI.class),
+                    buildFleetAt(0, 0),
+                    market -> true))
+                .isEmpty();
+        }
+
+        @Test
+        void returns_empty_for_a_null_system() {
+            assertThat(StarSystems.findNearestMarket(
+                    mock(SectorAPI.class),
+                    null,
+                    buildFleetAt(0, 0),
+                    market -> true))
                 .isEmpty();
         }
     }
@@ -694,6 +839,41 @@ final class StarSystemsTest {
 
         when(buildOnlySystem(sector).getAllEntities())
             .thenReturn(List.of(entities));
+    }
+
+    // A market on a body of its own, fixed at a location and carrying an id - the pair a nearest
+    // search ranks by and settles its ties on. Wired both ways, so the market is reachable
+    // whether the search meets it through the economy or by walking the system's entities.
+    private static MarketAPI buildMarketOnBodyAt(String bodyId, float x, float y) {
+
+        // The body finishes its own stubbing before the market's opens, so the two do not nest
+        // into an unfinished-stubbing error.
+        var bodyMock = mock(SectorEntityToken.class);
+
+        when(bodyMock.getId())
+            .thenReturn(bodyId);
+        when(bodyMock.getLocation())
+            .thenReturn(new Vector2f(x, y));
+
+        var marketMock = mock(MarketAPI.class);
+
+        when(marketMock.getPrimaryEntity())
+            .thenReturn(bodyMock);
+        when(bodyMock.getMarket())
+            .thenReturn(marketMock);
+
+        return marketMock;
+    }
+
+    // The player's fleet as a nearest search sees it: a point in the system to measure from.
+    private static SectorEntityToken buildFleetAt(float x, float y) {
+
+        var fleetMock = mock(SectorEntityToken.class);
+
+        when(fleetMock.getLocation())
+            .thenReturn(new Vector2f(x, y));
+
+        return fleetMock;
     }
 
     // An entity with a market hung on it, which is how an unregistered colony reaches a reader at

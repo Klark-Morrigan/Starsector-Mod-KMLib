@@ -10,12 +10,15 @@ import com.fs.starfarer.api.impl.campaign.ids.MemFlags;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
 
 import kmlib.math.geometry.Points;
+import kmlib.starsector.geometry.StarsectorPoints;
 import kmlib.starsector.markets.LocationMarkets;
 import kmlib.starsector.rat.RandomAssortmentOfThingsMatcher;
 import kmlib.text.KmlibStrings;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.function.Predicate;
 
 /**
  * Queries over one star system: what it is called, what is in it, and whether it can be
@@ -144,6 +147,31 @@ public final class StarSystems {
     }
 
     /**
+     * The market in {@code system} that {@code eligibility} admits whose body sits closest to
+     * {@code from}.
+     *
+     * <p>The star-system half of {@link LocationMarkets#findNearestMarket}, which owns the
+     * search and documents what it ranks, what it passes over, and how it settles a tie. Kept
+     * as its own read for the same reason its neighbours are: a star system is searched by a
+     * method that accepts nothing else.
+     *
+     * @param sector      the sector whose economy is read; null (or a null economy) yields empty
+     * @param system      the system to search; null yields empty
+     * @param from        what nearness is measured from; null (or one with no location) yields
+     *                    empty
+     * @param eligibility what makes a market a candidate; null yields empty
+     * @return the nearest admitted market, or empty when the system holds none
+     */
+    public static Optional<MarketAPI> findNearestMarket(
+            SectorAPI sector,
+            StarSystemAPI system,
+            SectorEntityToken from,
+            Predicate<MarketAPI> eligibility) {
+
+        return LocationMarkets.findNearestMarket(sector, system, from, eligibility);
+    }
+
+    /**
      * The faction id decreed as {@code system}'s claimant by its
      * {@link MemFlags#CLAIMING_FACTION} ({@code $claimingFaction}) memory flag.
      *
@@ -168,8 +196,10 @@ public final class StarSystems {
      * from. This is the star nearest the centre, not one presumed to sit at it: a single-star
      * system yields its one star, which does sit at the centre, but a binary or trinary system
      * orbits a shared invisible centre, so the closest star is the busy inner system's, the
-     * natural reference rather than a distant companion. Falls back to the centre token itself
-     * when the system has no star.
+     * natural reference rather than a distant companion. An equal-mass binary's two stars sit
+     * equally far out, so the tie settles by {@link StarsectorPoints#isNearerThan}'s rule and
+     * the same system answers the same star on every pass. Falls back to the centre token
+     * itself when the system has no star.
      *
      * @param system the star system to read; null yields null
      * @return the star closest to the centre, the centre token when the system is starless, or
@@ -190,7 +220,7 @@ public final class StarSystems {
             var distance = centreLocation == null
                 ? 0.0
                 : Points.computeDistance(centreLocation, star.getLocation());
-            if (isNearerCentre(distance, nearestDistance, star, nearestStar)) {
+            if (StarsectorPoints.isNearerThan(distance, nearestDistance, star, nearestStar)) {
                 nearestDistance = distance;
                 nearestStar = star;
             }
@@ -262,23 +292,6 @@ public final class StarSystems {
             }
         }
         return null;
-    }
-
-    // Whether a candidate star is a better centre reference than the current nearest: strictly
-    // closer to the centre, or exactly as close but with the lower id. The id tie-break makes an
-    // equal-mass binary's two equidistant stars resolve to one deterministic reference rather
-    // than depending on the planet-list order, so a distance tie never decides the reference
-    // arbitrarily.
-    private static boolean isNearerCentre(
-            double candidateDistance,
-            double nearestDistance,
-            SectorEntityToken candidate,
-            SectorEntityToken nearest) {
-                
-        if (candidateDistance != nearestDistance) {
-            return candidateDistance < nearestDistance;
-        }
-        return nearest == null || candidate.getId().compareTo(nearest.getId()) < 0;
     }
 
     // Whether any gate in the system is lit. An inactive gate (unscanned, or the
