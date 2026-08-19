@@ -1,6 +1,7 @@
-package kmlib.console.markets;
+package kmlib.console.targets;
 
 import com.fs.starfarer.api.campaign.SectorAPI;
+import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
 import kmlib.starsector.systems.SectorStarSystems;
 import kmlib.starsector.systems.StarSystems;
@@ -61,13 +62,13 @@ public final class MarketTargetResolver {
      * @param requirement what makes a market a candidate, and the phrase a refusal names it by
      * @return the market to act on, or why there is none
      */
-    public static MarketTargetResolution resolveTargetMarket(
+    public static TargetResolution<MarketAPI> resolveTargetMarket(
             SectorAPI sector,
             String entityId,
             MarketTargetRequirement requirement) {
 
         if (sector == null) {
-            return new UnresolvedMarketTarget(NO_SECTOR_MESSAGE);
+            return new UnresolvedTarget<>(NO_SECTOR_MESSAGE);
         }
         return KmlibStrings.hasText(entityId)
             ? resolveNamedMarket(sector, entityId, requirement)
@@ -81,7 +82,7 @@ public final class MarketTargetResolver {
     // Looked up through the sector rather than a system, so a place can be acted on from
     // anywhere - the other side of the map, or hyperspace, where a command has no system to be
     // scoped to at all. Safe because an entity id is unique sector-wide, unlike a name.
-    private static MarketTargetResolution resolveNamedMarket(
+    private static TargetResolution<MarketAPI> resolveNamedMarket(
             SectorAPI sector,
             String entityId,
             MarketTargetRequirement requirement) {
@@ -89,22 +90,21 @@ public final class MarketTargetResolver {
         var entity = sector.getEntityById(entityId);
 
         if (entity == null) {
-            return new UnresolvedMarketTarget(
-                "No entity with id '" + entityId + "' in the sector.");
+            return new UnresolvedTarget<>("No entity with id '" + entityId + "' in the sector.");
         }
         var market = entity.getMarket();
 
         if (market == null) {
-            return new UnresolvedMarketTarget("Entity '" + entityId + "' has no market.");
+            return new UnresolvedTarget<>("Entity '" + entityId + "' has no market.");
         }
         if (!requirement.isMetBy(market)) {
-            return new UnresolvedMarketTarget("The market on '"
+            return new UnresolvedTarget<>("The market on '"
                 + entityId
                 + "' is not "
                 + requirement.requirementPhrase()
                 + ".");
         }
-        return new ResolvedMarketTarget(market);
+        return new ResolvedTarget<>(market);
     }
 
     // The qualifying place nearest the player's fleet, that being where a player acting without
@@ -113,25 +113,25 @@ public final class MarketTargetResolver {
     // fleet in hyperspace is in no system at all, so there is nothing to search. The fleet is
     // there to measure from by construction, a system having been found at all only by reading
     // which one the fleet is in.
-    private static MarketTargetResolution resolveNearestMarket(
+    private static TargetResolution<MarketAPI> resolveNearestMarket(
             SectorAPI sector,
             MarketTargetRequirement requirement) {
 
         var system = SectorStarSystems.getPlayerStarSystem(sector);
 
         if (system == null) {
-            return new UnresolvedMarketTarget(NO_SYSTEM_MESSAGE);
+            return new UnresolvedTarget<>(NO_SYSTEM_MESSAGE);
         }
         var nearestMarket = StarSystems
             .findNearestMarket(sector, system, sector.getPlayerFleet(), requirement::isMetBy);
 
         if (nearestMarket.isEmpty()) {
-            return new UnresolvedMarketTarget("Nothing in "
+            return new UnresolvedTarget<>("Nothing in "
                 + StarSystems.readDisplayName(system)
                 + " is "
                 + requirement.requirementPhrase()
                 + ".");
         }
-        return new ResolvedMarketTarget(nearestMarket.get());
+        return new ResolvedTarget<>(nearestMarket.get());
     }
 }

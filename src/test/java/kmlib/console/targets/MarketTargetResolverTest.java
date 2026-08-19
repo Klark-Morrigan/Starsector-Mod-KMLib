@@ -1,4 +1,4 @@
-package kmlib.console.markets;
+package kmlib.console.targets;
 
 import com.fs.starfarer.api.campaign.CampaignFleetAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
@@ -58,7 +58,7 @@ final class MarketTargetResolverTest {
                     sectorMock,
                     "jangala",
                     ANY_MARKET))
-                .isEqualTo(new ResolvedMarketTarget(jangala));
+                .isEqualTo(new ResolvedTarget<>(jangala));
         }
 
         @Test
@@ -74,7 +74,7 @@ final class MarketTargetResolverTest {
                     sectorMock,
                     "corvus_iii",
                     ANY_MARKET))
-                .isEqualTo(new ResolvedMarketTarget(surveyData));
+                .isEqualTo(new ResolvedTarget<>(surveyData));
         }
 
         @Test
@@ -91,7 +91,7 @@ final class MarketTargetResolverTest {
                     sectorMock,
                     "jangala",
                     ANY_MARKET))
-                .isEqualTo(new ResolvedMarketTarget(jangala));
+                .isEqualTo(new ResolvedTarget<>(jangala));
         }
 
         @Test
@@ -107,7 +107,7 @@ final class MarketTargetResolverTest {
                     sectorMock,
                     "jangala",
                     ANY_MARKET))
-                .isEqualTo(new ResolvedMarketTarget(named));
+                .isEqualTo(new ResolvedTarget<>(named));
         }
 
         @Test
@@ -120,7 +120,7 @@ final class MarketTargetResolverTest {
                     sectorMock,
                     "jangala",
                     ANY_MARKET))
-                .isEqualTo(new UnresolvedMarketTarget(
+                .isEqualTo(new UnresolvedTarget<MarketAPI>(
                     "No entity with id 'jangala' in the sector."));
         }
 
@@ -137,7 +137,7 @@ final class MarketTargetResolverTest {
                     sectorMock,
                     "corvus_gate",
                     ANY_MARKET))
-                .isEqualTo(new UnresolvedMarketTarget("Entity 'corvus_gate' has no market."));
+                .isEqualTo(new UnresolvedTarget<MarketAPI>("Entity 'corvus_gate' has no market."));
         }
 
         @Test
@@ -151,7 +151,7 @@ final class MarketTargetResolverTest {
                     buildSectorAround(systemMock, jangala),
                     "jangala",
                     NO_MARKET))
-                .isEqualTo(new UnresolvedMarketTarget(
+                .isEqualTo(new UnresolvedTarget<MarketAPI>(
                     "The market on 'jangala' is not a suitable target."));
         }
 
@@ -167,7 +167,7 @@ final class MarketTargetResolverTest {
                     sectorMock,
                     null,
                     ANY_MARKET))
-                .isEqualTo(new ResolvedMarketTarget(near));
+                .isEqualTo(new ResolvedTarget<>(near));
         }
 
         @Test
@@ -181,7 +181,7 @@ final class MarketTargetResolverTest {
                     buildSectorAround(systemMock, jangala),
                     "   ",
                     ANY_MARKET))
-                .isEqualTo(new ResolvedMarketTarget(jangala));
+                .isEqualTo(new ResolvedTarget<>(jangala));
         }
 
         @Test
@@ -194,7 +194,8 @@ final class MarketTargetResolverTest {
                     buildSectorAround(systemMock, jangala),
                     null,
                     NO_MARKET))
-                .isEqualTo(new UnresolvedMarketTarget("Nothing in Corvus is a suitable target."));
+                .isEqualTo(new UnresolvedTarget<MarketAPI>(
+                    "Nothing in Corvus is a suitable target."));
         }
 
         @Test
@@ -205,7 +206,7 @@ final class MarketTargetResolverTest {
                     buildSectorInHyperspace(),
                     null,
                     ANY_MARKET))
-                .isEqualTo(new UnresolvedMarketTarget(
+                .isEqualTo(new UnresolvedTarget<MarketAPI>(
                     "Not in a star system - name an entity id to point at a place directly."));
         }
 
@@ -214,7 +215,7 @@ final class MarketTargetResolverTest {
             // Nothing to look an id up in and nowhere to search from, so neither way of naming a
             // place is open.
             assertThat(MarketTargetResolver.resolveTargetMarket(null, "jangala", ANY_MARKET))
-                .isEqualTo(new UnresolvedMarketTarget("No sector to search."));
+                .isEqualTo(new UnresolvedTarget<MarketAPI>("No sector to search."));
         }
     }
 

@@ -110,12 +110,13 @@ src/main/java/kmlib/
   Starsector-facing wrappers and seams:
   console/         - Console Commands base class and KMLib's own
                      commands, with input/, output/, parsing/,
-                     validation/, and the two reads of what a command was
-                     pointed at behind them: markets/ - which place,
-                     named by id anywhere in the sector or the nearest
+                     validation/ and targets/ behind them. targets/ is
+                     what a command was pointed at, found or refused with
+                     a reason under one sealed answer: which place -
+                     named by id anywhere in the sector, or the nearest
                      one meeting what the command needs of it - and
-                     factions/ - which faction it acts for, named by id
-                     or the player's own
+                     which faction it acts for, named by id or the
+                     player's own
   settings/        - LunaLib settings read / write + labelled choices
   starsector/
     colonies/      - the shared colony set every "who is here" read

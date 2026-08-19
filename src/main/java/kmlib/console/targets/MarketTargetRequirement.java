@@ -1,4 +1,4 @@
-package kmlib.console.markets;
+package kmlib.console.targets;
 
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 

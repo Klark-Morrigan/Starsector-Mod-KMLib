@@ -5,13 +5,11 @@ import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
-import kmlib.console.factions.FactionTargetResolver;
-import kmlib.console.factions.ResolvedFactionTarget;
-import kmlib.console.factions.UnresolvedFactionTarget;
-import kmlib.console.markets.MarketTargetRequirement;
-import kmlib.console.markets.MarketTargetResolver;
-import kmlib.console.markets.ResolvedMarketTarget;
-import kmlib.console.markets.UnresolvedMarketTarget;
+import kmlib.console.targets.FactionTargetResolver;
+import kmlib.console.targets.MarketTargetRequirement;
+import kmlib.console.targets.MarketTargetResolver;
+import kmlib.console.targets.ResolvedTarget;
+import kmlib.console.targets.UnresolvedTarget;
 import kmlib.starsector.markets.MarketColoniser;
 import kmlib.testfixtures.console.output.CommandOutputFake;
 
@@ -81,7 +79,7 @@ final class ColoniseCommandTest {
         marketTargetResolverMock = mockStatic(MarketTargetResolver.class);
         marketTargetResolverMock
             .when(() -> MarketTargetResolver.resolveTargetMarket(any(), any(), any()))
-            .thenReturn(new ResolvedMarketTarget(marketMock));
+            .thenReturn(new ResolvedTarget<>(marketMock));
 
         factionTargetResolverMock = mockStatic(FactionTargetResolver.class);
 
@@ -163,8 +161,8 @@ final class ColoniseCommandTest {
 
             marketTargetResolverMock
                 .when(() -> MarketTargetResolver.resolveTargetMarket(any(), any(), any()))
-                .thenReturn(new UnresolvedMarketTarget("Nothing in Corvus is a body ready for "
-                    + "colonisation."));
+                .thenReturn(new UnresolvedTarget<MarketAPI>(
+                    "Nothing in Corvus is a body ready for colonisation."));
 
             var result = command.runCommand("", CommandContext.CAMPAIGN_MAP);
 
@@ -184,7 +182,7 @@ final class ColoniseCommandTest {
             // exactly as it was rather than half-colonised under nobody.
             factionTargetResolverMock
                 .when(() -> FactionTargetResolver.resolveOwningFaction(any(), any()))
-                .thenReturn(new UnresolvedFactionTarget("No faction with id 'hegmony'."));
+                .thenReturn(new UnresolvedTarget<FactionAPI>("No faction with id 'hegmony'."));
 
             var result = command.runCommand("corvus_iii hegmony", CommandContext.CAMPAIGN_MAP);
 
@@ -204,11 +202,11 @@ final class ColoniseCommandTest {
             // and its refusal is the one that gets said.
             marketTargetResolverMock
                 .when(() -> MarketTargetResolver.resolveTargetMarket(any(), any(), any()))
-                .thenReturn(new UnresolvedMarketTarget("No entity with id 'corvus_iv' in the "
-                    + "sector."));
+                .thenReturn(new UnresolvedTarget<MarketAPI>(
+                    "No entity with id 'corvus_iv' in the sector."));
             factionTargetResolverMock
                 .when(() -> FactionTargetResolver.resolveOwningFaction(any(), any()))
-                .thenReturn(new UnresolvedFactionTarget("No faction with id 'hegmony'."));
+                .thenReturn(new UnresolvedTarget<FactionAPI>("No faction with id 'hegmony'."));
 
             command.runCommand("corvus_iv hegmony", CommandContext.CAMPAIGN_MAP);
 
@@ -279,6 +277,6 @@ final class ColoniseCommandTest {
 
         factionTargetResolverMock
             .when(() -> FactionTargetResolver.resolveOwningFaction(any(), any()))
-            .thenReturn(new ResolvedFactionTarget(factionMock));
+            .thenReturn(new ResolvedTarget<>(factionMock));
     }
 }

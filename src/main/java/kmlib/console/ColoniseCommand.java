@@ -4,16 +4,14 @@ import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
-import kmlib.console.factions.FactionTargetResolver;
-import kmlib.console.factions.ResolvedFactionTarget;
-import kmlib.console.factions.UnresolvedFactionTarget;
-import kmlib.console.markets.MarketTargetRequirement;
-import kmlib.console.markets.MarketTargetResolver;
-import kmlib.console.markets.ResolvedMarketTarget;
-import kmlib.console.markets.UnresolvedMarketTarget;
 import kmlib.console.output.CommandOutput;
 import kmlib.console.parsing.Parameter;
 import kmlib.console.parsing.ParameterSpec;
+import kmlib.console.targets.FactionTargetResolver;
+import kmlib.console.targets.MarketTargetRequirement;
+import kmlib.console.targets.MarketTargetResolver;
+import kmlib.console.targets.ResolvedTarget;
+import kmlib.console.targets.UnresolvedTarget;
 import kmlib.starsector.factions.StarsectorPlayerFactionResolver;
 import kmlib.starsector.markets.MarketColoniser;
 
@@ -83,7 +81,7 @@ public final class ColoniseCommand extends KmlibBaseConsoleCommand {
             parsed.get(SPEC.entityId),
             MarketTargetRequirement.COLONISABLE_BODY);
 
-        if (target instanceof UnresolvedMarketTarget unresolvedTarget) {
+        if (target instanceof UnresolvedTarget<MarketAPI> unresolvedTarget) {
 
             output.showMessage(unresolvedTarget.failureMessage());
             return CommandResult.ERROR;
@@ -91,14 +89,14 @@ public final class ColoniseCommand extends KmlibBaseConsoleCommand {
 
         var owner = FactionTargetResolver.resolveOwningFaction(sector, parsed.get(SPEC.factionId));
 
-        if (owner instanceof UnresolvedFactionTarget unresolvedOwner) {
+        if (owner instanceof UnresolvedTarget<FactionAPI> unresolvedOwner) {
 
             output.showMessage(unresolvedOwner.failureMessage());
             return CommandResult.ERROR;
         }
 
-        var market = ((ResolvedMarketTarget) target).market();
-        var faction = ((ResolvedFactionTarget) owner).faction();
+        var market = ((ResolvedTarget<MarketAPI>) target).target();
+        var faction = ((ResolvedTarget<FactionAPI>) owner).target();
 
         MarketColoniser.establishColony(sector, market, faction.getId());
 

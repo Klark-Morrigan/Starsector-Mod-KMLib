@@ -1,5 +1,6 @@
-package kmlib.console.factions;
+package kmlib.console.targets;
 
+import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Factions;
 
@@ -45,10 +46,12 @@ public final class FactionTargetResolver {
      * @param factionId the id of the faction to act for; null or blank asks for the player's own
      * @return the faction to act for, or why there is none
      */
-    public static FactionTargetResolution resolveOwningFaction(SectorAPI sector, String factionId) {
+    public static TargetResolution<FactionAPI> resolveOwningFaction(
+            SectorAPI sector,
+            String factionId) {
 
         if (sector == null) {
-            return new UnresolvedFactionTarget(NO_SECTOR_MESSAGE);
+            return new UnresolvedTarget<>(NO_SECTOR_MESSAGE);
         }
 
         var requestedId = KmlibStrings.hasText(factionId)
@@ -58,8 +61,8 @@ public final class FactionTargetResolver {
         var faction = sector.getFaction(requestedId);
 
         if (faction == null) {
-            return new UnresolvedFactionTarget("No faction with id '" + requestedId + "'.");
+            return new UnresolvedTarget<>("No faction with id '" + requestedId + "'.");
         }
-        return new ResolvedFactionTarget(faction);
+        return new ResolvedTarget<>(faction);
     }
 }
