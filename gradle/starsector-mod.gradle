@@ -21,6 +21,23 @@ import groovy.json.JsonSlurper
 // is declared here - the Starsector layer - rather than in the gate itself.
 docLinkScanExcludedDirectoryNames << 'graphify-out'
 
+// The blocks a mod's imports are sorted into, in the order they appear: the
+// game's own API, then the KM libraries and mods, then third-party jars a mod
+// may compile against, then the JDK. Declared here - the Starsector layer -
+// because every name in it is either the game or a mod: Common-Java lints Java
+// for whoever asks and has no business knowing that Starsector, LunaLib or any
+// KM mod exists.
+//
+// The family is listed one mod per group rather than as a single pattern, since
+// a mod importing a KM library keeps that library's imports in a block of their
+// own. A new mod is added here, once, for every consumer of this script - and it
+// has to be: an import matching no group is sorted after every named one, which
+// puts a mod's own package below java.* until someone works out why.
+def starsectorImportGroups = 'com.fs.starfarer,kmlib,kmo,kmp,kmu,/^(org|lunalib)\\./,java'
+
+checkstyle.configProperties.importGroups = starsectorImportGroups
+checkstyle.configProperties.staticImportGroups = starsectorImportGroups
+
 // Mod metadata is the single source of truth for the artifact version, so
 // the jar name and Starsector's mod listing cannot drift.
 def modInfoFile = file('mod_info.json')
