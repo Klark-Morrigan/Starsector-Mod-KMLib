@@ -1,21 +1,14 @@
 package kmlib.console;
 
 import com.fs.starfarer.api.Global;
-import com.fs.starfarer.api.campaign.FactionAPI;
-import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
 import kmlib.console.output.CommandOutput;
-import kmlib.console.parsing.Parameter;
-import kmlib.console.parsing.ParameterSpec;
-import kmlib.console.targets.FactionTargetResolver;
+import kmlib.console.targets.MarketOwnerTarget;
+import kmlib.console.targets.MarketOwnerTargetResolver;
 import kmlib.console.targets.MarketTargetRequirement;
-import kmlib.console.targets.MarketTargetResolver;
 import kmlib.console.targets.ResolvedTarget;
 import kmlib.console.targets.UnresolvedTarget;
-import kmlib.starsector.factions.StarsectorPlayerFactionResolver;
 import kmlib.starsector.markets.colonisation.MarketColoniser;
-
-import static kmlib.console.parsing.ParameterValues.text;
 
 /**
  * Console command (cheat): founds a colony on a body that so far carries only survey data. Takes
@@ -33,16 +26,10 @@ import static kmlib.console.parsing.ParameterValues.text;
  * produces is otherwise the game's own baseline colony, and on an install running a mod with a
  * colonisation of its own, that mod's.
  *
- * <p>A shell over three collaborators, and deliberately holds no mechanics of its own: which
- * place was meant is {@code MarketTargetResolver}'s, which faction was meant is
- * {@code FactionTargetResolver}'s, and what founding a colony consists of is
- * {@link MarketColoniser}'s. That split is what lets the same founding be reached from a mod's
- * own code rather than only from a player typing at the console.
- *
- * <p>Both refusals are settled before anything is mutated, so a run naming an unknown faction
- * leaves the body untouched rather than half-colonised. The target is resolved first only
- * because a run with two mistakes in it has to report one of them, and the place is the argument
- * a player is likelier to have got wrong.
+ * <p>A shell over two collaborators, and deliberately holds no mechanics of its own: what the run
+ * was aimed at is {@code MarketOwnerTargetResolver}'s, and what founding a colony consists of is
+ * {@link MarketColoniser}'s. That split is what lets the same founding be reached from a mod's own
+ * code rather than only from a player typing at the console.
  *
  * <p>Soft Console Commands dependency: this class touches {@code org.lazywizard.console.*}, but
  * it is loaded only when Console Commands instantiates it from KMLib's commands.csv. A game
@@ -51,7 +38,8 @@ import static kmlib.console.parsing.ParameterValues.text;
  */
 public final class ColoniseCommand extends KmlibBaseConsoleCommand {
 
-    private static final ColoniseSpec SPEC = new ColoniseSpec();
+    private static final MarketOwnerSpec SPEC =
+        new MarketOwnerSpec("Usage: kmlib_colonise [entity-id] [faction-id].");
 
     public ColoniseCommand() {
     }
@@ -76,68 +64,38 @@ public final class ColoniseCommand extends KmlibBaseConsoleCommand {
 
         var sector = Global.getSector();
 
-        var target = MarketTargetResolver.resolveTargetMarket(
+        // Both halves are resolved before anything is mutated, so a run naming an unknown faction
+        // leaves the body untouched rather than half-colonised under nobody.
+        var target = MarketOwnerTargetResolver.resolveMarketAndOwner(
             sector,
             parsed.get(SPEC.entityId),
+            parsed.get(SPEC.factionId),
             MarketTargetRequirement.COLONISABLE_BODY);
 
-        if (target instanceof UnresolvedTarget<MarketAPI> unresolvedTarget) {
+        if (target instanceof UnresolvedTarget<MarketOwnerTarget> unresolvedTarget) {
 
             output.showMessage(unresolvedTarget.failureMessage());
             return CommandResult.ERROR;
         }
 
-        var owner = FactionTargetResolver.resolveOwningFaction(sector, parsed.get(SPEC.factionId));
+        var found = ((ResolvedTarget<MarketOwnerTarget>) target).target();
 
-        if (owner instanceof UnresolvedTarget<FactionAPI> unresolvedOwner) {
+        MarketColoniser.establishColony(sector, found.market(), found.owner().getId());
 
-            output.showMessage(unresolvedOwner.failureMessage());
-            return CommandResult.ERROR;
-        }
-
-        var market = ((ResolvedTarget<MarketAPI>) target).target();
-        var faction = ((ResolvedTarget<FactionAPI>) owner).target();
-
-        MarketColoniser.establishColony(sector, market, faction.getId());
-
-        output.showMessage(describeFoundedColony(market, faction));
+        output.showMessage(describeFoundedColony(found));
         return CommandResult.SUCCESS;
     }
 
-    // What the player is told about the colony that now exists. Built from the market only after
-    // the founding, never before it: survey data goes by whatever name its placeholder happened
-    // to hold, and the colony takes the body's - or, where a mod founded it, whatever name that
-    // mod gave the place.
-    private static String describeFoundedColony(MarketAPI market, FactionAPI faction) {
+    // What the player is told about the colony that now exists. The name is read from the market
+    // only after the founding, never before it: survey data goes by whatever name its placeholder
+    // happened to hold, and the colony takes the body's - or, where a mod founded it, whatever
+    // name that mod gave the place.
+    private static String describeFoundedColony(MarketOwnerTarget target) {
 
         return "Founded a colony on "
-            + market.getName()
+            + target.market().getName()
             + " for "
-            // Through the resolver rather than getDisplayName(), because the player faction
-            // reports a placeholder until it has an identity of its own - "Independent" before
-            // the first colony, and the literal "player" on a stock Nexerelin setup.
-            + StarsectorPlayerFactionResolver.resolveDisplayName(faction, faction.getId())
+            + target.readOwnerName()
             + '.';
-    }
-
-    /**
-     * What {@code kmlib_colonise} accepts: the body to colonise and the faction to colonise it
-     * for, both optional and in that order.
-     *
-     * <p>Neither carries a default of its own. What an omitted argument means is a question about
-     * the sector rather than about the command line - the nearest colonisable body, the player's
-     * own faction - so each is left unsupplied here and answered by the resolver that knows how
-     * to look it up.
-     */
-    private static final class ColoniseSpec extends ParameterSpec {
-
-        private final Parameter<String> entityId =
-            acceptsPositional("entity_id", "<entity-id>", text());
-        private final Parameter<String> factionId =
-            acceptsPositional("faction_id", "<faction-id>", text());
-
-        private ColoniseSpec() {
-            super("Usage: kmlib_colonise [entity-id] [faction-id].");
-        }
     }
 }

@@ -1,14 +1,12 @@
 package kmlib.console;
 
 import com.fs.starfarer.api.Global;
-import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
-import kmlib.console.targets.FactionTargetResolver;
+import kmlib.console.targets.MarketOwnerTarget;
+import kmlib.console.targets.MarketOwnerTargetResolver;
 import kmlib.console.targets.MarketTargetRequirement;
-import kmlib.console.targets.MarketTargetResolver;
-import kmlib.console.targets.ResolvedTarget;
 import kmlib.console.targets.UnresolvedTarget;
 import kmlib.starsector.markets.colonisation.MarketColoniser;
 import kmlib.testfixtures.console.output.CommandOutputFake;
@@ -28,16 +26,15 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 /**
- * Pins {@link ColoniseCommand#runCommand} as the shell it is: what it asks of each collaborator,
- * which of their refusals it passes on, and that nothing is founded until both refusals are past.
- * Player feedback is read back through a recording {@code CommandOutput} binding, so the message
- * text is asserted without a live console.
+ * Pins {@link ColoniseCommand#runCommand} as the shell it is: which requirement it aims its
+ * search under, that a refusal is passed on and founds nothing, and what the player is told about
+ * the colony that now exists. Player feedback is read back through a recording
+ * {@code CommandOutput} binding, so the message text is asserted without a live console.
  *
- * <p>The three collaborators are stubbed through static mocks, so what makes a body colonisable,
- * which body is nearest and what founding a colony consists of are left to their own suites.
- * What is asserted here is the wiring between them - the requirement the search is posed under,
- * the arguments an omitted one becomes, and the order the two refusals are taken in. Cases live
- * under a {@link Nested} group named for the method under test.
+ * <p>Both collaborators are stubbed through static mocks, so which place was meant and what
+ * founding a colony consists of are left to their own suites - including the order the two halves
+ * of a target are resolved in, which is {@code MarketOwnerTargetResolverTest}'s. Cases live under
+ * a {@link Nested} group named for the method under test.
  *
  * <p>No case poses the player inside a star system, and that is deliberate: the sector answers
  * for no fleet, so every run here is made from outside every system. A command still guarding on
@@ -50,8 +47,7 @@ final class ColoniseCommandTest {
     private static final String PLAYER_FACTION_ID = "player";
 
     private MockedStatic<Global> globalMock;
-    private MockedStatic<MarketTargetResolver> marketTargetResolverMock;
-    private MockedStatic<FactionTargetResolver> factionTargetResolverMock;
+    private MockedStatic<MarketOwnerTargetResolver> marketOwnerTargetResolverMock;
     private MockedStatic<MarketColoniser> marketColoniserMock;
 
     private SectorAPI sectorMock;
@@ -76,12 +72,7 @@ final class ColoniseCommandTest {
             .when(Global::getSector)
             .thenReturn(sectorMock);
 
-        marketTargetResolverMock = mockStatic(MarketTargetResolver.class);
-        marketTargetResolverMock
-            .when(() -> MarketTargetResolver.resolveTargetMarket(any(), any(), any()))
-            .thenReturn(new ResolvedTarget<>(marketMock));
-
-        factionTargetResolverMock = mockStatic(FactionTargetResolver.class);
+        marketOwnerTargetResolverMock = mockStatic(MarketOwnerTargetResolver.class);
 
         marketColoniserMock = mockStatic(MarketColoniser.class);
 
@@ -92,8 +83,7 @@ final class ColoniseCommandTest {
     @AfterEach
     void tearDown() {
         marketColoniserMock.close();
-        factionTargetResolverMock.close();
-        marketTargetResolverMock.close();
+        marketOwnerTargetResolverMock.close();
         globalMock.close();
     }
 
@@ -101,7 +91,7 @@ final class ColoniseCommandTest {
     class RunCommand {
 
         @Test
-        void founds_a_colony_for_the_named_faction_and_reports_it() {
+        void founds_a_colony_for_the_resolved_faction_and_reports_it() {
 
             answerWithFaction(HEGEMONY_ID, "Hegemony");
 
@@ -110,7 +100,7 @@ final class ColoniseCommandTest {
             assertThat(result)
                 .isEqualTo(CommandResult.SUCCESS);
 
-            // Delegation is the contract: the command resolves, MarketColoniser owns the
+            // Delegation is the contract: the command aims the run, MarketColoniser owns the
             // founding.
             marketColoniserMock
                 .verify(() -> MarketColoniser.establishColony(
@@ -124,9 +114,9 @@ final class ColoniseCommandTest {
         }
 
         @Test
-        void colonises_the_nearest_colonisable_body_for_the_player_on_a_bare_invocation() {
-            // Both arguments are left unsupplied rather than defaulted on the command line, so
-            // what an omission means stays the resolvers' answer to give.
+        void aims_the_search_at_a_colonisable_body_and_passes_on_omitted_arguments() {
+            // Neither argument is defaulted on the command line, so what an omission means stays
+            // the search's answer to give.
             answerWithFaction(PLAYER_FACTION_ID, "Sabre Company");
 
             var result = command.runCommand("", CommandContext.CAMPAIGN_MAP);
@@ -134,13 +124,12 @@ final class ColoniseCommandTest {
             assertThat(result)
                 .isEqualTo(CommandResult.SUCCESS);
 
-            marketTargetResolverMock
-                .verify(() -> MarketTargetResolver.resolveTargetMarket(
+            marketOwnerTargetResolverMock
+                .verify(() -> MarketOwnerTargetResolver.resolveMarketAndOwner(
                     sectorMock,
                     null,
+                    null,
                     MarketTargetRequirement.COLONISABLE_BODY));
-            factionTargetResolverMock
-                .verify(() -> FactionTargetResolver.resolveOwningFaction(sectorMock, null));
         }
 
         @Test
@@ -159,9 +148,10 @@ final class ColoniseCommandTest {
         @Test
         void passes_on_the_searchs_refusal_and_founds_nothing() {
 
-            marketTargetResolverMock
-                .when(() -> MarketTargetResolver.resolveTargetMarket(any(), any(), any()))
-                .thenReturn(new UnresolvedTarget<MarketAPI>(
+            marketOwnerTargetResolverMock
+                .when(() -> MarketOwnerTargetResolver.resolveMarketAndOwner(
+                    any(), any(), any(), any()))
+                .thenReturn(new UnresolvedTarget<MarketOwnerTarget>(
                     "Nothing in Corvus is a body ready for colonisation."));
 
             var result = command.runCommand("", CommandContext.CAMPAIGN_MAP);
@@ -177,45 +167,6 @@ final class ColoniseCommandTest {
         }
 
         @Test
-        void passes_on_an_unknown_factions_refusal_and_founds_nothing() {
-            // The body was found and would have been colonised; a mistyped owner has to leave it
-            // exactly as it was rather than half-colonised under nobody.
-            factionTargetResolverMock
-                .when(() -> FactionTargetResolver.resolveOwningFaction(any(), any()))
-                .thenReturn(new UnresolvedTarget<FactionAPI>("No faction with id 'hegmony'."));
-
-            var result = command.runCommand("corvus_iii hegmony", CommandContext.CAMPAIGN_MAP);
-
-            assertThat(result)
-                .isEqualTo(CommandResult.ERROR);
-            assertThat(outputFake.getMessages())
-                .anyMatch(message -> message.contains("No faction with id 'hegmony'."));
-
-            marketColoniserMock
-                .verifyNoInteractions();
-        }
-
-        @Test
-        void reports_the_place_rather_than_the_owner_when_both_are_wrong() {
-            // A run with two mistakes in it has to report one of them, and the place is the
-            // argument a player is likelier to have got wrong - so the target is resolved first
-            // and its refusal is the one that gets said.
-            marketTargetResolverMock
-                .when(() -> MarketTargetResolver.resolveTargetMarket(any(), any(), any()))
-                .thenReturn(new UnresolvedTarget<MarketAPI>(
-                    "No entity with id 'corvus_iv' in the sector."));
-            factionTargetResolverMock
-                .when(() -> FactionTargetResolver.resolveOwningFaction(any(), any()))
-                .thenReturn(new UnresolvedTarget<FactionAPI>("No faction with id 'hegmony'."));
-
-            command.runCommand("corvus_iv hegmony", CommandContext.CAMPAIGN_MAP);
-
-            assertThat(outputFake.getMessages())
-                .anyMatch(message -> message.contains("No entity with id 'corvus_iv'"))
-                .noneMatch(message -> message.contains("No faction"));
-        }
-
-        @Test
         void reports_a_surplus_argument_as_bad_syntax_and_resolves_nothing() {
 
             var result = command.runCommand(
@@ -227,7 +178,7 @@ final class ColoniseCommandTest {
             assertThat(outputFake.getMessages())
                 .anyMatch(message -> message.contains("Too many arguments"));
 
-            marketTargetResolverMock
+            marketOwnerTargetResolverMock
                 .verifyNoInteractions();
             marketColoniserMock
                 .verifyNoInteractions();
@@ -264,19 +215,17 @@ final class ColoniseCommandTest {
         }
     }
 
-    // Has the owner search answer with a faction under the given id and display name, which is
-    // what the success message is built from.
+    // Has the search answer with this suite's market held by a faction under the given id and
+    // display name, which is what the success message is built from.
     private void answerWithFaction(String factionId, String displayName) {
 
-        var factionMock = mock(FactionAPI.class);
+        // The target is built before the stubbing opens: the fixture stubs a faction of its own,
+        // and doing that inside the thenReturn would nest one stubbing in another.
+        var resolvedTarget =
+            CommandTargetFixture.buildResolvedTarget(marketMock, factionId, displayName);
 
-        when(factionMock.getId())
-            .thenReturn(factionId);
-        when(factionMock.getDisplayName())
-            .thenReturn(displayName);
-
-        factionTargetResolverMock
-            .when(() -> FactionTargetResolver.resolveOwningFaction(any(), any()))
-            .thenReturn(new ResolvedTarget<>(factionMock));
+        marketOwnerTargetResolverMock
+            .when(() -> MarketOwnerTargetResolver.resolveMarketAndOwner(any(), any(), any(), any()))
+            .thenReturn(resolvedTarget);
     }
 }

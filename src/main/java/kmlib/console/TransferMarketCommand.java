@@ -1,22 +1,15 @@
 package kmlib.console;
 
 import com.fs.starfarer.api.Global;
-import com.fs.starfarer.api.campaign.FactionAPI;
-import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
 import kmlib.console.output.CommandOutput;
-import kmlib.console.parsing.Parameter;
-import kmlib.console.parsing.ParameterSpec;
-import kmlib.console.targets.FactionTargetResolver;
+import kmlib.console.targets.MarketOwnerTarget;
+import kmlib.console.targets.MarketOwnerTargetResolver;
 import kmlib.console.targets.MarketTargetRequirement;
-import kmlib.console.targets.MarketTargetResolver;
 import kmlib.console.targets.ResolvedTarget;
 import kmlib.console.targets.UnresolvedTarget;
-import kmlib.starsector.factions.StarsectorPlayerFactionResolver;
 import kmlib.starsector.markets.Markets;
 import kmlib.starsector.markets.ownership.MarketOwnershipTransfer;
-
-import static kmlib.console.parsing.ParameterValues.text;
 
 /**
  * Console command (cheat): hands an existing colony to another owner. Takes an optional entity id
@@ -34,16 +27,10 @@ import static kmlib.console.parsing.ParameterValues.text;
  * the absence of the operation, which is what makes it a cheat: standing, intel and the reasons a
  * place changed hands are all skipped over.
  *
- * <p>A shell over three collaborators, and deliberately holds no mechanics of its own: which
- * place was meant is {@code MarketTargetResolver}'s, which faction was meant is
- * {@code FactionTargetResolver}'s, and what handing a colony over consists of is
- * {@link MarketOwnershipTransfer}'s. That split is what lets the same hand-over be reached from a
- * mod's own code rather than only from a player typing at the console.
- *
- * <p>Every refusal is settled before anything is mutated, so a run naming an unknown faction, or
- * the faction already holding the place, leaves the colony exactly as it was. The target is
- * resolved first only because a run with two mistakes in it has to report one of them, and the
- * place is the argument a player is likelier to have got wrong.
+ * <p>A shell over two collaborators, and deliberately holds no mechanics of its own: what the run
+ * was aimed at is {@code MarketOwnerTargetResolver}'s, and what handing a colony over consists of
+ * is {@link MarketOwnershipTransfer}'s. That split is what lets the same hand-over be reached from
+ * a mod's own code rather than only from a player typing at the console.
  *
  * <p>Soft Console Commands dependency: this class touches {@code org.lazywizard.console.*}, but
  * it is loaded only when Console Commands instantiates it from KMLib's commands.csv. A game
@@ -52,7 +39,8 @@ import static kmlib.console.parsing.ParameterValues.text;
  */
 public final class TransferMarketCommand extends KmlibBaseConsoleCommand {
 
-    private static final TransferMarketSpec SPEC = new TransferMarketSpec();
+    private static final MarketOwnerSpec SPEC =
+        new MarketOwnerSpec("Usage: kmlib_transfer_market [entity-id] [faction-id].");
 
     public TransferMarketCommand() {
     }
@@ -75,92 +63,57 @@ public final class TransferMarketCommand extends KmlibBaseConsoleCommand {
             return parsed.getResult();
         }
 
-        var sector = Global.getSector();
-
-        var target = MarketTargetResolver.resolveTargetMarket(
-            sector,
+        // Both halves are resolved before anything is mutated, so a run naming an unknown faction
+        // leaves the colony exactly as it was rather than detached from an owner and given to
+        // nobody.
+        var target = MarketOwnerTargetResolver.resolveMarketAndOwner(
+            Global.getSector(),
             parsed.get(SPEC.entityId),
+            parsed.get(SPEC.factionId),
             MarketTargetRequirement.EXISTING_COLONY);
 
-        if (target instanceof UnresolvedTarget<MarketAPI> unresolvedTarget) {
+        if (target instanceof UnresolvedTarget<MarketOwnerTarget> unresolvedTarget) {
 
             output.showMessage(unresolvedTarget.failureMessage());
             return CommandResult.ERROR;
         }
 
-        var owner = FactionTargetResolver.resolveOwningFaction(sector, parsed.get(SPEC.factionId));
-
-        if (owner instanceof UnresolvedTarget<FactionAPI> unresolvedOwner) {
-
-            output.showMessage(unresolvedOwner.failureMessage());
-            return CommandResult.ERROR;
-        }
-
-        var market = ((ResolvedTarget<MarketAPI>) target).target();
-        var faction = ((ResolvedTarget<FactionAPI>) owner).target();
+        var found = ((ResolvedTarget<MarketOwnerTarget>) target).target();
 
         // A hand-over to the incumbent is not one, and the transfer refuses it on this same read -
         // so the run is stopped here to say why, rather than reported as a success that did
         // nothing. This is no target requirement: every one of those weighs the market alone,
-        // while this is a relation between the market and the faction argument and so cannot be
-        // asked until both have resolved.
-        if (Markets.isOwnedBy(market, faction.getId())) {
+        // while this is a relation between the two halves and so cannot be asked until both have
+        // resolved.
+        if (Markets.isOwnedBy(found.market(), found.owner().getId())) {
 
-            output.showMessage(describeUnchangedOwnership(market, faction));
+            output.showMessage(describeUnchangedOwnership(found));
             return CommandResult.ERROR;
         }
 
-        MarketOwnershipTransfer.transferOwnership(market, faction.getId());
+        MarketOwnershipTransfer.transferOwnership(found.market(), found.owner().getId());
 
-        output.showMessage(describeTransferredColony(market, faction));
+        output.showMessage(describeTransferredColony(found));
         return CommandResult.SUCCESS;
     }
 
     // What the player is told about the colony that has changed hands.
-    private static String describeTransferredColony(MarketAPI market, FactionAPI faction) {
+    private static String describeTransferredColony(MarketOwnerTarget target) {
 
         return "Transferred "
-            + market.getName()
+            + target.market().getName()
             + " to "
-            + readOwnerName(faction)
+            + target.readOwnerName()
             + '.';
     }
 
     // Why a run that named the colony's own owner did nothing. Worded as a statement about the
     // colony rather than about the argument, the mistake being a belief about who holds the place.
-    private static String describeUnchangedOwnership(MarketAPI market, FactionAPI faction) {
+    private static String describeUnchangedOwnership(MarketOwnerTarget target) {
 
-        return market.getName()
+        return target.market().getName()
             + " is already owned by "
-            + readOwnerName(faction)
+            + target.readOwnerName()
             + '.';
-    }
-
-    // Through the resolver rather than getDisplayName(), because the player faction reports a
-    // placeholder until it has an identity of its own - "Independent" before the first colony, and
-    // the literal "player" on a stock Nexerelin setup. Falls back to the id, which is what the
-    // player typed to name the faction in the first place.
-    private static String readOwnerName(FactionAPI faction) {
-        return StarsectorPlayerFactionResolver.resolveDisplayName(faction, faction.getId());
-    }
-
-    /**
-     * What {@code kmlib_transfer_market} accepts: the colony to hand over and the faction to hand
-     * it to, both optional and in that order.
-     *
-     * <p>Neither carries a default of its own. What an omitted argument means is a question about
-     * the sector rather than about the command line - the nearest colony, the player's own faction
-     * - so each is left unsupplied here and answered by the resolver that knows how to look it up.
-     */
-    private static final class TransferMarketSpec extends ParameterSpec {
-
-        private final Parameter<String> entityId =
-            acceptsPositional("entity_id", "<entity-id>", text());
-        private final Parameter<String> factionId =
-            acceptsPositional("faction_id", "<faction-id>", text());
-
-        private TransferMarketSpec() {
-            super("Usage: kmlib_transfer_market [entity-id] [faction-id].");
-        }
     }
 }

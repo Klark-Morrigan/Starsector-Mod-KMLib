@@ -1,14 +1,12 @@
 package kmlib.console;
 
 import com.fs.starfarer.api.Global;
-import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
-import kmlib.console.targets.FactionTargetResolver;
+import kmlib.console.targets.MarketOwnerTarget;
+import kmlib.console.targets.MarketOwnerTargetResolver;
 import kmlib.console.targets.MarketTargetRequirement;
-import kmlib.console.targets.MarketTargetResolver;
-import kmlib.console.targets.ResolvedTarget;
 import kmlib.console.targets.UnresolvedTarget;
 import kmlib.starsector.markets.ownership.MarketOwnershipTransfer;
 import kmlib.testfixtures.console.output.CommandOutputFake;
@@ -28,16 +26,16 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 /**
- * Pins {@link TransferMarketCommand#runCommand} as the shell it is: what it asks of each
- * collaborator, which of their refusals it passes on, and that nothing changes hands until every
- * refusal is past. Player feedback is read back through a recording {@code CommandOutput} binding,
- * so the message text is asserted without a live console.
+ * Pins {@link TransferMarketCommand#runCommand} as the shell it is: which requirement it aims its
+ * search under, that a refusal is passed on and hands over nothing, that a colony is not handed to
+ * the faction already holding it, and what the player is told either way. Player feedback is read
+ * back through a recording {@code CommandOutput} binding, so the message text is asserted without
+ * a live console.
  *
- * <p>The resolvers and the hand-over are stubbed through static mocks, so which colony is nearest
- * and what a hand-over consists of are left to their own suites. What is asserted here is the
- * wiring between them - the requirement the search is posed under, the arguments an omitted one
- * becomes, and the order the refusals are taken in. Cases live under a {@link Nested} group named
- * for the method under test.
+ * <p>Both collaborators are stubbed through static mocks, so which place was meant and what a
+ * hand-over consists of are left to their own suites - including the order the two halves of a
+ * target are resolved in, which is {@code MarketOwnerTargetResolverTest}'s. Cases live under a
+ * {@link Nested} group named for the method under test.
  *
  * <p>One collaborator is deliberately not stubbed: the ownership read the same-owner refusal is
  * built on. It is a comparison of the colony's own faction id against the one resolved, so posing
@@ -56,8 +54,7 @@ final class TransferMarketCommandTest {
     private static final String PLAYER_FACTION_ID = "player";
 
     private MockedStatic<Global> globalMock;
-    private MockedStatic<MarketTargetResolver> marketTargetResolverMock;
-    private MockedStatic<FactionTargetResolver> factionTargetResolverMock;
+    private MockedStatic<MarketOwnerTargetResolver> marketOwnerTargetResolverMock;
     private MockedStatic<MarketOwnershipTransfer> marketOwnershipTransferMock;
 
     private SectorAPI sectorMock;
@@ -84,12 +81,7 @@ final class TransferMarketCommandTest {
             .when(Global::getSector)
             .thenReturn(sectorMock);
 
-        marketTargetResolverMock = mockStatic(MarketTargetResolver.class);
-        marketTargetResolverMock
-            .when(() -> MarketTargetResolver.resolveTargetMarket(any(), any(), any()))
-            .thenReturn(new ResolvedTarget<>(marketMock));
-
-        factionTargetResolverMock = mockStatic(FactionTargetResolver.class);
+        marketOwnerTargetResolverMock = mockStatic(MarketOwnerTargetResolver.class);
 
         marketOwnershipTransferMock = mockStatic(MarketOwnershipTransfer.class);
 
@@ -100,8 +92,7 @@ final class TransferMarketCommandTest {
     @AfterEach
     void tearDown() {
         marketOwnershipTransferMock.close();
-        factionTargetResolverMock.close();
-        marketTargetResolverMock.close();
+        marketOwnerTargetResolverMock.close();
         globalMock.close();
     }
 
@@ -109,7 +100,7 @@ final class TransferMarketCommandTest {
     class RunCommand {
 
         @Test
-        void hands_the_colony_to_the_named_faction_and_reports_it() {
+        void hands_the_colony_to_the_resolved_faction_and_reports_it() {
 
             answerWithFaction(HEGEMONY_ID, "Hegemony");
 
@@ -118,8 +109,8 @@ final class TransferMarketCommandTest {
             assertThat(result)
                 .isEqualTo(CommandResult.SUCCESS);
 
-            // Delegation is the contract: the command resolves, MarketOwnershipTransfer owns the
-            // hand-over.
+            // Delegation is the contract: the command aims the run, MarketOwnershipTransfer owns
+            // the hand-over.
             marketOwnershipTransferMock
                 .verify(() -> MarketOwnershipTransfer.transferOwnership(marketMock, HEGEMONY_ID));
 
@@ -128,9 +119,9 @@ final class TransferMarketCommandTest {
         }
 
         @Test
-        void hands_the_nearest_colony_to_the_player_on_a_bare_invocation() {
-            // Both arguments are left unsupplied rather than defaulted on the command line, so
-            // what an omission means stays the resolvers' answer to give.
+        void aims_the_search_at_an_existing_colony_and_passes_on_omitted_arguments() {
+            // Neither argument is defaulted on the command line, so what an omission means stays
+            // the search's answer to give.
             answerWithFaction(PLAYER_FACTION_ID, "Sabre Company");
 
             var result = command.runCommand("", CommandContext.CAMPAIGN_MAP);
@@ -138,13 +129,12 @@ final class TransferMarketCommandTest {
             assertThat(result)
                 .isEqualTo(CommandResult.SUCCESS);
 
-            marketTargetResolverMock
-                .verify(() -> MarketTargetResolver.resolveTargetMarket(
+            marketOwnerTargetResolverMock
+                .verify(() -> MarketOwnerTargetResolver.resolveMarketAndOwner(
                     sectorMock,
                     null,
+                    null,
                     MarketTargetRequirement.EXISTING_COLONY));
-            factionTargetResolverMock
-                .verify(() -> FactionTargetResolver.resolveOwningFaction(sectorMock, null));
         }
 
         @Test
@@ -161,9 +151,8 @@ final class TransferMarketCommandTest {
 
         @Test
         void refuses_a_colony_the_named_faction_already_holds_and_hands_over_nothing() {
-            // The place and the faction both resolved, so only the relation between them is
-            // wrong - and a hand-over to the incumbent would still detach the colony from the
-            // owner it is not leaving.
+            // Both halves resolved, so only the relation between them is wrong - and a hand-over
+            // to the incumbent would still detach the colony from the owner it is not leaving.
             answerWithFaction(INCUMBENT_OWNER_ID, "Persean League");
 
             var result = command.runCommand(
@@ -183,9 +172,10 @@ final class TransferMarketCommandTest {
         @Test
         void passes_on_the_searchs_refusal_and_hands_over_nothing() {
 
-            marketTargetResolverMock
-                .when(() -> MarketTargetResolver.resolveTargetMarket(any(), any(), any()))
-                .thenReturn(new UnresolvedTarget<MarketAPI>(
+            marketOwnerTargetResolverMock
+                .when(() -> MarketOwnerTargetResolver.resolveMarketAndOwner(
+                    any(), any(), any(), any()))
+                .thenReturn(new UnresolvedTarget<MarketOwnerTarget>(
                     "Nothing in Corvus is an existing colony."));
 
             var result = command.runCommand("", CommandContext.CAMPAIGN_MAP);
@@ -200,45 +190,6 @@ final class TransferMarketCommandTest {
         }
 
         @Test
-        void passes_on_an_unknown_factions_refusal_and_hands_over_nothing() {
-            // The colony was found and would have changed hands; a mistyped owner has to leave it
-            // exactly as it was rather than detached from an owner and given to nobody.
-            factionTargetResolverMock
-                .when(() -> FactionTargetResolver.resolveOwningFaction(any(), any()))
-                .thenReturn(new UnresolvedTarget<FactionAPI>("No faction with id 'hegmony'."));
-
-            var result = command.runCommand("corvus_iii hegmony", CommandContext.CAMPAIGN_MAP);
-
-            assertThat(result)
-                .isEqualTo(CommandResult.ERROR);
-            assertThat(outputFake.getMessages())
-                .anyMatch(message -> message.contains("No faction with id 'hegmony'."));
-
-            marketOwnershipTransferMock
-                .verifyNoInteractions();
-        }
-
-        @Test
-        void reports_the_place_rather_than_the_owner_when_both_are_wrong() {
-            // A run with two mistakes in it has to report one of them, and the place is the
-            // argument a player is likelier to have got wrong - so the target is resolved first
-            // and its refusal is the one that gets said.
-            marketTargetResolverMock
-                .when(() -> MarketTargetResolver.resolveTargetMarket(any(), any(), any()))
-                .thenReturn(new UnresolvedTarget<MarketAPI>(
-                    "No entity with id 'corvus_iv' in the sector."));
-            factionTargetResolverMock
-                .when(() -> FactionTargetResolver.resolveOwningFaction(any(), any()))
-                .thenReturn(new UnresolvedTarget<FactionAPI>("No faction with id 'hegmony'."));
-
-            command.runCommand("corvus_iv hegmony", CommandContext.CAMPAIGN_MAP);
-
-            assertThat(outputFake.getMessages())
-                .anyMatch(message -> message.contains("No entity with id 'corvus_iv'"))
-                .noneMatch(message -> message.contains("No faction"));
-        }
-
-        @Test
         void reports_a_surplus_argument_as_bad_syntax_and_resolves_nothing() {
 
             var result = command.runCommand(
@@ -250,7 +201,7 @@ final class TransferMarketCommandTest {
             assertThat(outputFake.getMessages())
                 .anyMatch(message -> message.contains("Too many arguments"));
 
-            marketTargetResolverMock
+            marketOwnerTargetResolverMock
                 .verifyNoInteractions();
             marketOwnershipTransferMock
                 .verifyNoInteractions();
@@ -287,19 +238,17 @@ final class TransferMarketCommandTest {
         }
     }
 
-    // Has the owner search answer with a faction under the given id and display name, which is
-    // what the reported message is built from.
+    // Has the search answer with this suite's colony held by a faction under the given id and
+    // display name, which is what the reported message is built from.
     private void answerWithFaction(String factionId, String displayName) {
 
-        var factionMock = mock(FactionAPI.class);
+        // The target is built before the stubbing opens: the fixture stubs a faction of its own,
+        // and doing that inside the thenReturn would nest one stubbing in another.
+        var resolvedTarget =
+            CommandTargetFixture.buildResolvedTarget(marketMock, factionId, displayName);
 
-        when(factionMock.getId())
-            .thenReturn(factionId);
-        when(factionMock.getDisplayName())
-            .thenReturn(displayName);
-
-        factionTargetResolverMock
-            .when(() -> FactionTargetResolver.resolveOwningFaction(any(), any()))
-            .thenReturn(new ResolvedTarget<>(factionMock));
+        marketOwnerTargetResolverMock
+            .when(() -> MarketOwnerTargetResolver.resolveMarketAndOwner(any(), any(), any(), any()))
+            .thenReturn(resolvedTarget);
     }
 }
