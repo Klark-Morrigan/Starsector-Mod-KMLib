@@ -30,7 +30,8 @@ import static org.mockito.Mockito.when;
  * Pins the contracts of {@link Markets#findAttachedStation},
  * {@link Markets#getStabilityFraction}, {@link Markets#hasAttachedStation},
  * {@link Markets#isAbandonedStation}, {@link Markets#isMilitary}, {@link Markets#isOwnedBy},
- * {@link Markets#isOwnedColony}, {@link Markets#readNameplate} and
+ * {@link Markets#isOwnedColony}, {@link Markets#isSettledColony}, {@link Markets#readNameplate}
+ * and
  * {@link Markets#readSubmarketPlugin} - the reads that answer what one market is, plus the one
  * reach into how it is put together. The cases live in a
  * {@link Nested} group per method so the suite reports as a per-method tree; the shared mock
@@ -350,6 +351,59 @@ final class MarketsTest {
         @Test
         void returns_false_for_a_null_market() {
             assertThat(Markets.isOwnedColony(null))
+                .isFalse();
+        }
+    }
+
+    @Nested
+    class IsSettledColony {
+
+        @Test
+        void returns_true_for_a_colony_a_faction_holds() {
+            assertThat(Markets.isSettledColony(MarketStateFixture.buildColony("hegemony")))
+                .isTrue();
+        }
+
+        @Test
+        void returns_true_for_a_colony_the_economy_does_not_list() {
+            // Galatia Academy is settled by anyone's reckoning; registration is a separate
+            // question and no part of this one.
+            assertThat(Markets.isSettledColony(
+                    MarketStateFixture.buildColonyUnlistedByEconomy("independent")))
+                .isTrue();
+        }
+
+        @Test
+        void returns_false_for_a_derelict_station_flying_the_neutral_flag() {
+            // The case the ownership read alone gets wrong: a hulk has a faction like any other
+            // market, and it is neutral - which is the game saying nobody lives here.
+            assertThat(Markets.isSettledColony(MarketStateFixture.buildAbandonedStation()))
+                .isFalse();
+        }
+
+        @Test
+        void returns_false_for_a_bare_worlds_placeholder() {
+            assertThat(Markets.isSettledColony(MarketStateFixture.buildColonisableBody()))
+                .isFalse();
+        }
+
+        @Test
+        void returns_false_for_a_decivilised_world() {
+            // What is left where a colony was is not a colony: neutral holds it, and the market
+            // is back to carrying the planet's conditions and nothing else.
+            assertThat(Markets.isSettledColony(MarketStateFixture.buildDecivilisedWorld()))
+                .isFalse();
+        }
+
+        @Test
+        void returns_false_when_no_faction_holds_the_market() {
+            assertThat(Markets.isSettledColony(MarketStateFixture.buildUnownedMarket()))
+                .isFalse();
+        }
+
+        @Test
+        void returns_false_for_a_null_market() {
+            assertThat(Markets.isSettledColony(null))
                 .isFalse();
         }
     }

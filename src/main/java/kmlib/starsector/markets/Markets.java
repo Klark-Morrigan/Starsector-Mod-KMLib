@@ -242,6 +242,33 @@ public final class Markets {
     }
 
     /**
+     * Whether a market is a place somebody has settled, rather than one merely standing where
+     * nobody has.
+     *
+     * <p>Narrower than {@link #isOwnedColony} by one arm, and that arm is what "somebody" means.
+     * Every market has an owner whether or not anyone lives there: a bare world's placeholder, a
+     * decivilised world's remains and a derelict station alike are handed to the neutral faction
+     * as they are built, so a read asking only whether a faction holds the market finds one
+     * holding all three. Asking whether that faction is anybody is what separates a settled place
+     * from a flag flown over an empty one.
+     *
+     * <p>The neutral question is put to the faction rather than answered by comparing an id here,
+     * which is how the engine's own code asks it. The id it settles on is the engine's own to
+     * change, and a library comparing its own copy of that id would be a second answer free to
+     * disagree with the game's.
+     *
+     * <p>Ownership is the whole of the rule. Whether the economy lists the colony is no part of
+     * it, a real colony being buildable unregistered, and neither is whether the player has found
+     * it - compose with {@link MarketVisibility#isDiscoveredByPlayer} when visibility matters.
+     *
+     * @param market the market to test; null (or one with no owning faction) yields false
+     * @return true when a faction other than neutral holds a market that is not condition-only
+     */
+    public static boolean isSettledColony(MarketAPI market) {
+        return isOwnedColony(market) && !market.getFaction().isNeutralFaction();
+    }
+
+    /**
      * How a market is identified to a reader: the name it goes by, and the glyph the sector map
      * marks it with.
      *
