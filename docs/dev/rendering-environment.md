@@ -34,48 +34,70 @@ against anything else.
 | What | Version | Identity |
 | --- | --- | --- |
 | Starsector | `0.98a-RC8` | - |
-| Fast Rendering | `v0.8.4` | `fr.jar` SHA-256 `dea3ea3d0fd7437d4a7945fee65f741d9b72d3fec565b9c4807aea479ce56144`, 639820 bytes; `fr.agent.jar` 15566 bytes |
+| Fast Rendering | `v0.8.5rc1` | `fr.jar` SHA-256 `85db8158414547f4c4b56302c0ca8644e62fb4043156e485ae84b5098d7a8ee3`, 642412 bytes; `fr.agent.jar` 15558 bytes |
 
 That row is the release the citations below were read out of. An install is
 patched by dropping the release zip's jars into `starsector-core\`, so a matching
 hash means the recorded artifact and the running one are the same file.
 
-Two claims on this page are specific to `v0.8.4` rather than true of `v0.8.3`
-before it, and both are flagged where they appear: `GL_CURRENT_PROGRAM` is now
-answered from `ShaderTracker` rather than `AttribTracker`, and `glIsTexture`
-became an inline read instead of a stalling one. Everything else holds on either.
-`ScriptTransformations` - the table that decides the bridge package name - is
-byte-identical across the two, as are `ContextManager`, `Context.transformManager`,
-`TransformManager` and `Executor.execute`, so nothing KMLib binds to moved.
+Four claims on this page are release-specific rather than true of every build
+still in the field, and each is flagged where it appears:
 
-Fast Rendering names itself in three places, and they are worth different amounts.
+- **Per-mod exclusion exists**, from `v0.8.5rc1`. Earlier releases rewrite every
+  mod jar without exception; `v0.8.5rc1` hard-codes a class-name prefix that is
+  skipped.
+- **`GL_CURRENT_PROGRAM` is answered from `AttribTracker`** on `v0.8.5rc1` and
+  through `v0.8.3`, and from `ShaderTracker` on `v0.8.4` alone.
+- **`glIsTexture` is an inline read**, from `v0.8.4`. On `v0.8.3` and earlier it
+  stalls.
+- **`glGetTexLevelParameteri` is an inline read** for three pnames, from
+  `v0.8.5rc1`. Earlier releases always stall on it.
 
-From `v0.8.4` the agent logs its release at startup, before anything else runs:
-`Agent.premain` writes `Fast Rendering: v0.8.4` at INFO, followed by the SHA-256 of
-`starfarer_obf.jar`
-(`starsector-core/fr.agent/com/genir/renderer/agent/Agent.java:17-20`). That is the
-only one of the three a running game reports, so from `v0.8.4` a log names the
-release that produced it; earlier releases log nothing.
+Nothing KMLib binds to moved in `v0.8.5rc1`. `ScriptTransformations` - the table
+that decides the bridge package name - is byte-identical to `v0.8.4`, as are
+`TransformManager`, `VertexInterceptor`, `MatrixStack`, `Executor` and
+`GLCommand`; `ContextManager.getThreadContext` and `Context.transformManager`
+kept their names and signatures while the code around them was reworked.
+
+Fast Rendering names itself in three places, and **on `v0.8.5rc1` all three of
+them are wrong**: each says `v0.8.4`. The three files carrying them are
+byte-identical to the `v0.8.4` release, so the version was simply not bumped
+before publishing. Treat every self-report as a lower bound on the release, never
+as the release, and hash the jar when the answer matters.
+
+The agent logs a release at startup, before anything else runs: `Agent.premain`
+writes `Fast Rendering: v0.8.4` at INFO - on `v0.8.4` and on `v0.8.5rc1` alike -
+followed by the SHA-256 of `starfarer_obf.jar`
+(`starsector-core/fr.agent/com/genir/renderer/agent/Agent.java:17-20`). The line
+appeared in `v0.8.4`; earlier releases log nothing. That checksum is of the
+*game's* jar, not Fast Rendering's, so it identifies the Starsector build being
+patched and says nothing about which patch is doing it.
 
 `fr.jar` carries a version constant from `v0.8.2`,
 `com.genir.renderer.Version.getVersion()`
-(`starsector-core/fr/com/genir/renderer/Version.java:7`), returning the release
-string. Nothing in either jar calls it, so it names the artifact rather than the
-session, which is what a build wants: KMLib's `build.gradle` loads it straight out
-of the jar to report which Fast Rendering the bridge adapter was type-checked
-against.
+(`starsector-core/fr/com/genir/renderer/Version.java:7-8`), returning a release
+string - `"v0.8.4"` on both `v0.8.4` and `v0.8.5rc1`. Nothing in either jar calls
+it, so it names the artifact rather than the session, which is what a build wants:
+KMLib's `build.gradle` loads it straight out of the jar to report which Fast
+Rendering the bridge adapter was type-checked against. That report inherits the
+staleness - a KMLib build bound against `v0.8.5rc1` logs
+`Fast Rendering: v0.8.4` - so the banner is a hint about the bridge, not evidence
+of which release is installed.
 
 The third is a display string in the shadowed copy of the game's own version class,
 `"Starsector 0.98a-RC8 FR8.4"`
 (`starsector-core/fr/com/fs/starfarer/Version.java:27`, `:42`), which is what puts
-`FR8.4` on the launcher and the main menu. It tracks the release exactly - `FR`
-followed by the release tag with its leading `v0.` dropped, patch letters and
-release-candidate suffixes included, so `v0.7.1` reads `FR7.1`, `v0.7.1b` reads
-`FR7.1b` and `v0.8.4rc1` reads `FR8.4rc1`. It is the only identifier readable
-without opening a jar, which makes it the one to ask a player for.
+`FR8.4` on the launcher and the main menu. Its shape is `FR` followed by the
+release tag with its leading `v0.` dropped, patch letters and release-candidate
+suffixes included, so `v0.7.1` reads `FR7.1`, `v0.7.1b` reads `FR7.1b` and
+`v0.8.4rc1` reads `FR8.4rc1`. It tracked the release exactly through `v0.8.4` and
+stopped at `v0.8.5rc1`, which also reads `FR8.4`. It is still the only identifier
+readable without opening a jar and so the one to ask a player for, but `FR8.4`
+alone no longer distinguishes two releases.
 
-None of the three proves the bytes, and a rebuild could carry any of them
-unchanged. The SHA-256 is what identifies what these citations were read from.
+None of the three proves the bytes, and - as `v0.8.5rc1` demonstrates - a rebuild
+can carry all of them unchanged. The SHA-256 is what identifies what these
+citations were read from.
 
 Releases are published at
 [Halke1986/starsector-render](https://github.com/Halke1986/starsector-render/releases),
@@ -88,11 +110,13 @@ sha256sum "<starsector>/starsector-core/fr.jar"
 
 Sizes still separate neighbouring releases (`v0.7.6` is 632557 bytes, `v0.7.7` is
 632640, `v0.8.0` is 617425, `v0.8.1` is 631624, `v0.8.2` is 635887, `v0.8.3` is
-634576, `v0.8.4rc1` is 632459, `v0.8.4` is 639820), so a size mismatch is a fast
-first check before hashing. Treat only the mismatch as informative: `v0.7.6` and
-`v0.7.7` are 83 bytes apart, close enough that a size *match* is weak evidence and
-hashing is what settles it. Release candidates are published as ordinary releases
-and get installed as such, so `rc` builds are part of the set an install can be.
+634576, `v0.8.4rc1` is 632459, `v0.8.4` is 639820, `v0.8.5rc1` is 642412), so a
+size mismatch is a fast first check before hashing. Treat only the mismatch as
+informative: `v0.7.6` and `v0.7.7` are 83 bytes apart, close enough that a size
+*match* is weak evidence and hashing is what settles it. Release candidates are
+published as ordinary releases and get installed as such, so `rc` builds are part
+of the set an install can be - and on `v0.8.5rc1` the size is the *only* cheap
+discriminator against `v0.8.4`, since all three self-reports agree with it.
 
 Names below are release-specific, and a rename is not announced. Two moves so far
 have invalidated citations wholesale, neither mentioned in its release notes.
@@ -111,9 +135,17 @@ steadily: `context/BufferPool` was rewritten in `v0.8.0`, `commands/GL11`'s
 `glGetTexImage` gained a compressed-texture path in `v0.8.3`, and `v0.8.4` repacked
 `context/VertexInterceptor`'s vertex arrays, added `stall/TextureTracker`, moved
 program tracking from `AttribTracker` to `ShaderTracker`, and deleted
-`commands/ARBVertexBufferObject` and `stall/BufferManager`. So byte-identity of the
-tree is the wrong thing to check on an upgrade; the six members KMLib mirrors are,
-and the real-jar build leg is what checks them.
+`commands/ARBVertexBufferObject` and `stall/BufferManager`. `v0.8.5rc1` moved
+texture loading off the startup path into a new `context/TextureManager` and a new
+`overrides/loading/textures/` package, deleting `overrides/loading/DDSCache` and
+relocating `TextureBuilder`, `TextureData` and `TextureLoader` into it; deleted
+`commands/DisplayUtil` and stopped redirecting `org/lwjgl/util/Display` to it; made
+most of `commands/Display` call real LWJGL inline instead of deferring; and
+re-signatured `context/Context`'s constructor from `Context(boolean)` to
+`Context(Context parent)`, so auxiliary contexts now share the main context's
+texture and shader trackers. So byte-identity of the tree is the wrong thing to
+check on an upgrade; the six members KMLib mirrors are, and the real-jar build leg
+is what checks them.
 
 ## How to re-verify
 
@@ -202,18 +234,36 @@ classes get a narrower but deeper rewrite, selected by package prefix and checke
 first - `com.fs.`, `sound.`, `zzz.com.fs.` take the game transformer,
 `org.lwjgl.util.glu.` and `com.thoughtworks.xstream.` take their own
 (`.../agent/ClassTransformer.java:44-59`) - which redirects `GL11`, `GL14`,
-`Display`, `GLContext`, and `org/lwjgl/util/Display`, swaps janino's
+`Display` and `GLContext`, swaps janino's
 `JavaSourceClassLoader` for a plain `ClassLoader`, renames the display-list
 calls `glGenLists` / `glNewList` / `glEndList` / `glCallList` to `*_restricted`
 variants, and rewrites obfuscated names that collide with Java keywords - `class.do`
 to `class_do` and so on, which is why a decompile shows types like
 `com/fs/starfarer/util/return` (`.../agent/ClassTransformer.java:20`,
-`.../agent/IllegalTransformations.java:12-23`).
+`.../agent/IllegalTransformations.java:12-23`). Through `v0.8.4` that table also
+redirected `org/lwjgl/util/Display` to a `commands/DisplayUtil` shim; `v0.8.5rc1`
+dropped both.
 
-This applies to KM jars. It is blunt and total: there is no opt-out, no
-annotation, and no per-mod exclusion. A KM jar compiles against real LWJGL and
-links fine, then binds to the bridge at runtime, so a bridge gap surfaces as a
-`NoSuchMethodError` from inside a render pass rather than as a build failure.
+This applies to KM jars, and no KM code can turn it off: a KM jar compiles against
+real LWJGL and links fine, then binds to the bridge at runtime, so a bridge gap
+surfaces as a `NoSuchMethodError` from inside a render pass rather than as a build
+failure.
+
+There is no opt-out a mod can *request* - no annotation, no manifest entry, no
+setting. What `v0.8.5rc1` introduced is an opt-out genir grants: classes whose
+binary name starts with `DeCell.VOpt.Commons.Rendering.` get no transformer at all
+(`.../agent/ClassTransformer.java:63-65`), and `overrides/loading/ResourceLoader`
+separately skips mods whose plugin class starts with `DeCell.VOpt`. Earlier
+releases have no such branch.
+
+That matters to KM code less for the one mod named than for the shape it
+establishes, because an excluded jar is a *mixed* state this page's model does not
+otherwise admit: its GL references stay pointed at real LWJGL while the game
+around it runs on the bridge. Detection stays correct through it - the check below
+asks what *this* jar's `GL11` resolved to, which is exactly the question an
+exclusion changes the answer to - but "Fast Rendering is installed" and "my calls
+go through Fast Rendering" stop being the same fact, and only the second one is
+worth acting on.
 
 Two useful consequences:
 
@@ -260,8 +310,16 @@ because it yields silently wrong coordinates instead.
 
 The matrix is reachable, publicly: `ContextManager.getThreadContext()` is public
 static (`.../bridge/context/ContextManager.java:16`), `Context.transformManager`
-is a public final field (`.../bridge/context/Context.java:32`), and
+is a public final field (`.../bridge/context/Context.java:34`), and
 `getCPUModelView()` is public (`.../bridge/context/TransformManager.java:44`).
+
+`getThreadContext()` returns `null` more often than "unregistered thread"
+suggests. From `v0.8.5rc1` the main context is created lazily and cleared on
+shutdown (`.../bridge/context/ContextManager.java:12-13`, `:26-36`), so the same
+call on the same thread answers `null` before the renderer is up and again after
+it is torn down; earlier releases built it in a static initialiser and it was
+never null on the main thread. Any read of it has to null-check regardless of
+release.
 
 Four cautions on using it. The first is where, not what, and it dwarfs the rest:
 the matrix cannot be read correctly from the calling thread at all, because the
@@ -328,7 +386,7 @@ confident wrong point every frame, not an absent one.
 This is the asymmetry that makes the viewport safe but the modelview not. The
 viewport read (`glGetInteger(int, IntBuffer)`) is answered synchronously from
 `context.attribTracker` on the calling thread
-(`.../bridge/commands/GL11.java:1321-1336`), so it is caller-side state and reads
+(`.../bridge/commands/GL11.java:1331-1352`), so it is caller-side state and reads
 true from anywhere. `TransformManager` is executor-side state, so it does not.
 
 A synchronous readback reads the right matrix but is a trap of its own. The
@@ -355,7 +413,7 @@ for hours before the arming point is ever reached.
 
 The viewport read escapes this only because it never stalls: the bridge answers
 `GL_VIEWPORT` inline from `attribTracker` and returns before reaching `exec.wait`
-(`.../bridge/commands/GL11.java:1321-1336`). The modelview has no such inline path.
+(`.../bridge/commands/GL11.java:1331-1352`). The modelview has no such inline path.
 
 The fix is to read **one frame late, without stalling**. `Executor.execute(GLCommand)`
 enqueues a command and returns immediately - no `wait`, no stall
@@ -384,13 +442,13 @@ a command that reads nothing from it ignores both parameters.
 Drawing is broadly covered. Reading state back is not: the bridge's entire
 `glGet*` surface is `glGetInteger(int)` and `glGetInteger(int, IntBuffer)`,
 `glGetString`, `glGetFloat(int)`, `glGetError`, `glGetTexLevelParameteri`, and
-two `glGetTexImage` overloads (`.../bridge/commands/GL11.java:1278-1474`).
+two `glGetTexImage` overloads (`.../bridge/commands/GL11.java:1288-1501`).
 
 There is **no buffer-taking `glGetFloat`** at all, so `GL_MODELVIEW_MATRIX` and
 `GL_PROJECTION_MATRIX` cannot be read through the bridge in any form.
 `glGetInteger(int, IntBuffer)` is bridged and delegates to real GL, so
 `GL_VIEWPORT` reads work unchanged under both renderers
-(`.../bridge/commands/GL11.java:1321`).
+(`.../bridge/commands/GL11.java:1331`).
 
 A second axis matters as much as which reads exist: whether a read is answered
 inline or by stalling the pipeline. Only the state the bridge shadows on the
@@ -400,24 +458,37 @@ caller's side is inline, and everything else routes through `exec.get` /
 - `glGetInteger(int)` for the texture binding, matrix mode, active texture, array
   buffer binding, **current program**, framebuffer binding, and vertex array
   binding, plus four cached limits
-  (`.../bridge/commands/GL11.java:1278-1310`). The current program comes from
-  `ShaderTracker` on `v0.8.4` and from `AttribTracker` before it; both inline.
+  (`.../bridge/commands/GL11.java:1288-1320`). The current program comes from
+  `AttribTracker` on `v0.8.5rc1` and through `v0.8.3`, and from `ShaderTracker` on
+  `v0.8.4`; inline on all of them, so only a stack trace tells them apart.
 - `glGetInteger(int, IntBuffer)` for `GL_VIEWPORT` only.
 - `glIsEnabled` for stencil test, alpha test, texture 2D, blend, lighting, and
-  **scissor test** (`.../bridge/commands/GL11.java:1477-1507`).
-- `glGetFloat(int)` for `GL_LINE_WIDTH` (`.../bridge/commands/GL11.java:1369-1375`).
-- `glIsTexture`, from `v0.8.4` only (`.../bridge/commands/GL11.java:1509-1522`).
-  `TextureTracker` keeps a caller-side set of texture names that have been bound
+  **scissor test** (`.../bridge/commands/GL11.java:1503-1533`).
+- `glGetFloat(int)` for `GL_LINE_WIDTH` (`.../bridge/commands/GL11.java:1379-1385`).
+- `glIsTexture`, from `v0.8.4` (`.../bridge/commands/GL11.java:1535-1548`).
+  `TextureTracker` keeps a caller-side record of texture names that have been bound
   and not deleted, and the answer comes from that; the real GL call still runs,
   deferred, purely to assert the two agree. On `v0.8.3` and earlier the same call
   is an `exec.get` and stalls.
+- `glGetTexLevelParameteri` for `GL_TEXTURE_WIDTH`, `GL_TEXTURE_HEIGHT` and
+  `GL_TEXTURE_INTERNAL_FORMAT`, from `v0.8.5rc1`
+  (`.../bridge/commands/GL11.java:1452-1478`). `TextureTracker` caches those three
+  per texture name as level 0 is uploaded, and the read is inline only when the
+  currently bound texture has an entry and the pname is one of the three;
+  everything else - any other pname, an unseen texture - still falls through to
+  `exec.get` and stalls. Non-zero mip levels are not cached: a `level` above 30000
+  short-circuits to `0` without touching GL at all, which makes that a read to
+  distrust rather than one to rely on.
 
 The set grows release by release, and each addition is somebody's crash being
 fixed: `GL_CURRENT_PROGRAM` went inline in `v0.7.4`, `GL_SCISSOR_TEST` in `v0.7.5`,
-`glIsTexture` in `v0.8.4`, each to stop a per-frame reader from tripping the stall
-detector. Two consequences for KM code. Whether a given read is fatal depends on
-the Fast Rendering version, so "it worked on my install" proves less than it looks;
-and the scissor **box** is still not shadowed - only the enable flag is - so the
+`glIsTexture` in `v0.8.4`, `glGetTexLevelParameteri`'s three size pnames in
+`v0.8.5rc1`, each to stop a per-frame reader from tripping the stall detector. Two
+consequences for KM code. Whether a given read is fatal depends on the Fast
+Rendering version, so "it worked on my install" proves less than it looks - and
+`v0.8.5rc1` makes that worse, since it is indistinguishable from `v0.8.4` in a log
+or on the main menu while answering two of these reads differently. And the
+scissor **box** is still not shadowed - only the enable flag is - so the
 current clip rectangle remains unreadable without a stall, which is why clip
 composition is the caller's job (`kmlib.starsector.ui.render.gl.UiScissor`) and
 why the one place KMLib does read the box back - the clip a map hover is
@@ -427,7 +498,7 @@ renderer rather than merely used sparingly.
 `glGetInteger(int, IntBuffer)` switches on exactly one pname - `2978`, which is
 `GL_VIEWPORT` - answering it from `attribTracker.getViewport()` and returning
 before the executor is reached; every other pname falls past the switch to
-`context.exec.wait` (`.../bridge/commands/GL11.java:1321-1341`). `GL_SCISSOR_BOX`
+`context.exec.wait` (`.../bridge/commands/GL11.java:1331-1352`). `GL_SCISSOR_BOX`
 is `3088`, so it takes that second path and stalls.
 
 The neighbouring pair is what makes this easy to get wrong from memory: the
@@ -445,8 +516,11 @@ thread](#it-defers-every-gl-call-to-a-render-thread)).
 
 `fr.jar` also ships patched copies of core game classes under `com.fs.*` (and
 `sound.*`), not just the GL bridge, and they shadow the game's own copies in
-`starfarer_obf.jar` / `fs.common_obf.jar`. There are 21 on `v0.8.4`, unchanged in
-membership since `v0.8.1`. They reach well past rendering: `Version`, `BaseGameState`,
+`starfarer_obf.jar` / `fs.common_obf.jar`. There are 21 on `v0.8.5rc1`, unchanged
+in membership since `v0.8.1` - though `graphics/TextureLoader` was rewritten in
+`v0.8.5rc1` to load DDS textures on demand rather than at startup, so membership
+holding still says nothing about behaviour holding. They reach well past
+rendering: `Version`, `BaseGameState`,
 `combat/CombatEngine`, `combat/CombatState`, `combat/entities/Ship`,
 `combat/ai/admiral/G`, `graphics/TextureLoader`, `graphics/LayeredRenderer`,
 `loading/SpecStore`, `loading/ScriptStore`, `loading/LoadingUtils`,
