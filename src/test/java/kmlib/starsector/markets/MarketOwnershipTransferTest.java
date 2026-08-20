@@ -215,6 +215,33 @@ final class MarketOwnershipTransferTest {
         }
 
         @Test
+        void strips_a_colony_handed_to_the_owner_it_already_has() {
+            // Not a no-op, which is the case a caller offering a choice of owner has to know
+            // about: the ownership half settles where it already was, and the detaching half runs
+            // regardless - so the incumbent gets their own colony back without the administrator,
+            // the free port or the unrest it had a moment ago. Refusing that is the caller's, and
+            // pinning it here is what keeps the refusal from being written against a no-op.
+            var market = MarketTransferFixture.buildFactionColonyAsItsOwnerLeftIt();
+            var recentUnrest = MarketTransferFixture.readRecentUnrest(market);
+
+            ModStateScopes.runWithoutModManager(() ->
+                MarketOwnershipTransfer.transferOwnership(
+                    market,
+                    MarketTransferFixture.FACTION_OWNER_ID));
+
+            assertThat(market.getFactionId())
+                .isEqualTo("hegemony");
+            assertThat(MarketOwnershipFixture.readSubmarketIds(market))
+                .containsExactlyInAnyOrder("open_market", "black_market");
+            assertThat(market.getAdmin())
+                .isNull();
+            assertThat(market.isFreePort())
+                .isFalse();
+            verify(recentUnrest)
+                .setPenalty(0);
+        }
+
+        @Test
         void hands_over_a_colony_whose_counter_keeps_no_account() {
             // The counter is asked for its billing step through the listener that step is declared
             // on, so a plugin some other mod put there is simply not asked - rather than the
