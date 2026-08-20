@@ -62,10 +62,28 @@ final class MarketTargetRequirementTest {
 
         @Test
         void refuses_a_body_carrying_only_survey_data_as_transferable() {
-            // The two requirements are complements over the same market, which is what lets one
-            // resolver serve both commands: whatever one admits, the other refuses.
+            // The two requirements are the two sides of one axis - whether the place is settled -
+            // which is what lets one resolver serve both commands.
             assertThat(MarketTargetRequirement.EXISTING_COLONY.isMetBy(
                     MarketStateFixture.buildColonisableBody()))
+                .isFalse();
+        }
+
+        @Test
+        void refuses_a_derelict_station_flying_the_neutral_flag_as_transferable() {
+            // A hulk carries a faction like any other market, and it is the neutral one - so a
+            // requirement asking only whether some faction held the place would offer a derelict
+            // as a colony to hand out.
+            assertThat(MarketTargetRequirement.EXISTING_COLONY.isMetBy(
+                    MarketStateFixture.buildAbandonedStation()))
+                .isFalse();
+        }
+
+        @Test
+        void refuses_a_decivilised_world_as_transferable() {
+
+            assertThat(MarketTargetRequirement.EXISTING_COLONY.isMetBy(
+                    MarketStateFixture.buildDecivilisedWorld()))
                 .isFalse();
         }
     }
