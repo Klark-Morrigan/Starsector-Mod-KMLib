@@ -13,6 +13,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static kmlib.testfixtures.starsector.settings.StubbedModIds.NEXERELIN;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -43,7 +45,7 @@ import static org.mockito.Mockito.verify;
  * is billed for is settled against the month's last economy step, and the number of steps a month
  * has is one of them.
  *
- * <p>The three cases that pose an installed routine state one of their own instead, since a machine
+ * <p>The cases about an installed routine state a routine of their own instead, since a machine
  * running the case has whichever mods it happens to have and the branch has to be posed both ways
  * regardless.
  */
@@ -349,6 +351,40 @@ final class MarketOwnershipTransferTest {
                 .isNull();
             assertThat(MarketOwnershipFixture.readSubmarketIds(market))
                 .containsExactlyInAnyOrder("local_resources", "storage");
+        }
+
+        @Test
+        void leaves_the_account_to_a_routine_that_takes_the_transfer() {
+            // A mod with a hand-over of its own settles the same account as part of it, so a
+            // sequence that billed the colony before offering the hand-over over would charge the
+            // month twice. The order the branch takes - refuse, offer, only then detach - is what
+            // this reads.
+            var market = MarketTransferFixture.buildPlayerColonyAsItsOwnerLeftIt();
+            var account = MarketTransferFixture.readLocalResourcesAccount(market);
+
+            MarketOwnershipTransfer.transferOwnership(
+                market,
+                MarketTransferFixture.FACTION_OWNER_ID,
+                (routineMarket, routineFactionId) -> true);
+
+            verify(account, never())
+                .reportEconomyTick(anyInt());
+        }
+
+        @Test
+        void hands_the_colony_over_through_the_live_binding_when_no_such_mod_is_installed() {
+            // The public entry point against a mod set that is readable and holds no such mod:
+            // nothing else here exercises the routine the library actually binds, and an install
+            // without that mod is what the composed sequence exists for.
+            var market = MarketTransferFixture.buildFactionColonyAsItsOwnerLeftIt();
+
+            ModStateScopes.runWithModEnabled(NEXERELIN, false, () ->
+                MarketOwnershipTransfer.transferOwnership(market, Factions.PLAYER));
+
+            assertThat(market.getFactionId())
+                .isEqualTo("player");
+            assertThat(market.getAdmin())
+                .isNull();
         }
 
         @Test
