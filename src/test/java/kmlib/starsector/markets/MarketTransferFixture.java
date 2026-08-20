@@ -1,7 +1,9 @@
 package kmlib.starsector.markets;
 
+import com.fs.starfarer.api.campaign.SubmarketPlugin;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.campaign.econ.MarketConditionAPI;
+import com.fs.starfarer.api.campaign.econ.SubmarketAPI;
 import com.fs.starfarer.api.campaign.listeners.EconomyTickListener;
 import com.fs.starfarer.api.characters.PersonAPI;
 import com.fs.starfarer.api.impl.campaign.econ.RecentUnrest;
@@ -15,6 +17,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -85,6 +88,31 @@ public final class MarketTransferFixture {
                 FACTION_OWNER_ID,
                 Submarkets.SUBMARKET_OPEN),
             false);
+    }
+
+    /**
+     * The player's colony with a local resources counter that keeps no account - a plugin some
+     * other mod put there, which never took anything on credit and has no month-end billing step
+     * to be asked for. The shape that tells whether the settling reaches for the account or
+     * assumes one.
+     */
+    public static MarketAPI buildPlayerColonyWhoseCounterKeepsNoAccount() {
+
+        var market = buildPlayerColonyAsItsOwnerLeftIt();
+        var counterMock = mock(SubmarketAPI.class);
+
+        when(counterMock.getSpecId())
+            .thenReturn(Submarkets.LOCAL_RESOURCES);
+        when(counterMock.getPlugin())
+            .thenReturn(mock(SubmarketPlugin.class));
+
+        // Named rather than added to the colony's own counters, so the one counter this shape is
+        // about answers a plugin of its own while every other read of the market is unchanged.
+        doReturn(counterMock)
+            .when(market)
+            .getSubmarket(Submarkets.LOCAL_RESOURCES);
+
+        return market;
     }
 
     /**

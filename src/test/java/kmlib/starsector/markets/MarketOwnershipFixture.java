@@ -46,9 +46,12 @@ import static org.mockito.Mockito.withSettings;
  * <p>Separate from {@link MarketStateFixture}, which poses what kind of market a state read is
  * asked about, and from {@link MarketPlacementFixture}, which poses where one sits. Neither is
  * mutable, and neither carries the submarkets, entities and tariff an ownership change touches.
- * {@link MarketColonisationFixture} is the one sibling that is not separate: an operation ending
- * in an ownership change poses a market that changes hands, so it composes the wirings below
- * rather than stubbing its own.
+ *
+ * <p>The siblings that are not separate are the ones posing an operation that <em>ends</em> in an
+ * ownership change, since such an operation poses a market that changes hands:
+ * {@link MarketColonisationFixture} composes the wirings below rather than stubbing its own, and
+ * {@link MarketTransferFixture} hangs what an outgoing owner leaves behind on the colonies built
+ * here.
  */
 public final class MarketOwnershipFixture {
 

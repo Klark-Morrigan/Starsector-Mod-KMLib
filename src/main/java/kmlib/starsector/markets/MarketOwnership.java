@@ -28,9 +28,10 @@ import kmlib.starsector.nexerelin.NexerelinSubmarkets;
  * installed, there being no such rule to defer to.
  *
  * <p>What it deliberately leaves alone is everything about <em>leaving</em> an owner - the
- * administrator, the free-port flag, stockpile use, recent unrest. A colony founded a moment ago
- * has no previous owner to detach from, so those belong to a takeover rather than to the rule
- * for whoever holds the place now.
+ * administrator, the free-port flag, stockpile use, recent unrest, and the account outstanding at
+ * the counter that owner's own production was sold over. A colony founded a moment ago has no
+ * previous owner to detach from, so those belong to {@link MarketOwnershipTransfer} rather than to
+ * the rule for whoever holds the place now.
  *
  * <p>Final class with a private constructor: pure-function utility, no instance state, and
  * null-defensive like the rest of the library.

@@ -215,6 +215,24 @@ final class MarketOwnershipTransferTest {
         }
 
         @Test
+        void hands_over_a_colony_whose_counter_keeps_no_account() {
+            // The counter is asked for its billing step through the listener that step is declared
+            // on, so a plugin some other mod put there is simply not asked - rather than the
+            // hand-over failing on a colony whose counter is not the one this library expects.
+            var market = MarketTransferFixture.buildPlayerColonyWhoseCounterKeepsNoAccount();
+
+            ModStateScopes.runWithoutModManager(() ->
+                MarketOwnershipTransfer.transferOwnership(
+                    market,
+                    MarketTransferFixture.FACTION_OWNER_ID));
+
+            assertThat(market.getFactionId())
+                .isEqualTo("hegemony");
+            assertThat(market.isFreePort())
+                .isFalse();
+        }
+
+        @Test
         void hands_over_a_colony_before_the_game_settings_are_up() {
             // A read taken outside a running game cannot say how many steps a month has, and there
             // is no month being played through to have taken anything on credit in - so the

@@ -155,14 +155,20 @@ src/main/java/kmlib/
                      owner-neutral sequence that settles it, the owner it
                      is founded under, and the seam a mod's own
                      colonisation takes the founding through instead),
-                     and what holding one
-                     makes true of it - flag, submarkets and tariff,
-                     stated so that either owner can be applied over the
-                     other
+                     handing an existing colony to another owner (what
+                     its outgoing one leaves behind - administrator, free
+                     port, stockpiling, unrest, and the account at the
+                     counter their production was sold over, settled
+                     while the colony is still theirs to bill), and what
+                     holding one makes true of it - flag, submarkets and
+                     tariff, stated so that either owner can be applied
+                     over the other
     memory/        - typed sector-memory accessors (flag, string)
     nexerelin/     - Nexerelin: founding a colony through that mod's own
                      colonisation, which a founding is offered to before
-                     the composed sequence in markets/ is run
+                     the composed sequence in markets/ is run, and the
+                     trading counters an ownership change defers to that
+                     mod's own rule where it is installed
     rat/           - Random Assortment of Things: Abyssal Fracture matching,
                      and the campaign-minimap role answered for its mini-map
     relation/      - player relationship formatting
