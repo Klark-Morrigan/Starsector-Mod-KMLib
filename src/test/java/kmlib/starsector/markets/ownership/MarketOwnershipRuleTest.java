@@ -1,8 +1,9 @@
-package kmlib.starsector.markets;
+package kmlib.starsector.markets.ownership;
 
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Factions;
 
+import kmlib.starsector.markets.MarketOwnershipFixture;
 import kmlib.testfixtures.starsector.settings.ModStateScopes;
 
 import org.junit.jupiter.api.Nested;
@@ -17,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.Mockito.verify;
 
 /**
- * Pins the contract of {@link MarketOwnership#applyOwnership}. The cases live in a {@link Nested}
+ * Pins the contract of {@link MarketOwnershipRule#applyOwnership}. The cases live in a {@link Nested}
  * group so the suite reports as a per-method tree; the colonies they are posed against are
  * {@link MarketOwnershipFixture}'s, which answer from what has been done to them.
  *
@@ -30,7 +31,7 @@ import static org.mockito.Mockito.verify;
  * the mod's own rule then does to a colony is verified in play, that rule being reached only once
  * the presence gate has passed.
  */
-final class MarketOwnershipTest {
+final class MarketOwnershipRuleTest {
 
     // Vanilla's own id for the tariff modifier, spelt here rather than read off the class under
     // test: what is being pinned is that the rule writes the key vanilla's colonisation writes, and
@@ -50,7 +51,7 @@ final class MarketOwnershipTest {
                 "open_market",
                 "black_market");
 
-            MarketOwnership.applyOwnership(market, Factions.PLAYER);
+            MarketOwnershipRule.applyOwnership(market, Factions.PLAYER);
 
             assertThat(MarketOwnershipFixture.readSubmarketIds(market))
                 .containsExactlyInAnyOrder("local_resources", "storage");
@@ -63,7 +64,7 @@ final class MarketOwnershipTest {
                 Factions.PLAYER,
                 "local_resources");
 
-            MarketOwnership.applyOwnership(market, MarketOwnershipFixture.FACTION_OWNER_ID);
+            MarketOwnershipRule.applyOwnership(market, MarketOwnershipFixture.FACTION_OWNER_ID);
 
             assertThat(MarketOwnershipFixture.readSubmarketIds(market))
                 .containsExactlyInAnyOrder("open_market", "black_market");
@@ -77,17 +78,17 @@ final class MarketOwnershipTest {
             var market = MarketOwnershipFixture.buildColonyHeldBy(
                 MarketOwnershipFixture.FACTION_OWNER_ID);
 
-            MarketOwnership.applyOwnership(market, Factions.PLAYER);
+            MarketOwnershipRule.applyOwnership(market, Factions.PLAYER);
 
             assertThat(MarketOwnershipFixture.readSubmarketIds(market))
                 .containsExactlyInAnyOrder("local_resources", "storage");
 
-            MarketOwnership.applyOwnership(market, MarketOwnershipFixture.FACTION_OWNER_ID);
+            MarketOwnershipRule.applyOwnership(market, MarketOwnershipFixture.FACTION_OWNER_ID);
 
             assertThat(MarketOwnershipFixture.readSubmarketIds(market))
                 .containsExactlyInAnyOrder("open_market", "black_market", "storage");
 
-            MarketOwnership.applyOwnership(market, Factions.PLAYER);
+            MarketOwnershipRule.applyOwnership(market, Factions.PLAYER);
 
             assertThat(MarketOwnershipFixture.readSubmarketIds(market))
                 .containsExactlyInAnyOrder("local_resources", "storage");
@@ -106,7 +107,7 @@ final class MarketOwnershipTest {
 
             var openMarketBefore = market.getSubmarket("open_market");
 
-            MarketOwnership.applyOwnership(market, MarketOwnershipFixture.FACTION_OWNER_ID);
+            MarketOwnershipRule.applyOwnership(market, MarketOwnershipFixture.FACTION_OWNER_ID);
 
             assertThat(market.getSubmarket("open_market"))
                 .isSameAs(openMarketBefore);
@@ -119,12 +120,12 @@ final class MarketOwnershipTest {
             var market = MarketOwnershipFixture.buildColonyHeldBy(
                 MarketOwnershipFixture.FACTION_OWNER_ID);
 
-            MarketOwnership.applyOwnership(market, Factions.PLAYER);
+            MarketOwnershipRule.applyOwnership(market, Factions.PLAYER);
 
             assertThat(market.getTariff().getFlatStatMod(DEFAULT_TARIFF_MODIFIER_ID).value)
                 .isEqualTo(0.3f);
 
-            MarketOwnership.applyOwnership(market, MarketOwnershipFixture.FACTION_OWNER_ID);
+            MarketOwnershipRule.applyOwnership(market, MarketOwnershipFixture.FACTION_OWNER_ID);
 
             assertThat(market.getTariff().getFlatStatMod(DEFAULT_TARIFF_MODIFIER_ID).value)
                 .isEqualTo(0.2f);
@@ -138,12 +139,12 @@ final class MarketOwnershipTest {
             var market = MarketOwnershipFixture.buildColonyHeldBy(
                 MarketOwnershipFixture.FACTION_OWNER_ID);
 
-            MarketOwnership.applyOwnership(market, Factions.PLAYER);
+            MarketOwnershipRule.applyOwnership(market, Factions.PLAYER);
 
             assertThat(market.isPlayerOwned())
                 .isTrue();
 
-            MarketOwnership.applyOwnership(market, MarketOwnershipFixture.FACTION_OWNER_ID);
+            MarketOwnershipRule.applyOwnership(market, MarketOwnershipFixture.FACTION_OWNER_ID);
 
             assertThat(market.isPlayerOwned())
                 .isFalse();
@@ -158,7 +159,7 @@ final class MarketOwnershipTest {
             // asks the entity rather than the market.
             var market = MarketOwnershipFixture.buildColonyHeldBy(Factions.PLAYER);
 
-            MarketOwnership.applyOwnership(market, MarketOwnershipFixture.FACTION_OWNER_ID);
+            MarketOwnershipRule.applyOwnership(market, MarketOwnershipFixture.FACTION_OWNER_ID);
 
             assertThat(MarketOwnershipFixture.readFactionId(market.getPrimaryEntity()))
                 .isEqualTo("hegemony");
@@ -173,7 +174,7 @@ final class MarketOwnershipTest {
             // body is re-flagged in its own right rather than by being swept up with the rest.
             var market = MarketOwnershipFixture.buildColonyNotListingItsOwnBody(Factions.PLAYER);
 
-            MarketOwnership.applyOwnership(market, MarketOwnershipFixture.FACTION_OWNER_ID);
+            MarketOwnershipRule.applyOwnership(market, MarketOwnershipFixture.FACTION_OWNER_ID);
 
             assertThat(MarketOwnershipFixture.readFactionId(market.getPrimaryEntity()))
                 .isEqualTo("hegemony");
@@ -188,7 +189,7 @@ final class MarketOwnershipTest {
                 MarketOwnershipFixture.FACTION_OWNER_ID,
                 "commerce");
 
-            MarketOwnership.applyOwnership(market, Factions.PLAYER);
+            MarketOwnershipRule.applyOwnership(market, Factions.PLAYER);
 
             assertThat(MarketOwnershipFixture.readSubmarketIds(market))
                 .containsExactlyInAnyOrder("local_resources", "open_market", "storage");
@@ -201,7 +202,7 @@ final class MarketOwnershipTest {
                 Factions.PLAYER,
                 "militarybase");
 
-            MarketOwnership.applyOwnership(market, MarketOwnershipFixture.FACTION_OWNER_ID);
+            MarketOwnershipRule.applyOwnership(market, MarketOwnershipFixture.FACTION_OWNER_ID);
 
             assertThat(MarketOwnershipFixture.readSubmarketIds(market))
                 .contains("generic_military");
@@ -216,8 +217,8 @@ final class MarketOwnershipTest {
                 MarketOwnershipFixture.FACTION_OWNER_ID,
                 "militarybase");
 
-            MarketOwnership.applyOwnership(market, MarketOwnershipFixture.FACTION_OWNER_ID);
-            MarketOwnership.applyOwnership(market, Factions.PLAYER);
+            MarketOwnershipRule.applyOwnership(market, MarketOwnershipFixture.FACTION_OWNER_ID);
+            MarketOwnershipRule.applyOwnership(market, Factions.PLAYER);
 
             assertThat(MarketOwnershipFixture.readSubmarketIds(market))
                 .doesNotContain("generic_military");
@@ -233,7 +234,7 @@ final class MarketOwnershipTest {
                 "local_resources",
                 "storage");
 
-            MarketOwnership.applyOwnership(market, MarketOwnershipFixture.FACTION_OWNER_ID);
+            MarketOwnershipRule.applyOwnership(market, MarketOwnershipFixture.FACTION_OWNER_ID);
 
             assertThat(MarketOwnershipFixture.readSubmarketIds(market))
                 .contains("storage");
@@ -247,7 +248,7 @@ final class MarketOwnershipTest {
             var market = MarketOwnershipFixture.buildColonyHeldBy(
                 MarketOwnershipFixture.FACTION_OWNER_ID);
 
-            MarketOwnership.applyOwnership(market, Factions.PLAYER);
+            MarketOwnershipRule.applyOwnership(market, Factions.PLAYER);
 
             verify(MarketOwnershipFixture.readStoragePlugin(market))
                 .setPlayerPaidToUnlock(true);
@@ -260,7 +261,7 @@ final class MarketOwnershipTest {
             var market = MarketOwnershipFixture.buildColonyWithNothingAttached(
                 MarketOwnershipFixture.FACTION_OWNER_ID);
 
-            MarketOwnership.applyOwnership(market, Factions.PLAYER);
+            MarketOwnershipRule.applyOwnership(market, Factions.PLAYER);
 
             assertThat(market.getFactionId())
                 .isEqualTo("player");
@@ -281,7 +282,7 @@ final class MarketOwnershipTest {
             var offeredOldOwnerId = new AtomicReference<String>();
             var offeredNewOwnerId = new AtomicReference<String>();
 
-            MarketOwnership.applyOwnership(
+            MarketOwnershipRule.applyOwnership(
                 market,
                 MarketOwnershipFixture.FACTION_OWNER_ID,
                 (ruleMarket, ruleOldOwnerId, ruleNewOwnerId) -> {
@@ -309,7 +310,7 @@ final class MarketOwnershipTest {
 
             var offeredOldOwnerId = new AtomicReference<String>();
 
-            MarketOwnership.applyOwnership(
+            MarketOwnershipRule.applyOwnership(
                 market,
                 Factions.PLAYER,
                 (ruleMarket, ruleOldOwnerId, ruleNewOwnerId) -> {
@@ -329,7 +330,7 @@ final class MarketOwnershipTest {
             var market = MarketOwnershipFixture.buildColonyHeldBy(
                 MarketOwnershipFixture.FACTION_OWNER_ID);
 
-            MarketOwnership.applyOwnership(
+            MarketOwnershipRule.applyOwnership(
                 market,
                 Factions.PLAYER,
                 (ruleMarket, ruleOldOwnerId, ruleNewOwnerId) -> true);
@@ -349,7 +350,7 @@ final class MarketOwnershipTest {
             var market = MarketOwnershipFixture.buildColonyHeldBy(
                 MarketOwnershipFixture.FACTION_OWNER_ID);
 
-            MarketOwnership.applyOwnership(
+            MarketOwnershipRule.applyOwnership(
                 market,
                 Factions.PLAYER,
                 (ruleMarket, ruleOldOwnerId, ruleNewOwnerId) -> true);
@@ -375,7 +376,7 @@ final class MarketOwnershipTest {
                 Factions.PLAYER,
                 "local_resources");
 
-            MarketOwnership.applyOwnership(
+            MarketOwnershipRule.applyOwnership(
                 market,
                 MarketOwnershipFixture.FACTION_OWNER_ID,
                 (ruleMarket, ruleOldOwnerId, ruleNewOwnerId) -> false);
@@ -394,7 +395,7 @@ final class MarketOwnershipTest {
                 "local_resources");
 
             ModStateScopes.runWithModEnabled(NEXERELIN, false, () ->
-                MarketOwnership.applyOwnership(
+                MarketOwnershipRule.applyOwnership(
                     market,
                     MarketOwnershipFixture.FACTION_OWNER_ID));
 
@@ -404,7 +405,7 @@ final class MarketOwnershipTest {
 
         @Test
         void leaves_a_null_market_alone() {
-            assertThatCode(() -> MarketOwnership.applyOwnership(null, Factions.PLAYER))
+            assertThatCode(() -> MarketOwnershipRule.applyOwnership(null, Factions.PLAYER))
                 .doesNotThrowAnyException();
         }
 
@@ -416,7 +417,7 @@ final class MarketOwnershipTest {
                 MarketOwnershipFixture.FACTION_OWNER_ID,
                 "open_market");
 
-            MarketOwnership.applyOwnership(market, null);
+            MarketOwnershipRule.applyOwnership(market, null);
 
             assertThat(market.getFactionId())
                 .isEqualTo("hegemony");

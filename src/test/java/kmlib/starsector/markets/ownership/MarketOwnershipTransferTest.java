@@ -1,7 +1,8 @@
-package kmlib.starsector.markets;
+package kmlib.starsector.markets.ownership;
 
 import com.fs.starfarer.api.impl.campaign.ids.Factions;
 
+import kmlib.starsector.markets.MarketOwnershipFixture;
 import kmlib.testfixtures.starsector.settings.ModStateScopes;
 
 import org.junit.jupiter.api.Nested;
@@ -215,12 +216,12 @@ final class MarketOwnershipTransferTest {
         }
 
         @Test
-        void strips_a_colony_handed_to_the_owner_it_already_has() {
-            // Not a no-op, which is the case a caller offering a choice of owner has to know
-            // about: the ownership half settles where it already was, and the detaching half runs
-            // regardless - so the incumbent gets their own colony back without the administrator,
-            // the free port or the unrest it had a moment ago. Refusing that is the caller's, and
-            // pinning it here is what keeps the refusal from being written against a no-op.
+        void leaves_a_colony_named_for_the_owner_it_already_has_untouched() {
+            // A hand-over to the incumbent changes nothing about who holds the place, and the
+            // detaching half has no way of knowing that - so it would strip the administrator, the
+            // free port and the stockpiling of a colony whose owner never changed. Refused whole
+            // rather than performed, which is what makes the call safe to make from anywhere that
+            // cannot be certain the owner it names is a new one.
             var market = MarketTransferFixture.buildFactionColonyAsItsOwnerLeftIt();
             var recentUnrest = MarketTransferFixture.readRecentUnrest(market);
 
@@ -229,16 +230,29 @@ final class MarketOwnershipTransferTest {
                     market,
                     MarketTransferFixture.FACTION_OWNER_ID));
 
-            assertThat(market.getFactionId())
-                .isEqualTo("hegemony");
-            assertThat(MarketOwnershipFixture.readSubmarketIds(market))
-                .containsExactlyInAnyOrder("open_market", "black_market");
             assertThat(market.getAdmin())
-                .isNull();
+                .isNotNull();
             assertThat(market.isFreePort())
-                .isFalse();
-            verify(recentUnrest)
-                .setPenalty(0);
+                .isTrue();
+            assertThat(market.isUseStockpilesForShortages())
+                .isTrue();
+            verify(recentUnrest, never())
+                .setPenalty(anyInt());
+        }
+
+        @Test
+        void leaves_the_account_unbilled_when_the_owner_named_is_the_one_already_holding_it() {
+            // The half of the refusal that costs money rather than state. The account is settled
+            // early on every real hand-over, so a call naming the owner already there would pull
+            // the month's charge forward for a transfer that never happened.
+            var market = MarketTransferFixture.buildPlayerColonyAsItsOwnerLeftIt();
+            var account = MarketTransferFixture.readLocalResourcesAccount(market);
+
+            ModStateScopes.runWithoutModManager(() ->
+                MarketOwnershipTransfer.transferOwnership(market, Factions.PLAYER));
+
+            verify(account, never())
+                .reportEconomyTick(anyInt());
         }
 
         @Test

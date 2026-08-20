@@ -13,7 +13,7 @@ import kmlib.console.targets.MarketTargetResolver;
 import kmlib.console.targets.ResolvedTarget;
 import kmlib.console.targets.UnresolvedTarget;
 import kmlib.starsector.factions.StarsectorPlayerFactionResolver;
-import kmlib.starsector.markets.MarketColoniser;
+import kmlib.starsector.markets.colonisation.MarketColoniser;
 
 import static kmlib.console.parsing.ParameterValues.text;
 

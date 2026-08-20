@@ -28,6 +28,15 @@ import java.util.Optional;
  * here, and both are questions a caller can reach for by accident while wanting a plain
  * state read - so each states its own subject in its own name.
  *
+ * <p>Nothing in this package changes a market, and the layering gate holds it that way -
+ * the reads may not import either operation, while an operation reads freely. What can be
+ * <em>done</em> to a market lives a package in, named for the operation it is -
+ * {@link kmlib.starsector.markets.colonisation} and
+ * {@link kmlib.starsector.markets.ownership} - each holding the seam through which an
+ * installed mod takes that operation over. Reading and mutating a market were once the
+ * same package under names of the same shape, where a class that answered a question and
+ * a class that rewrote a colony were told apart only by opening them.
+ *
  * <p>Final class with a private constructor: pure-function utility, no instance
  * state. Matches {@link kmlib.starsector.systems.StarSystems}'s shape, and is
  * null-market defensive like the rest of the library.
@@ -189,6 +198,29 @@ public final class Markets {
     }
 
     /**
+     * Whether a market is held by the named faction.
+     *
+     * <p>Reads the market's own faction id rather than its faction object, that being what an
+     * ownership change writes and therefore what is answering for the owner a moment after one.
+     * The ids are compared exactly: faction ids are keys rather than names, and a read that
+     * matched loosely would have two mods' factions answer for each other.
+     *
+     * <p>Its callers are the operations that must not act twice. Handing a colony to the faction
+     * already holding it, or founding under one, is a call whose subject has already happened -
+     * and where such a call would still change the colony, this is the read that stops it.
+     *
+     * @param market    the market to test; null yields false
+     * @param factionId the faction id to test for; null yields false, no market being held by
+     *                  nobody in the sense this asks about
+     * @return true when the market flies that faction's flag
+     */
+    public static boolean isOwnedBy(MarketAPI market, String factionId) {
+        return market != null
+            && factionId != null
+            && factionId.equals(market.getFactionId());
+    }
+
+    /**
      * Whether a market is a colony a faction owns, rather than a bare planet's
      * placeholder.
      *
@@ -247,9 +279,10 @@ public final class Markets {
      * wanting only the interface a step is declared on names that instead, and is answered by
      * whatever is actually keeping the counter.
      *
-     * <p>Not part of the library's public surface, unlike its neighbours here. It is a reach into
-     * how a market is put together rather than a read of what a market is, and an operation on the
-     * far side of it is one this package states in its own right.
+     * <p>The one read here that is about how a market is put together rather than about what it
+     * is. It sits with the others because its callers are the operations on a market, and an
+     * operation reaching a counter's plugin for itself would be the place all three of those
+     * steps get skipped.
      *
      * @param market       the market whose counter is being reached; null yields null
      * @param submarketId  the counter's submarket id
@@ -257,7 +290,10 @@ public final class Markets {
      * @param <T>          that kind
      * @return the counter's plugin as that kind, or null where there is none to speak to
      */
-    static <T> T readSubmarketPlugin(MarketAPI market, String submarketId, Class<T> pluginType) {
+    public static <T> T readSubmarketPlugin(
+            MarketAPI market,
+            String submarketId,
+            Class<T> pluginType) {
 
         if (market == null) {
             return null;

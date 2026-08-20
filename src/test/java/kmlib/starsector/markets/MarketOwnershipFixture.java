@@ -49,8 +49,8 @@ import static org.mockito.Mockito.withSettings;
  *
  * <p>The siblings that are not separate are the ones posing an operation that <em>ends</em> in an
  * ownership change, since such an operation poses a market that changes hands:
- * {@link MarketColonisationFixture} composes the wirings below rather than stubbing its own, and
- * {@link MarketTransferFixture} hangs what an outgoing owner leaves behind on the colonies built
+ * {@link kmlib.starsector.markets.colonisation.MarketColonisationFixture} composes the wirings below rather than stubbing its own, and
+ * {@link kmlib.starsector.markets.ownership.MarketTransferFixture} hangs what an outgoing owner leaves behind on the colonies built
  * here.
  */
 public final class MarketOwnershipFixture {
@@ -191,7 +191,7 @@ public final class MarketOwnershipFixture {
     // change is not the only mutation posed against a market in this package, and a second
     // fixture stubbing these by hand would be a second answer to what changing hands does to a
     // market - free to disagree with this one.
-    static void stubOwner(
+    public static void stubOwner(
             MarketAPI marketMock,
             Map<String, FactionAPI> factionsById,
             String factionId) {
@@ -238,7 +238,7 @@ public final class MarketOwnershipFixture {
     // The counters the colony trades over, opened and closed as it changes hands. A counter
     // opened twice yields the same one back, because the map is keyed by submarket id - which is
     // what lets a case tell a counter left alone from one closed and opened again.
-    static void stubSubmarkets(
+    public static void stubSubmarkets(
             MarketAPI marketMock,
             Map<String, SubmarketAPI> submarkets) {
 
@@ -268,7 +268,7 @@ public final class MarketOwnershipFixture {
 
     // The tax rate, as the engine's own stat rather than a stubbed number: what a case reads back
     // is then what the modifier arithmetic produced, including a rate written over an earlier one.
-    static void stubTariff(MarketAPI marketMock) {
+    public static void stubTariff(MarketAPI marketMock) {
         when(marketMock.getTariff())
             .thenReturn(new MutableStat(0f));
     }
@@ -329,7 +329,7 @@ public final class MarketOwnershipFixture {
     }
 
     // The owners a colony can be posed under, each carrying the tariff fraction it levies.
-    static Map<String, FactionAPI> buildFactions() {
+    public static Map<String, FactionAPI> buildFactions() {
 
         var factionsById = new LinkedHashMap<String, FactionAPI>();
 

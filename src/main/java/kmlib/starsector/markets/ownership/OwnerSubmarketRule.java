@@ -1,4 +1,4 @@
-package kmlib.starsector.markets;
+package kmlib.starsector.markets.ownership;
 
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 

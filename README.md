@@ -146,23 +146,33 @@ src/main/java/kmlib/
                      for tab-tag mix-in; BaseExpiringIntelPlugin layers
                      auto-removal on top)
     map/           - which systems the sector map marks
-    markets/       - market queries (including whether a market is a
-                     derelict station rather than a place anybody
-                     lives), decivilised markets, patrol counts,
-                     the nearest-market search a targeted operation is
-                     pointed with, founding a colony on a body that
-                     carries only survey data (whether it can be, the
-                     owner-neutral sequence that settles it, the owner it
-                     is founded under, and the seam a mod's own
-                     colonisation takes the founding through instead),
-                     handing an existing colony to another owner (what
-                     its outgoing one leaves behind - administrator, free
-                     port, stockpiling, unrest, and the account at the
-                     counter their production was sold over, settled
-                     while the colony is still theirs to bill), and what
-                     holding one makes true of it - flag, submarkets and
-                     tariff, stated so that either owner can be applied
-                     over the other
+    markets/       - what a market is, read and never changed: the
+                     queries (including whether one is a derelict station
+                     rather than a place anybody lives), what may be said
+                     about it, which of several speaks for a place,
+                     decivilised markets, patrol counts, and the searches
+                     over a location - every market in one, and the
+                     nearest meeting what a caller needs of it. What can
+                     be done *to* a market is a package in, one per
+                     operation, so a class that answers a question and a
+                     class that rewrites a colony are never the same word
+                     shape in the same place
+      colonisation/ - founding a colony on a body that carries only
+                      survey data: whether it can be, the owner-neutral
+                      sequence that settles it, the owner it is founded
+                      under, and the seam a mod's own colonisation takes
+                      the founding through instead
+      ownership/   - what holding a colony makes true of it - flag,
+                     submarkets and tariff, stated so that either owner
+                     can be applied over the other, with the counters
+                     deferrable to a mod's own rule - and handing an
+                     existing colony to another owner: what its outgoing
+                     one leaves behind (administrator, free port,
+                     stockpiling, unrest, and the account at the counter
+                     their production was sold over, settled while the
+                     colony is still theirs to bill), with the owner it
+                     already has refused rather than costing it all of
+                     that for nothing
     memory/        - typed sector-memory accessors (flag, string)
     nexerelin/     - Nexerelin: founding a colony through that mod's own
                      colonisation, which a founding is offered to before

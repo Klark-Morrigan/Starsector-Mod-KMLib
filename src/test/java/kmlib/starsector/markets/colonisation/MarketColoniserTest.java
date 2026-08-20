@@ -1,4 +1,4 @@
-package kmlib.starsector.markets;
+package kmlib.starsector.markets.colonisation;
 
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.econ.EconomyAPI;
@@ -8,6 +8,8 @@ import com.fs.starfarer.api.impl.campaign.ids.Conditions;
 import com.fs.starfarer.api.impl.campaign.ids.Factions;
 import com.fs.starfarer.api.impl.campaign.ids.Industries;
 
+import kmlib.starsector.markets.MarketOwnershipFixture;
+import kmlib.starsector.markets.MarketStateFixture;
 import kmlib.testfixtures.starsector.settings.ModStateScopes;
 
 import org.junit.jupiter.api.Nested;

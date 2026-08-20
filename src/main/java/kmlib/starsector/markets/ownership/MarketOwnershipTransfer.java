@@ -1,4 +1,4 @@
-package kmlib.starsector.markets;
+package kmlib.starsector.markets.ownership;
 
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.SettingsAPI;
@@ -6,6 +6,8 @@ import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.campaign.listeners.EconomyTickListener;
 import com.fs.starfarer.api.impl.campaign.econ.RecentUnrest;
 import com.fs.starfarer.api.impl.campaign.ids.Submarkets;
+
+import kmlib.starsector.markets.Markets;
 
 /**
  * Handing an existing colony to another owner.
@@ -15,13 +17,18 @@ import com.fs.starfarer.api.impl.campaign.ids.Submarkets;
  * arrangement they made, the stockpiling they turned on, the unrest their rule accrued, and the
  * running account at the counter their own production was sold over. None of that is a property of
  * the incoming owner, which is why it is stated here rather than in
- * {@link MarketOwnership#applyOwnership} - a colony founded a moment ago has no previous owner, and
+ * {@link MarketOwnershipRule#applyOwnership} - a colony founded a moment ago has no previous owner, and
  * a founding that undid arrangements nobody had made would be describing a takeover instead.
  *
  * <p>What the colony becomes under its new owner is that rule's answer whole, applied rather than
  * restated. A colony that changed hands and one founded under the same owner therefore read
  * identically afterwards, instead of a takeover being a second and quieter definition of what an
  * owner's colony looks like.
+ *
+ * <p>Because the leaving half is destructive, a hand-over that is not one is refused rather than
+ * performed: naming the owner a colony already has would cost it the arrangements that owner made
+ * and settle its account, all for a call that changes nothing about who holds the place. A caller
+ * that cannot be certain the owner it names is a new one can therefore make the call anyway.
  *
  * <p>The order of the two halves carries a charge with it. The player takes goods from the local
  * resources counter on credit, and the bill for what was taken is raised at the month's end only
@@ -60,29 +67,34 @@ public final class MarketOwnershipTransfer {
      *
      * <p>Only the leaving half is this method's own. Everything the colony reads as afterwards -
      * its flag, the flags of its outlying entities, its trading counters and its tariff - is
-     * {@link MarketOwnership#applyOwnership}'s single statement of what holding a colony means,
+     * {@link MarketOwnershipRule#applyOwnership}'s single statement of what holding a colony means,
      * so a colony taken by a faction is the same shape as one that faction founded.
      *
-     * <p>Whether the colony is one that may change hands at all is the caller's question rather
-     * than this method's, and naming the owner a colony already has is the case to be careful of.
-     * Only the ownership half of such a call settles where it already was: the detaching half runs
-     * regardless, so the colony loses the administrator, the free port and the stockpiling its
-     * owner set up and has its account billed there and then. A caller offering a choice of owner
-     * is the one that knows the choice was made, and is where naming the incumbent is refused.
+     * <p>Naming the owner the colony already has is refused rather than performed. Only the
+     * ownership half of such a call would settle where it already was - the detaching half has no
+     * idea it is being asked for nothing, so the colony would lose the administrator, the free
+     * port and the stockpiling its own owner set up, and be billed there and then, for a call that
+     * reads as changing nothing. A hand-over that is not one is a mistake wherever it is made, so
+     * the refusal is here rather than left to each caller to remember.
+     *
+     * <p>Whether the market is a colony at all is still the caller's question: a market that is
+     * not one has nothing to detach and nothing an owner would hold, so it is left alone by every
+     * step below rather than tested for here.
      *
      * @param market    the colony changing hands; null is left alone
      * @param factionId the incoming owner's faction id; null leaves the colony alone rather than
-     *                  detaching it from an owner and giving it to nobody
+     *                  detaching it from an owner and giving it to nobody, as does the id of the
+     *                  faction already holding it
      */
     public static void transferOwnership(MarketAPI market, String factionId) {
 
-        if (market == null || factionId == null) {
+        if (market == null || factionId == null || Markets.isOwnedBy(market, factionId)) {
             return;
         }
 
         detachFromOutgoingOwner(market);
 
-        MarketOwnership.applyOwnership(market, factionId);
+        MarketOwnershipRule.applyOwnership(market, factionId);
     }
 
     // Everything the outgoing owner leaves behind, undone before the colony is anyone else's. The

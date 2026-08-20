@@ -1,4 +1,4 @@
-package kmlib.starsector.markets;
+package kmlib.starsector.markets.colonisation;
 
 import com.fs.starfarer.api.campaign.PlanetAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
@@ -8,6 +8,7 @@ import com.fs.starfarer.api.impl.campaign.ids.Conditions;
 import com.fs.starfarer.api.impl.campaign.ids.Factions;
 import com.fs.starfarer.api.impl.campaign.ids.Industries;
 
+import kmlib.starsector.markets.ownership.MarketOwnershipRule;
 import kmlib.starsector.nexerelin.NexerelinColoniser;
 
 /**
@@ -22,7 +23,7 @@ import kmlib.starsector.nexerelin.NexerelinColoniser;
  * the survey panel's, which founds a colony for the player, and the one story rulecmd that
  * founds a colony for a faction. Read side by side those two agree on everything except who
  * ends up holding the place, so what they share is {@link #foundColony} and what they differ
- * over is {@link MarketOwnership#applyOwnership}. Neither owner's sequence is written out in
+ * over is {@link MarketOwnershipRule#applyOwnership}. Neither owner's sequence is written out in
  * full here, which is what keeps the two from drifting apart.
  *
  * <p>All of which is what founding a colony means where nothing else has an opinion about it. An
@@ -91,7 +92,7 @@ public final class MarketColoniser {
      *
      * <p>Owner-neutral by construction - nothing here names a faction, sets the player-owned
      * mark, opens a trading counter or charges a tariff. Those are what the game's two
-     * colonisation routines disagree over, and they are {@link MarketOwnership#applyOwnership}'s
+     * colonisation routines disagree over, and they are {@link MarketOwnershipRule#applyOwnership}'s
      * to state once for both directions rather than this method's to state twice.
      *
      * <p>Everything the body carries is surveyed on arrival. The survey panel can leave that out
@@ -194,7 +195,7 @@ public final class MarketColoniser {
             return;
         }
 
-        MarketOwnership.applyOwnership(market, factionId);
+        MarketOwnershipRule.applyOwnership(market, factionId);
 
         foundColony(sector, market);
 

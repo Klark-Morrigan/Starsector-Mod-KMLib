@@ -10,7 +10,7 @@ import kmlib.console.targets.MarketTargetRequirement;
 import kmlib.console.targets.MarketTargetResolver;
 import kmlib.console.targets.ResolvedTarget;
 import kmlib.console.targets.UnresolvedTarget;
-import kmlib.starsector.markets.MarketColoniser;
+import kmlib.starsector.markets.colonisation.MarketColoniser;
 import kmlib.testfixtures.console.output.CommandOutputFake;
 
 import org.junit.jupiter.api.AfterEach;

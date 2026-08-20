@@ -29,9 +29,10 @@ import static org.mockito.Mockito.when;
 /**
  * Pins the contracts of {@link Markets#findAttachedStation},
  * {@link Markets#getStabilityFraction}, {@link Markets#hasAttachedStation},
- * {@link Markets#isAbandonedStation}, {@link Markets#isMilitary}, {@link Markets#isOwnedColony},
- * {@link Markets#readNameplate} and {@link Markets#readSubmarketPlugin} - the reads that answer
- * what one market is, plus the one reach into how it is put together. The cases live in a
+ * {@link Markets#isAbandonedStation}, {@link Markets#isMilitary}, {@link Markets#isOwnedBy},
+ * {@link Markets#isOwnedColony}, {@link Markets#readNameplate} and
+ * {@link Markets#readSubmarketPlugin} - the reads that answer what one market is, plus the one
+ * reach into how it is put together. The cases live in a
  * {@link Nested} group per method so the suite reports as a per-method tree; the shared mock
  * builders stay on the outer class.
  *
@@ -283,6 +284,44 @@ final class MarketsTest {
         @Test
         void returns_false_for_a_null_market() {
             assertThat(Markets.isMilitary(null))
+                .isFalse();
+        }
+    }
+
+    // The colonies here answer a faction id rather than only a faction object, which is what this
+    // read asks for and what an ownership change writes - so they are MarketOwnershipFixture's.
+    @Nested
+    class IsOwnedBy {
+
+        @Test
+        void reads_a_colony_as_held_by_the_faction_whose_flag_it_flies() {
+            assertThat(Markets.isOwnedBy(
+                    MarketOwnershipFixture.buildColonyHeldBy("hegemony"),
+                    "hegemony"))
+                .isTrue();
+        }
+
+        @Test
+        void reads_a_colony_as_not_held_by_another_faction() {
+            assertThat(Markets.isOwnedBy(
+                    MarketOwnershipFixture.buildColonyHeldBy("hegemony"),
+                    "tritachyon"))
+                .isFalse();
+        }
+
+        @Test
+        void reads_a_colony_as_held_by_nobody_when_no_faction_is_named() {
+            // Asking whether a colony is held by nobody is not a question about its owner, and an
+            // operation guarding on this must not read a missing id as a match.
+            assertThat(Markets.isOwnedBy(
+                    MarketOwnershipFixture.buildColonyHeldBy("hegemony"),
+                    null))
+                .isFalse();
+        }
+
+        @Test
+        void reads_a_null_market_as_held_by_nobody() {
+            assertThat(Markets.isOwnedBy(null, "hegemony"))
                 .isFalse();
         }
     }

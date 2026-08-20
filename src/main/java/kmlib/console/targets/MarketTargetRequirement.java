@@ -2,8 +2,8 @@ package kmlib.console.targets;
 
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
-import kmlib.starsector.markets.MarketColoniser;
 import kmlib.starsector.markets.Markets;
+import kmlib.starsector.markets.colonisation.MarketColoniser;
 
 import java.util.function.Predicate;
 

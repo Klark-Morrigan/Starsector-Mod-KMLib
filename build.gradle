@@ -32,6 +32,24 @@ enforcePackageLayering {
     // becoming possible, which is the shape that would collapse the two into one unit again.
     forbidImport under: 'kmlib.starsector.colonies', of: 'kmlib.starsector.systems'
     forbidImport under: 'kmlib.starsector.markets', of: 'kmlib.starsector.colonies'
+
+    // Founding a colony ends in an ownership change, so colonisation is stated in terms of the
+    // ownership rule and the arrow points that way. Closing the reverse edge is what keeps the
+    // ownership rule usable on its own - it is what every operation on a colony ends in, and one
+    // import back would make it inseparable from the one operation that happens to be its
+    // neighbour.
+    forbidImport under: 'kmlib.starsector.markets.ownership',
+            of: 'kmlib.starsector.markets.colonisation'
+
+    // What a market is, read without changing it, is stated a package above what may be done to
+    // one - so the reads may not reach down into either operation, while the operations are free
+    // to read. Closed at the narrow width because the roots being closed off are this package's
+    // own subpackages: as a subtree the same edge would shut the operations off from each other
+    // too, and colonisation ends in an ownership change.
+    forbidImport exactly: 'kmlib.starsector.markets',
+            of: 'kmlib.starsector.markets.colonisation'
+    forbidImport exactly: 'kmlib.starsector.markets',
+            of: 'kmlib.starsector.markets.ownership'
 }
 
 // LunaLib backs KmLogging's in-game log-level binding. compileOnly, and

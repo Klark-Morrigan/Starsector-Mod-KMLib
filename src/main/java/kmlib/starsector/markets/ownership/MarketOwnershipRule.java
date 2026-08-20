@@ -1,4 +1,4 @@
-package kmlib.starsector.markets;
+package kmlib.starsector.markets.ownership;
 
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Factions;
@@ -6,6 +6,7 @@ import com.fs.starfarer.api.impl.campaign.ids.Industries;
 import com.fs.starfarer.api.impl.campaign.ids.Submarkets;
 import com.fs.starfarer.api.impl.campaign.submarkets.StoragePlugin;
 
+import kmlib.starsector.markets.Markets;
 import kmlib.starsector.nexerelin.NexerelinSubmarkets;
 
 /**
@@ -36,7 +37,7 @@ import kmlib.starsector.nexerelin.NexerelinSubmarkets;
  * <p>Final class with a private constructor: pure-function utility, no instance state, and
  * null-defensive like the rest of the library.
  */
-public final class MarketOwnership {
+public final class MarketOwnershipRule {
 
     // Vanilla's own id for the tariff modifier a colony's base tax rate is filed under. No ids
     // class names it - both of vanilla's colonisation routines write the literal - so this is
@@ -52,7 +53,7 @@ public final class MarketOwnership {
     private static final OwnerSubmarketRule INSTALLED_OWNER_SUBMARKET_RULE =
         NexerelinSubmarkets::applySubmarkets;
 
-    private MarketOwnership() {
+    private MarketOwnershipRule() {
         // utility class, no instances.
     }
 
