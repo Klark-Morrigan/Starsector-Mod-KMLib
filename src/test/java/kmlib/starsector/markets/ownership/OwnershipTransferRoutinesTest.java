@@ -1,5 +1,6 @@
 package kmlib.starsector.markets.ownership;
 
+import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
 import kmlib.extensions.DeclinedWork;
@@ -38,6 +39,7 @@ final class OwnershipTransferRoutinesTest {
 
     private List<String> offeredTo;
     private MarketAPI marketMock;
+    private SectorAPI sectorMock;
 
     @BeforeEach
     void setUp() {
@@ -46,6 +48,7 @@ final class OwnershipTransferRoutinesTest {
 
         offeredTo = new ArrayList<>();
         marketMock = mock(MarketAPI.class);
+        sectorMock = mock(SectorAPI.class);
     }
 
     @AfterEach
@@ -149,7 +152,7 @@ final class OwnershipTransferRoutinesTest {
     }
 
     private WorkOutcome offerTransfer() {
-        return OwnershipTransferRoutines.offerTransfer(marketMock, FACTION_ID);
+        return OwnershipTransferRoutines.offerTransfer(sectorMock, marketMock, FACTION_ID);
     }
 
     private static void installForbiddingFallback(
@@ -176,7 +179,7 @@ final class OwnershipTransferRoutinesTest {
     // case can assert both who was asked and what came of it.
     private OwnershipTransferRoutine buildRoutineNamed(String name, boolean takesTheHandOver) {
 
-        return (market, factionId) -> {
+        return (sector, market, factionId) -> {
             offeredTo.add(name);
             return takesTheHandOver ? new ExecutedWork() : new DeclinedWork("this stub declines");
         };

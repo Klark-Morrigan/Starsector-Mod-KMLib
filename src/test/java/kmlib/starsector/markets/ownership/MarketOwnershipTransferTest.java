@@ -1,5 +1,6 @@
 package kmlib.starsector.markets.ownership;
 
+import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Factions;
 
@@ -22,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -58,6 +60,11 @@ final class MarketOwnershipTransferTest {
     // is its first - what a case reading the number from the code it checks would pin is nothing.
     private static final int MONTH_END_ECONOMY_ITERATION = 0;
 
+    // The sector each hand-over is stated in. Nothing this library does to a colony reads it - it
+    // is carried for whichever routine takes the hand-over over - so one stand-in serves every
+    // case here, and a case about a routine reading it would pose its own.
+    private static final SectorAPI sectorMock = mock(SectorAPI.class);
+
     @Nested
     class TransferOwnership {
 
@@ -69,7 +76,7 @@ final class MarketOwnershipTransferTest {
             var market = MarketTransferFixture.buildFactionColonyAsItsOwnerLeftIt();
 
             ModStateScopes.runWithoutModManager(() ->
-                MarketOwnershipTransfer.transferOwnership(market, Factions.PLAYER));
+                MarketOwnershipTransfer.transferOwnership(sectorMock, market, Factions.PLAYER));
 
             assertThat(market.getFactionId())
                 .isEqualTo("player");
@@ -86,6 +93,7 @@ final class MarketOwnershipTransferTest {
 
             ModStateScopes.runWithoutModManager(() ->
                 MarketOwnershipTransfer.transferOwnership(
+                    sectorMock,
                     market,
                     MarketTransferFixture.FACTION_OWNER_ID));
 
@@ -105,7 +113,7 @@ final class MarketOwnershipTransferTest {
             var market = MarketTransferFixture.buildFactionColonyAsItsOwnerLeftIt();
 
             ModStateScopes.runWithoutModManager(() ->
-                MarketOwnershipTransfer.transferOwnership(market, Factions.PLAYER));
+                MarketOwnershipTransfer.transferOwnership(sectorMock, market, Factions.PLAYER));
 
             assertThat(market.getAdmin())
                 .isNull();
@@ -119,6 +127,7 @@ final class MarketOwnershipTransferTest {
 
             ModStateScopes.runWithoutModManager(() ->
                 MarketOwnershipTransfer.transferOwnership(
+                    sectorMock,
                     market,
                     MarketTransferFixture.FACTION_OWNER_ID));
 
@@ -133,6 +142,7 @@ final class MarketOwnershipTransferTest {
 
             ModStateScopes.runWithoutModManager(() ->
                 MarketOwnershipTransfer.transferOwnership(
+                    sectorMock,
                     market,
                     MarketTransferFixture.FACTION_OWNER_ID));
 
@@ -149,7 +159,7 @@ final class MarketOwnershipTransferTest {
             var recentUnrest = MarketTransferFixture.readRecentUnrest(market);
 
             ModStateScopes.runWithoutModManager(() ->
-                MarketOwnershipTransfer.transferOwnership(market, Factions.PLAYER));
+                MarketOwnershipTransfer.transferOwnership(sectorMock, market, Factions.PLAYER));
 
             verify(recentUnrest)
                 .setPenalty(0);
@@ -163,7 +173,7 @@ final class MarketOwnershipTransferTest {
             var market = MarketTransferFixture.buildContentedFactionColony();
 
             ModStateScopes.runWithoutModManager(() ->
-                MarketOwnershipTransfer.transferOwnership(market, Factions.PLAYER));
+                MarketOwnershipTransfer.transferOwnership(sectorMock, market, Factions.PLAYER));
 
             verify(market, never())
                 .addCondition(anyString());
@@ -187,6 +197,7 @@ final class MarketOwnershipTransferTest {
 
             ModStateScopes.runWithoutModManager(() ->
                 MarketOwnershipTransfer.transferOwnership(
+                    sectorMock,
                     market,
                     MarketTransferFixture.FACTION_OWNER_ID));
 
@@ -204,6 +215,7 @@ final class MarketOwnershipTransferTest {
 
             ModStateScopes.runWithoutModManager(() ->
                 MarketOwnershipTransfer.transferOwnership(
+                    sectorMock,
                     market,
                     MarketTransferFixture.FACTION_OWNER_ID));
 
@@ -220,7 +232,7 @@ final class MarketOwnershipTransferTest {
             var market = MarketTransferFixture.buildFactionColonyAsItsOwnerLeftIt();
 
             ModStateScopes.runWithoutModManager(() ->
-                MarketOwnershipTransfer.transferOwnership(market, Factions.PLAYER));
+                MarketOwnershipTransfer.transferOwnership(sectorMock, market, Factions.PLAYER));
 
             verify(MarketTransferFixture.readLocalResourcesAccount(market), never())
                 .reportEconomyTick(anyInt());
@@ -240,6 +252,7 @@ final class MarketOwnershipTransferTest {
 
             ModStateScopes.runWithoutModManager(() ->
                 MarketOwnershipTransfer.transferOwnership(
+                    sectorMock,
                     market,
                     MarketTransferFixture.FACTION_OWNER_ID));
 
@@ -262,7 +275,7 @@ final class MarketOwnershipTransferTest {
             var account = MarketTransferFixture.readLocalResourcesAccount(market);
 
             ModStateScopes.runWithoutModManager(() ->
-                MarketOwnershipTransfer.transferOwnership(market, Factions.PLAYER));
+                MarketOwnershipTransfer.transferOwnership(sectorMock, market, Factions.PLAYER));
 
             verify(account, never())
                 .reportEconomyTick(anyInt());
@@ -277,6 +290,7 @@ final class MarketOwnershipTransferTest {
 
             ModStateScopes.runWithoutModManager(() ->
                 MarketOwnershipTransfer.transferOwnership(
+                    sectorMock,
                     market,
                     MarketTransferFixture.FACTION_OWNER_ID));
 
@@ -296,6 +310,7 @@ final class MarketOwnershipTransferTest {
 
             ModStateScopes.runWithoutGameSettings(() ->
                 MarketOwnershipTransfer.transferOwnership(
+                    sectorMock,
                     market,
                     MarketTransferFixture.FACTION_OWNER_ID));
 
@@ -316,9 +331,10 @@ final class MarketOwnershipTransferTest {
             var offeredFactionId = new AtomicReference<String>();
 
             MarketOwnershipTransfer.transferOwnership(
+                sectorMock,
                 market,
                 Factions.PLAYER,
-                (routineMarket, routineFactionId) -> {
+                (routineSector, routineMarket, routineFactionId) -> {
                     offeredMarket.set(routineMarket);
                     offeredFactionId.set(routineFactionId);
                     return new ExecutedWork();
@@ -343,9 +359,10 @@ final class MarketOwnershipTransferTest {
             var market = MarketTransferFixture.buildFactionColonyAsItsOwnerLeftIt();
 
             MarketOwnershipTransfer.transferOwnership(
+                sectorMock,
                 market,
                 Factions.PLAYER,
-                (routineMarket, routineFactionId) -> new DeclinedWork("this stub moves nothing"));
+                (routineSector, routineMarket, routineFactionId) -> new DeclinedWork("this stub moves nothing"));
 
             assertThat(market.getFactionId())
                 .isEqualTo("player");
@@ -365,9 +382,10 @@ final class MarketOwnershipTransferTest {
             var account = MarketTransferFixture.readLocalResourcesAccount(market);
 
             MarketOwnershipTransfer.transferOwnership(
+                sectorMock,
                 market,
                 MarketTransferFixture.FACTION_OWNER_ID,
-                (routineMarket, routineFactionId) -> new ExecutedWork());
+                (routineSector, routineMarket, routineFactionId) -> new ExecutedWork());
 
             verify(account, never())
                 .reportEconomyTick(anyInt());
@@ -381,7 +399,7 @@ final class MarketOwnershipTransferTest {
             var market = MarketTransferFixture.buildFactionColonyAsItsOwnerLeftIt();
 
             ModStateScopes.runWithModEnabled(NEXERELIN, false, () ->
-                MarketOwnershipTransfer.transferOwnership(market, Factions.PLAYER));
+                MarketOwnershipTransfer.transferOwnership(sectorMock, market, Factions.PLAYER));
 
             assertThat(market.getFactionId())
                 .isEqualTo("player");
@@ -397,9 +415,10 @@ final class MarketOwnershipTransferTest {
             var routineOfferCount = new AtomicInteger();
 
             MarketOwnershipTransfer.transferOwnership(
+                sectorMock,
                 MarketTransferFixture.buildFactionColonyAsItsOwnerLeftIt(),
                 MarketTransferFixture.FACTION_OWNER_ID,
-                (routineMarket, routineFactionId) -> {
+                (routineSector, routineMarket, routineFactionId) -> {
                     routineOfferCount.incrementAndGet();
                     return new ExecutedWork();
                 });
@@ -410,7 +429,7 @@ final class MarketOwnershipTransferTest {
 
         @Test
         void leaves_a_null_market_alone() {
-            assertThatCode(() -> MarketOwnershipTransfer.transferOwnership(null, Factions.PLAYER))
+            assertThatCode(() -> MarketOwnershipTransfer.transferOwnership(sectorMock, null, Factions.PLAYER))
                 .doesNotThrowAnyException();
         }
 
@@ -421,7 +440,7 @@ final class MarketOwnershipTransferTest {
             var market = MarketTransferFixture.buildFactionColonyAsItsOwnerLeftIt();
 
             ModStateScopes.runWithoutModManager(() ->
-                MarketOwnershipTransfer.transferOwnership(market, null));
+                MarketOwnershipTransfer.transferOwnership(sectorMock, market, null));
 
             assertThat(market.getFactionId())
                 .isEqualTo("hegemony");

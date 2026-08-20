@@ -24,9 +24,9 @@ import org.apache.log4j.Logger;
  * registers nothing and its operations then run without a single question about mods being asked
  * anywhere.
  *
- * <p>The sector each adapter needs is read at the moment of use rather than captured now: nothing
- * is standing at load, and a routine registered against the sector of the session it was installed
- * in would be holding the wrong one by the second campaign.
+ * <p>No sector is captured here, and none is read. Each adapter takes the sector it acts in as an
+ * argument of the work itself, so one registration made at load serves whatever campaign is
+ * started after it.
  */
 public final class NexerelinIntegration {
 
@@ -74,13 +74,9 @@ public final class NexerelinIntegration {
             NexerelinColoniser::establishColony,
             FallbackToDefaults.PERMITTED);
 
-        // The sector is this adapter's own need rather than part of what a hand-over is, so it is
-        // read here where the adapter is bound instead of widening the operation's parameters for
-        // a path most installs never take.
         OwnershipTransferRoutines.registerRoutine(
             INTEGRATION_NAME,
-            (market, factionId) ->
-                NexerelinMarketTransfer.transferOwnership(Global.getSector(), market, factionId),
+            NexerelinMarketTransfer::transferOwnership,
             FallbackToDefaults.PERMITTED);
 
         OwnerSubmarketRules.registerRule(

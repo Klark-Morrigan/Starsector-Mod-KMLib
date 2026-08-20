@@ -50,7 +50,7 @@ public final class ListSystemEntitiesCommand extends KmlibBaseConsoleCommand {
     public CommandResult runCommand(String args, CommandContext context) {
         var parsed = readInput(context, args)
             .requireCampaign()
-            .requireStarSystem()
+            .requireStarSystem(readActiveSector())
             .parseArguments(SPEC);
         if (!parsed.isValid()) {
             return parsed.getResult();

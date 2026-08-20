@@ -78,7 +78,7 @@ public final class SpawnEntityCommand extends KmlibBaseConsoleCommand {
         // directly rather than through CommandInput.
         var command = new CommandContextValidation(context, output)
             .requireCampaign()
-            .requireStarSystem()
+            .requireStarSystem(readActiveSector())
             .validateAndPrintFeedback();
         if (!command.isValid()) {
             return command.getResult();

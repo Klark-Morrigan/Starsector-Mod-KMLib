@@ -2,6 +2,7 @@ package kmlib.starsector.markets.ownership;
 
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.SettingsAPI;
+import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.campaign.listeners.EconomyTickListener;
 import com.fs.starfarer.api.impl.campaign.econ.RecentUnrest;
@@ -66,11 +67,6 @@ public final class MarketOwnershipTransfer {
     // composed. Asked of this package's own register rather than by naming a mod here: which mods
     // are present is a fact about the install and is settled where the install is composed, not by
     // the operation that happens to have a colony to hand over.
-    //
-    // A hand-over is stated as a colony and whoever is taking it, which is the whole of what one
-    // is. A routine needing more than that - the faction behind the id, the sector it lives in - is
-    // describing itself rather than the operation, so it reads what it needs where it is registered
-    // and this parameter list stays what a hand-over actually takes.
     private static final OwnershipTransferRoutine INSTALLED_OWNERSHIP_TRANSFER_ROUTINES =
         OwnershipTransferRoutines::offerTransfer;
 
@@ -104,18 +100,24 @@ public final class MarketOwnershipTransfer {
      * either way is a colony held by the owner it named, not the particular sequence that got it
      * there.
      *
+     * @param sector    the sector the colony sits in. Nothing in the sequence below reads it - a
+     *                  colony carries everything this library changes about it - but an installed
+     *                  routine resolves the incoming owner against a sector's factions, so it is
+     *                  passed on rather than read there. Null is passed on too, and a routine
+     *                  needing it declines
      * @param market    the colony changing hands; null is left alone
      * @param factionId the incoming owner's faction id; null leaves the colony alone rather than
      *                  detaching it from an owner and giving it to nobody, as does the id of the
      *                  faction already holding it
      */
-    public static void transferOwnership(MarketAPI market, String factionId) {
-        transferOwnership(market, factionId, INSTALLED_OWNERSHIP_TRANSFER_ROUTINES);
+    public static void transferOwnership(SectorAPI sector, MarketAPI market, String factionId) {
+        transferOwnership(sector, market, factionId, INSTALLED_OWNERSHIP_TRANSFER_ROUTINES);
     }
 
     // The same hand-over against a stated routine rather than the installed one, which is what lets
     // both branches be posed on a machine that has whichever mods it happens to have.
     static void transferOwnership(
+            SectorAPI sector,
             MarketAPI market,
             String factionId,
             OwnershipTransferRoutine ownershipTransferRoutine) {
@@ -131,7 +133,7 @@ public final class MarketOwnershipTransfer {
         // sequence run under it, so a colony on that install changes hands the way the rest of that
         // mod expects. A routine that declines leaves the colony untouched for the sequence below -
         // which is the answer on every install without such a mod.
-        var outcome = ownershipTransferRoutine.transferOwnership(market, factionId);
+        var outcome = ownershipTransferRoutine.transferOwnership(sector, market, factionId);
 
         if (outcome != null && outcome.wasExecuted()) {
             return;

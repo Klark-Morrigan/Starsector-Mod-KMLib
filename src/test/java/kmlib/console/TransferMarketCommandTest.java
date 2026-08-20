@@ -112,7 +112,10 @@ final class TransferMarketCommandTest {
             // Delegation is the contract: the command aims the run, MarketOwnershipTransfer owns
             // the hand-over.
             marketOwnershipTransferMock
-                .verify(() -> MarketOwnershipTransfer.transferOwnership(marketMock, HEGEMONY_ID));
+                .verify(() -> MarketOwnershipTransfer.transferOwnership(
+                    sectorMock,
+                    marketMock,
+                    HEGEMONY_ID));
 
             assertThat(outputFake.getMessages())
                 .anyMatch(message -> message.contains("Transferred Corvus III to Hegemony."));

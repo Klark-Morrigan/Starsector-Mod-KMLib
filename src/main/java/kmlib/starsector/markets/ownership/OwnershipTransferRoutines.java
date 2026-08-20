@@ -1,5 +1,6 @@
 package kmlib.starsector.markets.ownership;
 
+import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
 import kmlib.extensions.ExtensionPoint;
@@ -79,12 +80,12 @@ public final class OwnershipTransferRoutines {
     // Offers the hand-over to whatever is installed, and says whether it was taken. Shaped as one
     // routine itself, so the operation handing a colony over asks one question of its own package
     // rather than reading a point it would then have to know the rules of.
-    static WorkOutcome offerTransfer(MarketAPI market, String factionId) {
+    static WorkOutcome offerTransfer(SectorAPI sector, MarketAPI market, String factionId) {
 
         var ownershipTransferRoutine = readRoutine();
 
         var outcome = ownershipTransferRoutine != null
-            ? ownershipTransferRoutine.transferOwnership(market, factionId)
+            ? ownershipTransferRoutine.transferOwnership(sector, market, factionId)
             : null;
 
         return INSTALLED_ROUTINE.settleWorkOutcome(outcome);

@@ -1,5 +1,6 @@
 package kmlib.starsector.markets.ownership;
 
+import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
 import kmlib.extensions.WorkOutcome;
@@ -36,10 +37,12 @@ public interface OwnershipTransferRoutine {
      * belonging to, nothing having been changed about it yet, so passing it as well would let a
      * caller name an owner the colony never had.
      *
+     * @param sector    the sector the colony sits in, and the one the incoming owner's id is
+     *                  resolved against
      * @param market    the colony changing hands
      * @param factionId the incoming owner's faction id
      * @return a performed hand-over, or a decline saying what about this call it could not do -
      *         which the caller reads back to whoever is diagnosing the install
      */
-    WorkOutcome transferOwnership(MarketAPI market, String factionId);
+    WorkOutcome transferOwnership(SectorAPI sector, MarketAPI market, String factionId);
 }

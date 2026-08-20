@@ -1,6 +1,6 @@
 package kmlib.console.validation;
 
-import com.fs.starfarer.api.Global;
+import com.fs.starfarer.api.campaign.SectorAPI;
 
 import kmlib.console.output.CommandOutput;
 import kmlib.console.output.ConsoleCommandOutput;
@@ -21,7 +21,7 @@ import java.util.function.Supplier;
  * <pre>
  * CommandValidationResult command = new CommandContextValidation(context, output)
  *     .requireCampaign()
- *     .requireStarSystem()
+ *     .requireStarSystem(sector)
  *     .validateAndPrintFeedback();
  * if (!command.isValid()) {
  *     return command.getResult();
@@ -66,8 +66,16 @@ public final class CommandContextValidation {
         return this;
     }
 
-    public CommandContextValidation requireStarSystem() {
-        checks.add(() -> SectorStarSystems.getPlayerStarSystem(Global.getSector()) != null
+    /**
+     * Requires the player to be inside a star system of {@code sector}, which the caller states
+     * rather than this guard reading it: which sector a command acts in is the command's own.
+     *
+     * @param sector the sector to look for the player in; null reads as not being in a system,
+     *               which is the answer a run outside a campaign wants
+     * @return this, so guards chain
+     */
+    public CommandContextValidation requireStarSystem(SectorAPI sector) {
+        checks.add(() -> SectorStarSystems.getPlayerStarSystem(sector) != null
             ? null
             : new Failure(
                 "This command must be run inside a star system.",

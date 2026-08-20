@@ -1,5 +1,7 @@
 package kmlib.console.input;
 
+import com.fs.starfarer.api.campaign.SectorAPI;
+
 import kmlib.console.output.CommandOutput;
 import kmlib.console.parsing.ParameterSpec;
 import kmlib.console.parsing.ParsedParameters;
@@ -17,7 +19,7 @@ import org.lazywizard.console.BaseCommand.CommandContext;
  * <pre>
  * ParsedParameters run = new CommandInput(context, args, output)
  *         .requireCampaign()
- *         .requireStarSystem()
+ *         .requireStarSystem(sector)
  *         .parseArguments(SPEC);
  * if (!run.isValid()) {
  *     return run.getResult();
@@ -49,8 +51,15 @@ public final class CommandInput {
         return this;
     }
 
-    public CommandInput requireStarSystem() {
-        contextValidation.requireStarSystem();
+    /**
+     * Requires the player to be inside a star system of {@code sector} - the one the calling
+     * command acts in.
+     *
+     * @param sector the sector to look for the player in
+     * @return this, so guards chain
+     */
+    public CommandInput requireStarSystem(SectorAPI sector) {
+        contextValidation.requireStarSystem(sector);
         return this;
     }
 

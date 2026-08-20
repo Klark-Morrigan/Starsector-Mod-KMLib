@@ -64,8 +64,10 @@ public final class TransferMarketCommand extends KmlibBaseConsoleCommand {
         // Both halves are resolved before anything is mutated, so a run naming an unknown faction
         // leaves the colony exactly as it was rather than detached from an owner and given to
         // nobody.
+        var sector = readActiveSector();
+
         var target = MarketOwnerTargetResolver.resolveMarketAndOwner(
-            readActiveSector(),
+            sector,
             parsed.get(SPEC.entityId),
             parsed.get(SPEC.factionId),
             MarketTargetRequirement.EXISTING_COLONY);
@@ -89,7 +91,7 @@ public final class TransferMarketCommand extends KmlibBaseConsoleCommand {
             return CommandResult.ERROR;
         }
 
-        MarketOwnershipTransfer.transferOwnership(found.market(), found.owner().getId());
+        MarketOwnershipTransfer.transferOwnership(sector, found.market(), found.owner().getId());
 
         output.showMessage(describeTransferredColony(found));
         return CommandResult.SUCCESS;

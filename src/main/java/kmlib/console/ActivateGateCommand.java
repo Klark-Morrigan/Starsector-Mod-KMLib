@@ -36,7 +36,7 @@ public final class ActivateGateCommand extends KmlibBaseConsoleCommand {
         // surplus argument is reported as bad syntax before any gate lookup.
         var parsed = readInput(context, args)
             .requireCampaign()
-            .requireStarSystem()
+            .requireStarSystem(readActiveSector())
             .parseArguments(SPEC);
         if (!parsed.isValid()) {
             return parsed.getResult();
