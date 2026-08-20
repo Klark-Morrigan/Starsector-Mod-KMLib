@@ -325,6 +325,23 @@ final class MarketColoniserTest {
         }
 
         @Test
+        void adds_a_storage_submarket_to_a_colony_founded_for_a_faction() {
+            // The game's own faction colony has one - its story rulecmd opens it alongside the
+            // trading counters, and the market setup every procgen faction market comes from lists
+            // it in the same breath. A colony founded without one is a place nothing can be stored
+            // at, which is not a shape the game has.
+            var market = MarketColonisationFixture.buildColonisableWorld();
+
+            MarketColoniser.establishColony(
+                sector,
+                market,
+                MarketColonisationFixture.FACTION_OWNER_ID);
+
+            assertThat(MarketOwnershipFixture.readSubmarketIds(market))
+                .contains("storage");
+        }
+
+        @Test
         void names_the_owner_before_the_economy_hears_about_the_colony() {
             // The order both of the game's own colonisation routines take: the economy is stepped
             // against a colony already flying its flag and trading over its owner's counters,

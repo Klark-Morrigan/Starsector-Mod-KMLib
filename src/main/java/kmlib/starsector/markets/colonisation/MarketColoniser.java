@@ -7,6 +7,7 @@ import com.fs.starfarer.api.campaign.listeners.ListenerUtil;
 import com.fs.starfarer.api.impl.campaign.ids.Conditions;
 import com.fs.starfarer.api.impl.campaign.ids.Factions;
 import com.fs.starfarer.api.impl.campaign.ids.Industries;
+import com.fs.starfarer.api.impl.campaign.ids.Submarkets;
 
 import kmlib.starsector.markets.ownership.MarketOwnershipRule;
 
@@ -47,8 +48,9 @@ public final class MarketColoniser {
 
     // Whether registering the colony also scatters orbital junk around the body and starts the
     // radio chatter its traffic is heard as. Both belong to a place that has just become
-    // inhabited, and the game asks for them on every colony founded on a fresh body - the one
-    // routine that declines them is re-registering markets that were already lived in.
+    // inhabited, which is why the survey panel asks for them. The story rulecmd declines them, but
+    // it is dressing one particular world the story has already staged; a colony founded anywhere
+    // else has nothing around it until this puts it there.
     private static final boolean WITH_ORBITAL_JUNK_AND_CHATTER = true;
 
     // Whatever colonisation this install supplies, offered every founding before the sequence below
@@ -130,6 +132,7 @@ public final class MarketColoniser {
         market.setPlanetConditionMarketOnly(false);
 
         settleBaselinePopulation(market);
+        addStorageSubmarket(market);
         bindMarketToBody(market);
         registerMarketWithEconomy(sector, market);
         queueFirstSpaceport(market);
@@ -226,6 +229,19 @@ public final class MarketColoniser {
         replaceDecivilisationWithSubpopulation(market);
 
         market.setSize(BASELINE_COLONY_SIZE);
+    }
+
+    // The hold a colony keeps whoever owns it. Both of the game's colonisation routines add one -
+    // the survey panel for the player, the story rulecmd for a faction - and the game's own market
+    // setup lists it for every faction market alongside the trading counters, so a colony founded
+    // without it is a place nothing can be stored at. Owner-neutral for that reason: what an owner
+    // changes about it is only whether the player has already paid to use it, which is the
+    // ownership rule's to say.
+    private static void addStorageSubmarket(MarketAPI market) {
+
+        if (!market.hasSubmarket(Submarkets.SUBMARKET_STORAGE)) {
+            market.addSubmarket(Submarkets.SUBMARKET_STORAGE);
+        }
     }
 
     // Every condition the body carries, marked as looked at, and the body itself as fully
