@@ -1,6 +1,5 @@
 package kmlib.console;
 
-import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
 
@@ -123,7 +122,7 @@ public final class ListFactionsCommand extends KmlibBaseConsoleCommand {
             ? FactionListingFilter.ALL
             : selectedFilters.get(0);
 
-        output.showMessage(buildReport(Global.getSector(), filter));
+        output.showMessage(buildReport(readActiveSector(), filter));
         return CommandResult.SUCCESS;
     }
 

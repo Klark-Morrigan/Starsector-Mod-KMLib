@@ -1,7 +1,5 @@
 package kmlib.console;
 
-import com.fs.starfarer.api.Global;
-
 import kmlib.console.output.CommandOutput;
 import kmlib.console.targets.MarketOwnerTarget;
 import kmlib.console.targets.MarketOwnerTargetResolver;
@@ -62,7 +60,7 @@ public final class ColoniseCommand extends KmlibBaseConsoleCommand {
             return parsed.getResult();
         }
 
-        var sector = Global.getSector();
+        var sector = readActiveSector();
 
         // Both halves are resolved before anything is mutated, so a run naming an unknown faction
         // leaves the body untouched rather than half-colonised under nobody.

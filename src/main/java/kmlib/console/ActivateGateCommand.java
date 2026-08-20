@@ -1,6 +1,5 @@
 package kmlib.console;
 
-import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
 
 import kmlib.console.output.CommandOutput;
@@ -43,7 +42,7 @@ public final class ActivateGateCommand extends KmlibBaseConsoleCommand {
             return parsed.getResult();
         }
 
-        var system = SectorStarSystems.getPlayerStarSystem(Global.getSector());
+        var system = SectorStarSystems.getPlayerStarSystem(readActiveSector());
         var id = parsed.get(SPEC.id);
         var gate = StarSystems.find(system, Tags.GATE, id);
         if (gate == null) {

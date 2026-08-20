@@ -1,6 +1,5 @@
 package kmlib.console;
 
-import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.PlanetAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
@@ -108,7 +107,7 @@ public final class SpawnEntityCommand extends KmlibBaseConsoleCommand {
             return parsed.getResult();
         }
 
-        var system = SectorStarSystems.getPlayerStarSystem(Global.getSector());
+        var system = SectorStarSystems.getPlayerStarSystem(readActiveSector());
         // resolveOrbitFocus returns null (having printed why) when the focus is
         // ambiguous in a multi-star system or the supplied id matches no entity,
         // so we surface that as bad syntax too.
@@ -116,7 +115,7 @@ public final class SpawnEntityCommand extends KmlibBaseConsoleCommand {
         if (focus == null) {
             return CommandResult.BAD_SYNTAX;
         }
-        var fleetLocation = Global.getSector().getPlayerFleet().getLocation();
+        var fleetLocation = readActiveSector().getPlayerFleet().getLocation();
         var focusLocation = focus.getLocation();
         var distance = (float) Points.computeDistance(focusLocation, fleetLocation);
         var angle = (float) Points.computeAngleDegrees(focusLocation, fleetLocation);

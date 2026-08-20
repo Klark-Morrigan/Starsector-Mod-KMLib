@@ -1,5 +1,8 @@
 package kmlib.console;
 
+import com.fs.starfarer.api.Global;
+import com.fs.starfarer.api.campaign.SectorAPI;
+
 import kmlib.console.input.CommandInput;
 import kmlib.console.output.CommandOutput;
 import kmlib.console.output.ConsoleCommandOutput;
@@ -36,5 +39,26 @@ public abstract class KmlibBaseConsoleCommand implements BaseCommand {
     // so a subclass adds only its guards and spec before parsing.
     protected final CommandInput readInput(CommandContext context, String args) {
         return new CommandInput(context, args, output);
+    }
+
+    /**
+     * The sector this run acts in, which every command reads here rather than reaching for the
+     * game's own.
+     *
+     * <p>Today the game has exactly one sector and this is it. That is not a permanent fact about
+     * Starsector: additional sectors, switched between during a campaign, are a standing ambition
+     * in the modding community, and a console command is precisely the surface that would then
+     * have to act in whichever one the player is currently in rather than in "the" sector.
+     *
+     * <p>Read through one named method so that day is one edit here instead of one per command.
+     * Nothing below a command has to change with it - the reads and operations this library
+     * offers already take the sector as a parameter, so a command is where the choice is made and
+     * the only place that knows how it was made.
+     *
+     * @return the sector to act in; null outside a running game, which the context guards are what
+     *         keep a command from reaching
+     */
+    protected final SectorAPI readActiveSector() {
+        return Global.getSector();
     }
 }

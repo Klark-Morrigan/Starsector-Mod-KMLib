@@ -1,6 +1,5 @@
 package kmlib.console;
 
-import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
@@ -57,7 +56,7 @@ public final class ListMapSpoilersCommand extends KmlibBaseConsoleCommand {
         if (!parsed.isValid()) {
             return parsed.getResult();
         }
-        output.showMessage(buildReport(Global.getSector()));
+        output.showMessage(buildReport(readActiveSector()));
         return CommandResult.SUCCESS;
     }
 

@@ -1,6 +1,5 @@
 package kmlib.console;
 
-import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.CampaignFleetAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
@@ -56,7 +55,7 @@ public final class ListSystemEntitiesCommand extends KmlibBaseConsoleCommand {
         if (!parsed.isValid()) {
             return parsed.getResult();
         }
-        var system = SectorStarSystems.getPlayerStarSystem(Global.getSector());
+        var system = SectorStarSystems.getPlayerStarSystem(readActiveSector());
         output.showMessage(buildReport(system, parsed.get(SPEC.gatesOnly)));
         return CommandResult.SUCCESS;
     }

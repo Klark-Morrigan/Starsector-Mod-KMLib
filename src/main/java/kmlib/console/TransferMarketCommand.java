@@ -1,7 +1,5 @@
 package kmlib.console;
 
-import com.fs.starfarer.api.Global;
-
 import kmlib.console.output.CommandOutput;
 import kmlib.console.targets.MarketOwnerTarget;
 import kmlib.console.targets.MarketOwnerTargetResolver;
@@ -67,7 +65,7 @@ public final class TransferMarketCommand extends KmlibBaseConsoleCommand {
         // leaves the colony exactly as it was rather than detached from an owner and given to
         // nobody.
         var target = MarketOwnerTargetResolver.resolveMarketAndOwner(
-            Global.getSector(),
+            readActiveSector(),
             parsed.get(SPEC.entityId),
             parsed.get(SPEC.factionId),
             MarketTargetRequirement.EXISTING_COLONY);
