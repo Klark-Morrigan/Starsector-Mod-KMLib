@@ -1,5 +1,6 @@
 package kmlib.starsector.markets.ownership;
 
+import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Factions;
 
 import kmlib.starsector.markets.MarketOwnershipFixture;
@@ -9,6 +10,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -33,10 +36,16 @@ import static org.mockito.Mockito.verify;
  * having been applied whole. That rule has its own suite, and restating its verdicts here would
  * make a change to what an owner's colony looks like fail twice for one reason.
  *
- * <p>The cases run inside a game whose mod set is readable and holds no colonisation mod, that
- * being the install the composed sequence exists for. Which the game's own settings are readable in
- * matters beyond the mod gate here: the account a colony's outgoing owner is billed for is settled
- * against the month's last economy step, and the number of steps a month has is one of them.
+ * <p>The cases run inside a game whose mod set is readable and holds no mod with a hand-over of its
+ * own, that being the install the composed sequence exists for - and running them through the public
+ * entry point is what exercises the routine the library actually binds. Which the game's own
+ * settings are readable in matters beyond the mod gate here: the account a colony's outgoing owner
+ * is billed for is settled against the month's last economy step, and the number of steps a month
+ * has is one of them.
+ *
+ * <p>The three cases that pose an installed routine state one of their own instead, since a machine
+ * running the case has whichever mods it happens to have and the branch has to be posed both ways
+ * regardless.
  */
 final class MarketOwnershipTransferTest {
 
@@ -290,6 +299,75 @@ final class MarketOwnershipTransferTest {
                 .reportEconomyTick(anyInt());
             assertThat(market.getFactionId())
                 .isEqualTo("hegemony");
+        }
+
+        @Test
+        void hands_the_whole_transfer_to_a_routine_the_install_supplies() {
+            // A mod that moves its own colonies files intel, moves standing and re-posts offices
+            // that nothing can arrange afterwards, so its routine takes the hand-over whole and
+            // none of this sequence runs under it - the colony is left exactly as that routine
+            // found it, arrangements of the outgoing owner included.
+            var market = MarketTransferFixture.buildFactionColonyAsItsOwnerLeftIt();
+            var offeredMarket = new AtomicReference<MarketAPI>();
+            var offeredFactionId = new AtomicReference<String>();
+
+            MarketOwnershipTransfer.transferOwnership(
+                market,
+                Factions.PLAYER,
+                (routineMarket, routineFactionId) -> {
+                    offeredMarket.set(routineMarket);
+                    offeredFactionId.set(routineFactionId);
+                    return true;
+                });
+
+            assertThat(offeredMarket.get())
+                .isSameAs(market);
+            assertThat(offeredFactionId.get())
+                .isEqualTo(Factions.PLAYER);
+            assertThat(market.getAdmin())
+                .isNotNull();
+            assertThat(market.isFreePort())
+                .isTrue();
+            assertThat(MarketOwnershipFixture.readSubmarketIds(market))
+                .containsExactlyInAnyOrder("open_market", "black_market");
+        }
+
+        @Test
+        void hands_the_colony_over_itself_when_the_installed_routine_declines_it() {
+            // The answer on every install without such a mod - the composed sequence runs in its
+            // place and the colony still changes hands.
+            var market = MarketTransferFixture.buildFactionColonyAsItsOwnerLeftIt();
+
+            MarketOwnershipTransfer.transferOwnership(
+                market,
+                Factions.PLAYER,
+                (routineMarket, routineFactionId) -> false);
+
+            assertThat(market.getFactionId())
+                .isEqualTo("player");
+            assertThat(market.getAdmin())
+                .isNull();
+            assertThat(MarketOwnershipFixture.readSubmarketIds(market))
+                .containsExactlyInAnyOrder("local_resources", "storage");
+        }
+
+        @Test
+        void offers_nothing_to_the_installed_routine_when_the_owner_named_already_holds_it() {
+            // The refusal is asked before the hand-over is offered anywhere, so a call that changes
+            // nothing about who holds the place is not one a mod is handed either - a mod's own
+            // routine would file intel and move standing for it.
+            var routineOfferCount = new AtomicInteger();
+
+            MarketOwnershipTransfer.transferOwnership(
+                MarketTransferFixture.buildFactionColonyAsItsOwnerLeftIt(),
+                MarketTransferFixture.FACTION_OWNER_ID,
+                (routineMarket, routineFactionId) -> {
+                    routineOfferCount.incrementAndGet();
+                    return true;
+                });
+
+            assertThat(routineOfferCount.get())
+                .isZero();
         }
 
         @Test

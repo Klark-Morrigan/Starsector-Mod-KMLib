@@ -44,7 +44,9 @@ Compatibility coded in:
 
 - **Nexerelin** - a colony founded on an install running Nexerelin is founded by
   Nexerelin's own routine, since the records it writes about a colony cannot be
-  added to one afterwards.
+  added to one afterwards, and a colony changing hands there is handed over by
+  that mod's own routine for the same reason - the intel it files, the standing
+  it moves and the offices it re-posts are not arrangeable after the fact.
 - **Random Assortment of Things** - KMLib recognises RAT's Abyssal Fractures, and
   reports whether its mini-map has replaced the campaign radar.
 
@@ -172,13 +174,17 @@ src/main/java/kmlib/
                      their production was sold over, settled while the
                      colony is still theirs to bill), with the owner it
                      already has refused rather than costing it all of
-                     that for nothing
+                     that for nothing, and the seam a mod's own hand-over
+                     takes the whole transfer through instead
     memory/        - typed sector-memory accessors (flag, string)
     nexerelin/     - Nexerelin: founding a colony through that mod's own
                      colonisation, which a founding is offered to before
-                     the composed sequence in markets/ is run, and the
-                     trading counters an ownership change defers to that
-                     mod's own rule where it is installed
+                     the composed sequence in markets/ is run, handing an
+                     existing colony over through that mod's own transfer,
+                     offered the same way and stated as a hand-over rather
+                     than a capture, and the trading counters an ownership
+                     change defers to that mod's own rule where it is
+                     installed
     rat/           - Random Assortment of Things: Abyssal Fracture matching,
                      and the campaign-minimap role answered for its mini-map
     relation/      - player relationship formatting

@@ -8,6 +8,7 @@ import com.fs.starfarer.api.impl.campaign.econ.RecentUnrest;
 import com.fs.starfarer.api.impl.campaign.ids.Submarkets;
 
 import kmlib.starsector.markets.Markets;
+import kmlib.starsector.nexerelin.NexerelinMarketTransfer;
 
 /**
  * Handing an existing colony to another owner.
@@ -36,6 +37,11 @@ import kmlib.starsector.markets.Markets;
  * the same transfer would silently forgive whatever was outstanding, which on an operation whose
  * whole purpose is handing colonies around is free goods for the asking.
  *
+ * <p>All of which is what handing a colony over means where nothing else has an opinion about it.
+ * An install running a mod with a hand-over of its own gives that mod the whole of it, since a
+ * colony changing hands there moves standing, files intel and re-posts offices that nothing can
+ * arrange after the fact - see {@link OwnershipTransferRoutine}.
+ *
  * <p>Final class with a private constructor: pure-function utility, no instance state, and
  * null-defensive like the rest of the library.
  */
@@ -56,6 +62,19 @@ public final class MarketOwnershipTransfer {
     // would mark a peacefully handed-over colony as recently troubled until the next economy step
     // swept it away again.
     private static final boolean WITHOUT_ADDING_THE_CONDITION = false;
+
+    // The hand-over routine this install supplies, offered every transfer before the sequence below
+    // is composed. Bound to the one mod this library knows how to defer to, and reached through the
+    // seam rather than named at the call site so the branch can be posed both ways under test - an
+    // install whose mod hands the colony over, and one where nothing does.
+    //
+    // The sector is read here rather than taken as a parameter. A hand-over is stated as a colony
+    // and whoever is taking it, which is the whole of what one is, and a routine needing the
+    // faction behind that id is a fact about that routine rather than about the operation - so the
+    // parameter would be one every caller carried for a path most installs never take.
+    private static final OwnershipTransferRoutine INSTALLED_OWNERSHIP_TRANSFER_ROUTINE =
+        (market, factionId) ->
+            NexerelinMarketTransfer.transferOwnership(Global.getSector(), market, factionId);
 
     private MarketOwnershipTransfer() {
         // utility class, no instances.
@@ -81,14 +100,40 @@ public final class MarketOwnershipTransfer {
      * not one has nothing to detach and nothing an owner would hold, so it is left alone by every
      * step below rather than tested for here.
      *
+     * <p>Where the install runs a mod with a hand-over of its own, that mod moves the colony and
+     * none of the above happens: a colony changing hands on such an install has to move the way the
+     * rest of that mod expects, which nothing can arrange after the fact. What a caller is promised
+     * either way is a colony held by the owner it named, not the particular sequence that got it
+     * there.
+     *
      * @param market    the colony changing hands; null is left alone
      * @param factionId the incoming owner's faction id; null leaves the colony alone rather than
      *                  detaching it from an owner and giving it to nobody, as does the id of the
      *                  faction already holding it
      */
     public static void transferOwnership(MarketAPI market, String factionId) {
+        transferOwnership(market, factionId, INSTALLED_OWNERSHIP_TRANSFER_ROUTINE);
+    }
 
+    // The same hand-over against a stated routine rather than the installed one, which is what lets
+    // both branches be posed on a machine that has whichever mods it happens to have.
+    static void transferOwnership(
+            MarketAPI market,
+            String factionId,
+            OwnershipTransferRoutine ownershipTransferRoutine) {
+
+        // Asked before the routine below is offered the hand-over, so a call this library refuses
+        // is not one a mod is handed either - the colony that would lose its administrator, its
+        // free port and its stockpiling for nothing loses them to whichever sequence ran.
         if (market == null || factionId == null || Markets.isOwnedBy(market, factionId)) {
+            return;
+        }
+
+        // A mod that moves its own colonies takes the whole hand-over rather than having this
+        // sequence run under it, so a colony on that install changes hands the way the rest of that
+        // mod expects. A routine that declines leaves the colony untouched for the sequence below -
+        // which is the answer on every install without such a mod.
+        if (ownershipTransferRoutine.transferOwnership(market, factionId)) {
             return;
         }
 
