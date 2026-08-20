@@ -1,7 +1,6 @@
 package kmlib.starsector.nexerelin;
 
 import com.fs.starfarer.api.campaign.FactionAPI;
-import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Factions;
 
@@ -10,6 +9,7 @@ import kmlib.testfixtures.starsector.settings.ModStateScopes;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import static kmlib.starsector.nexerelin.SectorFactionFixture.buildSectorHolding;
 import static kmlib.testfixtures.starsector.settings.StubbedModIds.NEXERELIN;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -141,17 +141,5 @@ final class NexerelinMarketTransferTest {
             .thenReturn(owner);
 
         return marketMock;
-    }
-
-    // A sector that knows one faction and nothing else, so an id it was not given reads as an owner
-    // that does not exist.
-    private static SectorAPI buildSectorHolding(String factionId) {
-
-        var sectorMock = mock(SectorAPI.class);
-
-        when(sectorMock.getFaction(factionId))
-            .thenReturn(mock(FactionAPI.class));
-
-        return sectorMock;
     }
 }
