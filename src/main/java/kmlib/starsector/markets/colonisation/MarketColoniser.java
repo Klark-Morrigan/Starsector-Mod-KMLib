@@ -9,7 +9,6 @@ import com.fs.starfarer.api.impl.campaign.ids.Factions;
 import com.fs.starfarer.api.impl.campaign.ids.Industries;
 
 import kmlib.starsector.markets.ownership.MarketOwnershipRule;
-import kmlib.starsector.nexerelin.NexerelinColoniser;
 
 /**
  * Founding a colony on a body that so far carries only survey data.
@@ -52,12 +51,12 @@ public final class MarketColoniser {
     // routine that declines them is re-registering markets that were already lived in.
     private static final boolean WITH_ORBITAL_JUNK_AND_CHATTER = true;
 
-    // The colonisation routine this install supplies, offered every founding before the sequence
-    // below is composed. Bound to the one mod this library knows how to defer to, and reached
-    // through the seam rather than named at the call site so the branch can be posed both ways
-    // under test - an install whose mod takes the founding, and one where nothing does.
-    private static final ColonisationRoutine INSTALLED_COLONISATION_ROUTINE =
-        NexerelinColoniser::establishColony;
+    // Whatever colonisation this install supplies, offered every founding before the sequence below
+    // is composed. Asked of this package's own register rather than by naming a mod here: which
+    // mods are present is a fact about the install and is settled where the install is composed,
+    // not by the operation that happens to have a colony to found.
+    private static final ColonisationRoutine INSTALLED_COLONISATION_ROUTINES =
+        ColonisationRoutines::offerColonisation;
 
     private MarketColoniser() {
         // utility class, no instances.
@@ -166,7 +165,7 @@ public final class MarketColoniser {
      *                  colony
      */
     public static void establishColony(SectorAPI sector, MarketAPI market, String factionId) {
-        establishColony(sector, market, factionId, INSTALLED_COLONISATION_ROUTINE);
+        establishColony(sector, market, factionId, INSTALLED_COLONISATION_ROUTINES);
     }
 
     // The same founding against a stated routine rather than the installed one, which is what lets
@@ -191,7 +190,10 @@ public final class MarketColoniser {
         // expects to find. A routine that declines leaves the market untouched for the sequence
         // below - which is the answer on every install without such a mod, and on a body its
         // routine cannot found on.
-        if (colonisationRoutine.establishColony(sector, market, factionId, BASELINE_COLONY_SIZE)) {
+        var outcome =
+            colonisationRoutine.establishColony(sector, market, factionId, BASELINE_COLONY_SIZE);
+
+        if (outcome != null && outcome.wasExecuted()) {
             return;
         }
 

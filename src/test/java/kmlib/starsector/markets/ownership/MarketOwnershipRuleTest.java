@@ -3,6 +3,8 @@ package kmlib.starsector.markets.ownership;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Factions;
 
+import kmlib.extensions.DeclinedWork;
+import kmlib.extensions.ExecutedWork;
 import kmlib.starsector.markets.MarketOwnershipFixture;
 import kmlib.testfixtures.starsector.settings.ModStateScopes;
 
@@ -289,7 +291,7 @@ final class MarketOwnershipRuleTest {
                     offeredMarket.set(ruleMarket);
                     offeredOldOwnerId.set(ruleOldOwnerId);
                     offeredNewOwnerId.set(ruleNewOwnerId);
-                    return true;
+                    return new ExecutedWork();
                 });
 
             assertThat(offeredMarket.get())
@@ -315,7 +317,7 @@ final class MarketOwnershipRuleTest {
                 Factions.PLAYER,
                 (ruleMarket, ruleOldOwnerId, ruleNewOwnerId) -> {
                     offeredOldOwnerId.set(ruleOldOwnerId);
-                    return true;
+                    return new ExecutedWork();
                 });
 
             assertThat(offeredOldOwnerId.get())
@@ -333,7 +335,7 @@ final class MarketOwnershipRuleTest {
             MarketOwnershipRule.applyOwnership(
                 market,
                 Factions.PLAYER,
-                (ruleMarket, ruleOldOwnerId, ruleNewOwnerId) -> true);
+                (ruleMarket, ruleOldOwnerId, ruleNewOwnerId) -> new ExecutedWork());
 
             assertThat(MarketOwnershipFixture.readSubmarketIds(market))
                 .containsExactly("storage");
@@ -353,7 +355,7 @@ final class MarketOwnershipRuleTest {
             MarketOwnershipRule.applyOwnership(
                 market,
                 Factions.PLAYER,
-                (ruleMarket, ruleOldOwnerId, ruleNewOwnerId) -> true);
+                (ruleMarket, ruleOldOwnerId, ruleNewOwnerId) -> new ExecutedWork());
 
             assertThat(market.getFactionId())
                 .isEqualTo("player");
@@ -379,7 +381,8 @@ final class MarketOwnershipRuleTest {
             MarketOwnershipRule.applyOwnership(
                 market,
                 MarketOwnershipFixture.FACTION_OWNER_ID,
-                (ruleMarket, ruleOldOwnerId, ruleNewOwnerId) -> false);
+                (ruleMarket, ruleOldOwnerId, ruleNewOwnerId) ->
+                    new DeclinedWork("this stub decides nothing"));
 
             assertThat(MarketOwnershipFixture.readSubmarketIds(market))
                 .containsExactlyInAnyOrder("open_market", "black_market");

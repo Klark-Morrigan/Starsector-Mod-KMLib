@@ -8,9 +8,10 @@ import kmlib.testfixtures.starsector.settings.ModStateScopes;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import static kmlib.starsector.nexerelin.NexerelinDeclineAssertions.assertDeclined;
+import static kmlib.starsector.nexerelin.NexerelinDeclineAssertions.assertDeclinedBecauseOf;
 import static kmlib.testfixtures.starsector.settings.StubbedModIds.NEXERELIN;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -42,11 +43,12 @@ final class NexerelinSubmarketsTest {
             var marketMock = mock(MarketAPI.class);
 
             ModStateScopes.runWithModEnabled(NEXERELIN, false, () ->
-                assertThat(NexerelinSubmarkets.applySubmarkets(
+                assertDeclinedBecauseOf(
+                    NexerelinSubmarkets.applySubmarkets(
                         marketMock,
                         FACTION_OWNER_ID,
-                        Factions.PLAYER))
-                    .isFalse());
+                        Factions.PLAYER),
+                    "Nexerelin is not enabled"));
 
             verifyNoInteractions(marketMock);
         }
@@ -56,11 +58,10 @@ final class NexerelinSubmarketsTest {
             // A read taken outside a running game, which cannot say whether the mod is there - so
             // it answers as an install without it does.
             ModStateScopes.runWithoutGameSettings(() ->
-                assertThat(NexerelinSubmarkets.applySubmarkets(
+                assertDeclined(NexerelinSubmarkets.applySubmarkets(
                         mock(MarketAPI.class),
                         FACTION_OWNER_ID,
-                        Factions.PLAYER))
-                    .isFalse());
+                        Factions.PLAYER)));
         }
 
         @Test
@@ -68,22 +69,20 @@ final class NexerelinSubmarketsTest {
             // The mod's routine reads every one of its verdicts off the incoming id, so a change
             // that names nobody is a decline rather than a set of counters decided against nothing.
             ModStateScopes.runWithModEnabled(NEXERELIN, true, () ->
-                assertThat(NexerelinSubmarkets.applySubmarkets(
+                assertDeclined(NexerelinSubmarkets.applySubmarkets(
                         mock(MarketAPI.class),
                         FACTION_OWNER_ID,
-                        null))
-                    .isFalse());
+                        null)));
         }
 
         @Test
         void declines_a_null_market() {
 
             ModStateScopes.runWithModEnabled(NEXERELIN, true, () ->
-                assertThat(NexerelinSubmarkets.applySubmarkets(
+                assertDeclined(NexerelinSubmarkets.applySubmarkets(
                         null,
                         FACTION_OWNER_ID,
-                        Factions.PLAYER))
-                    .isFalse());
+                        Factions.PLAYER)));
         }
     }
 }

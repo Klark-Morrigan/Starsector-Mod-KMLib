@@ -7,7 +7,6 @@ import com.fs.starfarer.api.impl.campaign.ids.Submarkets;
 import com.fs.starfarer.api.impl.campaign.submarkets.StoragePlugin;
 
 import kmlib.starsector.markets.Markets;
-import kmlib.starsector.nexerelin.NexerelinSubmarkets;
 
 /**
  * What holding a colony makes true of it: whose flag it and its outlying entities fly, which
@@ -46,12 +45,12 @@ public final class MarketOwnershipRule {
     // previous owner's rate instead of stacking the new rate on top of it.
     private static final String DEFAULT_TARIFF_MODIFIER_ID = "default_tariff";
 
-    // The submarket rule this install supplies, offered every ownership change before the verdicts
-    // below are applied. Bound to the one mod this library knows how to defer to, and reached
-    // through the seam rather than named at the call site so the branch can be posed both ways
-    // under test - an install whose mod decides the counters, and one where nothing does.
-    private static final OwnerSubmarketRule INSTALLED_OWNER_SUBMARKET_RULE =
-        NexerelinSubmarkets::applySubmarkets;
+    // Whatever submarket rule this install supplies, offered every ownership change before the
+    // verdicts below are applied. Asked of this package's own register rather than by naming a mod
+    // here: which mods are present is a fact about the install and is settled where the install is
+    // composed, not by the operation that happens to have counters to decide.
+    private static final OwnerSubmarketRule INSTALLED_OWNER_SUBMARKET_RULES =
+        OwnerSubmarketRules::offerSubmarkets;
 
     private MarketOwnershipRule() {
         // utility class, no instances.
@@ -81,7 +80,7 @@ public final class MarketOwnershipRule {
      *                  null leaves the market alone rather than unowning it
      */
     public static void applyOwnership(MarketAPI market, String factionId) {
-        applyOwnership(market, factionId, INSTALLED_OWNER_SUBMARKET_RULE);
+        applyOwnership(market, factionId, INSTALLED_OWNER_SUBMARKET_RULES);
     }
 
     // The same change against a stated submarket rule rather than the installed one, which is what
@@ -159,7 +158,9 @@ public final class MarketOwnershipRule {
 
         var isPlayerHeld = isHeldByPlayer(factionId);
 
-        if (!ownerSubmarketRule.applySubmarkets(market, outgoingFactionId, factionId)) {
+        var outcome = ownerSubmarketRule.applySubmarkets(market, outgoingFactionId, factionId);
+
+        if (outcome == null || !outcome.wasExecuted()) {
             applySubmarketVerdicts(market, isPlayerHeld);
         }
 

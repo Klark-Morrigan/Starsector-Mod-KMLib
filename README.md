@@ -90,6 +90,13 @@ src/main/java/kmlib/
   collections/     - small Collection / Map helpers
   colour/          - AWT Color to normalised GL channels, folding in an
                      alpha multiplier so one factor fades a palette
+  extensions/      - the point an operation offers its work to, so what a
+                     piece of work is stays the library's and which mod on
+                     this install does it instead is settled where the
+                     install is composed. One implementation, the last
+                     registered, since work is taken over whole or not at
+                     all - an install over an occupied point is logged as
+                     the displacement it is
   input/           - rising-edge click detection, for polled input with
                      no discrete event to consume
   logging/         - log4j level control over one mod's package subtree, and the
@@ -163,8 +170,9 @@ src/main/java/kmlib/
       colonisation/ - founding a colony on a body that carries only
                       survey data: whether it can be, the owner-neutral
                       sequence that settles it, the owner it is founded
-                      under, and the seam a mod's own colonisation takes
-                      the founding through instead
+                      under, and the register whatever colonisation this
+                      install supplies is offered the founding through
+                      before that sequence is composed
       ownership/   - what holding a colony makes true of it - flag,
                      submarkets and tariff, stated so that either owner
                      can be applied over the other, with the counters
@@ -175,17 +183,18 @@ src/main/java/kmlib/
                      their production was sold over, settled while the
                      colony is still theirs to bill), with the owner it
                      already has refused rather than costing it all of
-                     that for nothing, and the seam a mod's own hand-over
-                     takes the whole transfer through instead
+                     that for nothing, and the registers whatever
+                     hand-over and submarket rule this install supplies
+                     are offered their work through
     memory/        - typed sector-memory accessors (flag, string)
     nexerelin/     - Nexerelin: founding a colony through that mod's own
-                     colonisation, which a founding is offered to before
-                     the composed sequence in markets/ is run, handing an
-                     existing colony over through that mod's own transfer,
-                     offered the same way and stated as a hand-over rather
-                     than a capture, and the trading counters an ownership
-                     change defers to that mod's own rule where it is
-                     installed
+                     colonisation, handing an existing colony over through
+                     that mod's own transfer, stated as a hand-over rather
+                     than a capture, and the trading counters that mod's
+                     own rule decides. Registered with the operations in
+                     markets/ at load, and only where the mod is enabled,
+                     so the arrow runs from here to them and they never
+                     name this package
     rat/           - Random Assortment of Things: Abyssal Fracture matching,
                      and the campaign-minimap role answered for its mini-map
     relation/      - player relationship formatting

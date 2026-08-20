@@ -10,10 +10,11 @@ import kmlib.testfixtures.starsector.settings.ModStateScopes;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import static kmlib.starsector.nexerelin.NexerelinDeclineAssertions.assertDeclined;
+import static kmlib.starsector.nexerelin.NexerelinDeclineAssertions.assertDeclinedBecauseOf;
 import static kmlib.starsector.nexerelin.SectorFactionFixture.buildSectorHolding;
 import static kmlib.testfixtures.starsector.settings.StubbedModIds.NEXERELIN;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -48,12 +49,11 @@ final class NexerelinColoniserTest {
             var market = buildWorldMarket();
 
             ModStateScopes.runWithModEnabled(NEXERELIN, false, () ->
-                assertThat(NexerelinColoniser.establishColony(
+                assertDeclined(NexerelinColoniser.establishColony(
                         buildSectorHolding(FACTION_OWNER_ID),
                         market,
                         FACTION_OWNER_ID,
-                        COLONY_SIZE))
-                    .isFalse());
+                        COLONY_SIZE)));
 
             verifyNoInteractions(market);
         }
@@ -63,12 +63,11 @@ final class NexerelinColoniserTest {
             // A read taken outside a running game, which cannot say whether the mod is there - so
             // it answers as an install without it does.
             ModStateScopes.runWithoutGameSettings(() ->
-                assertThat(NexerelinColoniser.establishColony(
+                assertDeclined(NexerelinColoniser.establishColony(
                         buildSectorHolding(FACTION_OWNER_ID),
                         buildWorldMarket(),
                         FACTION_OWNER_ID,
-                        COLONY_SIZE))
-                    .isFalse());
+                        COLONY_SIZE)));
         }
 
         @Test
@@ -77,24 +76,24 @@ final class NexerelinColoniserTest {
             // the system off the planet to do it, so a modded body of another kind is a decline
             // and the caller founds the colony itself.
             ModStateScopes.runWithModEnabled(NEXERELIN, true, () ->
-                assertThat(NexerelinColoniser.establishColony(
+                assertDeclinedBecauseOf(
+                    NexerelinColoniser.establishColony(
                         buildSectorHolding(FACTION_OWNER_ID),
                         buildStationMarket(),
                         FACTION_OWNER_ID,
-                        COLONY_SIZE))
-                    .isFalse());
+                        COLONY_SIZE),
+                    "is not a planet"));
         }
 
         @Test
         void declines_a_place_the_game_gave_no_body() {
 
             ModStateScopes.runWithModEnabled(NEXERELIN, true, () ->
-                assertThat(NexerelinColoniser.establishColony(
+                assertDeclined(NexerelinColoniser.establishColony(
                         buildSectorHolding(FACTION_OWNER_ID),
                         buildMarketWithoutBody(),
                         FACTION_OWNER_ID,
-                        COLONY_SIZE))
-                    .isFalse());
+                        COLONY_SIZE)));
         }
 
         @Test
@@ -103,48 +102,44 @@ final class NexerelinColoniserTest {
             // id, so an id the sector does not know is a decline rather than a founding that dies
             // partway through one.
             ModStateScopes.runWithModEnabled(NEXERELIN, true, () ->
-                assertThat(NexerelinColoniser.establishColony(
+                assertDeclined(NexerelinColoniser.establishColony(
                         buildSectorHolding(FACTION_OWNER_ID),
                         buildWorldMarket(),
                         "a_faction_this_sector_does_not_have",
-                        COLONY_SIZE))
-                    .isFalse());
+                        COLONY_SIZE)));
         }
 
         @Test
         void declines_a_founding_under_no_owner_at_all() {
 
             ModStateScopes.runWithModEnabled(NEXERELIN, true, () ->
-                assertThat(NexerelinColoniser.establishColony(
+                assertDeclined(NexerelinColoniser.establishColony(
                         buildSectorHolding(FACTION_OWNER_ID),
                         buildWorldMarket(),
                         null,
-                        COLONY_SIZE))
-                    .isFalse());
+                        COLONY_SIZE)));
         }
 
         @Test
         void declines_a_null_market() {
 
             ModStateScopes.runWithModEnabled(NEXERELIN, true, () ->
-                assertThat(NexerelinColoniser.establishColony(
+                assertDeclined(NexerelinColoniser.establishColony(
                         buildSectorHolding(Factions.PLAYER),
                         null,
                         Factions.PLAYER,
-                        COLONY_SIZE))
-                    .isFalse());
+                        COLONY_SIZE)));
         }
 
         @Test
         void declines_a_founding_with_no_sector_to_read_the_owner_from() {
 
             ModStateScopes.runWithModEnabled(NEXERELIN, true, () ->
-                assertThat(NexerelinColoniser.establishColony(
+                assertDeclined(NexerelinColoniser.establishColony(
                         null,
                         buildWorldMarket(),
                         Factions.PLAYER,
-                        COLONY_SIZE))
-                    .isFalse());
+                        COLONY_SIZE)));
         }
     }
 

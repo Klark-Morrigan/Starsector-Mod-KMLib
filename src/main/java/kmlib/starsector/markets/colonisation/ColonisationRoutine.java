@@ -3,6 +3,8 @@ package kmlib.starsector.markets.colonisation;
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
+import kmlib.extensions.WorkOutcome;
+
 /**
  * A colonisation sequence belonging to something other than this library - the routine an installed
  * mod founds its own colonies with, offered a founding before the game's own sequence is composed.
@@ -19,7 +21,7 @@ import com.fs.starfarer.api.campaign.econ.MarketAPI;
  * founds the colony in its place.
  */
 @FunctionalInterface
-interface ColonisationRoutine {
+public interface ColonisationRoutine {
 
     /**
      * Founds the colony if this routine is the one that should, and says whether it did.
@@ -32,9 +34,12 @@ interface ColonisationRoutine {
      * @param market     the survey data to found on
      * @param factionId  the owner the colony is founded under
      * @param colonySize the size the colony is founded at
-     * @return true when this routine founded the colony and nothing further is to be done to the
-     *         market; false when it declined, leaving the market exactly as it was for the caller
-     *         to found itself
+     * @return a performed founding, or a decline saying what about this call it could not do -
+     *         which the caller reads back to whoever is diagnosing the install
      */
-    boolean establishColony(SectorAPI sector, MarketAPI market, String factionId, int colonySize);
+    WorkOutcome establishColony(
+        SectorAPI sector,
+        MarketAPI market,
+        String factionId,
+        int colonySize);
 }

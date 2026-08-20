@@ -8,6 +8,8 @@ import com.fs.starfarer.api.impl.campaign.ids.Conditions;
 import com.fs.starfarer.api.impl.campaign.ids.Factions;
 import com.fs.starfarer.api.impl.campaign.ids.Industries;
 
+import kmlib.extensions.DeclinedWork;
+import kmlib.extensions.ExecutedWork;
 import kmlib.starsector.markets.MarketOwnershipFixture;
 import kmlib.starsector.markets.MarketStateFixture;
 import kmlib.testfixtures.starsector.settings.ModStateScopes;
@@ -408,7 +410,7 @@ final class MarketColoniserTest {
                     offeredMarket.set(routineMarket);
                     offeredFactionId.set(routineFactionId);
                     offeredSize.set(routineColonySize);
-                    return true;
+                    return new ExecutedWork();
                 });
 
             assertThat(offeredMarket.get())
@@ -436,7 +438,8 @@ final class MarketColoniserTest {
                 sector,
                 market,
                 MarketColonisationFixture.FACTION_OWNER_ID,
-                (routineSector, routineMarket, routineFactionId, routineColonySize) -> false);
+                (routineSector, routineMarket, routineFactionId, routineColonySize) ->
+                    new DeclinedWork("this stub founds nothing"));
 
             assertThat(market.isPlanetConditionMarketOnly())
                 .isFalse();
@@ -478,7 +481,7 @@ final class MarketColoniserTest {
                 Factions.PLAYER,
                 (routineSector, routineMarket, routineFactionId, routineColonySize) -> {
                     routineOfferCount.incrementAndGet();
-                    return true;
+                    return new ExecutedWork();
                 });
 
             assertThat(routineOfferCount.get())

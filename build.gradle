@@ -50,6 +50,15 @@ enforcePackageLayering {
             of: 'kmlib.starsector.markets.colonisation'
     forbidImport exactly: 'kmlib.starsector.markets',
             of: 'kmlib.starsector.markets.ownership'
+
+    // What a market operation does is this library's; which mods on this install might do it
+    // instead is not, and an operation naming one has decided something it cannot see the inputs
+    // to. Each operation states the shape of a routine that could take its work over and asks its
+    // own register, the register being filled where the install is composed - so the arrow runs
+    // from the integration to the operation and never back. Closing this edge is what keeps it
+    // that way: one import back and the operations would again depend on a mod they exist to be
+    // usable without.
+    forbidImport under: 'kmlib.starsector.markets', of: 'kmlib.starsector.nexerelin'
 }
 
 // LunaLib backs KmLogging's in-game log-level binding. compileOnly, and

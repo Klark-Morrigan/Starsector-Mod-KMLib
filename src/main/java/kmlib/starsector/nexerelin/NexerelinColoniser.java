@@ -6,6 +6,10 @@ import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Factions;
 
+import kmlib.extensions.DeclinedWork;
+import kmlib.extensions.ExecutedWork;
+import kmlib.extensions.WorkOutcome;
+
 import exerelin.campaign.intel.colony.ColonyExpeditionIntel;
 
 /**
@@ -65,10 +69,10 @@ public final class NexerelinColoniser {
      *                   this wrapper: a colony has one size however it was founded, so the number
      *                   is the caller's to keep in step with whatever it founds at otherwise. The
      *                   mod's own callers all pass three
-     * @return true when Nexerelin founded the colony; false when this install cannot take that
-     *         path, with the market left exactly as it was
+     * @return the founding performed by Nexerelin, or a decline naming what about this call it
+     *         could not found - the market left exactly as it was either way
      */
-    public static boolean establishColony(
+    public static WorkOutcome establishColony(
             SectorAPI sector,
             MarketAPI market,
             String factionId,
@@ -77,11 +81,12 @@ public final class NexerelinColoniser {
         // The presence gate is asked first and alone, so an install without the mod reads nothing
         // else and never reaches the holder below.
         if (!NexerelinPresence.isModEnabled()) {
-            return false;
+            return new DeclinedWork("Nexerelin is not enabled on this install");
         }
 
         if (sector == null || market == null || factionId == null) {
-            return false;
+            return new DeclinedWork("the founding was stated without a sector, a market or an "
+                + "owner");
         }
 
         // The body has to be a planet: the routine dereferences it to rename a world still carrying
@@ -89,7 +94,9 @@ public final class NexerelinColoniser {
         // whose body is something else - which a modded body can be - is a decline rather than a
         // crash, and the caller founds the colony itself.
         if (!(market.getPrimaryEntity() instanceof PlanetAPI planet)) {
-            return false;
+            return new DeclinedWork("the body under '" + market.getName()
+                + "' is not a planet, and Nexerelin's own founding renames one and reads its "
+                + "star system");
         }
 
         // The faction is looked up rather than passed on as an id: the routine reads that mod's
@@ -98,7 +105,8 @@ public final class NexerelinColoniser {
         var faction = sector.getFaction(factionId);
 
         if (faction == null) {
-            return false;
+            return new DeclinedWork("the sector answers for no faction with id '" + factionId
+                + "', and Nexerelin's own founding reads its configuration and tariffs off one");
         }
 
         NexerelinTypes.createColony(
@@ -108,7 +116,7 @@ public final class NexerelinColoniser {
             Factions.PLAYER.equals(factionId),
             colonySize);
 
-        return true;
+        return new ExecutedWork();
     }
 
     // Isolates the only reference to a Nexerelin type. The classloader resolves this holder on

@@ -4,6 +4,10 @@ import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
+import kmlib.extensions.DeclinedWork;
+import kmlib.extensions.ExecutedWork;
+import kmlib.extensions.WorkOutcome;
+
 import java.util.List;
 
 import exerelin.campaign.SectorManager;
@@ -88,25 +92,30 @@ public final class NexerelinMarketTransfer {
      * @param factionId the incoming owner's faction id; null is declined, and so is an id no
      *                  faction answers to - the routine reads that mod's own configuration and
      *                  tariffs off the faction rather than off an id
-     * @return true when Nexerelin handed the colony over; false when this install cannot take that
-     *         path, with the colony left exactly as it was
+     * @return the hand-over performed by Nexerelin, or a decline naming what about this call it
+     *         could not move - the colony left exactly as it was either way
      */
-    public static boolean transferOwnership(SectorAPI sector, MarketAPI market, String factionId) {
+    public static WorkOutcome transferOwnership(
+            SectorAPI sector,
+            MarketAPI market,
+            String factionId) {
 
         // The presence gate is asked first and alone, so an install without the mod reads nothing
         // else and never reaches the holder below.
         if (!NexerelinPresence.isModEnabled()) {
-            return false;
+            return new DeclinedWork("Nexerelin is not enabled on this install");
         }
 
         if (sector == null || market == null || factionId == null) {
-            return false;
+            return new DeclinedWork("the hand-over was stated without a sector, a colony or an "
+                + "incoming owner");
         }
 
         var incomingOwner = sector.getFaction(factionId);
 
         if (incomingOwner == null) {
-            return false;
+            return new DeclinedWork("the sector answers for no faction with id '" + factionId
+                + "', and Nexerelin's own hand-over reads its configuration and standing off one");
         }
 
         // Both owners reach the routine as factions rather than ids: it reads each one's
@@ -115,12 +124,14 @@ public final class NexerelinMarketTransfer {
         var outgoingOwner = market.getFaction();
 
         if (outgoingOwner == null) {
-            return false;
+            return new DeclinedWork("'" + market.getName()
+                + "' flies no flag to hand over from, and Nexerelin's own hand-over is stated "
+                + "between two owners");
         }
 
         NexerelinTypes.transferMarket(market, incomingOwner, outgoingOwner);
 
-        return true;
+        return new ExecutedWork();
     }
 
     // Isolates the only reference to a Nexerelin type. The classloader resolves this holder on

@@ -3,6 +3,8 @@ package kmlib.starsector.markets.ownership;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Factions;
 
+import kmlib.extensions.DeclinedWork;
+import kmlib.extensions.ExecutedWork;
 import kmlib.starsector.markets.MarketOwnershipFixture;
 import kmlib.testfixtures.starsector.settings.ModStateScopes;
 
@@ -319,7 +321,7 @@ final class MarketOwnershipTransferTest {
                 (routineMarket, routineFactionId) -> {
                     offeredMarket.set(routineMarket);
                     offeredFactionId.set(routineFactionId);
-                    return true;
+                    return new ExecutedWork();
                 });
 
             assertThat(offeredMarket.get())
@@ -343,7 +345,7 @@ final class MarketOwnershipTransferTest {
             MarketOwnershipTransfer.transferOwnership(
                 market,
                 Factions.PLAYER,
-                (routineMarket, routineFactionId) -> false);
+                (routineMarket, routineFactionId) -> new DeclinedWork("this stub moves nothing"));
 
             assertThat(market.getFactionId())
                 .isEqualTo("player");
@@ -365,7 +367,7 @@ final class MarketOwnershipTransferTest {
             MarketOwnershipTransfer.transferOwnership(
                 market,
                 MarketTransferFixture.FACTION_OWNER_ID,
-                (routineMarket, routineFactionId) -> true);
+                (routineMarket, routineFactionId) -> new ExecutedWork());
 
             verify(account, never())
                 .reportEconomyTick(anyInt());
@@ -399,7 +401,7 @@ final class MarketOwnershipTransferTest {
                 MarketTransferFixture.FACTION_OWNER_ID,
                 (routineMarket, routineFactionId) -> {
                     routineOfferCount.incrementAndGet();
-                    return true;
+                    return new ExecutedWork();
                 });
 
             assertThat(routineOfferCount.get())

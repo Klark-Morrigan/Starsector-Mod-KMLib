@@ -2,6 +2,8 @@ package kmlib.starsector.markets.ownership;
 
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
+import kmlib.extensions.WorkOutcome;
+
 /**
  * A hand-over of a colony belonging to something other than this library - the routine an installed
  * mod moves its own colonies between owners with, offered a hand-over before the sequence this
@@ -24,7 +26,7 @@ import com.fs.starfarer.api.campaign.econ.MarketAPI;
  * handed a change of owner.
  */
 @FunctionalInterface
-interface OwnershipTransferRoutine {
+public interface OwnershipTransferRoutine {
 
     /**
      * Hands the colony to its new owner if this routine is the one that should, and says whether it
@@ -36,9 +38,8 @@ interface OwnershipTransferRoutine {
      *
      * @param market    the colony changing hands
      * @param factionId the incoming owner's faction id
-     * @return true when this routine handed the colony over and nothing further is to be done to
-     *         it; false when it declined, leaving the colony exactly as it was for the caller to
-     *         hand over itself
+     * @return a performed hand-over, or a decline saying what about this call it could not do -
+     *         which the caller reads back to whoever is diagnosing the install
      */
-    boolean transferOwnership(MarketAPI market, String factionId);
+    WorkOutcome transferOwnership(MarketAPI market, String factionId);
 }

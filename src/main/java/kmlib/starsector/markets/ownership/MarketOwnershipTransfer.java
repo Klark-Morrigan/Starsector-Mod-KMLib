@@ -8,7 +8,6 @@ import com.fs.starfarer.api.impl.campaign.econ.RecentUnrest;
 import com.fs.starfarer.api.impl.campaign.ids.Submarkets;
 
 import kmlib.starsector.markets.Markets;
-import kmlib.starsector.nexerelin.NexerelinMarketTransfer;
 
 /**
  * Handing an existing colony to another owner.
@@ -63,18 +62,17 @@ public final class MarketOwnershipTransfer {
     // swept it away again.
     private static final boolean WITHOUT_ADDING_THE_CONDITION = false;
 
-    // The hand-over routine this install supplies, offered every transfer before the sequence below
-    // is composed. Bound to the one mod this library knows how to defer to, and reached through the
-    // seam rather than named at the call site so the branch can be posed both ways under test - an
-    // install whose mod hands the colony over, and one where nothing does.
+    // Whatever hand-over this install supplies, offered every transfer before the sequence below is
+    // composed. Asked of this package's own register rather than by naming a mod here: which mods
+    // are present is a fact about the install and is settled where the install is composed, not by
+    // the operation that happens to have a colony to hand over.
     //
-    // The sector is read here rather than taken as a parameter. A hand-over is stated as a colony
-    // and whoever is taking it, which is the whole of what one is, and a routine needing the
-    // faction behind that id is a fact about that routine rather than about the operation - so the
-    // parameter would be one every caller carried for a path most installs never take.
-    private static final OwnershipTransferRoutine INSTALLED_OWNERSHIP_TRANSFER_ROUTINE =
-        (market, factionId) ->
-            NexerelinMarketTransfer.transferOwnership(Global.getSector(), market, factionId);
+    // A hand-over is stated as a colony and whoever is taking it, which is the whole of what one
+    // is. A routine needing more than that - the faction behind the id, the sector it lives in - is
+    // describing itself rather than the operation, so it reads what it needs where it is registered
+    // and this parameter list stays what a hand-over actually takes.
+    private static final OwnershipTransferRoutine INSTALLED_OWNERSHIP_TRANSFER_ROUTINES =
+        OwnershipTransferRoutines::offerTransfer;
 
     private MarketOwnershipTransfer() {
         // utility class, no instances.
@@ -112,7 +110,7 @@ public final class MarketOwnershipTransfer {
      *                  faction already holding it
      */
     public static void transferOwnership(MarketAPI market, String factionId) {
-        transferOwnership(market, factionId, INSTALLED_OWNERSHIP_TRANSFER_ROUTINE);
+        transferOwnership(market, factionId, INSTALLED_OWNERSHIP_TRANSFER_ROUTINES);
     }
 
     // The same hand-over against a stated routine rather than the installed one, which is what lets
@@ -133,7 +131,9 @@ public final class MarketOwnershipTransfer {
         // sequence run under it, so a colony on that install changes hands the way the rest of that
         // mod expects. A routine that declines leaves the colony untouched for the sequence below -
         // which is the answer on every install without such a mod.
-        if (ownershipTransferRoutine.transferOwnership(market, factionId)) {
+        var outcome = ownershipTransferRoutine.transferOwnership(market, factionId);
+
+        if (outcome != null && outcome.wasExecuted()) {
             return;
         }
 

@@ -2,6 +2,10 @@ package kmlib.starsector.nexerelin;
 
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
+import kmlib.extensions.DeclinedWork;
+import kmlib.extensions.ExecutedWork;
+import kmlib.extensions.WorkOutcome;
+
 import exerelin.campaign.SectorManager;
 
 /**
@@ -60,10 +64,10 @@ public final class NexerelinSubmarkets {
      *                      null is taken as an owner that cannot be matched
      * @param newOwnerId    the incoming owner's faction id; null is declined, the mod's routine
      *                      reading every one of its verdicts off it
-     * @return true when Nexerelin decided the counters; false when this install cannot take that
-     *         path, with the counters left exactly as they were
+     * @return the counters decided by Nexerelin, or a decline naming what about this call it could
+     *         not decide - the counters left exactly as they were either way
      */
-    public static boolean applySubmarkets(
+    public static WorkOutcome applySubmarkets(
             MarketAPI market,
             String oldOwnerId,
             String newOwnerId) {
@@ -71,16 +75,17 @@ public final class NexerelinSubmarkets {
         // The presence gate is asked first and alone, so an install without the mod reads nothing
         // else and never reaches the holder below.
         if (!NexerelinPresence.isModEnabled()) {
-            return false;
+            return new DeclinedWork("Nexerelin is not enabled on this install");
         }
 
         if (market == null || newOwnerId == null) {
-            return false;
+            return new DeclinedWork("the counters were stated without a colony or an incoming "
+                + "owner, and Nexerelin reads every one of its verdicts off the incoming owner");
         }
 
         NexerelinTypes.updateSubmarkets(market, oldOwnerId, newOwnerId);
 
-        return true;
+        return new ExecutedWork();
     }
 
     // Isolates the only reference to a Nexerelin type. The classloader resolves this holder on

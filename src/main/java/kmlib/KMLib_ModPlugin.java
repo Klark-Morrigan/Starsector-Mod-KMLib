@@ -5,6 +5,7 @@ import com.fs.starfarer.api.Global;
 
 import kmlib.opengl.FastRendering;
 import kmlib.settings.KmlibLunaSettings;
+import kmlib.starsector.nexerelin.NexerelinIntegration;
 
 import org.apache.log4j.Logger;
 
@@ -27,12 +28,38 @@ public class KMLib_ModPlugin extends BaseModPlugin {
 
     @Override
     public void onApplicationLoad() {
+
+        installLunaLibSettingsBindings();
+        logActiveRenderer();
+        installOptionalModRoutines();
+    }
+
+    private static void installLunaLibSettingsBindings() {
+
         try {
             KmlibLunaSettings.installBindings();
+
         } catch (RuntimeException exception) {
             LOG.error("Failed to install KMLib LunaLib settings bindings", exception);
         }
-        logActiveRenderer();
+    }
+
+    // Puts the adapters for whichever optional mods this install has in front of the operations
+    // that may defer to them. It happens here because which mods are present is a fact about the
+    // install, and an operation asking that question for itself would be naming a mod it has no
+    // business knowing about - so the composing is done once, where a mod's entry point already is.
+    //
+    // A failure leaves the library running its own sequences rather than a mod's, which is the
+    // behaviour of an install without that mod - a worse colony than the player expected, and a
+    // far better outcome than taking down every mod that depends on KMLib.
+    private static void installOptionalModRoutines() {
+
+        try {
+            NexerelinIntegration.installRoutines();
+
+        } catch (RuntimeException exception) {
+            LOG.error("Failed to install KMLib Nexerelin routines", exception);
+        }
     }
 
     // Which GL implementation every KM draw call reaches, stated once at load. It changes what a

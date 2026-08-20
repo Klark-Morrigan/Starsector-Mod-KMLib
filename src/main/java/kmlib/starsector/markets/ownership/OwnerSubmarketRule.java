@@ -2,6 +2,8 @@ package kmlib.starsector.markets.ownership;
 
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
+import kmlib.extensions.WorkOutcome;
+
 /**
  * A statement of which counters a colony trades over belonging to something other than this library
  * - the rule an installed mod decides its own colonies' submarkets by, offered an ownership change
@@ -23,7 +25,7 @@ import com.fs.starfarer.api.campaign.econ.MarketAPI;
  * closes.
  */
 @FunctionalInterface
-interface OwnerSubmarketRule {
+public interface OwnerSubmarketRule {
 
     /**
      * Brings the colony's counters to what the incoming owner trades over if this rule is the one
@@ -35,8 +37,8 @@ interface OwnerSubmarketRule {
      * @param market     the colony whose counters are being decided
      * @param oldOwnerId the outgoing owner's faction id, read before the incoming one landed
      * @param newOwnerId the incoming owner's faction id
-     * @return true when this rule decided the counters and nothing further is to be done to them;
-     *         false when it declined, leaving them exactly as they were for the caller to decide
+     * @return the counters decided, or a decline saying what about this call it could not do -
+     *         which the caller reads back to whoever is diagnosing the install
      */
-    boolean applySubmarkets(MarketAPI market, String oldOwnerId, String newOwnerId);
+    WorkOutcome applySubmarkets(MarketAPI market, String oldOwnerId, String newOwnerId);
 }

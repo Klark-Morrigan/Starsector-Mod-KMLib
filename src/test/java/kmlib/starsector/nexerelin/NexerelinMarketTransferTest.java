@@ -9,10 +9,11 @@ import kmlib.testfixtures.starsector.settings.ModStateScopes;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import static kmlib.starsector.nexerelin.NexerelinDeclineAssertions.assertDeclined;
+import static kmlib.starsector.nexerelin.NexerelinDeclineAssertions.assertDeclinedBecauseOf;
 import static kmlib.starsector.nexerelin.SectorFactionFixture.buildSectorHolding;
 import static kmlib.testfixtures.starsector.settings.StubbedModIds.NEXERELIN;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -41,11 +42,10 @@ final class NexerelinMarketTransferTest {
             var market = buildColonyHeldByAFaction();
 
             ModStateScopes.runWithModEnabled(NEXERELIN, false, () ->
-                assertThat(NexerelinMarketTransfer.transferOwnership(
+                assertDeclined(NexerelinMarketTransfer.transferOwnership(
                         buildSectorHolding(Factions.PLAYER),
                         market,
-                        Factions.PLAYER))
-                    .isFalse());
+                        Factions.PLAYER)));
 
             verifyNoInteractions(market);
         }
@@ -55,11 +55,10 @@ final class NexerelinMarketTransferTest {
             // A read taken outside a running game, which cannot say whether the mod is there - so
             // it answers as an install without it does.
             ModStateScopes.runWithoutGameSettings(() ->
-                assertThat(NexerelinMarketTransfer.transferOwnership(
+                assertDeclined(NexerelinMarketTransfer.transferOwnership(
                         buildSectorHolding(Factions.PLAYER),
                         buildColonyHeldByAFaction(),
-                        Factions.PLAYER))
-                    .isFalse());
+                        Factions.PLAYER)));
         }
 
         @Test
@@ -68,11 +67,12 @@ final class NexerelinMarketTransferTest {
             // than off an id, so an id the sector does not know is a decline rather than a
             // hand-over that dies partway through one.
             ModStateScopes.runWithModEnabled(NEXERELIN, true, () ->
-                assertThat(NexerelinMarketTransfer.transferOwnership(
+                assertDeclinedBecauseOf(
+                    NexerelinMarketTransfer.transferOwnership(
                         buildSectorHolding(Factions.PLAYER),
                         buildColonyHeldByAFaction(),
-                        "a_faction_this_sector_does_not_have"))
-                    .isFalse());
+                        "a_faction_this_sector_does_not_have"),
+                    "no faction with id 'a_faction_this_sector_does_not_have'"));
         }
 
         @Test
@@ -81,44 +81,40 @@ final class NexerelinMarketTransferTest {
             // counts what that faction has left afterwards - so a colony nobody is recorded as
             // holding is a decline and the caller hands it over itself.
             ModStateScopes.runWithModEnabled(NEXERELIN, true, () ->
-                assertThat(NexerelinMarketTransfer.transferOwnership(
+                assertDeclined(NexerelinMarketTransfer.transferOwnership(
                         buildSectorHolding(Factions.PLAYER),
                         buildColonyHeldByNobody(),
-                        Factions.PLAYER))
-                    .isFalse());
+                        Factions.PLAYER)));
         }
 
         @Test
         void declines_a_hand_over_naming_no_incoming_owner() {
 
             ModStateScopes.runWithModEnabled(NEXERELIN, true, () ->
-                assertThat(NexerelinMarketTransfer.transferOwnership(
+                assertDeclined(NexerelinMarketTransfer.transferOwnership(
                         buildSectorHolding(Factions.PLAYER),
                         buildColonyHeldByAFaction(),
-                        null))
-                    .isFalse());
+                        null)));
         }
 
         @Test
         void declines_a_null_market() {
 
             ModStateScopes.runWithModEnabled(NEXERELIN, true, () ->
-                assertThat(NexerelinMarketTransfer.transferOwnership(
+                assertDeclined(NexerelinMarketTransfer.transferOwnership(
                         buildSectorHolding(Factions.PLAYER),
                         null,
-                        Factions.PLAYER))
-                    .isFalse());
+                        Factions.PLAYER)));
         }
 
         @Test
         void declines_a_hand_over_with_no_sector_to_read_the_incoming_owner_from() {
 
             ModStateScopes.runWithModEnabled(NEXERELIN, true, () ->
-                assertThat(NexerelinMarketTransfer.transferOwnership(
+                assertDeclined(NexerelinMarketTransfer.transferOwnership(
                         null,
                         buildColonyHeldByAFaction(),
-                        Factions.PLAYER))
-                    .isFalse());
+                        Factions.PLAYER)));
         }
     }
 
