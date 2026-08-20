@@ -54,14 +54,14 @@ final class ColonyVisibilityTest {
         void keeps_the_gates_it_was_built_with_when_the_source_set_changes_later() {
 
             var gates = new HashSet<RevelationGate>();
-            gates.add(RevelationGate.ABANDONED_STATIONS);
+            gates.add(RevelationGate.SPACE_DERELICTS);
 
             var rule = new ColonyVisibility(false, gates);
 
             gates.clear();
 
             assertThat(rule.revelationGates())
-                .containsExactly(RevelationGate.ABANDONED_STATIONS);
+                .containsExactly(RevelationGate.SPACE_DERELICTS);
         }
 
         @Test

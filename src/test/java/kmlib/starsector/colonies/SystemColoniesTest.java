@@ -2,7 +2,6 @@ package kmlib.starsector.colonies;
 
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
-import com.fs.starfarer.api.impl.campaign.ids.Factions;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -115,28 +114,33 @@ final class SystemColoniesTest {
             // The set admits it like any other owned market - what changes is that the colony
             // says what it is, so a reader downstream is not left to take a hulk for a town.
             var fixture = new ColonyFixture("corvus");
-            var derelict = fixture.buildDerelictStation(Factions.NEUTRAL);
+            var derelict = fixture.buildDerelictStation();
 
             fixture.placeColoniesInSystem(derelict);
 
             assertThat(readColonies(fixture))
-                .containsExactly(new Colony(derelict, ColonyKind.ABANDONED_STATION, false));
+                .containsExactly(new Colony(derelict, ColonyKind.SPACE_DERELICT, false));
         }
 
         @Test
         void takes_a_colliding_pair_s_kind_from_the_market_that_wins_the_place() {
             // Kind and place have to be settled by the same market. The loser is named first
-            // here, so a resolution reading the kind off anything but the winner reports the
-            // derelict as a settlement.
+            // here, so a resolution reading the kind off anything but the winner reports a plain
+            // colony where the winner is a station.
+            //
+            // The winner comes out an outpost rather than a derelict, and that is the staging
+            // rather than the rule: two markets can only share one place through the economy's
+            // listing, and being listed is itself one of the two things that make a station
+            // somebody's.
             var fixture = new ColonyFixture("corvus");
-            var derelict = fixture.buildDerelictStation(Factions.NEUTRAL);
+            var derelict = fixture.buildDerelictStation();
             var supersededMarket = fixture.buildSiblingMarketOn(derelict, SMALLER_COLONY_SIZE);
 
             fixture.placeColoniesInSystem(derelict);
             fixture.listColoniesInEconomy(supersededMarket, derelict);
 
             assertThat(readColonies(fixture))
-                .containsExactly(new Colony(derelict, ColonyKind.ABANDONED_STATION, true));
+                .containsExactly(new Colony(derelict, ColonyKind.OUTPOST, true));
         }
 
         @Test

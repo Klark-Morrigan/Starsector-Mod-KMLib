@@ -1,7 +1,6 @@
 package kmlib.starsector.colonies;
 
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
-import com.fs.starfarer.api.impl.campaign.ids.Factions;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -24,27 +23,37 @@ final class RevelationGateTest {
     class CoversColony {
 
         @Test
-        void abandoned_stations_covers_a_derelict() {
+        void space_derelicts_covers_a_derelict() {
 
-            assertThat(RevelationGate.ABANDONED_STATIONS.coversColony(
-                    buildDerelict(ColonyMarketFixture.buildDerelictStation(Factions.NEUTRAL))))
+            assertThat(RevelationGate.SPACE_DERELICTS.coversColony(
+                    buildDerelict(ColonyMarketFixture.buildDerelictStation())))
                 .isTrue();
         }
 
         @Test
-        void abandoned_stations_passes_over_a_colony_somebody_lives_on() {
+        void space_derelicts_passes_over_a_colony_somebody_lives_on() {
 
-            assertThat(RevelationGate.ABANDONED_STATIONS.coversColony(
+            assertThat(RevelationGate.SPACE_DERELICTS.coversColony(
                     buildColony(ColonyMarketFixture.buildVisibleColony("hegemony"))))
                 .isFalse();
         }
 
         @Test
-        void abandoned_stations_passes_over_a_concealed_colony() {
+        void space_derelicts_passes_over_a_concealed_colony() {
             // The other gate's shape. A derelict gate that covered concealment would hide a
             // raided pirate base for the player who raided it.
-            assertThat(RevelationGate.ABANDONED_STATIONS.coversColony(
+            assertThat(RevelationGate.SPACE_DERELICTS.coversColony(
                     buildColony(ColonyMarketFixture.buildFoundConcealedColony("pirates"))))
+                .isFalse();
+        }
+
+        @Test
+        void space_derelicts_passes_over_a_station_a_faction_keeps() {
+            // A kept station wears the derelict condition and is somebody's, so the kind read
+            // parts it from the hulk and this gate is not about it - it answers to concealment
+            // alone, exactly as an ordinary colony does.
+            assertThat(RevelationGate.SPACE_DERELICTS.coversColony(
+                    buildOutpost(ColonyMarketFixture.buildOutpost("hegemony"))))
                 .isFalse();
         }
 
@@ -69,7 +78,7 @@ final class RevelationGateTest {
             // The ordinary derelict: open, and covered by the other gate alone. Concealment and
             // kind are separate facts, and this is the case that says so.
             assertThat(RevelationGate.HIDDEN_COLONIES.coversColony(
-                    buildDerelict(ColonyMarketFixture.buildDerelictStation(Factions.NEUTRAL))))
+                    buildDerelict(ColonyMarketFixture.buildDerelictStation())))
                 .isFalse();
         }
     }
@@ -82,6 +91,11 @@ final class RevelationGateTest {
     // A derelict nobody has ever lived on. Its kind is stated rather than resolved off the
     // market, these cases being about what a gate does with a kind rather than how one is read.
     private static Colony buildDerelict(MarketAPI market) {
-        return new Colony(market, ColonyKind.ABANDONED_STATION, true);
+        return new Colony(market, ColonyKind.SPACE_DERELICT, true);
+    }
+
+    // A station a faction keeps, stated as its kind for the same reason the derelict above is.
+    private static Colony buildOutpost(MarketAPI market) {
+        return new Colony(market, ColonyKind.OUTPOST, true);
     }
 }

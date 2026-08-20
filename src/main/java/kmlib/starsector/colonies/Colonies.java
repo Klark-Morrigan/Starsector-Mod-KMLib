@@ -206,15 +206,17 @@ public record Colonies(
         return false;
     }
 
-    // A colony that makes its place settled: somewhere people live, held in the open, and shown
+    // A colony that makes its place settled: somewhere people are, held in the open, and shown
     // by the fog. Its kind and its openness are exactly what keeps it out of every gate, which
     // is why the pass over these can be read before any gate is decided.
     //
-    // A dead colony would not qualify, having nobody left to talk; an abandoned station never
-    // had anybody; and a concealed colony is not the sector's town crier.
+    // A dead colony would not qualify, having nobody left to talk; a derelict never had anybody;
+    // and a concealed colony is not the sector's town crier. Which kinds have somebody to talk is
+    // the kind's own answer rather than a comparison written here, so a kind added later is not
+    // left out of it by omission.
     private static boolean isSettlingColony(Colony colony, ColonyVisibility rule) {
 
-        return colony.kind() == ColonyKind.COLONY
+        return colony.kind().isSettlingLocation()
             && !colony.isHidden()
             && isAdmittedByFog(colony, rule);
     }
@@ -248,7 +250,7 @@ public record Colonies(
     // Overstating a place by one hulk is the cheaper mistake; erasing a settlement that is really
     // there takes its people with it.
     private static boolean isInhabitingColony(Colony colony) {
-        return colony.kind() != ColonyKind.ABANDONED_STATION;
+        return colony.kind() != ColonyKind.SPACE_DERELICT;
     }
 
     // The base fog, plus the ownership arm the composed filter carries with it.

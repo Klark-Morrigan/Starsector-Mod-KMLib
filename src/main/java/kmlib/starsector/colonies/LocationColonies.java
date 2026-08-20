@@ -68,10 +68,17 @@ public final class LocationColonies {
             // Kind is resolved off the market that won the place, so a colony superseded by a
             // larger market on its entity is classified as whatever the winner is - not as
             // whatever the loser was.
+            //
+            // The listing is read once and handed to both, rather than let the kind read ask the
+            // market whether it is in the economy: listing is decided here by identity against
+            // the economy's own set, and a second answer to it could disagree with the one the
+            // colony carries.
+            var isListedByEconomy = isListedByEconomy(listedMarkets, market);
+
             colonies.add(new Colony(
                 market,
-                ColonyKind.resolveKind(market),
-                isListedByEconomy(listedMarkets, market)));
+                ColonyKind.resolveKind(market, isListedByEconomy),
+                isListedByEconomy));
         }
         return new Colonies(colonies);
     }

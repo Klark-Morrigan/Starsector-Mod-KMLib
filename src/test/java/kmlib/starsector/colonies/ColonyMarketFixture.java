@@ -64,16 +64,30 @@ public final class ColonyMarketFixture {
     }
 
     /**
-     * A derelict station: owned, open and on an entity the player has found, exactly as an
-     * ordinary colony is - and marked out only by the condition vanilla hangs on an abandoned
-     * station. Every read but that condition takes it for a settlement, which is the whole
-     * reason the kind is resolved at all.
+     * A derelict adrift: open, on an entity the player has found, and held by nobody - the neutral
+     * faction every unowned station falls to. Every read but the condition takes it for a
+     * settlement, which is the whole reason the kind is resolved at all.
      */
-    public static MarketAPI buildDerelictStation(String factionId) {
+    public static MarketAPI buildDerelictStation() {
+        return buildStationCarryingDerelictCondition(Factions.NEUTRAL);
+    }
 
-        // Built from the ordinary colony rather than from its flags, because the two shapes are
-        // the same shape: repeating the flag triple here would leave a second statement of what
-        // an open, found colony is, free to drift from the one above.
+    /**
+     * A station somebody keeps: the same derelict condition on a market a real faction holds.
+     * Nothing but the owner parts it from the hulk above, which is what makes the pair worth
+     * posing together - a kind read splitting them on anything else would be reading the wrong
+     * thing.
+     */
+    public static MarketAPI buildOutpost(String factionId) {
+        return buildStationCarryingDerelictCondition(factionId);
+    }
+
+    // The derelict condition on an ordinary colony's shape, which the owner then decides the kind
+    // of. Built from the ordinary colony rather than from its flags, because the two are the same
+    // shape: repeating the flag triple here would leave a second statement of what an open, found
+    // colony is, free to drift from the one above.
+    private static MarketAPI buildStationCarryingDerelictCondition(String factionId) {
+
         var marketMock = buildVisibleColony(factionId);
 
         when(marketMock.hasCondition(Conditions.ABANDONED_STATION))
@@ -147,12 +161,18 @@ public final class ColonyMarketFixture {
         return marketMock;
     }
 
+    // The faction holding one of these markets. Whether it is the neutral one is answered off the
+    // faction, as the engine answers it, rather than left false: every place nobody has settled is
+    // handed to neutral as it is built, so a fixture that had neutral deny being neutral would
+    // pose an unowned hulk as a station somebody keeps.
     private static FactionAPI buildFaction(String id) {
 
         var factionMock = mock(FactionAPI.class);
 
         when(factionMock.getId())
             .thenReturn(id);
+        when(factionMock.isNeutralFaction())
+            .thenReturn(Factions.NEUTRAL.equals(id));
 
         return factionMock;
     }

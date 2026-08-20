@@ -10,6 +10,7 @@ import com.fs.starfarer.api.campaign.econ.EconomyAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.campaign.rules.MemoryAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Conditions;
+import com.fs.starfarer.api.impl.campaign.ids.Factions;
 import com.fs.starfarer.api.impl.campaign.ids.MemFlags;
 
 import kmlib.starsector.factions.FactionCustomFixture;
@@ -108,6 +109,14 @@ final class ClaimContestFixture implements AutoCloseable {
 
             when(entityMock.getMarket())
                 .thenReturn(market);
+
+            // Each market names the system back, as the listed ones do. A colony that could not
+            // say where it stands reads as standing nowhere, and a rule asking whether anybody has
+            // seen it answers that nobody could have been in a system it is not in - which shows
+            // as an unvisited hulk reporting itself known.
+            when(market.getContainingLocation())
+                .thenReturn(systemMock);
+
             entities.add(entityMock);
         }
         when(systemMock.getAllEntities())
@@ -225,6 +234,12 @@ final class ClaimContestFixture implements AutoCloseable {
             .thenReturn(id);
         when(factionMock.getCustom())
             .thenReturn(FactionCustomFixture.buildPunitiveExpeditionCustom(isTerritorial));
+
+        // Whether this is the neutral faction is answered off the faction, as the engine answers
+        // it: the colony kind read parts an unowned hulk from a station somebody keeps on exactly
+        // this question, so leaving it false would pose every derelict here as a manned outpost.
+        when(factionMock.isNeutralFaction())
+            .thenReturn(Factions.NEUTRAL.equals(id));
 
         return factionMock;
     }

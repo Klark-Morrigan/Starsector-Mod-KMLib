@@ -25,12 +25,16 @@ public enum RevelationGate {
      * A derelict nobody ever lived on. The fog admits one the moment its entity is found, and a
      * great many modded stations are never discoverable at all - so ungated, every hulk in the
      * sector is on the map from the first frame of a campaign.
+     *
+     * <p>A station a faction keeps is not one of these and is not held back here. It wears the same
+     * condition and is somebody's, which is what the kind read parts on, so it passes this gate on
+     * the strength of its owner and answers to the concealment gate alone.
      */
-    ABANDONED_STATIONS {
+    SPACE_DERELICTS {
 
         @Override
         boolean coversColony(Colony colony) {
-            return colony.kind() == ColonyKind.ABANDONED_STATION;
+            return colony.kind() == ColonyKind.SPACE_DERELICT;
         }
     },
 

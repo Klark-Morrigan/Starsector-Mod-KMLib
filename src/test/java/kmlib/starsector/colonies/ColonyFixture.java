@@ -105,8 +105,12 @@ public final class ColonyFixture {
         return ColonyMarketFixture.buildConditionOnlyMarket();
     }
 
-    public MarketAPI buildDerelictStation(String factionId) {
-        return ColonyMarketFixture.buildDerelictStation(factionId);
+    public MarketAPI buildDerelictStation() {
+        return ColonyMarketFixture.buildDerelictStation();
+    }
+
+    public MarketAPI buildOutpost(String factionId) {
+        return ColonyMarketFixture.buildOutpost(factionId);
     }
 
     public MarketAPI buildFoundConcealedColony(String factionId) {

@@ -5,58 +5,93 @@ import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import kmlib.starsector.markets.Markets;
 
 /**
- * What kind of place a colony is: somewhere people live, or a derelict nobody ever lived on.
+ * What kind of place a colony is: somewhere people live, a station somebody keeps, or a derelict
+ * nobody ever lived on.
  *
- * <p>The sector holds both under one market shape. An abandoned station is owned by the faction
- * whose station it was, is not condition-only, and is registered like any other market, so every
- * ownership read admits it as a colony - while nobody is aboard it, it supports nothing, and a
- * place holding only derelicts is empty space with hulks in it. A reader that cannot tell the two
- * apart says something false about the sector rather than merely drawing it oddly.
+ * <p>The sector holds all three under one market shape. A market carrying the derelict condition is
+ * owned by some faction, is not condition-only, and is registered like any other, so every
+ * ownership read admits it as a colony - while nobody is aboard the abandoned ones, they support
+ * nothing, and a place holding only those is empty space with hulks in it. A reader that cannot
+ * tell them apart says something false about the sector rather than merely drawing it oddly.
  *
  * <p>A kind rather than a boolean because the distinction is already known not to be binary: a
- * decivilised world is a third kind - somewhere people did live and no longer do - and it needs
- * its own answer rather than being folded into either of these. An enum admits it without any
- * reader changing shape, where a boolean would have to be replaced.
+ * decivilised world is a further kind - somewhere people did live and no longer do - and it needs
+ * its own answer rather than being folded into any of these. An enum admits it without any reader
+ * changing shape, where a boolean would have to be replaced.
  *
- * <p>Resolved once, where a colony is selected, and carried on the colony from there. Every
- * reader downstream routes on it, and each re-deriving it from the market would be that many
- * independent statements of what an abandoned station is.
+ * <p>Resolved once, where a colony is selected, and carried on the colony from there. Every reader
+ * downstream routes on it, and each re-deriving it from the market would be that many independent
+ * statements of what a derelict is.
  */
 public enum ColonyKind {
 
     /**
-     * Somebody lives here. The ordinary case, and the only kind that settles its location for
-     * the sector's own word-of-mouth - a place with people in it now is a place whose people
-     * would have seen whatever else stands there.
-     *
-     * <p>Not the only kind that <em>inhabits</em> one. Habitation is read as everything but the
-     * derelict, so a decivilised world - people once, nobody now - joins it without this line
-     * changing.
+     * The general case for most held markets.
      */
     COLONY,
 
     /**
-     * A derelict station with a storage submarket bolted on. Nobody has ever lived aboard it,
-     * so it settles nothing and supports nothing - it is a thing present in a place, which the
-     * player may or may not be entitled to be told about.
+     * An abandoned station somebody is at: one a faction holds, or one the economy lists.
      */
-    ABANDONED_STATION;
+    OUTPOST,
+
+    /**
+     * An abandoned station nobody is at: held by neutral (or nobody), and unlisted.
+     */
+    SPACE_DERELICT;
 
     /**
      * Reads which kind of place a market stands for.
      *
-     * <p>Positive identification only: a market is an abandoned station because it says so
-     * ({@link Markets#isAbandonedStation}), and everything else - including a market that reads
-     * as nothing in particular, and a null one - is an ordinary colony.
+     * <p>Positive identification only: a market wears the derelict shape because it says so
+     * ({@link Markets#isAbandonedStation}), and everything else - including a market that reads as
+     * nothing in particular, and a null one - is an ordinary colony.
      *
-     * <p>That default is the safe direction rather than the tidy one. Misfiling a derelict as a
-     * colony overstates a place by one hulk; misfiling a colony as a derelict erases a
+     * <p>Which of the two derelict-shaped kinds it is then turns on whether anybody is there, and
+     * two independent facts say so. A real owner is one, asked through
+     * {@link Markets#isSettledColony} so that "is the owner somebody" is answered here exactly as
+     * it is answered everywhere else. Registration with the economy is the other, and it is a
+     * deliberate act: the routine that builds a derelict pointedly does not register one, so a
+     * market wearing the condition and trading anyway was made economically real on purpose.
+     * Either alone is enough, since they are two ways of saying the same thing rather than two
+     * requirements - and reading only the first left a registered hulk taking a dominance weight
+     * while counting toward nobody living there.
+     *
+     * <p>The listing arrives as an argument rather than being read off the market, because which
+     * markets the economy lists is decided by the walk that selected this one - by identity
+     * against the economy's own set - and asking the market itself would be a second answer free
+     * to disagree with the one the colony carries.
+     *
+     * <p>The colony default is the safe direction rather than the tidy one. Misfiling a derelict
+     * as a colony overstates a place by one hulk; misfiling a colony as a derelict erases a
      * settlement that is really there, taking its people with it.
      *
-     * @param market the market to classify; null yields {@link #COLONY}
+     * @param market            the market to classify; null yields {@link #COLONY}
+     * @param isListedByEconomy whether the economy's own listing holds this very market, as the
+     *                          walk that selected it decided
      * @return the kind of place the market stands for
      */
-    public static ColonyKind resolveKind(MarketAPI market) {
-        return Markets.isAbandonedStation(market) ? ABANDONED_STATION : COLONY;
+    public static ColonyKind resolveKind(MarketAPI market, boolean isListedByEconomy) {
+
+        if (!Markets.isAbandonedStation(market)) {
+            return COLONY;
+        }
+        return Markets.isSettledColony(market) || isListedByEconomy
+            ? OUTPOST
+            : SPACE_DERELICT;
+    }
+
+    /**
+     * Whether a place of this kind settles its location - whether it has people on it now whose
+     * word about whatever else stands there would reach the player.
+     *
+     * <p>Asked of the kind rather than tested against a constant at the rule that uses it, so a
+     * kind added later declares for itself whether its people can vouch for a neighbour instead of
+     * being silently left out of a comparison written before it existed.
+     *
+     * @return true when somebody is there to have seen what else is in the location
+     */
+    public boolean isSettlingLocation() {
+        return this == COLONY || this == OUTPOST;
     }
 }

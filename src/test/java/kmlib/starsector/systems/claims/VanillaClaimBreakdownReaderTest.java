@@ -42,7 +42,7 @@ final class VanillaClaimBreakdownReaderTest {
     // knowledge. Everything else runs under the fog alone, which is the rule that adds nothing.
     private static final ColonyVisibility BOTH_GATES_ON = new ColonyVisibility(
         false,
-        Set.of(RevelationGate.ABANDONED_STATIONS, RevelationGate.HIDDEN_COLONIES));
+        Set.of(RevelationGate.SPACE_DERELICTS, RevelationGate.HIDDEN_COLONIES));
 
     private ClaimContestFixture claimContest;
 
@@ -905,16 +905,39 @@ final class VanillaClaimBreakdownReaderTest {
         }
 
         @Test
-        void weighsADerelictNobodyHasSeenWhileReportingItUnknown() {
-            // The gate and the mechanic pull in opposite directions here, which is the whole
-            // point of carrying the answer rather than applying it: the derelict is scored
-            // exactly as vanilla scores it, and a box reading the flag still declines to name a
-            // hulk in a system no fleet has been to and nobody lives in.
-            var hegemony = claimContest.buildFaction("hegemony", true);
-            var derelict = claimContest.buildMarket(hegemony, 3);
+        void reportsAnUnweighedDerelictNobodyHasSeenAsUnknown() {
+            // The mechanic only ever weighs what the economy lists, and a listed station is an
+            // outpost - so a derelict reaches a contest as an unweighed presence and never as a
+            // score. What the gate still does is decline to name it in a system no fleet has been
+            // to and nobody lives in.
+            var neutral = claimContest.buildFaction(Factions.NEUTRAL, false);
+            var derelict = claimContest.buildMarket(neutral, 3);
 
             claimContest.markMarketAsAbandonedStation(derelict);
-            claimContest.placeMarketsInSystem(derelict);
+            claimContest.placeOffEconomyMarketsInSystem(derelict);
+
+            var breakdown = new VanillaClaimBreakdownReader(BOTH_GATES_ON)
+                .readBreakdown(claimContest.getSystem());
+
+            assertThat(breakdown.scores())
+                .singleElement()
+                .isInstanceOf(PresenceOnlyClaimStanding.class);
+            assertThat(breakdown.scores().get(0).readHeldMarkets())
+                .extracting(MarketClaimBreakdown::isKnownToPlayer)
+                .containsExactly(false);
+        }
+
+        @Test
+        void weighsAnOutpostLikeAnyColonyAndReportsItKnown() {
+            // The shape the two derelict cases here used to be posed in, and a different thing
+            // now: a station a faction keeps and the economy lists is an outpost. Vanilla reads
+            // only the listing and tests no condition, so it scores at its size like any colony -
+            // and no gate holds an outpost back, so the box may name it.
+            var hegemony = claimContest.buildFaction("hegemony", true);
+            var outpost = claimContest.buildMarket(hegemony, 3);
+
+            claimContest.markMarketAsAbandonedStation(outpost);
+            claimContest.placeMarketsInSystem(outpost);
 
             var standing = readTopStanding(
                 new VanillaClaimBreakdownReader(BOTH_GATES_ON)
@@ -923,7 +946,7 @@ final class VanillaClaimBreakdownReaderTest {
             assertThat(standing.standingMarket().computeTotalScore())
                 .isEqualTo(3);
             assertThat(standing.standingMarket().isKnownToPlayer())
-                .isFalse();
+                .isTrue();
         }
 
         @Test
@@ -932,17 +955,25 @@ final class VanillaClaimBreakdownReaderTest {
             // derelict itself changes between this case and the one above it - only who else is
             // in the system to have seen it.
             var hegemony = claimContest.buildFaction("hegemony", true);
+            var neutral = claimContest.buildFaction(Factions.NEUTRAL, false);
             var capital = claimContest.buildMarket(hegemony, 5);
-            var derelict = claimContest.buildMarket(hegemony, 3);
+            var derelict = claimContest.buildMarket(neutral, 3);
 
             claimContest.markMarketAsAbandonedStation(derelict);
-            claimContest.placeMarketsInSystem(capital, derelict);
+            claimContest.placeMarketsInSystem(capital);
+            claimContest.placeOffEconomyMarketsInSystem(derelict);
 
-            var standing = readTopStanding(
-                new VanillaClaimBreakdownReader(BOTH_GATES_ON)
-                    .readBreakdown(claimContest.getSystem()));
+            var breakdown = new VanillaClaimBreakdownReader(BOTH_GATES_ON)
+                .readBreakdown(claimContest.getSystem());
 
-            assertThat(standing.otherMarkets())
+            // The derelict is neutral's, so it stands apart from the capital's own standing -
+            // reached by its kind rather than by rank, which is not what this case is about.
+            var derelictStanding = breakdown.scores().stream()
+                .filter(PresenceOnlyClaimStanding.class::isInstance)
+                .findFirst()
+                .orElseThrow();
+
+            assertThat(derelictStanding.readHeldMarkets())
                 .extracting(MarketClaimBreakdown::isKnownToPlayer)
                 .containsExactly(true);
         }
