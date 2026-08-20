@@ -312,6 +312,10 @@ final class ListMapSpoilersCommandTest {
             .thenReturn(factionId);
         when(factionMock.getDisplayName())
             .thenReturn(factionId);
+        // Answered off the faction as the engine answers it, that being the read which tells a
+        // place somebody lives from one flying the flag that means nobody does.
+        when(factionMock.isNeutralFaction())
+            .thenReturn(Factions.NEUTRAL.equals(factionId));
 
         var entityMock = mock(SectorEntityToken.class);
 

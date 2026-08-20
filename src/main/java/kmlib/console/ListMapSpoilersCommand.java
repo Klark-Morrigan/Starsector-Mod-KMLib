@@ -8,6 +8,7 @@ import com.fs.starfarer.api.impl.campaign.ids.Tags;
 
 import kmlib.console.output.CommandOutput;
 import kmlib.console.parsing.ParameterSpec;
+import kmlib.starsector.markets.Markets;
 import kmlib.starsector.systems.StarSystems;
 
 import java.util.ArrayList;
@@ -36,7 +37,6 @@ import java.util.List;
  * declared.
  */
 public final class ListMapSpoilersCommand extends KmlibBaseConsoleCommand {
-    private static final String NEUTRAL_FACTION_ID = "neutral";
     // No parameters; declaring the spec still makes the parser reject a stray
     // argument as bad syntax rather than silently ignoring it.
     private static final ParameterSpec SPEC =
@@ -116,16 +116,15 @@ public final class ListMapSpoilersCommand extends KmlibBaseConsoleCommand {
         return false;
     }
 
+    // The systems worth spoiling are the ones somebody has settled, so the listing asks the same
+    // question the colony commands do rather than restating it as a loop of its own - a place
+    // flying the neutral flag is somewhere nobody lives, and nothing about it is a spoiler.
     private static List<MarketAPI> collectOwnedMarkets(SectorAPI sector, StarSystemAPI system) {
         var ownedMarkets = new ArrayList<MarketAPI>();
         for (var market : sector.getEconomy().getMarkets(system)) {
-            var faction = market.getFaction();
-            if (market.isPlanetConditionMarketOnly()
-                    || faction == null
-                    || NEUTRAL_FACTION_ID.equals(faction.getId())) {
-                continue;
+            if (Markets.isSettledColony(market)) {
+                ownedMarkets.add(market);
             }
-            ownedMarkets.add(market);
         }
         return ownedMarkets;
     }
