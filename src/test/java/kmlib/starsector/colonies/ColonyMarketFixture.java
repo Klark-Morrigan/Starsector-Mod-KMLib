@@ -4,6 +4,7 @@ import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Conditions;
+import com.fs.starfarer.api.impl.campaign.ids.Factions;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -86,7 +87,7 @@ public final class ColonyMarketFixture {
      * hold its hazard and atmosphere. Owned by nobody in particular, and rejected on that arm.
      */
     public static MarketAPI buildConditionOnlyMarket() {
-        return buildColonyOnItsOwnEntity("neutral", DEFAULT_COLONY_SIZE, false, false, true);
+        return buildColonyOnItsOwnEntity(Factions.NEUTRAL, DEFAULT_COLONY_SIZE, false, false, true);
     }
 
     /**

@@ -1,6 +1,7 @@
 package kmlib.starsector.colonies;
 
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
+import com.fs.starfarer.api.impl.campaign.ids.Factions;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -26,7 +27,7 @@ final class RevelationGateTest {
         void abandoned_stations_covers_a_derelict() {
 
             assertThat(RevelationGate.ABANDONED_STATIONS.coversColony(
-                    buildDerelict(ColonyMarketFixture.buildDerelictStation("neutral"))))
+                    buildDerelict(ColonyMarketFixture.buildDerelictStation(Factions.NEUTRAL))))
                 .isTrue();
         }
 
@@ -68,7 +69,7 @@ final class RevelationGateTest {
             // The ordinary derelict: open, and covered by the other gate alone. Concealment and
             // kind are separate facts, and this is the case that says so.
             assertThat(RevelationGate.HIDDEN_COLONIES.coversColony(
-                    buildDerelict(ColonyMarketFixture.buildDerelictStation("neutral"))))
+                    buildDerelict(ColonyMarketFixture.buildDerelictStation(Factions.NEUTRAL))))
                 .isFalse();
         }
     }

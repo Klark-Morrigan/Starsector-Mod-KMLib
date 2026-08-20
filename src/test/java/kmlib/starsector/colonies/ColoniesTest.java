@@ -2,6 +2,7 @@ package kmlib.starsector.colonies;
 
 import com.fs.starfarer.api.campaign.LocationAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
+import com.fs.starfarer.api.impl.campaign.ids.Factions;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -104,7 +105,7 @@ final class ColoniesTest {
             // concealment would paint its system as settled from the first frame of a campaign,
             // for a place no fleet has been near.
             var fixture = new ColonyFixture("kumari_kandam");
-            var derelict = fixture.buildUnfoundOpenColony("neutral");
+            var derelict = fixture.buildUnfoundOpenColony(Factions.NEUTRAL);
 
             assertThat(buildColoniesOf(buildColony(derelict))
                     .readKnownColonies(ColonyVisibility.BASE_FOG))
@@ -150,7 +151,7 @@ final class ColoniesTest {
             // must a reveal: a derelict the player has found reads known, and one they have not
             // does not.
             var fixture = new ColonyFixture("kumari_kandam");
-            var derelict = fixture.buildDerelictStation("neutral");
+            var derelict = fixture.buildDerelictStation(Factions.NEUTRAL);
 
             assertThat(buildColoniesOf(buildDerelict(derelict)).readKnownColonies(null))
                 .containsExactly(buildDerelict(derelict));
@@ -161,7 +162,7 @@ final class ColoniesTest {
             // The Sentinel Gantries reading: found by the fog because nothing hides it, and
             // nothing whatever about it has reached the player.
             var fixture = new ColonyFixture("kumari_kandam");
-            var derelict = fixture.buildDerelictStation("neutral");
+            var derelict = fixture.buildDerelictStation(Factions.NEUTRAL);
 
             fixture.placeColoniesInSystem(derelict);
 
@@ -173,7 +174,7 @@ final class ColoniesTest {
         void keeps_a_derelict_the_player_has_been_to_the_system_of() {
 
             var fixture = new ColonyFixture("kumari_kandam");
-            var derelict = fixture.buildDerelictStation("neutral");
+            var derelict = fixture.buildDerelictStation(Factions.NEUTRAL);
 
             fixture.placeColoniesInSystem(derelict);
             fixture.markSystemAsEntered();
@@ -187,7 +188,7 @@ final class ColoniesTest {
             // The second route to revelation: a hulk in orbit over an inhabited world is common
             // knowledge there, whether or not the player has ever been.
             var fixture = new ColonyFixture("kumari_kandam");
-            var derelict = fixture.buildDerelictStation("neutral");
+            var derelict = fixture.buildDerelictStation(Factions.NEUTRAL);
             var colony = fixture.buildVisibleColony("hegemony");
 
             fixture.placeColoniesInSystem(derelict, colony);
@@ -203,7 +204,7 @@ final class ColoniesTest {
             // undiscovered colony is no grapevine the player is party to, so the derelict beside
             // it stays unmentioned rather than being vouched for by a place nobody has seen.
             var fixture = new ColonyFixture("kumari_kandam");
-            var derelict = fixture.buildDerelictStation("neutral");
+            var derelict = fixture.buildDerelictStation(Factions.NEUTRAL);
             var unfoundColony = fixture.buildUnfoundOpenColony("hegemony");
 
             fixture.placeColoniesInSystem(derelict, unfoundColony);
@@ -218,8 +219,8 @@ final class ColoniesTest {
             // A derelict cannot settle anything, having never had anybody aboard, so a place
             // holding nothing but hulks reveals none of them.
             var fixture = new ColonyFixture("kumari_kandam");
-            var first = fixture.buildDerelictStation("neutral");
-            var second = fixture.buildDerelictStation("neutral");
+            var first = fixture.buildDerelictStation(Factions.NEUTRAL);
+            var second = fixture.buildDerelictStation(Factions.NEUTRAL);
 
             fixture.placeColoniesInSystem(first, second);
 
@@ -232,7 +233,7 @@ final class ColoniesTest {
         void keeps_a_derelict_under_its_own_gate_off() {
 
             var fixture = new ColonyFixture("kumari_kandam");
-            var derelict = fixture.buildDerelictStation("neutral");
+            var derelict = fixture.buildDerelictStation(Factions.NEUTRAL);
 
             fixture.placeColoniesInSystem(derelict);
 
@@ -318,7 +319,7 @@ final class ColoniesTest {
         void keeps_a_gated_colony_under_the_reveal_though_nobody_has_seen_it() {
 
             var fixture = new ColonyFixture("kumari_kandam");
-            var derelict = fixture.buildDerelictStation("neutral");
+            var derelict = fixture.buildDerelictStation(Factions.NEUTRAL);
 
             fixture.placeColoniesInSystem(derelict);
 
@@ -330,7 +331,7 @@ final class ColoniesTest {
         void keeps_a_gated_colony_standing_in_no_star_system() {
             // Hyperspace, where mods put a few. There is no system to have been in and none to be
             // settled, so a gate answering otherwise would withhold it for the whole campaign.
-            var derelict = ColonyMarketFixture.buildDerelictStation("neutral");
+            var derelict = ColonyMarketFixture.buildDerelictStation(Factions.NEUTRAL);
 
             ColonyPlacementFixture.placeColonies(mock(LocationAPI.class), derelict);
 
@@ -385,7 +386,7 @@ final class ColoniesTest {
             // nothing but an undiscovered derelict reads as empty, which is what the player has
             // any means of knowing about it.
             var fixture = new ColonyFixture("kumari_kandam");
-            var derelict = fixture.buildUnfoundOpenColony("neutral");
+            var derelict = fixture.buildUnfoundOpenColony(Factions.NEUTRAL);
 
             assertThat(buildColoniesOf(buildColony(derelict))
                     .hasKnownColony(ColonyVisibility.BASE_FOG))
@@ -430,7 +431,7 @@ final class ColoniesTest {
             // Nothing here settles the place, so both reads have to reach their answer through
             // the gate itself rather than through anything an ordinary colony vouched for.
             var fixture = new ColonyFixture("kumari_kandam");
-            var derelict = fixture.buildDerelictStation("neutral");
+            var derelict = fixture.buildDerelictStation(Factions.NEUTRAL);
 
             fixture.placeColoniesInSystem(derelict);
 
@@ -452,7 +453,7 @@ final class ColoniesTest {
             // A settled place, where the derelict is admitted only by the colony beside it. Both
             // reads must take that settled reading before judging the gate, or they diverge.
             var fixture = new ColonyFixture("kumari_kandam");
-            var derelict = fixture.buildDerelictStation("neutral");
+            var derelict = fixture.buildDerelictStation(Factions.NEUTRAL);
             var colony = fixture.buildVisibleColony("hegemony");
 
             fixture.placeColoniesInSystem(derelict, colony);
@@ -474,7 +475,7 @@ final class ColoniesTest {
             // The whole of the projection's reason for existing: the listing may name a hulk the
             // player has been past, and the place it orbits is still nobody's home.
             var fixture = new ColonyFixture("kumari_kandam");
-            var derelict = fixture.buildDerelictStation("neutral");
+            var derelict = fixture.buildDerelictStation(Factions.NEUTRAL);
 
             fixture.placeColoniesInSystem(derelict);
             fixture.markSystemAsEntered();
@@ -494,7 +495,7 @@ final class ColoniesTest {
             // colony.
             var fixture = new ColonyFixture("kumari_kandam");
             var colony = fixture.buildVisibleColony("hegemony");
-            var derelict = fixture.buildDerelictStation("neutral");
+            var derelict = fixture.buildDerelictStation(Factions.NEUTRAL);
 
             fixture.placeColoniesInSystem(colony, derelict);
 
@@ -526,7 +527,7 @@ final class ColoniesTest {
             // Kind and gate answer separate questions. Turning the station gate off says the
             // player may be told about a hulk they have found; it does not put anybody aboard it.
             var fixture = new ColonyFixture("kumari_kandam");
-            var derelict = fixture.buildDerelictStation("neutral");
+            var derelict = fixture.buildDerelictStation(Factions.NEUTRAL);
 
             fixture.placeColoniesInSystem(derelict);
 
@@ -544,7 +545,7 @@ final class ColoniesTest {
             // entity the player has not found, so it is the reveal alone putting the hulk in the
             // listing - and habitation still declines it.
             var fixture = new ColonyFixture("kumari_kandam");
-            var derelict = fixture.buildUnfoundOpenColony("neutral");
+            var derelict = fixture.buildUnfoundOpenColony(Factions.NEUTRAL);
 
             fixture.placeColoniesInSystem(derelict);
 
@@ -613,7 +614,7 @@ final class ColoniesTest {
             // The reading the map turns on: a system the listing has something to say about, and
             // which is still empty space with a hulk in it.
             var fixture = new ColonyFixture("kumari_kandam");
-            var derelict = fixture.buildDerelictStation("neutral");
+            var derelict = fixture.buildDerelictStation(Factions.NEUTRAL);
 
             fixture.placeColoniesInSystem(derelict);
             fixture.markSystemAsEntered();
@@ -631,7 +632,7 @@ final class ColoniesTest {
             // A settled place, where the derelict must not be what carries the answer - the
             // colony beside it is.
             var fixture = new ColonyFixture("kumari_kandam");
-            var derelict = fixture.buildDerelictStation("neutral");
+            var derelict = fixture.buildDerelictStation(Factions.NEUTRAL);
             var colony = fixture.buildVisibleColony("hegemony");
 
             fixture.placeColoniesInSystem(derelict, colony);
@@ -646,7 +647,7 @@ final class ColoniesTest {
             // The emptiness question asked of the same case: the reveal admits the hulk to the
             // listing without making its place anybody's home.
             var fixture = new ColonyFixture("kumari_kandam");
-            var derelict = fixture.buildUnfoundOpenColony("neutral");
+            var derelict = fixture.buildUnfoundOpenColony(Factions.NEUTRAL);
 
             fixture.placeColoniesInSystem(derelict);
 
@@ -694,7 +695,7 @@ final class ColoniesTest {
             // and a set mixing a derelict with a colony the fog withholds is where a short-circuit
             // that had drifted from the projection would show it.
             var fixture = new ColonyFixture("kumari_kandam");
-            var derelict = fixture.buildDerelictStation("neutral");
+            var derelict = fixture.buildDerelictStation(Factions.NEUTRAL);
             var unfoundColony = fixture.buildUnfoundOpenColony("hegemony");
 
             fixture.placeColoniesInSystem(derelict, unfoundColony);

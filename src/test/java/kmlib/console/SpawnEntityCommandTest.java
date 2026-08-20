@@ -8,6 +8,7 @@ import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Entities;
+import com.fs.starfarer.api.impl.campaign.ids.Factions;
 
 import kmlib.starsector.entities.EntityNameGenerator;
 import kmlib.starsector.entities.EntityOrbits;
@@ -206,7 +207,7 @@ final class SpawnEntityCommandTest {
                 .when(() -> EntitySpawner.spawnOrbitingCustomEntity(
                     eq(focusMock),
                     eq(Entities.INACTIVE_GATE),
-                    eq("neutral"),
+                    eq(Factions.NEUTRAL),
                     anyFloat(),
                     anyFloat(),
                     anyFloat()))

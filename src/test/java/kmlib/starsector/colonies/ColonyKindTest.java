@@ -1,5 +1,7 @@
 package kmlib.starsector.colonies;
 
+import com.fs.starfarer.api.impl.campaign.ids.Factions;
+
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -22,7 +24,7 @@ final class ColonyKindTest {
         @Test
         void reads_a_derelict_station_as_an_abandoned_station() {
 
-            var derelict = ColonyMarketFixture.buildDerelictStation("neutral");
+            var derelict = ColonyMarketFixture.buildDerelictStation(Factions.NEUTRAL);
 
             assertThat(ColonyKind.resolveKind(derelict))
                 .isEqualTo(ColonyKind.ABANDONED_STATION);

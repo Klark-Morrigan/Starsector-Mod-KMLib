@@ -7,6 +7,7 @@ import com.fs.starfarer.api.campaign.JumpPointAPI;
 import com.fs.starfarer.api.campaign.LocationAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
+import com.fs.starfarer.api.impl.campaign.ids.Factions;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
 
 import org.junit.jupiter.api.AfterEach;
@@ -64,11 +65,11 @@ final class EntitySpawnerTest {
             var entityMock = mock(CustomCampaignEntityAPI.class);
             // Null id and name let the engine auto-assign; the type and faction
             // are the spawn slots passed through.
-            when(locationMock.addCustomEntity(null, null, "inactive_gate", "neutral"))
+            when(locationMock.addCustomEntity(null, null, "inactive_gate", Factions.NEUTRAL))
                 .thenReturn(entityMock);
 
             var result = EntitySpawner.spawnOrbitingCustomEntity(focusMock, "inactive_gate",
-                "neutral", 100f, 2f, 45f);
+                Factions.NEUTRAL, 100f, 2f, 45f);
 
             assertThat(result).isSameAs(entityMock);
             // The freshly added entity is placed on the requested orbit geometry.

@@ -5,6 +5,7 @@ import com.fs.starfarer.api.campaign.PlanetAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Entities;
+import com.fs.starfarer.api.impl.campaign.ids.Factions;
 
 import kmlib.collections.KmlibCollections;
 import kmlib.console.output.CommandOutput;
@@ -218,7 +219,7 @@ public final class SpawnEntityCommand extends KmlibBaseConsoleCommand {
                 return EntitySpawner.spawnOrbitingCustomEntity(
                     focus,
                     Entities.INACTIVE_GATE,
-                    "neutral",
+                    Factions.NEUTRAL,
                     distance,
                     speedDegPerDay,
                     startAngleDegrees);

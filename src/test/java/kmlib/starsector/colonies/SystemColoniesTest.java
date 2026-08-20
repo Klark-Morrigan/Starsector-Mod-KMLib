@@ -2,6 +2,7 @@ package kmlib.starsector.colonies;
 
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
+import com.fs.starfarer.api.impl.campaign.ids.Factions;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -114,7 +115,7 @@ final class SystemColoniesTest {
             // The set admits it like any other owned market - what changes is that the colony
             // says what it is, so a reader downstream is not left to take a hulk for a town.
             var fixture = new ColonyFixture("corvus");
-            var derelict = fixture.buildDerelictStation("neutral");
+            var derelict = fixture.buildDerelictStation(Factions.NEUTRAL);
 
             fixture.placeColoniesInSystem(derelict);
 
@@ -128,7 +129,7 @@ final class SystemColoniesTest {
             // here, so a resolution reading the kind off anything but the winner reports the
             // derelict as a settlement.
             var fixture = new ColonyFixture("corvus");
-            var derelict = fixture.buildDerelictStation("neutral");
+            var derelict = fixture.buildDerelictStation(Factions.NEUTRAL);
             var supersededMarket = fixture.buildSiblingMarketOn(derelict, SMALLER_COLONY_SIZE);
 
             fixture.placeColoniesInSystem(derelict);

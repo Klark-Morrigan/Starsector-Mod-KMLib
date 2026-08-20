@@ -1,6 +1,7 @@
 package kmlib.starsector.systems.claims;
 
 import com.fs.starfarer.api.Global;
+import com.fs.starfarer.api.impl.campaign.ids.Factions;
 
 import kmlib.starsector.colonies.ColonyVisibility;
 import kmlib.starsector.colonies.RevelationGate;
@@ -377,7 +378,7 @@ final class VanillaClaimBreakdownReaderTest {
             // surveyed rock in the sector. It is the shared colony set that rules them out, which
             // is what makes reading through that set rather than walking here load-bearing.
             var hegemony = claimContest.buildFaction("hegemony", true);
-            var neutral = claimContest.buildFaction("neutral", false);
+            var neutral = claimContest.buildFaction(Factions.NEUTRAL, false);
 
             claimContest.placeMarketsInSystem(claimContest.buildMarket(hegemony, 3));
             claimContest.placeOffEconomyMarketsInSystem(

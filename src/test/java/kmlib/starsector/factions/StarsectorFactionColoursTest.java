@@ -2,6 +2,7 @@ package kmlib.starsector.factions;
 
 import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
+import com.fs.starfarer.api.impl.campaign.ids.Factions;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -31,7 +32,7 @@ class StarsectorFactionColoursTest {
             var neutralMock = mock(FactionAPI.class);
             when(neutralMock.getBaseUIColor()).thenReturn(NEUTRAL_BASE);
             var sectorMock = mock(SectorAPI.class);
-            when(sectorMock.getFaction("neutral")).thenReturn(neutralMock);
+            when(sectorMock.getFaction(Factions.NEUTRAL)).thenReturn(neutralMock);
 
             assertThat(StarsectorFactionColours.resolveNeutralColour(sectorMock))
                 .isEqualTo(NEUTRAL_BASE);
@@ -48,7 +49,7 @@ class StarsectorFactionColoursTest {
             // A sector with no "neutral" faction (a bare double, or a stripped
             // modded launcher) must not NPE - the grey fallback stands in.
             var sectorMock = mock(SectorAPI.class);
-            when(sectorMock.getFaction("neutral")).thenReturn(null);
+            when(sectorMock.getFaction(Factions.NEUTRAL)).thenReturn(null);
 
             assertThat(StarsectorFactionColours.resolveNeutralColour(sectorMock))
                 .isEqualTo(Color.GRAY);
