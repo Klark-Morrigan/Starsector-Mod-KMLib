@@ -18,6 +18,7 @@ on at compile and runtime.
   - [Test fixtures in the main jar](#test-fixtures-in-the-main-jar)
 - [Rendering environment](#rendering-environment)
 - [Caching](#caching)
+- [Optional mod seams](#optional-mod-seams)
 - [Player Faction Resolution](#player-faction-resolution)
 - [UI Colour Palette](#ui-colour-palette)
 - [Highlighted Text](#highlighted-text)
@@ -708,6 +709,36 @@ live, because only a consumer knows which campaign changes it must react to.
 
 Consuming mods that cache derived campaign state should read it alongside their own
 invalidation model - KMU's is the worked example.
+
+## Optional mod seams
+
+Where an installed mod has a routine of its own for something this library also does -
+founding a colony, handing one to another owner, deciding which counters a colony trades
+over - that routine takes the whole operation and the sequence KMLib composes stands
+down. Three pieces make that switchable on an install that may not have the mod, and
+they are the same three every time:
+
+- **A presence gate**, one per mod, holding that mod's id in one place
+  ([NexerelinPresence](src/main/java/kmlib/starsector/nexerelin/NexerelinPresence.java),
+  [RandomAssortmentOfThingsPresence](src/main/java/kmlib/starsector/rat/RandomAssortmentOfThingsPresence.java)).
+- **An adapter** in that mod's package, wrapping the routine as the mod states it. The
+  only reference to a type of the mod's lives in a nested holder class, which the
+  classloader does not resolve until the gate has passed - so an install without the mod
+  never seeks a class it does not have.
+- **A seam interface** beside the composed sequence, package-private, with a single
+  method that performs the work *and* answers whether it did. One method rather than a
+  question and a command: a routine declines for reasons the caller has an answer to -
+  the mod is absent, or the subject is not a shape it handles - and reporting the decline
+  is what lets the composed sequence run in its place. Split in two, the pair would also
+  be open to a caller asking and then not calling, which is the operation silently not
+  happening at all.
+
+The composing class binds the installed routine in a constant and keeps a package-private
+overload taking one, so both branches are posed under test on a machine that has whichever
+mods it happens to have. The seam is not an extension point: a routine is bound because
+this library knows how to defer to that mod, and a caller supplying its own would be
+choosing behaviour the rest of the library cannot reason about. Every such mod stays a
+soft dependency, absent from `mod_info.json`.
 
 ## Player Faction Resolution
 

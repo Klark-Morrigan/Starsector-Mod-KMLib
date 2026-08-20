@@ -14,16 +14,9 @@ import com.fs.starfarer.api.campaign.econ.MarketAPI;
  * game's sequence on that install is one the mod will never fully recognise, so where such a
  * routine is present it takes the whole founding rather than having ours layered under it.
  *
- * <p>One method that answers whether it acted, rather than a question and a command. A routine
- * declines for reasons the caller has an answer to - the mod is not installed, or the body is not
- * the shape its routine can found on - and reporting the decline is what lets the composed sequence
- * run in its place instead of a colonisation being quietly skipped. Split in two, the pair would
- * also be open to a caller asking and then not calling, which is a colony founded by nobody.
- *
- * <p>Deliberately not part of the library's public surface. It is the seam that lets the branch be
- * posed both ways without a mod installed, not an extension point: a routine is bound here because
- * this library knows how to defer to that mod, and a caller supplying its own would be choosing a
- * colonisation the rest of the library cannot reason about.
+ * <p>What a routine here declines for: the mod is not installed, or the body is not the shape its
+ * own colonisation can found on. Both leave the market exactly as it was, so the composed sequence
+ * founds the colony in its place.
  */
 @FunctionalInterface
 interface ColonisationRoutine {

@@ -13,21 +13,14 @@ import com.fs.starfarer.api.campaign.econ.MarketAPI;
  * its own to be used in place of the game's. None of that is derivable from a market, so where such
  * a rule is present it decides the counters and this library's own table stands down.
  *
- * <p>One method that answers whether it acted, rather than a question and a command. A rule declines
- * for a reason the caller has an answer to - the mod is not installed - and reporting the decline is
- * what lets the library's own verdicts apply in its place instead of a colony changing hands with
- * whatever counters the previous owner traded over. Split in two, the pair would also be open to a
- * caller asking and then not calling, which is that same colony.
+ * <p>What a rule here declines for: the mod is not installed. The decline leaves the counters
+ * exactly as they were, so the library's own verdicts apply in its place rather than a colony
+ * changing hands still trading over whatever the previous owner did.
  *
  * <p>Narrower than the ownership change it takes part in. The flag, the player-owned mark, the
  * outlying entities and the tariff are not offered here, having no such rule to defer to, and
  * neither is storage - a counter holding the player's own property, which no owner's rule opens or
  * closes.
- *
- * <p>Deliberately not part of the library's public surface. It is the seam that lets the branch be
- * posed both ways without a mod installed, not an extension point: a rule is bound here because this
- * library knows how to defer to that mod, and a caller supplying its own would be choosing counters
- * the rest of the library cannot reason about.
  */
 @FunctionalInterface
 interface OwnerSubmarketRule {
