@@ -7,6 +7,7 @@ import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.campaign.econ.EconomyAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
+import com.fs.starfarer.api.impl.campaign.ids.Factions;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
 
 import kmlib.testfixtures.console.output.CommandOutputFake;
@@ -180,7 +181,7 @@ final class ListMapSpoilersCommandTest {
             // neutral and condition-only markets are not counted as owned, so they
             // do not appear.
             var real = buildOwnedMarket("Colony", "Hegemony", Visibility.SHOWN);
-            var neutral = buildOwnedMarket("Rock", "neutral", Visibility.SHOWN);
+            var neutral = buildOwnedMarket("Rock", Factions.NEUTRAL, Visibility.SHOWN);
             var conditionOnly = buildOwnedMarket("Gas Giant", "Hegemony", Visibility.SHOWN);
 
             when(conditionOnly.isPlanetConditionMarketOnly())

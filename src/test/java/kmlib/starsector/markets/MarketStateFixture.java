@@ -3,6 +3,7 @@ package kmlib.starsector.markets;
 import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Conditions;
+import com.fs.starfarer.api.impl.campaign.ids.Factions;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -38,7 +39,7 @@ public final class MarketStateFixture {
         // precisely what a derelict is on every axis but the condition: an owned market the
         // economy never registered. The composition is the point the doc above makes.
         return stubConditionOn(
-            buildColonyUnlistedByEconomy("neutral"),
+            buildColonyUnlistedByEconomy(Factions.NEUTRAL),
             Conditions.ABANDONED_STATION);
     }
 
@@ -47,7 +48,7 @@ public final class MarketStateFixture {
      * planet and never registers, which is what colonisation turns into a colony.
      */
     public static MarketAPI buildColonisableBody() {
-        return buildMarket(buildFaction("neutral"), true, false);
+        return buildMarket(buildFaction(Factions.NEUTRAL), true, false);
     }
 
     /** An ordinary colony: a faction holds it and the economy lists it. */
@@ -80,7 +81,7 @@ public final class MarketStateFixture {
      * a registration read tells apart from a colonisable body.
      */
     public static MarketAPI buildRegisteredSurveyData() {
-        return buildMarket(buildFaction("neutral"), true, true);
+        return buildMarket(buildFaction(Factions.NEUTRAL), true, true);
     }
 
     /** A market no faction holds, which is nobody's colony however else it reads. */
@@ -116,12 +117,18 @@ public final class MarketStateFixture {
         return marketMock;
     }
 
+    // The faction holding one of these markets. Whether it is the neutral one is answered off the
+    // faction, as the engine answers it, rather than left false: every market nobody has settled
+    // is handed to neutral as it is built, so a fixture that had neutral deny being neutral would
+    // pose a derelict station and a bare world's placeholder as places somebody lives.
     private static FactionAPI buildFaction(String id) {
 
         var factionMock = mock(FactionAPI.class);
 
         when(factionMock.getId())
             .thenReturn(id);
+        when(factionMock.isNeutralFaction())
+            .thenReturn(Factions.NEUTRAL.equals(id));
 
         return factionMock;
     }
