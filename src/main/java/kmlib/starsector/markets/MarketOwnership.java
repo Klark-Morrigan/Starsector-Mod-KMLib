@@ -249,16 +249,15 @@ public final class MarketOwnership {
 
         applySubmarketPresence(market, Submarkets.SUBMARKET_STORAGE, true);
 
-        var storage = market.getSubmarket(Submarkets.SUBMARKET_STORAGE);
+        // Asked for as vanilla's own plugin rather than assumed to be one: the storage counter is
+        // vanilla's, but a mod is free to replace the plugin behind it, and a colony changing
+        // hands is not worth failing over a fee.
+        var storagePlugin = Markets.readSubmarketPlugin(
+            market,
+            Submarkets.SUBMARKET_STORAGE,
+            StoragePlugin.class);
 
-        if (storage == null) {
-            return;
-        }
-
-        // Guarded rather than cast outright: the storage submarket is vanilla's, but a mod is
-        // free to replace the plugin behind it, and a colony changing hands is not worth a
-        // ClassCastException over a fee.
-        if (storage.getPlugin() instanceof StoragePlugin storagePlugin) {
+        if (storagePlugin != null) {
             storagePlugin.setPlayerPaidToUnlock(true);
         }
     }

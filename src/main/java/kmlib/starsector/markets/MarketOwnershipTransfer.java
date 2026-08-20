@@ -64,9 +64,11 @@ public final class MarketOwnershipTransfer {
      * so a colony taken by a faction is the same shape as one that faction founded.
      *
      * <p>Whether the colony is one that may change hands at all is the caller's question rather
-     * than this method's. A market that is not a colony has nothing to detach and nothing an owner
-     * would hold, and a colony handed to the owner it already has is a transfer that reads as its
-     * own owner's rule being reapplied - neither is refused here.
+     * than this method's, and naming the owner a colony already has is the case to be careful of.
+     * Only the ownership half of such a call settles where it already was: the detaching half runs
+     * regardless, so the colony loses the administrator, the free port and the stockpiling its
+     * owner set up and has its account billed there and then. A caller offering a choice of owner
+     * is the one that knows the choice was made, and is where naming the incumbent is refused.
      *
      * @param market    the colony changing hands; null is left alone
      * @param factionId the incoming owner's faction id; null leaves the colony alone rather than
@@ -119,13 +121,12 @@ public final class MarketOwnershipTransfer {
             return;
         }
 
-        var localResources = market.getSubmarket(Submarkets.LOCAL_RESOURCES);
+        var account = Markets.readSubmarketPlugin(
+            market,
+            Submarkets.LOCAL_RESOURCES,
+            EconomyTickListener.class);
 
-        if (localResources == null) {
-            return;
-        }
-
-        if (localResources.getPlugin() instanceof EconomyTickListener account) {
+        if (account != null) {
             account.reportEconomyTick(readMonthEndEconomyIteration(settings));
         }
     }
