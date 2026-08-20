@@ -231,4 +231,48 @@ public final class Markets {
             market.getName(),
             EntityMapIcons.resolveMapIcon(market.getPrimaryEntity()));
     }
+
+    /**
+     * The plugin keeping one of a market's trading counters, as the kind of plugin the caller
+     * means - or null where the market has no such counter, or has one kept by something else.
+     *
+     * <p>Speaking to a counter is a three-step reach: the counter, its plugin, and whether that
+     * plugin is the one the caller is about to speak to. Every step can come back empty on a
+     * modded market - the counter may be absent, and the plugin behind a counter vanilla defines
+     * is a plugin any mod may replace - so an operation that skipped the checks would fail on an
+     * install rather than on a mistake.
+     *
+     * <p>The kind is asked for rather than assumed for the same reason. A caller wanting vanilla's
+     * own plugin names that class and gets nothing on an install that replaced it; a caller
+     * wanting only the interface a step is declared on names that instead, and is answered by
+     * whatever is actually keeping the counter.
+     *
+     * <p>Not part of the library's public surface, unlike its neighbours here. It is a reach into
+     * how a market is put together rather than a read of what a market is, and an operation on the
+     * far side of it is one this package states in its own right.
+     *
+     * @param market       the market whose counter is being reached; null yields null
+     * @param submarketId  the counter's submarket id
+     * @param pluginType   the kind of plugin the caller is about to speak to
+     * @param <T>          that kind
+     * @return the counter's plugin as that kind, or null where there is none to speak to
+     */
+    static <T> T readSubmarketPlugin(MarketAPI market, String submarketId, Class<T> pluginType) {
+
+        if (market == null) {
+            return null;
+        }
+
+        var submarket = market.getSubmarket(submarketId);
+
+        if (submarket == null) {
+            return null;
+        }
+
+        var plugin = submarket.getPlugin();
+
+        return pluginType.isInstance(plugin)
+            ? pluginType.cast(plugin)
+            : null;
+    }
 }
