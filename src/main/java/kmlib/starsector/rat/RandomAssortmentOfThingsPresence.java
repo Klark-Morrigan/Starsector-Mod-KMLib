@@ -17,7 +17,7 @@ import kmlib.starsector.settings.ModPresence;
  */
 public final class RandomAssortmentOfThingsPresence {
 
-    static final String MOD_ID = "assortment_of_things";
+    public static final String MOD_ID = "assortment_of_things";
 
     private RandomAssortmentOfThingsPresence() {
     }
