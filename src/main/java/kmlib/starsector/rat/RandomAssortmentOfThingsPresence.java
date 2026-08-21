@@ -15,14 +15,18 @@ import kmlib.starsector.settings.ModPresence;
  * taken before the game has stood one up answers, is {@link ModPresence}'s - the same manner of
  * asking every optional-mod gate in the library uses.
  */
-final class RandomAssortmentOfThingsPresence {
+public final class RandomAssortmentOfThingsPresence {
 
     static final String MOD_ID = "assortment_of_things";
 
     private RandomAssortmentOfThingsPresence() {
     }
 
-    static boolean isModEnabled() {
+    /**
+     * @return whether Random Assortment of Things is enabled this run; false before the game has
+     *         stood its mod set up, which is {@link ModPresence}'s answer rather than this one's
+     */
+    public static boolean isModEnabled() {
         return ModPresence.isModEnabled(MOD_ID);
     }
 }
