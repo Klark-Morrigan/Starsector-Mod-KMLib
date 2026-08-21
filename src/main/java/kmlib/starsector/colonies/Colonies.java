@@ -29,9 +29,20 @@ import java.util.function.Predicate;
  * different claimant. What the player may be shown is {@link #readKnownColonies}, and what
  * amounts to people living here is {@link #readInhabitingColonies} - named projections over the
  * set rather than filters each display reader applies for itself.
+ *
+ * <p>The sighting register travels with the set rather than being handed to each projection,
+ * because it is a fact about the world the set was read out of - as the colonies themselves are -
+ * and every projection asks it the same question. A register given per read is one a later reader
+ * can state differently, which would have two surfaces drawn from one place disagreeing about
+ * where the player has been.
+ *
+ * @param colonies  the colonies present, in the order they were selected
+ * @param sightings what the player has seen of them and where; an unstated register reads as
+ *                  {@link ColonySightings#NONE}
  */
 public record Colonies(
-    List<Colony> colonies) {
+    List<Colony> colonies,
+    ColonySightings sightings) {
 
     /** A place with nobody in it, and the answer for one that cannot be read at all. */
     public static final Colonies NONE = new Colonies(List.of());
@@ -42,10 +53,22 @@ public record Colonies(
 
     /**
      * Takes an immutable copy of the colonies, and reads a null list as an empty one, so a set
-     * handed around a render pass cannot change under its readers.
+     * handed around a render pass cannot change under its readers. An absent register reads as
+     * nothing seen, which withholds a gated colony rather than leaking one.
      */
     public Colonies {
         colonies = colonies == null ? List.of() : List.copyOf(colonies);
+        sightings = sightings == null ? ColonySightings.NONE : sightings;
+    }
+
+    /**
+     * A set nothing is known to have been seen in - what a caller holding no register of the
+     * player's travels reads, and what every place answers before one is opened.
+     *
+     * @param colonies the colonies present; null reads as an empty set
+     */
+    public Colonies(List<Colony> colonies) {
+        this(colonies, ColonySightings.NONE);
     }
 
     /**
@@ -227,7 +250,7 @@ public record Colonies(
     //
     // Written over the kind, the two gates and the place's settled reading rather than as a
     // branch per surface, so a fourth kind or a third gate has one place to be added.
-    private static boolean isKnownColony(
+    private boolean isKnownColony(
             Colony colony,
             ColonyVisibility rule,
             boolean isSettledPlace) {
@@ -284,8 +307,13 @@ public record Colonies(
     // A disjunction because the two routes are two ways one piece of word travels rather than
     // two separate requirements: demanding both would put every derelict in the Core behind a
     // visit the place's own population makes unnecessary.
-    private static boolean isRevealedToPlayer(Colony colony, boolean isSettledPlace) {
-        return isSettledPlace || colony.isSightedByPlayer();
+    //
+    // The two are tightened separately for the same reason they are stated separately: the
+    // settled route asks who else could have seen this and reads the place as it stands, while
+    // the sighting route asks whether the player did and is the only one of the two needing a
+    // memory to answer with.
+    private boolean isRevealedToPlayer(Colony colony, boolean isSettledPlace) {
+        return isSettledPlace || colony.isSightedByPlayer(sightings);
     }
 
     // An unstated rule is the fog alone. Absent settings are not a reason to hold anything back

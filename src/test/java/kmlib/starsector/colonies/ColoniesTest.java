@@ -171,16 +171,87 @@ final class ColoniesTest {
         }
 
         @Test
-        void keeps_a_derelict_the_player_has_been_to_the_system_of() {
+        void keeps_a_derelict_the_player_has_seen_where_it_stands() {
 
             var fixture = new ColonyFixture("kumari_kandam");
             var derelict = fixture.buildDerelictStation();
 
             fixture.placeColoniesInSystem(derelict);
-            fixture.markSystemAsEntered();
+            fixture.markColoniesAsSighted(derelict);
 
-            assertThat(buildColoniesOf(buildDerelict(derelict)).readKnownColonies(BOTH_GATES_ON))
+            assertThat(buildColoniesSeenBy(fixture, buildDerelict(derelict))
+                    .readKnownColonies(BOTH_GATES_ON))
                 .containsExactly(buildDerelict(derelict));
+        }
+
+        @Test
+        void excludes_a_colony_the_player_saw_in_a_system_it_has_since_left() {
+            // The mover: an exoship warping about the fringes carries a sighting naming wherever
+            // it was met, and standing somewhere else is being unseen again. A gate reading only
+            // that the player had once been here would show it from the frame it arrived in.
+            var fixture = new ColonyFixture("kumari_kandam");
+            var mover = fixture.buildFoundConcealedColony("rat_exotech");
+
+            fixture.placeColoniesInSystem(mover);
+            fixture.markColoniesAsSightedElsewhere("corvus", mover);
+
+            assertThat(buildColoniesSeenBy(fixture, buildColony(mover))
+                    .readKnownColonies(BOTH_GATES_ON))
+                .isEmpty();
+        }
+
+        @Test
+        void keeps_a_mover_once_the_player_meets_it_where_it_has_gone() {
+            // The other half of the case above, and what keeps the rule from being a one-way
+            // door: the sighting is refreshed by the meeting, not by the first one ever made.
+            var fixture = new ColonyFixture("kumari_kandam");
+            var mover = fixture.buildFoundConcealedColony("rat_exotech");
+
+            fixture.placeColoniesInSystem(mover);
+            fixture.markColoniesAsSightedElsewhere("corvus", mover);
+            fixture.markColoniesAsSighted(mover);
+
+            assertThat(buildColoniesSeenBy(fixture, buildColony(mover))
+                    .readKnownColonies(BOTH_GATES_ON))
+                .containsExactly(buildColony(mover));
+        }
+
+        @Test
+        void excludes_a_colony_founded_where_the_player_has_already_been() {
+            // The founding case, which is the mover seen from the other end: a base built in a
+            // system the player cleared years ago was never there to be seen, and no amount of
+            // time passing changes that - nothing in the rule reads a clock at all.
+            var fixture = new ColonyFixture("kumari_kandam");
+            var neighbour = fixture.buildFoundConcealedColony("pirates");
+            var foundedSince = fixture.buildFoundConcealedColony("luddic_path");
+
+            fixture.placeColoniesInSystem(neighbour, foundedSince);
+            fixture.markColoniesAsSighted(neighbour);
+
+            assertThat(buildColoniesSeenBy(fixture, buildColony(neighbour), buildColony(foundedSince))
+                    .readKnownColonies(BOTH_GATES_ON))
+                .containsExactly(buildColony(neighbour));
+        }
+
+        @Test
+        void keeps_an_unseen_mover_among_inhabitants_and_drops_it_where_there_are_none() {
+            // The settled route is untouched by any of the above: it reads the place as it stands,
+            // so a colony arriving among people who can see it is revealed by the arrival itself,
+            // needs no sighting of its own, and loses that revelation the moment it warps out to
+            // somewhere nobody is watching.
+            var fixture = new ColonyFixture("kumari_kandam");
+            var mover = fixture.buildFoundConcealedColony("rat_exotech");
+            var colony = fixture.buildVisibleColony("hegemony");
+
+            fixture.placeColoniesInSystem(mover, colony);
+
+            assertThat(buildColoniesSeenBy(fixture, buildColony(mover), buildColony(colony))
+                    .readKnownColonies(BOTH_GATES_ON))
+                .containsExactly(buildColony(mover), buildColony(colony));
+
+            assertThat(buildColoniesSeenBy(fixture, buildColony(mover))
+                    .readKnownColonies(BOTH_GATES_ON))
+                .isEmpty();
         }
 
         @Test
@@ -308,9 +379,9 @@ final class ColoniesTest {
             var colony = fixture.buildVisibleColony("hegemony");
 
             fixture.placeColoniesInSystem(unfoundBase, colony);
-            fixture.markSystemAsEntered();
+            fixture.markColoniesAsSighted(unfoundBase, colony);
 
-            assertThat(buildColoniesOf(buildColony(unfoundBase), buildColony(colony))
+            assertThat(buildColoniesSeenBy(fixture, buildColony(unfoundBase), buildColony(colony))
                     .readKnownColonies(rule))
                 .containsExactly(buildColony(colony));
         }
@@ -513,9 +584,9 @@ final class ColoniesTest {
             var derelict = fixture.buildDerelictStation();
 
             fixture.placeColoniesInSystem(derelict);
-            fixture.markSystemAsEntered();
+            fixture.markColoniesAsSighted(derelict);
 
-            var colonies = buildColoniesOf(buildDerelict(derelict));
+            var colonies = buildColoniesSeenBy(fixture, buildDerelict(derelict));
 
             assertThat(colonies.readKnownColonies(BOTH_GATES_ON))
                 .containsExactly(buildDerelict(derelict));
@@ -652,9 +723,9 @@ final class ColoniesTest {
             var derelict = fixture.buildDerelictStation();
 
             fixture.placeColoniesInSystem(derelict);
-            fixture.markSystemAsEntered();
+            fixture.markColoniesAsSighted(derelict);
 
-            var colonies = buildColoniesOf(buildDerelict(derelict));
+            var colonies = buildColoniesSeenBy(fixture, buildDerelict(derelict));
 
             assertThat(colonies.hasKnownColony(BOTH_GATES_ON))
                 .isTrue();
@@ -734,10 +805,11 @@ final class ColoniesTest {
             var unfoundColony = fixture.buildUnfoundOpenColony("hegemony");
 
             fixture.placeColoniesInSystem(derelict, unfoundColony);
-            fixture.markSystemAsEntered();
+            fixture.markColoniesAsSighted(derelict, unfoundColony);
 
-            var derelictOnly = buildColoniesOf(buildDerelict(derelict));
-            var mixed = buildColoniesOf(buildDerelict(derelict), buildColony(unfoundColony));
+            var derelictOnly = buildColoniesSeenBy(fixture, buildDerelict(derelict));
+            var mixed = buildColoniesSeenBy(
+                fixture, buildDerelict(derelict), buildColony(unfoundColony));
 
             assertThat(derelictOnly.readInhabitingColonies(BOTH_GATES_ON))
                 .isEmpty();
@@ -763,9 +835,17 @@ final class ColoniesTest {
     }
 
     // A colony set built straight from colonies, for a case about the projection rather than
-    // about the walk that gathers the set.
+    // about the walk that gathers the set. Nothing in it has been seen, which is what a colony
+    // standing in a system reads as until a case says otherwise.
     private static Colonies buildColoniesOf(Colony... colonies) {
         return new Colonies(List.of(colonies));
+    }
+
+    // The same set, carrying what the fixture has recorded the player as having seen. Named apart
+    // from the plain builder so a case turning on a sighting says so at the point it builds the
+    // set, rather than by a stub several lines above it.
+    private static Colonies buildColoniesSeenBy(ColonyFixture fixture, Colony... colonies) {
+        return new Colonies(List.of(colonies), fixture.getSightings());
     }
 
     // Somewhere people live, listed by the economy - the kind neither gate is about.

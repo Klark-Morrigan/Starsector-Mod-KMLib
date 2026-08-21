@@ -14,11 +14,15 @@ import static org.mockito.Mockito.when;
 
 /**
  * Pins the contracts of {@link Colony#isHidden}, {@link Colony#isDiscoveredByPlayer} and
- * {@link Colony#isSightedByPlayer}, the three facts a colony answers off its own market rather
- * than storing beside it. Each method's cases live in a {@link Nested} group so the suite reports
- * as a per-method tree; the shared mock builders stay on the outer class.
+ * {@link Colony#isSightedByPlayer}, the three facts a colony answers about itself rather than
+ * storing beside it - the first two off its own market, and the third off its market read against
+ * a register of where the player has been. Each method's cases live in a {@link Nested} group so
+ * the suite reports as a per-method tree; the shared mock builders stay on the outer class.
  */
 final class ColonyTest {
+
+    private static final String COLONY_ID = "sentinel_gantries";
+    private static final String SYSTEM_ID = "kumari_kandam";
 
     @Nested
     class IsHidden {
@@ -80,20 +84,31 @@ final class ColonyTest {
     class IsSightedByPlayer {
 
         @Test
-        void reports_a_colony_in_a_system_the_player_has_entered_as_sighted() {
+        void reports_a_colony_seen_in_the_system_it_stands_in_as_sighted() {
 
-            var colony = new Colony(buildMarketInSystem(true), ColonyKind.COLONY, true);
+            var colony = new Colony(buildMarketInSystem(), ColonyKind.COLONY, true);
 
-            assertThat(colony.isSightedByPlayer())
+            assertThat(colony.isSightedByPlayer(buildSightingIn(SYSTEM_ID)))
                 .isTrue();
         }
 
         @Test
-        void reports_a_colony_in_a_system_the_player_has_never_entered_as_unsighted() {
+        void reports_a_colony_the_player_has_never_seen_as_unsighted() {
 
-            var colony = new Colony(buildMarketInSystem(false), ColonyKind.COLONY, true);
+            var colony = new Colony(buildMarketInSystem(), ColonyKind.COLONY, true);
 
-            assertThat(colony.isSightedByPlayer())
+            assertThat(colony.isSightedByPlayer(ColonySightings.NONE))
+                .isFalse();
+        }
+
+        @Test
+        void reports_a_colony_seen_somewhere_it_no_longer_stands_as_unsighted() {
+            // The mover. A sighting names where the colony was met, so standing anywhere else is
+            // being unseen again - which is the whole of what parts this from vanilla's memory of
+            // having entered a system.
+            var colony = new Colony(buildMarketInSystem(), ColonyKind.COLONY, true);
+
+            assertThat(colony.isSightedByPlayer(buildSightingIn("corvus")))
                 .isFalse();
         }
 
@@ -104,8 +119,18 @@ final class ColonyTest {
             // it for the whole campaign rather than until somebody saw it.
             var colony = new Colony(buildMarketIn(mock(LocationAPI.class)), ColonyKind.COLONY, true);
 
-            assertThat(colony.isSightedByPlayer())
+            assertThat(colony.isSightedByPlayer(ColonySightings.NONE))
                 .isTrue();
+        }
+
+        @Test
+        void reports_a_colony_as_unsighted_where_no_register_is_stated() {
+            // An absent record of the player's travels is not a reason to suppose they travelled,
+            // so the unstated case withholds rather than leaks.
+            var colony = new Colony(buildMarketInSystem(), ColonyKind.COLONY, true);
+
+            assertThat(colony.isSightedByPlayer(null))
+                .isFalse();
         }
     }
 
@@ -130,15 +155,26 @@ final class ColonyTest {
         return marketMock;
     }
 
-    // A market standing in a star system the player has or has not been to.
-    private static MarketAPI buildMarketInSystem(boolean isEnteredByPlayer) {
+    // A market standing in a star system, under an id of its own so a sighting can name it - or
+    // name somewhere else, which is the only way the two answers part company.
+    private static MarketAPI buildMarketInSystem() {
 
         var systemMock = mock(StarSystemAPI.class);
 
-        when(systemMock.isEnteredByPlayer())
-            .thenReturn(isEnteredByPlayer);
+        when(systemMock.getId())
+            .thenReturn(SYSTEM_ID);
 
-        return buildMarketIn(systemMock);
+        var marketMock = buildMarketIn(systemMock);
+
+        when(marketMock.getId())
+            .thenReturn(COLONY_ID);
+
+        return marketMock;
+    }
+
+    // A register holding one sighting of the colony above, in whichever system a case names.
+    private static ColonySightings buildSightingIn(String locationId) {
+        return colonyId -> COLONY_ID.equals(colonyId) ? locationId : null;
     }
 
     // A market standing in a given location, which the sighting read is the only consumer of.

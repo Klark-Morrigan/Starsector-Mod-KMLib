@@ -80,7 +80,11 @@ public final class LocationColonies {
                 ColonyKind.resolveKind(market, isListedByEconomy),
                 isListedByEconomy));
         }
-        return new Colonies(colonies);
+
+        // The register is opened here, with the set, because this is the one point at which the
+        // sector is in hand: a colony carries no route back to it, and a projection asked of the
+        // set later would have nowhere to read the player's travels from.
+        return new Colonies(colonies, SectorColonySightings.readSightings(sector));
     }
 
     // Appends the owned colonies among a listing, in the order the listing gives them. Kept as

@@ -5,7 +5,9 @@ import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.campaign.econ.EconomyAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -37,7 +39,10 @@ public final class ColonyFixture {
 
     private final EconomyAPI economyMock;
     private final SectorAPI sectorMock;
+    private final Map<String, String> sightedLocationIdsByColonyId = new HashMap<>();
     private final StarSystemAPI systemMock;
+
+    private int namedColonyCount;
 
     /**
      * Opens a sector holding exactly one system.
@@ -85,15 +90,40 @@ public final class ColonyFixture {
     }
 
     /**
-     * Records the player as having been in the system, the way vanilla does when their fleet
-     * arrives - the player's own route to having seen whatever stands here.
-     *
-     * <p>Stated rather than defaulted, because an unentered system is the interesting half: it
-     * is where a colony that would otherwise leak has to be held back.
+     * What the player has seen and where, as a colony set reads it. Live rather than a snapshot,
+     * so a case may build its set first and record the sighting after.
      */
-    public void markSystemAsEntered() {
-        when(systemMock.isEnteredByPlayer())
-            .thenReturn(true);
+    public ColonySightings getSightings() {
+        return sightedLocationIdsByColonyId::get;
+    }
+
+    /**
+     * Records the player as having seen these colonies standing in this system - their own route
+     * to having heard of whatever is here.
+     *
+     * <p>Stated rather than defaulted, because an unseen colony is the interesting half: it is
+     * where a colony that would otherwise leak has to be held back.
+     *
+     * <p>Per colony rather than per system, which is the whole of what the sighting rule turns
+     * on: a colony that has since moved, or was founded after the player passed through, is one
+     * this system carries no sighting of however often the player has crossed it.
+     */
+    public void markColoniesAsSighted(MarketAPI... colonies) {
+
+        for (var colony : colonies) {
+            sightedLocationIdsByColonyId.put(nameColony(colony), systemMock.getId());
+        }
+    }
+
+    /**
+     * Records the player as having seen these colonies in some other system - a sighting that no
+     * longer describes where they stand, which is what a colony that has moved since carries.
+     */
+    public void markColoniesAsSightedElsewhere(String otherSystemId, MarketAPI... colonies) {
+
+        for (var colony : colonies) {
+            sightedLocationIdsByColonyId.put(nameColony(colony), otherSystemId);
+        }
     }
 
     // Each colony builder below forwards to the one named for it on ColonyMarketFixture, which
@@ -135,5 +165,25 @@ public final class ColonyFixture {
 
     public MarketAPI buildVisibleColonyOfSize(String factionId, int size) {
         return ColonyMarketFixture.buildVisibleColonyOfSize(factionId, size);
+    }
+
+    // The id a sighting is kept against, given to the colony here if it has none. Colonies are
+    // built without one because almost nothing reads it, and a mock answers null until asked to
+    // answer otherwise - which would have every unnamed colony share one entry in the register.
+    private String nameColony(MarketAPI colony) {
+
+        var colonyId = colony.getId();
+
+        if (colonyId != null) {
+            return colonyId;
+        }
+        namedColonyCount++;
+
+        var namedColonyId = "colony_" + namedColonyCount;
+
+        when(colony.getId())
+            .thenReturn(namedColonyId);
+
+        return namedColonyId;
     }
 }

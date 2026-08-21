@@ -139,7 +139,12 @@ src/main/java/kmlib/
                      the composition of the two. Each colony carries
                      what kind of place it is, resolved once where it is
                      selected, so a derelict station is never taken for
-                     a settlement downstream
+                     a settlement downstream. Beside the set sits the
+                     sighting register: where the player last saw each
+                     colony, written as they travel and kept in the
+                     save, so a shape the fog alone would leak is shown
+                     only where somebody has seen it standing - and a
+                     colony that has since moved is unseen again
     entities/      - spawning custom campaign entities, their orbits,
                      name generation, and how an entity is identified to
                      a reader - its name paired with the map glyph it is

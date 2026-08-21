@@ -91,21 +91,33 @@ public record Colony(
     }
 
     /**
-     * Whether the player has been where this colony stands - their own route to having heard of
-     * it, beside the one that runs through the place's own inhabitants.
+     * Whether the player has seen this colony where it now stands - their own route to having
+     * heard of it, beside the one that runs through the place's own inhabitants.
      *
-     * <p>Read off the containing star system's memory of having been entered, which vanilla
-     * sets when the player fleet arrives and keeps in the save. Nothing here is tracked,
-     * listened for or migrated: the fact already exists on the object the question is asked of.
+     * <p>The sighting has to name the place the colony is in today, not merely some place it was
+     * once seen in. A colony that has moved since is unseen again until the player meets it
+     * where it has gone, and one founded after the player passed through was never seen at all -
+     * both of which a bare "has this system been entered" would answer wrongly, and in opposite
+     * directions.
      *
      * <p>A colony in no star system - hyperspace, where mods put a few - reads sighted. There is
      * no system to have been in and none to be settled, so a gate answering otherwise would hold
      * such a colony back for good rather than until somebody saw it.
      *
-     * @return true when the colony's system has been entered, or it stands in no system at all
+     * @param sightings what the player has seen and where; an unstated register reads as nothing
+     *                  seen, which withholds rather than leaks
+     * @return true when the colony was seen in the system it stands in, or it stands in no system
+     *         at all
      */
-    public boolean isSightedByPlayer() {
-        return !(market.getContainingLocation() instanceof StarSystemAPI system)
-            || system.isEnteredByPlayer();
+    public boolean isSightedByPlayer(ColonySightings sightings) {
+
+        if (!(market.getContainingLocation() instanceof StarSystemAPI system)) {
+            return true;
+        }
+        var sightedLocationId = sightings == null
+            ? null
+            : sightings.readSightedLocationId(market.getId());
+
+        return sightedLocationId != null && sightedLocationId.equals(system.getId());
     }
 }
