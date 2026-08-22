@@ -145,9 +145,12 @@ src/main/java/kmlib/
                      save, so a shape the fog alone would leak is shown
                      only where somebody has seen it standing - and a
                      colony that has since moved is unseen again
-    consolecommands/ - Console Commands: whether that mod is enabled, held
-                       here rather than in each consuming mod since the
-                       commands under console/ already compile against it
+    consolecommands/ - Console Commands as something to stand down for:
+                       whether the mod is enabled, and whether a console is
+                       taking text entry this frame - the latter as a role
+                       any caller holds, answered by one shared fail-open
+                       reader that settles the mod state once and warns once
+                       naming whichever hop broke
     entities/      - spawning custom campaign entities, their orbits,
                      name generation, and how an entity is identified to
                      a reader - its name paired with the map glyph it is
@@ -669,8 +672,9 @@ that depends on it - see [Requirements](#requirements).
 
 [`testfixtures/`](src/main/java/kmlib/testfixtures/) holds the fakes a consuming
 mod's tests stand its subjects on - KMLib's own ports (claims, fonts, the intel
-screen, the modelview, console output), the core-UI hops and widget tree a layout
-rule walks, the builders for the values those ports report, and
+screen, the modelview, console output, a console overlay up or down as a test
+says), the core-UI hops and widget tree a layout rule walks, the builders for the
+values those ports report, and
 [`starsector/settings/`](src/main/java/kmlib/testfixtures/starsector/settings/)'s
 no-op `SettingsAPI` proxy, which a test installs into `Global` before touching
 `Misc` (whose static initialiser would otherwise NPE).
