@@ -20,6 +20,9 @@ package kmlib.testfixtures.starsector.settings;
  */
 public final class StubbedModIds {
 
+    /** Console Commands, which loads the commands KMLib registers with it. */
+    public static final String CONSOLE_COMMANDS = "lw_console";
+
     /** Nexerelin, whose own colonisation KMLib hands a founding to rather than composing one. */
     public static final String NEXERELIN = "nexerelin";
 

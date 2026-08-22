@@ -145,6 +145,9 @@ src/main/java/kmlib/
                      save, so a shape the fog alone would leak is shown
                      only where somebody has seen it standing - and a
                      colony that has since moved is unseen again
+    consolecommands/ - Console Commands: whether that mod is enabled, held
+                       here rather than in each consuming mod since the
+                       commands under console/ already compile against it
     entities/      - spawning custom campaign entities, their orbits,
                      name generation, and how an entity is identified to
                      a reader - its name paired with the map glyph it is
@@ -733,8 +736,11 @@ down. Three pieces make that switchable on an install that may not have the mod,
 they are the same three every time:
 
 - **A presence gate**, one per mod, holding that mod's id in one place
-  ([NexerelinPresence](src/main/java/kmlib/starsector/nexerelin/NexerelinPresence.java),
+  ([ConsoleCommandsPresence](src/main/java/kmlib/starsector/consolecommands/ConsoleCommandsPresence.java),
+  [NexerelinPresence](src/main/java/kmlib/starsector/nexerelin/NexerelinPresence.java),
   [RandomAssortmentOfThingsPresence](src/main/java/kmlib/starsector/rat/RandomAssortmentOfThingsPresence.java)).
+  Gate and id are both public: a consuming mod integrating with the same mod asks here
+  instead of writing the id out again, so a mod that renames it is one edit for the series.
 - **An adapter** in that mod's package, wrapping the routine as the mod states it. The
   only reference to a type of the mod's lives in a nested holder class, which the
   classloader does not resolve until the gate has passed - so an install without the mod
