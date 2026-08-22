@@ -3,10 +3,10 @@ package kmlib;
 import com.fs.starfarer.api.BaseModPlugin;
 import com.fs.starfarer.api.Global;
 
+import kmlib.mods.nexerelin.NexerelinIntegration;
+import kmlib.mods.rat.RandomAssortmentOfThingsIntegration;
 import kmlib.opengl.FastRendering;
 import kmlib.settings.KmlibLunaSettings;
-import kmlib.starsector.nexerelin.NexerelinIntegration;
-import kmlib.starsector.rat.RandomAssortmentOfThingsIntegration;
 
 import org.apache.log4j.Logger;
 

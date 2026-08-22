@@ -20,9 +20,12 @@ place. Nothing in this package names the Starsector API or any mod.
 - **A presence gate**, one per mod, holding that mod's id in one place - `NexerelinPresence`,
   `RandomAssortmentOfThingsPresence`, `ConsoleCommandsPresence`. Gate and id are both public,
   so a consuming mod integrating with the same mod asks here rather than writing the id again.
-- **An adapter** in that mod's own package. The sole reference to a type of the mod's lives in
-  a nested holder class the classloader does not resolve until the gate has passed, so an
-  install without the mod never seeks a class it does not have.
+- **An adapter** in that mod's own package under `kmlib.mods`, which is where every one of these
+  lives and the only place in the library allowed to name a mod - `kmlib.starsector` is closed to
+  that subtree by the layering gate, so a new adapter is covered by the rule the moment it is
+  added. The sole reference to a type of the mod's lives in a nested holder class the classloader
+  does not resolve until the gate has passed, so an install without the mod never seeks a class it
+  does not have.
 - **An integration facade** in that same package - `NexerelinIntegration`,
   `RandomAssortmentOfThingsIntegration` - registering the adapters at load, and only where the
   mod is enabled. The arrow runs from the mod's package to the operation, never back: an

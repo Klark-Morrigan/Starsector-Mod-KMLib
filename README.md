@@ -128,6 +128,34 @@ src/main/java/kmlib/
                      one meeting what the command needs of it - and
                      which faction it acts for, named by id or the
                      player's own
+  mods/            - every adapter to a third-party mod, one package per mod
+                     and nothing else here. What belongs is what stands behind
+                     a presence gate, so a mod this library is compiled
+                     against but cannot run without - LunaLib under settings/,
+                     Fast Rendering under opengl/ - is not one of these.
+                     starsector/ is closed to this whole subtree: the arrow
+                     runs from an adapter to the operation it registers with
+                     and never back, and the mod plugin, which sits outside
+                     that root, is the only place that names any of them
+    consolecommands/ - Console Commands as something to stand down for:
+                       whether the mod is enabled, and whether a console is
+                       taking text entry this frame - the latter as a role any
+                       caller holds, answered by one shared fail-open reader
+                       that settles the mod state once and warns once naming
+                       whichever hop broke
+    nexerelin/     - Nexerelin: founding a colony through that mod's own
+                     colonisation, handing an existing colony over through
+                     that mod's own transfer, stated as a hand-over rather
+                     than a capture, and the trading counters that mod's own
+                     rule decides. Registered with the operations in
+                     starsector/markets/ at load, and only where the mod is
+                     enabled
+    rat/           - Random Assortment of Things: Abyssal Fracture matching,
+                     registered with the reachability read in
+                     starsector/systems/ at load as a means of arrival, and
+                     only where the mod is enabled; plus the campaign-minimap
+                     role answered for its mini-map, which a caller holds
+                     directly rather than reaching through a register
   settings/        - LunaLib settings read / write + labelled choices
   starsector/
     colonies/      - the shared colony set every "who is here" read
@@ -153,13 +181,12 @@ src/main/java/kmlib/
                      the sector on. The second is owner-aware - a colony
                      vouches for a concealed neighbour only when the two
                      are held by different factions, nobody announcing
-                     their own secrets
-    consolecommands/ - Console Commands as something to stand down for:
-                       whether the mod is enabled, and whether a console is
-                       taking text entry this frame - the latter as a role
-                       any caller holds, answered by one shared fail-open
-                       reader that settles the mod state once and warns once
-                       naming whichever hop broke
+                     their own secrets - and it is read live as well as
+                     recorded, so a colony arriving among witnesses is
+                     shown before any sweep has run. Only the shapes a
+                     gate holds back are recorded at all; an open colony
+                     the economy lists is in the sector's own sight
+                     permanently
     entities/      - spawning custom campaign entities, their orbits,
                      name generation, and how an entity is identified to
                      a reader - its name paired with the map glyph it is
@@ -207,21 +234,6 @@ src/main/java/kmlib/
                      hand-over and submarket rule this install supplies
                      are offered their work through
     memory/        - typed sector-memory accessors (flag, string)
-    nexerelin/     - Nexerelin: founding a colony through that mod's own
-                     colonisation, handing an existing colony over through
-                     that mod's own transfer, stated as a hand-over rather
-                     than a capture, and the trading counters that mod's
-                     own rule decides. Registered with the operations in
-                     markets/ at load, and only where the mod is enabled,
-                     so the arrow runs from here to them and they never
-                     name this package
-    rat/           - Random Assortment of Things: Abyssal Fracture matching,
-                     registered with the reachability read in systems/ at load
-                     as a means of arrival, and only where the mod is enabled,
-                     so the arrow runs from here to it and it never names this
-                     package; plus the campaign-minimap role answered for its
-                     mini-map, which a caller holds directly rather than
-                     reaching through a register
     relation/      - player relationship formatting
     scripts/       - sector script registration helpers
     settings/      - the game's own settings: whether a mod is enabled,

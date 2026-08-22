@@ -82,14 +82,29 @@ enforcePackageLayering {
     forbidImport exactly: 'kmlib.starsector.markets',
             of: 'kmlib.starsector.markets.ownership'
 
-    // What a market operation does is this library's; which mods on this install might do it
-    // instead is not, and an operation naming one has decided something it cannot see the inputs
-    // to. Each operation states the shape of a routine that could take its work over and asks its
-    // own register, the register being filled where the install is composed - so the arrow runs
-    // from the integration to the operation and never back. Closing this edge is what keeps it
-    // that way: one import back and the operations would again depend on a mod they exist to be
-    // usable without.
-    forbidImport under: 'kmlib.starsector.markets', of: 'kmlib.starsector.nexerelin'
+    // What this library does is its own; which mods on this install might do it instead is not,
+    // and a class naming one has decided something it cannot see the inputs to. Every adapter to
+    // a third-party mod is gathered under kmlib.mods, one package per mod, so the whole of it is
+    // a single subtree - and the game-facing library is closed to that subtree entire. Each
+    // operation states the shape of a routine that could take its work over and asks its own
+    // register, the register being filled where the install is composed, so the arrow runs from
+    // the adapter to the operation and never back. Closing this edge is what keeps it that way:
+    // one import back and the library would again depend on a mod it exists to be usable without.
+    //
+    // Stated at the subtree width rather than per package that happens to defer work today: a
+    // new adapter would otherwise need its own line here, and the one nobody remembers to add is
+    // the one that inverts an arrow.
+    //
+    // kmlib.mods sits beside kmlib.starsector rather than inside it so that this edge can be
+    // written at all. Under it, the rule would close the adapters to their own package: Java
+    // spells a same-package static import as an import like any other, so the gate reads a test
+    // reaching for its neighbouring assertion helper as a layering violation.
+    //
+    // Two things this leaves open, both deliberate. KMLib_ModPlugin sits in kmlib, outside the
+    // closed root, which is what lets the composition root bind the adapters it is the only place
+    // allowed to name. The fixture tree does too, so a shipped Fake can stand in for a role an
+    // adapter answers.
+    forbidImport under: 'kmlib.starsector', of: 'kmlib.mods'
 }
 
 // LunaLib backs KmLogging's in-game log-level binding. compileOnly, and
