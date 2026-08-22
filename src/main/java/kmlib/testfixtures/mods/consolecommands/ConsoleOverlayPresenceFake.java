@@ -8,9 +8,10 @@ import kmlib.mods.consolecommands.ConsoleOverlayPresence;
  *
  * <p>Stands in at the presence rather than at the gate above it, which is the seam that exists:
  * the gate's fail-open handling is behaviour a caller inherits rather than behaviour a suite
- * should replace, so a case drives this and lets the real gate run over it. Reaching the read at
- * all needs the mod reported enabled, which
- * {@code ModStateScopes.runWithModEnabled} is for.
+ * should replace, so a case drives this and lets the real gate run over it. The gate only reaches
+ * this read on an install reporting the mod enabled, which
+ * {@link kmlib.testfixtures.starsector.settings.ModStateScopes#runWithModEnabled} arranges - so a
+ * case that leaves the scope off is posing the mod-absent install instead.
  *
  * <p>Counts the asks so a case can pin that the gate short-circuits before the console is touched
  * at all - the thing that keeps an install without Console Commands from resolving a class it

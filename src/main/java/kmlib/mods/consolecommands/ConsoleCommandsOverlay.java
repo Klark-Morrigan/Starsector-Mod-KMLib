@@ -21,15 +21,8 @@ import org.apache.log4j.Logger;
  *
  * <p>Console Commands is compiled against but not declared a dependency, so an install without it
  * is ordinary and must cost nothing - which is what the gate, the deferred panel read and the held
- * enablement below are each for.
- *
- * <p>Fail-open is the governing rule here rather than a footnote. The mod absent, the class
- * missing, the accessor moved by a Console Commands release, the read throwing anything at all -
- * each reports no console open and nothing else. Callers then behave as they did before this
- * question existed: drawn over the console and still holding its hotkeys, which is a survivable
- * annoyance a player can work around by closing the panel. Reporting open-on-failure, or letting
- * a throw escape, would instead take those callers away on every screen and every frame, for a
- * mod the player may not even have installed.
+ * enablement below are each for. Every way the answer can go missing lands on "no console open";
+ * {@link #isOpen()} carries what that costs and why it is the survivable direction.
  */
 public final class ConsoleCommandsOverlay {
 
@@ -92,10 +85,13 @@ public final class ConsoleCommandsOverlay {
     /**
      * Whether a console is taking text entry this frame.
      *
-     * <p>Fails open: every way the answer can go missing - no console mod installed, its state
-     * unreadable, the read throwing - reports {@code false}. A caller then behaves exactly as it
-     * did before this question existed, which is a known annoyance, rather than standing down
-     * everywhere on a read that broke.
+     * <p>Fails open, which is the governing rule here rather than a footnote. The mod absent, the
+     * class missing, the accessor moved by a Console Commands release, the read throwing anything
+     * at all - each reports {@code false} and nothing else. Callers then behave as they did before
+     * this question existed: drawn over the console and still holding its hotkeys, a survivable
+     * annoyance a player can work around by closing the panel. Reporting open-on-failure, or
+     * letting a throw escape, would instead take those callers away on every screen and every
+     * frame, for a mod the player may not even have installed.
      *
      * @return whether a console overlay is open, and {@code false} whenever that cannot be
      *         established

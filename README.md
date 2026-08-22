@@ -132,11 +132,9 @@ src/main/java/kmlib/
                      and nothing else here. What belongs is what stands behind
                      a presence gate, so a mod this library is compiled
                      against but cannot run without - LunaLib under settings/,
-                     Fast Rendering under opengl/ - is not one of these.
-                     starsector/ is closed to this whole subtree: the arrow
-                     runs from an adapter to the operation it registers with
-                     and never back, and the mod plugin, which sits outside
-                     that root, is the only place that names any of them
+                     Fast Rendering under opengl/ - is not one of these. How
+                     one is written, and which way the arrows run, is in
+                     extensions/README.md
     consolecommands/ - Console Commands as something to stand down for:
                        whether the mod is enabled, and whether a console is
                        taking text entry this frame - the latter as a role any
