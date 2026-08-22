@@ -1,5 +1,6 @@
 package kmlib.starsector.systems.claims;
 
+import kmlib.starsector.colonies.ColonyVisibility;
 import kmlib.starsector.systems.SystemColoniesIndex;
 
 /**
@@ -15,15 +16,23 @@ import kmlib.starsector.systems.SystemColoniesIndex;
  * <p>A port rather than a direct call on the vanilla binding for the usual reason - a caller
  * depending on this can be handed a reader with no running game behind it, which is what keeps
  * a caller free of the mechanic while the binding stays the one place vanilla's is named.
+ *
+ * <p>The visibility rule travels with the index for the same reason the index does: both are the
+ * opening pass's, and a reader given one but not the other would answer about the sector the pass
+ * saw under a rule the pass never stated. What the rule reaches is only what a reader's breakdowns
+ * report about the player's knowledge of each market - the claimant is resolved off the unfogged
+ * set whatever it says - so this is a rule handed down rather than one a binding may invent.
  */
 @FunctionalInterface
 public interface ClaimReaderSource {
 
     /**
-     * Opens a reader answering off one pass's colony walk.
+     * Opens a reader answering off one pass's colony walk, under that pass's own rule.
      *
-     * @param colonies the pass's colony index, discarded with the pass that opened it
+     * @param visibility what the player may be shown of the colonies met, carried onto the
+     *                   breakdowns the opened reader builds
+     * @param colonies   the pass's colony index, discarded with the pass that opened it
      * @return a reader reading claims out of that index
      */
-    ClaimReader openReaderOver(SystemColoniesIndex colonies);
+    ClaimReader openReaderOver(ColonyVisibility visibility, SystemColoniesIndex colonies);
 }

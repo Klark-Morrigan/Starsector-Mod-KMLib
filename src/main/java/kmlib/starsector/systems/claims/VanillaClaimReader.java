@@ -21,29 +21,36 @@ import kmlib.starsector.systems.SystemColoniesIndex;
  * from, since that is the whole of what this adds to it: a reader built for one pass shares that
  * pass's walk of each system, and one built to outlive any pass walks afresh rather than answering
  * off a snapshot nothing refreshes.
+ *
+ * <p>The visibility rule is handed in beside it rather than chosen here. Nothing this reader
+ * answers turns on it - the claimant comes off the unfogged set, and no breakdown leaves the
+ * class - so a rule stated here would be one no caller asked for, sitting under callers that hold
+ * their own. Taking it keeps the rule a thing passed down from wherever a pass resolved it.
  */
 public final class VanillaClaimReader implements ClaimReader {
 
     private final ClaimBreakdownReader breakdownReader;
 
-    /** A reader with no pass behind it, walking each system afresh on every ask. */
-    public VanillaClaimReader() {
-        this(null);
+    /**
+     * A reader with no pass behind it, walking each system afresh on every ask.
+     *
+     * @param visibility what the player may be shown of the colonies met, carried onto the
+     *                   breakdowns behind the claimant
+     */
+    public VanillaClaimReader(ColonyVisibility visibility) {
+        this(visibility, null);
     }
 
     /**
      * A reader sharing one pass's colony walk.
      *
+     * @param visibility    what the player may be shown of the colonies met, carried onto the
+     *                      breakdowns behind the claimant
      * @param coloniesIndex the pass's colony index, discarded with the pass that opened it;
      *                      null reads each system afresh, as the no-index reader does
      */
-    public VanillaClaimReader(SystemColoniesIndex coloniesIndex) {
-        // The breakdown reader's visibility rule decides only what its breakdowns report about
-        // the player's knowledge of each market, and no breakdown leaves this class - only the
-        // claimant does, resolved off the unfogged set. So the rule that adds nothing is the
-        // honest one to state here: any other would imply this reader had a fog to apply.
-        breakdownReader =
-            new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG, coloniesIndex);
+    public VanillaClaimReader(ColonyVisibility visibility, SystemColoniesIndex coloniesIndex) {
+        breakdownReader = new VanillaClaimBreakdownReader(visibility, coloniesIndex);
     }
 
     @Override
