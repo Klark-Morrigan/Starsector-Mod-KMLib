@@ -32,7 +32,7 @@ public class KMLib_ModPlugin extends BaseModPlugin {
 
         installLunaLibSettingsBindings();
         logActiveRenderer();
-        installOptionalModRoutines();
+        installOptionalModIntegrations();
     }
 
     private static void installLunaLibSettingsBindings() {
@@ -49,29 +49,30 @@ public class KMLib_ModPlugin extends BaseModPlugin {
     // that may defer to them. It happens here because which mods are present is a fact about the
     // install, and an operation asking that question for itself would be naming a mod it has no
     // business knowing about - so the composing is done once, where a mod's entry point already is.
+    private static void installOptionalModIntegrations() {
+
+        installGuarded(
+            "Nexerelin routines",
+            NexerelinIntegration::installRoutines);
+            
+        installGuarded(
+            "Random Assortment of Things system access routes",
+            RandomAssortmentOfThingsIntegration::installSystemAccessRoutes);
+    }
+
+    // One guarded step per integration, so a mod whose registration throws costs only its own
+    // adapters rather than every adapter that had not been reached yet.
     //
     // A failure leaves the library running its own sequences rather than a mod's, which is the
     // behaviour of an install without that mod - a worse colony than the player expected, and a
     // far better outcome than taking down every mod that depends on KMLib.
-    //
-    // One try per integration, so a mod whose registration throws costs only its own adapters
-    // rather than every adapter that had not been reached yet.
-    private static void installOptionalModRoutines() {
+    private static void installGuarded(String integrationDescription, Runnable installation) {
 
         try {
-            NexerelinIntegration.installRoutines();
+            installation.run();
 
         } catch (RuntimeException exception) {
-            LOG.error("Failed to install KMLib Nexerelin routines", exception);
-        }
-
-        try {
-            RandomAssortmentOfThingsIntegration.installSystemAccessRoutes();
-
-        } catch (RuntimeException exception) {
-            LOG.error(
-                "Failed to install KMLib Random Assortment of Things system access routes",
-                exception);
+            LOG.error("Failed to install KMLib " + integrationDescription, exception);
         }
     }
 

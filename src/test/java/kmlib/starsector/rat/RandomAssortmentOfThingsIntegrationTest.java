@@ -43,34 +43,26 @@ final class RandomAssortmentOfThingsIntegrationTest {
     class InstallSystemAccessRoutes {
 
         @Test
-        void puts_a_route_in_front_of_the_reachability_read() {
+        void puts_a_route_in_front_of_the_reachability_read_under_the_mod_s_name() {
             // The Abyssal Fracture is the one way this mod moves fleets that the engine does not
             // model. A registration missed here is a system quietly reading as cut off on a save
-            // whose fleets get there every day.
-            RandomAssortmentOfThingsIntegration.installSystemAccessRoutes(WITH_RANDOM_ASSORTMENT_OF_THINGS);
+            // whose fleets get there every day. The name is asserted with it because what the
+            // startup log is read for is which mod supplies the way in.
+            RandomAssortmentOfThingsIntegration.installSystemAccessRoutes(
+                WITH_RANDOM_ASSORTMENT_OF_THINGS);
 
             assertThat(SystemAccessRoutes.readRouteNames())
                 .containsExactly(INTEGRATION_NAME);
         }
 
         @Test
-        void installs_the_route_under_a_name_a_log_line_can_be_read_by() {
-            // What the startup log is read for here is which mod supplies the way in on this
-            // install, so the name has to be the mod's rather than a lambda's type.
-            RandomAssortmentOfThingsIntegration.installSystemAccessRoutes(WITH_RANDOM_ASSORTMENT_OF_THINGS);
-
-            assertThat(SystemAccessRoutes.readRouteNames())
-                .doesNotContain(RandomAssortmentOfThingsIntegration.class.getName());
-            assertThat(SystemAccessRoutes.readRouteNames().get(0))
-                .isEqualTo(INTEGRATION_NAME);
-        }
-
-        @Test
         void installs_one_route_when_the_install_is_composed_twice() {
             // Keyed by name, so a second composition replaces this integration's own route rather
             // than adding a second one that would be walked for nothing on every read.
-            RandomAssortmentOfThingsIntegration.installSystemAccessRoutes(WITH_RANDOM_ASSORTMENT_OF_THINGS);
-            RandomAssortmentOfThingsIntegration.installSystemAccessRoutes(WITH_RANDOM_ASSORTMENT_OF_THINGS);
+            RandomAssortmentOfThingsIntegration.installSystemAccessRoutes(
+                WITH_RANDOM_ASSORTMENT_OF_THINGS);
+            RandomAssortmentOfThingsIntegration.installSystemAccessRoutes(
+                WITH_RANDOM_ASSORTMENT_OF_THINGS);
 
             assertThat(SystemAccessRoutes.readRouteNames())
                 .containsExactly(INTEGRATION_NAME);
@@ -81,7 +73,8 @@ final class RandomAssortmentOfThingsIntegrationTest {
             // What keeps the reachability read clear of a class naming a Random Assortment of
             // Things type: with nothing registered, no route is ever consulted and no such class
             // is ever reached.
-            RandomAssortmentOfThingsIntegration.installSystemAccessRoutes(WITHOUT_RANDOM_ASSORTMENT_OF_THINGS);
+            RandomAssortmentOfThingsIntegration.installSystemAccessRoutes(
+                WITHOUT_RANDOM_ASSORTMENT_OF_THINGS);
 
             assertThat(SystemAccessRoutes.readRouteNames())
                 .isEmpty();

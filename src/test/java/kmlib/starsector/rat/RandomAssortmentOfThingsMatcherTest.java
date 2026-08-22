@@ -20,14 +20,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * Pins the contracts of {@link RandomAssortmentOfThingsMatcher#isAbyssalFracture}
- * and {@link RandomAssortmentOfThingsMatcher#hasAbyssalFracture}: an entity is a
- * fracture only when RAT is enabled and the entity's custom plugin is an Abyssal
- * Fracture, and a system holds one only when some entity in it does. The
- * mod-enabled gate is what makes the dependency optional, so the disabled case is
- * pinned alongside the positive match. Each method's cases live in a
- * {@link Nested} group so the suite reports as a per-method tree; the shared mock
- * builders stay on the outer class.
+ * Pins the contract of {@link RandomAssortmentOfThingsMatcher#hasAbyssalFracture}:
+ * a system holds a fracture only when RAT is enabled and some entity in it carries
+ * an Abyssal Fracture as its custom plugin. The mod-enabled gate is what makes the
+ * dependency optional, so the disabled case is pinned alongside the positive match.
+ * The cases live in a {@link Nested} group so the suite reports as a per-method
+ * tree; the shared mock builders stay on the outer class.
  */
 final class RandomAssortmentOfThingsMatcherTest {
 
@@ -79,43 +77,6 @@ final class RandomAssortmentOfThingsMatcherTest {
 
             ModStateScopes.runWithModEnabled(RANDOM_ASSORTMENT_OF_THINGS, true, () ->
                 assertThat(RandomAssortmentOfThingsMatcher.hasAbyssalFracture(systemMock))
-                    .isTrue());
-        }
-    }
-
-    @Nested
-    class IsAbyssalFracture {
-        @Test
-        void returns_false_for_a_null_entity() {
-            // Null short-circuits before the mod-enabled check, so RAT state is
-            // irrelevant and Global is never consulted.
-            assertThat(RandomAssortmentOfThingsMatcher.isAbyssalFracture(null)).isFalse();
-        }
-
-        @Test
-        void returns_false_when_rat_disabled() {
-            var entityMock = buildEntityWithPlugin(mock(AbyssalFracture.class));
-
-            ModStateScopes.runWithModEnabled(RANDOM_ASSORTMENT_OF_THINGS, false, () ->
-                assertThat(RandomAssortmentOfThingsMatcher.isAbyssalFracture(entityMock))
-                    .isFalse());
-        }
-
-        @Test
-        void returns_false_when_the_plugin_is_not_a_fracture() {
-            var entityMock = buildEntityWithPlugin(mock(CustomCampaignEntityPlugin.class));
-
-            ModStateScopes.runWithModEnabled(RANDOM_ASSORTMENT_OF_THINGS, true, () ->
-                assertThat(RandomAssortmentOfThingsMatcher.isAbyssalFracture(entityMock))
-                    .isFalse());
-        }
-
-        @Test
-        void returns_true_for_a_fracture_plugin_when_rat_enabled() {
-            var entityMock = buildEntityWithPlugin(mock(AbyssalFracture.class));
-
-            ModStateScopes.runWithModEnabled(RANDOM_ASSORTMENT_OF_THINGS, true, () ->
-                assertThat(RandomAssortmentOfThingsMatcher.isAbyssalFracture(entityMock))
                     .isTrue());
         }
     }

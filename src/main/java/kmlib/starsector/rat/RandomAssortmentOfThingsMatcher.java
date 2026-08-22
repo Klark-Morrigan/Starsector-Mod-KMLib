@@ -24,41 +24,25 @@ public final class RandomAssortmentOfThingsMatcher {
     }
 
     /**
-     * Whether the system holds an Abyssal Fracture anywhere in it - the whole-system read, which
-     * is the shape reachability is asked in: what matters there is that a fracture is in the
-     * system, not which entity it is.
+     * Whether the system holds an Abyssal Fracture anywhere in it.
      *
-     * <p>The mod-enabled gate is passed once here rather than once per entity, so a system on a
-     * RAT-free install is answered without walking its entities at all, and one on a RAT install
-     * asks the mod set a single question however many entities it holds.
+     * <p>Stated over the system rather than over an entity because that is the shape the
+     * question is asked in: what matters is that a fracture is in there, not which entity it
+     * is. The mod-enabled gate is then passed once per system rather than once per entity.
      *
      * @param system the system being asked about; null yields false
      * @return true when RAT is enabled and any entity in the system is an Abyssal Fracture
      */
     public static boolean hasAbyssalFracture(StarSystemAPI system) {
-        // Short-circuits before touching RatTypes for the same reason the per-entity read does.
         if (system == null || !RandomAssortmentOfThingsPresence.isModEnabled()) {
             return false;
         }
         return RatTypes.hasAbyssalFracture(system);
     }
 
-    /**
-     * @param entity the entity being asked about; null yields false
-     * @return true when RAT is enabled and the entity is an Abyssal Fracture
-     */
-    public static boolean isAbyssalFracture(SectorEntityToken entity) {
-        // Short-circuit before touching RatTypes so a RAT-free install never
-        // loads the class that names AbyssalFracture.
-        if (entity == null || !RandomAssortmentOfThingsPresence.isModEnabled()) {
-            return false;
-        }
-        return RatTypes.isAbyssalFracture(entity);
-    }
-
     // Isolates the only reference to a RAT type. The classloader resolves this
-    // holder on first call, which the gate in isAbyssalFracture defers until
-    // RAT is known to be present, so AbyssalFracture is never sought otherwise.
+    // holder on first call, which the gate above defers until RAT is known to
+    // be present, so AbyssalFracture is never sought otherwise.
     private static final class RatTypes {
 
         private static boolean hasAbyssalFracture(StarSystemAPI system) {

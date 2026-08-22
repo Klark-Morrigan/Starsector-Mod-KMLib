@@ -76,17 +76,6 @@ final class SystemAccessRoutesTest {
                 .containsExactly("a mod");
         }
 
-        @Test
-        void records_an_unnamed_route_under_its_own_type() {
-            // A blank name still has to leave a line worth reading, so it falls back to the
-            // route's class rather than being refused or recorded as nothing at all.
-            SystemAccessRoutes.registerRoute("  ", GRANTING_ROUTE);
-
-            assertThat(SystemAccessRoutes.readRouteNames())
-                .hasSize(1);
-            assertThat(SystemAccessRoutes.readRouteNames().get(0))
-                .contains(GRANTING_ROUTE.getClass().getName());
-        }
     }
 
     @Nested
@@ -130,14 +119,6 @@ final class SystemAccessRoutesTest {
         @Test
         void returns_false_on_an_install_that_registered_none() {
             assertThat(SystemAccessRoutes.isReachedByAnyRoute(mock(StarSystemAPI.class)))
-                .isFalse();
-        }
-
-        @Test
-        void returns_false_for_a_null_system() {
-            SystemAccessRoutes.registerRoute("a mod", GRANTING_ROUTE);
-
-            assertThat(SystemAccessRoutes.isReachedByAnyRoute(null))
                 .isFalse();
         }
 

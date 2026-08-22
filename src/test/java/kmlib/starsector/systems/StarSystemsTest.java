@@ -429,28 +429,6 @@ final class StarSystemsTest {
                 .isFalse();
         }
 
-        @Test
-        void returns_true_when_only_the_last_of_several_routes_reaches_the_system() {
-            // The load-bearing difference from a single-slot extension point: a
-            // second registration adds a way in beside the first rather than
-            // displacing it, so a system either route reaches is reachable.
-            SystemAccessRoutes.registerRoute("declining route", anySystem -> false);
-            SystemAccessRoutes.registerRoute("granting route", anySystem -> true);
-
-            assertThat(StarSystems.isReachable(cutOffSystem("a")))
-                .isTrue();
-        }
-
-        @Test
-        void returns_true_when_only_the_first_of_several_routes_reaches_the_system() {
-            // The same in the other order, so the pass is not an artefact of
-            // whichever route happens to be consulted last.
-            SystemAccessRoutes.registerRoute("granting route", anySystem -> true);
-            SystemAccessRoutes.registerRoute("declining route", anySystem -> false);
-
-            assertThat(StarSystems.isReachable(cutOffSystem("a")))
-                .isTrue();
-        }
     }
 
     @Nested

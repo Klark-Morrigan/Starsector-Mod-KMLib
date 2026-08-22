@@ -96,8 +96,8 @@ src/main/java/kmlib/
                      this install does it instead is settled where the
                      install is composed. One implementation, the last
                      registered, since work is taken over whole or not at
-                     all - an install over an occupied point is logged as
-                     the displacement it is
+                     all. Also the one place the three optional-mod seam
+                     shapes are set beside each other - see its own README
   input/           - rising-edge click detection, for polled input with
                      no discrete event to consume
   logging/         - log4j level control over one mod's package subtree, and the
@@ -747,50 +747,17 @@ invalidation model - KMU's is the worked example.
 
 ## Optional mod seams
 
-An optional mod is reached in one of two shapes, and both stand on the same presence gate.
+An optional mod is reached in one of three shapes, all standing on the same presence gate, an
+adapter in the mod's own package, and a facade registering it at load:
 
-The first is **a routine taken over**. Where an installed mod has a routine of its own for
-something this library also does - founding a colony, handing one to another owner, deciding
-which counters a colony trades over - that routine takes the whole operation and the sequence
-KMLib composes stands down. Three pieces make that switchable on an install that may not have
-the mod, and they are the same three every time:
+- **A routine taken over** - the mod does the whole job instead of us, and ours stands down.
+- **A fact the mod publishes** - something only it can answer, held as a role the caller takes.
+- **An answer that composes** - the mod adds to an answer we already have, both standing.
 
-- **A presence gate**, one per mod, holding that mod's id in one place
-  ([ConsoleCommandsPresence](src/main/java/kmlib/starsector/consolecommands/ConsoleCommandsPresence.java),
-  [NexerelinPresence](src/main/java/kmlib/starsector/nexerelin/NexerelinPresence.java),
-  [RandomAssortmentOfThingsPresence](src/main/java/kmlib/starsector/rat/RandomAssortmentOfThingsPresence.java)).
-  Gate and id are both public: a consuming mod integrating with the same mod asks here
-  instead of writing the id out again, so a mod that renames it is one edit for the series.
-- **An adapter** in that mod's package, wrapping the routine as the mod states it. The
-  only reference to a type of the mod's lives in a nested holder class, which the
-  classloader does not resolve until the gate has passed - so an install without the mod
-  never seeks a class it does not have.
-- **A seam interface** beside the composed sequence, package-private, with a single
-  method that performs the work *and* answers whether it did. One method rather than a
-  question and a command: a routine declines for reasons the caller has an answer to -
-  the mod is absent, or the subject is not a shape it handles - and reporting the decline
-  is what lets the composed sequence run in its place. Split in two, the pair would also
-  be open to a caller asking and then not calling, which is the operation silently not
-  happening at all.
+Which to reach for, what backs each, and why the third is not the first:
+[Optional mod seams](src/main/java/kmlib/extensions/README.md).
 
-The composing class binds the installed routine in a constant and keeps a package-private
-overload taking one, so both branches are posed under test on a machine that has whichever
-mods it happens to have. The seam is not an extension point: a routine is bound because
-this library knows how to defer to that mod, and a caller supplying its own would be
-choosing behaviour the rest of the library cannot reason about.
-
-The second shape is **a fact the mod publishes**, which nothing here has an answer for on its
-own - whether a console is taking text entry, whether a mini-map has replaced the campaign
-radar. There is no sequence to stand down, so instead of a seam interface the question becomes
-a role a caller holds ([ConsoleOverlay](src/main/java/kmlib/starsector/consolecommands/ConsoleOverlay.java)),
-answered by an adapter behind the same gate and the same deferred type holder. A role rather
-than a static call because the question outlives the mod that currently answers it, and because
-the answer decides whether a caller draws or routes at all - behaviour worth settling without a
-game running. Such a read **fails open**: mod absent, class gone, accessor moved by a release,
-read throwing - each reports the answer that leaves a caller behaving as it did before the
-question existed, and warns once naming the hop that broke rather than per frame.
-
-Every mod reached either way stays a soft dependency, absent from `mod_info.json`.
+Every mod reached any of these ways stays a soft dependency, absent from `mod_info.json`.
 
 ## Player Faction Resolution
 
