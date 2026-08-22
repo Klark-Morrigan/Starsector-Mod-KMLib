@@ -6,6 +6,7 @@ import com.fs.starfarer.api.Global;
 import kmlib.opengl.FastRendering;
 import kmlib.settings.KmlibLunaSettings;
 import kmlib.starsector.nexerelin.NexerelinIntegration;
+import kmlib.starsector.rat.RandomAssortmentOfThingsIntegration;
 
 import org.apache.log4j.Logger;
 
@@ -52,6 +53,9 @@ public class KMLib_ModPlugin extends BaseModPlugin {
     // A failure leaves the library running its own sequences rather than a mod's, which is the
     // behaviour of an install without that mod - a worse colony than the player expected, and a
     // far better outcome than taking down every mod that depends on KMLib.
+    //
+    // One try per integration, so a mod whose registration throws costs only its own adapters
+    // rather than every adapter that had not been reached yet.
     private static void installOptionalModRoutines() {
 
         try {
@@ -59,6 +63,15 @@ public class KMLib_ModPlugin extends BaseModPlugin {
 
         } catch (RuntimeException exception) {
             LOG.error("Failed to install KMLib Nexerelin routines", exception);
+        }
+
+        try {
+            RandomAssortmentOfThingsIntegration.installSystemAccessRoutes();
+
+        } catch (RuntimeException exception) {
+            LOG.error(
+                "Failed to install KMLib Random Assortment of Things system access routes",
+                exception);
         }
     }
 

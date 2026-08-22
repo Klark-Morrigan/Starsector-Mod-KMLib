@@ -1,6 +1,7 @@
 package kmlib.starsector.rat;
 
 import com.fs.starfarer.api.campaign.SectorEntityToken;
+import com.fs.starfarer.api.campaign.StarSystemAPI;
 
 import assortment_of_things.abyss.entities.hyper.AbyssalFracture;
 
@@ -23,7 +24,27 @@ public final class RandomAssortmentOfThingsMatcher {
     }
 
     /**
-     * @param entity the entity to test; null yields false
+     * Whether the system holds an Abyssal Fracture anywhere in it - the whole-system read, which
+     * is the shape reachability is asked in: what matters there is that a fracture is in the
+     * system, not which entity it is.
+     *
+     * <p>The mod-enabled gate is passed once here rather than once per entity, so a system on a
+     * RAT-free install is answered without walking its entities at all, and one on a RAT install
+     * asks the mod set a single question however many entities it holds.
+     *
+     * @param system the system being asked about; null yields false
+     * @return true when RAT is enabled and any entity in the system is an Abyssal Fracture
+     */
+    public static boolean hasAbyssalFracture(StarSystemAPI system) {
+        // Short-circuits before touching RatTypes for the same reason the per-entity read does.
+        if (system == null || !RandomAssortmentOfThingsPresence.isModEnabled()) {
+            return false;
+        }
+        return RatTypes.hasAbyssalFracture(system);
+    }
+
+    /**
+     * @param entity the entity being asked about; null yields false
      * @return true when RAT is enabled and the entity is an Abyssal Fracture
      */
     public static boolean isAbyssalFracture(SectorEntityToken entity) {
@@ -39,6 +60,15 @@ public final class RandomAssortmentOfThingsMatcher {
     // holder on first call, which the gate in isAbyssalFracture defers until
     // RAT is known to be present, so AbyssalFracture is never sought otherwise.
     private static final class RatTypes {
+
+        private static boolean hasAbyssalFracture(StarSystemAPI system) {
+            for (var entity : system.getAllEntities()) {
+                if (isAbyssalFracture(entity)) {
+                    return true;
+                }
+            }
+            return false;
+        }
 
         private static boolean isAbyssalFracture(SectorEntityToken entity) {
             return entity.getCustomPlugin() instanceof AbyssalFracture;

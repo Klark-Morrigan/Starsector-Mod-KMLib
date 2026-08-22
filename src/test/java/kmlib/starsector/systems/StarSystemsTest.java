@@ -1,8 +1,5 @@
 package kmlib.starsector.systems;
 
-import com.fs.starfarer.api.Global;
-import com.fs.starfarer.api.ModManagerAPI;
-import com.fs.starfarer.api.SettingsAPI;
 import com.fs.starfarer.api.campaign.PlanetAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
@@ -15,18 +12,16 @@ import com.fs.starfarer.api.impl.campaign.ids.Tags;
 
 import kmlib.starsector.markets.MarketPlacementFixture;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.lwjgl.util.vector.Vector2f;
-import org.mockito.MockedStatic;
 
 import java.util.List;
 
-import assortment_of_things.abyss.entities.hyper.AbyssalFracture;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 /**
@@ -359,6 +354,19 @@ final class StarSystemsTest {
     @Nested
     class IsReachable {
 
+        // The routes are one set per running game, so a case that installs one empties the set
+        // before and after itself rather than leaving it standing for whatever runs next - and
+        // the cases that install none are then posed on a genuinely empty install.
+        @BeforeEach
+        void setUp() {
+            SystemAccessRoutes.clearRoutes();
+        }
+
+        @AfterEach
+        void tearDown() {
+            SystemAccessRoutes.clearRoutes();
+        }
+
         @Test
         void returns_true_for_a_system_with_a_jump_point() {
             assertThat(StarSystems.isReachable(buildSystemNotCutOff("a")))
@@ -400,33 +408,48 @@ final class StarSystemsTest {
         }
 
         @Test
-        void returns_true_for_a_cut_off_system_with_a_fracture_when_rat_enabled() {
-            // A fracture ferries fleets in past the disabled jump points, so it
-            // overrides the cut-off flag the way an active gate does.
-            var system = cutOffSystemWithEntities("a", buildFractureEntity());
+        void returns_true_for_a_cut_off_system_an_installed_route_reaches() {
+            // A route stands for a mod that moves fleets in without a jump
+            // point, so it overrides the cut-off flag the way an active gate
+            // does. Stated as a route rather than as any one mod's entity: what
+            // this pins is that the read defers at all.
+            SystemAccessRoutes.registerRoute("granting route", anySystem -> true);
 
-            try (var globalMock = mockStatic(Global.class)) {
-
-                stubRatEnabled(globalMock, true);
-
-                assertThat(StarSystems.isReachable(system))
-                    .isTrue();
-            }
+            assertThat(StarSystems.isReachable(cutOffSystem("a")))
+                .isTrue();
         }
 
         @Test
-        void returns_false_for_a_cut_off_system_with_a_fracture_when_rat_disabled() {
-            // The optional dependency is off, so the matcher cannot see the
-            // fracture and the system reads as the cut-off system it is.
-            var system = cutOffSystemWithEntities("a", buildFractureEntity());
+        void returns_false_for_a_cut_off_system_no_installed_route_reaches() {
+            // A route that declines leaves the question where it found it, so
+            // the system reads as the cut-off system it is.
+            SystemAccessRoutes.registerRoute("declining route", anySystem -> false);
 
-            try (var globalMock = mockStatic(Global.class)) {
+            assertThat(StarSystems.isReachable(cutOffSystem("a")))
+                .isFalse();
+        }
 
-                stubRatEnabled(globalMock, false);
+        @Test
+        void returns_true_when_only_the_last_of_several_routes_reaches_the_system() {
+            // The load-bearing difference from a single-slot extension point: a
+            // second registration adds a way in beside the first rather than
+            // displacing it, so a system either route reaches is reachable.
+            SystemAccessRoutes.registerRoute("declining route", anySystem -> false);
+            SystemAccessRoutes.registerRoute("granting route", anySystem -> true);
 
-                assertThat(StarSystems.isReachable(system))
-                    .isFalse();
-            }
+            assertThat(StarSystems.isReachable(cutOffSystem("a")))
+                .isTrue();
+        }
+
+        @Test
+        void returns_true_when_only_the_first_of_several_routes_reaches_the_system() {
+            // The same in the other order, so the pass is not an artefact of
+            // whichever route happens to be consulted last.
+            SystemAccessRoutes.registerRoute("granting route", anySystem -> true);
+            SystemAccessRoutes.registerRoute("declining route", anySystem -> false);
+
+            assertThat(StarSystems.isReachable(cutOffSystem("a")))
+                .isTrue();
         }
     }
 
@@ -620,21 +643,6 @@ final class StarSystemsTest {
         return systemMock;
     }
 
-    private static StarSystemAPI cutOffSystemWithEntities(String id, SectorEntityToken... entities) {
-        // Cut off and holding no jump point or gate - access can come only from
-        // one of the passed entities (a fracture in these cases).
-        var systemMock = mock(StarSystemAPI.class);
-
-        when(systemMock.getId())
-            .thenReturn(id);
-        when(systemMock.hasTag(Tags.SYSTEM_CUT_OFF_FROM_HYPER))
-            .thenReturn(true);
-        when(systemMock.getAllEntities())
-            .thenReturn(List.of(entities));
-
-        return systemMock;
-    }
-
     private static SectorEntityToken buildGateWithPlugin(GateEntityPlugin plugin) {
 
         var gateMock = mock(SectorEntityToken.class);
@@ -653,32 +661,6 @@ final class StarSystemsTest {
             .thenReturn(isActive);
 
         return pluginMock;
-    }
-
-    private static SectorEntityToken buildFractureEntity() {
-
-        var entityMock = mock(SectorEntityToken.class);
-
-        when(entityMock.getCustomPlugin())
-            .thenReturn(mock(AbyssalFracture.class));
-
-        return entityMock;
-    }
-
-    private static void stubRatEnabled(MockedStatic<Global> globalMock, boolean isEnabled) {
-
-        var settingsMock = mock(SettingsAPI.class);
-        var modManagerMock = mock(ModManagerAPI.class);
-
-        globalMock
-            .when(Global::getSettings)
-            .thenReturn(settingsMock);
-
-        when(settingsMock.getModManager())
-            .thenReturn(modManagerMock);
-
-        when(modManagerMock.isModEnabled("assortment_of_things"))
-            .thenReturn(isEnabled);
     }
 
     private static PlanetAPI buildPlanet(boolean isStar) {

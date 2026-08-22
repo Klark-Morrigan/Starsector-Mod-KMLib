@@ -12,7 +12,6 @@ import com.fs.starfarer.api.impl.campaign.ids.Tags;
 import kmlib.math.geometry.Points;
 import kmlib.starsector.geometry.StarsectorPoints;
 import kmlib.starsector.markets.LocationMarkets;
-import kmlib.starsector.rat.RandomAssortmentOfThingsMatcher;
 import kmlib.text.KmlibStrings;
 
 import java.util.ArrayList;
@@ -242,22 +241,23 @@ public final class StarSystems {
      * present but inactive gate does not rescue it. Gate activation flips
      * {@link GateEntityPlugin#isActive}, so reachability tracks the real state.
      *
-     * <p>Random Assortment of Things' Abyssal Fracture is a further means of
-     * arrival: it ferries fleets in with a manual hyperspace transition rather
-     * than a jump point, so a system entered only through a fracture carries no
-     * jump point and would otherwise read as cut off. A fracture therefore grants
-     * access the same way an active gate does, bypassing both the jump-point and
-     * cut-off checks. RAT is optional, so the detection is delegated to
-     * {@link RandomAssortmentOfThingsMatcher}, which is inert when RAT is absent.
+     * <p>An installed mod may supply a further means of arrival that the engine
+     * does not model - one that moves fleets in without a jump point, so that a
+     * system entered only that way would otherwise read as cut off. Such a route
+     * grants access the same way an active gate does, bypassing both the
+     * jump-point and cut-off checks. Which routes this install has is
+     * {@link SystemAccessRoutes}' to hold: the mods that supply them register
+     * there, so nothing named here is a mod, and an install with none answers
+     * from the vanilla reads alone.
      *
-     * @param system the system to test
+     * @param system the system being asked about
      * @return true when the player has a normal means of reaching it
      */
     public static boolean isReachable(StarSystemAPI system) {
-        // A lit gate or an Abyssal Fracture reaches the system regardless of
-        // jump connectivity, so either overrides the cut-off flag and the
+        // A lit gate or an installed access route reaches the system regardless
+        // of jump connectivity, so either overrides the cut-off flag and the
         // absence of jump points.
-        if (hasActiveGate(system) || hasAbyssalFracture(system)) {
+        if (hasActiveGate(system) || SystemAccessRoutes.isReachedByAnyRoute(system)) {
             return true;
         }
         // No gate: the system must be reachable by ordinary hyperspace travel.
@@ -299,17 +299,6 @@ public final class StarSystems {
     private static boolean hasActiveGate(StarSystemAPI system) {
         for (var gate : system.getEntitiesWithTag(Tags.GATE)) {
             if (GateEntityPlugin.isActive(gate)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    // Whether the system holds a RAT Abyssal Fracture. The matcher gates itself
-    // on RAT being enabled, so this scans for nothing on a RAT-free install.
-    private static boolean hasAbyssalFracture(StarSystemAPI system) {
-        for (var entity : system.getAllEntities()) {
-            if (RandomAssortmentOfThingsMatcher.isAbyssalFracture(entity)) {
                 return true;
             }
         }

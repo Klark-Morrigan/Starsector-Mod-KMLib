@@ -48,7 +48,8 @@ behind a presence gate, so an install without any of them is ordinary
 - **Nexerelin**
   - KMLib's colony related console commands account for Nexerelin implementation.
 - **Random Assortment of Things** (RAT)
-  - KMLib recognises Abyssal Fractures;
+  - KMLib recognises Abyssal Fractures, and counts one as a valid access point into the
+    attached system;
   - KMLib reports whether RAT's mini-map has replaced the campaign radar.
 
 ## Layout
@@ -212,7 +213,12 @@ src/main/java/kmlib/
                      so the arrow runs from here to them and they never
                      name this package
     rat/           - Random Assortment of Things: Abyssal Fracture matching,
-                     and the campaign-minimap role answered for its mini-map
+                     registered with the reachability read in systems/ at load
+                     as a means of arrival, and only where the mod is enabled,
+                     so the arrow runs from here to it and it never names this
+                     package; plus the campaign-minimap role answered for its
+                     mini-map, which a caller holds directly rather than
+                     reaching through a register
     relation/      - player relationship formatting
     scripts/       - sector script registration helpers
     settings/      - the game's own settings: whether a mod is enabled,
@@ -234,7 +240,10 @@ src/main/java/kmlib/
                      contest states its own kind: weighed, resting on the
                      market the mechanic scored, or presence-only at a
                      nought, for a faction holding nothing the mechanic
-                     ever reached
+                     ever reached. Reachability keeps a register of the
+                     means of arrival the engine does not model, which the
+                     mods supplying them fill at load, so the read itself
+                     names no mod
     time/          - campaign clock wrapper
     ui/            - UI toolkit, tiered by render substrate: a spec
                      names content (controls, built out of widgets'
