@@ -3,7 +3,10 @@ package kmlib.starsector.colonies;
 import kmlib.starsector.markets.MarketVisibility;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Predicate;
 
 /**
@@ -105,7 +108,7 @@ public record Colonies(
      * sector on a scan, and per cell while the map is drawn, where the projection's contents
      * are never wanted - only whether it has any.
      *
-     * <p>Stops at the first colony that passes, the place's settled reading having been taken
+     * <p>Stops at the first colony that passes, the place's settling owners having been folded
      * for the whole set beforehand - so the answer cannot differ from the listing's own
      * emptiness, whichever way a gate falls.
      *
@@ -150,7 +153,7 @@ public record Colonies(
      * per system and per frame.
      *
      * <p>Stops at the first colony that passes, on the same terms its known counterpart does -
-     * one walk, the settled reading taken for the whole set beforehand, and a derelict passed
+     * one walk, the settling owners folded for the whole set beforehand, and a derelict passed
      * over however plainly the player can see it.
      *
      * @param rule what the player may be shown of the set; null reads as
@@ -161,7 +164,7 @@ public record Colonies(
         return hasColonyPassing(rule, Colonies::isInhabitingColony);
     }
 
-    // Materialises one projection: the place's settled reading taken once for the whole set,
+    // Materialises one projection: the place's settling owners folded once for the whole set,
     // then every colony the rule admits whose kind this projection wants.
     //
     // The two projections are one walk with two kind tests rather than a walk each, so the only
@@ -175,20 +178,20 @@ public record Colonies(
             Predicate<Colony> isWantedColony) {
 
         var resolvedRule = resolveRule(rule);
-        var isSettledPlace = hasSettlingColony(resolvedRule);
+        var settlingOwnerIds = readSettlingOwnerIds(resolvedRule);
         var passingColonies = new ArrayList<Colony>();
 
         for (var colony : colonies) {
 
             if (isWantedColony.test(colony)
-                    && isKnownColony(colony, resolvedRule, isSettledPlace)) {
+                    && isKnownColony(colony, resolvedRule, settlingOwnerIds)) {
                 passingColonies.add(colony);
             }
         }
         return List.copyOf(passingColonies);
     }
 
-    // The emptiness of one projection, asked without materialising it - the same settled reading
+    // The emptiness of one projection, asked without materialising it - the same settling owners
     // and the same per-colony rule as the listing, stopped at the first colony that passes.
     //
     // Its own walk rather than the listing's isEmpty, because the cell that paints a place and
@@ -199,34 +202,40 @@ public record Colonies(
             Predicate<Colony> isWantedColony) {
 
         var resolvedRule = resolveRule(rule);
-        var isSettledPlace = hasSettlingColony(resolvedRule);
+        var settlingOwnerIds = readSettlingOwnerIds(resolvedRule);
 
         for (var colony : colonies) {
 
             if (isWantedColony.test(colony)
-                    && isKnownColony(colony, resolvedRule, isSettledPlace)) {
+                    && isKnownColony(colony, resolvedRule, settlingOwnerIds)) {
                 return true;
             }
         }
         return false;
     }
 
-    // The first pass: whether the ungated colonies the fog admits amount to somewhere people
-    // live, and so to somewhere with inhabitants who would have seen whatever else is here.
+    // The first pass: who is here whose word about whatever else stands in this place would
+    // reach the player - the owners of the ungated colonies the fog admits.
     //
     // Read off what the projection shows rather than off what is present, because word reaches
     // the player through colonies the player knows are inhabited. A place whose only ordinary
     // colony is itself undiscovered has no grapevine the player is party to, and letting it
     // reveal anything would have the map act on a fact the player has no means of holding.
-    private boolean hasSettlingColony(ColonyVisibility rule) {
+    //
+    // Their owners rather than a bare "somebody is here", because whose colony it is decides
+    // whom it can speak for. Folded once for the whole set, as the boolean it replaces was:
+    // a place holds a handful of owners at most, and every gated colony asks the same fold.
+    private Set<String> readSettlingOwnerIds(ColonyVisibility rule) {
+
+        var settlingOwnerIds = new HashSet<String>();
 
         for (var colony : colonies) {
 
             if (isSettlingColony(colony, rule)) {
-                return true;
+                settlingOwnerIds.add(colony.readOwnerId());
             }
         }
-        return false;
+        return settlingOwnerIds;
     }
 
     // A colony that makes its place settled: somewhere people are, held in the open, and shown
@@ -253,7 +262,7 @@ public record Colonies(
     private boolean isKnownColony(
             Colony colony,
             ColonyVisibility rule,
-            boolean isSettledPlace) {
+            Set<String> settlingOwnerIds) {
 
         if (!isAdmittedByFog(colony, rule)) {
             return false;
@@ -262,7 +271,7 @@ public record Colonies(
         // hides and then withheld a derelict would answer half the question it was asked.
         return rule.shouldIncludeUndiscoveredMarkets()
             || !isGatedOnRevelation(colony, rule)
-            || isRevealedToPlayer(colony, isSettledPlace);
+            || isRevealedToPlayer(colony, settlingOwnerIds);
     }
 
     // Whether a colony amounts to people living where it stands - the one thing that separates
@@ -312,8 +321,33 @@ public record Colonies(
     // settled route asks who else could have seen this and reads the place as it stands, while
     // the sighting route asks whether the player did and is the only one of the two needing a
     // memory to answer with.
-    private boolean isRevealedToPlayer(Colony colony, boolean isSettledPlace) {
-        return isSettledPlace || colony.isSightedByPlayer(sightings);
+    private boolean isRevealedToPlayer(Colony colony, Set<String> settlingOwnerIds) {
+        return isSettledForColony(colony, settlingOwnerIds)
+            || colony.isSightedByPlayer(sightings);
+    }
+
+    // Whether the place is settled by somebody willing to speak about this colony: a shown, open
+    // colony of some owner other than its own.
+    //
+    // Owner-aware rather than a bare "anybody lives here", because the people keeping a secret
+    // are exactly the ones a faction-blind test credits with telling it. A pirate base in a
+    // system the pirates openly hold would otherwise be announced to the player by the pirates,
+    // which is the one case the route was never arguing for - a rival's colony in the same place
+    // does talk, and that is what the route is for.
+    //
+    // No derelict is touched by this: a derelict is held by nobody, and nobody never settles a
+    // place, so the owner it would be compared against can never be among the settling ones.
+    private static boolean isSettledForColony(Colony colony, Set<String> settlingOwnerIds) {
+
+        var ownerId = colony.readOwnerId();
+
+        for (var settlingOwnerId : settlingOwnerIds) {
+
+            if (!Objects.equals(settlingOwnerId, ownerId)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // An unstated rule is the fog alone. Absent settings are not a reason to hold anything back

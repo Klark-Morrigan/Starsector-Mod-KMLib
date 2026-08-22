@@ -113,11 +113,14 @@ public final class ColonyMarketFixture {
         // Read off the sibling before the new mock's stubbing opens, so the two do not nest into
         // an unfinished-stubbing error.
         var faction = colony.getFaction();
+        var factionId = colony.getFactionId();
         var entity = colony.getPrimaryEntity();
         var marketMock = mock(MarketAPI.class);
 
         when(marketMock.getFaction())
             .thenReturn(faction);
+        when(marketMock.getFactionId())
+            .thenReturn(factionId);
         when(marketMock.getPrimaryEntity())
             .thenReturn(entity);
         when(marketMock.getSize())
@@ -145,8 +148,14 @@ public final class ColonyMarketFixture {
         var factionMock = buildFaction(factionId);
         var marketMock = mock(MarketAPI.class);
 
+        // The owner answers on both readings, as a real market's does. A read asking the market
+        // for its faction id and a read asking its faction object are the same fact in the game,
+        // so a fixture answering only one of them would let a rule pass on the reading it happens
+        // to make rather than on the owner.
         when(marketMock.getFaction())
             .thenReturn(factionMock);
+        when(marketMock.getFactionId())
+            .thenReturn(factionId);
         when(marketMock.getPrimaryEntity())
             .thenReturn(entityMock);
         when(marketMock.getSize())

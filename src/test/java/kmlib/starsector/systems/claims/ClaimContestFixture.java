@@ -242,10 +242,19 @@ final class ClaimContestFixture implements AutoCloseable {
 
     private MarketAPI createMarket(FactionAPI faction, int size, boolean isHidden) {
 
+        // The owner's id is read before the market's stubbing opens, so the two mocks do not nest
+        // into an unfinished-stubbing error.
+        var factionId = faction == null ? null : faction.getId();
         var marketMock = mock(MarketAPI.class);
 
+        // The owner answers on both readings, as a real market's does: a rule asking the market
+        // for its faction id and one asking its faction object read the same fact in the game, so
+        // a fixture answering only one of them would have every market here share one owner as
+        // far as the other reading is concerned.
         when(marketMock.getFaction())
             .thenReturn(faction);
+        when(marketMock.getFactionId())
+            .thenReturn(factionId);
         when(marketMock.getSize())
             .thenReturn(size);
         when(marketMock.isHidden())

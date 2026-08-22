@@ -120,4 +120,20 @@ public record Colony(
 
         return sightedLocationId != null && sightedLocationId.equals(system.getId());
     }
+
+    /**
+     * Who holds this colony, as the faction id an ownership change writes.
+     *
+     * <p>Read off the market's own id rather than its faction object, that being what a transfer
+     * writes and therefore what answers for the owner a moment after one.
+     *
+     * <p>Asked wherever one colony's owner has to be told from another's - the place a colony
+     * stands in vouches for it only through somebody else's colony, a faction being the last
+     * witness to credit with announcing its own concealed holdings.
+     *
+     * @return the owning faction's id, or null where the market names none
+     */
+    public String readOwnerId() {
+        return market.getFactionId();
+    }
 }

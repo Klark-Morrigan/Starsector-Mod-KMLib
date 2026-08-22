@@ -342,6 +342,91 @@ final class ColoniesTest {
         }
 
         @Test
+        void excludes_a_concealed_colony_only_its_own_faction_could_vouch_for() {
+            // A pirate base in a system the pirates openly hold. The settled route rests on
+            // somebody saying what they can see, and the party keeping the secret is the one that
+            // will not - so the base falls back to the player's own sighting, which nothing here
+            // has made.
+            var fixture = new ColonyFixture("kumari_kandam");
+            var base = fixture.buildFoundConcealedColony("pirates");
+            var ownColony = fixture.buildVisibleColony("pirates");
+
+            fixture.placeColoniesInSystem(base, ownColony);
+
+            assertThat(buildColoniesOf(buildColony(base), buildColony(ownColony))
+                    .readKnownColonies(BOTH_GATES_ON))
+                .containsExactly(buildColony(ownColony));
+        }
+
+        @Test
+        void keeps_a_concealed_colony_a_rival_s_colony_can_see() {
+            // The other half of the pair, posed on one base and one neighbour so the owners are
+            // the only thing that has moved: a faction that is not keeping the secret has every
+            // reason to mention what is sitting in the system with it.
+            var fixture = new ColonyFixture("kumari_kandam");
+            var base = fixture.buildFoundConcealedColony("pirates");
+            var rivalColony = fixture.buildVisibleColony("hegemony");
+
+            fixture.placeColoniesInSystem(base, rivalColony);
+
+            assertThat(buildColoniesOf(buildColony(base), buildColony(rivalColony))
+                    .readKnownColonies(BOTH_GATES_ON))
+                .containsExactly(buildColony(base), buildColony(rivalColony));
+        }
+
+        @Test
+        void keeps_a_concealed_colony_a_rival_can_see_among_its_own_faction_s_neighbours() {
+            // Several owners settle this place, and the question is asked of the set rather than
+            // of whichever colony was reached first: one rival among the base's own countrymen is
+            // enough, and a fold that had collapsed to "somebody is here" or to "the first owner
+            // found" would answer differently.
+            var fixture = new ColonyFixture("kumari_kandam");
+            var base = fixture.buildFoundConcealedColony("pirates");
+            var ownColony = fixture.buildVisibleColony("pirates");
+            var rivalColony = fixture.buildVisibleColony("hegemony");
+
+            fixture.placeColoniesInSystem(base, ownColony, rivalColony);
+
+            assertThat(buildColoniesOf(
+                    buildColony(base), buildColony(ownColony), buildColony(rivalColony))
+                    .readKnownColonies(BOTH_GATES_ON))
+                .containsExactly(
+                    buildColony(base), buildColony(ownColony), buildColony(rivalColony));
+        }
+
+        @Test
+        void keeps_a_concealed_colony_its_own_faction_shelters_once_the_player_has_seen_it() {
+            // Owner-awareness narrows the route that runs through the neighbours and leaves the
+            // player's own untouched: having been there is knowing, whoever else holds the place.
+            var fixture = new ColonyFixture("kumari_kandam");
+            var base = fixture.buildFoundConcealedColony("pirates");
+            var ownColony = fixture.buildVisibleColony("pirates");
+
+            fixture.placeColoniesInSystem(base, ownColony);
+            fixture.markColoniesAsSighted(base);
+
+            assertThat(buildColoniesSeenBy(fixture, buildColony(base), buildColony(ownColony))
+                    .readKnownColonies(BOTH_GATES_ON))
+                .containsExactly(buildColony(base), buildColony(ownColony));
+        }
+
+        @Test
+        void keeps_a_derelict_whichever_faction_settles_the_system_around_it() {
+            // A hulk is held by nobody, and nobody never settles a place - so the owner comparison
+            // can never find the derelict's own owner among the settling ones, and the route
+            // answers for a derelict exactly as it did before it read owners at all.
+            var fixture = new ColonyFixture("kumari_kandam");
+            var derelict = fixture.buildDerelictStation();
+            var pirateColony = fixture.buildVisibleColony("pirates");
+
+            fixture.placeColoniesInSystem(derelict, pirateColony);
+
+            assertThat(buildColoniesOf(buildDerelict(derelict), buildColony(pirateColony))
+                    .readKnownColonies(BOTH_GATES_ON))
+                .containsExactly(buildDerelict(derelict), buildColony(pirateColony));
+        }
+
+        @Test
         void keeps_a_concealed_colony_under_its_own_gate_off() {
 
             var fixture = new ColonyFixture("kumari_kandam");

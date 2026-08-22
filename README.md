@@ -144,7 +144,12 @@ src/main/java/kmlib/
                      colony, written as they travel and kept in the
                      save, so a shape the fog alone would leak is shown
                      only where somebody has seen it standing - and a
-                     colony that has since moved is unseen again
+                     colony that has since moved is unseen again. The
+                     other route to being seen runs through the place's
+                     own inhabitants, and it is owner-aware: a colony
+                     vouches for a concealed neighbour only when the two
+                     are held by different factions, nobody announcing
+                     their own secrets
     consolecommands/ - Console Commands as something to stand down for:
                        whether the mod is enabled, and whether a console is
                        taking text entry this frame - the latter as a role
