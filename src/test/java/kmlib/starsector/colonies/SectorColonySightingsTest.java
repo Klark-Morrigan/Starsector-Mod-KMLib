@@ -239,6 +239,16 @@ final class SectorColonySightingsTest {
 
             verifyNoInteractions(memoryMock);
         }
+
+        @Test
+        void records_nothing_where_there_is_no_colony_set_to_write_from() {
+            // The other half of the same guard. A caller walking a sector mid-load holds places
+            // it has no reading of yet, and handing one over must cost the register nothing
+            // rather than fault on the way through.
+            SectorColonySightings.recordSightingsByInhabitants(sectorMock, systemMock, null);
+
+            verifyNoInteractions(memoryMock);
+        }
     }
 
     @Nested
