@@ -5,6 +5,7 @@ import com.fs.starfarer.api.ModManagerAPI;
 import com.fs.starfarer.api.SettingsAPI;
 
 import kmlib.testfixtures.mods.consolecommands.ConsoleOverlayPresenceFake;
+import kmlib.testfixtures.starsector.settings.ModStateScopes;
 
 import org.apache.log4j.Logger;
 import org.junit.jupiter.api.Nested;
@@ -42,15 +43,13 @@ final class ConsoleCommandsOverlayTest {
             var presenceFake = new ConsoleOverlayPresenceFake();
             presenceFake.openConsole();
 
-            try (var globalMock = mockStatic(Global.class)) {
-
-                stubGlobalWithModEnabled(globalMock, false);
+            ModStateScopes.runWithModEnabled(CONSOLE_COMMANDS, false, () -> {
 
                 assertThat(new ConsoleCommandsOverlay(presenceFake).isOpen())
                     .isFalse();
                 assertThat(presenceFake.readAskCount())
                     .isZero();
-            }
+            });
         }
 
         @Test
@@ -60,13 +59,9 @@ final class ConsoleCommandsOverlayTest {
             // to answer without ever resolving the class that names the mod's overlay panel,
             // which would otherwise be a missing-class error on a per-frame path. Nothing else
             // here exercises that constructor, so nothing else would notice it eagerly built.
-            try (var globalMock = mockStatic(Global.class)) {
-
-                stubGlobalWithModEnabled(globalMock, false);
-
+            ModStateScopes.runWithModEnabled(CONSOLE_COMMANDS, false, () ->
                 assertThat(new ConsoleCommandsOverlay().isOpen())
-                    .isFalse();
-            }
+                    .isFalse());
         }
 
         @Test
@@ -75,13 +70,9 @@ final class ConsoleCommandsOverlayTest {
             var presenceFake = new ConsoleOverlayPresenceFake();
             presenceFake.openConsole();
 
-            try (var globalMock = mockStatic(Global.class)) {
-
-                stubGlobalWithModEnabled(globalMock, true);
-
+            ModStateScopes.runWithModEnabled(CONSOLE_COMMANDS, true, () ->
                 assertThat(new ConsoleCommandsOverlay(presenceFake).isOpen())
-                    .isTrue();
-            }
+                    .isTrue());
         }
 
         @Test
@@ -89,13 +80,9 @@ final class ConsoleCommandsOverlayTest {
 
             var presenceFake = new ConsoleOverlayPresenceFake();
 
-            try (var globalMock = mockStatic(Global.class)) {
-
-                stubGlobalWithModEnabled(globalMock, true);
-
+            ModStateScopes.runWithModEnabled(CONSOLE_COMMANDS, true, () ->
                 assertThat(new ConsoleCommandsOverlay(presenceFake).isOpen())
-                    .isFalse();
-            }
+                    .isFalse());
         }
 
         @Test
@@ -103,13 +90,9 @@ final class ConsoleCommandsOverlayTest {
 
             var presenceFake = new UnreachableConsolePresenceFake();
 
-            try (var globalMock = mockStatic(Global.class)) {
-
-                stubGlobalWithModEnabled(globalMock, true);
-
+            ModStateScopes.runWithModEnabled(CONSOLE_COMMANDS, true, () ->
                 assertThat(new ConsoleCommandsOverlay(presenceFake).isOpen())
-                    .isFalse();
-            }
+                    .isFalse());
         }
 
         @Test
@@ -117,13 +100,9 @@ final class ConsoleCommandsOverlayTest {
 
             var presenceFake = new FailingConsolePresenceFake();
 
-            try (var globalMock = mockStatic(Global.class)) {
-
-                stubGlobalWithModEnabled(globalMock, true);
-
+            ModStateScopes.runWithModEnabled(CONSOLE_COMMANDS, true, () ->
                 assertThat(new ConsoleCommandsOverlay(presenceFake).isOpen())
-                    .isFalse();
-            }
+                    .isFalse());
         }
 
         @Test
@@ -151,9 +130,7 @@ final class ConsoleCommandsOverlayTest {
             // be swallowed sixty times a second for the rest of the session.
             var presenceFake = new UnreachableConsolePresenceFake();
 
-            try (var globalMock = mockStatic(Global.class)) {
-
-                stubGlobalWithModEnabled(globalMock, true);
+            ModStateScopes.runWithModEnabled(CONSOLE_COMMANDS, true, () -> {
 
                 var consoleOverlay = new ConsoleCommandsOverlay(presenceFake);
                 consoleOverlay.isOpen();
@@ -162,7 +139,7 @@ final class ConsoleCommandsOverlayTest {
                     .isFalse();
                 assertThat(presenceFake.askCount)
                     .isEqualTo(1);
-            }
+            });
         }
 
         @Test
@@ -172,7 +149,7 @@ final class ConsoleCommandsOverlayTest {
 
             try (var globalMock = mockStatic(Global.class)) {
 
-                var modManagerMock = stubGlobalWithModEnabled(globalMock, true);
+                var modManagerMock = stubGlobalWithTheModEnabled(globalMock);
                 var consoleOverlay = new ConsoleCommandsOverlay(presenceFake);
 
                 consoleOverlay.isOpen();
@@ -186,9 +163,9 @@ final class ConsoleCommandsOverlayTest {
         }
     }
 
-    private static ModManagerAPI stubGlobalWithModEnabled(
-            MockedStatic<Global> globalMock,
-            boolean isModEnabled) {
+    // A mod manager the case can count the asks on, which is the one thing ModStateScopes' proxy
+    // cannot answer - every other case here says "the mod is enabled" through the shipped scope.
+    private static ModManagerAPI stubGlobalWithTheModEnabled(MockedStatic<Global> globalMock) {
 
         stubLogger(globalMock);
 
@@ -203,7 +180,7 @@ final class ConsoleCommandsOverlayTest {
             .thenReturn(modManagerMock);
 
         when(modManagerMock.isModEnabled(CONSOLE_COMMANDS))
-            .thenReturn(isModEnabled);
+            .thenReturn(true);
 
         return modManagerMock;
     }
