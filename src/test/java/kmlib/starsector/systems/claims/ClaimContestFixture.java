@@ -27,12 +27,8 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 /**
- * The claim contest both claim-reading suites are driven against: one star system, its economy
- * and memory, and builders for the markets and factions that populate it.
- *
- * <p>Shared so the narrow claimant read and the full breakdown are exercised against the same
- * notion of a contest. The two are meant to resolve identically, which they cannot be shown to
- * do if each suite builds its own world.
+ * The claim contest the claim-reading cases are driven against: one star system, its economy and
+ * memory, and builders for the markets and factions that populate it.
  *
  * <p>Markets and factions here carry the state vanilla classifies on - real memory, real custom
  * data - rather than having the classifying reads stubbed out. A garrison in a contest is one

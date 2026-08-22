@@ -26,9 +26,9 @@ import java.util.OptionalInt;
 import java.util.Set;
 
 /**
- * {@link ClaimBreakdownReader} binding that recomputes vanilla's claim mechanic
- * ({@link Misc#getClaimingFaction}) in the open, keeping every intermediate value the static
- * throws away.
+ * Vanilla's claim mechanic ({@link Misc#getClaimingFaction}) recomputed in the open, keeping every
+ * intermediate value the static throws away - and answering both claim ports off that one
+ * computation.
  *
  * <p>Recomputing a mechanic the base game already implements is a liability, so the terms are
  * deliberate: the claimant mirrors {@code Misc.getClaimingFaction} step for step - the same
@@ -37,59 +37,55 @@ import java.util.Set;
  * is the winner the game itself would report, which is what lets it stand as the single source
  * for both a map fill and the text explaining it.
  *
- * <p>What is mirrored is that <em>result</em>, not the market walk that reaches it, and the
- * standings go one market wider than vanilla scores: the player's colonies are scored, forced
- * non-territorial. The mechanic bars the player from claiming at all, so a standing that can
- * never be territorial cannot move the winner - while dropping it, as vanilla does, would
- * report a system the player holds a colony in as one they have no presence in.
+ * <p>{@link ClaimReader} is answered here rather than by a binding of its own, that port being
+ * {@link #readBreakdown}'s claimant and nothing besides. A class holding this one to forward a
+ * single field would state no rule the two ports do not already share.
  *
- * <p>A hidden market carries no score of its own, as in vanilla, and that exclusion is not the
- * same call: hidden markets already enter the contest through the sibling count, so scoring one
- * separately would count it twice, and since a faction stands on its strongest market alone a
- * large hidden base would displace the visible colony actually contesting the system. Note that
- * this is not about whether the player has found it - a market's hiddenness and its entity's
- * discovery are independent, and the mechanic reads only the former.
+ * <p>What is mirrored is that <em>result</em>, not the market walk reaching it: the standings
+ * carry three kinds of market vanilla's own walk drops, none of which can move the winner.
  *
- * <p>The standings go one market wider again, in the other direction: a colony the economy does
- * not list at all is carried too, treated exactly as a hidden market is - present in its faction's
- * holdings, never scored, never a claimant. Vanilla builds Galatia Academy that way deliberately,
- * and a system account that never mentions the station on screen in a faction's colours is telling
- * a reader less than the map already shows them. It takes no part because vanilla's own walk never
- * reaches it, which is the same reason it is kept out of the sibling count: admitting it there
- * would raise a real colony's score above the one the game scores it at.
+ * <ul>
+ *   <li>The player's colonies are scored, forced non-territorial - the mechanic bars the player
+ *       from claiming at all, so the standing can never lead, while dropping it as vanilla does
+ *       would report a system the player holds a colony in as one they have no presence in.
+ *   <li>A hidden market carries no score of its own, as in vanilla, but not for vanilla's reason:
+ *       it already enters the contest through the sibling count, so scoring it separately would
+ *       count it twice, and since a faction stands on its strongest market alone a large hidden
+ *       base would displace the visible colony actually contesting the system. Hiddenness and the
+ *       entity's discovery are independent - the mechanic reads only the former.
+ *   <li>A colony the economy does not list is carried too, treated exactly as a hidden market is.
+ *       Vanilla builds Galatia Academy that way deliberately, and a system account never
+ *       mentioning that station in its faction's colours tells a reader less than the map already
+ *       shows them. It stays out of the sibling count for the reason it is never scored: admitting
+ *       it would raise a real colony's score above the one the game scores it at.
+ * </ul>
  *
  * <p>A faction holding nothing but such markets still takes a standing - a
  * {@link PresenceOnlyClaimStanding} at nought - rather than dropping out of the contest for want
- * of anything to stand on. That is the last step of the same widening: a station drawn on the map
- * in a faction's colours has to reach the account of who is in the system, and the faction it
- * belongs to is what carries it there. The nought is what keeps the widening off the mechanic,
+ * of anything to stand on, since a station drawn on the map in a faction's colours has to reach
+ * the account of who is in the system. The nought is what keeps the widening off the mechanic,
  * the lead changing only on a score strictly greater than nought.
  *
- * <p>The markets themselves come from {@link Colonies} rather than from a walk of this
- * class's own, so what counts as a colony here is what counts as one everywhere else reading the
- * same system - and the condition-only market every uninhabited planet carries, which a widening
- * to off-economy markets would otherwise admit on every surveyed rock, is excluded by that shared
+ * <p>The markets themselves come from {@link Colonies} rather than from a walk of this class's
+ * own, so what counts as a colony here is what counts as one everywhere else reading the same
+ * system - and the condition-only market every uninhabited planet carries, which the widening to
+ * off-economy markets would otherwise admit on every surveyed rock, is excluded by that shared
  * rule rather than by a check repeated here.
  *
- * <p>A visibility rule is taken alongside, and reaches the contest nowhere: it decides only what
+ * <p>A visibility rule is taken alongside and reaches the contest nowhere: it decides only what
  * each market's breakdown reports about the player's knowledge of it, which a display uses to
  * withhold a name. Taken at all because knowledge is no longer a fact a market carries - a
  * derelict or a concealed colony is known only where somebody has seen it, which is a question
- * about the system - so the reader has to be told the rule to answer it.
+ * about the system.
  *
- * <p>That read walks the whole system, so it is the expensive half of the two reads below; the
- * override is a bare memory read and stays cheap. A caller that walks a sector reads several
- * surfaces off each system and would pay that walk once per surface, so a reader built for such a
- * pass takes the pass's {@link SystemColoniesIndex} and shares the one walk with everything else
- * the pass reads.
- *
- * <p>A reader built without one walks afresh on every ask, and that is the case the second
- * constructor exists for rather than an oversight. An index is a snapshot of the sector the pass
- * that opened it saw; a reader outliving any one pass - the shared instance a hover box holds, for
- * one - would go on answering off a sector that has since moved on. Paying the walk is the honest
- * price of having no pass to belong to.
+ * <p>That colony read walks the whole system, so a caller reading several surfaces off each system
+ * of a sector would pay the walk once per surface. A reader built for such a pass therefore takes
+ * the pass's {@link SystemColoniesIndex} and shares one walk with everything else the pass reads.
+ * A reader built without one walks afresh on every ask, which is what a reader outliving any pass
+ * has to do: an index is a snapshot of the sector the pass that opened it saw, so the shared
+ * instance a hover box holds would otherwise answer off a sector that has since moved on.
  */
-public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
+public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader, ClaimReader {
 
     // A military market weighs far more than any colony's size can reach on its own, which is
     // how a garrison world claims a system its neighbours out-populate. Vanilla's flat bonus.
@@ -117,10 +113,6 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
 
     /**
      * A reader with no pass behind it, walking each system afresh on every ask.
-     *
-     * <p>What a long-lived reader has to take: an instance kept past the pass that built it
-     * would answer off a snapshot nothing refreshes, so one that cannot be discarded with a
-     * pass must not hold one.
      *
      * @param visibility what the player may be shown of the colonies met, carried onto each
      *                   market's breakdown
@@ -166,6 +158,11 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader {
             overrideFactionId,
             claimantFactionId,
             rankStandings(collectStandings(claimedMarkets)));
+    }
+
+    @Override
+    public String readClaimingFactionId(StarSystemAPI system) {
+        return readBreakdown(system).claimantFactionId();
     }
 
     @Override

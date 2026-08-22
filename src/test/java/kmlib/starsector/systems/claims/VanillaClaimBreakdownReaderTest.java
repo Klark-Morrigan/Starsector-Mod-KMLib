@@ -35,6 +35,11 @@ import static org.assertj.core.api.Assertions.tuple;
  * entity with - is pinned here too, since a surface listing the markets behind a standing reads both
  * off this walk rather than looking the market up again. That reading them changes no outcome is
  * asserted head-on beside them.
+ *
+ * <p>The narrow claimant read and the {@link ClaimReaderSource} binding sit beside the breakdown
+ * cases rather than in a suite of their own, the reader answering both claim ports off one
+ * contest. Posing them here is what shows the narrow answer is the wide one's claimant and not a
+ * second opinion.
  */
 final class VanillaClaimBreakdownReaderTest {
 
@@ -54,6 +59,29 @@ final class VanillaClaimBreakdownReaderTest {
     @AfterEach
     void tearDown() {
         claimContest.close();
+    }
+
+    @Nested
+    class OpenReaderOver {
+
+        @Test
+        void bindsTheConstructorAsAClaimReaderSource() {
+            // The map's holder providers hold a source rather than a reader so they can open one
+            // per pass. The binding is what makes that possible at all, so it is pinned where the
+            // reader it opens is rather than left to whichever caller happens to write it out.
+            var hegemony = claimContest.buildFaction("hegemony", true);
+
+            claimContest.placeMarketsInSystem(claimContest.buildMarket(hegemony, 4));
+
+            ClaimReaderSource source = VanillaClaimBreakdownReader::new;
+
+            assertThat(source
+                    .openReaderOver(
+                        ColonyVisibility.BASE_FOG,
+                        new SystemColoniesIndex(Global.getSector()))
+                    .readClaimingFactionId(claimContest.getSystem()))
+                .isEqualTo("hegemony");
+        }
     }
 
     @Nested
@@ -1019,6 +1047,57 @@ final class VanillaClaimBreakdownReaderTest {
 
             assertThat(breakdown)
                 .isEqualTo(SystemClaimBreakdown.NONE);
+        }
+    }
+
+    @Nested
+    class ReadClaimingFactionId {
+
+        @Test
+        void reportsTheTopScoringTerritorialFaction() {
+
+            var hegemony = claimContest.buildFaction("hegemony", true);
+            var tritachyon = claimContest.buildFaction("tritachyon", true);
+
+            claimContest.placeMarketsInSystem(
+                claimContest.buildMarket(hegemony, 4),
+                claimContest.buildMarket(tritachyon, 7));
+
+            assertThat(new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+                    .readClaimingFactionId(claimContest.getSystem()))
+                .isEqualTo("tritachyon");
+        }
+
+        @Test
+        void reportsTheOverrideAheadOfAnyScore() {
+
+            var hegemony = claimContest.buildFaction("hegemony", true);
+
+            claimContest.placeMarketsInSystem(claimContest.buildMarket(hegemony, 6));
+            claimContest.overrideClaimingFaction("luddic_church");
+
+            assertThat(new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+                    .readClaimingFactionId(claimContest.getSystem()))
+                .isEqualTo("luddic_church");
+        }
+
+        @Test
+        void reportsUnclaimedWhenNoTerritorialFactionIsPresent() {
+
+            var pirates = claimContest.buildFaction("pirates", false);
+
+            claimContest.placeMarketsInSystem(claimContest.buildMarket(pirates, 9));
+
+            assertThat(new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+                    .readClaimingFactionId(claimContest.getSystem()))
+                .isNull();
+        }
+
+        @Test
+        void reportsUnclaimedForANullSystem() {
+            assertThat(new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+                    .readClaimingFactionId(null))
+                .isNull();
         }
     }
 
