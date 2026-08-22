@@ -14,11 +14,11 @@ import static org.mockito.Mockito.when;
 
 /**
  * Pins the contracts of {@link Colony#isHidden}, {@link Colony#isDiscoveredByPlayer},
- * {@link Colony#isSightedByPlayer} and {@link Colony#readOwnerId}, the facts a colony answers
+ * {@link Colony#isSighted} and {@link Colony#readOwnerId}, the facts a colony answers
  * about itself rather than storing beside it - three of them straight off its own market, and the
- * sighting off its market read against a register of where the player has been. Each method's
- * cases live in a {@link Nested} group so the suite reports as a per-method tree; the shared mock
- * builders stay on the outer class.
+ * sighting off its market read against a register of what has been observed and where. Each
+ * method's cases live in a {@link Nested} group so the suite reports as a per-method tree; the
+ * shared mock builders stay on the outer class.
  */
 final class ColonyTest {
 
@@ -82,14 +82,14 @@ final class ColonyTest {
     }
 
     @Nested
-    class IsSightedByPlayer {
+    class IsSighted {
 
         @Test
         void reports_a_colony_seen_in_the_system_it_stands_in_as_sighted() {
 
             var colony = new Colony(buildMarketInSystem(), ColonyKind.COLONY, true);
 
-            assertThat(colony.isSightedByPlayer(buildSightingIn(SYSTEM_ID)))
+            assertThat(colony.isSighted(buildSightingIn(SYSTEM_ID)))
                 .isTrue();
         }
 
@@ -98,7 +98,7 @@ final class ColonyTest {
 
             var colony = new Colony(buildMarketInSystem(), ColonyKind.COLONY, true);
 
-            assertThat(colony.isSightedByPlayer(ColonySightings.NONE))
+            assertThat(colony.isSighted(ColonySightings.NONE))
                 .isFalse();
         }
 
@@ -109,7 +109,7 @@ final class ColonyTest {
             // having entered a system.
             var colony = new Colony(buildMarketInSystem(), ColonyKind.COLONY, true);
 
-            assertThat(colony.isSightedByPlayer(buildSightingIn("corvus")))
+            assertThat(colony.isSighted(buildSightingIn("corvus")))
                 .isFalse();
         }
 
@@ -120,7 +120,7 @@ final class ColonyTest {
             // it for the whole campaign rather than until somebody saw it.
             var colony = new Colony(buildMarketIn(mock(LocationAPI.class)), ColonyKind.COLONY, true);
 
-            assertThat(colony.isSightedByPlayer(ColonySightings.NONE))
+            assertThat(colony.isSighted(ColonySightings.NONE))
                 .isTrue();
         }
 
@@ -130,7 +130,7 @@ final class ColonyTest {
             // so the unstated case withholds rather than leaks.
             var colony = new Colony(buildMarketInSystem(), ColonyKind.COLONY, true);
 
-            assertThat(colony.isSightedByPlayer(null))
+            assertThat(colony.isSighted(null))
                 .isFalse();
         }
     }

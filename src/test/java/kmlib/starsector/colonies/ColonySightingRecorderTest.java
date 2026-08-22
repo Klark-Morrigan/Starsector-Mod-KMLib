@@ -6,8 +6,6 @@ import com.fs.starfarer.api.campaign.econ.EconomyAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.campaign.rules.MemoryAPI;
 
-import kmlib.starsector.markets.MarketPlacementFixture;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -62,7 +60,7 @@ final class ColonySightingRecorderTest {
         @Test
         void records_the_colonies_where_the_player_arrives() {
 
-            var arrivalSystem = buildSystemHolding(ARRIVAL_SYSTEM_ID, buildColony("jangala"));
+            var arrivalSystem = buildSystemHolding(ARRIVAL_SYSTEM_ID, buildGatedColony("jangala"));
 
             new ColonySightingRecorder(sectorMock)
                 .reportCurrentLocationChanged(null, arrivalSystem);
@@ -77,7 +75,7 @@ final class ColonySightingRecorderTest {
             // not there to be recorded on arrival, and the register would otherwise go on saying
             // the player had never seen it.
             var departureSystem =
-                buildSystemHolding(DEPARTURE_SYSTEM_ID, buildColony("sentinel_gantries"));
+                buildSystemHolding(DEPARTURE_SYSTEM_ID, buildGatedColony("sentinel_gantries"));
 
             new ColonySightingRecorder(sectorMock)
                 .reportCurrentLocationChanged(departureSystem, null);
@@ -91,10 +89,10 @@ final class ColonySightingRecorderTest {
             // The cost claim. A journey pays for the two places it joins, and a sector full of
             // systems the player is nowhere near is not walked at all.
             var departureSystem =
-                buildSystemHolding(DEPARTURE_SYSTEM_ID, buildColony("sentinel_gantries"));
-            var arrivalSystem = buildSystemHolding(ARRIVAL_SYSTEM_ID, buildColony("jangala"));
+                buildSystemHolding(DEPARTURE_SYSTEM_ID, buildGatedColony("sentinel_gantries"));
+            var arrivalSystem = buildSystemHolding(ARRIVAL_SYSTEM_ID, buildGatedColony("jangala"));
 
-            buildSystemHolding(UNVISITED_SYSTEM_ID, buildColony("mairaath"));
+            buildSystemHolding(UNVISITED_SYSTEM_ID, buildGatedColony("mairaath"));
 
             new ColonySightingRecorder(sectorMock)
                 .reportCurrentLocationChanged(departureSystem, arrivalSystem);
@@ -104,10 +102,12 @@ final class ColonySightingRecorderTest {
         }
     }
 
-    // A market on a body of its own, named by the id a sighting is kept against.
-    private static MarketAPI buildColony(String colonyId) {
+    // A colony that conceals itself, named by the id an observation is kept against. Gated, since
+    // an ungated colony is never recorded and a case posing one could not tell a recorder that
+    // walked the wrong places from one that walked none.
+    private static MarketAPI buildGatedColony(String colonyId) {
 
-        var marketMock = MarketPlacementFixture.buildMarketOnBody(colonyId + "_body");
+        var marketMock = ColonyMarketFixture.buildFoundConcealedColony("pirates");
 
         when(marketMock.getId())
             .thenReturn(colonyId);
@@ -124,7 +124,7 @@ final class ColonySightingRecorderTest {
         when(systemMock.getId())
             .thenReturn(systemId);
 
-        MarketPlacementFixture.listMarketsIn(economyMock, systemMock, colonies);
+        ColonyPlacementFixture.listColonies(economyMock, systemMock, colonies);
 
         return systemMock;
     }

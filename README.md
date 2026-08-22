@@ -141,13 +141,16 @@ src/main/java/kmlib/
                      what kind of place it is, resolved once where it is
                      selected, so a derelict station is never taken for
                      a settlement downstream. Beside the set sits the
-                     sighting register: where the player last saw each
-                     colony, written as they travel and kept in the
-                     save, so a shape the fog alone would leak is shown
-                     only where somebody has seen it standing - and a
-                     colony that has since moved is unseen again. The
-                     other route to being seen runs through the place's
-                     own inhabitants, and it is owner-aware: a colony
+                     sighting register: where each colony was last
+                     observed standing, kept in the save, so a shape the
+                     fog alone would leak is shown only where somebody
+                     has seen it - and a colony that has since moved is
+                     unseen again. Two routes make an observation and
+                     both write it down, so what is known does not
+                     evaporate when the informant dies: the player, as
+                     they travel, and the place's own inhabitants, swept
+                     for on whatever cadence a consumer already walks
+                     the sector on. The second is owner-aware - a colony
                      vouches for a concealed neighbour only when the two
                      are held by different factions, nobody announcing
                      their own secrets

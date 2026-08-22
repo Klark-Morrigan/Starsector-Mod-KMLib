@@ -7,8 +7,6 @@ import com.fs.starfarer.api.campaign.econ.EconomyAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.campaign.rules.MemoryAPI;
 
-import kmlib.starsector.markets.MarketPlacementFixture;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -18,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -27,12 +26,17 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
- * Pins the sighting register kept in sector memory: what an unwritten register answers, what a
- * visit records, which places are worth recording at all, and what a load sheds.
+ * Pins the sighting register kept in sector memory: what an unwritten register answers, what each
+ * of the two observation routes records, which colonies and places are worth recording at all, and
+ * what a load sheds.
  *
  * <p>The stored map is a real one behind a mocked memory, rather than a stub per key, because
  * every case here is about how the register accumulates across calls - a stubbed read could not
  * show a second visit overwriting the first, nor a reconciliation removing an entry.
+ *
+ * <p>The colonies are {@link ColonyMarketFixture}'s, gated shapes for the most part: an ungated
+ * colony is never recorded, so a suite posing only those could not tell a working recorder from
+ * one that wrote nothing at all.
  */
 final class SectorColonySightingsTest {
 
@@ -108,28 +112,44 @@ final class SectorColonySightingsTest {
     class RecordSightingsIn {
 
         @Test
-        void records_every_colony_standing_in_the_system_visited() {
+        void records_every_gated_colony_standing_in_the_system_visited() {
             // Both listings, since a gated colony is most often the unregistered shape: hung on
             // one of the system's own entities and never entered in the economy.
-            var listedColony = buildColony("jangala");
-            var unlistedColony = buildColony("galatia_academy");
+            var listedBase = buildConcealedColony("pirate_base", "pirates");
+            var unlistedDerelict = buildDerelict("sentinel_gantries");
 
-            listColoniesInSystem(listedColony);
-            placeColoniesOnSystemEntities(unlistedColony);
+            listColoniesInSystem(listedBase);
+            placeColoniesOnSystemEntities(unlistedDerelict);
             openStoredSightings();
 
             SectorColonySightings.recordSightingsIn(sectorMock, systemMock);
 
             assertThat(readStoredSightings())
-                .containsEntry("jangala", SYSTEM_ID)
-                .containsEntry("galatia_academy", SYSTEM_ID);
+                .containsEntry("pirate_base", SYSTEM_ID)
+                .containsEntry("sentinel_gantries", SYSTEM_ID);
+        }
+
+        @Test
+        void records_nothing_for_a_colony_held_in_the_open() {
+            // What bounds the register to what a gate actually reads. An open colony the economy
+            // lists is permanently in the sector's own sight, so an entry for one would answer
+            // nothing while costing an entry per colony in the sector.
+            var colony = buildOpenColony("jangala", "hegemony");
+
+            listColoniesInSystem(colony);
+            openStoredSightings();
+
+            SectorColonySightings.recordSightingsIn(sectorMock, systemMock);
+
+            assertThat(readStoredSightings())
+                .isEmpty();
         }
 
         @Test
         void moves_a_colonys_sighting_to_wherever_it_was_last_seen() {
             // The mover's own case, from the register's side: meeting a colony again names the
             // new place rather than adding to a list of places it has ever been.
-            var mover = buildColony("rat_exoship");
+            var mover = buildConcealedColony("rat_exoship", "rat_exotech");
             var stored = openStoredSightings();
 
             stored.put("rat_exoship", OTHER_SYSTEM_ID);
@@ -157,7 +177,67 @@ final class SectorColonySightingsTest {
             when(sectorMock.getMemoryWithoutUpdate())
                 .thenReturn(null);
 
+            listColoniesInSystem(buildDerelict("sentinel_gantries"));
+
             SectorColonySightings.recordSightingsIn(sectorMock, systemMock);
+
+            verifyNoInteractions(memoryMock);
+        }
+    }
+
+    @Nested
+    class RecordSightingsByInhabitants {
+
+        @Test
+        void records_a_derelict_standing_beside_another_factions_colony() {
+            // The route's own case, and the reason it is written down at all: a hulk in orbit over
+            // an inhabited world is common knowledge there, and stays known once that world dies.
+            var derelict = buildDerelict("sentinel_gantries");
+
+            listColoniesInSystem(buildOpenColony("jangala", "hegemony"));
+            placeColoniesOnSystemEntities(derelict);
+            openStoredSightings();
+
+            SectorColonySightings.recordSightingsByInhabitants(sectorMock);
+
+            assertThat(readStoredSightings())
+                .containsExactly(entry("sentinel_gantries", SYSTEM_ID));
+        }
+
+        @Test
+        void records_nothing_for_a_derelict_alone_in_its_system() {
+            // Nobody is here to have seen it, so nothing is written and no empty register is put
+            // into the save on the strength of a system holding a hulk.
+            placeColoniesOnSystemEntities(buildDerelict("sentinel_gantries"));
+
+            SectorColonySightings.recordSightingsByInhabitants(sectorMock);
+
+            verify(memoryMock, never())
+                .set(anyString(), any());
+        }
+
+        @Test
+        void records_nothing_for_a_base_its_own_faction_shelters() {
+            // Owner-awareness carried into the write: the pirates do not announce their own base,
+            // so the register is never given an observation the rule would decline to credit.
+            listColoniesInSystem(
+                buildConcealedColony("pirate_base", "pirates"),
+                buildOpenColony("pirate_haven", "pirates"));
+            openStoredSightings();
+
+            SectorColonySightings.recordSightingsByInhabitants(sectorMock);
+
+            assertThat(readStoredSightings())
+                .isEmpty();
+        }
+
+        @Test
+        void records_nothing_where_the_sector_has_no_systems_to_walk() {
+
+            when(sectorMock.getStarSystems())
+                .thenReturn(null);
+
+            SectorColonySightings.recordSightingsByInhabitants(sectorMock);
 
             verifyNoInteractions(memoryMock);
         }
@@ -169,29 +249,27 @@ final class SectorColonySightingsTest {
         @Test
         void drops_a_sighting_of_a_colony_no_longer_anywhere_in_the_sector() {
             // A sighting outliving what it was about would go on answering for whatever next took
-            // the id, which is a sighting the player never made.
-            var survivor = buildColony("jangala");
+            // the id, which is an observation nobody ever made.
             var stored = openStoredSightings();
 
-            stored.put("jangala", SYSTEM_ID);
+            stored.put("sentinel_gantries", SYSTEM_ID);
             stored.put("razed_base", SYSTEM_ID);
-            listColoniesInSystem(survivor);
+            placeColoniesOnSystemEntities(buildDerelict("sentinel_gantries"));
 
             SectorColonySightings.dropSightingsOfAbsentColonies(sectorMock);
 
             assertThat(readStoredSightings())
-                .containsOnlyKeys("jangala");
+                .containsOnlyKeys("sentinel_gantries");
         }
 
         @Test
         void keeps_a_sighting_of_a_colony_that_has_moved_to_another_system() {
             // Present but elsewhere is not absent. The sighting stays and simply stops matching
             // where the colony stands, which is the rule's own way of saying it is unseen again.
-            var mover = buildColony("rat_exoship");
             var stored = openStoredSightings();
 
             stored.put("rat_exoship", OTHER_SYSTEM_ID);
-            listColoniesInSystem(mover);
+            listColoniesInSystem(buildConcealedColony("rat_exoship", "rat_exotech"));
 
             SectorColonySightings.dropSightingsOfAbsentColonies(sectorMock);
 
@@ -217,11 +295,10 @@ final class SectorColonySightingsTest {
             // What a load owes the register. No location change fires until the player leaves, so
             // without this the place they are looking at is the one place nothing is known about -
             // and on a save written before any sighting was made, that is all it could learn.
-            var survivor = buildColony("jangala");
             var stored = openStoredSightings();
 
             stored.put("razed_base", SYSTEM_ID);
-            listColoniesInSystem(survivor);
+            placeColoniesOnSystemEntities(buildDerelict("sentinel_gantries"));
 
             when(sectorMock.getCurrentLocation())
                 .thenReturn(systemMock);
@@ -229,17 +306,15 @@ final class SectorColonySightingsTest {
             SectorColonySightings.reconcileWithLoadedSave(sectorMock);
 
             assertThat(readStoredSightings())
-                .containsOnlyKeys("jangala")
-                .containsEntry("jangala", SYSTEM_ID);
+                .containsOnlyKeys("sentinel_gantries")
+                .containsEntry("sentinel_gantries", SYSTEM_ID);
         }
 
         @Test
         void records_nothing_where_the_save_was_left_outside_a_star_system() {
 
-            var colony = buildColony("jangala");
-
             openStoredSightings();
-            listColoniesInSystem(colony);
+            placeColoniesOnSystemEntities(buildDerelict("sentinel_gantries"));
 
             when(sectorMock.getCurrentLocation())
                 .thenReturn(mock(LocationAPI.class));
@@ -251,23 +326,39 @@ final class SectorColonySightingsTest {
         }
     }
 
-    // A market on a body of its own, named by the id a sighting is kept against.
-    private static MarketAPI buildColony(String colonyId) {
+    // A derelict nobody ever lived on - the commonest gated shape, and the one the register was
+    // introduced for.
+    private static MarketAPI buildDerelict(String colonyId) {
+        return nameColony(ColonyMarketFixture.buildDerelictStation(), colonyId);
+    }
 
-        var marketMock = MarketPlacementFixture.buildMarketOnBody(colonyId + "_body");
+    // A base that conceals itself: the other gated shape, held by a real faction.
+    private static MarketAPI buildConcealedColony(String colonyId, String factionId) {
+        return nameColony(ColonyMarketFixture.buildFoundConcealedColony(factionId), colonyId);
+    }
 
-        when(marketMock.getId())
+    // An ordinary colony, gated by nothing. Posed both as the shape that must never reach the
+    // register and as the neighbour whose people do the observing.
+    private static MarketAPI buildOpenColony(String colonyId, String factionId) {
+        return nameColony(ColonyMarketFixture.buildVisibleColony(factionId), colonyId);
+    }
+
+    // The id a sighting is kept against. Given here rather than by the colony builders, none of
+    // which needs one - only the register does, and only because a stored entry has to be named.
+    private static MarketAPI nameColony(MarketAPI colony, String colonyId) {
+
+        when(colony.getId())
             .thenReturn(colonyId);
 
-        return marketMock;
+        return colony;
     }
 
     private void listColoniesInSystem(MarketAPI... colonies) {
-        MarketPlacementFixture.listMarketsIn(economyMock, systemMock, colonies);
+        ColonyPlacementFixture.listColonies(economyMock, systemMock, colonies);
     }
 
     private void placeColoniesOnSystemEntities(MarketAPI... colonies) {
-        MarketPlacementFixture.placeMarketsIn(systemMock, colonies);
+        ColonyPlacementFixture.placeColonies(systemMock, colonies);
     }
 
     // Opens the register the way a first sighting would, so a case can seed it and then assert

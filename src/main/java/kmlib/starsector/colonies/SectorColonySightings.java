@@ -15,16 +15,23 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * The sighting register kept in the sector's own memory: reading it, adding to it when the player
- * is somewhere, and shedding what it no longer describes.
+ * The sighting register kept in the sector's own memory: reading it, adding to it wherever an
+ * observation is made, and shedding what it no longer describes.
  *
  * <p>Sector memory rather than anything of vanilla's, because vanilla keeps no such fact. It
- * serialises into the save alongside everything else there, so a sighting survives reload the way
- * the visit that produced it does.
+ * serialises into the save alongside everything else there, so an observation survives reload the
+ * way the visit that produced it does.
  *
- * <p>Recording is done where the player is, one place at a time, rather than by a script sweeping
- * the sector. A sighting only ever changes when the player moves, so paying per day of a campaign
- * to answer a question that changes per journey would be paying for nothing on almost every day.
+ * <p>Two routes write it, because both are observations and knowledge does not evaporate when the
+ * informant dies. {@link #recordSightingsIn} takes what an observer standing in a place can see,
+ * and is driven by the player's own journeys - a fact that only ever changes when they move, so it
+ * costs nothing between moves. {@link #recordSightingsByInhabitants} takes what a place's own
+ * population can see, and is driven by whatever already sweeps the sector; that one has to be
+ * swept for, there being no event to hang it on when a colony arrives among witnesses.
+ *
+ * <p>Only the shapes a {@link RevelationGate} holds back are recorded at all. Nothing ever asks
+ * the register about an open colony the economy lists, so an entry for one would answer nothing
+ * while costing an entry per colony in the sector.
  *
  * <p>Only star systems are recorded. A colony standing anywhere else reads sighted whatever the
  * register says - there is no system to have been in - so recording out there would buy nothing,
@@ -65,15 +72,22 @@ public final class SectorColonySightings {
     }
 
     /**
-     * Records every colony standing in {@code location} as seen there.
+     * Records every gated colony standing in {@code location} as observed there - what somebody
+     * arriving in a place sees, being here amounting to seeing what is here.
      *
-     * <p>Every market present is recorded rather than the resolved colony set, because which
-     * market wins a place is decided when the place is read and can change between one reading
-     * and the next - a sighting held only for the winner of the day would be missing for the
-     * market that succeeds it.
+     * <p>Only the shapes a gate holds back. Nothing ever asks the register about an open colony
+     * the economy lists, that being permanently in the sector's own sight, so recording one would
+     * cost an entry per colony in the sector and answer nothing.
      *
-     * @param sector   the sector whose memory holds the register; null is a no-op
-     * @param location where the player is; anything that is not a star system is a no-op, a
+     * <p>Recorded off the resolved colony set rather than off the raw markets, because gated is a
+     * fact about a colony's kind and concealment, and kind is only well defined once a place has
+     * settled which of the markets on it is the colony. A market superseded on its own entity
+     * therefore records nothing of its own - it is not the colony standing here - and gains its
+     * entry when it wins the place and is next observed.
+     *
+     * @param sector   the sector whose economy is read and whose memory holds the register; null
+     *                 is a no-op
+     * @param location where the observer is; anything that is not a star system is a no-op, a
      *                 colony outside one reading sighted whatever the register holds
      */
     public static void recordSightingsIn(SectorAPI sector, LocationAPI location) {
@@ -81,19 +95,41 @@ public final class SectorColonySightings {
         if (!(location instanceof StarSystemAPI system)) {
             return;
         }
-        var locationId = system.getId();
-        var storedSightings = locationId == null ? null : openStoredSightings(sector);
+        putSightings(
+            sector,
+            system.getId(),
+            SystemColonies.readColoniesIn(sector, system).readGatedColonies());
+    }
 
-        if (storedSightings == null) {
+    /**
+     * Records every gated colony the sector's own inhabitants can see as observed where it stands.
+     *
+     * <p>The other route by which an observation is made, and the reason it is written down rather
+     * than merely tested where the rule is applied. A colony standing among people who are not its
+     * owner is common knowledge there; leaving that as a live test alone would take the colony off
+     * the map the moment its last neighbour decivilised, for a player who had known it was there
+     * for years.
+     *
+     * <p>Walks the whole sector, having nothing to do with where the player is. A caller runs this
+     * on whatever cadence it already walks the sector on, and nothing depends on its having run -
+     * the rule keeps its own live reading of the place for exactly that reason.
+     *
+     * @param sector the sector to read and whose memory holds the register; null is a no-op
+     */
+    public static void recordSightingsByInhabitants(SectorAPI sector) {
+
+        var systems = sector == null ? null : sector.getStarSystems();
+
+        if (systems == null) {
             return;
         }
-        for (var market : readMarketsIn(sector, system)) {
+        for (var system : systems) {
 
-            var colonyId = market.getId();
-
-            if (colonyId != null) {
-                storedSightings.put(colonyId, locationId);
-            }
+            putSightings(
+                sector,
+                system == null ? null : system.getId(),
+                SystemColonies.readColoniesIn(sector, system)
+                    .readColoniesObservedByInhabitants());
         }
     }
 
@@ -101,7 +137,7 @@ public final class SectorColonySightings {
      * Drops every sighting whose colony is no longer anywhere in the sector.
      *
      * <p>Run once against a loaded save. A sighting outliving the colony it was about would go on
-     * answering for whatever next took the id, which is a sighting the player never made.
+     * answering for whatever next took the id, which is an observation nobody ever made.
      *
      * @param sector the sector to reconcile the register against; null is a no-op
      */
@@ -117,7 +153,7 @@ public final class SectorColonySightings {
 
     /**
      * Brings the register into step with a loaded save: sheds the sightings whose colonies have
-     * gone, then records what stands where the player currently is.
+     * gone, then records what the player is currently standing among.
      *
      * <p>The second half is what a load owes the register. A save opened in a system produces no
      * location change until the player leaves it, so without this the place they are looking at is
@@ -139,10 +175,39 @@ public final class SectorColonySightings {
         }
     }
 
+    // Stamps a set of colonies as observed in one place, opening the register on the first write
+    // of a campaign.
+    //
+    // Nothing to stamp opens nothing, so the vast majority of systems - which hold no gated colony
+    // at all - never put an empty register into a save between them.
+    private static void putSightings(
+            SectorAPI sector,
+            String locationId,
+            List<Colony> observedColonies) {
+
+        if (locationId == null || observedColonies.isEmpty()) {
+            return;
+        }
+        var storedSightings = openStoredSightings(sector);
+
+        if (storedSightings == null) {
+            return;
+        }
+        for (var colony : observedColonies) {
+
+            var colonyId = colony.market().getId();
+
+            if (colonyId != null) {
+                storedSightings.put(colonyId, locationId);
+            }
+        }
+    }
+
     // The markets present in one place, both listings together: the economy's, and the ones hung
-    // on the place's own entities that it never registered. A sighting is about being seen rather
-    // than about being registered, so the unlisted colonies - which is the shape a gated one is
-    // most often built in - have to be walked too.
+    // on the place's own entities that it never registered. Read for the reconciliation alone,
+    // which asks what the sector still holds rather than what may be shown of it, so the ownership
+    // and kind rules a colony set applies are beside the point - an id present under any market at
+    // all is an id a sighting may still be about.
     private static List<MarketAPI> readMarketsIn(SectorAPI sector, LocationAPI location) {
 
         var markets = new ArrayList<MarketAPI>(LocationMarkets.readMarkets(sector, location));

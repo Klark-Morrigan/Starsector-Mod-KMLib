@@ -37,10 +37,15 @@ import java.util.function.Predicate;
  * because it is a fact about the world the set was read out of - as the colonies themselves are -
  * and every projection asks it the same question. A register given per read is one a later reader
  * can state differently, which would have two surfaces drawn from one place disagreeing about
- * where the player has been.
+ * what has been seen of it.
+ *
+ * <p>The set also says what it has to <em>offer</em> that register:
+ * {@link #readColoniesObservedByInhabitants} and {@link #readGatedColonies} are the observations
+ * made here, stated beside the rule that spends them so the two cannot part company over who can
+ * see what.
  *
  * @param colonies  the colonies present, in the order they were selected
- * @param sightings what the player has seen of them and where; an unstated register reads as
+ * @param sightings what has been observed of them and where; an unstated register reads as
  *                  {@link ColonySightings#NONE}
  */
 public record Colonies(
@@ -65,8 +70,8 @@ public record Colonies(
     }
 
     /**
-     * A set nothing is known to have been seen in - what a caller holding no register of the
-     * player's travels reads, and what every place answers before one is opened.
+     * A set nothing is known to have been observed in - what a caller holding no register reads,
+     * and what every place answers before one is opened.
      *
      * @param colonies the colonies present; null reads as an empty set
      */
@@ -164,6 +169,53 @@ public record Colonies(
         return hasColonyPassing(rule, Colonies::isInhabitingColony);
     }
 
+    /**
+     * The colonies some gate holds back until they have been observed - and so, for anybody
+     * standing in the place this set was read out of, exactly what they have just observed.
+     *
+     * <p>Being somewhere is seeing what is in it, which is why this needs no rule and reads no
+     * fog. A concealed base the observer cannot pick out is recorded all the same: an observation
+     * is not by itself permission to show anything, the gate being a further condition on top of
+     * the fog rather than an alternative to it.
+     *
+     * <p>Only the gated shapes, since only they are ever asked about. An open colony the economy
+     * lists is permanently in the sector's own sight, so writing an observation of one down would
+     * buy nothing and cost an entry per colony in the sector.
+     *
+     * @return the colonies a gate covers, in the set's own order
+     */
+    public List<Colony> readGatedColonies() {
+        return readColoniesPassing(RevelationGate::isGatedColony);
+    }
+
+    /**
+     * The gated colonies the place's own inhabitants can see standing here - what somebody living
+     * beside a derelict or a concealed base has observed, whether or not the player ever comes.
+     *
+     * <p>Named here rather than assembled by whatever writes the register, because who can see a
+     * colony is the same question {@link #readKnownColonies} answers and a second statement of it
+     * would be free to disagree with this one - recording observations the rule declines to
+     * credit, or missing the ones it does.
+     *
+     * <p>Owner-aware through the same test the rule uses: the people keeping a secret are exactly
+     * the ones a faction-blind reading would credit with telling it. So a faction's open colony
+     * observes a rival's concealed base beside it and never its own.
+     *
+     * <p>Read under the fog alone, whatever rule a caller may be holding. A reveal changes what
+     * may be shown and never what was seen, so letting one reach here would write down
+     * observations nobody made - permanently, into a save, where turning the reveal off again
+     * could not take them out.
+     *
+     * @return the gated colonies somebody living here has seen, in the set's own order
+     */
+    public List<Colony> readColoniesObservedByInhabitants() {
+
+        var settlingOwnerIds = readSettlingOwnerIds(ColonyVisibility.BASE_FOG);
+
+        return readColoniesPassing(colony -> RevelationGate.isGatedColony(colony)
+            && isObservedByInhabitants(colony, settlingOwnerIds));
+    }
+
     // What one projection admits, as a single test over a colony: the rule resolved, the place's
     // settling owners folded once for the whole set, and the kind this projection wants.
     //
@@ -183,14 +235,19 @@ public record Colonies(
     }
 
     // Materialises one projection.
-    //
-    // Walked in the set's own order rather than gated colonies after ungated ones, since a
-    // caller mirroring vanilla's tie rules reads that order and would resolve differently.
     private List<Colony> readColoniesPassing(
             ColonyVisibility rule,
             Predicate<Colony> isWantedColony) {
 
-        var isPassingColony = buildProjectionFilter(rule, isWantedColony);
+        return readColoniesPassing(buildProjectionFilter(rule, isWantedColony));
+    }
+
+    // Materialises whatever a test admits.
+    //
+    // Walked in the set's own order rather than gated colonies after ungated ones, since a
+    // caller mirroring vanilla's tie rules reads that order and would resolve differently.
+    private List<Colony> readColoniesPassing(Predicate<Colony> isPassingColony) {
+
         var passingColonies = new ArrayList<Colony>();
 
         for (var colony : colonies) {
@@ -279,7 +336,7 @@ public record Colonies(
         // hides and then withheld a derelict would answer half the question it was asked.
         return rule.shouldIncludeUndiscoveredMarkets()
             || !isGatedOnRevelation(colony, rule)
-            || isRevealedToPlayer(colony, settlingOwnerIds);
+            || isObservedColony(colony, settlingOwnerIds);
     }
 
     // Whether a colony amounts to people living where it stands - the one thing that separates
@@ -319,23 +376,24 @@ public record Colonies(
         return false;
     }
 
-    // Somebody has seen this colony where it now stands, and word of it has reached the player.
+    // Somebody has seen this colony where it now stands.
     //
-    // A disjunction because the two routes are two ways one piece of word travels rather than
-    // two separate requirements: demanding both would put every derelict in the Core behind a
-    // visit the place's own population makes unnecessary.
+    // One idea reached two ways rather than two unlike terms: the place is being looked at right
+    // now, or an observation of it standing here was written down at some point. Both are
+    // observations, and both routes that make one - the player's presence and the place's own
+    // inhabitants - write into the same register, so what is known does not evaporate when the
+    // informant dies.
     //
-    // The two are tightened separately for the same reason they are stated separately: the
-    // settled route asks who else could have seen this and reads the place as it stands, while
-    // the sighting route asks whether the player did and is the only one of the two needing a
-    // memory to answer with.
-    private boolean isRevealedToPlayer(Colony colony, Set<String> settlingOwnerIds) {
-        return isSettledForColony(colony, settlingOwnerIds)
-            || colony.isSightedByPlayer(sightings);
+    // The live term is kept beside the recorded one so a colony arriving among witnesses is shown
+    // at once rather than at whatever cadence the recorder happens to run on, and so the rule goes
+    // on answering in a sector where nothing has recorded anything at all.
+    private boolean isObservedColony(Colony colony, Set<String> settlingOwnerIds) {
+        return isObservedByInhabitants(colony, settlingOwnerIds)
+            || colony.isSighted(sightings);
     }
 
-    // Whether the place is settled by somebody willing to speak about this colony: a shown, open
-    // colony of some owner other than its own.
+    // Whether somebody living in this place would speak about this colony: a shown, open colony
+    // of some owner other than its own stands here.
     //
     // Owner-aware rather than a bare "anybody lives here", because the people keeping a secret
     // are exactly the ones a faction-blind test credits with telling it. A pirate base in a
@@ -347,7 +405,7 @@ public record Colonies(
     // a station no faction holds that the economy lists anyway, which is read as kept and so
     // settles its place. That pair is the only arrangement in which this comparison reaches a
     // derelict, and it withholds - a hulk on the books is no witness to the hulk beside it.
-    private static boolean isSettledForColony(Colony colony, Set<String> settlingOwnerIds) {
+    private static boolean isObservedByInhabitants(Colony colony, Set<String> settlingOwnerIds) {
 
         var ownerId = colony.readOwnerId();
 

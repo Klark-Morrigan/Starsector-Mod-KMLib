@@ -1,0 +1,229 @@
+package kmlib.starsector.colonies;
+
+import com.fs.starfarer.api.campaign.StarSystemAPI;
+import com.fs.starfarer.api.campaign.econ.MarketAPI;
+
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+
+import java.util.List;
+import java.util.Set;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+/**
+ * Pins what the two observation routes buy once they are written down rather than merely tested:
+ * the recorders, the register in sector memory and the rule over a colony set, exercised together
+ * against one world.
+ *
+ * <p>Integration rather than unit because the claim is about the seam between them. Each half
+ * answers correctly on its own - the sweep records what a place can see, the rule shows what the
+ * register holds - and what is worth pinning is the behaviour when the world moves in between: an
+ * informant dying, a colony warping off, a colony met somewhere new.
+ *
+ * <p>The world is {@link ColonyFixture}'s, with its sector memory opened wherever a recorder is
+ * exercised so the production writer puts an observation where the rule really reads one.
+ */
+final class ColonyObservationIntegrationTest {
+
+    // The rule as it ships: both leaking shapes held back until somebody has seen them, and
+    // nothing admitted that the player has not found.
+    private static final ColonyVisibility BOTH_GATES_ON = new ColonyVisibility(
+        false,
+        Set.of(RevelationGate.SPACE_DERELICTS, RevelationGate.HIDDEN_COLONIES));
+
+    private static final String DERELICT_ID = "sentinel_gantries";
+    private static final String MOVER_ID = "rat_exoship";
+    private static final String NEIGHBOUR_ID = "jangala";
+    private static final String OTHER_SYSTEM_ID = "corvus";
+    private static final String SYSTEM_ID = "kumari_kandam";
+
+    @Nested
+    class RecordSightingsByInhabitants {
+
+        @Test
+        void keeps_a_derelict_shown_once_the_colony_that_observed_it_has_decivilised() {
+            // The whole of why the place's route is written down instead of read live. The hulk
+            // has been on the map for cycles on its neighbours' account, and their dying is no
+            // reason for it to blink out of a sector the player learnt long ago.
+            var fixture = new ColonyFixture(SYSTEM_ID);
+            var derelict = placeDerelictIn(fixture);
+            var neighbour = listNeighbourIn(fixture);
+
+            fixture.openSectorMemory();
+
+            SectorColonySightings.recordSightingsByInhabitants(fixture.getSector());
+            decivilise(neighbour);
+
+            assertThat(readKnownColoniesIn(fixture))
+                .containsExactly(new Colony(derelict, ColonyKind.SPACE_DERELICT, false));
+        }
+
+        @Test
+        void withholds_a_derelict_that_moves_after_the_colony_that_observed_it_has_decivilised() {
+            // An observation names a place, so it stops answering the moment the colony stands
+            // somewhere else. That is what keeps a recorded observation from becoming a permanent
+            // pass for a colony that wanders.
+            var fixture = new ColonyFixture(SYSTEM_ID);
+            var derelict = placeDerelictIn(fixture);
+            var neighbour = listNeighbourIn(fixture);
+
+            fixture.openSectorMemory();
+
+            SectorColonySightings.recordSightingsByInhabitants(fixture.getSector());
+            decivilise(neighbour);
+
+            var elsewhere = buildSystemElsewhere();
+
+            ColonyPlacementFixture.placeColonies(elsewhere, derelict);
+
+            assertThat(readKnownColoniesIn(fixture, elsewhere))
+                .isEmpty();
+        }
+
+        @Test
+        void records_nothing_for_the_ordinary_colony_doing_the_observing() {
+            // The register holds what a gate reads and nothing besides. An open colony the economy
+            // lists is permanently in the sector's own sight, so an entry for one would cost an
+            // entry per colony in the sector to answer a question nobody asks.
+            var fixture = new ColonyFixture(SYSTEM_ID);
+
+            placeDerelictIn(fixture);
+            listNeighbourIn(fixture);
+
+            fixture.openSectorMemory();
+
+            SectorColonySightings.recordSightingsByInhabitants(fixture.getSector());
+
+            var sightings = SectorColonySightings.readSightings(fixture.getSector());
+
+            assertThat(sightings.readSightedLocationId(DERELICT_ID))
+                .isEqualTo(SYSTEM_ID);
+            assertThat(sightings.readSightedLocationId(NEIGHBOUR_ID))
+                .isNull();
+        }
+    }
+
+    @Nested
+    class ReadKnownColonies {
+
+        @Test
+        void shows_a_derelict_its_neighbours_can_see_before_anything_has_been_recorded() {
+            // The live half of the rule, kept beside the recorded one so a colony arriving among
+            // witnesses is shown at once rather than at whatever cadence a sweep runs on - and so
+            // an install where nothing has swept still shows what is plainly there. The sector's
+            // memory is left shut, which is what "nothing has been recorded" means.
+            var fixture = new ColonyFixture(SYSTEM_ID);
+            var derelict = placeDerelictIn(fixture);
+
+            listNeighbourIn(fixture);
+
+            assertThat(readKnownColoniesIn(fixture))
+                .contains(new Colony(derelict, ColonyKind.SPACE_DERELICT, false));
+        }
+    }
+
+    @Nested
+    class RecordSightingsIn {
+
+        @Test
+        void follows_a_mover_from_each_system_it_is_met_in_to_the_next() {
+            // The player's own route, and why an observation names a place rather than a day:
+            // meeting the exoship again rewrites where it was last seen, and the system it left
+            // stops answering for it.
+            var fixture = new ColonyFixture(SYSTEM_ID);
+            var mover = placeMoverIn(fixture);
+
+            fixture.openSectorMemory();
+
+            SectorColonySightings.recordSightingsIn(fixture.getSector(), fixture.getSystem());
+
+            var elsewhere = buildSystemElsewhere();
+
+            ColonyPlacementFixture.placeColonies(elsewhere, mover);
+            SectorColonySightings.recordSightingsIn(fixture.getSector(), elsewhere);
+
+            assertThat(readKnownColoniesIn(fixture, elsewhere))
+                .containsExactly(new Colony(mover, ColonyKind.COLONY, false));
+            assertThat(SectorColonySightings.readSightings(fixture.getSector())
+                    .readSightedLocationId(MOVER_ID))
+                .isEqualTo(OTHER_SYSTEM_ID);
+        }
+    }
+
+    // A derelict standing in the fixture's system, unregistered as vanilla builds one.
+    private static MarketAPI placeDerelictIn(ColonyFixture fixture) {
+
+        var derelict = nameColony(fixture.buildDerelictStation(), DERELICT_ID);
+
+        fixture.placeColoniesInSystem(derelict);
+
+        return derelict;
+    }
+
+    // A concealed colony that wanders, standing where the derelict does - the shape that makes a
+    // recorded observation stop answering by going somewhere else.
+    private static MarketAPI placeMoverIn(ColonyFixture fixture) {
+
+        var mover = nameColony(fixture.buildFoundConcealedColony("rat_exotech"), MOVER_ID);
+
+        fixture.placeColoniesInSystem(mover);
+
+        return mover;
+    }
+
+    // The ordinary colony whose people do the observing: open, held by somebody other than the
+    // derelict's neutral owner, and listed by the economy as an inhabited world is.
+    private static MarketAPI listNeighbourIn(ColonyFixture fixture) {
+
+        var neighbour = nameColony(fixture.buildVisibleColony("hegemony"), NEIGHBOUR_ID);
+
+        fixture.listColoniesInEconomy(neighbour);
+
+        return neighbour;
+    }
+
+    // A star system the fixture's sector does not list - somewhere a colony can be found standing
+    // after it has moved, which is all a case about moving asks of a second place.
+    private static StarSystemAPI buildSystemElsewhere() {
+
+        var systemMock = mock(StarSystemAPI.class);
+
+        when(systemMock.getId())
+            .thenReturn(OTHER_SYSTEM_ID);
+
+        return systemMock;
+    }
+
+    // Kills a colony the way the game does, by turning its market into the condition-only shell a
+    // decivilised world carries - which every ownership read then refuses.
+    private static void decivilise(MarketAPI colony) {
+
+        when(colony.isPlanetConditionMarketOnly())
+            .thenReturn(true);
+    }
+
+    // The id an observation is kept against. Colonies are built without one because almost nothing
+    // reads it, and every unnamed colony would otherwise share one entry in the register.
+    private static MarketAPI nameColony(MarketAPI colony, String colonyId) {
+
+        when(colony.getId())
+            .thenReturn(colonyId);
+
+        return colony;
+    }
+
+    private static List<Colony> readKnownColoniesIn(ColonyFixture fixture) {
+        return readKnownColoniesIn(fixture, fixture.getSystem());
+    }
+
+    private static List<Colony> readKnownColoniesIn(
+            ColonyFixture fixture,
+            StarSystemAPI system) {
+
+        return SystemColonies.readColoniesIn(fixture.getSector(), system)
+            .readKnownColonies(BOTH_GATES_ON);
+    }
+}

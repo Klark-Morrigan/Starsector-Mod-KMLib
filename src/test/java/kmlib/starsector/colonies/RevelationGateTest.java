@@ -8,9 +8,10 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Pins what each {@link RevelationGate} covers. The cases live in a {@link Nested} group so the
- * suite reports as a per-method tree, and the colonies they are posed against are
- * {@link ColonyMarketFixture}'s.
+ * Pins what each {@link RevelationGate} covers, and which colonies are gated by any of them at
+ * all - the second being what decides whose observations are worth writing down. The cases live in
+ * a {@link Nested} group per method so the suite reports as a per-method tree, and the colonies
+ * they are posed against are {@link ColonyMarketFixture}'s.
  *
  * <p>Pinned apart from the rule that applies them because the two gates read different facts -
  * one the kind of place, the other whether the market conceals itself - and a gate quietly
@@ -79,6 +80,50 @@ final class RevelationGateTest {
             // kind are separate facts, and this is the case that says so.
             assertThat(RevelationGate.HIDDEN_COLONIES.coversColony(
                     buildDerelict(ColonyMarketFixture.buildDerelictStation())))
+                .isFalse();
+        }
+    }
+
+    @Nested
+    class IsGatedColony {
+
+        @Test
+        void reports_a_derelict_as_gated() {
+
+            assertThat(RevelationGate.isGatedColony(
+                    buildDerelict(ColonyMarketFixture.buildDerelictStation())))
+                .isTrue();
+        }
+
+        @Test
+        void reports_a_concealed_colony_as_gated() {
+
+            assertThat(RevelationGate.isGatedColony(
+                    buildColony(ColonyMarketFixture.buildFoundConcealedColony("pirates"))))
+                .isTrue();
+        }
+
+        @Test
+        void reports_a_colony_held_in_the_open_as_ungated() {
+            // The shape the register must not fill up with. An open colony the economy lists is
+            // permanently in the sector's own sight, so an observation of one answers nothing.
+            assertThat(RevelationGate.isGatedColony(
+                    buildColony(ColonyMarketFixture.buildVisibleColony("hegemony"))))
+                .isFalse();
+        }
+
+        @Test
+        void reports_an_open_station_a_faction_keeps_as_ungated() {
+            // Neither gate is about it: its owner parts it from the hulk, and nothing conceals it.
+            assertThat(RevelationGate.isGatedColony(
+                    buildOutpost(ColonyMarketFixture.buildOutpost("hegemony"))))
+                .isFalse();
+        }
+
+        @Test
+        void reports_no_gate_where_there_is_no_colony_to_test() {
+
+            assertThat(RevelationGate.isGatedColony(null))
                 .isFalse();
         }
     }

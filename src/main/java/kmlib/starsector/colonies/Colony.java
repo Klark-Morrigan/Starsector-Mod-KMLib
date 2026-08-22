@@ -91,25 +91,31 @@ public record Colony(
     }
 
     /**
-     * Whether the player has seen this colony where it now stands - their own route to having
-     * heard of it, beside the one that runs through the place's own inhabitants.
+     * Whether this colony has been observed where it now stands - the recorded half of what makes
+     * a gated colony known.
      *
-     * <p>The sighting has to name the place the colony is in today, not merely some place it was
-     * once seen in. A colony that has moved since is unseen again until the player meets it
-     * where it has gone, and one founded after the player passed through was never seen at all -
-     * both of which a bare "has this system been entered" would answer wrongly, and in opposite
+     * <p>Says nothing about who did the observing, and deliberately so. The player standing in
+     * the place and the place's own inhabitants are both observations, and both are written to
+     * one register, so a colony known through its neighbours stays known once those neighbours
+     * are gone. A route tested live rather than recorded would take the colony off the map the
+     * day its witnesses died, for a player who has known about it for years.
+     *
+     * <p>The observation has to name the place the colony is in today, not merely some place it
+     * was once seen in. A colony that has moved since is unseen again until somebody meets it
+     * where it has gone, and one founded after the last observation was never seen at all - both
+     * of which a bare "has this system been entered" would answer wrongly, and in opposite
      * directions.
      *
      * <p>A colony in no star system - hyperspace, where mods put a few - reads sighted. There is
      * no system to have been in and none to be settled, so a gate answering otherwise would hold
      * such a colony back for good rather than until somebody saw it.
      *
-     * @param sightings what the player has seen and where; an unstated register reads as nothing
+     * @param sightings what has been observed and where; an unstated register reads as nothing
      *                  seen, which withholds rather than leaks
      * @return true when the colony was seen in the system it stands in, or it stands in no system
      *         at all
      */
-    public boolean isSightedByPlayer(ColonySightings sightings) {
+    public boolean isSighted(ColonySightings sightings) {
 
         if (!(market.getContainingLocation() instanceof StarSystemAPI system)) {
             return true;

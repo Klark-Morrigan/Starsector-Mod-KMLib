@@ -4,11 +4,15 @@ import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.campaign.econ.EconomyAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
+import com.fs.starfarer.api.campaign.rules.MemoryAPI;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -95,6 +99,34 @@ public final class ColonyFixture {
      */
     public ColonySightings getSightings() {
         return sightedLocationIdsByColonyId::get;
+    }
+
+    /**
+     * Backs the sector's memory with a real map, so the production recorders write where they
+     * really write and a later read finds it there.
+     *
+     * <p>What a case exercising the recorders needs, as against one merely stating what has been
+     * seen: {@link #markColoniesAsSighted} hands a colony set an answer, while a recorder has to
+     * be given somewhere to put one.
+     */
+    public void openSectorMemory() {
+
+        var storedValues = new HashMap<String, Object>();
+        var memoryMock = mock(MemoryAPI.class);
+
+        when(memoryMock.contains(anyString()))
+            .thenAnswer(invocation -> storedValues.containsKey(invocation.getArgument(0)));
+        when(memoryMock.get(anyString()))
+            .thenAnswer(invocation -> storedValues.get(invocation.getArgument(0)));
+
+        doAnswer(invocation -> storedValues.put(
+                invocation.getArgument(0),
+                invocation.getArgument(1)))
+            .when(memoryMock)
+            .set(anyString(), any());
+
+        when(sectorMock.getMemoryWithoutUpdate())
+            .thenReturn(memoryMock);
     }
 
     /**

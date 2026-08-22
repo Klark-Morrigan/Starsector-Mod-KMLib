@@ -21,7 +21,8 @@ import static org.mockito.Mockito.mock;
 /**
  * Pins the contracts of the two projections over a colony set - {@link Colonies#readKnownColonies}
  * and {@link Colonies#readInhabitingColonies}, each beside the emptiness question asked of it -
- * and the fixed-set guarantee its construction makes.
+ * the two reads that say what the set has observed, and the fixed-set guarantee its construction
+ * makes.
  * Each method's cases live in a {@link Nested} group so the suite reports as a per-method tree;
  * the world they are posed against is {@link ColonyFixture}, shared with the readers' suites.
  * The known projection's group is sub-grouped once more, by the arm of the rule each case
@@ -956,6 +957,129 @@ final class ColoniesTest {
                 .isEmpty();
             assertThat(mixed.hasInhabitingColony(BOTH_GATES_ON))
                 .isFalse();
+        }
+    }
+
+    @Nested
+    class ReadGatedColonies {
+
+        @Test
+        void yields_the_shapes_a_gate_holds_back() {
+
+            var fixture = new ColonyFixture("kumari_kandam");
+            var derelict = fixture.buildDerelictStation();
+            var base = fixture.buildFoundConcealedColony("pirates");
+
+            fixture.placeColoniesInSystem(derelict, base);
+
+            assertThat(buildColoniesOf(buildDerelict(derelict), buildColony(base))
+                    .readGatedColonies())
+                .containsExactly(buildDerelict(derelict), buildColony(base));
+        }
+
+        @Test
+        void passes_over_a_colony_held_in_the_open() {
+            // What keeps the register from holding an entry per colony in the sector. An open
+            // colony the economy lists is permanently in the sector's own sight, so no gate ever
+            // asks about it and an observation of one would answer nothing.
+            var fixture = new ColonyFixture("kumari_kandam");
+            var colony = fixture.buildVisibleColony("hegemony");
+
+            fixture.placeColoniesInSystem(colony);
+
+            assertThat(buildColoniesOf(buildColony(colony)).readGatedColonies())
+                .isEmpty();
+        }
+
+        @Test
+        void yields_a_derelict_the_player_has_not_found() {
+            // Being somewhere is seeing what is in it, so this read consults no fog. The colony
+            // still needs finding before it is shown, the gate being a condition on top of the fog
+            // rather than an alternative to it.
+            var fixture = new ColonyFixture("kumari_kandam");
+            var derelict = fixture.buildUnfoundOpenColony(Factions.NEUTRAL);
+
+            fixture.placeColoniesInSystem(derelict);
+
+            assertThat(buildColoniesOf(buildDerelict(derelict)).readGatedColonies())
+                .containsExactly(buildDerelict(derelict));
+        }
+    }
+
+    @Nested
+    class ReadColoniesObservedByInhabitants {
+
+        @Test
+        void yields_a_derelict_standing_beside_another_factions_colony() {
+            // The route's own case: a hulk in orbit over an inhabited world is common knowledge
+            // there, whether or not the player has ever been near it.
+            var fixture = new ColonyFixture("kumari_kandam");
+            var derelict = fixture.buildDerelictStation();
+            var neighbour = fixture.buildVisibleColony("hegemony");
+
+            fixture.placeColoniesInSystem(derelict, neighbour);
+
+            assertThat(buildColoniesOf(buildDerelict(derelict), buildColony(neighbour))
+                    .readColoniesObservedByInhabitants())
+                .containsExactly(buildDerelict(derelict));
+        }
+
+        @Test
+        void yields_nothing_for_a_derelict_alone_in_its_system() {
+
+            var fixture = new ColonyFixture("kumari_kandam");
+            var derelict = fixture.buildDerelictStation();
+
+            fixture.placeColoniesInSystem(derelict);
+
+            assertThat(buildColoniesOf(buildDerelict(derelict)).readColoniesObservedByInhabitants())
+                .isEmpty();
+        }
+
+        @Test
+        void yields_nothing_for_a_concealed_base_its_own_faction_shelters() {
+            // Owner-awareness, carried into the write: the pirates do not announce their own base,
+            // so nothing is recorded that the rule would decline to credit.
+            var fixture = new ColonyFixture("kumari_kandam");
+            var base = fixture.buildFoundConcealedColony("pirates");
+            var ownColony = fixture.buildVisibleColony("pirates");
+
+            fixture.placeColoniesInSystem(base, ownColony);
+
+            assertThat(buildColoniesOf(buildColony(base), buildColony(ownColony))
+                    .readColoniesObservedByInhabitants())
+                .isEmpty();
+        }
+
+        @Test
+        void yields_nothing_for_a_colony_no_gate_is_about() {
+            // Two open colonies watching each other. Neither is gated, so neither is worth an
+            // entry however plainly the other can see it.
+            var fixture = new ColonyFixture("kumari_kandam");
+            var colony = fixture.buildVisibleColony("hegemony");
+            var neighbour = fixture.buildVisibleColony("tritachyon");
+
+            fixture.placeColoniesInSystem(colony, neighbour);
+
+            assertThat(buildColoniesOf(buildColony(colony), buildColony(neighbour))
+                    .readColoniesObservedByInhabitants())
+                .isEmpty();
+        }
+
+        @Test
+        void yields_nothing_where_the_only_settler_is_a_colony_the_player_has_not_found() {
+            // The fog is read here as it is read by the rule, and no reveal can reach it: a
+            // written observation outlives the setting that let it be made, so one made under a
+            // reveal could not be taken back by turning the reveal off again.
+            var fixture = new ColonyFixture("kumari_kandam");
+            var derelict = fixture.buildDerelictStation();
+            var unfoundNeighbour = fixture.buildUnfoundOpenColony("hegemony");
+
+            fixture.placeColoniesInSystem(derelict, unfoundNeighbour);
+
+            assertThat(buildColoniesOf(buildDerelict(derelict), buildColony(unfoundNeighbour))
+                    .readColoniesObservedByInhabitants())
+                .isEmpty();
         }
     }
 

@@ -51,6 +51,36 @@ public enum RevelationGate {
         }
     };
 
+    /**
+     * Whether any gate at all is about this colony - the shape whose observations are worth
+     * writing down, as against the shape a rule happens to be holding back at the moment.
+     *
+     * <p>Asked of every gate rather than of one rule's set, because a gate turned off is a choice
+     * about what to show and never about what was seen. A register written under the live setting
+     * would have nothing recorded for the years a gate spent off, and would then hold back a
+     * colony the player had been looking at the whole time.
+     *
+     * <p>An ungated colony is pointedly not one of these. A colony held in the open and listed by
+     * the economy is permanently in the sector's own sight, so an observation of one answers
+     * nothing any rule asks while costing an entry per colony in the sector.
+     *
+     * @param colony the colony to test; a null one is covered by nothing
+     * @return true when some gate would hold this colony back until it had been observed
+     */
+    public static boolean isGatedColony(Colony colony) {
+
+        if (colony == null) {
+            return false;
+        }
+        for (var gate : values()) {
+
+            if (gate.coversColony(colony)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // Whether this gate is about the given colony at all. Package-private because which colonies
     // a gate covers is the visibility rule's own business, and the rule lives beside it - a
     // caller outside has the gate to name, not a colony to test against it.
