@@ -10,11 +10,13 @@ package kmlib.mods.consolecommands;
  * that gate's own class would be resolved with it, and an install without Console Commands would
  * then take a missing-class error on a per-frame path.
  *
- * <p>Being a role rather than a static call is also what keeps a second console source - a rival
- * mod, or a replacement for the overlay this one reads - an implementation to add here rather
- * than a branch to thread through the gate.
+ * <p>Public, and the only seam here that is, because this is where the console read is stood in:
+ * a caller that has to settle what its own code does while a console is up supplies one of these
+ * to {@link ConsoleCommandsOverlay} rather than trying to displace the gate above it. The gate
+ * itself is a fail-open wrapper with one live implementation and nothing to choose between, so it
+ * is a class rather than a role.
  */
-interface ConsoleOverlayPresence {
+public interface ConsoleOverlayPresence {
 
     /**
      * @return whether this console's overlay is live right now

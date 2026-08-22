@@ -59,10 +59,15 @@ Held by `ColonisationRoutines`, `OwnershipTransferRoutines`, `OwnerSubmarketRule
 Something only the mod can answer, with no sequence to stand down - whether a console is taking
 text entry, whether a mini-map has replaced the campaign radar.
 
-No register: the question is a **role a caller holds** (`ConsoleOverlay`, `CampaignMinimap`),
-answered by an adapter behind the same gate. A role rather than a static call because the
-question outlives the mod that currently answers it, and because the answer decides whether a
-caller draws at all - behaviour worth settling without a game running.
+No register: a gate class per mod, behind which the mod's own read is a seam. Where more than one
+mod could answer, the gate is stated as a role a caller holds and the mod's adapter implements it
+(`CampaignMinimap`). Where only one mod ever will, the gate class **is** what callers hold
+(`ConsoleCommandsOverlay`), because an interface with one permanent implementation says nothing a
+reader can act on - what varies there is the mod's own read underneath, so that is the seam a
+suite stands in (`ConsoleOverlayPresence`).
+
+Either way the seam is what makes the answer settleable without a game running, which matters
+because it decides whether a caller draws at all.
 
 Such a read **fails open**: mod absent, class gone, accessor moved by a release, read throwing -
 each reports the answer that leaves a caller behaving as it did before the question existed, and

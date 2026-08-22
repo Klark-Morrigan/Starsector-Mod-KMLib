@@ -4,6 +4,8 @@ import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.ModManagerAPI;
 import com.fs.starfarer.api.SettingsAPI;
 
+import kmlib.testfixtures.mods.consolecommands.ConsoleOverlayPresenceFake;
+
 import org.apache.log4j.Logger;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -37,7 +39,8 @@ final class ConsoleCommandsOverlayTest {
         @Test
         void reportsClosedWithoutAskingTheConsoleWhenTheModIsAbsent() {
 
-            var presenceFake = new ConsoleOverlayPresenceFake(true);
+            var presenceFake = new ConsoleOverlayPresenceFake();
+            presenceFake.openConsole();
 
             try (var globalMock = mockStatic(Global.class)) {
 
@@ -45,7 +48,7 @@ final class ConsoleCommandsOverlayTest {
 
                 assertThat(new ConsoleCommandsOverlay(presenceFake).isOpen())
                     .isFalse();
-                assertThat(presenceFake.askCount)
+                assertThat(presenceFake.readAskCount())
                     .isZero();
             }
         }
@@ -69,7 +72,8 @@ final class ConsoleCommandsOverlayTest {
         @Test
         void reportsOpenWhileTheConsoleOverlayIsUp() {
 
-            var presenceFake = new ConsoleOverlayPresenceFake(true);
+            var presenceFake = new ConsoleOverlayPresenceFake();
+            presenceFake.openConsole();
 
             try (var globalMock = mockStatic(Global.class)) {
 
@@ -83,7 +87,7 @@ final class ConsoleCommandsOverlayTest {
         @Test
         void reportsClosedWhileTheConsoleOverlayIsDown() {
 
-            var presenceFake = new ConsoleOverlayPresenceFake(false);
+            var presenceFake = new ConsoleOverlayPresenceFake();
 
             try (var globalMock = mockStatic(Global.class)) {
 
@@ -125,7 +129,8 @@ final class ConsoleCommandsOverlayTest {
         @Test
         void reportsClosedWhenTheModStateCannotBeRead() {
 
-            var presenceFake = new ConsoleOverlayPresenceFake(true);
+            var presenceFake = new ConsoleOverlayPresenceFake();
+            presenceFake.openConsole();
 
             try (var globalMock = mockStatic(Global.class)) {
 
@@ -163,7 +168,7 @@ final class ConsoleCommandsOverlayTest {
         @Test
         void readsTheModStateOnceAcrossFrames() {
 
-            var presenceFake = new ConsoleOverlayPresenceFake(false);
+            var presenceFake = new ConsoleOverlayPresenceFake();
 
             try (var globalMock = mockStatic(Global.class)) {
 
@@ -209,25 +214,6 @@ final class ConsoleCommandsOverlayTest {
         globalMock
             .when(() -> Global.getLogger(any(Class.class)))
             .thenReturn(mock(Logger.class));
-    }
-
-    // A console whose overlay is up or down as constructed, counting the asks so the mod gate's
-    // short-circuit can be pinned as "never reached" rather than merely "answered false".
-    private static final class ConsoleOverlayPresenceFake implements ConsoleOverlayPresence {
-
-        private final boolean isOverlayUp;
-
-        private int askCount;
-
-        private ConsoleOverlayPresenceFake(boolean isOverlayUp) {
-            this.isOverlayUp = isOverlayUp;
-        }
-
-        @Override
-        public boolean isOverlayUp() {
-            askCount++;
-            return isOverlayUp;
-        }
     }
 
     // A console whose panel class or accessor is gone: what an install running a Console Commands

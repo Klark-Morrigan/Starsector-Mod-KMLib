@@ -7,8 +7,17 @@ import kmlib.logging.SessionWarning;
 import org.apache.log4j.Logger;
 
 /**
- * The {@link ConsoleOverlay} answer for Console Commands: a mod-presence gate in front of the
- * mod's own overlay read, with every failure turned into "no console is open".
+ * Answers "is a text-entry console overlay up right now?" for anything that has to stand down
+ * while one is: a mod-presence gate in front of Console Commands' own overlay read, with every
+ * failure turned into "no console is open". A console takes the keyboard for the length of a
+ * command, so an overlay drawn after the whole core UI covers it, and an input listener running
+ * ahead of the core swallows the keystrokes the console exists to receive.
+ *
+ * <p>Held by callers as this class rather than behind a role of its own. Console Commands is the
+ * only console there is, so an interface here would have exactly one implementation and would say
+ * nothing a reader could act on. What genuinely varies is the console state underneath, which
+ * {@link ConsoleOverlayPresence} is - and standing that in is what lets a caller settle its own
+ * behaviour without a game running.
  *
  * <p>Console Commands is compiled against but not declared a dependency, so an install without it
  * is ordinary and must cost nothing - which is what the gate, the deferred panel read and the held
@@ -22,7 +31,7 @@ import org.apache.log4j.Logger;
  * a throw escape, would instead take those callers away on every screen and every frame, for a
  * mod the player may not even have installed.
  */
-public final class ConsoleCommandsOverlay implements ConsoleOverlay {
+public final class ConsoleCommandsOverlay {
 
     private static final Logger LOG = Global.getLogger(ConsoleCommandsOverlay.class);
 
@@ -34,8 +43,8 @@ public final class ConsoleCommandsOverlay implements ConsoleOverlay {
     /**
      * The one live console read, shared by everything on the install that stands down for a
      * console - so the settled enablement, the built presence and the spent warning are held once
-     * rather than per caller. Callers name this where they compose; what they hold is the
-     * {@link ConsoleOverlay} role.
+     * rather than per caller. This is what production composes with; a suite stands a read in
+     * through the constructor below instead.
      */
     // Declared below the logger and not with the other headline members: constructing it runs this
     // class's instance initialisers, and the warning among them takes LOG, which static init has
@@ -68,14 +77,29 @@ public final class ConsoleCommandsOverlay implements ConsoleOverlay {
     }
 
     /**
+     * Stands a console read in behind the gate, so what a caller does while a console is up can be
+     * settled without one running. Public, unlike the live constructor above, because the read
+     * supplied here resolves no Console Commands type and settles no enablement any other caller
+     * shares - it is the one thing about this class that a consumer has any business replacing.
+     *
      * @param presence the console state to read once the mod gate has passed, in place of Console
      *                 Commands' own overlay panel
      */
-    ConsoleCommandsOverlay(ConsoleOverlayPresence presence) {
+    public ConsoleCommandsOverlay(ConsoleOverlayPresence presence) {
         this.presence = presence;
     }
 
-    @Override
+    /**
+     * Whether a console is taking text entry this frame.
+     *
+     * <p>Fails open: every way the answer can go missing - no console mod installed, its state
+     * unreadable, the read throwing - reports {@code false}. A caller then behaves exactly as it
+     * did before this question existed, which is a known annoyance, rather than standing down
+     * everywhere on a read that broke.
+     *
+     * @return whether a console overlay is open, and {@code false} whenever that cannot be
+     *         established
+     */
     public boolean isOpen() {
         // Short-circuit before touching the presence, so an install without Console Commands never
         // resolves the class that names its overlay panel - and so a settled failure costs one
