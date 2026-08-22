@@ -164,12 +164,25 @@ public record Colonies(
         return hasColonyPassing(rule, Colonies::isInhabitingColony);
     }
 
-    // Materialises one projection: the place's settling owners folded once for the whole set,
-    // then every colony the rule admits whose kind this projection wants.
+    // What one projection admits, as a single test over a colony: the rule resolved, the place's
+    // settling owners folded once for the whole set, and the kind this projection wants.
     //
-    // The two projections are one walk with two kind tests rather than a walk each, so the only
-    // thing that can differ between them is the kind - a second statement of the visibility rule
-    // is what would let the listing and habitation disagree about what has been found.
+    // Built once and handed to both walks below rather than restated in each, because the listing
+    // and the emptiness question about it agreeing is the whole reason the projection is named
+    // here - and a second statement of the filter is precisely how that agreement would be lost.
+    // The two projections then differ in their kind test alone.
+    private Predicate<Colony> buildProjectionFilter(
+            ColonyVisibility rule,
+            Predicate<Colony> isWantedColony) {
+
+        var resolvedRule = resolveRule(rule);
+        var settlingOwnerIds = readSettlingOwnerIds(resolvedRule);
+
+        return colony -> isWantedColony.test(colony)
+            && isKnownColony(colony, resolvedRule, settlingOwnerIds);
+    }
+
+    // Materialises one projection.
     //
     // Walked in the set's own order rather than gated colonies after ungated ones, since a
     // caller mirroring vanilla's tie rules reads that order and would resolve differently.
@@ -177,22 +190,19 @@ public record Colonies(
             ColonyVisibility rule,
             Predicate<Colony> isWantedColony) {
 
-        var resolvedRule = resolveRule(rule);
-        var settlingOwnerIds = readSettlingOwnerIds(resolvedRule);
+        var isPassingColony = buildProjectionFilter(rule, isWantedColony);
         var passingColonies = new ArrayList<Colony>();
 
         for (var colony : colonies) {
 
-            if (isWantedColony.test(colony)
-                    && isKnownColony(colony, resolvedRule, settlingOwnerIds)) {
+            if (isPassingColony.test(colony)) {
                 passingColonies.add(colony);
             }
         }
         return List.copyOf(passingColonies);
     }
 
-    // The emptiness of one projection, asked without materialising it - the same settling owners
-    // and the same per-colony rule as the listing, stopped at the first colony that passes.
+    // The emptiness of one projection, stopped at the first colony that passes.
     //
     // Its own walk rather than the listing's isEmpty, because the cell that paints a place and
     // the scan that decides whether to draw it at all ask this per system and per frame, and
@@ -201,13 +211,11 @@ public record Colonies(
             ColonyVisibility rule,
             Predicate<Colony> isWantedColony) {
 
-        var resolvedRule = resolveRule(rule);
-        var settlingOwnerIds = readSettlingOwnerIds(resolvedRule);
+        var isPassingColony = buildProjectionFilter(rule, isWantedColony);
 
         for (var colony : colonies) {
 
-            if (isWantedColony.test(colony)
-                    && isKnownColony(colony, resolvedRule, settlingOwnerIds)) {
+            if (isPassingColony.test(colony)) {
                 return true;
             }
         }
@@ -257,7 +265,7 @@ public record Colonies(
     // projection and the emptiness question about it cannot answer under different filters -
     // which is the very drift naming the projection here exists to prevent.
     //
-    // Written over the kind, the two gates and the place's settled reading rather than as a
+    // Written over the kind, the two gates and the place's settling owners rather than as a
     // branch per surface, so a fourth kind or a third gate has one place to be added.
     private boolean isKnownColony(
             Colony colony,
@@ -335,8 +343,11 @@ public record Colonies(
     // which is the one case the route was never arguing for - a rival's colony in the same place
     // does talk, and that is what the route is for.
     //
-    // No derelict is touched by this: a derelict is held by nobody, and nobody never settles a
-    // place, so the owner it would be compared against can never be among the settling ones.
+    // A derelict is held by nobody in particular, and so shares its owner with the one other
+    // thing that falls to nobody: a world whose people are gone. Such a world settles its place
+    // here for want of a kind that says otherwise, and this comparison is what stops it vouching
+    // for the hulk drifting beside it - which is the answer wanted either way, a dead world
+    // having nobody left to tell the player anything.
     private static boolean isSettledForColony(Colony colony, Set<String> settlingOwnerIds) {
 
         var ownerId = colony.readOwnerId();

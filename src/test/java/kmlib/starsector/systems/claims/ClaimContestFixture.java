@@ -247,10 +247,8 @@ final class ClaimContestFixture implements AutoCloseable {
         var factionId = faction == null ? null : faction.getId();
         var marketMock = mock(MarketAPI.class);
 
-        // The owner answers on both readings, as a real market's does: a rule asking the market
-        // for its faction id and one asking its faction object read the same fact in the game, so
-        // a fixture answering only one of them would have every market here share one owner as
-        // far as the other reading is concerned.
+        // The owner answers on both readings, as a real market's does - they are one fact in the
+        // game, and a rule that tells owners apart would see none if only one of them answered.
         when(marketMock.getFaction())
             .thenReturn(faction);
         when(marketMock.getFactionId())

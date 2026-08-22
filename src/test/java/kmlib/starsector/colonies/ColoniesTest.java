@@ -427,6 +427,23 @@ final class ColoniesTest {
         }
 
         @Test
+        void excludes_a_derelict_whose_only_neighbour_shares_its_owner() {
+            // The one arrangement in which the owner comparison reaches a derelict at all: a
+            // world whose people are gone falls to the same nobody a hulk does, and settles its
+            // place here for want of a kind that says otherwise. Withholding is the answer wanted
+            // either way - a dead world has nobody left to tell the player what is drifting there.
+            var fixture = new ColonyFixture("kumari_kandam");
+            var derelict = fixture.buildDerelictStation();
+            var deadWorld = fixture.buildVisibleColony(Factions.NEUTRAL);
+
+            fixture.placeColoniesInSystem(derelict, deadWorld);
+
+            assertThat(buildColoniesOf(buildDerelict(derelict), buildColony(deadWorld))
+                    .readKnownColonies(BOTH_GATES_ON))
+                .containsExactly(buildColony(deadWorld));
+        }
+
+        @Test
         void keeps_a_concealed_colony_under_its_own_gate_off() {
 
             var fixture = new ColonyFixture("kumari_kandam");

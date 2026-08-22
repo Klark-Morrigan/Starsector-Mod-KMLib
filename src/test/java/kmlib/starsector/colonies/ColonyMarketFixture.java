@@ -148,10 +148,8 @@ public final class ColonyMarketFixture {
         var factionMock = buildFaction(factionId);
         var marketMock = mock(MarketAPI.class);
 
-        // The owner answers on both readings, as a real market's does. A read asking the market
-        // for its faction id and a read asking its faction object are the same fact in the game,
-        // so a fixture answering only one of them would let a rule pass on the reading it happens
-        // to make rather than on the owner.
+        // The owner answers on both readings, as a real market's does - they are one fact in the
+        // game, and a rule that tells owners apart would see none if only one of them answered.
         when(marketMock.getFaction())
             .thenReturn(factionMock);
         when(marketMock.getFactionId())

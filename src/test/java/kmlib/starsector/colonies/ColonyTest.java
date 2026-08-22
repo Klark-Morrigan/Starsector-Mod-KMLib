@@ -13,11 +13,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * Pins the contracts of {@link Colony#isHidden}, {@link Colony#isDiscoveredByPlayer} and
- * {@link Colony#isSightedByPlayer}, the three facts a colony answers about itself rather than
- * storing beside it - the first two off its own market, and the third off its market read against
- * a register of where the player has been. Each method's cases live in a {@link Nested} group so
- * the suite reports as a per-method tree; the shared mock builders stay on the outer class.
+ * Pins the contracts of {@link Colony#isHidden}, {@link Colony#isDiscoveredByPlayer},
+ * {@link Colony#isSightedByPlayer} and {@link Colony#readOwnerId}, the facts a colony answers
+ * about itself rather than storing beside it - three of them straight off its own market, and the
+ * sighting off its market read against a register of where the player has been. Each method's
+ * cases live in a {@link Nested} group so the suite reports as a per-method tree; the shared mock
+ * builders stay on the outer class.
  */
 final class ColonyTest {
 
@@ -131,6 +132,33 @@ final class ColonyTest {
 
             assertThat(colony.isSightedByPlayer(null))
                 .isFalse();
+        }
+    }
+
+    @Nested
+    class ReadOwnerId {
+
+        @Test
+        void reports_the_faction_id_the_market_carries() {
+            // Read off the market's own id rather than its faction object, which is what an
+            // ownership change writes - so a market answering one and not the other answers here.
+            var marketMock = mock(MarketAPI.class);
+
+            when(marketMock.getFactionId())
+                .thenReturn("pirates");
+
+            assertThat(new Colony(marketMock, ColonyKind.COLONY, true).readOwnerId())
+                .isEqualTo("pirates");
+        }
+
+        @Test
+        void reports_no_owner_where_the_market_names_none() {
+            // Absorbed rather than refused: an owner nobody can name is compared against the
+            // settling ones like any other, and there is nothing here to fail on.
+            var colony = new Colony(mock(MarketAPI.class), ColonyKind.COLONY, true);
+
+            assertThat(colony.readOwnerId())
+                .isNull();
         }
     }
 
