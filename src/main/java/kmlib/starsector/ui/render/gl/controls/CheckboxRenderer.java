@@ -11,7 +11,7 @@ import kmlib.starsector.ui.widgets.Checkbox;
  * Raw-GL paint for a {@link Checkbox}: washes the row under the pointer, lights it for a press it
  * answered, strokes the tick box and, when checked, fills its inset centre, all faded by one opacity. The
  * box geometry lives on the substrate-independent widget; this is the GL passthrough (over
- * {@link UiFill#renderQuad} and {@link UiBoxes}), exercised in-engine.
+ * {@link UiFill#renderQuad} and {@link UiBoxes}), run only in-engine.
  */
 public final class CheckboxRenderer {
     // The filled tick is inset inside the box outline by this fraction of the box height, so the

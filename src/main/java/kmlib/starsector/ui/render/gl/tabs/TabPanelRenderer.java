@@ -39,7 +39,7 @@ import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
  *
  * <p>The header control draws its own immediate-mode GL, so it is bracketed in a {@link
  * GlStateGuard#bracket} state save like {@link PanelRenderer} brackets its own draw. Drawn after the body
- * so the row sits over the frame's top border rather than under it. GL passthrough exercised in-engine like
+ * so the row sits over the frame's top border rather than under it. GL passthrough run only in-engine like
  * the other draw helpers.
  */
 public final class TabPanelRenderer {

@@ -19,8 +19,7 @@ import org.lwjgl.opengl.GL11;
  * spec only guarantees 16 entries of - taking every later pass's state with it, long after the
  * frame that threw.
  *
- * <p>Touches the GL context, so like {@link GlRuns} it is exercised in-engine rather than in unit
- * tests.
+ * <p>Touches the GL context, so like {@link GlRuns} it runs only in-engine.
  */
 public final class GlPasses {
 

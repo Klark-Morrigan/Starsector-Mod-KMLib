@@ -21,8 +21,8 @@ import java.util.TreeMap;
  *
  * <p>Held in a {@link TreeMap} keyed by line index, so the packed run comes out in ascending line
  * order however the soup was ordered. A hash map would pack the same geometry in an order that
- * changed with the keys, which is the kind of difference that makes a run impossible to assert on
- * and a rendering impossible to compare frame to frame.
+ * changed with the keys, which is the kind of difference that makes a run impossible to say
+ * anything about and a rendering impossible to compare frame to frame.
  *
  * <p>Endpoints are rebuilt from the axes rather than carried through from the clip, so a merged
  * segment lies exactly on its line - and so the question of which of two coincident crossing points

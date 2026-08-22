@@ -66,8 +66,8 @@ public final class HighlightedParagraph {
     }
 
     /** Convenience projection - returns the highlight tokens as a
-     *  flat string array. Useful for assertions that only care about
-     *  the text side of each pair (tests, snapshot logging). */
+     *  flat string array. Useful for a caller that only cares about
+     *  the text side of each pair - a log line, a summary. */
     public String[] getHighlightTexts() {
         String[] texts = new String[highlights.length];
         for (var i = 0; i < highlights.length; i++) {

@@ -71,9 +71,9 @@ public record MapCursorRead(
     }
 
     // Split from the live renderer read so a description can be worded against a stated renderer.
-    // Which stack is underneath is fixed for the life of a process and cannot be stood up either
-    // way, so a caller reading it directly would leave the branch that keeps the read off Fast
-    // Rendering the one part of this class nothing exercises.
+    // Which stack is underneath is fixed for the life of a process and cannot be moved either way,
+    // so a caller reading it directly would leave the branch that keeps the read off Fast Rendering
+    // reachable only on a machine already running it.
     String describeReadUnderRenderer(boolean isFastRenderingActive) {
         return "cursorPixel=(" + cursorPixelX + "," + cursorPixelY + ")"
             + " " + transform.describeSnapshot()

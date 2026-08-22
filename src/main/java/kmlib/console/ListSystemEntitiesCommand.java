@@ -62,8 +62,8 @@ public final class ListSystemEntitiesCommand extends KmlibBaseConsoleCommand {
 
     /**
      * Builds the entity report for {@code system}. Free of {@code Global} and the
-     * console, so the tree, sorting, and gate filtering can be unit tested
-     * against a stub system.
+     * console, so the tree, sorting, and gate filtering turn on the system it is
+     * handed and nothing else.
      *
      * @param system      the system to scan
      * @param isGatesOnly when true, restrict the output to gates (keeping the

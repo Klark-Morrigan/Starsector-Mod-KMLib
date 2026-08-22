@@ -3,9 +3,9 @@ package kmlib.starsector.ui.sound;
 /**
  * Where a widget's interface sounds go. A port rather than a direct reach for the game's sound player,
  * because playing a sound is the one thing a panel's input controller does that leaves no trace in its
- * own state: what a press does to a lift can be read back and asserted, and what it does to the speakers
- * cannot. Inverting it is what lets the rules - which moment makes which sound, and which moments make
- * none - be pinned at all.
+ * own state: what a press does to a lift can be read back, and what it does to the speakers cannot.
+ * Inverting it is what makes those rules - which moment makes which sound, and which moments make
+ * none - observable at all.
  *
  * <p>What crosses the seam is a {@link UiSoundCue}: which role sounded and how loudly. Neither is this
  * end's to choose - a cue arrives already resolved, from the look that named it - and neither is

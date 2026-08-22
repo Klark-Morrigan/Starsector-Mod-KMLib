@@ -6,7 +6,7 @@ package kmlib.starsector.ui.map.transform;
  * renderer that batches on the CPU keeps its own and leaves GL untouched, so "read it back from
  * GL" is one binding of this role rather than the definition of it - see
  * {@code docs/dev/rendering-environment.md}. Depending on the port keeps the transform maths free
- * of that choice, and free of an un-mockable third-party static.
+ * of that choice, and free of a third-party static nothing can stand in for.
  *
  * <p>{@link GlModelviewMatrixReader} is the binding for the stock renderer and
  * {@link FastRenderingModelviewMatrixReader} the one for Fast Rendering.

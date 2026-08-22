@@ -21,7 +21,7 @@ import kmlib.text.KmlibStrings;
  * a colony can be left without.
  *
  * <p>Final class with a private constructor: pure-function utility, no instance state, and free
- * of {@code Global} so a run can be posed against a stub sector.
+ * of {@code Global}, so a run reads only the sector it is given.
  */
 public final class FactionTargetResolver {
 

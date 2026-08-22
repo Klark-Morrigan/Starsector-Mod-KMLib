@@ -49,7 +49,7 @@ public final class VanillaTabFills {
      * alike, and below the lift a press adds on top.
      *
      * <p>Short of the full glow rather than at it. The two-pass additive draw this is worked out from is an
-     * approximation of the engine's, so the amounts are measured against its own tabs rather than asserted:
+     * approximation of the engine's, so the amounts are measured against its own tabs rather than declared:
      * at the full glow a pointed-at tab came out plainly brighter than the Sector/System tabs beside it,
      * which is the comparison that decides this number.
      */

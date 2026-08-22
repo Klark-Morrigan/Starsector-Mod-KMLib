@@ -11,9 +11,9 @@ import kmlib.starsector.ui.render.gl.style.WidgetStyle;
  * Raw-GL paint for the collapse handle: the notch protruding past the panel's right border edge, the
  * chevron inside it whose orientation tracks the collapse fraction, and the hover lighting. It draws the
  * one rect the layout exposes and the input pass hit-tests, so the drawn handle is the clickable one. The
- * GL passthrough (over {@link UiFill}), exercised in-engine like the other draw helpers; the chevron
+ * GL passthrough (over {@link UiFill}) runs only in-engine like the other draw helpers; the chevron
  * orientation and the border floor are pure computations split out ({@link #computeChevronArms}, {@link
- * #computeNotchBorder}) so the glyph's contract is unit-testable without a GL context.
+ * #computeNotchBorder}) so the glyph's contract is settled without a GL context.
  *
  * <p>The chevron reads as one glyph rotating through the collapse: left-pointing at full expansion (the
  * collapse cue), straightening to a plain vertical line at the midpoint, and flipped to point right once

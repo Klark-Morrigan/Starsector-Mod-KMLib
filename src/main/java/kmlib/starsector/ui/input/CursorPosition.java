@@ -5,8 +5,8 @@ package kmlib.starsector.ui.input;
  *
  * <p>A role rather than a static call so a rule that compares the cursor against a box can be
  * driven without a display. {@link UiCursor} reads LWJGL's mouse and the game's screen metrics,
- * neither of which exists in a test, and a rule that reached for it directly could only be
- * exercised by the game itself - which is where a containment rule is hardest to see failing.
+ * neither of which exists outside a running game, and a rule that reached for it directly would
+ * work only inside one - which is where a containment rule is hardest to see failing.
  *
  * <p>Two reads rather than one point, matching what the live source has to offer: the axes are
  * rescaled independently from raw pixels, so a value type here would be assembled from these two

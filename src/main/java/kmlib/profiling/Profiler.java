@@ -18,8 +18,8 @@ import java.util.function.Supplier;
  * {@link TimingReport}.
  *
  * <p>The clock is injected (defaulting to {@link System#nanoTime()}) so the
- * accumulation logic can be unit tested against a scripted clock, with no real
- * time involved. Not synchronised: intended for the single game thread that
+ * accumulation reads whatever time source its caller names rather than the
+ * system clock. Not synchronised: intended for the single game thread that
  * drives campaign advance and rendering; sharing one instance across threads
  * would need external synchronisation.
  */
@@ -35,8 +35,8 @@ public final class Profiler {
     }
 
     /**
-     * Creates a profiler timing against {@code clockNanos}, for tests that need
-     * a deterministic clock.
+     * Creates a profiler timing against {@code clockNanos}, for a caller that
+     * supplies its own time source rather than reading the system clock.
      *
      * @param clockNanos source of the current time in nanoseconds
      */

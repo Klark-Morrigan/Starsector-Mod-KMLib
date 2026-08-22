@@ -16,8 +16,8 @@ import java.util.List;
  * tab bar - where each tab sits and which one a point falls in; how the tab is painted (colours,
  * selected/hover states, its label text) stays with the consumer, which owns that visual state.
  *
- * <p>Pure geometry in UI coordinates (origin bottom-left), unit-testable with a fake measurer:
- * it touches no GL surface and holds no state.
+ * <p>Pure geometry in UI coordinates (origin bottom-left), measured through whichever measurer it
+ * is handed: it touches no GL surface and holds no state.
  */
 public final class TabStrip {
     /** {@link #findTabIndexAt} returns this when the point falls in no tab. */

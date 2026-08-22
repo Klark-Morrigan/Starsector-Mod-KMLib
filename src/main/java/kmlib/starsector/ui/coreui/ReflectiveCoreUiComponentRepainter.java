@@ -20,9 +20,9 @@ import kmlib.starsector.ui.render.gl.UiScissor;
  * for the remainder of its draw - the surrounding state is still restored on the way out, but the
  * containment within the handed-in region is not guaranteed against a component that clips itself.
  *
- * <p>Touches the GL surface and reaches a draw entry point by name, so it is exercised in-engine
- * rather than in unit tests; there is no logic here to pin without a context, only an ordering. A
- * caller's own decisions around it are pinned through the port instead.
+ * <p>Touches the GL surface and reaches a draw entry point by name, so it runs only in-engine;
+ * there is no logic here beyond an ordering. A caller's own decisions around it sit behind the
+ * port instead.
  */
 public enum ReflectiveCoreUiComponentRepainter implements CoreUiComponentRepainter {
     INSTANCE;

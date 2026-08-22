@@ -24,7 +24,7 @@ import org.lwjgl.opengl.GL11;
  * through) and 1 fully opaque.
  *
  * <p>Raw GL passthrough (over {@link GlColour} for the colour and {@link GlQuads} for the
- * vertices), exercised in-engine like the other draw helpers. It owns only the state that makes
+ * vertices), run only in-engine like the other draw helpers. It owns only the state that makes
  * the fill composite - texture off, standard alpha blend - and leaves the quad emission to the
  * shared {@link GlQuads#fillQuad}.
  */

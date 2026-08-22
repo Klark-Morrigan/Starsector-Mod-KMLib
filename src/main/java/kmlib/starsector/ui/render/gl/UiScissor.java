@@ -13,8 +13,8 @@ import org.lwjgl.opengl.GL11;
  * framebuffer pixels, not the UI projection the layout works in, so this rescales the rectangle from UI
  * units to pixels - each edge along its own {@link ScreenAxis}, the inverse of the mapping the mouse
  * arrives through - before handing it to {@link GL11#glScissor}. Touches the GL surface and the live
- * screen ({@link VanillaScreen}), so it is exercised in-engine like the other draw helpers; the rescale
- * itself is the axis's own unit-tested arithmetic.
+ * screen ({@link VanillaScreen}), so it is run only in-engine like the other draw helpers; the rescale
+ * itself is the axis's own arithmetic.
  *
  * <p>{@link #runClippedTo} is how a caller brackets a draw: it pairs the two halves below and ends the
  * clip whichever way the draw leaves, which matters because a clip left enabled does not fail loudly -

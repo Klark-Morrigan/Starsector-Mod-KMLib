@@ -14,8 +14,7 @@ import org.lwjgl.input.Mouse;
  * <p>The rescale itself belongs to the axis being rescaled along, not here: each read asks
  * {@link kmlib.starsector.ui.screen.ScreenAxis} to convert on the axis it took the pixel from, so
  * an x cannot be rescaled by the screen's height. What is left here is the pair of live reads, the
- * LWJGL mouse and the screen behind them being why this is exercised in-engine rather than in a
- * test.
+ * LWJGL mouse and the screen behind them being why this runs only in-engine.
  */
 public final class UiCursor {
     private UiCursor() {

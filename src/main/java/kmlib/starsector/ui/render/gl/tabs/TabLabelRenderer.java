@@ -45,8 +45,8 @@ import java.util.List;
  * a pixel face lands its strokes whole rather than losing part of each to an interpolating filter. Held
  * around both passes rather than around each, since they draw the same glyphs from the same atlas.
  *
- * <p>GL passthrough (over {@link UiFill} for the underline and the font cache for the glyphs), exercised
- * in-engine like the other draw helpers.
+ * <p>GL passthrough (over {@link UiFill} for the underline and the font cache for the glyphs), run
+ * only in-engine like the other draw helpers.
  */
 public final class TabLabelRenderer {
 

@@ -39,7 +39,7 @@ import java.util.List;
  * all, that state arriving as a fill at zero alpha rather than as a case this pass tests for.
  *
  * <p>Opacity scales the backing, the frames, the fill, and the text alike, so a button fades as one piece.
- * GL passthrough (over {@link UiFill} and {@link UiBoxes}), exercised in-engine like the other draw
+ * GL passthrough (over {@link UiFill} and {@link UiBoxes}), run only in-engine like the other draw
  * helpers.
  */
 public final class RaisedButtonTabStripRenderer {

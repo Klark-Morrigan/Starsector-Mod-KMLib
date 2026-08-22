@@ -279,7 +279,7 @@ public record Colonies(
     // The base fog, plus the ownership arm the composed filter carries with it.
     //
     // Ownership is re-asked although the set is already selected on it: the composition is what
-    // the rule is, and unpicking it here to save a test would leave a second, narrower statement
+    // the rule is, and unpicking it here to save the second read would leave a narrower statement
     // of "counts as a known colony" living in this class.
     private static boolean isAdmittedByFog(Colony colony, ColonyVisibility rule) {
 

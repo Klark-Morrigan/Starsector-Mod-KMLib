@@ -10,7 +10,7 @@ import java.awt.Color;
  * Raw-GL paint for a {@link kmlib.starsector.ui.controls.ControlSpec.Divider}: a single horizontal
  * hairline centred in the row, spanning its whole width, faded by one opacity. It parts one run of
  * body controls from the next, so a host heads a section with a rule instead of a caption. The GL
- * passthrough (over {@link UiFill}), exercised in-engine like the other draw helpers.
+ * passthrough (over {@link UiFill}), run only in-engine like the other draw helpers.
  *
  * <p>The rule is drawn dimmer than a control frame so it separates without competing with the lit
  * controls around it, in the same frame colour every body control strokes with.

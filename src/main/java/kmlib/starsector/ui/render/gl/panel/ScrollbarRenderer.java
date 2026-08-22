@@ -11,7 +11,7 @@ import java.awt.Color;
  * by one opacity, in the panel's accent colour. It draws the two rectangles the host lays out - the
  * track it placed in a body's right inset and the thumb {@link kmlib.starsector.ui.widgets.scroll.Scrollbar}
  * sized within it - so the geometry stays with the widget and this only fills. The GL passthrough (over
- * {@link UiFill}), exercised in-engine like the other draw helpers.
+ * {@link UiFill}), run only in-engine like the other draw helpers.
  *
  * <p>The track reads quieter than the thumb so the channel shows where the list can scroll without
  * competing with the grabbable thumb, in the same accent every body control draws with.

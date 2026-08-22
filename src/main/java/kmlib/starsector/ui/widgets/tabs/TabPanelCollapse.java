@@ -19,7 +19,7 @@ public final class TabPanelCollapse {
      * The pace a full collapse or expand runs at, in seconds, when a consumer offers no control over it.
      * The holder no longer owns the duration - {@link #advanceByElapsedTime} takes it per frame - so this
      * is only the recommended default: a consumer's control defaults here so an untouched setting keeps the
-     * original pace, and it anchors the tests that pin that pace.
+     * original pace.
      */
     public static final float DEFAULT_DURATION_SECONDS = 0.25f;
 

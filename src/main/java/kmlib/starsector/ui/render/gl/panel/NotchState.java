@@ -17,7 +17,7 @@ import kmlib.math.ranges.Ranges;
  * agree about what "fully lit" is, which they cannot be relied on to if each decides for itself. The
  * collapse fraction is not confined here: it is read by one computation, {@link
  * NotchRenderer#computeChevronArms}, whose own limit is a statement about the glyph never inverting rather
- * than about the number, and which is exercised directly.
+ * than about the number.
  *
  * @param collapseFraction how far the body is collapsed horizontally, 0 fully expanded to 1 fully docked;
  *                         orients the chevron and gates the collapse clip

@@ -15,9 +15,9 @@ import lunalib.lunaSettings.LunaSettingsListener;
  * <p>LunaLib is a declared KMLib dependency, so these methods are safe to call
  * from any mod that depends on KMLib - it is present whenever KMLib is.
  *
- * <p>Thin passthrough to {@code LunaSettings}, exercised in-engine rather than
- * in tests (like {@link kmlib.opengl.GlColour}'s GL passthrough): there is no
- * logic here beyond the null fallback and the mod-id filtering.
+ * <p>Thin passthrough to {@code LunaSettings}, which answers only in-engine
+ * (like {@link kmlib.opengl.GlColour}'s GL passthrough): there is no logic here
+ * beyond the null fallback and the mod-id filtering.
  */
 public final class LunaSettingsReader {
 

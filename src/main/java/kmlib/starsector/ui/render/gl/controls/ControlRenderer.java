@@ -60,7 +60,7 @@ import java.util.List;
  * IconRadioListRenderer}, {@link ToggleButton}, {@link DividerRenderer}, and whichever
  * {@link TabChromeRenderer} the style names)
  * and the shared label paint, so a host renders a whole strip of controls by calling this per control. The
- * GL passthrough is exercised in-engine like the other draw helpers; the caller wraps it in the GL-state
+ * GL passthrough is run only in-engine like the other draw helpers; the caller wraps it in the GL-state
  * save its panel already holds. A small cache mints one GL text buffer per (font, size, text) so a steady
  * body does not leak a buffer per frame.
  */

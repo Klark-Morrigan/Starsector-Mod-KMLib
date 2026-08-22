@@ -14,7 +14,7 @@ import kmlib.starsector.systems.SystemColoniesIndex;
  *
  * <p>A port rather than a direct call on the vanilla binding for the usual reason - a caller
  * depending on this can be handed a reader with no running game behind it, which is what keeps
- * the callers testable while the binding stays the one place vanilla's mechanic is named.
+ * a caller free of the mechanic while the binding stays the one place vanilla's is named.
  */
 @FunctionalInterface
 public interface ClaimReaderSource {

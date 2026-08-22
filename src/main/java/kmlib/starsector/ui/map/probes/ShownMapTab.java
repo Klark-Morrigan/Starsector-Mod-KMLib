@@ -44,7 +44,7 @@ public final class ShownMapTab {
 
     // The live intel screen, since the visor is reached by walking the running game's widget tree.
     // Held here rather than taken per call so a caller in a render pass supplies nothing; the
-    // package-private read below is the seam a test drives instead.
+    // package-private read below is the seam a caller with a view of its own uses instead.
     private static final IntelScreenView INTEL_SCREEN = new VanillaIntelScreenView();
 
     // Says once per session that this recognition no longer fits, rather than on every frame a

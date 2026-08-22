@@ -8,8 +8,8 @@ import org.lwjgl.opengl.GL11;
  * {@link GlQuads}. A run is strided at {@link GlVertexRuns#FLOATS_PER_VERTEX} per vertex,
  * the packing {@link GlVertexRuns} owns, so producer and emitter agree on the layout by
  * construction. Colour and line width are the caller's current GL state; this only emits
- * the vertices. Like {@link GlColour} this touches the GL context, so it is exercised
- * in-engine rather than in unit tests.
+ * the vertices. Like {@link GlColour} this touches the GL context, so it runs only
+ * in-engine.
  */
 public final class GlRuns {
     private GlRuns() {

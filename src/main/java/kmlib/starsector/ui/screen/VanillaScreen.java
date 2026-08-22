@@ -31,7 +31,7 @@ import kmlib.math.geometry.Rectangle;
  * longer there.
  *
  * <p>A vanilla-tier home rather than the neutral layout package: every number here comes from the
- * running game, so this cannot sit where the layout maths it feeds is exercised without one.
+ * running game, so this cannot sit where the layout maths it feeds runs without one.
  */
 public final class VanillaScreen {
 

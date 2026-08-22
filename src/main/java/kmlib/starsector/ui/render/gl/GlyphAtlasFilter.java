@@ -26,7 +26,7 @@ import kmlib.starsector.ui.font.TextFace;
  * interpolated pass over it at a weight - and the sharpness is where between the two the text lands. Hard alone reads harsher than the chrome around it; interpolated alone is what cost the
  * strokes their weight in the first place.
  *
- * <p>GL passthrough, exercised in-engine like the other draw helpers.
+ * <p>GL passthrough, run only in-engine like the other draw helpers.
  */
 public final class GlyphAtlasFilter {
 

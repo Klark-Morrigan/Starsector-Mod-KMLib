@@ -25,9 +25,9 @@ import java.awt.Color;
  * Standard {@code GL_SRC_ALPHA} / {@code GL_ONE_MINUS_SRC_ALPHA} compositing, so opacity 0 is fully
  * transparent and 1 fully opaque, matching {@link UiFill} so an icon fades with the panel around it.
  *
- * <p>Raw GL passthrough with a live texture bound by the sprite; exercised in-engine like the other
- * draw helpers rather than in unit tests. The caller restores any GL state it depends on, as the
- * sprite render leaves the texture enable and blend it set in place.
+ * <p>Raw GL passthrough with a live texture bound by the sprite; run only in-engine like the other
+ * draw helpers. The caller restores any GL state it depends on, as the sprite render leaves the
+ * texture enable and blend it set in place.
  */
 public final class UiSprite {
 

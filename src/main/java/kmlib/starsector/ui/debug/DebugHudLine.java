@@ -4,7 +4,7 @@ import java.awt.Color;
 
 /**
  * One laid-out line of debug text: where it draws, how it aligns, and in what colour and size. The
- * pure output of {@link DebugHudLayout}, so the placement maths is decided and testable before any
+ * pure output of {@link DebugHudLayout}, so the placement maths is settled before any
  * GL call - {@link DebugHud} only forwards each of these to the text renderer, mapping the
  * alignment to a concrete anchor there so this stays free of the render toolkit's types.
  *

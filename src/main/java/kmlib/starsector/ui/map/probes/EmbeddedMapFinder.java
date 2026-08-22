@@ -54,7 +54,7 @@ import java.util.function.Supplier;
  *
  * <p>Both live reads arrive as injected ports rather than being taken statically here. What is kept
  * and when it is taken again is a rule with behaviour of its own, and a walk that reached into a
- * running game for its own root could not be stood up to pin any of it.
+ * running game for its own root would carry that rule nowhere else.
  *
  * <p>Answers nothing rather than throwing. A caller is typically in the middle of a frame, and a
  * read taken to refine what that frame draws must not be able to take the frame down; the reach it
@@ -83,7 +83,7 @@ public final class EmbeddedMapFinder {
     // pins the tree whatever this field does. Replacement is what releases it - see the class note.
     private Object walkedTreeRoot;
 
-    /** Reads the live core UI and the live map tab - the pairing outside a test. */
+    /** Reads the live core UI and the live map tab - the pairing a running game gets. */
     public EmbeddedMapFinder() {
         this(CoreUiTree::resolveActiveCoreUi, ShownMapTab::resolveShownMapTab);
     }

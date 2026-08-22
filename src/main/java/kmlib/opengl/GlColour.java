@@ -15,8 +15,8 @@ import java.awt.Color;
  * instead of unpacking four channel floats at the call site.
  *
  * <p>Lives apart from {@link Colours} because it touches the GL context: the
- * colour maths stays pure and unit-tested there, while this passthrough to
- * {@code GL11} is exercised in-engine, not in tests.
+ * colour maths stays pure there, while this passthrough to {@code GL11} runs
+ * only in-engine.
  */
 public final class GlColour {
     // Channel positions in the [r, g, b, a] array Colours#getGlComponents returns,

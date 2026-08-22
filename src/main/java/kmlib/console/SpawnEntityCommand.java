@@ -55,7 +55,7 @@ import static kmlib.console.parsing.ParameterValues.text;
  * in place.
  *
  * <p>Each kind owns its creation path: the gate is spawned inactive (grants no
- * access until activated, so a tester can confirm an inactive gate keeps a
+ * access until activated, so a player can confirm an inactive gate keeps a
  * cut-off system off a political map), while the jump point also generates its
  * hyperspace entrance and clears the system's cut-off tag so the system becomes
  * reachable. The orbit geometry and focus resolution are shared across kinds; a

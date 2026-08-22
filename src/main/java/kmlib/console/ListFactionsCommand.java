@@ -129,7 +129,7 @@ public final class ListFactionsCommand extends KmlibBaseConsoleCommand {
     /**
      * Builds the faction listing for {@code sector} under {@code filter}. Free of
      * {@code Global} and the console, so the grouping, the counts, the filtering
-     * and the formatting can be unit tested against a stub sector.
+     * and the formatting turn on the sector it is handed and nothing else.
      *
      * @param sector the sector whose factions and colonies to read
      * @param filter which factions to list, and which of their holdings the

@@ -45,8 +45,8 @@ public final class ControlStripLayout {
     public static final float BODY_PADDING = 8f;
 
     // The horizontal gap parting the two columns of a side-by-side group, wider than the inter-row gap
-    // so the two runs read as distinct blocks rather than one continuous row. Public so a test places
-    // the right column at the same offset the layout reserved for the gap.
+    // so the two runs read as distinct blocks rather than one continuous row. Public so a caller
+    // placing the right column names the same offset the layout reserved for the gap.
     public static final float COLUMN_GAP = 8f;
 
     // Per-control slack: the padding sizing each radio segment past its option label, the gap before

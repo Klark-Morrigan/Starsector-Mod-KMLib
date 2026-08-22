@@ -17,7 +17,7 @@ import org.lazywizard.console.BaseCommand;
  *
  * <p>Console Commands instantiates a command through its public no-arg
  * constructor (Class.newInstance), which binds the live console; the
- * output-injecting constructor lets a test - or any caller - supply its own sink.
+ * output-injecting constructor lets any caller supply its own sink instead.
  * A command then reads its input with {@link #readInput}; one whose flow branches
  * between the context check and the parse reaches for the
  * {@link kmlib.console.validation.CommandContextValidation} and

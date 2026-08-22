@@ -19,7 +19,7 @@ import com.fs.starfarer.api.campaign.econ.MarketAPI;
  * its factions.
  *
  * <p>Final class with a private constructor: pure-function utility, no instance state, and free
- * of {@code Global} so a run can be posed against a stub sector.
+ * of {@code Global}, so a run reads only the sector it is given.
  */
 public final class MarketOwnerTargetResolver {
 

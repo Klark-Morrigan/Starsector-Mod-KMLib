@@ -16,7 +16,7 @@ import java.util.function.IntFunction;
  * and frames the whole row, all faded by one opacity. The shared segmented-row chrome (the wash and the
  * seam dividers) is drawn through {@link HorizontalSegmentsRenderer} so a radio row and a tab strip
  * cannot drift on it; only the outer frame is the radio's own. The segment geometry lives on the
- * substrate-independent {@link RadioRow} widget; this is the GL passthrough, exercised in-engine. The
+ * substrate-independent {@link RadioRow} widget; this is the GL passthrough, run only in-engine. The
  * lit segment is a wash over the frame rather than a second opaque block, so it reads as a highlight;
  * the dividers are fainter still so they separate without competing.
  *

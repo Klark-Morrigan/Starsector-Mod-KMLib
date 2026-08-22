@@ -69,7 +69,7 @@ import java.util.Set;
  * class's own, so what counts as a colony here is what counts as one everywhere else reading the
  * same system - and the condition-only market every uninhabited planet carries, which a widening
  * to off-economy markets would otherwise admit on every surveyed rock, is excluded by that shared
- * rule rather than by a test repeated here.
+ * rule rather than by a check repeated here.
  *
  * <p>A visibility rule is taken alongside, and reaches the contest nowhere: it decides only what
  * each market's breakdown reports about the player's knowledge of it, which a display uses to

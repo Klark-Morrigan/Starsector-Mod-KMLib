@@ -30,7 +30,7 @@ public record TabPanelHover(
 
     /**
      * The pointer on none of the panel's parts - what a frame with the cursor away from the panel
-     * reports, and the reading a consumer stepping a panel by hand wants when it is exercising
+     * reports, and the reading a consumer stepping a panel by hand wants when it is driving
      * something other than hover.
      */
     public static final TabPanelHover NOTHING_HOVERED = new TabPanelHover(null, null, false);

@@ -18,7 +18,8 @@ import kmlib.math.geometry.Rectangle;
  * true across all three while the visor rectangle is present on Intel alone.
  *
  * <p>Depending on this role keeps that code free of the game's concrete intel panel, which the API
- * jar does not publish and which cannot be stood up in a unit test. {@link VanillaIntelScreenView}
+ * jar does not publish and which nothing outside a running game can stand up.
+ * {@link VanillaIntelScreenView}
  * is the binding that routes to the live screen at runtime.
  */
 public interface IntelScreenView {

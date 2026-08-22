@@ -18,9 +18,9 @@ import kmlib.math.geometry.Rectangle;
  * composited exactly once and no blend stacks.
  *
  * <p>A port rather than a static call because the only binding of it reaches a draw entry point by
- * name and writes to the GL surface, neither of which a test can stand under: whether a caller
- * repaints at all, what region it hands over, and how it survives a failed draw are decisions worth
- * pinning without a live game. {@link ReflectiveCoreUiComponentRepainter} is the live binding.
+ * name and writes to the GL surface, neither of which exists outside a running game: whether a
+ * caller repaints at all, what region it hands over, and how it survives a failed draw are
+ * decisions that hold anywhere. {@link ReflectiveCoreUiComponentRepainter} is the live binding.
  */
 public interface CoreUiComponentRepainter {
 

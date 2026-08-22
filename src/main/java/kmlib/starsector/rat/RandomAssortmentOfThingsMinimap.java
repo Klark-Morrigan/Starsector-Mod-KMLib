@@ -44,7 +44,7 @@ public final class RandomAssortmentOfThingsMinimap implements CampaignMinimap {
     private final BooleanSupplier isModEnabled;
     private final BooleanSupplier isMinimapSwitchedOn;
 
-    /** Reads the live mod set and the live LunaLib switch - the pairing outside a test. */
+    /** Reads the live mod set and the live LunaLib switch - the pairing a running game gets. */
     public RandomAssortmentOfThingsMinimap() {
         this(RandomAssortmentOfThingsPresence::isModEnabled,
             RandomAssortmentOfThingsMinimap::readLiveMinimapSetting);

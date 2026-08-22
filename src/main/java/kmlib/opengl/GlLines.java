@@ -14,8 +14,7 @@ import org.lwjgl.opengl.GL11;
  * dash is emitted as its own short {@code GL_LINES} segment instead - immediate-
  * mode vertices are always available. {@link #strokeLoop} is the plain closed-outline
  * counterpart, any vertex count, for a debug overlay tracing a polygon's edge. Like
- * {@link GlColour} this touches the GL context, so it is exercised in-engine rather
- * than in unit tests.
+ * {@link GlColour} this touches the GL context, so it runs only in-engine.
  */
 public final class GlLines {
     private GlLines() {

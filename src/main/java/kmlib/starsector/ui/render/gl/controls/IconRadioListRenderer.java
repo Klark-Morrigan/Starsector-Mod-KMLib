@@ -26,7 +26,7 @@ import java.util.List;
  * <p>The list is always vertical (a stacked column of options); an icon list only makes sense as a
  * column, so the alignment is fixed rather than a parameter. Its options can wrap across more than one
  * column ({@code columnCount}), filling each column top to bottom before the next, so a long list
- * reads as a grid; one column is the ordinary single stack. GL passthrough exercised in-engine like
+ * reads as a grid; one column is the ordinary single stack. GL passthrough run only in-engine like
  * the other render helpers; the caller wraps it in the GL-state save the panel already holds.
  */
 public final class IconRadioListRenderer {

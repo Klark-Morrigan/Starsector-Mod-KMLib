@@ -16,8 +16,8 @@ import java.awt.Color;
  * frame, so the button's geometry is just the {@code bounds} it is handed.
  *
  * <p>All draws touch the GL surface (over {@link UiFill#renderQuad} and {@link UiBoxes}), so
- * like the other raw-draw helpers this is exercised in-engine rather than in unit tests - there
- * is no geometry to compute here beyond the bounds the consumer supplies.
+ * like the other raw-draw helpers this is run only in-engine - there is no geometry to compute
+ * here beyond the bounds the consumer supplies.
  */
 public final class ToggleButton {
     // The lit state is a wash over the frame, not a second opaque block, so it reads as a

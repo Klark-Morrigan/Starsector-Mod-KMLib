@@ -75,7 +75,7 @@ public final class PanelController {
 
     // Where this panel's interface sounds go, held as a seam because a sound leaves no trace in the panel's
     // state: every other answer to an input can be read back off the scroll offset, and this one can only
-    // be asserted by recording that it was asked for.
+    // be observed by recording that it was asked for.
     private final UiSoundPlayer soundPlayer;
 
     // What each moment this panel answers sounds like, taken from the host with the rest of its look rather
@@ -105,7 +105,7 @@ public final class PanelController {
 
     /**
      * A panel that sounds through the given player and answers by the given scheme - for a host wearing a
-     * look of its own, or a test asserting which moments sound.
+     * look of its own, or one that wants to observe which moments sound.
      *
      * @param soundPlayer where this panel's interface sounds go
      * @param soundScheme what each moment this panel answers sounds like, the audible half of the look the

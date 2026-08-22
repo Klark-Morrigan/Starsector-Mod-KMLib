@@ -5,8 +5,8 @@ import java.awt.Color;
 /**
  * Colour conversions for raw rendering.
  *
- * <p>Pure math over {@link Color}: no rendering API, so it stays testable and
- * free of any GL dependency. Bridges AWT's 0-255 integer channels to the
+ * <p>Pure math over {@link Color}: no rendering API, so it stays free of any GL
+ * dependency. Bridges AWT's 0-255 integer channels to the
  * normalized 0..1 float components a {@code glColor4f}-style call wants,
  * folding in an alpha multiplier so a faded layer can dim a whole palette
  * with one factor.

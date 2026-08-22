@@ -86,8 +86,9 @@ public final class KmLogging {
         binding.applyConfiguredLevel();
     }
 
-    // Sets the resolved level on the loggerRoot subtree. Package-private so the
-    // log4j inheritance behaviour can be pinned without the LunaLib boundary.
+    // Sets the resolved level on the loggerRoot subtree. Package-private so what
+    // applying a level does to log4j stays separable from the LunaLib binding
+    // that decides which level it is.
     static void applyLevel(String loggerRoot, String levelName, Level fallback) {
         Logger.getLogger(loggerRoot).setLevel(resolveLevel(levelName, fallback));
     }

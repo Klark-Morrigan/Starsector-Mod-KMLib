@@ -22,8 +22,7 @@ import java.util.Set;
  *
  * <p>Tag order is preserved in iteration order (the backing set is a
  * {@code LinkedHashSet}), so consumers that pass multiple tags get a
- * deterministic merge for snapshot tests and for any vanilla code
- * that walks the set.</p>
+ * deterministic merge for any vanilla code that walks the set.</p>
  */
 public abstract class BaseTaggedIntelPlugin extends BaseIntelPlugin {
 

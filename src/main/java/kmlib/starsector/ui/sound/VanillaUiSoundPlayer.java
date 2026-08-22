@@ -7,11 +7,11 @@ import com.fs.starfarer.api.Global;
  * engine's own because it is the engine's own sample, mixed by the engine's own settings and scaled by
  * whatever volume the cue named over them.
  *
- * <p>Fails closed. There is no sound player before the game has one - a unit test, and the moments either
- * side of a session - and a UI sound is the least of what a caller in that position is doing, so a missing
- * player is a silent no-op rather than an exception raised out of an input handler. That also keeps the
- * default construction of a widget usable off a live engine, which is what stops every consumer having to
- * inject a player it does not care about.
+ * <p>Fails closed. There is no sound player before the game has one - the moments either side of a
+ * session, and anywhere the engine is not up - and a UI sound is the least of what a caller in that
+ * position is doing, so a missing player is a silent no-op rather than an exception raised out of an
+ * input handler. That also keeps the default construction of a widget usable off a live engine, which
+ * is what stops every consumer having to inject a player it does not care about.
  */
 public final class VanillaUiSoundPlayer implements UiSoundPlayer {
 

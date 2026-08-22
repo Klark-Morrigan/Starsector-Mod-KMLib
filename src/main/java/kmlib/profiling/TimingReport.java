@@ -7,8 +7,8 @@ import java.util.Locale;
  * Formats a {@link Profiler} snapshot into an aligned, human-readable table.
  *
  * <p>Pure text transform, no profiling state of its own: it takes the list of
- * {@link SectionTiming} and returns a string, so it can be unit tested directly
- * and reused by any output sink (a console command, a log line). Durations are
+ * {@link SectionTiming} and returns a string, so it is reusable by any output
+ * sink (a console command, a log line). Durations are
  * shown in milliseconds (via {@link Timings#convertNanosToMillis}), the useful scale
  * for frame-time work.
  */

@@ -47,9 +47,9 @@ import java.util.List;
  * The level is this library's own, so a consuming mod's verbosity setting does not reach it; the
  * warning below is the part that survives the default level, and it is the one that matters.
  *
- * <p>An instance rather than a static holder so a caller can stand a stub in its place: whether the
- * map is drawing its own tooltip decides whether that caller draws at all, which is behaviour worth
- * pinning without a live game.
+ * <p>An instance rather than a static holder so a caller can put its own probe in place: whether
+ * the map is drawing its own tooltip decides whether that caller draws at all, which is too much
+ * to hang on a reach nothing can substitute.
  */
 public final class VanillaMapTooltipProbe {
 

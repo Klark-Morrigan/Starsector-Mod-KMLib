@@ -27,7 +27,7 @@ import kmlib.starsector.ui.widgets.scroll.PanelScrollbars;
  * the whole draw shares that one save. The scrolling control (the one marked {@link
  * kmlib.starsector.ui.controls.ControlSpec.VerticalTable#scrolls()}) draws clipped to its viewport, so
  * its rows that scroll past the top slide out under a pinned control rather than overpainting it. GL
- * passthrough exercised in-engine like the other draw helpers.
+ * passthrough run only in-engine like the other draw helpers.
  */
 public final class PanelRenderer {
     private PanelRenderer() {

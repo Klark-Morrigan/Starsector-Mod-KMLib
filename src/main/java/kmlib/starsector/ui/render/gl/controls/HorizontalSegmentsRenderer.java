@@ -19,7 +19,7 @@ import java.util.List;
  * <p>Only the shared kernel lives here. What differs by control kind stays with each renderer - a radio
  * frames the whole row ({@link RadioRowRenderer}), a tab strip lays a per-state fill, a hover wash, a
  * baseline, and multi-colour text ({@link VanillaTabStripRenderer}) - because the sizing is shared but
- * the look is not. GL passthrough (over {@link UiFill}), exercised in-engine like the other
+ * the look is not. GL passthrough (over {@link UiFill}), run only in-engine like the other
  * draw helpers; the caller wraps it in the GL-state save its panel already holds.
  */
 public final class HorizontalSegmentsRenderer {

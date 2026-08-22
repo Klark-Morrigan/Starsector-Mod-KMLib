@@ -11,7 +11,7 @@ import kmlib.starsector.ui.widgets.BoxBorder;
  *
  * <p>Builds on {@link UiFill#renderQuad}, so the edges composite over what is behind them and
  * fade to nothing at zero alpha. This only places the quads. Like the rest of the raw-draw
- * helpers it touches the GL surface and is exercised in-engine rather than in unit tests.
+ * helpers it touches the GL surface and is run only in-engine.
  */
 public final class UiBoxes {
     private UiBoxes() {

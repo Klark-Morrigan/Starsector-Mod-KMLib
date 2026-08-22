@@ -7,7 +7,7 @@ import com.fs.starfarer.api.campaign.StarSystemAPI;
  * "establish colony" survey warns about. Resolving it means walking the system's economy and
  * reading third-party statics that only answer inside a running game, so callers that want to
  * reason about claims - map overlays, colony tools - depend on this role instead of that
- * computation, keeping their logic decoupled and testable. {@link VanillaClaimReader} is the
+ * computation, keeping their logic decoupled from it. {@link VanillaClaimReader} is the
  * binding that answers by the vanilla mechanic at runtime.
  *
  * <p>The port yields a faction id rather than a {@code FactionAPI} on purpose: an id is all a

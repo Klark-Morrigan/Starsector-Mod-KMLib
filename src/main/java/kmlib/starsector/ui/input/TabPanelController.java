@@ -103,7 +103,7 @@ public final class TabPanelController {
     // Where this panel's interface sounds go, so a KM tab answers a press the way the engine's own controls
     // do. Held as a seam rather than reached for directly because a sound leaves no trace in the panel's
     // state: every other answer to an input can be read back off a fraction, and this one can only be
-    // asserted by recording that it was asked for.
+    // observed by recording that it was asked for.
     private final UiSoundPlayer soundPlayer;
 
     // What each moment this panel's controls answer sounds like - which role, and how loudly. Taken from
@@ -146,7 +146,7 @@ public final class TabPanelController {
 
     /**
      * A controller whose panel opens expanded, sounds through the given player, and answers by the given
-     * scheme - for a host wearing a look of its own, or a test asserting which moments sound.
+     * scheme - for a host wearing a look of its own, or one that wants to observe which moments sound.
      *
      * @param soundPlayer where this panel's interface sounds go
      * @param soundScheme what each moment this panel's controls answer sounds like, the audible half of

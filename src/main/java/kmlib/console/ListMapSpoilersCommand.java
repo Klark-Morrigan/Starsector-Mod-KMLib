@@ -63,8 +63,8 @@ public final class ListMapSpoilersCommand extends KmlibBaseConsoleCommand {
     /**
      * Builds the spoiler report for {@code sector}: the tree of cut-off systems
      * and those holding an undiscovered owned market. Free of {@code Global} and
-     * the console, so the filtering and formatting can be unit tested against a
-     * stub sector.
+     * the console, so the filtering and formatting turn on the sector it is
+     * handed and nothing else.
      *
      * @param sector the sector to scan
      * @return the formatted report, or a notice line when nothing qualifies
