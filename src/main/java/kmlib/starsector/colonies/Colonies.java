@@ -336,7 +336,7 @@ public record Colonies(
         // hides and then withheld a derelict would answer half the question it was asked.
         return rule.shouldIncludeUndiscoveredMarkets()
             || !isGatedOnRevelation(colony, rule)
-            || isObservedColony(colony, settlingOwnerIds);
+            || isObserved(colony, settlingOwnerIds);
     }
 
     // Whether a colony amounts to people living where it stands - the one thing that separates
@@ -387,7 +387,7 @@ public record Colonies(
     // The live term is kept beside the recorded one so a colony arriving among witnesses is shown
     // at once rather than at whatever cadence the recorder happens to run on, and so the rule goes
     // on answering in a sector where nothing has recorded anything at all.
-    private boolean isObservedColony(Colony colony, Set<String> settlingOwnerIds) {
+    private boolean isObserved(Colony colony, Set<String> settlingOwnerIds) {
         return isObservedByInhabitants(colony, settlingOwnerIds)
             || colony.isSighted(sightings);
     }
