@@ -185,17 +185,12 @@ public record Colonies(
      * @return the colonies a gate covers, in the set's own order
      */
     public List<Colony> readGatedColonies() {
-        return readColoniesPassing(RevelationGate::isGatedColony);
+        return collectColonies(RevelationGate::isGatedColony);
     }
 
     /**
      * The gated colonies the place's own inhabitants can see standing here - what somebody living
      * beside a derelict or a concealed base has observed, whether or not the player ever comes.
-     *
-     * <p>Named here rather than assembled by whatever writes the register, because who can see a
-     * colony is the same question {@link #readKnownColonies} answers and a second statement of it
-     * would be free to disagree with this one - recording observations the rule declines to
-     * credit, or missing the ones it does.
      *
      * <p>Owner-aware through the same test the rule uses: the people keeping a secret are exactly
      * the ones a faction-blind reading would credit with telling it. So a faction's open colony
@@ -212,7 +207,7 @@ public record Colonies(
 
         var settlingOwnerIds = readSettlingOwnerIds(ColonyVisibility.BASE_FOG);
 
-        return readColoniesPassing(colony -> RevelationGate.isGatedColony(colony)
+        return collectColonies(colony -> RevelationGate.isGatedColony(colony)
             && isObservedByInhabitants(colony, settlingOwnerIds));
     }
 
@@ -239,14 +234,16 @@ public record Colonies(
             ColonyVisibility rule,
             Predicate<Colony> isWantedColony) {
 
-        return readColoniesPassing(buildProjectionFilter(rule, isWantedColony));
+        return collectColonies(buildProjectionFilter(rule, isWantedColony));
     }
 
-    // Materialises whatever a test admits.
+    // Materialises whatever a test admits, the test having been assembled by the caller. Named
+    // apart from the projection read above rather than overloading it, the two differing in what
+    // their argument means - a kind to want, against the whole of the filter.
     //
     // Walked in the set's own order rather than gated colonies after ungated ones, since a
     // caller mirroring vanilla's tie rules reads that order and would resolve differently.
-    private List<Colony> readColoniesPassing(Predicate<Colony> isPassingColony) {
+    private List<Colony> collectColonies(Predicate<Colony> isPassingColony) {
 
         var passingColonies = new ArrayList<Colony>();
 

@@ -59,7 +59,7 @@ public final class SectorColonySightings {
      *
      * @param sector the sector whose memory holds the register; null - or one holding no
      *               register yet - yields {@link ColonySightings#NONE}
-     * @return what the player has seen, by colony id; never null
+     * @return where each colony was last observed, by colony id; never null
      */
     public static ColonySightings readSightings(SectorAPI sector) {
 
@@ -125,9 +125,12 @@ public final class SectorColonySightings {
         }
         for (var system : systems) {
 
+            if (system == null) {
+                continue;
+            }
             putSightings(
                 sector,
-                system == null ? null : system.getId(),
+                system.getId(),
                 SystemColonies.readColoniesIn(sector, system)
                     .readColoniesObservedByInhabitants());
         }

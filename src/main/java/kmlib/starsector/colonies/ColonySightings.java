@@ -1,13 +1,16 @@
 package kmlib.starsector.colonies;
 
 /**
- * Where the player has seen each colony, asked by the colony's own id.
+ * Where each colony was last observed standing, asked by the colony's own id.
  *
- * <p>The player's own route to having heard of a colony, beside the one that runs through the
- * inhabitants of the place it stands in. Vanilla records only that a system has been entered,
- * which answers a different question: a colony founded after the visit, or moved in since, was
- * never seen there however many times the player has crossed the place. So what is kept is the
- * place a colony was seen standing in, and a reader compares that against where it stands now.
+ * <p>Says nothing about who did the observing. The player standing in a place and the place's own
+ * inhabitants are both observations, and one register holds them alike - which is what keeps a
+ * colony known once the neighbours who could see it are gone.
+ *
+ * <p>Vanilla records only that a system has been entered, which answers a different question: a
+ * colony founded after the visit, or moved in since, was never seen there however many times the
+ * player has crossed the place. So what is kept is the place a colony was seen standing in, and a
+ * reader compares that against where it stands now.
  *
  * <p>No clock is involved, and that is deliberate. The fact is "this colony was seen here", not
  * "this place was visited on such a day", so there is no recency window to fall out of and no
@@ -25,7 +28,7 @@ public interface ColonySightings {
 
     /**
      * Nothing has ever been seen anywhere. What an unstated register reads as, since an absent
-     * record of the player's travels is not a reason to suppose they have travelled.
+     * record of what was observed is not a reason to suppose anything was.
      */
     ColonySightings NONE = colonyId -> null;
 
@@ -34,8 +37,8 @@ public interface ColonySightings {
      *
      * @param colonyId the colony's market id, as {@code MarketAPI#getId} reports it; an id the
      *                 register has never held reads as never seen
-     * @return the id of the location the colony was last seen in, or null when the player has
-     *         never seen it anywhere
+     * @return the id of the location the colony was last observed in, or null when nobody has
+     *         seen it anywhere
      */
     String readSightedLocationId(String colonyId);
 }

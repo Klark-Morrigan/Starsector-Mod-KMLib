@@ -169,24 +169,17 @@ src/main/java/kmlib/
                      what kind of place it is, resolved once where it is
                      selected, so a derelict station is never taken for
                      a settlement downstream. Beside the set sits the
-                     sighting register: where each colony was last
-                     observed standing, kept in the save, so a shape the
-                     fog alone would leak is shown only where somebody
-                     has seen it - and a colony that has since moved is
-                     unseen again. Two routes make an observation and
-                     both write it down, so what is known does not
-                     evaporate when the informant dies: the player, as
-                     they travel, and the place's own inhabitants, swept
-                     for on whatever cadence a consumer already walks
-                     the sector on. The second is owner-aware - a colony
-                     vouches for a concealed neighbour only when the two
-                     are held by different factions, nobody announcing
-                     their own secrets - and it is read live as well as
-                     recorded, so a colony arriving among witnesses is
-                     shown before any sweep has run. Only the shapes a
-                     gate holds back are recorded at all; an open colony
-                     the economy lists is in the sector's own sight
-                     permanently
+                     sighting register: where each colony a gate holds
+                     back was last observed standing, kept in the save,
+                     so such a colony is shown only where somebody has
+                     seen it and one that has since moved is unseen
+                     again. Two routes observe and both record, so what
+                     is known does not evaporate when the informant
+                     dies - the player as they travel, and the place's
+                     own inhabitants, swept for. The second is
+                     owner-aware, nobody announcing their own secrets,
+                     and is read live as well as recorded so a colony
+                     arriving among witnesses is shown at once
     entities/      - spawning custom campaign entities, their orbits,
                      name generation, and how an entity is identified to
                      a reader - its name paired with the map glyph it is
