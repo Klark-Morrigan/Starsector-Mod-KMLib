@@ -11,11 +11,8 @@ import org.apache.log4j.Logger;
  * mod's own overlay read, with every failure turned into "no console is open".
  *
  * <p>Console Commands is compiled against but not declared a dependency, so an install without it
- * is ordinary and must cost nothing. The gate asks {@link ConsoleCommandsPresence} first and only
- * then touches {@link ConsoleCommandsPanelPresence}, which is what defers resolving the one class
- * that names an {@code org.lazywizard.console} type until that type is known to exist. The
- * enablement is read once and held: the mod set is fixed for a run, and this is asked every
- * frame.
+ * is ordinary and must cost nothing - which is what the gate, the deferred panel read and the held
+ * enablement below are each for.
  *
  * <p>Fail-open is the governing rule here rather than a footnote. The mod absent, the class
  * missing, the accessor moved by a Console Commands release, the read throwing anything at all -
@@ -24,19 +21,6 @@ import org.apache.log4j.Logger;
  * annoyance a player can work around by closing the panel. Reporting open-on-failure, or letting
  * a throw escape, would instead take those callers away on every screen and every frame, for a
  * mod the player may not even have installed.
- *
- * <p>A failure also settles the whole read off for the session, naming in the log which hop broke.
- * Off, because the console cannot be read any more and a retry would throw again on the next
- * frame, so it is as good as not installed. Named, because that is what turns a Console Commands
- * release moving the accessor into a line in the log rather than a report about the console being
- * unusable. Once, because the hop that broke first is the one that stopped the read, so a further
- * line would say nothing the first did not - one line against the sixty a second an ungated
- * warning would write.
- *
- * <p>That "once" is a fact about the session rather than about a caller because {@link #INSTANCE}
- * is what every caller reads: the question has one answer per frame however many passes ask it,
- * and the settled enablement, the built presence and the spent warning are worth holding once
- * rather than per binding - across every mod on the install, not merely within one.
  */
 public final class ConsoleCommandsOverlay implements ConsoleOverlay {
 
@@ -48,25 +32,31 @@ public final class ConsoleCommandsOverlay implements ConsoleOverlay {
         " Anything that steps aside for an open console will no longer do so this session.";
 
     /**
-     * The one live console read, shared by everything that stands down for a console. Callers name
-     * this where they compose; what they hold is the {@link ConsoleOverlay} role.
+     * The one live console read, shared by everything on the install that stands down for a
+     * console - so the settled enablement, the built presence and the spent warning are held once
+     * rather than per caller. Callers name this where they compose; what they hold is the
+     * {@link ConsoleOverlay} role.
      */
     // Declared below the logger and not with the other headline members: constructing it runs this
     // class's instance initialisers, and the warning among them takes LOG, which static init has
     // not reached until its own declaration.
     public static final ConsoleCommandsOverlay INSTANCE = new ConsoleCommandsOverlay();
 
-    // Null until the first ask, then the settled answer: whether the console can be read at all.
-    // The mod set cannot change within a run, so a successful read is held rather than repeated
-    // every frame; a failure settles it to false for the reason given in the class notes.
-    private Boolean isConsoleReadable;
+    // Whether the console can be read at all, settled on the first ask. The mod set cannot change
+    // within a run, so a successful read is held rather than repeated every frame. A failure
+    // settles it unreadable because the console cannot be read any more and a retry would throw
+    // again on the next frame, which is as good as the mod not being installed.
+    private ConsoleReadState consoleReadState = ConsoleReadState.UNASKED;
 
     // Built on the first ask that gets past the gate, not at construction: building it is what
     // resolves the class that names Console Commands' overlay panel, and an install without the
     // mod must never reach that name.
     private ConsoleOverlayPresence presence;
 
-    // Says which hop broke, once per reader, for the reasons given in the class notes.
+    // Names in the log whichever hop broke, which is what turns a Console Commands release moving
+    // the accessor into a line naming it rather than a player report about the console. Once, since
+    // the hop that broke first is the one that stopped the read and every later frame would say the
+    // same - one line against the sixty a second an ungated warning would write.
     private final SessionWarning warning = new SessionWarning(LOG);
 
     /**
@@ -117,20 +107,20 @@ public final class ConsoleCommandsOverlay implements ConsoleOverlay {
     // broken yet. A mod-manager read that throws answers "not readable", the fail-open answer.
     private boolean isConsoleReadable() {
 
-        if (isConsoleReadable == null) {
+        if (consoleReadState == ConsoleReadState.UNASKED) {
             try {
-                isConsoleReadable = ConsoleCommandsPresence.isModEnabled();
+                consoleReadState = ConsoleCommandsPresence.isModEnabled()
+                    ? ConsoleReadState.READABLE
+                    : ConsoleReadState.UNREADABLE;
 
             } catch (Throwable cannotReadModState) {
 
-                // Assigned here as well as inside the report, so this method's own answer is
-                // never left unset by a hop that stopped throwing on its way out.
-                isConsoleReadable = reportUnreadable(
+                reportUnreadable(
                     "Could not read whether Console Commands is installed.",
                     cannotReadModState);
             }
         }
-        return isConsoleReadable;
+        return consoleReadState == ConsoleReadState.READABLE;
     }
 
     // The presence, built behind the gate on first use. Not synchronised: every ask arrives on the
@@ -147,8 +137,17 @@ public final class ConsoleCommandsOverlay implements ConsoleOverlay {
     // failure branch reads as one line at the call site.
     private boolean reportUnreadable(String cause, Throwable failure) {
 
-        isConsoleReadable = false;
+        consoleReadState = ConsoleReadState.UNREADABLE;
         warning.warnOnce(cause + FAIL_OPEN_CONSEQUENCE, failure);
         return false;
+    }
+
+    // What is known about reading the console, named rather than carried as a nullable flag: the
+    // question genuinely has three answers, and "nobody has asked yet" is one a reader should not
+    // have to recognise as an absent value.
+    private enum ConsoleReadState {
+        UNASKED,
+        READABLE,
+        UNREADABLE
     }
 }
