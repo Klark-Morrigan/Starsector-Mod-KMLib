@@ -37,19 +37,19 @@ Hard dependencies:
   mod that set `kmlib` would be setting it for every other mod in the game.
 - **MagicLib** - provides code reflection utilities.
 
-Soft dependencies:
+Soft dependencies - compiled against, absent from `mod_info.json`, and reached only
+behind a presence gate, so an install without any of them is ordinary
+(see [Optional mod seams](#optional-mod-seams)):
 
-- **Console Commands** - for KMLib's console commands.
-
-Compatibility coded in:
-
-- **Nexerelin** - a colony founded on an install running Nexerelin is founded by
-  Nexerelin's own routine, since the records it writes about a colony cannot be
-  added to one afterwards, and a colony changing hands there is handed over by
-  that mod's own routine for the same reason - the intel it files, the standing
-  it moves and the offices it re-posts are not arrangeable after the fact.
-- **Random Assortment of Things** - KMLib recognises RAT's Abyssal Fractures, and
-  reports whether its mini-map has replaced the campaign radar.
+- **Console Commands**
+  - KMLib provides a set of console commands;
+  - KMLib publishes whether the console is up and taking text entry,
+    which anything drawing over the screen should stand down for.  
+- **Nexerelin**
+  - KMLib's colony related console commands account for Nexerelin implementation.
+- **Random Assortment of Things** (RAT)
+  - KMLib recognises Abyssal Fractures;
+  - KMLib reports whether RAT's mini-map has replaced the campaign radar.
 
 ## Layout
 
@@ -733,11 +733,13 @@ invalidation model - KMU's is the worked example.
 
 ## Optional mod seams
 
-Where an installed mod has a routine of its own for something this library also does -
-founding a colony, handing one to another owner, deciding which counters a colony trades
-over - that routine takes the whole operation and the sequence KMLib composes stands
-down. Three pieces make that switchable on an install that may not have the mod, and
-they are the same three every time:
+An optional mod is reached in one of two shapes, and both stand on the same presence gate.
+
+The first is **a routine taken over**. Where an installed mod has a routine of its own for
+something this library also does - founding a colony, handing one to another owner, deciding
+which counters a colony trades over - that routine takes the whole operation and the sequence
+KMLib composes stands down. Three pieces make that switchable on an install that may not have
+the mod, and they are the same three every time:
 
 - **A presence gate**, one per mod, holding that mod's id in one place
   ([ConsoleCommandsPresence](src/main/java/kmlib/starsector/consolecommands/ConsoleCommandsPresence.java),
@@ -761,8 +763,20 @@ The composing class binds the installed routine in a constant and keeps a packag
 overload taking one, so both branches are posed under test on a machine that has whichever
 mods it happens to have. The seam is not an extension point: a routine is bound because
 this library knows how to defer to that mod, and a caller supplying its own would be
-choosing behaviour the rest of the library cannot reason about. Every such mod stays a
-soft dependency, absent from `mod_info.json`.
+choosing behaviour the rest of the library cannot reason about.
+
+The second shape is **a fact the mod publishes**, which nothing here has an answer for on its
+own - whether a console is taking text entry, whether a mini-map has replaced the campaign
+radar. There is no sequence to stand down, so instead of a seam interface the question becomes
+a role a caller holds ([ConsoleOverlay](src/main/java/kmlib/starsector/consolecommands/ConsoleOverlay.java)),
+answered by an adapter behind the same gate and the same deferred type holder. A role rather
+than a static call because the question outlives the mod that currently answers it, and because
+the answer decides whether a caller draws or routes at all - behaviour worth settling without a
+game running. Such a read **fails open**: mod absent, class gone, accessor moved by a release,
+read throwing - each reports the answer that leaves a caller behaving as it did before the
+question existed, and warns once naming the hop that broke rather than per frame.
+
+Every mod reached either way stays a soft dependency, absent from `mod_info.json`.
 
 ## Player Faction Resolution
 
