@@ -198,7 +198,7 @@ final class SectorColonySightingsTest {
             placeColoniesOnSystemEntities(derelict);
             openStoredSightings();
 
-            SectorColonySightings.recordSightingsByInhabitants(sectorMock);
+            recordWhatTheSystemsInhabitantsSee();
 
             assertThat(readStoredSightings())
                 .containsExactly(entry("sentinel_gantries", SYSTEM_ID));
@@ -210,7 +210,7 @@ final class SectorColonySightingsTest {
             // into the save on the strength of a system holding a hulk.
             placeColoniesOnSystemEntities(buildDerelict("sentinel_gantries"));
 
-            SectorColonySightings.recordSightingsByInhabitants(sectorMock);
+            recordWhatTheSystemsInhabitantsSee();
 
             verify(memoryMock, never())
                 .set(anyString(), any());
@@ -225,19 +225,17 @@ final class SectorColonySightingsTest {
                 buildOpenColony("pirate_haven", "pirates"));
             openStoredSightings();
 
-            SectorColonySightings.recordSightingsByInhabitants(sectorMock);
+            recordWhatTheSystemsInhabitantsSee();
 
             assertThat(readStoredSightings())
                 .isEmpty();
         }
 
         @Test
-        void records_nothing_where_the_sector_has_no_systems_to_walk() {
-
-            when(sectorMock.getStarSystems())
-                .thenReturn(null);
-
-            SectorColonySightings.recordSightingsByInhabitants(sectorMock);
+        void records_nothing_where_there_is_no_system_to_name_the_sighting_after() {
+            // The write is handed a place and a set rather than sweeping for either, so a caller
+            // mid-walk over a sector that answers nothing must cost the register nothing.
+            SectorColonySightings.recordSightingsByInhabitants(sectorMock, null, Colonies.NONE);
 
             verifyNoInteractions(memoryMock);
         }
@@ -351,6 +349,18 @@ final class SectorColonySightingsTest {
             .thenReturn(colonyId);
 
         return colony;
+    }
+
+    // The inhabitants' write as a sweeping caller makes it: the system's colonies selected once,
+    // then handed in. Bound here because the write no longer sweeps for the set itself, and a case
+    // reading the sector its own way could hand the register a set the production walk never
+    // produces.
+    private void recordWhatTheSystemsInhabitantsSee() {
+
+        SectorColonySightings.recordSightingsByInhabitants(
+            sectorMock,
+            systemMock,
+            SystemColonies.readColoniesIn(sectorMock, systemMock));
     }
 
     private void listColoniesInSystem(MarketAPI... colonies) {

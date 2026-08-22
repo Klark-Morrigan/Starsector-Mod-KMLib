@@ -26,8 +26,9 @@ import java.util.Set;
  * informant dies. {@link #recordSightingsIn} takes what an observer standing in a place can see,
  * and is driven by the player's own journeys - a fact that only ever changes when they move, so it
  * costs nothing between moves. {@link #recordSightingsByInhabitants} takes what a place's own
- * population can see, and is driven by whatever already sweeps the sector; that one has to be
- * swept for, there being no event to hang it on when a colony arrives among witnesses.
+ * population can see, and has to be swept for, there being no event to hang it on when a colony
+ * arrives among witnesses - so it is written place by place over sets the sweeping caller has
+ * already read, rather than sweeping the sector a second time from in here.
  *
  * <p>Only the shapes a {@link RevelationGate} holds back are recorded at all. Nothing ever asks
  * the register about an open colony the economy lists, so an entry for one would answer nothing
@@ -98,11 +99,14 @@ public final class SectorColonySightings {
         putSightings(
             sector,
             system.getId(),
-            SystemColonies.readColoniesIn(sector, system).readGatedColonies());
+            SystemColonies
+                .readColoniesIn(sector, system)
+                .readGatedColonies());
     }
 
     /**
-     * Records every gated colony the sector's own inhabitants can see as observed where it stands.
+     * Records every gated colony in one system that the system's own inhabitants can see as
+     * observed where it stands.
      *
      * <p>The other route by which an observation is made, and the reason it is written down rather
      * than merely tested where the rule is applied. A colony standing among people who are not its
@@ -110,30 +114,35 @@ public final class SectorColonySightings {
      * the map the moment its last neighbour decivilised, for a player who had known it was there
      * for years.
      *
-     * <p>Walks the whole sector, having nothing to do with where the player is. A caller runs this
-     * on whatever cadence it already walks the sector on, and nothing depends on its having run -
-     * the rule keeps its own live reading of the place for exactly that reason.
+     * <p>Written one place at a time, over a colony set the caller already holds, rather than swept
+     * for here. This route has to be noticed by a walk - nothing in the engine announces a colony
+     * arriving among witnesses - and every caller in a position to run it is a pass that has just
+     * walked the sector for its own reasons. Sweeping again here would walk every system a second
+     * time to reach sets already in hand.
      *
-     * @param sector the sector to read and whose memory holds the register; null is a no-op
+     * <p>Nothing depends on this having run: the rule keeps its own live reading of the place for
+     * exactly that reason, so a caller that never writes still shows what stands among witnesses
+     * now. What the write buys is that the reading survives the witnesses.
+     *
+     * @param sector   the sector whose memory holds the register; null is a no-op
+     * @param system   where the colonies stand, and what a sighting names; null is a no-op. A star
+     *                 system alone, a colony outside one reading sighted whatever the register
+     *                 holds
+     * @param colonies the colonies selected for that system, as the caller's own walk read them;
+     *                 null is a no-op
      */
-    public static void recordSightingsByInhabitants(SectorAPI sector) {
+    public static void recordSightingsByInhabitants(
+            SectorAPI sector,
+            StarSystemAPI system,
+            Colonies colonies) {
 
-        var systems = sector == null ? null : sector.getStarSystems();
-
-        if (systems == null) {
+        if (system == null || colonies == null) {
             return;
         }
-        for (var system : systems) {
-
-            if (system == null) {
-                continue;
-            }
-            putSightings(
-                sector,
-                system.getId(),
-                SystemColonies.readColoniesIn(sector, system)
-                    .readColoniesObservedByInhabitants());
-        }
+        putSightings(
+            sector,
+            system.getId(),
+            colonies.readColoniesObservedByInhabitants());
     }
 
     /**
@@ -151,7 +160,9 @@ public final class SectorColonySightings {
         if (storedSightings == null || storedSightings.isEmpty()) {
             return;
         }
-        storedSightings.keySet().retainAll(readColonyIdsIn(sector));
+        storedSightings
+            .keySet()
+            .retainAll(readColonyIdsIn(sector));
     }
 
     /**
@@ -174,7 +185,9 @@ public final class SectorColonySightings {
         dropSightingsOfAbsentColonies(sector);
 
         if (sector != null) {
-            recordSightingsIn(sector, sector.getCurrentLocation());
+            recordSightingsIn(
+                sector,
+                sector.getCurrentLocation());
         }
     }
 

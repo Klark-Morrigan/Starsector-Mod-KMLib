@@ -54,7 +54,7 @@ final class ColonyObservationIntegrationTest {
 
             fixture.openSectorMemory();
 
-            SectorColonySightings.recordSightingsByInhabitants(fixture.getSector());
+            recordWhatTheSystemsInhabitantsSee(fixture);
             decivilise(neighbour);
 
             assertThat(readKnownColoniesIn(fixture))
@@ -72,7 +72,7 @@ final class ColonyObservationIntegrationTest {
 
             fixture.openSectorMemory();
 
-            SectorColonySightings.recordSightingsByInhabitants(fixture.getSector());
+            recordWhatTheSystemsInhabitantsSee(fixture);
             decivilise(neighbour);
 
             var elsewhere = buildSystemElsewhere();
@@ -95,7 +95,7 @@ final class ColonyObservationIntegrationTest {
 
             fixture.openSectorMemory();
 
-            SectorColonySightings.recordSightingsByInhabitants(fixture.getSector());
+            recordWhatTheSystemsInhabitantsSee(fixture);
 
             var sightings = SectorColonySightings.readSightings(fixture.getSector());
 
@@ -151,6 +151,17 @@ final class ColonyObservationIntegrationTest {
                     .readSightedLocationId(MOVER_ID))
                 .isEqualTo(OTHER_SYSTEM_ID);
         }
+    }
+
+    // The inhabitants' write as a sweeping caller makes it: the system selected once, then handed
+    // to the register. The seam this suite exists for is between that selection and the rule read
+    // below, so both go through the same production walk rather than the case staging a set.
+    private static void recordWhatTheSystemsInhabitantsSee(ColonyFixture fixture) {
+
+        SectorColonySightings.recordSightingsByInhabitants(
+            fixture.getSector(),
+            fixture.getSystem(),
+            SystemColonies.readColoniesIn(fixture.getSector(), fixture.getSystem()));
     }
 
     // A derelict standing in the fixture's system, unregistered as vanilla builds one.
