@@ -343,11 +343,10 @@ public record Colonies(
     // which is the one case the route was never arguing for - a rival's colony in the same place
     // does talk, and that is what the route is for.
     //
-    // A derelict is held by nobody in particular, and so shares its owner with the one other
-    // thing that falls to nobody: a world whose people are gone. Such a world settles its place
-    // here for want of a kind that says otherwise, and this comparison is what stops it vouching
-    // for the hulk drifting beside it - which is the answer wanted either way, a dead world
-    // having nobody left to tell the player anything.
+    // A derelict is held by nobody in particular, and one other shape falls to that same nobody:
+    // a station no faction holds that the economy lists anyway, which is read as kept and so
+    // settles its place. That pair is the only arrangement in which this comparison reaches a
+    // derelict, and it withholds - a hulk on the books is no witness to the hulk beside it.
     private static boolean isSettledForColony(Colony colony, Set<String> settlingOwnerIds) {
 
         var ownerId = colony.readOwnerId();
