@@ -13,7 +13,7 @@ import java.awt.Color;
  * re-exposes the engine's global palette <em>slots</em> ({@code Misc} shades):
  * this reads a specific faction's own colour, with a fallback that keeps the
  * caller from having to null-check the vanilla lifecycle - both the sector and
- * the faction can be absent during early engine boot or in a bare test double.
+ * the faction can be absent until the engine has finished building them.
  */
 public final class StarsectorFactionColours {
     // Fallback when the neutral faction cannot be read (it always exists in
