@@ -3,6 +3,7 @@ package kmlib.starsector.colonies;
 import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
+import com.fs.starfarer.api.campaign.econ.MarketConditionAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Conditions;
 import com.fs.starfarer.api.impl.campaign.ids.Factions;
 
@@ -105,6 +106,35 @@ public final class ColonyMarketFixture {
     }
 
     /**
+     * A world people left, and the player has surveyed closely enough to see it: the condition-only
+     * shell a colony leaves behind, carrying the decivilised condition, on a planet already found.
+     *
+     * <p>Nothing but that condition parts it from the bare placeholder above, which is what makes
+     * the pair worth posing together - an admission splitting them on anything else would be
+     * reading the wrong thing.
+     */
+    public static MarketAPI buildDeadWorld() {
+        return buildDeadWorld(MarketAPI.SurveyLevel.FULL, false);
+    }
+
+    /**
+     * The same ruin on a world nobody has looked at closely: the condition is there, and the player
+     * has no way of knowing it. Its planet is found all the same, discovery and survey being
+     * independent - which is the pair a case about the survey reveal turns on.
+     */
+    public static MarketAPI buildUnsurveyedDeadWorld() {
+        return buildDeadWorld(MarketAPI.SurveyLevel.NONE, false);
+    }
+
+    /**
+     * A ruin whose planet is neither surveyed nor found - the world both fog arms hold back at
+     * once, and so the case that shows each reveal drops its own arm and no other.
+     */
+    public static MarketAPI buildUnfoundUnsurveyedDeadWorld() {
+        return buildDeadWorld(MarketAPI.SurveyLevel.NONE, true);
+    }
+
+    /**
      * A second market object on an existing colony's entity, under the same owner - the shape a
      * mod builds when it supersedes a colony by adding beside vanilla's rather than replacing.
      */
@@ -125,6 +155,35 @@ public final class ColonyMarketFixture {
             .thenReturn(entity);
         when(marketMock.getSize())
             .thenReturn(size);
+
+        return marketMock;
+    }
+
+    // A dead world at a stated survey level. Built on the bare placeholder's shape rather than
+    // from its flags, the two being the same condition-only market with one condition between
+    // them - a second statement of that shape here would be free to drift from the one above.
+    //
+    // The condition is posed as one needing no survey of its own, so the survey level alone
+    // decides whether the ruins read: which arm reveals what is the market read's business, and a
+    // case here about a colony set has no reason to pose both bars at once.
+    private static MarketAPI buildDeadWorld(
+            MarketAPI.SurveyLevel surveyLevel,
+            boolean isEntityDiscoverable) {
+
+        var conditionMock = mock(MarketConditionAPI.class);
+        var marketMock = buildColonyOnItsOwnEntity(
+            Factions.NEUTRAL,
+            DEFAULT_COLONY_SIZE,
+            false,
+            isEntityDiscoverable,
+            true);
+
+        when(marketMock.hasCondition(Conditions.DECIVILIZED))
+            .thenReturn(true);
+        when(marketMock.getSurveyLevel())
+            .thenReturn(surveyLevel);
+        when(marketMock.getFirstCondition(Conditions.DECIVILIZED))
+            .thenReturn(conditionMock);
 
         return marketMock;
     }

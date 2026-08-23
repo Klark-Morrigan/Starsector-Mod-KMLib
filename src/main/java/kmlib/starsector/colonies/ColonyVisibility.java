@@ -3,36 +3,36 @@ package kmlib.starsector.colonies;
 import java.util.Set;
 
 /**
- * The rule a colony set is shown under: the reveal that lifts the fog outright, and the gates
- * that hold back the shapes of colony the fog alone would leak.
+ * The rule a colony set is shown under: the reveals that lift a half of the fog outright, and the
+ * gates that hold back the shapes of colony the fog alone would leak.
  *
- * <p>The fog itself - the player has found the market's entity - is not a knob and is not
- * carried here. What is carried is everything that <em>changes</em> that answer: a reveal that
- * admits what has not been found, and, for the shapes a bare fog shows before the player could
- * plausibly have heard of them, a requirement that somebody have seen them where they stand.
+ * <p>The fog itself - the player has found the market's entity, or has surveyed enough of a dead
+ * world to see it is dead - is not a knob and is not carried here. What is carried is everything
+ * that <em>changes</em> that answer: the reveals that admit what has not been found, and, for the
+ * shapes a bare fog shows before the player could plausibly have heard of them, a requirement that
+ * somebody have seen them where they stand.
  *
- * <p>Passed as one value rather than as loose flags because both are read together wherever the
+ * <p>Passed as one value rather than as loose flags because all of it is read together wherever the
  * rule is applied. A surface handed one gate and not the other would show a derelict it had been
- * told to hold back, and a signature taking three booleans in a row would say nothing about it
+ * told to hold back, and a signature taking four booleans in a row would say nothing about it
  * either way.
  *
- * <p>The gates are a set of names rather than a flag apiece, so which gate is which cannot be
- * got wrong at a call site and a gate added later needs no existing rule rewritten.
- * {@link RevelationGate} says what each covers.
+ * <p>Each side is a set of names rather than a flag apiece, so which reveal or gate is which cannot
+ * be got wrong at a call site and one added later needs no existing rule rewritten.
+ * {@link VisibilityReveal} and {@link RevelationGate} each say what theirs covers.
  *
- * <p>A gate narrows and never widens. Leaving one out drops that shape back to the fog alone
- * rather than admitting anything the fog refuses, so no rule stated here can put a colony on the
- * map that the player has not found.
+ * <p>Reveals and gates never reach each other. A reveal drops the fog arm it names and no more, so
+ * a colony a gate is holding back stays back however wide the fog is opened; a gate narrows and
+ * never widens, so leaving one out drops that shape to the fog alone rather than admitting anything
+ * the fog refuses. Which is what lets a player turn on exactly the thing they meant and nothing
+ * beside it.
  *
- * @param shouldIncludeUndiscoveredMarkets whether an undiscovered colony still counts - the
- *                                         "show all factions" reveal, which admits everything
- *                                         and overrides every gate below
- * @param revelationGates                  the shapes that must have been revealed as well as
- *                                         found; a shape whose gate is absent is held to the fog
- *                                         alone
+ * @param reveals         the halves of the fog this rule drops; an absent set is the fog entire
+ * @param revelationGates the shapes that must have been revealed as well as found; a shape whose
+ *                        gate is absent is held to the fog alone
  */
 public record ColonyVisibility(
-    boolean shouldIncludeUndiscoveredMarkets,
+    Set<VisibilityReveal> reveals,
     Set<RevelationGate> revelationGates) {
 
     /**
@@ -40,14 +40,33 @@ public record ColonyVisibility(
      * What a caller stating no rule of its own is read as, since a gate nobody asked for must
      * not appear out of an unstated argument.
      */
-    public static final ColonyVisibility BASE_FOG = new ColonyVisibility(false, Set.of());
+    public static final ColonyVisibility BASE_FOG = new ColonyVisibility(Set.of(), Set.of());
 
     /**
-     * Takes an immutable copy of the gates, and reads an absent set as no gates at all, so a
-     * rule handed around a render pass cannot change under its readers and an unstated set
-     * cannot hold anything back.
+     * Takes immutable copies of both sets, and reads an absent one as empty, so a rule handed
+     * around a render pass cannot change under its readers, an unstated set cannot hold anything
+     * back, and an unstated set cannot reveal anything either.
      */
     public ColonyVisibility {
+        reveals = reveals == null ? Set.of() : Set.copyOf(reveals);
         revelationGates = revelationGates == null ? Set.of() : Set.copyOf(revelationGates);
+    }
+
+    /**
+     * Whether a colony on an entity the player has not found still counts.
+     *
+     * @return true when the discovery arm of the fog is dropped
+     */
+    public boolean shouldIncludeUndiscoveredMarkets() {
+        return reveals.contains(VisibilityReveal.UNDISCOVERED_MARKETS);
+    }
+
+    /**
+     * Whether a dead world the player has not surveyed closely enough still counts.
+     *
+     * @return true when the survey arm of the fog is dropped
+     */
+    public boolean shouldIncludeUnsurveyedDeadWorlds() {
+        return reveals.contains(VisibilityReveal.UNSURVEYED_DEAD_WORLDS);
     }
 }

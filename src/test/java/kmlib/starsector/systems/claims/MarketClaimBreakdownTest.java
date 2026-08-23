@@ -1,5 +1,6 @@
 package kmlib.starsector.systems.claims;
 
+import kmlib.starsector.colonies.ColonyKind;
 import kmlib.starsector.entities.EntityMapIcon;
 import kmlib.starsector.entities.EntityNameplate;
 
@@ -146,6 +147,7 @@ final class MarketClaimBreakdownTest {
 
         return new MarketClaimBreakdown(
             MARKET_IDENTITY,
+            ColonyKind.COLONY,
             FIRST_LISTED,
             IS_KNOWN_TO_PLAYER,
             ContestAdmission.WEIGHED,
@@ -159,6 +161,7 @@ final class MarketClaimBreakdownTest {
     private static MarketClaimBreakdown buildClaimAdmittedAs(ContestAdmission admission) {
         return new MarketClaimBreakdown(
             MARKET_IDENTITY,
+            ColonyKind.COLONY,
             FIRST_LISTED,
             IS_KNOWN_TO_PLAYER,
             admission,

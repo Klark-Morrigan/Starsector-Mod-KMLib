@@ -188,6 +188,10 @@ public final class ColonyFixture {
         return ColonyMarketFixture.buildConditionOnlyMarket();
     }
 
+    public MarketAPI buildDeadWorld() {
+        return ColonyMarketFixture.buildDeadWorld();
+    }
+
     public MarketAPI buildDerelictStation() {
         return ColonyMarketFixture.buildDerelictStation();
     }
@@ -206,6 +210,14 @@ public final class ColonyFixture {
 
     public MarketAPI buildUnfoundConcealedColony(String factionId) {
         return ColonyMarketFixture.buildUnfoundConcealedColony(factionId);
+    }
+
+    public MarketAPI buildUnfoundUnsurveyedDeadWorld() {
+        return ColonyMarketFixture.buildUnfoundUnsurveyedDeadWorld();
+    }
+
+    public MarketAPI buildUnsurveyedDeadWorld() {
+        return ColonyMarketFixture.buildUnsurveyedDeadWorld();
     }
 
     public MarketAPI buildUnfoundOpenColony(String factionId) {

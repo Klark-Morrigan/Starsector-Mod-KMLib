@@ -1,5 +1,6 @@
 package kmlib.starsector.systems.claims;
 
+import kmlib.starsector.colonies.ColonyKind;
 import kmlib.starsector.entities.EntityNameplate;
 
 import java.util.OptionalInt;
@@ -25,6 +26,12 @@ import java.util.OptionalInt;
  *                           rather than looked up again by whatever draws the name, so the pair
  *                           shown can only ever belong to the colony whose score is stated beside
  *                           it
+ * @param colonyKind         what kind of place the colony is, carried for the same reason the
+ *                           nameplate is: an account listing a dead world and a derelict side by
+ *                           side has nothing else to tell them apart with, both being unowned,
+ *                           off-economy and listed at nought. Read on the walk that met the colony,
+ *                           so it can only ever describe the colony named beside it, and applied to
+ *                           no part of the contest
  * @param listingPosition    where the market falls among the system's owned markets, counting from
  *                           one: the economy's own in the order it lists them, then any market it
  *                           does not list. Carried because the contest is settled on a strictly
@@ -52,6 +59,7 @@ import java.util.OptionalInt;
  */
 public record MarketClaimBreakdown(
     EntityNameplate marketNameplate,
+    ColonyKind colonyKind,
     int listingPosition,
     boolean isKnownToPlayer,
     ContestAdmission admission,
@@ -63,13 +71,14 @@ public record MarketClaimBreakdown(
     private static final int NO_MILITARY_BONUS = 0;
 
     /**
-     * Reads a bonus handed over as null as no bonus and an unstated admission as the weighed one,
-     * so a hand-built market cannot fail late on either. The nameplate looks after its own unstated
-     * half.
+     * Reads a bonus handed over as null as no bonus, an unstated admission as the weighed one and
+     * an unstated kind as the ordinary colony, so a hand-built market cannot fail late on any of
+     * them. The nameplate looks after its own unstated half.
      */
     public MarketClaimBreakdown {
         militaryBonus = militaryBonus == null ? OptionalInt.empty() : militaryBonus;
         admission = admission == null ? ContestAdmission.WEIGHED : admission;
+        colonyKind = colonyKind == null ? ColonyKind.COLONY : colonyKind;
     }
 
     /**

@@ -26,12 +26,12 @@ import java.util.function.Predicate;
  * mechanic settles a tied contest on whichever market the economy reaches first, and an order
  * imposed here would resolve a different winner.
  *
- * <p>The set is unfogged: it holds every owned colony present, found or not. That is
- * deliberate, because a mechanic mirrored from vanilla has to see what vanilla sees - claim
- * scoring weighs colonies the player has never found, and a fogged input would resolve a
- * different claimant. What the player may be shown is {@link #readKnownColonies}, and what
- * amounts to people living here is {@link #readInhabitingColonies} - named projections over the
- * set rather than filters each display reader applies for itself.
+ * <p>The set is unfogged: it holds every colony present, found or not. That is deliberate,
+ * because a mechanic mirrored from vanilla has to see what vanilla sees - claim scoring weighs
+ * colonies the player has never found, and a fogged input would resolve a different claimant.
+ * What the player may be shown is {@link #readKnownColonies}, and what amounts to people living
+ * here is {@link #readInhabitingColonies} - named projections over the set rather than filters
+ * each display reader applies for itself.
  *
  * <p>The sighting register travels with the set rather than being handed to each projection,
  * because it is a fact about the world the set was read out of - as the colonies themselves are -
@@ -329,10 +329,11 @@ public record Colonies(
         if (!isAdmittedByFog(colony, rule)) {
             return false;
         }
-        // The reveal overrides the gates outright. A listing that showed everything the fog
-        // hides and then withheld a derelict would answer half the question it was asked.
-        return rule.shouldIncludeUndiscoveredMarkets()
-            || !isGatedOnRevelation(colony, rule)
+        // A reveal reaches the fog and stops there. It says a colony may be shown though nobody
+        // has found it, which is no answer at all to whether anybody has seen it standing here -
+        // and a reveal that quietly cleared a gate beside it would show a player a second thing
+        // they never asked for, with nothing on screen to say why it appeared.
+        return !isGatedOnRevelation(colony, rule)
             || isObserved(colony, settlingOwnerIds);
     }
 
@@ -347,13 +348,25 @@ public record Colonies(
         return colony.kind() != ColonyKind.SPACE_DERELICT;
     }
 
-    // The base fog, plus the ownership arm the composed filter carries with it.
+    // The base fog, plus the admission arm the composed filter carries with it.
     //
-    // Ownership is re-asked although the set is already selected on it: the composition is what
-    // the rule is, and unpicking it here to save the second read would leave a narrower statement
-    // of "counts as a known colony" living in this class.
+    // Routed on the kind because one kind is found by a different act. Every other colony is found
+    // by discovering its entity; a dead world is found by surveying it closely enough to read its
+    // ruins, and its market is owned by nobody and condition-only, which the ordinary composition
+    // refuses outright. Two named compositions rather than a branch spelled out here, so what
+    // "found" means for each kind is stated where the market's own facts are.
+    //
+    // The admission arm is re-asked although the set is already selected on it: the composition is
+    // what the rule is, and unpicking it here to save the second read would leave a narrower
+    // statement of "counts as a known colony" living in this class.
     private static boolean isAdmittedByFog(Colony colony, ColonyVisibility rule) {
 
+        if (colony.kind() == ColonyKind.DEAD_COLONY) {
+            return MarketVisibility.isCountedAsDeadColony(
+                colony.market(),
+                rule.shouldIncludeUndiscoveredMarkets(),
+                rule.shouldIncludeUnsurveyedDeadWorlds());
+        }
         return MarketVisibility.isCountedAsColony(
             colony.market(),
             rule.shouldIncludeUndiscoveredMarkets());

@@ -70,7 +70,9 @@ import java.util.Set;
  * own, so what counts as a colony here is what counts as one everywhere else reading the same
  * system - and the condition-only market every uninhabited planet carries, which the widening to
  * off-economy markets would otherwise admit on every surveyed rock, is excluded by that shared
- * rule rather than by a check repeated here.
+ * rule rather than by a check repeated here. The one such market the shared rule does admit, a
+ * decivilised world, reaches the contest as a presence and nothing more: it is unowned and
+ * off-economy, so it is never weighed, never counted as a sibling and can move no claimant.
  *
  * <p>A visibility rule is taken alongside and reaches the contest nowhere: it decides only what
  * each market's breakdown reports about the player's knowledge of it, which a display uses to
@@ -415,9 +417,11 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader, 
     // a box that would rather not name an unfound colony reads the flag instead. It is handed
     // in rather than read off the colony because it is the system's answer, not the market's.
     //
-    // How the colony is identified - its name and the glyph the map marks its entity with - is
-    // recorded here rather than looked up by whatever lists it: reading the pair on the walk that
-    // met the market is what stops a second lookup answering for a different one.
+    // How the colony is identified - its name, the glyph the map marks its entity with, and what
+    // kind of place it is - is recorded here rather than looked up by whatever lists it: reading
+    // them on the walk that met the market is what stops a second lookup answering for a
+    // different one. The kind reaches no term of the arithmetic; an account listing an unowned
+    // ruin beside an unowned hulk simply has nothing else to tell the two apart with.
     private static MarketClaimBreakdown computeMarketClaim(
             Colony colony,
             List<MarketAPI> economyMarkets,
@@ -434,6 +438,7 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader, 
         }
         return new MarketClaimBreakdown(
             Markets.readNameplate(market),
+            colony.kind(),
             listingPosition,
             isKnownToPlayer,
             new ContestAdmission(colony.isHidden(), !colony.isListedByEconomy()),

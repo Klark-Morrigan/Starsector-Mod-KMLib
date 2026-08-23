@@ -2,22 +2,28 @@ package kmlib.starsector.colonies;
 
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
+import kmlib.starsector.markets.DecivilisedMarkets;
 import kmlib.starsector.markets.Markets;
 
 /**
- * What kind of place a colony is: somewhere people live, a station somebody keeps, or a derelict
- * nobody ever lived on.
+ * What kind of place a colony is: somewhere people live, a station somebody keeps, a derelict
+ * nobody ever lived on, or a world people have left.
  *
- * <p>The sector holds all three under one market shape. A market carrying the derelict condition is
- * owned by some faction, is not condition-only, and is registered like any other, so every
- * ownership read admits it as a colony - while nobody is aboard the abandoned ones, they support
- * nothing, and a place holding only those is empty space with hulks in it. A reader that cannot
- * tell them apart says something false about the sector rather than merely drawing it oddly.
+ * <p>The sector holds the first three under one market shape. A market carrying the derelict
+ * condition is owned by some faction, is not condition-only, and is registered like any other, so
+ * every ownership read admits it as a colony - while nobody is aboard the abandoned ones, they
+ * support nothing, and a place holding only those is empty space with hulks in it. A reader that
+ * cannot tell them apart says something false about the sector rather than merely drawing it oddly.
  *
- * <p>A kind rather than a boolean because the distinction is already known not to be binary: a
- * decivilised world is a further kind - somewhere people did live and no longer do - and it needs
- * its own answer rather than being folded into any of these. An enum admits it without any reader
- * changing shape, where a boolean would have to be replaced.
+ * <p>The fourth wears the opposite disguise. A dead world is stripped of its owner, its industries
+ * and its economy listing as it dies, so every ownership read refuses it - and a place drawn as
+ * empty because its ruins are invisible to the selection says something equally false. It is
+ * admitted on the one condition that marks it, and named here so nothing downstream has to ask
+ * again what a ruin is.
+ *
+ * <p>A kind rather than a boolean because the distinction was already known not to be binary, and
+ * the fourth arrived exactly as expected. An enum admits a fifth without any reader changing shape,
+ * where a boolean would have to be replaced.
  *
  * <p>Resolved once, where a colony is selected, and carried on the colony from there. Every reader
  * downstream routes on it, and each re-deriving it from the market would be that many independent
@@ -36,6 +42,11 @@ public enum ColonyKind {
     OUTPOST,
 
     /**
+     * A decivilised and ungoverned colony..
+     */
+    DEAD_COLONY,
+
+    /**
      * An abandoned station nobody is at: held by neutral (or nobody), and unlisted.
      */
     SPACE_DERELICT;
@@ -46,6 +57,12 @@ public enum ColonyKind {
      * <p>Positive identification only: a market wears the derelict shape because it says so
      * ({@link Markets#isAbandonedStation}), and everything else - including a market that reads as
      * nothing in particular, and a null one - is an ordinary colony.
+     *
+     * <p>The ruin is tested first, and the order is what settles a market wearing both marks. A
+     * dead world is condition-only where a derelict is pointedly not, so vanilla builds neither
+     * shape into the other; where a mod hangs the derelict condition on a condition-only shell,
+     * being somewhere people once lived is the more particular thing to say about it, and the one
+     * that keeps its ruins on the map.
      *
      * <p>Which of the two derelict-shaped kinds it is then turns on whether anybody is there, and
      * two independent facts say so. A real owner is one, asked through
@@ -73,6 +90,9 @@ public enum ColonyKind {
      */
     public static ColonyKind resolveKind(MarketAPI market, boolean isListedByEconomy) {
 
+        if (DecivilisedMarkets.isDecivilisedWorld(market)) {
+            return DEAD_COLONY;
+        }
         if (!Markets.isAbandonedStation(market)) {
             return COLONY;
         }

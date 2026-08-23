@@ -33,24 +33,51 @@ import static org.mockito.Mockito.mock;
  */
 final class ColoniesTest {
 
-    // The rule as it ships: both leaking shapes held back until somebody has seen them, and
-    // nothing admitted that the player has not found.
-    private static final ColonyVisibility BOTH_GATES_ON = new ColonyVisibility(
-        false,
-        Set.of(RevelationGate.SPACE_DERELICTS, RevelationGate.HIDDEN_COLONIES));
+    // Every gate this rule can hold, which is how a case poses the shipped state - both leaking
+    // shapes held back until somebody has seen them.
+    private static final Set<RevelationGate> EVERY_GATE =
+        Set.of(RevelationGate.SPACE_DERELICTS, RevelationGate.HIDDEN_COLONIES);
+
+    // No arm of the fog dropped, which is the ordinary state: nothing admitted that the player has
+    // not found, and nothing about a ruin they have not surveyed.
+    private static final Set<VisibilityReveal> NOTHING_REVEALED = Set.of();
+
+    // The rule as it ships.
+    private static final ColonyVisibility BOTH_GATES_ON =
+        new ColonyVisibility(NOTHING_REVEALED, EVERY_GATE);
 
     // One gate apiece, which is how a case shows the two are independent of each other.
-    private static final ColonyVisibility ONLY_STATIONS_GATED =
-        new ColonyVisibility(false, Set.of(RevelationGate.SPACE_DERELICTS));
+    private static final ColonyVisibility ONLY_STATIONS_GATED = new ColonyVisibility(
+        NOTHING_REVEALED,
+        Set.of(RevelationGate.SPACE_DERELICTS));
 
-    private static final ColonyVisibility ONLY_HIDDEN_GATED =
-        new ColonyVisibility(false, Set.of(RevelationGate.HIDDEN_COLONIES));
+    private static final ColonyVisibility ONLY_HIDDEN_GATED = new ColonyVisibility(
+        NOTHING_REVEALED,
+        Set.of(RevelationGate.HIDDEN_COLONIES));
 
-    // The reveal, stated with both gates on so a case shows it overriding them rather than
-    // merely running where they were off anyway.
-    private static final ColonyVisibility REVEAL_EVERYTHING = new ColonyVisibility(
-        true,
-        Set.of(RevelationGate.SPACE_DERELICTS, RevelationGate.HIDDEN_COLONIES));
+    // The discovery reveal with nothing gated, which is what a case about the fog alone poses: the
+    // reveal drops the arm it names and no gate, so stating it beside a gate would pose two things
+    // at once.
+    private static final ColonyVisibility REVEAL_UNDISCOVERED = new ColonyVisibility(
+        Set.of(VisibilityReveal.UNDISCOVERED_MARKETS),
+        Set.of());
+
+    // The same reveal with every gate still in force - the pairing that shows a reveal reaching
+    // the fog and stopping there.
+    private static final ColonyVisibility REVEAL_UNDISCOVERED_UNDER_EVERY_GATE =
+        new ColonyVisibility(Set.of(VisibilityReveal.UNDISCOVERED_MARKETS), EVERY_GATE);
+
+    // The survey reveal, which is the only arm a ruin is ever held back by.
+    private static final ColonyVisibility REVEAL_UNSURVEYED = new ColonyVisibility(
+        Set.of(VisibilityReveal.UNSURVEYED_DEAD_WORLDS),
+        Set.of());
+
+    // Both arms dropped at once, for the world neither reveal alone reaches.
+    private static final ColonyVisibility REVEAL_BOTH_FOG_ARMS = new ColonyVisibility(
+        Set.of(
+            VisibilityReveal.UNDISCOVERED_MARKETS,
+            VisibilityReveal.UNSURVEYED_DEAD_WORLDS),
+        Set.of());
 
     @Nested
     class Construct {
@@ -95,8 +122,8 @@ final class ColoniesTest {
         // An arm is somewhere a case unambiguously belongs; a theme is a judgement call made again
         // every time one is added.
 
-        // The fog and the reveal - what a colony has to pass before any gate is consulted, and the
-        // one thing that overrides every gate at once.
+        // The fog and the reveals that lift an arm of it - what a colony has to pass before any
+        // gate is consulted.
         @Nested
         class BaseFog {
 
@@ -132,8 +159,24 @@ final class ColoniesTest {
                 var fixture = new ColonyFixture("kumari_kandam");
                 var base = fixture.buildUnfoundConcealedColony("pirates");
 
-                assertThat(buildColoniesOf(buildColony(base)).readKnownColonies(REVEAL_EVERYTHING))
+                assertThat(buildColoniesOf(buildColony(base))
+                        .readKnownColonies(REVEAL_UNDISCOVERED))
                     .containsExactly(buildColony(base));
+            }
+
+            @Test
+            void withholds_an_unfound_concealed_colony_under_the_discovery_reveal_alone() {
+                // The rule each toggle is written to: a reveal drops the arm it names and clears no
+                // gate beside it. This colony is held back twice over - unfound, and concealed in a
+                // place nobody has seen it - so lifting the fog leaves the second reason standing.
+                var fixture = new ColonyFixture("kumari_kandam");
+                var base = fixture.buildUnfoundConcealedColony("pirates");
+
+                fixture.placeColoniesInSystem(base);
+
+                assertThat(buildColoniesOf(buildColony(base))
+                        .readKnownColonies(REVEAL_UNDISCOVERED_UNDER_EVERY_GATE))
+                    .isEmpty();
             }
 
             @Test
@@ -191,15 +234,79 @@ final class ColoniesTest {
             }
 
             @Test
-            void keeps_a_gated_colony_under_the_reveal_though_nobody_has_seen_it() {
-
+            void withholds_a_gated_colony_under_the_reveal_where_nobody_has_seen_it() {
+                // The same rule from the derelict's side: the reveal says the hulk may be shown
+                // though nobody found it, which is no answer at all to whether anybody has seen it
+                // standing here.
                 var fixture = new ColonyFixture("kumari_kandam");
                 var derelict = fixture.buildDerelictStation();
 
                 fixture.placeColoniesInSystem(derelict);
 
-                assertThat(buildColoniesOf(buildDerelict(derelict)).readKnownColonies(REVEAL_EVERYTHING))
-                    .containsExactly(buildDerelict(derelict));
+                assertThat(buildColoniesOf(buildDerelict(derelict))
+                        .readKnownColonies(REVEAL_UNDISCOVERED_UNDER_EVERY_GATE))
+                    .isEmpty();
+            }
+
+            @Test
+            void admits_a_surveyed_dead_world() {
+                // A ruin the player has read: found by the survey arm, gated by nothing, and
+                // condition-only - which is what every other colony read refuses it for.
+                var fixture = new ColonyFixture("kumari_kandam");
+                var deadWorld = fixture.buildDeadWorld();
+
+                fixture.placeColoniesInSystem(deadWorld);
+
+                assertThat(buildColoniesOf(buildDeadWorld(deadWorld))
+                        .readKnownColonies(BOTH_GATES_ON))
+                    .containsExactly(buildDeadWorld(deadWorld));
+            }
+
+            @Test
+            void withholds_a_dead_world_nobody_has_surveyed() {
+                // The ruins are there and the player has no way of knowing it, so the map may not
+                // say so - and the planet being found is beside the point, the two arms being
+                // independent.
+                var fixture = new ColonyFixture("kumari_kandam");
+                var deadWorld = fixture.buildUnsurveyedDeadWorld();
+
+                fixture.placeColoniesInSystem(deadWorld);
+
+                assertThat(buildColoniesOf(buildDeadWorld(deadWorld))
+                        .readKnownColonies(BOTH_GATES_ON))
+                    .isEmpty();
+            }
+
+            @Test
+            void admits_an_unsurveyed_dead_world_under_the_survey_reveal() {
+
+                var fixture = new ColonyFixture("kumari_kandam");
+                var deadWorld = fixture.buildUnsurveyedDeadWorld();
+
+                fixture.placeColoniesInSystem(deadWorld);
+
+                assertThat(buildColoniesOf(buildDeadWorld(deadWorld))
+                        .readKnownColonies(REVEAL_UNSURVEYED))
+                    .containsExactly(buildDeadWorld(deadWorld));
+            }
+
+            @Test
+            void withholds_an_unfound_unsurveyed_dead_world_under_either_reveal_alone() {
+                // The kind's own case of the rule every toggle is written to: two arms hold this
+                // world back, each toggle drops one, and neither drops the other's.
+                var fixture = new ColonyFixture("kumari_kandam");
+                var deadWorld = fixture.buildUnfoundUnsurveyedDeadWorld();
+
+                fixture.placeColoniesInSystem(deadWorld);
+
+                var colonies = buildColoniesOf(buildDeadWorld(deadWorld));
+
+                assertThat(colonies.readKnownColonies(REVEAL_UNSURVEYED))
+                    .isEmpty();
+                assertThat(colonies.readKnownColonies(REVEAL_UNDISCOVERED))
+                    .isEmpty();
+                assertThat(colonies.readKnownColonies(REVEAL_BOTH_FOG_ARMS))
+                    .containsExactly(buildDeadWorld(deadWorld));
             }
         }
 
@@ -607,7 +714,7 @@ final class ColoniesTest {
             var fixture = new ColonyFixture("kumari_kandam");
             var base = fixture.buildUnfoundConcealedColony("pirates");
 
-            assertThat(buildColoniesOf(buildColony(base)).hasKnownColony(REVEAL_EVERYTHING))
+            assertThat(buildColoniesOf(buildColony(base)).hasKnownColony(REVEAL_UNDISCOVERED))
                 .isTrue();
         }
 
@@ -766,6 +873,26 @@ final class ColoniesTest {
         }
 
         @Test
+        void keeps_a_dead_world_and_lets_it_settle_nothing() {
+            // The ruin inhabits its place - somewhere people were is not empty space - while
+            // vouching for nothing else standing there, nobody being left to speak. So the derelict
+            // beside it stays unmentioned: a place is settled by the living, and the listing shows
+            // exactly the ruin and not the hulk.
+            var fixture = new ColonyFixture("kumari_kandam");
+            var deadWorld = fixture.buildDeadWorld();
+            var derelict = fixture.buildDerelictStation();
+
+            fixture.placeColoniesInSystem(deadWorld, derelict);
+
+            var colonies = buildColoniesOf(buildDeadWorld(deadWorld), buildDerelict(derelict));
+
+            assertThat(colonies.readInhabitingColonies(BOTH_GATES_ON))
+                .containsExactly(buildDeadWorld(deadWorld));
+            assertThat(colonies.readKnownColonies(BOTH_GATES_ON))
+                .containsExactly(buildDeadWorld(deadWorld));
+        }
+
+        @Test
         void excludes_a_derelict_its_own_gate_has_let_through() {
             // Kind and gate answer separate questions. Turning the station gate off says the
             // player may be told about a hulk they have found; it does not put anybody aboard it.
@@ -784,9 +911,9 @@ final class ColoniesTest {
 
         @Test
         void excludes_a_derelict_the_reveal_has_let_through() {
-            // The reveal is about the fog and the gates, not about who is aboard. Posed on an
-            // entity the player has not found, so it is the reveal alone putting the hulk in the
-            // listing - and habitation still declines it.
+            // The reveal is about the fog, not about who is aboard. Posed on an entity the player
+            // has not found, so it is the reveal alone putting the hulk in the listing - and
+            // habitation still declines it.
             var fixture = new ColonyFixture("kumari_kandam");
             var derelict = fixture.buildUnfoundOpenColony(Factions.NEUTRAL);
 
@@ -794,9 +921,9 @@ final class ColoniesTest {
 
             var colonies = buildColoniesOf(buildDerelict(derelict));
 
-            assertThat(colonies.readKnownColonies(REVEAL_EVERYTHING))
+            assertThat(colonies.readKnownColonies(REVEAL_UNDISCOVERED))
                 .containsExactly(buildDerelict(derelict));
-            assertThat(colonies.readInhabitingColonies(REVEAL_EVERYTHING))
+            assertThat(colonies.readInhabitingColonies(REVEAL_UNDISCOVERED))
                 .isEmpty();
         }
 
@@ -896,9 +1023,9 @@ final class ColoniesTest {
 
             var colonies = buildColoniesOf(buildDerelict(derelict));
 
-            assertThat(colonies.hasKnownColony(REVEAL_EVERYTHING))
+            assertThat(colonies.hasKnownColony(REVEAL_UNDISCOVERED))
                 .isTrue();
-            assertThat(colonies.hasInhabitingColony(REVEAL_EVERYTHING))
+            assertThat(colonies.hasInhabitingColony(REVEAL_UNDISCOVERED))
                 .isFalse();
         }
 
@@ -1118,6 +1245,12 @@ final class ColoniesTest {
     // how a kind is read.
     private static Colony buildDerelict(MarketAPI market) {
         return new Colony(market, ColonyKind.SPACE_DERELICT, true);
+    }
+
+    // A world people left, stated as its kind for the same reason the derelict above is. Unlisted,
+    // the economy dropping a colony as it dies - which is what a ruin always reaches a reader as.
+    private static Colony buildDeadWorld(MarketAPI market) {
+        return new Colony(market, ColonyKind.DEAD_COLONY, false);
     }
 
     // A station a faction keeps, stated as its kind for the same reason the derelict above is.

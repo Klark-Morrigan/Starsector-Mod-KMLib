@@ -77,6 +77,34 @@ final class SystemColoniesTest {
         }
 
         @Test
+        void admits_a_condition_only_market_carrying_the_decivilised_condition() {
+            // The one condition-only market a colony set holds, and the narrowest admission that
+            // reaches it: a ruin is stripped of its owner as it dies, so ownership refuses it along
+            // with every bare rock, and the decivilised condition is what parts it from those.
+            var fixture = new ColonyFixture("kumari_kandam");
+            var deadWorld = fixture.buildDeadWorld();
+
+            fixture.placeColoniesInSystem(deadWorld);
+
+            assertThat(readColonies(fixture))
+                .containsExactly(new Colony(deadWorld, ColonyKind.DEAD_COLONY, false));
+        }
+
+        @Test
+        void admits_a_dead_world_the_player_has_not_surveyed() {
+            // The set is unfogged, a mechanic mirrored from vanilla having to see what vanilla
+            // sees, so what the player may be told about the ruins is decided over the set rather
+            // than by leaving them out of it.
+            var fixture = new ColonyFixture("kumari_kandam");
+            var deadWorld = fixture.buildUnsurveyedDeadWorld();
+
+            fixture.placeColoniesInSystem(deadWorld);
+
+            assertThat(readColonies(fixture))
+                .containsExactly(new Colony(deadWorld, ColonyKind.DEAD_COLONY, false));
+        }
+
+        @Test
         void admits_a_concealed_colony_and_marks_it_hidden() {
 
             var fixture = new ColonyFixture("kumari_kandam");

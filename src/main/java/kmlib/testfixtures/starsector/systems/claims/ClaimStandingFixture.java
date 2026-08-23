@@ -1,5 +1,6 @@
 package kmlib.testfixtures.starsector.systems.claims;
 
+import kmlib.starsector.colonies.ColonyKind;
 import kmlib.starsector.entities.EntityNameplate;
 import kmlib.starsector.systems.claims.ContestAdmission;
 import kmlib.starsector.systems.claims.MarketClaimBreakdown;
@@ -58,6 +59,11 @@ public final class ClaimStandingFixture {
     private static final boolean IS_KNOWN_TO_PLAYER = true;
     private static final boolean IS_UNFOUND_BY_PLAYER = false;
 
+    // Somewhere people live, on every standing built here. A case about what a contest means is not
+    // a case about a ruin or a hulk, and the kind reaches no term of the arithmetic - so it is
+    // stated once rather than offered for a caller to vary.
+    private static final ColonyKind ORDINARY_COLONY = ColonyKind.COLONY;
+
     private ClaimStandingFixture() {
     }
 
@@ -80,6 +86,7 @@ public final class ClaimStandingFixture {
             isTerritorial,
             new MarketClaimBreakdown(
                 STANDING_MARKET,
+                ORDINARY_COLONY,
                 FIRST_LISTED,
                 IS_KNOWN_TO_PLAYER,
                 // Held in the open and listed by the economy, which a standing market could not be
@@ -113,6 +120,7 @@ public final class ClaimStandingFixture {
             isTerritorial,
             List.of(new MarketClaimBreakdown(
                 UNWEIGHED_MARKET,
+                ORDINARY_COLONY,
                 FIRST_LISTED,
                 IS_KNOWN_TO_PLAYER,
                 // Concealment rather than an absence from the economy's listing, arbitrarily: the
@@ -147,6 +155,7 @@ public final class ClaimStandingFixture {
             isTerritorial,
             List.of(new MarketClaimBreakdown(
                 UNFOUND_MARKET,
+                ORDINARY_COLONY,
                 FIRST_LISTED,
                 IS_UNFOUND_BY_PLAYER,
                 // Concealed as well as unfound, which is the ordinary pairing: a colony held in the

@@ -46,7 +46,7 @@ final class VanillaClaimBreakdownReaderTest {
     // The rule as it ships, posed where a case is about what the reader reports of the player's
     // knowledge. Everything else runs under the fog alone, which is the rule that adds nothing.
     private static final ColonyVisibility BOTH_GATES_ON = new ColonyVisibility(
-        false,
+        Set.of(),
         Set.of(RevelationGate.SPACE_DERELICTS, RevelationGate.HIDDEN_COLONIES));
 
     private ClaimContestFixture claimContest;

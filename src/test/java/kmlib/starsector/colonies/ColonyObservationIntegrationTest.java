@@ -31,7 +31,7 @@ final class ColonyObservationIntegrationTest {
     // The rule as it ships: both leaking shapes held back until somebody has seen them, and
     // nothing admitted that the player has not found.
     private static final ColonyVisibility BOTH_GATES_ON = new ColonyVisibility(
-        false,
+        Set.of(),
         Set.of(RevelationGate.SPACE_DERELICTS, RevelationGate.HIDDEN_COLONIES));
 
     private static final String DERELICT_ID = "sentinel_gantries";

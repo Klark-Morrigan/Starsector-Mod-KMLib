@@ -3,6 +3,8 @@ package kmlib.starsector.markets;
 import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
+import com.fs.starfarer.api.campaign.econ.MarketConditionAPI;
+import com.fs.starfarer.api.impl.campaign.ids.Conditions;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -12,7 +14,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * Pins the contracts of {@link MarketVisibility#isCountedAsColony} and
+ * Pins the contracts of {@link MarketVisibility#isCountedAsColony},
+ * {@link MarketVisibility#isCountedAsDeadColony} and
  * {@link MarketVisibility#isDiscoveredByPlayer}. The cases live in a {@link Nested} group per
  * method so the suite reports as a per-method tree; the shared mock builders stay on the
  * outer class.
@@ -101,6 +104,77 @@ final class MarketVisibilityTest {
     }
 
     @Nested
+    class IsCountedAsDeadColony {
+
+        @Test
+        void returns_true_for_a_surveyed_ruin_on_a_found_planet() {
+
+            var market = buildDeadWorld(MarketAPI.SurveyLevel.FULL, buildFoundEntity());
+
+            assertThat(MarketVisibility.isCountedAsDeadColony(market, false, false))
+                .isTrue();
+        }
+
+        @Test
+        void returns_false_for_a_market_that_is_no_dead_world() {
+            // The kind arm, which is what keeps every condition-only rock in the sector out of an
+            // answer the survey arm alone would admit on any surveyed one.
+            var market = buildConditionOnlyMarket();
+
+            assertThat(MarketVisibility.isCountedAsDeadColony(market, false, false))
+                .isFalse();
+        }
+
+        @Test
+        void returns_false_for_a_ruin_nobody_has_surveyed() {
+
+            var market = buildDeadWorld(MarketAPI.SurveyLevel.NONE, buildFoundEntity());
+
+            assertThat(MarketVisibility.isCountedAsDeadColony(market, false, false))
+                .isFalse();
+        }
+
+        @Test
+        void returns_true_for_an_unsurveyed_ruin_under_the_survey_reveal() {
+
+            var market = buildDeadWorld(MarketAPI.SurveyLevel.NONE, buildFoundEntity());
+
+            assertThat(MarketVisibility.isCountedAsDeadColony(market, false, true))
+                .isTrue();
+        }
+
+        @Test
+        void returns_false_for_a_surveyed_ruin_on_a_planet_the_player_has_not_found() {
+            // The two arms are independent, and this is the direction that is easy to miss: a
+            // survey the player somehow holds says nothing about their having found the planet.
+            var market = buildDeadWorld(MarketAPI.SurveyLevel.FULL, buildUnfoundEntity());
+
+            assertThat(MarketVisibility.isCountedAsDeadColony(market, false, false))
+                .isFalse();
+        }
+
+        @Test
+        void needs_both_reveals_for_an_unsurveyed_ruin_on_an_unfound_planet() {
+            // Each reveal drops the arm it names and no other, so a world held back twice needs
+            // both - which is the rule every visibility toggle is written to.
+            var market = buildDeadWorld(MarketAPI.SurveyLevel.NONE, buildUnfoundEntity());
+
+            assertThat(MarketVisibility.isCountedAsDeadColony(market, true, false))
+                .isFalse();
+            assertThat(MarketVisibility.isCountedAsDeadColony(market, false, true))
+                .isFalse();
+            assertThat(MarketVisibility.isCountedAsDeadColony(market, true, true))
+                .isTrue();
+        }
+
+        @Test
+        void returns_false_for_a_null_market() {
+            assertThat(MarketVisibility.isCountedAsDeadColony(null, true, true))
+                .isFalse();
+        }
+    }
+
+    @Nested
     class IsDiscoveredByPlayer {
 
         @Test
@@ -152,6 +226,29 @@ final class MarketVisibilityTest {
     // hold its hazard and atmosphere. Owned, and rejected on the ownership arm all the same.
     private static MarketAPI buildConditionOnlyMarket() {
         return buildColonyMarket(true, false, buildFoundEntity());
+    }
+
+    // A world people left: the condition-only shell a colony leaves behind, carrying the
+    // decivilised condition, at a stated survey level and on a stated planet.
+    //
+    // The condition is posed as one needing no survey of its own, so the survey level alone decides
+    // whether the ruins read - which bar a condition carries is the decivilised read's business and
+    // is pinned there.
+    private static MarketAPI buildDeadWorld(
+            MarketAPI.SurveyLevel surveyLevel,
+            SectorEntityToken entity) {
+
+        var conditionMock = mock(MarketConditionAPI.class);
+        var marketMock = buildColonyMarket(true, false, entity);
+
+        when(marketMock.hasCondition(Conditions.DECIVILIZED))
+            .thenReturn(true);
+        when(marketMock.getSurveyLevel())
+            .thenReturn(surveyLevel);
+        when(marketMock.getFirstCondition(Conditions.DECIVILIZED))
+            .thenReturn(conditionMock);
+
+        return marketMock;
     }
 
     // An owned colony with no entity at all: nothing is left to find, so the fog has nothing to

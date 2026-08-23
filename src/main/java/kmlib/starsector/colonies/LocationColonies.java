@@ -4,6 +4,7 @@ import com.fs.starfarer.api.campaign.LocationAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
+import kmlib.starsector.markets.DecivilisedMarkets;
 import kmlib.starsector.markets.LocationMarkets;
 import kmlib.starsector.markets.MarketColocation;
 import kmlib.starsector.markets.Markets;
@@ -16,9 +17,9 @@ import java.util.List;
  *
  * <p>The search {@link Colonies} and {@link HyperspaceColonies} are each a thin reader
  * over. Nothing about picking colonies out of a place is system-specific - both listings are
- * read, ownership rejects the condition-only markets, and the survivors resolve to one entry
- * per place and owner - so the rule is stated once here and the two kinds of place are named
- * separately above it. A single read taking a kind of place as an argument would instead put
+ * read, ownership rejects the condition-only markets a ruin aside, and the survivors resolve to
+ * one entry per place and owner - so the rule is stated once here and the two kinds of place are
+ * named separately above it. A single read taking a kind of place as an argument would instead put
  * the burden on every caller to know which kinds it may pass.
  *
  * <p>Not a reader in its own right. A caller knows whether it is asking about a star system or
@@ -37,7 +38,7 @@ public final class LocationColonies {
      * Reads {@code location}'s colonies out of the sector - the single walk every reader above
      * is meant to share rather than repeat.
      *
-     * <p>Both listings are filtered for ownership before they are resolved per place, so a
+     * <p>Both listings are filtered for admission before they are resolved per place, so a
      * planet's condition-only market can never win a place from the real colony sharing its
      * entity by being the larger of the two.
      *
@@ -87,17 +88,35 @@ public final class LocationColonies {
         return new Colonies(colonies, SectorColonySightings.readSightings(sector));
     }
 
-    // Appends the owned colonies among a listing, in the order the listing gives them. Kept as
-    // one pass over both listings so the ownership rule is stated once rather than per listing.
+    // Appends the colonies among a listing, in the order the listing gives them. Kept as one pass
+    // over both listings so the admission rule is stated once rather than per listing.
     private static void collectOwnedColonies(
             List<MarketAPI> markets,
             List<MarketAPI> ownedMarkets) {
 
         for (var market : markets) {
-            if (Markets.isOwnedColony(market)) {
+            if (isColonyMarket(market)) {
                 ownedMarkets.add(market);
             }
         }
+    }
+
+    // What may stand for a colony at all: a market some faction holds, or the one shape that is
+    // held by nobody and is still somewhere people were.
+    //
+    // The second arm is narrow because the first one's exclusion is load-bearing. Every
+    // uninhabited planet in the sector carries a condition-only market to hold its hazard and
+    // atmosphere, and ownership is what keeps those out - so the ruin is admitted on the
+    // decivilised condition alone rather than by relaxing that test, which would report somebody
+    // present in every system anybody ever surveyed.
+    //
+    // Admitted on what the world is and not on whether the player can see it. The set is unfogged
+    // by construction, a mechanic mirrored from vanilla having to see what vanilla sees, so
+    // whether the ruins have been surveyed is the fog above this and is applied where every other
+    // colony's fog is.
+    private static boolean isColonyMarket(MarketAPI market) {
+        return Markets.isOwnedColony(market)
+            || DecivilisedMarkets.isDecivilisedWorld(market);
     }
 
     // Whether this very market object is one the economy listed. Identity rather than equality:

@@ -80,11 +80,70 @@ final class ColonyKindTest {
         }
 
         @Test
+        void reads_a_decivilised_world_as_a_dead_colony() {
+
+            var deadWorld = ColonyMarketFixture.buildDeadWorld();
+
+            assertThat(ColonyKind.resolveKind(deadWorld, UNLISTED_BY_ECONOMY))
+                .isEqualTo(ColonyKind.DEAD_COLONY);
+        }
+
+        @Test
+        void reads_a_dead_world_the_player_has_not_surveyed_as_a_dead_colony() {
+            // What the world is and whether the player may be told are different questions asked at
+            // different layers, so an unread ruin is classified as the ruin it is and withheld by
+            // the fog above rather than by being misfiled here.
+            var deadWorld = ColonyMarketFixture.buildUnsurveyedDeadWorld();
+
+            assertThat(ColonyKind.resolveKind(deadWorld, UNLISTED_BY_ECONOMY))
+                .isEqualTo(ColonyKind.DEAD_COLONY);
+        }
+
+        @Test
+        void reads_a_bare_planets_placeholder_as_a_colony() {
+            // The condition-only market every uninhabited world carries, and the case that says the
+            // ruin arm turns on the decivilised condition rather than on being condition-only. Such
+            // a market never reaches a colony set in the first place, ownership refusing it.
+            var placeholder = ColonyMarketFixture.buildConditionOnlyMarket();
+
+            assertThat(ColonyKind.resolveKind(placeholder, UNLISTED_BY_ECONOMY))
+                .isEqualTo(ColonyKind.COLONY);
+        }
+
+        @Test
         void reads_a_null_market_as_a_colony() {
             // The default arm, posed at its extreme: nothing at all to read still yields the kind
             // that keeps a place on the map, because misfiling a settlement as a hulk erases it.
             assertThat(ColonyKind.resolveKind(null, UNLISTED_BY_ECONOMY))
                 .isEqualTo(ColonyKind.COLONY);
+        }
+    }
+
+    @Nested
+    class IsSettlingLocation {
+
+        @Test
+        void answers_true_for_the_kinds_somebody_is_at() {
+
+            assertThat(ColonyKind.COLONY.isSettlingLocation())
+                .isTrue();
+            assertThat(ColonyKind.OUTPOST.isSettlingLocation())
+                .isTrue();
+        }
+
+        @Test
+        void answers_false_for_a_dead_colony() {
+            // Somewhere people were is not somewhere people are: a ruin inhabits its place and has
+            // nobody left to say what else is standing in it.
+            assertThat(ColonyKind.DEAD_COLONY.isSettlingLocation())
+                .isFalse();
+        }
+
+        @Test
+        void answers_false_for_a_space_derelict() {
+
+            assertThat(ColonyKind.SPACE_DERELICT.isSettlingLocation())
+                .isFalse();
         }
     }
 }
