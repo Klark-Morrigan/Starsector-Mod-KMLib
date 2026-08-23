@@ -106,32 +106,41 @@ public final class ColonyMarketFixture {
     }
 
     /**
-     * A world people left, and the player has surveyed closely enough to see it: the condition-only
-     * shell a colony leaves behind, carrying the decivilised condition, on a planet already found.
+     * A world whose colony collapsed, surveyed closely enough for the player to see so: the
+     * condition-only shell a collapse leaves behind, carrying the decivilised condition, on a
+     * planet already found.
      *
      * <p>Nothing but that condition parts it from the bare placeholder above, which is what makes
      * the pair worth posing together - an admission splitting them on anything else would be
      * reading the wrong thing.
      */
-    public static MarketAPI buildDeadWorld() {
-        return buildDeadWorld(MarketAPI.SurveyLevel.FULL, false);
+    public static MarketAPI buildDecivilisedWorld() {
+        return buildDecivilisedWorld(MarketAPI.SurveyLevel.FULL, false);
     }
 
     /**
-     * The same ruin on a world nobody has looked at closely: the condition is there, and the player
-     * has no way of knowing it. Its planet is found all the same, discovery and survey being
-     * independent - which is the pair a case about the survey reveal turns on.
+     * The same world seen and no more - the lowest survey vanilla shows a condition at, and so the
+     * one a case raising the map's own bar past vanilla's has to pose.
      */
-    public static MarketAPI buildUnsurveyedDeadWorld() {
-        return buildDeadWorld(MarketAPI.SurveyLevel.NONE, false);
+    public static MarketAPI buildSeenDecivilisedWorld() {
+        return buildDecivilisedWorld(MarketAPI.SurveyLevel.SEEN, false);
     }
 
     /**
-     * A ruin whose planet is neither surveyed nor found - the world both fog arms hold back at
-     * once, and so the case that shows each reveal drops its own arm and no other.
+     * The same world with nobody having looked at it at all: the condition is there, and the
+     * player has no way of knowing it. Its planet is found all the same, discovery and survey
+     * being independent - which is the pair a case about the survey bar turns on.
      */
-    public static MarketAPI buildUnfoundUnsurveyedDeadWorld() {
-        return buildDeadWorld(MarketAPI.SurveyLevel.NONE, true);
+    public static MarketAPI buildUnsurveyedDecivilisedWorld() {
+        return buildDecivilisedWorld(MarketAPI.SurveyLevel.NONE, false);
+    }
+
+    /**
+     * A collapsed colony whose planet is neither surveyed nor found - the world both fog arms hold
+     * back at once, and so the case that shows each knob reaches its own arm and no other.
+     */
+    public static MarketAPI buildUnfoundUnsurveyedDecivilisedWorld() {
+        return buildDecivilisedWorld(MarketAPI.SurveyLevel.NONE, true);
     }
 
     /**
@@ -159,14 +168,14 @@ public final class ColonyMarketFixture {
         return marketMock;
     }
 
-    // A dead world at a stated survey level. Built on the bare placeholder's shape rather than
-    // from its flags, the two being the same condition-only market with one condition between
+    // A decivilised world at a stated survey level. Built on the bare placeholder's shape rather
+    // than from its flags, the two being the same condition-only market with one condition between
     // them - a second statement of that shape here would be free to drift from the one above.
     //
     // The condition is posed as one needing no survey of its own, so the survey level alone
     // decides whether the ruins read: which arm reveals what is the market read's business, and a
     // case here about a colony set has no reason to pose both bars at once.
-    private static MarketAPI buildDeadWorld(
+    private static MarketAPI buildDecivilisedWorld(
             MarketAPI.SurveyLevel surveyLevel,
             boolean isEntityDiscoverable) {
 

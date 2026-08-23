@@ -60,7 +60,7 @@ public final class ClaimStandingFixture {
     private static final boolean IS_UNFOUND_BY_PLAYER = false;
 
     // Somewhere people live, on every standing built here. A case about what a contest means is not
-    // a case about a ruin or a hulk, and the kind reaches no term of the arithmetic - so it is
+    // a case about a collapse or a hulk, and the kind reaches no term of the arithmetic - so it is
     // stated once rather than offered for a caller to vary.
     private static final ColonyKind ORDINARY_COLONY = ColonyKind.COLONY;
 

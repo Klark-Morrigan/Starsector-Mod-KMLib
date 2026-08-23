@@ -6,8 +6,8 @@ import kmlib.starsector.markets.DecivilisedMarkets;
 import kmlib.starsector.markets.Markets;
 
 /**
- * What kind of place a colony is: somewhere people live, a station somebody keeps, a derelict
- * nobody ever lived on, or a world people have left.
+ * What kind of place a colony is: somewhere a faction runs, a station somebody keeps, a derelict
+ * nobody ever lived on, or a colony whose government has collapsed.
  *
  * <p>The sector holds the first three under one market shape. A market carrying the derelict
  * condition is owned by some faction, is not condition-only, and is registered like any other, so
@@ -15,11 +15,11 @@ import kmlib.starsector.markets.Markets;
  * support nothing, and a place holding only those is empty space with hulks in it. A reader that
  * cannot tell them apart says something false about the sector rather than merely drawing it oddly.
  *
- * <p>The fourth wears the opposite disguise. A dead world is stripped of its owner, its industries
- * and its economy listing as it dies, so every ownership read refuses it - and a place drawn as
- * empty because its ruins are invisible to the selection says something equally false. It is
- * admitted on the one condition that marks it, and named here so nothing downstream has to ask
- * again what a ruin is.
+ * <p>The fourth wears the opposite disguise. A colony that decivilises is stripped of its owner,
+ * its industries and its economy listing, so every ownership read refuses it - and a place drawn as
+ * empty because the people still on it are invisible to the selection says something equally
+ * false. It is admitted on the one condition that marks it, and named here so nothing downstream
+ * has to ask again what a collapsed colony is.
  *
  * <p>A kind rather than a boolean because the distinction was already known not to be binary, and
  * the fourth arrived exactly as expected. An enum admits a fifth without any reader changing shape,
@@ -42,9 +42,15 @@ public enum ColonyKind {
     OUTPOST,
 
     /**
-     * A decivilised and ungoverned colony..
+     * A colony whose government has collapsed: decivilised, with no stable ruling polity, and
+     * still populated - survivors, bandits and looters, in vanilla's own account of the condition.
+     *
+     * <p>People are there, which is what parts it from a derelict and is why it inhabits its
+     * place. Nobody there speaks for it, which is what parts it from a colony and is why it takes
+     * no part in the political landscape: it holds nothing, claims nothing, weighs nothing, and
+     * vouches for nothing else standing in the same place.
      */
-    DEAD_COLONY,
+    UNGOVERNED_COLONY,
 
     /**
      * An abandoned station nobody is at: held by neutral (or nobody), and unlisted.
@@ -58,11 +64,11 @@ public enum ColonyKind {
      * ({@link Markets#isAbandonedStation}), and everything else - including a market that reads as
      * nothing in particular, and a null one - is an ordinary colony.
      *
-     * <p>The ruin is tested first, and the order is what settles a market wearing both marks. A
-     * dead world is condition-only where a derelict is pointedly not, so vanilla builds neither
+     * <p>The collapsed colony is tested first, and the order is what settles a market wearing both
+     * marks. It is condition-only where a derelict is pointedly not, so vanilla builds neither
      * shape into the other; where a mod hangs the derelict condition on a condition-only shell,
-     * being somewhere people once lived is the more particular thing to say about it, and the one
-     * that keeps its ruins on the map.
+     * being somewhere people still are is the more particular thing to say about it, and the one
+     * that keeps those people on the map.
      *
      * <p>Which of the two derelict-shaped kinds it is then turns on whether anybody is there, and
      * two independent facts say so. A real owner is one, asked through
@@ -91,7 +97,7 @@ public enum ColonyKind {
     public static ColonyKind resolveKind(MarketAPI market, boolean isListedByEconomy) {
 
         if (DecivilisedMarkets.isDecivilisedWorld(market)) {
-            return DEAD_COLONY;
+            return UNGOVERNED_COLONY;
         }
         if (!Markets.isAbandonedStation(market)) {
             return COLONY;
@@ -102,14 +108,19 @@ public enum ColonyKind {
     }
 
     /**
-     * Whether a place of this kind settles its location - whether it has people on it now whose
-     * word about whatever else stands there would reach the player.
+     * Whether a place of this kind settles its location - whether somebody there would both see
+     * whatever else stands in it and have word of that reach the player.
+     *
+     * <p>Two conditions, and a collapsed colony fails the second while passing the first. People
+     * are still on it, and they see what is in orbit; there is no polity, no comm directory and no
+     * economy for what they see to travel through. Being populated is not the same as being heard
+     * from, which is the whole reason this is asked of the kind rather than of habitation.
      *
      * <p>Asked of the kind rather than tested against a constant at the rule that uses it, so a
      * kind added later declares for itself whether its people can vouch for a neighbour instead of
      * being silently left out of a comparison written before it existed.
      *
-     * @return true when somebody is there to have seen what else is in the location
+     * @return true when somebody is there whose word about the location would reach the player
      */
     public boolean isSettlingLocation() {
         return this == COLONY || this == OUTPOST;

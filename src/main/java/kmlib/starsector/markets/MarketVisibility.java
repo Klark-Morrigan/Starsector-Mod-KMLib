@@ -69,37 +69,40 @@ public final class MarketVisibility {
     }
 
     /**
-     * Whether a market counts as a dead world the player has seen is dead - the base fog for the
-     * one kind of colony whose finding is a survey rather than a discovery.
+     * Whether a market counts as a colony the player has surveyed far enough to know has collapsed
+     * - the base fog for the one kind whose finding is a survey rather than a discovery.
      *
-     * <p>The counterpart of {@link #isCountedAsColony} for a ruin, and it has to be one rather
-     * than a case of it: a decivilised world is stripped of its owner as it dies, so the ownership
-     * arm above refuses it outright, and being condition-only is what it <em>is</em> rather than a
-     * reason to withhold it.
+     * <p>The counterpart of {@link #isCountedAsColony} for a collapsed colony, and it has to be one
+     * rather than a case of it: such a market is stripped of its owner as the colony falls, so the
+     * ownership arm above refuses it outright, and being condition-only is what it <em>is</em>
+     * rather than a reason to withhold it.
      *
-     * <p>Two arms, both of which must admit it, because they answer different questions. The
-     * survey arm asks whether anybody has looked closely enough to read the ruins; the discovery
-     * arm asks whether the planet has been found at all. A world flown past but never surveyed
-     * fails the first and passes the second, which is exactly the case each reveal exists to be
-     * asked about separately - so each reveal drops its own arm and neither drops the other's.
+     * <p>Two arms, both of which must admit it, because they answer different questions. The survey
+     * arm asks whether anybody has looked closely enough to see what became of the place; the
+     * discovery arm asks whether the planet has been found at all. A world flown past but never
+     * surveyed fails the first and passes the second, which is why the two are settled by two
+     * separate knobs and neither reaches the other's.
      *
      * @param market                           the market to test; null yields false
      * @param shouldIncludeUndiscoveredMarkets whether a market on an undiscovered entity still
      *                                         counts; false applies the discovery filter
-     * @param shouldIncludeUnsurveyedDeadWorlds whether an unsurveyed ruin still counts; false
-     *                                         applies the survey filter
-     * @return true when the market is a dead world and both arms admit it
+     * @param requiredSurveyLevel              how far the world must have been surveyed before it
+     *                                         counts; null applies the survey filter's own default
+     * @return true when the market is a decivilised world and both arms admit it
      */
-    public static boolean isCountedAsDeadColony(
+    public static boolean isCountedAsUngovernedColony(
             MarketAPI market,
             boolean shouldIncludeUndiscoveredMarkets,
-            boolean shouldIncludeUnsurveyedDeadWorlds) {
+            MarketAPI.SurveyLevel requiredSurveyLevel) {
 
+        // The kind arm is re-asked although a caller only reaches this for a colony already
+        // classified, on the same reasoning the ownership arm above is: the composition is what
+        // the rule is, and a narrower statement of it living at the call site is how two answers
+        // to "may this be shown" start to differ.
         if (!DecivilisedMarkets.isDecivilisedWorld(market)) {
             return false;
         }
-        if (!shouldIncludeUnsurveyedDeadWorlds
-                && !DecivilisedMarkets.isRevealedDecivilised(market)) {
+        if (!DecivilisedMarkets.isRevealedDecivilised(market, requiredSurveyLevel)) {
             return false;
         }
         return shouldIncludeUndiscoveredMarkets || isDiscoveredByPlayer(market);

@@ -1,5 +1,9 @@
 package kmlib.starsector.colonies;
 
+import com.fs.starfarer.api.campaign.econ.MarketAPI.SurveyLevel;
+
+import kmlib.starsector.markets.DecivilisedMarkets;
+
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -16,9 +20,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  *
  * <p>Worth pinning although the record itself holds no logic: everything it carries is
  * load-bearing in a direction nothing else would catch. A reveal set here by mistake would put
- * every undiscovered colony in the sector on the map, and a gate set here would hold back a
- * derelict nobody asked to hide - both silently, and both under the name the whole library falls
- * back to.
+ * every undiscovered colony in the sector on the map, a survey bar dropped here would name every
+ * collapsed colony in it, and a gate set here would hold back a derelict nobody asked to hide -
+ * all silently, and all under the name the whole library falls back to.
  */
 final class ColonyVisibilityTest {
 
@@ -33,10 +37,11 @@ final class ColonyVisibilityTest {
         }
 
         @Test
-        void admits_no_ruin_the_player_has_not_surveyed() {
-
-            assertThat(ColonyVisibility.BASE_FOG.shouldIncludeUnsurveyedDeadWorlds())
-                .isFalse();
+        void asks_the_survey_vanilla_asks_before_naming_a_collapsed_colony() {
+            // The fall-back rule mirrors the game rather than picking a bar of its own, so a map
+            // reading no settings says exactly what the game says and no more.
+            assertThat(ColonyVisibility.BASE_FOG.ungovernedColonySurveyLevel())
+                .isEqualTo(DecivilisedMarkets.DEFAULT_SURVEY_LEVEL);
         }
 
         @Test
@@ -53,34 +58,32 @@ final class ColonyVisibilityTest {
 
         @Test
         void reads_absent_gates_as_no_gates_at_all() {
-            assertThat(new ColonyVisibility(Set.of(), null).revelationGates())
+            assertThat(new ColonyVisibility(false, SurveyLevel.SEEN, null).revelationGates())
                 .isEmpty();
         }
 
         @Test
-        void reads_absent_reveals_as_the_fog_entire() {
-            // The direction that matters: an unstated set must not lift a fog arm, or a missing
-            // argument would put every undiscovered colony in the sector on the map.
-            var rule = new ColonyVisibility(null, Set.of());
+        void reads_an_absent_survey_level_as_the_fog_own_bar() {
+            // The direction that matters: a missing argument must not be read as no bar at all, or
+            // it would name every collapsed colony in the sector on a map that asked for nothing.
+            var rule = new ColonyVisibility(false, null, Set.of());
 
-            assertThat(rule.shouldIncludeUndiscoveredMarkets())
-                .isFalse();
-            assertThat(rule.shouldIncludeUnsurveyedDeadWorlds())
-                .isFalse();
+            assertThat(rule.ungovernedColonySurveyLevel())
+                .isEqualTo(DecivilisedMarkets.DEFAULT_SURVEY_LEVEL);
         }
 
         @Test
-        void reads_each_reveal_as_the_one_arm_it_names() {
-            // The whole of what parts one toggle from the next: each answers for its own arm and
-            // says nothing about the other's.
-            var rule = new ColonyVisibility(
-                Set.of(VisibilityReveal.UNSURVEYED_DEAD_WORLDS),
-                Set.of());
+        void keeps_each_part_answering_for_the_one_thing_it_names() {
+            // The whole of what parts one knob from the next: a survey bar dropped to nothing says
+            // nothing about whether an undiscovered colony counts, or about any gate.
+            var rule = new ColonyVisibility(false, SurveyLevel.NONE, Set.of());
 
-            assertThat(rule.shouldIncludeUnsurveyedDeadWorlds())
-                .isTrue();
+            assertThat(rule.ungovernedColonySurveyLevel())
+                .isEqualTo(SurveyLevel.NONE);
             assertThat(rule.shouldIncludeUndiscoveredMarkets())
                 .isFalse();
+            assertThat(rule.revelationGates())
+                .isEmpty();
         }
 
         @Test
@@ -89,7 +92,7 @@ final class ColonyVisibilityTest {
             var gates = new HashSet<RevelationGate>();
             gates.add(RevelationGate.SPACE_DERELICTS);
 
-            var rule = new ColonyVisibility(Set.of(), gates);
+            var rule = new ColonyVisibility(false, SurveyLevel.SEEN, gates);
 
             gates.clear();
 
@@ -98,39 +101,15 @@ final class ColonyVisibilityTest {
         }
 
         @Test
-        void keeps_the_reveals_it_was_built_with_when_the_source_set_changes_later() {
-
-            var reveals = new HashSet<VisibilityReveal>();
-            reveals.add(VisibilityReveal.UNDISCOVERED_MARKETS);
-
-            var rule = new ColonyVisibility(reveals, Set.of());
-
-            reveals.clear();
-
-            assertThat(rule.shouldIncludeUndiscoveredMarkets())
-                .isTrue();
-        }
-
-        @Test
         void rejects_an_attempt_to_change_the_gates() {
             // A rule is resolved once for a whole render pass and handed to every reader in it,
             // so one reader able to change it would be re-fogging the map underneath the others.
             var rule = new ColonyVisibility(
-                Set.of(),
+                false,
+                SurveyLevel.SEEN,
                 Set.of(RevelationGate.HIDDEN_COLONIES));
 
             assertThatThrownBy(() -> rule.revelationGates().clear())
-                .isInstanceOf(UnsupportedOperationException.class);
-        }
-
-        @Test
-        void rejects_an_attempt_to_change_the_reveals() {
-
-            var rule = new ColonyVisibility(
-                Set.of(VisibilityReveal.UNDISCOVERED_MARKETS),
-                Set.of());
-
-            assertThatThrownBy(() -> rule.reveals().clear())
                 .isInstanceOf(UnsupportedOperationException.class);
         }
     }

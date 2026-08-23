@@ -1,72 +1,71 @@
 package kmlib.starsector.colonies;
 
+import com.fs.starfarer.api.campaign.econ.MarketAPI.SurveyLevel;
+
+import kmlib.starsector.markets.DecivilisedMarkets;
+
 import java.util.Set;
 
 /**
- * The rule a colony set is shown under: the reveals that lift a half of the fog outright, and the
- * gates that hold back the shapes of colony the fog alone would leak.
+ * The rule a colony set is shown under: what lifts the fog over a colony the player has not found
+ * or read, and the gates that hold back the shapes the fog alone would leak.
  *
- * <p>The fog itself - the player has found the market's entity, or has surveyed enough of a dead
- * world to see it is dead - is not a knob and is not carried here. What is carried is everything
- * that <em>changes</em> that answer: the reveals that admit what has not been found, and, for the
- * shapes a bare fog shows before the player could plausibly have heard of them, a requirement that
- * somebody have seen them where they stand.
+ * <p>The fog itself is not a knob and is not carried here. What is carried is everything that
+ * <em>changes</em> that answer: a reveal that admits what has not been found, the survey the map
+ * asks of a collapsed colony before it will name one, and - for the shapes a bare fog shows before
+ * the player could plausibly have heard of them - a requirement that somebody have seen them where
+ * they stand.
  *
  * <p>Passed as one value rather than as loose flags because all of it is read together wherever the
  * rule is applied. A surface handed one gate and not the other would show a derelict it had been
- * told to hold back, and a signature taking four booleans in a row would say nothing about it
- * either way.
+ * told to hold back, and a signature taking the parts in a row would say nothing about it either
+ * way.
  *
- * <p>Each side is a set of names rather than a flag apiece, so which reveal or gate is which cannot
- * be got wrong at a call site and one added later needs no existing rule rewritten.
- * {@link VisibilityReveal} and {@link RevelationGate} each say what theirs covers.
+ * <p>The three parts are three different types, which is what makes them un-transposable at a call
+ * site: two adjacent booleans mean something quite different the wrong way round and still compile.
+ * The gates are a set of names for the same reason, so which gate is which cannot be got wrong and
+ * one added later needs no existing rule rewritten - {@link RevelationGate} says what each covers.
  *
- * <p>Reveals and gates never reach each other. A reveal drops the fog arm it names and no more, so
- * a colony a gate is holding back stays back however wide the fog is opened; a gate narrows and
- * never widens, so leaving one out drops that shape to the fog alone rather than admitting anything
- * the fog refuses. Which is what lets a player turn on exactly the thing they meant and nothing
- * beside it.
+ * <p>Each part reaches the one thing it names and no other. The reveal drops the discovery arm of
+ * the fog and clears no gate beside it; the survey level decides one kind's fog and nothing else's;
+ * a gate narrows and never widens, so leaving one out drops that shape back to the fog rather than
+ * admitting anything the fog refuses. Which is what lets a player ask for exactly the thing they
+ * meant and be shown nothing beside it.
  *
- * @param reveals         the halves of the fog this rule drops; an absent set is the fog entire
- * @param revelationGates the shapes that must have been revealed as well as found; a shape whose
- *                        gate is absent is held to the fog alone
+ * @param shouldIncludeUndiscoveredMarkets whether a colony on an entity the player has not found
+ *                                         still counts - the "show all factions" reveal, which
+ *                                         drops the discovery arm of the fog and no more
+ * @param ungovernedColonySurveyLevel      how far a collapsed colony's world must have been
+ *                                         surveyed before the map will name it; an unstated level
+ *                                         reads as {@link DecivilisedMarkets#DEFAULT_SURVEY_LEVEL}
+ * @param revelationGates                  the shapes that must have been revealed as well as
+ *                                         found; a shape whose gate is absent is held to the fog
+ *                                         alone
  */
 public record ColonyVisibility(
-    Set<VisibilityReveal> reveals,
+    boolean shouldIncludeUndiscoveredMarkets,
+    SurveyLevel ungovernedColonySurveyLevel,
     Set<RevelationGate> revelationGates) {
 
     /**
-     * The fog alone: nothing admitted that has not been found, and nothing held back beyond it.
-     * What a caller stating no rule of its own is read as, since a gate nobody asked for must
-     * not appear out of an unstated argument.
+     * The fog alone: nothing admitted that has not been found, no collapsed colony named before it
+     * has been encountered, and nothing held back beyond that. What a caller stating no rule of its
+     * own is read as, since a gate nobody asked for must not appear out of an unstated argument.
      */
-    public static final ColonyVisibility BASE_FOG = new ColonyVisibility(Set.of(), Set.of());
+    public static final ColonyVisibility BASE_FOG = new ColonyVisibility(
+        false,
+        DecivilisedMarkets.DEFAULT_SURVEY_LEVEL,
+        Set.of());
 
     /**
-     * Takes immutable copies of both sets, and reads an absent one as empty, so a rule handed
-     * around a render pass cannot change under its readers, an unstated set cannot hold anything
-     * back, and an unstated set cannot reveal anything either.
+     * Reads an unstated survey level as the fog's own, and takes an immutable copy of the gates -
+     * so a rule handed around a render pass cannot change under its readers, an unstated set cannot
+     * hold anything back, and a missing level cannot widen what a collapsed colony shows.
      */
     public ColonyVisibility {
-        reveals = reveals == null ? Set.of() : Set.copyOf(reveals);
+        ungovernedColonySurveyLevel = ungovernedColonySurveyLevel == null
+            ? DecivilisedMarkets.DEFAULT_SURVEY_LEVEL
+            : ungovernedColonySurveyLevel;
         revelationGates = revelationGates == null ? Set.of() : Set.copyOf(revelationGates);
-    }
-
-    /**
-     * Whether a colony on an entity the player has not found still counts.
-     *
-     * @return true when the discovery arm of the fog is dropped
-     */
-    public boolean shouldIncludeUndiscoveredMarkets() {
-        return reveals.contains(VisibilityReveal.UNDISCOVERED_MARKETS);
-    }
-
-    /**
-     * Whether a dead world the player has not surveyed closely enough still counts.
-     *
-     * @return true when the survey arm of the fog is dropped
-     */
-    public boolean shouldIncludeUnsurveyedDeadWorlds() {
-        return reveals.contains(VisibilityReveal.UNSURVEYED_DEAD_WORLDS);
     }
 }

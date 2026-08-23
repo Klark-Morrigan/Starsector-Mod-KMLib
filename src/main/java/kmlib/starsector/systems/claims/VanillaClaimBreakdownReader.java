@@ -421,7 +421,7 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader, 
     // kind of place it is - is recorded here rather than looked up by whatever lists it: reading
     // them on the walk that met the market is what stops a second lookup answering for a
     // different one. The kind reaches no term of the arithmetic; an account listing an unowned
-    // ruin beside an unowned hulk simply has nothing else to tell the two apart with.
+    // collapsed colony beside an unowned hulk simply has nothing else to tell the two apart with.
     private static MarketClaimBreakdown computeMarketClaim(
             Colony colony,
             List<MarketAPI> economyMarkets,

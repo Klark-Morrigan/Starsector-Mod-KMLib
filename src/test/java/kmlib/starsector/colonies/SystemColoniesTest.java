@@ -82,12 +82,12 @@ final class SystemColoniesTest {
             // reaches it: a ruin is stripped of its owner as it dies, so ownership refuses it along
             // with every bare rock, and the decivilised condition is what parts it from those.
             var fixture = new ColonyFixture("kumari_kandam");
-            var deadWorld = fixture.buildDeadWorld();
+            var decivilisedWorld = fixture.buildDecivilisedWorld();
 
-            fixture.placeColoniesInSystem(deadWorld);
+            fixture.placeColoniesInSystem(decivilisedWorld);
 
             assertThat(readColonies(fixture))
-                .containsExactly(new Colony(deadWorld, ColonyKind.DEAD_COLONY, false));
+                .containsExactly(new Colony(decivilisedWorld, ColonyKind.UNGOVERNED_COLONY, false));
         }
 
         @Test
@@ -96,12 +96,12 @@ final class SystemColoniesTest {
             // sees, so what the player may be told about the ruins is decided over the set rather
             // than by leaving them out of it.
             var fixture = new ColonyFixture("kumari_kandam");
-            var deadWorld = fixture.buildUnsurveyedDeadWorld();
+            var decivilisedWorld = fixture.buildUnsurveyedDecivilisedWorld();
 
-            fixture.placeColoniesInSystem(deadWorld);
+            fixture.placeColoniesInSystem(decivilisedWorld);
 
             assertThat(readColonies(fixture))
-                .containsExactly(new Colony(deadWorld, ColonyKind.DEAD_COLONY, false));
+                .containsExactly(new Colony(decivilisedWorld, ColonyKind.UNGOVERNED_COLONY, false));
         }
 
         @Test

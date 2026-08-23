@@ -27,7 +27,7 @@ import java.util.OptionalInt;
  *                           shown can only ever belong to the colony whose score is stated beside
  *                           it
  * @param colonyKind         what kind of place the colony is, carried for the same reason the
- *                           nameplate is: an account listing a dead world and a derelict side by
+ *                           nameplate is: an account listing a collapsed colony and a derelict side by
  *                           side has nothing else to tell them apart with, both being unowned,
  *                           off-economy and listed at nought. Read on the walk that met the colony,
  *                           so it can only ever describe the colony named beside it, and applied to

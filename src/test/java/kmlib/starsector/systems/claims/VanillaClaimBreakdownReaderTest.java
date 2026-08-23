@@ -6,6 +6,7 @@ import com.fs.starfarer.api.impl.campaign.ids.Factions;
 import kmlib.starsector.colonies.ColonyVisibility;
 import kmlib.starsector.colonies.RevelationGate;
 import kmlib.starsector.entities.EntityMapIcon;
+import kmlib.starsector.markets.DecivilisedMarkets;
 import kmlib.starsector.systems.SystemColoniesIndex;
 
 import org.junit.jupiter.api.AfterEach;
@@ -46,7 +47,8 @@ final class VanillaClaimBreakdownReaderTest {
     // The rule as it ships, posed where a case is about what the reader reports of the player's
     // knowledge. Everything else runs under the fog alone, which is the rule that adds nothing.
     private static final ColonyVisibility BOTH_GATES_ON = new ColonyVisibility(
-        Set.of(),
+        false,
+        DecivilisedMarkets.DEFAULT_SURVEY_LEVEL,
         Set.of(RevelationGate.SPACE_DERELICTS, RevelationGate.HIDDEN_COLONIES));
 
     private ClaimContestFixture claimContest;

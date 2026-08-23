@@ -17,7 +17,7 @@ import java.util.List;
  *
  * <p>The search {@link Colonies} and {@link HyperspaceColonies} are each a thin reader
  * over. Nothing about picking colonies out of a place is system-specific - both listings are
- * read, ownership rejects the condition-only markets a ruin aside, and the survivors resolve to
+ * read, ownership rejects the condition-only markets a collapsed colony aside, and the survivors resolve to
  * one entry per place and owner - so the rule is stated once here and the two kinds of place are
  * named separately above it. A single read taking a kind of place as an argument would instead put
  * the burden on every caller to know which kinds it may pass.
@@ -106,13 +106,13 @@ public final class LocationColonies {
     //
     // The second arm is narrow because the first one's exclusion is load-bearing. Every
     // uninhabited planet in the sector carries a condition-only market to hold its hazard and
-    // atmosphere, and ownership is what keeps those out - so the ruin is admitted on the
+    // atmosphere, and ownership is what keeps those out - so the collapsed colony is admitted on the
     // decivilised condition alone rather than by relaxing that test, which would report somebody
     // present in every system anybody ever surveyed.
     //
     // Admitted on what the world is and not on whether the player can see it. The set is unfogged
     // by construction, a mechanic mirrored from vanilla having to see what vanilla sees, so
-    // whether the ruins have been surveyed is the fog above this and is applied where every other
+    // whether the world has been surveyed is the fog above this and is applied where every other
     // colony's fog is.
     private static boolean isColonyMarket(MarketAPI market) {
         return Markets.isOwnedColony(market)

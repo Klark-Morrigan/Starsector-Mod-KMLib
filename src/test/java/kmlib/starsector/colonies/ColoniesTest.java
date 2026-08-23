@@ -2,7 +2,10 @@ package kmlib.starsector.colonies;
 
 import com.fs.starfarer.api.campaign.LocationAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
+import com.fs.starfarer.api.campaign.econ.MarketAPI.SurveyLevel;
 import com.fs.starfarer.api.impl.campaign.ids.Factions;
+
+import kmlib.starsector.markets.DecivilisedMarkets;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -38,45 +41,60 @@ final class ColoniesTest {
     private static final Set<RevelationGate> EVERY_GATE =
         Set.of(RevelationGate.SPACE_DERELICTS, RevelationGate.HIDDEN_COLONIES);
 
-    // No arm of the fog dropped, which is the ordinary state: nothing admitted that the player has
-    // not found, and nothing about a ruin they have not surveyed.
-    private static final Set<VisibilityReveal> NOTHING_REVEALED = Set.of();
+    // Nothing widened, which is the ordinary state: nothing admitted that the player has not
+    // found, and no collapsed colony named on a world nobody has looked at.
+    private static final boolean NOTHING_REVEALED = false;
+    private static final boolean UNDISCOVERED_REVEALED = true;
+
+    // The survey the fog itself asks for, which every case but the survey ones poses.
+    private static final SurveyLevel FOGGED_SURVEY_LEVEL = DecivilisedMarkets.DEFAULT_SURVEY_LEVEL;
 
     // The rule as it ships.
     private static final ColonyVisibility BOTH_GATES_ON =
-        new ColonyVisibility(NOTHING_REVEALED, EVERY_GATE);
+        new ColonyVisibility(NOTHING_REVEALED, FOGGED_SURVEY_LEVEL, EVERY_GATE);
 
     // One gate apiece, which is how a case shows the two are independent of each other.
     private static final ColonyVisibility ONLY_STATIONS_GATED = new ColonyVisibility(
         NOTHING_REVEALED,
+        FOGGED_SURVEY_LEVEL,
         Set.of(RevelationGate.SPACE_DERELICTS));
 
     private static final ColonyVisibility ONLY_HIDDEN_GATED = new ColonyVisibility(
         NOTHING_REVEALED,
+        FOGGED_SURVEY_LEVEL,
         Set.of(RevelationGate.HIDDEN_COLONIES));
 
     // The discovery reveal with nothing gated, which is what a case about the fog alone poses: the
     // reveal drops the arm it names and no gate, so stating it beside a gate would pose two things
     // at once.
     private static final ColonyVisibility REVEAL_UNDISCOVERED = new ColonyVisibility(
-        Set.of(VisibilityReveal.UNDISCOVERED_MARKETS),
+        UNDISCOVERED_REVEALED,
+        FOGGED_SURVEY_LEVEL,
         Set.of());
 
     // The same reveal with every gate still in force - the pairing that shows a reveal reaching
     // the fog and stopping there.
     private static final ColonyVisibility REVEAL_UNDISCOVERED_UNDER_EVERY_GATE =
-        new ColonyVisibility(Set.of(VisibilityReveal.UNDISCOVERED_MARKETS), EVERY_GATE);
+        new ColonyVisibility(UNDISCOVERED_REVEALED, FOGGED_SURVEY_LEVEL, EVERY_GATE);
 
-    // The survey reveal, which is the only arm a ruin is ever held back by.
-    private static final ColonyVisibility REVEAL_UNSURVEYED = new ColonyVisibility(
-        Set.of(VisibilityReveal.UNSURVEYED_DEAD_WORLDS),
+    // The survey bar dropped to nothing, which is the only thing that shows a collapsed colony on
+    // a world nobody has looked at.
+    private static final ColonyVisibility ASKING_NO_SURVEY = new ColonyVisibility(
+        NOTHING_REVEALED,
+        SurveyLevel.NONE,
         Set.of());
 
-    // Both arms dropped at once, for the world neither reveal alone reaches.
-    private static final ColonyVisibility REVEAL_BOTH_FOG_ARMS = new ColonyVisibility(
-        Set.of(
-            VisibilityReveal.UNDISCOVERED_MARKETS,
-            VisibilityReveal.UNSURVEYED_DEAD_WORLDS),
+    // The survey bar raised past what any case here poses, for the colony a stricter player would
+    // rather not be told about yet.
+    private static final ColonyVisibility ASKING_A_FULL_SURVEY = new ColonyVisibility(
+        NOTHING_REVEALED,
+        SurveyLevel.FULL,
+        Set.of());
+
+    // Both fog arms open at once, for the world neither knob alone reaches.
+    private static final ColonyVisibility ASKING_NEITHER_FOG_ARM = new ColonyVisibility(
+        UNDISCOVERED_REVEALED,
+        SurveyLevel.NONE,
         Set.of());
 
     @Nested
@@ -253,13 +271,13 @@ final class ColoniesTest {
                 // A ruin the player has read: found by the survey arm, gated by nothing, and
                 // condition-only - which is what every other colony read refuses it for.
                 var fixture = new ColonyFixture("kumari_kandam");
-                var deadWorld = fixture.buildDeadWorld();
+                var decivilisedWorld = fixture.buildDecivilisedWorld();
 
-                fixture.placeColoniesInSystem(deadWorld);
+                fixture.placeColoniesInSystem(decivilisedWorld);
 
-                assertThat(buildColoniesOf(buildDeadWorld(deadWorld))
+                assertThat(buildColoniesOf(buildUngovernedColony(decivilisedWorld))
                         .readKnownColonies(BOTH_GATES_ON))
-                    .containsExactly(buildDeadWorld(deadWorld));
+                    .containsExactly(buildUngovernedColony(decivilisedWorld));
             }
 
             @Test
@@ -268,45 +286,60 @@ final class ColoniesTest {
                 // say so - and the planet being found is beside the point, the two arms being
                 // independent.
                 var fixture = new ColonyFixture("kumari_kandam");
-                var deadWorld = fixture.buildUnsurveyedDeadWorld();
+                var decivilisedWorld = fixture.buildUnsurveyedDecivilisedWorld();
 
-                fixture.placeColoniesInSystem(deadWorld);
+                fixture.placeColoniesInSystem(decivilisedWorld);
 
-                assertThat(buildColoniesOf(buildDeadWorld(deadWorld))
+                assertThat(buildColoniesOf(buildUngovernedColony(decivilisedWorld))
                         .readKnownColonies(BOTH_GATES_ON))
                     .isEmpty();
             }
 
             @Test
-            void admits_an_unsurveyed_dead_world_under_the_survey_reveal() {
-
+            void withholds_a_seen_decivilised_world_where_a_full_survey_is_asked_for() {
+                // The bar moves both ways, which is what makes it a level rather than a reveal: a
+                // world vanilla would show is withheld where the map has been asked for more than
+                // vanilla asks.
                 var fixture = new ColonyFixture("kumari_kandam");
-                var deadWorld = fixture.buildUnsurveyedDeadWorld();
+                var decivilisedWorld = fixture.buildSeenDecivilisedWorld();
 
-                fixture.placeColoniesInSystem(deadWorld);
+                fixture.placeColoniesInSystem(decivilisedWorld);
 
-                assertThat(buildColoniesOf(buildDeadWorld(deadWorld))
-                        .readKnownColonies(REVEAL_UNSURVEYED))
-                    .containsExactly(buildDeadWorld(deadWorld));
+                assertThat(buildColoniesOf(buildUngovernedColony(decivilisedWorld))
+                        .readKnownColonies(ASKING_A_FULL_SURVEY))
+                    .isEmpty();
             }
 
             @Test
-            void withholds_an_unfound_unsurveyed_dead_world_under_either_reveal_alone() {
-                // The kind's own case of the rule every toggle is written to: two arms hold this
-                // world back, each toggle drops one, and neither drops the other's.
+            void admits_an_unsurveyed_decivilised_world_where_no_survey_is_asked_for() {
+
                 var fixture = new ColonyFixture("kumari_kandam");
-                var deadWorld = fixture.buildUnfoundUnsurveyedDeadWorld();
+                var decivilisedWorld = fixture.buildUnsurveyedDecivilisedWorld();
 
-                fixture.placeColoniesInSystem(deadWorld);
+                fixture.placeColoniesInSystem(decivilisedWorld);
 
-                var colonies = buildColoniesOf(buildDeadWorld(deadWorld));
+                assertThat(buildColoniesOf(buildUngovernedColony(decivilisedWorld))
+                        .readKnownColonies(ASKING_NO_SURVEY))
+                    .containsExactly(buildUngovernedColony(decivilisedWorld));
+            }
 
-                assertThat(colonies.readKnownColonies(REVEAL_UNSURVEYED))
+            @Test
+            void withholds_an_unfound_unsurveyed_decivilised_world_under_either_knob_alone() {
+                // The kind's own case of the rule every knob on the tab is written to: two arms
+                // hold this world back, each knob reaches one, and neither reaches the other's.
+                var fixture = new ColonyFixture("kumari_kandam");
+                var decivilisedWorld = fixture.buildUnfoundUnsurveyedDecivilisedWorld();
+
+                fixture.placeColoniesInSystem(decivilisedWorld);
+
+                var colonies = buildColoniesOf(buildUngovernedColony(decivilisedWorld));
+
+                assertThat(colonies.readKnownColonies(ASKING_NO_SURVEY))
                     .isEmpty();
                 assertThat(colonies.readKnownColonies(REVEAL_UNDISCOVERED))
                     .isEmpty();
-                assertThat(colonies.readKnownColonies(REVEAL_BOTH_FOG_ARMS))
-                    .containsExactly(buildDeadWorld(deadWorld));
+                assertThat(colonies.readKnownColonies(ASKING_NEITHER_FOG_ARM))
+                    .containsExactly(buildUngovernedColony(decivilisedWorld));
             }
         }
 
@@ -879,17 +912,17 @@ final class ColoniesTest {
             // beside it stays unmentioned: a place is settled by the living, and the listing shows
             // exactly the ruin and not the hulk.
             var fixture = new ColonyFixture("kumari_kandam");
-            var deadWorld = fixture.buildDeadWorld();
+            var decivilisedWorld = fixture.buildDecivilisedWorld();
             var derelict = fixture.buildDerelictStation();
 
-            fixture.placeColoniesInSystem(deadWorld, derelict);
+            fixture.placeColoniesInSystem(decivilisedWorld, derelict);
 
-            var colonies = buildColoniesOf(buildDeadWorld(deadWorld), buildDerelict(derelict));
+            var colonies = buildColoniesOf(buildUngovernedColony(decivilisedWorld), buildDerelict(derelict));
 
             assertThat(colonies.readInhabitingColonies(BOTH_GATES_ON))
-                .containsExactly(buildDeadWorld(deadWorld));
+                .containsExactly(buildUngovernedColony(decivilisedWorld));
             assertThat(colonies.readKnownColonies(BOTH_GATES_ON))
-                .containsExactly(buildDeadWorld(deadWorld));
+                .containsExactly(buildUngovernedColony(decivilisedWorld));
         }
 
         @Test
@@ -1249,8 +1282,8 @@ final class ColoniesTest {
 
     // A world people left, stated as its kind for the same reason the derelict above is. Unlisted,
     // the economy dropping a colony as it dies - which is what a ruin always reaches a reader as.
-    private static Colony buildDeadWorld(MarketAPI market) {
-        return new Colony(market, ColonyKind.DEAD_COLONY, false);
+    private static Colony buildUngovernedColony(MarketAPI market) {
+        return new Colony(market, ColonyKind.UNGOVERNED_COLONY, false);
     }
 
     // A station a faction keeps, stated as its kind for the same reason the derelict above is.

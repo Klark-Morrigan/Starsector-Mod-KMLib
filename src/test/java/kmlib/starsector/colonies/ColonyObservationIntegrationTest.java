@@ -3,6 +3,8 @@ package kmlib.starsector.colonies;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
+import kmlib.starsector.markets.DecivilisedMarkets;
+
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -31,7 +33,8 @@ final class ColonyObservationIntegrationTest {
     // The rule as it ships: both leaking shapes held back until somebody has seen them, and
     // nothing admitted that the player has not found.
     private static final ColonyVisibility BOTH_GATES_ON = new ColonyVisibility(
-        Set.of(),
+        false,
+        DecivilisedMarkets.DEFAULT_SURVEY_LEVEL,
         Set.of(RevelationGate.SPACE_DERELICTS, RevelationGate.HIDDEN_COLONIES));
 
     private static final String DERELICT_ID = "sentinel_gantries";

@@ -9,13 +9,17 @@ import com.fs.starfarer.api.impl.campaign.ids.Conditions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import static com.fs.starfarer.api.campaign.econ.MarketAPI.SurveyLevel.FULL;
+import static com.fs.starfarer.api.campaign.econ.MarketAPI.SurveyLevel.NONE;
+import static com.fs.starfarer.api.campaign.econ.MarketAPI.SurveyLevel.SEEN;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
  * Pins the contracts of {@link MarketVisibility#isCountedAsColony},
- * {@link MarketVisibility#isCountedAsDeadColony} and
+ * {@link MarketVisibility#isCountedAsUngovernedColony} and
  * {@link MarketVisibility#isDiscoveredByPlayer}. The cases live in a {@link Nested} group per
  * method so the suite reports as a per-method tree; the shared mock builders stay on the
  * outer class.
@@ -104,72 +108,93 @@ final class MarketVisibilityTest {
     }
 
     @Nested
-    class IsCountedAsDeadColony {
+    class IsCountedAsUngovernedColony {
 
         @Test
-        void returns_true_for_a_surveyed_ruin_on_a_found_planet() {
+        void returns_true_for_a_surveyed_world_on_a_found_planet() {
 
-            var market = buildDeadWorld(MarketAPI.SurveyLevel.FULL, buildFoundEntity());
+            var market = buildDecivilisedWorld(MarketAPI.SurveyLevel.FULL, buildFoundEntity());
 
-            assertThat(MarketVisibility.isCountedAsDeadColony(market, false, false))
+            assertThat(MarketVisibility.isCountedAsUngovernedColony(market, false, SEEN))
                 .isTrue();
         }
 
         @Test
-        void returns_false_for_a_market_that_is_no_dead_world() {
+        void returns_false_for_a_market_that_is_not_decivilised() {
             // The kind arm, which is what keeps every condition-only rock in the sector out of an
             // answer the survey arm alone would admit on any surveyed one.
             var market = buildConditionOnlyMarket();
 
-            assertThat(MarketVisibility.isCountedAsDeadColony(market, false, false))
+            assertThat(MarketVisibility.isCountedAsUngovernedColony(market, false, SEEN))
                 .isFalse();
         }
 
         @Test
-        void returns_false_for_a_ruin_nobody_has_surveyed() {
+        void returns_false_for_a_world_nobody_has_looked_at() {
 
-            var market = buildDeadWorld(MarketAPI.SurveyLevel.NONE, buildFoundEntity());
+            var market = buildDecivilisedWorld(MarketAPI.SurveyLevel.NONE, buildFoundEntity());
 
-            assertThat(MarketVisibility.isCountedAsDeadColony(market, false, false))
+            assertThat(MarketVisibility.isCountedAsUngovernedColony(market, false, SEEN))
                 .isFalse();
         }
 
         @Test
-        void returns_true_for_an_unsurveyed_ruin_under_the_survey_reveal() {
+        void returns_false_for_a_seen_world_where_a_full_survey_is_asked_for() {
+            // The bar moves both ways, which is what makes it a level rather than a reveal: a
+            // world vanilla would show is withheld where the caller asks for more than vanilla
+            // asks.
+            var market = buildDecivilisedWorld(MarketAPI.SurveyLevel.SEEN, buildFoundEntity());
 
-            var market = buildDeadWorld(MarketAPI.SurveyLevel.NONE, buildFoundEntity());
+            assertThat(MarketVisibility.isCountedAsUngovernedColony(market, false, FULL))
+                .isFalse();
+        }
 
-            assertThat(MarketVisibility.isCountedAsDeadColony(market, false, true))
+        @Test
+        void returns_true_for_an_unsurveyed_world_where_no_survey_is_asked_for() {
+
+            var market = buildDecivilisedWorld(MarketAPI.SurveyLevel.NONE, buildFoundEntity());
+
+            assertThat(MarketVisibility.isCountedAsUngovernedColony(market, false, NONE))
                 .isTrue();
         }
 
         @Test
-        void returns_false_for_a_surveyed_ruin_on_a_planet_the_player_has_not_found() {
-            // The two arms are independent, and this is the direction that is easy to miss: a
-            // survey the player somehow holds says nothing about their having found the planet.
-            var market = buildDeadWorld(MarketAPI.SurveyLevel.FULL, buildUnfoundEntity());
+        void reads_an_absent_survey_level_as_the_bar_vanilla_asks_for() {
+            // A missing argument may not be read as no bar at all: the direction it must never
+            // take is the widening one.
+            var market = buildDecivilisedWorld(MarketAPI.SurveyLevel.NONE, buildFoundEntity());
 
-            assertThat(MarketVisibility.isCountedAsDeadColony(market, false, false))
+            assertThat(MarketVisibility.isCountedAsUngovernedColony(market, false, null))
                 .isFalse();
         }
 
         @Test
-        void needs_both_reveals_for_an_unsurveyed_ruin_on_an_unfound_planet() {
-            // Each reveal drops the arm it names and no other, so a world held back twice needs
-            // both - which is the rule every visibility toggle is written to.
-            var market = buildDeadWorld(MarketAPI.SurveyLevel.NONE, buildUnfoundEntity());
+        void returns_false_for_a_surveyed_world_on_a_planet_the_player_has_not_found() {
+            // The two arms are independent, and this is the direction that is easy to miss: a
+            // survey the player somehow holds says nothing about their having found the planet.
+            var market = buildDecivilisedWorld(MarketAPI.SurveyLevel.FULL, buildUnfoundEntity());
 
-            assertThat(MarketVisibility.isCountedAsDeadColony(market, true, false))
+            assertThat(MarketVisibility.isCountedAsUngovernedColony(market, false, SEEN))
                 .isFalse();
-            assertThat(MarketVisibility.isCountedAsDeadColony(market, false, true))
+        }
+
+        @Test
+        void needs_both_knobs_for_an_unsurveyed_world_on_an_unfound_planet() {
+            // Each knob reaches the arm it names and no other, so a world held back twice needs
+            // both - which is the rule every knob on the visibility tab is written to.
+            var market = buildDecivilisedWorld(MarketAPI.SurveyLevel.NONE, buildUnfoundEntity());
+
+            assertThat(MarketVisibility.isCountedAsUngovernedColony(market, true, SEEN))
                 .isFalse();
-            assertThat(MarketVisibility.isCountedAsDeadColony(market, true, true))
+            assertThat(MarketVisibility.isCountedAsUngovernedColony(market, false, NONE))
+                .isFalse();
+            assertThat(MarketVisibility.isCountedAsUngovernedColony(market, true, NONE))
                 .isTrue();
         }
 
         @Test
         void returns_false_for_a_null_market() {
-            assertThat(MarketVisibility.isCountedAsDeadColony(null, true, true))
+            assertThat(MarketVisibility.isCountedAsUngovernedColony(null, true, NONE))
                 .isFalse();
         }
     }
@@ -234,7 +259,7 @@ final class MarketVisibilityTest {
     // The condition is posed as one needing no survey of its own, so the survey level alone decides
     // whether the ruins read - which bar a condition carries is the decivilised read's business and
     // is pinned there.
-    private static MarketAPI buildDeadWorld(
+    private static MarketAPI buildDecivilisedWorld(
             MarketAPI.SurveyLevel surveyLevel,
             SectorEntityToken entity) {
 

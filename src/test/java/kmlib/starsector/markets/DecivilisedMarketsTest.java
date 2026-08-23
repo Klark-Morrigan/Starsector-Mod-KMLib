@@ -8,16 +8,22 @@ import com.fs.starfarer.api.impl.campaign.ids.Conditions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import static com.fs.starfarer.api.campaign.econ.MarketAPI.SurveyLevel.FULL;
+import static com.fs.starfarer.api.campaign.econ.MarketAPI.SurveyLevel.NONE;
+import static com.fs.starfarer.api.campaign.econ.MarketAPI.SurveyLevel.SEEN;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * Pins what a dead world is and when the player may be told it is one.
+ * Pins what a decivilised world is and how far the player has to have surveyed one before being
+ * told its colony collapsed.
  *
  * <p>The two are deliberately separate reads, and the cases are grouped that way: what the market
- * is turns on the condition it carries and on its being the condition-only shell a colony leaves
- * behind, while the reveal turns on how much of it has been surveyed.
+ * is turns on the condition it carries and on its being the condition-only shell a collapse leaves
+ * behind, while the reveal turns on how much of the world has been surveyed and on vanilla's own
+ * rule for reading the condition.
  */
 final class DecivilisedMarketsTest {
 
@@ -47,8 +53,8 @@ final class DecivilisedMarketsTest {
         @Test
         void refusesAHeldColonyCarryingTheCondition() {
 
-            // A world resettled over its own ruins is the living colony it is now, not the ruin it
-            // was - which is what being condition-only is asked to tell apart.
+            // A world resettled over its own ruins is the governed colony it is now, not the
+            // collapse it came out of - which is what being condition-only is asked to tell apart.
             var market = buildMarket(true, false);
 
             assertThat(DecivilisedMarkets.isDecivilisedWorld(market))
@@ -85,7 +91,7 @@ final class DecivilisedMarketsTest {
 
             var market = buildSurveyedMarket(MarketAPI.SurveyLevel.FULL, true, true);
 
-            assertThat(DecivilisedMarkets.isRevealedDecivilised(market))
+            assertThat(DecivilisedMarkets.isRevealedDecivilised(market, SEEN))
                 .isTrue();
         }
 
@@ -95,7 +101,7 @@ final class DecivilisedMarketsTest {
             // A condition visible on contact reveals as soon as the planet is encountered.
             var market = buildSurveyedMarket(MarketAPI.SurveyLevel.SEEN, false, false);
 
-            assertThat(DecivilisedMarkets.isRevealedDecivilised(market))
+            assertThat(DecivilisedMarkets.isRevealedDecivilised(market, SEEN))
                 .isTrue();
         }
 
@@ -106,7 +112,7 @@ final class DecivilisedMarketsTest {
             // condition must not leak onto the map.
             var market = buildSurveyedMarket(MarketAPI.SurveyLevel.NONE, false, true);
 
-            assertThat(DecivilisedMarkets.isRevealedDecivilised(market))
+            assertThat(DecivilisedMarkets.isRevealedDecivilised(market, SEEN))
                 .isFalse();
         }
 
@@ -115,7 +121,38 @@ final class DecivilisedMarketsTest {
 
             var market = buildSurveyedMarket(MarketAPI.SurveyLevel.PRELIMINARY, true, false);
 
-            assertThat(DecivilisedMarkets.isRevealedDecivilised(market))
+            assertThat(DecivilisedMarkets.isRevealedDecivilised(market, SEEN))
+                .isFalse();
+        }
+
+        @Test
+        void refusesASeenWorldWhereAFullSurveyIsAskedFor() {
+            // The bar moves both ways, which is what makes it a level rather than a reveal: a
+            // world vanilla would show is withheld where the caller asks for more than vanilla
+            // asks.
+            var market = buildSurveyedMarket(MarketAPI.SurveyLevel.SEEN, false, false);
+
+            assertThat(DecivilisedMarkets.isRevealedDecivilised(market, FULL))
+                .isFalse();
+        }
+
+        @Test
+        void admitsANeverEncounteredWorldWhereNoSurveyIsAskedFor() {
+            // The other end of the same ladder, and the only setting that names a world nobody has
+            // looked at.
+            var market = buildSurveyedMarket(MarketAPI.SurveyLevel.NONE, false, false);
+
+            assertThat(DecivilisedMarkets.isRevealedDecivilised(market, NONE))
+                .isTrue();
+        }
+
+        @Test
+        void readsAnAbsentLevelAsTheBarVanillaAsksFor() {
+            // A missing argument may not be read as no bar at all: the direction it must never
+            // take is the widening one.
+            var market = buildSurveyedMarket(MarketAPI.SurveyLevel.NONE, false, false);
+
+            assertThat(DecivilisedMarkets.isRevealedDecivilised(market, null))
                 .isFalse();
         }
 
@@ -127,20 +164,20 @@ final class DecivilisedMarketsTest {
             when(marketMock.getSurveyLevel())
                 .thenReturn(MarketAPI.SurveyLevel.FULL);
 
-            assertThat(DecivilisedMarkets.isRevealedDecivilised(marketMock))
+            assertThat(DecivilisedMarkets.isRevealedDecivilised(marketMock, SEEN))
                 .isFalse();
         }
 
         @Test
         void refusesANullMarket() {
 
-            assertThat(DecivilisedMarkets.isRevealedDecivilised(null))
+            assertThat(DecivilisedMarkets.isRevealedDecivilised(null, SEEN))
                 .isFalse();
         }
     }
 
     // A market on the condition-only shell every uninhabited world carries, which the decivilised
-    // condition is then what parts a ruin from.
+    // condition is then what parts a collapsed colony from.
     private static MarketAPI buildConditionOnlyMarket(boolean isDecivilised) {
         return buildMarket(isDecivilised, true);
     }
@@ -162,7 +199,7 @@ final class DecivilisedMarketsTest {
         return marketMock;
     }
 
-    // A ruin at a stated survey level, whose condition carries its own survey bar.
+    // A decivilised world at a stated survey level, whose condition carries its own survey bar.
     private static MarketAPI buildSurveyedMarket(
             MarketAPI.SurveyLevel surveyLevel,
             boolean doesRequireSurveying,

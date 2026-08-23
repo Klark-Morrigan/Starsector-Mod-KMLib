@@ -304,10 +304,10 @@ public record Colonies(
     // by the fog. Its kind and its openness are exactly what keeps it out of every gate, which
     // is why the pass over these can be read before any gate is decided.
     //
-    // A dead colony would not qualify, having nobody left to talk; a derelict never had anybody;
-    // and a concealed colony is not the sector's town crier. Which kinds have somebody to talk is
-    // the kind's own answer rather than a comparison written here, so a kind added later is not
-    // left out of it by omission.
+    // A collapsed colony would not qualify - its people are still there and have nothing left to
+    // carry word through; a derelict never had anybody; and a concealed colony is not the sector's
+    // town crier. Which kinds have somebody to talk is the kind's own answer rather than a
+    // comparison written here, so a kind added later is not left out of it by omission.
     private static boolean isSettlingColony(Colony colony, ColonyVisibility rule) {
 
         return colony.kind().isSettlingLocation()
@@ -351,21 +351,21 @@ public record Colonies(
     // The base fog, plus the admission arm the composed filter carries with it.
     //
     // Routed on the kind because one kind is found by a different act. Every other colony is found
-    // by discovering its entity; a dead world is found by surveying it closely enough to read its
-    // ruins, and its market is owned by nobody and condition-only, which the ordinary composition
-    // refuses outright. Two named compositions rather than a branch spelled out here, so what
-    // "found" means for each kind is stated where the market's own facts are.
+    // by discovering its entity; a collapsed colony is found by surveying its world closely enough
+    // to see what became of it, and its market is owned by nobody and condition-only, which the
+    // ordinary composition refuses outright. Two named compositions rather than a branch spelled
+    // out here, so what "found" means for each kind is stated where the market's own facts are.
     //
     // The admission arm is re-asked although the set is already selected on it: the composition is
     // what the rule is, and unpicking it here to save the second read would leave a narrower
     // statement of "counts as a known colony" living in this class.
     private static boolean isAdmittedByFog(Colony colony, ColonyVisibility rule) {
 
-        if (colony.kind() == ColonyKind.DEAD_COLONY) {
-            return MarketVisibility.isCountedAsDeadColony(
+        if (colony.kind() == ColonyKind.UNGOVERNED_COLONY) {
+            return MarketVisibility.isCountedAsUngovernedColony(
                 colony.market(),
                 rule.shouldIncludeUndiscoveredMarkets(),
-                rule.shouldIncludeUnsurveyedDeadWorlds());
+                rule.ungovernedColonySurveyLevel());
         }
         return MarketVisibility.isCountedAsColony(
             colony.market(),

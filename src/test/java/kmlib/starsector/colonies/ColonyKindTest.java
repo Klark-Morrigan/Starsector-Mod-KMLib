@@ -82,10 +82,10 @@ final class ColonyKindTest {
         @Test
         void reads_a_decivilised_world_as_a_dead_colony() {
 
-            var deadWorld = ColonyMarketFixture.buildDeadWorld();
+            var decivilisedWorld = ColonyMarketFixture.buildDecivilisedWorld();
 
-            assertThat(ColonyKind.resolveKind(deadWorld, UNLISTED_BY_ECONOMY))
-                .isEqualTo(ColonyKind.DEAD_COLONY);
+            assertThat(ColonyKind.resolveKind(decivilisedWorld, UNLISTED_BY_ECONOMY))
+                .isEqualTo(ColonyKind.UNGOVERNED_COLONY);
         }
 
         @Test
@@ -93,10 +93,10 @@ final class ColonyKindTest {
             // What the world is and whether the player may be told are different questions asked at
             // different layers, so an unread ruin is classified as the ruin it is and withheld by
             // the fog above rather than by being misfiled here.
-            var deadWorld = ColonyMarketFixture.buildUnsurveyedDeadWorld();
+            var decivilisedWorld = ColonyMarketFixture.buildUnsurveyedDecivilisedWorld();
 
-            assertThat(ColonyKind.resolveKind(deadWorld, UNLISTED_BY_ECONOMY))
-                .isEqualTo(ColonyKind.DEAD_COLONY);
+            assertThat(ColonyKind.resolveKind(decivilisedWorld, UNLISTED_BY_ECONOMY))
+                .isEqualTo(ColonyKind.UNGOVERNED_COLONY);
         }
 
         @Test
@@ -135,7 +135,7 @@ final class ColonyKindTest {
         void answers_false_for_a_dead_colony() {
             // Somewhere people were is not somewhere people are: a ruin inhabits its place and has
             // nobody left to say what else is standing in it.
-            assertThat(ColonyKind.DEAD_COLONY.isSettlingLocation())
+            assertThat(ColonyKind.UNGOVERNED_COLONY.isSettlingLocation())
                 .isFalse();
         }
 
