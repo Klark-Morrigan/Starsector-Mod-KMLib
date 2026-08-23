@@ -245,9 +245,12 @@ public final class SectorColonySightings {
     // When the observation is being made, or null where there is no clock to ask - which is no
     // reason to lose the observation itself, the place being the half every visibility rule
     // spends. Such an entry reads as undated and is dated at the next observation.
+    //
+    // The sector is not re-checked: the only caller has already opened the register through it,
+    // which no absent sector can survive.
     private static Long readClockTimestamp(SectorAPI sector) {
 
-        var clock = sector == null ? null : sector.getClock();
+        var clock = sector.getClock();
 
         return clock == null ? null : clock.getTimestamp();
     }
