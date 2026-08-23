@@ -139,6 +139,6 @@ public final class DecivilisedMarkets {
 
         var surveyLevel = market.getSurveyLevel();
 
-        return surveyLevel != null && surveyLevel.ordinal() >= requiredLevel.ordinal();
+        return surveyLevel != null && surveyLevel.compareTo(requiredLevel) >= 0;
     }
 }

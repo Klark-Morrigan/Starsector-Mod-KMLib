@@ -15,7 +15,7 @@ import static org.mockito.Mockito.when;
  * whether the economy has it registered - and a suite setting them directly says nothing about
  * which of the resulting shapes it meant. Two adjacent booleans are also transposable without
  * failing, so the named builders keep them behind this boundary and a case reads as the shape it
- * poses. The shapes a condition marks rather than a flag - a derelict, a dead world - are built
+ * poses. The shapes a condition marks rather than a flag - a derelict, a decivilised world - are built
  * the same way for the same reason: a bare condition id in a case says nothing about what kind of
  * place it makes.
  *
@@ -65,13 +65,14 @@ public final class MarketStateFixture {
     }
 
     /**
-     * A dead colony's shape: ruins nobody holds, carrying the decivilised condition and nothing
-     * else a colony would. Posed against the derelict above, because both are unlisted neutral
-     * markets marked by a condition - so a read keying on the wrong one admits both.
+     * A decivilised world's shape: a colony nobody runs any more, carrying the decivilised
+     * condition and nothing else a colony would. Posed against the derelict above, because both are
+     * unlisted neutral markets marked by a condition - so a read keying on the wrong one admits
+     * both.
      */
     public static MarketAPI buildDecivilisedWorld() {
-        // A dead world is a bare world's placeholder with the condition on it - the colony that
-        // stood there is gone, and what stayed behind is the market holding the planet's own
+        // A decivilised world is a bare world's placeholder with the condition on it - the polity
+        // that ran the place is gone, and what stayed behind is the market holding the planet's own
         // conditions. Composed for that reason rather than to save the two flags.
         return stubConditionOn(buildColonisableBody(), Conditions.DECIVILIZED);
     }
