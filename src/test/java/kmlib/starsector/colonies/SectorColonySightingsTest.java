@@ -1,5 +1,6 @@
 package kmlib.starsector.colonies;
 
+import com.fs.starfarer.api.campaign.CampaignClockAPI;
 import com.fs.starfarer.api.campaign.LocationAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
@@ -16,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -40,10 +40,12 @@ import static org.mockito.Mockito.when;
  */
 final class SectorColonySightingsTest {
 
+    private static final long OBSERVED_NOW = 4_200L;
     private static final String OTHER_SYSTEM_ID = "corvus";
     private static final String SIGHTINGS_KEY = "$kmlib_colony_sightings";
     private static final String SYSTEM_ID = "kumari_kandam";
 
+    private CampaignClockAPI clockMock;
     private EconomyAPI economyMock;
     private MemoryAPI memoryMock;
     private SectorAPI sectorMock;
@@ -52,11 +54,16 @@ final class SectorColonySightingsTest {
     @BeforeEach
     void setUp() {
 
+        clockMock = mock(CampaignClockAPI.class);
         economyMock = mock(EconomyAPI.class);
         memoryMock = mock(MemoryAPI.class);
         sectorMock = mock(SectorAPI.class);
         systemMock = mock(StarSystemAPI.class);
 
+        when(clockMock.getTimestamp())
+            .thenReturn(OBSERVED_NOW);
+        when(sectorMock.getClock())
+            .thenReturn(clockMock);
         when(sectorMock.getEconomy())
             .thenReturn(economyMock);
         when(sectorMock.getMemoryWithoutUpdate())
@@ -73,7 +80,7 @@ final class SectorColonySightingsTest {
         @Test
         void reports_nothing_seen_where_the_register_has_never_been_written() {
 
-            assertThat(SectorColonySightings.readSightings(sectorMock).readSightedLocationId("any"))
+            assertThat(readObservationOf("any"))
                 .isNull();
         }
 
@@ -90,21 +97,47 @@ final class SectorColonySightingsTest {
             // that threw here would take down every colony set in the sector with it.
             storeSightings("not a register");
 
-            assertThat(SectorColonySightings.readSightings(sectorMock).readSightedLocationId("any"))
+            assertThat(readObservationOf("any"))
                 .isNull();
         }
 
         @Test
-        void reports_where_a_recorded_colony_was_seen() {
+        void reports_where_and_when_a_recorded_colony_was_seen() {
 
+            var stored = new HashMap<String, String>();
+
+            stored.put("sentinel_gantries", "1720@" + SYSTEM_ID);
+            storeSightings(stored);
+
+            assertThat(readObservationOf("sentinel_gantries"))
+                .isEqualTo(ColonyObservation.createObservationAt(SYSTEM_ID, 1720L));
+        }
+
+        @Test
+        void reports_a_value_written_before_observations_were_timed_as_seen_at_no_stated_moment() {
+            // The migration case, and the reason nothing here fails on an entry it did not write:
+            // a save made before the time was kept names a place alone, and that is a complete
+            // observation with one half missing rather than a broken one.
             var stored = new HashMap<String, String>();
 
             stored.put("sentinel_gantries", SYSTEM_ID);
             storeSightings(stored);
 
-            assertThat(SectorColonySightings.readSightings(sectorMock)
-                    .readSightedLocationId("sentinel_gantries"))
-                .isEqualTo(SYSTEM_ID);
+            assertThat(readObservationOf("sentinel_gantries"))
+                .isEqualTo(ColonyObservation.createUndatedObservation(SYSTEM_ID));
+        }
+
+        @Test
+        void reports_an_untimed_value_whole_where_its_place_holds_the_separator() {
+            // The same case for a location id that reads like a timed entry and is not one. Read
+            // as a time it would name a place that does not exist, so the whole of it is the place.
+            var stored = new HashMap<String, String>();
+
+            stored.put("sentinel_gantries", "outer@" + SYSTEM_ID);
+            storeSightings(stored);
+
+            assertThat(readObservationOf("sentinel_gantries"))
+                .isEqualTo(ColonyObservation.createUndatedObservation("outer@" + SYSTEM_ID));
         }
     }
 
@@ -124,9 +157,26 @@ final class SectorColonySightingsTest {
 
             SectorColonySightings.recordSightingsIn(sectorMock, systemMock);
 
-            assertThat(readStoredSightings())
-                .containsEntry("pirate_base", SYSTEM_ID)
-                .containsEntry("sentinel_gantries", SYSTEM_ID);
+            assertThat(readObservationOf("pirate_base"))
+                .isEqualTo(ColonyObservation.createObservationAt(SYSTEM_ID, OBSERVED_NOW));
+            assertThat(readObservationOf("sentinel_gantries"))
+                .isEqualTo(ColonyObservation.createObservationAt(SYSTEM_ID, OBSERVED_NOW));
+        }
+
+        @Test
+        void records_where_a_colony_stands_and_nothing_of_when_where_there_is_no_clock_to_read() {
+            // The place is the half every visibility rule spends, so a sector that cannot say what
+            // day it is must still record that somebody was here - dated at the next observation.
+            when(sectorMock.getClock())
+                .thenReturn(null);
+
+            placeColoniesOnSystemEntities(buildDerelict("sentinel_gantries"));
+            openStoredSightings();
+
+            SectorColonySightings.recordSightingsIn(sectorMock, systemMock);
+
+            assertThat(readObservationOf("sentinel_gantries"))
+                .isEqualTo(ColonyObservation.createUndatedObservation(SYSTEM_ID));
         }
 
         @Test
@@ -157,8 +207,8 @@ final class SectorColonySightingsTest {
 
             SectorColonySightings.recordSightingsIn(sectorMock, systemMock);
 
-            assertThat(readStoredSightings())
-                .containsEntry("rat_exoship", SYSTEM_ID);
+            assertThat(readObservationOf("rat_exoship"))
+                .isEqualTo(ColonyObservation.createObservationAt(SYSTEM_ID, OBSERVED_NOW));
         }
 
         @Test
@@ -201,7 +251,9 @@ final class SectorColonySightingsTest {
             recordWhatTheSystemsInhabitantsSee();
 
             assertThat(readStoredSightings())
-                .containsExactly(entry("sentinel_gantries", SYSTEM_ID));
+                .containsOnlyKeys("sentinel_gantries");
+            assertThat(readObservationOf("sentinel_gantries"))
+                .isEqualTo(ColonyObservation.createObservationAt(SYSTEM_ID, OBSERVED_NOW));
         }
 
         @Test
@@ -281,8 +333,8 @@ final class SectorColonySightingsTest {
 
             SectorColonySightings.dropSightingsOfAbsentColonies(sectorMock);
 
-            assertThat(readStoredSightings())
-                .containsEntry("rat_exoship", OTHER_SYSTEM_ID);
+            assertThat(readObservationOf("rat_exoship"))
+                .isEqualTo(ColonyObservation.createUndatedObservation(OTHER_SYSTEM_ID));
         }
 
         @Test
@@ -314,8 +366,9 @@ final class SectorColonySightingsTest {
             SectorColonySightings.reconcileWithLoadedSave(sectorMock);
 
             assertThat(readStoredSightings())
-                .containsOnlyKeys("sentinel_gantries")
-                .containsEntry("sentinel_gantries", SYSTEM_ID);
+                .containsOnlyKeys("sentinel_gantries");
+            assertThat(readObservationOf("sentinel_gantries"))
+                .isEqualTo(ColonyObservation.createObservationAt(SYSTEM_ID, OBSERVED_NOW));
         }
 
         @Test
@@ -403,5 +456,14 @@ final class SectorColonySightingsTest {
     @SuppressWarnings("unchecked")
     private Map<String, String> readStoredSightings() {
         return (Map<String, String>) memoryMock.get(SIGHTINGS_KEY);
+    }
+
+    // What the register says about one colony, read back through its own reader. The stored text
+    // is this class's private business - a case asserting against it would be pinning an encoding
+    // rather than an observation, and would have to be rewritten the day the encoding changes.
+    private ColonyObservation readObservationOf(String colonyId) {
+        return SectorColonySightings
+            .readSightings(sectorMock)
+            .readObservation(colonyId);
     }
 }

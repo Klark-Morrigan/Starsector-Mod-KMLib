@@ -99,9 +99,9 @@ final class ColonyObservationIntegrationTest {
 
             var sightings = SectorColonySightings.readSightings(fixture.getSector());
 
-            assertThat(sightings.readSightedLocationId(DERELICT_ID))
+            assertThat(sightings.readObservation(DERELICT_ID).locationId())
                 .isEqualTo(SYSTEM_ID);
-            assertThat(sightings.readSightedLocationId(NEIGHBOUR_ID))
+            assertThat(sightings.readObservation(NEIGHBOUR_ID))
                 .isNull();
         }
     }
@@ -148,7 +148,8 @@ final class ColonyObservationIntegrationTest {
             assertThat(readKnownColoniesIn(fixture, elsewhere))
                 .containsExactly(new Colony(mover, ColonyKind.COLONY, false));
             assertThat(SectorColonySightings.readSightings(fixture.getSector())
-                    .readSightedLocationId(MOVER_ID))
+                    .readObservation(MOVER_ID)
+                    .locationId())
                 .isEqualTo(OTHER_SYSTEM_ID);
         }
     }

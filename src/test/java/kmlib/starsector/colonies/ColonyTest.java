@@ -22,6 +22,7 @@ import static org.mockito.Mockito.when;
  */
 final class ColonyTest {
 
+    private static final long OBSERVED_AT = 4_200L;
     private static final String COLONY_ID = "sentinel_gantries";
     private static final String SYSTEM_ID = "kumari_kandam";
 
@@ -90,6 +91,19 @@ final class ColonyTest {
             var colony = new Colony(buildMarketInSystem(), ColonyKind.COLONY, true);
 
             assertThat(colony.isSighted(buildSightingIn(SYSTEM_ID)))
+                .isTrue();
+        }
+
+        @Test
+        void reports_a_colony_seen_at_no_stated_moment_as_sighted() {
+            // The rule reads the place and never the time, so an observation recorded before the
+            // time was kept answers exactly as a timed one does. Anything else would have a save
+            // upgrade take colonies off the map.
+            var colony = new Colony(buildMarketInSystem(), ColonyKind.COLONY, true);
+            ColonySightings sightings = colonyId ->
+                ColonyObservation.createUndatedObservation(SYSTEM_ID);
+
+            assertThat(colony.isSighted(sightings))
                 .isTrue();
         }
 
@@ -202,7 +216,10 @@ final class ColonyTest {
 
     // A register holding one sighting of the colony above, in whichever system a case names.
     private static ColonySightings buildSightingIn(String locationId) {
-        return colonyId -> COLONY_ID.equals(colonyId) ? locationId : null;
+
+        return colonyId -> COLONY_ID.equals(colonyId)
+            ? ColonyObservation.createObservationAt(locationId, OBSERVED_AT)
+            : null;
     }
 
     // A market standing in a given location, which the sighting read is the only consumer of.

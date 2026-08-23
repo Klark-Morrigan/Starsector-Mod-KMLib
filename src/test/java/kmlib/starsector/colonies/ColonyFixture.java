@@ -43,7 +43,7 @@ public final class ColonyFixture {
 
     private final EconomyAPI economyMock;
     private final SectorAPI sectorMock;
-    private final Map<String, String> sightedLocationIdsByColonyId = new HashMap<>();
+    private final Map<String, ColonyObservation> observationsByColonyId = new HashMap<>();
     private final StarSystemAPI systemMock;
 
     private int namedColonyCount;
@@ -98,7 +98,7 @@ public final class ColonyFixture {
      * so a case may build its set first and record the sighting after.
      */
     public ColonySightings getSightings() {
-        return sightedLocationIdsByColonyId::get;
+        return observationsByColonyId::get;
     }
 
     /**
@@ -143,7 +143,26 @@ public final class ColonyFixture {
     public void markColoniesAsSighted(MarketAPI... colonies) {
 
         for (var colony : colonies) {
-            sightedLocationIdsByColonyId.put(nameColony(colony), systemMock.getId());
+            observationsByColonyId.put(
+                nameColony(colony),
+                ColonyObservation.createUndatedObservation(systemMock.getId()));
+        }
+    }
+
+    /**
+     * Records the player as having seen these colonies standing in this system at a stated moment
+     * - what a case reading how old the news is poses, the place alone answering nothing about
+     * when it was last seen.
+     *
+     * @param observedTimestamp when the colonies were observed, on the campaign clock's own scale
+     * @param colonies          the colonies observed then
+     */
+    public void markColoniesAsSightedAt(long observedTimestamp, MarketAPI... colonies) {
+
+        for (var colony : colonies) {
+            observationsByColonyId.put(
+                nameColony(colony),
+                ColonyObservation.createObservationAt(systemMock.getId(), observedTimestamp));
         }
     }
 
@@ -154,7 +173,9 @@ public final class ColonyFixture {
     public void markColoniesAsSightedElsewhere(String otherSystemId, MarketAPI... colonies) {
 
         for (var colony : colonies) {
-            sightedLocationIdsByColonyId.put(nameColony(colony), otherSystemId);
+            observationsByColonyId.put(
+                nameColony(colony),
+                ColonyObservation.createUndatedObservation(otherSystemId));
         }
     }
 

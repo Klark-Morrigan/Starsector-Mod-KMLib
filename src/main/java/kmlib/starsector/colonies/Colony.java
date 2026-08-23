@@ -120,11 +120,11 @@ public record Colony(
         if (!(market.getContainingLocation() instanceof StarSystemAPI system)) {
             return true;
         }
-        var sightedLocationId = sightings == null
+        var observation = sightings == null
             ? null
-            : sightings.readSightedLocationId(market.getId());
+            : sightings.readObservation(market.getId());
 
-        return sightedLocationId != null && sightedLocationId.equals(system.getId());
+        return observation != null && observation.locationId().equals(system.getId());
     }
 
     /**

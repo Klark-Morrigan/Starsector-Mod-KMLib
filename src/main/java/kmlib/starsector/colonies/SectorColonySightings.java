@@ -38,6 +38,10 @@ import java.util.Set;
  * register says - there is no system to have been in - so recording out there would buy nothing,
  * and hyperspace holds by far the largest entity list in the sector to walk for it.
  *
+ * <p>The stored form is this class's own. Everything above it is handed a {@link ColonyObservation}
+ * carrying both the place and the moment, so a reader cannot pair one entry's place with another's
+ * time - and the two cannot be stored apart and drift.
+ *
  * <p>Final class with a private constructor: pure-function utility, no instance state, and
  * null-defensive like the rest of the library.
  */
@@ -46,6 +50,19 @@ public final class SectorColonySightings {
     // The save-serialised identity of the register. Stable once shipped: renaming it silently
     // drops every sighting in every existing save, and with them every colony a gate holds back.
     private static final String SIGHTINGS_KEY = "$kmlib_colony_sightings";
+
+    // What parts an observation's time from the place it names, in the one stored entry that
+    // carries both.
+    //
+    // Text in a map of text rather than a value class of ours, because a class put into a save
+    // bakes its own name into every save holding one: moving or renaming it later fails the load
+    // rather than the read, and there is nowhere in a loaded game to repair that from.
+    //
+    // The time leads, so whatever follows the first separator is the location id verbatim -
+    // punctuation and all. An entry with no separator, or one whose leading part is not a time,
+    // is a place alone: that is what every value written before observations were timed looks
+    // like, and it reads as an undated observation rather than as a corrupt one.
+    private static final String OBSERVATION_SEPARATOR = "@";
 
     private SectorColonySightings() {
         // utility class, no instances.
@@ -60,7 +77,7 @@ public final class SectorColonySightings {
      *
      * @param sector the sector whose memory holds the register; null - or one holding no
      *               register yet - yields {@link ColonySightings#NONE}
-     * @return where each colony was last observed, by colony id; never null
+     * @return what was last observed of each colony, by colony id; never null
      */
     public static ColonySightings readSightings(SectorAPI sector) {
 
@@ -69,7 +86,7 @@ public final class SectorColonySightings {
         if (storedSightings == null) {
             return ColonySightings.NONE;
         }
-        return storedSightings::get;
+        return colonyId -> decodeObservation(storedSightings.get(colonyId));
     }
 
     /**
@@ -191,11 +208,15 @@ public final class SectorColonySightings {
         }
     }
 
-    // Stamps a set of colonies as observed in one place, opening the register on the first write
-    // of a campaign.
+    // Stamps a set of colonies as observed in one place, at this moment, opening the register on
+    // the first write of a campaign.
     //
     // Nothing to stamp opens nothing, so the vast majority of systems - which hold no gated colony
     // at all - never put an empty register into a save between them.
+    //
+    // The clock is read once for the whole set rather than per colony, so every colony observed in
+    // one moment is stamped with that one moment - two of them a tick apart would say the observer
+    // saw one before the other.
     private static void putSightings(
             SectorAPI sector,
             String locationId,
@@ -209,13 +230,59 @@ public final class SectorColonySightings {
         if (storedSightings == null) {
             return;
         }
+        var storedObservation = encodeObservation(locationId, readClockTimestamp(sector));
+
         for (var colony : observedColonies) {
 
             var colonyId = colony.market().getId();
 
             if (colonyId != null) {
-                storedSightings.put(colonyId, locationId);
+                storedSightings.put(colonyId, storedObservation);
             }
+        }
+    }
+
+    // When the observation is being made, or null where there is no clock to ask - which is no
+    // reason to lose the observation itself, the place being the half every visibility rule
+    // spends. Such an entry reads as undated and is dated at the next observation.
+    private static Long readClockTimestamp(SectorAPI sector) {
+
+        var clock = sector == null ? null : sector.getClock();
+
+        return clock == null ? null : clock.getTimestamp();
+    }
+
+    // One observation as the register stores it: its time, then the place it names.
+    private static String encodeObservation(String locationId, Long observedTimestamp) {
+
+        if (observedTimestamp == null) {
+            return locationId;
+        }
+        return observedTimestamp + OBSERVATION_SEPARATOR + locationId;
+    }
+
+    // One stored entry read back. An entry that carries no time - every one written before
+    // observations were timed - reads as an undated observation of the place it names, which is
+    // exactly what it is: somebody saw the colony there, and nobody wrote down when.
+    private static ColonyObservation decodeObservation(String storedObservation) {
+
+        if (storedObservation == null) {
+            return null;
+        }
+        var separatorIndex = storedObservation.indexOf(OBSERVATION_SEPARATOR);
+
+        if (separatorIndex < 0) {
+            return ColonyObservation.createUndatedObservation(storedObservation);
+        }
+        try {
+            return ColonyObservation.createObservationAt(
+                storedObservation.substring(separatorIndex + OBSERVATION_SEPARATOR.length()),
+                Long.parseLong(storedObservation.substring(0, separatorIndex)));
+
+        } catch (NumberFormatException notATimestamp) {
+            // A location id that happens to hold the separator, which only an entry written
+            // before observations were timed can be. The whole of it is the place.
+            return ColonyObservation.createUndatedObservation(storedObservation);
         }
     }
 

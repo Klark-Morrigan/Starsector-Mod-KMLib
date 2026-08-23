@@ -177,7 +177,11 @@ src/main/java/kmlib/
                      own inhabitants, swept for. The second is
                      owner-aware, nobody announcing their own secrets,
                      and is read live as well as recorded so a colony
-                     arriving among witnesses is shown at once
+                     arriving among witnesses is shown at once. An entry
+                     carries the moment beside the place, for a reader
+                     stating how old its news of a colony is; no
+                     visibility rule reads it, a colony shown on how
+                     recent an observation was being one that blinks
     entities/      - spawning custom campaign entities, their orbits,
                      name generation, and how an entity is identified to
                      a reader - its name paired with the map glyph it is
