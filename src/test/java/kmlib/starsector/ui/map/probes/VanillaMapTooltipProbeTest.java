@@ -1,22 +1,65 @@
 package kmlib.starsector.ui.map.probes;
 
+import kmlib.testfixtures.starsector.ui.coreui.CoreUiComponentFake;
+
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Pins the three judgements the probe makes about each component it reaches. The walk itself starts
- * at the live core UI and answers nothing outside a running game, so it goes uncovered the way this
- * package's other walks do; what a walk does with a component it has already reached needs only an
- * object answering the core UI's names, which is what the fakes here are.
+ * Pins the three judgements the probe makes about each component it reaches, and where it starts
+ * from. What a walk does with a component it has already reached needs only an object answering the
+ * core UI's names, which is what the fakes here are.
  *
  * <p>Each of the three decides whether an overlay steps aside: a host misread as a leaf hides a
  * tooltip that is up, a tooltip idling on a widget mistaken for a shown one blanks the overlay over
  * every star, and a name match that missed the game's own subclass would report vanilla's tooltip as
  * some other mod's. None of the three is observable in the log until it is already wrong on screen.
+ *
+ * <p>The root is pinned alongside them because it is now the caller's to choose, so the two ways it
+ * can fail to name a widget are ways this probe answers over a surface nobody is looking at. A walk
+ * that found its tooltip cannot be reached from here - the type it recognises is the game's own,
+ * obfuscated and unloadable in this JVM - so what is observable is where the walk went and that a
+ * root it could not read leaves the overlay drawing.
  */
 class VanillaMapTooltipProbeTest {
+
+    @Nested
+    class FindShownTooltip {
+
+        @Test
+        void findShownTooltipSearchesUnderTheRootItIsGiven() {
+            // The whole of what this step moved. A probe searching some other subtree answers about
+            // a surface the pointer is not over, and does it silently - it finds no tooltip there,
+            // which is the same answer as a surface genuinely showing none.
+            var rootFake = new CoreUiComponentFake();
+
+            new VanillaMapTooltipProbe(() -> rootFake).findShownTooltip();
+
+            assertThat(rootFake.countChildrenReads())
+                .isEqualTo(1);
+        }
+
+        @Test
+        void findShownTooltipAnswersNothingWithNoRootToSearch() {
+            // The ordinary state on every frame showing no map surface at all.
+            assertThat(new VanillaMapTooltipProbe(() -> null).findShownTooltip())
+                .isNull();
+        }
+
+        @Test
+        void findShownTooltipAnswersNothingWhenTheRootCannotBeRead() {
+            // Fail-open, and the direction matters: a root read that broke on some game build leaves
+            // the overlay drawing over a possible second box, where the opposite would blank it for
+            // the rest of the session.
+            assertThat(new VanillaMapTooltipProbe(() -> {
+                    throw new IllegalStateException("A reach that no longer resolves.");
+                })
+                .findShownTooltip())
+                .isNull();
+        }
+    }
 
     @Nested
     class FindTooltipShownBy {

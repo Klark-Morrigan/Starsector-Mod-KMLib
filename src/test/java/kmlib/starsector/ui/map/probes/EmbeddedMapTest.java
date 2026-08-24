@@ -1,6 +1,7 @@
 package kmlib.starsector.ui.map.probes;
 
 import kmlib.math.geometry.Rectangle;
+import kmlib.testfixtures.starsector.ui.coreui.CoreUiComponentFake;
 import kmlib.testfixtures.starsector.ui.layout.PositionFake;
 import kmlib.testfixtures.starsector.ui.map.probes.PlacedSectorMapWidgetFake;
 import kmlib.testfixtures.starsector.ui.map.probes.SectorMapWidgetFake;
@@ -24,6 +25,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>Beside them the widget read, pinned where it parts from the box: a map drawn to nothing is
  * still a component, so a caller whose subject is the widget rather than what shows of it gets an
  * answer where the box read gives none.
+ *
+ * <p>And the owning widget, which is the ancestry read rather than a map read at all. Which end of
+ * the chain is the outermost is the sort of thing a caller cannot check for itself and a reader
+ * cannot see from a call site, so it is pinned here rather than left to each holder's indexing.
  */
 class EmbeddedMapTest {
 
@@ -103,6 +108,45 @@ class EmbeddedMapTest {
         @Test
         void resolveComponentAnswersNothingForAMapThatIsNotAComponent() {
             assertThat(new EmbeddedMap(new SectorMapWidgetFake(), NO_ANCESTORS).resolveComponent())
+                .isNull();
+        }
+    }
+
+    @Nested
+    class ResolveOwningPanel {
+
+        @Test
+        void resolveOwningPanelAnswersTheWidgetAddedToTheWalksRoot() {
+            // The load-bearing case, and the one an index off by one would pass anyway if the chain
+            // were shorter: a mod's panel with the map nested another level down inside it. The
+            // panel is what covers every way a mod might have assembled that nesting, so the walk
+            // root's own child is the answer rather than whatever the map hangs directly under.
+            var panelFake = new CoreUiComponentFake();
+
+            assertThat(new EmbeddedMap(
+                    new SectorMapWidgetFake(),
+                    List.of(new CoreUiComponentFake(), panelFake, new CoreUiComponentFake()))
+                .resolveOwningPanel())
+                .isSameAs(panelFake);
+        }
+
+        @Test
+        void resolveOwningPanelAnswersTheMapItselfWhenItHangsStraightUnderTheRoot() {
+            // Nothing was put around it, so the map is the widget that was added and there is no
+            // panel between the two. Answering nothing here would leave a caller with no root at
+            // all for a map that is plainly on screen.
+            var mapFake = new SectorMapWidgetFake();
+
+            assertThat(new EmbeddedMap(mapFake, List.of(new CoreUiComponentFake()))
+                .resolveOwningPanel())
+                .isSameAs(mapFake);
+        }
+
+        @Test
+        void resolveOwningPanelAnswersNothingWithoutAnAncestry() {
+            // A chain that was never recorded says nothing about what the map hangs under, so there
+            // is no widget to name - as against the case above, where the absence is the answer.
+            assertThat(new EmbeddedMap(new SectorMapWidgetFake(), NO_ANCESTORS).resolveOwningPanel())
                 .isNull();
         }
     }

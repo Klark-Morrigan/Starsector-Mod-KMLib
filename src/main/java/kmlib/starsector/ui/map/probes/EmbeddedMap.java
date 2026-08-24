@@ -31,6 +31,11 @@ public record EmbeddedMap(
     SectorMapAPI widget,
     List<Object> ancestors) {
 
+    // Where the owning widget sits in an ancestry documented outermost-first: the walk's own root is
+    // at the head, so the entry after it is the widget that was added to that root. Named here so no
+    // caller has to index into the list and be right about which end is which.
+    private static final int OWNING_PANEL_INDEX = 1;
+
     /**
      * Copies the ancestry, which a walk carries down as a single list it pushes onto and pops off
      * again - so a chain kept as handed in would be emptied by the walk that is still running.
@@ -78,5 +83,35 @@ public record EmbeddedMap(
      */
     public UIComponentAPI resolveComponent() {
         return widget instanceof UIComponentAPI component ? component : null;
+    }
+
+    /**
+     * The outermost widget this map is held inside, for a caller that has to reason about everything
+     * a mod put on screen around it rather than about the map alone.
+     *
+     * <p>Which widget of a mod's panel holds a given thing - the map, the element it was added to,
+     * or the panel around both - is a fact about how that mod assembled its panel, and not one this
+     * end can read. The outermost of them is the one answer that covers every assembly, which is why
+     * the ancestry is what is asked rather than the map.
+     *
+     * <p>Answered from the ancestry rather than by walking upwards, because a widget offers no way
+     * back to its parent: the chain is in hand exactly once, during the walk that found the map, and
+     * this reads the copy that walk left behind.
+     *
+     * <p>A map hanging directly under the walk's root answers as itself, since the map is then the
+     * widget that was added and there is no panel between the two.
+     *
+     * @return the widget added to the tree the map was found in, or null when the map carries no
+     *         ancestry at all - a chain that was never recorded, which says nothing about what the
+     *         map hangs under
+     */
+    public Object resolveOwningPanel() {
+
+        if (ancestors.isEmpty()) {
+            return null;
+        }
+        return ancestors.size() > OWNING_PANEL_INDEX
+            ? ancestors.get(OWNING_PANEL_INDEX)
+            : widget;
     }
 }

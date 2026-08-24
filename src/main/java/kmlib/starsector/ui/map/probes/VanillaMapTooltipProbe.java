@@ -9,6 +9,7 @@ import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 /**
  * Answers "which tooltip is the vanilla map screen showing right now?" for an overlay that must
@@ -22,10 +23,18 @@ import java.util.List;
  * <p>There is no API for this, so it is read off the live core-UI tree. A tooltip is not a node in
  * that tree and not a typed field on the map widget - the widget that draws it is a tooltip <em>host</em>
  * (the core UI's own {@code getTooltip()} contract), which holds the currently shown tooltip and hands
- * it back from {@code getTooltip()}, clearing it to null when the tooltip hides. So the read reaches the
- * core UI, takes its current tab (the map when it is open), and searches that subtree for any host whose
- * {@code getTooltip()} returns a live {@code StandardTooltipV2}. That is the same read the core UI does
- * itself to render a child's tooltip, so it tracks exactly when a tooltip is up.
+ * it back from {@code getTooltip()}, clearing it to null when the tooltip hides. So the read searches a
+ * subtree for any host whose {@code getTooltip()} returns a live {@code StandardTooltipV2}. That is the
+ * same read the core UI does itself to render a child's tooltip, so it tracks exactly when a tooltip is
+ * up.
+ *
+ * <p>Where that search starts is the caller's, taken as a port. A map surface is not always a core tab -
+ * a mod that docks one adds a panel to the core UI itself, and on the frames such a panel is up there is
+ * no tab at all - so a walk fixed at the current tab would be unreachable on exactly the surface a
+ * tooltip was raised on. What the search root should be is a question about which surfaces exist, which
+ * is answered where those surfaces are known rather than here; what a vanilla tooltip <em>is</em> is the
+ * same wherever it hangs, and that is what this class owns. The no-arg pairing binds the current tab,
+ * which is the root a caller reading a vanilla map host wants.
  *
  * <p>The private core-UI methods and the private tooltip host are reached through {@link CoreUiTree},
  * which is where the by-name reach and the library behind it are answered for; nothing here names that
@@ -40,7 +49,7 @@ import java.util.List;
  * declared {@code mod_info.json} dependency.
  *
  * <p>Because the reach is fragile and only observable in-engine, the read narrates itself at DEBUG:
- * each time its outcome changes it logs one line naming the current tab, how many nodes it walked,
+ * each time its outcome changes it logs one line naming the search root, how many nodes it walked,
  * the tooltips it saw shown, and the verdict. That is what turns "it does not suppress" from a guess
  * into a diagnosis - which hop failed, or whether the map's host was reached - without flooding the
  * log frame to frame. With DEBUG off it builds none of that, so the walk stays a bare tree search.
@@ -67,6 +76,10 @@ public final class VanillaMapTooltipProbe {
     private static final String GET_FADER_METHOD = "getFader";
     private static final String IS_FADED_OUT_METHOD = "isFadedOut";
 
+    // The widget to search under, read afresh at every ask: which surface owns the frame changes as
+    // the player opens and closes screens, so a root taken once would describe a screen that is gone.
+    private final Supplier<Object> readSearchRoot;
+
     // Says once per session that this read broke, rather than every frame. Per instance rather than
     // per class, since each consumer holds its own probe and a shared flag would let one consumer's
     // broken read silence the news of another's.
@@ -76,6 +89,20 @@ public final class VanillaMapTooltipProbe {
     // than every frame the map is up.
     private String lastLoggedOutcome;
 
+    /** Searches the core tab the player has open - the root a caller reading a vanilla host wants. */
+    public VanillaMapTooltipProbe() {
+        this(CoreUiTree::resolveCurrentTab);
+    }
+
+    /**
+     * @param readSearchRoot the widget whose subtree holds the map surface being reasoned about, and
+     *                       null on a frame that shows none; it may raise, which counts as a failed
+     *                       read like any other hop into the live tree
+     */
+    public VanillaMapTooltipProbe(Supplier<Object> readSearchRoot) {
+        this.readSearchRoot = readSearchRoot;
+    }
+
     /**
      * @return the core-UI component the vanilla map screen is currently showing as a tooltip, or
      *         {@code null} when none is up; {@code null} on any read failure too, so the caller
@@ -84,19 +111,19 @@ public final class VanillaMapTooltipProbe {
     public Object findShownTooltip() {
         try {
 
-            var currentTab = CoreUiTree.resolveCurrentTab();
+            var searchRoot = readSearchRoot.get();
 
-            if (currentTab == null) {
-                reportReachFailure("no current tab");
+            if (searchRoot == null) {
+                reportReachFailure("no search root");
                 return null;
             }
             // Build the diagnostic trace only when DEBUG is on, so a normal frame is a bare tree walk
             // with no per-node string work.
             var trace = LOG.isDebugEnabled()
-                ? new WalkTrace(currentTab.getClass().getName())
+                ? new WalkTrace(searchRoot.getClass().getName())
                 : null;
 
-            var tooltip = searchSubtreeForShownTooltip(currentTab, ProbeLimits.MAX_SEARCH_DEPTH, trace);
+            var tooltip = searchSubtreeForShownTooltip(searchRoot, ProbeLimits.MAX_SEARCH_DEPTH, trace);
 
             reportWalkOutcome(tooltip != null, trace);
             return tooltip;
@@ -213,10 +240,10 @@ public final class VanillaMapTooltipProbe {
         return isNamedInHierarchy(tooltip.getClass(), TOOLTIP_CLASS_NAME);
     }
 
-    // The walk never started: a hop down to the tab answered nothing, so there is no verdict to explain
-    // beyond why. Separate from the outcome below because the two say different things with different
-    // material - one names a hop, the other describes a completed walk - and a single reporter taking
-    // both would take one of them as null at each of its call sites.
+    // The walk never started: the root to search under answered nothing, so there is no verdict to
+    // explain beyond why. Separate from the outcome below because the two say different things with
+    // different material - one names a hop, the other describes a completed walk - and a single
+    // reporter taking both would take one of them as null at each of its call sites.
     private void reportReachFailure(String reachFailure) {
 
         // Guarded before the line is composed rather than inside the emit, because this runs per frame
@@ -255,17 +282,18 @@ public final class VanillaMapTooltipProbe {
             failure);
     }
 
-    // Accumulates what one walk saw - the current tab, how many nodes it visited, and the tooltips it
-    // found shown - so a walk that finds no vanilla tooltip can still say whether it reached the map's
-    // host at all and what it held.
+    // Accumulates what one walk saw - the root it started at, how many nodes it visited, and the
+    // tooltips it found shown - so a walk that finds no vanilla tooltip can still say whether it
+    // reached the map's host at all and what it held. The root is named because it is now the
+    // caller's choice, so a walk that searched the wrong surface says which one it searched.
     private static final class WalkTrace {
 
-        private final String tabClassName;
+        private final String rootClassName;
         private final List<String> shownTooltips = new ArrayList<>();
         private int nodesVisited;
 
-        private WalkTrace(String tabClassName) {
-            this.tabClassName = tabClassName;
+        private WalkTrace(String rootClassName) {
+            this.rootClassName = rootClassName;
         }
 
         // Notes one found tooltip's class and whether it read as visible, up to the trace cap so a busy
@@ -279,7 +307,7 @@ public final class VanillaMapTooltipProbe {
         }
 
         private String describeWalk() {
-            return "tab=" + tabClassName
+            return "root=" + rootClassName
                 + " visited=" + nodesVisited
                 + " shownTooltips=" + shownTooltips;
         }
