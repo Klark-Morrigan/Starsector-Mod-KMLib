@@ -46,8 +46,8 @@ final class SystemColoniesTest {
 
             assertThat(readColonies(fixture))
                 .containsExactly(
-                    new Colony(ancyra, ColonyKind.COLONY, true),
-                    new Colony(academy, ColonyKind.COLONY, false));
+                    new Colony(ancyra, true),
+                    new Colony(academy, false));
         }
 
         @Test
@@ -61,7 +61,7 @@ final class SystemColoniesTest {
             fixture.placeColoniesInSystem(academy);
 
             assertThat(readColonies(fixture))
-                .containsExactly(new Colony(academy, ColonyKind.COLONY, false));
+                .containsExactly(new Colony(academy, false));
         }
 
         @Test
@@ -87,7 +87,7 @@ final class SystemColoniesTest {
             fixture.placeColoniesInSystem(decivilisedWorld);
 
             assertThat(readColonies(fixture))
-                .containsExactly(new Colony(decivilisedWorld, ColonyKind.UNGOVERNED_COLONY, false));
+                .containsExactly(new Colony(decivilisedWorld, false));
         }
 
         @Test
@@ -101,7 +101,7 @@ final class SystemColoniesTest {
             fixture.placeColoniesInSystem(decivilisedWorld);
 
             assertThat(readColonies(fixture))
-                .containsExactly(new Colony(decivilisedWorld, ColonyKind.UNGOVERNED_COLONY, false));
+                .containsExactly(new Colony(decivilisedWorld, false));
         }
 
         @Test
@@ -116,7 +116,7 @@ final class SystemColoniesTest {
             var colonies = readColonies(fixture);
 
             assertThat(colonies)
-                .containsExactly(new Colony(base, ColonyKind.COLONY, true));
+                .containsExactly(new Colony(base, true));
             assertThat(colonies.get(0).isHidden())
                 .isTrue();
         }
@@ -134,7 +134,7 @@ final class SystemColoniesTest {
             fixture.listColoniesInEconomy(vanillaMarket, moddedMarket);
 
             assertThat(readColonies(fixture))
-                .containsExactly(new Colony(moddedMarket, ColonyKind.COLONY, true));
+                .containsExactly(new Colony(moddedMarket, true));
         }
 
         @Test
@@ -147,7 +147,7 @@ final class SystemColoniesTest {
             fixture.placeColoniesInSystem(derelict);
 
             assertThat(readColonies(fixture))
-                .containsExactly(new Colony(derelict, ColonyKind.SPACE_DERELICT, false));
+                .containsExactly(new Colony(derelict, false));
         }
 
         @Test
@@ -168,7 +168,7 @@ final class SystemColoniesTest {
             fixture.listColoniesInEconomy(supersededMarket, derelict);
 
             assertThat(readColonies(fixture))
-                .containsExactly(new Colony(derelict, ColonyKind.OUTPOST, true));
+                .containsExactly(new Colony(derelict, true));
         }
 
         @Test
@@ -182,7 +182,7 @@ final class SystemColoniesTest {
             fixture.listColoniesInEconomy(base);
 
             assertThat(readColonies(fixture))
-                .containsExactly(new Colony(base, ColonyKind.COLONY, true));
+                .containsExactly(new Colony(base, true));
         }
 
         @Test

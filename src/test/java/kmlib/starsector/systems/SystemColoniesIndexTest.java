@@ -5,7 +5,6 @@ import com.fs.starfarer.api.campaign.SectorAPI;
 import kmlib.starsector.colonies.Colonies;
 import kmlib.starsector.colonies.Colony;
 import kmlib.starsector.colonies.ColonyFixture;
-import kmlib.starsector.colonies.ColonyKind;
 import kmlib.starsector.colonies.SystemColonies;
 
 import org.junit.jupiter.api.Nested;
@@ -98,7 +97,7 @@ final class SystemColoniesIndexTest {
             var index = new SystemColoniesIndex(fixture.getSector());
 
             assertThat(index.readColoniesIn(fixture.getSystem()).colonies())
-                .containsExactly(new Colony(colony, ColonyKind.COLONY, true));
+                .containsExactly(new Colony(colony, true));
 
             index.readColoniesIn(fixture.getSystem());
 
@@ -136,7 +135,7 @@ final class SystemColoniesIndexTest {
             assertThat(new SystemColoniesIndex(fixture.getSector())
                     .readColoniesById("corvus")
                     .colonies())
-                .containsExactly(new Colony(colony, ColonyKind.COLONY, true));
+                .containsExactly(new Colony(colony, true));
         }
 
         @Test

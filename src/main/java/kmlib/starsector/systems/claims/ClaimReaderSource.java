@@ -1,6 +1,6 @@
 package kmlib.starsector.systems.claims;
 
-import kmlib.starsector.colonies.ColonyVisibility;
+import kmlib.starsector.colonies.KnownColonyReader;
 import kmlib.starsector.systems.SystemColoniesIndex;
 
 /**
@@ -17,22 +17,25 @@ import kmlib.starsector.systems.SystemColoniesIndex;
  * depending on this can be handed a reader with no running game behind it, which is what keeps
  * a caller free of the mechanic while the binding stays the one place vanilla's is named.
  *
- * <p>The visibility rule travels with the index for the same reason the index does: both are the
+ * <p>The knowledge port travels with the index for the same reason the index does: both are the
  * opening pass's, and a reader given one but not the other would answer about the sector the pass
- * saw under a rule the pass never stated. What the rule reaches is only what a reader's breakdowns
- * report about the player's knowledge of each market - the claimant is resolved off the unfogged
- * set whatever it says - so this is a rule handed down rather than one a binding may invent.
+ * saw while reporting a different pass's worth of it as known. What the port reaches is only what
+ * a reader's breakdowns report about the player's knowledge of each market - the claimant is
+ * resolved off the unfogged set whatever it admits - so this is handed down rather than invented
+ * by a binding.
  */
 @FunctionalInterface
 public interface ClaimReaderSource {
 
     /**
-     * Opens a reader answering off one pass's colony walk, under that pass's own rule.
+     * Opens a reader answering off one pass's colony walk, under that pass's own knowledge.
      *
-     * @param visibility what the player may be shown of the colonies met, carried onto the
-     *                   breakdowns the opened reader builds
-     * @param colonies   the pass's colony index, discarded with the pass that opened it
+     * @param knownColonyReader what the opened reader asks which of the colonies it meets the
+     *                          player may be told about, carried onto the breakdowns it builds
+     * @param colonies          the pass's colony index, discarded with the pass that opened it
      * @return a reader reading claims out of that index
      */
-    ClaimReader openReaderOver(ColonyVisibility visibility, SystemColoniesIndex colonies);
+    ClaimReader openReaderOver(
+        KnownColonyReader knownColonyReader,
+        SystemColoniesIndex colonies);
 }

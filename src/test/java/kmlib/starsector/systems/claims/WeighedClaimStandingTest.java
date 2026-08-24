@@ -1,6 +1,5 @@
 package kmlib.starsector.systems.claims;
 
-import kmlib.starsector.colonies.ColonyKind;
 import kmlib.starsector.entities.EntityNameplate;
 
 import org.junit.jupiter.api.Nested;
@@ -181,7 +180,7 @@ final class WeighedClaimStandingTest {
 
         return new MarketClaimBreakdown(
             EntityNameplate.createUnmarkedNameplate(marketName),
-            ColonyKind.COLONY,
+            marketName,
             listingPosition,
             IS_KNOWN_TO_PLAYER,
             ContestAdmission.WEIGHED,

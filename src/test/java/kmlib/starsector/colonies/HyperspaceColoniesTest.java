@@ -40,7 +40,7 @@ final class HyperspaceColoniesTest {
             var sector = buildSectorWhoseHyperspaceHolds(List.of(deepSpaceStation), List.of());
 
             assertThat(HyperspaceColonies.readColonies(sector).colonies())
-                .containsExactly(new Colony(deepSpaceStation, ColonyKind.COLONY, true));
+                .containsExactly(new Colony(deepSpaceStation, true));
         }
 
         @Test
@@ -51,7 +51,7 @@ final class HyperspaceColoniesTest {
             var sector = buildSectorWhoseHyperspaceHolds(List.of(), List.of(deepSpaceStation));
 
             assertThat(HyperspaceColonies.readColonies(sector).colonies())
-                .containsExactly(new Colony(deepSpaceStation, ColonyKind.COLONY, false));
+                .containsExactly(new Colony(deepSpaceStation, false));
         }
 
         @Test

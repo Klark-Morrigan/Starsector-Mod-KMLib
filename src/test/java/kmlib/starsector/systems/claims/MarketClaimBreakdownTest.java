@@ -1,6 +1,5 @@
 package kmlib.starsector.systems.claims;
 
-import kmlib.starsector.colonies.ColonyKind;
 import kmlib.starsector.entities.EntityMapIcon;
 import kmlib.starsector.entities.EntityNameplate;
 
@@ -35,6 +34,10 @@ final class MarketClaimBreakdownTest {
     private static final EntityNameplate MARKET_IDENTITY = new EntityNameplate(
         "Chicomoztoc",
         Optional.of(new EntityMapIcon("graphics/warroom/icon_planet.png", new Color(120, 200, 90))));
+
+    // Which colony it is, as the walk that met it recorded. Carried through the record untouched,
+    // no case here being about a reader pairing this row with anything else.
+    private static final String MARKET_ID = "chicomoztoc_market";
 
     // The plainest colony there is - a size and nothing else - for the cases about how a contest
     // reached a market rather than about what it came to.
@@ -147,7 +150,7 @@ final class MarketClaimBreakdownTest {
 
         return new MarketClaimBreakdown(
             MARKET_IDENTITY,
-            ColonyKind.COLONY,
+            MARKET_ID,
             FIRST_LISTED,
             IS_KNOWN_TO_PLAYER,
             ContestAdmission.WEIGHED,
@@ -161,7 +164,7 @@ final class MarketClaimBreakdownTest {
     private static MarketClaimBreakdown buildClaimAdmittedAs(ContestAdmission admission) {
         return new MarketClaimBreakdown(
             MARKET_IDENTITY,
-            ColonyKind.COLONY,
+            MARKET_ID,
             FIRST_LISTED,
             IS_KNOWN_TO_PLAYER,
             admission,

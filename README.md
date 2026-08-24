@@ -158,30 +158,20 @@ src/main/java/kmlib/
   starsector/
     colonies/      - the shared colony set every "who is here" read
                      selects through - one rule, one entry per place and
-                     owner, unfogged with the visibility filter as one
-                     named projection over it - with the selection
-                     itself stated once over a location and a
-                     separately-named reader per kind of place above it:
-                     a star system, hyperspace, and the whole sector as
-                     the composition of the two. Each colony carries
-                     what kind of place it is, resolved once where it is
-                     selected, so a derelict station is never taken for
-                     a settlement downstream. Beside the set sits the
-                     sighting register: where each colony a gate holds
-                     back was last observed standing, kept in the save,
-                     so such a colony is shown only where somebody has
-                     seen it and one that has since moved is unseen
-                     again. Two routes observe and both record, so what
-                     is known does not evaporate when the informant
-                     dies - the player as they travel, and the place's
-                     own inhabitants, swept for. The second is
-                     owner-aware, nobody announcing their own secrets,
-                     and is read live as well as recorded so a colony
-                     arriving among witnesses is shown at once. An entry
-                     carries the moment beside the place, for a reader
-                     stating how old its news of a colony is; no
-                     visibility rule reads it, a colony shown on how
-                     recent an observation was being one that blinks
+                     owner, unfogged - with the selection itself stated
+                     once over a location and a separately-named reader
+                     per kind of place above it: a star system,
+                     hyperspace, and the whole sector as the composition
+                     of the two. Each colony carries its market and the
+                     listing it was found in, and answers the facts that
+                     market holds about itself: concealment, discovery,
+                     and who owns it. What may be *shown* of the set is
+                     no part of it - withholding a colony is a judgement
+                     made for a purpose, and it needs facts the sector
+                     does not hold - so a consumer states its own
+                     projection and hands one in through
+                     KnownColonyReader where a library reader has to
+                     spend one
     entities/      - spawning custom campaign entities, their orbits,
                      name generation, and how an entity is identified to
                      a reader - its name paired with the map glyph it is

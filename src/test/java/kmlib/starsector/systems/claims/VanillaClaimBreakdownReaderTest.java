@@ -3,10 +3,9 @@ package kmlib.starsector.systems.claims;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.impl.campaign.ids.Factions;
 
-import kmlib.starsector.colonies.ColonyVisibility;
-import kmlib.starsector.colonies.RevelationGate;
+import kmlib.starsector.colonies.Colonies;
+import kmlib.starsector.colonies.KnownColonyReader;
 import kmlib.starsector.entities.EntityMapIcon;
-import kmlib.starsector.markets.DecivilisedMarkets;
 import kmlib.starsector.systems.SystemColoniesIndex;
 
 import org.junit.jupiter.api.AfterEach;
@@ -15,7 +14,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.awt.Color;
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -44,12 +42,27 @@ import static org.assertj.core.api.Assertions.tuple;
  */
 final class VanillaClaimBreakdownReaderTest {
 
-    // The rule as it ships, posed where a case is about what the reader reports of the player's
-    // knowledge. Everything else runs under the fog alone, which is the rule that adds nothing.
-    private static final ColonyVisibility BOTH_GATES_ON = new ColonyVisibility(
-        false,
-        DecivilisedMarkets.DEFAULT_SURVEY_LEVEL,
-        Set.of(RevelationGate.SPACE_DERELICTS, RevelationGate.HIDDEN_COLONIES));
+    // The port a case poses where the player's knowledge is beside the point: every colony the
+    // walk met may be named. What decides that in the running game is the consumer's rule, and no
+    // case here is about one - what this suite pins is that the port reaches each breakdown and no
+    // term of the contest.
+    private static final KnownColonyReader EVERY_COLONY_KNOWN = Colonies::colonies;
+
+    // The port at its other extreme, posed where a case is about what the reader reports of the
+    // player's knowledge. Named apart from the constant it happens to equal so a case reads as
+    // posing a port rather than as leaving one out.
+    private static final KnownColonyReader NO_COLONY_KNOWN = KnownColonyReader.NOTHING_KNOWN;
+
+    // A port admitting one named colony and nothing else - what shows the reader spends the
+    // port's own answer per market rather than one verdict for the whole system.
+    private static KnownColonyReader buildPortNaming(String knownMarketName) {
+
+        return colonies -> colonies
+            .colonies()
+            .stream()
+            .filter(colony -> knownMarketName.equals(colony.market().getName()))
+            .toList();
+    }
 
     private ClaimContestFixture claimContest;
 
@@ -79,7 +92,7 @@ final class VanillaClaimBreakdownReaderTest {
 
             assertThat(source
                     .openReaderOver(
-                        ColonyVisibility.BASE_FOG,
+                        EVERY_COLONY_KNOWN,
                         new SystemColoniesIndex(Global.getSector()))
                     .readClaimingFactionId(claimContest.getSystem()))
                 .isEqualTo("hegemony");
@@ -101,7 +114,7 @@ final class VanillaClaimBreakdownReaderTest {
                 garrison);
 
             var breakdown =
-                new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+                new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                     .readBreakdown(claimContest.getSystem());
 
             // The size-3 garrison outweighs the size-5 colony on the military bonus alone
@@ -126,7 +139,7 @@ final class VanillaClaimBreakdownReaderTest {
             claimContest.placeMarketsInSystem(capital, outpost);
 
             var standing = readTopStanding(
-                new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+                new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                     .readBreakdown(claimContest.getSystem()));
 
             // The standing rests on the one strongest market, and the rest are carried beside
@@ -161,7 +174,7 @@ final class VanillaClaimBreakdownReaderTest {
             claimContest.placeMarketsInSystem(ancyra);
 
             var standing = readTopStanding(
-                new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+                new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                     .readBreakdown(claimContest.getSystem()));
 
             assertThat(standing.standingMarket().marketNameplate().mapIcon())
@@ -179,7 +192,7 @@ final class VanillaClaimBreakdownReaderTest {
             claimContest.placeMarketsInSystem(claimContest.buildMarket(hegemony, 4));
 
             var standing = readTopStanding(
-                new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+                new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                     .readBreakdown(claimContest.getSystem()));
 
             assertThat(standing.standingMarket().marketNameplate().mapIcon())
@@ -202,7 +215,7 @@ final class VanillaClaimBreakdownReaderTest {
             claimContest.placeMarketsInSystem(weaker, claimContest.buildMarket(tritachyon, 7));
 
             var breakdown =
-                new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+                new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                     .readBreakdown(claimContest.getSystem());
 
             assertThat(breakdown.scores())
@@ -226,7 +239,7 @@ final class VanillaClaimBreakdownReaderTest {
             claimContest.placeMarketsInSystem(relay, capital, outpost);
 
             var standing = readTopStanding(
-                new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+                new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                     .readBreakdown(claimContest.getSystem()));
 
             // Economy order, not score order: the weakest colony leads because that is where
@@ -258,7 +271,7 @@ final class VanillaClaimBreakdownReaderTest {
             claimContest.nameMarket(capital, "Chicomoztoc");
             claimContest.placeMarketsInSystem(relay, rival, capital);
 
-            var breakdown = new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+            var breakdown = new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                 .readBreakdown(claimContest.getSystem());
 
             assertThat(readStanding(breakdown, "hegemony").standingMarket().listingPosition())
@@ -282,7 +295,7 @@ final class VanillaClaimBreakdownReaderTest {
             claimContest.nameMarket(capital, "Chicomoztoc");
             claimContest.placeMarketsInSystem(unowned, capital);
 
-            var breakdown = new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+            var breakdown = new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                 .readBreakdown(claimContest.getSystem());
 
             assertThat(readStanding(breakdown, "hegemony").standingMarket().listingPosition())
@@ -302,7 +315,7 @@ final class VanillaClaimBreakdownReaderTest {
                 claimContest.buildMarket(tritachyon, 3));
 
             var breakdown =
-                new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+                new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                     .readBreakdown(claimContest.getSystem());
 
             // The bonus is what turns a small garrison into a claimant, so the box explaining a
@@ -324,7 +337,7 @@ final class VanillaClaimBreakdownReaderTest {
                 claimContest.buildHiddenMarket(hegemony, 2));
 
             var breakdown =
-                new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+                new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                     .readBreakdown(claimContest.getSystem());
 
             // A hidden market cannot claim on its own account but still counts as presence for
@@ -346,7 +359,7 @@ final class VanillaClaimBreakdownReaderTest {
             claimContest.placeMarketsInSystem(haven, base);
 
             var standing = readTopStanding(
-                new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+                new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                     .readBreakdown(claimContest.getSystem()));
 
             // The larger base never stands for the faction, yet it is what the sibling point is
@@ -378,7 +391,7 @@ final class VanillaClaimBreakdownReaderTest {
             claimContest.placeMarketsInSystem(base);
 
             var breakdown =
-                new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+                new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                     .readBreakdown(claimContest.getSystem());
 
             // A scoring standing of its own would count the base twice - it already reaches the
@@ -415,7 +428,7 @@ final class VanillaClaimBreakdownReaderTest {
                 claimContest.buildConditionOnlyMarket(neutral, 0));
 
             var breakdown =
-                new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+                new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                     .readBreakdown(claimContest.getSystem());
 
             assertThat(breakdown.scores())
@@ -435,7 +448,7 @@ final class VanillaClaimBreakdownReaderTest {
             claimContest.placeOffEconomyMarketsInSystem(academy);
 
             var breakdown =
-                new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+                new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                     .readBreakdown(claimContest.getSystem());
 
             // The other way a colony goes unweighed, and it lands the same way: the walk never
@@ -465,7 +478,7 @@ final class VanillaClaimBreakdownReaderTest {
             claimContest.placeOffEconomyMarketsInSystem(cache);
 
             var breakdown =
-                new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+                new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                     .readBreakdown(claimContest.getSystem());
 
             // One standing per faction whatever mixture of unweighed colonies it holds, listed in
@@ -493,7 +506,7 @@ final class VanillaClaimBreakdownReaderTest {
             claimContest.placeOffEconomyMarketsInSystem(claimContest.buildMarket(independent, 9));
 
             var breakdown =
-                new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+                new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                     .readBreakdown(claimContest.getSystem());
 
             // The size-1 colony is the only thing anybody was weighed on, so it leads however large
@@ -527,7 +540,7 @@ final class VanillaClaimBreakdownReaderTest {
             claimContest.placeOffEconomyMarketsInSystem(academy);
 
             var breakdown =
-                new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+                new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                     .readBreakdown(claimContest.getSystem());
 
             // A faction takes one standing or the other, never both: the scored market carries it,
@@ -556,7 +569,7 @@ final class VanillaClaimBreakdownReaderTest {
             claimContest.placeOffEconomyMarketsInSystem(academy);
 
             var standing = readTopStanding(
-                new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+                new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                     .readBreakdown(claimContest.getSystem()));
 
             // The station is on the map in the faction's colours, so an account of the system that
@@ -590,7 +603,7 @@ final class VanillaClaimBreakdownReaderTest {
             claimContest.placeOffEconomyMarketsInSystem(academy);
 
             var standing = readTopStanding(
-                new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+                new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                     .readBreakdown(claimContest.getSystem()));
 
             assertThat(standing.standingMarket().listingPosition())
@@ -612,7 +625,7 @@ final class VanillaClaimBreakdownReaderTest {
             claimContest.placeOffEconomyMarketsInSystem(claimContest.buildMarket(null, 9));
 
             var breakdown =
-                new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+                new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                     .readBreakdown(claimContest.getSystem());
 
             assertThat(breakdown.scores())
@@ -631,7 +644,7 @@ final class VanillaClaimBreakdownReaderTest {
             claimContest.placeOffEconomyMarketsInSystem(claimContest.buildMarket(independent, 6));
 
             var breakdown =
-                new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+                new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                     .readBreakdown(claimContest.getSystem());
 
             // Vanilla counts siblings over the economy's own markets, so admitting an unregistered
@@ -652,7 +665,7 @@ final class VanillaClaimBreakdownReaderTest {
             claimContest.placeOffEconomyMarketsInSystem(claimContest.buildMarket(independent, 9));
 
             var breakdown =
-                new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+                new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                     .readBreakdown(claimContest.getSystem());
 
             // The unlisted colony out-sizes everything present and still takes nothing: its owner
@@ -674,7 +687,7 @@ final class VanillaClaimBreakdownReaderTest {
             claimContest.placeMarketsInSystem(claimContest.buildMarket(player, 8));
 
             var breakdown =
-                new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+                new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                     .readBreakdown(claimContest.getSystem());
 
             // Scored, so a system the player holds a colony in never reports as one they have
@@ -702,7 +715,7 @@ final class VanillaClaimBreakdownReaderTest {
                 claimContest.buildMarket(hegemony, 3));
 
             var breakdown =
-                new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+                new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                     .readBreakdown(claimContest.getSystem());
 
             // The player tops the standings and still loses the system: scoring it widens what
@@ -725,7 +738,7 @@ final class VanillaClaimBreakdownReaderTest {
                 claimContest.buildMarket(tritachyon, 7));
 
             var breakdown =
-                new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+                new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                     .readBreakdown(claimContest.getSystem());
 
             assertThat(breakdown.scores())
@@ -746,7 +759,7 @@ final class VanillaClaimBreakdownReaderTest {
                 claimContest.buildMarket(hegemony, 3));
 
             var breakdown =
-                new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+                new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                     .readBreakdown(claimContest.getSystem());
 
             // The pirates out-score everyone and still cannot take the system: territoriality
@@ -769,7 +782,7 @@ final class VanillaClaimBreakdownReaderTest {
                 claimContest.buildFaction("tritachyon", true),
                 5);
 
-            var reader = new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG);
+            var reader = new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN);
 
             claimContest.placeMarketsInSystem(hegemonyColony, tritachyonColony);
 
@@ -800,7 +813,7 @@ final class VanillaClaimBreakdownReaderTest {
                 claimContest.buildMarket(hegemony, 5));
 
             var breakdown =
-                new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+                new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                     .readBreakdown(claimContest.getSystem());
 
             // Both factions stand at 6 - Tri-Tachyon on its size-6 colony, the Hegemony on its
@@ -826,7 +839,7 @@ final class VanillaClaimBreakdownReaderTest {
                 claimContest.buildMarket(hegemony, 5));
 
             var breakdown =
-                new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+                new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                     .readBreakdown(claimContest.getSystem());
 
             // Ranking is by score alone, and the sort has to be stable: a tie in the listing
@@ -847,7 +860,7 @@ final class VanillaClaimBreakdownReaderTest {
                 claimContest.buildMarket(hegemony, 3));
 
             var breakdown =
-                new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+                new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                     .readBreakdown(claimContest.getSystem());
 
             // An unowned market belongs to nobody's standing, and the mechanic would throw on
@@ -868,7 +881,7 @@ final class VanillaClaimBreakdownReaderTest {
             claimContest.overrideClaimingFaction("luddic_church");
 
             var breakdown =
-                new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+                new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                     .readBreakdown(claimContest.getSystem());
 
             // The override settles the claim without being scored for it, and the faction it
@@ -890,7 +903,7 @@ final class VanillaClaimBreakdownReaderTest {
             claimContest.placeMarketsInSystem(claimContest.buildMarket(pirates, 9));
 
             var breakdown =
-                new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+                new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                     .readBreakdown(claimContest.getSystem());
 
             assertThat(breakdown.overrideFactionId())
@@ -914,10 +927,10 @@ final class VanillaClaimBreakdownReaderTest {
                 claimContest.buildMarket(pirates, 4));
 
             var throughIndex = new VanillaClaimBreakdownReader(
-                    ColonyVisibility.BASE_FOG,
+                    EVERY_COLONY_KNOWN,
                     new SystemColoniesIndex(Global.getSector()))
                 .readBreakdown(claimContest.getSystem());
-            var throughOwnWalk = new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+            var throughOwnWalk = new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                 .readBreakdown(claimContest.getSystem());
 
             // Both stated against the same literals rather than against each other, so a pair that
@@ -935,18 +948,17 @@ final class VanillaClaimBreakdownReaderTest {
         }
 
         @Test
-        void reportsAnUnweighedDerelictNobodyHasSeenAsUnknown() {
+        void reportsAnUnweighedDerelictThePortWithholdsAsUnknown() {
             // The mechanic only ever weighs what the economy lists, and a listed station is an
             // outpost - so a derelict reaches a contest as an unweighed presence and never as a
-            // score. What the gate still does is decline to name it in a system no fleet has been
-            // to and nobody lives in.
+            // score. What the port still does is decline to name it.
             var neutral = claimContest.buildFaction(Factions.NEUTRAL, false);
             var derelict = claimContest.buildMarket(neutral, 3);
 
             claimContest.markMarketAsAbandonedStation(derelict);
             claimContest.placeOffEconomyMarketsInSystem(derelict);
 
-            var breakdown = new VanillaClaimBreakdownReader(BOTH_GATES_ON)
+            var breakdown = new VanillaClaimBreakdownReader(NO_COLONY_KNOWN)
                 .readBreakdown(claimContest.getSystem());
 
             assertThat(breakdown.scores())
@@ -958,11 +970,10 @@ final class VanillaClaimBreakdownReaderTest {
         }
 
         @Test
-        void weighsAnOutpostLikeAnyColonyAndReportsItKnown() {
-            // The shape the two derelict cases here used to be posed in, and a different thing
-            // now: a station a faction keeps and the economy lists is an outpost. Vanilla reads
-            // only the listing and tests no condition, so it scores at its size like any colony -
-            // and no gate holds an outpost back, so the box may name it.
+        void weighsAnOutpostLikeAnyColony() {
+            // A station a faction keeps and the economy lists. Vanilla reads only the listing and
+            // tests no condition, so it scores at its size like any colony - the derelict
+            // condition reaching no term of the arithmetic.
             var hegemony = claimContest.buildFaction("hegemony", true);
             var outpost = claimContest.buildMarket(hegemony, 3);
 
@@ -970,7 +981,7 @@ final class VanillaClaimBreakdownReaderTest {
             claimContest.placeMarketsInSystem(outpost);
 
             var standing = readTopStanding(
-                new VanillaClaimBreakdownReader(BOTH_GATES_ON)
+                new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                     .readBreakdown(claimContest.getSystem()));
 
             assertThat(standing.standingMarket().computeTotalScore())
@@ -980,39 +991,37 @@ final class VanillaClaimBreakdownReaderTest {
         }
 
         @Test
-        void reportsADerelictAsKnownOnceAColonyStandsBesideIt() {
-            // Knowledge is the system's answer rather than the market's, so nothing about the
-            // derelict itself changes between this case and the one above it - only who else is
-            // in the system to have seen it.
+        void reportsEachMarketAsThePortAnswersForIt() {
+            // Knowledge is answered over the whole place and spent per market, so a port naming
+            // one of two colonies leaves the other unnamed - the reader carrying whichever answer
+            // came back rather than one verdict for the system.
             var hegemony = claimContest.buildFaction("hegemony", true);
-            var neutral = claimContest.buildFaction(Factions.NEUTRAL, false);
+            var tritachyon = claimContest.buildFaction("tritachyon", true);
             var capital = claimContest.buildMarket(hegemony, 5);
-            var derelict = claimContest.buildMarket(neutral, 3);
+            var rival = claimContest.buildMarket(tritachyon, 4);
 
-            claimContest.markMarketAsAbandonedStation(derelict);
-            claimContest.placeMarketsInSystem(capital);
-            claimContest.placeOffEconomyMarketsInSystem(derelict);
+            claimContest.nameMarket(capital, "Chicomoztoc");
+            claimContest.nameMarket(rival, "Eventide");
+            claimContest.placeMarketsInSystem(capital, rival);
 
-            var breakdown = new VanillaClaimBreakdownReader(BOTH_GATES_ON)
+            var breakdown = new VanillaClaimBreakdownReader(buildPortNaming("Chicomoztoc"))
                 .readBreakdown(claimContest.getSystem());
 
-            // The derelict is neutral's, so it stands apart from the capital's own standing -
-            // reached by its kind rather than by rank, which is not what this case is about.
-            var derelictStanding = breakdown.scores().stream()
-                .filter(PresenceOnlyClaimStanding.class::isInstance)
-                .findFirst()
-                .orElseThrow();
-
-            assertThat(derelictStanding.readHeldMarkets())
-                .extracting(MarketClaimBreakdown::isKnownToPlayer)
-                .containsExactly(true);
+            assertThat(breakdown.scores())
+                .flatExtracting(FactionClaimStanding::readHeldMarkets)
+                .extracting(
+                    market -> market.marketNameplate().displayName(),
+                    MarketClaimBreakdown::isKnownToPlayer)
+                .containsExactlyInAnyOrder(
+                    tuple("Chicomoztoc", true),
+                    tuple("Eventide", false));
         }
 
         @Test
-        void resolvesTheSameContestUnderAGatingRuleAsUnderTheFogAlone() {
-            // Widening or narrowing what may be shown never moves what is scored. The rule rides
-            // on each market for a display to read, and vanilla's own answer - claimant, scores
-            // and the order they rank in - is left exactly where it was.
+        void resolvesTheSameContestUnderEitherPort() {
+            // Widening or narrowing what may be named never moves what is scored. The port's
+            // answer rides on each market for a display to read, and vanilla's own - claimant,
+            // scores and the order they rank in - is left exactly where it was.
             var hegemony = claimContest.buildFaction("hegemony", true);
             var pirates = claimContest.buildFaction("pirates", true);
             var derelict = claimContest.buildMarket(hegemony, 4);
@@ -1022,21 +1031,21 @@ final class VanillaClaimBreakdownReaderTest {
                 derelict,
                 claimContest.buildHiddenMarket(pirates, 6));
 
-            var underGates = new VanillaClaimBreakdownReader(BOTH_GATES_ON)
+            var namingNothing = new VanillaClaimBreakdownReader(NO_COLONY_KNOWN)
                 .readBreakdown(claimContest.getSystem());
-            var underFogAlone = new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+            var namingEverything = new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                 .readBreakdown(claimContest.getSystem());
 
             // Both stated against the same literals rather than against each other, so a pair
             // that drifted together still fails.
-            assertThat(underGates.claimantFactionId())
+            assertThat(namingNothing.claimantFactionId())
                 .isEqualTo("hegemony");
-            assertThat(underGates.scores())
+            assertThat(namingNothing.scores())
                 .extracting(FactionClaimStanding::factionId, FactionClaimStanding::score)
                 .containsExactly(tuple("hegemony", 4), tuple("pirates", 0));
-            assertThat(underFogAlone.claimantFactionId())
+            assertThat(namingEverything.claimantFactionId())
                 .isEqualTo("hegemony");
-            assertThat(underFogAlone.scores())
+            assertThat(namingEverything.scores())
                 .extracting(FactionClaimStanding::factionId, FactionClaimStanding::score)
                 .containsExactly(tuple("hegemony", 4), tuple("pirates", 0));
         }
@@ -1044,7 +1053,7 @@ final class VanillaClaimBreakdownReaderTest {
         @Test
         void reportsNothingForANullSystem() {
 
-            var breakdown = new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+            var breakdown = new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                 .readBreakdown(null);
 
             assertThat(breakdown)
@@ -1065,7 +1074,7 @@ final class VanillaClaimBreakdownReaderTest {
                 claimContest.buildMarket(hegemony, 4),
                 claimContest.buildMarket(tritachyon, 7));
 
-            assertThat(new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+            assertThat(new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                     .readClaimingFactionId(claimContest.getSystem()))
                 .isEqualTo("tritachyon");
         }
@@ -1078,7 +1087,7 @@ final class VanillaClaimBreakdownReaderTest {
             claimContest.placeMarketsInSystem(claimContest.buildMarket(hegemony, 6));
             claimContest.overrideClaimingFaction("luddic_church");
 
-            assertThat(new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+            assertThat(new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                     .readClaimingFactionId(claimContest.getSystem()))
                 .isEqualTo("luddic_church");
         }
@@ -1090,14 +1099,14 @@ final class VanillaClaimBreakdownReaderTest {
 
             claimContest.placeMarketsInSystem(claimContest.buildMarket(pirates, 9));
 
-            assertThat(new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+            assertThat(new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                     .readClaimingFactionId(claimContest.getSystem()))
                 .isNull();
         }
 
         @Test
         void reportsUnclaimedForANullSystem() {
-            assertThat(new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+            assertThat(new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                     .readClaimingFactionId(null))
                 .isNull();
         }
@@ -1111,21 +1120,21 @@ final class VanillaClaimBreakdownReaderTest {
 
             claimContest.overrideClaimingFaction("luddic_church");
 
-            assertThat(new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+            assertThat(new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                     .readCoreFactionId(claimContest.getSystem()))
                 .isEqualTo("luddic_church");
         }
 
         @Test
         void reportsNoCoreWhenTheFlagIsUnset() {
-            assertThat(new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+            assertThat(new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                     .readCoreFactionId(claimContest.getSystem()))
                 .isNull();
         }
 
         @Test
         void reportsNoCoreForANullSystem() {
-            assertThat(new VanillaClaimBreakdownReader(ColonyVisibility.BASE_FOG)
+            assertThat(new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                     .readCoreFactionId(null))
                 .isNull();
         }

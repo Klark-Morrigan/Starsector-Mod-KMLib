@@ -66,26 +66,12 @@ public final class LocationColonies {
 
         for (var market : MarketColocation.readLargestMarketsPerFaction(ownedMarkets)) {
 
-            // Kind is resolved off the market that won the place, so a colony superseded by a
-            // larger market on its entity is classified as whatever the winner is - not as
-            // whatever the loser was.
-            //
-            // The listing is read once and handed to both, rather than let the kind read ask the
-            // market whether it is in the economy: listing is decided here by identity against
-            // the economy's own set, and a second answer to it could disagree with the one the
-            // colony carries.
-            var isListedByEconomy = isListedByEconomy(listedMarkets, market);
-
-            colonies.add(new Colony(
-                market,
-                ColonyKind.resolveKind(market, isListedByEconomy),
-                isListedByEconomy));
+            // Listing is decided here by identity against the economy's own set rather than by
+            // asking the market, so the one answer travels with the colony and a later reader
+            // cannot arrive at a second.
+            colonies.add(new Colony(market, isListedByEconomy(listedMarkets, market)));
         }
-
-        // The register is opened here, with the set, because this is the one point at which the
-        // sector is in hand: a colony carries no route back to it, and a projection asked of the
-        // set later would have nowhere to read the player's travels from.
-        return new Colonies(colonies, SectorColonySightings.readSightings(sector));
+        return new Colonies(colonies);
     }
 
     // Appends the colonies among a listing, in the order the listing gives them. Kept as one pass

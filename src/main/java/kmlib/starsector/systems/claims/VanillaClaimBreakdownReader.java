@@ -8,7 +8,7 @@ import com.fs.starfarer.api.util.Misc;
 
 import kmlib.starsector.colonies.Colonies;
 import kmlib.starsector.colonies.Colony;
-import kmlib.starsector.colonies.ColonyVisibility;
+import kmlib.starsector.colonies.KnownColonyReader;
 import kmlib.starsector.colonies.SystemColonies;
 import kmlib.starsector.factions.FactionFlags;
 import kmlib.starsector.markets.Markets;
@@ -74,11 +74,11 @@ import java.util.Set;
  * decivilised world, reaches the contest as a presence and nothing more: it is unowned and
  * off-economy, so it is never weighed, never counted as a sibling and can move no claimant.
  *
- * <p>A visibility rule is taken alongside and reaches the contest nowhere: it decides only what
+ * <p>A knowledge port is taken alongside and reaches the contest nowhere: it decides only what
  * each market's breakdown reports about the player's knowledge of it, which a display uses to
- * withhold a name. Taken at all because knowledge is no longer a fact a market carries - a
- * derelict or a concealed colony is known only where somebody has seen it, which is a question
- * about the system.
+ * withhold a name. Taken as a port rather than resolved here because knowledge is no fact of the
+ * sector's - a derelict or a concealed colony is known only where somebody has seen it, and which
+ * shapes are held to that at all is the caller's judgement.
  *
  * <p>That colony read walks the whole system, so a caller reading several surfaces off each system
  * of a sector would pay the walk once per surface. A reader built for such a pass therefore takes
@@ -107,36 +107,39 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader, 
     private final SystemColoniesIndex coloniesIndex;
 
     // What the player may be told about the colonies met on the walk. Applied to no part of the
-    // contest - see readClaimedMarkets - and carried only so each market's breakdown can say
+    // contest - see readClaimedMarkets - and spent only so each market's breakdown can say
     // whether a display naming it would be telling the player something they have no way of
-    // knowing. Required rather than defaulted, because a reader silently answering under a rule
-    // nobody stated would report a derelict as known on a surface built to hide exactly that.
-    private final ColonyVisibility visibility;
+    // knowing. An absent port names nothing, rather than a reader silently answering under a rule
+    // nobody stated and reporting a derelict as known on a surface built to hide exactly that.
+    private final KnownColonyReader knownColonyReader;
 
     /**
      * A reader with no pass behind it, walking each system afresh on every ask.
      *
-     * @param visibility what the player may be shown of the colonies met, carried onto each
-     *                   market's breakdown
+     * @param knownColonyReader what this reader asks which of the colonies it meets the player may
+     *                          be told about, carried onto each market's breakdown; null names none
      */
-    public VanillaClaimBreakdownReader(ColonyVisibility visibility) {
-        this(visibility, null);
+    public VanillaClaimBreakdownReader(KnownColonyReader knownColonyReader) {
+        this(knownColonyReader, null);
     }
 
     /**
      * A reader sharing one pass's colony walk, so a system this pass has already read costs
      * nothing to read again.
      *
-     * @param visibility    what the player may be shown of the colonies met, carried onto each
-     *                      market's breakdown
-     * @param coloniesIndex the pass's colony index, discarded with the pass that opened it;
-     *                      null reads each system afresh, as the no-index reader does
+     * @param knownColonyReader what this reader asks which of the colonies it meets the player may
+     *                          be told about, carried onto each market's breakdown; null names none
+     * @param coloniesIndex     the pass's colony index, discarded with the pass that opened it;
+     *                          null reads each system afresh, as the no-index reader does
      */
     public VanillaClaimBreakdownReader(
-            ColonyVisibility visibility,
+            KnownColonyReader knownColonyReader,
             SystemColoniesIndex coloniesIndex) {
 
-        this.visibility = visibility;
+        this.knownColonyReader = knownColonyReader == null
+            ? KnownColonyReader.NOTHING_KNOWN
+            : knownColonyReader;
+
         this.coloniesIndex = coloniesIndex;
     }
 
@@ -147,7 +150,7 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader, 
             return SystemClaimBreakdown.NONE;
         }
         var overrideFactionId = readCoreFactionId(system);
-        var claimedMarkets = readClaimedMarkets(readColonies(system), visibility);
+        var claimedMarkets = readClaimedMarkets(readColonies(system), knownColonyReader);
 
         // An override answers the question before any market is weighed, so it stands as the
         // claimant even where the scores point elsewhere; those scores stay on as context.
@@ -189,19 +192,19 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader, 
     // game itself would not report. Whether the player knows of a colony rides each market instead,
     // for a display to withhold.
     //
-    // That knowledge is taken from the projection rather than re-derived per market, because it
-    // is no longer a fact a market carries: an abandoned station or a concealed colony is known
-    // only where somebody has seen it, which the set answers over the whole system at once. The
-    // two reads therefore run over one walk - the contest off the set, the fog off its
-    // projection - so a market can never be scored as present and named as unknown for reasons
-    // that disagree.
+    // That knowledge is asked of the port over the whole place rather than re-derived per market,
+    // because it is no fact a market carries: an abandoned station or a concealed colony is known
+    // only where somebody has seen it standing, which is a question about the system. The two
+    // reads therefore run over one walk - the contest off the set, the fog off the port's
+    // selection from it - so a market can never be scored as present and named as unknown for
+    // reasons that disagree.
     private static List<ClaimedMarket> readClaimedMarkets(
             Colonies systemColonies,
-            ColonyVisibility visibility) {
+            KnownColonyReader knownColonyReader) {
 
         var colonies = systemColonies.colonies();
         var economyMarkets = selectEconomyListedMarkets(colonies);
-        var knownColonies = collectKnownColonies(systemColonies, visibility);
+        var knownColonies = collectKnownColonies(systemColonies, knownColonyReader);
         var claimedMarkets = new ArrayList<ClaimedMarket>(colonies.size());
 
         for (var colony : colonies) {
@@ -219,19 +222,20 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader, 
         return claimedMarkets;
     }
 
-    // The projection, held for membership tests rather than walked per market - the walk below
-    // asks it once per colony, and a list scan would make that quadratic in a system's markets.
+    // The port's selection, held for membership tests rather than walked per market - the walk
+    // below asks it once per colony, and a list scan would make that quadratic in a system's
+    // markets.
     //
     // Identity rather than equality, as every other market comparison in the contest is: two
     // indistinguishable twin colonies are distinct entries the set kept apart, and an equality
     // test would let one answer the fog question on the other's behalf.
     private static Set<Colony> collectKnownColonies(
             Colonies systemColonies,
-            ColonyVisibility visibility) {
+            KnownColonyReader knownColonyReader) {
 
         Set<Colony> knownColonies = Collections.newSetFromMap(new IdentityHashMap<>());
 
-        knownColonies.addAll(systemColonies.readKnownColonies(visibility));
+        knownColonies.addAll(knownColonyReader.readKnownColonies(systemColonies));
 
         return knownColonies;
     }
@@ -417,11 +421,12 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader, 
     // a box that would rather not name an unfound colony reads the flag instead. It is handed
     // in rather than read off the colony because it is the system's answer, not the market's.
     //
-    // How the colony is identified - its name, the glyph the map marks its entity with, and what
-    // kind of place it is - is recorded here rather than looked up by whatever lists it: reading
-    // them on the walk that met the market is what stops a second lookup answering for a
-    // different one. The kind reaches no term of the arithmetic; an account listing an unowned
-    // collapsed colony beside an unowned hulk simply has nothing else to tell the two apart with.
+    // How the colony is identified - its name, the glyph the map marks its entity with, and the
+    // id that says which colony it actually is - is recorded here rather than looked up by
+    // whatever lists it: reading them on the walk that met the market is what stops a second
+    // lookup answering for a different one. The id reaches no term of the arithmetic; it is what
+    // lets a display pair this row with whatever else it knows about the same colony, which a
+    // display name cannot do - vanilla names a station colony and its defending station alike.
     private static MarketClaimBreakdown computeMarketClaim(
             Colony colony,
             List<MarketAPI> economyMarkets,
@@ -438,7 +443,7 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader, 
         }
         return new MarketClaimBreakdown(
             Markets.readNameplate(market),
-            colony.kind(),
+            market.getId(),
             listingPosition,
             isKnownToPlayer,
             new ContestAdmission(colony.isHidden(), !colony.isListedByEconomy()),
