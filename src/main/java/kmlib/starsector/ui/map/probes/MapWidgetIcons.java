@@ -13,11 +13,11 @@ import java.util.Map;
  * Reaches the icon map of whichever map widget is on screen - the insertion-ordered collection the
  * widget draws from, keyed by the entity each icon belongs to.
  *
- * <p>Finds the widget by descending from the map tab until a component answers the icon accessor.
- * The widget is neither the tab nor the surface picked out of it - the tab holds a scrolling panel,
- * whose content container holds the map - so a fixed path would be a fact about one build's layout.
- * By method name rather than by field type for the same reason: the accessor is public and its name
- * survives obfuscation, while the fields down to it do not.
+ * <p>Finds the widget with {@link SubtreeSearch}, descending from the map tab until a component
+ * answers the icon accessor. The widget is neither the tab nor the surface picked out of it - the
+ * tab holds a scrolling panel, whose content container holds the map - so a fixed path would be a
+ * fact about one build's layout. By method name rather than by field type for the same reason: the
+ * accessor is public and its name survives obfuscation, while the fields down to it do not.
  *
  * <p>Read-only, and it hands back the widget's own live collection rather than a copy: every caller
  * here reads it within the call and keeps nothing, and copying a map that can hold a nebula per star
@@ -62,7 +62,7 @@ final class MapWidgetIcons {
             if (mapTab == null) {
                 return null;
             }
-            var icons = resolveIconMapUnder(mapTab, 0);
+            var icons = SubtreeSearch.findFirstUnder(mapTab, MapWidgetIcons::readIconMapOf);
             if (icons == null) {
                 warnOnce("no component under the map tab answers " + GET_ICONS_METHOD, null);
             }
@@ -85,25 +85,8 @@ final class MapWidgetIcons {
             failure);
     }
 
-    // Depth-first from the tab, first component that answers the accessor wins. Only the map widget
-    // defines it, so there is nothing else the walk could find first.
-    private static Map<?, ?> resolveIconMapUnder(Object component, int depth) {
-        if (component == null || depth > ProbeLimits.MAX_SEARCH_DEPTH) {
-            return null;
-        }
-        var icons = readIconMapOf(component);
-        if (icons != null) {
-            return icons;
-        }
-        for (var child : CoreUiTree.readChildrenOf(component)) {
-            var childIcons = resolveIconMapUnder(child, depth + 1);
-            if (childIcons != null) {
-                return childIcons;
-            }
-        }
-        return null;
-    }
-
+    // What the search above tries on each component: only the map widget defines the accessor, so
+    // the first component that answers is the widget and there is nothing else it could find first.
     private static Map<?, ?> readIconMapOf(Object component) {
         try {
             return CoreUiTree.invokeNoArg(component, GET_ICONS_METHOD) instanceof Map<?, ?> icons

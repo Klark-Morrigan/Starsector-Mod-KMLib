@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.function.Supplier;
 
 /**
- * Answers "which tooltip is the vanilla map screen showing right now?" for an overlay that must
+ * Answers "which tooltip is the map surface on screen showing right now?" for an overlay that must
  * step aside for it. When the cursor is over a star (or any entity) the map draws its own tooltip;
  * an overlay drawing its own box wants to suppress it then so only one shows.
  *
@@ -24,9 +24,9 @@ import java.util.function.Supplier;
  * that tree and not a typed field on the map widget - the widget that draws it is a tooltip <em>host</em>
  * (the core UI's own {@code getTooltip()} contract), which holds the currently shown tooltip and hands
  * it back from {@code getTooltip()}, clearing it to null when the tooltip hides. So the read searches a
- * subtree for any host whose {@code getTooltip()} returns a live {@code StandardTooltipV2}. That is the
- * same read the core UI does itself to render a child's tooltip, so it tracks exactly when a tooltip is
- * up.
+ * subtree ({@link SubtreeSearch}) for any host whose {@code getTooltip()} returns a live
+ * {@code StandardTooltipV2}. That is the same read the core UI does itself to render a child's tooltip,
+ * so it tracks exactly when a tooltip is up.
  *
  * <p>Where that search starts is the caller's, taken as a port. A map surface is not always a core tab -
  * a mod that docks one adds a panel to the core UI itself, and on the frames such a panel is up there is
@@ -69,9 +69,9 @@ public final class VanillaMapTooltipProbe {
     private static final String TOOLTIP_CLASS_NAME = "com.fs.starfarer.ui.impl.StandardTooltipV2";
 
     // The accessors this probe names for itself: a host's current tooltip, and (to tell a shown tooltip
-    // from a merely-configured one) the tooltip's fade state. The hops down to the tab and a component's
-    // children are {@link CoreUiTree}'s. All are part of the core UI's contract, so they survive
-    // obfuscation.
+    // from a merely-configured one) the tooltip's fade state. The hop to a component's children is
+    // {@link CoreUiTree}'s, and the hop to the root is the caller's. All are part of the core UI's
+    // contract, so they survive obfuscation.
     private static final String GET_TOOLTIP_METHOD = "getTooltip";
     private static final String GET_FADER_METHOD = "getFader";
     private static final String IS_FADED_OUT_METHOD = "isFadedOut";
@@ -104,7 +104,7 @@ public final class VanillaMapTooltipProbe {
     }
 
     /**
-     * @return the core-UI component the vanilla map screen is currently showing as a tooltip, or
+     * @return the core-UI component the searched surface is currently showing as a tooltip, or
      *         {@code null} when none is up; {@code null} on any read failure too, so the caller
      *         falls back to its own drawing rather than acting on a broken read
      */
@@ -123,7 +123,8 @@ public final class VanillaMapTooltipProbe {
                 ? new WalkTrace(searchRoot.getClass().getName())
                 : null;
 
-            var tooltip = searchSubtreeForShownTooltip(searchRoot, ProbeLimits.MAX_SEARCH_DEPTH, trace);
+            var tooltip = SubtreeSearch.findFirstUnder(
+                searchRoot, component -> readShownTooltipOf(component, trace));
 
             reportWalkOutcome(tooltip != null, trace);
             return tooltip;
@@ -136,7 +137,7 @@ public final class VanillaMapTooltipProbe {
     }
 
     /**
-     * @return whether the vanilla map screen is currently drawing a tooltip; {@code false} on any
+     * @return whether the searched surface is currently drawing a tooltip; {@code false} on any
      *         read failure, so the caller draws rather than hides on a broken read
      */
     public boolean isTooltipShowing() {
@@ -190,47 +191,31 @@ public final class VanillaMapTooltipProbe {
         return false;
     }
 
-    // The first live vanilla tooltip in this subtree, or null when none is up. Recurses the panel's
-    // children by depth, stopping at the bound so a malformed tree cannot loop the walk. Records every
-    // shown tooltip into the trace (when one is given, i.e. DEBUG is on) so a walk that finds no vanilla
-    // tooltip still says what it saw.
-    private static Object searchSubtreeForShownTooltip(
-            Object component,
-            int depthRemaining,
-            WalkTrace trace) {
+    // One component's answer to the search above: the live vanilla tooltip it is showing, or null for
+    // every component that is not showing one - which is all of a tree but at most one node, so this
+    // is also what lets the walk go on descending. Records every shown tooltip into the trace (when
+    // one is given, i.e. DEBUG is on) so a walk that finds no vanilla tooltip still says what it saw,
+    // which it can do here because a read is called on each node whether or not it answers.
+    private static Object readShownTooltipOf(Object component, WalkTrace trace) {
 
-        if (component == null || depthRemaining < 0) {
-            return null;
-        }
         if (trace != null) {
             trace.nodesVisited++;
         }
 
         var tooltip = findTooltipShownBy(component);
 
-        if (tooltip != null && isStandardTooltip(tooltip)) {
-
-            // A widget can hold a configured tooltip whose fader sits idle at zero (never hovered), which
-            // must not suppress our overlay - only a tooltip actually faded in should. So gate on the
-            // fader, the same read vanilla does before it renders a child's tooltip.
-            var visible = isTooltipVisible(tooltip);
-
-            if (trace != null) {
-                trace.recordShownTooltip(tooltip, visible);
-            }
-            if (visible) {
-                return tooltip;
-            }
+        if (tooltip == null || !isStandardTooltip(tooltip)) {
+            return null;
         }
-        for (var child : CoreUiTree.readChildrenOf(component)) {
+        // A widget can hold a configured tooltip whose fader sits idle at zero (never hovered), which
+        // must not suppress our overlay - only a tooltip actually faded in should. So gate on the
+        // fader, the same read vanilla does before it renders a child's tooltip.
+        var visible = isTooltipVisible(tooltip);
 
-            var found = searchSubtreeForShownTooltip(child, depthRemaining - 1, trace);
-
-            if (found != null) {
-                return found;
-            }
+        if (trace != null) {
+            trace.recordShownTooltip(tooltip, visible);
         }
-        return null;
+        return visible ? tooltip : null;
     }
 
     // Whether the tooltip's runtime class is, or descends from, the vanilla tooltip class. Its

@@ -6,6 +6,7 @@ import kmlib.testfixtures.starsector.ui.map.probes.SectorMapWidgetFake;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -21,6 +22,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>The rule carries what a hover in game space is allowed to answer. Too loose and the map the
  * player is looking at is treated as an intruder in its own screen; too tight and the surface a mod
  * put on the campaign HUD is invisible to everything that would otherwise stand clear of it.
+ *
+ * <p>The memo's bound is pinned in both directions because both halves are load-bearing and they
+ * pull against each other: without the memory a per-frame caller walks the whole core UI every
+ * frame, and without the bound a reading taken while a screen was between states stands for as long
+ * as the tree root does - the rest of the session, in the campaign's own core UI.
  */
 class EmbeddedMapFinderTest {
 
@@ -174,6 +180,65 @@ class EmbeddedMapFinderTest {
         }
 
         @Test
+        void findEmbeddedMapsWalksTheSameTreeAgainOnceTheMemoryElapses() {
+            // The root outlives changes within the tree, so an answer keyed on it alone would stand
+            // for as long as the campaign's own core UI does - which is the session. A screen the
+            // player closed is still in the tree while it fades and is no longer the map on screen,
+            // so a walk taken across those frames counts it as somebody else's map; this is what
+            // corrects that reading rather than living with it for the rest of the run.
+            var rootFake = new CoreUiComponentFake(new SectorMapWidgetFake());
+            var clockFake = new SteppedClockFake();
+            var finder = new EmbeddedMapFinder(
+                () -> rootFake, () -> NO_MAP_TAB_ON_SCREEN, clockFake::readNanos);
+
+            finder.findEmbeddedMaps();
+            clockFake.advanceBy(EmbeddedMapFinder.MEMO_LIFETIME_NANOS);
+            finder.findEmbeddedMaps();
+
+            assertThat(rootFake.countChildrenReads())
+                .isEqualTo(2);
+        }
+
+        @Test
+        void findEmbeddedMapsReusesTheWalkWithinTheMemory() {
+            // The other half of the same bound, and the reason it is a bound rather than no memo at
+            // all: a caller in a render pass asks per frame, and the walk descends the whole core UI
+            // by name.
+            var rootFake = new CoreUiComponentFake(new SectorMapWidgetFake());
+            var clockFake = new SteppedClockFake();
+            var finder = new EmbeddedMapFinder(
+                () -> rootFake, () -> NO_MAP_TAB_ON_SCREEN, clockFake::readNanos);
+
+            finder.findEmbeddedMaps();
+            clockFake.advanceBy(EmbeddedMapFinder.MEMO_LIFETIME_NANOS - 1);
+            finder.findEmbeddedMaps();
+
+            assertThat(rootFake.countChildrenReads())
+                .isEqualTo(1);
+        }
+
+        @Test
+        void findEmbeddedMapsAnswersTheScreenAsItStandsAfterTheMemoryElapses() {
+            // What the re-walk is for, in the shape the fault took: a map counted as embedded while
+            // the screen it belongs to was between states stops being counted once the reads settle,
+            // rather than standing as the answer for as long as the root does.
+            var mapTabFake = new SectorMapWidgetFake();
+            var minimapFake = new SectorMapWidgetFake();
+            var rootFake = new CoreUiComponentFake(mapTabFake, minimapFake);
+            var clockFake = new SteppedClockFake();
+            var shownMapTabFakes = Arrays.asList(NO_MAP_TAB_ON_SCREEN, mapTabFake).iterator();
+            var finder = new EmbeddedMapFinder(
+                () -> rootFake, shownMapTabFakes::next, clockFake::readNanos);
+
+            finder.findEmbeddedMaps();
+            clockFake.advanceBy(EmbeddedMapFinder.MEMO_LIFETIME_NANOS);
+
+            assertThat(finder.findEmbeddedMaps())
+                .extracting(EmbeddedMap::widget)
+                .containsExactly(minimapFake);
+        }
+
+        @Test
         void findEmbeddedMapsAnswersNothingWhenTheTreeCannotBeRead() {
             // The reach is by-name reflection into classes no game build is obliged to keep. A
             // caller is in the middle of a frame, so a broken reach costs the answer and not the
@@ -186,6 +251,22 @@ class EmbeddedMapFinderTest {
 
             assertThat(finder.findEmbeddedMaps())
                 .isEmpty();
+        }
+    }
+
+    // An elapsed clock a test moves itself, so the memo's interval is exercised without one. Stepped
+    // rather than scripted per reading, the finder reading the clock a differing number of times
+    // depending on which branch it takes - which is behaviour a test of the interval must not pin.
+    private static final class SteppedClockFake {
+
+        private long nanos;
+
+        private void advanceBy(long elapsedNanos) {
+            nanos += elapsedNanos;
+        }
+
+        private long readNanos() {
+            return nanos;
         }
     }
 }

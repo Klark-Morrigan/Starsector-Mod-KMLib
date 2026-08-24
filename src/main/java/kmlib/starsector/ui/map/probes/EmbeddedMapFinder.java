@@ -10,6 +10,7 @@ import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 /**
@@ -37,15 +38,24 @@ import java.util.function.Supplier;
  *
  * <p>An answer is remembered against the tree it was walked out of, because a caller asking per
  * frame cannot pay for a walk of the core UI per frame, while a widget a mod built once stays where
- * it was put. The tree is what the memo is keyed on rather than a load or an elapsed time: the core
- * UI in force changes when an interaction dialog stands up its own, so keying on it re-walks
- * exactly when the tree being described is a different one, and never merely because time passed.
+ * it was put. The tree is what the memo is keyed on: the core UI in force changes when an
+ * interaction dialog stands up its own, so keying on it re-walks exactly when the tree being
+ * described is a different one.
+ *
+ * <p>It is also remembered for a moment only, and the reason is that the root outlives changes
+ * <em>within</em> the tree. A core screen the player closes is still in that tree while it fades,
+ * and it is no longer the map on screen, so a walk taken across those frames counts it as somebody
+ * else's map - a true reading of that instant and a wrong one a moment later. Keyed on the root
+ * alone that reading would stand for as long as the root does, which in the campaign's own core UI
+ * is the rest of the session: a caller acting on there being exactly one embedded map would go on
+ * seeing two, and nothing the player did with a screen afterwards could correct it. A bounded
+ * memory costs one walk per interval instead of one per frame and heals in that interval.
  *
  * <p>What bounds how long a remembered answer holds a widget tree alive is that replacement and
  * nothing else. Every find carries its map and the whole chain it hangs under, and the outermost of
  * those ancestors is the root itself, so the memo pins the tree it came from for as long as it
- * stands - which lasts until the first ask after that tree changed, and for a caller asking per
- * frame is a frame.
+ * stands - which lasts until the first ask after that tree changed or the interval elapsed, and for
+ * a caller asking per frame is a frame.
  *
  * <p>Only a walk that found something is remembered, and a walk that found nothing is taken again.
  * Nothing orders a mod's widget building against ours, so a first walk can legitimately run before
@@ -65,6 +75,13 @@ public final class EmbeddedMapFinder {
 
     private static final Logger LOG = Global.getLogger(EmbeddedMapFinder.class);
 
+    // How long an answer is reused before the tree is read again. Long enough that a caller asking
+    // per frame pays a walk every few dozen frames rather than one per frame, and short enough that
+    // a reading taken while a screen was fading out of the tree corrects itself before a player
+    // pointing at a map surface could notice it had not.
+    static final long MEMO_LIFETIME_NANOS = 500_000_000L;
+
+    private final LongSupplier readElapsedNanos;
     private final Supplier<Object> readShownMapTab;
     private final Supplier<Object> readTreeRoot;
 
@@ -83,6 +100,10 @@ public final class EmbeddedMapFinder {
     // pins the tree whatever this field does. Replacement is what releases it - see the class note.
     private Object walkedTreeRoot;
 
+    // When that walk was made, on the elapsed clock this was handed. Read against the lifetime above
+    // rather than against a frame count, since nothing here is told when a frame begins.
+    private long walkedAtNanos;
+
     /** Reads the live core UI and the live map tab - the pairing a running game gets. */
     public EmbeddedMapFinder() {
         this(CoreUiTree::resolveActiveCoreUi, ShownMapTab::resolveShownMapTab);
@@ -94,6 +115,23 @@ public final class EmbeddedMapFinder {
      *                        embedded - and null on every screen showing none
      */
     EmbeddedMapFinder(Supplier<Object> readTreeRoot, Supplier<Object> readShownMapTab) {
+        this(readTreeRoot, readShownMapTab, System::nanoTime);
+    }
+
+    /**
+     * @param readTreeRoot     the widget tree to search, above any one tab
+     * @param readShownMapTab  the map tab the game is showing, which is the one map that is not
+     *                         embedded - and null on every screen showing none
+     * @param readElapsedNanos the elapsed-time clock the memo's life is measured on, which is a
+     *                         monotonic one rather than a wall clock: only differences are read, and
+     *                         a wall clock stepping back would hold an answer past its interval
+     */
+    EmbeddedMapFinder(
+            Supplier<Object> readTreeRoot,
+            Supplier<Object> readShownMapTab,
+            LongSupplier readElapsedNanos) {
+
+        this.readElapsedNanos = readElapsedNanos;
         this.readShownMapTab = readShownMapTab;
         this.readTreeRoot = readTreeRoot;
     }
@@ -118,7 +156,7 @@ public final class EmbeddedMapFinder {
             if (treeRoot == null) {
                 return List.of();
             }
-            if (walkedTreeRoot == treeRoot && !foundMaps.isEmpty()) {
+            if (walkedTreeRoot == treeRoot && !foundMaps.isEmpty() && !hasMemoryElapsed()) {
                 return foundMaps;
             }
             var embeddedMaps = collectEmbeddedMapsUnder(treeRoot, readShownMapTab.get());
@@ -201,7 +239,14 @@ public final class EmbeddedMapFinder {
             return;
         }
         foundMaps = embeddedMaps;
+        walkedAtNanos = readElapsedNanos.getAsLong();
         walkedTreeRoot = treeRoot;
+    }
+
+    // Whether what is remembered has stood long enough to be worth reading the tree again. Stated as
+    // a difference so it holds wherever the clock's own zero is.
+    private boolean hasMemoryElapsed() {
+        return readElapsedNanos.getAsLong() - walkedAtNanos >= MEMO_LIFETIME_NANOS;
     }
 
     // Warns on this library's own logger rather than the caller's, since a reach that broke is the
