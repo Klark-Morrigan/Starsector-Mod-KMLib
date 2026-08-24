@@ -4,9 +4,14 @@ import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.campaign.econ.EconomyAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
+import com.fs.starfarer.api.campaign.rules.MemoryAPI;
 
+import java.util.HashMap;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -83,6 +88,38 @@ public final class ColonyFixture {
         ColonyPlacementFixture.placeColonies(systemMock, colonies);
     }
 
+    /**
+     * Backs the sector's memory with a real map, so anything writing into it writes where it
+     * really writes and a later read finds it there.
+     *
+     * <p>What a case exercising a writer needs, as against one stating the answer it would have
+     * produced: a value handed over can be stated, while a write has to be given somewhere to
+     * land. Idempotent, so a case can open the memory twice and keep whatever the first call
+     * opened - which is the only way to pose one thing recorded and then another.
+     */
+    public void openSectorMemory() {
+
+        if (sectorMock.getMemoryWithoutUpdate() != null) {
+            return;
+        }
+        var storedValues = new HashMap<String, Object>();
+        var memoryMock = mock(MemoryAPI.class);
+
+        when(memoryMock.contains(anyString()))
+            .thenAnswer(invocation -> storedValues.containsKey(invocation.getArgument(0)));
+        when(memoryMock.get(anyString()))
+            .thenAnswer(invocation -> storedValues.get(invocation.getArgument(0)));
+
+        doAnswer(invocation -> storedValues.put(
+                invocation.getArgument(0),
+                invocation.getArgument(1)))
+            .when(memoryMock)
+            .set(anyString(), any());
+
+        when(sectorMock.getMemoryWithoutUpdate())
+            .thenReturn(memoryMock);
+    }
+
     /** Registers the colonies with the economy, in the order it will list them. */
     public void listColoniesInEconomy(MarketAPI... colonies) {
         ColonyPlacementFixture.listColonies(economyMock, systemMock, colonies);
@@ -107,6 +144,10 @@ public final class ColonyFixture {
 
     public MarketAPI buildDerelictStation() {
         return ColonyMarketFixture.buildDerelictStation();
+    }
+
+    public MarketAPI buildUnfoundDerelictStation() {
+        return ColonyMarketFixture.buildUnfoundDerelictStation();
     }
 
     public MarketAPI buildOutpost(String factionId) {

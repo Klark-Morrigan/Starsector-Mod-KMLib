@@ -131,15 +131,52 @@ public final class MarketPlacementFixture {
      */
     public static void placeMarketsIn(LocationAPI location, MarketAPI... markets) {
 
+        hangMarketsOnBodiesIn(location, markets);
+        standMarketsIn(location, markets);
+    }
+
+    /**
+     * Hangs the markets on the location's own bodies without saying where each market stands -
+     * the half of siting that decides what an entity walk finds.
+     *
+     * <p>Offered apart from {@link #placeMarketsIn} because the two halves answer different
+     * questions, and a case can turn on their disagreeing: a market found by walking a location
+     * it does not name as its own is exactly what a colony reached through one listing and not
+     * the other looks like.
+     *
+     * @param location the location whose bodies carry them
+     * @param markets  the markets to hang, each on the body it was built with
+     */
+    public static void hangMarketsOnBodiesIn(LocationAPI location, MarketAPI... markets) {
+
         // Every body is read off its market before the stubbing opens, so calling a mock does
         // not land inside a stubbing in progress.
         var bodies = new ArrayList<SectorEntityToken>();
 
         for (var market : markets) {
-            bodies.add(market.getPrimaryEntity());
+            var bodyMock = market.getPrimaryEntity();
+
+            when(bodyMock.getMarket())
+                .thenReturn(market);
+
+            bodies.add(bodyMock);
         }
         when(location.getAllEntities())
             .thenReturn(bodies);
+    }
+
+    /**
+     * Says where each market stands, without putting it among the location's bodies - the other
+     * half of siting, and the one a rule asking "where is this colony now" reads.
+     *
+     * <p>An unstubbed market names no location at all, which several rules read as standing
+     * outside any star system. A case meaning to pose a colony somewhere has to say so, and this
+     * is the half that says it.
+     *
+     * @param location the location the markets stand in
+     * @param markets  the markets standing there
+     */
+    public static void standMarketsIn(LocationAPI location, MarketAPI... markets) {
 
         for (var market : markets) {
             when(market.getContainingLocation())

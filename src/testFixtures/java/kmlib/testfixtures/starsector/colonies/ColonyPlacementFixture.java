@@ -33,6 +33,29 @@ public final class ColonyPlacementFixture {
         MarketPlacementFixture.placeMarketsIn(location, colonies);
     }
 
+    /**
+     * Hangs the colonies on the location's own bodies without saying where each one stands - the
+     * half of siting that decides what an entity walk finds, and so how an unregistered colony is
+     * found at all.
+     *
+     * @param location the location whose bodies carry them
+     * @param colonies the colonies to hang
+     */
+    public static void hangColoniesOnEntitiesIn(LocationAPI location, MarketAPI... colonies) {
+        MarketPlacementFixture.hangMarketsOnBodiesIn(location, colonies);
+    }
+
+    /**
+     * Says where each colony stands, without putting it among the location's bodies - the other
+     * half, and the one a rule asking where a colony is now reads.
+     *
+     * @param location the location the colonies stand in
+     * @param colonies the colonies standing there
+     */
+    public static void standColoniesIn(LocationAPI location, MarketAPI... colonies) {
+        MarketPlacementFixture.standMarketsIn(location, colonies);
+    }
+
     /** Registers the colonies with the economy, in the order it will list them. */
     public static void listColonies(
             EconomyAPI economyMock,
