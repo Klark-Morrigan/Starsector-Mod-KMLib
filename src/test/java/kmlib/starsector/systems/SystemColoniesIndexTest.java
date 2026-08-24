@@ -4,8 +4,8 @@ import com.fs.starfarer.api.campaign.SectorAPI;
 
 import kmlib.starsector.colonies.Colonies;
 import kmlib.starsector.colonies.Colony;
-import kmlib.starsector.colonies.ColonyFixture;
 import kmlib.starsector.colonies.SystemColonies;
+import kmlib.testfixtures.starsector.colonies.ColonyFixture;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

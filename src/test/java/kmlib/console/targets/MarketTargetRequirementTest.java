@@ -1,6 +1,6 @@
 package kmlib.console.targets;
 
-import kmlib.starsector.markets.MarketStateFixture;
+import kmlib.testfixtures.starsector.markets.MarketStateFixture;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

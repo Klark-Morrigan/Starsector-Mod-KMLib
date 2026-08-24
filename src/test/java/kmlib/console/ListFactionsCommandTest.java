@@ -11,10 +11,10 @@ import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.characters.RelationshipAPI;
 
 import kmlib.console.ListFactionsCommand.FactionListingFilter;
-import kmlib.starsector.colonies.ColonyMarketFixture;
-import kmlib.starsector.colonies.ColonyPlacementFixture;
 import kmlib.starsector.factions.FactionCustomFixture;
 import kmlib.testfixtures.console.output.CommandOutputFake;
+import kmlib.testfixtures.starsector.colonies.ColonyMarketFixture;
+import kmlib.testfixtures.starsector.colonies.ColonyPlacementFixture;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

@@ -1,4 +1,4 @@
-package kmlib.starsector.markets;
+package kmlib.testfixtures.starsector.markets;
 
 import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;

@@ -4,6 +4,12 @@
 // specific to KMLib.
 apply from: "${rootDir}/gradle/starsector-mod.gradle"
 
+// The fixtures a consuming mod's tests stand their subjects on, published as a
+// variant of their own rather than inside the jar the game loads. They are
+// test-only artefacts: the launcher never needs them, and a jar it does load
+// must not carry classes that link against a test library.
+apply plugin: 'java-test-fixtures'
+
 group = 'kmlib'
 
 // On-demand Java formatting (`gradlew spotlessApply`). The wiring and the
@@ -20,11 +26,8 @@ enforcePackageVocabulary {
 }
 
 enforceNoTestVocabulary {
-    // KMLib's fakes ship in the production jar so a consuming mod can drive a
-    // widget without rebuilding them, which puts a whole fixture tree in
-    // src/main. It is main by source set and a fixture by purpose, so only the
-    // package can say what it is.
-    exemptPackage root: 'kmlib.testfixtures'
+
+    exemptSourceSet name: 'testFixtures'
 
     // The hand-written bridge stubs mirror a third party's shape rather than
     // ours, on the same grounds that exempt them from the formatter and from
@@ -35,12 +38,16 @@ enforceNoTestVocabulary {
     // are for, and what they are for is stated in the words of a suite. Each
     // entry is per file and per word, so this unlocks nothing in the code
     // sitting next to it.
-    // 'fake' and 'testfixtures' are the fixture types' own names and the paths
-    // that link to them: the seam table lists each seam beside the Fake that
-    // stands in for it, so the catalogue cannot be written without saying them.
+    // 'fake', 'testfixtures' and 'test fixtures' are the fixture types' own
+    // names and the paths that link to them: the seam table lists each seam
+    // beside the Fake that stands in for it, so the catalogue cannot be written
+    // without saying them. The last is the source set they now live in, which a
+    // relative link out of this tree has to cross.
     allowWord word: 'fake',
             inFile: 'src/main/java/kmlib/starsector/ui/README.md'
     allowWord word: 'testfixtures',
+            inFile: 'src/main/java/kmlib/starsector/ui/README.md'
+    allowWord word: 'test fixtures',
             inFile: 'src/main/java/kmlib/starsector/ui/README.md'
     allowWord word: 'stubbing',
             inFile: 'src/main/java/kmlib/starsector/ui/README.md'
@@ -393,18 +400,6 @@ dependOnGameJars(files(fsCommonObfJarFile))
 dependOnGameJars(isFastRenderingInstalled
     ? files(fastRenderingJarFile)
     : sourceSets.bridgeStubs.output)
-
-jacocoTestReport {
-    // The 'testfixtures' package ships fakes in main so downstream mods can reuse
-    // them (the jar is consumed flat, so java-test-fixtures cannot carry them);
-    // they're production-located but test-only, so excluding them keeps the
-    // coverage signal honest.
-    classDirectories.setFrom(
-        files(classDirectories.files.collect {
-            fileTree(dir: it, exclude: ['kmlib/testfixtures/**'])
-        })
-    )
-}
 
 // Deliberately no version-file wiring here. Filling kmlib.version.template locally
 // is the shared conventions script's job (gradle/starsector-mod.gradle), which

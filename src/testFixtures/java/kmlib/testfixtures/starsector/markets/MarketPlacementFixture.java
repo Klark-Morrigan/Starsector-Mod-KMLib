@@ -1,4 +1,4 @@
-package kmlib.starsector.markets;
+package kmlib.testfixtures.starsector.markets;
 
 import com.fs.starfarer.api.campaign.CampaignFleetAPI;
 import com.fs.starfarer.api.campaign.FactionAPI;
@@ -62,7 +62,7 @@ public final class MarketPlacementFixture {
 
     /**
      * A market on a body of its own under a named owner - the pair
-     * {@link Markets#isSamePlaceAndOwner} keys on, so two of them can be posed as one place or
+     * {@link kmlib.starsector.markets.Markets#isSamePlaceAndOwner} keys on, so two of them can be posed as one place or
      * as two.
      */
     public static MarketAPI buildOwnedMarketOnBody(String bodyId, String factionId) {

@@ -3,6 +3,8 @@ package kmlib.starsector.colonies;
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 
+import kmlib.testfixtures.starsector.colonies.ColonyFixture;
+
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 

@@ -15,7 +15,7 @@ on at compile and runtime.
 - [Local linting](#local-linting)
 - [Reusable CI / release actions](#reusable-ci--release-actions)
 - [Consuming KMLib](#consuming-kmlib)
-  - [Test fixtures in the main jar](#test-fixtures-in-the-main-jar)
+  - [Test fixtures](#test-fixtures)
 - [Rendering environment](#rendering-environment)
 - [Caching](#caching)
 - [Optional mod seams](#optional-mod-seams)
@@ -372,7 +372,7 @@ Packages with more behind them than one line can carry:
 | [`math/geometry/`](src/main/java/kmlib/math/geometry/) | [2D shapes and polygon passes](src/main/java/kmlib/math/geometry/README.md) |
 | [`starsector/factions/`](src/main/java/kmlib/starsector/factions/) | [Player Faction Resolution](#player-faction-resolution) |
 | [`starsector/intel/`](src/main/java/kmlib/starsector/intel/) | [Intel Base Classes](#intel-base-classes) |
-| [`testfixtures/`](src/main/java/kmlib/testfixtures/) | [Test fixtures in the main jar](#test-fixtures-in-the-main-jar) |
+| [`testfixtures/`](src/testFixtures/java/kmlib/testfixtures/) | [Test fixtures](#test-fixtures) |
 | [`starsector/ui/`](src/main/java/kmlib/starsector/ui/) | [UI primitives, tiered by surface](src/main/java/kmlib/starsector/ui/README.md) |
 | [`starsector/ui/colour/`](src/main/java/kmlib/starsector/ui/colour/) | [UI Colour Palette](#ui-colour-palette) |
 | [`starsector/ui/font/`](src/main/java/kmlib/starsector/ui/font/), [`starsector/ui/label/`](src/main/java/kmlib/starsector/ui/label/) | [Caching](#caching) |
@@ -682,29 +682,32 @@ Tests in consuming mods that touch KMLib types also add the same jar as
 `testCompileOnly` / `testRuntimeOnly`. KMLib's hard dependencies apply to every mod
 that depends on it - see [Requirements](#requirements).
 
-### Test fixtures in the main jar
+### Test fixtures
 
-[`testfixtures/`](src/main/java/kmlib/testfixtures/) holds the fakes a consuming
-mod's tests stand its subjects on - KMLib's own ports (claims, fonts, the intel
-screen, the modelview, console output, a console overlay up or down as a test
+[`testfixtures/`](src/testFixtures/java/kmlib/testfixtures/) holds what a consuming
+mod's tests stand their subjects on - fakes of KMLib's own ports (claims, fonts, the
+intel screen, the modelview, console output, a console overlay up or down as a test
 says), the core-UI hops and widget tree a layout rule walks, the builders for the
-values those ports report, and
-[`starsector/settings/`](src/main/java/kmlib/testfixtures/starsector/settings/)'s
-no-op `SettingsAPI` proxy, which a test installs into `Global` before touching
-`Misc` (whose static initialiser would otherwise NPE).
+values those ports report, the market and colony shapes a "who is here" read is posed
+against, and
+[`starsector/settings/`](src/testFixtures/java/kmlib/testfixtures/starsector/settings/)'s
+no-op `SettingsAPI` proxy, which a test installs into `Global` before touching `Misc`
+(whose static initialiser would otherwise NPE).
 
-They live in the production source set rather than `src/test` because of how the
-jar travels: a consumer resolves KMLib as a flat `files(...)` dependency, which
-carries no Gradle variants, so `java-test-fixtures` has nothing to publish
-through and a `src/test` class is unreachable downstream. Shipping them in the
-main jar is the one mechanism that makes a fake reusable across KMU and KMO with
-no new wiring; the classes are never instantiated in play, so a player pays
-nothing for them.
+They are a source set of their own, published as a variant beside the jar. A consumer
+takes them with `testCompileOnly testFixtures('kmlib:KMLib')`, which resolves through
+the included build the same substitution already carries the main artifact over.
 
-Two consequences worth knowing. They are excluded from the JaCoCo report - being
-production-located but test-only, counting them would flatter the coverage
-signal. And the `Fake` suffix gate scans only `src/test`, so the suffix here is
-held by hand.
+Three trees, three audiences: `src/main` is what the game loads, `src/testFixtures` is
+what consumers' tests may take, and `src/test` stays private. That boundary is the
+reason for the split rather than a consequence of it - a fixture is a test artefact, and
+the jar the launcher loads must not carry classes that link against a test library. It
+is what lets a fixture here mock a vanilla type, which nothing inside the shipped jar
+could do.
+
+A fixture only KMLib's own suites use stays in `src/test`. What moves here is what a
+consumer actually asks for, so the published surface stays a decision rather than a
+default.
 
 ## Rendering environment
 

@@ -11,6 +11,9 @@ import com.fs.starfarer.api.impl.campaign.ids.Factions;
 import com.fs.starfarer.api.impl.campaign.ids.Submarkets;
 import com.fs.starfarer.api.impl.campaign.submarkets.StoragePlugin;
 
+import kmlib.testfixtures.starsector.markets.MarketPlacementFixture;
+import kmlib.testfixtures.starsector.markets.MarketStateFixture;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;

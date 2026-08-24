@@ -246,9 +246,9 @@ the surface supplies the implementation:
 | [`LabelLengthEstimator`](label/LabelLengthEstimator.java) | how long a label will draw | [`FontLabelLengthEstimator`](label/FontLabelLengthEstimator.java), [`AspectLabelLengthEstimator`](label/AspectLabelLengthEstimator.java) |
 | [`ModelviewMatrixReader`](map/transform/ModelviewMatrixReader.java) | the campaign map's transform | [`GlModelviewMatrixReader`](map/transform/GlModelviewMatrixReader.java), [`FastRenderingModelviewMatrixReader`](map/transform/FastRenderingModelviewMatrixReader.java) |
 | [`IntelScreenView`](intel/IntelScreenView.java) | what the intel screen is showing | [`VanillaIntelScreenView`](intel/VanillaIntelScreenView.java) |
-| [`UiSoundPlayer`](sound/UiSoundPlayer.java) | where a widget's interface sounds go | [`VanillaUiSoundPlayer`](sound/VanillaUiSoundPlayer.java), [`UiSoundPlayerFake`](../../testfixtures/starsector/ui/sound/UiSoundPlayerFake.java) |
-| [`CoreUiComponentRepainter`](coreui/CoreUiComponentRepainter.java) | drawing a core-UI component again, clipped | [`ReflectiveCoreUiComponentRepainter`](coreui/ReflectiveCoreUiComponentRepainter.java), [`CoreUiComponentRepainterFake`](../../testfixtures/starsector/ui/coreui/CoreUiComponentRepainterFake.java) |
-| [`CursorPosition`](input/CursorPosition.java) | where the pointer is, in UI units | [`VanillaCursorPosition`](input/VanillaCursorPosition.java), [`CursorPositionFake`](../../testfixtures/starsector/ui/input/CursorPositionFake.java) |
+| [`UiSoundPlayer`](sound/UiSoundPlayer.java) | where a widget's interface sounds go | [`VanillaUiSoundPlayer`](sound/VanillaUiSoundPlayer.java), [`UiSoundPlayerFake`](../../../../../testFixtures/java/kmlib/testfixtures/starsector/ui/sound/UiSoundPlayerFake.java) |
+| [`CoreUiComponentRepainter`](coreui/CoreUiComponentRepainter.java) | drawing a core-UI component again, clipped | [`ReflectiveCoreUiComponentRepainter`](coreui/ReflectiveCoreUiComponentRepainter.java), [`CoreUiComponentRepainterFake`](../../../../../testFixtures/java/kmlib/testfixtures/starsector/ui/coreui/CoreUiComponentRepainterFake.java) |
+| [`CursorPosition`](input/CursorPosition.java) | where the pointer is, in UI units | [`VanillaCursorPosition`](input/VanillaCursorPosition.java), [`CursorPositionFake`](../../../../../testFixtures/java/kmlib/testfixtures/starsector/ui/input/CursorPositionFake.java) |
 
 `ControlSpec` and `ControlAction` split the same way within `controls`: the sealed spec is
 content, the action is behaviour the container owns. A content model that held its own
@@ -466,7 +466,7 @@ about any KM content. It states a position rather than fetching one, which is th
 that keeps it the only exception - `screen.VanillaScreen` is the same subject read live,
 and reaching the running game for its numbers is exactly what puts it outside the neutral
 tier however naturally it would have sat beside the layout maths it feeds. Its counterpart on the test side is
-[`PositionFake`](../../testfixtures/starsector/ui/layout/PositionFake.java), a widget position
+[`PositionFake`](../../../../../testFixtures/java/kmlib/testfixtures/starsector/ui/layout/PositionFake.java), a widget position
 already laid out at a given [`Rectangle`](../../math/geometry/Rectangle.java) - anything that reads
 where a widget is takes one of those instead of stubbing six of `PositionAPI`'s thirty-odd methods,
 and a consuming mod's tests can lay a widget out without a mocking framework to describe a box.

@@ -11,7 +11,7 @@ import com.fs.starfarer.api.impl.campaign.ids.Industries;
 import kmlib.extensions.DeclinedWork;
 import kmlib.extensions.ExecutedWork;
 import kmlib.starsector.markets.MarketOwnershipFixture;
-import kmlib.starsector.markets.MarketStateFixture;
+import kmlib.testfixtures.starsector.markets.MarketStateFixture;
 import kmlib.testfixtures.starsector.settings.ModStateScopes;
 
 import org.junit.jupiter.api.Nested;

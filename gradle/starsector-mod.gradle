@@ -142,6 +142,19 @@ dependencies {
     testRuntimeOnly starsectorCoreJars
 }
 
+// A mod publishing test fixtures builds them against the same game jars its own
+// tests compile against: a fixture poses vanilla types, so without these it can
+// only pose the mod's own. Guarded on the plugin, since a mod with nothing to
+// share declares no fixtures source set and those configurations do not exist.
+plugins.withId('java-test-fixtures') {
+    dependencies {
+        testFixturesCompileOnly files(apiJarFile)
+        testFixturesCompileOnly files(lwjglUtilJarFile)
+        testFixturesCompileOnly files(lwjglJarFile)
+        testFixturesCompileOnly files(log4jJarFile)
+    }
+}
+
 tasks.withType(JavaCompile).configureEach {
     doFirst {
         if (!apiJarFile.exists()) {

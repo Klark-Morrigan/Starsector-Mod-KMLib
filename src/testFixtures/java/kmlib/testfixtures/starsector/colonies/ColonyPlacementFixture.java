@@ -1,10 +1,10 @@
-package kmlib.starsector.colonies;
+package kmlib.testfixtures.starsector.colonies;
 
 import com.fs.starfarer.api.campaign.LocationAPI;
 import com.fs.starfarer.api.campaign.econ.EconomyAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
-import kmlib.starsector.markets.MarketPlacementFixture;
+import kmlib.testfixtures.starsector.markets.MarketPlacementFixture;
 
 /**
  * Siting colonies in a location, the way the game sites them.
