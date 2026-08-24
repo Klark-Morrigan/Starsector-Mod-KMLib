@@ -37,8 +37,12 @@ import static org.mockito.Mockito.when;
  * <p>Nothing here says what may be shown of a colony, nor what has been seen of one. Both are a
  * consumer's framing over the set rather than facts of the world posed here, so a suite about
  * either poses its own.
+ *
+ * <p>Open for a consumer to extend for exactly that reason: a suite posing a framing of its own
+ * wants this world and one more fact, and inheriting is what keeps it from restating the world or
+ * forwarding every builder on it a second time.
  */
-public final class ColonyFixture {
+public class ColonyFixture {
 
     // The size every colony takes unless a case asks for another, named here as well so a suite
     // posing a system reads it off the fixture it is already holding.

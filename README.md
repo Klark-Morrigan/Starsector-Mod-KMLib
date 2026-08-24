@@ -301,6 +301,11 @@ src/main/java/kmlib/
                      and wraps by, the item seam it draws rows from, and
                      the memo a consumer holds its list in - holding no
                      store of its own
+src/bridgestubs/java/ - compile-only mirrors of the Fast Rendering bridge
+                        members KMLib reads, so an install without fr.jar
+                        still compiles (see Build & Test); never shipped,
+                        never loaded
+src/testFixtures/java/kmlib/
   testfixtures/    - Fakes for KMLib's own ports (claims, fonts, intel
                      screen, modelview, campaign minimap, console
                      output), the settings proxy every mod installs into
@@ -309,17 +314,17 @@ src/main/java/kmlib/
                      ids those states are named with - and for the core
                      UI - the hops down to the screen that is up, and the
                      widget tree a layout rule walks once there - plus
-                     builders for the values those ports report. Ships in
-                     the MAIN jar so consumer mods' tests can use them
+                     builders for the values those ports report, and the
+                     market and colony shapes a "who is here" read is
+                     posed against. Its own source set, published as a
+                     variant a consumer's tests take rather than shipped
+                     inside the jar the game loads
     starsector/
       settings/    - the no-op SettingsAPI proxy KM tests install into
                      Global before touching Misc (whose static
                      initialiser would otherwise NPE)
-src/bridgestubs/java/ - compile-only mirrors of the Fast Rendering bridge
-                        members KMLib reads, so an install without fr.jar
-                        still compiles (see Build & Test); never shipped,
-                        never loaded
-src/test/java/kmlib/  - JUnit 5 + Mockito unit tests
+src/test/java/kmlib/  - JUnit 5 + Mockito unit tests; KMLib's own suites and
+                        the fixtures only they use
 jars/                  - build output (gitignored); KMLib.jar
 scripts/
   run-ci-yaml-and-bash.sh / .bat      - MAIN entry: lint suite + bats
