@@ -6,6 +6,7 @@ import com.fs.starfarer.api.ui.PositionAPI;
 import com.fs.starfarer.api.ui.UIComponentAPI;
 import com.fs.starfarer.campaign.comms.v2.EventsPanel;
 
+import kmlib.logging.SessionWarning;
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.coreui.CampaignScreenView;
 import kmlib.starsector.ui.coreui.CoreUiTree;
@@ -41,11 +42,13 @@ import java.util.List;
  * starscape read fails the same way to "not in starscape mode", which is what an unreachable panel
  * is leaving the game doing anyway.
  *
- * <p>Failing closed is silent by design, and silent is wrong for one of the ways it happens: being
+ * <p>Failing closed is silent by design, and silent is wrong for two of the ways it happens. Being
  * off the intel tab entirely is the ordinary case on every other screen, while a game build whose
- * intel tab no longer yields a panel would stop every intel-screen overlay with nothing in the log.
- * Those two are distinguishable, because the tab-open read does not go through the walk at all, so
- * the second warns once per session.
+ * intel tab no longer yields a panel would stop every intel-screen overlay with nothing in the log;
+ * those two are distinguishable, because the tab-open read does not go through the walk at all. The
+ * third is a walk that fails outright rather than coming back empty, which is a broken reach on any
+ * screen and the only one carrying a cause worth printing. Each of the two that count as news warns
+ * once per session, separately, so neither can silence the other.
  */
 public final class VanillaIntelScreenView implements IntelScreenView {
 
@@ -67,7 +70,12 @@ public final class VanillaIntelScreenView implements IntelScreenView {
 
     // One-shot: the intel tab being up while its panel cannot be reached is a genuine anomaly worth
     // naming once, not on every frame a visor read is attempted.
-    private boolean hasLoggedUnreachableIntelPanel;
+    private final SessionWarning unreachablePanelWarning = new SessionWarning(LOG);
+
+    // A second one-shot rather than a widening of the first, because a walk that throws and a walk
+    // that comes back empty are different news: the empty one is read against which screen is up,
+    // while a reach that fails outright is broken on every screen and carries a cause to print.
+    private final SessionWarning unreadableCoreUiWarning = new SessionWarning(LOG);
 
     @Override
     public boolean isIntelTabOpen() {
@@ -166,13 +174,31 @@ public final class VanillaIntelScreenView implements IntelScreenView {
     // says so plainly.
     void warnOnceAboutUnreachableIntelPanel() {
 
-        if (hasLoggedUnreachableIntelPanel || !isIntelTabOpen()) {
+        // Tested before anything is read, so a session that has already said this costs a caller in
+        // a render pass one field read per frame rather than a walk into the campaign UI.
+        if (unreachablePanelWarning.hasWarnedThisSession() || !isIntelTabOpen()) {
             return;
         }
-        hasLoggedUnreachableIntelPanel = true;
+        unreachablePanelWarning.warnOnce(
+            "The intel tab is open but no EventsPanel was found below the core UI's current "
+                + "tab; intel-screen visor reads answer 'no visor' while that is so.");
+    }
 
-        LOG.warn("The intel tab is open but no EventsPanel was found below the core UI's current "
-            + "tab; intel-screen visor reads answer 'no visor' while that is so.");
+    // Names a walk that failed outright, as against one that simply found nothing. Not read against
+    // which screen is up, unlike the warning above: the hops this fails on are ones the core UI
+    // offers whatever tab it is showing, so a reach that cannot take them is broken everywhere and
+    // has silently stopped every read built on it rather than only the intel screen's.
+    //
+    // The cause is carried into the line because it is the whole of the diagnosis and nothing else
+    // records it - the visor reads answer null either way, which is what a screen with no intel
+    // panel on it looks like, so without this a broken reach is indistinguishable from an ordinary
+    // frame. One line per session, the failing walk running per frame.
+    void warnOnceAboutUnreadableCoreUi(Throwable unreadableTree) {
+
+        unreadableCoreUiWarning.warnOnce(
+            "The live core UI could not be walked to the tab that is up; intel-screen visor reads "
+                + "answer 'no visor' while that is so.",
+            unreadableTree);
     }
 
     // Walks the live core UI to the intel screen's events panel: campaign UI -> core -> current tab,
@@ -180,7 +206,7 @@ public final class VanillaIntelScreenView implements IntelScreenView {
     // no such panel, which is what leaves every caller inert on the other screens.
     private EventsPanel resolveIntelPanel() {
 
-        EventsPanel intelPanel = null;
+        EventsPanel intelPanel;
         try {
             intelPanel = findEventsPanelIn(CoreUiTree.resolveCurrentTab(), MAX_PANEL_SEARCH_DEPTH);
 
@@ -188,7 +214,10 @@ public final class VanillaIntelScreenView implements IntelScreenView {
             // A hop that is absent or throws outright leaves the panel unreached, which is the same
             // outcome for a caller as a tab that holds no panel. Swallowed rather than raised: a
             // caller is in the middle of a render pass, and a read that cannot answer must not take
-            // down the frame it was meant to refine.
+            // down the frame it was meant to refine - but it is said once, since nothing else in
+            // this class can tell that the walk broke rather than found nothing.
+            warnOnceAboutUnreadableCoreUi(unreadableTree);
+            return null;
         }
         if (intelPanel == null) {
             warnOnceAboutUnreachableIntelPanel();
