@@ -5,6 +5,7 @@ import com.fs.starfarer.api.campaign.CampaignUIAPI;
 import com.fs.starfarer.api.campaign.InteractionDialogAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
 
+import kmlib.testfixtures.starsector.ui.coreui.CoreHostingDialogFake;
 import kmlib.testfixtures.starsector.ui.coreui.CoreUiComponentFake;
 import kmlib.testfixtures.starsector.ui.coreui.CoreUiFake;
 import kmlib.testfixtures.starsector.ui.coreui.CoreUiHostFake;
@@ -16,7 +17,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Proxy;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -59,6 +59,11 @@ import static org.mockito.Mockito.when;
  * signature: a boxed argument resolves the primitive parameter, which is what makes the core UI's
  * {@code (float)} entry points reachable at all from mod code that can only hand over a
  * {@code Float}.
+ *
+ * <p>The showing read is pinned in both directions and in the walk that turns on it, because it is
+ * the one read here that fails open and the only thing separating a dialog's live screen from the
+ * one it goes on handing out after the player has closed it. A walk that lost it would search a
+ * closed screen's widgets for the whole of a docked visit, and find them lit.
  */
 class CoreUiTreeTest {
 
@@ -236,6 +241,51 @@ class CoreUiTreeTest {
     }
 
     @Nested
+    class IsComponentShowing {
+
+        @Test
+        void isComponentShowingIsTrueForAComponentThatIsNotFadedOut() {
+
+            assertThat(CoreUiTree.isComponentShowing(new CoreUiFake(new CoreUiComponentFake())))
+                .isTrue();
+        }
+
+        @Test
+        void isComponentShowingIsFalseForAComponentFadedFullyOut() {
+            // The whole point of the read: a screen the player has closed is faded out and dropped
+            // from its parent, while whoever handed the reference out goes on handing it out.
+            assertThat(CoreUiTree
+                .isComponentShowing(CoreUiFake.createDismissed(new CoreUiComponentFake())))
+                .isFalse();
+        }
+
+        @Test
+        void isComponentShowingIsTrueForAShapeCarryingNoFader() {
+            // Failing open, unlike the reads either side of this one. A shape that answers no such
+            // name leaves a caller doing what it did before rather than standing down on a screen
+            // the player is looking at.
+            assertThat(CoreUiTree.isComponentShowing(new Object()))
+                .isTrue();
+        }
+
+        @Test
+        void isComponentShowingIsTrueWhenTheFadeStateCannotBeRead() {
+            // The same failing open one hop further in, which is the half a game build can break on
+            // its own: the fader is there and answers nothing this can use.
+            assertThat(CoreUiTree.isComponentShowing(new UnreadableFadeStateTargetFake()))
+                .isTrue();
+        }
+
+        @Test
+        void isComponentShowingIsFalseWhenThereIsNoComponent() {
+            // A caller with nothing in hand has nothing on screen, so the null case saves every one
+            // of them a test of its own before asking.
+            assertThat(CoreUiTree.isComponentShowing(null))
+                .isFalse();
+        }
+    }
+
+    @Nested
     class ReadCoreUiOf {
 
         @Test
@@ -324,12 +374,31 @@ class CoreUiTreeTest {
             var campaignUiMock = mock(CampaignUIAPI.class);
 
             when(campaignUiMock.getCurrentInteractionDialog())
-                .thenReturn(asCoreHostingDialog(new CoreUiFake(tabFake)));
+                .thenReturn(CoreHostingDialogFake.createHosting(new CoreUiFake(tabFake)));
             when(sectorMock.getCampaignUI())
                 .thenReturn(campaignUiMock);
 
             assertThat(CoreUiTree.resolveCurrentTab())
                 .isSameAs(tabFake);
+        }
+
+        @Test
+        void resolveCurrentTabFallsThroughToTheCampaignsCoreOnceTheDialogsCoreIsDismissed() {
+            // A dialog keeps handing out the core UI of a screen the player has closed, and that
+            // core goes on naming the tab it last showed - so a walk that took it on presence alone
+            // would keep finding the closed screen's widgets for the rest of the docked visit.
+            // Reaching the campaign's core hop is what proves the walk carried on past it; the bare
+            // campaign UI mock does not expose that hop, which is the exception raised here.
+            var campaignUiMock = mock(CampaignUIAPI.class);
+
+            when(campaignUiMock.getCurrentInteractionDialog())
+                .thenReturn(CoreHostingDialogFake
+                    .createHosting(CoreUiFake.createDismissed(new CoreUiComponentFake())));
+            when(sectorMock.getCampaignUI())
+                .thenReturn(campaignUiMock);
+
+            assertThatThrownBy(CoreUiTree::resolveCurrentTab)
+                .isInstanceOf(Exception.class);
         }
 
         @Test
@@ -413,24 +482,13 @@ class CoreUiTreeTest {
         }
     }
 
-    // Stands for the game's one core-hosting dialog class: an interaction dialog that also answers
-    // the accessor the reach takes by name. Public because a proxy is only as visible as the least
-    // visible interface it implements, and the reach invokes from its own package.
-    public interface CoreHostingDialog {
-        Object getCoreUI();
-    }
+    // Stands for a component whose fade state is there and says nothing this can use, which is the
+    // half of failing open a game build can break on its own - as against a shape that carries no
+    // fader at all, which any leaf already is.
+    public static final class UnreadableFadeStateTargetFake {
 
-    // The reach receives the dialog as the published type and then hops by name, so exercising it
-    // needs an object that is both at once - which no fixture class and no mock can be here, the
-    // dialog API being too wide to implement and beyond what the mock maker will extend. A proxy
-    // over the two interfaces is the one shape that satisfies both halves.
-    private static InteractionDialogAPI asCoreHostingDialog(Object coreUi) {
-        return (InteractionDialogAPI) Proxy.newProxyInstance(
-            CoreUiTreeTest.class.getClassLoader(),
-            new Class<?>[] { InteractionDialogAPI.class, CoreHostingDialog.class },
-            (proxy, method, args) ->
-                "getCoreUI".equals(method.getName())
-                    ? coreUi
-                    : null);
+        public Object getFader() {
+            return new Object();
+        }
     }
 }

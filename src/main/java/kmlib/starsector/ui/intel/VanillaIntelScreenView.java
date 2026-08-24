@@ -1,13 +1,13 @@
 package kmlib.starsector.ui.intel;
 
 import com.fs.starfarer.api.Global;
-import com.fs.starfarer.api.campaign.CampaignUIAPI;
 import com.fs.starfarer.api.campaign.CoreUITabId;
 import com.fs.starfarer.api.ui.PositionAPI;
 import com.fs.starfarer.api.ui.UIComponentAPI;
 import com.fs.starfarer.campaign.comms.v2.EventsPanel;
 
 import kmlib.math.geometry.Rectangle;
+import kmlib.starsector.ui.coreui.CampaignScreenView;
 import kmlib.starsector.ui.coreui.CoreUiTree;
 import kmlib.starsector.ui.layout.VanillaPositions;
 
@@ -17,11 +17,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * {@link IntelScreenView} binding backed by the live campaign UI. The tab-open read is published
- * API; the map visor and its starscape state reach the game's concrete intel panel by walking the
- * live core-UI widget tree - the game's script classloader denies {@code java.lang.reflect} to mod
- * code, so the hops down to the tab that is up are taken by method name through {@link CoreUiTree},
- * and the panel is picked out of that tab's subtree by its own type.
+ * {@link IntelScreenView} binding backed by the live campaign UI. The tab-open read is the
+ * published one, corrected for a dialog still handing out a closed screen's core UI (see
+ * {@link CampaignScreenView#resolveShownCoreTab()}); the map visor and its starscape state reach the
+ * game's concrete intel panel by walking the live core-UI widget tree - the game's script
+ * classloader denies {@code java.lang.reflect} to mod code, so the hops down to the tab that is up
+ * are taken by method name through {@link CoreUiTree}, and the panel is picked out of that tab's
+ * subtree by its own type.
  *
  * <p>The visor's two reads are one walk: the rectangle is derived from the component, so a caller
  * handed either is looking at the same widget under the same conditions. A widget the layout never
@@ -42,10 +44,11 @@ import java.util.List;
  * <p>Failing closed is silent by design, and silent is wrong for one of the ways it happens: being
  * off the intel tab entirely is the ordinary case on every other screen, while a game build whose
  * intel tab no longer yields a panel would stop every intel-screen overlay with nothing in the log.
- * Those two are distinguishable, because the tab-open read is published API, so the second warns
- * once per session.
+ * Those two are distinguishable, because the tab-open read does not go through the walk at all, so
+ * the second warns once per session.
  */
 public final class VanillaIntelScreenView implements IntelScreenView {
+
     private static final Logger LOG = Global.getLogger(VanillaIntelScreenView.class);
 
     // The preview widget's opacity is hard-set to 1.0 while it is showing and 0.0 when a
@@ -68,53 +71,67 @@ public final class VanillaIntelScreenView implements IntelScreenView {
 
     @Override
     public boolean isIntelTabOpen() {
-        CampaignUIAPI campaignUi = readCampaignUi();
-        return campaignUi != null
-            && campaignUi.getCurrentCoreTab() == CoreUITabId.INTEL;
+        // The corrected tab read rather than the campaign UI's own: while an interaction dialog is
+        // up, the raw one goes on naming the intel screen after the player has closed it.
+        return CampaignScreenView.resolveShownCoreTab() == CoreUITabId.INTEL;
     }
 
     @Override
     public Rectangle getMapVisorRect() {
+
         // Derived from the widget read rather than walking to the panel a second time, so the two
         // cannot disagree about whether there is a visor: a caller handed a rectangle and a caller
         // handed the component are looking at the same widget under the same conditions.
         UIComponentAPI mapWidget = getMapVisorWidget();
-        return mapWidget == null ? null : VanillaPositions.toRectangle(mapWidget.getPosition());
+
+        return mapWidget == null
+            ? null
+            : VanillaPositions.toRectangle(mapWidget.getPosition());
     }
 
     @Override
     public UIComponentAPI getMapVisorWidget() {
+
         EventsPanel intelPanel = resolveIntelPanel();
         if (intelPanel == null) {
             return null;
         }
+
         var mapWidget = intelPanel.getMap();
         if (mapWidget == null) {
             return null;
         }
+
         if (!isMapVisorLit(intelPanel.getFader().getBrightness(), mapWidget.getOpacity())) {
             return null;
         }
+
         // A widget the layout never positioned is reported as no visor at all, not as a visor with
         // no box. It occupies nothing on screen, so there is nothing to draw over or measure
         // against - and answering the two reads the same way is what lets a caller take either.
         PositionAPI position = mapWidget.getPosition();
-        return position == null ? null : mapWidget;
+        return position == null
+            ? null
+            : mapWidget;
     }
 
     @Override
     public boolean isMapStarscapeModeOn() {
+
         EventsPanel intelPanel = resolveIntelPanel();
         if (intelPanel == null) {
             return false;
         }
+
         // Two steps in: the panel's map member is the framed holder widget, and the map inside it is
         // what owns the filter state. Its own starscape read is used rather than the raw filter flag,
         // so this says exactly what the game says - the filter alone is not starscape mode, which
         // also needs the map to be showing hyperspace.
         var mapWidget = intelPanel.getMap();
         var map = mapWidget == null ? null : mapWidget.getMap();
-        return map != null && map.isStarscapeMode();
+
+        return map != null
+            && map.isStarscapeMode();
     }
 
     // Whether the two live signals add up to a lit map visor. Kept apart from the walk that fetches
@@ -128,6 +145,7 @@ public final class VanillaIntelScreenView implements IntelScreenView {
     // Conversely the Intel sub-tab can be showing with its preview blanked, which zeroes the map
     // widget's opacity while the panel stays lit. Either alone leaves nothing to draw over.
     static boolean isMapVisorLit(float intelSubtabBrightness, float mapWidgetOpacity) {
+
         return intelSubtabBrightness >= INTEL_SUBTAB_SHOWING_MIN_BRIGHTNESS
             && mapWidgetOpacity >= MAP_WIDGET_VISIBLE_MIN_OPACITY;
     }
@@ -136,21 +154,23 @@ public final class VanillaIntelScreenView implements IntelScreenView {
     // one of two very different things: no intel tab is up, which is the ordinary state on every
     // other screen and worth nothing, or the intel tab is up and the walk still came back empty,
     // which is a game build this reach no longer fits and would otherwise stop every intel-screen
-    // overlay in silence. The tab-open read is published API, so the two are told apart rather than
-    // conflated.
+    // overlay in silence. The tab-open read does not go through the walk, so the two are told apart
+    // rather than conflated.
     //
     // Kept apart from the walk for the same reason the visor rule is: the walk needs a live widget
     // tree, while which of its failures counts as news is a rule that stands on its own.
     //
     // Both reads are aimed at the same core UI - an interaction dialog's own while such a dialog is
-    // up, the campaign's otherwise - so there is no benign way for them to disagree. A tab that
-    // reads as open and yields no panel is a build this reach no longer fits, and the message says
-    // so plainly.
+    // showing one, the campaign's otherwise - so there is no benign way for them to disagree. A tab
+    // that reads as open and yields no panel is a build this reach no longer fits, and the message
+    // says so plainly.
     void warnOnceAboutUnreachableIntelPanel() {
+
         if (hasLoggedUnreachableIntelPanel || !isIntelTabOpen()) {
             return;
         }
         hasLoggedUnreachableIntelPanel = true;
+
         LOG.warn("The intel tab is open but no EventsPanel was found below the core UI's current "
             + "tab; intel-screen visor reads answer 'no visor' while that is so.");
     }
@@ -159,9 +179,11 @@ public final class VanillaIntelScreenView implements IntelScreenView {
     // then that tab's subtree. Answers null off the intel tab, since the tab that is up then holds
     // no such panel, which is what leaves every caller inert on the other screens.
     private EventsPanel resolveIntelPanel() {
+
         EventsPanel intelPanel = null;
         try {
             intelPanel = findEventsPanelIn(CoreUiTree.resolveCurrentTab(), MAX_PANEL_SEARCH_DEPTH);
+
         } catch (Throwable unreadableTree) {
             // A hop that is absent or throws outright leaves the panel unreached, which is the same
             // outcome for a caller as a tab that holds no panel. Swallowed rather than raised: a
@@ -183,9 +205,14 @@ public final class VanillaIntelScreenView implements IntelScreenView {
     // hop away. Level by level, the panel is found among the tab's own children and no subtree below
     // them is read at all.
     private static EventsPanel findEventsPanelIn(Object root, int maxDepth) {
-        List<?> level = root == null ? List.of() : List.of(root);
+
+        List<?> level = root == null
+            ? List.of()
+            : List.of(root);
+
         for (var depth = 0; depth <= maxDepth && !level.isEmpty(); depth++) {
             for (var component : level) {
+                
                 if (component instanceof EventsPanel intelPanel) {
                     return intelPanel;
                 }
@@ -193,16 +220,13 @@ public final class VanillaIntelScreenView implements IntelScreenView {
             // Descend only once the whole level has missed, so finding the panel among the tab's
             // children costs no child read below them.
             var nextLevel = new ArrayList<>();
+
             for (var component : level) {
                 nextLevel.addAll(CoreUiTree.readChildrenOf(component));
             }
+            
             level = nextLevel;
         }
         return null;
-    }
-
-    private CampaignUIAPI readCampaignUi() {
-        var sector = Global.getSector();
-        return sector == null ? null : sector.getCampaignUI();
     }
 }

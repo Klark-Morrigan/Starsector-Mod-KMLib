@@ -44,6 +44,12 @@ public final class CoreUiTree {
     private static final String GET_CURRENT_TAB_METHOD = "getCurrentTab";
     private static final String GET_CHILDREN_METHOD = "getChildrenCopy";
 
+    // A component's fade state, which is what says whether it is still on screen. Both names are
+    // the game's own contract - every component carries a fader, and the fader's own read - so they
+    // survive obfuscation like the hops above.
+    private static final String GET_FADER_METHOD = "getFader";
+    private static final String IS_FADED_OUT_METHOD = "isFadedOut";
+
     // ReflectionUtils.invoke resolves a method matching the argument types it is handed - none, for
     // the reads this class takes itself. Shared rather than left to the varargs call so a tree walk
     // does not allocate a fresh empty array at each hop; the reach allocates per invoke regardless,
@@ -72,6 +78,7 @@ public final class CoreUiTree {
      * @return its children, or an empty list when it is a leaf
      */
     public static List<?> readChildrenOf(Object component) {
+
         // A component offering no such name is a leaf. Descend no further down this branch.
         return readHopIfOffered(component, GET_CHILDREN_METHOD) instanceof List<?> children
             ? children
@@ -100,6 +107,7 @@ public final class CoreUiTree {
      * @return whether the class declares or inherits any method of that name
      */
     public static boolean hasMethodNamed(Object instance, String methodName) {
+
         return SHAPES_CARRYING_NAME.computeIfAbsent(
             new MethodNameQuery(instance.getClass(), methodName),
             query -> !ReflectionUtils
@@ -132,6 +140,7 @@ public final class CoreUiTree {
         if (!hasMethodNamed(instance, methodName)) {
             return null;
         }
+
         try {
             return invokeNoArg(instance, methodName);
 
@@ -152,6 +161,7 @@ public final class CoreUiTree {
      * @return whatever the method returned
      */
     public static Object invokeNoArg(Object instance, String methodName) {
+
         return invokeWithArgs(instance, methodName, NO_ARGS);
     }
 
@@ -187,10 +197,44 @@ public final class CoreUiTree {
      * @return whatever the method returned, or null for a void one
      */
     public static Object invokeWithArgs(Object instance, String methodName, Object... arguments) {
+
         // The target stays declared as Object deliberately: a Class-typed argument in that position
         // selects the overload that invokes a static method on that class rather than one on the
         // object, and the two differ only in the static type at the call site.
         return ReflectionUtils.invoke(instance, methodName, arguments);
+    }
+
+    /**
+     * Whether a component is still drawn where its parent put it, so a caller holding one the game
+     * handed out earlier can tell a live widget from one the screen it belonged to has taken down.
+     *
+     * <p>Read off the component's own fader, which is the signal the game's containers act on: a
+     * panel that has finished fading out is dropped from its parent's children on the next advance.
+     * A reference outlives that, and nothing about the reference itself says so.
+     *
+     * <p>Fails open, unlike the reads it sits beside: a shape carrying no fader, or one whose fader
+     * cannot be read, counts as showing. The answer only ever takes something away from a caller -
+     * a tree it would otherwise walk, a screen it would otherwise act on - so an unreadable signal
+     * leaves it doing what it did before rather than going quiet on a screen the player is looking
+     * at.
+     *
+     * @param component the component to test, or null when the caller has none
+     * @return whether it is still on screen; false when there is no component at all
+     */
+    public static boolean isComponentShowing(Object component) {
+
+        if (component == null) {
+            return false;
+        }
+
+        var fader = readHopIfOffered(component, GET_FADER_METHOD);
+        if (fader == null) {
+            return true;
+        }
+
+        // Anything but a plain "yes, faded out" is read as showing, so an unreadable fade state
+        // fails open along with an absent fader.
+        return !Boolean.TRUE.equals(readHopIfOffered(fader, IS_FADED_OUT_METHOD));
     }
 
     /**
@@ -206,8 +250,11 @@ public final class CoreUiTree {
      * @return the core UI it hosts, or null
      */
     public static Object readCoreUiOf(Object dialog) {
+
         // A dialog offering no such name is a scripted one, hosting no core UI of its own.
-        return dialog == null ? null : readHopIfOffered(dialog, GET_CORE_UI_METHOD);
+        return dialog == null
+            ? null
+            : readHopIfOffered(dialog, GET_CORE_UI_METHOD);
     }
 
     /**
@@ -221,7 +268,9 @@ public final class CoreUiTree {
     public static Object resolveCurrentTab() {
 
         var core = resolveActiveCoreUi();
-        return core == null ? null : invokeNoArg(core, GET_CURRENT_TAB_METHOD);
+        return core == null
+            ? null
+            : invokeNoArg(core, GET_CURRENT_TAB_METHOD);
     }
 
     /**
@@ -244,6 +293,7 @@ public final class CoreUiTree {
         if (sector == null || sector.getCampaignUI() == null) {
             return null;
         }
+
         return resolveActiveCore(sector.getCampaignUI());
     }
 
@@ -253,19 +303,25 @@ public final class CoreUiTree {
     // campaign's core regardless therefore searches the wrong tree for as long as a dialog is up,
     // which is a whole docked visit rather than a moment.
     //
-    // Same precedence the published tab read applies, so the two cannot disagree about which screen
-    // is up: a caller that gates on the tab id and then walks to its widgets is answered about one
-    // core UI, not two.
+    // The dialog's core counts only while it is still on screen, which is not the same as the
+    // dialog having one. Closing a core screen opened from a dialog fades that core out and drops
+    // it from the dialog's children, but the dialog goes on handing the panel out, and unlike the
+    // campaign's core it never closes the tab it was showing - so a walk that took it on presence
+    // alone would keep finding the closed screen's widgets, lit, for the rest of the visit. Once it
+    // is down the screens are the campaign's again.
     private static Object resolveActiveCore(CampaignUIAPI campaignUi) {
 
         var dialogCore = readCoreUiOf(campaignUi.getCurrentInteractionDialog());
-        return dialogCore != null
+
+        return isComponentShowing(dialogCore)
             ? dialogCore
             : invokeNoArg(campaignUi, GET_CORE_METHOD);
     }
 
     // The one thing that keys the memo: a shape and a name are what decide the answer together, and
     // neither alone identifies the question being asked.
-    private record MethodNameQuery(Class<?> shape, String methodName) {
+    private record MethodNameQuery(
+        Class<?> shape,
+        String methodName) {
     }
 }

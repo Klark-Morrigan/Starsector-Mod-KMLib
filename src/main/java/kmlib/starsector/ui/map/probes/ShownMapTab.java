@@ -6,6 +6,7 @@ import com.fs.starfarer.api.ui.SectorMapAPI;
 import com.fs.starfarer.api.ui.UIComponentAPI;
 
 import kmlib.logging.SessionWarning;
+import kmlib.starsector.ui.coreui.CampaignScreenView;
 import kmlib.starsector.ui.coreui.CoreUiTree;
 import kmlib.starsector.ui.intel.IntelScreenView;
 import kmlib.starsector.ui.intel.VanillaIntelScreenView;
@@ -25,9 +26,8 @@ import org.apache.log4j.Logger;
  * <p>The {@code M} screen's tab is recognised by it being a {@link SectorMapAPI}, which is published
  * API and so survives the obfuscator's reshuffling of the tab classes' own names between game
  * builds. That is a test of what the widget <em>is</em> rather than of which core tab the campaign
- * UI reports, and the difference matters: the tab read answers for an interaction dialog's own core
- * UI while such a dialog is up, whereas the walk to the current tab goes through the main one, so
- * pairing the two could root the rule in a tab from a tree the read was never aimed at.
+ * UI reports, and the difference matters: the widget is what a layout rule is applied to, so a rule
+ * rooted at whatever the tab id named would be rooted at a tab that may not be a map at all.
  *
  * <p>The visor is asked second and only when the current tab is not itself a map, because the intel
  * screen hosts its map below a tab that is not one. Its own read fails closed to "no visor" off that
@@ -92,23 +92,21 @@ public final class ShownMapTab {
     // recognises it by - which would otherwise leave every rule rooted here inert in silence, since
     // a caller with no map tab has to fail open.
     //
-    // The two reads are not aimed at the same core UI, which is the one benign way this can fire:
-    // the tab read answers for an interaction dialog's own core UI while such a dialog is up,
-    // whereas the walk always goes through the main one. So the message names the tree that was
-    // actually searched rather than declaring the recognition broken.
+    // Both reads answer for the same core UI - an interaction dialog's own while such a dialog is
+    // showing one, the campaign's otherwise - so a disagreement between them is news rather than
+    // the two looking at different trees.
     private static void warnOnceIfTheMapScreenIsUpAnyway() {
         // Tested before anything is read, so a session that has already said this costs a caller in
         // a render pass one field read per frame rather than a walk into the campaign UI.
         if (WARNING.hasWarnedThisSession()) {
             return;
         }
-        var sector = Global.getSector();
-        var campaignUi = sector == null ? null : sector.getCampaignUI();
-        if (campaignUi == null || campaignUi.getCurrentCoreTab() != CoreUITabId.MAP) {
+        if (CampaignScreenView.resolveShownCoreTab() != CoreUITabId.MAP) {
             return;
         }
         WARNING.warnOnce(
-            "The map screen is up but the main core UI's current tab is not a SectorMapAPI; "
-                + "rules about map-tab layout have no tab to root at while that is so.");
+            "The map screen is up but the current tab of the core UI in force is not a "
+                + "SectorMapAPI; rules about map-tab layout have no tab to root at while that "
+                + "is so.");
     }
 }

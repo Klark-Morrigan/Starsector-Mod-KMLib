@@ -300,18 +300,28 @@ rather than as a boolean per read, so "not showing" cannot arrive carrying a fil
 
 That is a disjunction rather than a switch, and the reason is worth knowing before trusting
 either read too far. One core tab shows at a time, so the two usually exclude each other -
-but they are not reading the same thing. The sector read goes through `getCurrentCoreTab()`,
-which answers for an **interaction dialog's own** core UI whenever such a dialog is up,
-while the intel read always walks the **main** core UI. So the pair can be aimed at two
-different core UIs, and nothing in either read rules out both answering yes at once. Treat
-the exclusivity as the usual case rather than a guarantee.
+but they are not reading the same thing: the sector read goes through the core tab the
+campaign reports, while the intel read walks down to the panel that tab holds. Both answer
+for the **core UI in force** - an interaction dialog's own while such a dialog is showing
+one, the campaign's otherwise - so they cannot be aimed at two different trees, but nothing
+in either rules out both answering yes at once. Treat the exclusivity as the usual case
+rather than a guarantee.
 
-`ShownMapTab` sidesteps that pairing rather than living with it. It recognises the `M`
-screen's map by the tab being a `SectorMapAPI` - published API, so obfuscation-proof, and a
-test of what the widget **is** rather than of which tab the campaign UI reports. That keeps
-the reading and the widget it describes in the same tree, which the tab-id route cannot
-promise. The visor is asked second and only when the current tab is not itself a map, since
-that screen hosts its map below a tab that is not one.
+Neither goes through `getCurrentCoreTab()` raw, and the correction between them is what
+keeps the pair honest while the player is docked.
+[`CampaignScreenView`](coreui/CampaignScreenView.java) owns it: a dialog that hosts a core UI
+goes on handing it out after the player closes the screen it was showing, and that core -
+unlike the campaign's, which closes its tab - keeps naming the tab it last showed for the
+rest of the visit. So a reported tab stands only while the core UI it came from is still on
+screen, and the walk takes that dialog's core on the same terms. Read raw, opening the intel
+screen while docked and closing it again leaves every map-gated overlay believing it is
+still up.
+
+`ShownMapTab` does not take the tab id's word for it at all. It recognises the `M` screen's
+map by the tab being a `SectorMapAPI` - published API, so obfuscation-proof, and a test of
+what the widget **is** rather than of which tab the campaign UI reports, which is what a
+layout rule rooted at it actually needs. The visor is asked second and only when the current
+tab is not itself a map, since that screen hosts its map below a tab that is not one.
 
 Filter state follows the same split, and it is per map rather than global. Each map widget
 binds to the filter its params carry, falling back to the campaign's persisted filter when
@@ -426,7 +436,7 @@ standing for a count is not prose.
 | [`highlight`](highlight/) | vanilla | `Highlight`, `HighlightedParagraph`, `HighlightedMessage` |
 | [`tooltip`](tooltip/) | vanilla | [`Tooltips`](tooltip/Tooltips.java), the `TooltipCreator` boilerplate wrapper - the vanilla surface's answer to what [`widgets/tooltip`](widgets/tooltip/) holds neutrally |
 | [`intel`](intel/) | split | the screen-view port and its vanilla implementation |
-| [`coreui`](coreui/) | split | [`CoreUiTree`](coreui/CoreUiTree.java), the by-name reach into the live widget tree that every screen's probes walk; the [repaint port](coreui/CoreUiComponentRepainter.java) with its [reflective implementation](coreui/ReflectiveCoreUiComponentRepainter.java), which drives a component's own draw through that same reach, clipped to a region a caller hands it - the one thing here that writes to the tree rather than reading it; and [`CampaignScreenView`](coreui/CampaignScreenView.java), which answers the coarsest question about the core UI without walking anything: whether *none* of it is up and the player is looking at the campaign world itself, which published API states in two reads (no core tab, no interaction dialog) |
+| [`coreui`](coreui/) | split | [`CoreUiTree`](coreui/CoreUiTree.java), the by-name reach into the live widget tree that every screen's probes walk; the [repaint port](coreui/CoreUiComponentRepainter.java) with its [reflective implementation](coreui/ReflectiveCoreUiComponentRepainter.java), which drives a component's own draw through that same reach, clipped to a region a caller hands it - the one thing here that writes to the tree rather than reading it; and [`CampaignScreenView`](coreui/CampaignScreenView.java), which answers the coarse questions about the core UI without walking into any one screen: which core tab is up, and whether *none* of it is and the player is looking at the campaign world itself (that second one being the first plus "no interaction dialog"). The tab is published API with one correction, and the correction is why the read exists rather than each caller asking the campaign UI: a dialog goes on handing out the core UI of a screen the player has closed, still naming the tab it was showing, so a tab it reported stands only while that core is still on screen - the one thing here that reaches the tree, and only far enough to ask whether a panel is still drawn |
 | [`screen`](screen/) | split | how big the window is, in each of the two spaces a UI pass straddles - the UI units a widget is laid out in, and the framebuffer pixels the mouse and a GL clip are stated in. They coincide only at a pixel scale of 1, so a number taken from the wrong one is right on the machine it was written on and wrong on a scaled display. [`ScreenAxis`](screen/ScreenAxis.java) is one axis measured in both at once and converts between them, which is where the guard against that lives: a pixel length is never reachable apart from its own UI partner, so there is no arrangement of the two floats for a caller to transpose, and the conversion is pure arithmetic exercisable with no display. [`VanillaScreen`](screen/VanillaScreen.java) is what measures a real one - the whole screen as a box, the UI axes loose beside it for the callers comparing a widget rather than converting, and the axes bound for those that are. Read afresh at every ask, a window being resizable mid-session |
 | [`suppression`](suppression/) | vanilla | the write that stops a widget rendering at all: [`OffScreenWidgetSuppressor`](suppression/OffScreenWidgetSuppressor.java), the script that holds a widget's own opacity at zero while its owner has it parked clear of the screen, and hands back the value it was found at when it returns. A component drawn to nothing renders no subtree, which is the work saved - and, where that subtree is something the game reads answers from, the second answer removed from a frame meant to carry one: a sector map composited into somebody's panel iterates the sector's terrain and binds a transform of its own whether or not anyone can see it. Which widget it may be pointed at is a port, writing into another mod's panel being a decision only the caller can take, and the [screen](screen/VanillaScreen.java) the box is compared against is read live, so a resized window moves both sides of the comparison. The reading is where the widget *is* rather than what shows of it, the two parting the moment this writes: a read that sifted out widgets drawn to nothing would stop reporting the very widget it had just switched off, leaving it parked for good |
 | [`map/transform`](map/transform/) | split | the modelview-matrix port, its GL and Fast Rendering implementations, the [selector](map/transform/ModelviewMatrixReaders.java) between them, and the [transform](map/transform/CampaignMapTransform.java) and [cursor read](map/transform/MapCursor.java) built over it |

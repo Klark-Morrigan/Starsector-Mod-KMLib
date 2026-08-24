@@ -6,6 +6,8 @@ import com.fs.starfarer.api.campaign.CoreUITabId;
 import com.fs.starfarer.api.campaign.LocationAPI;
 import com.fs.starfarer.campaign.CampaignUIPersistentData;
 
+import kmlib.starsector.ui.coreui.CampaignScreenView;
+
 import org.apache.log4j.Logger;
 
 /**
@@ -24,8 +26,10 @@ import org.apache.log4j.Logger;
  * excludes them. The exception worth knowing is a map tab opened *with* such params, where the
  * persisted filter and the one that tab draws from can differ.
  *
- * <p>The active tab is published API ({@code getCurrentCoreTab}); the sub-view and
- * Starscape-filter state live on the game's concrete campaign-UI-data class,
+ * <p>The active tab comes from {@link CampaignScreenView#resolveShownCoreTab()} - the published
+ * read, corrected for an interaction dialog that goes on handing out the core UI of a screen the
+ * player has closed, which would otherwise leave this reporting the map long after they left it.
+ * The sub-view and Starscape-filter state live on the game's concrete campaign-UI-data class,
  * {@link CampaignUIPersistentData}, which the API jar does not publish. The port casts to it
  * directly - the game's script classloader denies {@code java.lang.reflect} to mod code, so
  * a reflective read is impossible, while loading core classes is permitted and the class is
@@ -34,6 +38,7 @@ import org.apache.log4j.Logger;
  * rather than misplacing it.
  */
 public final class CampaignMapView {
+
     private static final Logger LOG = Global.getLogger(CampaignMapView.class);
 
     // One-shot: getUIData() returning a type other than CampaignUIPersistentData means the
@@ -84,19 +89,23 @@ public final class CampaignMapView {
      * @return the current view-state signals, or a short reason when they cannot be read
      */
     public static String describeViewState() {
+
         var sector = Global.getSector();
         if (sector == null) {
             return "no sector";
         }
+
         CampaignUIAPI campaignUi = sector.getCampaignUI();
         if (campaignUi == null) {
             return "no campaign UI";
         }
+
         var uiData = readConcreteUiData();
         var filterData = uiData == null ? null : uiData.getMapFilterData();
         var mapLocation = uiData == null ? null : uiData.getCampaignMapLocation();
+
         return "tab="
-            + campaignUi.getCurrentCoreTab()
+            + CampaignScreenView.resolveShownCoreTab()
             + " starscape="
             + (filterData == null ? "unreadable" : filterData.starscape)
             + " mapLocation="
@@ -120,33 +129,41 @@ public final class CampaignMapView {
      *         any of them cannot be read
      */
     public static SectorMapState resolveSectorMapState() {
+
         var sector = Global.getSector();
         if (sector == null) {
             return SectorMapState.NOT_SHOWING;
         }
+
         CampaignUIAPI campaignUi = sector.getCampaignUI();
-        // getCurrentCoreTab() == MAP is the whole "the map is the active view" signal. Do not
-        // also gate on isShowingDialog(): the map is routinely viewed in a dialog-active
-        // context (opened from an interaction), where that flag is true the entire time, so
-        // gating on it would hide the overlay on the very screen it belongs to.
-        if (campaignUi == null || campaignUi.getCurrentCoreTab() != CoreUITabId.MAP) {
+        // The shown tab being MAP is the whole "the map is the active view" signal. Do not also
+        // gate on isShowingDialog(): the map is routinely viewed in a dialog-active context
+        // (opened from an interaction), where that flag is true the entire time, so gating on it
+        // would hide the overlay on the very screen it belongs to. The corrected read is what
+        // makes that safe - the raw one goes on naming the map after the player closes it there.
+        if (campaignUi == null
+            || CampaignScreenView.resolveShownCoreTab() != CoreUITabId.MAP) {
             return SectorMapState.NOT_SHOWING;
         }
+
         var uiData = readConcreteUiData();
         if (uiData == null) {
             return SectorMapState.NOT_SHOWING;
         }
         var mapLocation = uiData.getCampaignMapLocation();
+        
         // A null location means the map has not recorded a sub-view yet; it opens on the
         // player's current location, so read it as the Sector view until proven a system.
         var isSectorSubViewShowing = mapLocation == null || mapLocation.isHyperspace();
         if (!isSectorSubViewShowing) {
             return SectorMapState.NOT_SHOWING;
         }
+
         var filterData = uiData.getMapFilterData();
         if (filterData == null) {
             return SectorMapState.SHOWING_WITH_UNREADABLE_FILTER;
         }
+
         return filterData.starscape
             ? SectorMapState.SHOWING_IN_STARSCAPE_MODE
             : SectorMapState.SHOWING_WITH_STARSCAPE_OFF;
@@ -173,6 +190,7 @@ public final class CampaignMapView {
     // A null location is a real state (map not opened yet), so it prints as "null" rather
     // than being folded into the unreadable case.
     private static String describeLocation(LocationAPI location) {
+        
         if (location == null) {
             return "null";
         }
