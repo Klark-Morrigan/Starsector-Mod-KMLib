@@ -8,6 +8,10 @@ import com.fs.starfarer.api.campaign.PersistentUIDataAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.campaign.CampaignUIPersistentData;
 
+import kmlib.testfixtures.starsector.ui.coreui.CoreHostingDialogFake;
+import kmlib.testfixtures.starsector.ui.coreui.CoreUiComponentFake;
+import kmlib.testfixtures.starsector.ui.coreui.CoreUiFake;
+
 import org.apache.log4j.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,7 +27,8 @@ import static org.mockito.Mockito.when;
 
 /**
  * Pins the sector-map gates across each way they can fail closed - no sector, no campaign UI, a
- * non-map tab, a star-system sub-view, or UI-data that is not the game's concrete
+ * non-map tab, a map screen a dialog has closed but goes on naming, a star-system sub-view, or
+ * UI-data that is not the game's concrete
  * campaign-UI-data class - and how each weighs the Starscape filter: the "is showing" read
  * ignores it, while the two mode reads split the sector sub-view of the map tab between them.
  * The concrete UI-data object is the real
@@ -79,6 +84,33 @@ class CampaignMapViewTest {
             when(campaignUiMock.getCurrentCoreTab()).thenReturn(CoreUITabId.FLEET);
 
             assertThat(CampaignMapView.isSectorMapShowing()).isFalse();
+        }
+
+        @Test
+        void isFalseWhileADialogHandsOutAClosedMapScreensCoreUi() {
+            // The map screen opened from an interaction and closed again: that dialog's core UI is
+            // faded out and taken off screen, and goes on naming the map tab it was showing. Read
+            // raw, this reports the map for the rest of the docked visit and every overlay gated on
+            // it draws over the dialog.
+            when(campaignUiMock.getCurrentInteractionDialog())
+                .thenReturn(CoreHostingDialogFake
+                    .createHosting(CoreUiFake.createDismissed(new CoreUiComponentFake())));
+            stubUiDataWithStarscape(false, buildHyperspaceLocation());
+
+            assertThat(CampaignMapView.isSectorMapShowing()).isFalse();
+        }
+
+        @Test
+        void isTrueWhileADialogsMapScreenIsStillShowing() {
+            // The other side of it, and why the correction is about the core UI being down rather
+            // than about a dialog being up: the map is routinely opened from an interaction, and it
+            // is as much on screen there as one opened from game space.
+            when(campaignUiMock.getCurrentInteractionDialog())
+                .thenReturn(CoreHostingDialogFake
+                    .createHosting(new CoreUiFake(new CoreUiComponentFake())));
+            stubUiDataWithStarscape(false, buildHyperspaceLocation());
+
+            assertThat(CampaignMapView.isSectorMapShowing()).isTrue();
         }
 
         @Test

@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.LongSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -31,6 +32,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 class EmbeddedMapFinderTest {
 
     private static final Object NO_MAP_TAB_ON_SCREEN = null;
+
+    // A clock that never moves, for the cases that are not about the bound: the memory cannot expire
+    // under them, so what they observe is the walk being reused or repeated for its own reason.
+    private static final LongSupplier STOPPED_CLOCK = () -> 0L;
 
     @Nested
     class CollectEmbeddedMapsUnder {
@@ -125,7 +130,8 @@ class EmbeddedMapFinderTest {
         void findEmbeddedMapsAnswersNothingBeforeThereIsATree() {
             // No campaign UI is stood up yet. Nothing to walk is not a failure and says nothing
             // about what a tree will hold once there is one.
-            var finder = new EmbeddedMapFinder(() -> null, () -> NO_MAP_TAB_ON_SCREEN);
+            var finder = new EmbeddedMapFinder(
+                () -> null, () -> NO_MAP_TAB_ON_SCREEN, STOPPED_CLOCK);
 
             assertThat(finder.findEmbeddedMaps())
                 .isEmpty();
@@ -137,7 +143,8 @@ class EmbeddedMapFinderTest {
             // was put, so a second walk of the same tree would pay a full descent for the answer
             // already in hand.
             var rootFake = new CoreUiComponentFake(new SectorMapWidgetFake());
-            var finder = new EmbeddedMapFinder(() -> rootFake, () -> NO_MAP_TAB_ON_SCREEN);
+            var finder = new EmbeddedMapFinder(
+                () -> rootFake, () -> NO_MAP_TAB_ON_SCREEN, STOPPED_CLOCK);
 
             finder.findEmbeddedMaps();
             finder.findEmbeddedMaps();
@@ -156,7 +163,8 @@ class EmbeddedMapFinderTest {
                     new CoreUiComponentFake(firstMapFake),
                     new CoreUiComponentFake(secondMapFake))
                 .iterator();
-            var finder = new EmbeddedMapFinder(treeRootFakes::next, () -> NO_MAP_TAB_ON_SCREEN);
+            var finder = new EmbeddedMapFinder(
+                treeRootFakes::next, () -> NO_MAP_TAB_ON_SCREEN, STOPPED_CLOCK);
 
             finder.findEmbeddedMaps();
 
@@ -170,7 +178,8 @@ class EmbeddedMapFinderTest {
             // Nothing orders a mod's widget building against ours, so an empty first walk can mean
             // "not built yet" rather than "not there". Remembered, it would answer for the session.
             var rootFake = new CoreUiComponentFake();
-            var finder = new EmbeddedMapFinder(() -> rootFake, () -> NO_MAP_TAB_ON_SCREEN);
+            var finder = new EmbeddedMapFinder(
+                () -> rootFake, () -> NO_MAP_TAB_ON_SCREEN, STOPPED_CLOCK);
 
             finder.findEmbeddedMaps();
             finder.findEmbeddedMaps();
@@ -247,7 +256,8 @@ class EmbeddedMapFinderTest {
                 () -> {
                     throw new IllegalStateException("A reach that no longer resolves.");
                 },
-                () -> NO_MAP_TAB_ON_SCREEN);
+                () -> NO_MAP_TAB_ON_SCREEN,
+                STOPPED_CLOCK);
 
             assertThat(finder.findEmbeddedMaps())
                 .isEmpty();

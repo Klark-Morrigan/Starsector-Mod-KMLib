@@ -135,14 +135,13 @@ public final class CampaignMapView {
             return SectorMapState.NOT_SHOWING;
         }
 
-        CampaignUIAPI campaignUi = sector.getCampaignUI();
         // The shown tab being MAP is the whole "the map is the active view" signal. Do not also
         // gate on isShowingDialog(): the map is routinely viewed in a dialog-active context
         // (opened from an interaction), where that flag is true the entire time, so gating on it
         // would hide the overlay on the very screen it belongs to. The corrected read is what
         // makes that safe - the raw one goes on naming the map after the player closes it there.
-        if (campaignUi == null
-            || CampaignScreenView.resolveShownCoreTab() != CoreUITabId.MAP) {
+        // It fails closed to no tab, so a campaign UI that is not up yet needs no test of its own.
+        if (CampaignScreenView.resolveShownCoreTab() != CoreUITabId.MAP) {
             return SectorMapState.NOT_SHOWING;
         }
 

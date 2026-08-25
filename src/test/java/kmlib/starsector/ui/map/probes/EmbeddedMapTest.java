@@ -113,10 +113,10 @@ class EmbeddedMapTest {
     }
 
     @Nested
-    class ResolveOwningPanel {
+    class ResolveDockedWidget {
 
         @Test
-        void resolveOwningPanelAnswersTheWidgetAddedToTheWalksRoot() {
+        void resolveDockedWidgetAnswersTheWidgetAddedToTheWalksRoot() {
             // The load-bearing case, and the one an index off by one would pass anyway if the chain
             // were shorter: a mod's panel with the map nested another level down inside it. The
             // panel is what covers every way a mod might have assembled that nesting, so the walk
@@ -126,27 +126,27 @@ class EmbeddedMapTest {
             assertThat(new EmbeddedMap(
                     new SectorMapWidgetFake(),
                     List.of(new CoreUiComponentFake(), panelFake, new CoreUiComponentFake()))
-                .resolveOwningPanel())
+                .resolveDockedWidget())
                 .isSameAs(panelFake);
         }
 
         @Test
-        void resolveOwningPanelAnswersTheMapItselfWhenItHangsStraightUnderTheRoot() {
-            // Nothing was put around it, so the map is the widget that was added and there is no
-            // panel between the two. Answering nothing here would leave a caller with no root at
-            // all for a map that is plainly on screen.
+        void resolveDockedWidgetAnswersTheMapItselfWhenItHangsStraightUnderTheRoot() {
+            // Nothing was wrapped around it, so the map is the whole of what was docked. Answering
+            // nothing here would leave a caller with no root at all for a map that is plainly on
+            // screen.
             var mapFake = new SectorMapWidgetFake();
 
             assertThat(new EmbeddedMap(mapFake, List.of(new CoreUiComponentFake()))
-                .resolveOwningPanel())
+                .resolveDockedWidget())
                 .isSameAs(mapFake);
         }
 
         @Test
-        void resolveOwningPanelAnswersNothingWithoutAnAncestry() {
+        void resolveDockedWidgetAnswersNothingWithoutAnAncestry() {
             // A chain that was never recorded says nothing about what the map hangs under, so there
             // is no widget to name - as against the case above, where the absence is the answer.
-            assertThat(new EmbeddedMap(new SectorMapWidgetFake(), NO_ANCESTORS).resolveOwningPanel())
+            assertThat(new EmbeddedMap(new SectorMapWidgetFake(), NO_ANCESTORS).resolveDockedWidget())
                 .isNull();
         }
     }

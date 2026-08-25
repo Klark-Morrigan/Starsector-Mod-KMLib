@@ -104,18 +104,9 @@ public final class EmbeddedMapFinder {
     // rather than against a frame count, since nothing here is told when a frame begins.
     private long walkedAtNanos;
 
-    /** Reads the live core UI and the live map tab - the pairing a running game gets. */
+    /** Reads the live core UI, the live map tab and the elapsed clock - what a running game gets. */
     public EmbeddedMapFinder() {
-        this(CoreUiTree::resolveActiveCoreUi, ShownMapTab::resolveShownMapTab);
-    }
-
-    /**
-     * @param readTreeRoot    the widget tree to search, above any one tab
-     * @param readShownMapTab the map tab the game is showing, which is the one map that is not
-     *                        embedded - and null on every screen showing none
-     */
-    EmbeddedMapFinder(Supplier<Object> readTreeRoot, Supplier<Object> readShownMapTab) {
-        this(readTreeRoot, readShownMapTab, System::nanoTime);
+        this(CoreUiTree::resolveActiveCoreUi, ShownMapTab::resolveShownMapTab, System::nanoTime);
     }
 
     /**
@@ -156,7 +147,7 @@ public final class EmbeddedMapFinder {
             if (treeRoot == null) {
                 return List.of();
             }
-            if (walkedTreeRoot == treeRoot && !foundMaps.isEmpty() && !hasMemoryElapsed()) {
+            if (walkedTreeRoot == treeRoot && !foundMaps.isEmpty() && !hasMemoExpired()) {
                 return foundMaps;
             }
             var embeddedMaps = collectEmbeddedMapsUnder(treeRoot, readShownMapTab.get());
@@ -245,7 +236,7 @@ public final class EmbeddedMapFinder {
 
     // Whether what is remembered has stood long enough to be worth reading the tree again. Stated as
     // a difference so it holds wherever the clock's own zero is.
-    private boolean hasMemoryElapsed() {
+    private boolean hasMemoExpired() {
         return readElapsedNanos.getAsLong() - walkedAtNanos >= MEMO_LIFETIME_NANOS;
     }
 

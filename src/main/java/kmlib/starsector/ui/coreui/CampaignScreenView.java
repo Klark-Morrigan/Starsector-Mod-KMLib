@@ -49,8 +49,29 @@ public final class CampaignScreenView {
      *         campaign to read
      */
     public static CoreUITabId resolveShownCoreTab() {
-        
+        return resolveShownCoreTabOn(readCampaignUi());
+    }
+
+    /**
+     * @return whether the player is looking at the campaign world with no core screen open and no
+     *         interaction dialog up; false while either is showing, and false before there is a
+     *         campaign to read
+     */
+    public static boolean isShowingGameSpace() {
+
         var campaignUi = readCampaignUi();
+
+        return campaignUi != null
+            && resolveShownCoreTabOn(campaignUi) == null
+            && !campaignUi.isShowingDialog();
+    }
+
+    // The tab rule, over a campaign UI its caller has already read. Both reads above take that read
+    // once and hand it here, rather than each reaching into the live game for its own: game space is
+    // the tab answer plus one more signal off the same object, and two reads of it could be taken
+    // either side of the player opening something.
+    private static CoreUITabId resolveShownCoreTabOn(CampaignUIAPI campaignUi) {
+
         if (campaignUi == null) {
             return null;
         }
@@ -69,22 +90,6 @@ public final class CampaignScreenView {
         }
 
         return reportedTab;
-    }
-
-    /**
-     * @return whether the player is looking at the campaign world with no core screen open and no
-     *         interaction dialog up; false while either is showing, and false before there is a
-     *         campaign to read
-     */
-    public static boolean isShowingGameSpace() {
-
-        var campaignUi = readCampaignUi();
-        if (campaignUi == null) {
-            return false;
-        }
-
-        return resolveShownCoreTab() == null
-            && !campaignUi.isShowingDialog();
     }
 
     private static CampaignUIAPI readCampaignUi() {
