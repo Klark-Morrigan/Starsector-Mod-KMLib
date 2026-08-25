@@ -30,10 +30,10 @@ import static org.assertj.core.api.Assertions.tuple;
  * since both read as drift to anyone checking the two side by side, and would otherwise be quietly
  * "corrected" back into a mechanic that leaves real colonies out of its account.
  *
- * <p>What identifies a market rather than scoring it - its name and the glyph the map marks its
- * entity with - is pinned here too, since a surface listing the markets behind a standing reads both
- * off this walk rather than looking the market up again. That reading them changes no outcome is
- * asserted head-on beside them.
+ * <p>What identifies a market rather than scoring it - its id, its name and the glyph the map marks
+ * its entity with - is pinned here too, since a surface listing the markets behind a standing reads
+ * them off this walk rather than looking the market up again. That reading them changes no outcome
+ * is asserted head-on beside them.
  *
  * <p>The narrow claimant read and the {@link ClaimReaderSource} binding sit beside the breakdown
  * cases rather than in a suite of their own, the reader answering both claim ports off one
@@ -154,6 +154,33 @@ final class VanillaClaimBreakdownReaderTest {
             assertThat(standing.otherMarkets())
                 .extracting(market -> market.marketNameplate().displayName())
                 .containsExactly("Kazeron");
+        }
+
+        @Test
+        void carriesTheIdOfEveryMarketAStandingRestsOn() {
+            // A surface pairing a claim row back to anything else it knows about the system - how
+            // old its news of that colony is, say - needs an identity rather than a label, and
+            // vanilla names a station colony and its defending station alike. Read on the walk
+            // that met the market, so the id and the name on a row describe one colony.
+            var hegemony = claimContest.buildFaction("hegemony", true);
+            var colony = claimContest.buildMarket(hegemony, 5);
+            var defendingStation = claimContest.buildMarket(hegemony, 3);
+
+            claimContest.nameMarket(colony, "Chicomoztoc");
+            claimContest.nameMarket(defendingStation, "Chicomoztoc");
+            claimContest.identifyMarket(colony, "chicomoztoc");
+            claimContest.identifyMarket(defendingStation, "chicomoztoc_station");
+            claimContest.placeMarketsInSystem(colony, defendingStation);
+
+            var standing = readTopStanding(
+                new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
+                    .readBreakdown(claimContest.getSystem()));
+
+            assertThat(standing.standingMarket().marketId())
+                .isEqualTo("chicomoztoc");
+            assertThat(standing.otherMarkets())
+                .extracting(MarketClaimBreakdown::marketId)
+                .containsExactly("chicomoztoc_station");
         }
 
         @Test

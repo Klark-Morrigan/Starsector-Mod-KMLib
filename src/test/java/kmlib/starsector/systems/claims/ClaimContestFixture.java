@@ -132,6 +132,16 @@ final class ClaimContestFixture implements AutoCloseable {
     }
 
     /**
+     * Gives a market the identity the engine knows it by, which is a separate fact from the name a
+     * reader is shown: vanilla names a station colony and its defending station alike, so a case
+     * about the identity has to be able to state the two apart.
+     */
+    void identifyMarket(MarketAPI market, String marketId) {
+        when(market.getId())
+            .thenReturn(marketId);
+    }
+
+    /**
      * Hangs a map glyph on a market's own entity - a custom-entity spec's authored path and colour,
      * which is where vanilla keeps a station's icon. A plain market built here has no primary entity
      * at all, so a colony is unmarked unless a case says otherwise.
