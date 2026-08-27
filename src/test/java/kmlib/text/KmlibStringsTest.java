@@ -97,6 +97,86 @@ class KmlibStringsTest {
     }
 
     @Nested
+    class FindWholeWordIndex {
+
+        @Test
+        void findWholeWordIndexAnswersWhereTheTextOpensOnTheWord() {
+            assertThat(KmlibStrings.findWholeWordIndex("Abandoned Station", "abandoned"))
+                .isZero();
+        }
+
+        @Test
+        void findWholeWordIndexAnswersWhereTheWordSitsInTheMiddle() {
+            assertThat(KmlibStrings.findWholeWordIndex("Old Abandoned Yards", "abandoned"))
+                .isEqualTo(4);
+        }
+
+        @Test
+        void findWholeWordIndexTakesAHyphenAsPartingTwoWords() {
+            // Anything that is not a letter or a digit parts one word from another, so a hyphenated
+            // name says the word as plainly as the spaced form does.
+            assertThat(KmlibStrings.findWholeWordIndex("Abandoned-Station", "abandoned"))
+                .isZero();
+        }
+
+        @Test
+        void findWholeWordIndexPassesOverAWordMerelyOpeningALongerOne() {
+            // The whole reason this is not a containment: a caller picking a stretch out by the
+            // answer would otherwise pick out the first nine characters of a word nobody wrote.
+            assertThat(KmlibStrings.findWholeWordIndex("Abandonedium", "abandoned"))
+                .isEqualTo(KmlibStrings.NO_WORD_MATCH);
+        }
+
+        @Test
+        void findWholeWordIndexPassesOverAWordMerelyClosingALongerOne() {
+            assertThat(KmlibStrings.findWholeWordIndex("Unabandoned", "abandoned"))
+                .isEqualTo(KmlibStrings.NO_WORD_MATCH);
+        }
+
+        @Test
+        void findWholeWordIndexAnswersTheFirstOfSeveralOccurrences() {
+            assertThat(KmlibStrings.findWholeWordIndex("Abandoned Abandoned Yards", "abandoned"))
+                .isZero();
+        }
+
+        @Test
+        void findWholeWordIndexPassesOverAPartialMatchAheadOfAWholeOne() {
+            // The search does not stop at the first place the characters appear: a longer word
+            // carrying them is stepped over and the standalone one past it still answers.
+            assertThat(KmlibStrings.findWholeWordIndex("Abandonedium Abandoned", "abandoned"))
+                .isEqualTo(13);
+        }
+
+        @Test
+        void findWholeWordIndexAnswersTheTextsOwnPositionWhateverCaseEitherIsIn() {
+            // Matched against the text as it is spelled rather than a folded copy, so the position
+            // indexes the string the caller holds.
+            assertThat(KmlibStrings.findWholeWordIndex("ABANDONED STATION", "abandoned"))
+                .isZero();
+        }
+
+        @Test
+        void findWholeWordIndexAnswersAWordTheWholeTextConsistsOf() {
+            assertThat(KmlibStrings.findWholeWordIndex("abandoned", "abandoned"))
+                .isZero();
+        }
+
+        @Test
+        void findWholeWordIndexSaysNothingIsFoundInAbsentText() {
+            assertThat(KmlibStrings.findWholeWordIndex(null, "abandoned"))
+                .isEqualTo(KmlibStrings.NO_WORD_MATCH);
+        }
+
+        @Test
+        void findWholeWordIndexSaysAnAbsentWordIsSaidNowhere() {
+            // An empty word matches at every position of every string, which is an answer no caller
+            // could act on - so it is refused rather than answered at nought.
+            assertThat(KmlibStrings.findWholeWordIndex("Abandoned Station", ""))
+                .isEqualTo(KmlibStrings.NO_WORD_MATCH);
+        }
+    }
+
+    @Nested
     class DropAdjacentRepeatedWords {
 
         // A subject of two words with a third appended that opens on the word the subject ends on -

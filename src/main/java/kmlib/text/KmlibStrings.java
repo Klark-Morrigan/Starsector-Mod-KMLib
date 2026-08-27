@@ -17,6 +17,13 @@ import java.util.List;
  */
 public final class KmlibStrings {
 
+    /**
+     * What {@link #findWholeWordIndex} answers where the text does not say the word at all. Named
+     * rather than left as a bare negative index, so a caller reads the absence as one rather than
+     * comparing against a literal whose meaning is only in this method's contract.
+     */
+    public static final int NO_WORD_MATCH = -1;
+
     private KmlibStrings() {
     }
 
@@ -63,6 +70,39 @@ public final class KmlibStrings {
             words.add(word);
         }
         return words;
+    }
+
+    /**
+     * Where {@code text} first says {@code word} as a word of its own, ignoring case, or
+     * {@link #NO_WORD_MATCH} where it never does.
+     *
+     * <p>A whole word rather than a bare containment: what parts one word from another is anything
+     * that is not a letter or a digit, and the ends of the text itself. So a hyphen counts as plainly
+     * as a space does, and a word that merely opens a longer one does not match at all - searching
+     * <em>abandoned</em> finds nothing in <em>Abandonedium</em>.
+     *
+     * <p>Matched against the text as it is spelled rather than against a folded copy, so the position
+     * answered indexes the string the caller holds. A copy folded to one case is free to come out a
+     * different length, which would slide the answer along the text by however much it moved - and a
+     * caller picking a stretch out by that position would then pick out the wrong characters.
+     *
+     * @param text the text to search; null or empty says the word nowhere
+     * @param word the word to look for; null or empty is said nowhere
+     * @return the position the word starts at, or {@link #NO_WORD_MATCH}
+     */
+    public static int findWholeWordIndex(String text, String word) {
+
+        if (!hasText(text) || !hasText(word)) {
+            return NO_WORD_MATCH;
+        }
+        for (var index = 0; index + word.length() <= text.length(); index++) {
+
+            if (text.regionMatches(true, index, word, 0, word.length())
+                    && isWholeWordAt(text, index, word.length())) {
+                return index;
+            }
+        }
+        return NO_WORD_MATCH;
     }
 
     /**
@@ -113,5 +153,20 @@ public final class KmlibStrings {
             return text;
         }
         return String.join(" ", keptWords);
+    }
+
+    // Whether the stretch found at that position stands alone rather than opening or closing a
+    // longer word.
+    private static boolean isWholeWordAt(String text, int matchIndex, int wordLength) {
+        return isWordBoundaryAt(text, matchIndex - 1)
+            && isWordBoundaryAt(text, matchIndex + wordLength);
+    }
+
+    // Whether that position parts one word from another - anything that is not a letter or a digit,
+    // and the ends of the text itself.
+    private static boolean isWordBoundaryAt(String text, int index) {
+        return index < 0
+            || index >= text.length()
+            || !Character.isLetterOrDigit(text.charAt(index));
     }
 }
