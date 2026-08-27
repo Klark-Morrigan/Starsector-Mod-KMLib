@@ -133,7 +133,7 @@ public final class Segments {
             double signedEnd) {
 
         var fraction = signedStart / (signedStart - signedEnd);
-        
+
         return new double[] {
             start[0] + fraction * (end[0] - start[0]),
             start[1] + fraction * (end[1] - start[1]),

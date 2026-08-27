@@ -115,7 +115,7 @@ class LinesTest {
 
     @Nested
     class ComputeSignedOffsetFromLine {
-        
+
         @Test
         void computeSignedOffsetFromLineIsPositiveOnTheNormalSide() {
             // Line x = 5 with the normal pointing +x: a point at x = 8 is three

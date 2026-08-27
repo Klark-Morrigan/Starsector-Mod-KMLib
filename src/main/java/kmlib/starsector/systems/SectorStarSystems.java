@@ -75,7 +75,7 @@ public final class SectorStarSystems {
     public static Map<String, double[]> collectPositionsById(
             SectorAPI sector,
             Predicate<StarSystemAPI> shouldInclude) {
-                
+
         var positions = new LinkedHashMap<String, double[]>();
         if (sector == null) {
             return positions;

@@ -99,7 +99,7 @@ public final class KmlibStrings {
         var keptWords = new ArrayList<String>();
 
         for (var index = 0; index < words.size(); index++) {
-            
+
             var word = words.get(index);
             var isRepeat = index >= protectedWordCount
                 && !keptWords.isEmpty()

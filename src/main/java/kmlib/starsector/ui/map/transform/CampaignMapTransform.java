@@ -241,7 +241,7 @@ public record CampaignMapTransform(
         matrix[TRANSLATE_Y_SLOT] = -1f;
         matrix[TRANSLATE_Z_SLOT] = (UI_ORTHO_NEAR_PLANE + UI_ORTHO_FAR_PLANE) / depthSpan;
         matrix[HOMOGENEOUS_W_SLOT] = 1f;
-        
+
         return matrix;
     }
 }

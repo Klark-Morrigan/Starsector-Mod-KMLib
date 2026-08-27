@@ -942,7 +942,7 @@ final class TabPanelControllerTest {
             var placement = buildTwoTabPlacementShowing(FIRST_TAB_INDEX, tabIndex -> { });
 
             controller.activateTabAtPoint(placement, INSIDE_SECOND_TAB_X, ON_TAB_ROW_Y);
-            
+
             advanceAWholeTraverse(controller);
 
             controller.handlePointer(PointerEventMocks.mockLeftReleaseAt(INSIDE_FIRST_TAB_X, ON_TAB_ROW_Y), placement);
@@ -1229,7 +1229,7 @@ final class TabPanelControllerTest {
                 new TabPanelHover(NO_TAB_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
                 HALF_STEP_SECONDS,
                 DURATIONS);
-                
+
             controller.resetInputMotions();
 
             assertThat(pulseFractionAt(controller, SECOND_TAB_INDEX))
@@ -1256,7 +1256,7 @@ final class TabPanelControllerTest {
                 .isCloseTo(1f, within(TOLERANCE));
 
             controller.resetInputMotions();
-            
+
             advanceAWholeTraverse(controller);
 
             assertThat(pulseFractionAt(controller, SECOND_TAB_INDEX))
@@ -1653,7 +1653,7 @@ final class TabPanelControllerTest {
             var controller = buildControllerSounding(UiSoundScheme.createSilentSoundScheme());
 
             advanceWithPointerOn(controller, buildHoverOnTab(FIRST_TAB_INDEX));
-            
+
             controller.startHotkeyBlinkAt(FIRST_TAB_INDEX);
 
             assertThat(soundPlayerFake.getPlayedSounds())
@@ -1768,7 +1768,7 @@ final class TabPanelControllerTest {
                 buildScrollingListPlacement(UNSCROLLED_OFFSET));
 
             controller.resetInputMotions();
-            
+
             soundPlayerFake.clearPlayedCues();
 
             advanceWithPointerAt(

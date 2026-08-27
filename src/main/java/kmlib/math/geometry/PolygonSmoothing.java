@@ -277,7 +277,7 @@ public final class PolygonSmoothing {
             next[0] - corner[0],
             next[1] - corner[1],
             Limits.MIN_EDGE_LENGTH);
-            
+
         return Double.isNaN(angle) ? Math.PI : angle;
     }
 }

@@ -80,7 +80,7 @@ public final class EntitySpawner {
         var jumpPoint = Global.getFactory().createJumpPoint(null, name);
         jumpPoint.setStandardWormholeToHyperspaceVisual();
         location.addEntity(jumpPoint);
-        
+
         EntityOrbits.applyCircularOrbit(
             jumpPoint,
             focus,

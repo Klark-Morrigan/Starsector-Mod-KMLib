@@ -197,7 +197,7 @@ final class EasedFractionTest {
 
         @Test
         void advanceTowardTargetClampsATargetAboveTheRangeToTheFullEnd() {
-            
+
             var fraction = new EasedFraction();
             fraction.advanceTowardTarget(2f, FULL_DURATION, DURATION);
 
@@ -288,10 +288,10 @@ final class EasedFractionTest {
 
         @Test
         void hasReachedTargetIsTrueOnceTheAdvanceSettlesOnIt() {
-            
+
             var fraction = new EasedFraction();
             fraction.advanceTowardTarget(FULL_TARGET, FULL_DURATION, DURATION);
-            
+
             assertThat(fraction.hasReachedTarget(FULL_TARGET))
                 .isTrue();
         }

@@ -433,7 +433,7 @@ final class StarSystemsTest {
 
     @Nested
     class Find {
-        
+
         @Test
         void returns_the_tagged_entity_whose_id_matches() {
 

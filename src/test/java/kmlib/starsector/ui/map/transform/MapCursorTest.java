@@ -180,7 +180,7 @@ class MapCursorTest {
     // A reader serving back exactly what the map's pass would have left bound, so a test that is
     // not about a degraded binding gets one that captures.
     private static ModelviewMatrixReaderFake buildReaderOnALiveMap() {
-        
+
         // Column-major, the layout gluUnProject expects, carrying the pass's pan in the last
         // column. Identity is refused by the capture as a reading that cannot be the map's.
         var matrix = new float[] {

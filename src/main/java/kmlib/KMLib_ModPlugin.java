@@ -54,7 +54,7 @@ public class KMLib_ModPlugin extends BaseModPlugin {
         installGuarded(
             "Nexerelin routines",
             NexerelinIntegration::installRoutines);
-            
+
         installGuarded(
             "Random Assortment of Things system access routes",
             RandomAssortmentOfThingsIntegration::installSystemAccessRoutes);

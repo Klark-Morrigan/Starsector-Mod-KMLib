@@ -103,7 +103,7 @@ public final class Disks {
     public static List<List<double[]>> subtractDisk(List<double[]> polygon, Disk disk) {
 
         var pieces = new ArrayList<List<double[]>>();
-        
+
         for (var piece : subtractDiskWithLabels(
             buildUnlabelledSubject(polygon),
             disk,

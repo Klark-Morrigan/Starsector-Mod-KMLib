@@ -44,7 +44,7 @@ public final class LabelledPolygon {
         for (var i = 0; i < segments; i++) {
 
             var angle = Angles.FULL_TURN * i / segments;
-            
+
             vertices.add(new LabelledVertex(
                 new double[] {
                     disk.centreX() + disk.radius() * Math.cos(angle),

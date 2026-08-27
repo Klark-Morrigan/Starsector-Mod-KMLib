@@ -530,7 +530,7 @@ public final class ControlStripLayout {
             table.labels(),
             radioSegmentSpec(SegmentSizing.UNIFORM),
             measurer);
-            
+
         return widths.isEmpty()
             ? RADIO_SEGMENT_PADDING
             : widths.get(0);

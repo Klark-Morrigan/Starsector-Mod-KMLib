@@ -18,7 +18,7 @@ class DirectedLineTest {
 
     @Nested
     class ToUnitLine {
-        
+
         @Test
         void toUnitLineScalesTheDirectionToUnitLengthAndLeavesTheOriginWhereItWas() {
             // The 3-4-5 direction has length 5, so unit length is (0.6, 0.8); the origin

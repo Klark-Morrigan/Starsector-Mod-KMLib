@@ -32,7 +32,7 @@ public record Disk(
      *                                  {@code segments} cannot enclose an area
      */
     public Disk {
-        
+
         if (centre == null || centre.length < 2) {
             throw new IllegalArgumentException(
                 "centre must be an {x, y} pair: "

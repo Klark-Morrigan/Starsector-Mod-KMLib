@@ -39,7 +39,7 @@ class MapIconOrderTraceTest {
 
         @Test
         void readTerrainIconsReportsATerrainsTypeAndPlugin() {
-            
+
             var icons = buildIconMap(
                 buildTerrainMock("slipstream", new CampaignTerrainPluginFake()));
 

@@ -237,7 +237,7 @@ class TooltipStyleTest {
 
     @Nested
     class ResolveStyleFor {
-        
+
         @Test
         void resolveStyleForReturnsTheHeaderLookForAHeaderLine() {
             assertThat(buildTwoFacedStyle().resolveStyleFor(TooltipLineStyle.HEADER, IN_THE_BOXS_VOICE))

@@ -364,7 +364,7 @@ class HorizontalSegmentsTest {
                 for (var segment : placed) {
                     laidOutTotal += segment.width();
                 }
-                
+
                 assertThat(HorizontalSegments.measureRowWidth(labels, spec, measurerFake))
                     .isEqualTo(laidOutTotal);
             }

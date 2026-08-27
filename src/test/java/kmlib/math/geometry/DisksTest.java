@@ -490,7 +490,7 @@ final class DisksTest {
 
     @Nested
     class BothSenses {
-        
+
         @Test
         void the_two_senses_partition_the_polygon_between_them() {
             // The keep-out and the reach bound are the same disk read opposite ways, so

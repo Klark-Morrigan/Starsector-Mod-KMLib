@@ -167,7 +167,7 @@ public final class VanillaTabStrip {
             List<VanillaTab> tabs,
             float pointX,
             float pointY) {
-                
+
         return Rectangles.findIndexContaining(
             tabs,
             VanillaTab::bounds,

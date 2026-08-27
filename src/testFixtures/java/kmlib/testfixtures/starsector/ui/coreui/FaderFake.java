@@ -10,7 +10,7 @@ package kmlib.testfixtures.starsector.ui.coreui;
  * is not.
  */
 public final class FaderFake {
-    
+
     private final boolean isFadedOut;
 
     public FaderFake(boolean isFadedOut) {

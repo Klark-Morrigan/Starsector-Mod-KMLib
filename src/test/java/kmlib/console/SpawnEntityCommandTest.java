@@ -532,7 +532,7 @@ final class SpawnEntityCommandTest {
 
         @Test
         void refuses_an_explicit_focus_id_that_matches_nothing() {
-            
+
             when(systemMock.getEntityById("ghost"))
                 .thenReturn(null);
 
@@ -605,7 +605,7 @@ final class SpawnEntityCommandTest {
     private static PlanetAPI buildStar(String id) {
 
         var starMock = mock(PlanetAPI.class);
-        
+
         when(starMock.getId())
             .thenReturn(id);
 

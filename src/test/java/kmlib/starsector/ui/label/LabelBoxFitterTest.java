@@ -167,7 +167,7 @@ final class LabelBoxFitterTest {
             // assertion on the fitted box cannot see the difference.
             var keepOutsFake = new IterationCountingKeepOutsFake(
                 List.of(new double[] {1200, 350}));
-                
+
             var fitter = buildFitterWithKeepOutClearance(1.0, 100.0, 2000.0, 1, 1.0, 400.0);
 
             fitter.fitLargestBox(

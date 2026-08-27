@@ -39,7 +39,7 @@ final class PolygonSmoothingTest {
 
             assertThat(rounded)
                 .hasSize(16);
-                
+
             assertThat(rounded)
                 .allMatch(vertex -> vertex[0] >= 0
                     && vertex[0] <= 100
@@ -165,7 +165,7 @@ final class PolygonSmoothingTest {
 
             assertThat(rounded)
                 .hasSize(24);
-                
+
             assertThat(rounded)
                 .allMatch(vertex -> vertex[0] >= -1e-6
                     && vertex[0] <= 30 + 1e-6

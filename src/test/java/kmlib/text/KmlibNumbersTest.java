@@ -140,7 +140,7 @@ class KmlibNumbersTest {
 
     @Nested
     class FormatScientific {
-        
+
         @Test
         void formatScientificStripsExponentSignAndPadding() {
             assertThat(KmlibNumbers.formatScientific(1523.4))

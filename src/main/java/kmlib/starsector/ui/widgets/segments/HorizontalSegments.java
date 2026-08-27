@@ -49,7 +49,7 @@ public final class HorizontalSegments {
             List<String> labels,
             SegmentSpec spec,
             LineWidthMeasurer measurer) {
-                
+
         if (labels.isEmpty()) {
             return List.of();
         }

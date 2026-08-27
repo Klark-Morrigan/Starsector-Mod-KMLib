@@ -719,7 +719,7 @@ public final class PolygonOffsets {
         if (unitEdge == null) {
             return null;
         }
-        
+
         // Rotate the unit edge 90 degrees left (x, y) -> (-y, x) to face the CCW
         // polygon's interior, which lies to the left of the directed edge.
         return new double[] {-unitEdge[1], unitEdge[0]};

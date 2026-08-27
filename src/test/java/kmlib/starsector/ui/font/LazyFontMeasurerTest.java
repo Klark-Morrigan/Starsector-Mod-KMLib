@@ -41,7 +41,7 @@ class LazyFontMeasurerTest {
     // A face reporting the glyph box above for its lower-case band, and the atlas height every request is
     // scaled against. Built per case so no case can be steered by another's stubbing.
     private static LazyFont createFaceMock() {
-        
+
         var lowercaseGlyphMock = mock(LazyFont.LazyChar.class);
 
         when(lowercaseGlyphMock.getYOffset())
@@ -67,7 +67,7 @@ class LazyFontMeasurerTest {
             // The port's whole contribution is asking the loaded face, so what is pinned is that the size
             // asked for reaches it rather than a size of this class's own.
             var faceMock = mock(LazyFont.class);
-            
+
             when(faceMock.calcWidth("Hegemony", (float) DOUBLED_FONT_SIZE))
                 .thenReturn(96f);
 

@@ -41,7 +41,7 @@ class VanillaTabStripTest {
                 TABS,
                 List.of(factions),
                 measurerFake);
-                
+
             assertThat(tabs.get(0).content())
                 .isEqualTo(factions);
         }
@@ -183,7 +183,7 @@ class VanillaTabStripTest {
             var tabs = VanillaTabStrip.zipTabs(
                 List.of(),
                 List.of(new Rectangle(0f, 0f, 40f, 24f)));
-                
+
             assertThat(tabs)
                 .isEmpty();
         }

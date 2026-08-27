@@ -323,7 +323,7 @@ public sealed interface ControlSpec {
                 List<String> labels,
                 int selectedIndex,
                 ControlAction action) {
-                    
+
             return new HorizontalRadio(
                 labels,
                 selectedIndex,

@@ -23,7 +23,7 @@ public record ScrollRegion(
     Rectangle viewport,
     float offset,
     float overflow) {
-    
+
     /**
      * @return the full height of the scrolled content: the visible viewport plus how far it overruns
      */

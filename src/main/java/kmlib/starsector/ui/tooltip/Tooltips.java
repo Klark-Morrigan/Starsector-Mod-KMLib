@@ -55,7 +55,7 @@ public final class Tooltips {
             TooltipMakerAPI.TooltipLocation location,
             float width,
             Consumer<TooltipMakerAPI> body) {
-                
+
         Objects.requireNonNull(parent, "parent");
         Objects.requireNonNull(target, "target");
         Objects.requireNonNull(location, "location");

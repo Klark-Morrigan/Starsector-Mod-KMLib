@@ -141,7 +141,7 @@ final class PulseEnvelopesTest {
             // Retriggered halfway down and stepped a quarter of a traverse, the lift stands three quarters
             // up - one envelope climbing again, not two summing past the peak.
             var pulses = new PulseEnvelopes<Integer>();
-            
+
             pulses.startPulseAt(FIRST_KEY);
             pulses.advanceByElapsedTime(FULL_DURATION, DURATIONS);
             pulses.advanceByElapsedTime(HALF_DURATION, DURATIONS);

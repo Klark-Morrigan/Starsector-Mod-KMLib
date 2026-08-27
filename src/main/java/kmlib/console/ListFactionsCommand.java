@@ -101,7 +101,7 @@ public final class ListFactionsCommand extends KmlibBaseConsoleCommand {
         var parsed = readInput(context, args)
             .requireCampaign()
             .parseArguments(SPEC);
-            
+
         if (!parsed.isValid()) {
             return parsed.getResult();
         }
@@ -491,7 +491,7 @@ public final class ListFactionsCommand extends KmlibBaseConsoleCommand {
             var selected = new ArrayList<FactionListingFilter>();
 
             for (var entry : filtersByFlag.entrySet()) {
-                
+
                 if (Boolean.TRUE.equals(parsed.get(entry.getKey()))) {
                     selected.add(entry.getValue());
                 }

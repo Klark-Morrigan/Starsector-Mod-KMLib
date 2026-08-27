@@ -165,7 +165,7 @@ public final class EmbeddedMapHostTrace {
     private static Object resolveNearestTooltipAncestor(List<Object> ancestors) {
 
         for (var index = ancestors.size() - 1; index >= 0; index--) {
-            
+
             if (ancestors.get(index).getClass().getName().contains(TOOLTIP_CLASS_MARKER)) {
                 return ancestors.get(index);
             }

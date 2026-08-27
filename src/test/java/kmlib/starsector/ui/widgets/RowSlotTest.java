@@ -342,7 +342,7 @@ class RowSlotTest {
             // a run to a slot already handed to a layout - which would reserve a column for the runs it
             // measured and then draw another one past its edge.
             var textSpans = new ArrayList<TextSpan>();
-            
+
             textSpans.add(new TextSpan("12", SLOT_COLOUR));
 
             var rowSlot = new RowSlot.TextRuns(textSpans);

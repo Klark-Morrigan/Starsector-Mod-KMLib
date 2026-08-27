@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.within;
  * both lifted by, so a drift here would part a washed fill from the text standing on it.
  */
 final class TabWashTest {
-    
+
     private static final float TOLERANCE = 0.001f;
 
     // A base with a distinct value in every channel and a part-transparent alpha, so a blend that mixed

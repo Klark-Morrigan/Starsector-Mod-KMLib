@@ -47,7 +47,7 @@ final class ListMapSpoilersCommandTest {
 
         @Test
         void omitsOrdinaryFullyVisibleSystems() {
-            
+
             var sector = buildSectorWith(buildSystem(
                 "Corvus",
                 false,
@@ -339,7 +339,7 @@ final class ListMapSpoilersCommandTest {
     // Pairs a stubbed system with the market list its economy returns, so the
     // sector wiring can register both without nested stubbing.
     private static final class SystemWithMarkets {
-        
+
         private final StarSystemAPI system;
         private final List<MarketAPI> markets;
 

@@ -194,7 +194,7 @@ final class ControlStripLayoutTest {
 
         @Test
         void measureStripSumsRowHeightsAndGapsPlusInset() {
-            
+
             var measurement = ControlStripLayout.measureStrip(
                 List.<ControlSpec>of(
                     LabelledControlSpecs.buildCheckbox("A", false, ControlAction.NONE),
@@ -622,7 +622,7 @@ final class ControlStripLayoutTest {
                 .isCloseTo(
                     5 * WIDTH_PER_CHAR + ControlStripLayout.RADIO_SEGMENT_PADDING,
                     within(TOLERANCE));
-                    
+
             assertThat(fullSegment.width())
                 .isCloseTo(
                     4 * WIDTH_PER_CHAR + ControlStripLayout.RADIO_SEGMENT_PADDING,
@@ -634,7 +634,7 @@ final class ControlStripLayoutTest {
 
         @Test
         void layoutControlsSplitsAnIconListIntoStackedVerticalSegments() {
-            
+
             var specs = List.<ControlSpec>of(VerticalTableSpecs.buildIconList(
                 List.of("Hegemony", "Tri-Tachyon"),
                 List.of("crest_heg", "crest_tt"),
@@ -819,7 +819,7 @@ final class ControlStripLayoutTest {
             var leftWidth = ControlStripLayout.CONTROL_ROW_HEIGHT
                 + RowColumnSpec.CONTROL_ROW.leadingLabelGap()
                 + 1 * WIDTH_PER_CHAR;
-                
+
             assertThat(leftControl.spec())
                 .isEqualTo(left);
             assertThat(rightControl.spec())

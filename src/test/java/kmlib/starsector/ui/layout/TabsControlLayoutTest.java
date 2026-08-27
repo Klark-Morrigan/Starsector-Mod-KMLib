@@ -110,7 +110,7 @@ final class TabsControlLayoutTest {
 
         @Test
         void layoutHeaderControlHangsTheBandFromTheContentTopAtTheStyledHeight() {
-            
+
             var header = TabsControlLayout.layoutHeaderControl(
                 TABS,
                 HEADER_X,

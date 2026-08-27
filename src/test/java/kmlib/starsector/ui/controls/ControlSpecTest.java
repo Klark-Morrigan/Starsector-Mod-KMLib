@@ -749,7 +749,7 @@ final class ControlSpecTest {
 
         @Test
         void hasTrailingCaptionIsTrueOnACaptionedRow() {
-            
+
             var radio = ControlSpec.HorizontalRadio.of(List.of("Short", "Full"), 0, ControlAction.NONE)
                 .showsCaption("Names");
 

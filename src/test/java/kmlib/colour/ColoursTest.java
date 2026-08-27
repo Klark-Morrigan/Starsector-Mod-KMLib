@@ -65,6 +65,7 @@ final class ColoursTest {
 
     @Nested
     class ScaleAlpha {
+
         @Test
         void keeps_the_rgb_channels_and_scales_a_full_alpha() {
 
@@ -107,6 +108,7 @@ final class ColoursTest {
 
     @Nested
     class Darken {
+
         @Test
         void scales_each_rgb_channel_by_the_factor_and_keeps_the_alpha() {
 
@@ -155,6 +157,7 @@ final class ColoursTest {
 
     @Nested
     class BlendRgbTowards {
+
         @Test
         void lerps_each_rgb_channel_toward_the_target_and_keeps_base_alpha() {
 
@@ -197,7 +200,7 @@ final class ColoursTest {
             assertThat(washed.getRed()).isEqualTo(200);
             assertThat(washed.getGreen()).isEqualTo(150);
             assertThat(washed.getBlue()).isEqualTo(100);
-            
+
             // The target's alpha (255) is ignored - base's 128 survives the full wash.
             assertThat(washed.getAlpha()).isEqualTo(128);
         }
@@ -321,7 +324,7 @@ final class ColoursTest {
 
     @Nested
     class AddOverlay {
-        
+
         @Test
         void adds_the_overlay_channels_scaled_by_its_alpha_and_the_weight() {
 

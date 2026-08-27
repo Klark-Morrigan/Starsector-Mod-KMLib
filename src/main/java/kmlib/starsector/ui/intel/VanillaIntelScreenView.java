@@ -241,7 +241,7 @@ public final class VanillaIntelScreenView implements IntelScreenView {
 
         for (var depth = 0; depth <= maxDepth && !level.isEmpty(); depth++) {
             for (var component : level) {
-                
+
                 if (component instanceof EventsPanel intelPanel) {
                     return intelPanel;
                 }
@@ -253,7 +253,7 @@ public final class VanillaIntelScreenView implements IntelScreenView {
             for (var component : level) {
                 nextLevel.addAll(CoreUiTree.readChildrenOf(component));
             }
-            
+
             level = nextLevel;
         }
         return null;

@@ -136,7 +136,7 @@ public final class NotchRenderer {
      * @return the arms' shared end x, apex x, and the three ys the polyline runs through
      */
     static ChevronArms computeChevronArms(Rectangle notch, float collapseFraction) {
-        
+
         var fraction = Ranges.clampToUnit(collapseFraction);
         var centreX = notch.computeCenterX();
         var midY = notch.computeCenterY();

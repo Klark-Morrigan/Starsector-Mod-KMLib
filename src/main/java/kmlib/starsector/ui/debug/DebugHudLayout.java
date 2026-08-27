@@ -111,7 +111,7 @@ public final class DebugHudLayout {
             float anchorX,
             float blockTopY,
             boolean isRightAligned) {
-                
+
         var lines = new ArrayList<DebugHudLine>();
         var y = blockTopY;
         for (var entry : entries) {

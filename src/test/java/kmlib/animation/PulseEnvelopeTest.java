@@ -269,7 +269,7 @@ final class PulseEnvelopeTest {
         void startPulseClimbsAgainFromWhereAFallingLiftStands() {
 
             var envelope = new PulseEnvelope();
-            
+
             envelope.startPulse();
             envelope.advanceByElapsedTime(FULL_DURATION, DURATIONS);
             envelope.advanceByElapsedTime(HALF_DURATION, DURATIONS);
@@ -289,7 +289,7 @@ final class PulseEnvelopeTest {
             // A repeated trigger restarts the curve rather than summing onto it, so a tab clicked twice in
             // a frame is no brighter than one clicked once.
             var envelope = new PulseEnvelope();
-            
+
             envelope.startPulse();
             envelope.startPulse();
             envelope.advanceByElapsedTime(FULL_DURATION, DURATIONS);

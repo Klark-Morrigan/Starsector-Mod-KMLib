@@ -1201,7 +1201,7 @@ final class PanelControllerTest {
             controller.handlePointer(
                 PointerEventMocks.mockWheelDownAt(ON_LIST_X, ON_LIST_Y),
                 buildScrollingPlacement());
-                
+
             controller.resetListScrolled();
 
             assertThat(controller.takeHasListScrolledSinceLastFrame())

@@ -236,7 +236,7 @@ class MapIconReseatDecisionTest {
         void hasStoodDownIsFalseWhileLiftsAreStillBeingAttempted() {
 
             var reseatDecision = new MapIconReseatDecision();
-            
+
             driveFailedLifts(reseatDecision, MapIconReseatDecision.MAX_ATTEMPTS - 1);
 
             assertThat(reseatDecision.hasStoodDown())

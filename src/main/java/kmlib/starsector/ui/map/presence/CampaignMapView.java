@@ -150,7 +150,7 @@ public final class CampaignMapView {
             return SectorMapState.NOT_SHOWING;
         }
         var mapLocation = uiData.getCampaignMapLocation();
-        
+
         // A null location means the map has not recorded a sub-view yet; it opens on the
         // player's current location, so read it as the Sector view until proven a system.
         var isSectorSubViewShowing = mapLocation == null || mapLocation.isHyperspace();
@@ -189,7 +189,7 @@ public final class CampaignMapView {
     // A null location is a real state (map not opened yet), so it prints as "null" rather
     // than being folded into the unreadable case.
     private static String describeLocation(LocationAPI location) {
-        
+
         if (location == null) {
             return "null";
         }

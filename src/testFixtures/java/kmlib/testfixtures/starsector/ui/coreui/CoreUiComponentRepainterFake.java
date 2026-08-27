@@ -54,7 +54,7 @@ public final class CoreUiComponentRepainterFake implements CoreUiComponentRepain
 
         repaintedComponents.add(component);
         repaintedRegions.add(uiRegion);
-        
+
         if (failure != null) {
             throw failure;
         }

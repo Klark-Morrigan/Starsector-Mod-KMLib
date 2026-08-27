@@ -155,7 +155,7 @@ class TooltipRowTest {
 
         @Test
         void createRowCarriesNoneOfTheOptionalParts() {
-            
+
             var row = buildBareRow();
 
             assertThat(row.indent())
@@ -385,7 +385,7 @@ class TooltipRowTest {
 
     @Nested
     class ReadsAs {
-        
+
         @Test
         void readsAsSetsTheKindOfLine() {
 
@@ -397,7 +397,7 @@ class TooltipRowTest {
 
         @Test
         void readsAsSetsTheKindOfLineOnACentredRow() {
-            
+
             var centredRow = buildBareCentredRow().readsAs(TooltipLineStyle.HEADER);
 
             assertThat(centredRow.lineStyle())

@@ -98,7 +98,7 @@ final class ActivateGateCommandTest {
 
     @Nested
     class RunCommand {
-        
+
         @Test
         void reports_the_unknown_id_and_activates_nothing() {
 

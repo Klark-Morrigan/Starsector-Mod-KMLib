@@ -103,7 +103,7 @@ public final class RadioRowRenderer {
         var dividerPaint = new UiElementPaint(
             colours.frame(),
             opacity * HorizontalSegmentsRenderer.DIVIDER_ALPHA_MULT);
-            
+
         var thickness = HorizontalSegmentsRenderer.DIVIDER_THICKNESS;
         var rowCount = RadioRow.computeRowsPerColumn(optionCount, columnCount);
         var columnWidth = bounds.width() / columnCount;

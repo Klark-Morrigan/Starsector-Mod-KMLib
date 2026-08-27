@@ -21,7 +21,7 @@ final class TabHoverTest {
     private static final TabLook RESTING_LOOK = new TabLook(
         new Color(20, 40, 60),
         new Color(30, 50, 70));
-        
+
     private static final TabLook LIT_LOOK = new TabLook(
         new Color(80, 100, 120),
         new Color(90, 110, 130));

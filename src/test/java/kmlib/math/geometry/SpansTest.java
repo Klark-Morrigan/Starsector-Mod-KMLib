@@ -429,7 +429,7 @@ final class SpansTest {
 
         @Test
         void intersect_spans_yields_nothing_when_spans_miss() {
-            
+
             assertThat(Spans.intersectSpans(
                     List.of(new double[] {0, 4}),
                     List.of(new double[] {6, 10})))

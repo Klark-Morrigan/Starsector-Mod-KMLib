@@ -109,7 +109,7 @@ public final class LabelBoxFitter {
     // reaches it through the line-count sizing below, which projects the keep-outs once
     // for its whole sweep rather than per band as this single measurement must.
     public BandSpan fitBand(RegionChord chord, double halfThickness) {
-        
+
         var sizingChord = SizingChord.prepareFor(chord, keepOutClearance);
         return sizingChord == null
             ? new BandSpan(null, null)

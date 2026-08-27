@@ -121,7 +121,7 @@ final class TabLookTest {
 
         @Test
         void computeWashedLookLeavesBothShadesWhereTheyAreForARestingTab() {
-            
+
             var washed = LOOK.computeWashedLook(new TabWash(WASH_TARGET, 0f));
 
             assertThat(washed)

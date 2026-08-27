@@ -386,7 +386,7 @@ final class PanelLayoutTest {
         }
         var list = VerticalTableSpecs.buildIconList(labels, icons, ControlSpec.NO_SELECTION,
             ControlAction.NONE).asScrolling();
-            
+
         return List.of(
             LabelledControlSpecs.buildCheckbox("Header", false, ControlAction.NONE),
             list,

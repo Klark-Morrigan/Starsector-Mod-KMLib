@@ -238,7 +238,7 @@ final class VanillaClaimBreakdownReaderTest {
                 weaker,
                 "graphics/icons/station0.png",
                 new Color(200, 200, 255));
-                
+
             claimContest.placeMarketsInSystem(weaker, claimContest.buildMarket(tritachyon, 7));
 
             var breakdown =

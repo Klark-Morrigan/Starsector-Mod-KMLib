@@ -307,7 +307,7 @@ public final class Points {
         }
 
         var cosine = (ax * bx + ay * by) / (aLength * bLength);
-        
+
         // Clamp against rounding drift just outside [-1, 1] before acos.
         return Math.acos(Math.max(-1.0, Math.min(1.0, cosine)));
     }

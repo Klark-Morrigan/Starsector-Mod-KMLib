@@ -406,7 +406,7 @@ public final class PolygonRegions {
                     edgeEnd,
                     offsetStart,
                     offsetEnd);
-                    
+
                 crossings.add((crossing[0] - line.originX()) * line.directionX()
                     + (crossing[1] - line.originY()) * line.directionY());
             }

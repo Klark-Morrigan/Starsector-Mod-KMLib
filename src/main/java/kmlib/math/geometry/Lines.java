@@ -71,7 +71,7 @@ final class Lines {
     // offsets (where the shared scale cancels), never on the raw magnitude - the
     // half-plane test the polygon clip keys its keep/discard decision and crossing point on.
     static double computeSignedOffsetFromLine(double[] point, HalfPlane boundary) {
-        
+
         return Points.projectPointOnto(
             point[0] - boundary.pointX(),
             point[1] - boundary.pointY(),

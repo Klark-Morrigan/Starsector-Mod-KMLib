@@ -62,7 +62,7 @@ public final class RowStack {
             float rowGap,
             List<Float> rowHeights,
             List<Float> rowWidths) {
-                
+
         var rows = new ArrayList<Rectangle>(rowWidths.size());
         var rowTop = topY;
         for (var index = 0; index < rowWidths.size(); index++) {

@@ -204,7 +204,7 @@ public final class ExtensionPoint<T> {
         this.fallbackToDefaults = fallbackToDefaults != null
             ? fallbackToDefaults
             : FallbackToDefaults.PERMITTED;
-            
+
         this.implementationName = KmlibStrings.hasText(implementationName)
             ? implementationName
             : implementation.getClass().getName();

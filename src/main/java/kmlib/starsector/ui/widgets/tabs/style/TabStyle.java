@@ -55,7 +55,7 @@ public record TabStyle(
     TextFace face,
     TextHalo textHalo,
     float pixelFaceSharpness) {
-        
+
     /**
      * The baseline band height: room enough for the larger tab face with a little slack above and below
      * it. The one place the baseline dimension is written down, so a caller wanting a number off the

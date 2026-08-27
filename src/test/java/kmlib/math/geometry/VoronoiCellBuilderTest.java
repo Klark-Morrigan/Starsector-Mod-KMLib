@@ -684,7 +684,7 @@ final class VoronoiCellBuilderTest {
             var to = polygon.get((i + 1) % count);
             var cross = (to[0] - from[0]) * (point[1] - from[1])
                 - (to[1] - from[1]) * (point[0] - from[0]);
-                
+
             if (cross > 1e-9) {
                 hasPositive = true;
             } else if (cross < -1e-9) {

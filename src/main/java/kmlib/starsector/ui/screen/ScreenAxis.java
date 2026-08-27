@@ -52,7 +52,7 @@ public record ScreenAxis(
      *         extent
      */
     public float convertUiToPixel(float uiCoordinate) {
-        
+
         if (uiLength <= 0f) {
             return NO_EXTENT_COORDINATE;
         }

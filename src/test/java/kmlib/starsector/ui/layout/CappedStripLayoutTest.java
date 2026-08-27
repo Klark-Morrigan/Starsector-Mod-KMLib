@@ -376,7 +376,7 @@ final class CappedStripLayoutTest {
             // Fully scrolled, the list's bottom edge meets the viewport's bottom edge, so the last row is
             // the one flush at the bottom of the scroll region.
             var list = readFlexBounds(capped);
-            
+
             assertThat(list.y())
                 .isCloseTo(capped.flexViewport().y(), within(TOLERANCE));
         }
@@ -489,7 +489,7 @@ final class CappedStripLayoutTest {
     private Rectangle readFirstControlBounds(List<ControlSpec> specs, StripMeasurement strip, float height) {
 
         var body = buildFrameBody(height, strip.bodyWidth());
-        
+
         return CappedStripLayout.layoutCappedControls(
                 body,
                 specs,

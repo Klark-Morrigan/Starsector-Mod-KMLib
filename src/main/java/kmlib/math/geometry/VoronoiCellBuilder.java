@@ -345,7 +345,7 @@ public final class VoronoiCellBuilder {
     private static int indexOf(List<double[]> sites, double[] site) {
 
         for (var i = 0; i < sites.size(); i++) {
-            
+
             if (sites.get(i) == site) {
                 return i;
             }

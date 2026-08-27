@@ -443,7 +443,7 @@ final class ListPickerControlTest {
 
         @Test
         void clickingAnotherOptionWhileSpotlightingReportsTheNewItem() {
-            
+
             var picker = buildPickerFor(build(ANOMALIES, "drift_1", AnomalySortMode.ALPHA));
 
             picker.action().activateCell(1);
