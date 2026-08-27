@@ -18,7 +18,10 @@ package kmlib.starsector.systems.claims;
  * @param isHiddenMarket     whether the market is concealed rather than held in the open. The
  *                           mechanic skips it before scoring, so it takes no standing and can
  *                           neither win nor lose a listing tie - while still counting toward the
- *                           sibling term, which is the one thing it does reach the contest through
+ *                           sibling term, which is the one thing it does reach the contest through.
+ *                           A flag about the market and not about the place: vanilla also sets it
+ *                           on a market it never registered, to keep a station it means the player
+ *                           to visit off the economy's books
  * @param isOffEconomyMarket whether the colony sits outside the economy's own listing - a real
  *                           market on a real entity that was never registered, as vanilla builds
  *                           Galatia Academy. The mechanic walks the economy and nothing else, so
@@ -40,8 +43,13 @@ public record ContestAdmission(
     public static final ContestAdmission HIDDEN = new ContestAdmission(true, false);
 
     /**
-     * A colony held in the open that the economy does not list - Galatia Academy, as vanilla
-     * builds it. The walk never reaches it at all, so it takes no part in even the sibling term.
+     * A colony held in the open that the economy does not list - a mod's own unregistered colony,
+     * which need conceal nothing. The walk never reaches it at all, so it takes no part in even the
+     * sibling term.
+     *
+     * <p>Vanilla's Galatia Academy is <em>not</em> this shape: it is concealed as well, so it
+     * arrives with both facts set and matches none of the three constants here. They name the
+     * corners a reader is most often posing, not the whole of what the pair can express.
      */
     public static final ContestAdmission OFF_ECONOMY = new ContestAdmission(false, true);
 

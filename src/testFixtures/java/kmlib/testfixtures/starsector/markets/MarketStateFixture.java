@@ -57,8 +57,9 @@ public final class MarketStateFixture {
     }
 
     /**
-     * Galatia Academy's shape: a real colony under a real faction that vanilla deliberately
-     * never registers with the economy.
+     * A real colony under a real faction that the economy does not list - the shape vanilla builds
+     * Galatia Academy in, though the Academy's own market is concealed besides, which this poses
+     * nothing of.
      */
     public static MarketAPI buildColonyUnlistedByEconomy(String factionId) {
         return buildMarket(buildFaction(factionId), false, false);
