@@ -24,7 +24,7 @@ class TextSpanTest {
 
         @Test
         void constructorKeepsTheTextAndColourItWasGiven() {
-            
+
             var span = new TextSpan("Contested by", SPAN_COLOUR);
 
             assertThat(span.text())
@@ -155,7 +155,7 @@ class TextSpanTest {
 
         @Test
         void computeWidthChargesTheRunsGlyphs() {
-            
+
             assertThat(new TextSpan("Hegemony", SPAN_COLOUR)
                     .computeWidth(LINE_HEIGHT, ONE_UNIT_PER_CHARACTER))
                 .isEqualTo(8f);
