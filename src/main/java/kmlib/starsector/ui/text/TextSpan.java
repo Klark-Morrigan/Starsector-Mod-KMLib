@@ -26,16 +26,26 @@ import java.util.Objects;
  * caller write a crest into the middle of a sentence without the surfaces that lay labels out learning
  * a second way to compose one.
  *
- * @param text   the run as its author wrote it, before any casing the host's style applies to it
- * @param colour the colour the run draws in, before any opacity fade the host applies
+ * @param text                  the run as its author wrote it, before any casing the host's style
+ *                              applies to it
+ * @param colour                the colour the run draws in, before any opacity fade the host applies
+ * @param isJoinedToPreviousRun whether the run butts against the one before it rather than standing a
+ *                              word space clear of it, for a stretch picked out of the middle of
+ *                              somebody else's text ({@link LabelRun#isJoinedToPreviousRun})
  */
 public record TextSpan(
     String text,
-    Color colour) implements LabelRun {
+    Color colour,
+    boolean isJoinedToPreviousRun) implements LabelRun {
 
     // How a span with nothing to draw spells its text. Held here so the blank spelling has one home
     // rather than being open-coded wherever an absent run is built.
     private static final String NO_TEXT = "";
+
+    // What an ordinary run of a sentence is - a word of its own, spaced from whatever precedes it.
+    // Named so the plain constructor below says which reading it takes rather than passing a bare
+    // false a reader has to count off against the components.
+    private static final boolean IS_ITS_OWN_WORD = false;
 
     /**
      * Rejects nulls at construction, where the caller that built the span is still on the stack: a
@@ -49,6 +59,19 @@ public record TextSpan(
     }
 
     /**
+     * Builds the ordinary run: a word of the sentence, standing a word space clear of whatever
+     * precedes it. Butting against the run before is asked for afterwards ({@link #joinsPreviousRun}),
+     * so an author states what its run <em>is</em> rather than passing a spacing decision at every
+     * call site that has none to make.
+     *
+     * @param text   the run as its author wrote it
+     * @param colour the colour the run draws in
+     */
+    public TextSpan(String text, Color colour) {
+        this(text, colour, IS_ITS_OWN_WORD);
+    }
+
+    /**
      * Builds a span with nothing to draw, holding only the colour it would have drawn in. For a part
      * of a layout that is always present but not always filled: it keeps a colour rather than taking
      * null so that whatever measures or styles it needs no branch for the empty case.
@@ -58,6 +81,22 @@ public record TextSpan(
      */
     public static TextSpan createBlank(Color colour) {
         return new TextSpan(NO_TEXT, colour);
+    }
+
+    /**
+     * Returns a copy of this span butting against the run before it, with none of the word space a
+     * label parts its runs by - so the two draw as one word in two colours.
+     *
+     * <p>Stated as a refinement rather than at construction because it says nothing about the run
+     * itself: the same words in the same colour read as a word of their own or as the tail of the one
+     * before, and only whatever is composing the label knows which. A caller building a plain sentence
+     * therefore never states a spacing decision, and one splitting a name at a match states it exactly
+     * where the split is made.
+     *
+     * @return an otherwise-identical span that spends no gap in front of itself
+     */
+    public TextSpan joinsPreviousRun() {
+        return new TextSpan(text, colour, true);
     }
 
     /**

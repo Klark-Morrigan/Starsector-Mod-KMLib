@@ -338,6 +338,58 @@ class LabelRunsTest {
         }
 
         @Test
+        void measureRunOffsetsChargesNoGapToARunThatJoinsTheOneBeforeIt() {
+            // What lets a label pick a stretch out of the middle of a word: the second run anchors where
+            // the first measured out rather than a space past it, so the two draw as one word in two
+            // colours - 2, then 2 + 3.
+            var offsets = LabelRuns.measureRunOffsets(
+                List.of(
+                    new TextSpan("AA", RUN_COLOUR),
+                    new TextSpan("BBB", OTHER_RUN_COLOUR).joinsPreviousRun()),
+                LINE_HEIGHT,
+                ONE_UNIT_PER_CHARACTER);
+
+            assertThat(offsets.runOffsetXs())
+                .containsExactly(0f, 2f);
+            assertThat(offsets.runsWidth())
+                .isEqualTo(5f);
+        }
+
+        @Test
+        void measureRunOffsetsStillSpacesTheRunAfterAJoinedOne() {
+            // The joining is one run's statement about its own left edge and says nothing about the run
+            // after it, so a name split at a match closes up at the split and keeps the sentence spacing
+            // beyond it: 2, 2 + 3, then a space past that.
+            var offsets = LabelRuns.measureRunOffsets(
+                List.of(
+                    new TextSpan("AA", RUN_COLOUR),
+                    new TextSpan("BBB", OTHER_RUN_COLOUR).joinsPreviousRun(),
+                    new TextSpan("CC", RUN_COLOUR)),
+                LINE_HEIGHT,
+                ONE_UNIT_PER_CHARACTER);
+
+            assertThat(offsets.runOffsetXs())
+                .containsExactly(0f, 2f, 6f);
+            assertThat(offsets.runsWidth())
+                .isEqualTo(8f);
+        }
+
+        @Test
+        void measureRunOffsetsAnchorsAJoinedOpeningRunAtTheLabelsLeftEdge() {
+            // A label whose first run happens to ask to be joined has nothing to join to, so it opens
+            // flush rather than being charged a gap against the edge itself.
+            var offsets = LabelRuns.measureRunOffsets(
+                List.of(new TextSpan("AA", RUN_COLOUR).joinsPreviousRun()),
+                LINE_HEIGHT,
+                ONE_UNIT_PER_CHARACTER);
+
+            assertThat(offsets.runOffsetXs())
+                .containsExactly(0f);
+            assertThat(offsets.runsWidth())
+                .isEqualTo(2f);
+        }
+
+        @Test
         void measureRunOffsetsChargesNoLeadingGapWhenTheFirstRunIsBlank() {
             // The gap is charged where one drawn run follows another, so a blank opening run leaves the
             // first drawn one flush at the label's left edge.
@@ -407,6 +459,39 @@ class LabelRunsTest {
             // Stated as the literal too, so the two forms cannot pass by being wrong together.
             assertThat(lineText)
                 .isEqualTo("Hegemony (7) contested");
+            assertThat((float) lineText.length())
+                .isEqualTo(LabelRuns
+                    .measureRunOffsets(labelRuns, LINE_HEIGHT, ONE_UNIT_PER_CHARACTER)
+                    .runsWidth());
+        }
+
+        @Test
+        void resolveLineTextJoinsARunThatButtsAgainstTheOneBeforeItWithoutASpace() {
+            // The single-draw form of the same rule, and the one that says what a split label actually
+            // spells: a name parted at a match reads back as the name, not as the name with a space
+            // opened inside it.
+            var lineText = LabelRuns.resolveLineText(List.of(
+                new TextSpan("Abandoned", RUN_COLOUR),
+                new TextSpan("-Station", OTHER_RUN_COLOUR).joinsPreviousRun()));
+
+            assertThat(lineText)
+                .isEqualTo("Abandoned-Station");
+        }
+
+        @Test
+        void resolveLineTextSpacesAJoinedLabelAsWidelyAsItIsPlaced() {
+            // The agreement above, held over the joining too: the two forms part their runs by one rule
+            // written twice, so a surface that measures by one and draws by the other cannot open a gap
+            // inside a word on only one of them.
+            var labelRuns = List.<LabelRun>of(
+                new TextSpan("Abandoned", RUN_COLOUR),
+                new TextSpan("-Station", OTHER_RUN_COLOUR).joinsPreviousRun(),
+                new TextSpan("undiscovered", RUN_COLOUR));
+
+            var lineText = LabelRuns.resolveLineText(labelRuns);
+
+            assertThat(lineText)
+                .isEqualTo("Abandoned-Station undiscovered");
             assertThat((float) lineText.length())
                 .isEqualTo(LabelRuns
                     .measureRunOffsets(labelRuns, LINE_HEIGHT, ONE_UNIT_PER_CHARACTER)

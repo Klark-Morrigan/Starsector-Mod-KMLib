@@ -19,9 +19,10 @@ package kmlib.starsector.ui.text;
  *
  * <p>Every run answers its own width for a line of a given height, because the arithmetic differs per
  * kind: a stretch of text is as wide as its glyphs measure, while an image squares off the line so it
- * sits level with the words around it whatever face they draw in. What a run does <em>not</em> answer
- * is the gap in front of it or where it lands - those are facts about a label rather than about any one
- * run of it, so they stay with {@link LabelRuns}.
+ * sits level with the words around it whatever face they draw in. A run also answers whether the gap in
+ * front of it is spent at all ({@link #isJoinedToPreviousRun}). How wide that gap is and where the run
+ * lands it does <em>not</em> answer - those are facts about a label rather than about any one run of
+ * it, so they stay with {@link LabelRuns}.
  */
 public sealed interface LabelRun
     permits ImageSpan, TextSpan {
@@ -54,4 +55,24 @@ public sealed interface LabelRun
      * @return true when the run draws something
      */
     boolean hasContent();
+
+    /**
+     * Whether this run continues the one before it with no word space between them - so the two read as
+     * one word drawn in more than one colour rather than as two words of a sentence.
+     *
+     * <p>For a label picking a stretch out of a name it does not own: gilding a word inside
+     * <em>Abandoned-Station</em> splits the name into runs at the match, and a word space charged at
+     * each split would have the label draw a name its subject is not called. Joined runs let the split
+     * be made at exact character positions, so what is drawn is the text as its author spelled it
+     * whatever the match happened to land beside.
+     *
+     * <p>A run of its own by default, which is what every run of an ordinary sentence is. The exception
+     * has to be asked for, so a caller composing a line from independent parts cannot lose the spacing
+     * between them by omission.
+     *
+     * @return true when the run butts against the one before it
+     */
+    default boolean isJoinedToPreviousRun() {
+        return false;
+    }
 }

@@ -46,6 +46,15 @@ class ImageSpanTest {
         }
 
         @Test
+        void constructorBuildsAWordOfItsOwn() {
+            // An image is set among the words rather than inside one, so it always stands the sentence's
+            // own space clear of them - a mark butted against the name it prefixes would read as part of
+            // the glyphs.
+            assertThat(new ImageSpan(CREST_SPRITE_PATH).isJoinedToPreviousRun())
+                .isFalse();
+        }
+
+        @Test
         void constructorStatesNoTintForAnImageDrawnAsAuthored() {
             // A crest's colours are in its own pixels, so the path alone builds the run and the draw is
             // left to multiply by nothing.

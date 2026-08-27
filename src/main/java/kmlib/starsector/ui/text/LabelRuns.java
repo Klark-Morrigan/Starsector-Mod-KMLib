@@ -17,6 +17,11 @@ import java.util.Objects;
  * laid runs as columns would align the second colour of every line, which is not what picking a stretch
  * of a sentence out means.
  *
+ * <p>A run may {@linkplain LabelRun#isJoinedToPreviousRun join} the one before it instead, spending no
+ * gap at all, so a label can pick a stretch out of the <em>middle</em> of a word. Without it the only
+ * splits a label could make are the ones its author's own spacing already provides, and a name split
+ * anywhere else would draw with a space its subject is not spelled with.
+ *
  * <p>That space is the drawing face's own, measured on the line the runs sit on, so a label spaces its
  * runs the way the font spaces its words and a stack of lines at several sizes reads at one rhythm. A
  * fixed number cannot: it is a word space at whichever size it was chosen for and a column break at every
@@ -40,8 +45,8 @@ public final class LabelRuns {
 
     // The space charged between two drawn runs of one label: the face's own space glyph, measured on the
     // line the runs sit on. A word space rather than a column, so it is charged only where one run
-    // actually follows another - and held here rather than per surface, since a strip and a tooltip
-    // spacing the same runs differently would read as two different rules.
+    // actually follows another and asks to stand clear of it - and held here rather than per surface,
+    // since a strip and a tooltip spacing the same runs differently would read as two different rules.
     //
     // Measured rather than fixed because the runs of a label are one sentence, and how wide a word space
     // is in a sentence is the font's statement, not the layout's. A flat number is only ever right at one
@@ -160,7 +165,7 @@ public final class LabelRuns {
                 runOffsetXs.add(runsWidth);
                 continue;
             }
-            if (hasDrawnRun) {
+            if (hasDrawnRun && !labelRun.isJoinedToPreviousRun()) {
                 runsWidth += wordSpaceWidth;
             }
             runOffsetXs.add(runsWidth);
@@ -202,8 +207,9 @@ public final class LabelRuns {
                 continue;
             }
             // Spent between two runs that draw rather than in front of every one, so a label opening on
-            // an image or on a run that came out blank still starts on its first word.
-            if (!lineText.isEmpty()) {
+            // an image or on a run that came out blank still starts on its first word. Withheld from a
+            // run that joins the one before it, for the reason the placed form withholds the width.
+            if (!lineText.isEmpty() && !textSpan.isJoinedToPreviousRun()) {
                 lineText.append(WORD_SPACE_TEXT);
             }
             lineText.append(textSpan.text());
