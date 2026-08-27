@@ -18,9 +18,7 @@ import java.util.Objects;
  * of a sentence out means.
  *
  * <p>A run may {@linkplain LabelRun#isJoinedToPreviousRun join} the one before it instead, spending no
- * gap at all, so a label can pick a stretch out of the <em>middle</em> of a word. Without it the only
- * splits a label could make are the ones its author's own spacing already provides, and a name split
- * anywhere else would draw with a space its subject is not spelled with.
+ * gap at all - which is what lets a label pick a stretch out of the <em>middle</em> of a word.
  *
  * <p>That space is the drawing face's own, measured on the line the runs sit on, so a label spaces its
  * runs the way the font spaces its words and a stack of lines at several sizes reads at one rhythm. A

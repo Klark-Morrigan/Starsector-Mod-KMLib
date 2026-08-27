@@ -181,8 +181,7 @@ each addresses the text it colours:
 - `TextSpan` is a **run**: a stretch of characters that carries its own colour by
   position. Exact, and unambiguous by construction. A run may
   [join](text/LabelRun.java) the one before it rather than standing a word space clear of
-  it, so a colour can be picked out of the middle of a word without the label drawing a
-  space its author never wrote.
+  it, which is what lets a colour be picked out of the middle of a word.
 - `Highlight` is a **token**: vanilla's `LabelAPI.setHighlight(String[])` searches the
   paragraph for that substring. "3 of 3 markets" cannot say which "3" it means.
 
