@@ -1137,6 +1137,44 @@ final class VanillaClaimBreakdownReaderTest {
                     .readClaimingFactionId(null))
                 .isNull();
         }
+
+        @Test
+        void reportsTheSameFactionWhateverThePlayerHasFound() {
+            // The claimant is vanilla's, and vanilla weighs what is there rather than what has been
+            // found - so the answer cannot move with the knowledge port however little it admits.
+            // What the port would otherwise buy on this walk is a projection of every colony in the
+            // system, built for a set the claimant comparison never opens.
+            var hegemony = claimContest.buildFaction("hegemony", true);
+            var tritachyon = claimContest.buildFaction("tritachyon", true);
+
+            claimContest.placeMarketsInSystem(
+                claimContest.buildMarket(hegemony, 4),
+                claimContest.buildMarket(tritachyon, 7));
+
+            assertThat(new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
+                    .readClaimingFactionId(claimContest.getSystem()))
+                .isEqualTo("tritachyon");
+            assertThat(new VanillaClaimBreakdownReader(NO_COLONY_KNOWN)
+                    .readClaimingFactionId(claimContest.getSystem()))
+                .isEqualTo("tritachyon");
+        }
+
+        @Test
+        void passesOverAHiddenMarketThatWouldOtherwiseHaveTakenTheSystem() {
+            // The claimant walk skips a concealed market before scoring, exactly as the breakdown's
+            // does - the two share that comparison rather than each stating it - so the system falls
+            // to the largest colony held in the open however big the base beside it is.
+            var hegemony = claimContest.buildFaction("hegemony", true);
+            var pirates = claimContest.buildFaction("pirates", true);
+
+            claimContest.placeMarketsInSystem(
+                claimContest.buildMarket(hegemony, 4),
+                claimContest.buildHiddenMarket(pirates, 9));
+
+            assertThat(new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
+                    .readClaimingFactionId(claimContest.getSystem()))
+                .isEqualTo("hegemony");
+        }
     }
 
     @Nested

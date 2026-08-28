@@ -37,9 +37,16 @@ import java.util.Set;
  * is the winner the game itself would report, which is what lets it stand as the single source
  * for both a map fill and the text explaining it.
  *
- * <p>{@link ClaimReader} is answered here rather than by a binding of its own, that port being
- * {@link #readBreakdown}'s claimant and nothing besides. A class holding this one to forward a
- * single field would state no rule the two ports do not already share.
+ * <p>{@link ClaimReader} is answered here rather than by a binding of its own: it asks the same
+ * question of the same walk, and a class holding this one to put it would state no rule the two
+ * ports do not already share.
+ *
+ * <p>It does not go through {@link #readBreakdown} to do it. The claimant is one faction id off a
+ * walk whose every other product exists to be read by a display - the nameplates, the standings and
+ * the order they rank in, what each market reports about the player's knowledge of it - and a caller
+ * resolving who claims each system of a sector would build all of that once per system and keep none
+ * of it. The two ports therefore share the walk and the comparison that settles it, and part company
+ * after: the same split that keeps {@link #readCoreFactionId} from paying for the scoring.
  *
  * <p>What is mirrored is that <em>result</em>, not the market walk reaching it: the standings
  * carry three kinds of market vanilla's own walk drops, none of which can move the winner.
@@ -167,7 +174,22 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader, 
 
     @Override
     public String readClaimingFactionId(StarSystemAPI system) {
-        return readBreakdown(system).claimantFactionId();
+
+        if (system == null) {
+            return SystemClaimBreakdown.NONE.claimantFactionId();
+        }
+        var overrideFactionId = readCoreFactionId(system);
+
+        // A decree answers before a market is weighed, so nothing beneath it is walked at all.
+        if (overrideFactionId != null) {
+            return overrideFactionId;
+        }
+        // Walked under no knowledge at all, which changes no answer: the claimant is resolved off
+        // the unfogged set - the mechanic scores colonies nobody has found - and the port reaches
+        // only what a market's breakdown reports about the player, which nothing here reads. Asking
+        // it anyway would project every colony in the system to build a set this walk never opens.
+        return resolveTopTerritorialFactionId(
+            readClaimedMarkets(readColonies(system), KnownColonyReader.NOTHING_KNOWN));
     }
 
     @Override
