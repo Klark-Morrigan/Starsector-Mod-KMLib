@@ -14,8 +14,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Pins the contract of {@link PolygonSmoothing#roundCorners}: a corner becomes an
  * arc of {@code segmentsPerCorner + 1} points while straight edges are preserved,
  * the radius is clamped so it never spikes, a zero radius leaves the polygon
- * untouched, and a corner sharper than the threshold is chamfered flat instead of
- * rounded.
+ * untouched, a corner sharper than the bevel threshold is chamfered flat instead
+ * of rounded, and a corner flatter than the rounding threshold keeps its vertex
+ * verbatim.
  *
  * <p>And of {@link PolygonSmoothing#removeSpikes}: a sharp thin protrusion and an
  * equally sharp inward cusp are both spliced out, a sharp but tall peninsula is
@@ -35,7 +36,7 @@ final class PolygonSmoothingTest {
             // through its middle: the arc endpoints (10,0) and (90,0) lie on y = 0.
             var rounded = PolygonSmoothing.roundCorners(
                 buildSquare(100),
-                new CornerRounding(10.0, 3, 0.0));
+                new CornerRounding(10.0, 3, 0.0, CornerRounding.ROUND_EVERY_CORNER));
 
             assertThat(rounded)
                 .hasSize(16);
@@ -59,7 +60,7 @@ final class PolygonSmoothingTest {
             // result still stays inside the square instead of overshooting.
             var rounded = PolygonSmoothing.roundCorners(
                 buildSquare(100),
-                new CornerRounding(10_000.0, 3, 0.0));
+                new CornerRounding(10_000.0, 3, 0.0, CornerRounding.ROUND_EVERY_CORNER));
 
             assertThat(rounded)
                 .allMatch(vertex -> vertex[0] >= 0
@@ -72,7 +73,7 @@ final class PolygonSmoothingTest {
         void round_corners_leaves_the_polygon_unchanged_for_zero_radius() {
             assertThat(PolygonSmoothing.roundCorners(
                     buildReferenceSquare(),
-                    new CornerRounding(0.0, 3, 0.0)))
+                    new CornerRounding(0.0, 3, 0.0, CornerRounding.ROUND_EVERY_CORNER)))
                 .hasSize(4);
         }
 
@@ -82,7 +83,7 @@ final class PolygonSmoothingTest {
             // than replacing each corner with its two bare step-back points.
             assertThat(PolygonSmoothing.roundCorners(
                     buildReferenceSquare(),
-                    new CornerRounding(2.0, 0, 0.0)))
+                    new CornerRounding(2.0, 0, 0.0, CornerRounding.ROUND_EVERY_CORNER)))
                 .hasSize(4);
         }
 
@@ -93,7 +94,9 @@ final class PolygonSmoothingTest {
                 new double[] {0, 0},
                 new double[] {10, 0});
 
-            assertThat(PolygonSmoothing.roundCorners(segment, new CornerRounding(2.0, 3, 0.0)))
+            assertThat(PolygonSmoothing.roundCorners(
+                    segment,
+                    new CornerRounding(2.0, 3, 0.0, CornerRounding.ROUND_EVERY_CORNER)))
                 .hasSize(2);
         }
 
@@ -111,7 +114,7 @@ final class PolygonSmoothingTest {
 
             var rounded = PolygonSmoothing.roundCorners(
                 squareWithMidEdgeVertex,
-                new CornerRounding(1.0, 3, 0.0));
+                new CornerRounding(1.0, 3, 0.0, CornerRounding.ROUND_EVERY_CORNER));
 
             // Four real corners arc into 3 + 1 points each; the straight-through one
             // contributes its two step-back points alone. 16 + 2 = 18.
@@ -134,7 +137,8 @@ final class PolygonSmoothingTest {
 
             var rounded = PolygonSmoothing.roundCorners(
                 triangle,
-                new CornerRounding(5.0, 3, Math.toRadians(45)));
+                new CornerRounding(
+                    5.0, 3, Math.toRadians(45), CornerRounding.ROUND_EVERY_CORNER));
 
             assertThat(rounded)
                 .hasSize(10);
@@ -161,7 +165,7 @@ final class PolygonSmoothingTest {
 
             var rounded = PolygonSmoothing.roundCorners(
                 lShape,
-                new CornerRounding(3.0, 3, 0.0));
+                new CornerRounding(3.0, 3, 0.0, CornerRounding.ROUND_EVERY_CORNER));
 
             assertThat(rounded)
                 .hasSize(24);
@@ -178,6 +182,55 @@ final class PolygonSmoothingTest {
                     && vertex[0] < 12
                     && vertex[1] > 10
                     && vertex[1] < 12);
+        }
+
+        @Test
+        void round_corners_keeps_a_corner_flatter_than_the_rounding_threshold() {
+            // A square's corners span 90 deg, flatter than the 45 deg rounding
+            // threshold, so every one keeps its vertex verbatim: same four points.
+            var rounded = PolygonSmoothing.roundCorners(
+                buildSquare(100),
+                new CornerRounding(10.0, 3, 0.0, Math.toRadians(45)));
+
+            assertThat(rounded)
+                .hasSize(4);
+        }
+
+        @Test
+        void round_corners_rounds_only_a_corner_sharper_than_the_rounding_threshold() {
+            // Thin CCW triangle: the apex at the origin spans ~5.7 deg and is the
+            // only corner under the 45 deg rounding threshold, so it alone arcs
+            // into 3 + 1 points while the other two corners pass through verbatim.
+            // 4 + 1 + 1 = 6.
+            var triangle = Arrays.asList(
+                new double[] {0, 0},
+                new double[] {100, 0},
+                new double[] {100, 10});
+
+            var rounded = PolygonSmoothing.roundCorners(
+                triangle,
+                new CornerRounding(5.0, 3, 0.0, Math.toRadians(45)));
+
+            assertThat(rounded)
+                .hasSize(6);
+
+            // The flat corners survive untouched, coordinates and all.
+            assertThat(rounded)
+                .anyMatch(vertex -> vertex[0] == 100 && vertex[1] == 0);
+            assertThat(rounded)
+                .anyMatch(vertex -> vertex[0] == 100 && vertex[1] == 10);
+        }
+
+        @Test
+        void round_corners_rounds_nothing_for_a_non_positive_rounding_threshold() {
+            // No interior angle sits below zero, so a threshold there switches the
+            // pass off corner by corner: the square comes back as its four points.
+            var rounded = PolygonSmoothing.roundCorners(
+                buildSquare(100),
+                new CornerRounding(10.0, 3, 0.0, 0.0));
+
+            assertThat(rounded)
+                .hasSize(4);
         }
     }
 

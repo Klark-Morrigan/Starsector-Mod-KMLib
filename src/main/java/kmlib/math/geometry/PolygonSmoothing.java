@@ -38,10 +38,15 @@ public final class PolygonSmoothing {
      * <p>A corner sharper than the bevel threshold is cut straight across (a chamfer
      * between the two step-back points) rather than arced, since an arc that tight
      * reads as a nick; a non-positive threshold disables the chamfer and arcs every
-     * corner. Vertex cost is at most {@code corners * (segmentsPerCorner + 1)}.
+     * corner. A corner flatter than the rounding threshold keeps its original
+     * vertex untouched, which is what lets a densely sampled curve - whose every
+     * joint is nearly straight - be sanded at its few sharp joins without being
+     * resampled everywhere else. Vertex cost is at most
+     * {@code corners * (segmentsPerCorner + 1)}.
      *
      * @param polygon closed polygon vertices as {x, y} pairs
-     * @param shape   the radius, segment count and bevel threshold to round with
+     * @param shape   the radius, segment count and the two angle thresholds to
+     *                round with
      * @return the rounded polygon; a copy of the input (deduplicated) when it
      *         has fewer than three vertices, or when radius/segments are
      *         non-positive (nothing to round)
@@ -65,6 +70,14 @@ public final class PolygonSmoothing {
             var previous = vertices.get((i - 1 + count) % count);
             var corner = vertices.get(i);
             var next = vertices.get((i + 1) % count);
+            var interior = computeInteriorAngle(previous, corner, next);
+
+            // A corner flatter than the rounding threshold is not one this pass is
+            // for: it keeps its vertex verbatim, edges and all.
+            if (interior >= shape.roundBelowAngleRadians()) {
+                rounded.add(corner);
+                continue;
+            }
 
             // Clamp the cut to half of the shorter adjacent edge so two corners
             // sharing an edge cannot eat into each other.
@@ -80,8 +93,7 @@ public final class PolygonSmoothing {
             // Below the threshold a rounded arc would still read as a spike, so
             // cut straight across the corner: the two step-back points alone.
             if (shape.bevelBelowAngleRadians() > 0
-                    && computeInteriorAngle(previous, corner, next)
-                        < shape.bevelBelowAngleRadians()) {
+                    && interior < shape.bevelBelowAngleRadians()) {
 
                 rounded.add(arcStart);
                 rounded.add(arcEnd);

@@ -33,7 +33,7 @@ they are handed.
 | `Bounds` | an axis-aligned box as its two extreme corners: what a point cloud fits inside |
 | `Segment`, `DirectedLine`, `HalfPlane`, `BoxEdge` | a finite edge, an infinite oriented line, a clip side, a box's side |
 | `Disk` | a centre, a radius, and the segment count it is approximated at |
-| `CornerRounding` | the radius, segment count and bevel threshold a rounding pass uses |
+| `CornerRounding` | the radius, segment count, bevel threshold and rounding threshold a rounding pass uses |
 | `LabelledPolygon` | a ring whose every edge carries an int naming what lies across it |
 | `RingRegion` | one filled region: an outer ring plus the holes cut from it |
 | `RingPath` | a ring walked as a path: one direction, one start, positions as arc length |
