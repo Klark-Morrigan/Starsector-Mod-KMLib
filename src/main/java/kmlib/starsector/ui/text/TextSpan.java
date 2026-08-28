@@ -42,10 +42,12 @@ public record TextSpan(
     // rather than being open-coded wherever an absent run is built.
     private static final String NO_TEXT = "";
 
-    // What an ordinary run of a sentence is - a word of its own, spaced from whatever precedes it.
-    // Named so the plain constructor below says which reading it takes rather than passing a bare
-    // false a reader has to count off against the components.
+    // The two readings a run can take of its own left edge - a word of its own, spaced from whatever
+    // precedes it, or the tail of the word before it. Named so the constructor and the refinement
+    // below say which they take rather than passing bare booleans a reader has to count off against
+    // the components.
     private static final boolean IS_ITS_OWN_WORD = false;
+    private static final boolean IS_JOINED_TO_PREVIOUS_RUN = true;
 
     /**
      * Rejects nulls at construction, where the caller that built the span is still on the stack: a
@@ -96,7 +98,7 @@ public record TextSpan(
      * @return an otherwise-identical span that spends no gap in front of itself
      */
     public TextSpan joinsPreviousRun() {
-        return new TextSpan(text, colour, true);
+        return new TextSpan(text, colour, IS_JOINED_TO_PREVIOUS_RUN);
     }
 
     /**
