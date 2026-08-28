@@ -251,6 +251,7 @@ the surface supplies the implementation:
 | [`UiSoundPlayer`](sound/UiSoundPlayer.java) | where a widget's interface sounds go | [`VanillaUiSoundPlayer`](sound/VanillaUiSoundPlayer.java), [`UiSoundPlayerFake`](../../../../../testFixtures/java/kmlib/testfixtures/starsector/ui/sound/UiSoundPlayerFake.java) |
 | [`CoreUiComponentRepainter`](coreui/CoreUiComponentRepainter.java) | drawing a core-UI component again, clipped | [`ReflectiveCoreUiComponentRepainter`](coreui/ReflectiveCoreUiComponentRepainter.java), [`CoreUiComponentRepainterFake`](../../../../../testFixtures/java/kmlib/testfixtures/starsector/ui/coreui/CoreUiComponentRepainterFake.java) |
 | [`CursorPosition`](input/CursorPosition.java) | where the pointer is, in UI units | [`VanillaCursorPosition`](input/VanillaCursorPosition.java), [`CursorPositionFake`](../../../../../testFixtures/java/kmlib/testfixtures/starsector/ui/input/CursorPositionFake.java) |
+| [`PointerButtonHold`](input/PointerButtonHold.java) | whether a pointer button is down this frame | [`VanillaPointerButtonHold`](input/VanillaPointerButtonHold.java), [`PointerButtonHoldFake`](../../../../../testFixtures/java/kmlib/testfixtures/starsector/ui/input/PointerButtonHoldFake.java) |
 
 `ControlSpec` and `ControlAction` split the same way within `controls`: the sealed spec is
 content, the action is behaviour the container owns. A content model that held its own
