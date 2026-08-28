@@ -14,9 +14,9 @@ package kmlib.testfixtures.starsector.settings;
  * never this: a class here that the shipped code consulted would be the borrowed constant again,
  * with an extra hop.
  *
- * <p>Ships in the main jar with the rest of {@code kmlib.testfixtures}, for the reason that
- * package gives - a consuming mod's tests reach it through the jar they already compile against,
- * so the ids are declared once for the series rather than once per suite that stubs one.
+ * <p>Published as a fixture variant with the rest of {@code kmlib.testfixtures}, for the reason
+ * that package gives - a consuming mod's tests reach it through the fixtures they already compile
+ * against, so the ids are declared once for the series rather than once per suite that stubs one.
  */
 public final class StubbedModIds {
 

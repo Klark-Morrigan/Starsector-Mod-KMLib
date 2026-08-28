@@ -6,9 +6,9 @@ import kmlib.starsector.ui.input.CursorPosition;
  * A {@link CursorPosition} resting wherever a test put it, standing in for the live mouse and screen
  * metrics wherever the question is only which side of a box the pointer is on.
  *
- * <p>Ships in the main jar rather than a test source set, so a consuming mod's own tests can drive
- * their hit-testing through this seam without rebuilding the fixture - which is the point of the
- * role being here at all, since what a cursor position decides is decided in the mods that read one.
+ * <p>Published as a fixture variant, so a consuming mod's own tests can drive their hit-testing
+ * through this seam without rebuilding the fixture - which is the point of the role being here at
+ * all, since what a cursor position decides is decided in the mods that read one.
  *
  * <p>Starts off screen at negative coordinates, which is what the live read answers with no display,
  * so a rule driven by a fixture no case has moved is asked about a pointer that is nowhere rather

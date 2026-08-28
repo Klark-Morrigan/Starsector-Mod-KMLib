@@ -6,9 +6,9 @@ import kmlib.starsector.ui.map.presence.CampaignMinimap;
  * A {@link CampaignMinimap} that is drawn or not because a test said so, standing in for the live
  * mod and settings reads wherever the question is only "and what does the caller do then?".
  *
- * <p>Ships in the main jar rather than a test source set, so a consuming mod's own tests can drive
- * their behaviour through this seam without rebuilding the fixture - which is the point of the
- * role being here at all, since what a minimap changes is decided in the mods that answer to one.
+ * <p>Published as a fixture variant, so a consuming mod's own tests can drive their behaviour
+ * through this seam without rebuilding the fixture - which is the point of the role being here at
+ * all, since what a minimap changes is decided in the mods that answer to one.
  */
 public final class CampaignMinimapFake implements CampaignMinimap {
 

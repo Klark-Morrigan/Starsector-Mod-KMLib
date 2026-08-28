@@ -20,8 +20,8 @@ import java.util.List;
  * only that it did. Which volume answers which kind of moment is a rule of the same order as which role
  * does, and one nothing on screen would show had gone wrong.
  *
- * <p>Ships in the main jar rather than a test source set, so a consuming mod's own tests can drive a KM
- * widget through this seam without rebuilding the fixture.
+ * <p>Published as a fixture variant, so a consuming mod's own tests can drive a KM widget through this
+ * seam without rebuilding the fixture.
  */
 public final class UiSoundPlayerFake implements UiSoundPlayer {
 

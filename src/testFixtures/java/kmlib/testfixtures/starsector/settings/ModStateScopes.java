@@ -12,12 +12,12 @@ package kmlib.testfixtures.starsector.settings;
  * flatten them at the call site.
  *
  * <p>Built on {@link StarsectorSettingsFake}'s proxy rather than on a static mock, so a case pays
- * no mock-maker cost and a consuming mod's tests need nothing beyond the KMLib jar they already
+ * no mock-maker cost and a consuming mod's tests need nothing beyond the fixtures they already
  * compile against. Each scope installs and clears around the body, so no case can leave the
  * settings it installed standing for the next one.
  *
- * <p>Ships in the main jar with the rest of {@code kmlib.testfixtures}, for the reason that
- * package gives.
+ * <p>Published as a fixture variant with the rest of {@code kmlib.testfixtures}, for the reason
+ * that package gives.
  */
 public final class ModStateScopes {
 

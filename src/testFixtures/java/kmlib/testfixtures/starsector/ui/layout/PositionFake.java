@@ -16,9 +16,9 @@ import kmlib.math.geometry.Rectangle;
  * and says it in the type the reads answer in - so a test can hand the same box to a fixture and to
  * an assertion and be describing one thing.
  *
- * <p>Ships in the main jar rather than a test source set, which is also what makes it worth having
- * over a mock: a consuming mod's tests can lay a widget out without depending on a mocking framework
- * to describe a rectangle, and every repo's idea of "a widget at this box" is then one class.
+ * <p>Published as a fixture variant, which is also what makes it worth having over a mock: a
+ * consuming mod's tests can lay a widget out without depending on a mocking framework to describe a
+ * rectangle, and every repo's idea of "a widget at this box" is then one class.
  *
  * <p>The centre is derived rather than taken, so it cannot disagree with the box around it. The
  * engine derives it too, and a fixture that let a test set the two independently would admit a
