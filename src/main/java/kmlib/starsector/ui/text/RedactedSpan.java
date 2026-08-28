@@ -60,6 +60,18 @@ public record RedactedSpan(
     }
 
     /**
+     * Never - the blocks are the only way a withheld name says anything, so a line that leaves them out
+     * does not read as redacted, it reads as though the name had never been there. A surface that can only
+     * draw a line of glyphs is refused this run rather than quietly shortened.
+     *
+     * @return false, always
+     */
+    @Override
+    public boolean canBeLeftOutOfLineText() {
+        return false;
+    }
+
+    /**
      * How wide the blocks and the gaps between them come to together, measured through the face the label
      * is spoken in. A run standing for no words at all is charged nothing.
      *
@@ -107,19 +119,22 @@ public record RedactedSpan(
             float barHeight,
             StyledSpanMeasurer spanMeasurer) {
 
-        var wordSpans = composeWordSpans();
-        var wordOffsets = LabelRuns.measureRunOffsets(wordSpans, barHeight, spanMeasurer);
-        var wordBars = new ArrayList<Rectangle>(wordSpans.size());
+        var wordOffsets = LabelRuns.measureRunOffsets(composeWordSpans(), barHeight, spanMeasurer);
+        var eachWordWidths = wordOffsets.eachRunWidths();
+        var wordBars = new ArrayList<Rectangle>(eachWordWidths.size());
 
-        for (var index = 0; index < wordSpans.size(); index++) {
-            var wordSpan = wordSpans.get(index);
-            if (!wordSpan.hasContent()) {
+        for (var index = 0; index < eachWordWidths.size(); index++) {
+            var wordWidth = eachWordWidths.get(index);
+
+            // A word that ran to nothing was charged nothing, so it takes no block: the walk above already
+            // said which words draw, and asking the spans a second time would be a second answer to it.
+            if (wordWidth <= LabelRun.NO_WIDTH) {
                 continue;
             }
             wordBars.add(new Rectangle(
                 leftX + wordOffsets.runOffsetXs().get(index),
                 bottomY,
-                wordSpan.computeWidth(barHeight, spanMeasurer),
+                wordWidth,
                 barHeight));
         }
         return List.copyOf(wordBars);

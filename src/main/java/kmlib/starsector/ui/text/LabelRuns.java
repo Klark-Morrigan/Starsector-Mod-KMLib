@@ -129,10 +129,12 @@ public final class LabelRuns {
     }
 
     /**
-     * Where each of a label's runs sits relative to the label's own left edge, and how wide the runs come
-     * to together. One walk, returned as a pair, because a caller re-deriving either half from the other
-     * would be re-deciding the gap rule - and a placement disagreeing with the width its host was sized
-     * to is exactly the drift a measurement exists to prevent.
+     * Where each of a label's runs sits relative to the label's own left edge, how wide each one came out,
+     * and how wide they come to together. One walk, returned whole, because a caller re-deriving any part
+     * of it from the rest would be re-deciding the gap rule - and a placement disagreeing with the width
+     * its host was sized to is exactly the drift a measurement exists to prevent. The per-run widths ride
+     * along for the same reason: a caller drawing something the width of a run it did not measure itself
+     * would otherwise charge the face a second time for a number this walk already had.
      *
      * <p>A run with nothing to draw is charged neither gap nor width and anchors where its predecessor
      * ended, so a caller assembling a run from parts and coming up blank gets the line it would have had
@@ -143,7 +145,8 @@ public final class LabelRuns {
      *                   itself off, and ignored by a run of text
      * @param measurer   the width measurement already bound to the face the label draws in, which is
      *                   also asked for the face's own space - the gap charged between two drawn runs
-     * @return each run's offset from the label's left edge, and the width the runs occupy together
+     * @return each run's offset from the label's left edge, each run's own width, and the width the runs
+     *         occupy together
      */
     public static LabelRunOffsets measureRunOffsets(
             List<LabelRun> labelRuns,
@@ -151,6 +154,7 @@ public final class LabelRuns {
             StyledSpanMeasurer measurer) {
 
         var runOffsetXs = new ArrayList<Float>(labelRuns.size());
+        var eachRunWidths = new ArrayList<Float>(labelRuns.size());
 
         // Asked once for the whole label rather than per gap: every run of a label is spoken in the one
         // look, so a second measurement could only ever return the same number at a cost.
@@ -161,16 +165,23 @@ public final class LabelRuns {
         for (var labelRun : labelRuns) {
             if (!labelRun.hasContent()) {
                 runOffsetXs.add(runsWidth);
+                eachRunWidths.add(LabelRun.NO_WIDTH);
                 continue;
             }
             if (hasDrawnRun && !labelRun.isJoinedToPreviousRun()) {
                 runsWidth += wordSpaceWidth;
             }
+            var runWidth = labelRun.computeWidth(lineHeight, measurer);
+
             runOffsetXs.add(runsWidth);
-            runsWidth += labelRun.computeWidth(lineHeight, measurer);
+            eachRunWidths.add(runWidth);
+            runsWidth += runWidth;
             hasDrawnRun = true;
         }
-        return new LabelRunOffsets(List.copyOf(runOffsetXs), runsWidth);
+        return new LabelRunOffsets(
+            List.copyOf(runOffsetXs),
+            List.copyOf(eachRunWidths),
+            runsWidth);
     }
 
     /**
@@ -189,19 +200,32 @@ public final class LabelRuns {
      * <p>A run with nothing to draw is passed over rather than joined, so it costs the line neither a
      * space nor an empty stretch - the same reading {@link #measureRunOffsets} charges it nothing by.
      * Neither the colours nor any run without glyphs survives the join, since one line drawn once draws
-     * in one colour and holds only glyphs; an image and a withheld name therefore take no space here
-     * either, where the run-by-run form gives each of them room on the line. A surface sizing itself from
-     * this alone reserves nothing for them, and drops a redaction rather than blocking it out; one that
-     * shows them reads the runs themselves, measures through {@link #measureRunOffsets}, and paints
-     * through {@link LabelRunPainter}.
+     * in one colour and holds only glyphs; an image therefore takes no space here either, where the
+     * run-by-run form squares one off its line. A surface sizing itself from this alone reserves nothing
+     * for a label's images; one that shows them reads the runs themselves, measures through
+     * {@link #measureRunOffsets}, and paints through {@link LabelRunPainter}.
+     *
+     * <p>A run that cannot be left out ({@link LabelRun#canBeLeftOutOfLineText}) is refused rather than
+     * dropped. Dropping it would hand back a line that reads as complete while missing what the run was
+     * put there to say, and the surface receiving it has no way to tell - so the label is rejected where
+     * it is flattened, which is the last point that still knows a run was lost.
      *
      * @param labelRuns the label's runs in reading order
      * @return the text of the runs that draw, joined by one space each
+     * @throws IllegalArgumentException where a run that draws cannot be left out of a flattened line
      */
     public static String resolveLineText(List<LabelRun> labelRuns) {
         var lineText = new StringBuilder();
         for (var labelRun : labelRuns) {
 
+            // Asked only of runs that draw: a run that came out blank says nothing this form could lose,
+            // whatever kind it is.
+            if (labelRun.hasContent() && !labelRun.canBeLeftOutOfLineText()) {
+                throw new IllegalArgumentException(
+                    "labelRuns carries a run that cannot be read as one line of text: "
+                        + labelRun.getClass().getSimpleName()
+                        + " must be laid out run by run and painted through a LabelRunPainter");
+            }
             if (!(labelRun instanceof TextSpan textSpan) || !textSpan.hasContent()) {
                 continue;
             }
@@ -217,14 +241,22 @@ public final class LabelRuns {
     }
 
     /**
-     * One label's runs measured out from the label's own left edge: where each run starts, and how wide
-     * they come to together.
+     * One label's runs measured out from the label's own left edge: where each run starts, how wide each
+     * one is, and how wide they come to together.
      *
-     * @param runOffsetXs each run's offset from the label's left edge, in run order
-     * @param runsWidth   the width the runs occupy together, gaps included
+     * <p>The per-run widths are held beside the anchors rather than left to be measured again, so a caller
+     * that draws something the size of one run - a block standing in for a word, a rule under a stretch of
+     * the line - takes the width this walk already charged the label. Two readings of one run's width are
+     * two numbers that can disagree, and the one that reserved the room is the one the layout believed.
+     *
+     * @param runOffsetXs   each run's offset from the label's left edge, in run order
+     * @param eachRunWidths each run's own width, in the same order, {@link LabelRun#NO_WIDTH} for a run
+     *                      that draws nothing
+     * @param runsWidth     the width the runs occupy together, gaps included
      */
     public record LabelRunOffsets(
         List<Float> runOffsetXs,
+        List<Float> eachRunWidths,
         float runsWidth) {
     }
 }

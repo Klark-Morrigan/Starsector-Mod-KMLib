@@ -108,6 +108,19 @@ class ImageSpanTest {
     }
 
     @Nested
+    class CanBeLeftOutOfLineText {
+
+        @Test
+        void canBeLeftOutOfLineTextIsTrue() {
+            // A crest is decoration the sentence still reads without, so a surface that can only draw
+            // glyphs drops it and keeps the line - the long-standing behaviour, and what parts an image
+            // from a run whose whole meaning is in its own draw.
+            assertThat(new ImageSpan(CREST_SPRITE_PATH).canBeLeftOutOfLineText())
+                .isTrue();
+        }
+    }
+
+    @Nested
     class ComputeWidth {
 
         @Test

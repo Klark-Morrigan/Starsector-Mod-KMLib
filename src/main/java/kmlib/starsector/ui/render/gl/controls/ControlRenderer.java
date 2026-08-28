@@ -6,25 +6,12 @@ import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlInteractionSources;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.RowGeometry;
-import kmlib.starsector.ui.font.LazyFontSpanMeasurer;
-import kmlib.starsector.ui.font.TextFace;
 import kmlib.starsector.ui.layout.ControlStripLayout;
 import kmlib.starsector.ui.layout.TabsControlLayout;
-import kmlib.starsector.ui.render.gl.LabelRenderer;
-import kmlib.starsector.ui.render.gl.LabelStyle;
 import kmlib.starsector.ui.render.gl.TriangleRenderer;
 import kmlib.starsector.ui.render.gl.UiElementPaint;
-import kmlib.starsector.ui.render.gl.UiFill;
-import kmlib.starsector.ui.render.gl.UiSprite;
 import kmlib.starsector.ui.render.gl.style.WidgetStyle;
 import kmlib.starsector.ui.render.gl.tabs.TabChromeRenderer;
-import kmlib.starsector.ui.text.ImageSpan;
-import kmlib.starsector.ui.text.LabelRun;
-import kmlib.starsector.ui.text.LabelRunPainter;
-import kmlib.starsector.ui.text.LabelRuns;
-import kmlib.starsector.ui.text.RedactedSpan;
-import kmlib.starsector.ui.text.StyledSpanMeasurer;
-import kmlib.starsector.ui.text.TextSpan;
 import kmlib.starsector.ui.widgets.Checkbox;
 import kmlib.starsector.ui.widgets.IconLabelRow;
 import kmlib.starsector.ui.widgets.LabelledRow;
@@ -54,10 +41,9 @@ import java.util.List;
  * cursor, holds a timing, or learns that a fade exists; what a cell's lift is made of stays the widget's own,
  * and only its pace is the panel's.
  *
- * <p>A label a control authored as several runs is drawn run by run, each in its own colour, so a
- * caller picking a stretch of a label out gets it picked out here. Text that is not authored as spans -
- * a radio's option labels, a trailing caption - is drawn in the vanilla text tone, the one place that
- * default is decided.
+ * <p>Every word a control shows is set by {@link ControlLabelRenderer}, whichever kind of control it
+ * belongs to: how a label's runs are measured and anchored follows the face and the row rather than the
+ * widget, so this pass decides only where each label goes and what chrome stands behind it.
  *
  * <p>It composes the per-kind KMLib renderers ({@link CheckboxRenderer}, {@link RadioRowRenderer}, {@link
  * IconRadioListRenderer}, {@link ToggleButton}, {@link DividerRenderer}, and whichever
@@ -68,10 +54,6 @@ import java.util.List;
  * body does not leak a buffer per frame.
  */
 public final class ControlRenderer {
-
-    // The run count a label drawn from its left edge needs no offset walk for - the one-colour label
-    // most controls carry.
-    private static final int SINGLE_RUN = 1;
 
     private ControlRenderer() {
     }
@@ -231,7 +213,7 @@ public final class ControlRenderer {
             new UiElementPaint(style.accentColours().base(), paint.opacity()),
             new UiElementPaint(style.accentColours().bright(), paint.opacity()));
 
-        drawBodyLabelRuns(
+        ControlLabelRenderer.drawBodyLabelRuns(
             paint,
             spec.labelRuns(),
             Checkbox.computeLabelAnchorX(bounds),
@@ -282,7 +264,7 @@ public final class ControlRenderer {
         }
         for (var index = 0; index < segments.size() && index < labels.size(); index++) {
             var segment = segments.get(index);
-            drawBodyLabel(
+            ControlLabelRenderer.drawBodyLabel(
                 paint,
                 labels.get(index),
                 segment.computeCenterX(),
@@ -295,7 +277,7 @@ public final class ControlRenderer {
                 + bounds.width()
                 + ControlStripLayout.TRAILING_LABEL_GAP;
 
-            drawBodyLabel(
+            ControlLabelRenderer.drawBodyLabel(
                 paint,
                 radio.trailingLabel(),
                 trailingX,
@@ -339,7 +321,7 @@ public final class ControlRenderer {
                 segment,
                 labelledRow.leadingRowSlot().isFilled());
 
-            drawBodyLabelRuns(
+            ControlLabelRenderer.drawBodyLabelRuns(
                 paint,
                 labelledRow.labelRuns(),
                 labelX,
@@ -387,7 +369,7 @@ public final class ControlRenderer {
         if (trailingRowSlot instanceof RowSlot.Text text && text.textSpan().hasContent()) {
             // Drawn at the body size - the same size the layout reserved the column at - and in the run's
             // own colour, so a value the row picked out reads as picked out here too.
-            drawBodySpan(
+            ControlLabelRenderer.drawBodySpan(
                 paint,
                 text.textSpan(),
                 IconLabelRow.computeTrailingAnchorX(segment),
@@ -412,7 +394,7 @@ public final class ControlRenderer {
             paint.cellPaints(),
             paint.opacity());
 
-        drawCentredBodyLabelRuns(
+        ControlLabelRenderer.drawCentredBodyLabelRuns(
             paint,
             spec.labelRuns(),
             bounds.computeCenterX(),
@@ -436,219 +418,11 @@ public final class ControlRenderer {
         var spec = (ControlSpec.Label) control.spec();
         var bounds = control.bounds();
 
-        drawBodyLabelRuns(
+        ControlLabelRenderer.drawBodyLabelRuns(
             paint,
             spec.labelRuns(),
             bounds.x(),
             bounds.computeCenterY());
     }
 
-    // Draws a label's runs from leftX rightwards, each at the offset the runs measured out to - text in
-    // its own colour, an image hung square on the row - so a control calling part of its label out, or
-    // showing a mark beside its words, reads that way here. Anchored run by run rather than laid as one
-    // string: a batched draw would flatten the runs to a single colour, which is the whole of what a
-    // second run buys a caller.
-    private static void drawBodyLabelRuns(
-            ControlPaint paint,
-            List<LabelRun> labelRuns,
-            float leftX,
-            float centreY) {
-
-        // Each run hands itself to the painter rather than being tested here, so what a run is stays the
-        // run's own statement and this pass holds only what each kind looks like on a control row. One
-        // painter per label, since what it binds - the control's paint and the row's middle line - is
-        // settled for the whole label.
-        var labelRunPainter = new BodyLabelRunPainter(paint, centreY);
-
-        // A label of one run starts at leftX whatever it measures, so the walk that exists to find the
-        // next run's anchor is skipped - a list of rows is redrawn every frame, and each row would
-        // otherwise be measured a second time to learn an offset that is always zero.
-        if (labelRuns.size() == SINGLE_RUN) {
-            labelRuns
-                .get(0)
-                .paintRun(labelRunPainter, leftX);
-            return;
-        }
-
-        // The runs and the offsets they measured out to are walked together here rather than measured in
-        // one method and drawn in another: they are aligned by index, so a boundary between them is a
-        // boundary a mismatched pair could cross - which is the parallel-list hazard the row model was
-        // built to retire, and it is no more welcome inside a draw than it was inside the content.
-        var runOffsets = measureBodyLabelRuns(paint, labelRuns);
-
-        for (var index = 0; index < labelRuns.size(); index++) {
-            labelRuns
-                .get(index)
-                .paintRun(labelRunPainter, leftX + runOffsets.runOffsetXs().get(index));
-        }
-    }
-
-    // The square an image run hangs in: from its own anchor, the control row's height on each side, set
-    // about the row's middle line so it is centred exactly as the text beside it is. The image run
-    // reports that same height to the layout, so the room reserved and the square painted agree.
-    private static Rectangle computeLabelImageBox(float runX, float centreY) {
-
-        return new Rectangle(
-            runX,
-            computeLabelBottomY(centreY),
-            ControlStripLayout.CONTROL_ROW_HEIGHT,
-            ControlStripLayout.CONTROL_ROW_HEIGHT);
-    }
-
-    // The foot of the band a control's label stands in, the row being centred on its middle line. Held
-    // here because more than one element is set against that band - anything hung on the row rather than
-    // written along it - and two readings of where the band starts would paint them at two heights.
-    private static float computeLabelBottomY(float centreY) {
-
-        return centreY - ControlStripLayout.CONTROL_ROW_HEIGHT / 2f;
-    }
-
-    // The same runs set about centreX: the label's whole measured span is centred as one, so the runs
-    // stay one sentence rather than each centring on its own. Only the width is needed to find where
-    // the label starts; where each run sits within it is the draw's own walk.
-    private static void drawCentredBodyLabelRuns(
-            ControlPaint paint,
-            List<LabelRun> labelRuns,
-            float centreX,
-            float centreY) {
-
-        var runsWidth = measureBodyLabelRuns(paint, labelRuns).runsWidth();
-
-        drawBodyLabelRuns(
-            paint,
-            labelRuns,
-            centreX - runsWidth / 2f,
-            centreY);
-    }
-
-    // Where a label's runs measure out to at the body face, through the same one-sentence rule the strip
-    // layout snapped the control to - so what is drawn fits the room that was reserved for it. The row
-    // height goes along for the same reason it does there: it is what an image run sizes itself off.
-    private static LabelRuns.LabelRunOffsets measureBodyLabelRuns(
-            ControlPaint paint,
-            List<LabelRun> labelRuns) {
-
-        return LabelRuns.measureRunOffsets(
-            labelRuns,
-            ControlStripLayout.CONTROL_ROW_HEIGHT,
-            bindBodySpanMeasurer(paint));
-    }
-
-    // The body-line measurement bound to the face this pass paints in, so a run charges its own width
-    // without the walk above learning which face it will be drawn in.
-    private static StyledSpanMeasurer bindBodySpanMeasurer(ControlPaint paint) {
-
-        var bodyFace = paint.resolveBodyFace();
-
-        return textSpan -> LazyFontSpanMeasurer.measureSpanWidth(bodyFace, textSpan.text());
-    }
-
-    // Draws one plain label in the vanilla text colour - the tone a control's text reads in unless its
-    // own content named another, which is what a label authored as spans does. The one place that
-    // decision is made, so the segment labels, the trailing caption, and any other unspanned text agree.
-    private static void drawBodyLabel(
-            ControlPaint paint,
-            String text,
-            float x,
-            float y,
-            LazyFont.TextAnchor anchor) {
-
-        drawBodySpan(
-            paint,
-            new TextSpan(text, StarsectorUiColour.VANILLA_TEXT.resolve()),
-            x,
-            y,
-            anchor);
-    }
-
-    // Draws one span at the body size in its own colour, faded by opacity, through the shared label
-    // primitive so the control text and any other KM UI text share one cache.
-    private static void drawBodySpan(
-            ControlPaint paint,
-            TextSpan textSpan,
-            float x,
-            float y,
-            LazyFont.TextAnchor anchor) {
-
-        var labelStyle = new LabelStyle(
-            paint.resolveBodyFace(),
-            textSpan.colour(),
-            paint.opacity());
-
-        LabelRenderer.render(labelStyle, textSpan.text(), x, y, anchor);
-    }
-
-    /**
-     * What draws one label's runs: each kind of run set against the control row's middle line, in the
-     * paint the pass is drawing with. Bound to the label rather than to the run, since the paint and the
-     * row's line are the label's for all of its runs and only the anchor moves between them.
-     *
-     * @param paint   the look, opacity, and cell paints the control draws with
-     * @param centreY the middle line of the row the label is centred on
-     */
-    private record BodyLabelRunPainter(
-        ControlPaint paint,
-        float centreY) implements LabelRunPainter {
-
-        @Override
-        public void paintImageSpan(ImageSpan imageSpan, float runX) {
-
-            UiSprite.renderImage(
-                imageSpan.spritePath(),
-                computeLabelImageBox(runX, centreY),
-                paint.opacity(),
-                imageSpan.tintColour());
-        }
-
-        // Filled in the run's own colour and faded by the frame's alpha, like every other mark on the row
-        // - a redaction is a name drawn as blocks rather than chrome of the control, so it reads in
-        // whatever colour the label it stands in was written in.
-        @Override
-        public void paintRedactedSpan(RedactedSpan redactedSpan, float runX) {
-
-            var wordBarPaint = new UiElementPaint(redactedSpan.colour(), paint.opacity());
-
-            // Measured through the body binding the strip laid the control out by, so the blocks fill
-            // exactly the stretch the row reserved for the withheld name.
-            var wordBars = redactedSpan.layOutWordBars(
-                runX,
-                computeLabelBottomY(centreY),
-                ControlStripLayout.CONTROL_ROW_HEIGHT,
-                bindBodySpanMeasurer(paint));
-
-            for (var wordBar : wordBars) {
-                UiFill.renderQuad(wordBar, wordBarPaint);
-            }
-        }
-
-        @Override
-        public void paintTextSpan(TextSpan textSpan, float runX) {
-
-            drawBodySpan(
-                paint,
-                textSpan,
-                runX,
-                centreY,
-                LazyFont.TextAnchor.CENTER_LEFT);
-        }
-    }
-
-    // The look bundle plus the frame's alpha and the control's live cell paints, threaded together through
-    // every draw so a helper takes one paint rather than unpacking the accents, body font, opacity, and
-    // resolved washes and lights into loose arguments each time.
-    private record ControlPaint(
-        WidgetStyle style,
-        float opacity,
-        CellPaintSources cellPaints) {
-
-        // The face every control's text is measured and drawn at. Asked of the paint rather than built
-        // where it is wanted, so the measurement and the draw cannot end up naming a different pair -
-        // text measured on one face and painted on another sizes a row it then overflows.
-        private TextFace resolveBodyFace() {
-
-            return new TextFace(
-                style.bodyFont(),
-                ControlStripLayout.BODY_FONT_SIZE);
-        }
-    }
 }

@@ -75,6 +75,23 @@ public sealed interface LabelRun
     void paintRun(LabelRunPainter labelRunPainter, float runX);
 
     /**
+     * Whether a single-line reading of the label ({@link LabelRuns#resolveLineText}) may leave this run
+     * out without losing what it says. True by default, which covers both runs that are not left out at
+     * all - a stretch of text puts its own glyphs in the line - and runs whose absence costs the line
+     * nothing, an image among the words being decoration the sentence still reads without.
+     *
+     * <p>False is for a run whose whole meaning is in its own draw. Flattened, such a run does not come
+     * out plainer - it comes out missing, and the surface that flattened it shows a line with a hole in it
+     * that reads as though nothing had been there. That is worth refusing rather than documenting, which
+     * is why the flattening asks this instead of dropping every run it cannot spell.
+     *
+     * @return true when the flattened line is whole without this run
+     */
+    default boolean canBeLeftOutOfLineText() {
+        return true;
+    }
+
+    /**
      * Whether this run continues the one before it with no word space between them - so the two read as
      * one word drawn in more than one colour rather than as two words of a sentence.
      *

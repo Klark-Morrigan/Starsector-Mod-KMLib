@@ -265,6 +265,39 @@ class LabelRunsTest {
         }
 
         @Test
+        void measureRunOffsetsAnswersEachRunItsOwnWidth() {
+            // Held beside the anchors so a caller drawing something the size of one run takes the width
+            // the label was charged rather than measuring the face again and risking a second answer.
+            var offsets = LabelRuns.measureRunOffsets(
+                List.of(
+                    new TextSpan("AA", RUN_COLOUR),
+                    new ImageSpan(CREST_SPRITE_PATH),
+                    new TextSpan("BBB", OTHER_RUN_COLOUR)),
+                LINE_HEIGHT,
+                ONE_UNIT_PER_CHARACTER);
+
+            assertThat(offsets.eachRunWidths())
+                .containsExactly(2f, 20f, 3f);
+        }
+
+        @Test
+        void measureRunOffsetsAnswersARunThatDrawsNothingNoWidthOfItsOwn() {
+            // The blank is charged neither gap nor width, so its own entry reads as the nothing the total
+            // was charged for it - a caller walking the widths beside the runs needs no second rule for
+            // which of them draw.
+            var offsets = LabelRuns.measureRunOffsets(
+                List.of(
+                    new TextSpan("AA", RUN_COLOUR),
+                    TextSpan.createBlank(OTHER_RUN_COLOUR),
+                    new TextSpan("BBB", OTHER_RUN_COLOUR)),
+                LINE_HEIGHT,
+                ONE_UNIT_PER_CHARACTER);
+
+            assertThat(offsets.eachRunWidths())
+                .containsExactly(2f, 0f, 3f);
+        }
+
+        @Test
         void measureRunOffsetsChargesAnImageRunItsLineHeight() {
             // An image squares off its line, so the label is charged 20 for the crest, the face's 1-wide
             // space, and 3 for the glyphs after it.
@@ -542,15 +575,25 @@ class LabelRunsTest {
         }
 
         @Test
-        void resolveLineTextLeavesOutARedactedRun() {
-            // The line form is glyphs only and a redaction has none, so a surface drawing a label in one
-            // pass gets the words either side and no stand-in for the name between them. What that
-            // surface must not do is show a redacted label through this form alone - the withheld name
-            // would go missing rather than reading as withheld, which is why anything showing one lays
-            // its runs out and paints them through a LabelRunPainter.
+        void resolveLineTextRejectsALabelCarryingARedactedRun() {
+            // Dropped, the withheld name would not read as withheld - it would read as though nothing had
+            // been there, on a line the surface receiving it has no way to tell is short. So the label is
+            // refused here rather than silently shortened; a surface showing one lays its runs out and
+            // paints them through a LabelRunPainter.
+            assertThatThrownBy(() -> LabelRuns.resolveLineText(List.of(
+                    new TextSpan("Held by", RUN_COLOUR),
+                    new RedactedSpan(List.of(7), OTHER_RUN_COLOUR))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("RedactedSpan");
+        }
+
+        @Test
+        void resolveLineTextReadsALabelWhoseRedactionStandsForNothing() {
+            // A redaction that came out with no words to block draws nothing, so this form loses nothing
+            // by it - the refusal is over what would go missing, not over the kind of run it was.
             var lineText = LabelRuns.resolveLineText(List.of(
                 new TextSpan("Held by", RUN_COLOUR),
-                new RedactedSpan(List.of(7), OTHER_RUN_COLOUR),
+                new RedactedSpan(List.of(), OTHER_RUN_COLOUR),
                 new TextSpan("(7)", RUN_COLOUR)));
 
             assertThat(lineText)

@@ -98,6 +98,20 @@ class RedactedSpanTest {
     }
 
     @Nested
+    class CanBeLeftOutOfLineText {
+
+        @Test
+        void canBeLeftOutOfLineTextIsFalse() {
+            // The blocks are the only way the run says anything, so a line that drops them reads as
+            // though no name had been there - which is why the flattened form refuses one outright
+            // rather than handing back a shortened line nothing downstream can tell is short.
+            assertThat(new RedactedSpan(TWO_WORD_NAME_LENGTHS, REDACTION_COLOUR)
+                .canBeLeftOutOfLineText())
+                .isFalse();
+        }
+    }
+
+    @Nested
     class ComputeWidth {
 
         @Test
