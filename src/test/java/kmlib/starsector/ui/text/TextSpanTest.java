@@ -170,4 +170,23 @@ class TextSpanTest {
                 .isEqualTo(0f);
         }
     }
+
+    @Nested
+    class PaintRun {
+
+        @Test
+        void paintRunHandsItselfToThePaintersTextMethod() {
+            // A run that named no kind would compile and draw nothing, leaving a gap on the line the size
+            // of the room the measurement charged for it.
+            var textSpan = new TextSpan("Hegemony", SPAN_COLOUR);
+            var labelRunPainterFake = new LabelRunPainterFake();
+
+            textSpan.paintRun(labelRunPainterFake, 24f);
+
+            assertThat(labelRunPainterFake.getPaintedRun())
+                .isSameAs(textSpan);
+            assertThat(labelRunPainterFake.getPaintedRunX())
+                .isEqualTo(24f);
+        }
+    }
 }

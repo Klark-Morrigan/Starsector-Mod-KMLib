@@ -34,12 +34,14 @@ class ImageSpanTest {
 
         @Test
         void constructorKeepsThePathItWasGiven() {
+
             assertThat(new ImageSpan(CREST_SPRITE_PATH).spritePath())
                 .isEqualTo(CREST_SPRITE_PATH);
         }
 
         @Test
         void constructorRejectsANullPath() {
+
             assertThatThrownBy(() -> new ImageSpan(null))
                 .isInstanceOf(NullPointerException.class)
                 .hasMessageContaining("spritePath");
@@ -58,7 +60,8 @@ class ImageSpanTest {
         void constructorStatesNoTintForAnImageDrawnAsAuthored() {
             // A crest's colours are in its own pixels, so the path alone builds the run and the draw is
             // left to multiply by nothing.
-            assertThat(new ImageSpan(CREST_SPRITE_PATH).tintColour()).isNull();
+            assertThat(new ImageSpan(CREST_SPRITE_PATH).tintColour())
+                .isNull();
         }
 
         @Test
@@ -75,6 +78,7 @@ class ImageSpanTest {
 
         @Test
         void equalsIsTrueForTheSamePathAndTint() {
+
             assertThat(new ImageSpan(ICON_SPRITE_PATH, ICON_TINT))
                 .isEqualTo(new ImageSpan(ICON_SPRITE_PATH, ICON_TINT));
         }
@@ -89,6 +93,7 @@ class ImageSpanTest {
 
         @Test
         void equalsIsFalseForATintedSpanAgainstAnUntintedOne() {
+
             assertThat(new ImageSpan(ICON_SPRITE_PATH, ICON_TINT))
                 .isNotEqualTo(new ImageSpan(ICON_SPRITE_PATH));
         }
@@ -115,6 +120,7 @@ class ImageSpanTest {
 
         @Test
         void computeWidthFollowsATallerLine() {
+
             assertThat(new ImageSpan(CREST_SPRITE_PATH).computeWidth(32f, ONE_UNIT_PER_RUN))
                 .isEqualTo(32f);
         }
@@ -135,7 +141,27 @@ class ImageSpanTest {
         void hasContentIsTrueForAnyImageRun() {
             // There is no blank spelling of an image run, so one exists only where a caller had an image
             // to set into the line.
-            assertThat(new ImageSpan(CREST_SPRITE_PATH).hasContent()).isTrue();
+            assertThat(new ImageSpan(CREST_SPRITE_PATH).hasContent())
+                .isTrue();
+        }
+    }
+
+    @Nested
+    class PaintRun {
+
+        @Test
+        void paintRunHandsItselfToThePaintersImageMethod() {
+            // A run that named no kind would compile and draw nothing, leaving a gap on the line the size
+            // of the room the measurement charged for it.
+            var imageSpan = new ImageSpan(CREST_SPRITE_PATH);
+            var labelRunPainterFake = new LabelRunPainterFake();
+
+            imageSpan.paintRun(labelRunPainterFake, 48f);
+
+            assertThat(labelRunPainterFake.getPaintedRun())
+                .isSameAs(imageSpan);
+            assertThat(labelRunPainterFake.getPaintedRunX())
+                .isEqualTo(48f);
         }
     }
 }

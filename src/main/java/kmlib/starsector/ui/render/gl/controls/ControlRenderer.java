@@ -14,12 +14,15 @@ import kmlib.starsector.ui.render.gl.LabelRenderer;
 import kmlib.starsector.ui.render.gl.LabelStyle;
 import kmlib.starsector.ui.render.gl.TriangleRenderer;
 import kmlib.starsector.ui.render.gl.UiElementPaint;
+import kmlib.starsector.ui.render.gl.UiFill;
 import kmlib.starsector.ui.render.gl.UiSprite;
 import kmlib.starsector.ui.render.gl.style.WidgetStyle;
 import kmlib.starsector.ui.render.gl.tabs.TabChromeRenderer;
 import kmlib.starsector.ui.text.ImageSpan;
 import kmlib.starsector.ui.text.LabelRun;
+import kmlib.starsector.ui.text.LabelRunPainter;
 import kmlib.starsector.ui.text.LabelRuns;
+import kmlib.starsector.ui.text.RedactedSpan;
 import kmlib.starsector.ui.text.StyledSpanMeasurer;
 import kmlib.starsector.ui.text.TextSpan;
 import kmlib.starsector.ui.widgets.Checkbox;
@@ -140,17 +143,23 @@ public final class ControlRenderer {
                     opacity)));
 
         var spec = control.spec();
+
         if (spec instanceof ControlSpec.Checkbox) {
             drawCheckbox(control, paint);
+
         } else if (spec instanceof ControlSpec.Toggle) {
             drawToggle(control, paint);
+
         } else if (spec instanceof ControlSpec.HorizontalRadio
                 || spec instanceof ControlSpec.VerticalTable) {
             drawRadio(control, paint);
+
         } else if (spec instanceof ControlSpec.Label) {
             drawLabelRow(control, paint);
+
         } else if (spec instanceof ControlSpec.Divider) {
             drawDivider(control, paint);
+
         } else if (spec instanceof ControlSpec.Tabs) {
             drawTabs(control, paint, tabInteractions);
         }
@@ -236,9 +245,12 @@ public final class ControlRenderer {
     // its chrome over the laid segments, the same rects the labels below centre in, so the wash and
     // dividers cannot part from the labels whether even or snapped.
     private static void drawRadio(Control control, ControlPaint paint) {
+
         var spec = control.spec();
+
         if (spec instanceof ControlSpec.VerticalTable table
                 && table.rowGeometry() == RowGeometry.COLUMNS) {
+
             drawColumnTable(control, table, paint);
             return;
         }
@@ -317,8 +329,10 @@ public final class ControlRenderer {
         var segments = control.segments();
 
         for (var index = 0; index < segments.size() && index < labelledRows.size(); index++) {
+
             var segment = segments.get(index);
             var labelledRow = labelledRows.get(index);
+
             // The label starts past the leading slot when the row fills one, or at the row's left inset
             // when it does not - the same filled-slot rule the layout sized the row with.
             var labelX = IconLabelRow.computeLabelAnchorX(
@@ -342,6 +356,7 @@ public final class ControlRenderer {
     // The widget is handed the slots rather than the rows because the leading column is all it paints -
     // the label and the trailing column are drawn here, against the anchors it reserves.
     private static List<RowSlot> resolveLeadingRowSlots(List<LabelledRow> labelledRows) {
+
         var leadingRowSlots = new ArrayList<RowSlot>(labelledRows.size());
         for (var labelledRow : labelledRows) {
             leadingRowSlots.add(labelledRow.leadingRowSlot());
@@ -384,6 +399,7 @@ public final class ControlRenderer {
     // A single button washed when the spec's cell is lit, its label centred in it - the lit state is the
     // on/off signal, so the label carries no On/Off word.
     private static void drawToggle(Control control, ControlPaint paint) {
+
         var accent = paint.style().accentColours().base();
         var spec = (ControlSpec.Toggle) control.spec();
         var bounds = control.bounds();
@@ -406,14 +422,20 @@ public final class ControlRenderer {
     // A divider row: a single hairline centred across the row in the accent, parting one run of controls
     // from the next - it heads a section like a caption but carries no text and no hit target.
     private static void drawDivider(Control control, ControlPaint paint) {
-        DividerRenderer.render(control.bounds(), paint.style().accentColours().base(), paint.opacity());
+
+        DividerRenderer.render(
+            control.bounds(),
+            paint.style().accentColours().base(),
+            paint.opacity());
     }
 
     // A caption row: only its text, left-aligned at the row's left edge and vertically centred, with no
     // widget chrome - it heads the controls below it and is never clicked.
     private static void drawLabelRow(Control control, ControlPaint paint) {
+
         var spec = (ControlSpec.Label) control.spec();
         var bounds = control.bounds();
+
         drawBodyLabelRuns(
             paint,
             spec.labelRuns(),
@@ -432,11 +454,19 @@ public final class ControlRenderer {
             float leftX,
             float centreY) {
 
+        // Each run hands itself to the painter rather than being tested here, so what a run is stays the
+        // run's own statement and this pass holds only what each kind looks like on a control row. One
+        // painter per label, since what it binds - the control's paint and the row's middle line - is
+        // settled for the whole label.
+        var labelRunPainter = new BodyLabelRunPainter(paint, centreY);
+
         // A label of one run starts at leftX whatever it measures, so the walk that exists to find the
         // next run's anchor is skipped - a list of rows is redrawn every frame, and each row would
         // otherwise be measured a second time to learn an offset that is always zero.
         if (labelRuns.size() == SINGLE_RUN) {
-            drawBodyLabelRun(paint, labelRuns.get(0), leftX, centreY);
+            labelRuns
+                .get(0)
+                .paintRun(labelRunPainter, leftX);
             return;
         }
 
@@ -447,39 +477,9 @@ public final class ControlRenderer {
         var runOffsets = measureBodyLabelRuns(paint, labelRuns);
 
         for (var index = 0; index < labelRuns.size(); index++) {
-            drawBodyLabelRun(
-                paint,
-                labelRuns.get(index),
-                leftX + runOffsets.runOffsetXs().get(index),
-                centreY);
-        }
-    }
-
-    // Draws one run of a label at its resolved anchor, centred on the row's own middle line: a stretch of
-    // text in its own colour, or a small image squared off the control row so it stands level with the
-    // words beside it. The branch is over what the run is, so which control the label belongs to never
-    // enters into it.
-    private static void drawBodyLabelRun(
-            ControlPaint paint,
-            LabelRun labelRun,
-            float runX,
-            float centreY) {
-
-        if (labelRun instanceof TextSpan textSpan) {
-            drawBodySpan(
-                paint,
-                textSpan,
-                runX,
-                centreY,
-                LazyFont.TextAnchor.CENTER_LEFT);
-            return;
-        }
-        if (labelRun instanceof ImageSpan imageSpan) {
-            UiSprite.renderImage(
-                imageSpan.spritePath(),
-                computeLabelImageBox(runX, centreY),
-                paint.opacity(),
-                imageSpan.tintColour());
+            labelRuns
+                .get(index)
+                .paintRun(labelRunPainter, leftX + runOffsets.runOffsetXs().get(index));
         }
     }
 
@@ -487,11 +487,20 @@ public final class ControlRenderer {
     // about the row's middle line so it is centred exactly as the text beside it is. The image run
     // reports that same height to the layout, so the room reserved and the square painted agree.
     private static Rectangle computeLabelImageBox(float runX, float centreY) {
+
         return new Rectangle(
             runX,
-            centreY - ControlStripLayout.CONTROL_ROW_HEIGHT / 2f,
+            computeLabelBottomY(centreY),
             ControlStripLayout.CONTROL_ROW_HEIGHT,
             ControlStripLayout.CONTROL_ROW_HEIGHT);
+    }
+
+    // The foot of the band a control's label stands in, the row being centred on its middle line. Held
+    // here because more than one element is set against that band - anything hung on the row rather than
+    // written along it - and two readings of where the band starts would paint them at two heights.
+    private static float computeLabelBottomY(float centreY) {
+
+        return centreY - ControlStripLayout.CONTROL_ROW_HEIGHT / 2f;
     }
 
     // The same runs set about centreX: the label's whole measured span is centred as one, so the runs
@@ -528,7 +537,9 @@ public final class ControlRenderer {
     // The body-line measurement bound to the face this pass paints in, so a run charges its own width
     // without the walk above learning which face it will be drawn in.
     private static StyledSpanMeasurer bindBodySpanMeasurer(ControlPaint paint) {
+
         var bodyFace = paint.resolveBodyFace();
+
         return textSpan -> LazyFontSpanMeasurer.measureSpanWidth(bodyFace, textSpan.text());
     }
 
@@ -567,6 +578,61 @@ public final class ControlRenderer {
         LabelRenderer.render(labelStyle, textSpan.text(), x, y, anchor);
     }
 
+    /**
+     * What draws one label's runs: each kind of run set against the control row's middle line, in the
+     * paint the pass is drawing with. Bound to the label rather than to the run, since the paint and the
+     * row's line are the label's for all of its runs and only the anchor moves between them.
+     *
+     * @param paint   the look, opacity, and cell paints the control draws with
+     * @param centreY the middle line of the row the label is centred on
+     */
+    private record BodyLabelRunPainter(
+        ControlPaint paint,
+        float centreY) implements LabelRunPainter {
+
+        @Override
+        public void paintImageSpan(ImageSpan imageSpan, float runX) {
+
+            UiSprite.renderImage(
+                imageSpan.spritePath(),
+                computeLabelImageBox(runX, centreY),
+                paint.opacity(),
+                imageSpan.tintColour());
+        }
+
+        // Filled in the run's own colour and faded by the frame's alpha, like every other mark on the row
+        // - a redaction is a name drawn as blocks rather than chrome of the control, so it reads in
+        // whatever colour the label it stands in was written in.
+        @Override
+        public void paintRedactedSpan(RedactedSpan redactedSpan, float runX) {
+
+            var wordBarPaint = new UiElementPaint(redactedSpan.colour(), paint.opacity());
+
+            // Measured through the body binding the strip laid the control out by, so the blocks fill
+            // exactly the stretch the row reserved for the withheld name.
+            var wordBars = redactedSpan.layOutWordBars(
+                runX,
+                computeLabelBottomY(centreY),
+                ControlStripLayout.CONTROL_ROW_HEIGHT,
+                bindBodySpanMeasurer(paint));
+
+            for (var wordBar : wordBars) {
+                UiFill.renderQuad(wordBar, wordBarPaint);
+            }
+        }
+
+        @Override
+        public void paintTextSpan(TextSpan textSpan, float runX) {
+
+            drawBodySpan(
+                paint,
+                textSpan,
+                runX,
+                centreY,
+                LazyFont.TextAnchor.CENTER_LEFT);
+        }
+    }
+
     // The look bundle plus the frame's alpha and the control's live cell paints, threaded together through
     // every draw so a helper takes one paint rather than unpacking the accents, body font, opacity, and
     // resolved washes and lights into loose arguments each time.
@@ -579,6 +645,7 @@ public final class ControlRenderer {
         // where it is wanted, so the measurement and the draw cannot end up naming a different pair -
         // text measured on one face and painted on another sizes a row it then overflows.
         private TextFace resolveBodyFace() {
+            
             return new TextFace(
                 style.bodyFont(),
                 ControlStripLayout.BODY_FONT_SIZE);

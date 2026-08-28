@@ -1,16 +1,19 @@
 package kmlib.starsector.ui.text;
 
 /**
- * One run of a label: a stretch of text in the colour it draws in, or a small image set into the
- * sentence beside it. A label is a list of these read as one line, so picking a word out in another
- * colour and setting a crest mid-sentence are the same move - a run added to what is already there -
- * rather than a colour feature and an icon feature each surface has to grow separately.
+ * One run of a label: a stretch of text in the colour it draws in, a small image set into the sentence
+ * beside it, or a name withheld from it. A label is a list of these read as one line, so picking a word
+ * out in another colour, setting a crest mid-sentence, and blocking a name out are the same move - a run
+ * added to what is already there - rather than a colour feature, an icon feature, and a redaction feature
+ * each surface has to grow separately.
  *
- * <p>A sealed pair rather than an open interface, because these two are all a sentence is made of and
- * a layout that branches on the kind must stop compiling when a third arrives. It is deliberately
- * narrower than {@link kmlib.starsector.ui.widgets.RowSlot}: a tick box or a sort marker is a
- * control's state shown in a column of its own, and neither has any reading mid-word, so neither can
- * be spelled here at all.
+ * <p>A sealed set rather than an open interface, because these are all a sentence is made of and a
+ * surface that reads the kind must stop compiling when a new one arrives. That promise is kept by
+ * {@link LabelRunPainter} rather than by any branch: a run is handed to a painter that names every kind
+ * ({@link #paintRun}), so a kind added here adds a method there and every surface that draws runs stops
+ * building until it says what the new one looks like. It is deliberately narrower than
+ * {@link kmlib.starsector.ui.widgets.RowSlot}: a tick box or a sort marker is a control's state shown in
+ * a column of its own, and neither has any reading mid-word, so neither can be spelled here at all.
  *
  * <p>Runs flow where slots are columns - a run starts a word gap past where the one before it measured
  * out, while a slot is reserved at one width across a whole stack so the labels between them line up.
@@ -25,7 +28,7 @@ package kmlib.starsector.ui.text;
  * it, so they stay with {@link LabelRuns}.
  */
 public sealed interface LabelRun
-    permits ImageSpan, TextSpan {
+    permits ImageSpan, RedactedSpan, TextSpan {
 
     /**
      * What a run with nothing to draw is charged: no width, and no gap in front of it either. Named
@@ -55,6 +58,20 @@ public sealed interface LabelRun
      * @return true when the run draws something
      */
     boolean hasContent();
+
+    /**
+     * Draws this run at {@code runX} through {@code labelRunPainter}, by handing itself to the painter's
+     * method for the kind it is. The run states which kind that is and the painter states what the kind
+     * looks like, so neither has to test the other.
+     *
+     * <p>Dispatched rather than branched on so the seal above bites: a surface writes one method per kind
+     * and a kind added later takes its method with it, where a branch would fall through in silence and
+     * leave a gap on the line the size of the run it failed to draw.
+     *
+     * @param labelRunPainter what draws each kind of run on the surface the label is laid on
+     * @param runX            the run's left edge, as its label measured it out
+     */
+    void paintRun(LabelRunPainter labelRunPainter, float runX);
 
     /**
      * Whether this run continues the one before it with no word space between them - so the two read as

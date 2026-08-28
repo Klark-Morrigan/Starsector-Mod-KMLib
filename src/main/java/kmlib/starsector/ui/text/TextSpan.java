@@ -128,4 +128,13 @@ public record TextSpan(
     public boolean hasContent() {
         return KmlibStrings.hasText(text);
     }
+
+    /**
+     * Hands this run to {@code labelRunPainter} as the kind it is, so a surface paints a stretch of text
+     * by saying what one looks like rather than by testing what the run happens to be.
+     */
+    @Override
+    public void paintRun(LabelRunPainter labelRunPainter, float runX) {
+        labelRunPainter.paintTextSpan(this, runX);
+    }
 }

@@ -8,11 +8,13 @@ import kmlib.starsector.ui.render.gl.GlStateGuard;
 import kmlib.starsector.ui.render.gl.LabelRenderer;
 import kmlib.starsector.ui.render.gl.LabelStyle;
 import kmlib.starsector.ui.render.gl.UiElementPaint;
+import kmlib.starsector.ui.render.gl.UiFill;
 import kmlib.starsector.ui.render.gl.UiSprite;
 import kmlib.starsector.ui.render.gl.panel.BorderedBoxRenderer;
 import kmlib.starsector.ui.screen.VanillaScreen;
 import kmlib.starsector.ui.text.ImageSpan;
-import kmlib.starsector.ui.text.LabelRun;
+import kmlib.starsector.ui.text.LabelRunPainter;
+import kmlib.starsector.ui.text.RedactedSpan;
 import kmlib.starsector.ui.text.TextSpan;
 import kmlib.starsector.ui.text.TextStyle;
 import kmlib.starsector.ui.widgets.BoxBorder;
@@ -56,6 +58,7 @@ public final class CursorTooltipRenderer {
      * @param style    the typography, opacity, and box chrome the whole tooltip draws in
      */
     public static void render(List<TooltipSection> sections, CursorTooltipStyle style) {
+
         // The body face carries all but a handful of a tooltip's lines, so a box that cannot load it has
         // effectively nothing to say and is dropped whole rather than framed empty. Every other face is
         // left to degrade per line: the measurement charges it no width and the draw skips it.
@@ -139,40 +142,18 @@ public final class CursorTooltipRenderer {
         // layout's decision, so a style's default anchor has no say in a box that resolved its own. The
         // runs walk in step with the anchors the same rows produced, so run and anchor cannot slip. Every
         // run is drawn unconditionally - a blank span paints nothing.
+        //
+        // Each run hands itself to the painter rather than being tested here, so what a run is stays the
+        // run's own statement and this pass holds only what each kind looks like on a tooltip line. One
+        // painter per row, since what it binds - the row's placement and its resolved paint - is settled
+        // for the whole row.
+        var labelRunPainter = new RowLabelRunPainter(placement, rowPaint);
         var labelRuns = row.labelRuns();
+
         for (var index = 0; index < labelRuns.size(); index++) {
-            drawLabelRun(
-                labelRuns.get(index),
-                placement.labelRunXs().get(index),
-                placement,
-                rowPaint);
-        }
-    }
-
-    // Draws one run of a label at the anchor the layout resolved for it: a stretch of text in its own
-    // colour, or a small image hung square on the line. The branch is over what the run is rather than
-    // over which kind of line it sits on, so a crest set among a centred line's words and one set among a
-    // table row's are painted by the same step.
-    private static void drawLabelRun(
-            LabelRun labelRun,
-            float runX,
-            TooltipLayout.TooltipRowLayout placement,
-            RowPaint rowPaint) {
-
-        if (labelRun instanceof TextSpan textSpan) {
-            rowPaint.drawSpan(
-                textSpan,
-                runX,
-                placement.rowTopY(),
-                LazyFont.TextAnchor.TOP_LEFT);
-            return;
-        }
-        if (labelRun instanceof ImageSpan imageSpan) {
-            UiSprite.renderImage(
-                imageSpan.spritePath(),
-                computeImageBox(runX, placement),
-                rowPaint.opacity(),
-                imageSpan.tintColour());
+            labelRuns
+                .get(index)
+                .paintRun(labelRunPainter, placement.labelRunXs().get(index));
         }
     }
 
@@ -232,6 +213,7 @@ public final class CursorTooltipRenderer {
         var textSpans = valueRowSlot.textSpans();
 
         for (var index = 0; index < textSpans.size(); index++) {
+
             rowPaint.drawSpan(
                 textSpans.get(index),
                 runsLeftX + runOffsets.runOffsetXs().get(index),
@@ -251,9 +233,71 @@ public final class CursorTooltipRenderer {
 
         return new Rectangle(
             imageX,
-            placement.rowTopY() - placement.lineHeight(),
+            computeLineBottomY(placement),
             placement.lineHeight(),
             placement.lineHeight());
+    }
+
+    // The foot of the band a row's line stands in, the layout having anchored the row by its top. Held
+    // here because more than one element is set against that band - anything hung on the line rather than
+    // written along it - and two readings of where a line's foot is would paint them at two heights.
+    private static float computeLineBottomY(TooltipLayout.TooltipRowLayout placement) {
+
+        return placement.rowTopY() - placement.lineHeight();
+    }
+
+    /**
+     * What draws one row's label runs: each kind of run set against the row's own line, in the paint the
+     * row resolved. Bound to the row rather than to the run, since the placement and the look are the
+     * row's for all of its runs and only the anchor moves between them.
+     *
+     * @param placement where the layout pinned this row and its columns
+     * @param rowPaint  the face, casing, and opacity the row's runs draw in
+     */
+    private record RowLabelRunPainter(
+        TooltipLayout.TooltipRowLayout placement,
+        RowPaint rowPaint) implements LabelRunPainter {
+
+        @Override
+        public void paintImageSpan(ImageSpan imageSpan, float runX) {
+
+            UiSprite.renderImage(
+                imageSpan.spritePath(),
+                computeImageBox(runX, placement),
+                rowPaint.opacity(),
+                imageSpan.tintColour());
+        }
+
+        // Filled in the run's own colour and faded by the box's opacity, like every other mark on the
+        // line - a redaction is a name drawn as blocks rather than a chrome element of the box, so it
+        // reads in whatever colour the line it stands on was written in.
+        @Override
+        public void paintRedactedSpan(RedactedSpan redactedSpan, float runX) {
+
+            var wordBarPaint = new UiElementPaint(redactedSpan.colour(), rowPaint.opacity());
+
+            // Measured through the row's own binding, the one the layout charged the line by, so the
+            // blocks fill exactly the stretch the box reserved for the withheld name.
+            var wordBars = redactedSpan.layOutWordBars(
+                runX,
+                computeLineBottomY(placement),
+                placement.lineHeight(),
+                rowPaint::measureSpanWidth);
+
+            for (var wordBar : wordBars) {
+                UiFill.renderQuad(wordBar, wordBarPaint);
+            }
+        }
+
+        @Override
+        public void paintTextSpan(TextSpan textSpan, float runX) {
+
+            rowPaint.drawSpan(
+                textSpan,
+                runX,
+                placement.rowTopY(),
+                LazyFont.TextAnchor.TOP_LEFT);
+        }
     }
 
     /**
@@ -297,6 +341,7 @@ public final class CursorTooltipRenderer {
         // painted in - the same binding the layout measured the row through, so a value laid out inside a
         // column cannot come out wider than the column the box reserved for it.
         private double measureSpanWidth(TextSpan textSpan) {
+            
             return LazyFontSpanMeasurer.measureSpanWidth(
                 textStyle.face(),
                 textStyle.resolveDisplayText(textSpan.text()));

@@ -86,8 +86,8 @@ class LabelRunsTest {
             // A refinement hands its own list in and keeps holding it, so appending must not rewrite the
             // label of the value the caller started from.
             var callerRuns = new ArrayList<LabelRun>();
+            
             callerRuns.add(new TextSpan("Hegemony", RUN_COLOUR));
-
             LabelRuns.appendRun(callerRuns, new TextSpan("(7)", OTHER_RUN_COLOUR));
 
             assertThat(callerRuns)

@@ -71,4 +71,13 @@ public record ImageSpan(
     public boolean hasContent() {
         return true;
     }
+
+    /**
+     * Hands this run to {@code labelRunPainter} as the kind it is, so a surface paints an inline image by
+     * saying what one looks like rather than by testing what the run happens to be.
+     */
+    @Override
+    public void paintRun(LabelRunPainter labelRunPainter, float runX) {
+        labelRunPainter.paintImageSpan(this, runX);
+    }
 }
