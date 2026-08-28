@@ -25,7 +25,7 @@ import static org.mockito.Mockito.when;
  * outer class.
  *
  * <p>The colony shapes are named for what they are rather than posed by flag, and share
- * their vocabulary with {@code ColonyMarketFixture} - a case reading "unfound open colony"
+ * their vocabulary with {@code ColonyMarketFixture} - a case reading "undiscovered open colony"
  * means the same thing in both packages, which is what lets a reader carry one mental model
  * across the fog and the projections over it.
  */
@@ -55,7 +55,7 @@ final class MarketVisibilityTest {
         @Test
         void returns_false_for_an_undiscovered_concealed_colony() {
 
-            var market = buildUnfoundConcealedColony();
+            var market = buildUndiscoveredConcealedColony();
 
             assertThat(MarketVisibility.isCountedAsColony(market, false))
                 .isFalse();
@@ -64,7 +64,7 @@ final class MarketVisibilityTest {
         @Test
         void returns_true_for_an_undiscovered_concealed_colony_when_including_undiscovered() {
 
-            var market = buildUnfoundConcealedColony();
+            var market = buildUndiscoveredConcealedColony();
 
             assertThat(MarketVisibility.isCountedAsColony(market, true))
                 .isTrue();
@@ -75,7 +75,7 @@ final class MarketVisibilityTest {
             // The composed filter inherits the fog's own reading, so a colony that is merely
             // listed does not reach a surface that reports its system as settled before the
             // player has been anywhere near it.
-            var market = buildUnfoundOpenColony();
+            var market = buildUndiscoveredOpenColony();
 
             assertThat(MarketVisibility.isCountedAsColony(market, false))
                 .isFalse();
@@ -172,17 +172,17 @@ final class MarketVisibilityTest {
         void returns_false_for_a_surveyed_world_on_a_planet_the_player_has_not_found() {
             // The two arms are independent, and this is the direction that is easy to miss: a
             // survey the player somehow holds says nothing about their having found the planet.
-            var market = buildDecivilisedWorld(MarketAPI.SurveyLevel.FULL, buildUnfoundEntity());
+            var market = buildDecivilisedWorld(MarketAPI.SurveyLevel.FULL, buildUndiscoveredEntity());
 
             assertThat(MarketVisibility.isCountedAsUngovernedColony(market, false, SEEN))
                 .isFalse();
         }
 
         @Test
-        void needs_both_knobs_for_an_unsurveyed_world_on_an_unfound_planet() {
+        void needs_both_knobs_for_an_unsurveyed_world_on_an_undiscovered_planet() {
             // Each knob reaches the arm it names and no other, so a world held back twice needs
             // both - which is the rule every knob on the visibility tab is written to.
-            var market = buildDecivilisedWorld(MarketAPI.SurveyLevel.NONE, buildUnfoundEntity());
+            var market = buildDecivilisedWorld(MarketAPI.SurveyLevel.NONE, buildUndiscoveredEntity());
 
             assertThat(MarketVisibility.isCountedAsUngovernedColony(market, true, SEEN))
                 .isFalse();
@@ -224,7 +224,7 @@ final class MarketVisibilityTest {
         void returns_false_when_the_entity_is_undiscovered_though_the_market_is_un_hidden() {
             // The two axes pulled apart: being publicly listed is not having been there, so an
             // un-hidden market whose entity is still to be found reads undiscovered.
-            var market = buildUnfoundOpenColony();
+            var market = buildUndiscoveredOpenColony();
 
             assertThat(MarketVisibility.isDiscoveredByPlayer(market))
                 .isFalse();
@@ -234,7 +234,7 @@ final class MarketVisibilityTest {
         void returns_false_when_the_market_is_hidden_on_a_discoverable_entity() {
             // Concealment is not read here, so it neither rescues nor condemns: the answer is
             // the entity's alone, and this entity is still to be found.
-            var market = buildUnfoundConcealedColony();
+            var market = buildUndiscoveredConcealedColony();
 
             assertThat(MarketVisibility.isDiscoveredByPlayer(market))
                 .isFalse();
@@ -290,14 +290,14 @@ final class MarketVisibilityTest {
 
     // A base still to be found: concealed, and on an entity the player has not discovered.
     // Concealment and discovery agree here, so nothing whatever about it reaches the player.
-    private static MarketAPI buildUnfoundConcealedColony() {
-        return buildColonyMarket(false, true, buildUnfoundEntity());
+    private static MarketAPI buildUndiscoveredConcealedColony() {
+        return buildColonyMarket(false, true, buildUndiscoveredEntity());
     }
 
     // A market that declares itself to the economy while its entity is still to be found - the
     // shape every derelict station in the sector takes, and the one the fog withholds.
-    private static MarketAPI buildUnfoundOpenColony() {
-        return buildColonyMarket(false, false, buildUnfoundEntity());
+    private static MarketAPI buildUndiscoveredOpenColony() {
+        return buildColonyMarket(false, false, buildUndiscoveredEntity());
     }
 
     // An ordinary colony: publicly listed, on an entity the player has found. The plain case
@@ -312,7 +312,7 @@ final class MarketVisibilityTest {
     // adjacent booleans say nothing at a call site, and are transposable without failing.
     //
     // The entity is passed in rather than posed by a third boolean, so the one builder covers a
-    // market on a found entity, on an unfound one, and on none at all.
+    // market on a discovered entity, on an undiscovered one, and on none at all.
     private static MarketAPI buildColonyMarket(
             boolean isConditionOnly,
             boolean isHidden,
@@ -351,7 +351,7 @@ final class MarketVisibilityTest {
     }
 
     // An entity still awaiting physical discovery: flagged discoverable.
-    private static SectorEntityToken buildUnfoundEntity() {
+    private static SectorEntityToken buildUndiscoveredEntity() {
         return buildEntity(true);
     }
 

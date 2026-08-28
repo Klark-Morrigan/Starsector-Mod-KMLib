@@ -40,7 +40,7 @@ import java.util.function.Predicate;
  * that stays set for a market's whole life - the Galatia Academy is permanently
  * hidden, and a pirate base stays hidden long after it is raided - while
  * discoverability is player awareness and clears the moment the player arrives.
- * An unfound pirate base counts in both columns; a found one counts only as
+ * An undiscovered pirate base counts in both columns; a discovered one counts only as
  * hidden.
  *
  * <p>Counting is per place, not per market: several markets can share one body -
@@ -208,7 +208,7 @@ public final class ListFactionsCommand extends KmlibBaseConsoleCommand {
     }
 
     // What the faction holds: the count of places, how many are concealed, how
-    // many are unfound, and the systems they sit in.
+    // many are undiscovered, and the systems they sit in.
     private static void appendHoldingsLine(
             StringBuilder report,
             FactionHoldings holdings,
@@ -327,7 +327,7 @@ public final class ListFactionsCommand extends KmlibBaseConsoleCommand {
         /** {@code hidden}: a faction holding at least one concealed place. */
         HOLDS_HIDDEN("hidden", Colony::isHidden),
 
-        /** {@code discoverable}: a faction holding at least one unfound place. */
+        /** {@code discoverable}: a faction holding at least one undiscovered place. */
         HOLDS_DISCOVERABLE("discoverable", ListFactionsCommand::isStillDiscoverable),
 
         /** {@code no_markets}: a faction holding nothing at all. */
@@ -383,7 +383,7 @@ public final class ListFactionsCommand extends KmlibBaseConsoleCommand {
      * The places one faction holds, with the reads the listing poses of them.
      *
      * <p>The same set answers every question one faction's row raises - whether it
-     * is listed at all, how many places, how many concealed, how many unfound, and
+     * is listed at all, how many places, how many concealed, how many undiscovered, and
      * in which systems - so it is named once here rather than each question
      * re-walking the sector.
      */

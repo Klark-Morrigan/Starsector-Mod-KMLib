@@ -54,7 +54,7 @@ final class ColonyTest {
         }
 
         @Test
-        void reports_a_concealed_colony_on_an_unfound_entity_as_unfound() {
+        void reports_a_concealed_colony_on_an_undiscovered_entity_as_undiscovered() {
 
             var colony = new Colony(buildMarket(true, true), true);
 
@@ -63,7 +63,7 @@ final class ColonyTest {
         }
 
         @Test
-        void reports_an_open_colony_on_an_unfound_entity_as_unfound() {
+        void reports_an_open_colony_on_an_undiscovered_entity_as_undiscovered() {
             // The case concealment and the fog part company on. Being publicly listed is not
             // being seen: a derelict station declares itself to an economy the player has no
             // sight of, so listing alone must not carry a colony past the fog.

@@ -178,7 +178,7 @@ final class SystemColoniesTest {
             // The set is unfogged on purpose: claim scoring weighs colonies the player has never
             // found, and a fogged input would resolve a claimant vanilla does not report.
             var fixture = new ColonyFixture("kumari_kandam");
-            var base = fixture.buildUnfoundConcealedColony("pirates");
+            var base = fixture.buildUndiscoveredConcealedColony("pirates");
 
             fixture.placeColoniesInSystem(base);
             fixture.listColoniesInEconomy(base);

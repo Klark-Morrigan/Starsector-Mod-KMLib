@@ -440,8 +440,9 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader, 
     // Whether the player knows the market exists is recorded beside all that and applied to
     // none of it. The mechanic scores what is there rather than what has been found, so a
     // fog-of-war filter here would resolve a different claimant from the one the game reports;
-    // a box that would rather not name an unfound colony reads the flag instead. It is handed
-    // in rather than read off the colony because it is the system's answer, not the market's.
+    // a box that would rather not name a colony the player knows nothing of reads the flag
+    // instead. It is handed in rather than read off the colony because it is the system's answer,
+    // not the market's.
     //
     // How the colony is identified - its name, the glyph the map marks its entity with, and the
     // id that says which colony it actually is - is recorded here rather than looked up by

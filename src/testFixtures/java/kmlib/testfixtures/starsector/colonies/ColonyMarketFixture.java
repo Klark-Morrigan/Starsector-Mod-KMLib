@@ -75,8 +75,8 @@ public final class ColonyMarketFixture {
      * A base still to be found: concealed, and on an entity the player has not discovered.
      * Concealment and discovery agree here, so nothing whatever about it reaches the player.
      */
-    public static MarketAPI buildUnfoundConcealedColony(String factionId) {
-        return buildUnfoundConcealedColony(buildFaction(factionId), DEFAULT_COLONY_SIZE);
+    public static MarketAPI buildUndiscoveredConcealedColony(String factionId) {
+        return buildUndiscoveredConcealedColony(buildFaction(factionId), DEFAULT_COLONY_SIZE);
     }
 
     /**
@@ -86,7 +86,7 @@ public final class ColonyMarketFixture {
      * @param size    the colony size
      * @return the market mock
      */
-    public static MarketAPI buildUnfoundConcealedColony(FactionAPI faction, int size) {
+    public static MarketAPI buildUndiscoveredConcealedColony(FactionAPI faction, int size) {
         return buildColonyOnItsOwnEntity(faction, size, true, true, false);
     }
 
@@ -96,8 +96,8 @@ public final class ColonyMarketFixture {
      * and the fog answers on discovery - declaring itself to an economy the player has no sight
      * of is not being seen.
      */
-    public static MarketAPI buildUnfoundOpenColony(String factionId) {
-        return buildUnfoundOpenColony(buildFaction(factionId), DEFAULT_COLONY_SIZE);
+    public static MarketAPI buildUndiscoveredOpenColony(String factionId) {
+        return buildUndiscoveredOpenColony(buildFaction(factionId), DEFAULT_COLONY_SIZE);
     }
 
     /**
@@ -107,7 +107,7 @@ public final class ColonyMarketFixture {
      * @param size    the colony size
      * @return the market mock
      */
-    public static MarketAPI buildUnfoundOpenColony(FactionAPI faction, int size) {
+    public static MarketAPI buildUndiscoveredOpenColony(FactionAPI faction, int size) {
         return buildColonyOnItsOwnEntity(faction, size, false, true, false);
     }
 
@@ -140,7 +140,7 @@ public final class ColonyMarketFixture {
      *
      * @return the market mock
      */
-    public static MarketAPI buildUnfoundDerelictStation() {
+    public static MarketAPI buildUndiscoveredDerelictStation() {
 
         var marketMock = buildDerelictStation();
 
@@ -239,7 +239,7 @@ public final class ColonyMarketFixture {
      * A collapsed colony whose planet is neither surveyed nor found - the world both fog arms hold
      * back at once, and so the case that shows each knob reaches its own arm and no other.
      */
-    public static MarketAPI buildUnfoundUnsurveyedDecivilisedWorld() {
+    public static MarketAPI buildUndiscoveredUnsurveyedDecivilisedWorld() {
         return buildDecivilisedWorld(MarketAPI.SurveyLevel.NONE, true);
     }
 

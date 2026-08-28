@@ -112,7 +112,7 @@ final class ListFactionsCommandTest {
         @Test
         void counts_a_found_concealed_place_as_hidden_only() {
             // The hidden flag never clears, so a raided pirate base stays hidden while
-            // being perfectly well known - it must not also count as unfound.
+            // being perfectly well known - it must not also count as undiscovered.
             var sector = new SectorFixture();
 
             sector.addFaction(buildFaction("pirates", "Pirates"));
@@ -125,15 +125,15 @@ final class ListFactionsCommandTest {
         }
 
         @Test
-        void counts_an_unfound_concealed_place_in_both_columns() {
-            // Neither column is a subset of the other: an unfound base is concealed AND
+        void counts_an_undiscovered_concealed_place_in_both_columns() {
+            // Neither column is a subset of the other: an undiscovered base is concealed AND
             // still to be found, which is why the two are reported side by side.
             var sector = new SectorFixture();
 
             sector.addFaction(buildFaction("pirates", "Pirates"));
             sector.addSystemHolding(
                 "kumari_kandam",
-                ColonyMarketFixture.buildUnfoundConcealedColony("pirates"));
+                ColonyMarketFixture.buildUndiscoveredConcealedColony("pirates"));
 
             assertThat(readReport(sector, FactionListingFilter.ALL))
                 .contains("holdings: 1 (1 hidden, 1 discoverable)");
@@ -264,7 +264,7 @@ final class ListFactionsCommandTest {
         }
 
         @Test
-        void lists_only_factions_holding_an_unfound_place_under_the_discoverable_keyword() {
+        void lists_only_factions_holding_an_undiscovered_place_under_the_discoverable_keyword() {
             // A found concealed base is hidden but no longer findable, so it must not
             // satisfy this keyword - which is what keeps the two columns distinct.
             var sector = new SectorFixture();
@@ -273,7 +273,7 @@ final class ListFactionsCommandTest {
             sector.addFaction(buildFaction("pirates", "Pirates"));
             sector.addSystemHolding(
                 "hybrasil",
-                ColonyMarketFixture.buildUnfoundConcealedColony("pathers"));
+                ColonyMarketFixture.buildUndiscoveredConcealedColony("pathers"));
             sector.addSystemHolding(
                 "kumari_kandam",
                 ColonyMarketFixture.buildFoundConcealedColony("pirates"));

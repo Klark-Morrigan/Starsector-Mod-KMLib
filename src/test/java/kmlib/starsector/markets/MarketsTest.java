@@ -176,7 +176,7 @@ final class MarketsTest {
     }
 
     // The presence verdict is the entity read taken as a boolean, so this group pins that
-    // pairing - a found station reads true, an unfound one false - plus the null contract
+    // pairing - a discovered station reads true, an undiscovered one false - plus the null contract
     // its own Javadoc states. The scan's edge cases (the NO_ORBITAL_STATION opt-out, absent
     // or null connected entities) belong to the read that runs the scan, above.
     @Nested

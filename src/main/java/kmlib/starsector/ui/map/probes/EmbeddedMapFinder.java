@@ -245,7 +245,7 @@ public final class EmbeddedMapFinder {
     private void warnOnce(Throwable failure) {
         warning.warnOnce(
             "Could not walk the core UI tree by reflection; maps embedded outside the "
-                + "game's own map screens will go unfound this session.",
+                + "game's own map screens will not be found this session.",
             failure);
     }
 }

@@ -48,15 +48,19 @@ public final class ClaimStandingFixture {
     // not posing a tie, so every standing built here takes the head of the list.
     private static final int FIRST_LISTED = 1;
 
-    // The one colony an unfound presence stands on, named apart again so a case about the fog can
-    // be read against the found kinds above it.
-    private static final EntityNameplate UNFOUND_MARKET =
-        EntityNameplate.createUnmarkedNameplate("Undiscovered Colony");
+    // The one colony a presence nobody knows of stands on, named apart again so a case about the fog
+    // can be read against the known kinds above it.
+    private static final EntityNameplate UNKNOWN_MARKET =
+        EntityNameplate.createUnmarkedNameplate("Unknown Colony");
 
-    // Whether the player has found the colony. Found is what a case posing standings by score alone
-    // wants; unfound is the one thing the fog-of-war builder below varies.
+    // Whether the player knows of the colony. Known is what a case posing standings by score alone
+    // wants; the two false readings below are what the fog-of-war builders vary.
     private static final boolean IS_KNOWN_TO_PLAYER = true;
-    private static final boolean IS_UNFOUND_BY_PLAYER = false;
+
+    // The same flag false, named for the shape that reaches it. A market held in the open is unknown
+    // only by being undiscovered; a concealed one stays unknown until somebody has seen it standing
+    // there, whatever its entity says.
+    private static final boolean IS_UNKNOWN_TO_PLAYER = false;
 
     // Which colony each standing rests on. A case about what a contest means is not a case about
     // pairing a row with anything else, so each builder's market is identified once here rather
@@ -64,7 +68,7 @@ public final class ClaimStandingFixture {
     // standing still has one id per line.
     private static final String STANDING_MARKET_ID = "standing_colony";
     private static final String UNWEIGHED_MARKET_ID = "unweighed_colony";
-    private static final String UNFOUND_MARKET_ID = "undiscovered_colony";
+    private static final String UNKNOWN_MARKET_ID = "unknown_colony";
 
     private ClaimStandingFixture() {
     }
@@ -87,16 +91,17 @@ public final class ClaimStandingFixture {
     }
 
     /**
-     * The same standing, over a colony the player has or has not found.
+     * The same standing, over a colony the player knows of or does not.
      *
-     * <p>Both readings are ordinary, and the unfound one is the shape a case about a fog-of-war
+     * <p>Both readings are ordinary, and the second is the shape a case about a fog-of-war
      * projection over the scored kind has to pose: the mechanic settles a contest over colonies
-     * nobody has reached, so a faction can be weighed on a market no display may name.
+     * nobody has reached, so a faction can be weighed on a market no display may name. Such a market
+     * is held in the open and listed, so what the second reading poses is an undiscovered colony.
      *
      * @param factionId       the faction the standing belongs to
      * @param score           what the contest weighs the faction's presence at
      * @param isTerritorial   whether the faction may claim a system at all
-     * @param isKnownToPlayer whether the player has found the colony the standing rests on
+     * @param isKnownToPlayer whether the player knows of the colony the standing rests on
      * @return the standing
      */
     public static WeighedClaimStanding buildStandingOnOneMarket(
@@ -160,21 +165,21 @@ public final class ClaimStandingFixture {
     }
 
     /**
-     * The same faction, present through one colony the player has not found - so a presence a
+     * The same faction, present through one colony the player knows nothing of - so a presence a
      * display reading the whole contest knows about and may not name.
      *
      * <p>The presence-only standing a fog-of-war filter removes, which is what it is here for. It is
      * not the only standing such a filter reaches: the scored builder above poses a weighed standing
-     * the player has not found, the mechanic weighing colonies nobody has reached. A case about the
-     * projection therefore states which kind it is about rather than relying on one being the only
-     * shape that can be dropped.
+     * over an undiscovered colony, the mechanic weighing colonies nobody has reached. A case about
+     * the projection therefore states which kind it is about rather than relying on one being the
+     * only shape that can be dropped.
      *
      * @param factionId     the faction the standing belongs to
      * @param isTerritorial whether the faction may claim a system at all - carried, and claiming
      *                      nothing here, since a nought passes no gate either way
      * @return the standing
      */
-    public static PresenceOnlyClaimStanding buildUnfoundPresenceOnlyStanding(
+    public static PresenceOnlyClaimStanding buildUnknownPresenceOnlyStanding(
             String factionId,
             boolean isTerritorial) {
 
@@ -182,13 +187,13 @@ public final class ClaimStandingFixture {
             factionId,
             isTerritorial,
             List.of(new MarketClaimBreakdown(
-                UNFOUND_MARKET,
-                UNFOUND_MARKET_ID,
+                UNKNOWN_MARKET,
+                UNKNOWN_MARKET_ID,
                 FIRST_LISTED,
-                IS_UNFOUND_BY_PLAYER,
-                // Concealed as well as unfound, which is one pairing of two independent facts:
-                // concealment is what keeps the mechanic from weighing a market, being unfound is
-                // what keeps a display from naming it. Both are posed here because this standing
+                IS_UNKNOWN_TO_PLAYER,
+                // Concealed as well as unknown, which is one pairing of two independent facts:
+                // concealment is what keeps the mechanic from weighing a market, and being unknown
+                // is what keeps a display from naming it. Both are posed here because this standing
                 // needs the first to be presence-only and the case needs the second.
                 ContestAdmission.HIDDEN,
                 UNWEIGHED_MARKET_SIZE,

@@ -150,8 +150,8 @@ public class ColonyFixture {
         return ColonyMarketFixture.buildDerelictStation();
     }
 
-    public MarketAPI buildUnfoundDerelictStation() {
-        return ColonyMarketFixture.buildUnfoundDerelictStation();
+    public MarketAPI buildUndiscoveredDerelictStation() {
+        return ColonyMarketFixture.buildUndiscoveredDerelictStation();
     }
 
     public MarketAPI buildOutpost(String factionId) {
@@ -166,20 +166,20 @@ public class ColonyFixture {
         return ColonyMarketFixture.buildSiblingMarketOn(colony, size);
     }
 
-    public MarketAPI buildUnfoundConcealedColony(String factionId) {
-        return ColonyMarketFixture.buildUnfoundConcealedColony(factionId);
+    public MarketAPI buildUndiscoveredConcealedColony(String factionId) {
+        return ColonyMarketFixture.buildUndiscoveredConcealedColony(factionId);
     }
 
-    public MarketAPI buildUnfoundUnsurveyedDecivilisedWorld() {
-        return ColonyMarketFixture.buildUnfoundUnsurveyedDecivilisedWorld();
+    public MarketAPI buildUndiscoveredUnsurveyedDecivilisedWorld() {
+        return ColonyMarketFixture.buildUndiscoveredUnsurveyedDecivilisedWorld();
     }
 
     public MarketAPI buildUnsurveyedDecivilisedWorld() {
         return ColonyMarketFixture.buildUnsurveyedDecivilisedWorld();
     }
 
-    public MarketAPI buildUnfoundOpenColony(String factionId) {
-        return ColonyMarketFixture.buildUnfoundOpenColony(factionId);
+    public MarketAPI buildUndiscoveredOpenColony(String factionId) {
+        return ColonyMarketFixture.buildUndiscoveredOpenColony(factionId);
     }
 
     public MarketAPI buildVisibleColony(String factionId) {
