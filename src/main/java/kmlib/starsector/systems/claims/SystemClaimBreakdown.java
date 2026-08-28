@@ -1,5 +1,7 @@
 package kmlib.starsector.systems.claims;
 
+import kmlib.text.KmlibStrings;
+
 import java.util.List;
 
 /**
@@ -29,9 +31,9 @@ import java.util.List;
  *                          contest never weighed being no contender whatever its flag says.
  */
 public record SystemClaimBreakdown(
-        String overrideFactionId,
-        String claimantFactionId,
-        List<FactionClaimStanding> scores) {
+    String overrideFactionId,
+    String claimantFactionId,
+    List<FactionClaimStanding> scores) {
 
     /** An unreadable or wholly empty system: nobody present, nobody claiming, no override. */
     public static final SystemClaimBreakdown NONE =
@@ -46,5 +48,35 @@ public record SystemClaimBreakdown(
      */
     public SystemClaimBreakdown {
         scores = scores == null ? List.of() : List.copyOf(scores);
+    }
+
+    /**
+     * Whether the faction claiming the system is the one a decree imposed.
+     *
+     * <p>A narrower question than {@link #isSettledByDecree}, and the one a line naming the
+     * claimant asks: it says the faction on that line holds by decree rather than that some decree
+     * exists. The two part company only over a breakdown whose claimant was not taken from its
+     * override, which the mechanic never produces and a hand-built one can.
+     *
+     * @return true when the claimant is present and is the decreed faction
+     */
+    public boolean isClaimedByDecree() {
+        return isSettledByDecree()
+            && overrideFactionId.equals(claimantFactionId);
+    }
+
+    /**
+     * Whether a decree settled the system before a market was weighed.
+     *
+     * <p>Named here rather than tested at each reader, because the test is easy to write two ways
+     * that disagree: an override present as an empty string is no decree, and a reader asking only
+     * whether the field is set reads one where another reader reads none. The scores stay on under
+     * a decree - they are what the contest would have settled - so nothing else says a system was
+     * taken this way.
+     *
+     * @return true when the system's memory flag imposed a claimant
+     */
+    public boolean isSettledByDecree() {
+        return KmlibStrings.hasText(overrideFactionId);
     }
 }
