@@ -83,6 +83,28 @@ public final class ClaimStandingFixture {
             int score,
             boolean isTerritorial) {
 
+        return buildStandingOnOneMarket(factionId, score, isTerritorial, IS_KNOWN_TO_PLAYER);
+    }
+
+    /**
+     * The same standing, over a colony the player has or has not found.
+     *
+     * <p>Both readings are ordinary, and the unfound one is the shape a case about a fog-of-war
+     * projection over the scored kind has to pose: the mechanic settles a contest over colonies
+     * nobody has reached, so a faction can be weighed on a market no display may name.
+     *
+     * @param factionId       the faction the standing belongs to
+     * @param score           what the contest weighs the faction's presence at
+     * @param isTerritorial   whether the faction may claim a system at all
+     * @param isKnownToPlayer whether the player has found the colony the standing rests on
+     * @return the standing
+     */
+    public static WeighedClaimStanding buildStandingOnOneMarket(
+            String factionId,
+            int score,
+            boolean isTerritorial,
+            boolean isKnownToPlayer) {
+
         return new WeighedClaimStanding(
             factionId,
             isTerritorial,
@@ -90,9 +112,12 @@ public final class ClaimStandingFixture {
                 STANDING_MARKET,
                 STANDING_MARKET_ID,
                 FIRST_LISTED,
-                IS_KNOWN_TO_PLAYER,
+                isKnownToPlayer,
                 // Held in the open and listed by the economy, which a standing market could not be
                 // otherwise in any case: the mechanic lets neither kind stand for a faction.
+                // Whether the player has found it is a separate question, and the two do not move
+                // together - concealment is what the mechanic skips a market for, being found is
+                // what a display may name it on.
                 ContestAdmission.WEIGHED,
                 score,
                 NO_SIBLING_MARKETS,
@@ -138,10 +163,11 @@ public final class ClaimStandingFixture {
      * The same faction, present through one colony the player has not found - so a presence a
      * display reading the whole contest knows about and may not name.
      *
-     * <p>The one standing a fog-of-war filter ever removes, which is what it is here for: a weighed
-     * standing rests on a market held in the open, and one held in the open is one the player knows
-     * of, so a case posing "a standing the projection drops" cannot be posed with the scored
-     * builder at all.
+     * <p>The presence-only standing a fog-of-war filter removes, which is what it is here for. It is
+     * not the only standing such a filter reaches: the scored builder above poses a weighed standing
+     * the player has not found, the mechanic weighing colonies nobody has reached. A case about the
+     * projection therefore states which kind it is about rather than relying on one being the only
+     * shape that can be dropped.
      *
      * @param factionId     the faction the standing belongs to
      * @param isTerritorial whether the faction may claim a system at all - carried, and claiming
@@ -160,8 +186,10 @@ public final class ClaimStandingFixture {
                 UNFOUND_MARKET_ID,
                 FIRST_LISTED,
                 IS_UNFOUND_BY_PLAYER,
-                // Concealed as well as unfound, which is the ordinary pairing: a colony held in the
-                // open is one the player has found, so an unfound market is a concealed one.
+                // Concealed as well as unfound, which is one pairing of two independent facts:
+                // concealment is what keeps the mechanic from weighing a market, being unfound is
+                // what keeps a display from naming it. Both are posed here because this standing
+                // needs the first to be presence-only and the case needs the second.
                 ContestAdmission.HIDDEN,
                 UNWEIGHED_MARKET_SIZE,
                 NO_SIBLING_MARKETS,
