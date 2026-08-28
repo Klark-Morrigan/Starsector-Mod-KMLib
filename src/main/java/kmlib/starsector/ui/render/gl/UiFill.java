@@ -10,6 +10,8 @@ import kmlib.opengl.GlTriangles;
 
 import org.lwjgl.opengl.GL11;
 
+import java.util.List;
+
 /**
  * Fills a convex primitive (a rectangle or a triangle) in screen/UI coordinates, compositing it
  * over whatever is already drawn behind it by a 0..1 opacity. The alpha-blend counterpart to
@@ -48,6 +50,32 @@ public final class UiFill {
         beginUntexturedPass(GlBlendMode.ALPHA);
         GlColour.set(paint.colour(), paint.alpha());
         renderQuadVertices(bounds);
+    }
+
+    /**
+     * Fills every rectangle in {@code bounds} with one {@code paint}, each composited exactly as
+     * {@link #renderQuad} composites a single one. A hidden paint or an empty run emits nothing. Must run
+     * with a current GL context, like any immediate-mode GL call.
+     *
+     * <p>For a run of rectangles that are one element rather than several - the blocks a withheld name
+     * draws as, a banded stroke, a dashed rule. The pipeline is set once for the whole run instead of once
+     * per rectangle, which is the difference between an element costing one state change and costing as
+     * many as it has parts; and the caller states its colour once, where a loop outside would restate it
+     * per part and could be given two.
+     *
+     * @param bounds the rectangles to fill, in UI coordinates (UI origin is bottom-left)
+     * @param paint  the fill colour and its compositing alpha, shared by all of them
+     */
+    public static void renderQuads(List<Rectangle> bounds, UiElementPaint paint) {
+        if (paint.isHidden()) {
+            return;
+        }
+        beginUntexturedPass(GlBlendMode.ALPHA);
+        GlColour.set(paint.colour(), paint.alpha());
+
+        for (var quadBounds : bounds) {
+            renderQuadVertices(quadBounds);
+        }
     }
 
     /**

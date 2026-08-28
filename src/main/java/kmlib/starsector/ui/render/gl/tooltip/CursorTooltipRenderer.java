@@ -274,19 +274,16 @@ public final class CursorTooltipRenderer {
         @Override
         public void paintRedactedSpan(RedactedSpan redactedSpan, float runX) {
 
-            var wordBarPaint = new UiElementPaint(redactedSpan.colour(), rowPaint.opacity());
-
             // Measured through the row's own binding, the one the layout charged the line by, so the
-            // blocks fill exactly the stretch the box reserved for the withheld name.
-            var wordBars = redactedSpan.layOutWordBars(
-                runX,
-                computeLineBottomY(placement),
-                placement.lineHeight(),
-                rowPaint::measureSpanWidth);
-
-            for (var wordBar : wordBars) {
-                UiFill.renderQuad(wordBar, wordBarPaint);
-            }
+            // blocks fill exactly the stretch the box reserved for the withheld name. Filled as one run,
+            // since the blocks are one redaction rather than several marks that happen to share a colour.
+            UiFill.renderQuads(
+                redactedSpan.layOutWordBars(
+                    runX,
+                    computeLineBottomY(placement),
+                    placement.lineHeight(),
+                    rowPaint::measureSpanWidth),
+                new UiElementPaint(redactedSpan.colour(), rowPaint.opacity()));
         }
 
         @Override
