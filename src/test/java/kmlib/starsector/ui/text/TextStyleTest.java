@@ -227,7 +227,7 @@ class TextStyleTest {
 
         @Test
         void resolveDisplayTextShoutsWhenUpperCased() {
-            
+
             assertThat(buildBaselineStyle().inUpperCase().resolveDisplayText("Contested by"))
                 .isEqualTo("CONTESTED BY");
         }

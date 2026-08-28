@@ -21,10 +21,10 @@ import java.util.Objects;
  * path as one that draws something. {@link #hasContent} is the single rule deciding which of the two a
  * span is, so no caller has to invent its own reading of an empty run.
  *
- * <p>It is one of the two things a label's line can be made of ({@link LabelRun}), the other being an
- * image set among the words. Being a member of that set rather than the whole of it is what lets a
- * caller write a crest into the middle of a sentence without the surfaces that lay labels out learning
- * a second way to compose one.
+ * <p>It is one of the things a label's line can be made of ({@link LabelRun}), beside an image set among
+ * the words and a name withheld from them. Being a member of that set rather than the whole of it is
+ * what lets a caller write a crest into the middle of a sentence without the surfaces that lay labels
+ * out learning a second way to compose one.
  *
  * @param text                  the run as its author wrote it, before any casing the host's style
  *                              applies to it

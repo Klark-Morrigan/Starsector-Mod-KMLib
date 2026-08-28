@@ -19,8 +19,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * <p>The offsets are the contract worth fixing hardest. A run starting one word space past the one before
  * it, that space being the drawing face's own, and a blank run being charged nothing are what make two
  * surfaces lay the same label identically - and a placement that disagreed with the width its host was
- * sized to is drift no draw call could catch. An image run is held to the same walk, since a crest set
- * among a line's words is spaced and anchored by the sentence rather than by a column.
+ * sized to is drift no draw call could catch. Every kind of run is held to the same walk, since a crest
+ * set among a line's words and a name withheld from them are spaced and anchored by the sentence rather
+ * than by a column.
  */
 class LabelRunsTest {
 
@@ -86,7 +87,7 @@ class LabelRunsTest {
             // A refinement hands its own list in and keeps holding it, so appending must not rewrite the
             // label of the value the caller started from.
             var callerRuns = new ArrayList<LabelRun>();
-            
+
             callerRuns.add(new TextSpan("Hegemony", RUN_COLOUR));
             LabelRuns.appendRun(callerRuns, new TextSpan("(7)", OTHER_RUN_COLOUR));
 
@@ -295,6 +296,24 @@ class LabelRunsTest {
                 .containsExactly(0f, 3f);
             assertThat(offsets.runsWidth())
                 .isEqualTo(23f);
+        }
+
+        @Test
+        void measureRunOffsetsChargesARedactedRunItsWordsAndTheirOwnGaps() {
+            // A withheld name is a run like any other from out here: the label spaces it off the words
+            // before it, and the gap its own two words are parted by is the same one - 2, the face's
+            // 1-wide space, then 3 + 1 + 4 for the blocks standing in for a seven-character name.
+            var offsets = LabelRuns.measureRunOffsets(
+                List.of(
+                    new TextSpan("AA", RUN_COLOUR),
+                    new RedactedSpan(List.of(3, 4), OTHER_RUN_COLOUR)),
+                LINE_HEIGHT,
+                ONE_UNIT_PER_CHARACTER);
+
+            assertThat(offsets.runOffsetXs())
+                .containsExactly(0f, 3f);
+            assertThat(offsets.runsWidth())
+                .isEqualTo(11f);
         }
 
         @Test
@@ -520,6 +539,22 @@ class LabelRunsTest {
 
             assertThat(lineText)
                 .isEqualTo("Hegemony (7)");
+        }
+
+        @Test
+        void resolveLineTextLeavesOutARedactedRun() {
+            // The line form is glyphs only and a redaction has none, so a surface drawing a label in one
+            // pass gets the words either side and no stand-in for the name between them. What that
+            // surface must not do is show a redacted label through this form alone - the withheld name
+            // would go missing rather than reading as withheld, which is why anything showing one lays
+            // its runs out and paints them through a LabelRunPainter.
+            var lineText = LabelRuns.resolveLineText(List.of(
+                new TextSpan("Held by", RUN_COLOUR),
+                new RedactedSpan(List.of(7), OTHER_RUN_COLOUR),
+                new TextSpan("(7)", RUN_COLOUR)));
+
+            assertThat(lineText)
+                .isEqualTo("Held by (7)");
         }
 
         @Test

@@ -645,7 +645,7 @@ public final class ControlRenderer {
         // where it is wanted, so the measurement and the draw cannot end up naming a different pair -
         // text measured on one face and painted on another sizes a row it then overflows.
         private TextFace resolveBodyFace() {
-            
+
             return new TextFace(
                 style.bodyFont(),
                 ControlStripLayout.BODY_FONT_SIZE);

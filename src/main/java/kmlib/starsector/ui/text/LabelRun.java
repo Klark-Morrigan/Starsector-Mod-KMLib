@@ -21,8 +21,9 @@ package kmlib.starsector.ui.text;
  * aligns down a stack of rows, and the same crest as a run sits wherever the sentence puts it.
  *
  * <p>Every run answers its own width for a line of a given height, because the arithmetic differs per
- * kind: a stretch of text is as wide as its glyphs measure, while an image squares off the line so it
- * sits level with the words around it whatever face they draw in. A run also answers whether the gap in
+ * kind: a stretch of text is as wide as its glyphs measure, an image squares off the line so it sits
+ * level with the words around it whatever face they draw in, and a withheld name is charged the
+ * characters it stands for. A run also answers whether the gap in
  * front of it is spent at all ({@link #isJoinedToPreviousRun}). How wide that gap is and where the run
  * lands it does <em>not</em> answer - those are facts about a label rather than about any one run of
  * it, so they stay with {@link LabelRuns}.

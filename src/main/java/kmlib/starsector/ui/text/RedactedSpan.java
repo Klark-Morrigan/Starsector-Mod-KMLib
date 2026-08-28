@@ -145,5 +145,4 @@ public record RedactedSpan(
         }
         return wordSpans;
     }
-
 }

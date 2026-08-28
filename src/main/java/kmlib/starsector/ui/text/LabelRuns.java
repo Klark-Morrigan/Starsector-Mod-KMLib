@@ -31,9 +31,9 @@ import java.util.Objects;
  * caller that wrote its own would have to know which form its content ends up drawn in, and a label
  * carrying a separator of its own is spaced twice on the form that already spaces it.
  *
- * <p>What a run is - a stretch of text or a small image - is {@link LabelRun}'s sealed set, and nothing
- * here reads it: a run is asked its own width and whether it draws at all, so a label composed of words
- * and one composed of words around a crest are laid by the same walk.
+ * <p>What a run is - a stretch of text, a small image, a withheld name - is {@link LabelRun}'s sealed
+ * set, and nothing here reads it: a run is asked its own width and whether it draws at all, so a label
+ * composed of words and one composed of words around a crest are laid by the same walk.
  *
  * <p>A label carries at least one run and no null one, checked where the label is built rather than where
  * it is drawn: content with no runs at all is not a line, and a null run otherwise surfaces inside a
@@ -188,11 +188,12 @@ public final class LabelRuns {
      *
      * <p>A run with nothing to draw is passed over rather than joined, so it costs the line neither a
      * space nor an empty stretch - the same reading {@link #measureRunOffsets} charges it nothing by.
-     * Neither the colours nor any image runs survive the join, since one line drawn once draws in one
-     * colour and holds only glyphs; an image therefore takes no space here either, where the run-by-run
-     * form squares one off its line. A surface sizing itself from this alone reserves nothing for a
-     * label's images; one that shows them reads the runs themselves and measures through
-     * {@link #measureRunOffsets}.
+     * Neither the colours nor any run without glyphs survives the join, since one line drawn once draws
+     * in one colour and holds only glyphs; an image and a withheld name therefore take no space here
+     * either, where the run-by-run form gives each of them room on the line. A surface sizing itself from
+     * this alone reserves nothing for them, and drops a redaction rather than blocking it out; one that
+     * shows them reads the runs themselves, measures through {@link #measureRunOffsets}, and paints
+     * through {@link LabelRunPainter}.
      *
      * @param labelRuns the label's runs in reading order
      * @return the text of the runs that draw, joined by one space each

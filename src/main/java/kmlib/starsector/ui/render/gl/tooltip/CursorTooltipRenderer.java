@@ -32,7 +32,7 @@ import java.util.List;
 /**
  * Draws a {@link CursorTooltip}'s blocks as a free-floating box at the cursor: it lays them out through
  * the widget, resolves each row's look from the kind of line it is, and paints the box, each crest, each
- * row's label - run by run, words and inline images alike - its value, and the
+ * row's label - run by run, words, inline images and withheld names alike - its value, and the
  * {@linkplain TooltipLeaderLineRenderer rule} led between the two, in one bracketed GL pass.
  * The sanctioned way for a KM UI to show a tooltip
  * on a core screen that offers no panel to hang a vanilla {@code TooltipMakerAPI} on - the same rationale
@@ -341,7 +341,7 @@ public final class CursorTooltipRenderer {
         // painted in - the same binding the layout measured the row through, so a value laid out inside a
         // column cannot come out wider than the column the box reserved for it.
         private double measureSpanWidth(TextSpan textSpan) {
-            
+
             return LazyFontSpanMeasurer.measureSpanWidth(
                 textStyle.face(),
                 textStyle.resolveDisplayText(textSpan.text()));
