@@ -79,21 +79,15 @@ gradle/
                           a mod that commits a template (see Build & Test)
 src/main/java/kmlib/
   Game-agnostic helpers (no Starsector API on the signature):
-  animation/       - what time does to a value: a linear fraction advanced
-                     toward a target and eased on read, so a retarget
-                     mid-flight carries on from where it is, the pulse
-                     envelope that rides one out and back again - on a
-                     single trigger for an act already over, or held at
-                     its peak until released for one still being made -
-                     the pair of durations that pace the two directions
-                     apart, a motion answering input arriving quicker than
-                     it lets go, the phase clock a repeating animation
-                     reads its place in a cycle off, taken off real time so
-                     a paused or compressed simulation neither freezes nor
-                     strobes it, and the pair that shape what is read off
-                     that phase - an envelope climbing over a leading share
-                     of the turn and falling over the rest, and the rhythms
-                     saying which stretches of a turn sound at all
+  animation/       - what time does to a value, in two families. Stepped
+                     ones hold where they stand and are advanced each
+                     frame, answering an event only the caller can time;
+                     read ones hold nothing and are a function of the
+                     instant they are asked at, answering a cycle that was
+                     already turning. Which to reach for, and why a
+                     triggered lift and a shape read off a phase share the
+                     word envelope without being alternatives, is in its
+                     own README
   collections/     - small Collection / Map helpers
   colour/          - AWT Color to normalised GL channels, folding in an
                      alpha multiplier so one factor fades a palette
@@ -385,6 +379,7 @@ Packages with more behind them than one line can carry:
 | --- | --- |
 | [`opengl/`](src/main/java/kmlib/opengl/), [`starsector/ui/map/`](src/main/java/kmlib/starsector/ui/map/), [`starsector/ui/render/gl/`](src/main/java/kmlib/starsector/ui/render/gl/) | [Rendering environment](#rendering-environment) |
 | [`math/geometry/`](src/main/java/kmlib/math/geometry/) | [2D shapes and polygon passes](src/main/java/kmlib/math/geometry/README.md) |
+| [`animation/`](src/main/java/kmlib/animation/) | [Stepped and read animation](src/main/java/kmlib/animation/README.md) |
 | [`starsector/factions/`](src/main/java/kmlib/starsector/factions/) | [Player Faction Resolution](#player-faction-resolution) |
 | [`starsector/intel/`](src/main/java/kmlib/starsector/intel/) | [Intel Base Classes](#intel-base-classes) |
 | [`testfixtures/`](src/testFixtures/java/kmlib/testfixtures/) | [Test fixtures](#test-fixtures) |
