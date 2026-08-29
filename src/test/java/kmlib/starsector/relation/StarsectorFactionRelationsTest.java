@@ -9,7 +9,10 @@ import org.junit.jupiter.api.Test;
 import static kmlib.starsector.relation.StarsectorFactionRelations.isDispositionAboveNeutral;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -71,20 +74,29 @@ class StarsectorFactionRelationsTest {
         }
 
         @Test
-        void readsAnUnnamedOtherFactionAsNotAboveNeutral() {
-            // Nobody named on the other side, so there is nobody to be disposed toward - answered
-            // rather than put to a faction that would read it as an unknown id.
-            assertThat(isDispositionAboveNeutral(buildFactionAt(RepLevel.COOPERATIVE), null))
+        void readsAnUnnamedOtherFactionAsNotAboveNeutralWithoutAskingTheFaction() {
+            // Nobody named on the other side, so there is nobody to be disposed toward. Pinned as
+            // "never asked" rather than on the answer alone: a faction holding no standing for an
+            // unnamed id reads false either way, so the answer cannot fail if the guard goes and
+            // the unnamed id is put to a live faction that faults on one.
+            var factionMock = buildFactionAt(RepLevel.COOPERATIVE);
+
+            assertThat(isDispositionAboveNeutral(factionMock, null))
                 .isFalse();
-            assertThat(isDispositionAboveNeutral(buildFactionAt(RepLevel.COOPERATIVE), " "))
+            assertThat(isDispositionAboveNeutral(factionMock, " "))
                 .isFalse();
+
+            // Matched with nullable rather than any: the overload has to be named by type, and a
+            // plain typed matcher stands for no null - which would let exactly the call this guards
+            // against past the verification.
+            verify(factionMock, never()).getRelationshipLevel(nullable(String.class));
         }
     }
 
     // A faction standing at one level toward tritachyon and holding no other standing, so a suite
     // states the disposition under examination in a line.
     private static FactionAPI buildFactionAt(RepLevel level) {
-        
+
         var factionMock = mock(FactionAPI.class);
 
         when(factionMock.getRelationshipLevel("tritachyon"))

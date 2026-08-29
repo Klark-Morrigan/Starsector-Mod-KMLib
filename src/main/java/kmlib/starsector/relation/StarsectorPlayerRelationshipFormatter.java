@@ -101,7 +101,7 @@ public final class StarsectorPlayerRelationshipFormatter {
     }
 
     public static final class RelationshipSummary {
-        
+
         private final String description;
         private final Color colour;
 
