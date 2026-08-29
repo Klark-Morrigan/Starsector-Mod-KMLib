@@ -93,6 +93,16 @@ public record MarketClaimBreakdown(
     }
 
     /**
+     * Whether the mechanic counted this market toward its faction's sibling term, which the economy's
+     * listing alone decides - so a concealed market is counted though it was never scored.
+     *
+     * @return true when the market was counted as a sibling
+     */
+    public boolean isCountedTowardSiblings() {
+        return admission.isCountedTowardSiblings();
+    }
+
+    /**
      * Whether the market is concealed rather than held in the open.
      *
      * @return true when the mechanic skipped it before scoring

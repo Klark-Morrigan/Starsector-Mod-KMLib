@@ -6,9 +6,11 @@ package kmlib.starsector.systems.claims;
  *
  * <p>The two facts are independent and are kept apart because they are separately true - Galatia
  * Academy is concealed and unregistered at once, a raided pirate base is concealed and listed, and
- * a mod's unregistered colony need not be concealed at all. They are bundled because every reader
- * of a finished contest wants the same one question of them, {@link #isScoredOnItsOwnAccount},
- * and asking it here means no reader has to remember to keep a pair of tests in step.
+ * a mod's unregistered colony need not be concealed at all. They are bundled because what a reader
+ * of a finished contest wants of them is one of two nested questions - whether the market competed
+ * ({@link #isScoredOnItsOwnAccount}) or whether it reached the contest at all
+ * ({@link #isCountedTowardSiblings}) - and asking either here means no reader has to remember to
+ * keep a pair of tests in step.
  *
  * <p>A value rather than two booleans on the breakdown, because they would otherwise sit adjacent
  * in a constructor beside a third: swapping two of them compiles, and since both of these suppress
@@ -63,5 +65,23 @@ public record ContestAdmission(
      */
     public boolean isScoredOnItsOwnAccount() {
         return !isHiddenMarket && !isOffEconomyMarket;
+    }
+
+    /**
+     * Whether the mechanic counted the market toward its faction's sibling term - the flat point a
+     * standing is paid for every other market its faction holds in the same system.
+     *
+     * <p>The economy's listing is the whole of it. The count walks what the economy lists and nothing
+     * else, so a concealed market is counted despite never being scored, and an unregistered one is
+     * not counted despite being as present on the map as any other.
+     *
+     * <p>The broader of the two questions, and the one a reader wants when it is asking whether the
+     * market reached the contest <em>at all</em> rather than whether it competed:
+     * {@link #isScoredOnItsOwnAccount} is a strictly narrower set.
+     *
+     * @return true when the market was counted as a sibling
+     */
+    public boolean isCountedTowardSiblings() {
+        return !isOffEconomyMarket;
     }
 }

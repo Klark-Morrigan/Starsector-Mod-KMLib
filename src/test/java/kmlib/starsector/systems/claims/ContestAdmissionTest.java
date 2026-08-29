@@ -6,10 +6,14 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Pins the one question every reader of a finished contest asks of a market: did the mechanic weigh
- * it. Two independent facts answer it and they answer it the same way, so a reader that had to test
- * both itself would be one forgotten clause away from printing a score for a market that took no
- * part - which is the drift this value exists to make impossible.
+ * Pins the two nested questions a reader of a finished contest asks of a market: did the mechanic
+ * weigh it, and did the mechanic reach it at all. Two independent facts answer both, so a reader that
+ * had to test them itself would be one forgotten clause away from printing a score for a market that
+ * took no part - which is the drift this value exists to make impossible.
+ *
+ * <p>The concealed colony is the case that makes them two questions rather than one: it is never
+ * weighed and is counted as a sibling all the same, so a reader asking the narrower question of it and
+ * a reader asking the broader one are owed different answers.
  */
 final class ContestAdmissionTest {
 
@@ -17,6 +21,46 @@ final class ContestAdmissionTest {
     private static final boolean IS_NOT_HIDDEN = false;
     private static final boolean IS_OFF_ECONOMY = true;
     private static final boolean IS_NOT_OFF_ECONOMY = false;
+
+    @Nested
+    class IsCountedTowardSiblings {
+
+        @Test
+        void countsAColonyHeldInTheOpenAndListedByTheEconomy() {
+
+            assertThat(new ContestAdmission(IS_NOT_HIDDEN, IS_NOT_OFF_ECONOMY)
+                    .isCountedTowardSiblings())
+                .isTrue();
+        }
+
+        @Test
+        void countsAConcealedColonyTheEconomyLists() {
+            // Where this parts company with the scoring question, and the whole reason it is asked
+            // apart: the count walks the economy's listing without caring what is concealed on it, so
+            // a base the mechanic refused to weigh is still paid for as somebody's sibling.
+            assertThat(new ContestAdmission(IS_HIDDEN, IS_NOT_OFF_ECONOMY)
+                    .isCountedTowardSiblings())
+                .isTrue();
+        }
+
+        @Test
+        void passesOverAColonyTheEconomyDoesNotList() {
+            // The count walks the economy and nothing else, so a colony left off that listing is not
+            // reached for even this - the one way a market takes no part in the contest at all.
+            assertThat(new ContestAdmission(IS_NOT_HIDDEN, IS_OFF_ECONOMY)
+                    .isCountedTowardSiblings())
+                .isFalse();
+        }
+
+        @Test
+        void passesOverAColonyThatIsBothAtOnce() {
+            // Galatia Academy's own shape. Concealment would have left it counted; the absence from
+            // the listing is what keeps it out, so the pair is read on the listing alone.
+            assertThat(new ContestAdmission(IS_HIDDEN, IS_OFF_ECONOMY)
+                    .isCountedTowardSiblings())
+                .isFalse();
+        }
+    }
 
     @Nested
     class IsScoredOnItsOwnAccount {
