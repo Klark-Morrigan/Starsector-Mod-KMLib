@@ -232,9 +232,10 @@ final class ControlLabelRenderer {
                 imageSpan.tintColour());
         }
 
-        // Filled in the run's own colour and faded by the frame's alpha, like every other mark on the row
-        // - a redaction is a name drawn as blocks rather than chrome of the control, so it reads in
-        // whatever colour the label it stands in was written in.
+        // Filled in the run's own fill colour and faded by the frame's alpha, like every other mark on
+        // the row - a redaction is a name drawn as blocks rather than chrome of the control, so it reads
+        // in the colour the label it stands in was written in, short the step the run itself takes off a
+        // solid block.
         @Override
         public void paintRedactedSpan(RedactedSpan redactedSpan, float runX) {
 
@@ -247,7 +248,7 @@ final class ControlLabelRenderer {
                     computeLabelBottomY(centreY),
                     ControlStripLayout.CONTROL_ROW_HEIGHT,
                     bindBodySpanMeasurer(paint)),
-                new UiElementPaint(redactedSpan.colour(), paint.opacity()));
+                new UiElementPaint(redactedSpan.resolveBlockFillColour(), paint.opacity()));
         }
 
         @Override

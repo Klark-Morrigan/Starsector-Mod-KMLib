@@ -14,11 +14,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Pins {@link RedactedSpan}'s contracts: it holds counts and never the name they came from, it is charged
- * the room its blocks need, and it lays one block per word where the words stood. All three matter
- * downstream without being checked there - a run that came out narrower than its blocks would have them
- * overrun the words after it, a word charged room but left unpainted would show as a gap in the middle of
- * a redaction, and a shape the constructor let through reports as a failure inside a draw call rather
- * than at whoever derived it.
+ * the room its blocks need, it lays one block per word where the words stood, and it fills them at the
+ * weight of the line rather than at the colour it was handed. All four matter downstream without being
+ * checked there - a run that came out narrower than its blocks would have them overrun the words after
+ * it, a word charged room but left unpainted would show as a gap in the middle of a redaction, a fill
+ * taken straight off the line's colour shouts over the words either side, and a shape the constructor let
+ * through reports as a failure inside a draw call rather than at whoever derived it.
  */
 class RedactedSpanTest {
 
@@ -242,6 +243,40 @@ class RedactedSpanTest {
                 .isSameAs(redactedSpan);
             assertThat(labelRunPainterFake.getPaintedRunX())
                 .isEqualTo(64f);
+        }
+    }
+
+    @Nested
+    class ResolveBlockFillColour {
+
+        @Test
+        void resolveBlockFillColourSinksTheLineColourAStepTowardBlack() {
+            // A block covers its whole band where the glyphs it replaces cover a fraction of theirs, so
+            // filling it in the line's own colour lands several times the area of it on screen and the
+            // redaction shouts over the words either side. The tenth taken off here is what puts it back
+            // at the weight of its line.
+            assertThat(new RedactedSpan(TWO_WORD_NAME_LENGTHS, REDACTION_COLOUR)
+                .resolveBlockFillColour())
+                .isEqualTo(new Color(162, 162, 162));
+        }
+
+        @Test
+        void resolveBlockFillColourKeepsTheLineColoursOwnAlpha() {
+            // The correction is a weight one, and fading is the drawing surface's to decide - a run that
+            // also thinned itself would fade twice over in a box already drawing at part opacity.
+            assertThat(new RedactedSpan(TWO_WORD_NAME_LENGTHS, new Color(180, 180, 180, 120))
+                .resolveBlockFillColour()
+                .getAlpha())
+                .isEqualTo(120);
+        }
+
+        @Test
+        void resolveBlockFillColourLeavesTheRunsOwnColourAsTheLineWroteIt() {
+            // The line's colour is what the run was handed and what the words either side of it draw in;
+            // the fill is a reading taken off it. Kept apart so a surface asking for one cannot be given
+            // the other, and so the two never drift into disagreeing about what colour the line is.
+            assertThat(new RedactedSpan(TWO_WORD_NAME_LENGTHS, REDACTION_COLOUR).colour())
+                .isEqualTo(new Color(180, 180, 180));
         }
     }
 }

@@ -1,5 +1,6 @@
 package kmlib.starsector.ui.text;
 
+import kmlib.colour.Colours;
 import kmlib.math.geometry.Rectangle;
 
 import java.awt.Color;
@@ -28,7 +29,8 @@ import java.util.Objects;
  * word of no characters is charged nothing exactly as a blank run of text is.
  *
  * @param wordLengths how many characters each withheld word ran to, in reading order
- * @param colour      the colour the blocks are filled in
+ * @param colour      the colour the line the redaction stands on is written in, which its blocks are
+ *                    filled a step short of - see {@link #resolveBlockFillColour()}
  */
 public record RedactedSpan(
     List<Integer> wordLengths,
@@ -43,6 +45,13 @@ public record RedactedSpan(
     // The length at which a word has nothing to stand for. Named so the empty reading is stated once
     // rather than as a bare zero at each place that has to take it.
     private static final int NO_CHARACTERS = 0;
+
+    // How much of the line's colour a block keeps. A block covers its whole band where the glyphs it
+    // stands in for cover a fraction of theirs, so the same colour arrives as several times the area
+    // and the redaction reads louder than the words either side of it - which is the opposite of what
+    // it is for, a withheld name being the quiet part of its line rather than the shouted one. Sinking
+    // the fill a tenth of the way to black lands it at the weight of the line it belongs to.
+    private static final float BLOCK_FILL_DIM_FACTOR = 0.9f;
 
     /**
      * Copies the lengths and rejects a shape no redaction can have, where the caller that derived them is
@@ -147,6 +156,21 @@ public record RedactedSpan(
     @Override
     public void paintRun(LabelRunPainter labelRunPainter, float runX) {
         labelRunPainter.paintRedactedSpan(this, runX);
+    }
+
+    /**
+     * The colour a block is actually filled in: the line's own, sunk a step toward black so a solid
+     * block weighs what the glyphs either side of it weigh rather than shouting over them.
+     *
+     * <p>Resolved here rather than by each surface that draws one, and rather than folded into the
+     * colour the run was handed: the correction belongs to the shape of a block, which is this type's,
+     * while the colour belongs to the line, which is its caller's - and a redaction filled at one
+     * weight in a tooltip and another in a control would read as two different marks.
+     *
+     * @return the colour every block of this redaction is filled in
+     */
+    public Color resolveBlockFillColour() {
+        return Colours.darken(colour, BLOCK_FILL_DIM_FACTOR);
     }
 
     // The withheld words as the runs of a small sentence: each word a throwaway span of as many

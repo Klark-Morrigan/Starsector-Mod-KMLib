@@ -268,9 +268,10 @@ public final class CursorTooltipRenderer {
                 imageSpan.tintColour());
         }
 
-        // Filled in the run's own colour and faded by the box's opacity, like every other mark on the
-        // line - a redaction is a name drawn as blocks rather than a chrome element of the box, so it
-        // reads in whatever colour the line it stands on was written in.
+        // Filled in the run's own fill colour and faded by the box's opacity, like every other mark on
+        // the line - a redaction is a name drawn as blocks rather than a chrome element of the box, so
+        // it reads in the colour the line it stands on was written in, short the step the run itself
+        // takes off a solid block.
         @Override
         public void paintRedactedSpan(RedactedSpan redactedSpan, float runX) {
 
@@ -283,7 +284,7 @@ public final class CursorTooltipRenderer {
                     computeLineBottomY(placement),
                     placement.lineHeight(),
                     rowPaint::measureSpanWidth),
-                new UiElementPaint(redactedSpan.colour(), rowPaint.opacity()));
+                new UiElementPaint(redactedSpan.resolveBlockFillColour(), rowPaint.opacity()));
         }
 
         @Override
