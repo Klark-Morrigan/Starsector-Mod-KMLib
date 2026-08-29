@@ -25,6 +25,21 @@ class RedactedSpanTest {
 
     private static final Color REDACTION_COLOUR = new Color(180, 180, 180);
 
+    // The same colour part-transparent, for the case about what the fill does to alpha. Its own value
+    // rather than the one above with an alpha argument, so a case cannot read as being about the shade.
+    private static final int PART_ALPHA = 120;
+    private static final Color PART_ALPHA_REDACTION_COLOUR = new Color(180, 180, 180, PART_ALPHA);
+
+    // The strengths the cases are posed at: a tenth off, both ends of the range, and one past each end
+    // for the readings that are held rather than computed. A tenth rather than the shipped weight
+    // because the shipped weight has a case of its own, and a case standing for "some strength" that
+    // happened to be the default would go on passing if the arithmetic stopped reading its argument.
+    private static final float TENTH_STRENGTH = 0.1f;
+    private static final float NO_STRENGTH = 0f;
+    private static final float FULL_STRENGTH = 1f;
+    private static final float STRENGTH_PAST_FULL = 1.4f;
+    private static final float NEGATIVE_STRENGTH = -0.5f;
+
     // A name of two words, seven characters and five, as the counts a line carries in place of it.
     private static final List<Integer> TWO_WORD_NAME_LENGTHS = List.of(7, 5);
 
@@ -255,7 +270,7 @@ class RedactedSpanTest {
             // filling it in the line's own colour lands several times the area of it on screen and the
             // redaction shouts over the words either side. A tenth taken off is a tenth of every channel.
             assertThat(new RedactedSpan(TWO_WORD_NAME_LENGTHS, REDACTION_COLOUR)
-                .resolveBlockFillColour(0.1f))
+                .resolveBlockFillColour(TENTH_STRENGTH))
                 .isEqualTo(new Color(162, 162, 162));
         }
 
@@ -264,7 +279,7 @@ class RedactedSpanTest {
             // The near end of a host's slider, where the player has asked for no correction at all - so
             // the blocks draw in exactly the colour the words either side of them do.
             assertThat(new RedactedSpan(TWO_WORD_NAME_LENGTHS, REDACTION_COLOUR)
-                .resolveBlockFillColour(0f))
+                .resolveBlockFillColour(NO_STRENGTH))
                 .isEqualTo(new Color(180, 180, 180));
         }
 
@@ -272,17 +287,17 @@ class RedactedSpanTest {
         void resolveBlockFillColourFillsBlackAtFullStrength() {
 
             assertThat(new RedactedSpan(TWO_WORD_NAME_LENGTHS, REDACTION_COLOUR)
-                .resolveBlockFillColour(1f))
+                .resolveBlockFillColour(FULL_STRENGTH))
                 .isEqualTo(new Color(0, 0, 0));
         }
 
         @Test
         void resolveBlockFillColourHoldsAStrengthPastFullAtBlack() {
             // Past the range the strength means anything over. The channels would clamp on their own, but
-            // holding it here is what keeps the reading the caller asked for - a host handing over 1.4
-            // gets black rather than a colour arrived at by some other route.
+            // holding it here is what keeps the reading the caller asked for - a host handing over more
+            // than the whole colour gets black rather than a colour arrived at by some other route.
             assertThat(new RedactedSpan(TWO_WORD_NAME_LENGTHS, REDACTION_COLOUR)
-                .resolveBlockFillColour(1.4f))
+                .resolveBlockFillColour(STRENGTH_PAST_FULL))
                 .isEqualTo(new Color(0, 0, 0));
         }
 
@@ -291,7 +306,7 @@ class RedactedSpanTest {
             // The other end: a strength below nothing would brighten the blocks past the line they stand
             // in, which is the one thing the correction exists to prevent.
             assertThat(new RedactedSpan(TWO_WORD_NAME_LENGTHS, REDACTION_COLOUR)
-                .resolveBlockFillColour(-0.5f))
+                .resolveBlockFillColour(NEGATIVE_STRENGTH))
                 .isEqualTo(new Color(180, 180, 180));
         }
 
@@ -299,19 +314,19 @@ class RedactedSpanTest {
         void resolveBlockFillColourKeepsTheLineColoursOwnAlpha() {
             // The correction is a weight one, and fading is the drawing surface's to decide - a run that
             // also thinned itself would fade twice over in a box already drawing at part opacity.
-            assertThat(new RedactedSpan(TWO_WORD_NAME_LENGTHS, new Color(180, 180, 180, 120))
+            assertThat(new RedactedSpan(TWO_WORD_NAME_LENGTHS, PART_ALPHA_REDACTION_COLOUR)
                 .resolveBlockFillColour(RedactedSpan.TEXT_WEIGHT_DARKENING_STRENGTH)
                 .getAlpha())
-                .isEqualTo(120);
+                .isEqualTo(PART_ALPHA);
         }
 
         @Test
-        void resolveBlockFillColourSinksAFifthAtTheStandardStrength() {
+        void resolveBlockFillColourSinksTheShippedShareAtTheStandardStrength() {
             // The weight the library ships, restated as the colour it lands on so a change to the finding
             // shows up here as a changed expectation rather than passing silently.
             assertThat(new RedactedSpan(TWO_WORD_NAME_LENGTHS, REDACTION_COLOUR)
                 .resolveBlockFillColour(RedactedSpan.TEXT_WEIGHT_DARKENING_STRENGTH))
-                .isEqualTo(new Color(144, 144, 144));
+                .isEqualTo(new Color(108, 108, 108));
         }
 
         @Test

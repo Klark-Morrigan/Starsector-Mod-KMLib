@@ -46,31 +46,29 @@ public record RedactedSpan(
     // rather than as a bare zero at each place that has to take it.
     private static final int NO_CHARACTERS = 0;
 
-    // The whole of the line's colour, which a strength of nothing leaves a block filled in.
+    // How much of the line's colour a block may keep: none of it, through all of it. The bounds a
+    // darkening strength is read within - one taken off the whole leaves the kept share, and past either
+    // end the arithmetic still yields a colour, the channels clamping, but no longer the reading the
+    // caller asked for. A slider handing over 1.4 would otherwise sit at black for its whole top third
+    // with nothing on screen saying why.
+    private static final float NO_COLOUR = 0f;
     private static final float WHOLE_COLOUR = 1f;
-
-    // The range a darkening strength means anything over: none of the line's colour taken off, through to
-    // all of it. Past either end the arithmetic still yields a colour - the channels clamp - but it is no
-    // longer the reading the caller asked for, and a slider handing over 1.4 would sit at black for its
-    // whole top third with nothing on screen saying why.
-    private static final float NO_DARKENING = 0f;
-    private static final float FULL_DARKENING = 1f;
 
     /**
      * The strength a block fills at the weight of the line it stands in at, on the faces a KM label is
      * ordinarily set in - what a surface takes unless it has measured the balance itself or put it in the
      * player's hands.
      *
-     * <p>A fifth of the line's colour, because a block covers every pixel of its band outright where the
-     * glyphs it stands in for spend much of their own footprint at partial alpha: at equal colour the
-     * block is the heavier mark by some way, and a withheld name reading louder than the words either
-     * side of it draws the eye to exactly the thing the line is declining to say.
+     * <p>Well short of the line's own colour, because a block covers every pixel of its band outright
+     * where the glyphs it stands in for spend much of their own footprint at partial alpha: at equal
+     * colour the block is the heavier mark by some way, and a withheld name reading louder than the words
+     * either side of it draws the eye to exactly the thing the line is declining to say.
      *
      * <p>Offered as a value rather than left for each surface to spell, because it is a finding about how
      * a solid block reads beside glyphs rather than a taste: a surface restating it would be restating a
      * measurement someone else made, and two surfaces restating it would eventually disagree.
      */
-    public static final float TEXT_WEIGHT_DARKENING_STRENGTH = 0.2f;
+    public static final float TEXT_WEIGHT_DARKENING_STRENGTH = 0.4f;
 
     /**
      * Copies the lengths and rejects a shape no redaction can have, where the caller that derived them is
@@ -194,11 +192,11 @@ public record RedactedSpan(
      * @return the colour every block of this redaction is filled in
      */
     public Color resolveBlockFillColour(float darkeningStrength) {
-        var heldStrength = Math.max(
-            NO_DARKENING,
-            Math.min(FULL_DARKENING, darkeningStrength));
+        var keptColour = Math.max(
+            NO_COLOUR,
+            Math.min(WHOLE_COLOUR, WHOLE_COLOUR - darkeningStrength));
 
-        return Colours.darken(colour, WHOLE_COLOUR - heldStrength);
+        return Colours.darken(colour, keptColour);
     }
 
     // The withheld words as the runs of a small sentence: each word a throwaway span of as many
