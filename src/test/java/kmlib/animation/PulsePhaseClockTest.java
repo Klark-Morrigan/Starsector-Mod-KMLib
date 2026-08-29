@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.within;
  */
 final class PulsePhaseClockTest {
 
-    private static final float TOLERANCE = 0.000001f;
+    private static final float PHASE_TOLERANCE = 0.000001f;
     private static final double SECONDS_TOLERANCE = 0.000001;
 
     // A period long enough that the instants below land on clean fractions of it, which keeps the expected
@@ -38,16 +38,22 @@ final class PulsePhaseClockTest {
     // days of elapsed time instead of seconds.
     private static final long DISTANT_SOURCE_ORIGIN_NANOS = 7L * 24L * 60L * 60L * 1_000_000_000L;
 
+    // Loose enough that a slow machine cannot fail the case, and far tighter than the reading a clock that
+    // failed to subtract its own origin would give - which is the JVM's uptime at least.
+    private static final double FRESHLY_MADE_BOUND_SECONDS = 1.0;
+
     private static final long NANOS_PER_SECOND = 1_000_000_000L;
+
+    // The clock every case but the distant-origin one drives, made at a source origin of zero so an instant
+    // and the elapsed time to it are the same number and each case reads as the instant it asks at.
+    private final NanoClockFake nanoClockFake = new NanoClockFake(0L);
+    private final PulsePhaseClock clock = new PulsePhaseClock(nanoClockFake);
 
     @Nested
     class ReadElapsedSeconds {
 
         @Test
         void readElapsedSecondsReportsTheTimeSinceTheClockWasMade() {
-
-            var nanoClockFake = new NanoClockFake(0L);
-            var clock = new PulsePhaseClock(nanoClockFake);
 
             nanoClockFake.advanceBySeconds(2.5);
 
@@ -59,13 +65,22 @@ final class PulsePhaseClockTest {
         void readElapsedSecondsIgnoresWhereTheSourceStarted() {
             // A monotonic clock's origin is arbitrary, so elapsed time has to be measured against the reading
             // the clock was made at rather than against zero.
-            var nanoClockFake = new NanoClockFake(DISTANT_SOURCE_ORIGIN_NANOS);
-            var clock = new PulsePhaseClock(nanoClockFake);
+            var distantNanoClockFake = new NanoClockFake(DISTANT_SOURCE_ORIGIN_NANOS);
+            var distantClock = new PulsePhaseClock(distantNanoClockFake);
 
-            nanoClockFake.advanceBySeconds(1.0);
+            distantNanoClockFake.advanceBySeconds(1.0);
 
-            assertThat(clock.readElapsedSeconds())
+            assertThat(distantClock.readElapsedSeconds())
                 .isCloseTo(1.0, within(SECONDS_TOLERANCE));
+        }
+
+        @Test
+        void readElapsedSecondsStartsFromNothingOnAClockOverTheLiveSource() {
+            // The wiring the game gets, which no other case touches: the live source has an origin of its own
+            // and a clock made over it must still start from nothing.
+            assertThat(new PulsePhaseClock().readElapsedSeconds())
+                .isGreaterThanOrEqualTo(0.0)
+                .isLessThan(FRESHLY_MADE_BOUND_SECONDS);
         }
     }
 
@@ -75,43 +90,34 @@ final class PulsePhaseClockTest {
         @Test
         void resolvePhaseRunsFromTheStartOfTheCycleToItsEnd() {
 
-            var nanoClockFake = new NanoClockFake(0L);
-            var clock = new PulsePhaseClock(nanoClockFake);
-
             assertThat(clock.resolvePhase(PERIOD_SECONDS))
-                .isCloseTo(0f, within(TOLERANCE));
+                .isCloseTo(0f, within(PHASE_TOLERANCE));
 
             nanoClockFake.advanceBySeconds(1.0);
 
             assertThat(clock.resolvePhase(PERIOD_SECONDS))
-                .isCloseTo(0.25f, within(TOLERANCE));
+                .isCloseTo(0.25f, within(PHASE_TOLERANCE));
 
             nanoClockFake.advanceBySeconds(2.0);
 
             assertThat(clock.resolvePhase(PERIOD_SECONDS))
-                .isCloseTo(0.75f, within(TOLERANCE));
+                .isCloseTo(0.75f, within(PHASE_TOLERANCE));
         }
 
         @Test
         void resolvePhaseWrapsAtEveryTurn() {
             // Two and a half turns in, the phase reads the same as it did half a turn in: what makes the
             // reading a place in a cycle rather than a count of how long the clock has run.
-            var nanoClockFake = new NanoClockFake(0L);
-            var clock = new PulsePhaseClock(nanoClockFake);
-
             nanoClockFake.advanceBySeconds(10.0);
 
             assertThat(clock.resolvePhase(PERIOD_SECONDS))
-                .isCloseTo(0.5f, within(TOLERANCE));
+                .isCloseTo(0.5f, within(PHASE_TOLERANCE));
         }
 
         @Test
         void resolvePhaseStandsStillForAPeriodOfNothing() {
             // A knob wound down to nothing, and a negative one however it got there: both hold the animation
             // at the start of its cycle rather than dividing by a turn that takes no time.
-            var nanoClockFake = new NanoClockFake(0L);
-            var clock = new PulsePhaseClock(nanoClockFake);
-
             nanoClockFake.advanceBySeconds(3.0);
 
             assertThat(clock.resolvePhase(0f))
@@ -127,35 +133,26 @@ final class PulsePhaseClockTest {
         @Test
         void resolvePhaseForSubjectMovesTheSubjectAlongItsOwnShareOfTheTurn() {
 
-            var nanoClockFake = new NanoClockFake(0L);
-            var clock = new PulsePhaseClock(nanoClockFake);
-
             nanoClockFake.advanceBySeconds(1.0);
 
             assertThat(clock.resolvePhaseForSubject(PERIOD_SECONDS, SUBJECT_ID))
-                .isCloseTo(SUBJECT_PHASE_AT_A_QUARTER, within(TOLERANCE));
+                .isCloseTo(SUBJECT_PHASE_AT_A_QUARTER, within(PHASE_TOLERANCE));
         }
 
         @Test
         void resolvePhaseForSubjectWrapsWhenTheShareCarriesPastTheTurn() {
             // The shift has to fold back into the same cycle: a subject whose share pushes it past the end
             // reappears at the start rather than reading past a whole turn.
-            var nanoClockFake = new NanoClockFake(0L);
-            var clock = new PulsePhaseClock(nanoClockFake);
-
             nanoClockFake.advanceBySeconds(3.0);
 
             assertThat(clock.resolvePhaseForSubject(PERIOD_SECONDS, SUBJECT_ID))
-                .isCloseTo(SUBJECT_PHASE_AT_THREE_QUARTERS, within(TOLERANCE));
+                .isCloseTo(SUBJECT_PHASE_AT_THREE_QUARTERS, within(PHASE_TOLERANCE));
         }
 
         @Test
         void resolvePhaseForSubjectSeparatesTwoSubjectsInTheSameCycle() {
             // The reason the subject reading exists: emitters sharing one clock must not peak together, or
             // the set reads as one thing happening rather than as several sources.
-            var nanoClockFake = new NanoClockFake(0L);
-            var clock = new PulsePhaseClock(nanoClockFake);
-
             nanoClockFake.advanceBySeconds(1.0);
 
             assertThat(clock.resolvePhaseForSubject(PERIOD_SECONDS, SUBJECT_ID))
@@ -166,9 +163,6 @@ final class PulsePhaseClockTest {
         void resolvePhaseForSubjectStandsStillForAPeriodOfNothing() {
             // The still reading wins over the shift, so a stopped animation is stopped for every subject
             // rather than frozen at a different point per subject.
-            var nanoClockFake = new NanoClockFake(0L);
-            var clock = new PulsePhaseClock(nanoClockFake);
-
             nanoClockFake.advanceBySeconds(3.0);
 
             assertThat(clock.resolvePhaseForSubject(0f, SUBJECT_ID))

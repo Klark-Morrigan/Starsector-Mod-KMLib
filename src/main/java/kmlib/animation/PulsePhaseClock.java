@@ -64,8 +64,8 @@ public final class PulsePhaseClock {
     }
 
     /**
-     * @return real seconds since this clock was made, for a consumer pacing something the named periods below
-     *         do not describe
+     * @return real seconds since this clock was made, for a consumer pacing something that does not repeat
+     *         and so has no period for the readings below to take
      */
     public double readElapsedSeconds() {
 
@@ -81,7 +81,7 @@ public final class PulsePhaseClock {
      * @return a phase in [0, 1)
      */
     public float resolvePhase(float periodSeconds) {
-        
+
         return resolveOffsetPhase(periodSeconds, UNSTAGGERED_OFFSET);
     }
 
@@ -112,7 +112,7 @@ public final class PulsePhaseClock {
             return STILL_PHASE;
         }
         var turnsElapsed = readElapsedSeconds() / periodSeconds + offsetFraction;
-        
+
         return (float) (turnsElapsed % WHOLE_TURN);
     }
 }

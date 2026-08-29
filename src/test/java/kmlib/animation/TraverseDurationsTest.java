@@ -51,7 +51,7 @@ final class TraverseDurationsTest {
 
         @Test
         void createSymmetricGivesBothDirectionsTheSamePace() {
-            
+
             assertThat(TraverseDurations.createSymmetric(0.25f))
                 .isEqualTo(new TraverseDurations(0.25f, 0.25f));
         }

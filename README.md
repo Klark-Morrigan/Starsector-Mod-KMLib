@@ -79,20 +79,18 @@ gradle/
                           a mod that commits a template (see Build & Test)
 src/main/java/kmlib/
   Game-agnostic helpers (no Starsector API on the signature):
-  animation/       - positions between two ends that time moves: a linear
-                     fraction advanced toward a target and eased on read,
-                     so a retarget mid-flight carries on from where it is,
-                     the pulse envelope that rides one out and back again -
-                     on a single trigger for an act already over, or held
-                     at its peak until released for one still being made -
-                     and the pair of durations that
-                     pace the two directions apart, a motion answering
-                     input arriving quicker than it lets go. Also where a
-                     repeating animation reads its place in a cycle: a
-                     phase clock taken off real time, so a paused or
-                     compressed simulation neither freezes it nor makes it
-                     strobe, and read at the instant it is asked rather
-                     than stepped per frame
+  animation/       - what time does to a value: a linear fraction advanced
+                     toward a target and eased on read, so a retarget
+                     mid-flight carries on from where it is, the pulse
+                     envelope that rides one out and back again - on a
+                     single trigger for an act already over, or held at
+                     its peak until released for one still being made -
+                     the pair of durations that pace the two directions
+                     apart, a motion answering input arriving quicker than
+                     it lets go, and the phase clock a repeating animation
+                     reads its place in a cycle off, taken off real time so
+                     a paused or compressed simulation neither freezes nor
+                     strobes it
   collections/     - small Collection / Map helpers
   colour/          - AWT Color to normalised GL channels, folding in an
                      alpha multiplier so one factor fades a palette
@@ -110,8 +108,7 @@ src/main/java/kmlib/
   math/            - easing/, geometry/ (2D shapes, polygon passes and the
                      point arithmetic under them - see its own README),
                      hashing/ (avalanche, content fingerprints, the fixed
-                     share of the unit range a name holds, for spreading
-                     like things apart), motion/,
+                     share of the unit range a name holds), motion/,
                      random/, ranges/, solving/
   opengl/          - GL primitive emission (lines, quads, triangles,
                      vertex runs), the saved-state scope a blended 2D
