@@ -2,6 +2,7 @@ package kmlib.starsector.ui.render.gl.tooltip;
 
 import kmlib.starsector.ui.font.StarsectorFont;
 import kmlib.starsector.ui.font.TextFace;
+import kmlib.starsector.ui.text.RedactedSpan;
 import kmlib.starsector.ui.text.TextAlignment;
 import kmlib.starsector.ui.text.TextStyle;
 import kmlib.starsector.ui.widgets.tooltip.TooltipStyle;
@@ -16,13 +17,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Pins what a box states for itself against what it is given: that a look built the ordinary way rules
- * its leaders at the standard weights without the caller naming them, that a host tuning those weights
- * changes nothing else about the look, and that the weights can never arrive missing.
+ * its leaders and sinks its redactions at the standard weights without the caller naming them, that a
+ * host tuning either changes nothing else about the look, and that the leader weights can never arrive
+ * missing.
  *
- * <p>The default is the case worth fixing. It is what keeps a finding - how heavily a solid run reads
- * beside glyphs - in one place rather than in every host that ever builds a box, and a default that
+ * <p>The defaults are the cases worth fixing. They are what keeps one finding - how heavily a solid run
+ * reads beside glyphs - in one place rather than in every host that ever builds a box, and a default that
  * quietly stopped being applied would show as leaders at whatever a fresh record happens to hold, which
- * on a float is no rule drawn at all.
+ * on a float is no rule drawn at all, and as withheld names filled at the full weight of their line.
  */
 class CursorTooltipStyleTest {
 
@@ -35,6 +37,10 @@ class CursorTooltipStyleTest {
     // statement reached it rather than the default having happened to match.
     private static final float TUNED_THICKNESS = 3f;
     private static final float TUNED_ALPHA_MULT = 0.2f;
+
+    // A strength unlike the standard one, for the same reason: a look carrying it says the host's own
+    // statement reached it rather than the default having happened to match.
+    private static final float TUNED_DARKENING_STRENGTH = 0.55f;
 
     private static TooltipStyle createTypography() {
         // Built by hand rather than through TextStyle's own factory: its baseline colour resolves from
@@ -68,6 +74,15 @@ class CursorTooltipStyleTest {
             // having to know that pair exists.
             assertThat(createStyle().leaderLineStyle())
                 .isEqualTo(TooltipLeaderLineStyle.TEXT_WEIGHTED);
+        }
+
+        @Test
+        void createStyleRedactsAtTheStandardStrength() {
+            // The same reasoning as the leaders above, over the other solid mark a box draws among its
+            // glyphs: a host states its typography and its frame, and a withheld name comes out at the
+            // strength it reads level with its own line at.
+            assertThat(createStyle().redactionDarkeningStrength())
+                .isEqualTo(RedactedSpan.TEXT_WEIGHT_DARKENING_STRENGTH);
         }
 
         @Test
@@ -120,6 +135,40 @@ class CursorTooltipStyleTest {
     }
 
     @Nested
+    class RedactedAt {
+
+        @Test
+        void redactedAtSinksWithheldNamesByTheStrengthGiven() {
+
+            assertThat(createStyle()
+                .redactedAt(TUNED_DARKENING_STRENGTH)
+                .redactionDarkeningStrength())
+                .isEqualTo(TUNED_DARKENING_STRENGTH);
+        }
+
+        @Test
+        void redactedAtLeavesTheRestOfTheLookAsItWas() {
+            // A refinement states one thing and carries the rest over - the leaders included, so the two
+            // sliders a host may put on a box cannot overwrite one another.
+            var style = createStyle();
+            var tuned = style.redactedAt(TUNED_DARKENING_STRENGTH);
+
+            assertThat(tuned.typography())
+                .isEqualTo(style.typography());
+            assertThat(tuned.opacity())
+                .isEqualTo(OPACITY);
+            assertThat(tuned.borderWidth())
+                .isEqualTo(BORDER_WIDTH);
+            assertThat(tuned.fillColour())
+                .isEqualTo(FILL_COLOUR);
+            assertThat(tuned.borderColour())
+                .isEqualTo(BORDER_COLOUR);
+            assertThat(tuned.leaderLineStyle())
+                .isEqualTo(style.leaderLineStyle());
+        }
+    }
+
+    @Nested
     class Construct {
 
         @Test
@@ -133,7 +182,8 @@ class CursorTooltipStyleTest {
                 BORDER_WIDTH,
                 FILL_COLOUR,
                 BORDER_COLOUR,
-                null))
+                null,
+                RedactedSpan.TEXT_WEIGHT_DARKENING_STRENGTH))
                 .isInstanceOf(NullPointerException.class)
                 .hasMessageContaining("leaderLineStyle");
         }

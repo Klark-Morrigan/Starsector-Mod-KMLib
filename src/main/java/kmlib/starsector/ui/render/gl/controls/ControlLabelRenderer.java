@@ -234,8 +234,12 @@ final class ControlLabelRenderer {
 
         // Filled in the run's own fill colour and faded by the frame's alpha, like every other mark on
         // the row - a redaction is a name drawn as blocks rather than chrome of the control, so it reads
-        // in the colour the label it stands in was written in, short the step the run itself takes off a
-        // solid block.
+        // in the colour the label it stands in was written in, short the step a solid block is taken down
+        // by.
+        //
+        // At the standard strength rather than one of the control strip's own: a strip is set in the same
+        // faces at the same sizes as the boxes beside it, so the balance measured there holds here, and a
+        // knob for it would be a second answer to a question nothing here asks differently.
         @Override
         public void paintRedactedSpan(RedactedSpan redactedSpan, float runX) {
 
@@ -248,7 +252,10 @@ final class ControlLabelRenderer {
                     computeLabelBottomY(centreY),
                     ControlStripLayout.CONTROL_ROW_HEIGHT,
                     bindBodySpanMeasurer(paint)),
-                new UiElementPaint(redactedSpan.resolveBlockFillColour(), paint.opacity()));
+                new UiElementPaint(
+                    redactedSpan.resolveBlockFillColour(
+                        RedactedSpan.TEXT_WEIGHT_DARKENING_STRENGTH),
+                    paint.opacity()));
         }
 
         @Override

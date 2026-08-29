@@ -30,7 +30,7 @@ import java.util.Objects;
  *
  * @param wordLengths how many characters each withheld word ran to, in reading order
  * @param colour      the colour the line the redaction stands on is written in, which its blocks are
- *                    filled a step short of - see {@link #resolveBlockFillColour()}
+ *                    filled a step short of - see {@link #resolveBlockFillColour(float)}
  */
 public record RedactedSpan(
     List<Integer> wordLengths,
@@ -46,12 +46,31 @@ public record RedactedSpan(
     // rather than as a bare zero at each place that has to take it.
     private static final int NO_CHARACTERS = 0;
 
-    // How much of the line's colour a block keeps. A block covers its whole band where the glyphs it
-    // stands in for cover a fraction of theirs, so the same colour arrives as several times the area
-    // and the redaction reads louder than the words either side of it - which is the opposite of what
-    // it is for, a withheld name being the quiet part of its line rather than the shouted one. Sinking
-    // the fill a tenth of the way to black lands it at the weight of the line it belongs to.
-    private static final float BLOCK_FILL_DIM_FACTOR = 0.9f;
+    // The whole of the line's colour, which a strength of nothing leaves a block filled in.
+    private static final float WHOLE_COLOUR = 1f;
+
+    // The range a darkening strength means anything over: none of the line's colour taken off, through to
+    // all of it. Past either end the arithmetic still yields a colour - the channels clamp - but it is no
+    // longer the reading the caller asked for, and a slider handing over 1.4 would sit at black for its
+    // whole top third with nothing on screen saying why.
+    private static final float NO_DARKENING = 0f;
+    private static final float FULL_DARKENING = 1f;
+
+    /**
+     * The strength a block fills at the weight of the line it stands in at, on the faces a KM label is
+     * ordinarily set in - what a surface takes unless it has measured the balance itself or put it in the
+     * player's hands.
+     *
+     * <p>A fifth of the line's colour, because a block covers every pixel of its band outright where the
+     * glyphs it stands in for spend much of their own footprint at partial alpha: at equal colour the
+     * block is the heavier mark by some way, and a withheld name reading louder than the words either
+     * side of it draws the eye to exactly the thing the line is declining to say.
+     *
+     * <p>Offered as a value rather than left for each surface to spell, because it is a finding about how
+     * a solid block reads beside glyphs rather than a taste: a surface restating it would be restating a
+     * measurement someone else made, and two surfaces restating it would eventually disagree.
+     */
+    public static final float TEXT_WEIGHT_DARKENING_STRENGTH = 0.2f;
 
     /**
      * Copies the lengths and rejects a shape no redaction can have, where the caller that derived them is
@@ -159,18 +178,27 @@ public record RedactedSpan(
     }
 
     /**
-     * The colour a block is actually filled in: the line's own, sunk a step toward black so a solid
-     * block weighs what the glyphs either side of it weigh rather than shouting over them.
+     * The colour a block is actually filled in: the line's own, sunk toward black by
+     * {@code darkeningStrength} so a solid block weighs what the glyphs either side of it weigh rather
+     * than shouting over them.
      *
-     * <p>Resolved here rather than by each surface that draws one, and rather than folded into the
-     * colour the run was handed: the correction belongs to the shape of a block, which is this type's,
-     * while the colour belongs to the line, which is its caller's - and a redaction filled at one
-     * weight in a tooltip and another in a control would read as two different marks.
+     * <p>How the correction is made is this type's - toward black rather than by fading, so a surface
+     * drawing at part opacity does not thin the redaction twice over - while how far to make it is the
+     * surface's, because it turns on the face, the size it draws at, and how that atlas was rasterised,
+     * none of which a run can read. {@link #TEXT_WEIGHT_DARKENING_STRENGTH} is that judgement made on the
+     * faces a KM label is ordinarily set in.
      *
+     * @param darkeningStrength how much of the line's colour to take off the blocks, 0..1 - 0 fills them
+     *                          in the line's own colour and 1 fills them black; read outside that range
+     *                          as its nearer end
      * @return the colour every block of this redaction is filled in
      */
-    public Color resolveBlockFillColour() {
-        return Colours.darken(colour, BLOCK_FILL_DIM_FACTOR);
+    public Color resolveBlockFillColour(float darkeningStrength) {
+        var heldStrength = Math.max(
+            NO_DARKENING,
+            Math.min(FULL_DARKENING, darkeningStrength));
+
+        return Colours.darken(colour, WHOLE_COLOUR - heldStrength);
     }
 
     // The withheld words as the runs of a small sentence: each word a throwaway span of as many

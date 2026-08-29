@@ -147,7 +147,10 @@ public final class CursorTooltipRenderer {
         // run's own statement and this pass holds only what each kind looks like on a tooltip line. One
         // painter per row, since what it binds - the row's placement and its resolved paint - is settled
         // for the whole row.
-        var labelRunPainter = new RowLabelRunPainter(placement, rowPaint);
+        var labelRunPainter = new RowLabelRunPainter(
+            placement,
+            rowPaint,
+            style.redactionDarkeningStrength());
         var labelRuns = row.labelRuns();
 
         for (var index = 0; index < labelRuns.size(); index++) {
@@ -251,12 +254,15 @@ public final class CursorTooltipRenderer {
      * row resolved. Bound to the row rather than to the run, since the placement and the look are the
      * row's for all of its runs and only the anchor moves between them.
      *
-     * @param placement where the layout pinned this row and its columns
-     * @param rowPaint  the face, casing, and opacity the row's runs draw in
+     * @param placement                  where the layout pinned this row and its columns
+     * @param rowPaint                   the face, casing, and opacity the row's runs draw in
+     * @param redactionDarkeningStrength how far a withheld name's blocks are sunk from the colour of the
+     *                                   line they stand in, the box's own setting for it
      */
     private record RowLabelRunPainter(
         TooltipLayout.TooltipRowLayout placement,
-        RowPaint rowPaint) implements LabelRunPainter {
+        RowPaint rowPaint,
+        float redactionDarkeningStrength) implements LabelRunPainter {
 
         @Override
         public void paintImageSpan(ImageSpan imageSpan, float runX) {
@@ -284,7 +290,9 @@ public final class CursorTooltipRenderer {
                     computeLineBottomY(placement),
                     placement.lineHeight(),
                     rowPaint::measureSpanWidth),
-                new UiElementPaint(redactedSpan.resolveBlockFillColour(), rowPaint.opacity()));
+                new UiElementPaint(
+                    redactedSpan.resolveBlockFillColour(redactionDarkeningStrength),
+                    rowPaint.opacity()));
         }
 
         @Override

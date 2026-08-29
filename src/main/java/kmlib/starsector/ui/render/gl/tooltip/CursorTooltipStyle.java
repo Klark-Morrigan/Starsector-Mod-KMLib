@@ -1,5 +1,6 @@
 package kmlib.starsector.ui.render.gl.tooltip;
 
+import kmlib.starsector.ui.text.RedactedSpan;
 import kmlib.starsector.ui.widgets.tooltip.TooltipStyle;
 
 import java.awt.Color;
@@ -31,6 +32,10 @@ import java.util.Objects;
  * @param borderColour    the box's border colour
  * @param leaderLineStyle how heavily the rules led between a row's label and its value draw;
  *                        {@link TooltipLeaderLineStyle#TEXT_WEIGHTED} unless the host tunes them
+ * @param redactionDarkeningStrength
+ *                        how far a withheld name's blocks are sunk from the colour of the line they
+ *                        stand in, 0..1; {@link RedactedSpan#TEXT_WEIGHT_DARKENING_STRENGTH} unless the
+ *                        host tunes it
  */
 public record CursorTooltipStyle(
     TooltipStyle typography,
@@ -38,7 +43,8 @@ public record CursorTooltipStyle(
     float borderWidth,
     Color fillColour,
     Color borderColour,
-    TooltipLeaderLineStyle leaderLineStyle) {
+    TooltipLeaderLineStyle leaderLineStyle,
+    float redactionDarkeningStrength) {
 
     /**
      * Rejects a null leader look at construction: a box that rules no leaders states
@@ -79,7 +85,27 @@ public record CursorTooltipStyle(
             borderWidth,
             fillColour,
             borderColour,
-            TooltipLeaderLineStyle.TEXT_WEIGHTED);
+            TooltipLeaderLineStyle.TEXT_WEIGHTED,
+            RedactedSpan.TEXT_WEIGHT_DARKENING_STRENGTH);
+    }
+
+    /**
+     * Returns a copy of this look sinking a withheld name's blocks by {@code redactionDarkeningStrength}
+     * - for a host that has measured that balance on its own faces, or that puts it in the player's
+     * hands.
+     *
+     * @param redactionDarkeningStrength how much of the line's colour to take off its blocks, 0..1
+     * @return an otherwise-identical look redacting at that strength
+     */
+    public CursorTooltipStyle redactedAt(float redactionDarkeningStrength) {
+        return new CursorTooltipStyle(
+            typography,
+            opacity,
+            borderWidth,
+            fillColour,
+            borderColour,
+            leaderLineStyle,
+            redactionDarkeningStrength);
     }
 
     /**
@@ -96,6 +122,7 @@ public record CursorTooltipStyle(
             borderWidth,
             fillColour,
             borderColour,
-            leaderLineStyle);
+            leaderLineStyle,
+            redactionDarkeningStrength);
     }
 }
