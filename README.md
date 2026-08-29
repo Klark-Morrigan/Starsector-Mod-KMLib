@@ -87,10 +87,13 @@ src/main/java/kmlib/
                      its peak until released for one still being made -
                      the pair of durations that pace the two directions
                      apart, a motion answering input arriving quicker than
-                     it lets go, and the phase clock a repeating animation
+                     it lets go, the phase clock a repeating animation
                      reads its place in a cycle off, taken off real time so
                      a paused or compressed simulation neither freezes nor
-                     strobes it
+                     strobes it, and the pair that shape what is read off
+                     that phase - an envelope climbing over a leading share
+                     of the turn and falling over the rest, and the rhythms
+                     saying which stretches of a turn sound at all
   collections/     - small Collection / Map helpers
   colour/          - AWT Color to normalised GL channels, folding in an
                      alpha multiplier so one factor fades a palette
