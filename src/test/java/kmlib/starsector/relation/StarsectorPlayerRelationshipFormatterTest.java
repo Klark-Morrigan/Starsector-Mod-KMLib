@@ -22,45 +22,64 @@ class StarsectorPlayerRelationshipFormatterTest {
 
     @Nested
     class FormatPlayerRelationship {
+
         @Test
         void returnsEmptySummaryForNullFaction() {
+
             var result = formatPlayerRelationship(null);
 
-            assertThat(result.getDescription()).isNull();
-            assertThat(result.getColour()).isNull();
+            assertThat(result.getDescription())
+                .isNull();
+            assertThat(result.getColour())
+                .isNull();
         }
 
         @Test
         void formatsDescriptionAndColourViaRelationshipApiPath() {
+
             var relationshipMock = mock(RelationshipAPI.class);
-            when(relationshipMock.getLevel()).thenReturn(RepLevel.VENGEFUL);
-            when(relationshipMock.getRepInt()).thenReturn(-100);
-            when(relationshipMock.getRelColor()).thenReturn(RED);
+
+            when(relationshipMock.getLevel())
+                .thenReturn(RepLevel.VENGEFUL);
+            when(relationshipMock.getRepInt())
+                .thenReturn(-100);
+            when(relationshipMock.getRelColor())
+                .thenReturn(RED);
 
             var factionMock = mock(FactionAPI.class);
-            when(factionMock.getRelToPlayer()).thenReturn(relationshipMock);
+
+            when(factionMock.getRelToPlayer())
+                .thenReturn(relationshipMock);
 
             var result = formatPlayerRelationship(factionMock);
 
-            assertThat(result.getDescription()).isEqualTo("Vengeful (-100 / 100)");
-            assertThat(result.getColour()).isEqualTo(RED);
+            assertThat(result.getDescription())
+                .isEqualTo("Vengeful (-100 / 100)");
+            assertThat(result.getColour())
+                .isEqualTo(RED);
         }
 
         @Test
         void fallsBackToFactionRelationshipWhenRelToPlayerIsNull() {
+
             var factionMock = mock(FactionAPI.class);
+
             // getRelToPlayer defaults to null, triggering the fallback path.
             // Stub the faction-level colour so the resolver does NOT reach the
             // Misc.getRelColor fallback - Misc reads from the static palette
             // (Global.getSettings()) which is not initialised in unit tests.
-            when(factionMock.getRelationship(Factions.PLAYER)).thenReturn(0.0f);
-            when(factionMock.getRelColor(Factions.PLAYER)).thenReturn(RED);
+            when(factionMock.getRelationship(Factions.PLAYER))
+                .thenReturn(0.0f);
+            when(factionMock.getRelColor(Factions.PLAYER))
+                .thenReturn(RED);
 
             var result = formatPlayerRelationship(factionMock);
 
             // Level name varies by Starsector version; verify only the numeric format.
-            assertThat(result.getDescription()).isNotNull().contains("/ 100");
-            assertThat(result.getColour()).isEqualTo(RED);
+            assertThat(result.getDescription()).isNotNull()
+                .contains("/ 100");
+            assertThat(result.getColour())
+                .isEqualTo(RED);
         }
     }
 }

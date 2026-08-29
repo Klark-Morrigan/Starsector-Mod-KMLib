@@ -226,7 +226,10 @@ src/main/java/kmlib/
                      hand-over and submarket rule this install supplies
                      are offered their work through
     memory/        - typed sector-memory accessors (flag, string)
-    relation/      - player relationship formatting
+    relation/      - what one faction's standing with another comes to:
+                     the player relationship formatted as the game itself
+                     shows it, and whether a disposition clears the
+                     scale's own step from indifference to goodwill
     scripts/       - sector script registration helpers
     settings/      - the game's own settings: whether a mod is enabled,
                      answered the same way for every optional-mod gate

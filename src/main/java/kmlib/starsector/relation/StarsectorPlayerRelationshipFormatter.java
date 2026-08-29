@@ -38,6 +38,7 @@ import java.util.Locale;
  * - the single entry point is a static method, no instance needed.</p>
  */
 public final class StarsectorPlayerRelationshipFormatter {
+
     private static final int MAX_RELATIONSHIP_REPUTATION = 100;
     private static final String PLAYER_RELATIONSHIP_DESCRIPTION_FORMAT = "%s (%d / %d)";
 
@@ -45,14 +46,19 @@ public final class StarsectorPlayerRelationshipFormatter {
     }
 
     public static RelationshipSummary formatPlayerRelationship(FactionAPI faction) {
+
         if (faction == null) {
             return RelationshipSummary.createEmptySummary();
         }
 
         var relationship = faction.getRelToPlayer();
+
         if (relationship != null) {
+
             var level = relationship.getLevel();
+
             if (level != null) {
+
                 return new RelationshipSummary(
                     formatRelationshipDescription(level, relationship.getRepInt()),
                     relationship.getRelColor());
@@ -61,20 +67,27 @@ public final class StarsectorPlayerRelationshipFormatter {
 
         var rel = faction.getRelationship(Factions.PLAYER);
         var level = RepLevel.getLevelFor(rel);
+
         if (level == null) {
             return RelationshipSummary.createEmptySummary();
         }
         var repInt = RepLevel.getRepInt(rel);
         var colour = faction.getRelColor(Factions.PLAYER);
+
         if (colour == null) {
             colour = Misc.getRelColor(rel);
         }
-        return new RelationshipSummary(formatRelationshipDescription(level, repInt), colour);
+        return new RelationshipSummary(
+            formatRelationshipDescription(level, repInt),
+            colour);
     }
 
     private static String formatRelationshipDescription(RepLevel level, int repInt) {
+
         var levelName = level.getDisplayName();
+
         if (levelName == null || levelName.trim().isEmpty()) {
+
             // Enum-name fallback when the display name is missing (very
             // old saves, modded RepLevels with empty display strings).
             levelName = level.name();
@@ -88,6 +101,7 @@ public final class StarsectorPlayerRelationshipFormatter {
     }
 
     public static final class RelationshipSummary {
+        
         private final String description;
         private final Color colour;
 
