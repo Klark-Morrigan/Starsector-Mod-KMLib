@@ -63,10 +63,14 @@ public record PhaseEnvelope(
 
     // The un-eased ramp, split at the rise fraction. Kept apart from the ease so the split is one piece of
     // arithmetic to follow, and the curve stays the single shape the package eases everything along.
+    //
+    // Takes a phase already confined to the turn, which the arithmetic below depends on rather than merely
+    // tidies: a phase from before the turn would divide a rise of nothing into a negative and reach the ease
+    // as an infinity, where the caller's clamp makes it the peak the strike case wants.
     private float resolveLinearAmplitude(float turnPhase) {
 
-        // A phase below the split is inside the rise, which means the share it is a fraction of is above it
-        // and so above zero - that ordering is what makes the divide safe without a guard of its own.
+        // A phase below the split is inside the rise, and since the phase is at worst zero the share it is a
+        // fraction of is above zero - that ordering is what makes the divide safe without a guard of its own.
         if (turnPhase < riseFraction) {
             return turnPhase / riseFraction;
         }
