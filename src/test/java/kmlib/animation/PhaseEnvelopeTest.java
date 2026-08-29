@@ -9,8 +9,9 @@ import static org.assertj.core.api.Assertions.within;
 /**
  * Pins {@link PhaseEnvelope}: a climb over the leading share of the turn, a fall over the rest of it, rest at
  * both ends so a wrapping phase meets no seam, and the two shares that leave one half nothing at all. The
- * expectations are the smoothstep values of the linear positions each phase lands on - the same curve every
- * other animation in the package settles along.
+ * expectations are the smoothstep values of the un-eased positions each phase lands on - the same curve every
+ * other animation in the package settles along - and the quarter cases are what tell that curve from the ramp
+ * underneath it, the halves and the ends being the three points smoothstep leaves where it found them.
  */
 final class PhaseEnvelopeTest {
 
@@ -20,11 +21,18 @@ final class PhaseEnvelopeTest {
     // phase that reads the same amplitude on the way up and on the way down does so at different phases.
     private static final float QUARTER_RISE = 0.25f;
 
-    // Where that envelope stands half way up its climb and half way down its fall. Both linear positions are
-    // 0.5, whose smoothstep value is 0.5 - the one point the curve leaves where it found it.
-    private static final float PHASE_HALF_WAY_UP = 0.125f;
-    private static final float PHASE_HALF_WAY_DOWN = 0.625f;
+    // Phases named for how far along the un-eased ramp each one lands, climbing and falling. Positions on the
+    // ramp rather than amplitudes, because the amplitude is what the curve is asked for.
+    private static final float CLIMB_PHASE_AT_QUARTER_RAMP = 0.0625f;
+    private static final float CLIMB_PHASE_AT_HALF_RAMP = 0.125f;
+    private static final float FALL_PHASE_AT_HALF_RAMP = 0.625f;
+    private static final float FALL_PHASE_AT_QUARTER_RAMP = 0.8125f;
+
+    // What smoothstep makes of those two ramp positions. Half stays where it was - the curve's one interior
+    // fixed point - while a quarter of the way along the ramp reads well under a quarter of the way up, which
+    // is the difference an un-eased reading would fail on.
     private static final float HALF_AMPLITUDE = 0.5f;
+    private static final float EASED_QUARTER_AMPLITUDE = 0.15625f;
 
     private static final float TURN_START = 0f;
     private static final float TURN_END = 1f;
@@ -47,7 +55,10 @@ final class PhaseEnvelopeTest {
         @Test
         void resolveAmplitudeClimbsToThePeakOverTheLeadingShare() {
 
-            assertThat(envelope.resolveAmplitude(PHASE_HALF_WAY_UP))
+            assertThat(envelope.resolveAmplitude(CLIMB_PHASE_AT_QUARTER_RAMP))
+                .isCloseTo(EASED_QUARTER_AMPLITUDE, within(TOLERANCE));
+
+            assertThat(envelope.resolveAmplitude(CLIMB_PHASE_AT_HALF_RAMP))
                 .isCloseTo(HALF_AMPLITUDE, within(TOLERANCE));
 
             assertThat(envelope.resolveAmplitude(QUARTER_RISE))
@@ -57,8 +68,11 @@ final class PhaseEnvelopeTest {
         @Test
         void resolveAmplitudeFallsBackOverTheRemainderOfTheTurn() {
 
-            assertThat(envelope.resolveAmplitude(PHASE_HALF_WAY_DOWN))
+            assertThat(envelope.resolveAmplitude(FALL_PHASE_AT_HALF_RAMP))
                 .isCloseTo(HALF_AMPLITUDE, within(TOLERANCE));
+
+            assertThat(envelope.resolveAmplitude(FALL_PHASE_AT_QUARTER_RAMP))
+                .isCloseTo(EASED_QUARTER_AMPLITUDE, within(TOLERANCE));
         }
 
         @Test

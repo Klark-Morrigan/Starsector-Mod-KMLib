@@ -25,8 +25,13 @@ final class PhasePatternTest {
     // is doing there and how far through it is.
     private static final float HALF_WAY_THROUGH = 0.5f;
 
+    private static final float TURN_START = 0f;
     private static final float TURN_END = 1f;
     private static final float ELEMENT_START = 0f;
+
+    // Inside the last element of a turn whatever the rhythm, so the case closing every pattern on a silence
+    // can ask each of them at one phase rather than at a position of its own.
+    private static final float JUST_INSIDE_THE_TURNS_END = 0.999f;
 
     // A pace slow enough that a period reads as a different number from the unit count it scales.
     private static final float UNIT_SECONDS = 0.5f;
@@ -37,7 +42,7 @@ final class PhasePatternTest {
         @Test
         void resolveBeatAtSoundsThroughTheFirstHalfOfASteadyBeat() {
 
-            var beat = PhasePattern.STEADY_BEAT.resolveBeatAt(resolveSteadyBeatPhaseAtUnit(0.5f));
+            var beat = resolveSteadyBeatAtUnit(0.5f);
 
             assertThat(beat.isSounding())
                 .isTrue();
@@ -48,7 +53,7 @@ final class PhasePatternTest {
         @Test
         void resolveBeatAtRestsThroughTheSecondHalfOfASteadyBeat() {
 
-            var beat = PhasePattern.STEADY_BEAT.resolveBeatAt(resolveSteadyBeatPhaseAtUnit(1.5f));
+            var beat = resolveSteadyBeatAtUnit(1.5f);
 
             assertThat(beat.isSounding())
                 .isFalse();
@@ -60,43 +65,47 @@ final class PhasePatternTest {
         void resolveBeatAtOpensTheDistressSilhouetteWithThreeShortSounds() {
             // Each short sound is parted from the next by a silence as long as itself, which is what makes
             // three of them read as three rather than as one long one.
-            assertThat(PhasePattern.SOS.resolveBeatAt(resolveSosPhaseAtUnit(0.5f)).isSounding())
+            assertThat(resolveSosBeatAtUnit(0.5f).isSounding())
                 .isTrue();
-            assertThat(PhasePattern.SOS.resolveBeatAt(resolveSosPhaseAtUnit(1.5f)).isSounding())
+            assertThat(resolveSosBeatAtUnit(1.5f).isSounding())
                 .isFalse();
-            assertThat(PhasePattern.SOS.resolveBeatAt(resolveSosPhaseAtUnit(2.5f)).isSounding())
+            assertThat(resolveSosBeatAtUnit(2.5f).isSounding())
                 .isTrue();
-            assertThat(PhasePattern.SOS.resolveBeatAt(resolveSosPhaseAtUnit(3.5f)).isSounding())
+            assertThat(resolveSosBeatAtUnit(3.5f).isSounding())
                 .isFalse();
-            assertThat(PhasePattern.SOS.resolveBeatAt(resolveSosPhaseAtUnit(4.5f)).isSounding())
+            assertThat(resolveSosBeatAtUnit(4.5f).isSounding())
                 .isTrue();
-            assertThat(PhasePattern.SOS.resolveBeatAt(resolveSosPhaseAtUnit(5.5f)).isSounding())
+            assertThat(resolveSosBeatAtUnit(5.5f).isSounding())
                 .isFalse();
         }
 
         @Test
         void resolveBeatAtHoldsTheMiddleSoundsOfTheDistressSilhouetteThreeTimesAsLong() {
-            // The middle group is what tells the silhouette from a plain string of flashes, so its length is
-            // pinned by where the halfway point of a single sound falls rather than by its state alone.
-            var beat = PhasePattern.SOS.resolveBeatAt(resolveSosPhaseAtUnit(7.5f));
-
-            assertThat(beat.isSounding())
-                .isTrue();
-            assertThat(beat.beatPhase())
-                .isCloseTo(HALF_WAY_THROUGH, within(TOLERANCE));
-
-            assertThat(PhasePattern.SOS.resolveBeatAt(resolveSosPhaseAtUnit(9.5f)).isSounding())
+            // The middle group is what tells the silhouette from a plain string of flashes, so the sound has
+            // to be pinned by both of its ends: it is still running a unit after a short one would have
+            // stopped, and it stops before the next gap. Its halfway reading alone would not say that - a
+            // short sound sitting a unit later would answer the same.
+            assertThat(resolveSosBeatAtUnit(5.5f).isSounding())
                 .isFalse();
+            assertThat(resolveSosBeatAtUnit(6.5f).isSounding())
+                .isTrue();
+            assertThat(resolveSosBeatAtUnit(8.5f).isSounding())
+                .isTrue();
+            assertThat(resolveSosBeatAtUnit(9.5f).isSounding())
+                .isFalse();
+
+            assertThat(resolveSosBeatAtUnit(7.5f).beatPhase())
+                .isCloseTo(HALF_WAY_THROUGH, within(TOLERANCE));
         }
 
         @Test
         void resolveBeatAtClosesTheDistressSilhouetteWithThreeShortSounds() {
 
-            assertThat(PhasePattern.SOS.resolveBeatAt(resolveSosPhaseAtUnit(18.5f)).isSounding())
+            assertThat(resolveSosBeatAtUnit(18.5f).isSounding())
                 .isTrue();
-            assertThat(PhasePattern.SOS.resolveBeatAt(resolveSosPhaseAtUnit(20.5f)).isSounding())
+            assertThat(resolveSosBeatAtUnit(20.5f).isSounding())
                 .isTrue();
-            assertThat(PhasePattern.SOS.resolveBeatAt(resolveSosPhaseAtUnit(22.5f)).isSounding())
+            assertThat(resolveSosBeatAtUnit(22.5f).isSounding())
                 .isTrue();
         }
 
@@ -104,10 +113,25 @@ final class PhasePatternTest {
         void resolveBeatAtRestsAfterTheDistressSilhouetteForLongerThanItPartsItsOwnSounds() {
             // The trailing rest is the whole reason the group repeats as a message: a silence no longer than
             // the internal gaps would run the last sound of one turn into the first of the next.
-            assertThat(PhasePattern.SOS.resolveBeatAt(resolveSosPhaseAtUnit(23.5f)).isSounding())
+            assertThat(resolveSosBeatAtUnit(23.5f).isSounding())
                 .isFalse();
-            assertThat(PhasePattern.SOS.resolveBeatAt(resolveSosPhaseAtUnit(29.5f)).isSounding())
+            assertThat(resolveSosBeatAtUnit(29.5f).isSounding())
                 .isFalse();
+        }
+
+        @Test
+        void resolveBeatAtOpensEveryRhythmOnASoundAndClosesEachOfThemOnASilence() {
+            // The invariant the seam reading rests on: walking off the end of a turn lands on the opening
+            // state only because every rhythm alternates from a sound and ends on a silence. Asked of the
+            // whole set rather than of the two by name, so a rhythm added later that broke it is caught here
+            // instead of by a repeat that has quietly run its last sound into its first.
+            for (var pattern : PhasePattern.values()) {
+
+                assertThat(pattern.resolveBeatAt(TURN_START).isSounding())
+                    .isTrue();
+                assertThat(pattern.resolveBeatAt(JUST_INSIDE_THE_TURNS_END).isSounding())
+                    .isFalse();
+            }
         }
 
         @Test
@@ -152,14 +176,14 @@ final class PhasePatternTest {
         }
     }
 
-    // A position in the rhythm, expressed as the phase a consumer would be holding when the cycle stands
-    // there. The input to a case rather than its expectation, so no assertion is derived from the arithmetic
-    // under test.
-    private static float resolveSteadyBeatPhaseAtUnit(float unitPosition) {
-        return unitPosition / STEADY_BEAT_CYCLE_UNITS;
+    // What a rhythm answers at a position named in its own beat units, converted to the phase a consumer
+    // would be holding when the cycle stands there. The conversion is the input to a case rather than its
+    // expectation, so no assertion is derived from the arithmetic under test.
+    private static PatternBeat resolveSteadyBeatAtUnit(float unitPosition) {
+        return PhasePattern.STEADY_BEAT.resolveBeatAt(unitPosition / STEADY_BEAT_CYCLE_UNITS);
     }
 
-    private static float resolveSosPhaseAtUnit(float unitPosition) {
-        return unitPosition / SOS_CYCLE_UNITS;
+    private static PatternBeat resolveSosBeatAtUnit(float unitPosition) {
+        return PhasePattern.SOS.resolveBeatAt(unitPosition / SOS_CYCLE_UNITS);
     }
 }
