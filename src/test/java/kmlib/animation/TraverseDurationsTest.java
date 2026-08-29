@@ -33,12 +33,14 @@ final class TraverseDurationsTest {
 
         @Test
         void resolveDurationSecondsReturnsTheRiseWhileHeadingForTheFarEnd() {
+
             assertThat(DURATIONS.resolveDurationSeconds(RISING))
                 .isCloseTo(0.1f, within(TOLERANCE));
         }
 
         @Test
         void resolveDurationSecondsReturnsTheFallWhileHeadingBackToRest() {
+
             assertThat(DURATIONS.resolveDurationSeconds(FALLING))
                 .isCloseTo(0.4f, within(TOLERANCE));
         }
@@ -49,6 +51,7 @@ final class TraverseDurationsTest {
 
         @Test
         void createSymmetricGivesBothDirectionsTheSamePace() {
+            
             assertThat(TraverseDurations.createSymmetric(0.25f))
                 .isEqualTo(new TraverseDurations(0.25f, 0.25f));
         }

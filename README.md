@@ -87,7 +87,12 @@ src/main/java/kmlib/
                      at its peak until released for one still being made -
                      and the pair of durations that
                      pace the two directions apart, a motion answering
-                     input arriving quicker than it lets go
+                     input arriving quicker than it lets go. Also where a
+                     repeating animation reads its place in a cycle: a
+                     phase clock taken off real time, so a paused or
+                     compressed simulation neither freezes it nor makes it
+                     strobe, and read at the instant it is asked rather
+                     than stepped per frame
   collections/     - small Collection / Map helpers
   colour/          - AWT Color to normalised GL channels, folding in an
                      alpha multiplier so one factor fades a palette
@@ -104,7 +109,9 @@ src/main/java/kmlib/
                    scoped names that put library work under the mod it was done for
   math/            - easing/, geometry/ (2D shapes, polygon passes and the
                      point arithmetic under them - see its own README),
-                     hashing/ (avalanche, content fingerprints), motion/,
+                     hashing/ (avalanche, content fingerprints, the fixed
+                     share of the unit range a name holds, for spreading
+                     like things apart), motion/,
                      random/, ranges/, solving/
   opengl/          - GL primitive emission (lines, quads, triangles,
                      vertex runs), the saved-state scope a blended 2D
