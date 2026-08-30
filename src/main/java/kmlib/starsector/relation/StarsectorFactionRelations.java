@@ -2,8 +2,11 @@ package kmlib.starsector.relation;
 
 import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.RepLevel;
+import com.fs.starfarer.api.campaign.SectorAPI;
 
 import kmlib.text.KmlibStrings;
+
+import java.util.function.BiPredicate;
 
 /**
  * Reads whether one faction's standing with another is above the base game's own neutral:
@@ -17,9 +20,13 @@ import kmlib.text.KmlibStrings;
  * <p>Named for the test rather than for whatever word a heading above it uses, so nothing reading
  * this concludes the answer means the single {@link RepLevel#FRIENDLY} level.
  *
+ * <p>Answered of a faction the caller already holds, or over a pair of ids bound to one sector -
+ * the same rule at the two shapes callers ask it in, so a surface composing dispositions takes the
+ * pair form rather than writing the lookup itself.
+ *
  * <p>Reads are bare: any {@link RuntimeException} from a modded {@link FactionAPI} propagates to
- * the caller rather than degrading silently. Stateless - the single entry point is a static method,
- * no instance needed.
+ * the caller rather than degrading silently. Stateless - every entry point is a static method, no
+ * instance needed.
  */
 public final class StarsectorFactionRelations {
 
@@ -50,5 +57,33 @@ public final class StarsectorFactionRelations {
         // the doubt, so nothing reports warmth it never read.
         return level != null
             && level.isAtWorst(RepLevel.FAVORABLE);
+    }
+
+    /**
+     * The same answer over a pair of faction ids, bound to one sector: whether the first is disposed
+     * above neutral toward the second.
+     *
+     * <p>Offered because a rule composing dispositions takes the faction-level answer as a plain
+     * predicate over ids, and every such caller would otherwise write the same lookup-and-ask by
+     * hand. Two copies of it are two bindings of one relation, free to drift in which side of the
+     * pair is looked up - and a surface reporting one relation two ways is the fault composing them
+     * centrally exists to prevent.
+     *
+     * <p>Bound to the sector handed in rather than to the game's current one, so a caller drawing
+     * over a second sector reports that sector's relations. The sector is read per call, not
+     * captured as a faction, since a reader outlives the standings it is asked about.
+     *
+     * @param sector the sector the factions are looked up in; nothing is read of no sector, so no
+     *               pair is above neutral
+     * @return the pair test, answering false wherever either side names nobody the sector knows
+     */
+    public static BiPredicate<String, String> createDispositionReader(SectorAPI sector) {
+
+        if (sector == null) {
+            return (factionId, otherFactionId) -> false;
+        }
+        return (factionId, otherFactionId) -> isDispositionAboveNeutral(
+            sector.getFaction(factionId),
+            otherFactionId);
     }
 }
