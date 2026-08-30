@@ -17,6 +17,10 @@ import java.util.List;
  */
 public final class KmlibStrings {
 
+    // What closes each initial of an abbreviated name, so the short form reads as one - a run of
+    // bare capitals is a word in its own right rather than a name stood in for.
+    private static final char INITIAL_TERMINATOR = '.';
+
     /**
      * What {@link #findWholeWordIndex} answers where the text does not say the word at all. Named
      * rather than left as a bare negative index, so a caller reads the absence as one rather than
@@ -70,6 +74,34 @@ public final class KmlibStrings {
             words.add(word);
         }
         return words;
+    }
+
+    /**
+     * The initials of {@code text}'s words, each raised to upper case and closed by a full stop, so
+     * "Church of Galactic Redemption" reads as "C.O.G.R.".
+     *
+     * <p>Every word contributes, the small joining ones included. A reader matching a short form
+     * back to the name it stands for counts its letters off against the words, so a form that
+     * quietly passed over the joining words would leave them looking for a name of three words to
+     * account for four letters - and which words are small enough to drop is a judgement no two
+     * names would answer alike.
+     *
+     * <p>Whitespace is the only parting ({@link #splitIntoWords}), so a hyphenated word contributes
+     * the one initial it opens with rather than being read as two.
+     *
+     * @param text the name to abbreviate; text with no words in it abbreviates to nothing
+     * @return the initials, never null
+     */
+    public static String abbreviateToInitials(String text) {
+
+        var initials = new StringBuilder();
+
+        for (var word : splitIntoWords(text)) {
+            initials
+                .append(Character.toUpperCase(word.charAt(0)))
+                .append(INITIAL_TERMINATOR);
+        }
+        return initials.toString();
     }
 
     /**

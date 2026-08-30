@@ -97,6 +97,50 @@ class KmlibStringsTest {
     }
 
     @Nested
+    class AbbreviateToInitials {
+
+        @Test
+        void abbreviateToInitialsTakesTheInitialOfEveryWordIncludingTheSmallOnes() {
+            // A reader matching the short form back counts its letters off against the words, so a
+            // joining word quietly passed over would leave them one letter short of the name.
+            assertThat(KmlibStrings.abbreviateToInitials("Church of Galactic Redemption"))
+                .isEqualTo("C.O.G.R.");
+        }
+
+        @Test
+        void abbreviateToInitialsRaisesALowerCaseInitial() {
+            assertThat(KmlibStrings.abbreviateToInitials("church of redemption"))
+                .isEqualTo("C.O.R.");
+        }
+
+        @Test
+        void abbreviateToInitialsReadsAHyphenatedWordAsTheOneWordItIsWritten() {
+            // Whitespace is the only parting, so nothing here has to decide whether a hyphen joins
+            // two names or spells one.
+            assertThat(KmlibStrings.abbreviateToInitials("Tri-Tachyon Concord"))
+                .isEqualTo("T.C.");
+        }
+
+        @Test
+        void abbreviateToInitialsAnswersOneInitialForOneWord() {
+            assertThat(KmlibStrings.abbreviateToInitials("Galatia"))
+                .isEqualTo("G.");
+        }
+
+        @Test
+        void abbreviateToInitialsIsEmptyForTextWithNoWordsInIt() {
+            assertThat(KmlibStrings.abbreviateToInitials(" \t\n "))
+                .isEmpty();
+        }
+
+        @Test
+        void abbreviateToInitialsIsEmptyForNull() {
+            assertThat(KmlibStrings.abbreviateToInitials(null))
+                .isEmpty();
+        }
+    }
+
+    @Nested
     class FindWholeWordIndex {
 
         @Test
