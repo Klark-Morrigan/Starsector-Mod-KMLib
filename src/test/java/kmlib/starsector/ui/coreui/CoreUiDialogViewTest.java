@@ -23,8 +23,8 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 /**
- * Pins the three things a caller standing an overlay down for a modal depends on, none of which is
- * visible from the rule's own shape.
+ * Pins what a caller standing an overlay down for a modal depends on, none of it visible from the
+ * rule's own shape.
  *
  * <p>That the root is never tested, which is the one that would break silently and constantly: the
  * core UI panel carries the same marker its dialogs do, so a walk including it answers yes on every
@@ -36,9 +36,13 @@ import static org.mockito.Mockito.when;
  * player's answer, so an overlay gated on presence alone would stay down for those frames after the
  * screen underneath has already gone back to taking input.
  *
- * <p>And that every way the live read can fail lands on "no modal", which is what the callers are
+ * <p>That every way the live read can fail lands on "no modal", which is what the callers are
  * written against: each of them only ever stands something down on this answer, so an unreadable
  * tree has to leave them drawing rather than take them off a screen the player is looking at.
+ *
+ * <p>And that a malformed children list does not raise. The list comes back verbatim from whatever
+ * the game's own panel answered, and this runs from a render pass every frame, so it is the one
+ * thing here that must survive a shape nobody designed.
  */
 class CoreUiDialogViewTest {
 
@@ -56,8 +60,9 @@ class CoreUiDialogViewTest {
 
         @Test
         void isModalDialogShowingUnderFindsAModalAmongOrdinarySiblings() {
-            // The ordinary shape: a core UI holds its tab panel and its chrome, and a modal joins
-            // them as one more child rather than replacing them.
+            // The ordinary shape, and not a contrived one: showing a modal adds two children, the
+            // dialog and the event interceptor laid over the screen beneath it, to whatever the
+            // core UI was already holding. Only one of the three carries the marker.
             var coreUiFake = new CoreUiComponentFake(
                 new CoreUiComponentFake(),
                 new ModalDialogFake(),

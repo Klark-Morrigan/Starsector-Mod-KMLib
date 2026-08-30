@@ -209,9 +209,12 @@ No Starsector API on the signature.
   sizing, and the hover and press sources a body resolves per cell.
 - **`kmlib.starsector.ui.coreui`** - name-based reach into the game's concrete
   UI classes: child walks, offered hops, no-arg and argument invokes, showing
-  checks, the core UI behind a host, the current tab, and the campaign
-  screen's shown tab. Deliberately policy-free - a hop either answers or
-  throws, and what a failure means is the caller's to decide.
+  checks, the core UI behind a host, the current tab, the campaign screen's
+  shown tab, and whether a core screen has raised a modal in front of itself -
+  which the published dialog state never reports, that answering for the
+  campaign's own conversations. The reach itself is deliberately policy-free -
+  a hop either answers or throws, and what a failure means is the caller's to
+  decide.
 - **`kmlib.starsector.ui.debug`** - a quadrant-anchored on-screen debug HUD,
   drawn at the corners or around the cursor.
 - **`kmlib.starsector.ui.font`** - the face enum every caller names an atlas
