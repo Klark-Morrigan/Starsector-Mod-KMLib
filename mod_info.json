@@ -3,7 +3,7 @@
   "name": "Klark Morrigan's Library",
   "author": "Klark Morrigan",
   "utility": "true",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Shared helpers and general-purpose code.",
   "gameVersion": "0.98a-RC8",
   "jars": ["jars/KMLib.jar"],
