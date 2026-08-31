@@ -210,11 +210,12 @@ No Starsector API on the signature.
 - **`kmlib.starsector.ui.coreui`** - name-based reach into the game's concrete
   UI classes: child walks, offered hops, no-arg and argument invokes, showing
   checks, the core UI behind a host, the current tab, the campaign screen's
-  shown tab, and whether a core screen has raised a modal in front of itself -
-  which the published dialog state never reports, that answering for the
-  campaign's own conversations. The reach itself is deliberately policy-free -
-  a hop either answers or throws, and what a failure means is the caller's to
-  decide.
+  shown tab, and what a modal a core screen has raised in front of itself is
+  doing - whether it is up, which the published dialog state never reports,
+  that answering for the campaign's own conversations, and how far through its
+  own fade it stands, so a caller can thin out against its backdrop rather than
+  cut away from it. The reach itself is deliberately policy-free - a hop either
+  answers or throws, and what a failure means is the caller's to decide.
 - **`kmlib.starsector.ui.debug`** - a quadrant-anchored on-screen debug HUD,
   drawn at the corners or around the cursor.
 - **`kmlib.starsector.ui.font`** - the face enum every caller names an atlas
@@ -267,7 +268,9 @@ No Starsector API on the signature.
   into one widget style.
 - **`kmlib.starsector.ui.render.gl.tabs`** - painting both tab chromes,
   vanilla strip and raised button, the panel they head, and centred tab
-  labels, behind one chrome-selecting renderer.
+  labels, behind one chrome-selecting renderer. Each surface of a tab panel
+  takes its own channel from the panel's alpha, so a row opaque over a
+  translucent body still fades out with the panel around it.
 - **`kmlib.starsector.ui.render.gl.tooltip`** - painting a cursor tooltip and
   the leader lines ruling its rows, with redaction darkening.
 - **`kmlib.starsector.ui.screen`** - the UI screen box, its width and height,
@@ -287,7 +290,10 @@ No Starsector API on the signature.
   labelled-row core: bordered box content bounds, checkbox tick boxes,
   icon-label rows with trailing slots and direction triangles, radio grids and
   segments, the row slots a label carries (text, runs, image, tick, triangle,
-  empty), box borders per edge, and panel placement with its scroll region.
+  empty), box borders per edge, panel placement with its scroll region, and the
+  two alphas a panel paints at - how see-through its body is meant to be, and
+  how much of the panel is on screen at all - carried together because chrome
+  standing opaque on that body still has to leave with the panel.
 - **`kmlib.starsector.ui.widgets.lists`** - the spotlight picker: sort modes
   with direction and comparator, column-count and sort selectors, the item
   seam rows are drawn from, the store a consumer persists picks into, and a
