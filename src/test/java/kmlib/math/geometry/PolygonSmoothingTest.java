@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
+import java.util.List;
 
 import static kmlib.math.geometry.GeometryTestSupport.buildReferenceSquare;
 import static kmlib.math.geometry.GeometryTestSupport.buildSquare;
@@ -71,6 +72,7 @@ final class PolygonSmoothingTest {
 
         @Test
         void round_corners_leaves_the_polygon_unchanged_for_zero_radius() {
+            
             assertThat(PolygonSmoothing.roundCorners(
                     buildReferenceSquare(),
                     new CornerRounding(0.0, 3, 0.0, CornerRounding.ROUND_EVERY_CORNER)))
@@ -231,6 +233,75 @@ final class PolygonSmoothingTest {
 
             assertThat(rounded)
                 .hasSize(4);
+        }
+    }
+
+    @Nested
+    class RoundOpenCorners {
+
+        @Test
+        void round_open_corners_arcs_the_turn_and_keeps_both_ends_where_they_are() {
+            // A run turning once. The corner arcs into 3 + 1 points, and the two ends
+            // are the points the caller gave: 1 + 4 + 1 = 6. An end that moved would
+            // part the run from whatever it was drawn to meet.
+            var rounded = PolygonSmoothing.roundOpenCorners(
+                buildTurningRun(),
+                new CornerRounding(10.0, 3, 0.0, CornerRounding.ROUND_EVERY_CORNER));
+
+            assertThat(rounded)
+                .hasSize(6);
+
+            assertThat(rounded.get(0))
+                .containsExactly(0.0, 0.0);
+
+            assertThat(rounded.get(rounded.size() - 1))
+                .containsExactly(100.0, 100.0);
+        }
+
+        @Test
+        void round_open_corners_turns_at_no_end_where_the_closed_pass_turns_at_every_vertex() {
+            // The same three points read two ways. Closed, the run turns at all three
+            // and arcs each into 3 + 1 points; open, it turns only at its middle. The
+            // difference is the edge a ring has and a run does not - the one running
+            // back from the last point to the first.
+            var shape = new CornerRounding(10.0, 3, 0.0, CornerRounding.ROUND_EVERY_CORNER);
+
+            assertThat(PolygonSmoothing.roundCorners(buildTurningRun(), shape))
+                .hasSize(12);
+
+            assertThat(PolygonSmoothing.roundOpenCorners(buildTurningRun(), shape))
+                .hasSize(6);
+        }
+
+        @Test
+        void round_open_corners_returns_the_input_below_three_vertices() {
+            // Two points are one straight step, which turns nowhere.
+            var segment = Arrays.asList(
+                new double[] {0, 0},
+                new double[] {10, 0});
+
+            assertThat(PolygonSmoothing.roundOpenCorners(
+                    segment,
+                    new CornerRounding(2.0, 3, 0.0, CornerRounding.ROUND_EVERY_CORNER)))
+                .hasSize(2);
+        }
+
+        @Test
+        void round_open_corners_leaves_the_run_unchanged_for_zero_radius() {
+            assertThat(PolygonSmoothing.roundOpenCorners(
+                    buildTurningRun(),
+                    new CornerRounding(0.0, 3, 0.0, CornerRounding.ROUND_EVERY_CORNER)))
+                .hasSize(3);
+        }
+
+        // A run of two edges meeting at a right angle, which is one corner to soften
+        // and two ends to leave alone.
+        private static List<double[]> buildTurningRun() {
+
+            return Arrays.asList(
+                new double[] {0, 0},
+                new double[] {100, 0},
+                new double[] {100, 100});
         }
     }
 

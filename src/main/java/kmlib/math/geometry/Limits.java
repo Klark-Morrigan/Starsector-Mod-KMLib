@@ -15,6 +15,12 @@ public final class Limits {
     // nothing.
     public static final int MIN_VERTICES_TO_ENCLOSE_AREA = 3;
 
+    // A run needs three vertices before any of them is a corner: with two it is one
+    // straight step, and with one it is a place. The same number as the loop threshold
+    // above and a different fact - a closed ring turns at every vertex it has, an open
+    // run turns only between its ends - so a pass over corners states which it means.
+    public static final int MIN_VERTICES_TO_TURN = 3;
+
     // Edges shorter than this have no well-defined direction (and so no normal);
     // callers skip them rather than dividing by a near-zero length.
     public static final double MIN_EDGE_LENGTH = 1e-6;
