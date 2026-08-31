@@ -2,7 +2,8 @@ package kmlib.starsector.ui.coreui;
 
 /**
  * Whether a modal dialog is raised over the core UI right now - a confirmation prompt, a picker, or
- * anything else a core screen stands up in front of itself and takes the whole screen for.
+ * anything else a core screen stands up in front of itself and takes the whole screen for - and, for
+ * a caller that has to move with one rather than against it, how far through its own fade it stands.
  *
  * <p>Exists because the published read does not answer this. {@code CampaignUIAPI#isShowingDialog}
  * reports the conversation dialogs the campaign raises, and a modal a core screen raises over itself
@@ -41,6 +42,15 @@ public final class CoreUiDialogView {
     // base's own contract, so it survives obfuscation the way the hops in the reach below do.
     private static final String GET_BACKGROUND_DIM_AMOUNT_METHOD = "getBackgroundDimAmount";
 
+    // How far through its own fade a component stands, off the same fader the showing read consults.
+    private static final String GET_FADER_METHOD = "getFader";
+    private static final String GET_BRIGHTNESS_METHOD = "getBrightness";
+
+    // What an unreadable fade counts as. A modal is there - only how far in it is could not be read -
+    // so the answer that matches its presence is "all the way in", which is also the direction that
+    // keeps a caller fading on it from being left drawn over a dialog it cannot measure.
+    private static final float FULLY_RAISED = 1f;
+
     private CoreUiDialogView() {
     }
 
@@ -63,17 +73,75 @@ public final class CoreUiDialogView {
     }
 
     /**
-     * The rule itself, over a core UI its caller has already resolved. Package-private so it can be
-     * driven against a stood-up tree with no game running, the live resolution above being the half
-     * that needs one.
+     * Presence and fade together, for a caller that both stands its input down under a modal and fades
+     * something out against one - the two halves being wanted on the same frame and off the same walk.
+     *
+     * <p>Beside the presence read rather than replacing it: a caller wanting only "is one up" should not
+     * pay for the fader hops, and one wanting both should not pay for two walks.
+     *
+     * @return what the modal over the core UI is doing, and {@link ModalDialogState#NONE} whenever there
+     *         is none or the reach fails
+     */
+    public static ModalDialogState resolveModalDialogState() {
+
+        try {
+            return resolveModalDialogStateUnder(CoreUiTree.resolveActiveCoreUi());
+
+        } catch (Throwable cannotReachCoreUi) {
+            return ModalDialogState.NONE;
+        }
+    }
+
+    /**
+     * The presence rule itself, over a core UI its caller has already resolved. Package-private so it
+     * can be driven against a stood-up tree with no game running, the live resolutions above being the
+     * half that need one.
      *
      * @param coreUi the core UI in force, or null when there is none
      * @return whether any of its children is a modal that is still on screen
      */
     static boolean isModalDialogShowingUnder(Object coreUi) {
+        return findShowingModalUnder(coreUi) != null;
+    }
+
+    /**
+     * The combined rule, over a core UI its caller has already resolved. Package-private for the reason
+     * the presence rule beside it is.
+     *
+     * @param coreUi the core UI in force, or null when there is none
+     * @return what the modal among its children is doing, or {@link ModalDialogState#NONE}
+     */
+    static ModalDialogState resolveModalDialogStateUnder(Object coreUi) {
+
+        var modal = findShowingModalUnder(coreUi);
+
+        return modal == null
+            ? ModalDialogState.NONE
+            : new ModalDialogState(true, readBrightnessOf(modal));
+    }
+
+    // How far through its fade a found modal stands. Fails the other way from the presence read, and
+    // deliberately: the modal is there, so only how far in it is went unread, and answering "not raised"
+    // would leave a caller painting over a dialog it had already been told about.
+    private static float readBrightnessOf(Object modal) {
+
+        var fader = CoreUiTree.readHopIfOffered(modal, GET_FADER_METHOD);
+        if (fader == null) {
+            return FULLY_RAISED;
+        }
+
+        return CoreUiTree.readHopIfOffered(fader, GET_BRIGHTNESS_METHOD) instanceof Float brightness
+            ? brightness
+            : FULLY_RAISED;
+    }
+
+    // The modal standing over this core UI, or null when none is. One walk behind both reads, so the
+    // fade a caller paints by and the presence its input stands down on cannot be answered off two
+    // different children on the same frame.
+    private static Object findShowingModalUnder(Object coreUi) {
 
         if (coreUi == null) {
-            return false;
+            return null;
         }
 
         for (var child : CoreUiTree.readChildrenOf(coreUi)) {
@@ -81,10 +149,10 @@ public final class CoreUiDialogView {
             // Asked in this order because the cheap half settles most children: the name is answered
             // from a memo, while the fade state costs two hops into whatever carries it.
             if (isModalDialog(child) && CoreUiTree.isComponentShowing(child)) {
-                return true;
+                return child;
             }
         }
-        return false;
+        return null;
     }
 
     // Whether this child is a modal at all. A dismissed one stays a child until its fade finishes,

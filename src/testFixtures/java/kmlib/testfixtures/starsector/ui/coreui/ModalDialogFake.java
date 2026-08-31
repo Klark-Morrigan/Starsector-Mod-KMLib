@@ -13,7 +13,8 @@ package kmlib.testfixtures.starsector.ui.coreui;
  * <p>The dismissed mode is the frames between the player answering a dialog and its fade finishing,
  * during which it is still a child of the core UI. Modelled because those frames are the only thing
  * separating a reader that asks whether a dialog is still up from one that asks only whether one is
- * there.
+ * there. The mid-fade mode is the frames either side of that, where a reader following the dialog's
+ * own fade parts company with one that only asks whether it is there.
  */
 public final class ModalDialogFake {
 
@@ -36,6 +37,17 @@ public final class ModalDialogFake {
      */
     public static ModalDialogFake createDismissed() {
         return new ModalDialogFake(new FaderFake(true));
+    }
+
+    /**
+     * A modal part way through arriving or leaving, which is the state anything painting against its
+     * backdrop has to follow rather than snap through.
+     *
+     * @param brightness how far through its fade it stands, 0..1
+     * @return a modal showing at that brightness
+     */
+    public static ModalDialogFake createMidFade(float brightness) {
+        return new ModalDialogFake(FaderFake.createMidFade(brightness));
     }
 
     public float getBackgroundDimAmount() {

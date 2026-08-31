@@ -10,6 +10,7 @@ import kmlib.starsector.ui.render.gl.panel.NotchState;
 import kmlib.starsector.ui.render.gl.panel.PanelRenderer;
 import kmlib.starsector.ui.render.gl.style.WidgetStyle;
 import kmlib.starsector.ui.widgets.BoxBorder;
+import kmlib.starsector.ui.widgets.PanelAlpha;
 import kmlib.starsector.ui.widgets.tabs.TabInteractionSources;
 import kmlib.starsector.ui.widgets.tabs.TabPanelInteractionSources;
 import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
@@ -43,22 +44,16 @@ import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
  * the other draw helpers.
  */
 public final class TabPanelRenderer {
-    // The tabs header is opaque chrome, not part of the translucent body: it paints at full alpha
-    // regardless of the body's opacity, so the tab row reads as a solid cap over a see-through panel
-    // rather than fading with it. The body's translucency comes from its panelFill's own alpha and the
-    // opacity parameter; the header opts out of both. This is the seam where the tab chrome decouples
-    // from the panel's global opacity - the strip renderer still fades faithfully by whatever alpha it
-    // is handed, it is simply handed full alpha here.
-    private static final float HEADER_OPACITY = 1f;
 
     private TabPanelRenderer() {
     }
 
     /**
      * Draws the tab panel: the bordered frame, body controls, and scrollbar via {@link PanelRenderer},
-     * then the tabs header above them, then the collapse handle past the right edge. The body and handle
-     * fade by {@code opacity}; the header is opaque chrome and paints at full alpha regardless (see {@code
-     * HEADER_OPACITY}). Must run with a current GL context. The {@code border} names which frame edges to
+     * then the tabs header above them, then the collapse handle past the right edge. Each surface takes
+     * its alpha from {@code alpha}, which settles for itself which of the two channels a surface honours -
+     * the header being the one that stands opaque on the body while still going with it as the panel
+     * fades. Must run with a current GL context. The {@code border} names which frame edges to
      * stroke, so a panel flush against another's edge can drop the border there; the header, the notch,
      * and the collapse clip are unaffected.
      *
@@ -75,8 +70,9 @@ public final class TabPanelRenderer {
      * @param notchState   how far the body is collapsed (0 lays out full and unclipped, 1 docks to the
      *                     rail, and it orients the notch's chevron) and how far the handle has lit under
      *                     the pointer, resolved by the same owner for the same reason
-     * @param opacity      overall alpha, 0..1, fading the body and the collapse handle; the tabs header
-     *                     ignores it and paints opaque
+     * @param alpha        the panel's two alphas - how see-through its body is meant to be, and how far
+     *                     through arriving or leaving the whole panel stands - which each surface below
+     *                     reads the channel it honours from
      */
     public static void render(
             TabPanelPlacement placement,
@@ -84,15 +80,15 @@ public final class TabPanelRenderer {
             BoxBorder border,
             TabPanelInteractionSources interactions,
             NotchState notchState,
-            float opacity) {
+            PanelAlpha alpha) {
 
         // A bodyless panel frames nothing: it lays out no box, so there is no frame, no fill, and no fold -
         // the row above is the whole panel. Asked of the placement rather than inferred from the absent
         // handle, so what is skipped here is skipped for the reason it is skipped.
         if (placement.hasBody()) {
-            drawFramedBody(placement, style, border, interactions.bodyControls(), notchState, opacity);
+            drawFramedBody(placement, style, border, interactions.bodyControls(), notchState, alpha);
         }
-        drawHeaderBand(placement, style, interactions.headerTabs());
+        drawHeaderBand(placement, style, interactions.headerTabs(), alpha);
 
         // The handle draws last and unclipped, over the map beyond the frame's right edge, so it stays
         // reachable to expand the panel even when the body has wiped away to the docked rail. A bodyless
@@ -103,7 +99,7 @@ public final class TabPanelRenderer {
                 style,
                 border.width(),
                 notchState,
-                opacity);
+                alpha.resolveBodyAlpha());
         }
     }
 
@@ -117,12 +113,16 @@ public final class TabPanelRenderer {
             BoxBorder border,
             BodyInteractionSources bodyInteractions,
             NotchState notchState,
-            float opacity) {
+            PanelAlpha alpha) {
 
         // Named once and run either way, so the clipped and unclipped paths cannot drift apart in
         // what they draw - only in whether the clip is around it.
-        Runnable drawBody = () ->
-            PanelRenderer.render(placement.body(), style, border, bodyInteractions, opacity);
+        Runnable drawBody = () -> PanelRenderer.render(
+            placement.body(),
+            style,
+            border,
+            bodyInteractions,
+            alpha.resolveBodyAlpha());
 
         if (notchState.isFolding()) {
             UiScissor.runClippedTo(placement.body().box(), drawBody);
@@ -138,7 +138,8 @@ public final class TabPanelRenderer {
     private static void drawHeaderBand(
             TabPanelPlacement placement,
             WidgetStyle style,
-            TabInteractionSources tabInteractions) {
+            TabInteractionSources tabInteractions,
+            PanelAlpha alpha) {
 
         // Clipped to what the chrome paints rather than to the band alone: a chrome whose buttons lay their
         // borders on the panel's own lines reaches a hairline outside the band, and a clip cut to the band
@@ -152,7 +153,9 @@ public final class TabPanelRenderer {
             () -> GlStateGuard.bracket(() -> ControlRenderer.render(
                 placement.tabsHeader(),
                 style,
-                HEADER_OPACITY,
+                // The chrome channel: the row stands opaque on a see-through body, so it takes none of
+                // the body's opacity - but it goes with the panel as that panel arrives or leaves.
+                alpha.resolveChromeAlpha(),
                 tabInteractions,
                 // The row answers the pointer and a press through its own palette - a tab meets a shade
                 // rather than taking the body's cell wash - so it is drawn with those channels at rest.

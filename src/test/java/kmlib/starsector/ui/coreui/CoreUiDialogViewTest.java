@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
@@ -45,6 +46,8 @@ import static org.mockito.Mockito.when;
  * thing here that must survive a shape nobody designed.
  */
 class CoreUiDialogViewTest {
+
+    private static final float TOLERANCE = 0.0001f;
 
     @Nested
     class IsModalDialogShowingUnder {
@@ -137,6 +140,59 @@ class CoreUiDialogViewTest {
     }
 
     @Nested
+    class ResolveModalDialogStateUnder {
+
+        @Test
+        void resolveModalDialogStateUnderFollowsAModalMidFade() {
+            // The read the presence one cannot stand in for, and the reason it exists: the modal
+            // darkens the screen by this same brightness, so anything fading against it lands frame
+            // for frame instead of on a duration guessed to match.
+            var coreUiFake = new CoreUiComponentFake(ModalDialogFake.createMidFade(0.4f));
+
+            assertThat(CoreUiDialogView.resolveModalDialogStateUnder(coreUiFake).brightness())
+                .isCloseTo(0.4f, within(TOLERANCE));
+        }
+
+        @Test
+        void resolveModalDialogStateUnderReportsAModalMidFadeAsShowing() {
+            // The half that must not follow the fade. A modal claims input from the frame it is
+            // raised, when its brightness is still nothing, so presence read off the brightness
+            // would let the panel underneath route for the frames the fade is climbing through.
+            var coreUiFake = new CoreUiComponentFake(ModalDialogFake.createMidFade(0f));
+
+            assertThat(CoreUiDialogView.resolveModalDialogStateUnder(coreUiFake).isShowing())
+                .isTrue();
+        }
+
+        @Test
+        void resolveModalDialogStateUnderIsFullyRaisedForAModalAtRest() {
+
+            var coreUiFake = new CoreUiComponentFake(new ModalDialogFake());
+
+            assertThat(CoreUiDialogView.resolveModalDialogStateUnder(coreUiFake).brightness())
+                .isCloseTo(1f, within(TOLERANCE));
+        }
+
+        @Test
+        void resolveModalDialogStateUnderIsNoneWithNoModalUp() {
+
+            assertThat(CoreUiDialogView.resolveModalDialogStateUnder(new CoreUiComponentFake()))
+                .isEqualTo(ModalDialogState.NONE);
+        }
+
+        @Test
+        void resolveModalDialogStateUnderIsFullyRaisedWhenTheFadeCannotBeRead() {
+            // Failing the opposite way from the presence read beside it, which is the point: a modal
+            // was found, so only how far in it is went unread - and answering "not raised" there
+            // would leave a caller painting over the dialog it had just been told about.
+            var coreUiFake = new CoreUiComponentFake(new UnreadableFadeModalFake());
+
+            assertThat(CoreUiDialogView.resolveModalDialogStateUnder(coreUiFake).brightness())
+                .isCloseTo(1f, within(TOLERANCE));
+        }
+    }
+
+    @Nested
     class IsModalDialogShowing {
 
         private MockedStatic<Global> globalMock;
@@ -222,6 +278,20 @@ class CoreUiDialogViewTest {
 
         public List<Object> getChildrenCopy() {
             return children;
+        }
+    }
+
+    // Stands for a modal whose fade is there and says nothing readable - the half a game build can
+    // break on its own, as against a shape carrying no fader at all. Local, since a consuming mod
+    // stands up working dialogs rather than broken ones.
+    public static final class UnreadableFadeModalFake {
+
+        public float getBackgroundDimAmount() {
+            return 0f;
+        }
+
+        public Object getFader() {
+            return new Object();
         }
     }
 
