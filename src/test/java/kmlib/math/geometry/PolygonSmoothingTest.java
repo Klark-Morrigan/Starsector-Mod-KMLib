@@ -72,7 +72,7 @@ final class PolygonSmoothingTest {
 
         @Test
         void round_corners_leaves_the_polygon_unchanged_for_zero_radius() {
-            
+
             assertThat(PolygonSmoothing.roundCorners(
                     buildReferenceSquare(),
                     new CornerRounding(0.0, 3, 0.0, CornerRounding.ROUND_EVERY_CORNER)))
