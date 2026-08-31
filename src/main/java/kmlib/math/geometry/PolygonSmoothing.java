@@ -4,18 +4,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Softens corners - rounding or chamfering them, and sanding off the slivers a
- * Voronoi inset throws up - so an outline reads as a clean shape rather than a
- * faceted polygon.
+ * Softens a closed ring's corners - rounding or chamfering them, and sanding off
+ * the slivers a Voronoi inset throws up - so a province outline reads as a clean
+ * shape rather than a faceted polygon.
  *
  * <p>Two passes, run in order by a caller: {@link #removeSpikes} first drops the
  * needle protrusions and cusps whose own edges are too short for rounding to step
  * back along, then {@link #roundCorners} arcs the corners that remain. Both keep
  * the ring's real shape - a genuine peninsula tip or a long straight edge survives
  * - and touch only the corners.
- *
- * <p>{@link #roundOpenCorners} is the rounding pass for a run that does not close,
- * which softens the same corners while leaving the run's two ends where they are.
  */
 public final class PolygonSmoothing {
 
@@ -58,67 +55,59 @@ public final class PolygonSmoothing {
 
         var vertices = Rings.removeConsecutiveDuplicates(polygon);
         var count = vertices.size();
+        var segmentsPerCorner = shape.segmentsPerCorner();
 
-        if (count < Limits.MIN_VERTICES_TO_TURN || !isWorthRounding(shape)) {
+        if (count < Limits.MIN_VERTICES_TO_ENCLOSE_AREA
+                || shape.radius() <= 0
+                || segmentsPerCorner < 1) {
             return vertices;
         }
 
-        var rounded = new ArrayList<double[]>(count * (shape.segmentsPerCorner() + 1));
+        var rounded = new ArrayList<double[]>(count * (segmentsPerCorner + 1));
 
         for (var i = 0; i < count; i++) {
 
-            appendCorner(
+            var previous = vertices.get((i - 1 + count) % count);
+            var corner = vertices.get(i);
+            var next = vertices.get((i + 1) % count);
+            var interior = computeInteriorAngle(previous, corner, next);
+
+            // A corner flatter than the rounding threshold is not one this pass is
+            // for: it keeps its vertex verbatim, edges and all.
+            if (interior >= shape.roundBelowAngleRadians()) {
+                rounded.add(corner);
+                continue;
+            }
+
+            // Clamp the cut to half of the shorter adjacent edge so two corners
+            // sharing an edge cannot eat into each other.
+            var cut = Math.min(
+                shape.radius(),
+                0.5 * Math.min(
+                    Points.computeDistance(corner, previous),
+                    Points.computeDistance(corner, next)));
+
+            var arcStart = computePointToward(corner, previous, cut);
+            var arcEnd = computePointToward(corner, next, cut);
+
+            // Below the threshold a rounded arc would still read as a spike, so
+            // cut straight across the corner: the two step-back points alone.
+            if (shape.bevelBelowAngleRadians() > 0
+                    && interior < shape.bevelBelowAngleRadians()) {
+
+                rounded.add(arcStart);
+                rounded.add(arcEnd);
+                continue;
+            }
+            appendCircularArc(
                 rounded,
-                vertices.get((i - 1 + count) % count),
-                vertices.get(i),
-                vertices.get((i + 1) % count),
-                shape);
+                previous,
+                corner,
+                next,
+                arcStart,
+                arcEnd,
+                segmentsPerCorner);
         }
-        return rounded;
-    }
-
-    /**
-     * The same softening for a line that does not close: every corner between its two
-     * ends is rounded, and the ends themselves are kept exactly where they are.
-     *
-     * <p>The ends are the whole difference. A ring has a corner at every vertex
-     * because the last edge runs back to the first; an open line's ends have one edge
-     * each and so no corner to soften - and rounded as a ring, the two would be joined
-     * by an edge the line does not have and cut back by a corner it does not turn.
-     * That is a line that starts and finishes somewhere other than where it was told
-     * to, which for a run meeting other geometry at its ends is the one thing it may
-     * not do.
-     *
-     * <p>A run whose two ends are the same point is a closed ring however it was
-     * passed, and is rounded as one.
-     *
-     * @param line  the run's vertices as {x, y} pairs, in order
-     * @param shape the radius, segment count and the two angle thresholds to round
-     *              with
-     * @return the rounded run, beginning and ending on the points it was given; a copy
-     *         of the input (deduplicated) when it has fewer than three vertices, or
-     *         when radius/segments are non-positive (nothing to round)
-     */
-    public static List<double[]> roundOpenCorners(List<double[]> line, CornerRounding shape) {
-
-        var vertices = Rings.removeConsecutiveDuplicates(line);
-        var count = vertices.size();
-
-        if (count < Limits.MIN_VERTICES_TO_TURN || !isWorthRounding(shape)) {
-            return vertices;
-        }
-
-        var rounded = new ArrayList<double[]>(count * (shape.segmentsPerCorner() + 1));
-
-        rounded.add(vertices.get(0));
-
-        for (var i = 1; i < count - 1; i++) {
-
-            appendCorner(
-                rounded, vertices.get(i - 1), vertices.get(i), vertices.get(i + 1), shape);
-        }
-        rounded.add(vertices.get(count - 1));
-
         return rounded;
     }
 
@@ -197,56 +186,6 @@ public final class PolygonSmoothing {
             }
         }
         return vertices;
-    }
-
-    // Whether the shape asks for any rounding at all: a corner cannot be stepped back
-    // along by nothing, and an arc cannot be drawn in no segments.
-    private static boolean isWorthRounding(CornerRounding shape) {
-        return shape.radius() > 0 && shape.segmentsPerCorner() >= 1;
-    }
-
-    // One corner softened as the shape asks, appended to the run being built. Shared by
-    // the closed and open passes, which differ only in which corners they offer it -
-    // written twice, the two would come to soften the same corner differently.
-    private static void appendCorner(
-            List<double[]> rounded,
-            double[] previous,
-            double[] corner,
-            double[] next,
-            CornerRounding shape) {
-
-        var interior = computeInteriorAngle(previous, corner, next);
-
-        // A corner flatter than the rounding threshold is not one this pass is
-        // for: it keeps its vertex verbatim, edges and all.
-        if (interior >= shape.roundBelowAngleRadians()) {
-
-            rounded.add(corner);
-            return;
-        }
-
-        // Clamp the cut to half of the shorter adjacent edge so two corners
-        // sharing an edge cannot eat into each other.
-        var cut = Math.min(
-            shape.radius(),
-            0.5 * Math.min(
-                Points.computeDistance(corner, previous),
-                Points.computeDistance(corner, next)));
-
-        var arcStart = computePointToward(corner, previous, cut);
-        var arcEnd = computePointToward(corner, next, cut);
-
-        // Below the threshold a rounded arc would still read as a spike, so
-        // cut straight across the corner: the two step-back points alone.
-        if (shape.bevelBelowAngleRadians() > 0
-                && interior < shape.bevelBelowAngleRadians()) {
-
-            rounded.add(arcStart);
-            rounded.add(arcEnd);
-            return;
-        }
-        appendCircularArc(
-            rounded, previous, corner, next, arcStart, arcEnd, shape.segmentsPerCorner());
     }
 
     // Appends the circular arc that rounds one corner: the arc tangent to both edges
