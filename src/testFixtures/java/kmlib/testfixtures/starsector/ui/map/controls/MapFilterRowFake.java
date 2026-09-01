@@ -61,9 +61,11 @@ public final class MapFilterRowFake implements MapFilterActionListenerFake {
         buttons.add(button);
     }
 
-    // The row's button factory. Its second argument is the keyboard shortcut, which the game passes
-    // as one of its own enum constants and as null for the button that has none.
+    // The row's button factory. Its first argument is the words on the button and its second the
+    // keyboard shortcut, which the game passes as one of its own enum constants and as null for the
+    // button that has none. Neither is carried onto the button: what this fixture stands for is the
+    // signature, which is what tells the factory from the appender above.
     private MapFilterButtonFake o00000(String buttonLabel, Object shortcut) {
-        return new MapFilterButtonFake(buttonLabel, this);
+        return new MapFilterButtonFake(this);
     }
 }

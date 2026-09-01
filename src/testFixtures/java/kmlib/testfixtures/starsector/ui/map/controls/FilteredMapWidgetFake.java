@@ -1,9 +1,6 @@
 package kmlib.testfixtures.starsector.ui.map.controls;
 
-import com.fs.starfarer.api.campaign.SectorEntityToken;
-import com.fs.starfarer.api.campaign.comm.IntelInfoPlugin;
-import com.fs.starfarer.api.impl.campaign.procgen.Constellation;
-import com.fs.starfarer.api.ui.SectorMapAPI;
+import kmlib.testfixtures.starsector.ui.map.BaseSectorMapFake;
 
 /**
  * A sector map that offers its filter row the way the game's own does, which is the one hop a
@@ -14,12 +11,8 @@ import com.fs.starfarer.api.ui.SectorMapAPI;
  * different half of the widget: those answer about where a map is and what hangs under it, and this
  * answers what the map is furnished with. A map built holding no row stands for the shape that
  * carries the accessor and answers nothing through it, which is a state a caller has to survive.
- *
- * <p>The published half of a map is two entity lookups nothing here takes. They throw rather than
- * answering null, so a caller that strayed into one fails here instead of carrying on against a
- * fixture that cannot stand for what it asked.
  */
-public final class FilteredMapWidgetFake implements SectorMapAPI {
+public final class FilteredMapWidgetFake extends BaseSectorMapFake {
 
     private final Object filterRow;
 
@@ -31,17 +24,7 @@ public final class FilteredMapWidgetFake implements SectorMapAPI {
         this.filterRow = filterRow;
     }
 
-    @Override
-    public SectorEntityToken getConstellationLabelEntity(Constellation constellation) {
-        throw new UnsupportedOperationException("A fixture for a map's filter row holds no entities.");
-    }
-
     public Object getFilter() {
         return filterRow;
-    }
-
-    @Override
-    public SectorEntityToken getIntelIconEntity(IntelInfoPlugin intel) {
-        throw new UnsupportedOperationException("A fixture for a map's filter row holds no entities.");
     }
 }

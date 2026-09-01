@@ -1,9 +1,8 @@
 package kmlib.testfixtures.starsector.ui.map.controls;
 
 /**
- * One toggle on the game's map filter row: a label, a checked state, and the listener its clicks are
- * reported to. Shipped from KMLib so both KMLib's and consuming mods' tests build the same shape of
- * row.
+ * One toggle on the game's map filter row: a checked state, and the listener its clicks are reported
+ * to. Shipped from KMLib so both KMLib's and consuming mods' tests build the same shape of row.
  *
  * <p>Its own type rather than a bare object, because the row's two helpers are told apart by the
  * types in their signatures rather than by their names - the game gives them the same name - so a
@@ -16,18 +15,14 @@ package kmlib.testfixtures.starsector.ui.map.controls;
  */
 public final class MapFilterButtonFake {
 
-    private final String label;
-
     private boolean isChecked;
 
     private MapFilterActionListenerFake listener;
 
     /**
-     * @param label    the words on the button
      * @param listener what its clicks are reported to, which is the row that built it
      */
-    public MapFilterButtonFake(String label, MapFilterActionListenerFake listener) {
-        this.label = label;
+    public MapFilterButtonFake(MapFilterActionListenerFake listener) {
         this.listener = listener;
     }
 
@@ -36,13 +31,6 @@ public final class MapFilterButtonFake {
      */
     public MapFilterActionListenerFake readListener() {
         return listener;
-    }
-
-    /**
-     * @return the words on the button
-     */
-    public String readLabel() {
-        return label;
     }
 
     public boolean isChecked() {

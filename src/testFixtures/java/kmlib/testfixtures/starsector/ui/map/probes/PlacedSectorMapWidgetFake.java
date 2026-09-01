@@ -1,14 +1,11 @@
 package kmlib.testfixtures.starsector.ui.map.probes;
 
-import com.fs.starfarer.api.campaign.SectorEntityToken;
-import com.fs.starfarer.api.campaign.comm.IntelInfoPlugin;
-import com.fs.starfarer.api.impl.campaign.procgen.Constellation;
 import com.fs.starfarer.api.input.InputEventAPI;
 import com.fs.starfarer.api.ui.PositionAPI;
-import com.fs.starfarer.api.ui.SectorMapAPI;
 import com.fs.starfarer.api.ui.UIComponentAPI;
 
 import kmlib.testfixtures.starsector.ui.coreui.CoreUiWidgetFake;
+import kmlib.testfixtures.starsector.ui.map.BaseSectorMapFake;
 
 import java.util.List;
 
@@ -25,12 +22,8 @@ import java.util.List;
  * "placed, drawn component" means one thing across the fixtures: a case that moved this one's
  * opacity threshold or its unpositioned answer without moving the other's would be describing two
  * different screens.
- *
- * <p>The published half of a map is two entity lookups no tree walk takes. They throw rather than
- * answering null, so a caller that strayed into one fails here instead of carrying on against a
- * fixture that cannot stand for what it asked.
  */
-public final class PlacedSectorMapWidgetFake implements SectorMapAPI, UIComponentAPI {
+public final class PlacedSectorMapWidgetFake extends BaseSectorMapFake implements UIComponentAPI {
 
     private final CoreUiWidgetFake widget;
 
@@ -45,16 +38,6 @@ public final class PlacedSectorMapWidgetFake implements SectorMapAPI, UIComponen
 
     public List<Object> getChildrenCopy() {
         return widget.getChildrenCopy();
-    }
-
-    @Override
-    public SectorEntityToken getConstellationLabelEntity(Constellation constellation) {
-        throw new UnsupportedOperationException("A fixture for tree walks holds no entities.");
-    }
-
-    @Override
-    public SectorEntityToken getIntelIconEntity(IntelInfoPlugin intel) {
-        throw new UnsupportedOperationException("A fixture for tree walks holds no entities.");
     }
 
     @Override

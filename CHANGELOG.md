@@ -12,10 +12,7 @@ section here.
 
 ## Index
 
-- [Unreleased](#unreleased)
 - [0.1.0](#010---2026-08-30)
-
-## [Unreleased]
 
 ## [0.1.0] - 2026-08-30
 
@@ -240,6 +237,14 @@ No Starsector API on the signature.
   placement, and vanilla PositionAPI to rectangle.
 - **`kmlib.starsector.ui.map`** - how readable a map icon is under the nebulae
   drawn over it.
+- **`kmlib.starsector.ui.map.controls`** - the writes into the map screen's own
+  furniture, sitting above the reads in `map.probes` and the one map package
+  that names another's classes, since a write has to be aimed by a reading.
+  `MapFilterRows` reaches the row of toggles a map is furnished from - the `M`
+  screen's strip and the intel screen's map visor alike, both being one widget
+  reached by one accessor off the map itself - and hands it back as a
+  `MapFilterRow`, a handle that answers which row it is rather than the widget
+  itself.
 - **`kmlib.starsector.ui.map.icons`** - reseating a map icon once the layering
   over it settles.
 - **`kmlib.starsector.ui.map.presence`** - which campaign map surface is up

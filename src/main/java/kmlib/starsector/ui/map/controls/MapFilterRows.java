@@ -76,10 +76,9 @@ public final class MapFilterRows {
             return null;
         }
 
-        // The forgiving hop, because both ways it can come back empty are ordinary here: a widget
-        // that is a map without being the game's own carries no such accessor, and the reach into
-        // an obfuscated build is not owed a working one. Either is "no row", which is what a caller
-        // that must leave somebody else's widget alone acts on.
+        // The forgiving hop rather than the raising one, which is what turns the absences above
+        // into the null below rather than into a throw each caller would have to catch back into
+        // one.
         var rowWidget = CoreUiTree.readHopIfOffered(mapWidget, GET_FILTER_METHOD);
 
         return rowWidget == null

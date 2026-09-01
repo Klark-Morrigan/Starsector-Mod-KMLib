@@ -29,11 +29,21 @@ class MapFilterRowsTest {
         @Test
         void resolveMapFilterRowOfAnswersTheRowTheMapOffers() {
             // The ordinary case on either screen: the game's map, holding the row it built.
+            //
+            // Checked against a second, identical row as well as against the right one, because the
+            // handle is the only way to observe which row came back: an identity test that answered
+            // yes to everything would let this pass while the wrong row was resolved.
             var rowFake = new MapFilterRowFake("Starscape", "Fuel range");
+            var otherRowFake = new MapFilterRowFake("Starscape", "Fuel range");
 
-            assertThat(MapFilterRows.resolveMapFilterRowOf(new FilteredMapWidgetFake(rowFake)))
-                .isNotNull()
-                .matches(row -> row.isSameRowAs(new MapFilterRow(rowFake)));
+            var resolvedRow = MapFilterRows.resolveMapFilterRowOf(new FilteredMapWidgetFake(rowFake));
+
+            assertThat(resolvedRow)
+                .isNotNull();
+            assertThat(resolvedRow.isSameRowAs(new MapFilterRow(rowFake)))
+                .isTrue();
+            assertThat(resolvedRow.isSameRowAs(new MapFilterRow(otherRowFake)))
+                .isFalse();
         }
 
         @Test
@@ -71,11 +81,17 @@ class MapFilterRowsTest {
             // hop reaches it - which is what lets one control serve a surface KMLib did not put on
             // screen.
             var rowFake = new MapFilterRowFake("Starscape");
+            var otherRowFake = new MapFilterRowFake("Starscape");
             var embeddedMap = new EmbeddedMap(new FilteredMapWidgetFake(rowFake), NO_ANCESTORS);
 
-            assertThat(MapFilterRows.resolveEmbeddedMapFilterRow(embeddedMap))
-                .isNotNull()
-                .matches(row -> row.isSameRowAs(new MapFilterRow(rowFake)));
+            var resolvedRow = MapFilterRows.resolveEmbeddedMapFilterRow(embeddedMap);
+
+            assertThat(resolvedRow)
+                .isNotNull();
+            assertThat(resolvedRow.isSameRowAs(new MapFilterRow(rowFake)))
+                .isTrue();
+            assertThat(resolvedRow.isSameRowAs(new MapFilterRow(otherRowFake)))
+                .isFalse();
         }
 
         @Test
