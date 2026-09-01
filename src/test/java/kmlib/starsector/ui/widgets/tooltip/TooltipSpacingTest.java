@@ -29,6 +29,11 @@ class TooltipSpacingTest {
     private static final float TIGHTER_LINE_GAP = 1f;
     private static final float TOLERANCE = 0.001f;
 
+    // The share of its room a box compressed to fit keeps, and where the line gap lands once it is
+    // spent - a literal, so the case asserts the arithmetic rather than repeating it.
+    private static final float HALF_THE_ROOM = 0.5f;
+    private static final float HALVED_LINE_GAP = 2f;
+
     // How far under the box's own voice the line above a gap stands.
     private static final int IN_THE_BOXS_VOICE = 0;
     private static final int TWO_STEPS_UNDER = 2;
@@ -123,6 +128,30 @@ class TooltipSpacingTest {
             assertThat(buildStandardSpacing().partedBy(WIDER_SECTION_BREAK))
                 .usingRecursiveComparison()
                 .ignoringFields("sectionBreak")
+                .isEqualTo(buildStandardSpacing());
+        }
+    }
+
+    @Nested
+    class TightenedBy {
+
+        @Test
+        void tightenedByKeepsThatShareOfTheRoomBetweenTwoLines() {
+            // What a box compressed to fit spends where no boundary falls, which is most of a listing.
+            assertThat(buildStandardSpacing()
+                    .tightenedBy(HALF_THE_ROOM)
+                    .resolveLineGapAfter(IN_THE_BOXS_VOICE))
+                .isCloseTo(HALVED_LINE_GAP, within(TOLERANCE));
+        }
+
+        @Test
+        void tightenedByHoldsBothBlockPartingsAsTheyWere() {
+            // A boundary marks where the box changes subject and reads as one at whatever size the lines
+            // around it draw; given up along with the leading, a compressed listing would come out as a
+            // single undifferentiated run.
+            assertThat(buildStandardSpacing().tightenedBy(HALF_THE_ROOM))
+                .usingRecursiveComparison()
+                .ignoringFields("lineGaps")
                 .isEqualTo(buildStandardSpacing());
         }
     }

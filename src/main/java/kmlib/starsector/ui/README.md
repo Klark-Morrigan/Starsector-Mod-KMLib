@@ -171,6 +171,24 @@ style, and [`CursorTooltipRenderer`](render/gl/tooltip/CursorTooltipRenderer.jav
 the one walk of the blocks that lays them out, so a box weighed as fitting is the box then drawn.
 What to do about an overflow stays the caller's - cut content, restyle it smaller, or accept it.
 
+One of those answers is packaged, for a box whose content is the player's to ask for rather than the
+caller's to choose: [`TooltipHeightFit`](widgets/tooltip/TooltipHeightFit.java) gives up size instead
+of lines. It re-anchors the level shrink at the deepest line the blocks hold, so that line keeps its
+size while the tiers above it draw smaller and closer together, and solves for the gentlest ramp that
+brings the box inside the budget - `CursorTooltipRenderer.renderFitted` does it against the screen.
+Anchored the ordinary way the compression would quiet the deepest lines, which are the ones a reader
+who asked for that depth is there to read; anchored at the bottom it is the account they stand under
+that comes down to meet them. That inverts how a listing reads, and it scales more of the box off its
+atlas, which is why a box that fits is drawn untouched rather than the compression being a look.
+
+Height falls as the ramp rises and no closed form joins the two, so the ramp is bisected over a fixed
+count of probes; what bounds it is the shrink floor already in `TooltipStyle` - past the ramp that
+floors every tier above the anchor, no larger one resolves anything different. The line gaps come down
+with the glyphs, by the share one step of the ramp leaves of a body line, because leading is most of
+what a row costs and a compression spending glyphs alone would give up legibility for a fraction of the
+height it needs. The block partings hold: a boundary reads as one at any size. What no ramp can reach
+still overflows, and that is content the caller has to give up.
+
 ## Pairs that look like duplicates
 
 | What it expresses | Neutral | Vanilla-surface form | GL-surface form |
@@ -430,7 +448,7 @@ standing for a count is not prose.
 | [`widgets`](widgets/) | neutral | the shared `LabelledRow` core, its `RowSlot` flanks, and the row and box content and geometry built on them ([`tooltip`](widgets/tooltip/), [`tabs`](widgets/tabs/), [`scroll`](widgets/scroll/), [`segments`](widgets/segments/), [`lists`](widgets/lists/)) |
 | [`widgets/tabs`](widgets/tabs/) | neutral | a tab row's geometry ([`VanillaTabStrip`](widgets/tabs/VanillaTabStrip.java) lays it, [`RaisedButtonTabStrip`](widgets/tabs/RaisedButtonTabStrip.java) stands a button inside each laid tab), the seams a paint pass reads its per-tab [look](widgets/tabs/TabLookSource.java) and [lift](widgets/tabs/TabWashSource.java) through, the tabs' own text, and the tab panel's transient state. What the pointer is doing to a whole panel travels as [one value](widgets/tabs/TabPanelInteractionSources.java) - the header's channels and the body's - because both are resolved off one read of the cursor against the one placement being drawn, and a consumer taking them one at a time could pair a fresh reading with a stale one |
 | [`widgets/tabs/style`](widgets/tabs/style/) | neutral | how a tab row looks, as one injected [`TabStyle`](widgets/tabs/style/TabStyle.java): its [chrome](widgets/tabs/style/TabChrome.java), the [box](widgets/tabs/style/TabBox.java) each tab stands in - a stated width, height and neighbour channel, or `SNAPPED` for tabs sized to their own labels, which is what decides whether a label is measured at all - the [palette](widgets/tabs/style/TabPalette.java) of per-state [looks](widgets/tabs/style/TabLook.java) and [lifts](widgets/tabs/style/TabWash.java) over the backing the row stands on - the surface every fill is composited onto, and the one a parted row paints into the channels between its tabs - its [hotkey convention](widgets/tabs/style/HotkeyStyle.java), and the face it is lettered in - which the layout sizes its tabs at, so a row is measured in what it will be drawn in - with the [ring](widgets/tabs/style/TextHalo.java) that face wants around it, copies of the text laid on all four sides that cost no width and so move no tab. Split out from the geometry beside it because a look is what a host varies. One palette type, one factory per chrome, and a fill rule behind each - a tab's shades computed from the engine's tab colours ([`VanillaTabFills`](widgets/tabs/style/VanillaTabFills.java)), a button's from the accent it is built with ([`VanillaButtonFills`](widgets/tabs/style/VanillaButtonFills.java)) - because the engine's own two controls brighten by different rules and neither is the other with a knob |
-| [`widgets/tooltip`](widgets/tooltip/) | neutral | the hover box's own content and geometry - [`TooltipRow`](widgets/tooltip/TooltipRow.java) and the [`TooltipSection`](widgets/tooltip/TooltipSection.java) blocks it stacks in, the [`TooltipStyle`](widgets/tooltip/TooltipStyle.java) those are laid against, [`CursorTooltip`](widgets/tooltip/CursorTooltip.java) placing them, and the [`TooltipLeaderLine`](widgets/tooltip/TooltipLeaderLine.java) it measures between a row's label and its value |
+| [`widgets/tooltip`](widgets/tooltip/) | neutral | the hover box's own content and geometry - [`TooltipRow`](widgets/tooltip/TooltipRow.java) and the [`TooltipSection`](widgets/tooltip/TooltipSection.java) blocks it stacks in, the [`TooltipStyle`](widgets/tooltip/TooltipStyle.java) those are laid against, [`CursorTooltip`](widgets/tooltip/CursorTooltip.java) placing them, the [`TooltipLeaderLine`](widgets/tooltip/TooltipLeaderLine.java) it measures between a row's label and its value, and [`TooltipHeightFit`](widgets/tooltip/TooltipHeightFit.java), which answers what a box too tall for the room it has is drawn in |
 | [`layout`](layout/) | neutral | box sizing and placement, strips, padding, and the [tabs row](layout/TabsControlLayout.java) - the one control whose dimensions come from the vanilla tab strip rather than from a body-font label |
 | [`label`](label/) | neutral | label fitting, plus the length-estimator port |
 | [`colour`](colour/) | neutral | the UI colour vocabulary: [`StarsectorUiColour`](colour/StarsectorUiColour.java), the checked wrapper over vanilla's colour getters, and [`AccentColours`](colour/AccentColours.java), the dark/base/bright set the engine builds a control from. That set sits here rather than with the panel's other shade groups because both tiers compose out of it - a panel's paint pass and the neutral value a tab row is measured and painted from - and the neutral side cannot import across the line |

@@ -24,8 +24,13 @@ import kmlib.starsector.ui.text.TextStyle;
  * @param paragraphStyle the look of a line of the box's body
  * @param footnoteStyle  the look of a note at the box's foot; a box with nothing to note never resolves
  *                       it, so it defaults to the body look rather than being stated by every caller
- * @param levelShrink    how much smaller each step under the box's own voice draws than the step above
- *                       it, in UI units; zero draws every level at its kind's own size
+ * @param levelShrink    how much smaller each step away from the tier the shrink is anchored at draws
+ *                       than the step before it, in UI units; zero draws every level at its kind's own
+ *                       size
+ * @param shrinkAnchorLevel
+ *                       the tier that reads at its kind's own size, every other tier drawing one step
+ *                       quieter per step of distance from it; the box's own voice unless a box
+ *                       {@linkplain #compressedTowardLevel re-anchors} to fit the room it has
  * @param spacing        every measurement of room the box spends - between its lines, its blocks, and
  *                       the groups nested inside them
  */
@@ -34,11 +39,26 @@ public record TooltipStyle(
     TextStyle paragraphStyle,
     TextStyle footnoteStyle,
     float levelShrink,
+    int shrinkAnchorLevel,
     TooltipSpacing spacing) {
 
     // What a box demotes a subordinate line by unless it asks for something: nothing at all, so a stack
     // of rows reads at one size until a box states that its levels should read as levels.
     private static final float NO_LEVEL_SHRINK = 0f;
+
+    // Where the shrink is measured from unless a box re-anchors it: the box's own voice, so the step is
+    // spent going deeper and a box reads largest at the top, which is what a stack of levels ordinarily
+    // wants. Every other anchor is a fit's doing rather than a taste.
+    private static final int ANCHORED_AT_THE_BOXS_VOICE = TooltipRow.TableRow.NO_SUBORDINATION;
+
+    // The distance at which a line is the one the shrink is anchored at, and so reads at its kind's own
+    // size. Named because it is the whole of what the lookup below branches on.
+    private static final int NO_STEPS_FROM_ANCHOR = 0;
+
+    // The most of a line's room a compression can leave: all of it. A box compressing by nothing must
+    // not come out with its lines standing further apart than it asked for, which a face already drawn
+    // below the floor would otherwise arrive at.
+    private static final double WHOLE_GAP = 1d;
 
     // The smallest a demoted line is allowed to reach. A deep enough stack would otherwise arrive at a
     // size no atlas can render legibly, and then at zero and below - so the shrink stops here and the
@@ -66,6 +86,7 @@ public record TooltipStyle(
             paragraphStyle,
             paragraphStyle,
             NO_LEVEL_SHRINK,
+            ANCHORED_AT_THE_BOXS_VOICE,
             TooltipSpacing.createSpacing());
     }
 
@@ -96,6 +117,43 @@ public record TooltipStyle(
      */
     public TooltipStyle shrunkPerLevel(float levelShrink) {
         return rebuildOnTheSameFaces(footnoteStyle, levelShrink, spacing);
+    }
+
+    /**
+     * Returns a copy of this typography compressed toward {@code shrinkAnchorLevel}: that tier reads at
+     * its kind's own size and every other one draws {@code levelShrink} smaller per step of distance
+     * from it, with the room under a line coming down in the same proportion.
+     *
+     * <p>For a box asked for more than the room it has. The ordinary ramp is anchored at the box's own
+     * voice, so a listing reads largest at the top and quietest at the depth its subject matter reaches;
+     * anchored at the deepest tier instead, it is the context above that quiets while the depth the box
+     * was asked for holds its size. Which is the right way round for a box that has to give something
+     * up: the deepest lines are what the reader just asked to see, and the tiers above them are what
+     * they already know.
+     *
+     * <p>The room moves with the size because leading is most of what a row costs - a compression
+     * spending only glyphs would give up legibility for a fraction of the height it needs - and it moves
+     * by the share of a body line one step of the ramp leaves, so the two cannot come apart. The two
+     * block partings hold: they mark where the box changes subject, which reads as a boundary at any
+     * size, and a listing that lost them would be one undifferentiated run.
+     *
+     * <p>The gaps tightened are the ones this typography holds, so compressing an already-compressed
+     * typography tightens what that one left. A caller solving for how far it has to compress therefore
+     * builds every candidate off the uncompressed typography, and measures each against it rather than
+     * against the candidate before it.
+     *
+     * @param shrinkAnchorLevel the tier that reads at its kind's own size
+     * @param levelShrink       how much smaller each step of distance from that tier draws, in UI units
+     * @return an otherwise-identical typography compressed toward that tier
+     */
+    public TooltipStyle compressedTowardLevel(int shrinkAnchorLevel, float levelShrink) {
+        return new TooltipStyle(
+            headerStyle,
+            paragraphStyle,
+            footnoteStyle,
+            levelShrink,
+            shrinkAnchorLevel,
+            spacing.tightenedBy(measureCompressedGapShare(levelShrink)));
     }
 
     /**
@@ -134,7 +192,8 @@ public record TooltipStyle(
 
     /**
      * Answers what a line of {@code lineStyle} standing {@code subordinationLevel} steps under the box's
-     * own voice draws in - its kind's look, shrunk once per step by whatever the box asked for.
+     * own voice draws in - its kind's look, shrunk once per step of distance from the tier the box
+     * anchors its shrink at, which is that voice itself unless the box was compressed to fit.
      *
      * <p>The one lookup there is, since a row carries both facts. Resolved here rather than by the
      * renderer so the size a row is measured at and the size it is painted at come from one answer, and
@@ -152,7 +211,8 @@ public record TooltipStyle(
      */
     public TextStyle resolveStyleFor(TooltipLineStyle lineStyle, int subordinationLevel) {
         var lineStyleLook = resolveLineStyleLook(lineStyle);
-        if (subordinationLevel <= TooltipRow.TableRow.NO_SUBORDINATION
+        var stepsFromAnchor = measureStepsFromAnchor(subordinationLevel);
+        if (stepsFromAnchor <= NO_STEPS_FROM_ANCHOR
                 || levelShrink <= NO_LEVEL_SHRINK) {
             return lineStyleLook;
         }
@@ -161,7 +221,7 @@ public record TooltipStyle(
         // of disappearing.
         return lineStyleLook.sizedAt(Math.max(
             SMALLEST_SUBORDINATE_SIZE,
-            lineStyleLook.face().size() - subordinationLevel * levelShrink));
+            lineStyleLook.face().size() - stepsFromAnchor * levelShrink));
     }
 
     /**
@@ -179,6 +239,30 @@ public record TooltipStyle(
         return spacing.resolveLineGapAfter(subordinationLevel);
     }
 
+    // The share of a line's room a compression leaves it: what one step of the ramp leaves of a body
+    // line, floored where the glyphs are floored, so the room under a line comes down with the line
+    // itself and stops where it stops. Read off the body face because the gap is answered per tier
+    // rather than per kind of line, and the body is what a listing's tiers are set in.
+    private float measureCompressedGapShare(float levelShrink) {
+        var bodySize = paragraphStyle.face().size();
+        var steppedSize = Math.max(SMALLEST_SUBORDINATE_SIZE, bodySize - levelShrink);
+
+        return (float) Math.min(WHOLE_GAP, steppedSize / bodySize);
+    }
+
+    // How far a line stands from the tier the shrink is anchored at, which is what it is demoted by. A
+    // distance rather than a depth, so one arithmetic serves both anchors: at the box's own voice it is
+    // the level itself and the step is spent going deeper, and at the deepest tier of a compressed box
+    // it is the height above that tier, so the step is spent going back up.
+    //
+    // A level above the box's voice is read as speaking in it, since the lookup is public and is handed
+    // whatever a caller holds - a negative distance would otherwise resolve a size LARGER than the kind's
+    // own.
+    private int measureStepsFromAnchor(int subordinationLevel) {
+        return Math.abs(
+            Math.max(TooltipRow.TableRow.NO_SUBORDINATION, subordinationLevel) - shrinkAnchorLevel);
+    }
+
     // Rebuilds the typography around whatever a refinement changed, carrying the two looks a box always
     // has over untouched. Shared rather than each refinement restating the parts it leaves alone - which
     // is where a third part, and then a fourth, eventually gets restated wrongly in one of them.
@@ -192,6 +276,7 @@ public record TooltipStyle(
             paragraphStyle,
             footnoteStyle,
             levelShrink,
+            shrinkAnchorLevel,
             spacing);
     }
 

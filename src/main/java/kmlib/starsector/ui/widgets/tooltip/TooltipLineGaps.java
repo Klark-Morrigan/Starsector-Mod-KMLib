@@ -79,6 +79,26 @@ public record TooltipLineGaps(
     }
 
     /**
+     * Returns a copy of this spacing keeping {@code gapShare} of every gap it holds - the base gap and
+     * each stated tier alike - for a box compressed into less room than its lines were sized for.
+     *
+     * <p>One share across the tiers rather than a share per tier, because the tiers are a shape rather
+     * than a set of independent widths: a box that holds its deepest run tighter than the rest is saying
+     * the run belongs together, and tightening the tiers by different amounts would flatten that shape
+     * away at exactly the depth it was stated for.
+     *
+     * @param gapShare how much of each gap the spacing keeps, 0..1
+     * @return an otherwise-identical spacing holding its lines that much of their room apart
+     */
+    public TooltipLineGaps tightenedBy(float gapShare) {
+        var gapsByLevel = new HashMap<Integer, Float>();
+        for (var statedTier : gapsBySubordinationLevel.entrySet()) {
+            gapsByLevel.put(statedTier.getKey(), statedTier.getValue() * gapShare);
+        }
+        return new TooltipLineGaps(baseGap * gapShare, gapsByLevel);
+    }
+
+    /**
      * Answers how much room is spent after a line standing {@code subordinationLevel} steps under the
      * box's own voice - that tier's gap where one was stated, otherwise the gap of the nearest tier
      * stated above it, and the base gap where no tier above it was stated at all.

@@ -40,6 +40,13 @@ class TooltipLineGapsTest {
     // ends at a statement rather than at some bound near it.
     private static final int FAR_DEEPER_THAN_ANY_STATED = 12;
 
+    // The share of its room a compressed box keeps, and where the three gaps above land once it is
+    // spent. Stated as literals so the case asserts the arithmetic rather than repeating it.
+    private static final float HALF_THE_ROOM = 0.5f;
+    private static final float HALVED_BASE_GAP = 2f;
+    private static final float HALVED_FACTOR_GAP = 1.5f;
+    private static final float HALVED_TIER_GAP = 0.5f;
+
     private static TooltipLineGaps buildFlatGaps() {
         return TooltipLineGaps.createGaps(BASE_GAP);
     }
@@ -153,6 +160,48 @@ class TooltipLineGapsTest {
                     .gappedAtLevel(ABOVE_THE_BOXS_VOICE, FACTOR_GAP)
                     .resolveGapAfter(IN_THE_BOXS_VOICE))
                 .isCloseTo(FACTOR_GAP, within(TOLERANCE));
+        }
+    }
+
+    @Nested
+    class TightenedBy {
+
+        @Test
+        void tightenedByKeepsThatShareOfEveryGapItHolds() {
+            // What a compressed box spends between its lines: the base gap and each stated tier alike
+            // come down, or the tiers a box never named would be the only room it kept at full width.
+            var tightenedGaps = buildTieredGaps().tightenedBy(HALF_THE_ROOM);
+
+            assertThat(tightenedGaps.resolveGapAfter(IN_THE_BOXS_VOICE))
+                .isCloseTo(HALVED_BASE_GAP, within(TOLERANCE));
+            assertThat(tightenedGaps.resolveGapAfter(TWO_STEPS_UNDER))
+                .isCloseTo(HALVED_FACTOR_GAP, within(TOLERANCE));
+            assertThat(tightenedGaps.resolveGapAfter(THREE_STEPS_UNDER))
+                .isCloseTo(HALVED_TIER_GAP, within(TOLERANCE));
+        }
+
+        @Test
+        void tightenedByHoldsTheTiersInTheOrderTheyWereStatedIn() {
+            // One share across the tiers rather than a share per tier: the tiers are a shape - a run a
+            // box holds tighter than the rest is saying that run belongs together - and a compression
+            // that flattened them would undo the statement at exactly the depth it was made.
+            var tightenedGaps = buildTieredGaps().tightenedBy(HALF_THE_ROOM);
+
+            assertThat(tightenedGaps.resolveGapAfter(THREE_STEPS_UNDER))
+                .isLessThan(tightenedGaps.resolveGapAfter(TWO_STEPS_UNDER));
+            assertThat(tightenedGaps.resolveGapAfter(TWO_STEPS_UNDER))
+                .isLessThan(tightenedGaps.resolveGapAfter(IN_THE_BOXS_VOICE));
+        }
+
+        @Test
+        void tightenedByLeavesTheGapsItWasBuiltFromUntouched() {
+            // A caller solving for how far it has to compress measures candidate after candidate off the
+            // one spacing, so a tightening that reached back into it would compound with every probe.
+            var tieredGaps = buildTieredGaps();
+            tieredGaps.tightenedBy(HALF_THE_ROOM);
+
+            assertThat(tieredGaps.resolveGapAfter(IN_THE_BOXS_VOICE))
+                .isCloseTo(BASE_GAP, within(TOLERANCE));
         }
     }
 

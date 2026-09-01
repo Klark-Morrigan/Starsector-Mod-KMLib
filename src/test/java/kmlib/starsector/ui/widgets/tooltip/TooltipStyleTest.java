@@ -59,6 +59,15 @@ class TooltipStyleTest {
     private static final int DEEPER_THAN_THE_FLOOR = 9;
     private static final double SMALLEST_SUBORDINATE_SIZE = 7d;
 
+    // The tier a compressed box anchors its shrink at, and the room its lines then stand at: the base
+    // gap less the share one step of the ramp takes off a 15pt body line, stated as a literal so the
+    // coupling between the two is asserted here rather than recomputed.
+    private static final int ANCHOR_LEVEL = TWO_STEPS_UNDER;
+    private static final float COMPRESSED_LINE_GAP = 3.4667f;
+    private static final float TWICE_COMPRESSED_LINE_GAP = 3.0044f;
+    private static final float DEFAULT_LINE_GAP = 4f;
+    private static final float DEFAULT_SECTION_BREAK = 11.5f;
+
     // Built without the live palette: these styles stand in for "a look" and are only ever compared by
     // identity, so resolving colours through the running game's palette would add a static stub for
     // nothing. The two differ in face so a mixed-up lookup cannot pass by coincidence.
@@ -93,10 +102,20 @@ class TooltipStyleTest {
             .gappedAtLevel(TWO_STEPS_UNDER, TIGHTER_LINE_GAP));
     }
 
+    // The same two looks under a box compressed to fit the room it has: the shrink re-anchored at a tier
+    // below the box's own voice, which is the only state in which a line ABOVE another draws smaller.
+    private static TooltipStyle buildCompressedStyle() {
+        return buildTwoFacedStyle().compressedTowardLevel(ANCHOR_LEVEL, LEVEL_SHRINK);
+    }
+
     // The size a body line lands on standing that many steps under the box's own voice, which is the one
     // lookup a renderer makes per row.
     private static double resolveParagraphSizeAt(int subordinationLevel) {
-        return buildShrinkingStyle()
+        return resolveParagraphSizeIn(buildShrinkingStyle(), subordinationLevel);
+    }
+
+    private static double resolveParagraphSizeIn(TooltipStyle style, int subordinationLevel) {
+        return style
             .resolveStyleFor(TooltipLineStyle.PARAGRAPH, subordinationLevel)
             .face()
             .size();
@@ -172,6 +191,73 @@ class TooltipStyleTest {
             // A box that never asks demotes nothing, so a stack of rows reads at one size until one does.
             assertThat(buildTwoFacedStyle().levelShrink())
                 .isCloseTo(NO_LEVEL_SHRINK, within(TOLERANCE));
+        }
+    }
+
+    @Nested
+    class CompressedTowardLevel {
+
+        @Test
+        void compressedTowardLevelAnchorsTheShrinkAtTheStatedTier() {
+            // The whole of what a compression re-anchors: which tier reads at its kind's own size. Every
+            // other tier is then read off its distance from that one.
+            var compressedStyle = buildCompressedStyle();
+
+            assertThat(compressedStyle.shrinkAnchorLevel())
+                .isEqualTo(ANCHOR_LEVEL);
+            assertThat(compressedStyle.levelShrink())
+                .isCloseTo(LEVEL_SHRINK, within(TOLERANCE));
+        }
+
+        @Test
+        void compressedTowardLevelAnchorsAnUncompressedBoxAtItsOwnVoice() {
+            // The baseline the refinement moves off: a box that was never compressed reads largest at
+            // the top, the step being spent going deeper.
+            assertThat(buildTwoFacedStyle().shrinkAnchorLevel())
+                .isEqualTo(IN_THE_BOXS_VOICE);
+        }
+
+        @Test
+        void compressedTowardLevelTightensTheRoomBetweenLinesByTheShareTheGlyphsKept() {
+            // Leading is most of what a row costs, so the room comes down with the lines rather than the
+            // compression spending glyphs alone: the base gap keeps the share one step of the ramp
+            // leaves of a body line.
+            assertThat(buildTwoFacedStyle().resolveLineGapAfter(IN_THE_BOXS_VOICE))
+                .isCloseTo(DEFAULT_LINE_GAP, within(TOLERANCE));
+            assertThat(buildCompressedStyle().resolveLineGapAfter(IN_THE_BOXS_VOICE))
+                .isCloseTo(COMPRESSED_LINE_GAP, within(TOLERANCE));
+        }
+
+        @Test
+        void compressedTowardLevelHoldsTheBlockPartingsAsTheyWere() {
+            // A boundary marks where the box changes subject, which reads as a boundary at whatever size
+            // the lines around it draw - given up, a compressed listing would read as one run.
+            assertThat(buildCompressedStyle().spacing().sectionBreak())
+                .isCloseTo(DEFAULT_SECTION_BREAK, within(TOLERANCE));
+        }
+
+        @Test
+        void compressedTowardLevelTightensWhateverGapsItIsAppliedTo() {
+            // The refinement reaches the gaps the typography it is applied to holds, so compressing an
+            // already-compressed one compounds. Pinned because it is what a caller solving for a ramp
+            // has to work around: every candidate is built off the uncompressed typography, or the
+            // probes would each tighten the last probe's answer and the solve would run away from the
+            // ramp it is measuring.
+            assertThat(buildCompressedStyle()
+                    .compressedTowardLevel(ANCHOR_LEVEL, LEVEL_SHRINK)
+                    .resolveLineGapAfter(IN_THE_BOXS_VOICE))
+                .isCloseTo(TWICE_COMPRESSED_LINE_GAP, within(TOLERANCE));
+        }
+
+        @Test
+        void compressedTowardLevelChangesNothingBeyondTheRampAndTheLineGaps() {
+            // A box compressed to fit is the same box: the two looks, its footnote face, and both block
+            // partings have to come through untouched, or the fit would restyle content it was only
+            // asked to make room for.
+            assertThat(buildCompressedStyle())
+                .usingRecursiveComparison()
+                .ignoringFields("levelShrink", "shrinkAnchorLevel", "spacing.lineGaps")
+                .isEqualTo(buildTwoFacedStyle());
         }
     }
 
@@ -313,6 +399,27 @@ class TooltipStyleTest {
             // Left to run, the step would resolve a size no atlas renders, then zero, then a negative.
             assertThat(resolveParagraphSizeAt(DEEPER_THAN_THE_FLOOR))
                 .isCloseTo(SMALLEST_SUBORDINATE_SIZE, within(SIZE_TOLERANCE));
+        }
+
+        @Test
+        void resolveStyleForDrawsACompressedBoxsAnchoredTierAtItsKindsOwnSize() {
+            // The tier a compressed box was anchored at is the one thing it does not give up, so the
+            // lookup has to hand back that kind's own look however deep the tier sits.
+            assertThat(buildCompressedStyle().resolveStyleFor(TooltipLineStyle.PARAGRAPH, ANCHOR_LEVEL))
+                .isEqualTo(PARAGRAPH_STYLE);
+        }
+
+        @Test
+        void resolveStyleForShrinksACompressedBoxsLinesOncePerStepAboveItsAnchor() {
+            // The step is spent going back UP once the shrink is re-anchored, so a line lands on the
+            // size its distance from the anchor names - the same size that distance names below the
+            // box's own voice, since it is the same step.
+            var compressedStyle = buildCompressedStyle();
+
+            assertThat(resolveParagraphSizeIn(compressedStyle, ONE_STEP_UNDER))
+                .isCloseTo(ONE_STEP_UNDER_SIZE, within(SIZE_TOLERANCE));
+            assertThat(resolveParagraphSizeIn(compressedStyle, IN_THE_BOXS_VOICE))
+                .isCloseTo(TWO_STEPS_UNDER_SIZE, within(SIZE_TOLERANCE));
         }
 
         @Test

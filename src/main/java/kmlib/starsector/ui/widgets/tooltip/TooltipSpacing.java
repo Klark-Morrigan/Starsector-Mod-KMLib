@@ -99,6 +99,23 @@ public record TooltipSpacing(
     }
 
     /**
+     * Returns a copy of this spacing keeping {@code gapShare} of the room it stands between two lines of
+     * a block, at every tier it holds one for - what a box spends where it has been compressed to fit
+     * the room it has.
+     *
+     * <p>Only the line gaps come down. The two block partings mark where the box changes subject, which
+     * reads as a boundary at whatever size the lines around it are drawn; a compressed box that gave
+     * them up would save a parting per block and read as one undifferentiated run for it. Every tier is
+     * scaled by the one share, so a run a box holds tighter than the rest stays the tighter of the two.
+     *
+     * @param gapShare how much of each line gap the box keeps, 0..1
+     * @return an otherwise-identical spacing standing its lines that much of their room apart
+     */
+    public TooltipSpacing tightenedBy(float gapShare) {
+        return new TooltipSpacing(lineGaps.tightenedBy(gapShare), sectionBreak, groupBreak);
+    }
+
+    /**
      * Answers how much room stands under a line that sits {@code subordinationLevel} steps under the
      * box's own voice, where no block boundary falls between it and the line below.
      *

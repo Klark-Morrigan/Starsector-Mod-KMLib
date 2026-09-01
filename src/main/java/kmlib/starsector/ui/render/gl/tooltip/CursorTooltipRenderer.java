@@ -21,6 +21,7 @@ import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.LabelledRow;
 import kmlib.starsector.ui.widgets.RowSlot;
 import kmlib.starsector.ui.widgets.tooltip.CursorTooltip;
+import kmlib.starsector.ui.widgets.tooltip.TooltipHeightFit;
 import kmlib.starsector.ui.widgets.tooltip.TooltipLayout;
 import kmlib.starsector.ui.widgets.tooltip.TooltipRow;
 import kmlib.starsector.ui.widgets.tooltip.TooltipSection;
@@ -48,7 +49,9 @@ import java.util.List;
  * <p>Beside the draw it answers how tall a box would stand and how much room there is for one, neither
  * of which spends a frame or touches GL. A caller with more to say than the screen holds settles that
  * against these two before it hands the content over, since the box itself only clamps - drawn, an
- * over-tall box runs past both edges and says nothing about what it lost.
+ * over-tall box runs past both edges and says nothing about what it lost. A caller that would rather
+ * keep every line than choose between them hands the box over to {@link #renderFitted} instead, which
+ * gives up size on the way in.
  */
 public final class CursorTooltipRenderer {
 
@@ -85,6 +88,31 @@ public final class CursorTooltipRenderer {
         // The core map and its tooltips draw after this pass, so the box, crests, and text run inside
         // the shared state save that restores the blend and colour the draw touched on the way out.
         GlStateGuard.bracket(() -> drawRows(rows, layout, style));
+    }
+
+    /**
+     * Lays out {@code sections} at the live cursor and paints them in {@code style}, compressed first
+     * where they stand taller than the screen: the deepest line the blocks hold keeps its size while the
+     * tiers above it draw smaller and closer together, until the box fits. A box that already fits is
+     * drawn exactly as {@link #render} would draw it.
+     *
+     * <p>For a box whose content is the player's to ask for rather than the caller's to choose - one
+     * that lists whatever a subject happens to hold, and so has no size it can be authored to. What the
+     * compression can buy is bounded, so a box deep enough still overflows; a caller that must not
+     * overflow weighs its content itself ({@link #measureBoxHeight} against
+     * {@link #resolveHeightBudget}) and gives some of it up before drawing.
+     *
+     * @param sections the content blocks, top to bottom
+     * @param style    the typography, opacity, and box chrome the whole tooltip draws in
+     */
+    public static void renderFitted(List<TooltipSection> sections, CursorTooltipStyle style) {
+
+        render(
+            sections,
+            style.restyledAs(TooltipHeightFit.fitToHeight(
+                sections,
+                style.typography(),
+                resolveHeightBudget())));
     }
 
     /**

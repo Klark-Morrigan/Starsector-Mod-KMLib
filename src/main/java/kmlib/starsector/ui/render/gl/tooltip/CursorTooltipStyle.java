@@ -109,6 +109,27 @@ public record CursorTooltipStyle(
     }
 
     /**
+     * Returns a copy of this look set in {@code typography} - the same box, its chrome untouched, with
+     * every line drawn from another answer to how its kind looks.
+     *
+     * <p>What a fit is put back through: the typography is where a box's sizes and its spacing live, so
+     * a pass that settles those settles them there and hands them back for the box to be drawn in.
+     *
+     * @param typography the look of each kind of line, and how far apart the blocks stand
+     * @return an otherwise-identical look set in that typography
+     */
+    public CursorTooltipStyle restyledAs(TooltipStyle typography) {
+        return new CursorTooltipStyle(
+            typography,
+            opacity,
+            borderWidth,
+            fillColour,
+            borderColour,
+            leaderLineStyle,
+            redactionDarkeningStrength);
+    }
+
+    /**
      * Returns a copy of this look ruling its leaders at {@code leaderLineStyle} - for a host that has
      * measured the balance on its own faces, or that puts it in the player's hands.
      *
