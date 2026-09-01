@@ -39,9 +39,9 @@ import java.util.List;
  * A receded row draws its words and its crest back together - the words in the engine's gray, the
  * crest darkened by a tint - since receding one and not the other reads as a rendering slip.
  *
- * <p>Nothing here reaches a save. The three live values arrive as parameters, and the three picks -
- * with the row the pointer is on beside them - are reported through {@link ListPickerStore}, which
- * is the division the whole family rests on.
+ * <p>Nothing here reaches a save. The three live values arrive as one {@link ActivePicks} reading,
+ * and the three picks - with the row the pointer is on beside them - are reported through
+ * {@link ListPickerStore}, which is the division the whole family rests on.
  */
 public final class ListPickerControl {
 
@@ -60,13 +60,9 @@ public final class ListPickerControl {
      *                            throughout
      * @param items               the selectable items; order here is immaterial since the sort mode
      *                            reorders them for display
-     * @param selectedItemId      the currently spotlighted item's id, or null when nothing is
-     *                            spotlighted
-     * @param sort                how the list is ranked - the metric, its direction, and the
-     *                            vocabulary the sort selector draws its rows from; the metric also
-     *                            picks each row's trailing value
-     * @param columns             how many columns the item list wraps its rows across, which the
-     *                            columns selector lights and the list lays out under
+     * @param activePicks         what the picker is currently showing - the spotlighted item, the
+     *                            ranking the sort selector lights and the list draws in, and the
+     *                            column count the list wraps across
      * @param columnsCaptionText  the caption drawn beside the columns segments, resolved by the
      *                            caller against its own strings
      * @param trailingControls    the controls filling the right half of the sort row; empty leaves
@@ -77,9 +73,7 @@ public final class ListPickerControl {
      */
     public static <T extends SelectableListItem> List<ControlSpec> buildPicker(
             List<T> items,
-            String selectedItemId,
-            ListSort<T> sort,
-            ListColumns columns,
+            ActivePicks<T> activePicks,
             String columnsCaptionText,
             List<ControlSpec> trailingControls,
             ListPickerStore pickerStore) {
@@ -92,9 +86,9 @@ public final class ListPickerControl {
         // list untouched, so the rows draw in the chosen order and the lit index below is resolved
         // against that same order.
         var rankedItems = new ArrayList<>(items);
-        rankedItems.sort(sort.comparator());
+        rankedItems.sort(activePicks.sort().comparator());
 
-        var selectedIndex = resolveSelectedIndex(rankedItems, selectedItemId);
+        var selectedIndex = resolveSelectedIndex(rankedItems, activePicks.selectedItemId());
         var controls = new ArrayList<ControlSpec>();
 
         // A rule heads the block, parting whatever sits above from the picker below - the section
@@ -104,7 +98,7 @@ public final class ListPickerControl {
         // The columns selector rides directly under the rule, so the column count is chosen for the
         // block as a whole; the list below then wraps its rows across that many columns.
         controls.add(ColumnsSelectorControl.buildSelector(
-            columns,
+            activePicks.columns(),
             columnsCaptionText,
             pickerStore::storeColumnsPick));
 
@@ -114,7 +108,7 @@ public final class ListPickerControl {
         // its right half.
         controls.add(new ControlSpec.SideBySide(
             List.of(SortSelectorControl.buildSelector(
-                sort,
+                activePicks.sort(),
                 pickerStore::storeSortPick)),
             trailingControls));
 
@@ -125,7 +119,7 @@ public final class ListPickerControl {
         controls.add(
             ControlSpec.VerticalTable
                 .createColumnTable(
-                    buildItemRows(rankedItems, sort.mode()),
+                    buildItemRows(rankedItems, activePicks.sort().mode()),
                     selectedIndex,
                     cellIndex -> pickItem(pickerStore, rankedItems, selectedIndex, cellIndex))
                 .handlesReselect(ReselectBehaviour.DESELECT)
@@ -136,7 +130,7 @@ public final class ListPickerControl {
                 // either way.
                 .reportsHoverTo(hoveredCell ->
                     reportHoveredItem(pickerStore, rankedItems, hoveredCell))
-                .spreadsAcross(columns.columnCount())
+                .spreadsAcross(activePicks.columns().columnCount())
                 .asScrolling());
 
         return List.copyOf(controls);

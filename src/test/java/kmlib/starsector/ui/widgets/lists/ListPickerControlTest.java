@@ -640,9 +640,7 @@ final class ListPickerControlTest {
 
         return ListPickerControl.buildPicker(
             anomalies,
-            selectedItemId,
-            sort,
-            columns,
+            new ActivePicks<>(selectedItemId, sort, columns),
             CAPTION,
             trailingControls,
             pickerStoreFake);

@@ -376,8 +376,11 @@ vocabulary with the fallback an unrecognised key lands on,
 [`ListSort`](widgets/lists/ListSort.java) is how a list is ranked - the active mode, its
 [`SortDirection`](widgets/lists/SortDirection.java), and the vocabulary both were chosen
 from - [`ListPicker`](widgets/lists/ListPicker.java) is a list bundled with the vocabulary
-that ranks it, which is what a consumer hands over when *which* list it offers varies, and
-[`ListColumns`](widgets/lists/ListColumns.java) is the one-or-two column choice.
+that ranks it, which is what a consumer hands over when *which* list it offers varies,
+[`ListColumns`](widgets/lists/ListColumns.java) is the one-or-two column choice, and
+[`ActivePicks`](widgets/lists/ActivePicks.java) is a consumer's live read of all three of
+its stored picks - the spotlighted item, the sort, the column count - carried as one reading
+because they are read as one and because they are exactly what the store below writes.
 The two selectors - [`SortSelectorControl`](widgets/lists/SortSelectorControl.java) and
 [`ColumnsSelectorControl`](widgets/lists/ColumnsSelectorControl.java) - draw and drive them.
 

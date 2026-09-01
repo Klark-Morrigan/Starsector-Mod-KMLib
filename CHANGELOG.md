@@ -319,10 +319,11 @@ No Starsector API on the signature.
   standing opaque on that body still has to leave with the panel.
 - **`kmlib.starsector.ui.widgets.lists`** - the spotlight picker: sort modes
   with direction and comparator, column-count and sort selectors, the item
-  seam rows are drawn from, the store a consumer persists picks into and hears
-  the row under the pointer through - named by the item it stands for, so a
-  host can preview what picking it would do - and a revision memo holding a
-  built list until its inputs change.
+  seam rows are drawn from, a consumer's live read of its three stored picks
+  as one reading, the store it persists those picks into and hears the row
+  under the pointer through - named by the item it stands for, so a host can
+  preview what picking it would do - and a revision memo holding a built list
+  until its inputs change.
 - **`kmlib.starsector.ui.widgets.scroll`** - scroll offset state with
   clamping, and scrollbar track, thumb and grab-column geometry over a scroll
   region or a panel placement.
