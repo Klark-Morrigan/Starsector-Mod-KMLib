@@ -44,6 +44,11 @@ import java.util.List;
  * no text would only mislead - while any other face failing costs only the lines drawn in it, since the
  * body still reads. Must run with a current GL context, from an above-UI render pass, since the box
  * composites over the core UI and its tooltips.
+ *
+ * <p>Beside the draw it answers how tall a box would stand and how much room there is for one, neither
+ * of which spends a frame or touches GL. A caller with more to say than the screen holds settles that
+ * against these two before it hands the content over, since the box itself only clamps - drawn, an
+ * over-tall box runs past both edges and says nothing about what it lost.
  */
 public final class CursorTooltipRenderer {
 
@@ -71,9 +76,7 @@ public final class CursorTooltipRenderer {
             LazyFontSpanMeasurer::measureSpanWidth,
             UiCursor.getUiX(),
             UiCursor.getUiY(),
-            // The bound the box clamps inside is the whole screen rather than a region of it, so
-            // the screen's own box goes over as it stands.
-            VanillaScreen.resolveScreenBox());
+            resolveScreenBound());
 
         // Painted off the flat run of lines the layout anchored, in the same order: how those lines were
         // grouped was spent settling the spacing, and the draw has nothing left to do with it.
@@ -82,6 +85,41 @@ public final class CursorTooltipRenderer {
         // The core map and its tooltips draw after this pass, so the box, crests, and text run inside
         // the shared state save that restores the blend and colour the draw touched on the way out.
         GlStateGuard.bracket(() -> drawRows(rows, layout, style));
+    }
+
+    /**
+     * Answers how tall {@code sections} would stand in {@code style}, the box's own chrome included,
+     * without drawing anything or reading the cursor.
+     *
+     * <p>Read against {@link #resolveHeightBudget()} by a caller that has to settle what it can afford to
+     * show before it shows it: a box is sized by its content and then clamped on screen, so content
+     * taller than the screen is drawn with its ends past the edges and nothing on screen says what was
+     * lost. The two answers together are what let such a caller respond in its own terms - by cutting
+     * content, by restyling it smaller, or by accepting the overflow - rather than finding out from a
+     * screenshot.
+     *
+     * @param sections the content blocks, top to bottom
+     * @param style    the typography, opacity, and box chrome the tooltip would draw in
+     * @return the height the box would occupy, in UI units
+     */
+    public static float measureBoxHeight(List<TooltipSection> sections, CursorTooltipStyle style) {
+        return CursorTooltip.measureBoxHeight(sections, style.typography());
+    }
+
+    /**
+     * @return the tallest a box can stand and still be drawn whole, in UI units - the height of the very
+     *         bound {@link #render} clamps the box inside, read live, since the player can resize the
+     *         window or rescale the UI between one frame and the next
+     */
+    public static float resolveHeightBudget() {
+        return resolveScreenBound().height();
+    }
+
+    // The region a box is kept inside: the whole screen rather than a region of it, so the screen's own
+    // box goes over as it stands. Read through one call so the bound a box is clamped to and the budget
+    // its height is weighed against cannot end up describing two different screens.
+    private static Rectangle resolveScreenBound() {
+        return VanillaScreen.resolveScreenBox();
     }
 
     // Paints the frame then each row into the laid-out box: the box first, then per row its crest,

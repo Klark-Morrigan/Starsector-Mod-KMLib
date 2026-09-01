@@ -15,6 +15,10 @@ import static org.assertj.core.api.Assertions.within;
  *  - it clamps back inside the bound it is handed at that bound's far edges,
  *  - and it pins to the bound's near corner when it is larger than the bound rather than sliding off.
  *
+ * <p>Alongside it, {@link TooltipBoxLayout#computeBoxHeight} answers that same wrapping on its own, for
+ * a caller weighing a height before it has anywhere to put a box - so what is pinned there is that the
+ * two agree on the padding.
+ *
  * <p>How tall the content itself stacks is its own caller's rule and is pinned with that caller
  * ({@code CursorTooltipTest}); what is fixed here is that the box wraps whatever height it is given.
  *
@@ -37,6 +41,7 @@ final class TooltipBoxLayoutTest {
 
     @Nested
     class ComputeBox {
+
         @Test
         void grows_the_width_to_the_content_plus_padding_on_both_sides() {
 
@@ -126,6 +131,34 @@ final class TooltipBoxLayoutTest {
                 .isCloseTo(0f, within(TOLERANCE));
             assertThat(box.y())
                 .isCloseTo(0f, within(TOLERANCE));
+        }
+    }
+
+    @Nested
+    class ComputeBoxHeight {
+        
+        @Test
+        void wraps_the_content_height_in_the_padding_above_and_below_it() {
+
+            // One 15-tall line + 8 padding top and bottom, the same height the placed box comes to.
+            assertThat(TooltipBoxLayout.computeBoxHeight(ONE_LINE_HEIGHT))
+                .isCloseTo(31f, within(TOLERANCE));
+        }
+
+        @Test
+        void wraps_a_taller_content_stack_without_reinterpreting_it() {
+
+            // The 34 the caller measured - two lines and their gap - plus the same 16 of padding.
+            assertThat(TooltipBoxLayout.computeBoxHeight(TWO_LINE_HEIGHT))
+                .isCloseTo(50f, within(TOLERANCE));
+        }
+
+        @Test
+        void wraps_empty_content_in_the_padding_alone() {
+
+            // A box with nothing in it is still its own chrome, so the padding stands whatever it holds.
+            assertThat(TooltipBoxLayout.computeBoxHeight(0d))
+                .isCloseTo(16f, within(TOLERANCE));
         }
     }
 }

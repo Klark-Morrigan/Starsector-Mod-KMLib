@@ -34,6 +34,10 @@ import static org.assertj.core.api.Assertions.within;
  * padding and screen clamp themselves are {@link kmlib.starsector.ui.layout.TooltipBoxLayout}'s and
  * covered there; this fixes the row model on top of it. The cursor sits clear of every edge so no clamp
  * perturbs the anchors under test.
+ *
+ * <p>The same stack answered on its own, without a layout, is pinned to the same arithmetic: a box asked
+ * how tall it comes to counts every line at the size its tier resolves and every gap the blocks imply, so
+ * a caller weighing content against the room it has is told what would actually be drawn.
  */
 class CursorTooltipTest {
 
@@ -97,6 +101,7 @@ class CursorTooltipTest {
     private static final TooltipStyle UNIFORM_STYLE = TooltipStyle.createStyle(
         createStyle(BODY_FONT, BODY_LINE_HEIGHT),
         createStyle(BODY_FONT, BODY_LINE_HEIGHT));
+
     private static final TooltipStyle TWO_FACE_STYLE = TooltipStyle.createStyle(
         createStyle(HEADING_FONT, HEADING_LINE_HEIGHT),
         createStyle(BODY_FONT, BODY_LINE_HEIGHT));
@@ -112,6 +117,13 @@ class CursorTooltipTest {
     // from the line below it.
     private static final TooltipStyle TIERED_STYLE = UNIFORM_STYLE.stackedAt(
         TooltipLineGaps.createGaps(LINE_GAP).gappedAtLevel(TIGHTENED_LEVEL, TIGHTENED_GAP));
+
+    // The uniform box demoting each step under its own voice by two units, and a line standing one such
+    // step under it. A size no other style here resolves, so a measured height says the shrink was spent
+    // on the row rather than the row being stacked at its kind's own size.
+    private static final float LEVEL_SHRINK = 2f;
+    private static final int ONE_STEP_UNDER = 1;
+    private static final TooltipStyle SHRINKING_STYLE = UNIFORM_STYLE.shrunkPerLevel(LEVEL_SHRINK);
 
     // A top-tier row at no indent (short label, no value) and a wider indented member (longer label, a
     // value): the member is the widest laid-out row, so it must drive the box width even though it is the
@@ -137,9 +149,10 @@ class CursorTooltipTest {
     }
 
     private static double measureSpanWidth(TextFace face, String span) {
-        var widthPerCharacter = resolveWidthPerCharacter(face.font());
 
+        var widthPerCharacter = resolveWidthPerCharacter(face.font());
         var characterCost = 0d;
+
         for (var character : span.toCharArray()) {
             characterCost += character == 'I' ? SHOUTED_I_WIDTH : 1d;
         }
@@ -149,6 +162,7 @@ class CursorTooltipTest {
     // What one glyph of a face costs. Switched over the faces rather than tested against one, so a third
     // stand-in face is priced here alone and no case below has to say which branch it fell down.
     private static double resolveWidthPerCharacter(StarsectorFont font) {
+
         if (font == HEADING_FONT) {
             return HEADING_WIDTH_PER_CHARACTER;
         }
@@ -171,6 +185,13 @@ class CursorTooltipTest {
     private static TooltipLayout layOutSections(List<TooltipSection> sections, TooltipStyle style) {
         TextSpanMeasurer measurer = CursorTooltipTest::measureSpanWidth;
         return CursorTooltip.layOut(sections, style, measurer, CURSOR_X, CURSOR_Y, SCREEN);
+    }
+
+    // How tall the same one-block box comes to, asked without laying it out - the answer a caller weighs
+    // before it draws, taken through the same shapes the layout cases above are read off so the two can
+    // be compared line for line.
+    private static float measureBoxHeight(List<TooltipRow> rows, TooltipStyle style) {
+        return CursorTooltip.measureBoxHeight(List.of(TooltipSection.createSection(rows)), style);
     }
 
     // Two lines put in blocks of their own, which is the only way to say they are parted.
@@ -276,6 +297,7 @@ class CursorTooltipTest {
 
     @Nested
     class LayOut {
+
         @Test
         void sizesTheBoxToTheWidestRowAcrossIndentTiers() {
 
@@ -1142,6 +1164,73 @@ class CursorTooltipTest {
             // the wider line it then painted.
             assertThat(box.width())
                 .isCloseTo(48f, within(TOLERANCE));
+        }
+    }
+
+    @Nested
+    class MeasureBoxHeight {
+        
+        @Test
+        void measuresEachLinePlusTheGapAndPadding() {
+
+            // The 50 the laid-out box comes to: two 15-tall lines + one 4 line gap + 8 padding top and
+            // bottom. Weighed as anything else, a box that fits would be cut and one that does not left
+            // running off the screen.
+            assertThat(measureBoxHeight(List.of(TOP_TIER, MEMBER), UNIFORM_STYLE))
+                .isCloseTo(50f, within(TOLERANCE));
+        }
+
+        @Test
+        void growsByALineAndItsGapPerRow() {
+
+            // Three 15-tall lines + two 4 line gaps + 16 padding.
+            assertThat(measureBoxHeight(List.of(TOP_TIER, MEMBER, MEMBER), UNIFORM_STYLE))
+                .isCloseTo(69f, within(TOLERANCE));
+        }
+
+        @Test
+        void spendsTheStylesBreakBetweenTwoBlocks() {
+
+            // Two 15-tall lines parted by the 11.5 break rather than the 4 gap, + 16 padding: what a box
+            // spends on nothing is as much of its height as its lines are.
+            assertThat(CursorTooltip.measureBoxHeight(
+                    partIntoSections(TOP_TIER, MEMBER),
+                    UNIFORM_STYLE))
+                .isCloseTo(57.5f, within(TOLERANCE));
+        }
+
+        @Test
+        void stacksARunOfATightenedTierAtItsOwnGap() {
+
+            var tightenedRows = List.<TooltipRow>of(
+                createSubordinateRow("AA", TIGHTENED_LEVEL),
+                createSubordinateRow("BB", TIGHTENED_LEVEL));
+
+            // Two 15-tall lines + the tightened tier's own 1 gap + 16 padding, where the plain 4 would
+            // have measured 50.
+            assertThat(measureBoxHeight(tightenedRows, TIERED_STYLE))
+                .isCloseTo(47f, within(TOLERANCE));
+        }
+
+        @Test
+        void shrinksASubordinateLineByTheStylesLevelShrink() {
+
+            var demotedRows = List.<TooltipRow>of(
+                createCrestlessRow("AA"),
+                createSubordinateRow("BB", ONE_STEP_UNDER));
+
+            // The box's own voice at 15 over a line demoted one step to 13 + the 4 gap + 16 padding: a
+            // height read off the kinds alone would measure 50 and leave two units of the box unaccounted.
+            assertThat(measureBoxHeight(demotedRows, SHRINKING_STYLE))
+                .isCloseTo(48f, within(TOLERANCE));
+        }
+
+        @Test
+        void measuresThePaddingAloneForABoxOfNoBlocks() {
+
+            // A box with nothing in it is still its own chrome.
+            assertThat(CursorTooltip.measureBoxHeight(List.of(), UNIFORM_STYLE))
+                .isCloseTo(16f, within(TOLERANCE));
         }
     }
 }
