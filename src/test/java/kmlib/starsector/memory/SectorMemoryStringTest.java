@@ -1,22 +1,13 @@
 package kmlib.starsector.memory;
 
-import com.fs.starfarer.api.Global;
-import com.fs.starfarer.api.campaign.SectorAPI;
-import com.fs.starfarer.api.campaign.rules.MemoryAPI;
+import kmlib.testfixtures.starsector.memory.SectorMemoryFake;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
 
 /**
  * Pins the string value's contract against sector memory: a present key reads back its stored value,
@@ -25,124 +16,144 @@ import static org.mockito.Mockito.when;
  * caller can gate a side effect on a real change.
  */
 class SectorMemoryStringTest {
+
     private static final String KEY = "$kmlib_test_string";
     private static final String VALUE = "stored";
 
-    private MockedStatic<Global> globalMock;
-    private SectorAPI sectorMock;
-    private MemoryAPI memoryMock;
+    private SectorMemoryFake sectorMemoryFake;
     private SectorMemoryString value;
 
     @BeforeEach
-    void setUp() {
-        sectorMock = mock(SectorAPI.class);
-        memoryMock = mock(MemoryAPI.class);
-        when(sectorMock.getMemoryWithoutUpdate()).thenReturn(memoryMock);
-        globalMock = mockStatic(Global.class);
-        globalMock.when(Global::getSector).thenReturn(sectorMock);
+    void openASectorMemory() {
+
+        sectorMemoryFake = new SectorMemoryFake();
         value = new SectorMemoryString(KEY);
     }
 
     @AfterEach
-    void tearDown() {
-        globalMock.close();
+    void closeTheSectorMemory() {
+        sectorMemoryFake.close();
     }
 
     @Nested
     class Get {
-        @Test
-        void returnsTheStoredValueWhenTheKeyIsPresent() {
-            when(memoryMock.contains(KEY)).thenReturn(true);
-            when(memoryMock.getString(KEY)).thenReturn(VALUE);
 
-            assertThat(value.get()).isEqualTo(VALUE);
+        @Test
+        void getReturnsTheStoredValueWhenTheKeyIsPresent() {
+
+            sectorMemoryFake.storeValue(KEY, VALUE);
+
+            assertThat(value.get())
+                .isEqualTo(VALUE);
         }
 
         @Test
-        void returnsNullWhenTheKeyIsAbsent() {
-            when(memoryMock.contains(KEY)).thenReturn(false);
+        void getReturnsNullWhenTheKeyIsAbsent() {
 
-            assertThat(value.get()).isNull();
+            assertThat(value.get())
+                .isNull();
         }
 
         @Test
-        void returnsNullWhenTheSectorIsMissing() {
-            globalMock.when(Global::getSector).thenReturn(null);
+        void getReturnsNullWhenTheSectorIsMissing() {
 
-            assertThat(value.get()).isNull();
+            sectorMemoryFake.removeSector();
+
+            assertThat(value.get())
+                .isNull();
         }
     }
 
     @Nested
     class IsSet {
-        @Test
-        void isTrueWhenTheKeyIsPresent() {
-            when(memoryMock.contains(KEY)).thenReturn(true);
 
-            assertThat(value.isSet()).isTrue();
+        @Test
+        void isSetIsTrueWhenTheKeyIsPresent() {
+
+            sectorMemoryFake.storeValue(KEY, VALUE);
+
+            assertThat(value.isSet())
+                .isTrue();
         }
 
         @Test
-        void isFalseWhenTheKeyIsAbsent() {
-            when(memoryMock.contains(KEY)).thenReturn(false);
+        void isSetIsFalseWhenTheKeyIsAbsent() {
 
-            assertThat(value.isSet()).isFalse();
+            assertThat(value.isSet())
+                .isFalse();
         }
 
         @Test
-        void isFalseWhenTheSectorIsMissing() {
-            globalMock.when(Global::getSector).thenReturn(null);
+        void isSetIsFalseWhenTheSectorIsMissing() {
 
-            assertThat(value.isSet()).isFalse();
+            sectorMemoryFake.removeSector();
+
+            assertThat(value.isSet())
+                .isFalse();
         }
     }
 
     @Nested
     class Set {
-        @Test
-        void writesTheValueToSectorMemoryAndReportsItLanded() {
-            assertThat(value.set(VALUE)).isTrue();
 
-            verify(memoryMock).set(KEY, VALUE);
+        @Test
+        void setWritesTheValueToSectorMemoryAndReportsItLanded() {
+
+            assertThat(value.set(VALUE))
+                .isTrue();
+
+            assertThat(sectorMemoryFake.readStoredValue(KEY))
+                .isEqualTo(VALUE);
         }
 
         @Test
-        void doesNothingAndReportsNoWriteWhenTheSectorIsMissing() {
-            globalMock.when(Global::getSector).thenReturn(null);
+        void setDoesNothingAndReportsNoWriteWhenTheSectorIsMissing() {
 
-            assertThat(value.set(VALUE)).isFalse();
+            sectorMemoryFake.removeSector();
 
-            verifyNoInteractions(memoryMock);
+            assertThat(value.set(VALUE))
+                .isFalse();
+
+            assertThat(sectorMemoryFake.countWritesTo(KEY))
+                .isZero();
         }
     }
 
     @Nested
     class Clear {
+
         @Test
-        void removesTheStoredValueAndReportsItRemoved() {
-            when(memoryMock.contains(KEY)).thenReturn(true);
+        void clearRemovesTheStoredValueAndReportsItRemoved() {
 
-            assertThat(value.clear()).isTrue();
+            sectorMemoryFake.storeValue(KEY, VALUE);
 
-            verify(memoryMock).unset(KEY);
+            assertThat(value.clear())
+                .isTrue();
+
+            assertThat(sectorMemoryFake.hasStoredValue(KEY))
+                .isFalse();
         }
 
         @Test
-        void reportsNoRemovalAndLeavesMemoryAloneWhenTheKeyIsAbsent() {
-            when(memoryMock.contains(KEY)).thenReturn(false);
+        void clearReportsNoRemovalAndLeavesMemoryAloneWhenTheKeyIsAbsent() {
 
-            assertThat(value.clear()).isFalse();
+            assertThat(value.clear())
+                .isFalse();
 
-            verify(memoryMock, never()).unset(KEY);
+            assertThat(sectorMemoryFake.countRemovalsOf(KEY))
+                .isZero();
         }
 
         @Test
-        void doesNothingAndReportsNoRemovalWhenTheSectorIsMissing() {
-            globalMock.when(Global::getSector).thenReturn(null);
+        void clearDoesNothingAndReportsNoRemovalWhenTheSectorIsMissing() {
 
-            assertThat(value.clear()).isFalse();
+            sectorMemoryFake.removeSector();
 
-            verifyNoInteractions(memoryMock);
+            assertThat(value.clear())
+                .isFalse();
+
+            assertThat(sectorMemoryFake.countRemovalsOf(KEY))
+                .isZero();
         }
     }
 }
