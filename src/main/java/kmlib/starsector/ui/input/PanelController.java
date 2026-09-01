@@ -90,15 +90,9 @@ public final class PanelController {
     // This panel's scroll position, read by the layout and written by the wheel and by a drag.
     private final ScrollState scrollState = new ScrollState();
 
-    // Where this panel's interface sounds go, held as a seam because a sound leaves no trace in the panel's
-    // state: every other answer to an input can be read back off the scroll offset, and this one can only
-    // be observed by recording that it was asked for.
-    private final UiSoundPlayer soundPlayer;
-
-    // What each moment this panel answers sounds like, taken from the host with the rest of its look rather
-    // than named here - how a wheel sounds is a property of how the panel presents itself, and this end owns
-    // the moment and none of the choices.
-    private final UiSoundScheme soundScheme;
+    // What this panel sounds like in answer to the moments it detects. This end owns the moments and none of
+    // the choices, which is why the pair arrives whole rather than being named here.
+    private final PanelSounds sounds;
 
     // A scrollbar-thumb drag in progress, and the pointer's offset from the thumb centre when grabbed. The
     // drag spans frames (press, moves, release), so it lives as state between events: while set, every
@@ -129,9 +123,18 @@ public final class PanelController {
      *                    host paints the panel from
      */
     public PanelController(UiSoundPlayer soundPlayer, UiSoundScheme soundScheme) {
+        this(new PanelSounds(soundPlayer, soundScheme));
+    }
 
-        this.soundPlayer = soundPlayer;
-        this.soundScheme = soundScheme;
+    /**
+     * A panel sounding as an enclosing panel already does, for a tab panel building the body beneath its own
+     * header: handing the one value down is what makes the two halves answer alike, rather than two ends
+     * assembled from the same parts and trusted to match.
+     *
+     * @param sounds what the panel sounds like in answer to the moments it detects
+     */
+    PanelController(PanelSounds sounds) {
+        this.sounds = sounds;
     }
 
     /**
@@ -439,7 +442,7 @@ public final class PanelController {
         if (hitCell == null) {
             return null;
         }
-        soundPlayer.playCueIfPresent(soundScheme.pressCue());
+        sounds.soundPress();
 
         // The seen half of the same answer, off the same cell and beside the heard one. Started rather than
         // held: the control has already acted, so there is nothing for a release to end.
@@ -527,7 +530,7 @@ public final class PanelController {
         scrollState.clampTo(placement.scrollOverflow());
 
         if (recordListMovedFrom(offsetBeforeWheel)) {
-            soundPlayer.playCueIfPresent(soundScheme.listScrollCue());
+            sounds.soundListScroll();
         }
     }
 

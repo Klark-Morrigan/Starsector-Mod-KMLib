@@ -2,7 +2,6 @@ package kmlib.starsector.ui.input;
 
 import com.fs.starfarer.api.input.InputEventAPI;
 
-import kmlib.animation.PulseEnvelopes;
 import kmlib.animation.TraverseDurations;
 import kmlib.starsector.ui.controls.BodyHoverSource;
 import kmlib.starsector.ui.controls.BodyInteractionSources;
@@ -26,20 +25,21 @@ import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
  * agnostic to what selecting a tab does.
  *
  * <p>One controller per panel, since it holds that panel's runtime state across frames: the collapse
- * animation, the hover fades of the header tabs and of the collapse handle, and the two triggered motions
- * its tabs carry, a click's pulse and a bound key's blink. Everything the body holds - its scroll and drag
- * state, its cells' own fades, arrivals and press lifts, and what it reports to the host that built the
- * control under the pointer - lives on the {@link PanelController} beneath, the end a body press actually
- * lands on, and is charged by the same per-frame pass as everything above. A host creates it, reads
- * its {@link #getScrollState()} and {@link #getCollapseFraction()} when it lays the panel out, advances the
- * collapse and the input motions each frame it draws, reads {@link #getInteractionSources()} and {@link
- * #getNotchHoverFraction()} to paint with, and feeds it pointer
- * events. That state lives here beside the
- * scroll offset because all of it is the panel's own transient per-session UI state, not the host's; a
- * consumer that lays out a placement and pumps this controller inherits the collapse handle and the live
- * tabs without wiring any of those animations itself. The panel opens
- * expanded by default, or collapsed to its docked rail via {@link #createStartingDocked()}, so a host picks
- * the initial fold at construction rather than driving the animation to reach it.
+ * animation and its handle's fade, and the routing that decides which of the panel's parts a frame's reading
+ * belongs to. What each part is doing is held by that part's own end - the row's fades, lifts and blinks on
+ * {@link TabHeaderMotions}, and the body's scroll, drag, cell fades, arrivals, press lifts and hover report
+ * on the {@link PanelController} beneath, the end a body press actually lands on. Both are charged by this
+ * one per-frame pass, off one reading of where the pointer is, which is what keeps the panel answering at a
+ * single rhythm.
+ *
+ * <p>A host creates it, reads its {@link #getScrollState()} and {@link #getCollapseFraction()} when it lays
+ * the panel out, advances the collapse and the input motions each frame it draws, reads {@link
+ * #getInteractionSources()} and {@link #getNotchHoverFraction()} to paint with, and feeds it pointer events.
+ * That state lives here rather than on the host because all of it is the panel's own transient per-session UI
+ * state; a consumer that lays out a placement and pumps this controller inherits the collapse handle and the
+ * live tabs without wiring any of those animations itself. The panel opens expanded by default, or collapsed
+ * to its docked rail via {@link #createStartingDocked()}, so a host picks the initial fold at construction
+ * rather than driving the animation to reach it.
  *
  * <p>Every animation here is timed and nothing here is coloured, and the same line runs through what the
  * panel sounds: this end knows when a control was pressed and when the pointer reached one, and the look
@@ -55,9 +55,10 @@ public final class TabPanelController {
      * confirms a key pressed away from the panel, so it has to read as a strike and be gone, and at a
      * travel's pace it reads as one more thing moving at the speed everything else moves at.
      *
-     * <p>Public so a consumer stepping this panel by hand can name the pace rather than measure it.
+     * <p>Public so a consumer stepping this panel by hand can name the pace rather than measure it; the
+     * value itself lives with the motion that runs at it.
      */
-    public static final TraverseDurations HOTKEY_BLINK_DURATIONS = new TraverseDurations(0.05f, 0.2f);
+    public static final TraverseDurations HOTKEY_BLINK_DURATIONS = TabHeaderMotions.HOTKEY_BLINK_DURATIONS;
 
     // The body's controller, owning the scroll and drag state; this routes everything but a header-tab or
     // notch press to it, so the panel's scroll and drag behaviour is the plain panel's, unchanged. Built
@@ -70,51 +71,26 @@ public final class TabPanelController {
     // Held beside the scroll offset so any tab-panel consumer inherits the handle by pumping this controller.
     private final TabPanelCollapse collapse;
 
-    // How far each header tab has travelled onto the hovered shade, keyed by its index in the row - stable
-    // for as long as the row is, which is all a key has to be. Held here with the panel's other transient
-    // state rather than on the placement, which is an immutable value the layout computes: a fade is where
-    // the panel currently stands, not where its parts sit.
-    private final HoverFades<Integer> tabHoverFades = new HoverFades<>();
-
-    // The click lift each header tab is carrying, keyed the same way the fades are. A separate holder rather
-    // than a second reading off the fades because the two motions differ in kind: a hover is a position the
-    // pointer holds a tab at, a click is an event that runs its own course after the press that started it.
-    private final PulseEnvelopes<Integer> tabClickPulses = new PulseEnvelopes<>();
-
-    // The blink a bound key's press runs on its tab, keyed the same way again. An envelope like the clicks -
-    // it is triggered and runs its own course - but read on the look channel with the fades rather than on
-    // the lift channel with the clicks, because it carries its tab onto the hovered shade rather than past
-    // it. That is what makes a key pressed for the tab already under the pointer show nothing: the blink
-    // reaches only where the hover already stands.
-    private final PulseEnvelopes<Integer> tabHotkeyBlinks = new PulseEnvelopes<>();
+    // What the header row is doing - its tabs' hover fades, the lift a click holds on one, the blink a bound
+    // key strikes on one, and the arrival latch behind their sound. Held as one thing for the reason the
+    // body's are held on the controller beneath: they are charged together off one reading of where the
+    // pointer is, and two of them compose into the one fraction a tab is painted at.
+    private final TabHeaderMotions headerMotions = new TabHeaderMotions();
 
     // How far the collapse handle has travelled onto its lit look. A lone fade rather than a keyed set,
     // there being one handle per panel, and a fraction rather than a flag so the notch lights and dims at
     // the pace the tabs do rather than switching on the frame the pointer arrives.
     private final HoverFade notchHoverFade = new HoverFade();
 
-    // Where this panel's interface sounds go, so a KM tab answers a press the way the engine's own controls
-    // do. Held as a seam rather than reached for directly because a sound leaves no trace in the panel's
-    // state: every other answer to an input can be read back off a fraction, and this one can only be
-    // observed by recording that it was asked for.
-    private final UiSoundPlayer soundPlayer;
+    // What this panel sounds like in answer to the moments it detects, so a KM tab answers a press the way
+    // the engine's own controls do. One value for the whole panel, handed down to the body beneath, so its
+    // notch, its tabs and its controls answer alike and a panel is silenced in one place rather than by
+    // visiting every control that ever named a sound.
+    private final PanelSounds sounds;
 
-    // What each moment this panel's controls answer sounds like - which role, and how loudly. Taken from
-    // the host with the rest of the panel's look rather than named here, because how a press sounds is a
-    // property of how the panel presents itself: this end owns the moments - it is what detects them - and
-    // owns none of the choices.
-    // One value for the whole panel, so its notch and its tabs answer alike and a panel is silenced in one
-    // place rather than by visiting every control that ever named a sound.
-    private final UiSoundScheme soundScheme;
-
-    // When the pointer reaches a header tab, so an arrival is answered once rather than every frame the
-    // pointer spends there. Keyed by tab index like the fades, and one latch rather than one per tab: only
-    // one tab of a row is under the pointer at a time.
-    private final KeyedHoverArrival<Integer> tabHoverArrival = new KeyedHoverArrival<>();
-
-    // The same moment for the collapse handle - a lone one, there being one handle per panel. Held beside
-    // the tabs' rather than as a flag of this class's own so the two answer to one rule, and so a reset
-    // cannot clear one and leave the other latched.
+    // When the pointer reaches the collapse handle - a lone latch, there being one handle per panel, and the
+    // handle's own rather than the row's because the two are gated differently: the tabs go behind the fold
+    // and the handle outlives it.
     private final HoverArrival notchHoverArrival = new HoverArrival();
 
     /**
@@ -148,9 +124,12 @@ public final class TabPanelController {
             UiSoundScheme soundScheme) {
 
         this.collapse = collapse;
-        this.soundPlayer = soundPlayer;
-        this.soundScheme = soundScheme;
-        this.bodyController = new PanelController(soundPlayer, soundScheme);
+        this.sounds = new PanelSounds(soundPlayer, soundScheme);
+
+        // The body is handed this panel's own sounds rather than the parts they were built from: a body
+        // sounding by the library's default look while its header sounded by the host's would be one panel
+        // presenting itself two ways.
+        this.bodyController = new PanelController(sounds);
     }
 
     /**
@@ -320,16 +299,16 @@ public final class TabPanelController {
      * go of the cell it was last handed.
      */
     public void resetInputMotions() {
-        tabHoverFades.resetFades();
-        notchHoverFade.resetFade();
-        tabClickPulses.resetPulses();
-        tabHotkeyBlinks.resetPulses();
 
-        // Forgetting what was announced, so a panel re-opening under a still pointer sounds that tab's - or
-        // that handle's - arrival afresh. It is an arrival to the player - the row was not there a moment
-        // ago - even though the pointer never moved, and the alternative is a control that lights in silence
-        // for the one case where the panel came to the cursor rather than the other way about.
-        tabHoverArrival.resetArrival();
+        // Everything the row holds - its fades, its lifts, its blinks, and what it announced - goes in one
+        // call to the end that holds all of it.
+        headerMotions.resetTabMotions();
+        notchHoverFade.resetFade();
+
+        // Forgetting what was announced, so a panel re-opening under a still pointer sounds that handle's
+        // arrival afresh. It is an arrival to the player - the handle was not there a moment ago - even
+        // though the pointer never moved, and the alternative is a control that lights in silence for the one
+        // case where the panel came to the cursor rather than the other way about.
         notchHoverArrival.resetArrival();
 
         // Everything the body holds - its fades, its lifts, what it announced, and what it told the host
@@ -364,14 +343,14 @@ public final class TabPanelController {
         // over. First and unconditional, so no branch below can swallow the release before the tabs hear
         // it; neither consumed nor returned on, a release being a report rather than a claim, and every
         // branch below tests for a press so it falls through them untouched.
-        if (event.isLMBUpEvent() && tabClickPulses.releaseHeldPulses()) {
+        if (event.isLMBUpEvent() && headerMotions.releaseHeldClickPulses()) {
 
             // The press sounds on the release rather than on the down, matching the engine's own tabs: the
             // sound and the wash fading out are one answer to the button coming up. Gated on a hold having
             // actually ended, since every release on the screen reaches here and only the ones that let go
             // of a tab were owed anything - a click on the map behind the panel must not click at the
             // player.
-            soundPlayer.playCueIfPresent(soundScheme.pressCue());
+            sounds.soundPress();
         }
 
         // A left press on the notch flips the body between expanded and docked. Tested before the header and
@@ -385,7 +364,7 @@ public final class TabPanelController {
             // sound follows the moment the control acts and the handle acts immediately: the fold is
             // already moving. A tab's lift is held until the button comes up, so its press is not over
             // until then; the handle holds nothing and has nothing left to report by the release.
-            soundPlayer.playCueIfPresent(soundScheme.pressCue());
+            sounds.soundPress();
             event.consume();
             return;
         }
@@ -433,12 +412,12 @@ public final class TabPanelController {
      * @param tabIndex the tab the pressed key is bound to, in row order
      */
     public void startHotkeyBlinkAt(int tabIndex) {
-        tabHotkeyBlinks.startPulseAt(tabIndex);
+        headerMotions.startHotkeyBlinkAt(tabIndex);
 
         // Sounded as well as flashed, and for the same reason the flash exists: a keypress puts nothing
         // under the pointer to explain itself, so it needs both answers the engine gives a press rather
         // than half of one. Immediately rather than on any release, a key having no held moment to end.
-        soundPlayer.playCueIfPresent(soundScheme.pressCue());
+        sounds.soundPress();
     }
 
     /**
@@ -452,9 +431,7 @@ public final class TabPanelController {
      * @return the panel's live tab interaction channels
      */
     TabInteractionSources getTabInteractionSources() {
-        return new TabInteractionSources(
-            this::resolveHoverFractionAt,
-            tabClickPulses::resolvePulseFractionAt);
+        return headerMotions.resolveTabInteractionSources();
     }
 
     /**
@@ -540,9 +517,7 @@ public final class TabPanelController {
         if (pressedTabIndex == ControlHitResolver.NO_CELL_RESOLVED) {
             return false;
         }
-        // Held rather than self-timed: the lift reports a press the player is still making, so it waits at
-        // its peak until the release above rather than timing its own fall.
-        tabClickPulses.startHeldPulseAt(pressedTabIndex);
+        headerMotions.startHeldClickPulseAt(pressedTabIndex);
 
         // The action answers the switch, not the press, so the tab already being shown fires nothing - a
         // tabs row carries no reselect field and so reads as INERT, which is that rule. Split from the lift
@@ -612,9 +587,9 @@ public final class TabPanelController {
 
         soundArrivalsAt(hover);
 
-        // The handle is never gated with the tabs - it draws past the frame and outlives the fold, being
-        // what brings a docked panel back.
-        tabHoverFades.advanceTowardHoveredKey(hover.tabIndex(), elapsedSeconds, durations);
+        // Everything the row does with this frame - its fades, the lift a press is holding on a tab, and any
+        // blink still running - is charged in one call to the end that holds all of it.
+        headerMotions.advanceTabMotionsForFrame(hover.tabIndex(), elapsedSeconds, durations);
 
         // Everything the body does with this frame - its cells' fades, the lifts running on them, and the
         // report out to whoever built the control under the pointer - is charged in one call to the end
@@ -623,15 +598,9 @@ public final class TabPanelController {
         // widget's own paint, and a panel answering the pointer at two speeds reads as two panels.
         bodyController.advanceBodyInputMotionsForFrame(hover.bodyCell(), elapsedSeconds, durations);
 
+        // The handle is never gated with the tabs - it draws past the fold and outlives it, being what brings
+        // a docked panel back.
         notchHoverFade.advanceTowardHover(hover.isNotchHovered(), elapsedSeconds, durations);
-        tabClickPulses.advanceByElapsedTime(elapsedSeconds, durations);
-
-        // Ungated, like the clicks and unlike the fades: a blink is an event already seen, so its cycle runs
-        // out wherever the panel goes afterwards rather than being cut short by a fold it did not ask for.
-        // Paced by the strike rather than by the panel's travels - the one motion here that answers to its
-        // own clock, since it confirms something that happened away from the panel and has to be gone by
-        // the time the player looks for it.
-        tabHotkeyBlinks.advanceByElapsedTime(elapsedSeconds, HOTKEY_BLINK_DURATIONS);
     }
 
     /**
@@ -700,26 +669,6 @@ public final class TabPanelController {
                 hitCell.resolveHoverReport());
     }
 
-    /**
-     * How far onto the hovered shade a tab currently stands, from either motion that can put it there: the
-     * pointer holding it there, or a bound key's blink passing through. The greater of the two rather than
-     * their sum, because both aim at the one shade: summed, a blink on a tab already part-way hovered would
-     * drive it past a shade neither names.
-     *
-     * <p>Neither motion is aware of the other - each runs its own course and this reads whichever is further
-     * along - so a pointer arriving on a tab mid-blink watches the blink decay until its own fade overtakes
-     * it. Continuous, since the greater of two continuous fractions is one, but not a handover: the fade
-     * starts from rest rather than from where the blink stood.
-     *
-     * @param tabIndex the tab being asked about, in row order
-     * @return its look-channel fraction, 0 fully off the hovered shade and 1 fully on it
-     */
-    private float resolveHoverFractionAt(int tabIndex) {
-        return Math.max(
-            tabHoverFades.resolveHoverFractionAt(tabIndex),
-            tabHotkeyBlinks.resolvePulseFractionAt(tabIndex));
-    }
-
     // Answers the pointer reaching any of the panel's hoverable parts, once per arrival, at the level its
     // own kind of thing is owed. A tab and the handle answer alike because both are the panel's own
     // furniture - each moves the player between whole views - while a body cell answers as whatever it is,
@@ -734,7 +683,7 @@ public final class TabPanelController {
         // Every latch stepped before any is read. Each latches what the pointer is on this frame, so a
         // short-circuit would leave the unread ones holding a stale reading - and then stay silent on the
         // frame the pointer did come back to one of them, that stale latch saying it never left.
-        var hasReachedTab = tabHoverArrival.detectArrivalAt(hover.tabIndex());
+        var hasReachedTab = headerMotions.detectTabArrivalAt(hover.tabIndex());
         var hasReachedNotch = notchHoverArrival.detectArrival(hover.isNotchHovered());
         var hasReachedBodyCell = bodyController.detectBodyCellArrivalAt(hover.resolveBodyCellSlot());
 
@@ -743,18 +692,11 @@ public final class TabPanelController {
         // of several, and a second arrival in one frame would be a hit-test fault rather than a moment two
         // sounds are owed for.
         if (hasReachedTab || hasReachedNotch) {
-            soundArrivalAt(PointerArrivalTarget.PANEL_CHROME);
+            sounds.soundPointerArrivalAt(PointerArrivalTarget.PANEL_CHROME);
             return;
         }
         if (hasReachedBodyCell) {
-            soundArrivalAt(hover.bodyCell().arrivalTarget());
+            sounds.soundPointerArrivalAt(hover.bodyCell().arrivalTarget());
         }
-    }
-
-    // Plays what the look says reaching that kind of thing sounds like. Role and level are taken together,
-    // which is the point of a cue: resolved apart, a moment could sound at a level meant for another kind
-    // and nothing on screen would show it.
-    private void soundArrivalAt(PointerArrivalTarget arrivalTarget) {
-        soundPlayer.playCueIfPresent(soundScheme.resolvePointerArrivalCueFor(arrivalTarget));
     }
 }
