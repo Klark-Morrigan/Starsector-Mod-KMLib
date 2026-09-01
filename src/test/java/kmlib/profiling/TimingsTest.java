@@ -6,21 +6,24 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Pins {@link Timings}: the nanosecond-to-millisecond and nanosecond-to-second
- * conversions, and the fixed two-decimal "{@code 1.23ms}" format used by timing output.
+ * Pins {@link Timings}: the conversions between nanoseconds and the coarser units either
+ * way, and the fixed two-decimal "{@code 1.23ms}" format used by timing output.
  */
 class TimingsTest {
 
     @Nested
     class ConvertNanosToMillis {
+
         @Test
         void convertNanosToMillisDividesByAMillion() {
+
             assertThat(Timings.convertNanosToMillis(2_500_000L))
                 .isEqualTo(2.5);
         }
 
         @Test
         void convertNanosToMillisIsZeroForZero() {
+
             assertThat(Timings.convertNanosToMillis(0L))
                 .isZero();
         }
@@ -28,8 +31,10 @@ class TimingsTest {
 
     @Nested
     class ConvertNanosToSeconds {
+
         @Test
         void convertNanosToSecondsDividesByABillion() {
+
             assertThat(Timings.convertNanosToSeconds(2_500_000_000L))
                 .isEqualTo(2.5);
         }
@@ -44,21 +49,51 @@ class TimingsTest {
 
         @Test
         void convertNanosToSecondsIsZeroForZero() {
+
             assertThat(Timings.convertNanosToSeconds(0L))
                 .isZero();
         }
     }
 
     @Nested
+    class ConvertSecondsToNanos {
+
+        @Test
+        void convertSecondsToNanosMultipliesByABillion() {
+
+            assertThat(Timings.convertSecondsToNanos(2.5))
+                .isEqualTo(2_500_000_000L);
+        }
+
+        @Test
+        void convertSecondsToNanosKeepsSubSecondPrecision() {
+            // A duration stated in seconds is nearly always a fraction of one - an animation pace,
+            // a frame span - so the fraction is the case that matters rather than a whole second.
+            assertThat(Timings.convertSecondsToNanos(0.0015))
+                .isEqualTo(1_500_000L);
+        }
+
+        @Test
+        void convertSecondsToNanosIsZeroForZero() {
+
+            assertThat(Timings.convertSecondsToNanos(0))
+                .isZero();
+        }
+    }
+
+    @Nested
     class ConvertNanosToMicros {
+
         @Test
         void convertNanosToMicrosDividesByAThousand() {
+
             assertThat(Timings.convertNanosToMicros(2_500L))
                 .isEqualTo(2.5);
         }
 
         @Test
         void convertNanosToMicrosIsZeroForZero() {
+
             assertThat(Timings.convertNanosToMicros(0L))
                 .isZero();
         }
@@ -66,8 +101,10 @@ class TimingsTest {
 
     @Nested
     class FormatMicros {
+
         @Test
         void formatMicrosShowsOneDecimalAndTheUnit() {
+
             assertThat(Timings.formatMicros(123_400L))
                 .isEqualTo("123.4us");
         }
@@ -89,6 +126,7 @@ class TimingsTest {
 
         @Test
         void formatMicrosIsZeroForZero() {
+
             assertThat(Timings.formatMicros(0L))
                 .isEqualTo("0.0us");
         }
@@ -96,8 +134,10 @@ class TimingsTest {
 
     @Nested
     class FormatMillis {
+
         @Test
         void formatMillisShowsTwoDecimalsAndTheUnit() {
+
             assertThat(Timings.formatMillis(1_234_567L))
                 .isEqualTo("1.23ms");
         }
@@ -111,6 +151,7 @@ class TimingsTest {
 
         @Test
         void formatMillisIsZeroForZero() {
+
             assertThat(Timings.formatMillis(0L))
                 .isEqualTo("0.00ms");
         }

@@ -17,8 +17,10 @@ final class ProfilerTest {
 
     @Nested
     class Measure {
+
         @Test
         void measureRecordsTheClockDeltaForASection() {
+
             var clock = new ScriptedClock(100, 250);
             var profiler = new Profiler(clock);
 
@@ -26,9 +28,13 @@ final class ProfilerTest {
             });
 
             var timing = profiler.snapshot().get(0);
-            assertThat(timing.getSection()).isEqualTo("build");
-            assertThat(timing.getCount()).isEqualTo(1);
-            assertThat(timing.getTotalNanos()).isEqualTo(150);
+
+            assertThat(timing.getSection())
+                .isEqualTo("build");
+            assertThat(timing.getCount())
+                .isEqualTo(1);
+            assertThat(timing.getTotalNanos())
+                .isEqualTo(150);
         }
 
         @Test
@@ -39,33 +45,44 @@ final class ProfilerTest {
 
             profiler.measure("render", () -> {
             });
+
             profiler.measure("render", () -> {
             });
 
             var timing = profiler.snapshot().get(0);
-            assertThat(timing.getCount()).isEqualTo(2);
-            assertThat(timing.getTotalNanos()).isEqualTo(250);
-            assertThat(timing.getMinNanos()).isEqualTo(50);
-            assertThat(timing.getMaxNanos()).isEqualTo(200);
-            assertThat(timing.getAverageNanos()).isEqualTo(125);
+
+            assertThat(timing.getCount())
+                .isEqualTo(2);
+            assertThat(timing.getTotalNanos())
+                .isEqualTo(250);
+            assertThat(timing.getMinNanos())
+                .isEqualTo(50);
+            assertThat(timing.getMaxNanos())
+                .isEqualTo(200);
+            assertThat(timing.getAverageNanos())
+                .isEqualTo(125);
         }
 
         @Test
         void measureSupplierReturnsTheWorkResultAndStillTimesIt() {
+
             var clock = new ScriptedClock(0, 42);
             var profiler = new Profiler(clock);
-
             var result = profiler.measure("compute", () -> "value");
 
-            assertThat(result).isEqualTo("value");
-            assertThat(profiler.snapshot().get(0).getTotalNanos()).isEqualTo(42);
+            assertThat(result)
+                .isEqualTo("value");
+            assertThat(profiler.snapshot().get(0).getTotalNanos())
+                .isEqualTo(42);
         }
     }
 
     @Nested
     class Snapshot {
+
         @Test
         void snapshotFollowsFirstRecordOrder() {
+
             var profiler = new Profiler(new ScriptedClock(0, 0, 0, 0));
 
             profiler.measure("second", () -> {
@@ -80,21 +97,26 @@ final class ProfilerTest {
 
     @Nested
     class Reset {
+
         @Test
         void resetClearsAllSections() {
+
             var profiler = new Profiler(new ScriptedClock(0, 10));
 
             profiler.measure("build", () -> {
             });
+
             profiler.reset();
 
-            assertThat(profiler.snapshot()).isEmpty();
+            assertThat(profiler.snapshot())
+                .isEmpty();
         }
     }
 
     // Returns the supplied values in order on successive calls, so a measure()
     // sees a known start then end and thus a known delta.
     private static final class ScriptedClock implements LongSupplier {
+
         private final long[] readings;
         private final AtomicLong index = new AtomicLong();
 

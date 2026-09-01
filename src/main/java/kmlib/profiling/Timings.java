@@ -49,6 +49,19 @@ public final class Timings {
     }
 
     /**
+     * Converts a duration in seconds to nanoseconds, against the same divisor the
+     * reading above uses - so a span stated in the unit a rate or a period is written
+     * in reaches a clock counting in nanoseconds without a second spelling of the
+     * conversion.
+     *
+     * <p>Truncated rather than rounded, since the result is a count of nanoseconds and
+     * the fraction of one that is dropped is below what any clock here resolves.
+     */
+    public static long convertSecondsToNanos(double seconds) {
+        return (long) (seconds * NANOS_PER_SECOND);
+    }
+
+    /**
      * Formats a nanosecond duration as milliseconds with two decimals and a
      * trailing unit, e.g. {@code "1.23ms"}. {@link Locale#ROOT} is forced so the
      * decimal separator is a dot regardless of the JVM's default locale - a fixed
