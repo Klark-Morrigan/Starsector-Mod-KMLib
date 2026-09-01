@@ -163,16 +163,13 @@ and never above a block's first, which is what stops it piling up where several 
 the one row - a colony's last term, the colony, and the faction holding it all end together, and
 the next faction is set off by one gap rather than three.
 
-A box is sized by its content and then clamped on screen, so content taller than the screen is drawn
-with its ends past both edges and nothing on screen says what was cut. A caller with more to say than
-the screen holds settles that beforehand: `CursorTooltip.measureBoxHeight` answers how tall the same
-blocks would stand in the same style, and
-[`CursorTooltipRenderer`](render/gl/tooltip/CursorTooltipRenderer.java) offers that beside
-`resolveHeightBudget` - the height of the very bound it clamps the box inside. Height alone, and with
-no measurer, because that is all the question needs: how tall a box stands follows from the looks its
-rows resolve and the room the blocks put between them. Both answers come off one walk of the blocks,
-so a box weighed as fitting is the box that is then drawn. What to do about an overflow is the
-caller's - cut content, restyle it smaller, or accept it.
+A box is sized by its content and then clamped, so content taller than the screen is drawn with its
+ends past both edges and nothing on screen says what was cut. So the stack is weighable before it is
+drawn: `CursorTooltip.measureBoxHeight` answers how tall the same blocks would stand in the same
+style, and [`CursorTooltipRenderer`](render/gl/tooltip/CursorTooltipRenderer.java) offers that beside
+`resolveHeightBudget`, the height of the very bound it clamps the box inside. Both answers come off
+the one walk of the blocks that lays them out, so a box weighed as fitting is the box then drawn.
+What to do about an overflow stays the caller's - cut content, restyle it smaller, or accept it.
 
 ## Pairs that look like duplicates
 

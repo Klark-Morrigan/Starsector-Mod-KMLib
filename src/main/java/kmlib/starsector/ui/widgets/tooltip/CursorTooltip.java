@@ -477,9 +477,9 @@ public final class CursorTooltip {
     /**
      * One row bound to the look its kind of line resolved to and to where the grouping put it: the
      * height it stacks at, the room it takes above itself, and a width measurement already bound to its
-     * face and its casing. Bound once per layout so the height measurement, the width measurement, and
-     * the placement cannot read three different looks for one row - and so no step below has to carry
-     * the box's style, its blocks, and the measurer alongside the row it is working on.
+     * face and its casing. Bound once per layout so the width measurement and the placement cannot read
+     * two different looks for one row - and so no step below has to carry the box's style, its blocks,
+     * and the measurer alongside the row it is working on.
      *
      * @param row          the content row as its caller authored it
      * @param lineHeight   the height the row stacks at, which is also its crest square's side
@@ -492,8 +492,10 @@ public final class CursorTooltip {
         float leadingGap,
         ToDoubleFunction<String> measureWidth) {
 
-        // Resolves the look for one stacked row's kind of line and binds a measurement to it. The face
-        // doubles as the line height, as a bitmap face's size is the room one line of it needs.
+        // Resolves the look for one stacked row's kind of line and binds a measurement to it. The height
+        // is the stacked row's own answer rather than a second reading of the face, so the line a row is
+        // placed on and the line the box was sized for are one statement of what a line of that look
+        // costs.
         private static StyledRow bindRowToStyle(
                 StackedRow stackedRow,
                 TooltipStyle style,
@@ -506,7 +508,7 @@ public final class CursorTooltip {
             // measurement would clip the text drawn into it.
             return new StyledRow(
                 stackedRow.row(),
-                textStyle.face().size(),
+                stackedRow.measureLineHeight(style),
                 stackedRow.leadingGap(),
                 spanText -> measurer.measureSpanWidth(
                     textStyle.face(),

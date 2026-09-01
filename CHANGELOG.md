@@ -234,7 +234,8 @@ No Starsector API on the signature.
 - **`kmlib.starsector.ui.layout`** - pure placement maths: padding, row
   stacks, control strips and their measurement, height-capped strips with a
   flex region, panel and tab-panel placement, tab header layout, tooltip box
-  placement, and vanilla PositionAPI to rectangle.
+  placement and the height a box wraps a content stack to, and vanilla
+  PositionAPI to rectangle.
 - **`kmlib.starsector.ui.map`** - how readable a map icon is under the nebulae
   drawn over it.
 - **`kmlib.starsector.ui.map.controls`** - the writes into the map screen's own
@@ -277,7 +278,9 @@ No Starsector API on the signature.
   takes its own channel from the panel's alpha, so a row opaque over a
   translucent body still fades out with the panel around it.
 - **`kmlib.starsector.ui.render.gl.tooltip`** - painting a cursor tooltip and
-  the leader lines ruling its rows, with redaction darkening.
+  the leader lines ruling its rows, with redaction darkening, and the box
+  height and screen budget a caller weighs its content against before the box
+  is drawn.
 - **`kmlib.starsector.ui.screen`** - the UI screen box, its width and height,
   and the pixel-to-UI axis conversions over it.
 - **`kmlib.starsector.ui.sound`** - the engine's interface sounds a KM control
@@ -319,5 +322,6 @@ No Starsector API on the signature.
   resolved against.
 - **`kmlib.starsector.ui.widgets.tooltip`** - cursor tooltip content and
   layout: table and centred rows carrying crests, values and indentation,
-  nested sections, per-level line gaps and section breaks, and the header,
-  paragraph and footnote styles they read in.
+  nested sections, per-level line gaps and section breaks, the header,
+  paragraph and footnote styles they read in, and how tall those blocks stand
+  answered on its own, before a box is laid out anywhere.

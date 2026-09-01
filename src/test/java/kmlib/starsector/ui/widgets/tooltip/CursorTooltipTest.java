@@ -1169,7 +1169,7 @@ class CursorTooltipTest {
 
     @Nested
     class MeasureBoxHeight {
-        
+
         @Test
         void measuresEachLinePlusTheGapAndPadding() {
 
