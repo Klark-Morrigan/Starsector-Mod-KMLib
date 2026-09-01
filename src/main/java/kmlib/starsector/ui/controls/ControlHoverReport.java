@@ -8,9 +8,7 @@ package kmlib.starsector.ui.controls;
  *
  * <p>Reported on change rather than every frame, and with {@link #NO_CELL_HOVERED} as the pointer leaves,
  * so a host holds what it was last told rather than re-deciding it per frame - and is always told when to
- * let go of it. The reading behind it is taken against the placement being drawn rather than latched from
- * the last pointer event, which is what makes a list scrolling under a still pointer report the row now
- * under the cursor instead of the one that was there when the pointer last moved.
+ * let go of it.
  *
  * <p>It is not what a paint pass reads. {@link ControlHoverSource} is that: a fraction per cell saying how
  * far the cell has travelled onto its hovered look, resolved by whatever owns the panel's live state and

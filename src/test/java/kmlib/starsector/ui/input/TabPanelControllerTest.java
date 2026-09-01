@@ -1850,13 +1850,15 @@ final class TabPanelControllerTest {
         @Test
         void hoverReportsTellTheHostWhichCellThePointerCameOnto() {
             // The reading a frame takes goes back out to whoever built the control, which is what lets a
-            // host answer a hover without reading a cursor or hit-testing a strip of its own.
+            // host answer a hover without reading a cursor or hit-testing a strip of its own. Reported off
+            // the mid-strip slot, whose two halves are different numbers - a report that carried the
+            // control's place where it meant its cell would answer the same for a slot of two zeroes.
             var controller = new TabPanelController();
 
-            advanceWithPointerOn(controller, buildReportingBodyCell(FIRST_BODY_SLOT));
+            advanceWithPointerOn(controller, buildReportingBodyCell(MID_STRIP_SEGMENT_SLOT));
 
             assertThat(reportedCells)
-                .containsExactly(ControlSpec.SINGLE_CELL);
+                .containsExactly(1);
         }
 
         @Test
@@ -1865,11 +1867,11 @@ final class TabPanelControllerTest {
             // work every frame the player leaves the pointer where it is.
             var controller = new TabPanelController();
 
-            advanceWithPointerOn(controller, buildReportingBodyCell(FIRST_BODY_SLOT));
-            advanceWithPointerOn(controller, buildReportingBodyCell(FIRST_BODY_SLOT));
+            advanceWithPointerOn(controller, buildReportingBodyCell(MID_STRIP_SEGMENT_SLOT));
+            advanceWithPointerOn(controller, buildReportingBodyCell(MID_STRIP_SEGMENT_SLOT));
 
             assertThat(reportedCells)
-                .containsExactly(ControlSpec.SINGLE_CELL);
+                .containsExactly(1);
         }
 
         @Test
@@ -1879,11 +1881,11 @@ final class TabPanelControllerTest {
             // from.
             var controller = new TabPanelController();
 
-            advanceWithPointerOn(controller, buildReportingBodyCell(FIRST_BODY_SLOT));
+            advanceWithPointerOn(controller, buildReportingBodyCell(MID_STRIP_SEGMENT_SLOT));
             advanceWithPointerOn(controller, NO_BODY_CELL_HOVERED);
 
             assertThat(reportedCells)
-                .containsExactly(ControlSpec.SINGLE_CELL, NO_CELL_REPORTED);
+                .containsExactly(1, NO_CELL_REPORTED);
         }
 
         @Test
@@ -1908,11 +1910,11 @@ final class TabPanelControllerTest {
             // is no longer drawn.
             var controller = new TabPanelController();
 
-            advanceWithPointerOn(controller, buildReportingBodyCell(FIRST_BODY_SLOT));
+            advanceWithPointerOn(controller, buildReportingBodyCell(MID_STRIP_SEGMENT_SLOT));
             controller.resetInputMotions();
 
             assertThat(reportedCells)
-                .containsExactly(ControlSpec.SINGLE_CELL, NO_CELL_REPORTED);
+                .containsExactly(1, NO_CELL_REPORTED);
         }
 
         @Test

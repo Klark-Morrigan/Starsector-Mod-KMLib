@@ -72,7 +72,7 @@ final class BodyHoverReporter {
      * <p>Nothing is reported where nothing was, so a panel stood down twice tells its host once.
      */
     void reportHoverCleared() {
-        reportedHoverReport.reportHoveredCell(ControlHoverReport.NO_CELL_HOVERED);
+        reportLeaveToHostLastTold();
         reportedHoverReport = ControlHoverReport.NONE;
         reportedSlot = null;
     }
@@ -84,6 +84,13 @@ final class BodyHoverReporter {
         if (isOnControlAlreadyReported(hoveredSlot)) {
             return;
         }
+        reportLeaveToHostLastTold();
+    }
+
+    // The leave itself, going out on the channel the last reading did. Both the crossing above and a panel
+    // standing down send it, and one place to send it from is one place the resting NONE swallows it - a
+    // host that was never told anything hears nothing either way.
+    private void reportLeaveToHostLastTold() {
         reportedHoverReport.reportHoveredCell(ControlHoverReport.NO_CELL_HOVERED);
     }
 

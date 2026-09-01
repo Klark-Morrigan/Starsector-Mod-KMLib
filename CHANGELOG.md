@@ -206,7 +206,9 @@ No Starsector API on the signature.
 - **`kmlib.starsector.ui.controls`** - declarative control specs - label,
   checkbox, toggle, horizontal radio, tabs, vertical table, side-by-side
   columns, divider - with their actions, reselect behaviour and segment
-  sizing, and the hover and press sources a body resolves per cell.
+  sizing, the hover and press sources a body resolves per cell, and the hover
+  report a control tells its host which cell the pointer is on through -
+  carried by the vertical table, defaulted to reporting nowhere elsewhere.
 - **`kmlib.starsector.ui.coreui`** - name-based reach into the game's concrete
   UI classes: child walks, offered hops, no-arg and argument invokes, showing
   checks, the core UI behind a host, the current tab, the campaign screen's
@@ -230,8 +232,10 @@ No Starsector API on the signature.
 - **`kmlib.starsector.ui.input`** - pointer and key controllers driving panel
   and tab-panel state (scroll, drag, collapse, hotkey blink), hover arrival
   and fades with keyed variants of both, cursor position and button-hold
-  ports, pointer event claiming, and the hovered tab, body cell and notch a
-  frame resolves.
+  ports, pointer event claiming, the hovered tab, body cell and notch a
+  frame resolves, and the report of that body cell back to the host that
+  built the control - once per change, and once more as the pointer or the
+  panel leaves.
 - **`kmlib.starsector.ui.intel`** - obf-cast seam onto the intel screen:
   whether its tab is open, the map visor rect and widget, and that map's
   starscape flag. Fails closed.

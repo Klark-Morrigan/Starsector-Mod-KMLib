@@ -57,6 +57,8 @@ final class ControlSpecTest {
             // frame that first put the pointer on such a control would throw rather than report nothing.
             assertThat(LabelledControlSpecs.buildCheckbox("Muted", true, ControlAction.NONE).hoverReport())
                 .isEqualTo(ControlHoverReport.NONE);
+            assertThat(LabelledControlSpecs.buildToggle("Muted", true, ControlAction.NONE).hoverReport())
+                .isEqualTo(ControlHoverReport.NONE);
             assertThat(ControlSpec.HorizontalRadio.of(List.of("A"), 0, ControlAction.NONE).hoverReport())
                 .isEqualTo(ControlHoverReport.NONE);
             assertThat(new ControlSpec.Tabs(List.of("A"), List.of(), 0, ControlAction.NONE).hoverReport())

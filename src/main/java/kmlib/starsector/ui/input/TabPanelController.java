@@ -139,10 +139,9 @@ public final class TabPanelController {
     private final KeyedHoverArrival<BodyCellSlot> bodyHoverArrival = new KeyedHoverArrival<>();
 
     // Where the body's reading goes back out to whoever built the control under the pointer, once per
-    // change. Held beside the latch above because both turn the same per-frame reading into a moment; they
-    // part on who is owed it - the latch answers the player with a sound, this answers the host with the
-    // cell, and the two differ on a scroll, which moves rows nobody reached but does change which row is
-    // under the cursor.
+    // change. Beside the latch above because both turn one per-frame reading into a moment, and apart from
+    // it on a scroll: rows carried under a parked cursor were reached by nobody, and are still a different
+    // row for the host to answer.
     private final BodyHoverReporter bodyHoverReporter = new BodyHoverReporter();
 
     /**

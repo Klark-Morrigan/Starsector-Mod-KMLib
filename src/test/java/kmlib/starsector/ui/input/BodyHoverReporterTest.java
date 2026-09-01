@@ -33,8 +33,9 @@ final class BodyHoverReporterTest {
     private static final HoveredBodyCell NO_CELL_HOVERED = null;
 
     // What a host is told as the pointer leaves, named so a case reads as a leave rather than as a bare
-    // null among cell indices.
-    private static final Integer LEAVE_REPORTED = null;
+    // null among cell indices. The name the panel's own cases use for it, one concept reading one way
+    // across the package.
+    private static final Integer NO_CELL_REPORTED = null;
 
     private final BodyHoverReporter hoverReporter = new BodyHoverReporter();
 
@@ -88,7 +89,7 @@ final class BodyHoverReporterTest {
             hoverReporter.reportHoverChangeTo(NO_CELL_HOVERED);
 
             assertThat(reportedCells)
-                .containsExactly(0, LEAVE_REPORTED);
+                .containsExactly(0, NO_CELL_REPORTED);
         }
 
         @Test
@@ -101,7 +102,7 @@ final class BodyHoverReporterTest {
             hoverReporter.reportHoverChangeTo(NO_CELL_HOVERED);
 
             assertThat(reportedCells)
-                .containsExactly(0, LEAVE_REPORTED);
+                .containsExactly(0, NO_CELL_REPORTED);
         }
 
         @Test
@@ -117,7 +118,7 @@ final class BodyHoverReporterTest {
                     otherHostReportedCells::add));
 
             assertThat(reportedCells)
-                .containsExactly(0, LEAVE_REPORTED);
+                .containsExactly(0, NO_CELL_REPORTED);
             assertThat(otherHostReportedCells)
                 .containsExactly(ControlSpec.SINGLE_CELL);
         }
@@ -136,7 +137,7 @@ final class BodyHoverReporterTest {
             hoverReporter.reportHoverCleared();
 
             assertThat(reportedCells)
-                .containsExactly(0, LEAVE_REPORTED);
+                .containsExactly(0, NO_CELL_REPORTED);
         }
 
         @Test
@@ -149,7 +150,7 @@ final class BodyHoverReporterTest {
             hoverReporter.reportHoverCleared();
 
             assertThat(reportedCells)
-                .containsExactly(0, LEAVE_REPORTED);
+                .containsExactly(0, NO_CELL_REPORTED);
         }
 
         @Test
@@ -172,7 +173,7 @@ final class BodyHoverReporterTest {
             hoverReporter.reportHoverChangeTo(buildHoveredCell(FIRST_ROW));
 
             assertThat(reportedCells)
-                .containsExactly(0, LEAVE_REPORTED, 0);
+                .containsExactly(0, NO_CELL_REPORTED, 0);
         }
     }
 
