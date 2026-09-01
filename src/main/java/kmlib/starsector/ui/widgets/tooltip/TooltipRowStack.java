@@ -148,7 +148,7 @@ final class TooltipRowStack {
 
         if (precedingMember == NO_PRECEDING_MEMBER
                 || precedingMember.countLines() <= ONE_LINE) {
-                    
+
             return resolveGapAfterLastStackedRow();
         }
         return style.spacing().groupBreak();

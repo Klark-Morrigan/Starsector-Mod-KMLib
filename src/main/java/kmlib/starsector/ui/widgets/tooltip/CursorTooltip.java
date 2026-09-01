@@ -422,7 +422,7 @@ public final class CursorTooltip {
     // no column, whose width is already nothing). One source so the width measurement and the label
     // placement agree on the offset, row by row.
     private static float measureCrestOffset(TooltipRow.TableRow tableRow, float crestColumnWidth) {
-        
+
         return tableRow.labelPlacement() == TooltipLabelPlacement.ALIGNED_WITH_CRESTS
             ? crestColumnWidth
             : NO_CREST_COLUMN;
