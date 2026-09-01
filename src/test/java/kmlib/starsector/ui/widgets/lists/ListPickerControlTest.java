@@ -2,6 +2,7 @@ package kmlib.starsector.ui.widgets.lists;
 
 import com.fs.starfarer.api.util.Misc;
 
+import kmlib.starsector.ui.controls.ControlHoverReport;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.ReselectBehaviour;
 import kmlib.starsector.ui.text.TextSpan;
@@ -27,7 +28,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * sort selector beside the caller's own trailing controls, and the vertical icon-radio list of
  * selectable items ranked by the active sort mode. Also pins the click wiring: an unlit option
  * reports its item, the lit option reports a clear, and both selectors report through the same
- * store.
+ * store. Beside the click, the hover wiring: the row under the pointer reports its item to that
+ * same store, and a pointer on no row reports the leave.
  *
  * <p>Run throughout over the {@link Anomaly} item and {@link AnomalySortMode} vocabulary declared
  * outside this package's production surface - the proof that the picker draws, ranks, and reports a
@@ -466,7 +468,7 @@ final class ListPickerControlTest {
             // The item's own id is what is reported, not its label or its row index.
             assertThat(pickerStoreFake.pickedItemIds)
                 .containsExactly("drift_1");
-            assertThat(pickerStoreFake.clearCount)
+            assertThat(pickerStoreFake.pickClearCount)
                 .isZero();
         }
 
@@ -478,7 +480,7 @@ final class ListPickerControlTest {
 
             picker.action().activateCell(0);
 
-            assertThat(pickerStoreFake.clearCount)
+            assertThat(pickerStoreFake.pickClearCount)
                 .isEqualTo(1);
             assertThat(pickerStoreFake.pickedItemIds)
                 .isEmpty();
@@ -506,8 +508,85 @@ final class ListPickerControlTest {
 
             assertThat(pickerStoreFake.pickedItemIds)
                 .isEmpty();
-            assertThat(pickerStoreFake.clearCount)
+            assertThat(pickerStoreFake.pickClearCount)
                 .isZero();
+        }
+    }
+
+    @Nested
+    class ReportHoveredItem {
+
+        @Test
+        void hoveringARowReportsThatItemsId() {
+            // Which item a cell names is read off the ranked order, not off the list the caller handed
+            // over, so what a hover previews is what a click on that row would spotlight. Sorted by
+            // radius, the third item leads and the caller's own first item falls behind it.
+            var squall = new Anomaly("squall_1", "Squall", "crest_squall", 1, 12);
+            var picker = buildPickerFor(build(
+                List.of(STORM, DRIFT, squall),
+                null,
+                AnomalySortMode.RADIUS));
+
+            picker.hoverReport().reportHoveredCell(0);
+
+            assertThat(pickerStoreFake.hoveredItemIds)
+                .containsExactly("squall_1");
+            assertThat(pickerStoreFake.hoverClearCount)
+                .isZero();
+
+            // The two channels are separate: crossing a row previews it and picks nothing, so a
+            // pointer sweeping the list cannot move what is spotlighted.
+            assertThat(pickerStoreFake.pickedItemIds)
+                .isEmpty();
+            assertThat(pickerStoreFake.pickClearCount)
+                .isZero();
+        }
+
+        @Test
+        void hoveringTheSpotlightedRowReportsItLikeAnyOther() {
+            // A hover reads the row under the pointer and nothing about what is lit, so the
+            // spotlighted row reports its own item rather than the clear a click on it reports.
+            var picker = buildPickerFor(build(ANOMALIES, "drift_1", AnomalySortMode.ALPHA));
+
+            picker.hoverReport().reportHoveredCell(0);
+
+            assertThat(pickerStoreFake.hoveredItemIds)
+                .containsExactly("drift_1");
+            assertThat(pickerStoreFake.hoverClearCount)
+                .isZero();
+        }
+
+        @Test
+        void leavingTheListReportsNoItem() {
+            // The leave is the one thing a stream of readings never says out loud, so it reaches the
+            // store as a report of its own: a host previewing the hovered item stops previewing one
+            // rather than holding the last row the pointer crossed.
+            var picker = buildPickerFor(build(ANOMALIES, null, AnomalySortMode.ALPHA));
+
+            picker.hoverReport().reportHoveredCell(0);
+            picker.hoverReport().reportHoveredCell(ControlHoverReport.NO_CELL_HOVERED);
+
+            assertThat(pickerStoreFake.hoveredItemIds)
+                .containsExactly("drift_1");
+            assertThat(pickerStoreFake.hoverClearCount)
+                .isEqualTo(1);
+        }
+
+        @Test
+        void hoveringOutsideTheListReportsNoItem() {
+            // A reading on a cell no item stands in - past the rows, or a negative one - reports the
+            // leave rather than being dropped, which is where the hover parts from the click beside
+            // it: a stray click leaves the spotlight standing, while a hover on nothing is itself the
+            // answer that no item is under the pointer.
+            var picker = buildPickerFor(build(ANOMALIES, null, AnomalySortMode.ALPHA));
+
+            picker.hoverReport().reportHoveredCell(ANOMALIES.size());
+            picker.hoverReport().reportHoveredCell(-1);
+
+            assertThat(pickerStoreFake.hoveredItemIds)
+                .isEmpty();
+            assertThat(pickerStoreFake.hoverClearCount)
+                .isEqualTo(2);
         }
     }
 
@@ -589,17 +668,30 @@ final class ListPickerControlTest {
     // persisting it, so a suite reads exactly what a real consumer would have been asked to write.
     private static final class ListPickerStoreFake implements ListPickerStore {
 
+        private final List<String> hoveredItemIds = new ArrayList<>();
         private final List<ListColumns> pickedColumns = new ArrayList<>();
         private final List<String> pickedItemIds = new ArrayList<>();
         private final List<ListSort<?>> pickedSorts = new ArrayList<>();
 
         // Counted rather than collected: a clear carries no value, so how many arrived is the whole
-        // of what a test can read off it.
-        private int clearCount;
+        // of what a test can read off it. One count per channel, so a test reading either can tell a
+        // pointer leaving the rows from a spotlight being switched off.
+        private int hoverClearCount;
+        private int pickClearCount;
+
+        @Override
+        public void clearItemHover() {
+            hoverClearCount++;
+        }
 
         @Override
         public void clearItemPick() {
-            clearCount++;
+            pickClearCount++;
+        }
+
+        @Override
+        public void reportItemHover(String itemId) {
+            hoveredItemIds.add(itemId);
         }
 
         @Override

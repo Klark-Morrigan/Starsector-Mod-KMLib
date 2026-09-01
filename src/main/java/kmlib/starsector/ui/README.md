@@ -398,7 +398,11 @@ pairs beside it, then a deselectable icon-radio list of the items. The arrangeme
 what makes it worth sharing - three rules that are only obvious after getting them wrong
 are. Re-picking the lit row clears the spotlight rather than re-selecting it, the lit index
 is resolved against the *ranked* order rather than the order the caller handed over, and an
-index outside the rows is ignored rather than trusted.
+index outside the rows is ignored rather than trusted. The row under the pointer reports
+through the same store and off that same ranked order, so a host can light what picking a row
+would show before it is picked - and there a reading on no row reports the leave instead of
+being ignored, a stray click having to leave the spotlight standing where a hover on nothing
+*is* the answer that nothing is under the pointer.
 [`SelectableListItem`](widgets/lists/SelectableListItem.java) is the seam its rows are drawn
 from - an id, a label, a crest, whether the row reads back (`isDimmed`), and nothing else -
 which a consumer implements on its own item type, so the list ranks through that consumer's own
@@ -433,9 +437,12 @@ The division that makes all of it shareable is that **this package owns the mode
 resolution rule; the consuming mod owns where the answer is kept**. Nothing here reads or
 writes a save. The stored mode and direction keys arrive as arguments to
 `ListSort.resolveStored`, each selector reports its pick back through a callback, and the
-picker's three picks report together through
+picker's three picks - with the row the pointer is on beside them - report together through
 [`ListPickerStore`](widgets/lists/ListPickerStore.java) - write-only, because the live values
-arrive as the picker's own parameters and nothing here needs a read path into a save. A mod's
+arrive as the picker's own parameters and nothing here needs a read path into a save. The
+hover rides there rather than on a channel of its own because it is resolved from the very
+list the picks are, and what a consumer does with it - previewing, holding, or nothing at all
+- is that consumer's, exactly as where it keeps a pick is. A mod's
 own thin binder is what ties the two ends to its sector-memory keys or settings fields, and
 that binder is the only place those keys appear.
 

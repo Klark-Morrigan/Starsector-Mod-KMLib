@@ -1,6 +1,7 @@
 package kmlib.starsector.ui.widgets.lists;
 
 import kmlib.starsector.ui.colour.StarsectorUiColour;
+import kmlib.starsector.ui.controls.ControlHoverReport;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.ReselectBehaviour;
 import kmlib.starsector.ui.text.TextSpan;
@@ -38,8 +39,9 @@ import java.util.List;
  * A receded row draws its words and its crest back together - the words in the engine's gray, the
  * crest darkened by a tint - since receding one and not the other reads as a rendering slip.
  *
- * <p>Nothing here reaches a save. The three live values arrive as parameters and the three picks
- * are reported through {@link ListPickerStore}, which is the division the whole family rests on.
+ * <p>Nothing here reaches a save. The three live values arrive as parameters, and the three picks -
+ * with the row the pointer is on beside them - are reported through {@link ListPickerStore}, which
+ * is the division the whole family rests on.
  */
 public final class ListPickerControl {
 
@@ -69,7 +71,8 @@ public final class ListPickerControl {
      *                            caller against its own strings
      * @param trailingControls    the controls filling the right half of the sort row; empty leaves
      *                            the sort selector alone on the row
-     * @param pickerStore         told each of the three picks, for the caller to persist
+     * @param pickerStore         told each of the three picks, for the caller to persist, and told
+     *                            which item the pointer is on as it crosses the rows
      * @return the picker controls, top to bottom; empty when {@code items} is empty
      */
     public static <T extends SelectableListItem> List<ControlSpec> buildPicker(
@@ -126,6 +129,13 @@ public final class ListPickerControl {
                     selectedIndex,
                     cellIndex -> pickItem(pickerStore, rankedItems, selectedIndex, cellIndex))
                 .handlesReselect(ReselectBehaviour.DESELECT)
+
+                // The row under the pointer is reported beside the click and resolved the same way,
+                // so a host can show what picking a row would do before it is picked. A host that
+                // previews nothing takes the report and drops it; nothing here draws differently
+                // either way, the hover's own wash being the panel's business rather than this one's.
+                .reportsHoverTo(hoveredCell ->
+                    reportHoveredItem(pickerStore, rankedItems, hoveredCell))
                 .spreadsAcross(columns.columnCount())
                 .asScrolling());
 
@@ -210,6 +220,14 @@ public final class ListPickerControl {
             : new RowSlot.TextRuns(drawnRuns);
     }
 
+    // Whether a cell names one of the list's items. Both the click and the hover ask it before
+    // reading a row, since both arrive as a cell resolved from geometry rather than from the list:
+    // an index past the rows read unchecked would run off the ranked list, and a negative one would
+    // run off its front. One rule for the two, so a cell either names an item to both or to neither.
+    private static boolean isCellOnItem(List<? extends SelectableListItem> items, int cellIndex) {
+        return cellIndex >= 0 && cellIndex < items.size();
+    }
+
     // Reports the clicked item as the spotlighted one, or reports a clear when the click landed on
     // the already-lit row. The list is deselectable, so a press on the lit option reaches here with
     // its own index; re-picking it means "stop spotlighting". Any index outside the item list is
@@ -220,7 +238,7 @@ public final class ListPickerControl {
             int selectedIndex,
             int cellIndex) {
 
-        if (cellIndex < 0 || cellIndex >= items.size()) {
+        if (!isCellOnItem(items, cellIndex)) {
             return;
         }
         if (cellIndex == selectedIndex) {
@@ -237,6 +255,26 @@ public final class ListPickerControl {
             .stream()
             .map(run -> new TextSpan(run.text(), recededColour, run.isJoinedToPreviousRun()))
             .toList();
+    }
+
+    // Reports the item the pointer is on, resolved against the ranked list exactly as the click is,
+    // so what a hover previews and what a press would spotlight are the same item under any sort.
+    //
+    // A pointer on no row - it left the list, or the reading landed on a cell no item stands in -
+    // reports the leave rather than being dropped, which is where this parts from pickItem. A stray
+    // click must leave the spotlight standing, while a hover on nothing is itself the answer that no
+    // item is under the pointer: swallowed, it would leave a host previewing the last row the pointer
+    // crossed while the pointer is somewhere else entirely.
+    private static void reportHoveredItem(
+            ListPickerStore pickerStore,
+            List<? extends SelectableListItem> items,
+            Integer hoveredCell) {
+
+        if (hoveredCell == ControlHoverReport.NO_CELL_HOVERED || !isCellOnItem(items, hoveredCell)) {
+            pickerStore.clearItemHover();
+            return;
+        }
+        pickerStore.reportItemHover(items.get(hoveredCell).itemId());
     }
 
     // The lit row: the index of the item whose id is selected, or no selection when that id is
