@@ -284,7 +284,7 @@ No Starsector API on the signature.
 - **`kmlib.starsector.ui.render.gl.tooltip`** - painting a cursor tooltip and
   the leader lines ruling its rows, with redaction darkening, and the box
   height and screen budget a caller weighs its content against before the box
-  is drawn.
+  is drawn - or one draw that fits the box to the screen on the way in.
 - **`kmlib.starsector.ui.screen`** - the UI screen box, its width and height,
   and the pixel-to-UI axis conversions over it.
 - **`kmlib.starsector.ui.sound`** - the engine's interface sounds a KM control
@@ -327,5 +327,8 @@ No Starsector API on the signature.
 - **`kmlib.starsector.ui.widgets.tooltip`** - cursor tooltip content and
   layout: table and centred rows carrying crests, values and indentation,
   nested sections, per-level line gaps and section breaks, the header,
-  paragraph and footnote styles they read in, and how tall those blocks stand
-  answered on its own, before a box is laid out anywhere.
+  paragraph and footnote styles they read in, how tall those blocks stand
+  answered on its own, before a box is laid out anywhere, and the fit that
+  answers an overflow by giving up size rather than lines - re-anchoring the
+  level shrink at the deepest line shown, so it keeps its size while the tiers
+  above it draw smaller and closer together.

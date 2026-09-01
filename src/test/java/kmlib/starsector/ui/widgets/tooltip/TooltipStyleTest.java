@@ -59,6 +59,10 @@ class TooltipStyleTest {
     private static final int DEEPER_THAN_THE_FLOOR = 9;
     private static final double SMALLEST_SUBORDINATE_SIZE = 7d;
 
+    // A face a host set smaller than that floor, which is the one case where the floor could raise a
+    // line rather than stop it falling.
+    private static final double SMALLER_THAN_THE_FLOOR = 5d;
+
     // The tier a compressed box anchors its shrink at, and the room its lines then stand at: the base
     // gap less the share one step of the ramp takes off a 15pt body line, stated as a literal so the
     // coupling between the two is asserted here rather than recomputed.
@@ -420,6 +424,19 @@ class TooltipStyleTest {
                 .isCloseTo(ONE_STEP_UNDER_SIZE, within(SIZE_TOLERANCE));
             assertThat(resolveParagraphSizeIn(compressedStyle, IN_THE_BOXS_VOICE))
                 .isCloseTo(TWO_STEPS_UNDER_SIZE, within(SIZE_TOLERANCE));
+        }
+
+        @Test
+        void resolveStyleForNeverDemotesALinePastItsKindsOwnSize() {
+            // The floor is there to stop a demotion running away, so it must not raise one: a host whose
+            // face is already smaller than the smallest legible size would otherwise have every
+            // subordinate line drawn LARGER than the line it stands under.
+            var tinyFacedStyle = TooltipStyle
+                .createStyle(HEADER_STYLE, PARAGRAPH_STYLE.sizedAt(SMALLER_THAN_THE_FLOOR))
+                .shrunkPerLevel(LEVEL_SHRINK);
+
+            assertThat(resolveParagraphSizeIn(tinyFacedStyle, DEEPER_THAN_THE_FLOOR))
+                .isCloseTo(SMALLER_THAN_THE_FLOOR, within(SIZE_TOLERANCE));
         }
 
         @Test

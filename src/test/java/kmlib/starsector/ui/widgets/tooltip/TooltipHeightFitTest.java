@@ -48,6 +48,12 @@ class TooltipHeightFitTest {
     // padding either side. Every budget below is stated against it.
     private static final float UNFITTED_BOX_HEIGHT = 88f;
 
+    // The same fixture under a box that already demotes each step two units - 15, 13, 11 and 9 - which
+    // is the state a host reaches the fit in, since a listing that goes deep asks for the ordinary ramp
+    // long before it asks for a compression.
+    private static final float LEVEL_SHRINK = 2f;
+    private static final float SHRUNK_BOX_HEIGHT = 76f;
+
     // Room to spare, so the box is drawn as it stands.
     private static final float ROOMY_BUDGET = 120f;
 
@@ -106,8 +112,18 @@ class TooltipHeightFitTest {
             createRowAt("DD", IN_THE_BOXS_VOICE))));
     }
 
+    // The same box under a typography that already reads largest at the top, which is what a host hands
+    // the fit in practice.
+    private static TooltipStyle buildShrinkingStyle() {
+        return PLAIN_STYLE.shrunkPerLevel(LEVEL_SHRINK);
+    }
+
     private static TooltipStyle fitTieredBoxTo(float heightBudget) {
-        return TooltipHeightFit.fitToHeight(buildTieredBox(), PLAIN_STYLE, heightBudget);
+        return fitTieredBoxIn(PLAIN_STYLE, heightBudget);
+    }
+
+    private static TooltipStyle fitTieredBoxIn(TooltipStyle style, float heightBudget) {
+        return TooltipHeightFit.fitToHeight(buildTieredBox(), style, heightBudget);
     }
 
     private static float measureTieredBoxIn(TooltipStyle style) {
@@ -144,6 +160,32 @@ class TooltipHeightFitTest {
             // 70, and what comes back is a typography the same blocks stack inside that.
             assertThat(measureTieredBoxIn(fitTieredBoxTo(TIGHTER_BUDGET)))
                 .isLessThanOrEqualTo(TIGHTER_BUDGET);
+        }
+
+        @Test
+        void fitToHeightBringsABoxThatAlreadyDemotesItsLevelsWithinItsBudget() {
+            // The state a host actually reaches the fit in, and the one the solve's near end rests on: a
+            // compression of nothing leaves every tier at its kind's own size, so it stands taller than
+            // the authored box rather than shorter, and the end the search starts from is known to
+            // overflow without being weighed.
+            assertThat(measureTieredBoxIn(buildShrinkingStyle()))
+                .isCloseTo(SHRUNK_BOX_HEIGHT, within(TOLERANCE));
+            assertThat(measureTieredBoxIn(PLAIN_STYLE))
+                .isGreaterThan(measureTieredBoxIn(buildShrinkingStyle()));
+
+            assertThat(measureTieredBoxIn(fitTieredBoxIn(buildShrinkingStyle(), TIGHTER_BUDGET)))
+                .isLessThanOrEqualTo(TIGHTER_BUDGET);
+        }
+
+        @Test
+        void fitToHeightRaisesADemotedDeepestLineToItsKindsOwnSize() {
+            // The inversion at its starkest: the authored ramp had the deepest line at 9, the smallest
+            // in the box, and the fit hands it back at the body's own 15. It is what the reader asked
+            // for, so it reads at the size that kind of line reads at whatever the ordinary ramp left it.
+            assertThat(resolveSizeAt(buildShrinkingStyle(), DEEPEST_LEVEL))
+                .isLessThan(BODY_SIZE);
+            assertThat(resolveSizeAt(fitTieredBoxIn(buildShrinkingStyle(), TIGHTER_BUDGET), DEEPEST_LEVEL))
+                .isCloseTo(BODY_SIZE, within(SIZE_TOLERANCE));
         }
 
         @Test

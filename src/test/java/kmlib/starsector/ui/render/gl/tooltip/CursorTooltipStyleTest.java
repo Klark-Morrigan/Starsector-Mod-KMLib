@@ -42,6 +42,9 @@ class CursorTooltipStyleTest {
     // statement reached it rather than the default having happened to match.
     private static final float TUNED_DARKENING_STRENGTH = 0.55f;
 
+    // A parting no baseline typography holds, which is what tells one typography from another here.
+    private static final float TIGHTENED_SECTION_BREAK = 3f;
+
     private static TooltipStyle createTypography() {
         // Built by hand rather than through TextStyle's own factory: its baseline colour resolves from
         // the running game's palette, which a value test has no business standing up for a colour it
@@ -53,6 +56,12 @@ class CursorTooltipStyleTest {
             false);
 
         return TooltipStyle.createStyle(textStyle, textStyle);
+    }
+
+    // A typography unlike the one a look is built with, so a box carrying it says the restyle reached
+    // it rather than the two having been equal all along.
+    private static TooltipStyle createTightenedTypography() {
+        return createTypography().partedBy(TIGHTENED_SECTION_BREAK);
     }
 
     private static CursorTooltipStyle createStyle() {
@@ -165,6 +174,41 @@ class CursorTooltipStyleTest {
                 .isEqualTo(BORDER_COLOUR);
             assertThat(tuned.leaderLineStyle())
                 .isEqualTo(style.leaderLineStyle());
+        }
+    }
+
+    @Nested
+    class RestyledAs {
+
+        @Test
+        void restyledAsSetsTheLookEveryLineIsDrawnFrom() {
+            // The seam a fit is put back through: what a pass settling sizes and spacing hands back is a
+            // typography, and this is how it reaches the box that will be drawn.
+            var restyled = createStyle().restyledAs(createTightenedTypography());
+
+            assertThat(restyled.typography())
+                .isEqualTo(createTightenedTypography());
+        }
+
+        @Test
+        void restyledAsLeavesTheRestOfTheLookAsItWas() {
+            // A refinement states one thing and carries the rest over. A box redrawn in another
+            // typography is the same box: its frame, its fade, and both tuned weights come through.
+            var style = createStyle().redactedAt(TUNED_DARKENING_STRENGTH);
+            var restyled = style.restyledAs(createTightenedTypography());
+
+            assertThat(restyled.opacity())
+                .isEqualTo(OPACITY);
+            assertThat(restyled.borderWidth())
+                .isEqualTo(BORDER_WIDTH);
+            assertThat(restyled.fillColour())
+                .isEqualTo(FILL_COLOUR);
+            assertThat(restyled.borderColour())
+                .isEqualTo(BORDER_COLOUR);
+            assertThat(restyled.leaderLineStyle())
+                .isEqualTo(style.leaderLineStyle());
+            assertThat(restyled.redactionDarkeningStrength())
+                .isEqualTo(TUNED_DARKENING_STRENGTH);
         }
     }
 

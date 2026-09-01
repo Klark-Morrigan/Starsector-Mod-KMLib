@@ -55,9 +55,8 @@ public record TooltipStyle(
     // size. Named because it is the whole of what the lookup below branches on.
     private static final int NO_STEPS_FROM_ANCHOR = 0;
 
-    // The most of a line's room a compression can leave: all of it. A box compressing by nothing must
-    // not come out with its lines standing further apart than it asked for, which a face already drawn
-    // below the floor would otherwise arrive at.
+    // The most of a line's room a compression can leave: all of it, so compressing a box is never a way
+    // of opening it up whatever ramp it is handed.
     private static final double WHOLE_GAP = 1d;
 
     // The smallest a demoted line is allowed to reach. A deep enough stack would otherwise arrive at a
@@ -111,6 +110,10 @@ public record TooltipStyle(
      * whichever depth its author happened to imagine. How far a line stands under the box is its own
      * ({@code TooltipRow.TableRow}), and it is not the same as its indent - a group's members are inset
      * without being demoted, and read at their group's size.
+     *
+     * <p>Spent going deeper because that is where this typography's shrink is anchored; a box
+     * {@linkplain #compressedTowardLevel compressed to fit} spends the same step from the tier it
+     * anchored at instead.
      *
      * @param levelShrink how much smaller each step draws than the one above it, in UI units
      * @return an otherwise-identical typography shrinking its levels by that much
@@ -217,11 +220,13 @@ public record TooltipStyle(
             return lineStyleLook;
         }
         // Floored rather than allowed to run down: a stack deep enough would otherwise resolve a size no
-        // atlas renders, and then a negative one - so the deepest levels share the smallest size instead
-        // of disappearing.
+        // atlas renders, and then a negative one - so the furthest levels share the smallest size
+        // instead of disappearing.
+        var lineStyleSize = lineStyleLook.face().size();
+
         return lineStyleLook.sizedAt(Math.max(
-            SMALLEST_SUBORDINATE_SIZE,
-            lineStyleLook.face().size() - stepsFromAnchor * levelShrink));
+            resolveSmallestSizeFor(lineStyleSize),
+            lineStyleSize - stepsFromAnchor * levelShrink));
     }
 
     /**
@@ -239,13 +244,22 @@ public record TooltipStyle(
         return spacing.resolveLineGapAfter(subordinationLevel);
     }
 
+    // How small a line set at the given size may be demoted to: the smallest size an atlas still renders
+    // legibly, or that line's own size where it is already below that. Held down to its own size because
+    // the floor is there to stop a demotion running away - one standing above the size it is applied to
+    // would instead resolve a demoted line LARGER than the line it stands under, which is what a host
+    // setting a face below the floor would get on every subordinate line it draws.
+    private static double resolveSmallestSizeFor(double lineStyleSize) {
+        return Math.min(lineStyleSize, SMALLEST_SUBORDINATE_SIZE);
+    }
+
     // The share of a line's room a compression leaves it: what one step of the ramp leaves of a body
     // line, floored where the glyphs are floored, so the room under a line comes down with the line
     // itself and stops where it stops. Read off the body face because the gap is answered per tier
     // rather than per kind of line, and the body is what a listing's tiers are set in.
     private float measureCompressedGapShare(float levelShrink) {
         var bodySize = paragraphStyle.face().size();
-        var steppedSize = Math.max(SMALLEST_SUBORDINATE_SIZE, bodySize - levelShrink);
+        var steppedSize = Math.max(resolveSmallestSizeFor(bodySize), bodySize - levelShrink);
 
         return (float) Math.min(WHOLE_GAP, steppedSize / bodySize);
     }

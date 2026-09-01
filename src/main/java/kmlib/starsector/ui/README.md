@@ -181,13 +181,10 @@ who asked for that depth is there to read; anchored at the bottom it is the acco
 that comes down to meet them. That inverts how a listing reads, and it scales more of the box off its
 atlas, which is why a box that fits is drawn untouched rather than the compression being a look.
 
-Height falls as the ramp rises and no closed form joins the two, so the ramp is bisected over a fixed
-count of probes; what bounds it is the shrink floor already in `TooltipStyle` - past the ramp that
-floors every tier above the anchor, no larger one resolves anything different. The line gaps come down
-with the glyphs, by the share one step of the ramp leaves of a body line, because leading is most of
-what a row costs and a compression spending glyphs alone would give up legibility for a fraction of the
-height it needs. The block partings hold: a boundary reads as one at any size. What no ramp can reach
-still overflows, and that is content the caller has to give up.
+Sizes and line gaps move together under it - the gaps keep the share one step of the ramp leaves of a
+body line - because leading is most of what a row costs, so a compression spending glyphs alone would
+give up legibility for a fraction of the height it needs. The block partings hold: a boundary reads as
+one at any size. What no ramp can reach still overflows, and that is content the caller has to give up.
 
 ## Pairs that look like duplicates
 
