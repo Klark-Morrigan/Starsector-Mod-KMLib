@@ -211,8 +211,12 @@ No Starsector API on the signature.
   doing - whether it is up, which the published dialog state never reports,
   that answering for the campaign's own conversations, and how far through its
   own fade it stands, so a caller can thin out against its backdrop rather than
-  cut away from it. The reach itself is deliberately policy-free - a hop either
-  answers or throws, and what a failure means is the caller's to decide.
+  cut away from it. Beside that, a shape-based reach for the members no name can
+  find: what a class declares and what it publishes, each member's parameters,
+  return type and a way to call it, so a caller can recognise an obfuscated
+  member by its signature rather than by a name the next game build regenerates.
+  The reach itself is deliberately policy-free - a hop either answers or throws,
+  and what a failure means is the caller's to decide.
 - **`kmlib.starsector.ui.debug`** - a quadrant-anchored on-screen debug HUD,
   drawn at the corners or around the cursor.
 - **`kmlib.starsector.ui.font`** - the face enum every caller names an atlas

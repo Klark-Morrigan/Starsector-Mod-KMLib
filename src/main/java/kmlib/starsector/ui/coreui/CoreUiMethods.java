@@ -2,7 +2,7 @@ package kmlib.starsector.ui.coreui;
 
 import org.magiclib.ReflectionUtils;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -37,7 +37,11 @@ public final class CoreUiMethods {
      * @param shape the class to look in
      * @return its own methods, inheriting nothing
      * @throws RuntimeException when the shape cannot be read, so a caller applies its own policy to
-     *                          a class whose members will not resolve
+     *                          a class whose members will not resolve. Reading a member resolves
+     *                          every type in its signature, so a signature naming something absent
+     *                          arrives as an {@link Error} rather than as a
+     *                          {@link RuntimeException} - a caller guarding this has to catch
+     *                          {@link Throwable}
      */
     public static List<CoreUiMethod> readDeclaredMethodsOf(Class<?> shape) {
 
@@ -49,8 +53,9 @@ public final class CoreUiMethods {
      *
      * @param shape the class to look in
      * @return its public methods and those of everything it extends
-     * @throws RuntimeException when the shape cannot be read, so a caller applies its own policy to
-     *                          a class whose members will not resolve
+     * @throws RuntimeException as {@link #readDeclaredMethodsOf} does, and for the same reason -
+     *                          which includes the failure that is not a
+     *                          {@link RuntimeException} at all
      */
     public static List<CoreUiMethod> readPublicMethodsOf(Class<?> shape) {
 
@@ -62,11 +67,8 @@ public final class CoreUiMethods {
     // security error, where the array they arrive in is nothing the loader has to be asked about.
     private static List<CoreUiMethod> readMethods(Object[] methods) {
 
-        var readMethods = new ArrayList<CoreUiMethod>(methods.length);
-        
-        for (var method : methods) {
-            readMethods.add(new CoreUiMethod(new ReflectionUtils.ReflectedMethod(method)));
-        }
-        return readMethods;
+        return Arrays.stream(methods)
+            .map(method -> new CoreUiMethod(new ReflectionUtils.ReflectedMethod(method)))
+            .toList();
     }
 }

@@ -45,6 +45,10 @@ public final class CoreUiMethod {
      *         rather than as the box for it
      */
     public List<Class<?>> getParameterTypes() {
+
+        // Copied rather than wrapped. The reach holds one array per member and hands that same
+        // instance back at every ask, so anything written through it would be written into what
+        // every later reader sees.
         return List.of(method.getParameterTypes());
     }
 

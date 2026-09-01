@@ -59,9 +59,8 @@ final class VanillaToggleFactory {
     // behind it as the answer to the build that finally renames it.
     private static final String SET_LISTENER_METHOD = "setListener";
 
-    // What a stand-in listener is driven by, which is the caller's own callback with the listener's
-    // arguments dropped in front of it - a control bound to exactly one button learns nothing from
-    // being told which button was clicked.
+    // What a caller's callback is run through, the callback arriving as the one shape the platform
+    // already has for "something to do later".
     private static final String CALLBACK_METHOD = "run";
 
     // The shape of the row's button factory: the words for the button, then the keyboard shortcut it
@@ -131,7 +130,9 @@ final class VanillaToggleFactory {
             }
 
             // Before the append, so the button is never on screen while still reporting to the row.
-            rowShape.listenerSetter().invokeOn(button, createListener(rowShape, onToggled));
+            var listener = rowShape.listener();
+            listener.setter().invokeOn(button, createListener(listener, onToggled));
+
             rowShape.rowAppender().invokeOn(rowWidget, button, width, height);
 
             return button;
@@ -173,34 +174,22 @@ final class VanillaToggleFactory {
             return null;
         }
 
-        var listenerSetter = matchListenerSetter(buttonShape);
-        if (listenerSetter == null) {
-            return null;
-        }
+        var listener = matchListenerBinding(buttonShape);
 
-        var listenerShape = listenerSetter.getParameterTypes().get(LISTENER_PARAMETER);
-        var listenerCallback = matchSoleMethod(
-            CoreUiMethods.readPublicMethodsOf(listenerShape),
-            anyMethod -> true,
-            "the callback a filter button's listener hears a click through");
-
-        if (listenerCallback == null) {
-            return null;
-        }
-
-        return new RowShape(
-            buttonFactory,
-            rowAppender,
-            listenerSetter,
-            listenerShape,
-            listenerCallback.getParameterTypes());
+        return listener == null
+            ? null
+            : new RowShape(buttonFactory, rowAppender, listener);
     }
 
-    // The setter is asked for by name first and by shape second, so an unobfuscated name is used
+    // How a button's clicks are taken off the row: the member that rebinds them, the interface that
+    // member names, and what that interface's own callback takes - which is the shape a stand-in for
+    // it has to be built to. Found together because each is read off the one before it.
+    //
+    // The member is asked for by name first and by shape second, so an unobfuscated name is used
     // while it lasts and its disappearance costs the match nothing. Only the shape attempt reports a
     // failure: a name that finds nothing is the ordinary way into the fallback, and warning there
     // would spend the session's one warning on a build that went on to work.
-    private static CoreUiMethod matchListenerSetter(Class<?> buttonShape) {
+    private static ListenerBinding matchListenerBinding(Class<?> buttonShape) {
 
         var buttonMethods = CoreUiMethods.readPublicMethodsOf(buttonShape);
         var namedSetters = buttonMethods.stream()
@@ -208,27 +197,49 @@ final class VanillaToggleFactory {
             .filter(VanillaToggleFactory::isListenerSetter)
             .toList();
 
-        if (namedSetters.size() == 1) {
-            return namedSetters.get(0);
+        var listenerSetter = namedSetters.size() == 1
+            ? namedSetters.get(0)
+            : matchSoleMethod(
+                buttonMethods,
+                VanillaToggleFactory::isListenerSetter,
+                "the member of a filter button that redirects where it reports its clicks");
+
+        if (listenerSetter == null) {
+            return null;
         }
 
-        return matchSoleMethod(
-            buttonMethods,
-            VanillaToggleFactory::isListenerSetter,
-            "the member of a filter button that redirects where it reports its clicks");
+        var listenerShape = listenerSetter.getParameterTypes().get(LISTENER_PARAMETER);
+        var listenerCallback = matchSoleMethod(
+            CoreUiMethods.readPublicMethodsOf(listenerShape),
+            "the callback a filter button's listener hears a click through");
+
+        return listenerCallback == null
+            ? null
+            : new ListenerBinding(
+                listenerSetter, listenerShape, listenerCallback.getParameterTypes());
     }
 
-    // One match or none. Two candidates are refused for the same reason none is: what is wanted is a
-    // particular member, and a shape that fits two of them says the recognition no longer picks it
-    // out - picking either would be a coin toss made inside somebody else's widget.
+    // The members of a shape that fit, where there has to be exactly one of them.
     private static CoreUiMethod matchSoleMethod(
         List<CoreUiMethod> methods,
         Predicate<CoreUiMethod> isMatch,
         String whatWasWanted) {
 
-        var matches = methods.stream()
-            .filter(isMatch)
-            .toList();
+        return matchSoleMethod(
+            methods.stream()
+                .filter(isMatch)
+                .toList(),
+            whatWasWanted);
+    }
+
+    // One member or none. Two are refused for the same reason none is: what is wanted is a
+    // particular member, and a set holding two of them says the recognition no longer picks it out -
+    // taking either would be a coin toss made inside somebody else's widget.
+    //
+    // Beside the filtering match above rather than folded into it with a predicate that accepts
+    // everything, because an interface having exactly one callback is a question about the set
+    // itself rather than about any member's shape.
+    private static CoreUiMethod matchSoleMethod(List<CoreUiMethod> matches, String whatWasWanted) {
 
         if (matches.size() == 1) {
             return matches.get(0);
@@ -240,7 +251,7 @@ final class VanillaToggleFactory {
             + whatWasWanted
             + ", where exactly one "
             + "was expected; no control is appended to the map's filter row.");
-            
+
         return null;
     }
 
@@ -286,15 +297,16 @@ final class VanillaToggleFactory {
     // takes. The arguments are dropped rather than passed on because the only two a click carries
     // are what happened and which button it happened to, and a listener bound to one button knows
     // both already.
-    private static Object createListener(RowShape rowShape, Runnable onToggled) throws Throwable {
+    private static Object createListener(ListenerBinding listener, Runnable onToggled)
+        throws Throwable {
 
         var onToggledHandle = MethodHandles.lookup()
             .findVirtual(Runnable.class, CALLBACK_METHOD, MethodType.methodType(void.class))
             .bindTo(onToggled);
 
         return MethodHandleProxies.asInterfaceInstance(
-            rowShape.listenerShape(),
-            MethodHandles.dropArguments(onToggledHandle, 0, rowShape.listenerParameterTypes()));
+            listener.shape(),
+            MethodHandles.dropArguments(onToggledHandle, 0, listener.callbackParameterTypes()));
     }
 
     // Everything one write into a row needs, matched together because each part is found through the
@@ -303,8 +315,16 @@ final class VanillaToggleFactory {
     private record RowShape(
         CoreUiMethod buttonFactory,
         CoreUiMethod rowAppender,
-        CoreUiMethod listenerSetter,
-        Class<?> listenerShape,
-        List<Class<?>> listenerParameterTypes) {
+        ListenerBinding listener) {
+    }
+
+    // The listener half of that, kept together for the same reason and apart from the rest because
+    // it is about the button rather than about the row: the interface and its callback's shape are
+    // both read off the setter, and a caller holding the setter alone would have to read them again
+    // to use it.
+    private record ListenerBinding(
+        CoreUiMethod setter,
+        Class<?> shape,
+        List<Class<?>> callbackParameterTypes) {
     }
 }
