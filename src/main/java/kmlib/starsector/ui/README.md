@@ -400,9 +400,8 @@ are. Re-picking the lit row clears the spotlight rather than re-selecting it, th
 is resolved against the *ranked* order rather than the order the caller handed over, and an
 index outside the rows is ignored rather than trusted. The row under the pointer reports
 through the same store and off that same ranked order, so a host can light what picking a row
-would show before it is picked - and there a reading on no row reports the leave instead of
-being ignored, a stray click having to leave the spotlight standing where a hover on nothing
-*is* the answer that nothing is under the pointer.
+would show before it is picked; what a reading on no row means differs between the two
+channels, and is stated at the report itself.
 [`SelectableListItem`](widgets/lists/SelectableListItem.java) is the seam its rows are drawn
 from - an id, a label, a crest, whether the row reads back (`isDimmed`), and nothing else -
 which a consumer implements on its own item type, so the list ranks through that consumer's own

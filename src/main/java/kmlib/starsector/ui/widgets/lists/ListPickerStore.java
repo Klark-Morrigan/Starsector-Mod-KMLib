@@ -10,8 +10,7 @@ package kmlib.starsector.ui.widgets.lists;
  * <p>The hover rides here beside the picks for that same reason, and because it is resolved from
  * the very list they are: the row under the pointer names an item by the ranked order a click is
  * read against, so a consumer answering a hover wires two more methods on the value it already
- * hands over rather than a channel of its own. Whether that answer is kept anywhere is the
- * consumer's business - a hover is not a choice, and nothing here says it outlives the pointer.
+ * hands over rather than a channel of its own.
  *
  * <p>Write-only, and deliberately so: the picker never reads a choice back through this, since the
  * live values arrive as its own parameters. That keeps this package free of any read path into a

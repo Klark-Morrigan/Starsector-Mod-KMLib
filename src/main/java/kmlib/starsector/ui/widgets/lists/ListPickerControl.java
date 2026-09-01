@@ -133,7 +133,7 @@ public final class ListPickerControl {
                 // The row under the pointer is reported beside the click and resolved the same way,
                 // so a host can show what picking a row would do before it is picked. A host that
                 // previews nothing takes the report and drops it; nothing here draws differently
-                // either way, the hover's own wash being the panel's business rather than this one's.
+                // either way.
                 .reportsHoverTo(hoveredCell ->
                     reportHoveredItem(pickerStore, rankedItems, hoveredCell))
                 .spreadsAcross(columns.columnCount())
@@ -174,6 +174,7 @@ public final class ListPickerControl {
         var itemRows = new ArrayList<LabelledRow>(items.size());
 
         for (var item : items) {
+
             var displayName = item.displayName() == null ? "" : item.displayName();
             var crestSpritePath = item.crestSpritePath();
 
@@ -220,14 +221,6 @@ public final class ListPickerControl {
             : new RowSlot.TextRuns(drawnRuns);
     }
 
-    // Whether a cell names one of the list's items. Both the click and the hover ask it before
-    // reading a row, since both arrive as a cell resolved from geometry rather than from the list:
-    // an index past the rows read unchecked would run off the ranked list, and a negative one would
-    // run off its front. One rule for the two, so a cell either names an item to both or to neither.
-    private static boolean isCellOnItem(List<? extends SelectableListItem> items, int cellIndex) {
-        return cellIndex >= 0 && cellIndex < items.size();
-    }
-
     // Reports the clicked item as the spotlighted one, or reports a clear when the click landed on
     // the already-lit row. The list is deselectable, so a press on the lit option reaches here with
     // its own index; re-picking it means "stop spotlighting". Any index outside the item list is
@@ -238,7 +231,7 @@ public final class ListPickerControl {
             int selectedIndex,
             int cellIndex) {
 
-        if (!isCellOnItem(items, cellIndex)) {
+        if (!ListOptions.isOptionAt(items, cellIndex)) {
             return;
         }
         if (cellIndex == selectedIndex) {
@@ -270,7 +263,9 @@ public final class ListPickerControl {
             List<? extends SelectableListItem> items,
             Integer hoveredCell) {
 
-        if (hoveredCell == ControlHoverReport.NO_CELL_HOVERED || !isCellOnItem(items, hoveredCell)) {
+        if (hoveredCell == ControlHoverReport.NO_CELL_HOVERED
+                || !ListOptions.isOptionAt(items, hoveredCell)) {
+
             pickerStore.clearItemHover();
             return;
         }

@@ -63,7 +63,7 @@ public final class ColumnsSelectorControl {
     // ignored, so a stray hit changes nothing. Re-picking the lit segment never reaches here (the
     // horizontal radio swallows a re-pick as inert), so this only ever runs for a real change.
     private static void applySelection(Consumer<ListColumns> onColumnsPicked, int cellIndex) {
-        if (cellIndex < 0 || cellIndex >= CHOICES.size()) {
+        if (!ListOptions.isOptionAt(CHOICES, cellIndex)) {
             return;
         }
         onColumnsPicked.accept(CHOICES.get(cellIndex));

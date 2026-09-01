@@ -100,7 +100,7 @@ public final class SortSelectorControl {
             Consumer<ListSort<T>> onSortPicked,
             int cellIndex) {
 
-        if (cellIndex < 0 || cellIndex >= modes.size()) {
+        if (!ListOptions.isOptionAt(modes, cellIndex)) {
             return;
         }
 
