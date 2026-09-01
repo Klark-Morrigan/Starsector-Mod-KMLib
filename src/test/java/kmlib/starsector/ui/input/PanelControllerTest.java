@@ -124,6 +124,10 @@ final class PanelControllerTest {
     // it so one concept reads one way across the package.
     private static final Integer NO_CELL_REPORTED = null;
 
+    // What the host behind a hovered control was told, in the order it was told. One recorder for the cases
+    // about the body's frame pass, since each builds its own controller and only its own reading reaches it.
+    private final List<Integer> reportedCells = new ArrayList<>();
+
     private static final BodyCellSlot FIRST_ROW_SLOT = new BodyCellSlot(0, ControlSpec.SINGLE_CELL);
     private static final BodyCellSlot SECOND_ROW_SLOT = new BodyCellSlot(1, ControlSpec.SINGLE_CELL);
     private static final BodyCellSlot LEFT_SEGMENT_SLOT = new BodyCellSlot(0, 0);
@@ -620,9 +624,6 @@ final class PanelControllerTest {
 
         private final PanelController controller = new PanelController();
 
-        // What the host behind the hovered control was told, in the order it was told.
-        private final List<Integer> reportedCells = new ArrayList<>();
-
         @Test
         void advanceBodyInputMotionsForFrameRaisesTheHoveredSlotAndNoOther() {
             // The fade is keyed by the place under the pointer, so a frame lights that place alone - a
@@ -677,15 +678,6 @@ final class PanelControllerTest {
 
             assertThat(controller.resolveBodyPressFractionAt(FIRST_ROW_SLOT))
                 .isCloseTo(1f, within(TOLERANCE));
-        }
-
-        // One frame's reading with the pointer on a cell reporting into this case's own recorder. The kind
-        // of thing reached is left at the whole-row answer, nothing here reading it.
-        private HoveredBodyCell buildHoveredCell(BodyCellSlot slot) {
-            return new HoveredBodyCell(
-                slot,
-                PointerArrivalTarget.SINGLE_OPTION_CONTROL,
-                reportedCells::add);
         }
     }
 
@@ -747,8 +739,6 @@ final class PanelControllerTest {
 
         private final PanelController controller = new PanelController();
 
-        private final List<Integer> reportedCells = new ArrayList<>();
-
         @Test
         void resetBodyInputMotionsDropsAFadeLeftPartWayUp() {
             // A panel that stops showing drops what it was mid-way through, so the next session does not
@@ -800,13 +790,6 @@ final class PanelControllerTest {
 
             assertThat(controller.detectBodyCellArrivalAt(FIRST_ROW_SLOT))
                 .isTrue();
-        }
-
-        private HoveredBodyCell buildHoveredCell(BodyCellSlot slot) {
-            return new HoveredBodyCell(
-                slot,
-                PointerArrivalTarget.SINGLE_OPTION_CONTROL,
-                reportedCells::add);
         }
     }
 
@@ -1538,6 +1521,16 @@ final class PanelControllerTest {
             ROW.height());
 
         return new Control(spec, ROW, List.of(leftSegment, rightSegment));
+    }
+
+    // One frame's reading with the pointer on a cell reporting into this case's own recorder - what the
+    // panel's own walk would have built. The kind of thing reached is left at the whole-row answer, no case
+    // reading it through this path.
+    private HoveredBodyCell buildHoveredCell(BodyCellSlot slot) {
+        return new HoveredBodyCell(
+            slot,
+            PointerArrivalTarget.SINGLE_OPTION_CONTROL,
+            reportedCells::add);
     }
 
     // A two-tab row occupying ROW, split into two equal per-tab boxes (left tab, right tab), the lit tab

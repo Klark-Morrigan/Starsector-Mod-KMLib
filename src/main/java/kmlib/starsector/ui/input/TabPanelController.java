@@ -596,14 +596,10 @@ public final class TabPanelController {
      * the placement: a panel presenting none is a pointer on none, and stating it twice would be two places
      * to keep in step. What arrives here is only where the pointer is.
      *
-     * <p>Whether the body's list moved since the last frame is not handed in with it, being state the
-     * panel already holds rather than a reading of the cursor - it is taken from the body's own controller,
-     * which is the end that moved the list and so the only end that knows it did.
-     *
-     * <p>It is also where the hovered body cell is reported back to the host that built the control, on the
-     * frames where that reading changed. The reading is what a rebuilt list is answered from, so a scroll
-     * carrying a new row under a still pointer reports that row - unlike the arrival beside it, which stays
-     * silent because nobody reached anything.
+     * <p>What the body does with the frame - its cells' fades and lifts, the arrival it answers, and the
+     * report out to the host that built the control under the pointer - is the body controller's, handed
+     * the same reading and the same pair of paces. Nothing about a moving list reaches this end: whether
+     * one moved is state that end holds, being the end that moved it.
      *
      * @param hover          what the pointer is on this frame, over both of the panel's hoverable parts
      * @param elapsedSeconds real time since the last frame the host drew

@@ -216,10 +216,11 @@ public final class PanelController {
     }
 
     /**
-     * Reports whether the list has moved since this was last asked, and forgets it - for a per-frame pass
-     * that has to tell rows carried under a still pointer from a pointer moving over rows. Cleared by the
-     * reading, so one movement is answered by the first frame after it and by that frame alone; a movement
-     * made while nothing is drawing waits for the next frame rather than being dropped.
+     * Reports whether the list has moved since this was last asked, and forgets it - read by the arrival
+     * this class detects, which has to tell rows carried under a still pointer from a pointer moving over
+     * rows. Cleared by the reading, so one movement is answered by the first frame after it and by that
+     * frame alone; a movement made while nothing is drawing waits for the next frame rather than being
+     * dropped.
      *
      * <p>The wheel and a scrollbar drag both report through it, because what it answers is that content
      * moved and not what moved it - rows sliding past a parked cursor were reached by nobody either way.
@@ -235,9 +236,9 @@ public final class PanelController {
     }
 
     /**
-     * Drops a movement no frame has read yet, for a panel that stops showing - so the next session's first
-     * frame answers the pointer where it is rather than silently taking whatever is under it on the
-     * strength of a scroll from a session the player has since left.
+     * Drops a movement no frame has read yet, spent with the body's other motions when a panel stops
+     * showing - so the next session's first frame answers the pointer where it is rather than silently
+     * taking whatever is under it on the strength of a scroll from a session the player has since left.
      */
     void resetListScrolled() {
         hasListScrolledSinceLastFrame = false;
@@ -369,10 +370,9 @@ public final class PanelController {
     }
 
     /**
-     * Steps every press lift the body is carrying by a frame's worth of time, for the pass that already
-     * steps the panel's other motions to call once it has resolved the placement being drawn. Ungated,
-     * unlike a fade: a press is an event already seen, so its cycle runs out wherever the pointer went
-     * afterwards and whatever the panel did next.
+     * Steps every press lift the body is carrying by a frame's worth of time, spent with the body's other
+     * motions by the frame pass above. Ungated, unlike a fade: a press is an event already seen, so its
+     * cycle runs out wherever the pointer went afterwards and whatever the panel did next.
      *
      * <p>The pace arrives with the frame rather than being named here, so a body's presses run at whatever
      * rhythm the rest of the panel does - a panel answering input at two speeds reads as two panels.
@@ -401,9 +401,9 @@ public final class PanelController {
     }
 
     /**
-     * Drops every press lift the body is carrying, for a panel that stops showing - so a lift left part-way
-     * through its cycle cannot be the first thing the next session paints, decaying from a peak the player
-     * never saw rise.
+     * Drops every press lift the body is carrying, dropped with the body's other motions when a panel stops
+     * showing - so a lift left part-way through its cycle cannot be the first thing the next session paints,
+     * decaying from a peak the player never saw rise.
      */
     void resetBodyPressPulses() {
         bodyPressPulses.resetPulses();
