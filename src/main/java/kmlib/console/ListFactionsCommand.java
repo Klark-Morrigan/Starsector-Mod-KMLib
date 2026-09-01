@@ -12,7 +12,8 @@ import kmlib.starsector.colonies.SectorColonies;
 import kmlib.starsector.factions.FactionFlags;
 import kmlib.starsector.factions.StarsectorPlayerFactionResolver;
 import kmlib.starsector.markets.MarketVisibility;
-import kmlib.starsector.relation.StarsectorPlayerRelationshipFormatter;
+import kmlib.starsector.relation.StarsectorPlayerStandingFormatter;
+import kmlib.starsector.relation.StarsectorPlayerStandings;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -83,6 +84,7 @@ public final class ListFactionsCommand extends KmlibBaseConsoleCommand {
     private static final String HYPERSPACE_LABEL = "(hyperspace)";
     private static final String ID_NAME_SEPARATOR = "  -  ";
     private static final String NO_FACTIONS_LINE = "\n  (none)";
+    private static final String RELATIONSHIP_SEPARATOR = "  ";
     private static final String SELF_RELATIONSHIP = "(self)";
     private static final String TERRITORIAL_MARK = "  [territorial]";
 
@@ -198,12 +200,12 @@ public final class ListFactionsCommand extends KmlibBaseConsoleCommand {
         // the engine still answers for one, which would read as a finding.
         var relationship = Objects.equals(faction.getId(), playerFactionId)
             ? SELF_RELATIONSHIP
-            : StarsectorPlayerRelationshipFormatter
-                .formatPlayerRelationship(faction)
-                .getDescription();
+            : StarsectorPlayerStandings.readPlayerStanding(faction)
+                .map(StarsectorPlayerStandingFormatter::formatPlayerStanding)
+                .orElse(null);
 
         if (relationship != null) {
-            report.append("  ").append(relationship);
+            report.append(RELATIONSHIP_SEPARATOR).append(relationship);
         }
     }
 
