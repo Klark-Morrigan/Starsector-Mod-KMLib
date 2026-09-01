@@ -3,7 +3,6 @@ package kmlib.starsector.relation;
 import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.RepLevel;
 import com.fs.starfarer.api.characters.RelationshipAPI;
-import com.fs.starfarer.api.impl.campaign.ids.Factions;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -35,8 +34,10 @@ class StarsectorPlayerRelationshipFormatterTest {
         }
 
         @Test
-        void formatsDescriptionAndColourViaRelationshipApiPath() {
+        void namesTheLevelAndTheReputationAndCarriesTheStandingColourThrough() {
 
+            // Which tiers the level, the number and the colour are read off is the standing read's
+            // own business; this suite only proves the prose built over whatever it answers.
             var relationshipMock = mock(RelationshipAPI.class);
 
             when(relationshipMock.getLevel())
@@ -60,26 +61,24 @@ class StarsectorPlayerRelationshipFormatterTest {
         }
 
         @Test
-        void fallsBackToFactionRelationshipWhenRelToPlayerIsNull() {
+        void printsAPositiveReputationWithoutASign() {
+
+            var relationshipMock = mock(RelationshipAPI.class);
+
+            when(relationshipMock.getLevel())
+                .thenReturn(RepLevel.COOPERATIVE);
+            when(relationshipMock.getRepInt())
+                .thenReturn(85);
+            when(relationshipMock.getRelColor())
+                .thenReturn(RED);
 
             var factionMock = mock(FactionAPI.class);
 
-            // getRelToPlayer defaults to null, triggering the fallback path.
-            // Stub the faction-level colour so the resolver does NOT reach the
-            // Misc.getRelColor fallback - Misc reads from the static palette
-            // (Global.getSettings()) which is not initialised in unit tests.
-            when(factionMock.getRelationship(Factions.PLAYER))
-                .thenReturn(0.0f);
-            when(factionMock.getRelColor(Factions.PLAYER))
-                .thenReturn(RED);
+            when(factionMock.getRelToPlayer())
+                .thenReturn(relationshipMock);
 
-            var result = formatPlayerRelationship(factionMock);
-
-            // Level name varies by Starsector version; verify only the numeric format.
-            assertThat(result.getDescription()).isNotNull()
-                .contains("/ 100");
-            assertThat(result.getColour())
-                .isEqualTo(RED);
+            assertThat(formatPlayerRelationship(factionMock).getDescription())
+                .isEqualTo("Cooperative (85 / 100)");
         }
     }
 }

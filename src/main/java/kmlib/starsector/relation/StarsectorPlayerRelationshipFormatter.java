@@ -35,20 +35,14 @@ public final class StarsectorPlayerRelationshipFormatter {
             .orElseGet(RelationshipSummary::createEmptySummary);
     }
 
+    // Every level on the scale is a constant of a closed vanilla enum carrying the display name it
+    // was declared with, so there is always a name to print and no fallback to write.
     private static String formatRelationshipDescription(RepLevel level, int repInt) {
 
-        var levelName = level.getDisplayName();
-
-        if (levelName == null || levelName.trim().isEmpty()) {
-
-            // Enum-name fallback when the display name is missing (very
-            // old saves, modded RepLevels with empty display strings).
-            levelName = level.name();
-        }
         return String.format(
             Locale.ROOT,
             PLAYER_RELATIONSHIP_DESCRIPTION_FORMAT,
-            levelName,
+            level.getDisplayName(),
             repInt,
             MAX_RELATIONSHIP_REPUTATION);
     }

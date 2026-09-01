@@ -174,10 +174,13 @@ No Starsector API on the signature.
   into.
 - **`kmlib.starsector.memory`** - typed sector-memory accessors for flags and
   strings, over the raw memory read.
-- **`kmlib.starsector.relation`** - the player relationship formatted as the
-  game itself shows it, description and colour, and whether a disposition
-  clears the step from indifference to goodwill - asked of a faction in hand,
-  or as a pair test over faction ids bound to one sector.
+- **`kmlib.starsector.relation`** - where a faction stands with the player as
+  one value (level, signed reputation, and the colour the game paints them in,
+  off a single read walking its own three-tier colour fallback), a faction with
+  no standing reported by no value rather than by a nought; that same standing
+  formatted as the game itself shows it, description and colour; and whether a
+  disposition clears the step from indifference to goodwill - asked of a
+  faction in hand, or as a pair test over faction ids bound to one sector.
 - **`kmlib.starsector.scripts`** - registering an every-frame script on the
   sector only when one of its type is not already there.
 - **`kmlib.starsector.settings`** - whether a mod is enabled, answered the
