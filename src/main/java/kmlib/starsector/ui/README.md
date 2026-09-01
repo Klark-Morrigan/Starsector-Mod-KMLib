@@ -410,6 +410,18 @@ every item is equally worth picking implements nothing. The right half of the so
 parameter for the same reason: pairing something with the sort is a layout decision this
 package can hold, what sits there is not.
 
+The value trailing each row splits the same way. `ListSortMode.resolveTrailingRuns` answers
+what the row is visibly ranked by as [`TextSpan`](text/TextSpan.java) runs rather than as one
+string, because a value is not always a plain number in the row's own tone - a reading the
+engine itself gives a colour to, or a range whose two ends read differently, needs its own
+shades inside the one slot. The offered colour rides in with the item, so a mode with no
+colour opinion answers a single run in it and draws exactly as a plain value always did. What
+stays the picker's is everything about *how* the value lands: it decides which of
+[`RowSlot`](widgets/RowSlot.java)'s three shapes carries it, folds a mode that answered no
+runs and one whose runs all came out blank into the same empty slot, and re-colours every run
+on a receding row - so a mode's own shades cannot survive beside a greyed name any more than a
+crest can.
+
 [`RevisionMemo`](widgets/lists/RevisionMemo.java) is where a consumer holds the resolved
 list between frames, since a body is built twice a frame (render and hit-test) and a picker
 list is typically a full pass over whatever the consumer scores its items from. What belongs

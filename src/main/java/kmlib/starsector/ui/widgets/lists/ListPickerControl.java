@@ -141,10 +141,11 @@ public final class ListPickerControl {
     // value (a zero metric shows "0" rather than dropping the column), which for a mode with no value
     // to show is an unfilled slot throughout and the rows read as a plain list.
     //
-    // A row the caller marked as receding draws all three parts back at once, since a greyed name
-    // beside a full-strength crest reads as a rendering slip rather than as a state. Both tones are
-    // resolved here rather than asked of the item, so what "receding" looks like is one decision the
-    // whole family shares and a consumer states only which of its rows are in that state.
+    // A row the caller marked as receding draws all three parts back at once - its value too, even
+    // where the mode picked colours of its own - since a greyed name beside a full-strength crest or
+    // number reads as a rendering slip rather than as a state. Both tones are resolved here rather
+    // than asked of the item or of the mode, so what "receding" looks like is one decision the whole
+    // family shares and a consumer states only which of its rows are in that state.
     private static <T extends SelectableListItem> List<LabelledRow> buildItemRows(
             List<T> items,
             ListSortMode<T> sortMode) {
@@ -188,10 +189,10 @@ public final class ListPickerControl {
     // out in shades of its own. Which of the three is decided here rather than by the mode, so a mode
     // states only what its value reads as and every stack of rows spells "no value" the one way.
     //
-    // A receding row's value is re-coloured here rather than left to the mode, so a mode that colours
-    // its own runs cannot draw a full-strength value beside a greyed name - the same rule the crest
-    // tint follows. The mode is handed the row's own tone as its default either way, so a mode with no
-    // colour opinion recedes without the override touching anything.
+    // A mode that answered no runs and one whose runs all came out blank are the same absence, so both
+    // take the empty slot rather than one of them arriving as a run with nothing in it - a consumer
+    // assembling a value from parts cannot tell which of the two it produced. Which runs read as blank
+    // is TextSpan's rule, not a second one here.
     private static <T extends SelectableListItem> RowSlot buildTrailingRowSlot(
             ListSortMode<T> sortMode,
             T item,
@@ -199,7 +200,7 @@ public final class ListPickerControl {
             boolean isReceding) {
 
         var valueRuns = sortMode.resolveTrailingRuns(item, rowColour);
-        if (valueRuns.isEmpty()) {
+        if (valueRuns.stream().noneMatch(TextSpan::hasContent)) {
             return RowSlot.EMPTY;
         }
 

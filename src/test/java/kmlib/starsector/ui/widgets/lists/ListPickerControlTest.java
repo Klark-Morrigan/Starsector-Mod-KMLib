@@ -265,29 +265,45 @@ final class ListPickerControlTest {
         }
 
         @Test
+        void buildPickerLeavesTheValueSlotUnfilledWhenTheModesRunsAllCameOutBlank() {
+            // The other way a mode says nothing: it answers a run, and the run turns out to carry no
+            // text. A consumer assembling a value from parts cannot tell that case from declaring no
+            // value at all, so both reach the row as the one empty slot rather than as two spellings
+            // of the same absence.
+            var picker = buildPickerFor(build(ANOMALIES, null, AnomalySortMode.SEVERITY));
+
+            assertThat(readTrailingRowSlots(picker))
+                .containsExactly(RowSlot.EMPTY, RowSlot.EMPTY);
+        }
+
+        @Test
         void buildPickerDrawsAMultiRunValueInTheModesOwnColours() {
             // A mode whose value is picked out in shades of its own reaches the row as several runs,
-            // each keeping the colour the mode gave it - the row's own tone governs only the runs a
-            // mode left to it.
+            // each keeping the colour the mode gave it, while the run it left to the row takes the
+            // row's tone - so one value can mix the two.
             var picker = buildPickerFor(build(List.of(STORM), null, AnomalySortMode.SPREAD));
 
             assertThat(picker.labelledRows().get(0).trailingRowSlot())
                 .isEqualTo(new RowSlot.TextRuns(List.of(
                     new TextSpan("9", AnomalySortMode.LOW_END_COLOUR),
-                    new TextSpan("8", AnomalySortMode.HIGH_END_COLOUR))));
+                    new TextSpan(AnomalySortMode.RANGE_SEPARATOR, TEXT).joinsPreviousRun(),
+                    new TextSpan("8", AnomalySortMode.HIGH_END_COLOUR).joinsPreviousRun())));
         }
 
         @Test
-        void buildPickerRecedesAMultiRunValueOverTheModesOwnColours() {
+        void buildPickerRecedesAMultiRunValueOverTheModesOwnColoursKeepingItsSpacing() {
             // The receded tone wins over a mode's own shades: a row that reads back cannot keep a
             // full-strength value beside its greyed name, which is the same rule its crest follows.
+            // Each run's own spacing survives the re-colour, so a range that read as one word still
+            // does once greyed rather than falling apart into word-spaced numbers.
             var lapsed = new Anomaly("lapsed_1", "Lapsed", "crest_lapsed", 4, 6, true);
             var picker = buildPickerFor(build(List.of(lapsed), null, AnomalySortMode.SPREAD));
 
             assertThat(picker.labelledRows().get(0).trailingRowSlot())
                 .isEqualTo(new RowSlot.TextRuns(List.of(
                     new TextSpan("4", GRAY),
-                    new TextSpan("6", GRAY))));
+                    new TextSpan(AnomalySortMode.RANGE_SEPARATOR, GRAY).joinsPreviousRun(),
+                    new TextSpan("6", GRAY).joinsPreviousRun())));
         }
 
         @Test

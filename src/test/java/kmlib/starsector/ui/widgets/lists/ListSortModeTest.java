@@ -24,9 +24,9 @@ final class ListSortModeTest {
 
         @Test
         void resolveTrailingRunsDefaultsToNoRunsForAModeThatDeclaresNone() {
-            // The fixture's severity mode leaves the default in place, so a list ranked by it reads
-            // as a plain one.
-            assertThat(AnomalySortMode.SEVERITY.resolveTrailingRuns(
+            // The fixture's alpha mode leaves the default in place, so a list ranked by it reads as a
+            // plain one.
+            assertThat(AnomalySortMode.ALPHA.resolveTrailingRuns(
                     new Anomaly("Mild", 1, 5),
                     DEFAULT_COLOUR))
                 .isEmpty();
