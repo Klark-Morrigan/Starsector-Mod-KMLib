@@ -1,13 +1,20 @@
 package kmlib.testfixtures.starsector.ui.map.controls;
 
+import com.fs.starfarer.api.input.InputEventAPI;
+import com.fs.starfarer.api.ui.PositionAPI;
+import com.fs.starfarer.api.ui.UIComponentAPI;
+
+import kmlib.math.geometry.Rectangle;
+import kmlib.testfixtures.starsector.ui.layout.PositionFake;
+
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * The row of toggles the game furnishes a map screen from, in the shape a control appended to it has
- * to be matched against: a panel holding its buttons, a private factory that makes one, and a
- * private appender that puts one at the end of the row. Shipped from KMLib so both KMLib's and
- * consuming mods' tests build the same shape of row.
+ * to be matched against and measured off: a panel holding its buttons, a private factory that makes
+ * one, and a private appender that puts one at the end of the row. Shipped from KMLib so both
+ * KMLib's and consuming mods' tests build the same shape of row.
  *
  * <p>Both helpers carry the same meaningless name here because both carry the same meaningless name
  * in the game, where they are obfuscated members that are renamed with each build. That is the whole
@@ -15,27 +22,84 @@ import java.util.List;
  * has to tell them apart by their signatures, and a fixture that named them helpfully would let a
  * match by name pass while the game's own row defeated it.
  *
+ * <p>It lays its buttons out as the game's row does - left to right, each one gap past the last -
+ * and it is a laid-out component itself, sized as tall as the buttons on it. That is what makes it a
+ * row something can be measured against rather than a list of buttons: a control appended to a real
+ * row takes its height from the row and its width from the button already at the end, and neither
+ * question has an answer on a row that was never placed.
+ *
+ * <p>How wide the row is can be stated, because it is the one dimension the two screens disagree on
+ * in a way that matters: the game's own rows both leave room for another button, and a row that has
+ * been filled by somebody else is the case anything appending to one has to decline. A row built
+ * without a width stated is one with room to spare, which is the state the game leaves both of its
+ * own in.
+ *
  * <p>The row is also what its own buttons report their clicks to, which is how the game keeps its
  * filter settings in step with them - and so is what an appended control has to divert one button
  * away from.
  */
-public final class MapFilterRowFake implements MapFilterActionListenerFake {
+public final class MapFilterRowFake implements MapFilterActionListenerFake, UIComponentAPI {
+
+    private static final String NOT_A_ROW =
+        "A fixture for the map's filter row models what one is asked, not what one draws.";
 
     // What the game's own rows are built with. Stated so a caller asking for a row gets one that
     // stands for a real screen rather than an empty panel, which is not a shape either screen has.
     private static final float BUTTON_HEIGHT = 25f;
     private static final float BUTTON_WIDTH = 120f;
 
+    // What the game leaves between two buttons on either of its rows.
+    private static final float BUTTON_GAP = 3f;
+
+    // How much spare room a row built without a width stated has, counted in buttons it could still
+    // take. Two rather than one so such a row is plainly roomy rather than only just wide enough,
+    // which is the state the game leaves both of its own in - its M-screen strip spends barely half
+    // the panel it is laid on.
+    private static final int SPARE_BUTTON_SLOTS = 2;
+
     private final List<Object> buttons = new ArrayList<>();
+
+    private final PositionAPI position;
 
     private int clickCount;
 
+    // Where the next button laid out goes, which the game's row tracks the same way - by holding the
+    // last button it placed and putting the next one to the right of it.
+    private float nextButtonX;
+
     /**
+     * The M screen's strip: full-size buttons, and room to spare, as the game leaves it.
+     *
      * @param buttonLabels the words on each button, in the order the row lays them out
      */
     public MapFilterRowFake(String... buttonLabels) {
+        this(
+            BUTTON_WIDTH,
+            BUTTON_HEIGHT,
+            computeSpaciousWidthFor(buttonLabels.length),
+            buttonLabels);
+    }
+
+    /**
+     * Any row, stated at its own metrics - the intel visor's band, or a row somebody else has
+     * already filled.
+     *
+     * @param buttonWidth  how wide each button on it is laid out
+     * @param buttonHeight how tall each button is, which is also how tall the row itself is - the
+     *                     game sizes a row to the buttons it holds
+     * @param rowWidth     how wide the row is laid out, which is what decides whether one more
+     *                     button fits on it
+     * @param buttonLabels the words on each button, in the order the row lays them out
+     */
+    public MapFilterRowFake(
+        float buttonWidth,
+        float buttonHeight,
+        float rowWidth,
+        String... buttonLabels) {
+
+        position = new PositionFake(new Rectangle(0f, 0f, rowWidth, buttonHeight));
         for (var buttonLabel : buttonLabels) {
-            o00000(o00000(buttonLabel, null), BUTTON_WIDTH, BUTTON_HEIGHT);
+            o00000(o00000(buttonLabel, null), buttonWidth, buttonHeight);
         }
     }
 
@@ -52,12 +116,50 @@ public final class MapFilterRowFake implements MapFilterActionListenerFake {
     }
 
     @Override
+    public PositionAPI getPosition() {
+        return position;
+    }
+
+    @Override
     public void actionPerformed(Object action, Object component) {
         clickCount++;
     }
 
-    // The row's appender, which the game names the same as its factory below.
+    @Override
+    public void advance(float amount) {
+        throw new UnsupportedOperationException(NOT_A_ROW);
+    }
+
+    @Override
+    public float getOpacity() {
+        throw new UnsupportedOperationException(NOT_A_ROW);
+    }
+
+    @Override
+    public void processInput(List<InputEventAPI> events) {
+        throw new UnsupportedOperationException(NOT_A_ROW);
+    }
+
+    @Override
+    public void render(float alphaMult) {
+        throw new UnsupportedOperationException(NOT_A_ROW);
+    }
+
+    @Override
+    public void setOpacity(float opacity) {
+        throw new UnsupportedOperationException(NOT_A_ROW);
+    }
+
+    // How wide a row holding this many buttons is when it has room left for more.
+    private static float computeSpaciousWidthFor(int buttonCount) {
+        return (buttonCount + SPARE_BUTTON_SLOTS) * (BUTTON_WIDTH + BUTTON_GAP);
+    }
+
+    // The row's appender, which the game names the same as its factory below. It places the button
+    // as well as holding it, the game's row doing both in the same member.
     private void o00000(MapFilterButtonFake button, float width, float height) {
+        button.layOutAt(new Rectangle(nextButtonX, 0f, width, height));
+        nextButtonX += width + BUTTON_GAP;
         buttons.add(button);
     }
 
