@@ -43,8 +43,6 @@ public record TabPanelHover(
      * @return the hovered cell's slot, or null when the pointer is on no body cell
      */
     public BodyCellSlot resolveBodyCellSlot() {
-        return bodyCell == null
-            ? null
-            : bodyCell.slot();
+        return HoveredBodyCell.resolveSlotOf(bodyCell);
     }
 }

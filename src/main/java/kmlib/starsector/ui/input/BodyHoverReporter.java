@@ -45,9 +45,7 @@ final class BodyHoverReporter {
      */
     void reportHoverChangeTo(HoveredBodyCell hoveredCell) {
 
-        var hoveredSlot = hoveredCell == null
-            ? null
-            : hoveredCell.slot();
+        var hoveredSlot = HoveredBodyCell.resolveSlotOf(hoveredCell);
 
         if (Objects.equals(hoveredSlot, reportedSlot)) {
             return;

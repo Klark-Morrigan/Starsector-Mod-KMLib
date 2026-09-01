@@ -25,12 +25,12 @@ import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
  * hit-test on top; the tab's action is baked into its spec (the host wires it), so this controller stays
  * agnostic to what selecting a tab does.
  *
- * <p>One controller per panel, since it holds that panel's runtime state across frames: the body's scroll
- * and drag state, the collapse animation, the hover fades of the parts that light under the pointer - the
- * header tabs, the body's own controls, and the collapse handle - and the two triggered motions its tabs
- * carry, a click's pulse and a bound key's blink. A press on a body cell carries a lift of its own, held
- * with the scroll state on the body's controller - the end a body press actually lands on - and charged by
- * the same per-frame pass as everything above. A host creates it, reads
+ * <p>One controller per panel, since it holds that panel's runtime state across frames: the collapse
+ * animation, the hover fades of the header tabs and of the collapse handle, and the two triggered motions
+ * its tabs carry, a click's pulse and a bound key's blink. Everything the body holds - its scroll and drag
+ * state, its cells' own fades, arrivals and press lifts, and what it reports to the host that built the
+ * control under the pointer - lives on the {@link PanelController} beneath, the end a body press actually
+ * lands on, and is charged by the same per-frame pass as everything above. A host creates it, reads
  * its {@link #getScrollState()} and {@link #getCollapseFraction()} when it lays the panel out, advances the
  * collapse and the input motions each frame it draws, reads {@link #getInteractionSources()} and {@link
  * #getNotchHoverFraction()} to paint with, and feeds it pointer
@@ -40,11 +40,6 @@ import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
  * tabs without wiring any of those animations itself. The panel opens
  * expanded by default, or collapsed to its docked rail via {@link #createStartingDocked()}, so a host picks
  * the initial fold at construction rather than driving the animation to reach it.
- *
- * <p>One thing the frame's reading is spent on leaves the panel entirely: the host that built the body
- * control under the pointer is told which of its cells that is, on change and never per frame, and is told
- * when the pointer leaves it. That is what lets a host answer a hover the way it answers a click - lighting
- * what picking a row would show - without reading a cursor or hit-testing a strip of its own.
  *
  * <p>Every animation here is timed and nothing here is coloured, and the same line runs through what the
  * panel sounds: this end knows when a control was pressed and when the pointer reached one, and the look
@@ -80,13 +75,6 @@ public final class TabPanelController {
     // state rather than on the placement, which is an immutable value the layout computes: a fade is where
     // the panel currently stands, not where its parts sit.
     private final HoverFades<Integer> tabHoverFades = new HoverFades<>();
-
-    // How far each body cell has travelled onto its hovered look, keyed by the slot it occupies in the
-    // strip. A second set rather than a second key space in the one above, the two rows having nothing to
-    // say to each other: a tab and a body control are never hovered together, but nor is either ever asked
-    // about in the other's terms, and one map holding both would have to be keyed by something that can
-    // spell either.
-    private final HoverFades<BodyCellSlot> bodyHoverFades = new HoverFades<>();
 
     // The click lift each header tab is carrying, keyed the same way the fades are. A separate holder rather
     // than a second reading off the fades because the two motions differ in kind: a hover is a position the
@@ -128,21 +116,6 @@ public final class TabPanelController {
     // the tabs' rather than as a flag of this class's own so the two answer to one rule, and so a reset
     // cannot clear one and leave the other latched.
     private final HoverArrival notchHoverArrival = new HoverArrival();
-
-    // When the pointer reaches a body cell, keyed by the slot its fade is held against. One latch for the
-    // whole strip rather than one per control, only one cell of a body being under the pointer at a time -
-    // so crossing from one segment of a row to the next replaces the key and reads as the arrival it is.
-    //
-    // Keyed by the slot alone, which is why a widget swapped into a slot under a still pointer announces
-    // nothing: an arrival is the player reaching something, and a strip rebuilt beneath a parked cursor was
-    // reached by nobody.
-    private final KeyedHoverArrival<BodyCellSlot> bodyHoverArrival = new KeyedHoverArrival<>();
-
-    // Where the body's reading goes back out to whoever built the control under the pointer, once per
-    // change. Beside the latch above because both turn one per-frame reading into a moment, and apart from
-    // it on a scroll: rows carried under a parked cursor were reached by nobody, and are still a different
-    // row for the host to answer.
-    private final BodyHoverReporter bodyHoverReporter = new BodyHoverReporter();
 
     /**
      * A controller whose panel opens expanded and answers like a vanilla control - the fold and the scheme
@@ -348,14 +321,9 @@ public final class TabPanelController {
      */
     public void resetInputMotions() {
         tabHoverFades.resetFades();
-        bodyHoverFades.resetFades();
         notchHoverFade.resetFade();
         tabClickPulses.resetPulses();
         tabHotkeyBlinks.resetPulses();
-
-        // The body's presses go with them, held on its own controller and dropped in the same call - a lift
-        // left standing there would open the next session on whatever the rebuilt strip put in that slot.
-        bodyController.resetBodyPressPulses();
 
         // Forgetting what was announced, so a panel re-opening under a still pointer sounds that tab's - or
         // that handle's - arrival afresh. It is an arrival to the player - the row was not there a moment
@@ -363,17 +331,10 @@ public final class TabPanelController {
         // for the one case where the panel came to the cursor rather than the other way about.
         tabHoverArrival.resetArrival();
         notchHoverArrival.resetArrival();
-        bodyHoverArrival.resetArrival();
 
-        // And the host hearing the pointer leave, which is what a panel going away is to whatever was
-        // answering a hover over it: no frame will resolve a reading again, so nothing else would ever
-        // tell it to let go of the cell it was last handed.
-        bodyHoverReporter.reportHoverCleared();
-
-        // And the scroll the latch above would otherwise have adopted on. A movement left unread would
-        // make the next session's first frame take its cell in silence, which is the one thing the resets
-        // just above exist to prevent.
-        bodyController.resetListScrolled();
+        // Everything the body holds - its fades, its lifts, what it announced, and what it told the host
+        // answering its hover - goes in one call to the end that holds all of it.
+        bodyController.resetBodyInputMotions();
     }
 
     /**
@@ -503,54 +464,45 @@ public final class TabPanelController {
      * never both loose in one call - a crossed pair would light a cell of the wrong control, which is a
      * flicker nobody can reproduce rather than a failure anything reports.
      *
-     * <p>The seam a paint pass takes, over the point read below: a control is drawn cell by cell, so what it
-     * needs is something to ask, not a fraction fetched per cell by a caller that would have to spell the
-     * slot out itself. The other half of {@link #getInteractionSources()}.
+     * <p>Read from the body's own controller, which is where a body's motions are held and where the two
+     * halves of a slot are put back together; this end reaches for it rather than binding a second channel
+     * over the same cells. The other half of {@link #getInteractionSources()}.
      *
      * @return the panel's live body hover channel
      */
     BodyHoverSource getBodyHoverSource() {
-        return controlIndex -> cell -> resolveBodyHoverFractionAt(new BodyCellSlot(controlIndex, cell));
+        return bodyController.getBodyHoverSource();
     }
 
     /**
-     * What the body's controls are showing for the presses they answered, bound the same two steps the hover
-     * channel above is: the strip walk binds a control's place and the widget below passes only the cell it
-     * is painting, so the two halves of a slot are never both loose in one call.
-     *
-     * <p>A channel beside that one rather than folded into it - the panel's other half of {@link
-     * #getInteractionSources()} for the body - because the two say different things about one cell: where the
-     * pointer is standing, and what it just did there.
+     * What the body's controls are showing for the presses they answered - a channel beside the hover above
+     * rather than folded into it, the two saying different things about one cell: where the pointer is
+     * standing, and what it just did there. Read from the body's own controller for the same reason the
+     * hover is.
      *
      * @return the panel's live body press channel
      */
     BodyPressSource getBodyPressSource() {
-        return controlIndex -> cell -> resolveBodyPressFractionAt(new BodyCellSlot(controlIndex, cell));
+        return bodyController.getBodyPressSource();
     }
 
     /**
-     * How far onto its hovered look the body cell at a given slot currently stands. A bare fraction, so this
-     * end holds no colour: what the lift is made of - a blend, a wash, a brightened frame - is the widget's
-     * own paint, resolved where its style is.
+     * How far onto its hovered look the body cell at a given slot currently stands, read from the controller
+     * that holds the body's fades.
      *
-     * <p>The point read the source above is bound over, and the terms the fades are actually keyed in - which
-     * is what makes it the reachable end for pinning that a slot's two halves are not crossed.
+     * <p>The point the source above is bound over, and the terms the fades are actually keyed in - which is
+     * what makes it the reachable end for pinning that a slot's two halves are not crossed.
      *
      * @param slot the body cell being asked about
      * @return its hover fraction, 0 fully at rest and 1 fully on its hovered look
      */
     float resolveBodyHoverFractionAt(BodyCellSlot slot) {
-        return bodyHoverFades.resolveHoverFractionAt(slot);
+        return bodyController.resolveBodyHoverFractionAt(slot);
     }
 
     /**
      * How far through its press lift the body cell at a given slot currently stands - the second channel a
-     * body cell answers on, beside the hover above it. Read from the body's own controller, which is where
-     * a press lands and so where its lift is held; this end only charges it with the panel's other motions.
-     *
-     * <p>The point read {@link #getBodyPressSource()} is bound over, and the terms the lifts are actually
-     * keyed in - which is what makes it the reachable end for pinning that a slot's two halves are not
-     * crossed.
+     * body cell answers on, beside the hover above it, and read from the same controller.
      *
      * @param slot the body cell being asked about
      * @return its press fraction, 0 with no lift running on it and 1 at a lift's peak
@@ -664,28 +616,19 @@ public final class TabPanelController {
 
         soundArrivalsAt(hover);
 
-        // The other thing this frame's reading is owed outside the panel: the host that built the control
-        // under the pointer hears which of its cells that is, so it can answer a hover as it answers a
-        // click. Beside the arrivals because both spend the same reading, and after them because a sound
-        // is what the player is owed first.
-        bodyHoverReporter.reportHoverChangeTo(hover.bodyCell());
-
         // The handle is never gated with the tabs - it draws past the frame and outlives the fold, being
         // what brings a docked panel back.
         tabHoverFades.advanceTowardHoveredKey(hover.tabIndex(), elapsedSeconds, durations);
 
-        // The body's cells travel on the same pair of paces as the row above them, which is the whole of
-        // what the panel shares between its parts: what a fraction lifts a checkbox toward is that widget's
-        // own paint, and a panel answering the pointer at two speeds reads as two panels.
-        bodyHoverFades.advanceTowardHoveredKey(hover.resolveBodyCellSlot(), elapsedSeconds, durations);
+        // Everything the body does with this frame - its cells' fades, the lifts running on them, and the
+        // report out to whoever built the control under the pointer - is charged in one call to the end
+        // that holds all of it. It travels on the same pair of paces as the row above it, which is the whole
+        // of what the panel shares between its parts: what a fraction lifts a checkbox toward is that
+        // widget's own paint, and a panel answering the pointer at two speeds reads as two panels.
+        bodyController.advanceBodyInputMotionsForFrame(hover.bodyCell(), elapsedSeconds, durations);
 
         notchHoverFade.advanceTowardHover(hover.isNotchHovered(), elapsedSeconds, durations);
         tabClickPulses.advanceByElapsedTime(elapsedSeconds, durations);
-
-        // The body's presses are charged the same frame's time, from the end that detected them: a press
-        // lands on the body's own controller, so that is where its lift is held and this pass reaches for
-        // it rather than holding a second set of envelopes over the same cells.
-        bodyController.advanceBodyPressPulses(elapsedSeconds, durations);
 
         // Ungated, like the clicks and unlike the fades: a blink is an event already seen, so its cycle runs
         // out wherever the panel goes afterwards rather than being cut short by a fold it did not ask for.
@@ -797,7 +740,7 @@ public final class TabPanelController {
         // frame the pointer did come back to one of them, that stale latch saying it never left.
         var hasReachedTab = tabHoverArrival.detectArrivalAt(hover.tabIndex());
         var hasReachedNotch = notchHoverArrival.detectArrival(hover.isNotchHovered());
-        var hasReachedBodyCell = detectBodyCellArrivalAt(hover.resolveBodyCellSlot());
+        var hasReachedBodyCell = bodyController.detectBodyCellArrivalAt(hover.resolveBodyCellSlot());
 
         // At most one of them can have fired: there is one pointer, and no two of the panel's parts occupy
         // the same point. So this picks the cue of whatever was reached rather than composing an answer out
@@ -810,24 +753,6 @@ public final class TabPanelController {
         if (hasReachedBodyCell) {
             soundArrivalAt(hover.bodyCell().arrivalTarget());
         }
-    }
-
-    // Whether the pointer reached a body cell - which a frame the list moved on answers no to, however the
-    // reading changed. An arrival is the player reaching something, and rows carried under a parked cursor
-    // were reached by nobody; a wheel spun down a long list would otherwise tick once for every row it
-    // swept past, where the scroll answers for the whole movement in one sound. One act, one sound, which
-    // is also the honest reading - the player turned the wheel once.
-    //
-    // The latch still takes what is now under the cursor rather than being skipped, so the frame after a
-    // scroll is an ordinary frame again: the pointer moving onto that same cell later is an arrival like
-    // any other, and the cell it was on before the list moved cannot announce itself as the list settles.
-    private boolean detectBodyCellArrivalAt(BodyCellSlot hoveredSlot) {
-
-        if (bodyController.takeHasListScrolledSinceLastFrame()) {
-            bodyHoverArrival.adoptArrivalAt(hoveredSlot);
-            return false;
-        }
-        return bodyHoverArrival.detectArrivalAt(hoveredSlot);
     }
 
     // Plays what the look says reaching that kind of thing sounds like. Role and level are taken together,

@@ -5,6 +5,8 @@ import com.fs.starfarer.api.input.InputEventAPI;
 import kmlib.animation.PulseEnvelopes;
 import kmlib.animation.TraverseDurations;
 import kmlib.math.geometry.Rectangle;
+import kmlib.starsector.ui.controls.BodyHoverSource;
+import kmlib.starsector.ui.controls.BodyPressSource;
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.ReselectBehaviour;
@@ -41,6 +43,14 @@ import kmlib.starsector.ui.widgets.scroll.ScrollState;
  * holds its lift as well as sounding it. Both hang off the same resolved cell, which is what keeps the cell
  * that sounds and the cell that lights from ever parting. What the lift is made of stays the widget's own
  * paint and the pace stays the caller's, handed in with the frame: this end times a lift and draws nothing.
+ *
+ * <p>Everything else one body cell is currently doing is held here for the same reason, off the reading a
+ * caller resolves each frame and hands in: how far it has travelled onto its hovered look, whether the
+ * pointer just reached it, and - out to the host that supplied the control - which of its cells that
+ * pointer is on. The hover and the press are one subject, so a panel with no header holds them both; and
+ * the arrival is one this end can answer honestly, being the end that knows whether the list moved rather
+ * than the pointer. Which sound an arrival makes is left to the caller, a body inside a tab panel answering
+ * at the level that panel's chrome leaves it.
  */
 public final class PanelController {
 
@@ -69,6 +79,27 @@ public final class PanelController {
     // a tab's, because a body control acts on the way down and has nothing left to hold by the time the
     // button comes up.
     private final PulseEnvelopes<BodyCellSlot> bodyPressPulses = new PulseEnvelopes<>();
+
+    // How far each body cell has travelled onto its hovered look, keyed by the slot it occupies in the
+    // strip. Beside the lifts above because both are what one cell of this body is currently showing, and
+    // keyed alike for the same reason: a host rebuilds its strip every frame, so either belongs to the
+    // place under the pointer rather than to the widget standing in it.
+    private final HoverFades<BodyCellSlot> bodyHoverFades = new HoverFades<>();
+
+    // When the pointer reaches a body cell, keyed by the slot its fade is held against. One latch for the
+    // whole strip rather than one per control, only one cell of a body being under the pointer at a time -
+    // so crossing from one segment of a row to the next replaces the key and reads as the arrival it is.
+    //
+    // Keyed by the slot alone, which is why a widget swapped into a slot under a still pointer announces
+    // nothing: an arrival is the player reaching something, and a strip rebuilt beneath a parked cursor was
+    // reached by nobody.
+    private final KeyedHoverArrival<BodyCellSlot> bodyHoverArrival = new KeyedHoverArrival<>();
+
+    // Where the body's reading goes back out to whoever built the control under the pointer, once per
+    // change. Beside the latch above because both turn one per-frame reading into a moment, and apart from
+    // it on a scroll: rows carried under a parked cursor were reached by nobody, and are still a different
+    // row for the host to answer.
+    private final BodyHoverReporter bodyHoverReporter = new BodyHoverReporter();
 
     // This panel's scroll position, read by the layout and written by the wheel and by a drag.
     private final ScrollState scrollState = new ScrollState();
@@ -210,6 +241,131 @@ public final class PanelController {
      */
     void resetListScrolled() {
         hasListScrolledSinceLastFrame = false;
+    }
+
+    /**
+     * What the body's controls are currently showing, for the render pass to lift them by: asked for a
+     * control's place in the drawn strip, it answers that control's own cells. The strip walk binds the
+     * position and the widget below passes only the cell it is painting, so the two halves of a slot are
+     * never both loose in one call - a crossed pair would light a cell of the wrong control, which is a
+     * flicker nobody can reproduce rather than a failure anything reports.
+     *
+     * <p>The seam a paint pass takes, over the fraction read below: a control is drawn cell by cell, so what
+     * it needs is something to ask, not a fraction fetched per cell by a caller that would have to spell the
+     * slot out itself.
+     *
+     * @return the body's live hover channel
+     */
+    BodyHoverSource getBodyHoverSource() {
+        return controlIndex -> cell -> resolveBodyHoverFractionAt(new BodyCellSlot(controlIndex, cell));
+    }
+
+    /**
+     * What the body's controls are showing for the presses they answered, bound the same two steps the hover
+     * channel above is: the strip walk binds a control's place and the widget below passes only the cell it
+     * is painting, so the two halves of a slot are never both loose in one call.
+     *
+     * <p>A channel beside that one rather than folded into it, because the two say different things about
+     * one cell: where the pointer is standing, and what it just did there.
+     *
+     * @return the body's live press channel
+     */
+    BodyPressSource getBodyPressSource() {
+        return controlIndex -> cell -> resolveBodyPressFractionAt(new BodyCellSlot(controlIndex, cell));
+    }
+
+    /**
+     * Steps every motion the body makes in answer to input - the hover fades of its controls and the press
+     * lifts running on its cells - and reports the hovered cell onward to the host that built the control,
+     * for the pass that pumps the panel's frame to call once it has resolved what is under the pointer.
+     *
+     * <p>One call rather than one per motion, so a body's parts cannot be advanced against different
+     * readings or charged different slices of the same frame. What is under the pointer is resolved against
+     * the placement being drawn rather than latched from the last pointer event, which is what keeps a fade
+     * honest - and a report current - when the panel moves under a still cursor.
+     *
+     * <p>The arrival that reading is also owed is detected separately ({@link #detectBodyCellArrivalAt}),
+     * because who sounds it is the caller's: a body inside a tab panel answers at the level that panel's
+     * chrome leaves it, and only the caller holds the rest of the frame's reading to weigh it against.
+     *
+     * @param hoveredCell    the body cell the pointer is on this frame, or null when it is on none
+     * @param elapsedSeconds real time since the last frame the host drew
+     * @param durations      how long a traverse takes each way; a non-positive one snaps that way
+     */
+    void advanceBodyInputMotionsForFrame(
+            HoveredBodyCell hoveredCell,
+            float elapsedSeconds,
+            TraverseDurations durations) {
+
+        bodyHoverFades.advanceTowardHoveredKey(
+            HoveredBodyCell.resolveSlotOf(hoveredCell),
+            elapsedSeconds,
+            durations);
+
+        bodyHoverReporter.reportHoverChangeTo(hoveredCell);
+        advanceBodyPressPulses(elapsedSeconds, durations);
+    }
+
+    /**
+     * Whether the pointer reached a body cell this frame - which a frame the list moved on answers no to,
+     * however the reading changed. An arrival is the player reaching something, and rows carried under a
+     * parked cursor were reached by nobody; a wheel spun down a long list would otherwise tick once for every
+     * row it swept past, where the scroll answers for the whole movement in one sound. One act, one sound,
+     * which is also the honest reading - the player turned the wheel once.
+     *
+     * <p>The latch still takes what is now under the cursor rather than being skipped, so the frame after a
+     * scroll is an ordinary frame again: the pointer moving onto that same cell later is an arrival like any
+     * other, and the cell it was on before the list moved cannot announce itself as the list settles.
+     *
+     * <p>Whether the list moved is this end's own to know - it is the end that moved it - so no caller hands
+     * that in, and none can forget to.
+     *
+     * @param hoveredSlot the slot the pointer is on this frame, or null when it is on no body cell
+     * @return true on the frame the pointer arrives on a cell, by its own movement
+     */
+    boolean detectBodyCellArrivalAt(BodyCellSlot hoveredSlot) {
+
+        if (takeHasListScrolledSinceLastFrame()) {
+            bodyHoverArrival.adoptArrivalAt(hoveredSlot);
+            return false;
+        }
+        return bodyHoverArrival.detectArrivalAt(hoveredSlot);
+    }
+
+    /**
+     * How far onto its hovered look the body cell at a given slot currently stands. A bare fraction, so this
+     * end holds no colour: what the lift is made of - a blend, a wash, a brightened frame - is the widget's
+     * own paint, resolved where its style is.
+     *
+     * <p>The fraction {@link #getBodyHoverSource()} is bound over, and the terms the fades are actually keyed
+     * in - which is what makes it the reachable end for pinning that a slot's two halves are not crossed.
+     *
+     * @param slot the body cell being asked about
+     * @return its hover fraction, 0 fully at rest and 1 fully on its hovered look
+     */
+    float resolveBodyHoverFractionAt(BodyCellSlot slot) {
+        return bodyHoverFades.resolveHoverFractionAt(slot);
+    }
+
+    /**
+     * Drops every motion the body holds and reports the pointer's leave, for a panel that stops showing.
+     *
+     * <p>A fade or a lift left part-way would otherwise be the first thing the next session paints and then
+     * wind down, showing the player the tail of an interaction they never saw begin. What was announced is
+     * forgotten with them, so a panel re-opening under a still pointer answers that cell afresh - it is an
+     * arrival to the player, the strip not having been there a moment ago. And the host answering the hover
+     * hears the leave, since no further frame will resolve a reading to tell it with.
+     */
+    void resetBodyInputMotions() {
+        bodyHoverFades.resetFades();
+        resetBodyPressPulses();
+        bodyHoverArrival.resetArrival();
+        bodyHoverReporter.reportHoverCleared();
+
+        // And the scroll the latch above would otherwise have adopted on. A movement left unread would make
+        // the next session's first frame take its cell in silence, which is the one thing the resets just
+        // above exist to prevent.
+        resetListScrolled();
     }
 
     /**

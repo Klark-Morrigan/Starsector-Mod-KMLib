@@ -29,4 +29,19 @@ public record HoveredBodyCell(
     BodyCellSlot slot,
     PointerArrivalTarget arrivalTarget,
     ControlHoverReport hoverReport) {
+
+    /**
+     * Where on the strip a frame's reading sits, for the readers that hold a cell against its place and
+     * nothing else - the fade it travels on, the latch that answers reaching it, and the report that names
+     * it. Stated once here rather than unwrapped at each of them, a pointer on no cell being on no slot
+     * either.
+     *
+     * @param hoveredCell the body cell the pointer is on, or null when it is on none
+     * @return that cell's slot, or null when the pointer is on no body cell
+     */
+    public static BodyCellSlot resolveSlotOf(HoveredBodyCell hoveredCell) {
+        return hoveredCell == null
+            ? null
+            : hoveredCell.slot();
+    }
 }

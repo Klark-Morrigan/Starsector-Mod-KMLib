@@ -8,6 +8,7 @@ import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.LabelledControlSpecs;
 import kmlib.starsector.ui.controls.ReselectBehaviour;
 import kmlib.starsector.ui.controls.VerticalTableSpecs;
+import kmlib.starsector.ui.sound.PointerArrivalTarget;
 import kmlib.starsector.ui.sound.StarsectorUiSound;
 import kmlib.starsector.ui.sound.UiSoundCue;
 import kmlib.starsector.ui.sound.UiSoundScheme;
@@ -17,6 +18,7 @@ import kmlib.testfixtures.starsector.ui.sound.UiSoundPlayerFake;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -113,6 +115,15 @@ final class PanelControllerTest {
     // The first row and the left segment are the same pair of numbers because a whole-row control's cell and
     // a first segment are both zero. That is exactly why both are named: a lift keyed by the wrong half of a
     // slot reads correctly at either of them, so a case has to press somewhere neither number covers.
+    // What the frame's reading carries with the pointer on no body cell - off the strip, or on chrome that
+    // resolves to nothing - named so an advance reads as a pointer position rather than as a bare null.
+    private static final HoveredBodyCell NO_CELL_HOVERED = null;
+    private static final BodyCellSlot NO_SLOT_HOVERED = null;
+
+    // What a host answering a hover is told as the pointer leaves, named the way the panel's own cases name
+    // it so one concept reads one way across the package.
+    private static final Integer NO_CELL_REPORTED = null;
+
     private static final BodyCellSlot FIRST_ROW_SLOT = new BodyCellSlot(0, ControlSpec.SINGLE_CELL);
     private static final BodyCellSlot SECOND_ROW_SLOT = new BodyCellSlot(1, ControlSpec.SINGLE_CELL);
     private static final BodyCellSlot LEFT_SEGMENT_SLOT = new BodyCellSlot(0, 0);
@@ -601,6 +612,201 @@ final class PanelControllerTest {
 
             assertThat(controller.resolveBodyPressFractionAt(FIRST_ROW_SLOT))
                 .isCloseTo(0f, within(TOLERANCE));
+        }
+    }
+
+    @Nested
+    class AdvanceBodyInputMotionsForFrame {
+
+        private final PanelController controller = new PanelController();
+
+        // What the host behind the hovered control was told, in the order it was told.
+        private final List<Integer> reportedCells = new ArrayList<>();
+
+        @Test
+        void advanceBodyInputMotionsForFrameRaisesTheHoveredSlotAndNoOther() {
+            // The fade is keyed by the place under the pointer, so a frame lights that place alone - a
+            // reading spent against the whole strip would light every cell of it at once.
+            controller.advanceBodyInputMotionsForFrame(
+                buildHoveredCell(FIRST_ROW_SLOT), FULL_STEP_SECONDS, PRESS_DURATIONS);
+
+            assertThat(controller.resolveBodyHoverFractionAt(FIRST_ROW_SLOT))
+                .isCloseTo(1f, within(TOLERANCE));
+            assertThat(controller.resolveBodyHoverFractionAt(SECOND_ROW_SLOT))
+                .as("a slot the pointer is not on stays at rest")
+                .isCloseTo(0f, within(TOLERANCE));
+        }
+
+        @Test
+        void advanceBodyInputMotionsForFrameWindsTheDepartedSlotBackDown() {
+            // A fade travels both ways, so the cell the pointer left comes back off its hovered look under
+            // its own steam rather than being cut to nothing the frame the reading changed.
+            controller.advanceBodyInputMotionsForFrame(
+                buildHoveredCell(FIRST_ROW_SLOT), FULL_STEP_SECONDS, PRESS_DURATIONS);
+            controller.advanceBodyInputMotionsForFrame(
+                NO_CELL_HOVERED, FULL_STEP_SECONDS, PRESS_DURATIONS);
+
+            assertThat(controller.resolveBodyHoverFractionAt(FIRST_ROW_SLOT))
+                .isCloseTo(0f, within(TOLERANCE));
+        }
+
+        @Test
+        void advanceBodyInputMotionsForFrameReportsTheHoveredCellToItsHost() {
+            // The reading spent outwards rather than on paint. Off a slot whose two halves are different
+            // numbers, so a report carrying the control's place where it means its cell reads as a wrong
+            // number rather than as the right one by coincidence.
+            controller.advanceBodyInputMotionsForFrame(
+                buildHoveredCell(RIGHT_SEGMENT_SLOT), FULL_STEP_SECONDS, PRESS_DURATIONS);
+
+            assertThat(reportedCells)
+                .containsExactly(1);
+        }
+
+        @Test
+        void advanceBodyInputMotionsForFrameChargesAPressLiftRunningOnACell() {
+            // One call charges every motion the body makes, so a panel pumping its frames through this one
+            // cannot leave the lifts unstepped while the fades run - which would show as a press that never
+            // fades out.
+            controller.pressBodyControlAtPoint(
+                buildBodyPlacement(buildCheckboxControl("Muted", ControlAction.NONE)),
+                ROW.x() + ROW.width() / 2f,
+                ROW.y() + ROW.height() / 2f);
+
+            controller.advanceBodyInputMotionsForFrame(
+                NO_CELL_HOVERED, FULL_STEP_SECONDS, PRESS_DURATIONS);
+
+            assertThat(controller.resolveBodyPressFractionAt(FIRST_ROW_SLOT))
+                .isCloseTo(1f, within(TOLERANCE));
+        }
+
+        // One frame's reading with the pointer on a cell reporting into this case's own recorder. The kind
+        // of thing reached is left at the whole-row answer, nothing here reading it.
+        private HoveredBodyCell buildHoveredCell(BodyCellSlot slot) {
+            return new HoveredBodyCell(
+                slot,
+                PointerArrivalTarget.SINGLE_OPTION_CONTROL,
+                reportedCells::add);
+        }
+    }
+
+    @Nested
+    class DetectBodyCellArrivalAt {
+
+        private final PanelController controller = new PanelController();
+
+        @Test
+        void detectBodyCellArrivalAtReportsThePointerReachingACell() {
+
+            assertThat(controller.detectBodyCellArrivalAt(FIRST_ROW_SLOT))
+                .isTrue();
+        }
+
+        @Test
+        void detectBodyCellArrivalAtReportsNothingWhileThePointerRestsOnTheCell() {
+            // A moment rather than a position, which is what the whole latch is for: the fade beside it
+            // stands at the top for as long as the pointer stays, and an answer read off that would be a
+            // tone rather than a tick.
+            controller.detectBodyCellArrivalAt(FIRST_ROW_SLOT);
+
+            assertThat(controller.detectBodyCellArrivalAt(FIRST_ROW_SLOT))
+                .isFalse();
+        }
+
+        @Test
+        void detectBodyCellArrivalAtReportsNothingForARowAWheelCarriedUnderTheCursor() {
+            // The rule this end is the only one that can answer, being the end that moved the list: rows
+            // sliding past a parked pointer were reached by nobody, so a wheel down a long list is one act
+            // rather than one arrival per row it swept past.
+            controller.handlePointer(
+                PointerEventMocks.mockWheelDownAt(ON_LIST_X, ON_LIST_Y),
+                buildScrollingPlacement());
+
+            assertThat(controller.detectBodyCellArrivalAt(FIRST_ROW_SLOT))
+                .isFalse();
+        }
+
+        @Test
+        void detectBodyCellArrivalAtReportsTheRowAWheelLeftUnderTheCursorOnceThePointerReachesItItself() {
+            // Adopted rather than gone deaf. The row the scroll carried under the cursor is taken without
+            // being announced, so the pointer genuinely arriving on it afterwards is an arrival like any
+            // other - a latch that had simply stopped tracking would swallow this one too.
+            controller.handlePointer(
+                PointerEventMocks.mockWheelDownAt(ON_LIST_X, ON_LIST_Y),
+                buildScrollingPlacement());
+
+            controller.detectBodyCellArrivalAt(FIRST_ROW_SLOT);
+            controller.detectBodyCellArrivalAt(NO_SLOT_HOVERED);
+
+            assertThat(controller.detectBodyCellArrivalAt(FIRST_ROW_SLOT))
+                .isTrue();
+        }
+    }
+
+    @Nested
+    class ResetBodyInputMotions {
+
+        private final PanelController controller = new PanelController();
+
+        private final List<Integer> reportedCells = new ArrayList<>();
+
+        @Test
+        void resetBodyInputMotionsDropsAFadeLeftPartWayUp() {
+            // A panel that stops showing drops what it was mid-way through, so the next session does not
+            // open painting the tail of a hover the player never made.
+            controller.advanceBodyInputMotionsForFrame(
+                buildHoveredCell(FIRST_ROW_SLOT), HALF_STEP_SECONDS, PRESS_DURATIONS);
+
+            controller.resetBodyInputMotions();
+
+            assertThat(controller.resolveBodyHoverFractionAt(FIRST_ROW_SLOT))
+                .isCloseTo(0f, within(TOLERANCE));
+        }
+
+        @Test
+        void resetBodyInputMotionsReportsTheLeaveToTheHostLastTold() {
+            // What a panel going away is to whatever was answering the hover: no further frame resolves a
+            // reading, so nothing else would tell that host to let go of the cell it holds.
+            controller.advanceBodyInputMotionsForFrame(
+                buildHoveredCell(RIGHT_SEGMENT_SLOT), FULL_STEP_SECONDS, PRESS_DURATIONS);
+
+            controller.resetBodyInputMotions();
+
+            assertThat(reportedCells)
+                .containsExactly(1, NO_CELL_REPORTED);
+        }
+
+        @Test
+        void resetBodyInputMotionsMakesAPointerParkedOnACellArriveAfresh() {
+            // The strip was not there a moment ago, so the player reaching it is an arrival even though the
+            // pointer never moved - the panel came to the cursor rather than the other way about.
+            controller.detectBodyCellArrivalAt(FIRST_ROW_SLOT);
+
+            controller.resetBodyInputMotions();
+
+            assertThat(controller.detectBodyCellArrivalAt(FIRST_ROW_SLOT))
+                .isTrue();
+        }
+
+        @Test
+        void resetBodyInputMotionsDropsAScrollNoFrameHasReadYet() {
+            // A movement no frame ever read is a movement the next session must not answer to: left
+            // standing, the re-opened panel would adopt whatever is under the cursor and take that cell in
+            // silence.
+            controller.handlePointer(
+                PointerEventMocks.mockWheelDownAt(ON_LIST_X, ON_LIST_Y),
+                buildScrollingPlacement());
+
+            controller.resetBodyInputMotions();
+
+            assertThat(controller.detectBodyCellArrivalAt(FIRST_ROW_SLOT))
+                .isTrue();
+        }
+
+        private HoveredBodyCell buildHoveredCell(BodyCellSlot slot) {
+            return new HoveredBodyCell(
+                slot,
+                PointerArrivalTarget.SINGLE_OPTION_CONTROL,
+                reportedCells::add);
         }
     }
 
