@@ -41,6 +41,11 @@ import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
  * expanded by default, or collapsed to its docked rail via {@link #createStartingDocked()}, so a host picks
  * the initial fold at construction rather than driving the animation to reach it.
  *
+ * <p>One thing the frame's reading is spent on leaves the panel entirely: the host that built the body
+ * control under the pointer is told which of its cells that is, on change and never per frame, and is told
+ * when the pointer leaves it. That is what lets a host answer a hover the way it answers a click - lighting
+ * what picking a row would show - without reading a cursor or hit-testing a strip of its own.
+ *
  * <p>Every animation here is timed and nothing here is coloured, and the same line runs through what the
  * panel sounds: this end knows when a control was pressed and when the pointer reached one, and the look
  * it was handed says what each of those moments sounds like. What a fraction lifts a tab toward is the
@@ -132,6 +137,13 @@ public final class TabPanelController {
     // nothing: an arrival is the player reaching something, and a strip rebuilt beneath a parked cursor was
     // reached by nobody.
     private final KeyedHoverArrival<BodyCellSlot> bodyHoverArrival = new KeyedHoverArrival<>();
+
+    // Where the body's reading goes back out to whoever built the control under the pointer, once per
+    // change. Held beside the latch above because both turn the same per-frame reading into a moment; they
+    // part on who is owed it - the latch answers the player with a sound, this answers the host with the
+    // cell, and the two differ on a scroll, which moves rows nobody reached but does change which row is
+    // under the cursor.
+    private final BodyHoverReporter bodyHoverReporter = new BodyHoverReporter();
 
     /**
      * A controller whose panel opens expanded and answers like a vanilla control - the fold and the scheme
@@ -330,6 +342,10 @@ public final class TabPanelController {
      * left part-way up, or a pulse left part-way through its cycle, would otherwise be the first thing the
      * next session paints and then wind down, showing the player the tail of an interaction they never saw
      * begin - the same reason a host drops its frame clock there.
+     *
+     * <p>Whoever was being told about the hovered body cell hears the pointer leave here, that being what a
+     * panel going away is to it: no further frame resolves a reading, so nothing else would tell it to let
+     * go of the cell it was last handed.
      */
     public void resetInputMotions() {
         tabHoverFades.resetFades();
@@ -349,6 +365,11 @@ public final class TabPanelController {
         tabHoverArrival.resetArrival();
         notchHoverArrival.resetArrival();
         bodyHoverArrival.resetArrival();
+
+        // And the host hearing the pointer leave, which is what a panel going away is to whatever was
+        // answering a hover over it: no frame will resolve a reading again, so nothing else would ever
+        // tell it to let go of the cell it was last handed.
+        bodyHoverReporter.reportHoverCleared();
 
         // And the scroll the latch above would otherwise have adopted on. A movement left unread would
         // make the next session's first frame take its cell in silence, which is the one thing the resets
@@ -628,6 +649,11 @@ public final class TabPanelController {
      * panel already holds rather than a reading of the cursor - it is taken from the body's own controller,
      * which is the end that moved the list and so the only end that knows it did.
      *
+     * <p>It is also where the hovered body cell is reported back to the host that built the control, on the
+     * frames where that reading changed. The reading is what a rebuilt list is answered from, so a scroll
+     * carrying a new row under a still pointer reports that row - unlike the arrival beside it, which stays
+     * silent because nobody reached anything.
+     *
      * @param hover          what the pointer is on this frame, over both of the panel's hoverable parts
      * @param elapsedSeconds real time since the last frame the host drew
      * @param durations      how long a traverse takes each way; a non-positive one snaps that way
@@ -638,6 +664,12 @@ public final class TabPanelController {
             TraverseDurations durations) {
 
         soundArrivalsAt(hover);
+
+        // The other thing this frame's reading is owed outside the panel: the host that built the control
+        // under the pointer hears which of its cells that is, so it can answer a hover as it answers a
+        // click. Beside the arrivals because both spend the same reading, and after them because a sound
+        // is what the player is owed first.
+        bodyHoverReporter.reportHoverChangeTo(hover.bodyCell());
 
         // The handle is never gated with the tabs - it draws past the frame and outlives the fold, being
         // what brings a docked panel back.
@@ -711,10 +743,10 @@ public final class TabPanelController {
     // so the cell that lights and the cell a press lands on are the same cell because they are the same
     // answer, and the viewport and box gates that walk carries are inherited rather than restated.
     //
-    // A hit is reduced to where it landed and what kind of thing was reached, the control it names being
-    // the press's business alone: a fade is held against the slot, and a hover that carried the widget on
-    // could come to be keyed by it. The kind is settled here, while the walk still has the control, so
-    // nothing downstream has to ask a second time.
+    // A hit is reduced to where it landed, what kind of thing was reached, and where that control wants the
+    // reading told - the control it names being the press's business alone: a fade is held against the
+    // slot, and a hover that carried the widget on could come to be keyed by it. Both readings off the
+    // control are settled here, while the walk still has it, so nothing downstream has to ask a second time.
     private static HoveredBodyCell resolveHoveredBodyCellAtPoint(
             TabPanelPlacement placement,
             float pointX,
@@ -724,7 +756,10 @@ public final class TabPanelController {
 
         return hitCell == null
             ? null
-            : new HoveredBodyCell(hitCell.slot(), hitCell.resolveArrivalTarget());
+            : new HoveredBodyCell(
+                hitCell.slot(),
+                hitCell.resolveArrivalTarget(),
+                hitCell.resolveHoverReport());
     }
 
     /**

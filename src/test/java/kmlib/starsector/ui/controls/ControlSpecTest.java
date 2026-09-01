@@ -51,6 +51,19 @@ final class ControlSpecTest {
         }
 
         @Test
+        void hoverReportDefaultsToReportingNowhere() {
+            // The channel is on Interactive and the component is on the one variant whose host asked for
+            // one, so every other variant answers a report that drops what it is told. Read as a null, the
+            // frame that first put the pointer on such a control would throw rather than report nothing.
+            assertThat(LabelledControlSpecs.buildCheckbox("Muted", true, ControlAction.NONE).hoverReport())
+                .isEqualTo(ControlHoverReport.NONE);
+            assertThat(ControlSpec.HorizontalRadio.of(List.of("A"), 0, ControlAction.NONE).hoverReport())
+                .isEqualTo(ControlHoverReport.NONE);
+            assertThat(new ControlSpec.Tabs(List.of("A"), List.of(), 0, ControlAction.NONE).hoverReport())
+                .isEqualTo(ControlHoverReport.NONE);
+        }
+
+        @Test
         void labelAndDividerAreNotInteractive() {
             // A caption and a rule are drawn but never clicked, so they are chrome, not Interactive - the
             // one property the input listener reads to skip them.
@@ -73,6 +86,7 @@ final class ControlSpecTest {
                     RowGeometry.COLUMNS,
                     ControlSpec.NO_SELECTION,
                     ControlAction.NONE,
+                    ControlHoverReport.NONE,
                     ReselectBehaviour.DESELECT,
                     0,
                     false))
@@ -88,6 +102,24 @@ final class ControlSpecTest {
                     null,
                     ControlSpec.NO_SELECTION,
                     ControlAction.NONE,
+                    ControlHoverReport.NONE,
+                    ReselectBehaviour.DESELECT,
+                    ControlSpec.SINGLE_COLUMN,
+                    false))
+                .isInstanceOf(NullPointerException.class);
+        }
+
+        @Test
+        void constructorRejectsAMissingHoverReport() {
+            // A list reporting nowhere states that with NONE rather than with a null, which would pass
+            // every layout and every draw and then throw from inside the first frame that put the pointer
+            // on a row - nowhere near the host that built the list.
+            assertThatThrownBy(() -> new ControlSpec.VerticalTable(
+                    VerticalTableSpecs.buildRows(List.of("A")),
+                    RowGeometry.COLUMNS,
+                    ControlSpec.NO_SELECTION,
+                    ControlAction.NONE,
+                    null,
                     ReselectBehaviour.DESELECT,
                     ControlSpec.SINGLE_COLUMN,
                     false))
@@ -106,6 +138,7 @@ final class ControlSpecTest {
                 RowGeometry.COLUMNS,
                 0,
                 ControlAction.NONE,
+                ControlHoverReport.NONE,
                 ReselectBehaviour.DESELECT,
                 ControlSpec.SINGLE_COLUMN,
                 false);
@@ -362,6 +395,8 @@ final class ControlSpecTest {
                 .isEqualTo(1);
             assertThat(picker.scrolls())
                 .isFalse();
+            assertThat(picker.hoverReport())
+                .isEqualTo(ControlHoverReport.NONE);
         }
 
         @Test
@@ -476,6 +511,76 @@ final class ControlSpecTest {
                 .isEqualTo(1);
             assertThat(picker.rowGeometry())
                 .isEqualTo(RowGeometry.COLUMNS);
+        }
+    }
+
+    @Nested
+    class ReportsHoverTo {
+
+        @Test
+        void reportsHoverToCarriesTheChannelAndLeavesTheRestAsItWas() {
+            // A host answering a hover wires the channel onto a list built through the ordinary factory, so
+            // the copy carries it while everything the layout and the press path read stays as it was.
+            var reportedCells = new ArrayList<Integer>();
+
+            var picker = ControlSpec.VerticalTable
+                .createColumnTable(
+                    VerticalTableSpecs.buildRows(List.of("Hegemony", "Tri-Tachyon")),
+                    1,
+                    ControlAction.NONE)
+                .handlesReselect(ReselectBehaviour.DESELECT)
+                .reportsHoverTo(reportedCells::add);
+
+            picker.hoverReport().reportHoveredCell(1);
+
+            assertThat(reportedCells)
+                .containsExactly(1);
+            assertThat(picker.labels())
+                .containsExactly("Hegemony", "Tri-Tachyon");
+            assertThat(picker.selectedIndex())
+                .isEqualTo(1);
+            assertThat(picker.reselect())
+                .isEqualTo(ReselectBehaviour.DESELECT);
+        }
+
+        @Test
+        void reportsHoverToSurvivesTheRefinementsLayeredAfterIt() {
+            // The four refinements share one rebuild rather than each restating every component, which is
+            // the fault this pins: a rebuild that dropped the channel would leave a list reporting nothing
+            // for no reason its host could see.
+            var picker = VerticalTableSpecs.buildIconList(
+                    List.of("Hegemony", "Tri-Tachyon"),
+                    List.of("crest_heg", "crest_tt"),
+                    ControlSpec.NO_SELECTION,
+                    ControlAction.NONE)
+                .reportsHoverTo(hoveredCell -> {
+                })
+                .spreadsAcross(2)
+                .asScrolling();
+
+            assertThat(picker.hoverReport())
+                .isNotEqualTo(ControlHoverReport.NONE);
+            assertThat(picker.columnCount())
+                .isEqualTo(2);
+            assertThat(picker.scrolls())
+                .isTrue();
+        }
+
+        @Test
+        void reportsHoverToLeavesTheOriginalReportingNowhere() {
+            // The copy is a fresh spec, so the source the host still holds is untouched - only the one it
+            // wired reports.
+            var picker = VerticalTableSpecs.buildIconList(
+                List.of("Hegemony"),
+                List.of("crest_heg"),
+                0,
+                ControlAction.NONE);
+
+            picker.reportsHoverTo(hoveredCell -> {
+            });
+
+            assertThat(picker.hoverReport())
+                .isEqualTo(ControlHoverReport.NONE);
         }
     }
 

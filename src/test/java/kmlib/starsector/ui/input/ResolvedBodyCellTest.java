@@ -3,6 +3,7 @@ package kmlib.starsector.ui.input;
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlAction;
+import kmlib.starsector.ui.controls.ControlHoverReport;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.LabelledControlSpecs;
 import kmlib.starsector.ui.controls.VerticalTableSpecs;
@@ -11,6 +12,7 @@ import kmlib.starsector.ui.sound.PointerArrivalTarget;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -62,6 +64,32 @@ final class ResolvedBodyCellTest {
         }
     }
 
+    @Nested
+    class ResolveHoverReport {
+
+        @Test
+        void resolveHoverReportAnswersTheChannelTheControlWasWiredWith() {
+            // Read off the control while the walk still holds it, so what a frame's reading carries on is
+            // the channel rather than the widget it came from - the spec being gone by the next rebuild.
+            var reportedCells = new ArrayList<Integer>();
+
+            var hoverReport = buildResolvedCell(buildScrollingListControl(reportedCells::add))
+                .resolveHoverReport();
+            hoverReport.reportHoveredCell(1);
+
+            assertThat(reportedCells)
+                .containsExactly(1);
+        }
+
+        @Test
+        void resolveHoverReportAnswersNoneForAControlThatTakesNoReport() {
+            // Most controls take none, so the walk answers a channel that drops what it is told rather than
+            // a null the frame would have to check before every report.
+            assertThat(buildResolvedCell(buildCheckboxControl()).resolveHoverReport())
+                .isEqualTo(ControlHoverReport.NONE);
+        }
+    }
+
     // The hit as the walk hands it over: a control and the slot it was found at. The slot never decides the
     // kind - a whole-row control's single cell and a row's first segment are both index zero - so every
     // case here names the same one and varies only the control.
@@ -87,12 +115,19 @@ final class ResolvedBodyCellTest {
     }
 
     private static Control buildScrollingListControl() {
+        return buildScrollingListControl(ControlHoverReport.NONE);
+    }
+
+    // The same list wired to report the row under the pointer, for the cases about the channel the walk
+    // reads off it.
+    private static Control buildScrollingListControl(ControlHoverReport hoverReport) {
 
         var spec = VerticalTableSpecs.buildIconList(
                 List.of("First", "Second"),
                 Arrays.asList((String) null, null),
                 ControlSpec.NO_SELECTION,
                 ControlAction.NONE)
+            .reportsHoverTo(hoverReport)
             .asScrolling();
 
         return new Control(spec, ROW, List.of(LEFT_SEGMENT, RIGHT_SEGMENT));

@@ -90,6 +90,24 @@ public sealed interface ControlSpec {
         default boolean isLit() {
             return selectedIndex() != NO_SELECTION;
         }
+
+        /**
+         * Where the control reports which of its cells the pointer is on, for a host that answers a hover
+         * as well as a click. The input listener calls it as the hovered cell changes; the layout and the
+         * renderer ignore it, exactly as they ignore the action beside it.
+         *
+         * <p>Defaulted rather than carried by every variant, because a report is only worth wiring where a
+         * control's cells stand for things the host holds: a stacked list's rows name items it can act on,
+         * while a checkbox's single cell says no more than its own lit state already does. A variant whose
+         * host comes to want one carries a component overriding this, and nothing that drives the report
+         * changes - the frame reads it here and never branches on a variant.
+         *
+         * @return where the hovered cell is reported, {@link ControlHoverReport#NONE} for a control that
+         *         reports none
+         */
+        default ControlHoverReport hoverReport() {
+            return ControlHoverReport.NONE;
+        }
     }
 
     /**
@@ -418,6 +436,8 @@ public sealed interface ControlSpec {
      * @param rowGeometry   how each row lays its content out - a table of columns, or uniform cells
      * @param selectedIndex the lit option's index, or {@link #NO_SELECTION} when nothing is picked
      * @param action        what a click on an option does, keyed by the option index
+     * @param hoverReport   where the row under the pointer is reported, {@link ControlHoverReport#NONE}
+     *                      for a list whose host answers clicks alone
      * @param reselect      what a click on the lit option does (deselect, re-fire, or inert)
      * @param columnCount   how many columns to spread the options across ({@link #SINGLE_COLUMN} for
      *                      one column)
@@ -428,24 +448,31 @@ public sealed interface ControlSpec {
             RowGeometry rowGeometry,
             int selectedIndex,
             ControlAction action,
+            ControlHoverReport hoverReport,
             ReselectBehaviour reselect,
             int columnCount,
             boolean scrolls) implements Interactive {
 
         // What a table holds before a host refines it: every option inert on a re-pick (the standard
-        // always-one-lit list), stacked in a single column, and pinned rather than scrolling. Each is a
-        // refinement below, so a host states only the ones its list actually wants.
+        // always-one-lit list), stacked in a single column, pinned rather than scrolling, and reporting
+        // nothing back as the pointer crosses its rows. Each is a refinement below, so a host states only
+        // the ones its list actually wants.
         private static final ReselectBehaviour DEFAULT_RESELECT = ReselectBehaviour.INERT;
         private static final boolean NOT_SCROLLING = false;
 
         /**
-         * Copies the rows defensively and rejects a missing geometry or a column count the layout cannot
-         * lay out, so a mis-built table fails at construction rather than at paint time. What each row
-         * itself must hold is {@link LabelledRow}'s own rule, checked where that row is built.
+         * Copies the rows defensively and rejects a missing geometry, a missing hover report, or a column
+         * count the layout cannot lay out, so a mis-built table fails at construction rather than at paint
+         * time. What each row itself must hold is {@link LabelledRow}'s own rule, checked where that row is
+         * built.
          */
         public VerticalTable {
             labelledRows = List.copyOf(labelledRows);
             Objects.requireNonNull(rowGeometry, "rowGeometry");
+
+            // A null here would pass every layout and every draw and then throw from inside the frame that
+            // first put the pointer on a row, which is nowhere near the host that built the list.
+            Objects.requireNonNull(hoverReport, "hoverReport");
             if (columnCount < SINGLE_COLUMN) {
                 throw new IllegalArgumentException("columnCount must be at least "
                     + SINGLE_COLUMN
@@ -475,6 +502,7 @@ public sealed interface ControlSpec {
                 RowGeometry.COLUMNS,
                 selectedIndex,
                 action,
+                ControlHoverReport.NONE,
                 DEFAULT_RESELECT,
                 SINGLE_COLUMN,
                 NOT_SCROLLING);
@@ -501,6 +529,7 @@ public sealed interface ControlSpec {
                 RowGeometry.UNIFORM_SEGMENTS,
                 selectedIndex,
                 action,
+                ControlHoverReport.NONE,
                 DEFAULT_RESELECT,
                 SINGLE_COLUMN,
                 NOT_SCROLLING);
@@ -531,7 +560,22 @@ public sealed interface ControlSpec {
          * @return an otherwise-identical table handling a re-pick that way
          */
         public VerticalTable handlesReselect(ReselectBehaviour reselect) {
-            return rebuildAsLaidOut(reselect, columnCount, scrolls);
+            return rebuildAsLaidOut(hoverReport, reselect, columnCount, scrolls);
+        }
+
+        /**
+         * Returns a copy of this table reporting the row under the pointer to {@code hoverReport} - for a
+         * host that answers a hover as well as a click, previewing what picking that row would do.
+         *
+         * <p>A refinement rather than a factory parameter for the reason the three below it are: a list is
+         * built the same way whether or not anything is listening, and a host that takes no report writes
+         * nothing about one.
+         *
+         * @param hoverReport where the row under the pointer is reported
+         * @return an otherwise-identical table reporting its hovered row there
+         */
+        public VerticalTable reportsHoverTo(ControlHoverReport hoverReport) {
+            return rebuildAsLaidOut(hoverReport, reselect, columnCount, scrolls);
         }
 
         /**
@@ -543,7 +587,7 @@ public sealed interface ControlSpec {
          * @return an otherwise-identical table folded across that many columns
          */
         public VerticalTable spreadsAcross(int columnCount) {
-            return rebuildAsLaidOut(reselect, columnCount, scrolls);
+            return rebuildAsLaidOut(hoverReport, reselect, columnCount, scrolls);
         }
 
         /**
@@ -555,15 +599,16 @@ public sealed interface ControlSpec {
          * @return an otherwise-identical table with {@link #scrolls()} set
          */
         public VerticalTable asScrolling() {
-            return rebuildAsLaidOut(reselect, columnCount, true);
+            return rebuildAsLaidOut(hoverReport, reselect, columnCount, true);
         }
 
         // Rebuilds the table around how it is laid out and driven, carrying what it holds - its rows,
-        // their geometry, the lit row, and the click action - over untouched. The three refinements
-        // share it rather than each restating all seven components, one of which would eventually be
+        // their geometry, the lit row, and the click action - over untouched. The four refinements
+        // share it rather than each restating all eight components, one of which would eventually be
         // restated wrongly: the lit row and the column count are both counts, so a rebuild that crossed
         // them would compile clean and light the wrong row.
         private VerticalTable rebuildAsLaidOut(
+                ControlHoverReport hoverReport,
                 ReselectBehaviour reselect,
                 int columnCount,
                 boolean scrolls) {
@@ -573,6 +618,7 @@ public sealed interface ControlSpec {
                 rowGeometry,
                 selectedIndex,
                 action,
+                hoverReport,
                 reselect,
                 columnCount,
                 scrolls);

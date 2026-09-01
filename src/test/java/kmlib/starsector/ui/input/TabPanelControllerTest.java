@@ -4,6 +4,7 @@ import kmlib.animation.TraverseDurations;
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlAction;
+import kmlib.starsector.ui.controls.ControlHoverReport;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.LabelledControlSpecs;
 import kmlib.starsector.ui.controls.VerticalTableSpecs;
@@ -114,6 +115,10 @@ final class TabPanelControllerTest {
     private static final ControlSpec.Tabs TABS_SHOWING_FIRST_TAB =
         buildTabsSpecShowing(FIRST_TAB_INDEX, ControlAction.NONE);
 
+    // What a host answering a hover is told as the pointer leaves, named so a case reads as a leave rather
+    // than as a bare null among cell indices.
+    private static final Integer NO_CELL_REPORTED = null;
+
     // What the hit-tests report when the pointer is on none of the panel's parts, named so an advance reads
     // as a pointer position rather than as two nulls and a false.
     private static final Integer NO_TAB_HOVERED = null;
@@ -137,13 +142,17 @@ final class TabPanelControllerTest {
     // Those slots as the pointer reads them - the place a fade is held against, and the kind of thing the
     // player reached. The kinds match the slots they are paired with, a whole-row control's single cell
     // being what the first two name and a segment what the third does, so a case reading either half sees
-    // the pairing the panel's own walk would have produced.
+    // the pairing the panel's own walk would have produced. None of them reports its cell anywhere, the
+    // cases about the report naming a channel of their own.
     private static final HoveredBodyCell FIRST_BODY_CELL =
-        new HoveredBodyCell(FIRST_BODY_SLOT, PointerArrivalTarget.SINGLE_OPTION_CONTROL);
+        new HoveredBodyCell(
+            FIRST_BODY_SLOT, PointerArrivalTarget.SINGLE_OPTION_CONTROL, ControlHoverReport.NONE);
     private static final HoveredBodyCell SECOND_BODY_CELL =
-        new HoveredBodyCell(SECOND_BODY_SLOT, PointerArrivalTarget.SINGLE_OPTION_CONTROL);
+        new HoveredBodyCell(
+            SECOND_BODY_SLOT, PointerArrivalTarget.SINGLE_OPTION_CONTROL, ControlHoverReport.NONE);
     private static final HoveredBodyCell MID_STRIP_SEGMENT_CELL =
-        new HoveredBodyCell(MID_STRIP_SEGMENT_SLOT, PointerArrivalTarget.LISTED_ITEM);
+        new HoveredBodyCell(
+            MID_STRIP_SEGMENT_SLOT, PointerArrivalTarget.LISTED_ITEM, ControlHoverReport.NONE);
 
     // A whole duration in one step, so an end state is reached without walking frames, and half of one for
     // the part-way reads.
@@ -1831,6 +1840,132 @@ final class TabPanelControllerTest {
         }
     }
 
+    @Nested
+    class HoverReports {
+
+        // What the host behind the body's control was told, in the order it was told. The one channel these
+        // cases wire, so a report reaching it can only have come from the cell they put the pointer on.
+        private final List<Integer> reportedCells = new ArrayList<>();
+
+        @Test
+        void hoverReportsTellTheHostWhichCellThePointerCameOnto() {
+            // The reading a frame takes goes back out to whoever built the control, which is what lets a
+            // host answer a hover without reading a cursor or hit-testing a strip of its own.
+            var controller = new TabPanelController();
+
+            advanceWithPointerOn(controller, buildReportingBodyCell(FIRST_BODY_SLOT));
+
+            assertThat(reportedCells)
+                .containsExactly(ControlSpec.SINGLE_CELL);
+        }
+
+        @Test
+        void hoverReportsTellTheHostOnceWhileThePointerRestsOnTheCell() {
+            // On change rather than per frame: a host acting on what it is told would otherwise redo that
+            // work every frame the player leaves the pointer where it is.
+            var controller = new TabPanelController();
+
+            advanceWithPointerOn(controller, buildReportingBodyCell(FIRST_BODY_SLOT));
+            advanceWithPointerOn(controller, buildReportingBodyCell(FIRST_BODY_SLOT));
+
+            assertThat(reportedCells)
+                .containsExactly(ControlSpec.SINGLE_CELL);
+        }
+
+        @Test
+        void hoverReportsTellTheHostThePointerLeftTheStrip() {
+            // The one thing a stream of readings never says out loud, and the reason the channel a reading
+            // went out on is kept: by the time the pointer is off the strip there is no spec to read one
+            // from.
+            var controller = new TabPanelController();
+
+            advanceWithPointerOn(controller, buildReportingBodyCell(FIRST_BODY_SLOT));
+            advanceWithPointerOn(controller, NO_BODY_CELL_HOVERED);
+
+            assertThat(reportedCells)
+                .containsExactly(ControlSpec.SINGLE_CELL, NO_CELL_REPORTED);
+        }
+
+        @Test
+        void hoverReportsTellTheHostTheRowAScrollCarriedUnderAStillPointer() {
+            // Driven through the point rather than through a handed-in reading, because this is the case
+            // the placement-driven reading exists for: the cursor never moved, the list did, and the row
+            // now under it is a different row. Latched from the last pointer event, the host would still
+            // be holding the row the player last moved onto.
+            var controller = new TabPanelController();
+
+            advanceWithPointerAt(controller, buildReportingListPlacement(UNSCROLLED_OFFSET));
+            advanceWithPointerAt(controller, buildReportingListPlacement(SCROLLED_BY_ONE_ROW_OFFSET));
+
+            assertThat(reportedCells)
+                .containsExactly(0, 1);
+        }
+
+        @Test
+        void hoverReportsTellTheHostTheLeaveAsThePanelStandsDown() {
+            // A panel going away is a leave to whatever was answering the hover over it: no further frame
+            // resolves a reading, so a host left holding that cell would answer a hover over a strip that
+            // is no longer drawn.
+            var controller = new TabPanelController();
+
+            advanceWithPointerOn(controller, buildReportingBodyCell(FIRST_BODY_SLOT));
+            controller.resetInputMotions();
+
+            assertThat(reportedCells)
+                .containsExactly(ControlSpec.SINGLE_CELL, NO_CELL_REPORTED);
+        }
+
+        @Test
+        void hoverReportsStaySilentForACellBehindADockedPanelsRail() {
+            // The gate is the walk's, not a test of the report's own: a cell the fold has wiped off the
+            // screen is hovered by nobody, so its host hears nothing about a row the player cannot see.
+            var controller = new TabPanelController();
+
+            controller.advanceInputMotionsAtPoint(
+                buildDockedRailPlacement(),
+                INSIDE_FIRST_TAB_X,
+                BELOW_TABS_Y,
+                FULL_STEP_SECONDS,
+                DURATIONS);
+
+            assertThat(reportedCells)
+                .isEmpty();
+        }
+
+        // One frame with the pointer where the given reading puts it, on none of the panel's other parts.
+        private void advanceWithPointerOn(TabPanelController controller, HoveredBodyCell bodyCell) {
+            controller.advanceInputMotionsForFrame(
+                new TabPanelHover(NO_TAB_HOVERED, bodyCell, NOTCH_NOT_HOVERED),
+                FULL_STEP_SECONDS,
+                DURATIONS);
+        }
+
+        // One frame over the given placement with the pointer on its top drawn row, letting the panel run
+        // its own hit-test - what the cases about a moving list take, the row under the cursor being the
+        // part the placement decides.
+        private void advanceWithPointerAt(TabPanelController controller, TabPanelPlacement placement) {
+            controller.advanceInputMotionsAtPoint(
+                placement,
+                INSIDE_FIRST_TAB_X,
+                ON_TOP_SCROLLING_ROW_Y,
+                FULL_STEP_SECONDS,
+                DURATIONS);
+        }
+
+        // The pointer on one body cell reporting into this case's own recorder, and on nothing else.
+        private HoveredBodyCell buildReportingBodyCell(BodyCellSlot slot) {
+            return new HoveredBodyCell(
+                slot,
+                PointerArrivalTarget.SINGLE_OPTION_CONTROL,
+                reportedCells::add);
+        }
+
+        // The scrolling list at the given offset, wired to report into this case's own recorder.
+        private TabPanelPlacement buildReportingListPlacement(float scrollOffset) {
+            return buildScrollingListPlacement(scrollOffset, reportedCells::add);
+        }
+    }
+
     // How far onto the hovered shade a tab stands, read the way the render pass reads it - through the
     // interaction sources rather than off the fades directly, so these pin the composed value that actually
     // reaches a strip rather than either motion feeding it.
@@ -1936,6 +2071,14 @@ final class TabPanelControllerTest {
     // overflow the scrollbar and the wheel read. Taking the offset rather than holding one, so a case
     // drives the wheel and then hands in the frame the layout would next have drawn.
     private static TabPanelPlacement buildScrollingListPlacement(float scrollOffset) {
+        return buildScrollingListPlacement(scrollOffset, ControlHoverReport.NONE);
+    }
+
+    // The same list wired to report the row under the pointer, for the cases about what its host is told.
+    // Taking the channel rather than holding one, since a case reads what it wired and nothing else.
+    private static TabPanelPlacement buildScrollingListPlacement(
+            float scrollOffset,
+            ControlHoverReport hoverReport) {
 
         return buildPlacement(
             null,
@@ -1944,7 +2087,7 @@ final class TabPanelControllerTest {
             new PanelPlacement(
                 BODY_BOX,
                 BODY_BOX,
-                List.of(buildScrollingListControl(scrollOffset)),
+                List.of(buildScrollingListControl(scrollOffset, hoverReport)),
                 BODY_BOX,
                 scrollOffset,
                 SCROLLING_LIST_OVERFLOW));
@@ -1953,7 +2096,7 @@ final class TabPanelControllerTest {
     // The list itself: a scrolling table whose rows are stacked down from the body's top edge and shifted
     // by the offset, so a row scrolled past the top is laid above the viewport and drawn away exactly as
     // the real layout leaves it. What each case reads off it is which row the one test point falls in.
-    private static Control buildScrollingListControl(float scrollOffset) {
+    private static Control buildScrollingListControl(float scrollOffset, ControlHoverReport hoverReport) {
 
         var rows = new ArrayList<Rectangle>();
         var labels = new ArrayList<String>();
@@ -1972,6 +2115,7 @@ final class TabPanelControllerTest {
                 Arrays.asList(new String[SCROLLING_ROW_COUNT]),
                 ControlSpec.NO_SELECTION,
                 ControlAction.NONE)
+            .reportsHoverTo(hoverReport)
             .asScrolling();
 
         return new Control(spec, BODY_BOX, rows);

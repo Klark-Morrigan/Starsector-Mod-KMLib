@@ -1,6 +1,8 @@
 package kmlib.starsector.ui.input;
 
 import kmlib.starsector.ui.controls.Control;
+import kmlib.starsector.ui.controls.ControlHoverReport;
+import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.sound.PointerArrivalTarget;
 
 /**
@@ -38,5 +40,22 @@ record ResolvedBodyCell(
         return PanelController.isSegmentedControl(control)
             ? PointerArrivalTarget.LISTED_ITEM
             : PointerArrivalTarget.SINGLE_OPTION_CONTROL;
+    }
+
+    /**
+     * Where this cell's control reports the hovered cell back to whoever built it, or {@link
+     * ControlHoverReport#NONE} for a control that takes no report. Read off the control while the walk
+     * still holds it, for the same reason the arrival target above is: what travels on is the answer, so
+     * the reading a frame carries never has to hold the widget it was taken from.
+     *
+     * <p>Only an {@link ControlSpec.Interactive} control ever resolves to a cell, so the chrome arm is
+     * unreachable through the walk and is what keeps this a read rather than a cast.
+     *
+     * @return the control's hover report
+     */
+    ControlHoverReport resolveHoverReport() {
+        return control.spec() instanceof ControlSpec.Interactive interactive
+            ? interactive.hoverReport()
+            : ControlHoverReport.NONE;
     }
 }
