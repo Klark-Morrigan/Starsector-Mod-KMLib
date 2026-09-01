@@ -330,11 +330,13 @@ No Starsector API on the signature.
 - [`starsector/memory/`](src/main/java/kmlib/starsector/memory/) - typed
   sector-memory accessors (flag, string).
 - [`starsector/relation/`](src/main/java/kmlib/starsector/relation/) - what
-  one faction's standing with another comes to: the player relationship
-  formatted as the game itself shows it, and whether a disposition clears the
-  scale's own step from indifference to goodwill - the latter asked of a
-  faction in hand, or as a pair test over faction ids bound to one sector, so a
-  caller composing dispositions takes the read rather than writing the lookup.
+  one faction's standing with another comes to: where a faction stands with the
+  player as one value (level, signed reputation, and the colour the game paints
+  them in, off a single three-tier read), that same value formatted as the game
+  itself shows it, and whether a disposition clears the scale's own step from
+  indifference to goodwill - the last asked of a faction in hand, or as a pair
+  test over faction ids bound to one sector, so a caller composing dispositions
+  takes the read rather than writing the lookup.
 - [`starsector/scripts/`](src/main/java/kmlib/starsector/scripts/) - sector
   script registration helpers.
 - [`starsector/settings/`](src/main/java/kmlib/starsector/settings/) - the

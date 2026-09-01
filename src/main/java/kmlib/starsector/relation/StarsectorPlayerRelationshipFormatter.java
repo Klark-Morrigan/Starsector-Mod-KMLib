@@ -2,40 +2,21 @@ package kmlib.starsector.relation;
 
 import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.RepLevel;
-import com.fs.starfarer.api.characters.RelationshipAPI;
-import com.fs.starfarer.api.impl.campaign.ids.Factions;
-import com.fs.starfarer.api.util.Misc;
 
 import java.awt.Color;
 import java.util.Locale;
 
 /**
- * Formats a faction's relationship-to-the-player as a vanilla-styled
- * description + matching colour pair. Mirrors what the engine renders
- * in colony tooltips and intel rows: {@code "<RepLevel name> (<rep> /
- * 100)"}, e.g. {@code "Friendly (35 / 100)"}.
+ * Formats a faction's relationship-to-the-player as a vanilla-styled description + matching colour
+ * pair. Mirrors what the engine renders in colony tooltips and intel rows:
+ * {@code "<RepLevel name> (<rep> / 100)"}, e.g. {@code "Friendly (35 / 100)"}.
  *
- * <p>The colour resolver walks a three-tier fallback to pick up
- * whichever shade Starsector itself would use for this faction pair
- * right now:</p>
- * <ol>
- *   <li>{@link RelationshipAPI#getRelColor()} on the live relationship
- *       object - the most authoritative source, because it picks up
- *       any per-relationship overrides Starsector applies (tutorial
- *       pinning, scripted events, etc.).</li>
- *   <li>{@link FactionAPI#getRelColor(String)} against
- *       {@link Factions#PLAYER} - the next-best read, used when the
- *       live relationship object is unavailable.</li>
- *   <li>{@link Misc#getRelColor(float)} on the raw float - the
- *       stateless palette fallback.</li>
- * </ol>
+ * <p>Prose only: what the standing is, and what colour it is drawn in, are read by
+ * {@link StarsectorPlayerStandings}, so a tooltip describing a standing and a surface ranking by it
+ * quote one read of the game rather than two walks of the same fallback chain.
  *
- * <p>Reads are bare: any {@link RuntimeException} from a modded
- * {@link FactionAPI} or {@link RelationshipAPI} propagates to the
- * caller rather than degrading silently. Lives in KMLib so every mod
- * that surfaces a faction's player-relation renders it the same way
- * and pulls the same colour from the same fallback chain. Stateless
- * - the single entry point is a static method, no instance needed.</p>
+ * <p>Lives in KMLib so every mod that surfaces a faction's player-relation renders it the same way.
+ * Stateless - the single entry point is a static method, no instance needed.
  */
 public final class StarsectorPlayerRelationshipFormatter {
 
@@ -47,39 +28,11 @@ public final class StarsectorPlayerRelationshipFormatter {
 
     public static RelationshipSummary formatPlayerRelationship(FactionAPI faction) {
 
-        if (faction == null) {
-            return RelationshipSummary.createEmptySummary();
-        }
-
-        var relationship = faction.getRelToPlayer();
-
-        if (relationship != null) {
-
-            var level = relationship.getLevel();
-
-            if (level != null) {
-
-                return new RelationshipSummary(
-                    formatRelationshipDescription(level, relationship.getRepInt()),
-                    relationship.getRelColor());
-            }
-        }
-
-        var rel = faction.getRelationship(Factions.PLAYER);
-        var level = RepLevel.getLevelFor(rel);
-
-        if (level == null) {
-            return RelationshipSummary.createEmptySummary();
-        }
-        var repInt = RepLevel.getRepInt(rel);
-        var colour = faction.getRelColor(Factions.PLAYER);
-
-        if (colour == null) {
-            colour = Misc.getRelColor(rel);
-        }
-        return new RelationshipSummary(
-            formatRelationshipDescription(level, repInt),
-            colour);
+        return StarsectorPlayerStandings.readPlayerStanding(faction)
+            .map(standing -> new RelationshipSummary(
+                formatRelationshipDescription(standing.level(), standing.reputation()),
+                standing.colour()))
+            .orElseGet(RelationshipSummary::createEmptySummary);
     }
 
     private static String formatRelationshipDescription(RepLevel level, int repInt) {
