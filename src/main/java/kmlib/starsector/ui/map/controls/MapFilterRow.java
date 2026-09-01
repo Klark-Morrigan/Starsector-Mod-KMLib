@@ -10,9 +10,9 @@ package kmlib.starsector.ui.map.controls;
  * attached to: two reads a frame apart can hand back different rows, and a control appended against
  * one of them while the other is on screen is appended to nothing the player can see.
  *
- * <p>The widget stays wrapped rather than being handed out. Its class is obfuscated, so nothing
- * outside this package could name it in a signature anyway - but the wrapper is what says that
- * writing into the row is this package's business, and that a caller holding one is holding an
+ * <p>The widget stays wrapped rather than being handed out beyond this package. Its class is
+ * obfuscated, so nothing outside could name it in a signature anyway - but the wrapper is what says
+ * that writing into the row is this package's business, and that a caller holding one is holding an
  * attachment point rather than a widget to reach into.
  *
  * <p>What such a caller can ask is which row it has, and it asks by identity: the row is rebuilt
@@ -50,5 +50,15 @@ public final class MapFilterRow {
     public boolean isSameRowAs(MapFilterRow otherRow) {
 
         return otherRow != null && otherRow.rowWidget == rowWidget;
+    }
+
+    /**
+     * The widget itself, for the writes in this package that have to reach into it.
+     *
+     * @return the live row widget
+     */
+    Object getRowWidget() {
+
+        return rowWidget;
     }
 }

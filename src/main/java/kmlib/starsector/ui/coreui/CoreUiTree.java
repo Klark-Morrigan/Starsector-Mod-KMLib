@@ -18,8 +18,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * {@link ReflectionUtils}, the ecosystem's proven bypass of the game's script-classloader
  * reflection ban - it drives {@code java.lang.reflect} through method handles, so no reflect type
  * is named in mod code. Names rather than casts because the tab classes carry illegal member names
- * an obfuscated build leaves unwritable in Java source. This is the only place in the library that
- * names that dependency, so a breaking change in it is answered here rather than at each probe.
+ * an obfuscated build leaves unwritable in Java source. This package is the only place in the
+ * library that names that dependency - here for the hops taken by name, and in
+ * {@link CoreUiMethods} for the members that have to be recognised by their shape - so a breaking
+ * change in it is answered in one place rather than at each probe.
  *
  * <p>Names no tab and no screen. Every hop it takes is one the core UI offers whatever tab is up,
  * which is why it sits in a package of its own rather than beside any one screen's probes: a probe
