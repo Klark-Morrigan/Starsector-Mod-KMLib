@@ -61,47 +61,24 @@ public final class MapFilterToggle {
     /**
      * Stands a toggle at the end of a row, at the size that row lays its own buttons at.
      *
+     * @param row       the row to append to
      * @param label     the words on the button
      * @param onToggled what to run when it is clicked, which is called after the button has already
      *                  flipped its own state - so a caller reads that state back off the handle
      *                  returned here rather than tracking it
-     * @param row       the row to append to
      * @return the handle to drive it by, or null when the row cannot be measured, has no room left,
      *         or is not a shape a button can be built on - each of which is logged once and none of
      *         which is an error, the row being somebody else's
      */
     public static MapFilterToggle appendToRow(MapFilterRow row, String label, Runnable onToggled) {
 
-        var rowBox = row.readBox();
-        var lastButtonBox = row.readLastButtonBox();
-
-        // A row the layout never placed, or one holding nothing to take a width from. Both leave
-        // nothing to match, and a button laid at a guess would be the one thing on the row that did
-        // not look like its neighbours.
-        if (rowBox == null || lastButtonBox == null) {
-            WARNING.warnOnce(
-                "The map's filter row could not be measured, so no control is appended to it.");
-            return null;
-        }
-
-        var buttonWidth = lastButtonBox.width();
-        var buttonHeight = rowBox.height();
-
-        if (buttonWidth <= 0f || buttonHeight <= 0f) {
-            WARNING.warnOnce(
-                "The map's filter row measures to nothing, so no control is appended to it.");
-            return null;
-        }
-
-        if (computeFreeWidthOf(rowBox, lastButtonBox) < BUTTON_GAP + buttonWidth) {
-            WARNING.warnOnce(
-                "The map's filter row has no room left for another control; it is left as it was "
-                    + "found.");
+        var buttonSize = measureButtonFor(row);
+        if (buttonSize == null) {
             return null;
         }
 
         var appendedButton = VanillaToggleFactory.appendToggle(
-            row, label, buttonWidth, buttonHeight, onToggled);
+            row, label, buttonSize.width(), buttonSize.height(), onToggled);
 
         return adoptAppendedButton(row, appendedButton);
     }
@@ -155,6 +132,42 @@ public final class MapFilterToggle {
         return rowBox.width() - usedWidth;
     }
 
+    // How big a control on this row has to be, or nothing where the row will not take one. The size
+    // and the room are answered together because they are one decision - whether this row is fit for
+    // a control at all - and because the three ways of failing it are one piece of news to whoever
+    // asked, which is why they share a warning as well as an answer.
+    private static ButtonSize measureButtonFor(MapFilterRow row) {
+
+        var rowBox = row.readBox();
+        var lastButtonBox = row.readLastButtonBox();
+
+        // A row the layout never placed, or one holding nothing to take a width from. Both leave
+        // nothing to match, and a button laid at a guess would be the one thing on the row that did
+        // not look like its neighbours.
+        if (rowBox == null || lastButtonBox == null) {
+            WARNING.warnOnce(
+                "The map's filter row could not be measured, so no control is appended to it.");
+            return null;
+        }
+
+        var buttonSize = new ButtonSize(lastButtonBox.width(), rowBox.height());
+
+        if (buttonSize.width() <= 0f || buttonSize.height() <= 0f) {
+            WARNING.warnOnce(
+                "The map's filter row measures to nothing, so no control is appended to it.");
+            return null;
+        }
+
+        if (computeFreeWidthOf(rowBox, lastButtonBox) < BUTTON_GAP + buttonSize.width()) {
+            WARNING.warnOnce(
+                "The map's filter row has no room left for another control; it is left as it was "
+                    + "found.");
+            return null;
+        }
+
+        return buttonSize;
+    }
+
     // The button as something whose ticked state can be read and written. The game's own filter
     // buttons publish that through the modding interface, so it is asked of them through it rather
     // than through a second reach by name.
@@ -177,5 +190,13 @@ public final class MapFilterToggle {
         }
 
         return null;
+    }
+
+    // How big a control on the row has to be. The two travel together because they are one
+    // measurement taken off one row, and a caller holding them apart could pair a width read from a
+    // row with a height read from the one that replaced it.
+    private record ButtonSize(
+        float width,
+        float height) {
     }
 }

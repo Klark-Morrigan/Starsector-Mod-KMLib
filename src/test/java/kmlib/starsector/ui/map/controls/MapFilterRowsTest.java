@@ -33,8 +33,8 @@ class MapFilterRowsTest {
             // Checked against a second, identical row as well as against the right one, because the
             // handle is the only way to observe which row came back: an identity test that answered
             // yes to everything would let this pass while the wrong row was resolved.
-            var rowFake = new MapFilterRowFake("Starscape", "Fuel range");
-            var otherRowFake = new MapFilterRowFake("Starscape", "Fuel range");
+            var rowFake = MapFilterRowFake.createMapScreenStrip("Starscape", "Fuel range");
+            var otherRowFake = MapFilterRowFake.createMapScreenStrip("Starscape", "Fuel range");
 
             var resolvedRow = MapFilterRows.resolveMapFilterRowOf(new FilteredMapWidgetFake(rowFake));
 
@@ -80,8 +80,8 @@ class MapFilterRowsTest {
             // A mod's composited map is a map like any other and builds its own row, so the same
             // hop reaches it - which is what lets one control serve a surface KMLib did not put on
             // screen.
-            var rowFake = new MapFilterRowFake("Starscape");
-            var otherRowFake = new MapFilterRowFake("Starscape");
+            var rowFake = MapFilterRowFake.createMapScreenStrip("Starscape");
+            var otherRowFake = MapFilterRowFake.createMapScreenStrip("Starscape");
             var embeddedMap = new EmbeddedMap(new FilteredMapWidgetFake(rowFake), NO_ANCESTORS);
 
             var resolvedRow = MapFilterRows.resolveEmbeddedMapFilterRow(embeddedMap);

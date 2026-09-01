@@ -49,7 +49,7 @@ class VanillaToggleFactoryTest {
         void appendToggleStandsOneMoreButtonAtTheEndOfTheRow() {
             // The ordinary case on either screen, and the one thing the whole match is for: a row
             // the game built, with a button on the end of it that the game did not.
-            var rowFake = new MapFilterRowFake("Starscape", "Fuel range");
+            var rowFake = MapFilterRowFake.createMapScreenStrip("Starscape", "Fuel range");
 
             var button = appendToggleTo(rowFake, DOES_NOTHING);
 
@@ -65,7 +65,7 @@ class VanillaToggleFactoryTest {
             // Both halves of the redirect. The row answers a click by rewriting all eight of the
             // game's filter settings from its own toggles, so a button still reporting there would
             // spend every click writing the player's map filters back over themselves.
-            var rowFake = new MapFilterRowFake("Starscape");
+            var rowFake = MapFilterRowFake.createMapScreenStrip("Starscape");
             var clickCount = new AtomicInteger();
 
             var button = (MapFilterButtonFake) appendToggleTo(rowFake, clickCount::incrementAndGet);

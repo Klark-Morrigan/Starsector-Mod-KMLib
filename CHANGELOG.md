@@ -248,8 +248,12 @@ No Starsector API on the signature.
   `MapFilterRows` reaches the row of toggles a map is furnished from - the `M`
   screen's strip and the intel screen's map visor alike, both being one widget
   reached by one accessor off the map itself - and hands it back as a
-  `MapFilterRow`, a handle that answers which row it is rather than the widget
-  itself.
+  `MapFilterRow`, a handle that answers which row it is, and where it and the
+  last button on it were laid out, rather than the widget itself.
+  `MapFilterToggle` stands one more toggle at the end of such a row, sized off
+  the row so one path serves both screens, and declines a row it cannot measure
+  or that has no room left. What comes back reads and sets the button, and says
+  whether it is still standing on the row currently on screen.
 - **`kmlib.starsector.ui.map.icons`** - reseating a map icon once the layering
   over it settles.
 - **`kmlib.starsector.ui.map.presence`** - which campaign map surface is up

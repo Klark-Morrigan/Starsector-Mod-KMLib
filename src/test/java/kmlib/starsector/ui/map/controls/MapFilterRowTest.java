@@ -22,7 +22,7 @@ class MapFilterRowTest {
         void isSameRowAsAnswersYesForTwoHandlesOnOneRow() {
             // The common case at rest: the screen was reopened onto the same row, and whatever is
             // attached to it is still attached to what the player is looking at.
-            var rowFake = new MapFilterRowFake("Starscape", "Fuel range");
+            var rowFake = MapFilterRowFake.createMapScreenStrip("Starscape", "Fuel range");
 
             assertThat(new MapFilterRow(rowFake).isSameRowAs(new MapFilterRow(rowFake)))
                 .isTrue();
@@ -33,8 +33,8 @@ class MapFilterRowTest {
             // Two rows built the same way are still two rows, which is why the question is asked by
             // identity: a rebuilt row carries the same buttons at the same sizes as the one it
             // replaced, so anything comparing their contents would call them one.
-            assertThat(new MapFilterRow(new MapFilterRowFake("Starscape"))
-                .isSameRowAs(new MapFilterRow(new MapFilterRowFake("Starscape"))))
+            assertThat(new MapFilterRow(MapFilterRowFake.createMapScreenStrip("Starscape"))
+                .isSameRowAs(new MapFilterRow(MapFilterRowFake.createMapScreenStrip("Starscape"))))
                 .isFalse();
         }
 
@@ -42,7 +42,9 @@ class MapFilterRowTest {
         void isSameRowAsAnswersNoWhenThereIsNoRowToCompareAgainst() {
             // What a caller holds while no map is on screen. Not the same row as anything, so a
             // control attached to this one is not left believing it is still where it was put.
-            assertThat(new MapFilterRow(new MapFilterRowFake("Starscape")).isSameRowAs(null))
+            var rowFake = MapFilterRowFake.createMapScreenStrip("Starscape");
+
+            assertThat(new MapFilterRow(rowFake).isSameRowAs(null))
                 .isFalse();
         }
     }
