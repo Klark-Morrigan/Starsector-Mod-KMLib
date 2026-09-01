@@ -6,7 +6,6 @@ import kmlib.starsector.ui.layout.TooltipBoxLayout;
 import kmlib.starsector.ui.text.LabelRuns;
 import kmlib.starsector.ui.text.LabelRuns.LabelRunOffsets;
 import kmlib.starsector.ui.text.TextSpan;
-import kmlib.starsector.ui.text.TextStyle;
 import kmlib.starsector.ui.widgets.RowSlot;
 
 import java.util.ArrayList;
@@ -52,34 +51,22 @@ import java.util.function.ToDoubleFunction;
  * run and is charged to that same span, so a centred line showing a crest centres crest and words
  * together and still cannot reach past an edge.
  *
- * <p>The box is a stack of {@link TooltipSection blocks}, not of loose rows, and that is what settles the
- * spacing: two rows of one block sit a line gap apart, and two blocks the box's own section break apart.
- * Reading the parting off the structure is what keeps every parting in a box the same - a break spelled
- * as a flag on the opening row would vary with whatever line happened to open each block, so the gap
- * under a title would differ from the gap between two body blocks for no reason a reader could see.
+ * <p>The box is a stack of {@link TooltipSection blocks}, not of loose rows, and how far apart its lines
+ * stand is settled before any of this: the blocks are flattened into a {@link TooltipRowStack}, each
+ * line carrying the look it resolved and the room it takes above itself. This widget steps the placement
+ * down by exactly those two amounts, so the box is always as tall as the rows drawn into it and the
+ * grouping is spent by the time anything is placed.
  *
- * <p>The line gap itself is the style's answer for the tier of the row <em>just laid</em>
- * ({@link TooltipStyle#resolveLineGapAfter}), never for the row about to be: a run of lines at one depth
- * is what a reader takes in as a unit, so it is the run that a box tightens or opens up. Resolved from
- * the row below instead, the first line of a run would take its own tier's gap and shift the whole run
- * away from the line it belongs under.
+ * <p>That the look is a row's own rather than the box's is what lets one box hold a heading and a body
+ * line at once: a heading drawn in the game's blockier title atlas is far wider than a body line of the
+ * same size and stacks at its own height. So the line height a row occupies and the face its spans are
+ * measured on are both read per row, and a heading is measured on exactly the face it will be painted
+ * in.
  *
- * <p>Blocks nest, and the same reading settles the spacing inside one: a nested block takes the style's
- * narrower group break above itself where the nested block before it came to more than a line, and the
- * plain line gap otherwise. Spending it on the member that follows - and never above a block's first
- * member - is what keeps the parting from piling up where several groups end together, without any step
- * here having to count how many of them just closed.
- *
- * <p>Every row's own look is resolved up front from the box's {@link TooltipStyle}, because a box's rows
- * need not share a face: a heading drawn in the game's blockier title atlas is far wider than a body
- * line of the same size, and it stacks at its own height. So the line height a row occupies and the face
- * its spans are measured on are both read per row rather than threaded once through the whole layout,
- * and a heading is measured on exactly the face it will be painted in.
- *
- * <p>How tall a box comes to is answerable on its own, without laying one out, since a caller weighing
- * whether its content fits the room it has holds no cursor to place a box at and no measurer to charge
- * widths with. The two answers come off one walk of the blocks, so a box weighed as fitting is the box
- * that is then drawn.
+ * <p>How tall a box comes to is therefore answerable on its own, without laying one out - a caller
+ * weighing whether its content fits the room it has holds no cursor to place a box at and no measurer to
+ * charge widths with. Both answers come off the one stack, so a box weighed as fitting is the box that
+ * is then drawn.
  *
  * <p>Cursor-follow placement is what parts this from a docked panel: a panel pins to an edge and its
  * content is laid out to fit, where a tooltip is sized by its content and then trails the pointer,
@@ -129,16 +116,17 @@ public final class CursorTooltip {
             float cursorY,
             Rectangle screenBound) {
 
-        var stackedRows = StackedRowBinder.bindRowsToGaps(sections, style);
-        var styledRows = bindRowsToStyles(stackedRows, style, measurer);
+        var rowStack = TooltipRowStack.stackRows(sections, style);
+        var styledRows = bindRowsToStyles(rowStack.readStackedRows(), measurer);
         var crestColumnWidth = measureCrestColumnWidth(styledRows);
 
         var box = TooltipBoxLayout.computeBox(
             measureContentWidth(styledRows, crestColumnWidth),
-            measureContentHeight(stackedRows, style),
+            rowStack.measureContentHeight(),
             cursorX,
             cursorY,
             screenBound);
+
         return new TooltipLayout(
             box,
             placeRows(styledRows, box, crestColumnWidth));
@@ -151,8 +139,8 @@ public final class CursorTooltip {
      * <p>For a caller that has to know whether its content fits the room it has before it commits to
      * drawing it: a box is sized by its content and then clamped, so one taller than the region it is
      * clamped inside is drawn with its ends past the edges, and nothing on screen says what was cut off.
-     * Answered through the very walk {@link #layOut} stacks its rows by, so a height weighed here and
-     * the box later drawn cannot disagree.
+     * Answered off the very {@link TooltipRowStack} {@link #layOut} stacks its rows into, so a height
+     * weighed here and the box later drawn cannot disagree.
      *
      * <p>The height alone, and with no measurer, because that is all this question needs: how tall a box
      * stands follows from the looks its rows resolve and the room the blocks put between them, none of
@@ -164,21 +152,24 @@ public final class CursorTooltip {
      * @return the height the box would occupy, in UI units
      */
     public static float measureBoxHeight(List<TooltipSection> sections, TooltipStyle style) {
+
         return TooltipBoxLayout.computeBoxHeight(
-            measureContentHeight(StackedRowBinder.bindRowsToGaps(sections, style), style));
+            TooltipRowStack
+                .stackRows(sections, style)
+                .measureContentHeight());
     }
 
-    // Resolves each stacked row's look and binds a width measurement to it, which is what everything
-    // laid out horizontally reads. Kept apart from the stacking walk above it because only this half
-    // needs a measurer - so a caller with none can still ask how tall the same rows come to.
+    // Binds a width measurement to each stacked line, on the face that line already resolved. The one
+    // step of the layout a measurer is needed for, which is what leaves the stack itself askable by a
+    // caller holding none.
     private static List<StyledRow> bindRowsToStyles(
-            List<StackedRow> stackedRows,
-            TooltipStyle style,
+            List<TooltipRowStack.StackedRow> stackedRows,
             TextSpanMeasurer measurer) {
 
         var styledRows = new ArrayList<StyledRow>(stackedRows.size());
+
         for (var stackedRow : stackedRows) {
-            styledRows.add(StyledRow.bindRowToStyle(stackedRow, style, measurer));
+            styledRows.add(StyledRow.bindRowToStyle(stackedRow, measurer));
         }
         return styledRows;
     }
@@ -194,7 +185,9 @@ public final class CursorTooltip {
     // something other than an image reserves exactly what that thing takes and this measurement never
     // learns which kinds exist.
     private static float measureCrestColumnWidth(List<StyledRow> rows) {
+
         var widestLeadingRowSlotWidth = RowSlot.NO_WIDTH;
+
         for (var styledRow : rows) {
 
             // Only the rows that align to the column size it. A centred line holds no leading slot at
@@ -215,21 +208,6 @@ public final class CursorTooltip {
         return widestLeadingRowSlotWidth > RowSlot.NO_WIDTH
             ? widestLeadingRowSlotWidth + CREST_GAP
             : NO_CREST_COLUMN;
-    }
-
-    // How tall the rows stack: each row's own line height in this box's typography plus whatever it
-    // takes above itself. The placement below steps down by the same two amounts, so the box is always
-    // exactly as tall as the rows drawn into it.
-    //
-    // Read off the stacked rows rather than the styled ones so that the height of a box can be asked for
-    // on its own, before a measurer has been bound to anything - a caller weighing whether its content
-    // fits has no widths to charge and nothing to draw yet.
-    private static double measureContentHeight(List<StackedRow> rows, TooltipStyle style) {
-        var height = 0d;
-        for (var stackedRow : rows) {
-            height += stackedRow.measureLineHeight(style) + stackedRow.leadingGap();
-        }
-        return height;
     }
 
     // Places each row's crest, label, and value within the box, stepping down its own line height plus
@@ -297,6 +275,7 @@ public final class CursorTooltip {
         // It leads no rule either: a rule leads to a value column, and this line has left the table
         // that has one.
         if (!(styledRow.row() instanceof TooltipRow.TableRow tableRow)) {
+
             return new TooltipLayout.TooltipRowLayout(
                 rowTopY,
                 (float) styledRow.lineHeight(),
@@ -387,7 +366,9 @@ public final class CursorTooltip {
             float crestColumnWidth) {
 
         var widest = 0d;
+
         for (var styledRow : rows) {
+
             var labelSpan = measureLabelRunOffsets(styledRow).runsWidth();
             var rowWidth = styledRow.row() instanceof TooltipRow.TableRow tableRow
                 ? tableRow.indent()
@@ -414,6 +395,7 @@ public final class CursorTooltip {
     // crest column reserves for a leading image - so a crest set among a line's words and one set in its
     // gutter come out the same size whichever the caller reached for.
     private static LabelRunOffsets measureLabelRunOffsets(StyledRow styledRow) {
+
         return LabelRuns.measureRunOffsets(
             styledRow.row().labelRuns(),
             (float) styledRow.lineHeight(),
@@ -440,38 +422,10 @@ public final class CursorTooltip {
     // no column, whose width is already nothing). One source so the width measurement and the label
     // placement agree on the offset, row by row.
     private static float measureCrestOffset(TooltipRow.TableRow tableRow, float crestColumnWidth) {
+        
         return tableRow.labelPlacement() == TooltipLabelPlacement.ALIGNED_WITH_CRESTS
             ? crestColumnWidth
             : NO_CREST_COLUMN;
-    }
-
-    /**
-     * One row bound to the room it takes above itself: the flat stack a box's blocks come to, with the
-     * grouping already spent on the gaps. What a box's height is worked out from and what each row's
-     * look is then resolved onto, so a height asked for on its own and the box drawn are one walk read
-     * twice rather than two that could space the same content differently.
-     *
-     * <p>It carries no look and no measurement, because neither is needed to say where a row sits: how
-     * far a line stands from the one above it is settled by the blocks alone. That is what lets a caller
-     * holding no measurer ask how tall the box comes to.
-     *
-     * @param row        the content row as its caller authored it
-     * @param leadingGap the room taken above the row before its own line, in UI units
-     */
-    private record StackedRow(TooltipRow row, float leadingGap) {
-
-        // The height this row stacks at in a given typography. A bitmap face's size is the room one line
-        // of it needs, so the look a row resolves to answers how tall it stands as well as how it reads.
-        private double measureLineHeight(TooltipStyle style) {
-            return resolveTextStyle(style).face().size();
-        }
-
-        // The look this row's kind of line resolves to at the depth it stands - asked here rather than by
-        // each reader, so the height measurement and the width binding cannot resolve two different looks
-        // for one row and lay it out at one size while painting it at another.
-        private TextStyle resolveTextStyle(TooltipStyle style) {
-            return style.resolveStyleFor(row.lineStyle(), row.subordinationLevel());
-        }
     }
 
     /**
@@ -492,23 +446,21 @@ public final class CursorTooltip {
         float leadingGap,
         ToDoubleFunction<String> measureWidth) {
 
-        // Resolves the look for one stacked row's kind of line and binds a measurement to it. The height
-        // is the stacked row's own answer rather than a second reading of the face, so the line a row is
-        // placed on and the line the box was sized for are one statement of what a line of that look
-        // costs.
+        // Binds a measurement to one stacked row, on the look and at the height that row already
+        // resolved - neither is read a second time here, so the line a row is placed on and the line the
+        // box was sized for are one statement of what a line of that look costs.
         private static StyledRow bindRowToStyle(
-                StackedRow stackedRow,
-                TooltipStyle style,
+                TooltipRowStack.StackedRow stackedRow,
                 TextSpanMeasurer measurer) {
 
-            var textStyle = stackedRow.resolveTextStyle(style);
+            var textStyle = stackedRow.textStyle();
 
             // Measured through the style's own display text, not the authored text: a shouted line
             // measured as authored measures narrower than it paints, so the box sized from that
             // measurement would clip the text drawn into it.
             return new StyledRow(
                 stackedRow.row(),
-                stackedRow.measureLineHeight(style),
+                stackedRow.measureLineHeight(),
                 stackedRow.leadingGap(),
                 spanText -> measurer.measureSpanWidth(
                     textStyle.face(),
@@ -536,127 +488,6 @@ public final class CursorTooltip {
         // to charge it - and so the binding itself stays this record's own business.
         private double measureSpanWidth(TextSpan textSpan) {
             return measureWidth.applyAsDouble(textSpan.text());
-        }
-    }
-
-    /**
-     * The walk that flattens a box's blocks into the run of rows they draw as, resolving the room each
-     * row takes above itself once, before anything is measured or styled. What every step past it reads
-     * is that flat run rather than the blocks, which leaves the grouping a fact spent here rather than
-     * one carried on into the sizing and the placement.
-     *
-     * <p>Its own type because the two things the walk holds - the typography it resolves gaps from, and
-     * the rows bound so far - are held at every step of it and chosen by none of them. Threaded as
-     * arguments instead, each step carries both plus whatever it is working on, and the run of rows
-     * reads as an out-parameter among inputs when it is in fact what the next gap is resolved from.
-     */
-    private static final class StackedRowBinder {
-
-        // What the box's very first row takes above itself: nothing, since the box's own padding already
-        // sits there. A break spent there would pad the top edge unevenly against every other side.
-        private static final float NO_LEADING_GAP = 0f;
-
-        // Where a block's opening row sits within it. Named because the position is what makes a row the
-        // one parted from the block above, which a bare zero in the walk below would not say.
-        private static final int FIRST_ROW_OF_SECTION = 0;
-
-        // What stands above a block's first nested block: nothing, since a block's own lines are its
-        // voice rather than a sibling of the groups beneath them, so the first group hugs the lines that
-        // introduce it. Named rather than passed as a bare null, so the walk below reads as "no group
-        // closed here" instead of as an unexplained absence.
-        private static final TooltipSection NO_PRECEDING_MEMBER = null;
-
-        // The most a nested block can come to and still read as one item of a list. Past it the block
-        // broke down into an account of its own, which is what the next member is set clear of.
-        private static final int ONE_LINE = 1;
-
-        // Where the row a line gap is resolved from sits in the run bound so far: the last of them, since
-        // the gap belongs to the tier of the line just laid. Named because that position is what makes it
-        // the row being read, which a bare one subtracted from a size would not say.
-        private static final int LAST_BOUND_ROW = 1;
-
-        private final TooltipStyle style;
-        private final List<StackedRow> stackedRows = new ArrayList<>();
-
-        private StackedRowBinder(TooltipStyle style) {
-            this.style = style;
-        }
-
-        // Stacks a whole box: every block in reading order, each parted from the one above it by the
-        // style's section break. The one way in, so nothing outside can start a walk halfway through one
-        // and resolve a gap against rows that were never bound.
-        private static List<StackedRow> bindRowsToGaps(
-                List<TooltipSection> sections,
-                TooltipStyle style) {
-
-            var binder = new StackedRowBinder(style);
-            for (var section : sections) {
-
-                // The box's very first row is not asked what parts it from what came before, since
-                // nothing did: the box's own padding already sits above it, and a break spent there
-                // would pad the top edge unevenly against every other side.
-                var leadingGap = binder.stackedRows.isEmpty()
-                    ? NO_LEADING_GAP
-                    : style.spacing().sectionBreak();
-
-                binder.bindSectionRows(section, leadingGap);
-            }
-            return binder.stackedRows;
-        }
-
-        // Stacks one block and everything nested in it, in draw order: its own lines, then each member
-        // block beneath them. Recursive because the grouping is - a block nests blocks to whatever depth
-        // its subject matter has - and one walk is what keeps a group three deep spaced by the same rule
-        // as one at the top of the box.
-        //
-        // Only the block's first line is handed the parting; the rest of its lines continue what it
-        // opened, and every member works out its own from what it follows.
-        private void bindSectionRows(TooltipSection section, float leadingGap) {
-
-            var openingRows = section.openingRows();
-            for (var index = 0; index < openingRows.size(); index++) {
-
-                stackedRows.add(new StackedRow(
-                    openingRows.get(index),
-                    index == FIRST_ROW_OF_SECTION ? leadingGap : resolveGapAfterLastBoundRow()));
-            }
-            // Carried forward rather than read back out of the rows by index, since the rule is about
-            // what just ended: the block that closed above a member is the whole of what decides its gap.
-            var precedingMember = NO_PRECEDING_MEMBER;
-            for (var member : section.members()) {
-
-                bindSectionRows(member, measureMemberGap(precedingMember));
-                precedingMember = member;
-            }
-        }
-
-        // What a nested block takes above itself. The rule that turns nesting into spacing, and the one
-        // place it is decided, so a parting cannot pile up where several groups end on the same line: it
-        // is spent by the member that follows, never above the first, and only where the member before it
-        // broke down into more than a line - a run of one-line members reads as the plain list it is.
-        //
-        // Where no parting is due, the member opens at the plain gap under the line above it, which is
-        // where nearly every gap in a listing comes from: a caller that gives each entry a block of its
-        // own has no two lines sharing one block for the gap to fall between.
-        private float measureMemberGap(TooltipSection precedingMember) {
-            if (precedingMember == NO_PRECEDING_MEMBER
-                    || precedingMember.countLines() <= ONE_LINE) {
-                return resolveGapAfterLastBoundRow();
-            }
-            return style.spacing().groupBreak();
-        }
-
-        // The room a line takes above itself where no block boundary parts it from what came before: what
-        // the box's typography spends after the row just bound, resolved from that row's own tier.
-        //
-        // Read off the rows bound so far rather than handed in, because the row a gap follows is the last
-        // of them either way - whether the gap falls between two lines of one block or above a member
-        // opening beneath its parent's lines - and both callers would otherwise have to work out which
-        // row that is. There is always one: a TooltipSection carries at least one line, so a row is bound
-        // before any gap inside or beneath that block is asked for.
-        private float resolveGapAfterLastBoundRow() {
-            var lastBoundRow = stackedRows.get(stackedRows.size() - LAST_BOUND_ROW).row();
-            return style.resolveLineGapAfter(lastBoundRow.subordinationLevel());
         }
     }
 }
