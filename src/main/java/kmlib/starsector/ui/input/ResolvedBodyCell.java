@@ -37,7 +37,7 @@ record ResolvedBodyCell(
      * @return the kind of thing this cell is, in the terms a look sets its levels in
      */
     PointerArrivalTarget resolveArrivalTarget() {
-        return PanelController.isSegmentedControl(control)
+        return ControlHitResolver.isSegmentedControl(control)
             ? PointerArrivalTarget.LISTED_ITEM
             : PointerArrivalTarget.SINGLE_OPTION_CONTROL;
     }

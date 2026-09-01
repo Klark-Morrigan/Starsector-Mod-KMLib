@@ -537,7 +537,7 @@ public final class TabPanelController {
         // to answer, or pressing it reads as a panel that missed the click.
         var pressedTabIndex = resolveTabIndexAtPoint(placement, pointX, pointY);
 
-        if (pressedTabIndex == PanelController.NO_CELL_RESOLVED) {
+        if (pressedTabIndex == ControlHitResolver.NO_CELL_RESOLVED) {
             return false;
         }
         // Held rather than self-timed: the lift reports a press the player is still making, so it waits at
@@ -548,7 +548,7 @@ public final class TabPanelController {
         // tabs row carries no reselect field and so reads as INERT, which is that rule. Split from the lift
         // because the two report different things, and only this one has a reason to do nothing; the answer
         // it returns is dropped, the lift above having already recorded which tab the player pressed.
-        PanelController.activateCellIfActionable(placement.tabsHeader(), pressedTabIndex);
+        ControlActivation.activateCellIfActionable(placement.tabsHeader(), pressedTabIndex);
         return true;
     }
 
@@ -642,7 +642,7 @@ public final class TabPanelController {
      *
      * <p>It answers geometry and visibility and nothing else. Whether pressing that tab would <em>do</em>
      * anything is the press path's own question, settled after this by {@link
-     * PanelController#activateCellIfActionable} - which is what lets the lit tab light while firing nothing.
+     * ControlActivation#activateCellIfActionable} - which is what lets the lit tab light while firing nothing.
      * A resolver that folded the two together would take that shade away, the sidebar's look having the
      * resting and the selected tab converge on one hovered shade with the underline left to mark the
      * selection.
@@ -668,12 +668,12 @@ public final class TabPanelController {
 
         // A panel presenting no tabs is a pointer on no tab, whatever is laid out under it.
         if (!isPresentingTabsOf(placement)) {
-            return PanelController.NO_CELL_RESOLVED;
+            return ControlHitResolver.NO_CELL_RESOLVED;
         }
         // Through the body's own control resolver rather than a hit-test of the header's own: the header is
         // an ordinary laid-out control, and one mapping of a row miss onto "no cell" is one place for the
         // unboxing trap that mapping carries to be got wrong.
-        return PanelController.resolveHitCell(placement.tabsHeader(), pointX, pointY);
+        return ControlHitResolver.resolveHitCell(placement.tabsHeader(), pointX, pointY);
     }
 
     // Which body cell a point falls on, given what the panel is currently drawing - the body's half of the
@@ -690,7 +690,7 @@ public final class TabPanelController {
             float pointX,
             float pointY) {
 
-        var hitCell = PanelController.resolveHitBodyCell(placement.body(), pointX, pointY);
+        var hitCell = ControlHitResolver.resolveHitBodyCell(placement.body(), pointX, pointY);
 
         return hitCell == null
             ? null
