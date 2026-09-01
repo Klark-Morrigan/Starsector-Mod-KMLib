@@ -416,10 +416,9 @@ package can hold, what sits there is not.
 [`RevisionMemo`](widgets/lists/RevisionMemo.java) is where a consumer holds the resolved
 list between frames, since a body is built twice a frame (render and hit-test) and a picker
 list is typically a full pass over whatever the consumer scores its items from. What belongs
-in the revision is the caller's judgement; the key also carries the sector identity, weakly
-held, which is the half worth having once rather than per mod - a save reloaded in the same
-session is a fresh sector whose revision may well match the last, so without it the picker
-serves the previous save's items.
+in the revision is the caller's judgement, and how long a memo lives is the consumer's: it
+keys on the scope and the revision alone, so a list belonging to something that comes and goes
+is held in a memo per such thing and discarded with it.
 
 The division that makes all of it shareable is that **this package owns the model and the
 resolution rule; the consuming mod owns where the answer is kept**. Nothing here reads or

@@ -124,10 +124,11 @@ cannot be cleared by whichever consumer happens to look first.
 is the other half of that convention, and it is a primitive rather than a cache of
 this library's own for the same reason: the consumer supplies both the revision and
 the walk, so what is held and when it goes stale is entirely the consumer's
-declaration. It exists here because one part of the key is not the consumer's to
-get right by luck - the memo holds the sector it was built against, weakly, so a
-save reloaded in the same session recomputes rather than serving the previous save's
-value under a revision that happens to match.
+declaration. Its lifetime is the consumer's too - it keys on the scope and the
+revision and nothing else, so a value belonging to something that comes and goes is
+held in a memo per such thing, and `discardValue` is what releasing one calls. A
+holder going away moves no revision, which is why that discard exists rather than
+being inferable from the key.
 
 ## What is deliberately not cached
 
