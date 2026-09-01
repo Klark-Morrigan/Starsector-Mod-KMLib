@@ -87,7 +87,7 @@ final class SortSelectorControlTest {
             var selector = buildSelector(DEFAULT_MODE, DEFAULT_MODE.defaultDirection());
 
             assertThat(selector.labels())
-                .containsExactly("Alpha", "Severity", "Radius");
+                .containsExactly("Alpha", "Severity", "Radius", "Spread");
         }
 
         @Test

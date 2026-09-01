@@ -7,6 +7,7 @@ import kmlib.starsector.ui.text.TextSpan;
 import kmlib.starsector.ui.widgets.LabelledRow;
 import kmlib.starsector.ui.widgets.RowSlot;
 
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -137,8 +138,8 @@ public final class ListPickerControl {
     //
     // An item with no resolved name draws as an unlabelled row rather than a null the width measurer
     // would choke on; an item with no crest leads with nothing; and every row carries the metric's
-    // value (a zero metric shows "0" rather than dropping the column), which for a mode with no
-    // numeric metric is blank throughout and the rows read as a plain list.
+    // value (a zero metric shows "0" rather than dropping the column), which for a mode with no value
+    // to show is an unfilled slot throughout and the rows read as a plain list.
     //
     // A row the caller marked as receding draws all three parts back at once, since a greyed name
     // beside a full-strength crest reads as a rendering slip rather than as a state. Both tones are
@@ -177,10 +178,35 @@ public final class ListPickerControl {
                 .leadsWith(crestSpritePath == null
                     ? RowSlot.EMPTY
                     : new RowSlot.Image(crestSpritePath, crestTint))
-                .trailsWith(new RowSlot.Text(
-                    new TextSpan(sortMode.resolveTrailingValue(item), rowColour))));
+                .trailsWith(buildTrailingRowSlot(sortMode, item, rowColour, isReceding)));
         }
         return itemRows;
+    }
+
+    // The active mode's value for one item as the slot that draws it: nothing at all where the mode
+    // shows no value, one run where it shows a plain one, and several runs where the value is picked
+    // out in shades of its own. Which of the three is decided here rather than by the mode, so a mode
+    // states only what its value reads as and every stack of rows spells "no value" the one way.
+    //
+    // A receding row's value is re-coloured here rather than left to the mode, so a mode that colours
+    // its own runs cannot draw a full-strength value beside a greyed name - the same rule the crest
+    // tint follows. The mode is handed the row's own tone as its default either way, so a mode with no
+    // colour opinion recedes without the override touching anything.
+    private static <T extends SelectableListItem> RowSlot buildTrailingRowSlot(
+            ListSortMode<T> sortMode,
+            T item,
+            Color rowColour,
+            boolean isReceding) {
+
+        var valueRuns = sortMode.resolveTrailingRuns(item, rowColour);
+        if (valueRuns.isEmpty()) {
+            return RowSlot.EMPTY;
+        }
+
+        var drawnRuns = isReceding ? recedeRuns(valueRuns, rowColour) : valueRuns;
+        return drawnRuns.size() == 1
+            ? new RowSlot.Text(drawnRuns.get(0))
+            : new RowSlot.TextRuns(drawnRuns);
     }
 
     // Reports the clicked item as the spotlighted one, or reports a clear when the click landed on
@@ -201,6 +227,15 @@ public final class ListPickerControl {
         } else {
             pickerStore.storeItemPick(items.get(cellIndex).itemId());
         }
+    }
+
+    // Every run of a value in the receded tone. Each run's own spacing is carried over, so a value
+    // whose runs butt against one another still reads as one word once it has receded.
+    private static List<TextSpan> recedeRuns(List<TextSpan> valueRuns, Color recededColour) {
+        return valueRuns
+            .stream()
+            .map(run -> new TextSpan(run.text(), recededColour, run.isJoinedToPreviousRun()))
+            .toList();
     }
 
     // The lit row: the index of the item whose id is selected, or no selection when that id is

@@ -1,6 +1,10 @@
 package kmlib.starsector.ui.widgets.lists;
 
+import kmlib.starsector.ui.text.TextSpan;
+
+import java.awt.Color;
 import java.util.Comparator;
+import java.util.List;
 
 /**
  * One named mode a picker list can be ranked by - the seam between this package's sort mechanism and
@@ -51,14 +55,23 @@ public interface ListSortMode<T> {
     Comparator<T> comparator(SortDirection direction);
 
     /**
-     * The trailing value the picker draws on an item's row under this mode - the number the list
-     * is visibly ranked by, so the rows read as a sorted table. Defaults to blank for a mode with
-     * no number to show (a by-name mode), under which the rows read as a plain list.
+     * The trailing value the picker draws on an item's row under this mode - what the list is
+     * visibly ranked by, so the rows read as a sorted table - given as the runs it is composed of.
+     * Defaults to no runs for a mode with nothing to show (a by-name mode), under which the rows
+     * read as a plain list.
      *
-     * @param item the listed item
-     * @return the mode's value for the item as text, or "" when this mode shows none
+     * <p>Runs rather than one string, because a value is not always a plain number in the row's own
+     * colour: a reading the engine itself gives a colour to, or a range whose two ends read
+     * differently, needs its own shades inside the one slot. A mode with no colour opinion answers a
+     * single run in {@code defaultColour} and draws exactly as a plain value does, so nothing is
+     * paid for the capability where it is not used.
+     *
+     * @param item          the listed item
+     * @param defaultColour the colour a run with no shade of its own draws in - the tone the rest of
+     *                      the row takes, so an ordinary value matches the name beside it
+     * @return the value's runs in reading order, or an empty list when this mode shows none
      */
-    default String resolveTrailingValue(T item) {
-        return "";
+    default List<TextSpan> resolveTrailingRuns(T item, Color defaultColour) {
+        return List.of();
     }
 }

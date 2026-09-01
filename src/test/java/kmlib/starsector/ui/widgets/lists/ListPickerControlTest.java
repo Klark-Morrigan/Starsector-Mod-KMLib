@@ -254,13 +254,40 @@ final class ListPickerControlTest {
         }
 
         @Test
-        void buildPickerLeavesTheValuesBlankUnderAModeThatShowsNone() {
-            // A mode that declares no trailing value leaves every row blank, so the list reads as a
-            // plain one rather than a ranked table.
+        void buildPickerLeavesTheValueSlotUnfilledUnderAModeThatShowsNone() {
+            // A mode that answers no runs leaves every row's value column unfilled, so the list reads
+            // as a plain one rather than a ranked table - and the absence is the empty slot rather
+            // than a blank run, so nothing downstream has to read an empty string as "nothing here".
             var picker = buildPickerFor(build(ANOMALIES, null, AnomalySortMode.ALPHA));
 
             assertThat(readTrailingRowSlots(picker))
-                .containsExactly(readValueRowSlot(""), readValueRowSlot(""));
+                .containsExactly(RowSlot.EMPTY, RowSlot.EMPTY);
+        }
+
+        @Test
+        void buildPickerDrawsAMultiRunValueInTheModesOwnColours() {
+            // A mode whose value is picked out in shades of its own reaches the row as several runs,
+            // each keeping the colour the mode gave it - the row's own tone governs only the runs a
+            // mode left to it.
+            var picker = buildPickerFor(build(List.of(STORM), null, AnomalySortMode.SPREAD));
+
+            assertThat(picker.labelledRows().get(0).trailingRowSlot())
+                .isEqualTo(new RowSlot.TextRuns(List.of(
+                    new TextSpan("9", AnomalySortMode.LOW_END_COLOUR),
+                    new TextSpan("8", AnomalySortMode.HIGH_END_COLOUR))));
+        }
+
+        @Test
+        void buildPickerRecedesAMultiRunValueOverTheModesOwnColours() {
+            // The receded tone wins over a mode's own shades: a row that reads back cannot keep a
+            // full-strength value beside its greyed name, which is the same rule its crest follows.
+            var lapsed = new Anomaly("lapsed_1", "Lapsed", "crest_lapsed", 4, 6, true);
+            var picker = buildPickerFor(build(List.of(lapsed), null, AnomalySortMode.SPREAD));
+
+            assertThat(picker.labelledRows().get(0).trailingRowSlot())
+                .isEqualTo(new RowSlot.TextRuns(List.of(
+                    new TextSpan("4", GRAY),
+                    new TextSpan("6", GRAY))));
         }
 
         @Test

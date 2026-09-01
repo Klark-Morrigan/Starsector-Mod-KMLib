@@ -1,14 +1,20 @@
 package kmlib.starsector.ui.widgets.lists;
 
+import kmlib.starsector.ui.text.TextSpan;
+
+import java.awt.Color;
 import java.util.Comparator;
+import java.util.List;
 
 /**
  * Test fixture: a set of sort modes declared outside this package - the stand-in for whatever a
  * consuming mod ranks its picker list by. An enum, since that is the shape a consumer is expected to
- * reach for. Alpha runs ascending by default while the two numeric modes run descending, so a suite
- * can tell a mode's own default direction from the active sort's live one. Only {@link #RADIUS}
- * declares a trailing value; the other two leave the seam's blank default, so a suite can tell a mode
- * that writes a number onto its rows from one that shows none.
+ * reach for. Alpha runs ascending by default while the numeric modes run descending, so a suite
+ * can tell a mode's own default direction from the active sort's live one.
+ *
+ * <p>The three shapes a trailing value can take are one mode apiece, so a suite can tell them apart:
+ * {@link #ALPHA} and {@link #SEVERITY} leave the seam's no-runs default, {@link #RADIUS} writes one
+ * run in the tone the row itself takes, and {@link #SPREAD} writes two runs in shades of its own.
  *
  * <p>Each label is a plain literal, which is what the seam asks for: a consumer resolves its own
  * strings and hands drawn text over, so a fixture has nothing to resolve against.
@@ -30,13 +36,35 @@ enum AnomalySortMode implements ListSortMode<Anomaly> {
         SortDirection.DESCENDING,
         Comparator.comparingInt(Anomaly::radius)) {
 
-        // The one mode that writes its number onto the rows, so a suite can tell a drawn trailing
-        // value apart from the blank the other two leave.
+        // The plain-value mode: one run in whatever tone the row itself took, so a suite can tell a
+        // drawn value apart from the unfilled slot the two blank modes leave.
         @Override
-        public String resolveTrailingValue(Anomaly anomaly) {
-            return String.valueOf(anomaly.radius());
+        public List<TextSpan> resolveTrailingRuns(Anomaly anomaly, Color defaultColour) {
+            return List.of(new TextSpan(String.valueOf(anomaly.radius()), defaultColour));
+        }
+    },
+
+    SPREAD(
+        "spread",
+        "Spread",
+        SortDirection.DESCENDING,
+        Comparator.comparingInt(anomaly -> anomaly.radius() - anomaly.severity())) {
+
+        // The multi-run mode: the two ends of the spread, each in a shade of its own rather than the
+        // row's, so a suite can tell a value that carries its own colours from one that takes the
+        // row's - and can watch the receded override win over both.
+        @Override
+        public List<TextSpan> resolveTrailingRuns(Anomaly anomaly, Color defaultColour) {
+            return List.of(
+                new TextSpan(String.valueOf(anomaly.severity()), LOW_END_COLOUR),
+                new TextSpan(String.valueOf(anomaly.radius()), HIGH_END_COLOUR));
         }
     };
+
+    // The shades SPREAD's two runs draw in - two arbitrary, distinguishable literals, since what a
+    // suite reads off them is only that the mode's own colours reached the slot rather than the row's.
+    static final Color HIGH_END_COLOUR = Color.BLUE;
+    static final Color LOW_END_COLOUR = Color.RED;
 
     private final String persistenceKey;
     private final String labelText;
