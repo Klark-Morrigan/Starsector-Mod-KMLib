@@ -54,6 +54,11 @@ public final class MapFilterToggle {
     // line. The build below keeps its own, a row it cannot recognise being news of a different kind.
     private static final SessionWarning WARNING = new SessionWarning(LOG);
 
+    // The tooltip's own holder. A control that ended up without its hover is news of a different
+    // kind from a row that would take no control at all: there is still a working box on the row,
+    // and the player is short a sentence rather than a switch.
+    private static final SessionWarning TOOLTIP_WARNING = new SessionWarning(LOG);
+
     private final MapFilterRow row;
 
     private final ButtonAPI button;
@@ -98,21 +103,32 @@ public final class MapFilterToggle {
      * <p>Above the button, which is where the row's own tooltips sit - the row runs along the
      * bottom of both screens it appears on, so anywhere else is off the edge of the display.
      *
-     * <p>Nothing is checked and nothing is reported. The engine's attachment quietly does nothing
-     * when the target is not the widget kind it expects, so a game build that reworks the row's
-     * buttons costs the tooltip and leaves the control itself working - which is the same fail-open
-     * answer every other reach in this package gives.
+     * <p>A hover the control ends up without costs the hover and nothing else, which takes two
+     * things rather than one. The engine's own attachment quietly does nothing when the target is
+     * not the widget kind it expects, so a reworked row costs the words silently; and the surface
+     * the attachment is made through is built here, so a substrate that refuses to build one is
+     * caught rather than thrown at the caller - who has a working box already standing on a row,
+     * and no way to take it off again if this were allowed to read as a failed attachment.
      *
      * @param width fixed tooltip width in pixels
      * @param body  painter invoked on every hover with the tooltip element to fill
      */
     public void attachTooltip(float width, Consumer<TooltipMakerAPI> body) {
 
-        Tooltips.attachWithOwnSurface(
-            button,
-            TooltipMakerAPI.TooltipLocation.ABOVE,
-            width,
-            body);
+        try {
+            Tooltips.attachWithOwnSurface(
+                button,
+                TooltipMakerAPI.TooltipLocation.ABOVE,
+                width,
+                body);
+
+        } catch (RuntimeException failure) {
+
+            TOOLTIP_WARNING.warnOnce(
+                "The control appended to the map's filter row could not be given a hover tooltip; "
+                    + "it is left standing without one.",
+                failure);
+        }
     }
 
     /**

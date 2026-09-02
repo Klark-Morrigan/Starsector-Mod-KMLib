@@ -323,6 +323,22 @@ class MapFilterToggleTest {
                 eq((MapFilterButtonFake) rowFake.getChildrenCopy().get(1)),
                 eq(TooltipMakerAPI.TooltipLocation.ABOVE));
         }
+
+        @Test
+        void attachTooltipLeavesTheBoxWorkingWhenNoTooltipSurfaceCanBeMade() {
+            // The box is already on the row by the time its hover is hung, and the row offers no
+            // way to take one off again - so a surface that cannot be built has to cost the words
+            // alone. Thrown at the caller instead, it would read as a control that never went up,
+            // and the next frame would append a second one beside the first.
+            var rowFake = MapFilterRowFake.createMapScreenStrip("Starscape");
+            var toggle = MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING);
+
+            toggle.attachTooltip(TOOLTIP_WIDTH, tt -> {
+                /* never reached - there is no surface to open it on */ });
+
+            toggle.setChecked(true);
+            assertThat(toggle.isChecked()).isTrue();
+        }
     }
 
     @Nested
