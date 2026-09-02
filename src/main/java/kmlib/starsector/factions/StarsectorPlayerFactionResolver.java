@@ -2,6 +2,8 @@ package kmlib.starsector.factions;
 
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.FactionAPI;
+import com.fs.starfarer.api.campaign.SectorAPI;
+import com.fs.starfarer.api.impl.campaign.ids.Factions;
 import com.fs.starfarer.api.util.Misc;
 
 import kmlib.text.KmlibStrings;
@@ -35,12 +37,15 @@ import java.util.Set;
  * <ol>
  *   <li>{@link #isPlayerFactionEstablished()} - returns {@code true}
  *       when {@code playerFaction.getDisplayName()} is NOT in the
- *       unestablished-placeholder set OR
- *       {@link Misc#getPlayerMarkets(boolean)} is non-empty. The OR is
- *       deliberate: requiring both signals would mis-classify both
- *       Nex's custom-faction-at-game-start flow (custom name before any
- *       colony exists) and vanilla's keeps-Independent-through-rename
- *       flow (default name on a real identity).</li>
+ *       unestablished-placeholder set OR the player owns a market. The
+ *       OR is deliberate: requiring both signals would mis-classify
+ *       both Nex's custom-faction-at-game-start flow (custom name
+ *       before any colony exists) and vanilla's
+ *       keeps-Independent-through-rename flow (default name on a real
+ *       identity). {@link #isPlayerFactionEstablished(SectorAPI)} asks
+ *       the same question of a named sector, for a caller drawing
+ *       something other than the sector the game is currently
+ *       running.</li>
  *   <li>{@link #resolveDisplayName(FactionAPI, String)} - a generic
  *       normaliser callers use against <em>any</em> faction. When the
  *       live display name lands in the placeholder set (or is null /
@@ -57,12 +62,14 @@ import java.util.Set;
  * assignment, and a {@code null} or empty argument resets to the
  * built-in defaults rather than silently disabling the check.
  *
- * <p>The public no-arg {@link #isPlayerFactionEstablished} reads live
- * {@code Global} / {@code Misc} state via {@link LiveSource}; a
- * package-private overload accepts an explicit
- * {@link PlayerFactionSource} so callers that already hold the two
- * inputs (player faction, "any player-owned market" flag) can bypass
- * the static reads.
+ * <p>The established-check is one rule over two inputs (player
+ * faction, "any player-owned market" flag), and where those inputs come
+ * from is {@link PlayerFactionSource}. {@link LiveSource} takes them
+ * off {@code Global} / {@code Misc}; {@link SectorSource} takes both
+ * off one named sector, so a caller drawing a second sector reports
+ * that sector's identity rather than the running game's; and the
+ * package-private overload accepts a source outright, so a caller
+ * already holding the two inputs bypasses the reads entirely.
  */
 public final class StarsectorPlayerFactionResolver {
 
@@ -122,6 +129,24 @@ public final class StarsectorPlayerFactionResolver {
      */
     public static boolean isPlayerFactionEstablished() {
         return isPlayerFactionEstablished(LiveSource.INSTANCE);
+    }
+
+    /**
+     * The same question asked of one named sector: whether the player
+     * has finalised a faction identity <em>there</em>. Both signals are
+     * read off that sector, so a caller drawing a sector the game is
+     * not currently running reports what it is looking at rather than
+     * what is loaded.
+     *
+     * @param sector the sector to ask about; no sector holds no player
+     *               identity, so it answers {@code false} rather than
+     *               throwing
+     */
+    public static boolean isPlayerFactionEstablished(SectorAPI sector) {
+        if (sector == null) {
+            return false;
+        }
+        return isPlayerFactionEstablished(new SectorSource(sector));
     }
 
     /**
@@ -198,4 +223,41 @@ public final class StarsectorPlayerFactionResolver {
         }
     }
 
+    /** Source over one named sector, backing the sector-bound entry.
+     *  Both inputs come off that sector, which is what
+     *  {@link LiveSource} cannot offer: {@code Misc.getPlayerMarkets}
+     *  reads the sector the game is running, so it answers about the
+     *  wrong one whenever the caller is drawing another. */
+    private record SectorSource(
+        SectorAPI sector) implements PlayerFactionSource {
+
+        @Override
+        public FactionAPI playerFaction() {
+
+            return sector.getPlayerFaction();
+        }
+
+        @Override
+        public boolean ownsAnyMarket() {
+
+            var playerFaction = sector.getFaction(Factions.PLAYER);
+            var economy = sector.getEconomy();
+
+            // A sector with no economy or no player faction registered
+            // has no market to own, which a load in progress can both
+            // be true of.
+            if (playerFaction == null || economy == null) {
+                return false;
+            }
+            for (var market : economy.getMarketsCopy()) {
+                // The test Misc.getPlayerMarkets(false) applies, against
+                // this sector's own faction: owned by "player" itself,
+                // not merely flown by the player under another flag.
+                if (market.getFaction() == playerFaction) {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
 }

@@ -906,6 +906,12 @@ set (`Independent` / `player` / `Player`):
   The OR is deliberate: requiring both signals would mis-classify both
   Nex's custom-faction-at-game-start flow and vanilla's
   keeps-Independent-through-rename flow.
+  `isPlayerFactionEstablished(sector)` is the same rule with both
+  signals read off a named sector - the display name off its player
+  faction, the market off its own economy, applying the test
+  `Misc.getPlayerMarkets(false)` applies. It exists because that helper
+  is bound to `Global.getSector()`: a caller drawing anything but the
+  running sector would otherwise be told about the wrong one.
 - `resolveDisplayName(faction, fallback)` returns the live display
   name when populated and not in the placeholder set, else the
   caller's `fallback`. Generic - operates on any faction, not just the

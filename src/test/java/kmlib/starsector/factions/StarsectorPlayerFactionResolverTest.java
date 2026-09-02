@@ -1,6 +1,9 @@
 package kmlib.starsector.factions;
 
 import com.fs.starfarer.api.campaign.FactionAPI;
+import com.fs.starfarer.api.campaign.SectorAPI;
+import com.fs.starfarer.api.campaign.econ.EconomyAPI;
+import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
 import kmlib.starsector.factions.StarsectorPlayerFactionResolver.PlayerFactionSource;
 
@@ -10,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -97,6 +101,45 @@ class StarsectorPlayerFactionResolverTest {
                 });
 
             assertThat(established).isFalse();
+        }
+
+        @Test
+        void establishedIsFalseForNoSector() {
+            // The sector-bound form of the same question: nothing to ask
+            // holds no player identity, so it answers rather than throws.
+            assertThat(StarsectorPlayerFactionResolver.isPlayerFactionEstablished((SectorAPI) null))
+                .isFalse();
+        }
+
+        @Test
+        void establishedReadsTheDisplayNameOfTheNamedSector() {
+            assertThat(StarsectorPlayerFactionResolver.isPlayerFactionEstablished(
+                stubSector("Concord", false))).isTrue();
+            assertThat(StarsectorPlayerFactionResolver.isPlayerFactionEstablished(
+                stubSector("Independent", false))).isFalse();
+        }
+
+        @Test
+        void establishedReadsTheMarketsOfTheNamedSector() {
+            // Default name, so the market signal is what decides it - and
+            // the market walked is that sector's, which is the whole point
+            // of the overload: Misc reads the sector the game is running.
+            assertThat(StarsectorPlayerFactionResolver.isPlayerFactionEstablished(
+                stubSector("Independent", true))).isTrue();
+        }
+
+        @Test
+        void establishedIsFalseWhenTheSectorHasNoEconomy() {
+            // A load in progress: the sector exists, the economy does not.
+            var playerFactionMock = Mockito.mock(FactionAPI.class);
+            Mockito.when(playerFactionMock.getDisplayName()).thenReturn("Independent");
+
+            var sectorMock = Mockito.mock(SectorAPI.class);
+            Mockito.when(sectorMock.getPlayerFaction()).thenReturn(playerFactionMock);
+            Mockito.when(sectorMock.getFaction("player")).thenReturn(playerFactionMock);
+
+            assertThat(StarsectorPlayerFactionResolver.isPlayerFactionEstablished(sectorMock))
+                .isFalse();
         }
     }
 
@@ -231,6 +274,32 @@ class StarsectorPlayerFactionResolverTest {
                 // ok
             }
         }
+    }
+
+    /**
+     * A sector holding one market, owned either by its player faction or
+     * by somebody else - the two inputs the established-check reads,
+     * both taken off the sector rather than off the running game.
+     */
+    private static SectorAPI stubSector(String displayName, boolean ownsMarket) {
+        var playerFactionMock = Mockito.mock(FactionAPI.class);
+        Mockito.when(playerFactionMock.getDisplayName()).thenReturn(displayName);
+
+        var otherFactionMock = Mockito.mock(FactionAPI.class);
+        var marketMock = Mockito.mock(MarketAPI.class);
+        Mockito.when(marketMock.getFaction())
+            .thenReturn(ownsMarket ? playerFactionMock : otherFactionMock);
+
+        var economyMock = Mockito.mock(EconomyAPI.class);
+        Mockito.when(economyMock.getMarketsCopy()).thenReturn(List.of(marketMock));
+
+        var sectorMock = Mockito.mock(SectorAPI.class);
+        Mockito.when(sectorMock.getPlayerFaction()).thenReturn(playerFactionMock);
+        // The literal id vanilla's own market walk looks the player up by.
+        Mockito.when(sectorMock.getFaction("player")).thenReturn(playerFactionMock);
+        Mockito.when(sectorMock.getEconomy()).thenReturn(economyMock);
+
+        return sectorMock;
     }
 
     private static PlayerFactionSource stubSource(String displayName, boolean ownsMarket) {
