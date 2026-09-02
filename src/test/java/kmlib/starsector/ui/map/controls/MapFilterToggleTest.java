@@ -1,14 +1,12 @@
 package kmlib.starsector.ui.map.controls;
 
-import com.fs.starfarer.api.Global;
-import com.fs.starfarer.api.SettingsAPI;
 import com.fs.starfarer.api.input.InputEventAPI;
-import com.fs.starfarer.api.ui.CustomPanelAPI;
 import com.fs.starfarer.api.ui.PositionAPI;
 import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import com.fs.starfarer.api.ui.UIComponentAPI;
 
 import kmlib.math.geometry.Rectangle;
+import kmlib.testfixtures.starsector.settings.StarsectorSettingsFake;
 import kmlib.testfixtures.starsector.ui.layout.PositionFake;
 import kmlib.testfixtures.starsector.ui.map.controls.MapFilterActionListenerFake;
 import kmlib.testfixtures.starsector.ui.map.controls.MapFilterButtonFake;
@@ -21,12 +19,9 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyFloat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * Pins how a control is fitted to a row it did not build: that it comes out at the row's own
@@ -313,10 +308,14 @@ class MapFilterToggleTest {
             var toggle = MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING);
             var elementMock = mock(TooltipMakerAPI.class);
 
-            withSettingsCreating(
-                elementMock,
-                () -> toggle.attachTooltip(TOOLTIP_WIDTH, tt -> {
-                    /* unused for this assertion */ }));
+            StarsectorSettingsFake.installSettings(
+                StarsectorSettingsFake.EMPTY_STRINGS, () -> elementMock);
+            try {
+                toggle.attachTooltip(TOOLTIP_WIDTH, tt -> {
+                    /* unused for this assertion */ });
+            } finally {
+                StarsectorSettingsFake.clearSettings();
+            }
 
             verify(elementMock).addTooltipTo(
                 any(TooltipMakerAPI.TooltipCreator.class),
@@ -358,26 +357,6 @@ class MapFilterToggleTest {
                 .isTrue();
             assertThat(rowFake.countClicksHeard())
                 .isZero();
-        }
-    }
-
-    // Runs the subject against a settings stand-in whose panels hand back one known element. The
-    // toggle makes its own tooltip surface, so that element is the only place the attachment can be
-    // seen from outside. Global.setSettings is the engine's own seam, so no static mocking is needed.
-    private static void withSettingsCreating(TooltipMakerAPI element, Runnable subject) {
-        var panelMock = mock(CustomPanelAPI.class);
-        when(panelMock.createUIElement(anyFloat(), anyFloat(), anyBoolean()))
-            .thenReturn(element);
-
-        var settingsMock = mock(SettingsAPI.class);
-        when(settingsMock.createCustom(anyFloat(), anyFloat(), any()))
-            .thenReturn(panelMock);
-
-        Global.setSettings(settingsMock);
-        try {
-            subject.run();
-        } finally {
-            Global.setSettings(null);
         }
     }
 

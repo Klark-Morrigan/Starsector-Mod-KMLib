@@ -1,11 +1,12 @@
 package kmlib.starsector.ui.tooltip;
 
-import com.fs.starfarer.api.Global;
-import com.fs.starfarer.api.SettingsAPI;
-import com.fs.starfarer.api.ui.CustomPanelAPI;
 import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import com.fs.starfarer.api.ui.UIComponentAPI;
 
+import kmlib.testfixtures.starsector.settings.StarsectorSettingsFake;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -16,12 +17,9 @@ import java.util.function.Consumer;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyFloat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * Pins {@link Tooltips#attach} against the {@code addTooltipTo} contract:
@@ -152,17 +150,31 @@ class TooltipsTest {
     @Nested
     class AttachWithOwnSurface {
 
+        // The one element every panel this settings makes hands back, which is the only place the
+        // subject's own surface can be observed from - it never reaches the caller.
+        private final TooltipMakerAPI elementMock = mock(TooltipMakerAPI.class);
+
+        @BeforeEach
+        void installStarsectorSettings() {
+            StarsectorSettingsFake.installSettings(
+                StarsectorSettingsFake.EMPTY_STRINGS, () -> elementMock);
+        }
+
+        @AfterEach
+        void clearStarsectorSettings() {
+            StarsectorSettingsFake.clearSettings();
+        }
+
         @Test
         void attachWithOwnSurfaceRegistersTheCreatorOnAnElementItMakesForTheCall() {
-            var elementMock = mock(TooltipMakerAPI.class);
             var targetMock = mock(UIComponentAPI.class);
 
-            withSettingsCreating(elementMock, () -> Tooltips.attachWithOwnSurface(
+            Tooltips.attachWithOwnSurface(
                 targetMock,
                 TooltipMakerAPI.TooltipLocation.ABOVE,
                 WIDTH,
                 tt -> {
-                    /* unused for this assertion */ }));
+                    /* unused for this assertion */ });
 
             // The caller never sees the element, so the only evidence it was made and used is the
             // call landing on it with the caller's own target and edge.
@@ -174,16 +186,15 @@ class TooltipsTest {
 
         @Test
         void attachWithOwnSurfaceRegistersACreatorAnsweringTheEngineAsTheParentFormDoes() {
-            var elementMock = mock(TooltipMakerAPI.class);
             var targetMock = mock(UIComponentAPI.class);
             var engineTooltipMock = mock(TooltipMakerAPI.class);
             var invocations = new AtomicInteger();
 
-            withSettingsCreating(elementMock, () -> Tooltips.attachWithOwnSurface(
+            Tooltips.attachWithOwnSurface(
                 targetMock,
                 TooltipMakerAPI.TooltipLocation.ABOVE,
                 WIDTH,
-                tt -> invocations.incrementAndGet()));
+                tt -> invocations.incrementAndGet());
 
             var creator = captureCreator(
                 elementMock, targetMock, TooltipMakerAPI.TooltipLocation.ABOVE);
@@ -213,26 +224,6 @@ class TooltipsTest {
             assertThatThrownBy(() -> Tooltips.attachWithOwnSurface(
                 targetMock, TooltipMakerAPI.TooltipLocation.ABOVE, WIDTH, null))
                 .isInstanceOf(NullPointerException.class);
-        }
-    }
-
-    // Runs the subject against a settings stand-in whose panels hand back one known element, which
-    // is what lets a test see the surface the subject makes for itself. Global.setSettings is the
-    // engine's own seam, so no static mocking is needed.
-    private static void withSettingsCreating(TooltipMakerAPI element, Runnable subject) {
-        var panelMock = mock(CustomPanelAPI.class);
-        when(panelMock.createUIElement(anyFloat(), anyFloat(), anyBoolean()))
-            .thenReturn(element);
-
-        var settingsMock = mock(SettingsAPI.class);
-        when(settingsMock.createCustom(anyFloat(), anyFloat(), any()))
-            .thenReturn(panelMock);
-
-        Global.setSettings(settingsMock);
-        try {
-            subject.run();
-        } finally {
-            Global.setSettings(null);
         }
     }
 

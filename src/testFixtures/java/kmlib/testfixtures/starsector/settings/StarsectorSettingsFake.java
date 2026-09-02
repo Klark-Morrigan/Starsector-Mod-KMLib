@@ -3,6 +3,8 @@ package kmlib.testfixtures.starsector.settings;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.ModManagerAPI;
 import com.fs.starfarer.api.SettingsAPI;
+import com.fs.starfarer.api.ui.CustomPanelAPI;
+import com.fs.starfarer.api.ui.TooltipMakerAPI;
 
 import java.awt.Color;
 import java.lang.reflect.InvocationHandler;
@@ -73,6 +75,20 @@ public final class StarsectorSettingsFake {
         boolean isEnabled(String modId);
     }
 
+    /**
+     * Pluggable adapter for the element a panel built through {@link SettingsAPI#createCustom}
+     * hands back from {@code createUIElement}, for a test whose subject makes a tooltip surface of
+     * its own rather than being handed one. That surface never reaches the caller, so the element
+     * named here is the only place such an attachment can be observed from outside.
+     */
+    @FunctionalInterface
+    public interface UiElementSource {
+        TooltipMakerAPI createElement();
+    }
+
+    /** {@link UiElementSource} for a settings object that builds no panels at all. */
+    public static final UiElementSource NO_UI_ELEMENTS = () -> null;
+
     // What an unnamed colour key answers with. Opaque and unmistakable: a test that did not mean to read
     // a colour sees white rather than a plausible shade it might have asserted against by accident.
     private static final Color DEFAULT_COLOUR = Color.WHITE;
@@ -105,7 +121,21 @@ public final class StarsectorSettingsFake {
     public static void installSettings(
             SettingsStringSource stringSource,
             SettingsColourSource colourSource) {
-        installSettings(stringSource, colourSource, null);
+        installSettings(new SettingsAnswers(
+            stringSource, colourSource, null, NO_UI_ELEMENTS));
+    }
+
+    /**
+     * Installs the proxy with a caller-supplied {@code getString} resolver and panels that build
+     * one known element. Use this overload for a subject that makes its own tooltip surface: the
+     * panel and the element it comes off are internal to that subject, so the element named here
+     * is what an assertion about the attachment is made against.
+     */
+    public static void installSettings(
+            SettingsStringSource stringSource,
+            UiElementSource uiElementSource) {
+        installSettings(new SettingsAnswers(
+            stringSource, DEFAULT_COLOURS, null, uiElementSource));
     }
 
     /**
@@ -115,30 +145,27 @@ public final class StarsectorSettingsFake {
      * Use this overload for a subject that gates on another mod being installed.
      */
     public static void installSettingsWithEnabledMods(EnabledModsSource enabledMods) {
-        installSettings(EMPTY_STRINGS, DEFAULT_COLOURS, enabledMods);
+        installSettings(new SettingsAnswers(
+            EMPTY_STRINGS, DEFAULT_COLOURS, enabledMods, NO_UI_ELEMENTS));
     }
 
     public static void clearSettings() {
         Global.setSettings(null);
     }
 
-    private static void installSettings(
-            SettingsStringSource stringSource,
-            SettingsColourSource colourSource,
-            EnabledModsSource enabledMods) {
-        Global.setSettings(settings(stringSource, colourSource, enabledMods));
+    private static void installSettings(SettingsAnswers answers) {
+        Global.setSettings(settings(answers));
     }
 
-    private static SettingsAPI settings(
-            SettingsStringSource stringSource,
-            SettingsColourSource colourSource,
-            EnabledModsSource enabledMods) {
+    private static SettingsAPI settings(SettingsAnswers answers) {
 
         return proxy(SettingsAPI.class, (proxy, method, args) -> {
             // Null unless a caller asked for one, so the no-mod-manager state stays reachable -
             // see installSettingsWithEnabledMods.
             if ("getModManager".equals(method.getName())) {
-                return enabledMods == null ? null : modManager(enabledMods);
+                return answers.enabledModsSource() == null
+                    ? null
+                    : modManager(answers.enabledModsSource());
             }
             // Misc.<clinit> reads several floats and a colour before any
             // test code runs; returning safe defaults keeps it quiet.
@@ -146,13 +173,29 @@ public final class StarsectorSettingsFake {
                 return 1f;
             }
             if ("getColor".equals(method.getName())) {
-                return resolveColour(colourSource, args);
+                return resolveColour(answers.colourSource(), args);
             }
             if ("getString".equals(method.getName())) {
                 if (args != null && args.length == 2) {
-                    return stringSource.get((String) args[0], (String) args[1]);
+                    return answers.stringSource().get((String) args[0], (String) args[1]);
                 }
                 return null;
+            }
+            if ("createCustom".equals(method.getName())) {
+                return customPanel(answers.uiElementSource());
+            }
+            return defaultValue(method.getReturnType());
+        });
+    }
+
+    // A panel handing back the caller's element and defaults for everything else. Its own proxy
+    // rather than a mock so the whole settings object stays one kind of stand-in, and so a test
+    // naming an element does not also have to describe a panel it never sees.
+    private static CustomPanelAPI customPanel(UiElementSource uiElementSource) {
+
+        return proxy(CustomPanelAPI.class, (proxy, method, args) -> {
+            if ("createUIElement".equals(method.getName())) {
+                return uiElementSource.createElement();
             }
             return defaultValue(method.getReturnType());
         });
@@ -221,5 +264,27 @@ public final class StarsectorSettingsFake {
             type.getClassLoader(),
             new Class<?>[] {type},
             handler));
+    }
+
+    /**
+     * Everything one installed settings object answers with, carried as one value.
+     *
+     * <p>Each adapter is optional and most tests name one of them, so the alternative is an
+     * overload per combination - and the combinations multiply with every adapter added, while the
+     * plumbing behind them takes the same list of arguments either way. Held together, the public
+     * overloads stay the handful of shapes callers actually ask for and the proxy below takes one
+     * parameter however many adapters there come to be.
+     *
+     * @param stringSource      what {@code getString} answers
+     * @param colourSource      what {@code getColor} answers
+     * @param enabledModsSource what the mod manager answers, or null for a settings object
+     *                          carrying no mod manager at all
+     * @param uiElementSource   what a panel's {@code createUIElement} answers
+     */
+    private record SettingsAnswers(
+        SettingsStringSource stringSource,
+        SettingsColourSource colourSource,
+        EnabledModsSource enabledModsSource,
+        UiElementSource uiElementSource) {
     }
 }
