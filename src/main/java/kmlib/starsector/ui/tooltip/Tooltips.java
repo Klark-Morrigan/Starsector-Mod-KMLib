@@ -1,5 +1,6 @@
 package kmlib.starsector.ui.tooltip;
 
+import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import com.fs.starfarer.api.ui.UIComponentAPI;
 
@@ -83,5 +84,42 @@ public final class Tooltips {
             },
             target,
             location);
+    }
+
+    /**
+     * Attaches the same fixed-width, non-expandable hover tooltip on {@code target} for a caller
+     * that has no tooltip surface of its own to hang it from.
+     *
+     * <p>The engine only offers {@code addTooltipTo} on a {@link TooltipMakerAPI}, which every
+     * caller building its own panel already holds. A caller decorating a widget somebody else built
+     * holds none, and nothing about the target yields one - so one is made here: a custom panel and
+     * a single element off it, used for the call and then dropped.
+     *
+     * <p>Neither is added to anything and neither draws. What the call leaves behind is on the
+     * target component alone - the element is the vehicle for making it, not a surface with a life
+     * of its own - so letting both go the moment it returns is the whole of the cleanup rather than
+     * a leak.
+     *
+     * @param target   the UI component the hover triggers on
+     * @param location which edge of {@code target} the tooltip sits against
+     * @param width    fixed tooltip width in pixels
+     * @param body     painter invoked on every hover with the tooltip element to fill
+     */
+    public static void attachWithOwnSurface(
+            UIComponentAPI target,
+            TooltipMakerAPI.TooltipLocation location,
+            float width,
+            Consumer<TooltipMakerAPI> body) {
+
+        Objects.requireNonNull(target, "target");
+        Objects.requireNonNull(location, "location");
+        Objects.requireNonNull(body, "body");
+
+        // Sized at the tooltip's own width rather than at nothing, so a panel that did somehow get
+        // drawn would be the shape of the thing it carries. No plugin: a panel with no lifetime has
+        // no per-frame work to hand one.
+        var surface = Global.getSettings().createCustom(width, width, null);
+
+        attach(surface.createUIElement(width, width, false), target, location, width, body);
     }
 }
