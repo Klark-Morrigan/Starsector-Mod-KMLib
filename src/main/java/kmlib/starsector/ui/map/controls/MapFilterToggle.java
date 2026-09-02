@@ -48,6 +48,17 @@ public final class MapFilterToggle {
     // row holding a single button.
     private static final float BUTTON_GAP = 3f;
 
+    // Whether a bound key is spelled out in a bracket after the button's words. Left false so the
+    // row applies its own rule instead: the game brackets a key whose name is not already in a
+    // button's label and tints the matching letter where it is, which is why the buttons it builds
+    // read "Starscape [1]" rather than either form uniformly. Forcing the bracket would make an
+    // appended control the one thing on the strip that did not follow the rule the rest do.
+    private static final boolean IS_SHORTCUT_SPELLED_OUT = false;
+
+    // LWJGL's "no key", which is what a keycode field holds once the player has cleared its binding.
+    // A control handed this must end up with no key rather than with a key nothing can press.
+    private static final int NO_SHORTCUT_KEYCODE = 0;
+
     // Says once per session that a row could not be measured or had no room, rather than on every
     // frame a caller reattaches. One holder for the refusals made here, those being one piece of news
     // to whoever asked - there is no button - so the first of them to happen is the one worth the
@@ -129,6 +140,35 @@ public final class MapFilterToggle {
                     + "it is left standing without one.",
                 failure);
         }
+    }
+
+    /**
+     * Gives the button a key that clicks it.
+     *
+     * <p>Asked of the toggle rather than of the button for the reason the hover is: the widget is
+     * not handed out, so what can be done to it is what this exposes.
+     *
+     * <p>Nothing has to be arranged for the key to be live in the right places and dead everywhere
+     * else. A button answers its key while it is on screen and its row is taking input, so a key
+     * bound here reaches exactly the screens the control stands on - there is no listener to
+     * register, none to take away, and no key at all on a screen the control never reached.
+     *
+     * <p>Whether the key shows on the button is the row's own business, and a key it cannot name is
+     * still a key: a raw code carries no display name of its own, so an engine that cannot resolve
+     * one leaves the button answering a key it does not print.
+     *
+     * @param keycode the LWJGL code to bind, 0 leaving the button with no key at all - which is
+     *                what a keycode field holds after the player clears its binding, so binding it
+     *                literally would give the control a key that cannot be pressed and no way to
+     *                tell that from a real one
+     */
+    public void bindShortcut(int keycode) {
+
+        if (keycode <= NO_SHORTCUT_KEYCODE) {
+            return;
+        }
+
+        button.setShortcut(keycode, IS_SHORTCUT_SPELLED_OUT);
     }
 
     /**

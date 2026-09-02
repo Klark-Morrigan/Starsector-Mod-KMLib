@@ -14,12 +14,12 @@ import java.util.List;
  * and the box the row laid it out at. Shipped from KMLib so both KMLib's and consuming mods' tests
  * build the same shape of row.
  *
- * <p>A {@link ButtonAPI}, because the game's own filter buttons are: their checked state is part of
- * the published modding interface even though the class carrying it is obfuscated, so anything
- * driving one drives it through that interface and a stand-in that were not one could not be driven
- * at all. Everything on it but the checked state and the position throws - a row's button is asked
- * what it is showing and where it sits, and answering the rest silently would let a subject that
- * strayed into painting or shortcut handling pass while proving nothing.
+ * <p>A {@link ButtonAPI}, because the game's own filter buttons are: their checked state and the key
+ * that presses them are part of the published modding interface even though the class carrying them
+ * is obfuscated, so anything driving one drives it through that interface and a stand-in that were
+ * not one could not be driven at all. Everything on it but those two and the position throws - a
+ * row's button is asked what it is showing, what presses it and where it sits, and answering the
+ * rest silently would let a subject that strayed into painting pass while proving nothing.
  *
  * <p>Its own type rather than a bare object, because the row's two helpers are told apart by the
  * types in their signatures rather than by their names - the game gives them the same name - so a
@@ -40,11 +40,18 @@ public final class MapFilterButtonFake implements ButtonAPI {
         "A fixture for a toggle on the map's filter row models what one is asked, not what one "
             + "draws.";
 
+    // LWJGL's "no key", which is what a button nothing has bound a key to answers.
+    private static final int NO_SHORTCUT_KEYCODE = 0;
+
     private boolean isChecked;
+
+    private boolean isShortcutSpelledOut;
 
     private MapFilterActionListenerFake listener;
 
     private PositionAPI position;
+
+    private int shortcutKeycode = NO_SHORTCUT_KEYCODE;
 
     /**
      * @param listener what its clicks are reported to, which is the row that built it
@@ -60,9 +67,24 @@ public final class MapFilterButtonFake implements ButtonAPI {
         return listener;
     }
 
+    /**
+     * @return the LWJGL code of the key bound to it, or 0 while nothing has bound one
+     */
+    public int readShortcutKeycode() {
+        return shortcutKeycode;
+    }
+
     @Override
     public boolean isChecked() {
         return isChecked;
+    }
+
+    /**
+     * @return whether the bound key was asked to be spelled out after the button's words, rather
+     *         than left to the row's own rule about which keys it prints
+     */
+    public boolean isShortcutSpelledOut() {
+        return isShortcutSpelledOut;
     }
 
     @Override
@@ -94,6 +116,12 @@ public final class MapFilterButtonFake implements ButtonAPI {
 
     public void setListener(MapFilterActionListenerFake listener) {
         this.listener = listener;
+    }
+
+    @Override
+    public void setShortcut(int keycode, boolean isSpelledOut) {
+        this.shortcutKeycode = keycode;
+        this.isShortcutSpelledOut = isSpelledOut;
     }
 
     @Override
@@ -243,11 +271,6 @@ public final class MapFilterButtonFake implements ButtonAPI {
 
     @Override
     public void setRightClicksOkWhenDisabled(boolean areRightClicksOk) {
-        throw new UnsupportedOperationException(NOT_A_ROW_BUTTON);
-    }
-
-    @Override
-    public void setShortcut(int keyCode, boolean isShownOnButton) {
         throw new UnsupportedOperationException(NOT_A_ROW_BUTTON);
     }
 

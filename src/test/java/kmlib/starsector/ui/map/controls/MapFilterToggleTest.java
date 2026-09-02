@@ -14,6 +14,7 @@ import kmlib.testfixtures.starsector.ui.map.controls.MapFilterRowFake;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.lwjgl.input.Keyboard;
 
 import java.util.List;
 
@@ -67,6 +68,10 @@ class MapFilterToggleTest {
 
     private static final Runnable DOES_NOTHING = () -> {
     };
+
+    // A key to bind, and the code a keycode field holds once the player has cleared its binding.
+    private static final int A_BOUND_KEY = Keyboard.KEY_M;
+    private static final int NO_KEY = 0;
 
     @Nested
     class AppendToRow {
@@ -235,6 +240,52 @@ class MapFilterToggleTest {
     }
 
     @Nested
+    class BindShortcut {
+
+        @Test
+        void bindShortcutGivesTheButtonTheKeyItWasHandedTo() {
+            // The whole of what a key costs: one call into the published interface, on the button
+            // this handle appended. Nothing is registered anywhere, so nothing has to be taken away
+            // when the screen that carries the button goes.
+            var rowFake = MapFilterRowFake.createMapScreenStrip("Starscape");
+            var toggle = MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING);
+
+            toggle.bindShortcut(A_BOUND_KEY);
+
+            assertThat(readAppendedButton(rowFake).readShortcutKeycode())
+                .isEqualTo(Keyboard.KEY_M);
+        }
+
+        @Test
+        void bindShortcutLeavesTheButtonWithNoKeyForAClearedBinding() {
+
+            var rowFake = MapFilterRowFake.createMapScreenStrip("Starscape");
+            var toggle = MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING);
+
+            toggle.bindShortcut(NO_KEY);
+
+            // A cleared binding reads as a code of zero rather than as an absent one, so binding it
+            // through would leave the control answering a key nothing can press.
+            assertThat(readAppendedButton(rowFake).readShortcutKeycode())
+                .isZero();
+        }
+
+        @Test
+        void bindShortcutLeavesItToTheRowWhetherTheKeyIsSpelledOutOnTheButton() {
+            // The row prints a key that is not already in a button's words and tints the matching
+            // letter where it is, which is why its own buttons do not all read one way. Asking for
+            // the bracket regardless would make the appended control the one that broke the rule.
+            var rowFake = MapFilterRowFake.createMapScreenStrip("Starscape");
+            var toggle = MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING);
+
+            toggle.bindShortcut(A_BOUND_KEY);
+
+            assertThat(readAppendedButton(rowFake).isShortcutSpelledOut())
+                .isFalse();
+        }
+    }
+
+    @Nested
     class IsChecked {
 
         @Test
@@ -310,6 +361,7 @@ class MapFilterToggleTest {
 
             StarsectorSettingsFake.installSettings(
                 StarsectorSettingsFake.EMPTY_STRINGS, () -> elementMock);
+
             try {
                 toggle.attachTooltip(TOOLTIP_WIDTH, tt -> {
                     /* unused for this assertion */ });
@@ -317,10 +369,11 @@ class MapFilterToggleTest {
                 StarsectorSettingsFake.clearSettings();
             }
 
-            verify(elementMock).addTooltipTo(
-                any(TooltipMakerAPI.TooltipCreator.class),
-                eq((MapFilterButtonFake) rowFake.getChildrenCopy().get(1)),
-                eq(TooltipMakerAPI.TooltipLocation.ABOVE));
+            verify(elementMock)
+                .addTooltipTo(
+                    any(TooltipMakerAPI.TooltipCreator.class),
+                    eq((MapFilterButtonFake) rowFake.getChildrenCopy().get(1)),
+                    eq(TooltipMakerAPI.TooltipLocation.ABOVE));
         }
 
         @Test
@@ -336,7 +389,9 @@ class MapFilterToggleTest {
                 /* never reached - there is no surface to open it on */ });
 
             toggle.setChecked(true);
-            assertThat(toggle.isChecked()).isTrue();
+
+            assertThat(toggle.isChecked())
+                .isTrue();
         }
     }
 
@@ -358,6 +413,15 @@ class MapFilterToggleTest {
             assertThat(rowFake.countClicksHeard())
                 .isZero();
         }
+    }
+
+    // The control that was appended, which is whatever stands last on the row: the row's own buttons
+    // went up before it, and the append puts each new one after them.
+    private static MapFilterButtonFake readAppendedButton(MapFilterRowFake rowFake) {
+
+        var children = rowFake.getChildrenCopy();
+
+        return (MapFilterButtonFake) children.get(children.size() - 1);
     }
 
     /**
