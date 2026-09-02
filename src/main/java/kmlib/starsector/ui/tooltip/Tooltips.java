@@ -8,24 +8,24 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
- * Utility wrappers around {@link TooltipMakerAPI#addTooltipTo}. The
- * vanilla API only accepts a fully realised
- * {@link TooltipMakerAPI.TooltipCreator} - four overrides, three of
- * which every caller fills with the same boilerplate (always-collapsed,
- * fixed width, delegate the body to a lambda). This class lifts the
- * boilerplate into one static call so call sites read as
- * <pre>
- *   Tooltips.attach(parent, target, location, width, tt -> { ... });
- * </pre>
- * mirroring the shape RAT ships as {@code RATExtensionsKt.addTooltip}
- * (Kotlin extension) and the in-tree call sites already used.
+ * Hanging a vanilla hover tooltip on a component.
  *
- * <p>Non-expandable / fixed-width is the right default for every hover
- * tooltip we paint today (per-cell hex hover on the management screen,
- * facility picker rows, future per-month income breakdowns). The
- * expandable variant is rare enough that callers can fall back to
- * implementing {@link TooltipMakerAPI.TooltipCreator} directly if they
- * ever need it.
+ * <p>The engine takes only a fully realised
+ * {@link TooltipMakerAPI.TooltipCreator} - four overrides, three of which
+ * are the same answers every time: never expandable, one fixed width, and
+ * the body delegated onwards. Those three are filled in here so a caller
+ * writes the fourth alone, as a lambda over the tooltip it is handed.
+ *
+ * <p>Two forms, because the engine offers the attachment only on a
+ * tooltip surface. A caller building its own panel already holds one and
+ * passes it in. A caller decorating a widget somebody else built holds
+ * none, and nothing about the target yields one, so
+ * {@link #attachWithOwnSurface} makes a surface for the call and drops it.
+ *
+ * <p>Non-expandable and fixed-width is what a hover tooltip wants; the
+ * expandable variant is rare enough that a caller needing one implements
+ * {@link TooltipMakerAPI.TooltipCreator} directly rather than being served
+ * by a second pair of entry points here.
  */
 public final class Tooltips {
 

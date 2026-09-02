@@ -259,8 +259,9 @@ No Starsector API on the signature.
   last button on it were laid out, rather than the widget itself.
   `MapFilterToggle` stands one more toggle at the end of such a row, sized off
   the row so one path serves both screens, and declines a row it cannot measure
-  or that has no room left. What comes back reads and sets the button, and says
-  whether it is still standing on the row currently on screen.
+  or that has no room left. What comes back reads and sets the button, hangs
+  the hover tooltip the row's own buttons carry, and says whether it is still
+  standing on the row currently on screen.
 - **`kmlib.starsector.ui.map.icons`** - reseating a map icon once the layering
   over it settles.
 - **`kmlib.starsector.ui.map.presence`** - which campaign map surface is up
@@ -308,7 +309,9 @@ No Starsector API on the signature.
   spans, and redacted spans laid out as word bars, with run offsets, widths
   and joined-run handling.
 - **`kmlib.starsector.ui.tooltip`** - attaching a vanilla TooltipMakerAPI
-  tooltip to a component.
+  tooltip to a component, either from a surface the caller already holds or
+  from one made for the call, for a caller decorating a widget it did not
+  build and so holding no surface of its own.
 - **`kmlib.starsector.ui.widgets`** - widget geometry over one shared
   labelled-row core: bordered box content bounds, checkbox tick boxes,
   icon-label rows with trailing slots and direction triangles, radio grids and
