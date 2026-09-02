@@ -145,10 +145,10 @@ No Starsector API on the signature.
   points, circular orbits with vanilla jitter and focus-chain reads, jump
   point name generation, gate activation, and the nameplate pairing an
   entity's name with the map glyph it is marked with.
-- **`kmlib.starsector.factions`** - player-faction established check and
-  display-name normalisation across vanilla and Nex defaults, faction primary
-  and secondary palettes, the neutral colour, crest paths, and the territorial
-  flag.
+- **`kmlib.starsector.factions`** - player-faction established check, asked of
+  the running game or of a named sector, and display-name normalisation across
+  vanilla and Nex defaults, faction primary and secondary palettes, the neutral
+  colour, crest paths, and the territorial flag.
 - **`kmlib.starsector.fleet`** - whether the player fleet is in orbit of a
   planet.
 - **`kmlib.starsector.geometry`** - distance and bearing between campaign

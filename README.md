@@ -896,8 +896,8 @@ vanilla pre-first-colony reports `"Independent"`, Nexerelin's stock
 `player.faction` reports the literal `"player"`, and the user can edit either to
 a custom name later. Substituting the raw value into prose - "Production from a
 local player settlement...", "player leader in orbit" - reads poorly before the
-player has settled on an identity. Two static entry points share one placeholder
-set (`Independent` / `player` / `Player`):
+player has settled on an identity. Two rules share one placeholder set
+(`Independent` / `player` / `Player`):
 
 - `isPlayerFactionEstablished()` returns `true` when the display name
   is NOT in the placeholder set OR `Misc.getPlayerMarkets(false)` is
@@ -918,9 +918,13 @@ set (`Independent` / `player` / `Player`):
   player - so host-faction-in-contested-prose, remote-management-fee
   tooltip, and any other faction-substituting surface share one policy.
 
-A package-private overload of the no-arg `isPlayerFactionEstablished`
-takes a `PlayerFactionSource` test seam so unit tests stub the live
-`Global` / `Misc` reads without `mockStatic`.
+The established-check itself is one rule over two inputs - the player
+faction, and whether any market is player-owned - and where those come
+from is a `PlayerFactionSource`. Both public forms delegate to a
+package-private overload taking one: the no-arg form reads `Global` /
+`Misc`, the sector-bound form reads the sector. A caller already
+holding the two inputs - a unit test among them, which is how the live
+reads are stubbed without `mockStatic` - passes its own.
 
 ## UI Colour Palette
 
