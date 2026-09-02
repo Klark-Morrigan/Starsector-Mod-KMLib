@@ -36,8 +36,7 @@ class VanillaToggleFactoryTest {
 
     // What the game lays its own M-screen toggles at. Stated so the append is asked for at a size a
     // row really uses rather than at a placeholder.
-    private static final float BUTTON_WIDTH = 120f;
-    private static final float BUTTON_HEIGHT = 25f;
+    private static final ButtonSize BUTTON_SIZE = new ButtonSize(120f, 25f);
 
     private static final Runnable DOES_NOTHING = () -> {
     };
@@ -158,7 +157,7 @@ class VanillaToggleFactoryTest {
     private static Object appendToggleTo(Object rowFake, Runnable onToggled) {
 
         return VanillaToggleFactory.appendToggle(
-            new MapFilterRow(rowFake), LABEL, BUTTON_WIDTH, BUTTON_HEIGHT, onToggled);
+            new MapFilterRow(rowFake), LABEL, BUTTON_SIZE, onToggled);
     }
 
     /** A row offering nothing that looks like a way to build one of its buttons. */

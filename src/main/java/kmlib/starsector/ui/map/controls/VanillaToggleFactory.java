@@ -86,7 +86,9 @@ final class VanillaToggleFactory {
 
     // Says once per session that the row is no longer a shape this can write into, rather than on
     // every frame a caller reattaches. Failing to recognise it and failing to write into it are the
-    // same news - there is no button - so one of these covers both.
+    // same news - there is no button - so one of these covers both. Its own rather than shared with
+    // the fitting above it, so the line names the half that refused: a row this cannot recognise and
+    // a row with no room left are different findings, and a session can meet both.
     private static final SessionWarning WARNING = new SessionWarning(LOG);
 
     private VanillaToggleFactory() {
@@ -96,22 +98,20 @@ final class VanillaToggleFactory {
      * Builds a toggle the way the row builds its own, points its clicks at the given callback, and
      * stands it at the end of the row.
      *
-     * @param row       the row to append to
-     * @param label     the words on the button
-     * @param width     how wide to lay it, which a caller measures off the row rather than states
-     * @param height    how tall to lay it, measured the same way
-     * @param onToggled what to run when it is clicked, which is called after the button has already
-     *                  flipped its own state, so a caller reads that state rather than tracking it
+     * @param row        the row to append to
+     * @param label      the words on the button
+     * @param buttonSize how big to lay it, which a caller measures off the row rather than states
+     * @param onToggled  what to run when it is clicked, which is called after the button has already
+     *                   flipped its own state, so a caller reads that state rather than tracking it
      * @return the button, for a caller that goes on to drive it, or null when the row is not a shape
      *         this understands or the write into it failed - which is logged once and is not an
      *         error, the row being somebody else's
      */
     static Object appendToggle(
-        MapFilterRow row,
-        String label,
-        float width,
-        float height,
-        Runnable onToggled) {
+            MapFilterRow row,
+            String label,
+            ButtonSize buttonSize,
+            Runnable onToggled) {
 
         try {
             var rowWidget = row.getRowWidget();
@@ -133,7 +133,8 @@ final class VanillaToggleFactory {
             var listener = rowShape.listener();
             listener.setter().invokeOn(button, createListener(listener, onToggled));
 
-            rowShape.rowAppender().invokeOn(rowWidget, button, width, height);
+            rowShape.rowAppender().invokeOn(
+                rowWidget, button, buttonSize.width(), buttonSize.height());
 
             return button;
 
@@ -221,9 +222,9 @@ final class VanillaToggleFactory {
 
     // The members of a shape that fit, where there has to be exactly one of them.
     private static CoreUiMethod matchSoleMethod(
-        List<CoreUiMethod> methods,
-        Predicate<CoreUiMethod> isMatch,
-        String whatWasWanted) {
+            List<CoreUiMethod> methods,
+            Predicate<CoreUiMethod> isMatch,
+            String whatWasWanted) {
 
         return matchSoleMethod(
             methods.stream()
@@ -313,9 +314,9 @@ final class VanillaToggleFactory {
     // one before it: a half-matched row is not something to hold, and carrying the parts separately
     // would let a caller pair a button factory with the appender of some other row.
     private record RowShape(
-        CoreUiMethod buttonFactory,
-        CoreUiMethod rowAppender,
-        ListenerBinding listener) {
+            CoreUiMethod buttonFactory,
+            CoreUiMethod rowAppender,
+            ListenerBinding listener) {
     }
 
     // The listener half of that, kept together for the same reason and apart from the rest because
@@ -323,8 +324,8 @@ final class VanillaToggleFactory {
     // both read off the setter, and a caller holding the setter alone would have to read them again
     // to use it.
     private record ListenerBinding(
-        CoreUiMethod setter,
-        Class<?> shape,
-        List<Class<?>> callbackParameterTypes) {
+            CoreUiMethod setter,
+            Class<?> shape,
+            List<Class<?>> callbackParameterTypes) {
     }
 }

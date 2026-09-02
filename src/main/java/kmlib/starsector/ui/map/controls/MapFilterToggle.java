@@ -45,8 +45,9 @@ public final class MapFilterToggle {
     private static final float BUTTON_GAP = 3f;
 
     // Says once per session that a row could not be measured or had no room, rather than on every
-    // frame a caller reattaches. One holder for all of them because they are one piece of news to
-    // whoever asked - there is no button - and the first of them to happen is the one worth the line.
+    // frame a caller reattaches. One holder for the refusals made here, those being one piece of news
+    // to whoever asked - there is no button - so the first of them to happen is the one worth the
+    // line. The build below keeps its own, a row it cannot recognise being news of a different kind.
     private static final SessionWarning WARNING = new SessionWarning(LOG);
 
     private final MapFilterRow row;
@@ -77,8 +78,7 @@ public final class MapFilterToggle {
             return null;
         }
 
-        var appendedButton = VanillaToggleFactory.appendToggle(
-            row, label, buttonSize.width(), buttonSize.height(), onToggled);
+        var appendedButton = VanillaToggleFactory.appendToggle(row, label, buttonSize, onToggled);
 
         return adoptAppendedButton(row, appendedButton);
     }
@@ -190,13 +190,5 @@ public final class MapFilterToggle {
         }
 
         return null;
-    }
-
-    // How big a control on the row has to be. The two travel together because they are one
-    // measurement taken off one row, and a caller holding them apart could pair a width read from a
-    // row with a height read from the one that replaced it.
-    private record ButtonSize(
-        float width,
-        float height) {
     }
 }
