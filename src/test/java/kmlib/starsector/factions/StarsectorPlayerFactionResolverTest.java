@@ -129,6 +129,28 @@ class StarsectorPlayerFactionResolverTest {
         }
 
         @Test
+        void establishedIsFalseWhenTheSectorRegistersNoPlayerFaction() {
+            // The player-faction guard earns its place: a market whose own
+            // faction is null would otherwise match a null player faction
+            // and report an identity nothing established.
+            var placeholderFactionMock = Mockito.mock(FactionAPI.class);
+            Mockito.when(placeholderFactionMock.getDisplayName()).thenReturn("Independent");
+
+            var economyMock = Mockito.mock(EconomyAPI.class);
+            Mockito.when(economyMock.getMarketsCopy())
+                .thenReturn(List.of(Mockito.mock(MarketAPI.class)));
+
+            var sectorMock = Mockito.mock(SectorAPI.class);
+            Mockito.when(sectorMock.getPlayerFaction()).thenReturn(placeholderFactionMock);
+            Mockito.when(sectorMock.getEconomy()).thenReturn(economyMock);
+            // getFaction("player") is left unstubbed: this sector knows no
+            // player faction, and the market it holds names no faction either.
+
+            assertThat(StarsectorPlayerFactionResolver.isPlayerFactionEstablished(sectorMock))
+                .isFalse();
+        }
+
+        @Test
         void establishedIsFalseWhenTheSectorHasNoEconomy() {
             // A load in progress: the sector exists, the economy does not.
             var playerFactionMock = Mockito.mock(FactionAPI.class);
