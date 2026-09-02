@@ -1,7 +1,11 @@
 package kmlib.starsector.ui.map.controls;
 
+import com.fs.starfarer.api.Global;
+import com.fs.starfarer.api.SettingsAPI;
 import com.fs.starfarer.api.input.InputEventAPI;
+import com.fs.starfarer.api.ui.CustomPanelAPI;
 import com.fs.starfarer.api.ui.PositionAPI;
+import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import com.fs.starfarer.api.ui.UIComponentAPI;
 
 import kmlib.math.geometry.Rectangle;
@@ -16,6 +20,13 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyFloat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Pins how a control is fitted to a row it did not build: that it comes out at the row's own
@@ -34,6 +45,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * what it holds, so the one that is not obvious from the outside is the crowded row: an append past
  * the end of it draws over whatever is beyond the strip rather than failing, which is why it has to
  * be declined before it is attempted rather than survived afterwards.
+ *
+ * <p>The tooltip is pinned for where it lands rather than for what it says: the button is never
+ * handed out, so the one thing a caller cannot check for itself is that the hover was hung on the
+ * button this handle appended and on the edge the row's own tooltips use.
  */
 class MapFilterToggleTest {
 
@@ -50,6 +65,10 @@ class MapFilterToggleTest {
 
     private static final String NOT_A_ROW =
         "A row standing in for one of the game's own answers what it is asked, not what it draws.";
+
+    // What the game's own row gives its tooltips. Any number would do for the assertions below -
+    // this one is the number a caller actually passes.
+    private static final float TOOLTIP_WIDTH = 300f;
 
     private static final Runnable DOES_NOTHING = () -> {
     };
@@ -282,6 +301,31 @@ class MapFilterToggleTest {
     }
 
     @Nested
+    class AttachTooltip {
+
+        @Test
+        void attachTooltipHangsTheTooltipAboveTheButtonItStoodOnTheRow() {
+            // Where the row's own tooltips sit, and the only place one can sit: the row runs along
+            // the bottom of both screens it appears on. The target is pinned as the button this
+            // handle appended rather than as any component, the handle being the only thing that
+            // knows which of the row's children is ours.
+            var rowFake = MapFilterRowFake.createMapScreenStrip("Starscape");
+            var toggle = MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING);
+            var elementMock = mock(TooltipMakerAPI.class);
+
+            withSettingsCreating(
+                elementMock,
+                () -> toggle.attachTooltip(TOOLTIP_WIDTH, tt -> {
+                    /* unused for this assertion */ }));
+
+            verify(elementMock).addTooltipTo(
+                any(TooltipMakerAPI.TooltipCreator.class),
+                eq((MapFilterButtonFake) rowFake.getChildrenCopy().get(1)),
+                eq(TooltipMakerAPI.TooltipLocation.ABOVE));
+        }
+    }
+
+    @Nested
     class SetChecked {
 
         @Test
@@ -298,6 +342,26 @@ class MapFilterToggleTest {
                 .isTrue();
             assertThat(rowFake.countClicksHeard())
                 .isZero();
+        }
+    }
+
+    // Runs the subject against a settings stand-in whose panels hand back one known element. The
+    // toggle makes its own tooltip surface, so that element is the only place the attachment can be
+    // seen from outside. Global.setSettings is the engine's own seam, so no static mocking is needed.
+    private static void withSettingsCreating(TooltipMakerAPI element, Runnable subject) {
+        var panelMock = mock(CustomPanelAPI.class);
+        when(panelMock.createUIElement(anyFloat(), anyFloat(), anyBoolean()))
+            .thenReturn(element);
+
+        var settingsMock = mock(SettingsAPI.class);
+        when(settingsMock.createCustom(anyFloat(), anyFloat(), any()))
+            .thenReturn(panelMock);
+
+        Global.setSettings(settingsMock);
+        try {
+            subject.run();
+        } finally {
+            Global.setSettings(null);
         }
     }
 

@@ -2,11 +2,15 @@ package kmlib.starsector.ui.map.controls;
 
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.ui.ButtonAPI;
+import com.fs.starfarer.api.ui.TooltipMakerAPI;
 
 import kmlib.logging.SessionWarning;
 import kmlib.math.geometry.Rectangle;
+import kmlib.starsector.ui.tooltip.Tooltips;
 
 import org.apache.log4j.Logger;
+
+import java.util.function.Consumer;
 
 /**
  * A toggle standing on a map's filter row: how one is put there, and the handle whoever put it there
@@ -81,6 +85,34 @@ public final class MapFilterToggle {
         var appendedButton = VanillaToggleFactory.appendToggle(row, label, buttonSize, onToggled);
 
         return adoptAppendedButton(row, appendedButton);
+    }
+
+    /**
+     * Hangs a hover tooltip on the button, the way the game's own row hangs one on most of the
+     * buttons already standing on it.
+     *
+     * <p>Asked of the toggle rather than of the button, because the button is not handed out: the
+     * wrapper exists so that writing into another party's row stays this package's business, and a
+     * caller reaching the widget to decorate it would be reaching past that.
+     *
+     * <p>Above the button, which is where the row's own tooltips sit - the row runs along the
+     * bottom of both screens it appears on, so anywhere else is off the edge of the display.
+     *
+     * <p>Nothing is checked and nothing is reported. The engine's attachment quietly does nothing
+     * when the target is not the widget kind it expects, so a game build that reworks the row's
+     * buttons costs the tooltip and leaves the control itself working - which is the same fail-open
+     * answer every other reach in this package gives.
+     *
+     * @param width fixed tooltip width in pixels
+     * @param body  painter invoked on every hover with the tooltip element to fill
+     */
+    public void attachTooltip(float width, Consumer<TooltipMakerAPI> body) {
+
+        Tooltips.attachWithOwnSurface(
+            button,
+            TooltipMakerAPI.TooltipLocation.ABOVE,
+            width,
+            body);
     }
 
     /**
