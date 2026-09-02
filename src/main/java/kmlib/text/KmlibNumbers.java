@@ -85,6 +85,23 @@ public final class KmlibNumbers {
     }
 
     /**
+     * Formats {@code value} as a signed reading on a scale whose middle is a real position:
+     * {@code "+N"} above it, {@code "-N"} below it, and a bare {@code "0"} at it.
+     *
+     * <p>The sibling of {@link #formatDelta(int)}, and the choice between them is what the number
+     * means rather than how it looks. A delta is a movement, so a nought is a movement of none and
+     * signing it says so; a reading on a scale has a neutral point, and signing that would claim a
+     * direction the reading does not have. For standings, temperature-like ratings, and anything else
+     * where zero is somewhere a value can sit rather than a change that did not happen.
+     *
+     * @param value the reading to word
+     * @return the reading with its direction shown, or the bare number at the scale's middle
+     */
+    public static String formatSignedNonZero(int value) {
+        return value == 0 ? ZERO : formatDelta(value);
+    }
+
+    /**
      * Formats {@code value} as a whole number grouped by thousands,
      * e.g. {@code 1234567 -> "1,234,567"}, so a large tally reads at
      * a glance.
