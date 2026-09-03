@@ -130,7 +130,13 @@ class MapFilterRowTest {
     /** A row holding one button the layout never positioned, so there is no box at the end of it. */
     private static final class UnplacedButtonRowFake {
 
-        private final MapFilterButtonFake unplacedButtonFake = new MapFilterButtonFake(null);
+        // Words of its own, the way a row's button has them. Nothing here reads them - what this row
+        // is about is the box that is missing - but a button built without any would stand for one
+        // the game does not build.
+        private static final String BUTTON_LABEL = "Starscape";
+
+        private final MapFilterButtonFake unplacedButtonFake =
+            new MapFilterButtonFake(null, BUTTON_LABEL);
 
         public List<Object> getChildrenCopy() {
             return List.of(unplacedButtonFake);

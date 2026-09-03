@@ -194,9 +194,10 @@ public final class MapFilterRowFake implements MapFilterActionListenerFake, UICo
 
     // The row's button factory. Its first argument is the words on the button and its second the
     // keyboard shortcut, which the game passes as one of its own enum constants and as null for the
-    // button that has none. Neither is carried onto the button: what this fixture stands for is the
-    // signature, which is what tells the factory from the appender above.
+    // button that has none. What this fixture stands for is the signature, which is what tells the
+    // factory from the appender above - but the words are carried onto the button, a button's words
+    // being where a bound key is announced and so something a subject can be caught not saying.
     private MapFilterButtonFake o00000(String buttonLabel, Object shortcut) {
-        return new MapFilterButtonFake(this);
+        return new MapFilterButtonFake(this, buttonLabel);
     }
 }

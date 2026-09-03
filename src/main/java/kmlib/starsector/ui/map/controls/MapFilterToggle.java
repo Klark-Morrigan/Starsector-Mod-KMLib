@@ -7,8 +7,10 @@ import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import kmlib.logging.SessionWarning;
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.tooltip.Tooltips;
+import kmlib.text.KmlibStrings;
 
 import org.apache.log4j.Logger;
+import org.lwjgl.input.Keyboard;
 
 import java.util.function.Consumer;
 
@@ -48,11 +50,9 @@ public final class MapFilterToggle {
     // row holding a single button.
     private static final float BUTTON_GAP = 3f;
 
-    // Whether a bound key is spelled out in a bracket after the button's words. Left false so the
-    // row applies its own rule instead: the game brackets a key whose name is not already in a
-    // button's label and tints the matching letter where it is, which is why the buttons it builds
-    // read "Starscape [1]" rather than either form uniformly. Forcing the bracket would make an
-    // appended control the one thing on the strip that did not follow the rule the rest do.
+    // Whether the game is asked to spell a bound key out after the button's words. Left false
+    // because it writes nothing either way on the kind of button a filter row holds - and were that
+    // to change, it would write a second announcement beside the one made here.
     private static final boolean IS_SHORTCUT_SPELLED_OUT = false;
 
     // LWJGL's "no key", which is what a keycode field holds once the player has cleared its binding.
@@ -69,6 +69,10 @@ public final class MapFilterToggle {
     // kind from a row that would take no control at all: there is still a working box on the row,
     // and the player is short a sentence rather than a switch.
     private static final SessionWarning TOOLTIP_WARNING = new SessionWarning(LOG);
+
+    // The key announcement's own holder, for the same reason: a control answering a key it does not
+    // say is still a working control, and is news of a different kind from one that never went up.
+    private static final SessionWarning SHORTCUT_WARNING = new SessionWarning(LOG);
 
     private final MapFilterRow row;
 
@@ -153,9 +157,11 @@ public final class MapFilterToggle {
      * bound here reaches exactly the screens the control stands on - there is no listener to
      * register, none to take away, and no key at all on a screen the control never reached.
      *
-     * <p>Whether the key shows on the button is the row's own business, and a key it cannot name is
-     * still a key: a raw code carries no display name of its own, so an engine that cannot resolve
-     * one leaves the button answering a key it does not print.
+     * <p>The key is written into the button's words as well as bound, because a key nothing shows
+     * is a key nobody presses. The row does that for the buttons it keys itself and cannot do it
+     * for one keyed this way, so it is done here and in the row's own format - which is what keeps
+     * the control reading as one of the row's rather than as the only button on the strip with a
+     * secret.
      *
      * @param keycode the LWJGL code to bind, 0 leaving the button with no key at all - which is
      *                what a keycode field holds after the player clears its binding, so binding it
@@ -169,6 +175,8 @@ public final class MapFilterToggle {
         }
 
         button.setShortcut(keycode, IS_SHORTCUT_SPELLED_OUT);
+
+        announceShortcutInLabel(keycode);
     }
 
     /**
@@ -208,6 +216,45 @@ public final class MapFilterToggle {
     public void setChecked(boolean isChecked) {
 
         button.setChecked(isChecked);
+    }
+
+    // Says which key the button answers to, in its own words.
+    //
+    // The game says it for the buttons it keys itself and cannot say it for one keyed by bare code:
+    // that call writes the key into the words of one kind of button only, and a filter row is
+    // furnished with a different kind. So the words are written here instead - and not through the
+    // button, whose published text accessors answer for that same one kind and quietly do nothing
+    // for this one, but through the label underneath it.
+    private void announceShortcutInLabel(int keycode) {
+
+        var keyName = Keyboard.getKeyName(keycode);
+
+        // A code outside the key table. Nothing to announce, and a bracket around nothing would read
+        // as a control whose key had gone missing rather than one whose key cannot be written down.
+        if (!KmlibStrings.hasText(keyName)) {
+            return;
+        }
+
+        var label = VanillaButtonLabel.resolveLabelOf(button);
+
+        // Already said where it happened. The key is bound either way, so what is lost is the
+        // telling rather than the control.
+        if (label == null) {
+            return;
+        }
+
+        try {
+            label.announceShortcut(keyName);
+
+        } catch (RuntimeException failure) {
+
+            // Saying it reads the palette a key is drawn in, which is one more thing that can be
+            // unavailable. The binding is already made, so this costs the words and not the key.
+            SHORTCUT_WARNING.warnOnce(
+                "The key bound to the control on the map's filter row could not be written into its "
+                    + "words; it is left answering a key it does not announce.",
+                failure);
+        }
     }
 
     // What is left of the row to the right of everything already standing on it. Measured from the

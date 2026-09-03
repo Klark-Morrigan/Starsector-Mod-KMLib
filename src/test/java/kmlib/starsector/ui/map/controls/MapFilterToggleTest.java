@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.lwjgl.input.Keyboard;
 
+import java.awt.Color;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -72,6 +73,10 @@ class MapFilterToggleTest {
     // A key to bind, and the code a keycode field holds once the player has cleared its binding.
     private static final int A_BOUND_KEY = Keyboard.KEY_M;
     private static final int NO_KEY = 0;
+
+    // What the install draws a key on a button in. Any colour would serve the assertions below -
+    // what matters is that the one handed to the words is the one the palette answered with.
+    private static final Color SHORTCUT_COLOUR = new Color(255, 200, 100);
 
     @Nested
     class AppendToRow {
@@ -250,7 +255,7 @@ class MapFilterToggleTest {
             var rowFake = MapFilterRowFake.createMapScreenStrip("Starscape");
             var toggle = MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING);
 
-            toggle.bindShortcut(A_BOUND_KEY);
+            bindShortcutUnderThePalette(toggle, A_BOUND_KEY);
 
             assertThat(readAppendedButton(rowFake).readShortcutKeycode())
                 .isEqualTo(Keyboard.KEY_M);
@@ -265,20 +270,100 @@ class MapFilterToggleTest {
             toggle.bindShortcut(NO_KEY);
 
             // A cleared binding reads as a code of zero rather than as an absent one, so binding it
-            // through would leave the control answering a key nothing can press.
+            // through would leave the control answering a key nothing can press - and announcing
+            // one, which is worse: the words would name a key the button does not answer to.
             assertThat(readAppendedButton(rowFake).readShortcutKeycode())
                 .isZero();
+            assertThat(readAppendedButton(rowFake).readLabel().getText())
+                .isEqualTo("Map layers");
+            assertThat(readAppendedButton(rowFake).readLabel().readHighlightedRuns())
+                .isEmpty();
         }
 
         @Test
-        void bindShortcutLeavesItToTheRowWhetherTheKeyIsSpelledOutOnTheButton() {
-            // The row prints a key that is not already in a button's words and tints the matching
-            // letter where it is, which is why its own buttons do not all read one way. Asking for
-            // the bracket regardless would make the appended control the one that broke the rule.
+        void bindShortcutLightsTheKeyWhereTheButtonsWordsAlreadyHoldIt() {
+            // The game's rule for a key its button's words already contain, applied to a button the
+            // game will not apply it to: the occurrence is lit rather than repeated. "Map layers"
+            // bound to M lights the M it already starts with.
+            var rowFake = MapFilterRowFake.createMapScreenStrip("Starscape");
+            var toggle = MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING);
+
+            bindShortcutUnderThePalette(toggle, A_BOUND_KEY);
+
+            var label = readAppendedButton(rowFake).readLabel();
+
+            assertThat(label.getText())
+                .isEqualTo("Map layers");
+            assertThat(label.readHighlightedRuns())
+                .containsExactly("M");
+        }
+
+        @Test
+        void bindShortcutLightsTheOccurrenceAsItIsWrittenRatherThanAsTheKeyIsNamed() {
+            // The match ignores case and the lighting cannot: a run handed over has to be a
+            // substring of what is drawn, so a key named "L" against words holding "l" is lit as
+            // the lower-case "l" the words actually carry.
+            var rowFake = MapFilterRowFake.createMapScreenStrip("Starscape");
+            var toggle = MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING);
+
+            toggle.bindShortcut(Keyboard.KEY_L);
+
+            assertThat(readAppendedButton(rowFake).readLabel().readHighlightedRuns())
+                .containsExactly("l");
+        }
+
+        @Test
+        void bindShortcutSpellsTheKeyOutWhereTheButtonsWordsDoNotHoldIt() {
+            // The other half of the same rule, and the one the row's own six take: a key the words
+            // do not contain is written after them in a bracket, and that bracket is what is lit.
+            var rowFake = MapFilterRowFake.createMapScreenStrip("Starscape");
+            var toggle = MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING);
+
+            toggle.bindShortcut(Keyboard.KEY_Q);
+
+            var label = readAppendedButton(rowFake).readLabel();
+
+            assertThat(label.getText())
+                .isEqualTo("Map layers [Q]");
+            assertThat(label.readHighlightedRuns())
+                .containsExactly("[Q]");
+        }
+
+        @Test
+        void bindShortcutLightsWhatItSaysInTheColourTheGameLightsAKeyIn() {
+            // A run named without a colour draws in whatever the last caller left behind, so the
+            // two travel together or the announcement reads differently from screen to screen.
+            var rowFake = MapFilterRowFake.createMapScreenStrip("Starscape");
+            var toggle = MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING);
+
+            bindShortcutUnderThePalette(toggle, A_BOUND_KEY);
+
+            assertThat(readAppendedButton(rowFake).readLabel().readHighlightColours())
+                .containsExactly(SHORTCUT_COLOUR);
+        }
+
+        @Test
+        void bindShortcutStillBindsTheKeyWhenThePaletteCannotBeRead() {
+            // The palette is one more thing that can be unavailable, and it is read only to say the
+            // key rather than to bind it. So a control whose announcement fails is a control that
+            // still answers its key, rather than one that never got keyed.
             var rowFake = MapFilterRowFake.createMapScreenStrip("Starscape");
             var toggle = MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING);
 
             toggle.bindShortcut(A_BOUND_KEY);
+
+            assertThat(readAppendedButton(rowFake).readShortcutKeycode())
+                .isEqualTo(Keyboard.KEY_M);
+        }
+
+        @Test
+        void bindShortcutDoesNotAskTheRowToSpellTheKeyOutAsWell() {
+            // The row is asked for nothing it cannot do. Were it asked, it would print nothing today
+            // and a second bracket beside ours on any build that could name a bare code.
+            var rowFake = MapFilterRowFake.createMapScreenStrip("Starscape");
+            var toggle = MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING);
+
+            bindShortcutUnderThePalette(toggle, A_BOUND_KEY);
 
             assertThat(readAppendedButton(rowFake).isShortcutSpelledOut())
                 .isFalse();
@@ -415,6 +500,20 @@ class MapFilterToggleTest {
         }
     }
 
+    // Binds a key with the install's palette standing, which saying the key reads and binding it does
+    // not. Installed per call rather than per suite so the one case about a missing palette can leave
+    // it out and mean it.
+    private static void bindShortcutUnderThePalette(MapFilterToggle toggle, int keycode) {
+
+        StarsectorSettingsFake.installSettings(
+            StarsectorSettingsFake.EMPTY_STRINGS, colourKey -> SHORTCUT_COLOUR);
+        try {
+            toggle.bindShortcut(keycode);
+        } finally {
+            StarsectorSettingsFake.clearSettings();
+        }
+    }
+
     // The control that was appended, which is whatever stands last on the row: the row's own buttons
     // went up before it, and the append puts each new one after them.
     private static MapFilterButtonFake readAppendedButton(MapFilterRowFake rowFake) {
@@ -467,7 +566,7 @@ class MapFilterToggleTest {
      */
     private static final class UnplacedButtonRowFake extends PlacedRowFake {
 
-        private final MapFilterButtonFake unplacedButtonFake = new MapFilterButtonFake(null);
+        private final MapFilterButtonFake unplacedButtonFake = new MapFilterButtonFake(null, LABEL);
 
         public List<Object> getChildrenCopy() {
             return List.of(unplacedButtonFake);
@@ -477,7 +576,7 @@ class MapFilterToggleTest {
     /** A placed row whose buttons are built with no checked state to read. */
     private static final class UncheckableButtonRowFake extends PlacedRowFake {
 
-        private final MapFilterButtonFake placedButtonFake = new MapFilterButtonFake(null);
+        private final MapFilterButtonFake placedButtonFake = new MapFilterButtonFake(null, LABEL);
 
         private int appendCount;
 
@@ -521,7 +620,7 @@ class MapFilterToggleTest {
     private static final class UnplacedRowFake {
 
         public List<Object> getChildrenCopy() {
-            return List.of(new MapFilterButtonFake(null));
+            return List.of(new MapFilterButtonFake(null, LABEL));
         }
     }
 }

@@ -168,11 +168,11 @@ class VanillaToggleFactoryTest {
     private static final class TwinFactoryRowFake {
 
         private MapFilterButtonFake o00000(String buttonLabel, Object shortcut) {
-            return new MapFilterButtonFake(null);
+            return new MapFilterButtonFake(null, LABEL);
         }
 
         private MapFilterButtonFake o00001(String buttonLabel, Object modifier) {
-            return new MapFilterButtonFake(null);
+            return new MapFilterButtonFake(null, LABEL);
         }
     }
 
@@ -180,7 +180,7 @@ class VanillaToggleFactoryTest {
     private static final class UnappendableRowFake {
 
         private MapFilterButtonFake o00000(String buttonLabel, Object shortcut) {
-            return new MapFilterButtonFake(null);
+            return new MapFilterButtonFake(null, LABEL);
         }
     }
 
@@ -188,7 +188,7 @@ class VanillaToggleFactoryTest {
     private static final class TwinAppenderRowFake {
 
         private MapFilterButtonFake o00000(String buttonLabel, Object shortcut) {
-            return new MapFilterButtonFake(null);
+            return new MapFilterButtonFake(null, LABEL);
         }
 
         private void o00001(MapFilterButtonFake button, float width, float height) {

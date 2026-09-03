@@ -5,6 +5,7 @@ import com.fs.starfarer.api.ui.ButtonAPI;
 import com.fs.starfarer.api.ui.PositionAPI;
 
 import kmlib.math.geometry.Rectangle;
+import kmlib.testfixtures.starsector.ui.label.ButtonLabelFake;
 import kmlib.testfixtures.starsector.ui.layout.PositionFake;
 
 import java.util.List;
@@ -47,6 +48,10 @@ public final class MapFilterButtonFake implements ButtonAPI {
 
     private boolean isShortcutSpelledOut;
 
+    private final ButtonLabelFake label;
+
+    private final MapFilterButtonRendererFake renderer;
+
     private MapFilterActionListenerFake listener;
 
     private PositionAPI position;
@@ -55,9 +60,22 @@ public final class MapFilterButtonFake implements ButtonAPI {
 
     /**
      * @param listener what its clicks are reported to, which is the row that built it
+     * @param label    the words the row built it with, which are readable and rewritable the way
+     *                 the game's own are - a button's words are where a bound key is announced, so
+     *                 a fixture that dropped them could not show one being announced or missing
      */
-    public MapFilterButtonFake(MapFilterActionListenerFake listener) {
+    public MapFilterButtonFake(MapFilterActionListenerFake listener, String label) {
         this.listener = listener;
+        this.label = new ButtonLabelFake(label);
+        this.renderer = new MapFilterButtonRendererFake(this.label);
+    }
+
+    /**
+     * @return the words on it, as the thing that actually carries them - which is where anything
+     *         reading or rewriting them has to go
+     */
+    public ButtonLabelFake readLabel() {
+        return label;
     }
 
     /**
@@ -72,6 +90,20 @@ public final class MapFilterButtonFake implements ButtonAPI {
      */
     public int readShortcutKeycode() {
         return shortcutKeycode;
+    }
+
+    /** What draws it, which is the only route from the button to the words it wears. */
+    public MapFilterButtonRendererFake getRenderer() {
+        return renderer;
+    }
+
+    // Answers nothing, exactly as the game's own filter-row button does: the published text
+    // accessors on a button serve one kind of renderer and this is not that kind, so they read back
+    // null and write nowhere rather than failing. Modelled rather than left throwing because a
+    // subject reaching a button's words the obvious way finds precisely this, and finds it silently.
+    @Override
+    public String getText() {
+        return null;
     }
 
     @Override
@@ -118,6 +150,12 @@ public final class MapFilterButtonFake implements ButtonAPI {
         this.listener = listener;
     }
 
+    // Writes nowhere, the other half of what the game's own filter-row button does with its text
+    // accessors: the words are not the button's to set, and nothing says so at the call site.
+    @Override
+    public void setText(String label) {
+    }
+
     @Override
     public void setShortcut(int keycode, boolean isSpelledOut) {
         this.shortcutKeycode = keycode;
@@ -161,11 +199,6 @@ public final class MapFilterButtonFake implements ButtonAPI {
 
     @Override
     public float getOpacity() {
-        throw new UnsupportedOperationException(NOT_A_ROW_BUTTON);
-    }
-
-    @Override
-    public String getText() {
         throw new UnsupportedOperationException(NOT_A_ROW_BUTTON);
     }
 
@@ -281,11 +314,6 @@ public final class MapFilterButtonFake implements ButtonAPI {
 
     @Override
     public void setSkipPlayingPressedSoundOnce(boolean isSkipped) {
-        throw new UnsupportedOperationException(NOT_A_ROW_BUTTON);
-    }
-
-    @Override
-    public void setText(String text) {
         throw new UnsupportedOperationException(NOT_A_ROW_BUTTON);
     }
 
