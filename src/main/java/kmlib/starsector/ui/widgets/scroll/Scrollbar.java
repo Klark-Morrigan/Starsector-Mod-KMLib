@@ -7,10 +7,10 @@ import kmlib.math.ranges.Ranges;
  * The geometry of a vertical scrollbar over a {@link ScrollRegion}: the track in the region's container
  * gutter at a given {@link ScrollbarThickness}, the thumb sized and positioned within it for how far the
  * content is scrolled, the grab column a drag reads, and the scroll offset a pointer on the track maps
- * to. How thick the bar draws is an input rather than a constant here, so a host that lets a player
- * judge the bar on screen varies it. Substrate-independent - it computes
- * rectangles and offsets, rendering nothing - so a GL or a UI-API renderer paints against it and an input
- * listener hit-tests it. The raw-GL paint lives in {@link kmlib.starsector.ui.render.gl.panel.ScrollbarRenderer}.
+ * to. How thick the bar draws is an input rather than a constant here. Substrate-independent - it
+ * computes rectangles and offsets, rendering nothing - so a GL or a UI-API renderer paints against it
+ * and an input listener hit-tests it. The raw-GL paint lives in
+ * {@link kmlib.starsector.ui.render.gl.panel.ScrollbarRenderer}.
  *
  * <p>The scrollbar is scoped to the scrollable region, not to any host: everything it needs rides on the
  * {@link ScrollRegion} (the container for the track's gutter, the viewport for its extent, the
@@ -35,6 +35,11 @@ public final class Scrollbar {
      * the track sits in the container's gutter clear of the content. A thicker bar therefore grows
      * leftward from a fixed right edge, the margin off that edge being the one gap the thickness does not
      * set. Pairs with {@link #computeThumb}, which sizes the thumb within it.
+     *
+     * <p>Reserving that gutter is the caller's - {@link ScrollbarThickness#computeGutterWidth} is the
+     * width to keep clear - since only whatever laid the container out can widen it. A track thicker
+     * than the room left is placed all the same, over the content, and the grab column beside it then
+     * runs narrower than the track it is meant to be easier to hit than.
      *
      * @param region    the scrollable region
      * @param thickness how wide the track draws

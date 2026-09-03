@@ -37,13 +37,13 @@ public record ScrollbarThickness(float pixels) {
     }
 
     /**
-     * The width the bar occupies across the right of its container: the track itself plus the margin
-     * off the edge and the clearance off the content. This states the gutter and stops there - it does
-     * not know what padding a container already insets its content by, nor subtract one from the other.
-     * That arithmetic belongs to whatever lays the container out, and reaching for it here would point
-     * this package at the layout tier that arranges it, reversing the one edge between the two.
+     * States the gutter and stops there - it does not know what padding a container already insets its
+     * content by, nor subtract one from the other. That arithmetic belongs to whatever lays the
+     * container out, and reaching for it here would point this package at the layout tier that arranges
+     * it, reversing the one edge between the two.
      *
-     * @return the total width the bar needs clear of the content
+     * @return the width the bar needs clear of the content: the track, the margin off the container's
+     *         edge, and the clearance off the content
      */
     public float computeGutterWidth() {
         return pixels + RIGHT_MARGIN + CONTENT_CLEARANCE;

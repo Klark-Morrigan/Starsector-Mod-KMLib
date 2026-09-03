@@ -340,7 +340,10 @@ No Starsector API on the signature.
   until its inputs change.
 - **`kmlib.starsector.ui.widgets.scroll`** - scroll offset state with
   clamping, and scrollbar track, thumb and grab-column geometry over a scroll
-  region or a panel placement.
+  region or a panel placement, at a bar thickness the caller sets rather than
+  a width the geometry holds - carried with the two fixed gaps flanking the
+  track, so the one dimension a bar is judged by varies while its spacing does
+  not, and stating the gutter a container reserves for it.
 - **`kmlib.starsector.ui.widgets.segments`** - splitting a row into segments
   under uniform, snapped or fixed sizing, and the dividers and channels
   between them.
