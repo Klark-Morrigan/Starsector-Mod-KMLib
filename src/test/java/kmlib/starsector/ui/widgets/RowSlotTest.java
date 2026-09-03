@@ -52,6 +52,24 @@ class RowSlotTest {
         return rowSlot.computeWidth(lineHeight, spanMeasurer);
     }
 
+    // Each slot named by the case it was handed to, so one assertion reads which kind reached which
+    // case for every kind at once.
+    private static List<String> listKindNames(RowSlot... rowSlots) {
+
+        var kindNames = new ArrayList<String>(rowSlots.length);
+
+        for (var rowSlot : rowSlots) {
+            kindNames.add(rowSlot.selectByCase(
+                image -> "image",
+                text -> "text",
+                textRuns -> "textRuns",
+                tick -> "tick",
+                triangle -> "triangle",
+                () -> "empty"));
+        }
+        return kindNames;
+    }
+
     @Nested
     class ComputeWidth {
         @Test
@@ -278,6 +296,39 @@ class RowSlotTest {
                 .isFalse();
             assertThat(computeWidth(new RowSlot.Text(TextSpan.createBlank(SLOT_COLOUR)), LINE_HEIGHT))
                 .isEqualTo(RowSlot.NO_WIDTH);
+        }
+    }
+
+    @Nested
+    class SelectByCase {
+
+        @Test
+        void selectByCaseHandsEachKindToItsOwnCase() {
+            // The fold is how a painter is meant to branch on the kind, so every kind reaching its own
+            // case is the whole of what it promises. Run over all six at once, since a kind wired to a
+            // neighbour's case is exactly the mistake a per-kind case would read as passing.
+            assertThat(listKindNames(
+                    new RowSlot.Image("crest_a"),
+                    new RowSlot.Text(new TextSpan("7", SLOT_COLOUR)),
+                    new RowSlot.TextRuns(List.of(new TextSpan("7", SLOT_COLOUR))),
+                    new RowSlot.Tick(true),
+                    new RowSlot.Triangle(TriangleDirection.UP),
+                    RowSlot.EMPTY))
+                .containsExactly("image", "text", "textRuns", "tick", "triangle", "empty");
+        }
+
+        @Test
+        void selectByCaseHandsTheSlotItselfToTheCaseThatTookIt() {
+            // A painter reads the slot's own content off the case it landed in, so the fold has to hand
+            // over the slot rather than only say which kind it was.
+            assertThat(new RowSlot.Text(new TextSpan("-40", SLOT_COLOUR)).<String>selectByCase(
+                    image -> null,
+                    text -> text.textSpan().text(),
+                    textRuns -> null,
+                    tick -> null,
+                    triangle -> null,
+                    () -> null))
+                .isEqualTo("-40");
         }
     }
 

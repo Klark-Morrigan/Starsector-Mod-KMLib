@@ -12,6 +12,7 @@ import kmlib.starsector.ui.render.gl.TriangleRenderer;
 import kmlib.starsector.ui.render.gl.UiElementPaint;
 import kmlib.starsector.ui.render.gl.style.WidgetStyle;
 import kmlib.starsector.ui.render.gl.tabs.TabChromeRenderer;
+import kmlib.starsector.ui.text.LabelRun;
 import kmlib.starsector.ui.widgets.Checkbox;
 import kmlib.starsector.ui.widgets.IconLabelRow;
 import kmlib.starsector.ui.widgets.LabelledRow;
@@ -347,35 +348,87 @@ public final class ControlRenderer {
     }
 
     // The row's trailing slot: a filled direction triangle for a marker the body font has no glyph for
-    // (a sort selector's ascending/descending), or the right-aligned run of text a ranked row shows as
-    // its value. Both right-align to the same inset the layout reserved, so a triangle column and a value
-    // column occupy the same right-hand strip. A row trailing with nothing draws nothing here.
+    // (a sort selector's ascending/descending), or the right-aligned value a ranked row shows - as one
+    // run, or as several where the value is picked out in shades of its own. All right-align to the same
+    // inset the layout reserved, so a triangle column and a value column occupy the same right-hand
+    // strip. A row trailing with nothing draws nothing here.
+    //
+    // Every kind is stated, the three this surface paints nothing for included: a trailing crest and a
+    // trailing tick are not things a control row shows, and saying so through the fold is what makes a
+    // seventh kind break here rather than quietly leave the column empty.
     private static void drawTrailingRowSlot(
             RowSlot trailingRowSlot,
             Rectangle segment,
             ControlPaint paint) {
 
-        if (trailingRowSlot instanceof RowSlot.Triangle triangle) {
-            // In the row's body text tone so it reads as a quiet annotation like the value it replaces.
-            var trianglePaint = new UiElementPaint(
-                StarsectorUiColour.VANILLA_TEXT.resolve(),
-                paint.opacity());
-            TriangleRenderer.render(
-                IconLabelRow.computeDirectionTriangleBox(segment),
-                triangle.triangleDirection(),
-                trianglePaint);
+        trailingRowSlot.<Void>selectByCase(
+            image -> null,
+            text -> {
+                drawTrailingText(text, segment, paint);
+                return null;
+            },
+            textRuns -> {
+                drawTrailingTextRuns(textRuns, segment, paint);
+                return null;
+            },
+            tick -> null,
+            triangle -> {
+                drawTrailingTriangle(triangle, segment, paint);
+                return null;
+            },
+            () -> null);
+    }
+
+    // The marker in the row's body text tone, so it reads as a quiet annotation like the value it
+    // replaces.
+    private static void drawTrailingTriangle(
+            RowSlot.Triangle triangle,
+            Rectangle segment,
+            ControlPaint paint) {
+
+        var trianglePaint = new UiElementPaint(
+            StarsectorUiColour.VANILLA_TEXT.resolve(),
+            paint.opacity());
+
+        TriangleRenderer.render(
+            IconLabelRow.computeDirectionTriangleBox(segment),
+            triangle.triangleDirection(),
+            trianglePaint);
+    }
+
+    // A one-run value, drawn at the body size - the same size the layout reserved the column at - and in
+    // the run's own colour, so a value the row picked out reads as picked out here too. A run that came
+    // out blank draws nothing rather than anchoring an empty string.
+    private static void drawTrailingText(
+            RowSlot.Text text,
+            Rectangle segment,
+            ControlPaint paint) {
+
+        if (!text.textSpan().hasContent()) {
             return;
         }
-        if (trailingRowSlot instanceof RowSlot.Text text && text.textSpan().hasContent()) {
-            // Drawn at the body size - the same size the layout reserved the column at - and in the run's
-            // own colour, so a value the row picked out reads as picked out here too.
-            ControlLabelRenderer.drawBodySpan(
-                paint,
-                text.textSpan(),
-                IconLabelRow.computeTrailingAnchorX(segment),
-                segment.computeCenterY(),
-                LazyFont.TextAnchor.CENTER_RIGHT);
-        }
+        ControlLabelRenderer.drawBodySpan(
+            paint,
+            text.textSpan(),
+            IconLabelRow.computeTrailingAnchorX(segment),
+            segment.computeCenterY(),
+            LazyFont.TextAnchor.CENTER_RIGHT);
+    }
+
+    // A value of several runs, finishing at the same inset a one-run value finishes at, so a row whose
+    // value is picked out in two shades lines its column up with every plainer row above it. Each run is
+    // drawn on its own for the reason a label's runs are: batched into one string, a run's colour would
+    // be flattened to the first one's, which is the whole of what a second run buys a caller.
+    private static void drawTrailingTextRuns(
+            RowSlot.TextRuns textRuns,
+            Rectangle segment,
+            ControlPaint paint) {
+
+        ControlLabelRenderer.drawRightAlignedBodyLabelRuns(
+            paint,
+            List.<LabelRun>copyOf(textRuns.textSpans()),
+            IconLabelRow.computeTrailingAnchorX(segment),
+            segment.computeCenterY());
     }
 
     // A single button washed when the spec's cell is lit, its label centred in it - the lit state is the

@@ -80,19 +80,29 @@ public final class IconRadioListRenderer {
         for (var index = 0; index < segments.size(); index++) {
 
             // Only an image slot paints here; a row leading with nothing, or with a slot this widget has
-            // no paint for, leaves the column clear rather than the widget guessing at a stand-in.
-            if (!(leadingRowSlots.get(index) instanceof RowSlot.Image image)) {
-                continue;
-            }
+            // no paint for, leaves the column clear rather than the widget guessing at a stand-in. Every
+            // kind says so through the fold, so a kind added later breaks this widget rather than
+            // quietly joining the ones it draws nothing for.
+            //
+            // The image is multiplied by whatever tint the slot states, so a row the caller marked as
+            // receding draws its icon back with its words rather than at full strength beside greyed
+            // text. A slot stating none passes null, which UiSprite already draws as authored.
+            var iconBox = IconLabelRow.computeIconBox(segments.get(index));
 
-            // Multiplied by whatever tint the slot states, so a row the caller marked as receding
-            // draws its icon back with its words rather than at full strength beside greyed text. A
-            // slot stating none passes null, which UiSprite already draws as authored.
-            UiSprite.renderImage(
-                image.spritePath(),
-                IconLabelRow.computeIconBox(segments.get(index)),
-                opacity,
-                image.tintColour());
+            leadingRowSlots.get(index).<Void>selectByCase(
+                image -> {
+                    UiSprite.renderImage(
+                        image.spritePath(),
+                        iconBox,
+                        opacity,
+                        image.tintColour());
+                    return null;
+                },
+                text -> null,
+                textRuns -> null,
+                tick -> null,
+                triangle -> null,
+                () -> null);
         }
     }
 }

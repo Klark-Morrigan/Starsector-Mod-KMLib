@@ -9,6 +9,8 @@ import kmlib.starsector.ui.text.TextSpan;
 import java.awt.Color;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * What a row carries beside its label - a small image, a run of text, a tick, a direction triangle, or
@@ -19,7 +21,10 @@ import java.util.Objects;
  *
  * <p>A sealed set instead: a new kind of flanking element is a new member, and every layout that
  * branches on the kind stops compiling until it handles the new one - which is the whole difference
- * between a model that can absorb a new kind and one that quietly draws nothing for it.
+ * between a model that can absorb a new kind and one that quietly draws nothing for it. That promise is
+ * {@link #selectByCase}'s to keep and not the sealing's: the mod targets Java 17, whose {@code switch}
+ * is not exhaustive over a sealed set, so a painter branching by {@code instanceof} compiles perfectly
+ * well with a kind unhandled and silently leaves that column empty.
  *
  * <p>Every member answers its own width for a line of a given height, because that width is the one
  * fact a stack of rows needs to reserve a column all of them share, and the arithmetic behind it
@@ -73,6 +78,35 @@ public sealed interface RowSlot {
     boolean isFilled();
 
     /**
+     * Hands this slot to whichever of the six cases the caller wrote for it, and answers what that one
+     * produced.
+     *
+     * <p>How a painter is meant to branch on the kind. A new member added to the set breaks every
+     * caller of this at once, which is what the sealing claims and cannot itself deliver on Java 17 -
+     * an {@code instanceof} chain missing a kind draws nothing for it and says nothing about it, and a
+     * column that silently stops being painted is the hardest kind of absence to notice.
+     *
+     * <p>A painter with nothing to draw for a kind states that as its own case rather than by leaving
+     * it out, so "this surface paints no tick" is written down where a reader can see it was decided.
+     *
+     * @param <R>           what the caller produces for a slot
+     * @param imageCase     what a slot holding a small image produces
+     * @param textCase      what a slot holding one run of text produces
+     * @param textRunsCase  what a slot holding a value of several runs produces
+     * @param tickCase      what a slot holding a tick box produces
+     * @param triangleCase  what a slot holding a direction triangle produces
+     * @param emptyCase     what an unfilled slot produces
+     * @return the answer of the case this slot is
+     */
+    <R> R selectByCase(
+        Function<Image, R> imageCase,
+        Function<Text, R> textCase,
+        Function<TextRuns, R> textRunsCase,
+        Function<Tick, R> tickCase,
+        Function<Triangle, R> triangleCase,
+        Supplier<R> emptyCase);
+
+    /**
      * A small image drawn in the slot - a faction crest, an icon, whatever the host supplies. It hangs
      * as a square as tall as its line, so it sits level with the label beside it whatever face that
      * label draws in, and a stack of rows shows equally-sized images without any row stating a size.
@@ -123,6 +157,18 @@ public sealed interface RowSlot {
         public boolean isFilled() {
             return true;
         }
+
+        @Override
+        public <R> R selectByCase(
+                Function<Image, R> imageCase,
+                Function<Text, R> textCase,
+                Function<TextRuns, R> textRunsCase,
+                Function<Tick, R> tickCase,
+                Function<Triangle, R> triangleCase,
+                Supplier<R> emptyCase) {
+
+            return imageCase.apply(this);
+        }
     }
 
     /**
@@ -161,6 +207,18 @@ public sealed interface RowSlot {
         @Override
         public boolean isFilled() {
             return textSpan.hasContent();
+        }
+
+        @Override
+        public <R> R selectByCase(
+                Function<Image, R> imageCase,
+                Function<Text, R> textCase,
+                Function<TextRuns, R> textRunsCase,
+                Function<Tick, R> tickCase,
+                Function<Triangle, R> triangleCase,
+                Supplier<R> emptyCase) {
+
+            return textCase.apply(this);
         }
     }
 
@@ -230,6 +288,18 @@ public sealed interface RowSlot {
                 .stream()
                 .anyMatch(TextSpan::hasContent);
         }
+
+        @Override
+        public <R> R selectByCase(
+                Function<Image, R> imageCase,
+                Function<Text, R> textCase,
+                Function<TextRuns, R> textRunsCase,
+                Function<Tick, R> tickCase,
+                Function<Triangle, R> triangleCase,
+                Supplier<R> emptyCase) {
+
+            return textRunsCase.apply(this);
+        }
     }
 
     /**
@@ -251,6 +321,18 @@ public sealed interface RowSlot {
         @Override
         public boolean isFilled() {
             return true;
+        }
+
+        @Override
+        public <R> R selectByCase(
+                Function<Image, R> imageCase,
+                Function<Text, R> textCase,
+                Function<TextRuns, R> textRunsCase,
+                Function<Tick, R> tickCase,
+                Function<Triangle, R> triangleCase,
+                Supplier<R> emptyCase) {
+
+            return tickCase.apply(this);
         }
     }
 
@@ -283,6 +365,18 @@ public sealed interface RowSlot {
         public boolean isFilled() {
             return true;
         }
+
+        @Override
+        public <R> R selectByCase(
+                Function<Image, R> imageCase,
+                Function<Text, R> textCase,
+                Function<TextRuns, R> textRunsCase,
+                Function<Tick, R> tickCase,
+                Function<Triangle, R> triangleCase,
+                Supplier<R> emptyCase) {
+
+            return triangleCase.apply(this);
+        }
     }
 
     /**
@@ -302,6 +396,18 @@ public sealed interface RowSlot {
         @Override
         public boolean isFilled() {
             return false;
+        }
+
+        @Override
+        public <R> R selectByCase(
+                Function<Image, R> imageCase,
+                Function<Text, R> textCase,
+                Function<TextRuns, R> textRunsCase,
+                Function<Tick, R> tickCase,
+                Function<Triangle, R> triangleCase,
+                Supplier<R> emptyCase) {
+
+            return emptyCase.get();
         }
     }
 }

@@ -236,29 +236,45 @@ public final class CursorTooltipRenderer {
             TooltipLayout.TooltipRowLayout placement,
             RowPaint rowPaint) {
 
-        // What the leading column holds decides what is drawn in it: a slot holding something other than
-        // an image draws nothing here rather than resolving to a texture lookup never meant for it.
-        // Faded through the paint the row's text draws with, so a crest and the label beside it cannot
-        // end up compositing at two different alphas, and multiplied by whatever tint the slot states -
-        // honoured here as well as in the list widget, since a slot whose tint one of the two surfaces
-        // silently ignored would be worse than one that carried none.
-        if (labelledRow.leadingRowSlot() instanceof RowSlot.Image crestRowSlot) {
-            UiSprite.renderImage(
-                crestRowSlot.spritePath(),
-                computeImageBox(placement.leadingRowSlotX(), placement),
-                rowPaint.opacity(),
-                crestRowSlot.tintColour());
-        }
-        if (labelledRow.trailingRowSlot() instanceof RowSlot.Text valueRowSlot) {
-            rowPaint.drawSpan(
-                valueRowSlot.textSpan(),
-                placement.trailingRowSlotX(),
-                placement.rowTopY(),
-                LazyFont.TextAnchor.TOP_RIGHT);
-        }
-        if (labelledRow.trailingRowSlot() instanceof RowSlot.TextRuns valueRowSlot) {
-            drawTrailingTextRuns(valueRowSlot, placement, rowPaint);
-        }
+        // What each column holds decides what is drawn in it, stated through the fold so every kind is
+        // accounted for: a leading slot other than an image draws nothing rather than resolving to a
+        // texture lookup never meant for it, and a trailing tick or triangle is not a thing a tooltip
+        // row shows. Faded through the paint the row's text draws with, so a crest and the label beside
+        // it cannot end up compositing at two different alphas, and multiplied by whatever tint the slot
+        // states - honoured here as well as in the list widget, since a slot whose tint one of the two
+        // surfaces silently ignored would be worse than one that carried none.
+        labelledRow.leadingRowSlot().<Void>selectByCase(
+            crestRowSlot -> {
+                UiSprite.renderImage(
+                    crestRowSlot.spritePath(),
+                    computeImageBox(placement.leadingRowSlotX(), placement),
+                    rowPaint.opacity(),
+                    crestRowSlot.tintColour());
+                return null;
+            },
+            text -> null,
+            textRuns -> null,
+            tick -> null,
+            triangle -> null,
+            () -> null);
+
+        labelledRow.trailingRowSlot().<Void>selectByCase(
+            image -> null,
+            valueRowSlot -> {
+                rowPaint.drawSpan(
+                    valueRowSlot.textSpan(),
+                    placement.trailingRowSlotX(),
+                    placement.rowTopY(),
+                    LazyFont.TextAnchor.TOP_RIGHT);
+                return null;
+            },
+            valueRowSlot -> {
+                drawTrailingTextRuns(valueRowSlot, placement, rowPaint);
+                return null;
+            },
+            tick -> null,
+            triangle -> null,
+            () -> null);
     }
 
     // Draws a value made of several runs inside the column reserved for it: the runs read left to right

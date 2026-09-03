@@ -168,6 +168,31 @@ final class ControlLabelRenderer {
             centreY);
     }
 
+    /**
+     * The same runs set to finish at {@code rightX}: the whole measured span is right-aligned as one, so
+     * a value picked out in two colours ends flush where a one-run value ends. Sibling to
+     * {@link #drawCentredBodyLabelRuns}, differing only in which edge the measured width is taken off.
+     *
+     * @param paint     the look and alpha the control draws with
+     * @param labelRuns the label's runs in reading order
+     * @param rightX    the right edge the runs finish at, in UI units
+     * @param centreY   the middle line of the row the label is centred on
+     */
+    static void drawRightAlignedBodyLabelRuns(
+            ControlPaint paint,
+            List<LabelRun> labelRuns,
+            float rightX,
+            float centreY) {
+
+        var runsWidth = measureBodyLabelRuns(paint, labelRuns).runsWidth();
+
+        drawBodyLabelRuns(
+            paint,
+            labelRuns,
+            rightX - runsWidth,
+            centreY);
+    }
+
     // The body-line measurement bound to the face this pass paints in, so a run charges its own width
     // without the walk above learning which face it will be drawn in.
     private static StyledSpanMeasurer bindBodySpanMeasurer(ControlPaint paint) {
