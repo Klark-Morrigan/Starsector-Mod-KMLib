@@ -5,8 +5,10 @@ import kmlib.math.ranges.Ranges;
 
 /**
  * The geometry of a vertical scrollbar over a {@link ScrollRegion}: the track in the region's container
- * gutter, the thumb sized and positioned within it for how far the content is scrolled, the grab column a
- * drag reads, and the scroll offset a pointer on the track maps to. Substrate-independent - it computes
+ * gutter at a given {@link ScrollbarThickness}, the thumb sized and positioned within it for how far the
+ * content is scrolled, the grab column a drag reads, and the scroll offset a pointer on the track maps
+ * to. How thick the bar draws is an input rather than a constant here, so a host that lets a player
+ * judge the bar on screen varies it. Substrate-independent - it computes
  * rectangles and offsets, rendering nothing - so a GL or a UI-API renderer paints against it and an input
  * listener hit-tests it. The raw-GL paint lives in {@link kmlib.starsector.ui.render.gl.panel.ScrollbarRenderer}.
  *
@@ -19,10 +21,6 @@ import kmlib.math.ranges.Ranges;
  */
 public final class Scrollbar {
 
-    /** The track's width, and the gap holding it off the container's right edge so it clears a border. */
-    public static final float DEFAULT_TRACK_WIDTH = 3f;
-    public static final float DEFAULT_RIGHT_MARGIN = 3f;
-
     // A floor on the thumb height so a very long list still leaves a grabbable thumb rather than a
     // sliver; a track shorter than this collapses the thumb to the whole track.
     static final float MIN_THUMB_HEIGHT = 12f;
@@ -31,19 +29,23 @@ public final class Scrollbar {
     }
 
     /**
-     * The scrollbar track: a thin bar in the right-hand gutter of the region's container, spanning the
-     * region's viewport. It pins to the container's right edge (not the viewport's), because the list
-     * column the viewport covers may be narrower than the container, so the track sits in the container's
-     * gutter clear of the content. Pairs with {@link #computeThumb}, which sizes the thumb within it.
+     * The scrollbar track: a bar in the right-hand gutter of the region's container, as wide as
+     * {@code thickness} and spanning the region's viewport. It pins to the container's right edge (not
+     * the viewport's), because the list column the viewport covers may be narrower than the container, so
+     * the track sits in the container's gutter clear of the content. A thicker bar therefore grows
+     * leftward from a fixed right edge, the margin off that edge being the one gap the thickness does not
+     * set. Pairs with {@link #computeThumb}, which sizes the thumb within it.
      *
-     * @param region the scrollable region
+     * @param region    the scrollable region
+     * @param thickness how wide the track draws
      * @return the track rectangle, in UI coordinates
      */
-    public static Rectangle computeTrack(ScrollRegion region) {
+    public static Rectangle computeTrack(ScrollRegion region, ScrollbarThickness thickness) {
         var container = region.container();
         var viewport = region.viewport();
-        var trackX = container.x() + container.width() - DEFAULT_TRACK_WIDTH - DEFAULT_RIGHT_MARGIN;
-        return new Rectangle(trackX, viewport.y(), DEFAULT_TRACK_WIDTH, viewport.height());
+        var trackWidth = thickness.pixels();
+        var trackX = container.x() + container.width() - trackWidth - ScrollbarThickness.RIGHT_MARGIN;
+        return new Rectangle(trackX, viewport.y(), trackWidth, viewport.height());
     }
 
     /**

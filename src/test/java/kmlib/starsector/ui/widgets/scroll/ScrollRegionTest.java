@@ -14,7 +14,9 @@ import static org.assertj.core.api.Assertions.within;
  * the content height as a separate field.
  */
 final class ScrollRegionTest {
+
     private static final float TOLERANCE = 0.01f;
+
     private static final Rectangle CONTAINER = new Rectangle(0f, 0f, 100f, 300f);
     private static final Rectangle VIEWPORT = new Rectangle(0f, 0f, 100f, 120f);
 
@@ -25,14 +27,18 @@ final class ScrollRegionTest {
         void computeContentHeightIsTheViewportPlusItsOverflow() {
             // The visible viewport (120) plus how far the content overruns it (80) is the full content.
             var region = new ScrollRegion(CONTAINER, VIEWPORT, 0f, 80f);
-            assertThat(region.computeContentHeight()).isCloseTo(200f, within(TOLERANCE));
+
+            assertThat(region.computeContentHeight())
+                .isCloseTo(200f, within(TOLERANCE));
         }
 
         @Test
         void computeContentHeightIsTheViewportWhenNothingOverflows() {
             // A content that fits is exactly its viewport tall.
             var region = new ScrollRegion(CONTAINER, VIEWPORT, 0f, 0f);
-            assertThat(region.computeContentHeight()).isCloseTo(120f, within(TOLERANCE));
+
+            assertThat(region.computeContentHeight())
+                .isCloseTo(120f, within(TOLERANCE));
         }
     }
 }

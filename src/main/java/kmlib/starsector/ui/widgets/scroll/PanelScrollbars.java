@@ -22,7 +22,7 @@ public final class PanelScrollbars {
      * @return the scrollbar track in the panel body's right gutter
      */
     public static Rectangle computeTrack(PanelPlacement placement) {
-        return Scrollbar.computeTrack(placement.toScrollRegion());
+        return Scrollbar.computeTrack(placement.toScrollRegion(), ScrollbarThickness.DEFAULT);
     }
 
     /**
@@ -31,7 +31,7 @@ public final class PanelScrollbars {
      */
     public static Rectangle computeThumb(PanelPlacement placement) {
         var region = placement.toScrollRegion();
-        return Scrollbar.computeThumb(region, Scrollbar.computeTrack(region));
+        return Scrollbar.computeThumb(region, Scrollbar.computeTrack(region, ScrollbarThickness.DEFAULT));
     }
 
     /**
@@ -49,6 +49,7 @@ public final class PanelScrollbars {
      */
     public static float resolveOffsetForPointer(PanelPlacement placement, float pointerY) {
         var region = placement.toScrollRegion();
-        return Scrollbar.resolveOffsetForPointer(region, Scrollbar.computeTrack(region), pointerY);
+        var track = Scrollbar.computeTrack(region, ScrollbarThickness.DEFAULT);
+        return Scrollbar.resolveOffsetForPointer(region, track, pointerY);
     }
 }

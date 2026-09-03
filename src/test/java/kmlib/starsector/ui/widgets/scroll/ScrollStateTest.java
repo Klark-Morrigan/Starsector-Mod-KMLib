@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.within;
  * a fresh instance, so the cases do not leak into one another.
  */
 final class ScrollStateTest {
+
     private static final float TOLERANCE = 0.01f;
 
     @Nested
@@ -20,9 +21,13 @@ final class ScrollStateTest {
 
         @Test
         void scrollByAddsToTheOffset() {
+
             var state = new ScrollState();
+
             state.scrollBy(30f);
-            assertThat(state.getOffset()).isCloseTo(30f, within(TOLERANCE));
+
+            assertThat(state.getOffset())
+                .isCloseTo(30f, within(TOLERANCE));
         }
 
         @Test
@@ -30,9 +35,12 @@ final class ScrollStateTest {
             // A run of notches sums, so repeated scrolling walks the content rather than jumping to a
             // single position.
             var state = new ScrollState();
+
             state.scrollBy(30f);
             state.scrollBy(-10f);
-            assertThat(state.getOffset()).isCloseTo(20f, within(TOLERANCE));
+
+            assertThat(state.getOffset())
+                .isCloseTo(20f, within(TOLERANCE));
         }
     }
 
@@ -44,9 +52,12 @@ final class ScrollStateTest {
             // A scrollbar drag maps the pointer to an absolute position, so setOffset replaces the offset
             // rather than accumulating like scrollBy does.
             var state = new ScrollState();
+
             state.scrollBy(30f);
             state.setOffset(80f);
-            assertThat(state.getOffset()).isCloseTo(80f, within(TOLERANCE));
+
+            assertThat(state.getOffset())
+                .isCloseTo(80f, within(TOLERANCE));
         }
     }
 
@@ -58,17 +69,24 @@ final class ScrollStateTest {
             // A request past the content's bottom settles at the overflow, so the stored value tracks what
             // can be scrolled rather than drifting far below the last row.
             var state = new ScrollState();
+
             state.scrollBy(500f);
             state.clampTo(100f);
-            assertThat(state.getOffset()).isCloseTo(100f, within(TOLERANCE));
+
+            assertThat(state.getOffset())
+                .isCloseTo(100f, within(TOLERANCE));
         }
 
         @Test
         void clampToFloorsANegativeOffsetAtTheTop() {
+
             var state = new ScrollState();
+
             state.scrollBy(-50f);
             state.clampTo(100f);
-            assertThat(state.getOffset()).isZero();
+
+            assertThat(state.getOffset())
+                .isZero();
         }
 
         @Test
@@ -76,9 +94,12 @@ final class ScrollStateTest {
             // A region that now fits (overflow 0) pulls the stored offset back to the top, so a shrunk
             // region does not stay scrolled into blank space.
             var state = new ScrollState();
+
             state.scrollBy(40f);
             state.clampTo(0f);
-            assertThat(state.getOffset()).isZero();
+
+            assertThat(state.getOffset())
+                .isZero();
         }
     }
 }
