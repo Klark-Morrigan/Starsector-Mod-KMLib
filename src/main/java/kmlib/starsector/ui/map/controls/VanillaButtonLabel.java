@@ -5,12 +5,16 @@ import com.fs.starfarer.api.ui.LabelAPI;
 
 import kmlib.logging.SessionWarning;
 import kmlib.starsector.ui.colour.StarsectorUiColour;
+import kmlib.starsector.ui.coreui.CoreUiMethod;
 import kmlib.starsector.ui.coreui.CoreUiMethods;
 import kmlib.text.KmlibStrings;
 
 import org.apache.log4j.Logger;
 
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.Locale;
+import java.util.Set;
 
 /**
  * The words on a button the game built, and how a key bound to that button is said in them.
@@ -51,6 +55,18 @@ final class VanillaButtonLabel {
     private static final String RENDERER_ACCESSOR = "getRenderer";
     private static final String TITLE_ACCESSOR = "getTitle";
 
+    // Every object's own shape accessor, which leads out of the widget tree rather than down it.
+    private static final String CLASS_ACCESSOR = "getClass";
+
+    // Values from the standard library are the end of the walk: a widget's words are held by another
+    // widget, so a string, a list or a colour is somewhere the search has already gone wrong.
+    private static final String STANDARD_LIBRARY_PREFIX = "java.";
+
+    // How far below a button its words sit: its renderer, and the piece that renderer holds. Stated
+    // rather than left open because an unbounded walk over a live widget tree would call its way
+    // across half the screen looking for something that is two hops away or nowhere.
+    private static final int MAX_HOPS_BELOW_RENDERER = 2;
+
     // How the row's own buttons wear a key their words do not already contain - "Starscape [1]".
     private static final String SHORTCUT_SUFFIX = " [%s]";
 
@@ -71,7 +87,13 @@ final class VanillaButtonLabel {
 
         try {
             var renderer = readNoArg(button, RENDERER_ACCESSOR);
-            var label = findLabelUnder(renderer == null ? button : renderer);
+            var label = findLabelUnder(
+                renderer == null ? button : renderer,
+                MAX_HOPS_BELOW_RENDERER,
+                // By identity: two widgets are the same node here only if they are the same object,
+                // and asking a live widget whether it equals another is a question it may answer
+                // expensively or not at all.
+                Collections.newSetFromMap(new IdentityHashMap<>()));
 
             if (label == null) {
                 WARNING.warnOnce(
@@ -128,25 +150,32 @@ final class VanillaButtonLabel {
         lightRun(bracketed.trim());
     }
 
-    // Whether a shape answers a title that is drawable words, asked of the type before anything is
-    // called on the instance. What makes the hop below the renderer a lookup rather than a trawl:
-    // the one method worth calling is the one already declaring where it leads.
-    private static boolean declaresTitleAccessor(Class<?> shape) {
+    // Whether a member is worth following in search of the words: something the node holds, asked
+    // for without arguments, and not a value out of the standard library - a widget's words are held
+    // by another widget, so a hop into a string or a list is a hop out of the tree.
+    private static boolean isFollowableHop(CoreUiMethod method) {
 
-        return CoreUiMethods.readPublicMethodsOf(shape)
-            .stream()
-            .anyMatch(method -> TITLE_ACCESSOR.equals(method.getName())
-                    && method.getParameterTypes().isEmpty()
-                    && LabelAPI.class.isAssignableFrom(method.getReturnType()));
+        var held = method.getReturnType();
+
+        return method.getParameterTypes().isEmpty()
+            && !held.isPrimitive()
+            && !held.getName().startsWith(STANDARD_LIBRARY_PREFIX)
+            && !CLASS_ACCESSOR.equals(method.getName());
     }
 
-    // The words under a node: its own title, or the title of the one thing it holds that has one.
-    // Two levels is the whole depth the game uses - a button's renderer either draws its own words
-    // or holds the piece that does - so a deeper walk would be searching for something that is not
-    // there.
-    private static LabelAPI findLabelUnder(Object node) {
+    // The words under a node: its own title, or the title of something it holds.
+    //
+    // The hop between a button's renderer and the piece carrying its words is followed by calling it
+    // and looking at what came back, rather than by reading what it promises to return. It has to
+    // be: the game declares that hop as something broader than the piece it actually hands over and
+    // tests the answer itself, so a search that trusted the declared type would skip the one member
+    // that leads anywhere - which is exactly what it did.
+    //
+    // Bounded to the depth the game uses, and every call guarded: a widget asked a question it does
+    // not care for answers by throwing, and that is a dead end here rather than a failure.
+    private static LabelAPI findLabelUnder(Object node, int hopsLeft, Set<Object> visited) {
 
-        if (node == null) {
+        if (node == null || !visited.add(node)) {
             return null;
         }
 
@@ -158,26 +187,38 @@ final class VanillaButtonLabel {
             return title;
         }
 
-        return findTitleBelow(node);
+        return hopsLeft <= 0 ? null : findLabelBelow(node, hopsLeft, visited);
     }
 
-    // The title of whatever the node holds. Only the members whose own type promises one are called,
-    // so a widget is never asked a question to find out whether it was the right question.
-    private static LabelAPI findTitleBelow(Object node) {
+    // One level down, through everything the node holds, first answer winning.
+    private static LabelAPI findLabelBelow(Object node, int hopsLeft, Set<Object> visited) {
 
         for (var method : CoreUiMethods.readPublicMethodsOf(node.getClass())) {
 
-            if (!method.getParameterTypes().isEmpty()
-                    || method.getReturnType().isPrimitive()
-                    || !declaresTitleAccessor(method.getReturnType())) {
+            if (!isFollowableHop(method)) {
                 continue;
             }
 
-            if (readNoArg(method.invokeOn(node), TITLE_ACCESSOR) instanceof LabelAPI title) {
-                return title;
+            var held = readQuietly(method, node);
+            var label = findLabelUnder(held, hopsLeft - 1, visited);
+
+            if (label != null) {
+                return label;
             }
         }
         return null;
+    }
+
+    // What a member answers, or nothing where asking it was the wrong question. Throwable rather
+    // than Exception for the reason the resolve above catches one: a member of a shape that has
+    // moved fails as an Error, and the reach these go through lets a checked throw escape unnoticed.
+    private static Object readQuietly(CoreUiMethod method, Object node) {
+
+        try {
+            return method.invokeOn(node);
+        } catch (Throwable failure) {
+            return null;
+        }
     }
 
     // Calls a published no-arg accessor by name, answering nothing where the shape does not offer
