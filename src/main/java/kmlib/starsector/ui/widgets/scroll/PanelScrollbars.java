@@ -8,7 +8,8 @@ import kmlib.starsector.ui.widgets.PanelPlacement;
  * Scrollbar} that projects the panel to its {@link ScrollRegion} and computes the track, thumb, grab
  * column, and pointer-to-offset for it. It is the one place the panel-to-scrollbar bridge lives, so a
  * panel's renderer and its input controller read the same geometry rather than each re-projecting the
- * placement - what is drawn and what a drag grabs cannot drift.
+ * placement - what is drawn and what a drag grabs cannot drift. How thick the bar draws is taken off that
+ * same placement, so neither pass names a width of its own.
  *
  * <p>{@link Scrollbar} stays scoped to a bare {@link ScrollRegion}; this only adapts a panel onto it.
  * Pure geometry in UI coordinates, computing rectangles and offsets and rendering nothing.
@@ -19,10 +20,10 @@ public final class PanelScrollbars {
 
     /**
      * @param placement the laid-out panel
-     * @return the scrollbar track in the panel body's right gutter
+     * @return the scrollbar track in the panel body's right gutter, at the placement's own thickness
      */
     public static Rectangle computeTrack(PanelPlacement placement) {
-        return Scrollbar.computeTrack(placement.toScrollRegion(), ScrollbarThickness.DEFAULT);
+        return Scrollbar.computeTrack(placement.toScrollRegion(), placement.scrollbarThickness());
     }
 
     /**
@@ -31,7 +32,9 @@ public final class PanelScrollbars {
      */
     public static Rectangle computeThumb(PanelPlacement placement) {
         var region = placement.toScrollRegion();
-        return Scrollbar.computeThumb(region, Scrollbar.computeTrack(region, ScrollbarThickness.DEFAULT));
+        return Scrollbar.computeThumb(
+            region,
+            Scrollbar.computeTrack(region, placement.scrollbarThickness()));
     }
 
     /**
@@ -49,7 +52,7 @@ public final class PanelScrollbars {
      */
     public static float resolveOffsetForPointer(PanelPlacement placement, float pointerY) {
         var region = placement.toScrollRegion();
-        var track = Scrollbar.computeTrack(region, ScrollbarThickness.DEFAULT);
+        var track = Scrollbar.computeTrack(region, placement.scrollbarThickness());
         return Scrollbar.resolveOffsetForPointer(region, track, pointerY);
     }
 }

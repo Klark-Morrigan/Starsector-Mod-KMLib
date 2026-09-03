@@ -3,6 +3,7 @@ package kmlib.starsector.ui.widgets;
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.widgets.scroll.ScrollRegion;
+import kmlib.starsector.ui.widgets.scroll.ScrollbarThickness;
 
 import java.util.List;
 
@@ -25,12 +26,19 @@ import java.util.List;
  * #scrollOverflow()} drive the scrollbar. An uncapped body carries a zero viewport and zero overflow, so
  * the whole strip pins and no scrollbar shows.
  *
- * @param box            the panel's full footprint, border included
- * @param body           the inset control-strip region framed by the box, zero-size when there is no body
- * @param bodyControls   the controls laid inside the body, top to bottom (empty for no body)
- * @param flexViewport   the clip rectangle for the scrolling control, zero-size when nothing scrolls
- * @param scrollOffset   the applied scroll offset in pixels, baked into the scrolling control's bounds
- * @param scrollOverflow how far the scrolling control overruns its viewport, zero when it fits
+ * <p>How thick that bar draws rides here beside the scroll geometry rather than reaching the paint pass as
+ * a render parameter, because two passes spend it: one draws the track and thumb, the other hit-tests the
+ * thumb to tell a grab from a press on bare track. A thickness known to only one of them would leave a fat
+ * drawn thumb that grabs along a thin strip of itself.
+ *
+ * @param box                the panel's full footprint, border included
+ * @param body               the inset control-strip region framed by the box, zero-size when there is no
+ *                           body
+ * @param bodyControls       the controls laid inside the body, top to bottom (empty for no body)
+ * @param flexViewport       the clip rectangle for the scrolling control, zero-size when nothing scrolls
+ * @param scrollOffset       the applied scroll offset in pixels, baked into the scrolling control's bounds
+ * @param scrollOverflow     how far the scrolling control overruns its viewport, zero when it fits
+ * @param scrollbarThickness how wide the scrollbar's track and thumb draw over this panel's body
  */
 public record PanelPlacement(
     Rectangle box,
@@ -38,7 +46,8 @@ public record PanelPlacement(
     List<Control> bodyControls,
     Rectangle flexViewport,
     float scrollOffset,
-    float scrollOverflow) {
+    float scrollOverflow,
+    ScrollbarThickness scrollbarThickness) {
 
     /**
      * @return whether the scrolling control overruns its viewport, so the renderer draws a scrollbar and

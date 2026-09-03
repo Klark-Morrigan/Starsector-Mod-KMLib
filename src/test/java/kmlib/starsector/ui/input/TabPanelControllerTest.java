@@ -15,6 +15,7 @@ import kmlib.starsector.ui.sound.UiSoundCue;
 import kmlib.starsector.ui.sound.UiSoundScheme;
 import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.PanelPlacement;
+import kmlib.starsector.ui.widgets.scroll.ScrollbarThickness;
 import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
 import kmlib.testfixtures.starsector.ui.sound.UiSoundPlayerFake;
 
@@ -2092,7 +2093,8 @@ final class TabPanelControllerTest {
                 List.of(buildScrollingListControl(scrollOffset, hoverReport)),
                 BODY_BOX,
                 scrollOffset,
-                SCROLLING_LIST_OVERFLOW));
+                SCROLLING_LIST_OVERFLOW,
+                ScrollbarThickness.DEFAULT));
     }
 
     // The list itself: a scrolling table whose rows are stacked down from the body's top edge and shifted
@@ -2170,7 +2172,7 @@ final class TabPanelControllerTest {
     // the builder above takes a body rather than the pieces of one, two rectangles side by side in a
     // parameter list being two rectangles that can be handed over the wrong way round.
     private static PanelPlacement buildBody(Rectangle box, List<Control> bodyControls) {
-        return new PanelPlacement(box, box, bodyControls, box, 0f, 0f);
+        return new PanelPlacement(box, box, bodyControls, box, 0f, 0f, ScrollbarThickness.DEFAULT);
     }
 
     // A body control, so the placement reads as having a body at all; what it is never matters here, only

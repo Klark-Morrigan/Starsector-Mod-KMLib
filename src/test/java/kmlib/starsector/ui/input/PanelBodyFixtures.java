@@ -7,6 +7,7 @@ import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.LabelledControlSpecs;
 import kmlib.starsector.ui.controls.VerticalTableSpecs;
 import kmlib.starsector.ui.widgets.PanelPlacement;
+import kmlib.starsector.ui.widgets.scroll.ScrollbarThickness;
 
 import java.util.Arrays;
 import java.util.List;
@@ -189,7 +190,8 @@ final class PanelBodyFixtures {
             List.of(bodyControls),
             flexViewport,
             0f,
-            0f);
+            0f,
+            ScrollbarThickness.DEFAULT);
     }
 
     // The row split into two equal boxes, which is how both segmented fixtures lay their cells - a radio's

@@ -11,6 +11,7 @@ import kmlib.starsector.ui.sound.StarsectorUiSound;
 import kmlib.starsector.ui.sound.UiSoundCue;
 import kmlib.starsector.ui.sound.UiSoundScheme;
 import kmlib.starsector.ui.widgets.PanelPlacement;
+import kmlib.starsector.ui.widgets.scroll.ScrollbarThickness;
 import kmlib.testfixtures.starsector.ui.sound.UiSoundPlayerFake;
 
 import org.junit.jupiter.api.Nested;
@@ -1083,12 +1084,26 @@ final class PanelControllerTest {
     // The same panel with the given controls laid in it, for a case that has to tell what the wheel and the
     // scrollbar answer from what a control does - a body with nothing in it would be silent either way.
     private static PanelPlacement buildScrollingPlacementOver(Control... bodyControls) {
-        return new PanelPlacement(ROW, ROW, List.of(bodyControls), ROW, 0f, SHORT_SCROLL_OVERFLOW);
+        return new PanelPlacement(
+            ROW,
+            ROW,
+            List.of(bodyControls),
+            ROW,
+            0f,
+            SHORT_SCROLL_OVERFLOW,
+            ScrollbarThickness.DEFAULT);
     }
 
     // The same panel whose content fits, so there is no scrollbar and the wheel moves nothing.
     private static PanelPlacement buildUnscrollablePlacement() {
-        return new PanelPlacement(ROW, ROW, List.of(), ROW, 0f, NO_SCROLL_OVERFLOW);
+        return new PanelPlacement(
+            ROW,
+            ROW,
+            List.of(),
+            ROW,
+            0f,
+            NO_SCROLL_OVERFLOW,
+            ScrollbarThickness.DEFAULT);
     }
 
     // The same scrolling panel with its list narrowed off the box's right edge, leaving the gutter a drag
@@ -1104,7 +1119,14 @@ final class PanelControllerTest {
     private static PanelPlacement buildGutteredPlacementOver(Control... bodyControls) {
 
         var list = new Rectangle(ROW.x(), ROW.y(), ROW.width() - SCROLLBAR_GUTTER_WIDTH, ROW.height());
-        return new PanelPlacement(ROW, ROW, List.of(bodyControls), list, 0f, SHORT_SCROLL_OVERFLOW);
+        return new PanelPlacement(
+            ROW,
+            ROW,
+            List.of(bodyControls),
+            list,
+            0f,
+            SHORT_SCROLL_OVERFLOW,
+            ScrollbarThickness.DEFAULT);
     }
 
     // One frame's reading with the pointer on a cell reporting into this class's own recorder - what the

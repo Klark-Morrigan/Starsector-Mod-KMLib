@@ -6,6 +6,7 @@ import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.PanelPlacement;
+import kmlib.starsector.ui.widgets.scroll.ScrollbarThickness;
 
 import java.util.List;
 
@@ -35,20 +36,24 @@ public final class PanelLayout {
      * a body sized to hold the controls (capped to the bottom margin), then places each control inside
      * that framed body. An empty {@code bodyControls} leaves a minimal bordered box with no body.
      *
-     * @param screenHeight    the UI-coordinate screen height, giving the top edge to hang from
-     * @param padding         the panel's edge margins: the top-left anchor and the bottom keep-clear
-     *                        margin the body caps to (the right inset is unused - a panel grows rightward)
-     * @param borderWidth     the outer border thickness framing the footprint; 0 leaves no inset
-     * @param bodyControls    the body controls, top to bottom (empty for no body)
-     * @param measurer        measures each label's rendered width for text snapping
-     * @param rawScrollOffset the requested scroll offset for the body's scrolling control, in pixels;
-     *                        clamped to its overflow by the capped layout
+     * @param screenHeight        the UI-coordinate screen height, giving the top edge to hang from
+     * @param padding             the panel's edge margins: the top-left anchor and the bottom keep-clear
+     *                            margin the body caps to (the right inset is unused - a panel grows
+     *                            rightward)
+     * @param borderWidth         the outer border thickness framing the footprint; 0 leaves no inset
+     * @param scrollbarThickness  how wide the body's scrollbar draws, carried onto the placement so the
+     *                            passes that draw the bar and grab its thumb read one width
+     * @param bodyControls        the body controls, top to bottom (empty for no body)
+     * @param measurer            measures each label's rendered width for text snapping
+     * @param rawScrollOffset     the requested scroll offset for the body's scrolling control, in pixels;
+     *                            clamped to its overflow by the capped layout
      * @return the box, body, laid-out body controls, and the scroll geometry, in UI coordinates
      */
     public static PanelPlacement computePlacement(
             float screenHeight,
             Padding padding,
             int borderWidth,
+            ScrollbarThickness scrollbarThickness,
             List<ControlSpec> bodyControls,
             LineWidthMeasurer measurer,
             float rawScrollOffset) {
@@ -76,6 +81,7 @@ public final class PanelLayout {
             padding.left(),
             origin.boxTopY(),
             border,
+            scrollbarThickness,
             bodyStrip.bounds(),
             bodyStrip);
     }
@@ -117,20 +123,22 @@ public final class PanelLayout {
      * controls into: the box and interior collapse together while the controls keep their laid-out
      * positions for the renderer to clip.
      *
-     * @param leftX            the box's left edge (the panel's left margin), in UI coordinates
-     * @param boxTopY          the box's top edge, in UI coordinates
-     * @param border           the frame around the footprint; the box grows by the border on each stroked
-     *                         edge and by nothing on an open one, so it shrinks to sit flush where it drops
-     *                         a border
-     * @param framedBody       the body rectangle the box frames and reports as its interior
-     * @param bodyStrip        the laid-out body strip whose controls and scroll geometry the placement
-     *                         carries
+     * @param leftX               the box's left edge (the panel's left margin), in UI coordinates
+     * @param boxTopY             the box's top edge, in UI coordinates
+     * @param border              the frame around the footprint; the box grows by the border on each
+     *                            stroked edge and by nothing on an open one, so it shrinks to sit flush
+     *                            where it drops a border
+     * @param scrollbarThickness  how wide the body's scrollbar draws, carried onto the placement
+     * @param framedBody          the body rectangle the box frames and reports as its interior
+     * @param bodyStrip           the laid-out body strip whose controls and scroll geometry the placement
+     *                            carries
      * @return the panel placement: the bordered box plus the framed body, controls, and scroll geometry
      */
     static PanelPlacement framePlacement(
             int leftX,
             float boxTopY,
             BoxBorder border,
+            ScrollbarThickness scrollbarThickness,
             Rectangle framedBody,
             CappedStripLayout.BodyStrip bodyStrip) {
 
@@ -158,7 +166,8 @@ public final class PanelLayout {
             capped.controls(),
             capped.flexViewport(),
             capped.scrollOffset(),
-            capped.scrollOverflow());
+            capped.scrollOverflow(),
+            scrollbarThickness);
     }
 
     /**

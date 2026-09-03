@@ -16,11 +16,16 @@ import static org.assertj.core.api.Assertions.within;
  * {@link ScrollRegion} and computes the scrollbar geometry from it, so the track lands in the body's right
  * gutter, the thumb sizes to the visible fraction, the grab column runs right of the list, and a pointer
  * maps to a scroll offset. A body wider than its viewport, and a list twice its viewport, make the geometry
- * hand-checkable.
+ * hand-checkable. The bar's width comes off the placement rather than from a constant here, so a panel
+ * carrying a thicker bar is drawn and grabbed at that width.
  */
 final class PanelScrollbarsTest {
 
     private static final float TOLERANCE = 0.01f;
+
+    // A bar four times the default, far enough from it that a track still sized by the old constant reads
+    // as a plain failure rather than as rounding.
+    private static final ScrollbarThickness THICK_BAR = new ScrollbarThickness(12f);
 
     // A 200-wide body (right edge 300) over a viewport covering a narrower 120-wide list column (right edge
     // 228), and a list that overruns its 100-tall viewport by 100 (content 200 tall).
@@ -30,9 +35,13 @@ final class PanelScrollbarsTest {
     private static final float OVERFLOW = 100f;
 
     private static PanelPlacement buildPlacement(float scrollOffset) {
+        return buildPlacement(scrollOffset, ScrollbarThickness.DEFAULT);
+    }
+
+    private static PanelPlacement buildPlacement(float scrollOffset, ScrollbarThickness thickness) {
 
         // The box is unused by PanelScrollbars (it projects the body's gutter), so the body doubles as it.
-        return new PanelPlacement(BODY, BODY, List.of(), VIEWPORT, scrollOffset, OVERFLOW);
+        return new PanelPlacement(BODY, BODY, List.of(), VIEWPORT, scrollOffset, OVERFLOW, thickness);
     }
 
     @Nested
@@ -54,6 +63,19 @@ final class PanelScrollbarsTest {
                 .isCloseTo(VIEWPORT.y(), within(TOLERANCE));
             assertThat(track.height())
                 .isCloseTo(VIEWPORT.height(), within(TOLERANCE));
+        }
+
+        @Test
+        void computeTrackSizesTheTrackToThePlacementsOwnThickness() {
+
+            var track = PanelScrollbars.computeTrack(buildPlacement(0f, THICK_BAR));
+
+            // 12 wide, still held 3 off the body's right edge (300) - so a thicker bar grows leftward from
+            // the same right edge rather than pushing past the frame.
+            assertThat(track.width())
+                .isCloseTo(12f, within(TOLERANCE));
+            assertThat(track.x())
+                .isCloseTo(285f, within(TOLERANCE));
         }
     }
 

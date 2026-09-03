@@ -7,6 +7,7 @@ import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.LabelledControlSpecs;
 import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.PanelPlacement;
+import kmlib.starsector.ui.widgets.scroll.ScrollbarThickness;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -205,7 +206,14 @@ final class TabPanelPlacementTest {
         return new TabPanelPlacement(
             buildHeaderControl(),
             drawnHeaderBand,
-            new PanelPlacement(BODY_BOX, BODY_BOX, List.of(buildBodyControl()), BODY_BOX, 0f, 0f),
+            new PanelPlacement(
+                BODY_BOX,
+                BODY_BOX,
+                List.of(buildBodyControl()),
+                BODY_BOX,
+                0f,
+                0f,
+                ScrollbarThickness.DEFAULT),
             new BoxBorder(BORDER_WIDTH),
             notch);
     }
@@ -221,7 +229,14 @@ final class TabPanelPlacementTest {
         return new TabPanelPlacement(
             buildHeaderControl(),
             HEADER_BAND,
-            new PanelPlacement(emptyBox, emptyBox, List.of(), emptyBox, 0f, 0f),
+            new PanelPlacement(
+                emptyBox,
+                emptyBox,
+                List.of(),
+                emptyBox,
+                0f,
+                0f,
+                ScrollbarThickness.DEFAULT),
             new BoxBorder(BORDER_WIDTH),
             null);
     }

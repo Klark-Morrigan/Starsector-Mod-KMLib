@@ -9,6 +9,7 @@ import kmlib.starsector.ui.controls.VerticalTableSpecs;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.widgets.PanelPlacement;
 import kmlib.starsector.ui.widgets.RowColumnSpec;
+import kmlib.starsector.ui.widgets.scroll.ScrollbarThickness;
 import kmlib.testfixtures.starsector.ui.font.LineWidthMeasurerFake;
 
 import org.junit.jupiter.api.Nested;
@@ -344,6 +345,7 @@ final class PanelLayoutTest {
                 SCREEN_HEIGHT,
                 new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT),
                 BORDER_WIDTH,
+                ScrollbarThickness.DEFAULT,
                 bodyControls,
                 measurerFake,
                 0f);
@@ -354,6 +356,7 @@ final class PanelLayoutTest {
                 SCREEN_HEIGHT,
                 new Padding(PADDING_TOP, 0, TIGHT_PADDING_BOTTOM, PADDING_LEFT),
                 BORDER_WIDTH,
+                ScrollbarThickness.DEFAULT,
                 buildScrollingBody(),
                 measurerFake,
                 rawScrollOffset);

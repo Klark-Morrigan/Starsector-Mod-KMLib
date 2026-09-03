@@ -6,6 +6,7 @@ import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.PanelPlacement;
+import kmlib.starsector.ui.widgets.scroll.ScrollbarThickness;
 import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
 import kmlib.starsector.ui.widgets.tabs.TabPanelViewState;
 import kmlib.starsector.ui.widgets.tabs.style.TabStyle;
@@ -69,19 +70,23 @@ public final class TabPanelLayout {
      * it. An empty {@code bodyControls} leaves the tab row standing alone: no box, and, with nothing to
      * collapse, no notch either - the placement's collapse handle is absent.
      *
-     * @param screenHeight the UI-coordinate screen height, giving the top edge to hang from
-     * @param padding      the panel's edge margins: the top-left anchor and the bottom keep-clear
-     *                     margin the body caps to (the right inset is unused - a panel grows rightward)
-     * @param border       the frame around the footprint; an open edge reserves no inset, so the box shrinks
-     *                     to sit flush against a neighbour instead of leaving a bare strip where its border
-     *                     would have been
-     * @param tabStyle     the tab dimensions the header band is laid to, so two panels sharing this one
-     *                     layout can still stand their tab rows at different heights; the band height is
-     *                     content-space, standing under the top border rather than including it
-     * @param tabsSpec     the tabs control (labels + per-tab shortcuts) drawn across the header band
-     * @param bodyControls the active tab's body controls, top to bottom (empty for no body)
-     * @param measurer     measures each label's rendered width for text snapping
-     * @param viewState    how far the panel is scrolled and folded
+     * @param screenHeight        the UI-coordinate screen height, giving the top edge to hang from
+     * @param padding             the panel's edge margins: the top-left anchor and the bottom keep-clear
+     *                            margin the body caps to (the right inset is unused - a panel grows
+     *                            rightward)
+     * @param border              the frame around the footprint; an open edge reserves no inset, so the box
+     *                            shrinks to sit flush against a neighbour instead of leaving a bare strip
+     *                            where its border would have been
+     * @param scrollbarThickness  how wide the body's scrollbar draws, carried onto the body placement so
+     *                            the passes that draw the bar and grab its thumb read one width
+     * @param tabStyle            the tab dimensions the header band is laid to, so two panels sharing this
+     *                            one layout can still stand their tab rows at different heights; the band
+     *                            height is content-space, standing under the top border rather than
+     *                            including it
+     * @param tabsSpec            the tabs control (labels + per-tab shortcuts) drawn across the header band
+     * @param bodyControls        the active tab's body controls, top to bottom (empty for no body)
+     * @param measurer            measures each label's rendered width for text snapping
+     * @param viewState           how far the panel is scrolled and folded
      * @return the laid-out tabs header, how much of that header the fold leaves on screen, the body
      *         placement carrying the framed box, the border it was framed around, and the collapse-handle
      *         notch on the box's right border edge - null when {@code bodyControls} is empty, since a
@@ -91,6 +96,7 @@ public final class TabPanelLayout {
             float screenHeight,
             Padding padding,
             BoxBorder border,
+            ScrollbarThickness scrollbarThickness,
             TabStyle tabStyle,
             ControlSpec.Tabs tabsSpec,
             List<ControlSpec> bodyControls,
@@ -180,6 +186,7 @@ public final class TabPanelLayout {
                 padding.left(),
                 origin.boxTopY(),
                 border,
+                scrollbarThickness,
                 framedBody,
                 bodyStrip);
 
@@ -230,6 +237,9 @@ public final class TabPanelLayout {
     // tab row with nothing beneath it is the whole panel, so there is no frame to stroke and no footprint to
     // claim under the row - framing a zero body would instead leave a border-sized square hanging off the
     // row's left end, drawn and clickable with nothing in it.
+    //
+    // It carries the default thickness rather than the caller's: there is no body to scroll and so no bar
+    // to size, and a placement must still name one.
     private static PanelPlacement buildBodylessPlacement(int leftX, float boxTopY) {
 
         var emptyBox = new Rectangle(leftX, boxTopY, 0f, 0f);
@@ -240,7 +250,8 @@ public final class TabPanelLayout {
             List.of(),
             emptyBox,
             0f,
-            0f);
+            0f,
+            ScrollbarThickness.DEFAULT);
     }
 
     // The collapse-handle notch: a rect protruding past the box's right border edge, vertically centred on
