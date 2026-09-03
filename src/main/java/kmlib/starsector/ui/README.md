@@ -428,13 +428,15 @@ runs and one whose runs all came out blank into the same empty slot, and re-colo
 on a receding row - so a mode's own shades cannot survive beside a greyed name any more than a
 crest can.
 
-Which kind a slot is, is asked through `RowSlot.selectByCase` and never through an `instanceof`
-chain. The sealing alone does not deliver what it promises here: the mod targets Java 17, whose
-`switch` is not exhaustive over a sealed set, so a painter that never learned about a new kind
-compiles and silently leaves that column empty - which is how a two-run value once reached the
-picker's rows and drew nothing, while the column it needed was reserved around it. Through the
-fold, a painter states every kind including the ones it draws nothing for, and the next kind
-added breaks all three painters at once.
+Which kind a slot is, is asked through [`RowSlotPainter`](widgets/RowSlotPainter.java) and never
+through an `instanceof` chain - the same role [`LabelRunPainter`](text/LabelRunPainter.java) plays
+for the kinds a label's runs come in, and for the same reason. The sealing alone does not deliver
+what it promises: the mod targets Java 17, whose `switch` is not exhaustive over a sealed set, so a
+painter with a kind unhandled compiles and leaves that column reserved by the polymorphic
+measurement and painted by nothing. A method per kind moves that to the compiler. A surface that
+shows nothing for a kind implements the method empty, so "no tick is drawn here" is written down
+rather than merely absent, and a kind added to either seal stops every painting surface from
+building until it says what the new kind looks like.
 
 [`RevisionMemo`](widgets/lists/RevisionMemo.java) is where a consumer holds the resolved
 list between frames, since a body is built twice a frame (render and hit-test) and a picker

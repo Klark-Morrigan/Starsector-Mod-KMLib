@@ -5,6 +5,7 @@ import kmlib.starsector.ui.render.gl.UiSprite;
 import kmlib.starsector.ui.widgets.IconLabelRow;
 import kmlib.starsector.ui.widgets.RadioRow;
 import kmlib.starsector.ui.widgets.RowSlot;
+import kmlib.starsector.ui.widgets.RowSlotPainter;
 
 import java.util.List;
 
@@ -79,30 +80,60 @@ public final class IconRadioListRenderer {
 
         for (var index = 0; index < segments.size(); index++) {
 
-            // Only an image slot paints here; a row leading with nothing, or with a slot this widget has
-            // no paint for, leaves the column clear rather than the widget guessing at a stand-in. Every
-            // kind says so through the fold, so a kind added later breaks this widget rather than
-            // quietly joining the ones it draws nothing for.
-            //
-            // The image is multiplied by whatever tint the slot states, so a row the caller marked as
-            // receding draws its icon back with its words rather than at full strength beside greyed
-            // text. A slot stating none passes null, which UiSprite already draws as authored.
-            var iconBox = IconLabelRow.computeIconBox(segments.get(index));
+            // One painter per row, bound to the box that row's icon hangs in.
+            leadingRowSlots
+                .get(index)
+                .paintSlot(new LeadingIconPainter(
+                    IconLabelRow.computeIconBox(segments.get(index)),
+                    opacity));
+        }
+    }
 
-            leadingRowSlots.get(index).<Void>selectByCase(
-                image -> {
-                    UiSprite.renderImage(
-                        image.spritePath(),
-                        iconBox,
-                        opacity,
-                        image.tintColour());
-                    return null;
-                },
-                text -> null,
-                textRuns -> null,
-                tick -> null,
-                triangle -> null,
-                () -> null);
+    /**
+     * What each kind of slot looks like in this widget's leading column, bound to the one row.
+     *
+     * <p>Only an image paints here; a row leading with anything else leaves the column clear rather than
+     * the widget guessing at a stand-in. Every such kind says so, which is what makes a kind added to the
+     * set break this widget rather than quietly join the ones it draws nothing for.
+     *
+     * @param iconBox the square this row's icon hangs in
+     * @param opacity the alpha the list paints at
+     */
+    private record LeadingIconPainter(
+        Rectangle iconBox,
+        float opacity) implements RowSlotPainter {
+
+        @Override
+        public void paintEmptySlot() {
+        }
+
+        // Multiplied by whatever tint the slot states, so a row the caller marked as receding draws its
+        // icon back with its words rather than at full strength beside greyed text. A slot stating none
+        // passes null, which UiSprite already draws as authored.
+        @Override
+        public void paintImageSlot(RowSlot.Image imageSlot) {
+
+            UiSprite.renderImage(
+                imageSlot.spritePath(),
+                iconBox,
+                opacity,
+                imageSlot.tintColour());
+        }
+
+        @Override
+        public void paintTextRunsSlot(RowSlot.TextRuns textRunsSlot) {
+        }
+
+        @Override
+        public void paintTextSlot(RowSlot.Text textSlot) {
+        }
+
+        @Override
+        public void paintTickSlot(RowSlot.Tick tickSlot) {
+        }
+
+        @Override
+        public void paintTriangleSlot(RowSlot.Triangle triangleSlot) {
         }
     }
 }

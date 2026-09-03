@@ -14,12 +14,14 @@ import kmlib.starsector.ui.render.gl.panel.BorderedBoxRenderer;
 import kmlib.starsector.ui.screen.VanillaScreen;
 import kmlib.starsector.ui.text.ImageSpan;
 import kmlib.starsector.ui.text.LabelRunPainter;
+import kmlib.starsector.ui.text.LabelRuns;
 import kmlib.starsector.ui.text.RedactedSpan;
 import kmlib.starsector.ui.text.TextSpan;
 import kmlib.starsector.ui.text.TextStyle;
 import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.LabelledRow;
 import kmlib.starsector.ui.widgets.RowSlot;
+import kmlib.starsector.ui.widgets.RowSlotPainter;
 import kmlib.starsector.ui.widgets.tooltip.CursorTooltip;
 import kmlib.starsector.ui.widgets.tooltip.TooltipHeightFit;
 import kmlib.starsector.ui.widgets.tooltip.TooltipLayout;
@@ -188,8 +190,16 @@ public final class CursorTooltipRenderer {
             style.typography().resolveStyleFor(row.lineStyle(), row.subordinationLevel()),
             style.opacity());
 
+        // Built before the flanking columns rather than beside the label walk below, because a trailing
+        // value of several runs is set through this same painter: the runs of a value and the runs of a
+        // label are drawn the one way, so a row resolves what its runs look like once.
+        var labelRunPainter = new RowLabelRunPainter(
+            placement,
+            rowPaint,
+            style.redactionDarkeningStrength());
+
         if (row instanceof TooltipRow.TableRow tableRow) {
-            drawFlankingRowSlots(tableRow.labelledRow(), placement, rowPaint);
+            drawFlankingRowSlots(tableRow.labelledRow(), placement, rowPaint, labelRunPainter);
         }
 
         // Ruled along the stretch the layout measured, not one worked out from the anchors beside it: the
@@ -213,10 +223,6 @@ public final class CursorTooltipRenderer {
         // run's own statement and this pass holds only what each kind looks like on a tooltip line. One
         // painter per row, since what it binds - the row's placement and its resolved paint - is settled
         // for the whole row.
-        var labelRunPainter = new RowLabelRunPainter(
-            placement,
-            rowPaint,
-            style.redactionDarkeningStrength());
         var labelRuns = row.labelRuns();
 
         for (var index = 0; index < labelRuns.size(); index++) {
@@ -226,84 +232,127 @@ public final class CursorTooltipRenderer {
         }
     }
 
-    // Draws what a table row carries either side of its label: an image in the leading column and a run
-    // of text in the trailing one. A slot the row left unfilled has nothing to paint, and a slot holding
-    // a kind this pass has not been taught draws nothing - the layout reserved the column from that
-    // slot's own width either way, so the unpainted kind costs the box its room rather than overlapping
-    // the label.
+    // Draws what a table row carries either side of its label, each column through a painter of its
+    // own: the leading one shows a crest and nothing else, the trailing one a value of one run or of
+    // several. Every kind either column does not show is stated as drawing nothing, so a kind added to
+    // the set breaks this surface rather than joining the ones it silently skips.
     private static void drawFlankingRowSlots(
             LabelledRow labelledRow,
             TooltipLayout.TooltipRowLayout placement,
-            RowPaint rowPaint) {
+            RowPaint rowPaint,
+            LabelRunPainter labelRunPainter) {
 
-        // What each column holds decides what is drawn in it, stated through the fold so every kind is
-        // accounted for: a leading slot other than an image draws nothing rather than resolving to a
-        // texture lookup never meant for it, and a trailing tick or triangle is not a thing a tooltip
-        // row shows. Faded through the paint the row's text draws with, so a crest and the label beside
-        // it cannot end up compositing at two different alphas, and multiplied by whatever tint the slot
-        // states - honoured here as well as in the list widget, since a slot whose tint one of the two
-        // surfaces silently ignored would be worse than one that carried none.
-        labelledRow.leadingRowSlot().<Void>selectByCase(
-            crestRowSlot -> {
-                UiSprite.renderImage(
-                    crestRowSlot.spritePath(),
-                    computeImageBox(placement.leadingRowSlotX(), placement),
-                    rowPaint.opacity(),
-                    crestRowSlot.tintColour());
-                return null;
-            },
-            text -> null,
-            textRuns -> null,
-            tick -> null,
-            triangle -> null,
-            () -> null);
+        labelledRow
+            .leadingRowSlot()
+            .paintSlot(new LeadingSlotPainter(placement, rowPaint));
 
-        labelledRow.trailingRowSlot().<Void>selectByCase(
-            image -> null,
-            valueRowSlot -> {
-                rowPaint.drawSpan(
-                    valueRowSlot.textSpan(),
-                    placement.trailingRowSlotX(),
-                    placement.rowTopY(),
-                    LazyFont.TextAnchor.TOP_RIGHT);
-                return null;
-            },
-            valueRowSlot -> {
-                drawTrailingTextRuns(valueRowSlot, placement, rowPaint);
-                return null;
-            },
-            tick -> null,
-            triangle -> null,
-            () -> null);
+        labelledRow
+            .trailingRowSlot()
+            .paintSlot(new TrailingSlotPainter(placement, rowPaint, labelRunPainter));
     }
 
-    // Draws a value made of several runs inside the column reserved for it: the runs read left to right
-    // from the column's own left edge, which is its right anchor less the width the runs come to.
-    //
-    // The offsets come from the slot itself, through the same walk the layout charged the column its
-    // width by - so the room reserved and the runs painted into it are one measurement read twice rather
-    // than two that could disagree. Each run is drawn on its own for the reason the label's runs are:
-    // batched into one string, a run's colour would be baked absolute and the box's fade would stop
-    // applying to it.
-    private static void drawTrailingTextRuns(
-            RowSlot.TextRuns valueRowSlot,
-            TooltipLayout.TooltipRowLayout placement,
-            RowPaint rowPaint) {
+    /**
+     * What each kind of slot looks like in a table row's leading column, bound to the one row.
+     *
+     * <p>Only a crest is shown there. Anything else draws nothing rather than resolving to a texture
+     * lookup never meant for it - the layout reserved the column from that slot's own width either way,
+     * so an unpainted kind costs the box its room rather than overlapping the label.
+     *
+     * @param placement where the row was laid out
+     * @param rowPaint  the look and alpha the row's text draws with
+     */
+    private record LeadingSlotPainter(
+        TooltipLayout.TooltipRowLayout placement,
+        RowPaint rowPaint) implements RowSlotPainter {
 
-        var runOffsets = valueRowSlot.measureRunOffsets(
-            placement.lineHeight(),
-            rowPaint::measureSpanWidth);
+        @Override
+        public void paintEmptySlot() {
+        }
 
-        var runsLeftX = placement.trailingRowSlotX() - runOffsets.runsWidth();
-        var textSpans = valueRowSlot.textSpans();
+        // Faded through the paint the row's text draws with, so a crest and the label beside it cannot
+        // end up compositing at two different alphas, and multiplied by whatever tint the slot states -
+        // honoured here as well as in the list widget, since a slot whose tint one of the two surfaces
+        // silently ignored would be worse than one that carried none.
+        @Override
+        public void paintImageSlot(RowSlot.Image imageSlot) {
 
-        for (var index = 0; index < textSpans.size(); index++) {
+            UiSprite.renderImage(
+                imageSlot.spritePath(),
+                computeImageBox(placement.leadingRowSlotX(), placement),
+                rowPaint.opacity(),
+                imageSlot.tintColour());
+        }
+
+        @Override
+        public void paintTextRunsSlot(RowSlot.TextRuns textRunsSlot) {
+        }
+
+        @Override
+        public void paintTextSlot(RowSlot.Text textSlot) {
+        }
+
+        @Override
+        public void paintTickSlot(RowSlot.Tick tickSlot) {
+        }
+
+        @Override
+        public void paintTriangleSlot(RowSlot.Triangle triangleSlot) {
+        }
+    }
+
+    /**
+     * What each kind of slot looks like in a table row's trailing column, bound to the one row.
+     *
+     * <p>A value is shown there, of one run or of several; a crest, a tick and a direction marker are
+     * not things a tooltip row trails with.
+     *
+     * @param placement       where the row was laid out
+     * @param rowPaint        the look and alpha the row's text draws with
+     * @param labelRunPainter what a run looks like on this row, shared with the label's own walk
+     */
+    private record TrailingSlotPainter(
+        TooltipLayout.TooltipRowLayout placement,
+        RowPaint rowPaint,
+        LabelRunPainter labelRunPainter) implements RowSlotPainter {
+
+        @Override
+        public void paintEmptySlot() {
+        }
+
+        @Override
+        public void paintImageSlot(RowSlot.Image imageSlot) {
+        }
+
+        // Set to finish at the column's own anchor, so a value picked out in two shades ends exactly
+        // where a one-run value ends. The walk is the shared one, so the room the column reserved and
+        // the runs painted into it come off a single measurement.
+        @Override
+        public void paintTextRunsSlot(RowSlot.TextRuns textRunsSlot) {
+
+            LabelRuns.paintRunsEndingAt(
+                List.copyOf(textRunsSlot.textSpans()),
+                placement.trailingRowSlotX(),
+                (float) placement.lineHeight(),
+                rowPaint::measureSpanWidth,
+                labelRunPainter);
+        }
+
+        @Override
+        public void paintTextSlot(RowSlot.Text textSlot) {
 
             rowPaint.drawSpan(
-                textSpans.get(index),
-                runsLeftX + runOffsets.runOffsetXs().get(index),
+                textSlot.textSpan(),
+                placement.trailingRowSlotX(),
                 placement.rowTopY(),
-                LazyFont.TextAnchor.TOP_LEFT);
+                LazyFont.TextAnchor.TOP_RIGHT);
+        }
+
+        @Override
+        public void paintTickSlot(RowSlot.Tick tickSlot) {
+        }
+
+        @Override
+        public void paintTriangleSlot(RowSlot.Triangle triangleSlot) {
         }
     }
 

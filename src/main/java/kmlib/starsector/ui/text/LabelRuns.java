@@ -129,6 +129,44 @@ public final class LabelRuns {
     }
 
     /**
+     * Paints a set of runs so that they finish flush at {@code rightX}, each run handed to
+     * {@code labelRunPainter} at the anchor this walk measured for it.
+     *
+     * <p>For a value set into a column reserved from its right edge - what a row's trailing slot is - so
+     * a value picked out in two shades ends exactly where a one-run value ends. Stated here rather than
+     * at each surface because it is the same three steps every time: measure the runs, take the left
+     * edge as the right one less what they came to, and set each run at its own offset from there. Two
+     * surfaces working that out separately would be two chances to measure once and draw against another
+     * number.
+     *
+     * <p>Measured once for both the width and the offsets, since the walk answers them together - asking
+     * for the width and then walking again to draw charges the face twice for one label.
+     *
+     * @param labelRuns       the runs in reading order
+     * @param rightX          the edge the runs finish at, in UI units
+     * @param lineHeight      the height of the line the runs sit on, in UI units
+     * @param measurer        the width measurement already bound to the face the runs draw in
+     * @param labelRunPainter what each kind of run looks like on this surface, already bound to where
+     *                        the line sits
+     */
+    public static void paintRunsEndingAt(
+            List<LabelRun> labelRuns,
+            float rightX,
+            float lineHeight,
+            StyledSpanMeasurer measurer,
+            LabelRunPainter labelRunPainter) {
+
+        var runOffsets = measureRunOffsets(labelRuns, lineHeight, measurer);
+        var leftX = rightX - runOffsets.runsWidth();
+
+        for (var index = 0; index < labelRuns.size(); index++) {
+            labelRuns
+                .get(index)
+                .paintRun(labelRunPainter, leftX + runOffsets.runOffsetXs().get(index));
+        }
+    }
+
+    /**
      * Where each of a label's runs sits relative to the label's own left edge, how wide each one came out,
      * and how wide they come to together. One walk, returned whole, because a caller re-deriving any part
      * of it from the rest would be re-deciding the gap rule - and a placement disagreeing with the width

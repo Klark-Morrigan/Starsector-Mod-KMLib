@@ -100,8 +100,10 @@ No Starsector API on the signature.
 - **`kmlib.settings`** - LunaLib settings read and write, immediate and
   deferred with flush and removal, change callbacks, and resolving a labelled
   choice back from its label.
-- **`kmlib.text`** - number formatting (scientific, signed delta, grouped
-  integer, compact decimal) and the reads over a string every surface shares:
+- **`kmlib.text`** - number formatting (scientific, signed delta, a signed
+  reading on a scale whose middle is a real position and so draws unsigned,
+  grouped integer, compact decimal) and the reads over a string every surface
+  shares:
   is there text here, what are its words, initials, whole-word search, and
   dropping the stutter left where one phrase was appended to another ending on
   the same word.
@@ -319,12 +321,18 @@ No Starsector API on the signature.
   labelled-row core: bordered box content bounds, checkbox tick boxes,
   icon-label rows with trailing slots and direction triangles, radio grids and
   segments, the row slots a label carries (text, runs, image, tick, triangle,
-  empty), box borders per edge, panel placement with its scroll region, and the
+  empty) with the painter role a surface draws them through - a method per kind,
+  so a kind added later stops every painting surface from building rather than
+  leaving one column silently unpainted - box borders per edge, panel placement
+  with its scroll region, and the
   two alphas a panel paints at - how see-through its body is meant to be, and
   how much of the panel is on screen at all - carried together because chrome
   standing opaque on that body still has to leave with the panel.
 - **`kmlib.starsector.ui.widgets.lists`** - the spotlight picker: sort modes
-  with direction and comparator, column-count and sort selectors, the item
+  with direction, comparator and the trailing value a ranked row draws for them
+  - answered as runs, so a value the engine gives a colour to, or a range whose
+  two ends read differently, keeps its own shades inside the one column -
+  column-count and sort selectors, the item
   seam rows are drawn from, a consumer's live read of its three stored picks
   as one reading, the store it persists those picks into and hears the row
   under the pointer through - named by the item it stands for, so a host can

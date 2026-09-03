@@ -169,28 +169,28 @@ final class ControlLabelRenderer {
     }
 
     /**
-     * The same runs set to finish at {@code rightX}: the whole measured span is right-aligned as one, so
-     * a value picked out in two colours ends flush where a one-run value ends. Sibling to
-     * {@link #drawCentredBodyLabelRuns}, differing only in which edge the measured width is taken off.
+     * The same runs set to finish at {@code rightX}, for a value laid into a column reserved from its
+     * right edge. Sibling to {@link #drawCentredBodyLabelRuns}, differing only in which edge the
+     * measured width is taken off - and, through {@link LabelRuns#paintRunsEndingAt}, measured once for
+     * both the edge and the anchors rather than walked a second time to draw.
      *
      * @param paint     the look and alpha the control draws with
      * @param labelRuns the label's runs in reading order
      * @param rightX    the right edge the runs finish at, in UI units
      * @param centreY   the middle line of the row the label is centred on
      */
-    static void drawRightAlignedBodyLabelRuns(
+    static void drawBodyLabelRunsEndingAt(
             ControlPaint paint,
             List<LabelRun> labelRuns,
             float rightX,
             float centreY) {
 
-        var runsWidth = measureBodyLabelRuns(paint, labelRuns).runsWidth();
-
-        drawBodyLabelRuns(
-            paint,
+        LabelRuns.paintRunsEndingAt(
             labelRuns,
-            rightX - runsWidth,
-            centreY);
+            rightX,
+            ControlStripLayout.CONTROL_ROW_HEIGHT,
+            bindBodySpanMeasurer(paint),
+            new BodyLabelRunPainter(paint, centreY));
     }
 
     // The body-line measurement bound to the face this pass paints in, so a run charges its own width
