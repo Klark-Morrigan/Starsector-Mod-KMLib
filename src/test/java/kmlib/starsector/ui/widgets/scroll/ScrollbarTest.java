@@ -80,6 +80,22 @@ final class ScrollbarTest {
         }
 
         @Test
+        void computeTrackSpendsTheGutterItsThicknessStates() {
+
+            var thickness = new ScrollbarThickness(10f);
+            var track = Scrollbar.computeTrack(buildRegion(0f), thickness);
+
+            // The two halves of the contract meet here: the gutter a container is asked to reserve is
+            // 15 (10 of track, 3 of margin, 2 of clearance), and the track then takes 13 of it back from
+            // the container's right edge (300 to 287) - leaving exactly the clearance the gutter counted
+            // and nothing spare. A thickness spent one way and stated another would part these numbers.
+            assertThat(thickness.computeGutterWidth())
+                .isCloseTo(15f, within(TOLERANCE));
+            assertThat(CONTAINER.x() + CONTAINER.width() - track.x())
+                .isCloseTo(13f, within(TOLERANCE));
+        }
+
+        @Test
         void computeTrackCollapsesTheTrackToNothingAtZeroThickness() {
 
             var track = Scrollbar.computeTrack(buildRegion(0f), new ScrollbarThickness(0f));
