@@ -203,6 +203,17 @@ No Starsector API on the signature.
   own kind - weighed on the market the mechanic scored, or presence-only at a
   nought - with a claim by decree reported separately.
 - **`kmlib.starsector.time`** - campaign clock constants.
+- **`kmlib.starsector.ui.buttons`** - the words on a button the game built,
+  reached and written for a caller decorating a widget it did not draw. The
+  published text accessors on a button serve one of the several kinds the game
+  builds and quietly do nothing for the rest, reading back null and writing
+  nowhere, so the words are found instead as the published label the engine
+  draws them with - through the two accessors the game leaves unobfuscated, and
+  accepted only where the label already reads what the button was built with,
+  since a widget holds several and writing into the wrong one changes nothing
+  anyone can see. What it says there is the game's own rule for a key: the key's
+  name lit where the words already hold it, spelled out after them where they do
+  not. Not finding the words costs what was going to be said and nothing else.
 - **`kmlib.starsector.ui.colour`** - the UI palette enum resolving through
   Misc, and the dark, base and bright accent triple a look is built from.
 - **`kmlib.starsector.ui.controls`** - declarative control specs - label,
@@ -272,10 +283,10 @@ No Starsector API on the signature.
   the row so one path serves both screens, and declines a row it cannot measure
   or that has no room left. What comes back reads and sets the button, hangs
   the hover tooltip the row's own buttons carry, binds the key that ticks it -
-  live wherever the button is on screen and nowhere else, unbound rather than
-  bound to the cleared code, and named in the button's own words since the row
-  can only announce a key it can name and a bare keycode carries none - and says
-  whether it is still standing on the row currently on screen.
+  live wherever the button is on screen and nowhere else, and unbound rather
+  than bound to the cleared code - says that key in the button's own words
+  through `ui.buttons`, and says whether it is still standing on the row
+  currently on screen.
 - **`kmlib.starsector.ui.map.icons`** - reseating a map icon once the layering
   over it settles.
 - **`kmlib.starsector.ui.map.presence`** - which campaign map surface is up

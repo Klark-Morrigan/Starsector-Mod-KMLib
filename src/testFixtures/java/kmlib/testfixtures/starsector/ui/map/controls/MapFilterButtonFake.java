@@ -22,6 +22,13 @@ import java.util.List;
  * row's button is asked what it is showing, what presses it and where it sits, and answering the
  * rest silently would let a subject that strayed into painting pass while proving nothing.
  *
+ * <p>Its words are the exception, and they neither answer nor throw: the published text accessors
+ * read back null and write nowhere, exactly as the game's own filter-row button does. Those
+ * accessors serve a different kind of button than a row is furnished with, and their doing nothing
+ * is silent in a running game - so a fixture that answered them would let a subject reaching for a
+ * button's words the obvious way pass here and find nothing in play. The words live where the game
+ * keeps them instead, on the label beneath the renderer, reachable through the same two hops.
+ *
  * <p>Its own type rather than a bare object, because the row's two helpers are told apart by the
  * types in their signatures rather than by their names - the game gives them the same name - so a
  * button that were an {@code Object} would leave the appender indistinguishable from anything else
