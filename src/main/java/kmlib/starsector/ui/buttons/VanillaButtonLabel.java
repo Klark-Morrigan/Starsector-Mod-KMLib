@@ -99,12 +99,7 @@ public final class VanillaButtonLabel {
             var renderer = readNoArg(button, RENDERER_ACCESSOR);
             var label = findLabelUnder(
                 renderer == null ? button : renderer,
-                MAX_HOPS_BELOW_RENDERER,
-                // By identity: two widgets are the same node here only if they are the same object,
-                // and asking a live widget whether it equals another is a question it may answer
-                // expensively or not at all.
-                Collections.newSetFromMap(new IdentityHashMap<>()),
-                expectedWords);
+                LabelSearch.forWords(expectedWords));
 
             if (label == null) {
                 WARNING.warnOnce(
@@ -184,44 +179,27 @@ public final class VanillaButtonLabel {
     //
     // Bounded to the depth the game uses, and every call guarded: a widget asked a question it does
     // not care for answers by throwing, and that is a dead end here rather than a failure.
-    private static LabelAPI findLabelUnder(
-            Object node,
-            int hopsLeft,
-            Set<Object> visited,
-            String expectedWords) {
+    private static LabelAPI findLabelUnder(Object node, LabelSearch search) {
 
-        if (node == null || !visited.add(node)) {
+        if (node == null || !search.isFirstVisitTo(node)) {
             return null;
         }
 
-        var here = acceptIfReading(node, expectedWords);
+        var here = search.acceptIfReading(node);
         if (here != null) {
             return here;
         }
 
-        var title = acceptIfReading(readNoArg(node, TITLE_ACCESSOR), expectedWords);
+        var title = search.acceptIfReading(readNoArg(node, TITLE_ACCESSOR));
         if (title != null) {
             return title;
         }
 
-        return hopsLeft <= 0 ? null : findLabelBelow(node, hopsLeft, visited, expectedWords);
-    }
-
-    // A candidate, but only where it is drawable words already reading what the button was built
-    // with. Anything else is somebody else's label that happens to be within reach.
-    private static LabelAPI acceptIfReading(Object candidate, String expectedWords) {
-
-        return candidate instanceof LabelAPI label && expectedWords.equals(label.getText())
-            ? label
-            : null;
+        return search.hasHopsLeft() ? findLabelBelow(node, search) : null;
     }
 
     // One level down, through everything the node holds, first match winning.
-    private static LabelAPI findLabelBelow(
-            Object node,
-            int hopsLeft,
-            Set<Object> visited,
-            String expectedWords) {
+    private static LabelAPI findLabelBelow(Object node, LabelSearch search) {
 
         for (var method : CoreUiMethods.readPublicMethodsOf(node.getClass())) {
 
@@ -229,8 +207,7 @@ public final class VanillaButtonLabel {
                 continue;
             }
 
-            var held = readQuietly(method, node);
-            var label = findLabelUnder(held, hopsLeft - 1, visited, expectedWords);
+            var label = findLabelUnder(readQuietly(method, node), search.oneHopDeeper());
 
             if (label != null) {
                 return label;
@@ -269,6 +246,59 @@ public final class VanillaButtonLabel {
             .map(method -> method.invokeOn(instance))
             .orElse(null);
     }
+
+    /**
+     * One walk in progress: what is being looked for, how much further it may go, and where it has
+     * already been.
+     *
+     * <p>Together rather than as three arguments threaded down the recursion, because they travel
+     * together and only one of them changes on the way: a walk that dropped the visited set on one
+     * branch, or carried a depth belonging to another, is a walk that loops or overruns, and neither
+     * is visible at a call site handing over four separate things.
+     *
+     * @param expectedWords what the button was built reading, which is the only thing that tells its
+     *                      own label from every other label beneath it
+     * @param hopsLeft      how many levels further down the search may go
+     * @param visited       the nodes already seen, shared by every branch so a widget tree that
+     *                      leads back to itself is walked once rather than forever
+     */
+    private record LabelSearch(String expectedWords, int hopsLeft, Set<Object> visited) {
+
+        static LabelSearch forWords(String expectedWords) {
+
+            // Visited by identity: two widgets are the same node here only if they are the same
+            // object, and asking a live widget whether it equals another is a question it may answer
+            // expensively or not at all.
+            return new LabelSearch(
+                expectedWords,
+                MAX_HOPS_BELOW_RENDERER,
+                Collections.newSetFromMap(new IdentityHashMap<>()));
+        }
+
+        // A candidate, but only where it is drawable words already reading what the button was built
+        // with. Anything else is somebody else's label that happens to be within reach.
+        LabelAPI acceptIfReading(Object candidate) {
+
+            return candidate instanceof LabelAPI label && expectedWords.equals(label.getText())
+                ? label
+                : null;
+        }
+
+        boolean hasHopsLeft() {
+            return hopsLeft > 0;
+        }
+
+        // The same search one level down. The visited set is shared rather than copied, so a node
+        // reached by two branches is walked by the first of them alone.
+        LabelSearch oneHopDeeper() {
+            return new LabelSearch(expectedWords, hopsLeft - 1, visited);
+        }
+
+        boolean isFirstVisitTo(Object node) {
+            return visited.add(node);
+        }
+    }
+    // MOVE_MARKER_END
 
     // Lights one run of the words in the colour the game lights a key in.
     //
