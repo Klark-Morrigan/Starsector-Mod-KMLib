@@ -14,12 +14,11 @@ import com.fs.state.AppDriver;
  * door - cannot see it however deep it goes, and the codex carries none of the modal marker that
  * rule recognises either. Two independent misses, either one enough.
  *
- * <p>What that costs is paid by anything composited after the core UI. The codex panel is drawn
- * before the render pass a mod's own overlay is reached through, so an overlay draws over the codex
- * undimmed while the screen underneath is dark, and goes on hit-testing the real pointer - the game
- * silences its own screen panel by feeding it a cursor parked far off screen, which reaches nothing
- * that reads the mouse for itself. Both halves are settled by standing the overlay down for as long
- * as this answers yes.
+ * <p>What that costs anything composited after the core UI is {@link CoreUiDialogView}'s to state and
+ * is the same cost here, the codex panel being drawn before the render pass such an overlay is
+ * reached through. What differs is how the game silences the screen underneath: not an interceptor
+ * swallowing events, but a cursor parked far off screen and fed to that screen's own panel - which
+ * reaches every widget in the tree and nothing that polls the mouse for itself.
  *
  * <p>Read off the app state rather than off any widget, which is what keeps it one answer: the state
  * reports the codex up both ways it can be raised - opened over a screen into that second panel, and
@@ -66,9 +65,9 @@ public final class CodexView {
             return false;
         }
 
-        // Anything but a plain "yes, showing" is read as no codex - a state carrying no such
-        // accessor (the combat and title states do, but a future one need not) lands here alongside
-        // a hop that resolved and threw.
+        // Anything but a plain "yes, showing" is read as no codex, which puts a state carrying no
+        // such accessor alongside a hop that resolved and threw. Every state that can raise a codex
+        // carries it, so one that does not is a different shape rather than a broken read.
         return Boolean.TRUE.equals(
             CoreUiTree.readHopIfOffered(appState, IS_SHOWING_CODEX_METHOD));
     }

@@ -218,7 +218,13 @@ No Starsector API on the signature.
   doing - whether it is up, which the published dialog state never reports,
   that answering for the campaign's own conversations, and how far through its
   own fade it stands, so a caller can thin out against its backdrop rather than
-  cut away from it. Beside that, a shape-based reach for the members no name can
+  cut away from it. Beside that, whether the codex stands over the screen - a
+  reading of its own rather than a case of the modal, the codex being raised
+  outside the core UI entirely, into a second screen panel the campaign state
+  keeps for it, so no walk of the core UI reaches it however deep it goes. It is
+  read off the app state instead, which reports the codex up whichever way it
+  was raised, over a screen or from the campaign itself. And a shape-based reach
+  for the members no name can
   find: what a class declares and what it publishes, each member's parameters,
   return type and a way to call it, so a caller can recognise an obfuscated
   member by its signature rather than by a name the next game build regenerates.
