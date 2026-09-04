@@ -286,9 +286,13 @@ No Starsector API on the signature.
 - **`kmlib.starsector.ui.render.gl.controls`** - painting a control: checkbox,
   toggle button, horizontal and vertical radio rows, icon radio lists, segment
   washes, seam dividers and channel fills, over per-cell hover wash and press
-  light sources.
+  light sources. A control is drawn against the panel's alpha pair rather than
+  one compounded number, and spends the two apart: its chrome honours the look's
+  translucency and the moment, its words the moment alone, so a see-through body
+  never costs a coloured reading its colour.
 - **`kmlib.starsector.ui.render.gl.panel`** - painting a panel: bordered box,
-  scrollbar, and the collapse notch with its chevron.
+  scrollbar, and the collapse notch with its chevron, all against the alpha pair
+  it hands on to each body control.
 - **`kmlib.starsector.ui.render.gl.style`** - the look a host hands in: box
   colours, accents, hover wash and press light resolved to a paint at a
   fraction, notch colours, body font, tab style and sound scheme, gathered
@@ -327,7 +331,10 @@ No Starsector API on the signature.
   with its scroll region, and the
   two alphas a panel paints at - how see-through its body is meant to be, and
   how much of the panel is on screen at all - carried together because chrome
-  standing opaque on that body still has to leave with the panel.
+  standing opaque on that body still has to leave with the panel, and asked for
+  separately by what honours the look and what honours only the moment: a
+  panel's chrome takes both channels, while its words take the moment alone, so
+  a see-through body never costs the reading its colour.
 - **`kmlib.starsector.ui.widgets.lists`** - the spotlight picker: sort modes
   with direction, comparator and the trailing value a ranked row draws for them
   - answered as runs, so a value the engine gives a colour to, or a range whose

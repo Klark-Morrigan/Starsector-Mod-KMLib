@@ -11,6 +11,7 @@ import kmlib.starsector.ui.render.gl.controls.ControlRenderer;
 import kmlib.starsector.ui.render.gl.style.WidgetStyle;
 import kmlib.starsector.ui.render.gl.tabs.TabPanelRenderer;
 import kmlib.starsector.ui.widgets.BoxBorder;
+import kmlib.starsector.ui.widgets.PanelAlpha;
 import kmlib.starsector.ui.widgets.PanelPlacement;
 import kmlib.starsector.ui.widgets.scroll.PanelScrollbars;
 
@@ -19,7 +20,7 @@ import kmlib.starsector.ui.widgets.scroll.PanelScrollbars;
  * BorderedBoxRenderer}), then each body control (via {@link ControlRenderer}), then the scrollbar when
  * the body is capped. It composes the frame, the per-control paint, and the scrollbar into one panel
  * draw, so a host renders its whole panel with one call and stays out of the per-widget GL. The look
- * rides on a {@link WidgetStyle}; the per-frame border width and opacity are parameters. A {@link
+ * rides on a {@link WidgetStyle}; the per-frame border width and alpha are parameters. A {@link
  * TabPanelRenderer} reuses this for the body and overlays a tabs header on the top band.
  *
  * <p>Brackets the draw in one {@link GlStateGuard#bracket} state save - the map chrome and tooltips draw
@@ -35,7 +36,7 @@ public final class PanelRenderer {
 
     /**
      * Draws the panel: the bordered frame, the body controls at whatever point of their hover fades they
-     * stand, and the scrollbar when the body is capped, all faded by {@code opacity}. Must run with a
+     * stand, and the scrollbar when the body is capped, all faded by {@code alpha}. Must run with a
      * current GL context. The {@code border} names which frame edges to stroke, so a panel flush against
      * another's edge can drop the border there; the body controls and scrollbar are unaffected.
      *
@@ -50,14 +51,15 @@ public final class PanelRenderer {
      * @param bodyInteractions how far onto its hovered look, and how far through its press lift, each cell of
      *                         each body control stands, resolved by whoever owns the panel's live state,
      *                         since this pass reads no cursor and holds no timing
-     * @param opacity          overall alpha, 0..1, fading the whole panel
+     * @param alpha            the panel's two alpha channels - the body's own translucency and how much
+     *                         of the panel is on screen - which its chrome and its words take separately
      */
     public static void render(
             PanelPlacement placement,
             WidgetStyle style,
             BoxBorder border,
             BodyInteractionSources bodyInteractions,
-            float opacity) {
+            PanelAlpha alpha) {
         // Belt-and-suspenders around the raw GL: the map chrome and tooltips draw after a UI-overlay
         // pass, so any state the panel touches must be restored. The whole draw shares this one save.
         GlStateGuard.bracket(() -> {
@@ -66,9 +68,9 @@ public final class PanelRenderer {
             BorderedBoxRenderer.render(
                 placement.box(),
                 border,
-                new UiElementPaint(style.boxColours().fill(), opacity),
-                new UiElementPaint(style.boxColours().border(), opacity));
-            drawBodyControls(placement, style, bodyInteractions, opacity);
+                new UiElementPaint(style.boxColours().fill(), alpha.resolveBodyAlpha()),
+                new UiElementPaint(style.boxColours().border(), alpha.resolveBodyAlpha()));
+            drawBodyControls(placement, style, bodyInteractions, alpha);
         });
     }
 
@@ -85,7 +87,7 @@ public final class PanelRenderer {
             PanelPlacement placement,
             WidgetStyle style,
             BodyInteractionSources bodyInteractions,
-            float opacity) {
+            PanelAlpha alpha) {
 
         var bodyControls = placement.bodyControls();
 
@@ -105,13 +107,13 @@ public final class PanelRenderer {
                 // Uncollapsed the viewport already sits within the box, so the intersection is a no-op.
                 UiScissor.runClippedTo(
                     placement.flexViewport().intersectWith(placement.box()),
-                    () -> drawControl(control, style, interactions, opacity));
+                    () -> drawControl(control, style, interactions, alpha));
             } else {
-                drawControl(control, style, interactions, opacity);
+                drawControl(control, style, interactions, alpha);
             }
         }
         if (placement.isScrollbarNeeded()) {
-            drawScrollbar(placement, style, opacity);
+            drawScrollbar(placement, style, alpha);
         }
     }
 
@@ -119,21 +121,21 @@ public final class PanelRenderer {
             Control control,
             WidgetStyle style,
             ControlInteractionSources interactions,
-            float opacity) {
+            PanelAlpha alpha) {
 
-        ControlRenderer.render(control, style, opacity, interactions);
+        ControlRenderer.render(control, style, alpha, interactions);
     }
 
     // The scrollbar for the capped body: track and thumb come from the placement's scroll region - the
     // same geometry the input listener hit-tests for a drag - so what is drawn and what a drag grabs
     // cannot drift.
-    private static void drawScrollbar(PanelPlacement placement, WidgetStyle style, float opacity) {
+    private static void drawScrollbar(PanelPlacement placement, WidgetStyle style, PanelAlpha alpha) {
         var track = PanelScrollbars.computeTrack(placement);
         var thumb = PanelScrollbars.computeThumb(placement);
         ScrollbarRenderer.render(
             track,
             thumb,
             style.accentColours().base(),
-            opacity);
+            alpha.resolveBodyAlpha());
     }
 }

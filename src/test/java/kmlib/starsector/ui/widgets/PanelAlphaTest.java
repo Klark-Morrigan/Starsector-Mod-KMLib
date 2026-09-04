@@ -73,4 +73,28 @@ class PanelAlphaTest {
                 .isCloseTo(0.4f, within(TOLERANCE));
         }
     }
+
+    @Nested
+    class WithOpaqueBody {
+
+        @Test
+        void withOpaqueBodyLeavesBothChannelsOnTheFadeAlone() {
+            // What a surface standing wholly opaque on the body is handed: it keeps both channels, so
+            // whatever it draws inside can go on telling body paint from chrome paint, but neither of
+            // them is any longer discounted by a translucency that surface does not wear.
+            var opaqueBody = new PanelAlpha(0.25f, 0.4f).withOpaqueBody();
+
+            assertThat(opaqueBody.resolveBodyAlpha())
+                .isCloseTo(0.4f, within(TOLERANCE));
+            assertThat(opaqueBody.resolveChromeAlpha())
+                .isCloseTo(0.4f, within(TOLERANCE));
+        }
+
+        @Test
+        void withOpaqueBodyKeepsThePanelsOwnFade() {
+            // The half it must not drop: a surface opting out of the look still leaves with the panel.
+            assertThat(new PanelAlpha(1f, 0f).withOpaqueBody().resolveChromeAlpha())
+                .isCloseTo(0f, within(TOLERANCE));
+        }
+    }
 }

@@ -16,6 +16,7 @@ import kmlib.starsector.ui.text.LabelRun;
 import kmlib.starsector.ui.widgets.Checkbox;
 import kmlib.starsector.ui.widgets.IconLabelRow;
 import kmlib.starsector.ui.widgets.LabelledRow;
+import kmlib.starsector.ui.widgets.PanelAlpha;
 import kmlib.starsector.ui.widgets.RowSlot;
 import kmlib.starsector.ui.widgets.RowSlotPainter;
 import kmlib.starsector.ui.widgets.tabs.TabInteractionSources;
@@ -62,29 +63,29 @@ public final class ControlRenderer {
 
     /**
      * Draws a body control at whatever point of its hover fades and press lifts its cells stand - one with no
-     * tabs to be interacting with, so it is drawn as {@link #render(Control, WidgetStyle, float,
+     * tabs to be interacting with, so it is drawn as {@link #render(Control, WidgetStyle, PanelAlpha,
      * TabInteractionSources, ControlInteractionSources)} with nothing happening to any tab. A consumer drawing
      * a strip without an animator behind it passes {@link ControlInteractionSources#RESTING}, which says so
      * where it is called rather than through an overload that says it by omission.
      *
      * @param control      the laid-out control to draw
      * @param style        the look bundle - accents, the cell treatments, and body font for every kind
-     * @param opacity      overall alpha, 0..1
+     * @param alpha        the panel's two alpha channels, which the chrome and the text take separately
      * @param interactions how far onto its hovered look, and how far through its press lift, each of this
      *                     control's cells stands
      */
     public static void render(
             Control control,
             WidgetStyle style,
-            float opacity,
+            PanelAlpha alpha,
             ControlInteractionSources interactions) {
 
-        render(control, style, opacity, TabInteractionSources.RESTING, interactions);
+        render(control, style, alpha, TabInteractionSources.RESTING, interactions);
     }
 
     /**
      * Draws {@code control} in the lit state its spec carries, styled from {@code style} and faded by
-     * {@code opacity}. A tick box / toggle lights its accent when its cell is selected; a radio frames its
+     * {@code alpha}. A tick box / toggle lights its accent when its cell is selected; a radio frames its
      * segments in the accent and washes the active one; a checkbox uses the bright accent for its tick; a
      * tabs row draws in the tab chrome the style names, in its tab colours and face, lighting the selected
      * tab and painting each tab at whatever point of its hover fade and pulse {@code tabInteractions}
@@ -96,7 +97,8 @@ public final class ControlRenderer {
      * @param control         the laid-out control to draw
      * @param style           the look bundle - accents and body font for every kind, tab colours and face
      *                        for a tabs row
-     * @param opacity         overall alpha, 0..1
+     * @param alpha           the panel's two alpha channels: the chrome honours both the look's
+     *                        translucency and the moment, while the words honour the moment alone
      * @param tabInteractions what each tab of a tabs row is currently showing; unread by every other kind,
      *                        since only a tabs row has tabs to interact with
      * @param interactions    how far onto its hovered look, and how far through its press lift, each of this
@@ -106,7 +108,7 @@ public final class ControlRenderer {
     public static void render(
             Control control,
             WidgetStyle style,
-            float opacity,
+            PanelAlpha alpha,
             TabInteractionSources tabInteractions,
             ControlInteractionSources interactions) {
 
@@ -115,16 +117,16 @@ public final class ControlRenderer {
         // than a fraction and a colour to combine for itself.
         var paint = new ControlPaint(
             style,
-            opacity,
+            alpha,
             new CellPaintSources(
                 CellHoverWashSource.createHoverFadedWashSource(
                     style.controlHoverWash(),
                     interactions.hovers(),
-                    opacity),
+                    alpha.resolveBodyAlpha()),
                 CellPressLightSource.createPressLitLightSource(
                     style.controlPressLight(),
                     interactions.presses(),
-                    opacity)));
+                    alpha.resolveBodyAlpha())));
 
         var spec = control.spec();
 
@@ -197,7 +199,7 @@ public final class ControlRenderer {
                 tabs,
                 new TabPaintSources(looks, washes, lights),
                 tabStyle,
-                paint.opacity());
+                paint.chromeOpacity());
     }
 
     // A tick box lit when the spec's cell is selected, then its label at the anchor the widget places
@@ -212,8 +214,8 @@ public final class ControlRenderer {
             bounds,
             spec.isLit(),
             paint.cellPaints(),
-            new UiElementPaint(style.accentColours().base(), paint.opacity()),
-            new UiElementPaint(style.accentColours().bright(), paint.opacity()));
+            new UiElementPaint(style.accentColours().base(), paint.chromeOpacity()),
+            new UiElementPaint(style.accentColours().bright(), paint.chromeOpacity()));
 
         ControlLabelRenderer.drawBodyLabelRuns(
             paint,
@@ -254,7 +256,7 @@ public final class ControlRenderer {
                 table.columnCount(),
                 colours,
                 paint.cellPaints(),
-                paint.opacity());
+                paint.chromeOpacity());
         } else {
             RadioRowRenderer.renderHorizontalRow(
                 bounds,
@@ -262,7 +264,7 @@ public final class ControlRenderer {
                 selectedIndex,
                 colours,
                 paint.cellPaints(),
-                paint.opacity());
+                paint.chromeOpacity());
         }
         for (var index = 0; index < segments.size() && index < labels.size(); index++) {
             var segment = segments.get(index);
@@ -308,7 +310,7 @@ public final class ControlRenderer {
             spec.columnCount(),
             new RadioColours(accent, accent),
             paint.cellPaints(),
-            paint.opacity());
+            paint.chromeOpacity());
 
         var segments = control.segments();
 
@@ -421,13 +423,15 @@ public final class ControlRenderer {
         public void paintTickSlot(RowSlot.Tick tickSlot) {
         }
 
-        // In the row's body text tone so it reads as a quiet annotation like the value it replaces.
+        // In the row's body text tone so it reads as a quiet annotation like the value it replaces - and
+        // on the words' alpha channel for the same reason, since a marker standing in for a value must
+        // not fade out from under the values above and below it.
         @Override
         public void paintTriangleSlot(RowSlot.Triangle triangleSlot) {
 
             var trianglePaint = new UiElementPaint(
                 StarsectorUiColour.VANILLA_TEXT.resolve(),
-                paint.opacity());
+                paint.textOpacity());
 
             TriangleRenderer.render(
                 IconLabelRow.computeDirectionTriangleBox(segment),
@@ -450,7 +454,7 @@ public final class ControlRenderer {
             accent,
             accent,
             paint.cellPaints(),
-            paint.opacity());
+            paint.chromeOpacity());
 
         ControlLabelRenderer.drawCentredBodyLabelRuns(
             paint,
@@ -466,7 +470,7 @@ public final class ControlRenderer {
         DividerRenderer.render(
             control.bounds(),
             paint.style().accentColours().base(),
-            paint.opacity());
+            paint.chromeOpacity());
     }
 
     // A caption row: only its text, left-aligned at the row's left edge and vertically centred, with no

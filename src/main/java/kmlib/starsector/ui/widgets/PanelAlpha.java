@@ -59,4 +59,17 @@ public record PanelAlpha(
     public float resolveChromeAlpha() {
         return panelFade;
     }
+
+    /**
+     * This same moment with the look's translucency dropped: both channels then answer the fade alone.
+     *
+     * <p>For a surface drawn wholly opaque on the body - a tab row - which is handed one of these rather
+     * than a bare {@link #resolveChromeAlpha()} so that whatever it draws inside keeps both channels and
+     * can go on telling body paint from chrome paint.
+     *
+     * @return this alpha with a fully opaque body
+     */
+    public PanelAlpha withOpaqueBody() {
+        return new PanelAlpha(FULLY_PRESENT, panelFade);
+    }
 }

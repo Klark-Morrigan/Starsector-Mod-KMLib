@@ -119,8 +119,8 @@ final class ControlLabelRenderer {
     }
 
     /**
-     * Draws one span at the body size in its own colour, faded by opacity, through the shared label
-     * primitive so the control text and any other KM UI text share one cache.
+     * Draws one span at the body size in its own colour, on the words' own alpha channel, through the
+     * shared label primitive so the control text and any other KM UI text share one cache.
      *
      * @param paint    the look and alpha the control draws with
      * @param textSpan the run to set, in the colour it states
@@ -138,7 +138,7 @@ final class ControlLabelRenderer {
         var labelStyle = new LabelStyle(
             paint.resolveBodyFace(),
             textSpan.colour(),
-            paint.opacity());
+            paint.textOpacity());
 
         LabelRenderer.render(labelStyle, textSpan.text(), x, y, anchor);
     }
@@ -240,7 +240,7 @@ final class ControlLabelRenderer {
      * paint the pass is drawing with. Bound to the label rather than to the run, since the paint and the
      * row's line are the label's for all of its runs and only the anchor moves between them.
      *
-     * @param paint   the look, opacity, and cell paints the control draws with
+     * @param paint   the look, both alpha channels, and cell paints the control draws with
      * @param centreY the middle line of the row the label is centred on
      */
     private record BodyLabelRunPainter(
@@ -253,7 +253,7 @@ final class ControlLabelRenderer {
             UiSprite.renderImage(
                 imageSpan.spritePath(),
                 computeLabelImageBox(runX, centreY),
-                paint.opacity(),
+                paint.textOpacity(),
                 imageSpan.tintColour());
         }
 
@@ -280,7 +280,7 @@ final class ControlLabelRenderer {
                 new UiElementPaint(
                     redactedSpan.resolveBlockFillColour(
                         RedactedSpan.TEXT_WEIGHT_DARKENING_STRENGTH),
-                    paint.opacity()));
+                    paint.textOpacity()));
         }
 
         @Override

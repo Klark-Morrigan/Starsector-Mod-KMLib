@@ -122,7 +122,7 @@ public final class TabPanelRenderer {
             style,
             border,
             bodyInteractions,
-            alpha.resolveBodyAlpha());
+            alpha);
 
         if (notchState.isFolding()) {
             UiScissor.runClippedTo(placement.body().box(), drawBody);
@@ -153,9 +153,11 @@ public final class TabPanelRenderer {
             () -> GlStateGuard.bracket(() -> ControlRenderer.render(
                 placement.tabsHeader(),
                 style,
-                // The chrome channel: the row stands opaque on a see-through body, so it takes none of
-                // the body's opacity - but it goes with the panel as that panel arrives or leaves.
-                alpha.resolveChromeAlpha(),
+                // The chrome channel throughout: the row stands opaque on a see-through body, so it
+                // takes none of the body's opacity - but it goes with the panel as that panel arrives or
+                // leaves. Handed on as the pair rather than as the one number, so the words inside it
+                // keep telling body paint from chrome paint the way every other control's do.
+                alpha.withOpaqueBody(),
                 tabInteractions,
                 // The row answers the pointer and a press through its own palette - a tab meets a shade
                 // rather than taking the body's cell wash - so it is drawn with those channels at rest.
