@@ -6,6 +6,7 @@ import com.fs.starfarer.api.ui.TooltipMakerAPI;
 
 import kmlib.logging.SessionWarning;
 import kmlib.math.geometry.Rectangle;
+import kmlib.starsector.ui.buttons.VanillaButtonLabel;
 import kmlib.starsector.ui.tooltip.Tooltips;
 import kmlib.text.KmlibStrings;
 
@@ -78,9 +79,15 @@ public final class MapFilterToggle {
 
     private final ButtonAPI button;
 
-    private MapFilterToggle(MapFilterRow row, ButtonAPI button) {
+    // What the button was built reading. Kept because the button will not answer for its own words -
+    // the published text accessors serve a different kind of button than a filter row holds - so
+    // this is the only handle on which of the labels beneath it is the one that draws them.
+    private final String label;
+
+    private MapFilterToggle(MapFilterRow row, ButtonAPI button, String label) {
         this.row = row;
         this.button = button;
+        this.label = label;
     }
 
     /**
@@ -104,7 +111,7 @@ public final class MapFilterToggle {
 
         var appendedButton = VanillaToggleFactory.appendToggle(row, label, buttonSize, onToggled);
 
-        return adoptAppendedButton(row, appendedButton);
+        return adoptAppendedButton(row, appendedButton, label);
     }
 
     /**
@@ -235,16 +242,16 @@ public final class MapFilterToggle {
             return;
         }
 
-        var label = VanillaButtonLabel.resolveLabelOf(button);
+        var buttonLabel = VanillaButtonLabel.resolveLabelOf(button, label);
 
         // Already said where it happened. The key is bound either way, so what is lost is the
         // telling rather than the control.
-        if (label == null) {
+        if (buttonLabel == null) {
             return;
         }
 
         try {
-            label.announceShortcut(keyName);
+            buttonLabel.announceShortcut(keyName);
 
         } catch (RuntimeException failure) {
 
@@ -310,10 +317,13 @@ public final class MapFilterToggle {
     // Asked after the append rather than before because the button does not exist before: what a row
     // building some other kind of button costs is one control standing inert on it, which is the
     // whole of the price for a question that cannot be put any earlier.
-    private static MapFilterToggle adoptAppendedButton(MapFilterRow row, Object appendedButton) {
+    private static MapFilterToggle adoptAppendedButton(
+            MapFilterRow row,
+            Object appendedButton,
+            String label) {
 
         if (appendedButton instanceof ButtonAPI button) {
-            return new MapFilterToggle(row, button);
+            return new MapFilterToggle(row, button, label);
         }
 
         // Null is the build's own refusal, already logged where it happened. Anything else is a

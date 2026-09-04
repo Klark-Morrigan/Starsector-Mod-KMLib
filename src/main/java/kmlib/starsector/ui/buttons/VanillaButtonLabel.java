@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.map.controls;
+package kmlib.starsector.ui.buttons;
 
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.ui.LabelAPI;
@@ -19,35 +19,32 @@ import java.util.Set;
 /**
  * The words on a button the game built, and how a key bound to that button is said in them.
  *
- * <p>Needed because the published button interface does not reach these words. Its own text
- * accessors answer only for one of the several kinds of button the game builds, and the kind a map's
- * filter row is furnished with is not that one - so a control appended there reads back nothing and
- * writes back nothing, silently, through the interface that looks like it should work. The same
- * split is why the game's own key announcement never reaches such a button: the call that takes a
- * bare keycode writes the key into the words for that one button kind and leaves every other kind
- * bound to a key it never mentions.
+ * <p>Needed because the published button interface does not reach these words. Its text accessors
+ * answer for one of the several kinds of button the game builds and quietly do nothing for the
+ * rest - they read back null and write nowhere, through the interface that looks like it should
+ * work. The same split is why the game's own key announcement never reaches those other kinds: the
+ * call that takes a bare keycode writes the key into the words for that one kind and leaves every
+ * other bound to a key it never mentions.
  *
  * <p>What the words <em>are</em> reachable through is the published label the engine draws them
  * with, which every kind of button holds somewhere beneath it. So this finds that label rather than
- * naming the widget that holds it, and everything said afterwards is said through the modding
- * interface like any other label.
+ * naming the widget holding it, and everything said afterwards is said through the modding interface
+ * like any other label.
  *
- * <p>The search is by type and by published accessor, never by an obfuscated name. It follows the
- * button's renderer, and then the one hop below it that leads to a title - and it takes that hop
- * only where the return type <em>already declares</em> a title accessor, so nothing is called
- * speculatively on a live widget to find out what it answers.
+ * <p>The search never matches an obfuscated name. It takes the two accessors the game leaves alone,
+ * and follows the hop between them by calling it and looking at what came back rather than by
+ * trusting what it promises to return - the game declares that hop as something broader than the
+ * piece it hands over, and tests the answer itself.
  *
- * <p>Not finding one costs the announcement and nothing else. The key is bound before any of this
- * is attempted, so a button whose words cannot be reached still answers its key; what the player
- * loses is being told about it.
+ * <p>Not finding the words costs whatever was going to be said and nothing else, which is what makes
+ * this safe to reach for while decorating a widget somebody else drew.
  */
-final class VanillaButtonLabel {
+public final class VanillaButtonLabel {
 
     private static final Logger LOG = Global.getLogger(VanillaButtonLabel.class);
 
-    // Says once per session that a button's words could not be reached, rather than on every
-    // reattachment. One holder for every way of not finding them, that being one piece of news to
-    // whoever asked - the key is bound and unannounced.
+    // Says once per session that a button's words could not be reached, rather than on every attempt
+    // - a caller redecorating a rebuilt widget asks again on every open of the screen carrying it.
     private static final SessionWarning WARNING = new SessionWarning(LOG);
 
     // The two hops the game itself takes to a button's words, both of them names the game leaves
@@ -67,7 +64,7 @@ final class VanillaButtonLabel {
     // across half the screen looking for something that is two hops away or nowhere.
     private static final int MAX_HOPS_BELOW_RENDERER = 2;
 
-    // How the row's own buttons wear a key their words do not already contain - "Starscape [1]".
+    // How the game's own buttons wear a key their words do not already contain - "Starscape [1]".
     private static final String SHORTCUT_SUFFIX = " [%s]";
 
     private final LabelAPI label;
@@ -79,11 +76,24 @@ final class VanillaButtonLabel {
     /**
      * Finds the words on a button the game built.
      *
-     * @param button the widget to look under, which is the game's own rather than anything drawn here
+     * <p>The caller says what the button was built to read, and only a label already saying exactly
+     * that is accepted. A widget holds more than one label - a piece of chrome, a tooltip's own, an
+     * empty one waiting to be filled - so a search taking the first it met would come back holding
+     * something, write into it, and change nothing anyone can see. Matching on the words turns that
+     * silent wrong answer into no answer, which is one that gets logged.
+     *
+     * @param button       the widget to look under, which is the game's own rather than anything
+     *                     drawn by the caller
+     * @param expectedWords what the button was built reading, which is how its own label is told
+     *                      from every other label beneath it
      * @return its words as something that can be read and written, or null where they cannot be
      *         reached - logged once, and never an error, the widget being somebody else's
      */
-    static VanillaButtonLabel resolveLabelOf(Object button) {
+    public static VanillaButtonLabel resolveLabelOf(Object button, String expectedWords) {
+
+        if (!KmlibStrings.hasText(expectedWords)) {
+            return null;
+        }
 
         try {
             var renderer = readNoArg(button, RENDERER_ACCESSOR);
@@ -93,12 +103,13 @@ final class VanillaButtonLabel {
                 // By identity: two widgets are the same node here only if they are the same object,
                 // and asking a live widget whether it equals another is a question it may answer
                 // expensively or not at all.
-                Collections.newSetFromMap(new IdentityHashMap<>()));
+                Collections.newSetFromMap(new IdentityHashMap<>()),
+                expectedWords);
 
             if (label == null) {
                 WARNING.warnOnce(
-                    "The control appended to the map's filter row has no words this can reach, so "
-                        + "the key bound to it is not announced on it.");
+                    "No label reading \"" + expectedWords + "\" was found under the button the game "
+                        + "built for it, so nothing can be said in its words.");
             }
             return label == null ? null : new VanillaButtonLabel(label);
 
@@ -108,8 +119,8 @@ final class VanillaButtonLabel {
             // signature, so a shape that has moved arrives as an Error, and the bypass the reads go
             // through lets a checked throw escape unannounced.
             WARNING.warnOnce(
-                "The control appended to the map's filter row could not be read for its words, so "
-                    + "the key bound to it is not announced on it.",
+                "A button the game built could not be read for its words, so nothing can be said in "
+                    + "them.",
                 failure);
             return null;
         }
@@ -120,13 +131,13 @@ final class VanillaButtonLabel {
      *
      * <p>The game's own rule, applied to a button the game will not apply it to: a key whose name
      * already occurs in the words has that occurrence lit rather than repeated, and one that does
-     * not is spelled out after them in a bracket. That is why the row reads "Starscape [1]" and a
-     * core tab reads "Chara(c)ter" - one rule, two outcomes, and matching it is what keeps an
-     * appended control from being the one thing on the strip that announces itself differently.
+     * not is spelled out after them in a bracket. That is why a map filter reads "Starscape [1]"
+     * while a core tab reads "Chara(c)ter" - one rule, two outcomes, and following it is what keeps
+     * a decorated button from being the one thing on its row that announces itself differently.
      *
      * @param keyName what the key is called, as the key table names it
      */
-    void announceShortcut(String keyName) {
+    public void announceShortcut(String keyName) {
 
         var words = label.getText();
 
@@ -169,29 +180,48 @@ final class VanillaButtonLabel {
     // and looking at what came back, rather than by reading what it promises to return. It has to
     // be: the game declares that hop as something broader than the piece it actually hands over and
     // tests the answer itself, so a search that trusted the declared type would skip the one member
-    // that leads anywhere - which is exactly what it did.
+    // that leads anywhere.
     //
     // Bounded to the depth the game uses, and every call guarded: a widget asked a question it does
     // not care for answers by throwing, and that is a dead end here rather than a failure.
-    private static LabelAPI findLabelUnder(Object node, int hopsLeft, Set<Object> visited) {
+    private static LabelAPI findLabelUnder(
+            Object node,
+            int hopsLeft,
+            Set<Object> visited,
+            String expectedWords) {
 
         if (node == null || !visited.add(node)) {
             return null;
         }
 
-        if (node instanceof LabelAPI label) {
-            return label;
+        var here = acceptIfReading(node, expectedWords);
+        if (here != null) {
+            return here;
         }
 
-        if (readNoArg(node, TITLE_ACCESSOR) instanceof LabelAPI title) {
+        var title = acceptIfReading(readNoArg(node, TITLE_ACCESSOR), expectedWords);
+        if (title != null) {
             return title;
         }
 
-        return hopsLeft <= 0 ? null : findLabelBelow(node, hopsLeft, visited);
+        return hopsLeft <= 0 ? null : findLabelBelow(node, hopsLeft, visited, expectedWords);
     }
 
-    // One level down, through everything the node holds, first answer winning.
-    private static LabelAPI findLabelBelow(Object node, int hopsLeft, Set<Object> visited) {
+    // A candidate, but only where it is drawable words already reading what the button was built
+    // with. Anything else is somebody else's label that happens to be within reach.
+    private static LabelAPI acceptIfReading(Object candidate, String expectedWords) {
+
+        return candidate instanceof LabelAPI label && expectedWords.equals(label.getText())
+            ? label
+            : null;
+    }
+
+    // One level down, through everything the node holds, first match winning.
+    private static LabelAPI findLabelBelow(
+            Object node,
+            int hopsLeft,
+            Set<Object> visited,
+            String expectedWords) {
 
         for (var method : CoreUiMethods.readPublicMethodsOf(node.getClass())) {
 
@@ -200,7 +230,7 @@ final class VanillaButtonLabel {
             }
 
             var held = readQuietly(method, node);
-            var label = findLabelUnder(held, hopsLeft - 1, visited);
+            var label = findLabelUnder(held, hopsLeft - 1, visited, expectedWords);
 
             if (label != null) {
                 return label;
@@ -247,8 +277,8 @@ final class VanillaButtonLabel {
         label.setHighlight(run);
 
         // The shade the engine gives a key on a button rather than the one it gives an emphasised
-        // word: the two match on a stock install and are separate keys, so a restyle that parts them
-        // should part this from prose as well.
+        // word. They resolve alike today, being two names for one settings key, but they are two
+        // roles - so a restyle that parts them should part this from prose as well.
         label.setHighlightColors(StarsectorUiColour.VANILLA_BUTTON_SHORTCUT.resolve());
     }
 }
