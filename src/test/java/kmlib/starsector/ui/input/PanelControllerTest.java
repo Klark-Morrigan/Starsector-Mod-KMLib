@@ -89,10 +89,6 @@ final class PanelControllerTest {
     // drag grabs the scrollbar by. Wider than the track, which is what the real grab column is.
     private static final float SCROLLBAR_GUTTER_WIDTH = 20f;
 
-    // The bar a host has set away. The gutter is still there and the list still overruns it - which is what
-    // makes the cases about it worth having, the geometry being identical either way.
-    private static final ScrollbarThickness NO_SCROLLBAR = new ScrollbarThickness(0f);
-
     // A point over the list itself - inside the box and inside the scroll region, the only place a wheel
     // reaches the list at all.
     private static final float ON_LIST_X = ROW.x() + ROW.width() / 2f;
@@ -960,7 +956,7 @@ final class PanelControllerTest {
             controller.handlePointer(
                 PointerEventMocks.mockLeftPressAt(IN_GRAB_COLUMN_X, IN_GRAB_COLUMN_Y),
                 buildGutteredPlacementAtThickness(
-                    NO_SCROLLBAR,
+                    ScrollbarThickness.NONE,
                     buildCheckboxControl("Muted", ControlAction.NONE)));
 
             assertThat(controller.getScrollState().getOffset())
@@ -968,6 +964,32 @@ final class PanelControllerTest {
                 .isZero();
             assertThat(soundPlayerFake.getPlayedSounds())
                 .containsExactly(StarsectorUiSound.BUTTON_PRESSED);
+        }
+
+        @Test
+        void handlePointerCarriesADragWithoutMovingTheListOnceTheBarHasGone() {
+            // A drag reads the same question that started it, so a bar taken away under a held thumb stops
+            // carrying the list rather than going on following a pointer with nothing under it. The release
+            // still ends the drag where the player let go, which is why the frames between are carried at
+            // all instead of the drag being dropped.
+            var controller = buildVanillaSoundingController();
+
+            controller.handlePointer(
+                PointerEventMocks.mockLeftPressAt(IN_GRAB_COLUMN_X, IN_GRAB_COLUMN_Y),
+                buildGutteredPlacement());
+
+            assertThat(controller.getScrollState().getOffset())
+                .as("the drag began and took the list to its end")
+                .isEqualTo(SHORT_SCROLL_OVERFLOW);
+
+            // The top of the same column, which maps to the start of the list - so a drag still following
+            // the pointer would take the offset back to 0 and this reading could not pass by accident.
+            controller.handlePointer(
+                PointerEventMocks.mockMoveAt(IN_GRAB_COLUMN_X, ROW.y() + ROW.height()),
+                buildGutteredPlacementAtThickness(ScrollbarThickness.NONE));
+
+            assertThat(controller.getScrollState().getOffset())
+                .isEqualTo(SHORT_SCROLL_OVERFLOW);
         }
 
         @Test
@@ -979,7 +1001,7 @@ final class PanelControllerTest {
 
             controller.handlePointer(
                 PointerEventMocks.mockWheelDownAt(ON_LIST_X, ON_LIST_Y),
-                buildScrollingPlacementAtThickness(NO_SCROLLBAR));
+                buildScrollingPlacementAtThickness(ScrollbarThickness.NONE));
 
             assertThat(controller.getScrollState().getOffset())
                 .as("the list has to have moved for the sound to mean anything")

@@ -98,7 +98,7 @@ final class ScrollbarTest {
         @Test
         void computeTrackCollapsesTheTrackToNothingAtZeroThickness() {
 
-            var track = Scrollbar.computeTrack(buildRegion(0f), new ScrollbarThickness(0f));
+            var track = Scrollbar.computeTrack(buildRegion(0f), ScrollbarThickness.NONE);
             // Zero leaves a rectangle of no width parked at the margin; that it is not drawn at all is
             // the renderer's reading of the thickness, not the geometry's.
 

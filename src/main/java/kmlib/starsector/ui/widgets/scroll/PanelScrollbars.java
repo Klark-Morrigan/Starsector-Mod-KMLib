@@ -37,7 +37,8 @@ public final class PanelScrollbars {
 
     /**
      * @param placement the laid-out panel
-     * @return the gutter column a drag grabs the scrollbar by
+     * @return the gutter column a drag grabs the scrollbar by, stated whether or not this placement draws
+     *         a bar - {@link PanelPlacement#isScrollbarDrawn} is what says there is one to grab
      */
     public static Rectangle computeGrabColumn(PanelPlacement placement) {
         return Scrollbar.computeGrabColumn(placement.toScrollRegion());

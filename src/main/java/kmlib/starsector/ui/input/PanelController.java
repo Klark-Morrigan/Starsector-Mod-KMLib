@@ -482,14 +482,17 @@ public final class PanelController {
 
     // Follows an in-progress drag: the release ends it, and until then every move maps the pointer to a
     // scroll position. Consumes the event so the surface behind neither pans nor acts while the thumb is
-    // held.
+    // held. A frame where the bar has gone - the list stopped overrunning, or its host took the thickness
+    // away - carries the drag without moving anything, so the release still ends it where the player let go
+    // rather than leaving a held thumb behind. The same reading that began the drag, so a bar cannot be
+    // grabbable by one question and draggable by another.
     private void continueThumbDrag(InputEventAPI event, PanelPlacement placement) {
         if (event.isLMBUpEvent()) {
             isDraggingThumb = false;
             event.consume();
             return;
         }
-        if (placement.isScrollbarNeeded()) {
+        if (placement.isScrollbarDrawn()) {
             updateDragOffset(placement, event.getY());
         }
         event.consume();

@@ -31,6 +31,14 @@ public record ScrollbarThickness(float pixels) {
     /** The thin bar a scrolled region draws when its host names no thickness of its own. */
     public static final ScrollbarThickness DEFAULT = new ScrollbarThickness(3f);
 
+    /**
+     * No bar at all: nothing drawn in the gutter and nothing there to grab, for a host that moves its
+     * scrolled content some other way. Named beside the default because it is a state the passes reading a
+     * thickness talk about rather than a number one of them happens to hold, and a bare 0 at each of those
+     * places says what the width is where this says what it means.
+     */
+    public static final ScrollbarThickness NONE = new ScrollbarThickness(0f);
+
     /** The gap holding the track off the container's right edge, so it clears a border drawn there. */
     public static final float RIGHT_MARGIN = 3f;
 

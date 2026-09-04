@@ -96,8 +96,14 @@ public final class Scrollbar {
      * is drawn over the content and leaves this column narrower than the bar it grabs (see {@link
      * #computeTrack}).
      *
+     * <p>Measured off the container also means it is the same column whether or not a bar stands in it: it
+     * is stated for a region at {@link ScrollbarThickness#NONE} exactly as for any other, there being no
+     * thickness in the question. Whether a press there grabs anything is the caller's, and belongs with the
+     * caller because the same answer decides whether the bar was painted - a column that emptied itself
+     * would be a second place for the two to disagree.
+     *
      * @param region the scrollable region
-     * @return the grab column, in UI coordinates
+     * @return the grab column, in UI coordinates, whether or not a bar is drawn within it
      */
     public static Rectangle computeGrabColumn(ScrollRegion region) {
 

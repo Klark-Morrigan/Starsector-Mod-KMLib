@@ -27,10 +27,6 @@ final class PanelPlacementTest {
     private static final Rectangle BODY = new Rectangle(10f, 20f, 200f, 300f);
     private static final Rectangle VIEWPORT = new Rectangle(18f, 30f, 120f, 100f);
 
-    // The bar a host has set away: no track, no thumb, and nothing to grab. Named because it is the one
-    // reading that parts the two questions below.
-    private static final ScrollbarThickness NO_SCROLLBAR = new ScrollbarThickness(0f);
-
     // A panel whose list overruns its viewport, which is what puts a bar in question at all.
     private static PanelPlacement buildPlacement(ScrollbarThickness thickness) {
         return new PanelPlacement(BOX, BODY, List.of(), VIEWPORT, 15f, 60f, thickness);
@@ -55,7 +51,7 @@ final class PanelPlacementTest {
         void isScrollbarDrawnReportsNoBarAtNoThickness() {
             // The half the overflow alone cannot answer: the list still overruns, so a reading taken off
             // that would paint a track of no width and claim a column over it.
-            assertThat(buildPlacement(NO_SCROLLBAR).isScrollbarDrawn())
+            assertThat(buildPlacement(ScrollbarThickness.NONE).isScrollbarDrawn())
                 .isFalse();
         }
 
@@ -81,7 +77,7 @@ final class PanelPlacementTest {
         void isScrollbarNeededStillReportsSomewhereToScrollAtNoThickness() {
             // The wheel's question, and why it is a question of its own: a player who has set the bar away
             // moves the list by the wheel, so a list that overruns still has somewhere to go.
-            assertThat(buildPlacement(NO_SCROLLBAR).isScrollbarNeeded())
+            assertThat(buildPlacement(ScrollbarThickness.NONE).isScrollbarNeeded())
                 .isTrue();
         }
 

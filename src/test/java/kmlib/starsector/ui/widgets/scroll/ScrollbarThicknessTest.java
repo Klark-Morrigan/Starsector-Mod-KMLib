@@ -50,7 +50,7 @@ final class ScrollbarThicknessTest {
         void isTrackDrawnIsFalseAtZero() {
             // Zero means no bar at all rather than a bar of no width, so nothing is drawn and nothing
             // claims the gutter.
-            assertThat(new ScrollbarThickness(0f).isTrackDrawn())
+            assertThat(ScrollbarThickness.NONE.isTrackDrawn())
                 .isFalse();
         }
     }
@@ -76,7 +76,7 @@ final class ScrollbarThicknessTest {
         void computeGutterWidthIsTheGapsAloneAtZeroThickness() {
             // No track to hold clear, but the arithmetic states the gaps regardless - what a container
             // does with a gutter its own padding already covers is the layout's call, not this type's.
-            assertThat(new ScrollbarThickness(0f).computeGutterWidth())
+            assertThat(ScrollbarThickness.NONE.computeGutterWidth())
                 .isCloseTo(5f, within(TOLERANCE));
         }
     }
