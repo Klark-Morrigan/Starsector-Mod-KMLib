@@ -270,15 +270,23 @@ public final class VanillaButtonLabel {
             .orElse(null);
     }
 
-    // Lights one run of the words in the colour the game lights a key in. Both calls or neither: a
-    // run named without a colour draws in whatever the last caller left behind.
+    // Lights one run of the words in the colour the game lights a key in.
+    //
+    // Through the label's first-occurrence highlight and its single highlight colour, and not
+    // through the run list and colour list a paragraph is tinted with. The label keeps those as two
+    // separate mechanisms - a range of indices, and a per-character mask - and each clears the other
+    // when set. A button's own key is drawn by the range, so a mask set on its label is honoured by
+    // nothing that draws the button: the tint lands and never shows. The range is also what the game
+    // sets for its own keyed buttons, colour and all, so this is the same write in the same place.
+    //
+    // Both calls or neither: a range without a colour draws in whatever the last caller left.
     private void lightRun(String run) {
 
-        label.setHighlight(run);
+        label.highlightFirst(run);
 
         // The shade the engine gives a key on a button rather than the one it gives an emphasised
         // word. They resolve alike today, being two names for one settings key, but they are two
         // roles - so a restyle that parts them should part this from prose as well.
-        label.setHighlightColors(StarsectorUiColour.VANILLA_BUTTON_SHORTCUT.resolve());
+        label.setHighlightColor(StarsectorUiColour.VANILLA_BUTTON_SHORTCUT.resolve());
     }
 }

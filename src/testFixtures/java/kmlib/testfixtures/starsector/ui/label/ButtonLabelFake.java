@@ -69,9 +69,23 @@ public final class ButtonLabelFake implements LabelAPI {
         this.text = text;
     }
 
+    // The two ways a label takes a lit run - a list of runs matched into a mask, and one run lit
+    // as a range - both land in the same readers here. The fixture records what was asked to be
+    // lit and does not model that the game draws the two differently; which of them a subject
+    // reaches for is the subject's decision, stated in the subject.
+    @Override
+    public void highlightFirst(String run) {
+        highlightedRuns = List.of(run);
+    }
+
     @Override
     public void setHighlight(String... runs) {
         highlightedRuns = List.of(runs);
+    }
+
+    @Override
+    public void setHighlightColor(Color colour) {
+        highlightColours = List.of(colour);
     }
 
     @Override
@@ -120,11 +134,6 @@ public final class ButtonLabelFake implements LabelAPI {
     }
 
     @Override
-    public void highlightFirst(String run) {
-        throw new UnsupportedOperationException(NOT_DRAWN_HERE);
-    }
-
-    @Override
     public void highlightLast(String run) {
         throw new UnsupportedOperationException(NOT_DRAWN_HERE);
     }
@@ -156,11 +165,6 @@ public final class ButtonLabelFake implements LabelAPI {
 
     @Override
     public void setHighlight(int start, int end) {
-        throw new UnsupportedOperationException(NOT_DRAWN_HERE);
-    }
-
-    @Override
-    public void setHighlightColor(Color colour) {
         throw new UnsupportedOperationException(NOT_DRAWN_HERE);
     }
 
