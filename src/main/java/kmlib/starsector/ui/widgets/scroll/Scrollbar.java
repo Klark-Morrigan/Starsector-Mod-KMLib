@@ -87,9 +87,14 @@ public final class Scrollbar {
 
     /**
      * The gutter column a drag grabs the scrollbar by: the strip right of the content, from the viewport's
-     * right edge to the container's, at the viewport's height. It is wider than the thin track so a drag
-     * need not hit the track exactly, and it sits right of the content so a press here grabs the scrollbar
-     * rather than acting on the content (which lies to its left).
+     * right edge to the container's, at the viewport's height. It sits right of the content so a press here
+     * grabs the scrollbar rather than acting on the content (which lies to its left).
+     *
+     * <p>It is measured off the container rather than off the bar, so how easy it is to hit relative to the
+     * track depends on the room the container left: at the thicknesses a reserved gutter holds it runs
+     * wider than the track, so a drag need not hit the track exactly, while a track thicker than that room
+     * is drawn over the content and leaves this column narrower than the bar it grabs (see {@link
+     * #computeTrack}).
      *
      * @param region the scrollable region
      * @return the grab column, in UI coordinates

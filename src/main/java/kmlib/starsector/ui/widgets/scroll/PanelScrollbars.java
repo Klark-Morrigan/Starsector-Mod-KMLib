@@ -23,7 +23,7 @@ public final class PanelScrollbars {
      * @return the scrollbar track in the panel body's right gutter, at the placement's own thickness
      */
     public static Rectangle computeTrack(PanelPlacement placement) {
-        return Scrollbar.computeTrack(placement.toScrollRegion(), placement.scrollbarThickness());
+        return computeTrackOver(placement, placement.toScrollRegion());
     }
 
     /**
@@ -32,9 +32,7 @@ public final class PanelScrollbars {
      */
     public static Rectangle computeThumb(PanelPlacement placement) {
         var region = placement.toScrollRegion();
-        return Scrollbar.computeThumb(
-            region,
-            Scrollbar.computeTrack(region, placement.scrollbarThickness()));
+        return Scrollbar.computeThumb(region, computeTrackOver(placement, region));
     }
 
     /**
@@ -52,7 +50,15 @@ public final class PanelScrollbars {
      */
     public static float resolveOffsetForPointer(PanelPlacement placement, float pointerY) {
         var region = placement.toScrollRegion();
-        var track = Scrollbar.computeTrack(region, placement.scrollbarThickness());
+        var track = computeTrackOver(placement, region);
         return Scrollbar.resolveOffsetForPointer(region, track, pointerY);
+    }
+
+    // The track for a placement over a region already projected from it - the one pairing of a region with
+    // the thickness that sizes its bar. Every method here that needs a track goes through this, so a
+    // thickness cannot come to be read on the path that draws the bar and missed on a path that measures
+    // against it. Takes the region rather than re-projecting, the callers holding one already.
+    private static Rectangle computeTrackOver(PanelPlacement placement, ScrollRegion region) {
+        return Scrollbar.computeTrack(region, placement.scrollbarThickness());
     }
 }

@@ -93,6 +93,20 @@ final class PanelScrollbarsTest {
         }
 
         @Test
+        void computeThumbSitsTheThumbInATrackOfThePlacementsOwnThickness() {
+
+            var thumb = PanelScrollbars.computeThumb(buildPlacement(0f, THICK_BAR));
+
+            // The thumb fills the track across, so it stands where a 12-wide track does: 3 in from the
+            // body's right edge (300). The thumb reads the thickness through its own track, so a track
+            // sized here from anything but the placement leaves a thin thumb over a fat bar.
+            assertThat(thumb.width())
+                .isCloseTo(12f, within(TOLERANCE));
+            assertThat(thumb.x())
+                .isCloseTo(285f, within(TOLERANCE));
+        }
+
+        @Test
         void computeThumbDropsTheThumbAsTheListScrolls() {
 
             var atTop = PanelScrollbars.computeThumb(buildPlacement(0f));
