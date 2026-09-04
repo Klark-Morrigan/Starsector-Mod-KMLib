@@ -378,7 +378,13 @@ No Starsector API on the signature.
   region or a panel placement, at a bar thickness the caller sets rather than
   a width the geometry holds - carried with the two fixed gaps flanking the
   track, so the one dimension a bar is judged by varies while its spacing does
-  not, and stating the gutter a container reserves for it.
+  not, and stating the gutter a container reserves for it. A width of nothing
+  takes the bar away rather than drawing one of no width - no track, no thumb,
+  and nothing claiming presses over that inset - answered as one reading on the
+  placement so the pass that draws the bar and the pass that grabs its thumb
+  cannot disagree about whether there is one. It is a reading apart from whether
+  the list overruns at all, which stays the wheel's question: the wheel is how a
+  list with no bar is moved.
 - **`kmlib.starsector.ui.widgets.segments`** - splitting a row into segments
   under uniform, snapped or fixed sizing, and the dividers and channels
   between them.
