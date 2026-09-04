@@ -23,10 +23,10 @@ import java.util.List;
  * {@link PanelLayout#computeContentOrigin} anchor and {@link PanelLayout#framePlacement} that frame a plain
  * panel - so the body beneath the row is framed exactly as a headerless panel is, and the tab row never
  * drives the box width: a tab row wider than the body overhangs the frame rather than stretching it. It
- * also reuses {@link CappedStripLayout#layoutBodyStrip} for the body and
- * adds {@link TabsControlLayout#layoutHeaderControl} for the header, so the only thing unique here
- * is where the header sits. How tall that header stands is an injected {@link TabStyle} rather than a fixed
- * constant, so two panels composed through this one path can size their tab rows to their own surroundings.
+ * also reuses {@link CappedStripLayout#layoutBodyStrip} for the body and adds
+ * {@link TabsControlLayout#layoutHeaderControl} for the header, so the only thing unique here is where the
+ * header sits. How tall that header stands is an injected {@link TabStyle} rather than a fixed constant,
+ * so two panels composed through this one path can size their tab rows to their own surroundings.
  *
  * <p>A tab whose body is empty is its tab row and nothing else: no frame is laid out beneath it, so the
  * panel claims no footprint under a row it does not fill, and the row alone is what the passes draw and

@@ -16,10 +16,10 @@ import java.util.List;
  * is {@link CappedStripLayout#layoutBodyStrip} - the measured, capped, scrollable control strip; this class
  * owns only the framing - hang that body from the inset content top and wrap it with the border it was
  * handed, on whichever edges that border strokes - so a host's concrete content is just a column of
- * controls and the frame math stays here. Its
- * framing primitives ({@link #computeContentOrigin}, {@link #framePlacement}) are shared: {@link
- * TabPanelLayout} reuses them to frame the body it hangs beneath its tab row, so a tab panel is this
- * panel's framing with a row standing on top of it - one border, around the body alone.
+ * controls and the frame math stays here. Its framing primitives ({@link #computeContentOrigin},
+ * {@link #framePlacement}) are shared: {@link TabPanelLayout} reuses them to frame the body it hangs
+ * beneath its tab row, so a tab panel is this panel's framing with a row standing on top of it - one
+ * border, around the body alone.
  *
  * <p>The one shared {@link PanelPlacement} a renderer draws and an input listener hit-tests is what keeps
  * the drawn box and the clickable box in step. UI coordinates throughout (origin bottom-left, y grows up);

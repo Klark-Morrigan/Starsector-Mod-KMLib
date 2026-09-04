@@ -15,9 +15,18 @@ package kmlib.starsector.ui.widgets.scroll;
  * border, and {@link #CONTENT_CLEARANCE} parts it from the content to its left. Those stay constants -
  * the thing being varied is the bar's width, not its spacing.
  *
- * @param pixels the drawn width of the track and thumb; 0 for no bar at all
+ * @param pixels the drawn width of the track and thumb, never below 0; 0 for no bar at all
  */
 public record ScrollbarThickness(float pixels) {
+
+    /**
+     * Floors the width at 0, so "no bar" is the thinnest a bar gets. A negative would otherwise report no
+     * track drawn while still stating a gutter narrower than the gaps flanking it, which is a width no
+     * layout can act on and no host meant to ask for.
+     */
+    public ScrollbarThickness {
+        pixels = Math.max(0f, pixels);
+    }
 
     /** The thin bar a scrolled region draws when its host names no thickness of its own. */
     public static final ScrollbarThickness DEFAULT = new ScrollbarThickness(3f);

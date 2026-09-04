@@ -268,7 +268,11 @@ No Starsector API on the signature.
   stacks, control strips and their measurement, height-capped strips with a
   flex region, panel and tab-panel placement, tab header layout, tooltip box
   placement and the height a box wraps a content stack to, and vanilla
-  PositionAPI to rectangle.
+  PositionAPI to rectangle. It is also where a scrollbar's gutter is spent: a
+  capped strip knows what its own padding already holds clear, so a bar no
+  fatter than that costs the body nothing, while a fatter one widens the body -
+  and the box framed around it - by the excess, leaving the rows at the width
+  they measured to.
 - **`kmlib.starsector.ui.map`** - how readable a map icon is under the nebulae
   drawn over it.
 - **`kmlib.starsector.ui.map.controls`** - the writes into the map screen's own
@@ -348,7 +352,11 @@ No Starsector API on the signature.
   empty) with the painter role a surface draws them through - a method per kind,
   so a kind added later stops every painting surface from building rather than
   leaving one column silently unpainted - box borders per edge, panel placement
-  with its scroll region, and the
+  with its scroll region, what a panel spends on chrome rather than on content
+  as one value - the border around its footprint and the thickness of the bar
+  its body keeps a gutter clear for, together because both are room reserved
+  before a control is placed and a panel is never laid out knowing one without
+  the other - and the
   two alphas a panel paints at - how see-through its body is meant to be, and
   how much of the panel is on screen at all - carried together because chrome
   standing opaque on that body still has to leave with the panel, and asked for

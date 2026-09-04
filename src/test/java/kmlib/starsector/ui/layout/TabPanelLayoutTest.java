@@ -4,6 +4,7 @@ import kmlib.math.geometry.BoxEdge;
 import kmlib.starsector.ui.controls.ControlAction;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.LabelledControlSpecs;
+import kmlib.starsector.ui.controls.VerticalTableSpecs;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.PanelChrome;
@@ -18,6 +19,7 @@ import kmlib.testfixtures.starsector.ui.font.LineWidthMeasurerFake;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
@@ -49,6 +51,10 @@ final class TabPanelLayoutTest {
     // A bar four times the default, far enough from it that a placement still carrying the default reads
     // as a plain failure rather than as rounding.
     private static final ScrollbarThickness THICK_BAR = new ScrollbarThickness(12f);
+
+    // What that bar overruns the body padding by (12 + 3 margin + 2 clearance = 17, against a padding of
+    // 8), which is what the body, the box framed around it, and the notch riding its edge each move by.
+    private static final float THICK_BAR_GUTTER_EXCESS = 9f;
 
     // The tab row hangs from the panel's own top anchor, taking no border inset above it; across, it
     // starts at the body's content edge, the frame being drawn down the body alone.
@@ -93,6 +99,18 @@ final class TabPanelLayoutTest {
     // A one-checkbox body, so the body has a definite non-zero height beneath the header.
     private static final List<ControlSpec> BODY = List.of(
         LabelledControlSpecs.buildCheckbox("X", false, ControlAction.NONE));
+
+    // A body that scrolls: a checkbox over a marked list. The gutter is reserved on a strip HAVING a
+    // scrolling region rather than on that region overrunning, so this list is deliberately short enough
+    // to fit - a bar's room is held whether or not the list is currently long enough to need one.
+    private static final List<ControlSpec> SCROLLING_BODY = List.of(
+        LabelledControlSpecs.buildCheckbox("X", false, ControlAction.NONE),
+        VerticalTableSpecs.buildIconList(
+                List.of("Alpha", "Beta", "Gamma"),
+                Arrays.asList(null, null, null),
+                ControlSpec.NO_SELECTION,
+                ControlAction.NONE)
+            .asScrolling());
 
     @Nested
     class ComputePlacement {
@@ -573,6 +591,54 @@ final class TabPanelLayoutTest {
                 .isEqualTo(ScrollbarThickness.DEFAULT);
         }
 
+        @Test
+        void computePlacementGrowsTheBoxWithTheScrollbarGutter() {
+
+            var atDefault = placeAtThickness(SCROLLING_BODY, ScrollbarThickness.DEFAULT).body();
+            var atThick = placeAtThickness(SCROLLING_BODY, THICK_BAR).body();
+
+            // The body reserves the gutter and the box frames the body, so a bar too fat for the padding
+            // widens the panel rather than drawing over its rows. Both grow by the same amount, and the
+            // box keeps its left edge - the panel grows rightward.
+            assertThat(atThick.body().width() - atDefault.body().width())
+                .isCloseTo(THICK_BAR_GUTTER_EXCESS, within(TOLERANCE));
+            assertThat(atThick.box().width() - atDefault.box().width())
+                .isCloseTo(THICK_BAR_GUTTER_EXCESS, within(TOLERANCE));
+            assertThat(atThick.box().x())
+                .isCloseTo(PADDING_LEFT, within(TOLERANCE));
+        }
+
+        @Test
+        void computePlacementDocksAWidenedBodyToTheSameRail() {
+
+            var box = placeAtThickness(SCROLLING_BODY, THICK_BAR, 1f).body().box();
+
+            // The collapse interpolates whatever width the body was laid at down to nothing, so a panel
+            // widened for a fat bar still docks to the border-only rail at the left anchor rather than to
+            // a rail carrying the gutter it no longer shows.
+            assertThat(box.width())
+                .isCloseTo(2f * BORDER_WIDTH, within(TOLERANCE));
+            assertThat(box.x())
+                .isCloseTo(PADDING_LEFT, within(TOLERANCE));
+        }
+
+        @Test
+        void computePlacementRidesTheNotchOnTheWidenedBoxEdge() {
+
+            var placement = placeAtThickness(SCROLLING_BODY, THICK_BAR);
+            var box = placement.body().box();
+
+            // The handle rides the box's right border edge, so widening the box for the bar carries the
+            // notch out with it - it stays flush against the frame rather than floating over the gutter.
+            assertThat(placement.notch().x())
+                .isCloseTo(box.x() + box.width(), within(TOLERANCE));
+            assertThat(placement.notch().x())
+                .isCloseTo(
+                    placeAtThickness(SCROLLING_BODY, ScrollbarThickness.DEFAULT).notch().x()
+                        + THICK_BAR_GUTTER_EXCESS,
+                    within(TOLERANCE));
+        }
+
         private TabPanelPlacement place(List<ControlSpec> bodyControls) {
             return place(bodyControls, 0f);
         }
@@ -580,6 +646,14 @@ final class TabPanelLayoutTest {
         private TabPanelPlacement placeAtThickness(
                 List<ControlSpec> bodyControls,
                 ScrollbarThickness scrollbarThickness) {
+
+            return placeAtThickness(bodyControls, scrollbarThickness, 0f);
+        }
+
+        private TabPanelPlacement placeAtThickness(
+                List<ControlSpec> bodyControls,
+                ScrollbarThickness scrollbarThickness,
+                float collapseFraction) {
 
             return TabPanelLayout.computePlacement(
                 SCREEN_HEIGHT,
@@ -589,7 +663,7 @@ final class TabPanelLayoutTest {
                 TABS,
                 bodyControls,
                 measurerFake,
-                TabPanelViewState.RESTING);
+                new TabPanelViewState(0f, collapseFraction));
         }
 
         private TabPanelPlacement placeStyled(TabStyle tabStyle, List<ControlSpec> bodyControls) {

@@ -10,7 +10,8 @@ import static org.assertj.core.api.Assertions.within;
  * Pins what a {@link ScrollbarThickness} answers about the bar it sizes: {@link
  * ScrollbarThickness#isTrackDrawn} separates a bar from no bar at all, and {@link
  * ScrollbarThickness#computeGutterWidth} states the width the bar needs clear of the content - the track
- * plus the two fixed gaps flanking it, and nothing about whatever padding a container already has.
+ * plus the two fixed gaps flanking it, and nothing about whatever padding a container already has. The
+ * width itself floors at no bar, so every reading below is taken of a thickness of 0 or more.
  */
 final class ScrollbarThicknessTest {
 
@@ -24,6 +25,14 @@ final class ScrollbarThicknessTest {
             // The width the bar has always drawn at, so a host naming no thickness sees no change.
             assertThat(ScrollbarThickness.DEFAULT.pixels())
                 .isCloseTo(3f, within(TOLERANCE));
+        }
+
+        @Test
+        void pixelsFloorsANegativeWidthAtNoBar() {
+            // "No bar" is the thinnest a bar gets, so a width below it settles there rather than travelling
+            // on into a gutter narrower than the gaps flanking the track.
+            assertThat(new ScrollbarThickness(-5f).pixels())
+                .isCloseTo(0f, within(TOLERANCE));
         }
     }
 
