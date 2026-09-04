@@ -3,8 +3,13 @@ package kmlib.starsector.ui.coreui;
 import com.fs.state.AppDriver;
 
 /**
- * Whether the codex is standing over the screen right now - the reference work the game raises full
- * screen over whatever the player was looking at, dimming it and taking every event.
+ * Whether the codex is standing over the screen right now - the reference work the game raises over
+ * whatever the player was looking at.
+ *
+ * <p>The codex panel itself is a large box in the middle of the screen rather than the whole of it,
+ * but what it covers is the whole of it: the game raises a screen-spanning sibling behind the panel
+ * that dims the backdrop and takes the events, so nothing underneath is reachable wherever the
+ * pointer rests. A caller standing aside for this therefore has nothing to measure against a box.
  *
  * <p>Beside {@link CoreUiDialogView} because it answers the same question a caller has - what stands
  * *over* a screen - but it is emphatically not the same reading, and that is the finding this class
@@ -28,6 +33,12 @@ import com.fs.state.AppDriver;
  * <p>The state itself is reached through the app driver, which is unobfuscated and stable across
  * builds; the accessor on it is taken by name, the state's own type being obfuscated. The name is
  * part of that type's contract and survives obfuscation, so no obfuscated name appears here.
+ *
+ * <p>Presence alone, with no fade beside it - which is where this parts company with the modal read
+ * next door rather than merely reading a different thing. The codex does fade in, three tenths of a
+ * second and nothing at all under the game's fast-UI setting, but the fade lives on the panel and
+ * this deliberately never walks to one. At that length a caller standing down on the frame the flag
+ * turns does not read as a cut, so following the fade would buy a walk and no visible difference.
  *
  * <p>Fails open for the caller - whatever cannot be established reads as no codex showing. The
  * answer only ever takes something away from a caller, so an unreadable game leaves it doing what it

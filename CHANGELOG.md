@@ -223,7 +223,10 @@ No Starsector API on the signature.
   outside the core UI entirely, into a second screen panel the campaign state
   keeps for it, so no walk of the core UI reaches it however deep it goes. It is
   read off the app state instead, which reports the codex up whichever way it
-  was raised, over a screen or from the campaign itself. And a shape-based reach
+  was raised, over a screen or from the campaign itself. Presence only: the
+  codex fades in over a few tenths of a second, but on a panel this never walks
+  to, and at that length a caller standing down at once does not read as a cut.
+  And a shape-based reach
   for the members no name can
   find: what a class declares and what it publishes, each member's parameters,
   return type and a way to call it, so a caller can recognise an obfuscated
