@@ -215,8 +215,10 @@ public final class MapFilterToggle {
     /**
      * Ticks or unticks the button without reporting a click.
      *
-     * <p>What a caller seeds a freshly appended toggle from, so the control opens showing the state
-     * the player left it in rather than the state a new button happens to start in.
+     * <p>Written rather than only read because the state a control shows is decided elsewhere: a
+     * button left to its own answers what a fresh button happens to start at, and goes on answering
+     * it however the thing it stands for moves afterwards. Silent for the same reason - a caller
+     * writing the state it already holds must not be told about it as though a player had clicked.
      *
      * @param isChecked whether the button should show as ticked
      */

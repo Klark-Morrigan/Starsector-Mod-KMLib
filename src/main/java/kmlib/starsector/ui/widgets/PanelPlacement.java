@@ -50,8 +50,26 @@ public record PanelPlacement(
     ScrollbarThickness scrollbarThickness) {
 
     /**
-     * @return whether the scrolling control overruns its viewport, so the renderer draws a scrollbar and
-     *         the input listener scrolls on a wheel event
+     * Whether there is a bar on screen: the list has somewhere to scroll AND the host asked for a bar wide
+     * enough to draw. A thickness of nothing takes the track and thumb away rather than drawing them at no
+     * width, so nothing is painted there and nothing there is grabbable.
+     *
+     * <p>Stated here rather than at each pass, because the two that spend it - the one drawing the bar and
+     * the one hit-testing the thumb - must agree: a bar drawn by one reading and grabbed by another is a
+     * thumb that does not answer the press landing on it, or a column claiming presses over nothing.
+     *
+     * @return whether the bar is both due and drawn
+     */
+    public boolean isScrollbarDrawn() {
+        return isScrollbarNeeded() && scrollbarThickness.isTrackDrawn();
+    }
+
+    /**
+     * Whether the scrolling control overruns its viewport, and so has somewhere to be scrolled to. It is
+     * the wheel's question: a wheel is how a player with no bar moves the list, so it answers to the list
+     * overrunning alone and never to how the bar is drawn.
+     *
+     * @return whether the scrolling control overruns its viewport
      */
     public boolean isScrollbarNeeded() {
         return scrollOverflow > 0f;

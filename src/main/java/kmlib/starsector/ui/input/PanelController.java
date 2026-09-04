@@ -461,10 +461,11 @@ public final class PanelController {
     // Starts a scrollbar drag when a left press lands on the grab column, reporting whether it did. The
     // grab column is the gutter right of the list, wider than the thin track so it need not be hit exactly;
     // a press on the thumb records its offset from the thumb centre so the thumb stays under the cursor,
-    // while a press on the bare track jumps the thumb to the pointer at once. Only fires while the list
-    // overflows - there is no scrollbar otherwise.
+    // while a press on the bare track jumps the thumb to the pointer at once. Only fires while there is a
+    // bar on screen: a list that fits has none, and neither has a panel whose host set the bar to no width
+    // at all - so the column claims nothing there and the press goes on to whatever control is under it.
     private boolean beginThumbDragIfPressed(InputEventAPI event, PanelPlacement placement) {
-        if (!placement.isScrollbarNeeded()) {
+        if (!placement.isScrollbarDrawn()) {
             return false;
         }
         if (!PanelScrollbars.computeGrabColumn(placement).containsPoint(event.getX(), event.getY())) {
@@ -515,6 +516,10 @@ public final class PanelController {
     // toward the list top, so it decreases the offset, and a wheel down increases it, each by one fixed
     // step. Off the scroll region (over a pinned control, or a list that fits) the wheel does nothing,
     // though the caller still consumes it so the surface behind does not act.
+    //
+    // Gated on the list overrunning rather than on there being a bar drawn, deliberately: the wheel is how a
+    // player who has set the bar away moves the list at all, so taking it with the bar would leave that list
+    // unreachable.
     private void scrollListUnderPointer(InputEventAPI event, PanelPlacement placement) {
         if (!placement.isScrollbarNeeded()
                 || !placement.flexViewport().containsPoint(event.getX(), event.getY())) {

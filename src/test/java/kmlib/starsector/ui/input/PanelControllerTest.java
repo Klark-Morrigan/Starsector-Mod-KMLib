@@ -56,6 +56,11 @@ import static org.mockito.Mockito.verify;
  * decides it: the sound follows the press having reached a control rather than having fired one, so an inert
  * cell sounds like the press it was and chrome stays silent.
  *
+ * <p>The barless cases pin where those two part. A host may set the bar to no width at all, which takes the
+ * track and the thumb away and with them the column a drag grabs - so the press that column would have
+ * swallowed reaches the control beneath it, while the wheel, being what is left to move the list with, still
+ * carries it and still sounds.
+ *
  * <p>The press lift is pinned off that same rule and against the slot it is keyed by, both halves of which
  * carry a fault nothing else would report: a lift keyed off the walk's start rather than off where the hit
  * landed, or off the control rather than the cell, would light a place the player did not press - which
@@ -83,6 +88,10 @@ final class PanelControllerTest {
     // How wide a gutter the guttered body leaves right of its list, so a press there lands in the column a
     // drag grabs the scrollbar by. Wider than the track, which is what the real grab column is.
     private static final float SCROLLBAR_GUTTER_WIDTH = 20f;
+
+    // The bar a host has set away. The gutter is still there and the list still overruns it - which is what
+    // makes the cases about it worth having, the geometry being identical either way.
+    private static final ScrollbarThickness NO_SCROLLBAR = new ScrollbarThickness(0f);
 
     // A point over the list itself - inside the box and inside the scroll region, the only place a wheel
     // reaches the list at all.
@@ -941,6 +950,45 @@ final class PanelControllerTest {
         }
 
         @Test
+        void handlePointerSoundsAPressInTheGrabColumnWhenNoBarIsDrawn() {
+            // The same press one line up, on the same geometry, with the bar set away: with no track and no
+            // thumb there is nothing over that column to grab, so it claims nothing and the press falls
+            // through to the control it was always laid over. A bar of no width still taking presses would
+            // leave a dead strip down the panel that nothing on screen accounts for.
+            var controller = buildVanillaSoundingController();
+
+            controller.handlePointer(
+                PointerEventMocks.mockLeftPressAt(IN_GRAB_COLUMN_X, IN_GRAB_COLUMN_Y),
+                buildGutteredPlacementBarred(
+                    NO_SCROLLBAR,
+                    buildCheckboxControl("Muted", ControlAction.NONE)));
+
+            assertThat(controller.getScrollState().getOffset())
+                .as("no drag began, so the list is where it was")
+                .isZero();
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .containsExactly(StarsectorUiSound.BUTTON_PRESSED);
+        }
+
+        @Test
+        void handlePointerSoundsTheWheelThatMovedTheListWhenNoBarIsDrawn() {
+            // The wheel is what is left to a player who has set the bar away, so it answers to the list
+            // overrunning and not to the bar being drawn - taking it with the bar would strand the rows past
+            // the viewport with no way to reach them.
+            var controller = buildVanillaSoundingController();
+
+            controller.handlePointer(
+                PointerEventMocks.mockWheelDownAt(ON_LIST_X, ON_LIST_Y),
+                buildScrollingPlacementBarred(NO_SCROLLBAR));
+
+            assertThat(controller.getScrollState().getOffset())
+                .as("the list has to have moved for the sound to mean anything")
+                .isEqualTo(SHORT_SCROLL_OVERFLOW);
+            assertThat(soundPlayerFake.getPlayedSounds())
+                .containsExactly(StarsectorUiSound.LIST_SCROLLED);
+        }
+
+        @Test
         void handlePointerStaysSilentForAPressOnAControlTheFoldHasWipedOffTheScreen() {
             // A press outside the box the body is drawn in never reaches the body at all. The checkbox is
             // laid where it always was and the box has narrowed to a docked panel's rail, so the control
@@ -1084,6 +1132,16 @@ final class PanelControllerTest {
     // The same panel with the given controls laid in it, for a case that has to tell what the wheel and the
     // scrollbar answer from what a control does - a body with nothing in it would be silent either way.
     private static PanelPlacement buildScrollingPlacementOver(Control... bodyControls) {
+        return buildScrollingPlacementBarred(ScrollbarThickness.DEFAULT, bodyControls);
+    }
+
+    // The same panel with the bar's width named, for the cases about a host that has set it away. Taken as
+    // an argument rather than written into a second placement, so a barless case and the cases above differ
+    // in that one number and in nothing else.
+    private static PanelPlacement buildScrollingPlacementBarred(
+            ScrollbarThickness thickness,
+            Control... bodyControls) {
+
         return new PanelPlacement(
             ROW,
             ROW,
@@ -1091,7 +1149,7 @@ final class PanelControllerTest {
             ROW,
             0f,
             SHORT_SCROLL_OVERFLOW,
-            ScrollbarThickness.DEFAULT);
+            thickness);
     }
 
     // The same panel whose content fits, so there is no scrollbar and the wheel moves nothing.
@@ -1117,6 +1175,15 @@ final class PanelControllerTest {
     // the real ones sit, the grab column being drawn over the body rather than beside it. What a press in
     // that column answers is then a question the placement can actually pose.
     private static PanelPlacement buildGutteredPlacementOver(Control... bodyControls) {
+        return buildGutteredPlacementBarred(ScrollbarThickness.DEFAULT, bodyControls);
+    }
+
+    // The guttered panel with the bar's width named, for the same reason the scrolling one takes it: the
+    // barless cases have to be the drawn ones with one number changed, the gutter and the list being where
+    // they always were.
+    private static PanelPlacement buildGutteredPlacementBarred(
+            ScrollbarThickness thickness,
+            Control... bodyControls) {
 
         var list = new Rectangle(ROW.x(), ROW.y(), ROW.width() - SCROLLBAR_GUTTER_WIDTH, ROW.height());
         return new PanelPlacement(
@@ -1126,7 +1193,7 @@ final class PanelControllerTest {
             list,
             0f,
             SHORT_SCROLL_OVERFLOW,
-            ScrollbarThickness.DEFAULT);
+            thickness);
     }
 
     // One frame's reading with the pointer on a cell reporting into this class's own recorder - what the

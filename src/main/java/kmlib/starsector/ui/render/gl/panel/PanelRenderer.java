@@ -112,7 +112,7 @@ public final class PanelRenderer {
                 drawControl(control, style, interactions, alpha);
             }
         }
-        if (placement.isScrollbarNeeded()) {
+        if (placement.isScrollbarDrawn()) {
             drawScrollbar(placement, style, alpha);
         }
     }
