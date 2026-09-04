@@ -959,7 +959,7 @@ final class PanelControllerTest {
 
             controller.handlePointer(
                 PointerEventMocks.mockLeftPressAt(IN_GRAB_COLUMN_X, IN_GRAB_COLUMN_Y),
-                buildGutteredPlacementBarred(
+                buildGutteredPlacementAtThickness(
                     NO_SCROLLBAR,
                     buildCheckboxControl("Muted", ControlAction.NONE)));
 
@@ -979,7 +979,7 @@ final class PanelControllerTest {
 
             controller.handlePointer(
                 PointerEventMocks.mockWheelDownAt(ON_LIST_X, ON_LIST_Y),
-                buildScrollingPlacementBarred(NO_SCROLLBAR));
+                buildScrollingPlacementAtThickness(NO_SCROLLBAR));
 
             assertThat(controller.getScrollState().getOffset())
                 .as("the list has to have moved for the sound to mean anything")
@@ -1132,13 +1132,13 @@ final class PanelControllerTest {
     // The same panel with the given controls laid in it, for a case that has to tell what the wheel and the
     // scrollbar answer from what a control does - a body with nothing in it would be silent either way.
     private static PanelPlacement buildScrollingPlacementOver(Control... bodyControls) {
-        return buildScrollingPlacementBarred(ScrollbarThickness.DEFAULT, bodyControls);
+        return buildScrollingPlacementAtThickness(ScrollbarThickness.DEFAULT, bodyControls);
     }
 
     // The same panel with the bar's width named, for the cases about a host that has set it away. Taken as
     // an argument rather than written into a second placement, so a barless case and the cases above differ
     // in that one number and in nothing else.
-    private static PanelPlacement buildScrollingPlacementBarred(
+    private static PanelPlacement buildScrollingPlacementAtThickness(
             ScrollbarThickness thickness,
             Control... bodyControls) {
 
@@ -1175,13 +1175,13 @@ final class PanelControllerTest {
     // the real ones sit, the grab column being drawn over the body rather than beside it. What a press in
     // that column answers is then a question the placement can actually pose.
     private static PanelPlacement buildGutteredPlacementOver(Control... bodyControls) {
-        return buildGutteredPlacementBarred(ScrollbarThickness.DEFAULT, bodyControls);
+        return buildGutteredPlacementAtThickness(ScrollbarThickness.DEFAULT, bodyControls);
     }
 
     // The guttered panel with the bar's width named, for the same reason the scrolling one takes it: the
     // barless cases have to be the drawn ones with one number changed, the gutter and the list being where
     // they always were.
-    private static PanelPlacement buildGutteredPlacementBarred(
+    private static PanelPlacement buildGutteredPlacementAtThickness(
             ScrollbarThickness thickness,
             Control... bodyControls) {
 
