@@ -6,6 +6,7 @@ import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.LabelledControlSpecs;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.widgets.BoxBorder;
+import kmlib.starsector.ui.widgets.PanelChrome;
 import kmlib.starsector.ui.widgets.scroll.ScrollbarThickness;
 import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
 import kmlib.starsector.ui.widgets.tabs.TabPanelViewState;
@@ -418,8 +419,7 @@ final class TabPanelLayoutTest {
             var placement = TabPanelLayout.computePlacement(
                 SCREEN_HEIGHT,
                 new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT),
-                new BoxBorder(0f),
-                ScrollbarThickness.DEFAULT,
+                new PanelChrome(new BoxBorder(0f), ScrollbarThickness.DEFAULT),
                 DEFAULT_TAB_STYLE,
                 TABS,
                 BODY,
@@ -584,8 +584,7 @@ final class TabPanelLayoutTest {
             return TabPanelLayout.computePlacement(
                 SCREEN_HEIGHT,
                 new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT),
-                new BoxBorder(BORDER_WIDTH),
-                scrollbarThickness,
+                new PanelChrome(new BoxBorder(BORDER_WIDTH), scrollbarThickness),
                 DEFAULT_TAB_STYLE,
                 TABS,
                 bodyControls,
@@ -597,8 +596,7 @@ final class TabPanelLayoutTest {
             return TabPanelLayout.computePlacement(
                 SCREEN_HEIGHT,
                 new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT),
-                new BoxBorder(BORDER_WIDTH),
-                ScrollbarThickness.DEFAULT,
+                new PanelChrome(new BoxBorder(BORDER_WIDTH), ScrollbarThickness.DEFAULT),
                 tabStyle,
                 TABS,
                 bodyControls,
@@ -617,8 +615,7 @@ final class TabPanelLayoutTest {
             return TabPanelLayout.computePlacement(
                 SCREEN_HEIGHT,
                 new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT),
-                new BoxBorder(BORDER_WIDTH, borderedEdges),
-                ScrollbarThickness.DEFAULT,
+                new PanelChrome(new BoxBorder(BORDER_WIDTH, borderedEdges), ScrollbarThickness.DEFAULT),
                 DEFAULT_TAB_STYLE,
                 TABS,
                 bodyControls,

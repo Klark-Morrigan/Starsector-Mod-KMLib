@@ -7,6 +7,8 @@ import kmlib.starsector.ui.controls.LabelledControlSpecs;
 import kmlib.starsector.ui.controls.ReselectBehaviour;
 import kmlib.starsector.ui.controls.VerticalTableSpecs;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
+import kmlib.starsector.ui.widgets.BoxBorder;
+import kmlib.starsector.ui.widgets.PanelChrome;
 import kmlib.starsector.ui.widgets.PanelPlacement;
 import kmlib.starsector.ui.widgets.RowColumnSpec;
 import kmlib.starsector.ui.widgets.scroll.ScrollbarThickness;
@@ -43,6 +45,10 @@ final class PanelLayoutTest {
     // A bar four times the default, far enough from it that a placement still carrying the default reads
     // as a plain failure rather than as rounding.
     private static final ScrollbarThickness THICK_BAR = new ScrollbarThickness(12f);
+
+    // What that bar overruns the body padding by (12 + 3 margin + 2 clearance = 17, against a padding of
+    // 8), which is what the body and the box framed around it each have to grow by.
+    private static final float THICK_BAR_GUTTER_EXCESS = 9f;
 
     // A round per-character width makes every snapped rectangle a hand-checkable multiple, so the
     // expected geometry is arithmetic rather than a measured constant.
@@ -330,6 +336,23 @@ final class PanelLayoutTest {
         }
 
         @Test
+        void computePlacementGrowsTheBoxWithTheScrollbarGutter() {
+
+            var atDefault = placeCapped(0f, ScrollbarThickness.DEFAULT);
+            var atThick = placeCapped(0f, THICK_BAR);
+
+            // The gutter is reserved on the body and the box frames the body, so a bar too fat for the
+            // padding widens the panel rather than drawing over its rows. Box and interior grow by the
+            // same amount, and the box keeps its left edge - the panel grows rightward.
+            assertThat(atThick.body().width() - atDefault.body().width())
+                .isCloseTo(THICK_BAR_GUTTER_EXCESS, within(TOLERANCE));
+            assertThat(atThick.box().width() - atDefault.box().width())
+                .isCloseTo(THICK_BAR_GUTTER_EXCESS, within(TOLERANCE));
+            assertThat(atThick.box().x())
+                .isCloseTo(atDefault.box().x(), within(TOLERANCE));
+        }
+
+        @Test
         void computePlacementBakesTheScrollOffsetIntoTheListBounds() {
 
             var atTop = placeCapped(0f).bodyControls().get(1).bounds();
@@ -366,22 +389,33 @@ final class PanelLayoutTest {
             return PanelLayout.computePlacement(
                 SCREEN_HEIGHT,
                 new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT),
-                BORDER_WIDTH,
-                scrollbarThickness,
+                buildChrome(scrollbarThickness),
                 bodyControls,
                 measurerFake,
                 0f);
         }
 
         private PanelPlacement placeCapped(float rawScrollOffset) {
+            return placeCapped(rawScrollOffset, ScrollbarThickness.DEFAULT);
+        }
+
+        private PanelPlacement placeCapped(
+                float rawScrollOffset,
+                ScrollbarThickness scrollbarThickness) {
+
             return PanelLayout.computePlacement(
                 SCREEN_HEIGHT,
                 new Padding(PADDING_TOP, 0, TIGHT_PADDING_BOTTOM, PADDING_LEFT),
-                BORDER_WIDTH,
-                ScrollbarThickness.DEFAULT,
+                buildChrome(scrollbarThickness),
                 buildScrollingBody(),
                 measurerFake,
                 rawScrollOffset);
+        }
+
+        // The panel's chrome at the case's own bar thickness, framed on every edge - the dropped-edge cases
+        // belong to the tab panel, which is the host that frames flush against a neighbour.
+        private PanelChrome buildChrome(ScrollbarThickness scrollbarThickness) {
+            return new PanelChrome(new BoxBorder(BORDER_WIDTH), scrollbarThickness);
         }
     }
 

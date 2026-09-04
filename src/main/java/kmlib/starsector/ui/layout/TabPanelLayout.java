@@ -4,7 +4,7 @@ import kmlib.math.geometry.BoxEdge;
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
-import kmlib.starsector.ui.widgets.BoxBorder;
+import kmlib.starsector.ui.widgets.PanelChrome;
 import kmlib.starsector.ui.widgets.PanelPlacement;
 import kmlib.starsector.ui.widgets.scroll.ScrollbarThickness;
 import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
@@ -62,7 +62,7 @@ public final class TabPanelLayout {
     }
 
     /**
-     * Lays the tab panel out for the given screen height, padding, border, tab style, tabs, and body
+     * Lays the tab panel out for the given screen height, padding, chrome, tab style, tabs, and body
      * controls: a header band hung from the panel's anchor carrying the tabs control at the style's height,
      * and the body strip framed beneath it (capped to the bottom margin). The returned body's
      * {@link PanelPlacement#box()} frames the body alone - its width the body's and its height the body's -
@@ -70,23 +70,20 @@ public final class TabPanelLayout {
      * it. An empty {@code bodyControls} leaves the tab row standing alone: no box, and, with nothing to
      * collapse, no notch either - the placement's collapse handle is absent.
      *
-     * @param screenHeight        the UI-coordinate screen height, giving the top edge to hang from
-     * @param padding             the panel's edge margins: the top-left anchor and the bottom keep-clear
-     *                            margin the body caps to (the right inset is unused - a panel grows
-     *                            rightward)
-     * @param border              the frame around the footprint; an open edge reserves no inset, so the box
-     *                            shrinks to sit flush against a neighbour instead of leaving a bare strip
-     *                            where its border would have been
-     * @param scrollbarThickness  how wide the body's scrollbar draws, carried onto the body placement so
-     *                            the passes that draw the bar and grab its thumb read one width
-     * @param tabStyle            the tab dimensions the header band is laid to, so two panels sharing this
-     *                            one layout can still stand their tab rows at different heights; the band
-     *                            height is content-space, standing under the top border rather than
-     *                            including it
-     * @param tabsSpec            the tabs control (labels + per-tab shortcuts) drawn across the header band
-     * @param bodyControls        the active tab's body controls, top to bottom (empty for no body)
-     * @param measurer            measures each label's rendered width for text snapping
-     * @param viewState           how far the panel is scrolled and folded
+     * @param screenHeight the UI-coordinate screen height, giving the top edge to hang from
+     * @param padding      the panel's edge margins: the top-left anchor and the bottom keep-clear
+     *                     margin the body caps to (the right inset is unused - a panel grows rightward)
+     * @param chrome       the room the panel spends on chrome rather than content: the border framing the
+     *                     footprint, where an open edge reserves no inset so the box sits flush against a
+     *                     neighbour, and the bar thickness the body reserves a gutter for - a bar past
+     *                     what the body's own padding holds clear widens the body and with it the box
+     * @param tabStyle     the tab dimensions the header band is laid to, so two panels sharing this one
+     *                     layout can still stand their tab rows at different heights; the band height is
+     *                     content-space, standing under the top border rather than including it
+     * @param tabsSpec     the tabs control (labels + per-tab shortcuts) drawn across the header band
+     * @param bodyControls the active tab's body controls, top to bottom (empty for no body)
+     * @param measurer     measures each label's rendered width for text snapping
+     * @param viewState    how far the panel is scrolled and folded
      * @return the laid-out tabs header, how much of that header the fold leaves on screen, the body
      *         placement carrying the framed box, the border it was framed around, and the collapse-handle
      *         notch on the box's right border edge - null when {@code bodyControls} is empty, since a
@@ -95,8 +92,7 @@ public final class TabPanelLayout {
     public static TabPanelPlacement computePlacement(
             float screenHeight,
             Padding padding,
-            BoxBorder border,
-            ScrollbarThickness scrollbarThickness,
+            PanelChrome chrome,
             TabStyle tabStyle,
             ControlSpec.Tabs tabsSpec,
             List<ControlSpec> bodyControls,
@@ -108,6 +104,7 @@ public final class TabPanelLayout {
         // to rule its baseline in. The band itself is the header's own business, spent inside the call
         // that lays the row out.
         var tabHeight = tabStyle.resolveTabHeight();
+        var border = chrome.border();
 
         // The body is framed as a plain headerless panel would be against a screen ending where the TABS
         // end, not where their band does: its box hangs from the tabs' own bottom edge, so its top border
@@ -159,6 +156,7 @@ public final class TabPanelLayout {
             origin.contentX(),
             origin.contentTopY(),
             maxBodyHeight,
+            chrome.scrollbarThickness(),
             bodyControls,
             measurer,
             viewState.rawScrollOffset());
@@ -185,8 +183,7 @@ public final class TabPanelLayout {
             : PanelLayout.framePlacement(
                 padding.left(),
                 origin.boxTopY(),
-                border,
-                scrollbarThickness,
+                chrome,
                 framedBody,
                 bodyStrip);
 

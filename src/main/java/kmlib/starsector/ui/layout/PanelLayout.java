@@ -5,8 +5,8 @@ import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.widgets.BoxBorder;
+import kmlib.starsector.ui.widgets.PanelChrome;
 import kmlib.starsector.ui.widgets.PanelPlacement;
-import kmlib.starsector.ui.widgets.scroll.ScrollbarThickness;
 
 import java.util.List;
 
@@ -14,8 +14,9 @@ import java.util.List;
  * Composes a headerless panel: it frames a bordered box around the shared body composition. The frame is
  * a {@link kmlib.starsector.ui.widgets.BorderedBox} (an outer border wrapping the inset body), and the body
  * is {@link CappedStripLayout#layoutBodyStrip} - the measured, capped, scrollable control strip; this class
- * owns only the framing - hang that body from the inset content top and wrap it with the border on every
- * edge - so a host's concrete content is just a column of controls and the frame math stays here. Its
+ * owns only the framing - hang that body from the inset content top and wrap it with the border it was
+ * handed, on whichever edges that border strokes - so a host's concrete content is just a column of
+ * controls and the frame math stays here. Its
  * framing primitives ({@link #computeContentOrigin}, {@link #framePlacement}) are shared: {@link
  * TabPanelLayout} reuses them to frame the body it hangs beneath its tab row, so a tab panel is this
  * panel's framing with a row standing on top of it - one border, around the body alone.
@@ -32,34 +33,30 @@ public final class PanelLayout {
     }
 
     /**
-     * Lays the panel out for the given screen height, padding, border, and body controls. The box frames
+     * Lays the panel out for the given screen height, padding, chrome, and body controls. The box frames
      * a body sized to hold the controls (capped to the bottom margin), then places each control inside
      * that framed body. An empty {@code bodyControls} leaves a minimal bordered box with no body.
      *
-     * @param screenHeight        the UI-coordinate screen height, giving the top edge to hang from
-     * @param padding             the panel's edge margins: the top-left anchor and the bottom keep-clear
-     *                            margin the body caps to (the right inset is unused - a panel grows
-     *                            rightward)
-     * @param borderWidth         the outer border thickness framing the footprint; 0 leaves no inset
-     * @param scrollbarThickness  how wide the body's scrollbar draws, carried onto the placement so the
-     *                            passes that draw the bar and grab its thumb read one width
-     * @param bodyControls        the body controls, top to bottom (empty for no body)
-     * @param measurer            measures each label's rendered width for text snapping
-     * @param rawScrollOffset     the requested scroll offset for the body's scrolling control, in pixels;
-     *                            clamped to its overflow by the capped layout
+     * @param screenHeight    the UI-coordinate screen height, giving the top edge to hang from
+     * @param padding         the panel's edge margins: the top-left anchor and the bottom keep-clear
+     *                        margin the body caps to (the right inset is unused - a panel grows rightward)
+     * @param chrome          the room the panel spends on chrome rather than content: the border framing
+     *                        the footprint, and the thickness of the bar its body reserves a gutter for
+     * @param bodyControls    the body controls, top to bottom (empty for no body)
+     * @param measurer        measures each label's rendered width for text snapping
+     * @param rawScrollOffset the requested scroll offset for the body's scrolling control, in pixels;
+     *                        clamped to its overflow by the capped layout
      * @return the box, body, laid-out body controls, and the scroll geometry, in UI coordinates
      */
     public static PanelPlacement computePlacement(
             float screenHeight,
             Padding padding,
-            int borderWidth,
-            ScrollbarThickness scrollbarThickness,
+            PanelChrome chrome,
             List<ControlSpec> bodyControls,
             LineWidthMeasurer measurer,
             float rawScrollOffset) {
 
-        // A plain panel frames every side, so the content is inset by the border on all four edges.
-        var border = new BoxBorder(borderWidth);
+        var border = chrome.border();
         var origin = computeContentOrigin(screenHeight, padding, border);
 
         // The shared body composition, capped so the box never runs past the bottom margin.
@@ -73,6 +70,7 @@ public final class PanelLayout {
             origin.contentX(),
             origin.contentTopY(),
             maxBodyHeight,
+            chrome.scrollbarThickness(),
             bodyControls,
             measurer,
             rawScrollOffset);
@@ -80,8 +78,7 @@ public final class PanelLayout {
         return framePlacement(
             padding.left(),
             origin.boxTopY(),
-            border,
-            scrollbarThickness,
+            chrome,
             bodyStrip.bounds(),
             bodyStrip);
     }
@@ -123,24 +120,23 @@ public final class PanelLayout {
      * controls into: the box and interior collapse together while the controls keep their laid-out
      * positions for the renderer to clip.
      *
-     * @param leftX               the box's left edge (the panel's left margin), in UI coordinates
-     * @param boxTopY             the box's top edge, in UI coordinates
-     * @param border              the frame around the footprint; the box grows by the border on each
-     *                            stroked edge and by nothing on an open one, so it shrinks to sit flush
-     *                            where it drops a border
-     * @param scrollbarThickness  how wide the body's scrollbar draws, carried onto the placement
-     * @param framedBody          the body rectangle the box frames and reports as its interior
-     * @param bodyStrip           the laid-out body strip whose controls and scroll geometry the placement
-     *                            carries
+     * @param leftX      the box's left edge (the panel's left margin), in UI coordinates
+     * @param boxTopY    the box's top edge, in UI coordinates
+     * @param chrome     the panel's chrome: the border the box grows by on each stroked edge and by nothing
+     *                   on an open one, so it shrinks to sit flush where it drops a border, and the bar
+     *                   thickness the placement carries for the passes that draw and grab it
+     * @param framedBody the body rectangle the box frames and reports as its interior
+     * @param bodyStrip  the laid-out body strip whose controls and scroll geometry the placement carries
      * @return the panel placement: the bordered box plus the framed body, controls, and scroll geometry
      */
     static PanelPlacement framePlacement(
             int leftX,
             float boxTopY,
-            BoxBorder border,
-            ScrollbarThickness scrollbarThickness,
+            PanelChrome chrome,
             Rectangle framedBody,
             CappedStripLayout.BodyStrip bodyStrip) {
+
+        var border = chrome.border();
 
         // Each side contributes the border to the box only where it is stroked; an open edge reserves
         // nothing, so the box shrinks against the neighbour it sits flush with rather than leaving a bare
@@ -167,7 +163,7 @@ public final class PanelLayout {
             capped.flexViewport(),
             capped.scrollOffset(),
             capped.scrollOverflow(),
-            scrollbarThickness);
+            chrome.scrollbarThickness());
     }
 
     /**
