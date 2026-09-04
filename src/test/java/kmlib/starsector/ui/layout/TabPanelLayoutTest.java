@@ -45,6 +45,10 @@ final class TabPanelLayoutTest {
     private static final int BORDER_WIDTH = 2;
     private static final float TOLERANCE = 0.01f;
 
+    // A bar four times the default, far enough from it that a placement still carrying the default reads
+    // as a plain failure rather than as rounding.
+    private static final ScrollbarThickness THICK_BAR = new ScrollbarThickness(12f);
+
     // The tab row hangs from the panel's own top anchor, taking no border inset above it; across, it
     // starts at the body's content edge, the frame being drawn down the body alone.
     private static final float HEADER_TOP_Y = SCREEN_HEIGHT - PADDING_TOP;
@@ -547,8 +551,46 @@ final class TabPanelLayoutTest {
                 .isEqualTo(borderedEdges);
         }
 
+        @Test
+        void computePlacementCarriesTheScrollbarThicknessOntoTheBodyPlacement() {
+
+            var placement = placeAtThickness(BODY, THICK_BAR);
+
+            // The thickness travels with the body it sizes a bar over, since that is the placement both
+            // the pass drawing the bar and the pass grabbing its thumb read.
+            assertThat(placement.body().scrollbarThickness().pixels())
+                .isCloseTo(12f, within(TOLERANCE));
+        }
+
+        @Test
+        void computePlacementLeavesABodylessPanelAtTheDefaultThickness() {
+
+            var placement = placeAtThickness(List.of(), THICK_BAR);
+
+            // A tab row with nothing under it has no body to scroll and so no bar to size; the placement
+            // must still name a thickness, and the default is what it names.
+            assertThat(placement.body().scrollbarThickness())
+                .isEqualTo(ScrollbarThickness.DEFAULT);
+        }
+
         private TabPanelPlacement place(List<ControlSpec> bodyControls) {
             return place(bodyControls, 0f);
+        }
+
+        private TabPanelPlacement placeAtThickness(
+                List<ControlSpec> bodyControls,
+                ScrollbarThickness scrollbarThickness) {
+
+            return TabPanelLayout.computePlacement(
+                SCREEN_HEIGHT,
+                new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT),
+                new BoxBorder(BORDER_WIDTH),
+                scrollbarThickness,
+                DEFAULT_TAB_STYLE,
+                TABS,
+                bodyControls,
+                measurerFake,
+                TabPanelViewState.RESTING);
         }
 
         private TabPanelPlacement placeStyled(TabStyle tabStyle, List<ControlSpec> bodyControls) {

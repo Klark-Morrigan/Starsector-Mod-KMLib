@@ -40,6 +40,10 @@ final class PanelLayoutTest {
     private static final int BORDER_WIDTH = 2;
     private static final float TOLERANCE = 0.01f;
 
+    // A bar four times the default, far enough from it that a placement still carrying the default reads
+    // as a plain failure rather than as rounding.
+    private static final ScrollbarThickness THICK_BAR = new ScrollbarThickness(12f);
+
     // A round per-character width makes every snapped rectangle a hand-checkable multiple, so the
     // expected geometry is arithmetic rather than a measured constant.
     private static final float WIDTH_PER_CHAR = 10f;
@@ -315,6 +319,17 @@ final class PanelLayoutTest {
         }
 
         @Test
+        void computePlacementCarriesTheScrollbarThicknessOntoThePlacement() {
+
+            var placement = place(BODY, THICK_BAR);
+
+            // The layout spends no geometry on the thickness; it hands it to the placement, which is the
+            // one value the pass drawing the bar and the pass grabbing its thumb both read.
+            assertThat(placement.scrollbarThickness().pixels())
+                .isCloseTo(12f, within(TOLERANCE));
+        }
+
+        @Test
         void computePlacementBakesTheScrollOffsetIntoTheListBounds() {
 
             var atTop = placeCapped(0f).bodyControls().get(1).bounds();
@@ -341,11 +356,18 @@ final class PanelLayoutTest {
         }
 
         private PanelPlacement place(List<ControlSpec> bodyControls) {
+            return place(bodyControls, ScrollbarThickness.DEFAULT);
+        }
+
+        private PanelPlacement place(
+                List<ControlSpec> bodyControls,
+                ScrollbarThickness scrollbarThickness) {
+
             return PanelLayout.computePlacement(
                 SCREEN_HEIGHT,
                 new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT),
                 BORDER_WIDTH,
-                ScrollbarThickness.DEFAULT,
+                scrollbarThickness,
                 bodyControls,
                 measurerFake,
                 0f);
