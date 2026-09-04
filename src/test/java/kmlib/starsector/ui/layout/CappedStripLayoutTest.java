@@ -7,6 +7,7 @@ import kmlib.starsector.ui.controls.LabelledControlSpecs;
 import kmlib.starsector.ui.controls.VerticalTableSpecs;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.layout.ControlStripLayout.StripMeasurement;
+import kmlib.starsector.ui.widgets.scroll.ScrollbarThickness;
 import kmlib.testfixtures.starsector.ui.font.LineWidthMeasurerFake;
 
 import org.junit.jupiter.api.Nested;
@@ -24,6 +25,9 @@ import static org.assertj.core.api.Assertions.within;
  * header from the top, pins the footer to the bottom, and scrolls the flex list between them. Framing
  * hangs the body from a FIXED top edge (as the tab panel frames it from the tab-row bottom), so a shorter
  * capped body rises from the bottom while the header stays put - the property the assertions lean on.
+ *
+ * <p>{@link CappedStripLayout#layoutBodyStrip} adds the across dimension: the body widens for a scrollbar
+ * too fat for the padding to hold clear, and the controls inside it do not move when it does.
  */
 final class CappedStripLayoutTest {
 
@@ -35,6 +39,16 @@ final class CappedStripLayoutTest {
     // shorter capped body rises from the bottom rather than dropping its top.
     private static final float BODY_TOP_Y = 400f;
     private static final int FLEX_OPTION_COUNT = 4;
+
+    // A cap far above any strip these cases build, so a body-width assertion is never also measuring a
+    // height cap.
+    private static final float UNCAPPED_BODY_HEIGHT = 1000f;
+
+    // A bar the body padding still swallows whole (2 + 3 margin + 2 clearance = 7, under the padding's 8)
+    // and one it cannot (12 + 3 + 2 = 17, nine past it).
+    private static final ScrollbarThickness SWALLOWED_BAR = new ScrollbarThickness(2f);
+    private static final ScrollbarThickness OVERSIZE_BAR = new ScrollbarThickness(12f);
+    private static final float OVERSIZE_BAR_EXCESS = 9f;
 
     private final LineWidthMeasurer measurerFake = new LineWidthMeasurerFake(WIDTH_PER_CHAR);
 
@@ -166,6 +180,7 @@ final class CappedStripLayoutTest {
                 strip.rowHeights(),
                 strip.rowWidths(),
                 CappedStripLayout.NO_FLEX_REGION,
+                ScrollbarThickness.DEFAULT,
                 0f,
                 measurerFake);
 
@@ -204,6 +219,7 @@ final class CappedStripLayoutTest {
                 strip.rowHeights(),
                 strip.rowWidths(),
                 1,
+                ScrollbarThickness.DEFAULT,
                 0f,
                 measurerFake);
 
@@ -246,6 +262,7 @@ final class CappedStripLayoutTest {
                 strip.rowHeights(),
                 strip.rowWidths(),
                 1,
+                ScrollbarThickness.DEFAULT,
                 0f,
                 measurerFake);
 
@@ -271,6 +288,7 @@ final class CappedStripLayoutTest {
                 strip.rowHeights(),
                 strip.rowWidths(),
                 1,
+                ScrollbarThickness.DEFAULT,
                 0f,
                 measurerFake);
 
@@ -297,6 +315,7 @@ final class CappedStripLayoutTest {
                 strip.rowHeights(),
                 strip.rowWidths(),
                 1,
+                ScrollbarThickness.DEFAULT,
                 9999f,
                 measurerFake);
 
@@ -316,6 +335,7 @@ final class CappedStripLayoutTest {
                 strip.rowHeights(),
                 strip.rowWidths(),
                 1,
+                ScrollbarThickness.DEFAULT,
                 -50f,
                 measurerFake);
 
@@ -336,6 +356,7 @@ final class CappedStripLayoutTest {
                 strip.rowHeights(),
                 strip.rowWidths(),
                 1,
+                ScrollbarThickness.DEFAULT,
                 0f,
                 measurerFake));
 
@@ -345,6 +366,7 @@ final class CappedStripLayoutTest {
                 strip.rowHeights(),
                 strip.rowWidths(),
                 1,
+                ScrollbarThickness.DEFAULT,
                 40f,
                 measurerFake));
 
@@ -370,6 +392,7 @@ final class CappedStripLayoutTest {
                 strip.rowHeights(),
                 strip.rowWidths(),
                 1,
+                ScrollbarThickness.DEFAULT,
                 40f,
                 measurerFake);
 
@@ -401,6 +424,7 @@ final class CappedStripLayoutTest {
                 strip.rowHeights(),
                 strip.rowWidths(),
                 1,
+                ScrollbarThickness.DEFAULT,
                 0f,
                 measurerFake);
 
@@ -437,6 +461,7 @@ final class CappedStripLayoutTest {
                 strip.rowHeights(),
                 strip.rowWidths(),
                 1,
+                ScrollbarThickness.DEFAULT,
                 0f,
                 measurerFake);
 
@@ -467,6 +492,7 @@ final class CappedStripLayoutTest {
                 strip.rowHeights(),
                 strip.rowWidths(),
                 1,
+                ScrollbarThickness.DEFAULT,
                 0f,
                 measurerFake);
 
@@ -477,6 +503,91 @@ final class CappedStripLayoutTest {
             assertThat(divider.width())
                 .isCloseTo(body.width(), within(TOLERANCE));
         }
+    }
+
+    @Nested
+    class LayoutBodyStrip {
+
+        @Test
+        void layoutBodyStripKeepsTheMeasuredWidthAtTheDefaultThickness() {
+
+            var specs = buildHeaderFlexFooterStrip();
+
+            // The default bar fits inside the padding the body already insets its controls by, so it costs
+            // the body nothing and the framed width is the strip's own measured width.
+            assertThat(layoutBodyStripAt(specs, ScrollbarThickness.DEFAULT).bounds().width())
+                .isCloseTo(measure(specs).bodyWidth(), within(TOLERANCE));
+        }
+
+        @Test
+        void layoutBodyStripKeepsTheMeasuredWidthWhenThePaddingSwallowsTheBar() {
+
+            var specs = buildHeaderFlexFooterStrip();
+
+            // A bar thinner than the default has even more room inside the padding, so it likewise leaves
+            // the body at its measured width rather than narrowing it.
+            assertThat(layoutBodyStripAt(specs, SWALLOWED_BAR).bounds().width())
+                .isCloseTo(measure(specs).bodyWidth(), within(TOLERANCE));
+        }
+
+        @Test
+        void layoutBodyStripWidensTheBodyByWhatTheBarOverrunsThePadding() {
+
+            var specs = buildHeaderFlexFooterStrip();
+            var atDefault = layoutBodyStripAt(specs, ScrollbarThickness.DEFAULT).bounds();
+            var atOversize = layoutBodyStripAt(specs, OVERSIZE_BAR).bounds();
+
+            // The fat bar has nowhere to grow but over the rows, so the body grows rightward by exactly
+            // what it overruns the padding by - and keeps its left edge, the direction a panel grows.
+            assertThat(atOversize.width() - atDefault.width())
+                .isCloseTo(OVERSIZE_BAR_EXCESS, within(TOLERANCE));
+            assertThat(atOversize.x())
+                .isCloseTo(atDefault.x(), within(TOLERANCE));
+        }
+
+        @Test
+        void layoutBodyStripLeavesTheListWidthAloneAsTheBarThickens() {
+
+            var specs = buildHeaderFlexFooterStrip();
+            var atDefault = readFlexBounds(layoutBodyStripAt(specs, ScrollbarThickness.DEFAULT).placement());
+            var atOversize = readFlexBounds(layoutBodyStripAt(specs, OVERSIZE_BAR).placement());
+
+            // The box absorbed the whole of the growth, so the rows are exactly where they were - which is
+            // the point of widening the body rather than letting the bar eat into the list.
+            assertThat(atOversize.width())
+                .isCloseTo(atDefault.width(), within(TOLERANCE));
+            assertThat(atOversize.x())
+                .isCloseTo(atDefault.x(), within(TOLERANCE));
+        }
+
+        @Test
+        void layoutBodyStripReservesNothingWhenNoControlScrolls() {
+
+            var specs = List.<ControlSpec>of(
+                LabelledControlSpecs.buildCheckbox("A", false, ControlAction.NONE),
+                LabelledControlSpecs.buildCheckbox("B", false, ControlAction.NONE));
+
+            // A strip with nothing to scroll has no bar to reserve for, so even the fattest thickness
+            // leaves its body at the measured width.
+            assertThat(layoutBodyStripAt(specs, OVERSIZE_BAR).bounds().width())
+                .isCloseTo(measure(specs).bodyWidth(), within(TOLERANCE));
+        }
+    }
+
+    // A body strip laid out at the given bar thickness under a cap loose enough never to bite, so a case
+    // reads only what the thickness did to the width.
+    private CappedStripLayout.BodyStrip layoutBodyStripAt(
+            List<ControlSpec> specs,
+            ScrollbarThickness thickness) {
+
+        return CappedStripLayout.layoutBodyStrip(
+            BODY_LEFT_X,
+            BODY_TOP_Y,
+            UNCAPPED_BODY_HEIGHT,
+            thickness,
+            specs,
+            measurerFake,
+            0f);
     }
 
     // The flex list's laid-out bounds - the second control, between the header and the footer.
@@ -496,6 +607,7 @@ final class CappedStripLayoutTest {
                 strip.rowHeights(),
                 strip.rowWidths(),
                 1,
+                ScrollbarThickness.DEFAULT,
                 0f,
                 measurerFake)
             .controls()

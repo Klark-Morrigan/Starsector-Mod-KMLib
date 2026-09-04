@@ -5,6 +5,7 @@ import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.layout.ControlStripLayout.StripMeasurement;
+import kmlib.starsector.ui.widgets.scroll.ScrollbarThickness;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,7 +21,15 @@ import java.util.List;
  * <p>As the strip's main region, the flex region also fills the body's content width rather than its own
  * narrower row width - it flexes horizontally into the leftover width just as it flexes vertically into
  * the leftover height. The body is as wide as the widest control, so a flex list narrower than the widest
- * header row spreads to the frame instead of leaving a gutter of dead space between it and the scrollbar.
+ * header row spreads to the frame instead of leaving a strip of dead space between it and the scrollbar.
+ *
+ * <p>Across, the body reserves the gutter its scrollbar stands in. {@link ControlStripLayout#BODY_PADDING}
+ * already insets the controls by as much as a default-thickness bar occupies, so a bar no fatter than that
+ * costs the body nothing; a fatter one has nowhere to grow but over the rows, so the body widens by the
+ * excess instead and the controls keep the width they measured to. Reserved on the strip HAVING a scrolling
+ * region rather than on that region currently overrunning: a list crossing the overflow threshold is an
+ * ordinary thing, and a body that changed width when it did would read as the panel twitching. A strip with
+ * no scrolling control reserves nothing, having no bar to reserve for.
  *
  * <p>Pure geometry in UI coordinates (origin bottom-left, y grows up), split into the same measure-then-
  * place shape as the strip it caps: {@link #capBodyHeight} shrinks the measured body height for the host
@@ -105,11 +114,14 @@ public final class CappedStripLayout {
      * the flex viewport lands one row or taller; a body framed smaller than "header + footer + one row"
      * leaves the flex region nothing to occupy.
      *
-     * @param body            the framed body rectangle, sized via {@link #capBodyHeight}
+     * @param body            the framed body rectangle, sized via {@link #capBodyHeight} and widened for the
+     *                        scrollbar gutter via {@link #layoutBodyStrip}
      * @param specs           the controls to place, top to bottom (must match the measured specs)
      * @param rowHeights      the measured row heights, from {@link StripMeasurement#rowHeights()}
      * @param rowWidths       the measured row widths, from {@link StripMeasurement#rowWidths()}
      * @param flexIndex       the scrolling control's index, from {@link #findScrollingIndex}
+     * @param thickness       how wide the scrollbar draws, deciding how much of the body's right side the
+     *                        flex region leaves clear for it
      * @param rawScrollOffset the requested scroll offset in pixels; clamped to the available overflow
      * @param measurer        measures each label's rendered width, for snapping a tabs row's segments
      * @return the laid-out controls, the flex viewport, the clamped offset, and the overflow
@@ -120,6 +132,7 @@ public final class CappedStripLayout {
             List<Float> rowHeights,
             List<Float> rowWidths,
             int flexIndex,
+            ScrollbarThickness thickness,
             float rawScrollOffset,
             LineWidthMeasurer measurer) {
 
@@ -182,9 +195,15 @@ public final class CappedStripLayout {
         // vertically into the leftover height. The body is as wide as the widest control, so this only
         // ever grows the list (a list already as wide as the body is unchanged), spreading its columns to
         // the frame and right-aligning each row's trailing value against the panel edge by the scrollbar.
+        //
+        // The right side is measured against whichever is wider, the padding or the scrollbar's gutter, so
+        // a bar too fat for the padding is left its room rather than drawing over the rows. The body was
+        // widened by that same excess, so the list comes out at its measured content width either way -
+        // the growth is absorbed by the box, not taken out of the content.
+        var reservedRight = Math.max(ControlStripLayout.BODY_PADDING, thickness.computeGutterWidth());
         var flexWidth = Math.max(
             rowWidths.get(flexIndex),
-            body.width() - 2f * ControlStripLayout.BODY_PADDING);
+            body.width() - ControlStripLayout.BODY_PADDING - reservedRight);
         var overflow = Math.max(0f, flexNatural - flexViewportHeight);
         var scrollOffset = clamp(rawScrollOffset, overflow);
 
@@ -219,6 +238,8 @@ public final class CappedStripLayout {
      * @param originX         the body's left edge (the content inset), in UI coordinates
      * @param bodyTopY        the body's top edge, in UI coordinates (below a header, or the content top)
      * @param maxBodyHeight   the most the body may stand before its scrolling control caps
+     * @param thickness       how wide the scrolling control's bar draws; a bar wider than the padding
+     *                        already holds clear widens the body by the excess
      * @param bodyControls    the body controls, top to bottom (empty for no body)
      * @param measurer        measures each label's rendered width for text snapping
      * @param rawScrollOffset the requested scroll offset for the scrolling control; clamped to its overflow
@@ -228,6 +249,7 @@ public final class CappedStripLayout {
             float originX,
             float bodyTopY,
             float maxBodyHeight,
+            ScrollbarThickness thickness,
             List<ControlSpec> bodyControls,
             LineWidthMeasurer measurer,
             float rawScrollOffset) {
@@ -235,7 +257,11 @@ public final class CappedStripLayout {
         var strip = ControlStripLayout.measureStrip(bodyControls, measurer);
         var flexIndex = findScrollingIndex(bodyControls);
         var bodyHeight = capBodyHeight(strip, flexIndex, maxBodyHeight);
-        var bounds = new Rectangle(originX, bodyTopY - bodyHeight, strip.bodyWidth(), bodyHeight);
+
+        // Grow rightward for a bar the padding cannot swallow, which is the direction a panel already
+        // grows: the list keeps its measured width and its left edge, and the frame moves out around it.
+        var bodyWidth = strip.bodyWidth() + measureGutterExcess(flexIndex, thickness);
+        var bounds = new Rectangle(originX, bodyTopY - bodyHeight, bodyWidth, bodyHeight);
 
         var placement = layoutCappedControls(
             bounds,
@@ -243,10 +269,22 @@ public final class CappedStripLayout {
             strip.rowHeights(),
             strip.rowWidths(),
             flexIndex,
+            thickness,
             rawScrollOffset,
             measurer);
 
         return new BodyStrip(bounds, placement);
+    }
+
+    // How much wider than a plain strip a body has to stand to hold its scrollbar: the gutter the bar
+    // occupies, less the padding the body already insets its controls by. Zero for a strip with nothing to
+    // scroll (no bar to reserve for) and zero for any bar the padding already covers, which is why the
+    // default thickness costs the body nothing.
+    private static float measureGutterExcess(int flexIndex, ScrollbarThickness thickness) {
+        if (flexIndex == NO_FLEX_REGION) {
+            return 0f;
+        }
+        return Math.max(0f, thickness.computeGutterWidth() - ControlStripLayout.BODY_PADDING);
     }
 
     // Confines a requested offset to the scrollable range: 0 when the list fits (overflow 0) or the
