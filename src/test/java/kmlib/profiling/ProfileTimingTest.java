@@ -20,7 +20,8 @@ final class ProfileTimingTest {
         @Test
         void reportsTheTotalSpreadOverTheCallsThatMadeIt() {
 
-            assertThat(new ProfileTiming(2, TOTAL_NANOS, 50L, 200L).getAverageNanos())
+            assertThat(new ProfileTiming(2, TOTAL_NANOS, 50L, 200L, DurationBuckets.NO_CALLS)
+                .getAverageNanos())
                 .isEqualTo(125L);
         }
 
@@ -28,7 +29,7 @@ final class ProfileTimingTest {
         void reportsNoMeanWhereNoCallHasFinished() {
             // A readout asked for mid-frame holds the section that is running, and its row has a
             // count of nothing to divide by.
-            assertThat(new ProfileTiming(0, 0, 0, 0).getAverageNanos())
+            assertThat(new ProfileTiming(0, 0, 0, 0, DurationBuckets.NO_CALLS).getAverageNanos())
                 .isEqualTo(0L);
         }
     }

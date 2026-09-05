@@ -10,8 +10,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Pins {@link TimingReport}: empty input yields a notice, a section renders a row with its name,
  * count, and nanos converted to milliseconds, a section that ran inside another is printed
- * indented under it with its own self time, and every counter the tree touched heads a group of
- * columns that stays blank on the rows which never touched it.
+ * indented under it with its own self time, every counter the tree touched heads a group of
+ * columns that stays blank on the rows which never touched it, the duration bands are marked by
+ * how many calls landed in each, and a row whose slowest call has more to say than its duration
+ * carries a second line saying it without disturbing the columns.
  */
 final class TimingReportTest {
 
@@ -31,8 +33,9 @@ final class TimingReportTest {
     // "walkTheWholeSector" plus the two spaces one level of nesting indents it by.
     private static final int WIDEST_NAME_WIDTH = 20;
 
-    // The six numeric columns: two spaces then 8, 10, 10, 10, 10 and 11 characters.
-    private static final int NUMERIC_COLUMNS_WIDTH = 71;
+    // The six numeric columns and the spread beside them: two spaces then 8, 10, 10, 10, 10, 11,
+    // and 22 for the one character each duration band takes.
+    private static final int NUMERIC_COLUMNS_WIDTH = 95;
 
     // The section name, the six timing columns, and the four of the one counter group that row
     // filled - the second group in the table stays blank on it.
@@ -40,6 +43,29 @@ final class TimingReportTest {
 
     // The same row less its cost-each cell, which a row that counted nothing itself cannot state.
     private static final int FILLED_CELLS_PER_ROW_WITH_NO_PER_ITEM_COST = 10;
+
+    // The header and the one section under it, which is all a row with nothing to add about its
+    // slowest call may print.
+    private static final int ROWS_OF_A_HEADER_AND_ONE_SECTION = 2;
+
+    // A thousand calls in the band a microsecond opens, and three a thousand times slower in the
+    // band around a millisecond - two rows a mean of 4us cannot tell apart.
+    private static final int QUICK_CALL_BAND = 1;
+    private static final int SLOW_CALL_BAND = 11;
+    private static final long THOUSAND_CALLS = 1_000L;
+    private static final long FEW_CALLS = 3L;
+
+    // Those two bands marked by how many digits each tally has - 4 for the thousand, 1 for the
+    // three - with a dot in each of the twenty bands nothing landed in.
+    private static final String EXPECTED_BAND_MARKS = ".4.........1..........";
+
+    private static final String WORST_CALL_TAG = "eos";
+    private static final long WORST_CALL_SYSTEMS = 48L;
+
+    // Longer than the section column and every number beside it, so a table that measured the line
+    // would be visibly pulled out of shape by it.
+    private static final String LONG_WORST_CALL_TAG =
+        "a tag longer than the whole row it was written under";
 
     @Nested
     class Format {
@@ -56,7 +82,8 @@ final class TimingReportTest {
             // 2 calls, total 3_000_000ns = 3.000ms, avg 1.500ms.
             var node = new ProfileNode(
                 ProfileSection.registerSection("render"),
-                new ProfileTiming(2, 3_000_000, 1_000_000, 2_000_000),
+                new ProfileTiming(2, 3_000_000, 1_000_000, 2_000_000, DurationBuckets.NO_CALLS),
+                WorstCall.NO_CALL,
                 List.of(),
                 List.of());
             var report = TimingReport.format(List.of(node));
@@ -159,6 +186,69 @@ final class TimingReportTest {
                 .hasSize(FILLED_CELLS_PER_ROW_WITH_NO_PER_ITEM_COST)
                 .contains("7");
         }
+
+        @Test
+        void formatMarksEachDurationBandWithHowManyDigitsItsTallyHas() {
+            // The shape a mean and a maximum cannot show: the band holding the thousand quick calls
+            // reads taller than the one holding the single stall, so a row that stalled once is
+            // told apart from a row that is always this slow.
+            var report = TimingReport.format(List.of(nodeSpreadOver(
+                bandsHolding(THOUSAND_CALLS, FEW_CALLS))));
+
+            assertThat(readFilledCells(report, PARENT_SECTION))
+                .contains(EXPECTED_BAND_MARKS);
+        }
+
+        @Test
+        void formatShowsNoBandsForARowNoCallHasFinishedOn() {
+            // A line of dots would read as calls that were all too fast to matter, which is the
+            // opposite of what a row caught mid-call holds.
+            var report = TimingReport.format(List.of(nodeCounting(
+                PARENT_SECTION, countOf(SYSTEMS_COUNTER, 300, 300, 100, 200))));
+
+            // Two dots in a row can only be empty bands: a millisecond figure carries one.
+            assertThat(report)
+                .doesNotContain("..");
+        }
+
+        @Test
+        void formatWritesWhatTheSlowestCallWasDoingUnderTheRow() {
+            // The one fact that says what to optimise: the maximum column carries the duration, and
+            // the tag and the counters it was reached over have nowhere else to go.
+            var report = TimingReport.format(List.of(nodeWhoseWorstCall(new WorstCall(
+                PARENT_TOTAL_NANOS,
+                WORST_CALL_TAG,
+                List.of(new CallCount(
+                    ProfileCounter.registerCounter(SYSTEMS_COUNTER), WORST_CALL_SYSTEMS))))));
+
+            assertThat(report)
+                .contains("\n  worst 3.000ms")
+                .contains("\"" + WORST_CALL_TAG + "\"")
+                .contains(SYSTEMS_COUNTER + "=" + WORST_CALL_SYSTEMS);
+        }
+
+        @Test
+        void formatWritesNoWorstCallLineWhereItRepeatsTheMaximumColumn() {
+            // A call named nothing and counting nothing has only its duration to state, and the
+            // table has already stated it - so the rows whose calls are all alike stay one line.
+            var report = TimingReport.format(List.of(nodeWhoseWorstCall(
+                new WorstCall(PARENT_TOTAL_NANOS, WorstCall.NO_TAG, List.of()))));
+
+            assertThat(report.lines())
+                .hasSize(ROWS_OF_A_HEADER_AND_ONE_SECTION);
+        }
+
+        @Test
+        void formatKeepsTheColumnsAlignedAroundAWorstCallLine() {
+            // The line belongs to no column and carries a caller's own text, so measuring it would
+            // widen the section column by however long that text was and push every number away
+            // from the header it sits under.
+            var report = TimingReport.format(List.of(nodeWhoseWorstCall(new WorstCall(
+                PARENT_TOTAL_NANOS, LONG_WORST_CALL_TAG, List.of()))));
+
+            assertThat(readRow(report, PARENT_SECTION).length())
+                .isEqualTo(PARENT_SECTION.length() + NUMERIC_COLUMNS_WIDTH);
+        }
     }
 
     // One call of a parent holding one call of a child, which is the smallest tree that has a
@@ -166,11 +256,13 @@ final class TimingReportTest {
     private static ProfileNode parentHoldingOneChild(String parentName, String childName) {
         return new ProfileNode(
             ProfileSection.registerSection(parentName),
-            new ProfileTiming(1, PARENT_TOTAL_NANOS, PARENT_TOTAL_NANOS, PARENT_TOTAL_NANOS),
+            oneCallOf(PARENT_TOTAL_NANOS),
+            WorstCall.NO_CALL,
             List.of(),
             List.of(new ProfileNode(
                 ProfileSection.registerSection(childName),
-                new ProfileTiming(1, CHILD_TOTAL_NANOS, CHILD_TOTAL_NANOS, CHILD_TOTAL_NANOS),
+                oneCallOf(CHILD_TOTAL_NANOS),
+                WorstCall.NO_CALL,
                 List.of(),
                 List.of())));
     }
@@ -180,8 +272,43 @@ final class TimingReportTest {
     private static ProfileNode nodeCounting(String sectionName, ProfileCount count) {
         return new ProfileNode(
             ProfileSection.registerSection(sectionName),
-            new ProfileTiming(1, PARENT_TOTAL_NANOS, PARENT_TOTAL_NANOS, PARENT_TOTAL_NANOS),
+            oneCallOf(PARENT_TOTAL_NANOS),
+            WorstCall.NO_CALL,
             List.of(count),
+            List.of());
+    }
+
+    private static ProfileTiming oneCallOf(long totalNanos) {
+        return new ProfileTiming(1, totalNanos, totalNanos, totalNanos, DurationBuckets.NO_CALLS);
+    }
+
+    // Calls in two bands a thousandfold apart, which is the spread a mean and a maximum read as one
+    // slow row.
+    private static DurationBuckets bandsHolding(long quickCalls, long slowCalls) {
+
+        var callsPerBucket = new long[DurationBuckets.countBuckets()];
+
+        callsPerBucket[QUICK_CALL_BAND] = quickCalls;
+        callsPerBucket[SLOW_CALL_BAND] = slowCalls;
+        return new DurationBuckets(callsPerBucket);
+    }
+
+    private static ProfileNode nodeSpreadOver(DurationBuckets buckets) {
+        return new ProfileNode(
+            ProfileSection.registerSection(PARENT_SECTION),
+            new ProfileTiming(
+                1, PARENT_TOTAL_NANOS, PARENT_TOTAL_NANOS, PARENT_TOTAL_NANOS, buckets),
+            WorstCall.NO_CALL,
+            List.of(),
+            List.of());
+    }
+
+    private static ProfileNode nodeWhoseWorstCall(WorstCall worstCall) {
+        return new ProfileNode(
+            ProfileSection.registerSection(PARENT_SECTION),
+            oneCallOf(PARENT_TOTAL_NANOS),
+            worstCall,
+            List.of(),
             List.of());
     }
 
@@ -199,12 +326,16 @@ final class TimingReportTest {
     // The cells a row actually fills, blank ones excluded - a blank cell is whitespace and so
     // splits away with the padding, which is what "prints nothing" has to mean in a fixed table.
     private static List<String> readFilledCells(String report, String sectionName) {
-        return List.of(report
+        return List.of(readRow(report, sectionName).trim().split("\\s+"));
+    }
+
+    // The row a section is reported on, padding and all, for the cases about how wide it is rather
+    // than about what it says.
+    private static String readRow(String report, String sectionName) {
+        return report
             .lines()
             .filter(line -> line.startsWith(sectionName))
             .findFirst()
-            .orElseThrow()
-            .trim()
-            .split("\\s+"));
+            .orElseThrow();
     }
 }

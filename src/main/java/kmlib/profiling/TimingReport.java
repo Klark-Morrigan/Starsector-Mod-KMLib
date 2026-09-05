@@ -1,5 +1,7 @@
 package kmlib.profiling;
 
+import kmlib.text.KmlibStrings;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -27,6 +29,17 @@ import java.util.function.ToLongFunction;
  * the row counted in all, the spread of one call's worth, and what one item
  * cost it. A duration is judged against the work it covered, so the two are
  * read on one line rather than in a table and a log.
+ *
+ * <p>The last column is where the row's calls fell in duration: one character
+ * per band, the bands doubling from a microsecond up, a dot where no call
+ * landed and otherwise how many digits that band's tally has. A row whose calls
+ * sit in one band costs what it costs; a row with an outlier band stalled, and
+ * the two want different fixes.
+ *
+ * <p>Under a row whose slowest call has something to say beyond its duration
+ * goes a second line naming that call and what its counters stood at, since the
+ * maximum column already carries the duration and nothing else could carry the
+ * rest.
  */
 public final class TimingReport {
 
@@ -39,6 +52,11 @@ public final class TimingReport {
     private static final String MAXIMUM_HEADER = "MAX ms";
     private static final String SELF_HEADER = "SELF ms";
     private static final String TOTAL_HEADER = "TOTAL ms";
+
+    // Names the scale rather than the contents: the bands run left to right
+    // from a microsecond through milliseconds to a second and over, which is
+    // the one thing a reader needs to place a mark in the column.
+    private static final String SPREAD_HEADER = "us>ms>s";
 
     // Suffixed onto the counter's own name, so a reader can tell which group a
     // spread belongs to when several counters are in the table at once.
@@ -62,6 +80,26 @@ public final class TimingReport {
     private static final int CALL_COUNT_COLUMN_FLOOR = 8;
     private static final int DURATION_COLUMN_FLOOR = 10;
     private static final int TOTAL_COLUMN_FLOOR = 11;
+
+    // The spread is one character per band whether or not a row filled any, so
+    // its floor is the band count itself: every row's marks then sit under the
+    // same bands, which is the only way one row's shape can be read against
+    // another's.
+    private static final int SPREAD_COLUMN_FLOOR = DurationBuckets.countBuckets();
+
+    // A band no call landed in, and the digit a filled one is marked from: a
+    // band's mark is how many digits its tally has, capped so the column keeps
+    // its width whatever the capture holds.
+    private static final char EMPTY_BAND_MARK = '.';
+    private static final char FIRST_DIGIT_MARK = '0';
+    private static final int WIDEST_MARKED_TALLY = 9;
+
+    // The second line under a row: what its slowest call took, what it was
+    // called, and what each counter stood at when it ended.
+    private static final String WORST_CALL_PREFIX = "worst ";
+    private static final String MILLIS_UNIT = "ms";
+    private static final String TAG_QUOTE = "\"";
+    private static final String COUNT_ASSIGNMENT = "=";
 
     // Blank where a row never touched a counter - see ProfileNode#getCounts for
     // why that is not a zero.
@@ -112,8 +150,43 @@ public final class TimingReport {
                 cells.add(column.renderCell(node));
             }
             table.add(cells);
+            appendWorstCallLine(table, node, depth);
             appendNodeRows(table, node.getChildren(), depth + 1, columns);
         }
+    }
+
+    // What the row's slowest call was doing, on a line of its own under it: the
+    // counters it carries are that one call's values rather than the row's, so
+    // they belong to no column, and a tag is free text of the caller's length.
+    // Written only where it says something the maximum column does not, so the
+    // rows whose calls are all alike stay one line each.
+    private static void appendWorstCallLine(List<List<String>> table, ProfileNode node, int depth) {
+
+        var worstCall = node.getWorstCall();
+
+        if (!hasContextBeyondItsDuration(worstCall)) {
+            return;
+        }
+        var line = new StringBuilder();
+
+        line.append(" ".repeat((depth + 1) * INDENT_SPACES_PER_DEPTH));
+        line.append(WORST_CALL_PREFIX);
+        line.append(formatMillis(worstCall.getDurationNanos()));
+        line.append(MILLIS_UNIT);
+
+        if (KmlibStrings.hasText(worstCall.getTag())) {
+            // Quoted, because a tag is whatever the caller wrote - spaces
+            // included - and its end has to be tellable from the counters after
+            // it.
+            line.append(COLUMN_GAP).append(TAG_QUOTE).append(worstCall.getTag()).append(TAG_QUOTE);
+        }
+        for (var count : worstCall.getCounts()) {
+            line.append(COLUMN_GAP);
+            line.append(count.getCounter().getName());
+            line.append(COUNT_ASSIGNMENT);
+            line.append(count.getAmount());
+        }
+        table.add(List.of(line.toString()));
     }
 
     // The columns after the section name. The timing ones are always there; the
@@ -138,6 +211,10 @@ public final class TimingReport {
             TOTAL_HEADER,
             TOTAL_COLUMN_FLOOR,
             node -> formatMillis(node.getTiming().getTotalNanos())));
+        columns.add(new ReportColumn(
+            SPREAD_HEADER,
+            SPREAD_COLUMN_FLOOR,
+            TimingReport::formatBands));
 
         for (var counter : collectCounters(roots)) {
             columns.addAll(buildCounterColumns(counter));
@@ -215,6 +292,38 @@ public final class TimingReport {
         return CounterLookup.findByCounter(node.getCounts(), ProfileCount::getCounter, counter);
     }
 
+    // A band's mark is how many digits its tally has, so a band holding
+    // thousands of calls reads taller than one holding three while the column
+    // stays as wide as it was - a shape that can be compared between two
+    // captures rather than one that reflows with them. Capped at the widest
+    // digit for the same reason.
+    private static char formatBandMark(long calls) {
+
+        if (calls == 0) {
+            return EMPTY_BAND_MARK;
+        }
+        var digits = Math.min(Long.toString(calls).length(), WIDEST_MARKED_TALLY);
+
+        return (char) (FIRST_DIGIT_MARK + digits);
+    }
+
+    // Blank on a row no call has finished on: there is no shape to show, and a
+    // line of dots would read as calls that were all too fast to matter.
+    private static String formatBands(ProfileNode node) {
+
+        var buckets = node.getTiming().getBuckets();
+
+        if (!buckets.hasAnyCalls()) {
+            return ABSENT_CELL;
+        }
+        var bands = new StringBuilder(DurationBuckets.countBuckets());
+
+        for (var index = 0; index < DurationBuckets.countBuckets(); index++) {
+            bands.append(formatBandMark(buckets.getCallsInBucket(index)));
+        }
+        return bands.toString();
+    }
+
     private static String formatMillis(long nanos) {
         return String.format(Locale.ROOT, MILLIS_FORMAT, Timings.convertNanosToMillis(nanos));
     }
@@ -239,8 +348,24 @@ public final class TimingReport {
             Timings.convertNanosToMicros(node.getSelfNanos()) / count.getSelfTotal());
     }
 
+    // Whether the record says anything the table does not already carry. Its
+    // duration is the maximum column, so a call that was named nothing and
+    // counted nothing would print a line repeating a number one column to the
+    // left.
+    private static boolean hasContextBeyondItsDuration(WorstCall worstCall) {
+        return KmlibStrings.hasText(worstCall.getTag()) || !worstCall.getCounts().isEmpty();
+    }
+
     private static String indentSectionName(ProfileNode node, int depth) {
         return " ".repeat(depth * INDENT_SPACES_PER_DEPTH) + node.getSection().getName();
+    }
+
+    // A row is either a cell per column or a single line written across all of
+    // them, and the count tells the two apart: a table always has the section
+    // column and the timing ones beside it, so nothing that is padded into
+    // columns is ever one cell wide.
+    private static boolean isSpanningLine(List<String> row) {
+        return row.size() == 1;
     }
 
     // The widest cell in each column, floors included, so every row agrees on
@@ -254,6 +379,13 @@ public final class TimingReport {
             widths[index + 1] = columns.get(index).getFloorWidth();
         }
         for (var row : table) {
+
+            // A worst-call line is one cell spanning the whole width, so
+            // measuring it would widen the section column by however long a
+            // caller's tag was and push every number away from its header.
+            if (isSpanningLine(row)) {
+                continue;
+            }
             for (var index = 0; index < row.size(); index++) {
                 widths[index] = Math.max(widths[index], row.get(index).length());
             }
@@ -271,6 +403,12 @@ public final class TimingReport {
 
             if (report.length() > 0) {
                 report.append('\n');
+            }
+            if (isSpanningLine(row)) {
+                // Written as it stands: it carries its own indent and belongs to
+                // no column, so padding it would only trail spaces.
+                report.append(row.get(0));
+                continue;
             }
             report.append(String.format(Locale.ROOT, "%-" + widths[0] + "s", row.get(0)));
             for (var index = 1; index < row.size(); index++) {

@@ -1,11 +1,14 @@
 package kmlib.profiling;
 
+import kmlib.text.KmlibStrings;
+
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * One entry on {@link RecordingProfiler}'s open stack: the node the span will
- * land on, when it started, and what it has counted so far.
+ * land on, when it started, what it has counted so far, and what the caller
+ * has named it.
  *
  * <p>Closing is handed back to the profiler rather than settled here, because
  * what a close means depends on the whole stack - a scope closed while a
@@ -22,6 +25,8 @@ final class RecordingProfileScope implements ProfileScope {
     // counts nothing - which most on a per-frame path do - allocates only itself.
     private List<ScopeCount> counts;
 
+    private String tag = WorstCall.NO_TAG;
+
     RecordingProfileScope(RecordingProfiler profiler, ProfileNodeAccumulator node, long startNanos) {
         this.profiler = profiler;
         this.node = node;
@@ -34,6 +39,15 @@ final class RecordingProfileScope implements ProfileScope {
             counts = new ArrayList<>();
         }
         ScopeCount.resolveCountIn(counts, counter).addSelfAmount(amount);
+    }
+
+    @Override
+    public void tagCall(String tag) {
+        // A blank name is no name: a caller composing one out of what it
+        // happens to hold may end up with an empty string, and a record whose
+        // name is a run of spaces reads as a name that was lost rather than as
+        // one that was never given.
+        this.tag = KmlibStrings.hasText(tag) ? tag : WorstCall.NO_TAG;
     }
 
     @Override
@@ -70,6 +84,6 @@ final class RecordingProfileScope implements ProfileScope {
     }
 
     void recordSpan(long endNanos) {
-        node.addSpan(endNanos - startNanos, counts == null ? List.of() : counts);
+        node.addSpan(endNanos - startNanos, counts == null ? List.of() : counts, tag);
     }
 }

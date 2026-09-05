@@ -25,6 +25,21 @@ public interface ProfileScope extends AutoCloseable {
     void addCount(ProfileCounter counter, long amount);
 
     /**
+     * Names what this call is doing - the sector it is in, the reason a refresh
+     * was asked for, the body being built - so the row's slowest call can say
+     * which call it was.
+     *
+     * <p>Taken as the call closes, so a caller may name it once it knows: the
+     * tag is worth most on the paths that only find out what they were handed
+     * part way through. Naming it again replaces the name; a blank one leaves
+     * the call unnamed, since a record saying nothing is worse than one saying
+     * it has no name.
+     *
+     * @param tag what to call this one call in a report
+     */
+    void tagCall(String tag);
+
+    /**
      * Ends this scope and records its span. Closing an already-closed scope
      * records nothing, so a caller that closes both explicitly and by
      * try-with-resources is not counted twice.

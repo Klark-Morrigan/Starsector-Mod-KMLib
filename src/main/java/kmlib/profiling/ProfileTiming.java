@@ -2,12 +2,15 @@ package kmlib.profiling;
 
 /**
  * How often a section ran at one place in the tree and what its calls cost: the
- * call count, and the total, fastest and slowest span across them.
+ * call count, the total, fastest and slowest span across them, and how those
+ * spans were spread over the duration bands.
  *
- * <p>Grouped rather than carried as four loose numbers, because they only mean
+ * <p>Grouped rather than carried as loose numbers, because they only mean
  * anything together - a total says nothing without the count it is spread over,
- * a maximum nothing without the total it is part of - and because four adjacent
- * longs at a call site are four chances to hand one over in another's place.
+ * a maximum nothing without the total it is part of - and because adjacent
+ * longs at a call site are as many chances to hand one over in another's place.
+ * The spread belongs with them for the same reason: it is one more thing said
+ * about the very durations the bounds are taken from.
  *
  * <p>Self time is not here. What a section spent outside the sections opened
  * inside it is a fact about where the node sits in the tree rather than about
@@ -22,12 +25,20 @@ public final class ProfileTiming {
     private final long totalNanos;
     private final long minNanos;
     private final long maxNanos;
+    private final DurationBuckets buckets;
 
-    public ProfileTiming(long count, long totalNanos, long minNanos, long maxNanos) {
+    public ProfileTiming(
+            long count,
+            long totalNanos,
+            long minNanos,
+            long maxNanos,
+            DurationBuckets buckets) {
+
         this.count = count;
         this.totalNanos = totalNanos;
         this.minNanos = minNanos;
         this.maxNanos = maxNanos;
+        this.buckets = buckets;
     }
 
     public long getCount() {
@@ -44,6 +55,15 @@ public final class ProfileTiming {
 
     public long getMaxNanos() {
         return maxNanos;
+    }
+
+    /**
+     * @return where these calls fell across the duration bands, which is what
+     *         tells a section that is always this slow from one that stalled
+     *         once - two rows a mean and a maximum can read alike
+     */
+    public DurationBuckets getBuckets() {
+        return buckets;
     }
 
     /**

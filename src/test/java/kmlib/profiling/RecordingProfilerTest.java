@@ -12,14 +12,16 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 /**
  * Pins the accumulation contract of {@link RecordingProfiler}: a scope's span lands under whatever
  * was open when it opened, repeated calls on one row aggregate into count/total/min/max, a row's
  * self time is what it did not spend in its children, a count added on a scope rolls into every
- * scope it was open inside and spreads over the calls of its own row, snapshot order follows
- * first-record order, a scope closed out of order takes the scopes inside it with it, and reset()
- * clears everything.
+ * scope it was open inside and spreads over the calls of its own row, the slowest call is kept with
+ * the counters and the tag it ended on, every span is placed in a duration band, snapshot order
+ * follows first-record order, a scope closed out of order takes the scopes inside it with it, and
+ * reset() clears everything.
  */
 final class RecordingProfilerTest {
 
@@ -30,6 +32,16 @@ final class RecordingProfilerTest {
     private static final String INNER_SECTION = "test.inner";
     private static final String SYSTEMS_COUNTER = "test.systems";
     private static final String MARKETS_COUNTER = "test.markets";
+
+    private static final String FIRST_CALL_TAG = "test.firstCall";
+    private static final String SLOWEST_CALL_TAG = "test.slowestCall";
+    private static final String LAST_CALL_TAG = "test.lastCall";
+
+    // What a caller composing a tag out of what it happens to hold can end up handing over.
+    private static final String BLANK_TAG = "   ";
+
+    private static final long ONE_MICROSECOND_IN_NANOS = 1_000L;
+    private static final long ONE_MILLISECOND_IN_NANOS = 1_000_000L;
 
     @Nested
     class Open {
@@ -146,6 +158,86 @@ final class RecordingProfilerTest {
                 .isEqualTo(2);
             assertThat(roots.get(0).getTiming().getTotalNanos())
                 .isEqualTo(12);
+        }
+
+        @Test
+        void keepsTheSlowestCallAndGivesItUpOnlyToASlowerOne() {
+            // What the maximum column cannot say on its own: which call it was. The record has to
+            // be the call the maximum reports, so a faster call after it changes nothing.
+            var profiler = new RecordingProfiler(new ScriptedClock(0, 20, 20, 120, 120, 130));
+
+            openTaggedCall(profiler, FIRST_CALL_TAG);
+            openTaggedCall(profiler, SLOWEST_CALL_TAG);
+            openTaggedCall(profiler, LAST_CALL_TAG);
+
+            assertThat(profiler.snapshot().get(0).getWorstCall())
+                .extracting(WorstCall::getDurationNanos, WorstCall::getTag)
+                .containsExactly(100L, SLOWEST_CALL_TAG);
+        }
+
+        @Test
+        void keepsTheCountersAsTheSlowestCallLeftThemRatherThanTheRowsTotals() {
+            // A duration is read against the work that call did, so the record carries that call's
+            // 8 systems - not the 11 the row has walked in all, which price nothing.
+            var profiler = new RecordingProfiler(new ScriptedClock(0, 10, 10, 110));
+
+            countInACall(profiler, 3);
+            countInACall(profiler, 8);
+
+            var worstCall = profiler.snapshot().get(0).getWorstCall();
+
+            assertThat(worstCall.getCounts())
+                .extracting(count -> count.getCounter().getName(), CallCount::getAmount)
+                .containsExactly(tuple(SYSTEMS_COUNTER, 8L));
+        }
+
+        @Test
+        void placesEachCallInTheDurationBandItsSpanFallsIn() {
+            // Two calls a thousandfold apart land in two bands, which is the shape that tells a
+            // section that stalled once from one that is always this slow.
+            var profiler = new RecordingProfiler(
+                new ScriptedClock(0, ONE_MICROSECOND_IN_NANOS, 0, ONE_MILLISECOND_IN_NANOS));
+
+            profiler.open(ProfileSection.registerSection(PARENT_SECTION)).close();
+            profiler.open(ProfileSection.registerSection(PARENT_SECTION)).close();
+
+            var buckets = profiler.snapshot().get(0).getTiming().getBuckets();
+
+            assertThat(buckets.getCallsInBucket(
+                DurationBuckets.resolveBucketIndex(ONE_MICROSECOND_IN_NANOS)))
+                .isEqualTo(1);
+            assertThat(buckets.getCallsInBucket(
+                DurationBuckets.resolveBucketIndex(ONE_MILLISECOND_IN_NANOS)))
+                .isEqualTo(1);
+        }
+    }
+
+    @Nested
+    class TagCall {
+
+        @Test
+        void namesTheCallItWasSetOnAndNotTheOnesAroundIt() {
+            // A tag belongs to one call: the section it was set on runs again with nothing named,
+            // and the record still says which call the name was for.
+            var profiler = new RecordingProfiler(new ScriptedClock(0, 100, 100, 110));
+
+            openTaggedCall(profiler, SLOWEST_CALL_TAG);
+            profiler.open(ProfileSection.registerSection(PARENT_SECTION)).close();
+
+            assertThat(profiler.snapshot().get(0).getWorstCall().getTag())
+                .isEqualTo(SLOWEST_CALL_TAG);
+        }
+
+        @Test
+        void leavesACallUnnamedWhereTheTagSaysNothing() {
+            // A caller composing a tag out of what it happens to hold may end up with an empty
+            // string, and a name that is a run of spaces reads as one that was lost.
+            var profiler = new RecordingProfiler(new ScriptedClock(0, 100));
+
+            openTaggedCall(profiler, BLANK_TAG);
+
+            assertThat(profiler.snapshot().get(0).getWorstCall().getTag())
+                .isEqualTo(WorstCall.NO_TAG);
         }
     }
 
@@ -581,6 +673,22 @@ final class RecordingProfilerTest {
             assertThat(openNode.getTiming().getMaxNanos())
                 .isEqualTo(0);
         }
+
+        @Test
+        void reportsNoWorstCallAndNoBandsForASectionNoCallHasFinishedOn() {
+            // The same row from the other two columns' side: there is no slowest call to describe
+            // and nowhere to place a span, so both read as the shared nothing.
+            var profiler = new RecordingProfiler(new ScriptedClock(0));
+
+            profiler.open(ProfileSection.registerSection(PARENT_SECTION));
+
+            var openNode = profiler.snapshot().get(0);
+
+            assertThat(openNode.getWorstCall())
+                .isSameAs(WorstCall.NO_CALL);
+            assertThat(openNode.getTiming().getBuckets().hasAnyCalls())
+                .isFalse();
+        }
     }
 
     @Nested
@@ -622,6 +730,22 @@ final class RecordingProfilerTest {
             names.add(node.getSection().getName());
         }
         return names;
+    }
+
+    // One call of the parent section counting what it was handed, for the cases about what one
+    // call left behind rather than about where it sat in the tree.
+    private static void countInACall(RecordingProfiler profiler, long systems) {
+        try (var call = profiler.open(ProfileSection.registerSection(PARENT_SECTION))) {
+            call.addCount(ProfileCounter.registerCounter(SYSTEMS_COUNTER), systems);
+        }
+    }
+
+    // One call of the parent section named as the caller would name it - at the end, which is
+    // where a path that only finds out what it was handed part way through can name it.
+    private static void openTaggedCall(RecordingProfiler profiler, String tag) {
+        try (var call = profiler.open(ProfileSection.registerSection(PARENT_SECTION))) {
+            call.tagCall(tag);
+        }
     }
 
     // One call of the child section that counts what it was handed, which is the shape a walker

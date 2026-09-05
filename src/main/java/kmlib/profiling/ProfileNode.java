@@ -4,8 +4,8 @@ import java.util.List;
 
 /**
  * One section at one place in the tree: what its calls cost, how much of that
- * it spent itself rather than beneath it, what it counted while it ran, and the
- * sections opened inside it.
+ * it spent itself rather than beneath it, what it counted while it ran, what
+ * its slowest call was doing, and the sections opened inside it.
  *
  * <p>A node is inclusive by construction - its total is everything that ran
  * under it - so self time is what the section costs on its own, which is the
@@ -22,18 +22,25 @@ public final class ProfileNode {
 
     private final ProfileSection section;
     private final ProfileTiming timing;
+    private final WorstCall worstCall;
     private final long selfNanos;
     private final List<ProfileCount> counts;
     private final List<ProfileNode> children;
 
+    /**
+     * @param worstCall what the slowest call of this row was doing, or
+     *                  {@link WorstCall#NO_CALL} where none has finished here
+     */
     public ProfileNode(
             ProfileSection section,
             ProfileTiming timing,
+            WorstCall worstCall,
             List<ProfileCount> counts,
             List<ProfileNode> children) {
 
         this.section = section;
         this.timing = timing;
+        this.worstCall = worstCall;
         this.counts = List.copyOf(counts);
         this.children = List.copyOf(children);
         this.selfNanos = subtractChildNanos(timing.getTotalNanos(), this.children);
@@ -49,6 +56,15 @@ public final class ProfileNode {
      */
     public ProfileTiming getTiming() {
         return timing;
+    }
+
+    /**
+     * @return what the slowest call of this row was doing - its duration, its
+     *         counters and its tag - or {@link WorstCall#NO_CALL} where a
+     *         snapshot caught the row before any call of it had finished
+     */
+    public WorstCall getWorstCall() {
+        return worstCall;
     }
 
     /**

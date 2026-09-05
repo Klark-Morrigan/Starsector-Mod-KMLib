@@ -23,6 +23,12 @@ final class SilentProfileScope implements ProfileScope {
     }
 
     @Override
+    public void tagCall(String tag) {
+        // Named for a record nobody is keeping, so the name goes nowhere and
+        // this scope stays the stateless one every open can share.
+    }
+
+    @Override
     public void close() {
         // Nothing was timed, so there is nothing to attribute.
     }

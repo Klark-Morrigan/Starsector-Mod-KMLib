@@ -221,8 +221,9 @@ No Starsector API on the signature.
 - [`profiling/`](src/main/java/kmlib/profiling/) - the profiler seam a mod
   binds, silent until it does; sections opened as nesting scopes, their count,
   total, min, max, average and self time snapshotted as a tree, the counters a
-  scope tallies and rolls up beside those durations, and the indented report
-  over it.
+  scope tallies and rolls up beside those durations, what the slowest call of a
+  row was doing and how a row's calls fell across doubling duration bands, and
+  the indented report over it.
 - [`settings/`](src/main/java/kmlib/settings/) - LunaLib settings read and
   write, immediate and deferred, change callbacks, and labelled choices.
 - [`text/`](src/main/java/kmlib/text/) - string and number formatting, plus

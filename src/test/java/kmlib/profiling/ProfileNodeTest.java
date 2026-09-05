@@ -25,7 +25,13 @@ final class ProfileNodeTest {
 
             var parent = new ProfileNode(
                 ProfileSection.registerSection("test.profileNode.parent"),
-                new ProfileTiming(1, PARENT_TOTAL_NANOS, PARENT_TOTAL_NANOS, PARENT_TOTAL_NANOS),
+                new ProfileTiming(
+                    1,
+                    PARENT_TOTAL_NANOS,
+                    PARENT_TOTAL_NANOS,
+                    PARENT_TOTAL_NANOS,
+                    DurationBuckets.NO_CALLS),
+                WorstCall.NO_CALL,
                 List.of(),
                 List.of(
                     childNode("test.profileNode.firstChild", CHILD_TOTAL_NANOS),
@@ -41,7 +47,8 @@ final class ProfileNodeTest {
             // holds no span of its own to take theirs out of.
             var unclosed = new ProfileNode(
                 ProfileSection.registerSection("test.profileNode.unclosed"),
-                new ProfileTiming(0, 0, 0, 0),
+                new ProfileTiming(0, 0, 0, 0, DurationBuckets.NO_CALLS),
+                WorstCall.NO_CALL,
                 List.of(),
                 List.of(childNode("test.profileNode.closedChild", CHILD_TOTAL_NANOS)));
 
@@ -53,7 +60,8 @@ final class ProfileNodeTest {
     private static ProfileNode childNode(String name, long totalNanos) {
         return new ProfileNode(
             ProfileSection.registerSection(name),
-            new ProfileTiming(1, totalNanos, totalNanos, totalNanos),
+            new ProfileTiming(1, totalNanos, totalNanos, totalNanos, DurationBuckets.NO_CALLS),
+            WorstCall.NO_CALL,
             List.of(),
             List.of());
     }

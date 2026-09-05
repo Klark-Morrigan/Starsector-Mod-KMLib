@@ -57,6 +57,23 @@ final class SilentProfilerTest {
     }
 
     @Nested
+    class TagCall {
+
+        @Test
+        void tagCallOnTheSharedScopeKeepsNothing() {
+            // The shared scope is stateless, so a name handed to it cannot outlive the call and
+            // reach the next section opened through it.
+            var scope = SilentProfiler.INSTANCE.open(ProfileSection.registerSection("rebuild"));
+
+            scope.tagCall("eos");
+            scope.close();
+
+            assertThat(SilentProfiler.INSTANCE.snapshot())
+                .isEmpty();
+        }
+    }
+
+    @Nested
     class Measure {
 
         @Test

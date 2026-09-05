@@ -90,8 +90,9 @@ public final class RecordingProfiler implements Profiler {
     public void record(String section, long elapsedNanos) {
         // A span the caller timed itself still belongs under whatever is open,
         // so it lands on the same node an open()/close() pair would have. It
-        // counted nothing: there was no scope to count on.
-        resolveNode(ProfileSection.registerSection(section)).addSpan(elapsedNanos, List.of());
+        // counted nothing and named nothing: there was no scope to do either on.
+        resolveNode(ProfileSection.registerSection(section))
+            .addSpan(elapsedNanos, List.of(), WorstCall.NO_TAG);
     }
 
     @Override
