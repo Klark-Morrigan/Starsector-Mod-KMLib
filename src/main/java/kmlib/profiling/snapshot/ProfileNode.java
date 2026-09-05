@@ -8,7 +8,8 @@ import java.util.List;
 /**
  * One section at one place in the tree: what its calls cost, how much of that
  * it spent itself rather than beneath it, what it counted while it ran, what
- * its slowest call was doing, and the sections opened inside it.
+ * its slowest call was doing, what the loops inside those calls ran, and the
+ * sections opened inside it.
  *
  * <p>A node is inclusive by construction - its total is everything that ran
  * under it - so self time is what the section costs on its own, which is the
@@ -26,24 +27,30 @@ public final class ProfileNode {
     private final ProfileSection section;
     private final ProfileTiming timing;
     private final WorstCall worstCall;
+    private final ProfileIterations iterations;
     private final long selfNanos;
     private final List<ProfileCount> counts;
     private final List<ProfileNode> children;
 
     /**
-     * @param worstCall what the slowest call of this row was doing, or
-     *                  {@link WorstCall#NO_CALL} where none has finished here
+     * @param worstCall  what the slowest call of this row was doing, or
+     *                   {@link WorstCall#NO_CALL} where none has finished here
+     * @param iterations what the loops of this row ran, or
+     *                   {@link ProfileIterations#NO_ITERATIONS} where its calls
+     *                   ran none
      */
     public ProfileNode(
             ProfileSection section,
             ProfileTiming timing,
             WorstCall worstCall,
+            ProfileIterations iterations,
             List<ProfileCount> counts,
             List<ProfileNode> children) {
 
         this.section = section;
         this.timing = timing;
         this.worstCall = worstCall;
+        this.iterations = iterations;
         this.counts = List.copyOf(counts);
         this.children = List.copyOf(children);
         this.selfNanos = subtractChildNanos(timing.getTotalNanos(), this.children);
@@ -68,6 +75,16 @@ public final class ProfileNode {
      */
     public WorstCall getWorstCall() {
         return worstCall;
+    }
+
+    /**
+     * @return what the loops of this row ran - how many turns, what each step of
+     *         a turn came to, and the slowest turn - or
+     *         {@link ProfileIterations#NO_ITERATIONS} where its calls ran no
+     *         loop, which is most rows
+     */
+    public ProfileIterations getIterations() {
+        return iterations;
     }
 
     /**

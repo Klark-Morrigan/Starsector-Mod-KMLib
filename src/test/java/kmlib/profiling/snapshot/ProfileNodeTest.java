@@ -40,6 +40,7 @@ final class ProfileNodeTest {
                     PARENT_TOTAL_NANOS,
                     DurationBuckets.NO_CALLS),
                 WorstCall.NO_CALL,
+                ProfileIterations.NO_ITERATIONS,
                 List.of(),
                 List.of(
                     childNode("test.profileNode.firstChild", CHILD_TOTAL_NANOS),
@@ -57,6 +58,7 @@ final class ProfileNodeTest {
                 ProfileSection.registerSection("test.profileNode.unclosed"),
                 new ProfileTiming(0, 0, 0, 0, DurationBuckets.NO_CALLS),
                 WorstCall.NO_CALL,
+                ProfileIterations.NO_ITERATIONS,
                 List.of(),
                 List.of(childNode("test.profileNode.closedChild", CHILD_TOTAL_NANOS)));
 
@@ -108,6 +110,7 @@ final class ProfileNodeTest {
                 PARENT_TOTAL_NANOS,
                 DurationBuckets.NO_CALLS),
             WorstCall.NO_CALL,
+            ProfileIterations.NO_ITERATIONS,
             List.of(count),
             List.of());
     }
@@ -117,6 +120,7 @@ final class ProfileNodeTest {
             ProfileSection.registerSection(name),
             new ProfileTiming(1, totalNanos, totalNanos, totalNanos, DurationBuckets.NO_CALLS),
             WorstCall.NO_CALL,
+            ProfileIterations.NO_ITERATIONS,
             List.of(),
             List.of());
     }

@@ -1,7 +1,8 @@
 package kmlib.profiling.recording;
 
+import kmlib.profiling.IterationScope;
 import kmlib.profiling.ProfileCounter;
-import kmlib.profiling.ProfileScope;
+import kmlib.profiling.ProfilePhase;
 import kmlib.profiling.ProfileSection;
 import kmlib.profiling.snapshot.WorstCall;
 import kmlib.text.KmlibStrings;
@@ -18,12 +19,22 @@ import java.util.List;
  * what a close means depends on the whole stack - a scope closed while a
  * younger one is still open ends that one too, and a scope's counts are handed
  * to whatever it was open inside.
+ *
+ * <p>One class for both kinds of open, since a loop's turns are one more thing
+ * a span may carry: which of the two a caller is holding is settled by the
+ * interface it was handed back, so the turns of a loop cannot be marked on a
+ * scope that was not opened over one.
  */
-final class RecordingProfileScope implements ProfileScope {
+final class RecordingProfileScope implements IterationScope {
 
     private final RecordingProfiler profiler;
     private final ProfileNodeAccumulator node;
     private final long startNanos;
+
+    // What this scope's loop has run, or null on a scope opened over no loop -
+    // which is nearly all of them, and which is why the state is not carried
+    // where it would never be filled in.
+    private final ScopeIterations iterations;
 
     // Created on the first count rather than with the scope, so a section that
     // counts nothing - which most on a per-frame path do - allocates only itself.
@@ -31,10 +42,16 @@ final class RecordingProfileScope implements ProfileScope {
 
     private String tag = WorstCall.NO_TAG;
 
-    RecordingProfileScope(RecordingProfiler profiler, ProfileNodeAccumulator node, long startNanos) {
+    RecordingProfileScope(
+            RecordingProfiler profiler,
+            ProfileNodeAccumulator node,
+            long startNanos,
+            ScopeIterations iterations) {
+
         this.profiler = profiler;
         this.node = node;
         this.startNanos = startNanos;
+        this.iterations = iterations;
     }
 
     @Override
@@ -52,6 +69,30 @@ final class RecordingProfileScope implements ProfileScope {
         // name is a run of spaces reads as a name that was lost rather than as
         // one that was never given.
         this.tag = KmlibStrings.hasText(tag) ? tag : WorstCall.NO_TAG;
+    }
+
+    @Override
+    public void beginIteration(String tag) {
+        // Null only on a scope no caller can reach as an iteration scope, since
+        // that is what an open over no loop hands back - so the guard is here
+        // rather than in a state a caller could be in.
+        if (iterations != null) {
+            iterations.beginIteration(profiler.readClockNanos(), tag);
+        }
+    }
+
+    @Override
+    public void markPhase(ProfilePhase phase) {
+        if (iterations != null) {
+            iterations.markPhase(profiler.readClockNanos(), phase);
+        }
+    }
+
+    @Override
+    public void endIteration() {
+        if (iterations != null) {
+            iterations.endIteration(profiler.readClockNanos());
+        }
     }
 
     @Override
@@ -88,6 +129,14 @@ final class RecordingProfileScope implements ProfileScope {
     }
 
     void recordSpan(long endNanos) {
+
         node.addSpan(endNanos - startNanos, counts == null ? List.of() : counts, tag);
+
+        // The turns go in with the span rather than as they run: a row is read
+        // as one thing, and a loop half way through its cells is not a fact
+        // about what a call of that row costs.
+        if (iterations != null) {
+            node.addIterations(iterations);
+        }
     }
 }

@@ -1,5 +1,7 @@
 package kmlib.profiling.recording;
 
+import kmlib.profiling.IterationScope;
+import kmlib.profiling.PhasedSection;
 import kmlib.profiling.ProfileScope;
 import kmlib.profiling.ProfileSection;
 import kmlib.profiling.Profiler;
@@ -63,9 +65,14 @@ public final class RecordingProfiler implements Profiler {
 
     @Override
     public ProfileScope open(ProfileSection section) {
-        var scope = new RecordingProfileScope(this, resolveNode(section), clockNanos.getAsLong());
-        openScopes.add(scope);
-        return scope;
+        // No loop under this scope, so there is no per-turn state to carry: what
+        // a plain section costs to open is the scope itself.
+        return openScope(section, null);
+    }
+
+    @Override
+    public IterationScope openIterations(PhasedSection section) {
+        return openScope(section.getSection(), new ScopeIterations(section));
     }
 
     @Override
@@ -146,6 +153,27 @@ public final class RecordingProfiler implements Profiler {
         }
         openScopes.remove(closingIndex);
         endScope(scope, endNanos);
+    }
+
+    /**
+     * @return the clock this profiler times against, for a scope timing the
+     *         turns of a loop between its own two ends - every span of one
+     *         capture is then read off one time source
+     */
+    long readClockNanos() {
+        return clockNanos.getAsLong();
+    }
+
+    // Both opens, since what differs between them is the state the scope carries
+    // and not what opening one means: the section lands under whatever is
+    // already open, and the scope goes on the stack.
+    private RecordingProfileScope openScope(ProfileSection section, ScopeIterations iterations) {
+
+        var scope = new RecordingProfileScope(
+            this, resolveNode(section), clockNanos.getAsLong(), iterations);
+
+        openScopes.add(scope);
+        return scope;
     }
 
     // Records the span and hands what the scope counted to whatever it was open

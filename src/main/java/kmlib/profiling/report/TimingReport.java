@@ -48,6 +48,11 @@ import java.util.function.ToLongFunction;
  * goes a second line naming that call and what its counters stood at, since the
  * maximum column already carries the duration and nothing else could carry the
  * rest.
+ *
+ * <p>Under a row whose calls ran a loop goes a line for the loop: how many turns
+ * it took, what one turn cost in each of the section's steps, and the slowest
+ * turn. Per turn rather than in total, because the row's own columns already
+ * report the whole loop and what is wanted beside them is what one item cost.
  */
 public final class TimingReport {
 
@@ -66,11 +71,16 @@ public final class TimingReport {
     // the one thing a reader needs to place a mark in the column.
     private static final String SPREAD_HEADER = "us>ms>s";
 
+    // What one of something cost, whether the something is an item a row counted
+    // or a turn of its loop. One spelling, since a reader meets both in one
+    // table and two would read as two different measures.
+    private static final String PER_ITEM_UNIT = "us/ea";
+
     // Suffixed onto the counter's own name, so a reader can tell which group a
     // spread belongs to when several counters are in the table at once.
     private static final String COUNTER_MINIMUM_SUFFIX = " MIN";
     private static final String COUNTER_MAXIMUM_SUFFIX = " MAX";
-    private static final String COUNTER_PER_ITEM_SUFFIX = " us/ea";
+    private static final String COUNTER_PER_ITEM_SUFFIX = " " + PER_ITEM_UNIT;
 
     // Two spaces per level of nesting: enough for the eye to follow a row to
     // its parent, narrow enough that a deep tree still fits a console line.
@@ -108,6 +118,11 @@ public final class TimingReport {
     private static final String MILLIS_UNIT = "ms";
     private static final String TAG_QUOTE = "\"";
     private static final String COUNT_ASSIGNMENT = "=";
+
+    // The loop line under a row: the turns, what one of them cost in each step,
+    // and the slowest of them.
+    private static final String ITERATION_COUNT_LABEL = "iterations";
+    private static final String SLOWEST_ITERATION_LABEL = "slowest";
 
     // Blank where a row never touched a counter - see ProfileNode#getCounts for
     // why that is not a zero.
@@ -159,6 +174,7 @@ public final class TimingReport {
             }
             table.add(cells);
             appendWorstCallLine(table, node, depth);
+            appendIterationsLine(table, node, depth);
             appendNodeRows(table, node.getChildren(), depth + 1, columns);
         }
     }
@@ -177,7 +193,7 @@ public final class TimingReport {
         }
         var line = new StringBuilder();
 
-        line.append(" ".repeat((depth + 1) * INDENT_SPACES_PER_DEPTH));
+        line.append(indentSpanningLine(depth));
         line.append(WORST_CALL_PREFIX);
         line.append(formatMillis(worstCall.getDurationNanos()));
         line.append(MILLIS_UNIT);
@@ -193,6 +209,46 @@ public final class TimingReport {
             line.append(count.getCounter().getName());
             line.append(COUNT_ASSIGNMENT);
             line.append(count.getAmount());
+        }
+        table.add(List.of(line.toString()));
+    }
+
+    // What the row's loop ran, on a line of its own under it. Its numbers are
+    // per turn while every column of the row is per call - a bake and a cell are
+    // different denominators - so they belong to no column and are written
+    // beside their own labels. A row whose calls ran no loop writes nothing.
+    private static void appendIterationsLine(
+            List<List<String>> table,
+            ProfileNode node,
+            int depth) {
+
+        var iterations = node.getIterations();
+
+        if (!iterations.hasAnyIterations()) {
+            return;
+        }
+        var line = new StringBuilder();
+
+        line.append(indentSpanningLine(depth));
+        line.append(ITERATION_COUNT_LABEL).append(COUNT_ASSIGNMENT).append(iterations.getCount());
+
+        for (var phaseTotal : iterations.getPhaseTotals()) {
+            line.append(COLUMN_GAP);
+            line.append(phaseTotal.getPhase().getName());
+            line.append(COUNT_ASSIGNMENT);
+            line.append(formatMicrosPerIteration(phaseTotal.getTotalNanos(), iterations.getCount()));
+        }
+        line.append(COLUMN_GAP);
+        line.append(SLOWEST_ITERATION_LABEL).append(COUNT_ASSIGNMENT);
+        line.append(formatMillis(iterations.getSlowestNanos())).append(MILLIS_UNIT);
+
+        if (KmlibStrings.hasText(iterations.getSlowestTag())) {
+            // Quoted for the reason a call's tag is: it is whatever the caller
+            // wrote, and where it ends has to be tellable.
+            line.append(COLUMN_GAP)
+                .append(TAG_QUOTE)
+                .append(iterations.getSlowestTag())
+                .append(TAG_QUOTE);
         }
         table.add(List.of(line.toString()));
     }
@@ -330,6 +386,17 @@ public final class TimingReport {
         return bands.toString();
     }
 
+    // What one turn of the loop spent in one of its steps. Microseconds for the
+    // reason the per-item column is in them: a step of a per-item loop that read
+    // in milliseconds is a loop already too slow to be running.
+    private static String formatMicrosPerIteration(long totalNanos, long iterations) {
+
+        return String.format(
+            Locale.ROOT,
+            PER_ITEM_FORMAT,
+            Timings.convertNanosToMicros(totalNanos) / iterations) + PER_ITEM_UNIT;
+    }
+
     private static String formatMillis(long nanos) {
         return String.format(Locale.ROOT, MILLIS_FORMAT, Timings.convertNanosToMillis(nanos));
     }
@@ -364,6 +431,13 @@ public final class TimingReport {
 
     private static String indentSectionName(ProfileNode node, int depth) {
         return " ".repeat(depth * INDENT_SPACES_PER_DEPTH) + node.getSection().getName();
+    }
+
+    // One level past the row it belongs to, so a line written across the columns
+    // reads as something said about the row above it rather than as a row of its
+    // own.
+    private static String indentSpanningLine(int depth) {
+        return " ".repeat((depth + 1) * INDENT_SPACES_PER_DEPTH);
     }
 
     // A row is either a cell per column or a single line written across all of

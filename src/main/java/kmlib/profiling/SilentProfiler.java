@@ -30,6 +30,13 @@ public final class SilentProfiler implements Profiler {
     }
 
     @Override
+    public IterationScope openIterations(PhasedSection section) {
+        // The same shared scope: a loop's turns are as free to leave unmeasured
+        // as the section holding them, and the caller marks them either way.
+        return SilentProfileScope.INSTANCE;
+    }
+
+    @Override
     public void measure(String section, Runnable work) {
         work.run();
     }

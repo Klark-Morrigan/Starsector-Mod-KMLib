@@ -9,7 +9,7 @@ package kmlib.profiling;
  * code sit inside a scope on a per-frame path and cost nothing when no readout
  * is bound.
  */
-final class SilentProfileScope implements ProfileScope {
+final class SilentProfileScope implements IterationScope {
 
     static final SilentProfileScope INSTANCE = new SilentProfileScope();
 
@@ -26,6 +26,22 @@ final class SilentProfileScope implements ProfileScope {
     public void tagCall(String tag) {
         // Named for a record nobody is keeping, so the name goes nowhere and
         // this scope stays the stateless one every open can share.
+    }
+
+    @Override
+    public void beginIteration(String tag) {
+        // No clock read, which is what the silent profiler is for: a loop
+        // measuring itself per turn would cost per turn even with nothing bound.
+    }
+
+    @Override
+    public void markPhase(ProfilePhase phase) {
+        // The step of a turn nobody is timing, so there is no boundary to read.
+    }
+
+    @Override
+    public void endIteration() {
+        // A turn nobody counted, and this scope holds no tally to close it into.
     }
 
     @Override

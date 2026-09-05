@@ -1,12 +1,15 @@
 package kmlib.profiling.report;
 
+import kmlib.profiling.PhasedSection;
 import kmlib.profiling.ProfileCounter;
 import kmlib.profiling.ProfileSection;
 import kmlib.profiling.snapshot.CallCount;
 import kmlib.profiling.snapshot.CountSpread;
 import kmlib.profiling.snapshot.CountTotals;
 import kmlib.profiling.snapshot.DurationBuckets;
+import kmlib.profiling.snapshot.PhaseTotal;
 import kmlib.profiling.snapshot.ProfileCount;
+import kmlib.profiling.snapshot.ProfileIterations;
 import kmlib.profiling.snapshot.ProfileNode;
 import kmlib.profiling.snapshot.ProfileTiming;
 import kmlib.profiling.snapshot.WorstCall;
@@ -23,8 +26,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * count, and nanos converted to milliseconds, a section that ran inside another is printed
  * indented under it with its own self time, every counter the tree touched heads a group of
  * columns that stays blank on the rows which never touched it, the duration bands are marked by
- * how many calls landed in each, and a row whose slowest call has more to say than its duration
- * carries a second line saying it without disturbing the columns.
+ * how many calls landed in each, a row whose slowest call has more to say than its duration carries
+ * a second line saying it, a row whose calls ran a loop carries a line stating what one turn of it
+ * cost, and neither of those lines disturbs the columns.
  */
 final class TimingReportTest {
 
@@ -74,6 +78,13 @@ final class TimingReportTest {
     private static final long UNCOUNTABLY_MANY_CALLS = 10_000_000_000L;
     private static final String EXPECTED_CAPPED_BAND_MARKS = ".9.........1..........";
 
+    // A loop of two turns whose one step took 200us in all, which is 100us a turn - a figure
+    // milliseconds would round to nothing and the row's own columns could never state.
+    private static final String PLAN_PHASE_NAME = "plan";
+    private static final long LOOP_TURNS = 2;
+    private static final long PHASE_TOTAL_NANOS = 200_000;
+    private static final String SLOWEST_TURN_TAG = "corvus";
+
     private static final String WORST_CALL_TAG = "eos";
     private static final long WORST_CALL_SYSTEMS = 48L;
 
@@ -99,6 +110,7 @@ final class TimingReportTest {
                 ProfileSection.registerSection("render"),
                 new ProfileTiming(2, 3_000_000, 1_000_000, 2_000_000, DurationBuckets.NO_CALLS),
                 WorstCall.NO_CALL,
+                ProfileIterations.NO_ITERATIONS,
                 List.of(),
                 List.of());
             var report = TimingReport.format(List.of(node));
@@ -281,6 +293,41 @@ final class TimingReportTest {
         }
 
         @Test
+        void formatWritesWhatOneTurnOfTheLoopCostInEachStep() {
+            // What the row's own columns cannot say: they are per call, and a bake's cost scales
+            // with the cells it turned over rather than with how often it ran.
+            var report = TimingReport.format(List.of(nodeIterating(
+                LOOP_TURNS, PHASE_TOTAL_NANOS, SLOWEST_TURN_TAG)));
+
+            assertThat(report)
+                .contains("\n  iterations=2")
+                .contains("plan=100.0us/ea")
+                .contains("slowest=3.000ms")
+                .contains("\"" + SLOWEST_TURN_TAG + "\"");
+        }
+
+        @Test
+        void formatWritesNoLoopLineForARowThatRanNone() {
+            // Most rows, which would otherwise each carry a line saying they iterated over
+            // nothing.
+            var report = TimingReport.format(List.of(nodeWhoseWorstCall(WorstCall.NO_CALL)));
+
+            assertThat(report.lines())
+                .hasSize(ROWS_OF_A_HEADER_AND_ONE_SECTION);
+        }
+
+        @Test
+        void formatKeepsTheColumnsAlignedAroundALoopLine() {
+            // The loop line belongs to no column for the same reason the worst call's does: its
+            // numbers are per turn, and its tag is a caller's own text of a caller's own length.
+            var report = TimingReport.format(List.of(nodeIterating(
+                LOOP_TURNS, PHASE_TOTAL_NANOS, LONG_WORST_CALL_TAG)));
+
+            assertThat(readRow(report, PARENT_SECTION).length())
+                .isEqualTo(PARENT_SECTION.length() + NUMERIC_COLUMNS_WIDTH);
+        }
+
+        @Test
         void formatKeepsTheColumnsAlignedAroundAWorstCallLine() {
             // The line belongs to no column and carries a caller's own text, so measuring it would
             // widen the section column by however long that text was and push every number away
@@ -300,11 +347,13 @@ final class TimingReportTest {
             ProfileSection.registerSection(parentName),
             oneCallOf(PARENT_TOTAL_NANOS),
             WorstCall.NO_CALL,
+            ProfileIterations.NO_ITERATIONS,
             List.of(),
             List.of(new ProfileNode(
                 ProfileSection.registerSection(childName),
                 oneCallOf(CHILD_TOTAL_NANOS),
                 WorstCall.NO_CALL,
+                ProfileIterations.NO_ITERATIONS,
                 List.of(),
                 List.of())));
     }
@@ -316,6 +365,7 @@ final class TimingReportTest {
             ProfileSection.registerSection(sectionName),
             oneCallOf(PARENT_TOTAL_NANOS),
             WorstCall.NO_CALL,
+            ProfileIterations.NO_ITERATIONS,
             List.of(count),
             List.of());
     }
@@ -341,6 +391,26 @@ final class TimingReportTest {
             new ProfileTiming(
                 1, PARENT_TOTAL_NANOS, PARENT_TOTAL_NANOS, PARENT_TOTAL_NANOS, buckets),
             WorstCall.NO_CALL,
+            ProfileIterations.NO_ITERATIONS,
+            List.of(),
+            List.of());
+    }
+
+    // A row whose one call ran a loop of one step, which is the smallest tree with a per-turn cost
+    // to divide out and a slowest turn to name.
+    private static ProfileNode nodeIterating(long turns, long phaseNanos, String slowestTag) {
+
+        var bakeSection = PhasedSection.registerPhasedSection(PARENT_SECTION, PLAN_PHASE_NAME);
+
+        return new ProfileNode(
+            ProfileSection.registerSection(PARENT_SECTION),
+            oneCallOf(PARENT_TOTAL_NANOS),
+            WorstCall.NO_CALL,
+            new ProfileIterations(
+                turns,
+                List.of(new PhaseTotal(bakeSection.resolvePhase(PLAN_PHASE_NAME), phaseNanos)),
+                PARENT_TOTAL_NANOS,
+                slowestTag),
             List.of(),
             List.of());
     }
@@ -350,6 +420,7 @@ final class TimingReportTest {
             ProfileSection.registerSection(PARENT_SECTION),
             oneCallOf(PARENT_TOTAL_NANOS),
             worstCall,
+            ProfileIterations.NO_ITERATIONS,
             List.of(),
             List.of());
     }

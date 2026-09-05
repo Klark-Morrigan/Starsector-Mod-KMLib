@@ -1,12 +1,16 @@
 package kmlib.profiling.recording;
 
+import kmlib.profiling.IterationScope;
+import kmlib.profiling.PhasedSection;
 import kmlib.profiling.ProfileCounter;
 import kmlib.profiling.ProfileSection;
 import kmlib.profiling.snapshot.CallCount;
 import kmlib.profiling.snapshot.CountSpread;
 import kmlib.profiling.snapshot.CountTotals;
 import kmlib.profiling.snapshot.DurationBuckets;
+import kmlib.profiling.snapshot.PhaseTotal;
 import kmlib.profiling.snapshot.ProfileCount;
+import kmlib.profiling.snapshot.ProfileIterations;
 import kmlib.profiling.snapshot.ProfileNode;
 import kmlib.profiling.snapshot.WorstCall;
 
@@ -29,9 +33,10 @@ import static org.assertj.core.api.Assertions.tuple;
  * was open when it opened, repeated calls on one row aggregate into count/total/min/max, a row's
  * self time is what it did not spend in its children, a count added on a scope rolls into every
  * scope it was open inside and spreads over the calls of its own row, the slowest call is kept with
- * the counters and the tag it ended on, every span is placed in a duration band, snapshot order
- * follows first-record order, a scope closed out of order takes the scopes inside it with it, and
- * reset() clears everything.
+ * the counters and the tag it ended on, every span is placed in a duration band, a scope opened over
+ * a loop counts its turns and charges each step of one to its own slot, snapshot order follows
+ * first-record order, a scope closed out of order takes the scopes inside it with it, and reset()
+ * clears everything.
  */
 final class RecordingProfilerTest {
 
@@ -42,6 +47,11 @@ final class RecordingProfilerTest {
     private static final String INNER_SECTION = "test.inner";
     private static final String SYSTEMS_COUNTER = "test.systems";
     private static final String MARKETS_COUNTER = "test.markets";
+
+    // The two steps every loop below declares, which is the smallest pair that can show one step's
+    // time landing in the other's slot.
+    private static final String PLAN_PHASE = "plan";
+    private static final String TRACE_PHASE = "trace";
 
     private static final String FIRST_CALL_TAG = "test.firstCall";
     private static final String SLOWEST_CALL_TAG = "test.slowestCall";
@@ -649,6 +659,171 @@ final class RecordingProfilerTest {
     }
 
     @Nested
+    class OpenIterations {
+
+        @Test
+        void sumsEachStepOfATurnIntoItsOwnSlot() {
+            // What the loop is measured for: two steps that grow on different axes are two
+            // numbers, and one span over the pair could only say the loop got slower.
+            var section = registerBakeSection("test.iterations.slots");
+            var profiler = new RecordingProfiler(new ScriptedClock(0, 10, 13, 18, 20, 30));
+
+            try (var loop = profiler.openIterations(section)) {
+                loop.beginIteration(FIRST_CALL_TAG);
+                loop.markPhase(section.resolvePhase(PLAN_PHASE));
+                loop.markPhase(section.resolvePhase(TRACE_PHASE));
+                loop.endIteration();
+            }
+
+            assertThat(profiler.snapshot().get(0).getIterations().getPhaseTotals())
+                .extracting(phaseTotal -> phaseTotal.getPhase().getName(), PhaseTotal::getTotalNanos)
+                .containsExactly(tuple("plan", 3L), tuple("trace", 5L));
+        }
+
+        @Test
+        void countsTheTurnsOfTheLoopRatherThanTheCallsOfTheRow() {
+            // A bake is one call and a cell is one turn: the row's own count answers what a bake
+            // costs, and only the turns can answer what a cell does.
+            var section = registerBakeSection("test.iterations.turns");
+            var profiler = new RecordingProfiler(new ScriptedClock(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
+
+            try (var loop = profiler.openIterations(section)) {
+                runOneTurnOf(loop, section, "cell.first");
+                runOneTurnOf(loop, section, "cell.second");
+            }
+
+            var bakeNode = profiler.snapshot().get(0);
+
+            assertThat(bakeNode.getTiming().getCount())
+                .isEqualTo(1);
+            assertThat(bakeNode.getIterations().getCount())
+                .isEqualTo(2);
+        }
+
+        @Test
+        void keepsTheSlowestTurnAndWhatItsCallerNamedIt() {
+            // A mean over thousands of turns cannot say whether one item was pathological, which
+            // is the item worth looking at - and its name is the only thing that says which.
+            var section = registerBakeSection("test.iterations.slowest");
+            // A first turn of 5ns and a second of 20ns, so the record cannot be whichever ran
+            // last.
+            var profiler =
+                new RecordingProfiler(new ScriptedClock(0, 10, 11, 12, 15, 20, 22, 24, 40, 50));
+
+            try (var loop = profiler.openIterations(section)) {
+                runOneTurnOf(loop, section, FIRST_CALL_TAG);
+                runOneTurnOf(loop, section, SLOWEST_CALL_TAG);
+            }
+
+            var iterations = profiler.snapshot().get(0).getIterations();
+
+            assertThat(iterations.getSlowestNanos())
+                .isEqualTo(20);
+            assertThat(iterations.getSlowestTag())
+                .isEqualTo(SLOWEST_CALL_TAG);
+        }
+
+        @Test
+        void leavesATurnItsCallerNamedNothingUnnamed() {
+            // A slowest turn named a run of spaces reads as one whose name was lost rather than as
+            // one that was never given.
+            var section = registerBakeSection("test.iterations.blankTag");
+            var profiler = new RecordingProfiler(new ScriptedClock(0, 10, 12, 14, 20, 30));
+
+            try (var loop = profiler.openIterations(section)) {
+                runOneTurnOf(loop, section, BLANK_TAG);
+            }
+
+            assertThat(profiler.snapshot().get(0).getIterations().getSlowestTag())
+                .isEqualTo(WorstCall.NO_TAG);
+        }
+
+        @Test
+        void chargesAStepMarkedOutOfOrderWhereItWasMarked() {
+            // The mark says what has just finished, so a caller that runs its steps in another
+            // order gets the numbers that order produced rather than the ones it declared.
+            var section = registerBakeSection("test.iterations.outOfOrder");
+            var profiler = new RecordingProfiler(new ScriptedClock(0, 10, 17, 19, 20, 30));
+
+            try (var loop = profiler.openIterations(section)) {
+                loop.beginIteration(FIRST_CALL_TAG);
+                loop.markPhase(section.resolvePhase(TRACE_PHASE));
+                loop.markPhase(section.resolvePhase(PLAN_PHASE));
+                loop.endIteration();
+            }
+
+            assertThat(profiler.snapshot().get(0).getIterations().getPhaseTotals())
+                .extracting(phaseTotal -> phaseTotal.getPhase().getName(), PhaseTotal::getTotalNanos)
+                .containsExactly(tuple("plan", 2L), tuple("trace", 7L));
+        }
+
+        @Test
+        void dropsAStepBelongingToAnotherSectionsLoop() {
+            // Such a step numbers a slot of this loop that means something else, so it is dropped
+            // rather than charged: a phase silently holding another loop's work is a diagnostic
+            // that misleads about the very loop it was opened for.
+            var section = registerBakeSection("test.iterations.ownLoop");
+            var otherSection = registerBakeSection("test.iterations.otherLoop");
+            var profiler = new RecordingProfiler(new ScriptedClock(0, 10, 15, 20, 20, 20));
+
+            try (var loop = profiler.openIterations(section)) {
+                loop.beginIteration(FIRST_CALL_TAG);
+                loop.markPhase(otherSection.resolvePhase(PLAN_PHASE));
+                loop.markPhase(section.resolvePhase(PLAN_PHASE));
+                loop.endIteration();
+            }
+
+            // The whole 10ns since the turn began, since the dropped mark moved no boundary.
+            assertThat(readPhaseNanos(profiler, PLAN_PHASE))
+                .isEqualTo(10);
+        }
+
+        @Test
+        void dropsAStepMarkedWithNoTurnRunning() {
+            // There is no boundary behind such a mark to measure from, so it says nothing about
+            // the turn that begins after it.
+            var section = registerBakeSection("test.iterations.markOutsideATurn");
+            var profiler = new RecordingProfiler(new ScriptedClock(0, 5, 10, 14, 14, 14));
+
+            try (var loop = profiler.openIterations(section)) {
+                loop.markPhase(section.resolvePhase(PLAN_PHASE));
+                loop.beginIteration(FIRST_CALL_TAG);
+                loop.markPhase(section.resolvePhase(PLAN_PHASE));
+                loop.endIteration();
+            }
+
+            assertThat(readPhaseNanos(profiler, PLAN_PHASE))
+                .isEqualTo(4);
+        }
+
+        @Test
+        void reportsNoLoopForACallThatRanNoTurnOfOne() {
+            // A section whose loop had nothing to iterate over says nothing about steps: a row of
+            // zeroed phases would read as steps that cost nothing rather than as steps nothing
+            // ran.
+            var section = registerBakeSection("test.iterations.emptyLoop");
+            var profiler = new RecordingProfiler(new ScriptedClock(0, 10));
+
+            profiler.openIterations(section).close();
+
+            assertThat(profiler.snapshot().get(0).getIterations())
+                .isSameAs(ProfileIterations.NO_ITERATIONS);
+        }
+
+        @Test
+        void reportsNoLoopForASectionOpenedWithoutOne() {
+            // Most rows, which is why the record they carry is the shared nothing rather than an
+            // empty one of their own.
+            var profiler = new RecordingProfiler(new ScriptedClock(0, 10));
+
+            profiler.open(ProfileSection.registerSection(PARENT_SECTION)).close();
+
+            assertThat(profiler.snapshot().get(0).getIterations())
+                .isSameAs(ProfileIterations.NO_ITERATIONS);
+        }
+    }
+
+    @Nested
     class Snapshot {
 
         @Test
@@ -731,6 +906,36 @@ final class RecordingProfilerTest {
             assertThat(profiler.snapshot())
                 .isEmpty();
         }
+    }
+
+    // A section whose calls run a loop of two steps, which is what every case above opens over.
+    // Named per case, since a registered section is one instance for the life of the JVM and two
+    // cases sharing one would be two captures of the same row.
+    private static PhasedSection registerBakeSection(String name) {
+        return PhasedSection.registerPhasedSection(name, PLAN_PHASE, TRACE_PHASE);
+    }
+
+    // One turn of that loop, marking both its steps - the shape a per-item loop has, and four
+    // clock readings.
+    private static void runOneTurnOf(IterationScope loop, PhasedSection section, String tag) {
+
+        loop.beginIteration(tag);
+        loop.markPhase(section.resolvePhase(PLAN_PHASE));
+        loop.markPhase(section.resolvePhase(TRACE_PHASE));
+        loop.endIteration();
+    }
+
+    private static long readPhaseNanos(RecordingProfiler profiler, String phaseName) {
+        return profiler
+            .snapshot()
+            .get(0)
+            .getIterations()
+            .getPhaseTotals()
+            .stream()
+            .filter(phaseTotal -> phaseTotal.getPhase().getName().equals(phaseName))
+            .mapToLong(PhaseTotal::getTotalNanos)
+            .findFirst()
+            .orElseThrow();
     }
 
     private static List<String> readSectionNames(List<ProfileNode> nodes) {

@@ -21,6 +21,11 @@ import java.util.function.Supplier;
  * its own, and the parent's self time is what is left when its children are
  * taken out - which is what says whether to look at a row or below it.
  *
+ * <p>A section that runs a per-item loop is opened through
+ * {@link #openIterations} instead, which measures the turns of that loop inside
+ * the one span - a scope per item would cost about what the item's own work
+ * costs.
+ *
  * <p>A seam rather than a class, so what profiling costs is a binding rather
  * than a rebuild. Library code measures through {@link ActiveProfiler} without
  * knowing whether anything is listening; a mod that wants a readout binds a
@@ -45,6 +50,21 @@ public interface Profiler {
      * @return the open scope, closed to record the span
      */
     ProfileScope open(ProfileSection section);
+
+    /**
+     * Opens {@code section} the way {@link #open} does, over a loop whose turns
+     * and steps the returned scope also measures.
+     *
+     * <p>The row is the same one a plain open of that section lands on: what
+     * differs is that the scope takes the turns of a loop as well as a span, so
+     * a per-item loop is one row that states what one item cost rather than
+     * thousands of rows or one number nothing can be read out of.
+     *
+     * @param section the section this span belongs to, and the steps one turn of
+     *                its loop is split into
+     * @return the open scope, closed to record the span and the turns beneath it
+     */
+    IterationScope openIterations(PhasedSection section);
 
     /**
      * Times {@code work} and records its duration under {@code section}.

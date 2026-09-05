@@ -23,6 +23,7 @@ final class ProfileNodeAccumulator {
     private final List<ProfileCountAccumulator> countAccumulators = new ArrayList<>();
     private final SpanAccumulator spans = new SpanAccumulator();
     private final WorstCallAccumulator worstCall = new WorstCallAccumulator();
+    private final IterationAccumulator iterations = new IterationAccumulator();
 
     ProfileNodeAccumulator(ProfileSection section) {
         this.section = section;
@@ -85,6 +86,19 @@ final class ProfileNodeAccumulator {
     }
 
     /**
+     * Folds one ended call's loop into this node.
+     *
+     * <p>Apart from the span, since a turn and a call are different things to
+     * average over: what a bake costs is the span, and what a cell costs is the
+     * turn.
+     *
+     * @param callIterations what the call's turns came to
+     */
+    void addIterations(ScopeIterations callIterations) {
+        iterations.addIterations(callIterations);
+    }
+
+    /**
      * @return this node and everything under it, copied into the immutable form
      *         a snapshot is read from
      */
@@ -103,6 +117,7 @@ final class ProfileNodeAccumulator {
             section,
             spans.buildTiming(),
             worstCall.buildWorstCall(),
+            iterations.buildIterations(),
             counts,
             childNodes);
     }

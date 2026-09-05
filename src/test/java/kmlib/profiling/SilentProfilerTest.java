@@ -74,6 +74,37 @@ final class SilentProfilerTest {
     }
 
     @Nested
+    class OpenIterations {
+
+        @Test
+        void openIterationsHandsBackTheSameSharedScope() {
+            // A loop is as free to leave unmeasured as the section holding it: nothing is
+            // allocated for the turns of a bake with no readout bound.
+            var scope = SilentProfiler.INSTANCE.openIterations(
+                PhasedSection.registerPhasedSection("test.silent.bake", "plan"));
+
+            assertThat(scope)
+                .isSameAs(SilentProfiler.INSTANCE.open(ProfileSection.registerSection("build")));
+        }
+
+        @Test
+        void turnsMarkedOnTheSharedScopeKeepNothing() {
+            // The shared scope is stateless, so a turn cannot outlive the loop that ran it and
+            // reach whatever opens next through it.
+            var section = PhasedSection.registerPhasedSection("test.silent.loop", "plan");
+            var scope = SilentProfiler.INSTANCE.openIterations(section);
+
+            scope.beginIteration("cell");
+            scope.markPhase(section.resolvePhase("plan"));
+            scope.endIteration();
+            scope.close();
+
+            assertThat(SilentProfiler.INSTANCE.snapshot())
+                .isEmpty();
+        }
+    }
+
+    @Nested
     class Measure {
 
         @Test

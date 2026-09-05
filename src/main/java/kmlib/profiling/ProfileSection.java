@@ -16,8 +16,7 @@ package kmlib.profiling;
  */
 public final class ProfileSection {
 
-    private static final NameRegistry<ProfileSection> SECTIONS_BY_NAME =
-        new NameRegistry<>(ProfileSection::new);
+    private static final NameRegistry<ProfileSection> SECTIONS_BY_NAME = new NameRegistry<>();
 
     private final String name;
 
@@ -33,7 +32,7 @@ public final class ProfileSection {
      * @return the one section carrying that name
      */
     public static ProfileSection registerSection(String name) {
-        return SECTIONS_BY_NAME.resolveByName(name);
+        return SECTIONS_BY_NAME.resolveByName(name, ProfileSection::new);
     }
 
     public String getName() {

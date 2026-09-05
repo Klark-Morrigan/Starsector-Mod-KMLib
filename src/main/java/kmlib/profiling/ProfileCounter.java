@@ -13,8 +13,7 @@ package kmlib.profiling;
  */
 public final class ProfileCounter {
 
-    private static final NameRegistry<ProfileCounter> COUNTERS_BY_NAME =
-        new NameRegistry<>(ProfileCounter::new);
+    private static final NameRegistry<ProfileCounter> COUNTERS_BY_NAME = new NameRegistry<>();
 
     private final String name;
 
@@ -30,7 +29,7 @@ public final class ProfileCounter {
      * @return the one counter carrying that name
      */
     public static ProfileCounter registerCounter(String name) {
-        return COUNTERS_BY_NAME.resolveByName(name);
+        return COUNTERS_BY_NAME.resolveByName(name, ProfileCounter::new);
     }
 
     public String getName() {
