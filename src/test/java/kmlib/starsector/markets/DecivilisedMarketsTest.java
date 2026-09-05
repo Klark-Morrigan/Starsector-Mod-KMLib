@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 
 import static com.fs.starfarer.api.campaign.econ.MarketAPI.SurveyLevel.FULL;
 import static com.fs.starfarer.api.campaign.econ.MarketAPI.SurveyLevel.NONE;
+import static com.fs.starfarer.api.campaign.econ.MarketAPI.SurveyLevel.PRELIMINARY;
 import static com.fs.starfarer.api.campaign.econ.MarketAPI.SurveyLevel.SEEN;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -20,10 +21,10 @@ import static org.mockito.Mockito.when;
  * Pins what a decivilised world is and how far the player has to have surveyed one before being
  * told its colony collapsed.
  *
- * <p>The two are deliberately separate reads, and the cases are grouped that way: what the market
- * is turns on the condition it carries and on its being the condition-only shell a collapse leaves
- * behind, while the reveal turns on how much of the world has been surveyed and on vanilla's own
- * rule for reading the condition.
+ * <p>The reads are deliberately separate, and the cases are grouped that way: what the market is
+ * turns on the condition it carries and on its being the condition-only shell a collapse leaves
+ * behind, the reveal turns on how much of the world has been surveyed and on vanilla's own rule
+ * for reading the condition, and the sighting bar turns on nothing but the level asked for.
  */
 final class DecivilisedMarketsTest {
 
@@ -80,6 +81,51 @@ final class DecivilisedMarketsTest {
 
             assertThat(DecivilisedMarkets.isDecivilisedWorld(null))
                 .isFalse();
+        }
+    }
+
+    @Nested
+    class IsMetBySighting {
+
+        @Test
+        void meetsABarOfNothingAtAll() {
+
+            assertThat(DecivilisedMarkets.isMetBySighting(NONE))
+                .isTrue();
+        }
+
+        @Test
+        void meetsABarOfHavingBeenSeen() {
+
+            // The whole of what a sighting says: somebody laid eyes on the place.
+            assertThat(DecivilisedMarkets.isMetBySighting(SEEN))
+                .isTrue();
+        }
+
+        @Test
+        void refusesABarOfPreliminarySurveyData() {
+
+            // Above SEEN the caller is asking for readings taken off the world, which nobody's
+            // presence beside it produces - so a sighting reaches these neither in part nor by
+            // degree.
+            assertThat(DecivilisedMarkets.isMetBySighting(PRELIMINARY))
+                .isFalse();
+        }
+
+        @Test
+        void refusesABarOfAFullSurvey() {
+
+            assertThat(DecivilisedMarkets.isMetBySighting(FULL))
+                .isFalse();
+        }
+
+        @Test
+        void readsAnAbsentLevelAsTheBarVanillaAsksFor() {
+
+            // The same rule the market-taking reads follow, and here it lands on SEEN - which a
+            // sighting does meet.
+            assertThat(DecivilisedMarkets.isMetBySighting(null))
+                .isTrue();
         }
     }
 

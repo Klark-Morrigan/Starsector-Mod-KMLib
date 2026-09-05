@@ -310,8 +310,10 @@ No Starsector API on the signature.
 - [`starsector/markets/`](src/main/java/kmlib/starsector/markets/) - what a
   market is, read and never changed: the queries (including whether one is a
   derelict station rather than a place anybody lives), visibility and
-  discovery, which of several speaks for a place, decivilised markets, patrol
-  counts, and the searches over a location - every market in one, and the
+  discovery, which of several speaks for a place, decivilised markets - what
+  one is, how far it must have been surveyed before the fog says so, and what a
+  bare sighting of one is worth against that bar - patrol counts, and the
+  searches over a location - every market in one, and the
   nearest meeting what a caller needs of it. What can be done *to* a market is
   a package in, one per operation, so a class that answers a question and a
   class that rewrites a colony are never the same word shape in the same
