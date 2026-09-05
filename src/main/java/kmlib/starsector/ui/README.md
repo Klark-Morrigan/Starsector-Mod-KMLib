@@ -20,6 +20,7 @@ content. Pairs that look like duplication across the tiers usually are not - see
 - [Ports across the boundary](#ports-across-the-boundary)
 - [Two span measurers](#two-span-measurers)
 - [Two hosts, one map widget](#two-hosts-one-map-widget)
+- [A panel of one's own over a core screen](#a-panel-of-ones-own-over-a-core-screen)
 - [The list picker holds no store](#the-list-picker-holds-no-store)
 - [Where each package sits](#where-each-package-sits)
 
@@ -362,6 +363,32 @@ embedded filter is built with it off. Toggling one leaves the other alone, which
 reason the host-blind read is an OR over two sources rather than one flag consulted once.
 
 All three fail closed, so an unreadable link answers "not showing" rather than guessing.
+
+## A panel of one's own over a core screen
+
+The game publishes no way to raise a custom panel over a core screen. Every published route -
+`InteractionDialogAPI.showCustomDialog` and its visual twin - hangs off an interaction dialog,
+and a screen the player opened from the campaign has none; standing one up to obtain the route
+would close the screen the panel was wanted on. `CampaignUIAPI` offers only the text prompts.
+
+[`CoreUiOverlayPanels`](coreui/CoreUiOverlayPanels.java) is what is left: the core UI is a panel
+like any other, so a component added to it is drawn and hit-tested by the game beside the
+screen's own widgets rather than composited after them. Reached through the published panel
+interface rather than by name, so a build that renames the obfuscated class leaves it working
+and one that stops answering the interface leaves it refusing.
+
+The parent is resolved at every call and never held, which settles both directions at once: a
+core UI is rebuilt as the player moves between screens, so a panel added back to a previously
+resolved root joins a tree nothing is drawing, and a removal that no longer finds its parent has
+nothing left to do - whatever discarded that root discarded the panel with it.
+
+**It supplies no modality, and cannot.** The dimming and the event interception belong to the
+game's own modal base, the one [`CoreUiDialogView`](coreui/CoreUiDialogView.java) recognises a
+modal by, and nothing added this way descends from it. So a consumer wanting a modal paints its
+own backdrop, claims its own input, and publishes its own "I am up" reading for anything that
+stands down under a dialog - because that walk will not see it. Unlike the reads in that package
+this fails **closed**: a no means "the panel is not up", which is a state every consumer already
+handles, where a read failing closed would take away something that worked before it.
 
 ## The list picker holds no store
 
