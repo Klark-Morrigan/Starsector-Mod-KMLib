@@ -14,6 +14,7 @@ import java.util.Locale;
  * dependency.
  */
 public final class Timings {
+
     private static final double NANOS_PER_MICROSECOND = 1_000.0;
     private static final double NANOS_PER_MILLISECOND = 1_000_000.0;
     private static final double NANOS_PER_SECOND = 1_000_000_000.0;

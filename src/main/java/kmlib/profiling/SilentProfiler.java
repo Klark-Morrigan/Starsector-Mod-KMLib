@@ -21,6 +21,13 @@ public final class SilentProfiler implements Profiler {
     }
 
     @Override
+    public ProfileScope open(ProfileSection section) {
+        // The shared do-nothing scope, so a section opened here allocates
+        // nothing and closes to nothing.
+        return SilentProfileScope.INSTANCE;
+    }
+
+    @Override
     public void measure(String section, Runnable work) {
         work.run();
     }
@@ -36,7 +43,7 @@ public final class SilentProfiler implements Profiler {
     }
 
     @Override
-    public List<SectionTiming> snapshot() {
+    public List<ProfileNode> snapshot() {
         // A shared immutable empty list, so reporting through a silent profiler
         // allocates nothing either.
         return List.of();

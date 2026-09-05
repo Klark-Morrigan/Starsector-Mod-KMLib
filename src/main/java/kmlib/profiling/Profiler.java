@@ -6,11 +6,19 @@ import java.util.function.Supplier;
 /**
  * Where code reports how long its named sections took, for on-demand profiling.
  *
- * <p>A caller wraps a block in {@link #measure}, or hands a raw duration to
- * {@link #record}, then reads {@link #snapshot()} and formats it with
- * {@link TimingReport}. What comes back is one row per section rather than one
- * per call, which is the shape per-frame work needs: thousands of calls collapse
- * into a count and a spread instead of thousands of log lines.
+ * <p>A caller opens a section with {@link #open}, wraps a block in
+ * {@link #measure}, or hands a raw duration to {@link #record}, then reads
+ * {@link #snapshot()} and formats it with {@link TimingReport}. What comes back
+ * is one row per section rather than one per call, which is the shape per-frame
+ * work needs: thousands of calls collapse into a count and a spread instead of
+ * thousands of log lines.
+ *
+ * <p>Rows are a tree, not a list, because a duration on its own says little: a
+ * section that ran under a rebuild and the same section under a hover are two
+ * facts, and a row averaging them is neither. A section opened inside another
+ * is that one's child, its time counts towards the parent's total as well as
+ * its own, and the parent's self time is what is left when its children are
+ * taken out - which is what says whether to look at a row or below it.
  *
  * <p>A seam rather than a class, so what profiling costs is a binding rather
  * than a rebuild. Library code measures through {@link ActiveProfiler} without
@@ -23,6 +31,19 @@ import java.util.function.Supplier;
  * external synchronisation.
  */
 public interface Profiler {
+
+    /**
+     * Opens {@code section} under whatever scope is already open, timing until
+     * the returned scope is closed.
+     *
+     * <p>For try-with-resources, so the scope cannot outlive the call that
+     * opened it - which is the whole basis of the nesting: what is open is what
+     * is still running.
+     *
+     * @param section the section this span belongs to
+     * @return the open scope, closed to record the span
+     */
+    ProfileScope open(ProfileSection section);
 
     /**
      * Times {@code work} and records its duration under {@code section}.
@@ -53,10 +74,11 @@ public interface Profiler {
     void record(String section, long elapsedNanos);
 
     /**
-     * @return an immutable snapshot of every section's stats, in the order the
-     *         sections were first recorded
+     * @return an immutable snapshot of the section tree - the sections opened
+     *         with nothing else open, each holding what ran inside it, in the
+     *         order they were first recorded
      */
-    List<SectionTiming> snapshot();
+    List<ProfileNode> snapshot();
 
     /**
      * Clears all accumulated timings, so the next measurements start fresh.

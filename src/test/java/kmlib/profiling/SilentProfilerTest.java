@@ -15,6 +15,31 @@ import static org.assertj.core.api.Assertions.assertThat;
 final class SilentProfilerTest {
 
     @Nested
+    class Open {
+
+        @Test
+        void openReturnsAScopeThatClosesWithoutEffect() {
+
+            var scope = SilentProfiler.INSTANCE.open(ProfileSection.registerSection("build"));
+
+            scope.close();
+
+            assertThat(SilentProfiler.INSTANCE.snapshot())
+                .isEmpty();
+        }
+
+        @Test
+        void openHandsBackOneSharedScopeRatherThanANewOne() {
+            // What makes a section opened on a per-frame path free: nothing is allocated to open
+            // one, so library code can sit inside a scope with no readout bound.
+            var scope = SilentProfiler.INSTANCE.open(ProfileSection.registerSection("build"));
+
+            assertThat(SilentProfiler.INSTANCE.open(ProfileSection.registerSection("render")))
+                .isSameAs(scope);
+        }
+    }
+
+    @Nested
     class Measure {
 
         @Test
