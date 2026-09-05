@@ -114,28 +114,6 @@ final class ProfileNodeAccumulator {
             childNodes);
     }
 
-    // Identity scans over two handfuls, for the same reason a section is
-    // resolved by one: these run on every close of every row.
-    private static ScopeCount findCallCount(List<ScopeCount> callCounts, ProfileCounter counter) {
-        for (var index = 0; index < callCounts.size(); index++) {
-            var callCount = callCounts.get(index);
-            if (callCount.getCounter() == counter) {
-                return callCount;
-            }
-        }
-        return null;
-    }
-
-    private ProfileCountAccumulator findCountAccumulator(ProfileCounter counter) {
-        for (var index = 0; index < countAccumulators.size(); index++) {
-            var countAccumulator = countAccumulators.get(index);
-            if (countAccumulator.getCounter() == counter) {
-                return countAccumulator;
-            }
-        }
-        return null;
-    }
-
     // Every counter this node has ever seen takes a value for the call that has
     // just ended, zero included: a call that counted none of something is what
     // makes a minimum zero, and a spread that only saw the calls which counted
@@ -143,18 +121,29 @@ final class ProfileNodeAccumulator {
     private void recordCallCounts(List<ScopeCount> callCounts) {
 
         for (var countAccumulator : countAccumulators) {
-            var callCount = findCallCount(callCounts, countAccumulator.getCounter());
+
+            var callCount = CounterLookup.findByCounter(
+                callCounts, ScopeCount::getCounter, countAccumulator.getCounter());
+
             if (callCount == null) {
                 countAccumulator.addCall(0, 0);
             } else {
                 countAccumulator.addCall(callCount.getSelfAmount(), callCount.getTotalAmount());
             }
         }
+
+        // Whatever the loop above did not already hold: the counters this call
+        // is the first of this row's to touch.
         for (var callCount : callCounts) {
-            if (findCountAccumulator(callCount.getCounter()) != null) {
+
+            var alreadyOpened = CounterLookup.findByCounter(
+                countAccumulators, ProfileCountAccumulator::getCounter, callCount.getCounter());
+
+            if (alreadyOpened != null) {
                 continue;
             }
             var opened = new ProfileCountAccumulator(callCount.getCounter(), count);
+
             opened.addCall(callCount.getSelfAmount(), callCount.getTotalAmount());
             countAccumulators.add(opened);
         }

@@ -212,12 +212,7 @@ public final class TimingReport {
     }
 
     private static ProfileCount findCount(ProfileNode node, ProfileCounter counter) {
-        for (var count : node.getCounts()) {
-            if (count.getCounter() == counter) {
-                return count;
-            }
-        }
-        return null;
+        return CounterLookup.findByCounter(node.getCounts(), ProfileCount::getCounter, counter);
     }
 
     private static String formatMillis(long nanos) {

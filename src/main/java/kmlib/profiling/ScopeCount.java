@@ -36,16 +36,13 @@ final class ScopeCount {
      */
     static ScopeCount resolveCountIn(List<ScopeCount> counts, ProfileCounter counter) {
 
-        // An indexed identity scan rather than a map lookup, for the same reason
-        // a section is resolved that way: a scope counts a handful of things, a
-        // counter is a registered value, and this runs inside the loops it counts.
-        for (var index = 0; index < counts.size(); index++) {
-            var count = counts.get(index);
-            if (count.counter == counter) {
-                return count;
-            }
+        var tallied = CounterLookup.findByCounter(counts, ScopeCount::getCounter, counter);
+
+        if (tallied != null) {
+            return tallied;
         }
         var opened = new ScopeCount(counter);
+
         counts.add(opened);
         return opened;
     }
