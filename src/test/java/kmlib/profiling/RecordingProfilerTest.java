@@ -29,6 +29,7 @@ final class RecordingProfilerTest {
     private static final String OUTER_SECTION = "test.outer";
     private static final String INNER_SECTION = "test.inner";
     private static final String SYSTEMS_COUNTER = "test.systems";
+    private static final String MARKETS_COUNTER = "test.markets";
 
     @Nested
     class Open {
@@ -237,6 +238,104 @@ final class RecordingProfilerTest {
             assertThat(readCount(childNode, SYSTEMS_COUNTER))
                 .extracting(ProfileCount::getMinPerCall, ProfileCount::getMaxPerCall)
                 .containsExactly(0L, 5L);
+        }
+
+        @Test
+        void separatesWhatARowCountedItselfFromWhatItsChildrenCounted() {
+            // The row that both counts and delegates is where the two totals part company: 9 in
+            // all is what the row is answerable for, and 2 is what its self time may be priced
+            // against - dividing that time by the child's 7 would cost work it never did.
+            var profiler = new RecordingProfiler(new ScriptedClock(0, 0, 0, 0));
+
+            var parent = profiler.open(ProfileSection.registerSection(PARENT_SECTION));
+
+            parent.addCount(ProfileCounter.registerCounter(SYSTEMS_COUNTER), 2);
+
+            var child = profiler.open(ProfileSection.registerSection(CHILD_SECTION));
+
+            child.addCount(ProfileCounter.registerCounter(SYSTEMS_COUNTER), 7);
+            child.close();
+            parent.close();
+
+            assertThat(readCount(profiler.snapshot().get(0), SYSTEMS_COUNTER))
+                .extracting(ProfileCount::getTotal, ProfileCount::getSelfTotal)
+                .containsExactly(9L, 2L);
+        }
+
+        @Test
+        void addsUpRepeatedCountsOfOneCounterWithinASingleCall() {
+            // A walker adds as it goes rather than once at the end, so one call reaches the same
+            // counter many times and the row has to read as the one call it was.
+            var profiler = new RecordingProfiler(new ScriptedClock(0, 0));
+
+            var scope = profiler.open(ProfileSection.registerSection(PARENT_SECTION));
+
+            scope.addCount(ProfileCounter.registerCounter(SYSTEMS_COUNTER), 3);
+            scope.addCount(ProfileCounter.registerCounter(SYSTEMS_COUNTER), 4);
+            scope.close();
+
+            assertThat(readCount(profiler.snapshot().get(0), SYSTEMS_COUNTER))
+                .extracting(
+                    ProfileCount::getTotal,
+                    ProfileCount::getMinPerCall,
+                    ProfileCount::getMaxPerCall)
+                .containsExactly(7L, 7L, 7L);
+        }
+
+        @Test
+        void keepsSeveralCountersOnOneRowApart() {
+            // A section counts more than one kind of thing - systems walked and markets read - and
+            // a later call may touch only some of them. Each counter carries its own spread, so a
+            // call that read markets without walking must not shorten the walk's tally.
+            var profiler = new RecordingProfiler(new ScriptedClock(0, 0, 0, 0));
+
+            var first = profiler.open(ProfileSection.registerSection(PARENT_SECTION));
+
+            first.addCount(ProfileCounter.registerCounter(SYSTEMS_COUNTER), 3);
+            first.addCount(ProfileCounter.registerCounter(MARKETS_COUNTER), 10);
+            first.close();
+
+            var second = profiler.open(ProfileSection.registerSection(PARENT_SECTION));
+
+            second.addCount(ProfileCounter.registerCounter(MARKETS_COUNTER), 4);
+            second.close();
+
+            var node = profiler.snapshot().get(0);
+
+            assertThat(readCount(node, SYSTEMS_COUNTER))
+                .extracting(
+                    ProfileCount::getTotal,
+                    ProfileCount::getMinPerCall,
+                    ProfileCount::getMaxPerCall)
+                .containsExactly(3L, 0L, 3L);
+            assertThat(readCount(node, MARKETS_COUNTER))
+                .extracting(
+                    ProfileCount::getTotal,
+                    ProfileCount::getMinPerCall,
+                    ProfileCount::getMaxPerCall)
+                .containsExactly(14L, 4L, 10L);
+        }
+
+        @Test
+        void keepsTheCountsOfAScopeTheUnwindClosedForIt() {
+            // A scope left open is closed by the one outside it, and what it counted is part of
+            // that call as much as its time is - dropping the count there would take the walk out
+            // of the row whose budget is meant to catch it.
+            var profiler = new RecordingProfiler(new ScriptedClock(0, 0, 0));
+
+            var outer = profiler.open(ProfileSection.registerSection(OUTER_SECTION));
+
+            profiler.open(ProfileSection.registerSection(INNER_SECTION))
+                .addCount(ProfileCounter.registerCounter(SYSTEMS_COUNTER), 5);
+            outer.close();
+
+            var outerNode = profiler.snapshot().get(0);
+
+            assertThat(readCount(outerNode, SYSTEMS_COUNTER))
+                .extracting(ProfileCount::getTotal, ProfileCount::getSelfTotal)
+                .containsExactly(5L, 0L);
+            assertThat(readCount(outerNode.getChildren().get(0), SYSTEMS_COUNTER).getSelfTotal())
+                .isEqualTo(5L);
         }
 
         @Test

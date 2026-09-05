@@ -38,6 +38,9 @@ final class TimingReportTest {
     // filled - the second group in the table stays blank on it.
     private static final int FILLED_CELLS_PER_ROW_WITH_ONE_COUNTER = 11;
 
+    // The same row less its cost-each cell, which a row that counted nothing itself cannot state.
+    private static final int FILLED_CELLS_PER_ROW_WITH_NO_PER_ITEM_COST = 10;
+
     @Nested
     class Format {
 
@@ -145,6 +148,19 @@ final class TimingReportTest {
                 .hasSize(FILLED_CELLS_PER_ROW_WITH_ONE_COUNTER);
             assertThat(readFilledCells(report, CHILD_SECTION))
                 .hasSize(FILLED_CELLS_PER_ROW_WITH_ONE_COUNTER);
+        }
+
+        @Test
+        void formatPricesNoItemForARowWhoseChildrenDidAllTheCounting() {
+            // The row still states the 7 counted beneath it, because that is what it is answerable
+            // for. It states no cost each, because its self time bought none of those 7 - pricing
+            // one against the other would charge this row for work a row below it did.
+            var report = TimingReport.format(List.of(nodeCounting(
+                PARENT_SECTION, countOf(SYSTEMS_COUNTER, 7, 0, 7, 7))));
+
+            assertThat(readFilledCells(report, PARENT_SECTION))
+                .hasSize(FILLED_CELLS_PER_ROW_WITH_NO_PER_ITEM_COST)
+                .contains("7");
         }
     }
 
