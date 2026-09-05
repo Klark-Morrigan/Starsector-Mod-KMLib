@@ -26,6 +26,12 @@ public final class TimingReport {
     // its parent, narrow enough that a deep tree still fits a console line.
     private static final int INDENT_SPACES_PER_DEPTH = 2;
 
+    // The columns after the section name, once as labels and once as numbers.
+    // Adjacent on purpose: they carry the same six widths, and a column widened
+    // in one and not the other skews every row against its header.
+    private static final String HEADER_COLUMNS = "  %8s  %10s  %10s  %10s  %10s  %11s";
+    private static final String ROW_COLUMNS = "  %8d  %10.3f  %10.3f  %10.3f  %10.3f  %11.3f";
+
     private TimingReport() {
     }
 
@@ -47,7 +53,7 @@ public final class TimingReport {
         var report = new StringBuilder();
         report.append(String.format(
             Locale.ROOT,
-            "%-" + sectionWidth + "s  %8s  %10s  %10s  %10s  %10s  %11s",
+            "%-" + sectionWidth + "s" + HEADER_COLUMNS,
             SECTION_HEADER,
             "COUNT",
             "AVG ms",
@@ -84,7 +90,7 @@ public final class TimingReport {
             report.append('\n');
             report.append(String.format(
                 Locale.ROOT,
-                "%-" + sectionWidth + "s  %8d  %10.3f  %10.3f  %10.3f  %10.3f  %11.3f",
+                "%-" + sectionWidth + "s" + ROW_COLUMNS,
                 indentSectionName(node, depth),
                 node.getCount(),
                 Timings.convertNanosToMillis(node.getAverageNanos()),

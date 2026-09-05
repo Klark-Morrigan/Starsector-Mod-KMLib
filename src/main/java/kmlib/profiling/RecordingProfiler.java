@@ -145,7 +145,7 @@ public final class RecordingProfiler implements Profiler {
     private ProfileNodeAccumulator resolveNode(ProfileSection section) {
         return openScopes.isEmpty()
             ? ProfileNodeAccumulator.resolveNodeIn(rootNodes, section)
-            : openScopes.get(openScopes.size() - 1).getNode().resolveChildNode(section);
+            : openScopes.get(openScopes.size() - 1).resolveChildNode(section);
     }
 
     // Once per section, because the sites this happens on run every frame and

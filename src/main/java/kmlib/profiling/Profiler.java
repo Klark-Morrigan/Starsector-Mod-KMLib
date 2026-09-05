@@ -9,7 +9,7 @@ import java.util.function.Supplier;
  * <p>A caller opens a section with {@link #open}, wraps a block in
  * {@link #measure}, or hands a raw duration to {@link #record}, then reads
  * {@link #snapshot()} and formats it with {@link TimingReport}. What comes back
- * is one row per section rather than one per call, which is the shape per-frame
+ * is one row per section per parent rather than one per call, the shape per-frame
  * work needs: thousands of calls collapse into a count and a spread instead of
  * thousands of log lines.
  *

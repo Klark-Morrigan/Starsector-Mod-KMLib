@@ -123,6 +123,26 @@ final class RecordingProfilerTest {
             assertThat(childNode.getMaxNanos())
                 .isEqualTo(4);
         }
+
+        @Test
+        void landsANameMeasuredAndASectionOpenedOnOneRow() {
+            // A section is an identity resolved from its name, so converting a measure() site to a
+            // scope keeps its history rather than starting a second row spelled the same.
+            var profiler = new RecordingProfiler(new ScriptedClock(0, 5, 5, 12));
+
+            profiler.measure(PARENT_SECTION, () -> {
+            });
+            profiler.open(ProfileSection.registerSection(PARENT_SECTION)).close();
+
+            var roots = profiler.snapshot();
+
+            assertThat(roots)
+                .hasSize(1);
+            assertThat(roots.get(0).getCount())
+                .isEqualTo(2);
+            assertThat(roots.get(0).getTotalNanos())
+                .isEqualTo(12);
+        }
     }
 
     @Nested
@@ -228,6 +248,22 @@ final class RecordingProfilerTest {
             assertThat(parentNode.getChildren().get(0).getTotalNanos())
                 .isEqualTo(20);
         }
+
+        @Test
+        void recordsAPreMeasuredSpanAsARootWhereNothingIsOpen() {
+            // The clock is scripted with no readings at all, which is how "a span handed over
+            // whole is never re-timed" is stated: a reading here would run the script out.
+            var profiler = new RecordingProfiler(new ScriptedClock());
+
+            profiler.record(PARENT_SECTION, 20);
+
+            var roots = profiler.snapshot();
+
+            assertThat(readSectionNames(roots))
+                .containsExactly(PARENT_SECTION);
+            assertThat(roots.get(0).getTotalNanos())
+                .isEqualTo(20);
+        }
     }
 
     @Nested
@@ -322,6 +358,24 @@ final class RecordingProfilerTest {
             assertThat(readSectionNames(profiler.snapshot()))
                 .containsExactly("second", "first");
         }
+
+        @Test
+        void reportsASectionStillOpenAsARowWithNoSpanYet() {
+            // A readout asked for mid-frame has to show the section that is running, and show it
+            // holding nothing - the row a span has not reached yet is zeroes, not a bound.
+            var profiler = new RecordingProfiler(new ScriptedClock(0));
+
+            profiler.open(ProfileSection.registerSection(PARENT_SECTION));
+
+            var openNode = profiler.snapshot().get(0);
+
+            assertThat(openNode.getCount())
+                .isEqualTo(0);
+            assertThat(openNode.getMinNanos())
+                .isEqualTo(0);
+            assertThat(openNode.getMaxNanos())
+                .isEqualTo(0);
+        }
     }
 
     @Nested
@@ -336,6 +390,21 @@ final class RecordingProfilerTest {
             });
 
             profiler.reset();
+
+            assertThat(profiler.snapshot())
+                .isEmpty();
+        }
+
+        @Test
+        void dropsAScopeThatWasOpenWhenTheTimingsWereCleared() {
+            // Its node went with the tree, so its close has nowhere to land and must not raise a
+            // new root out of a call that began before the reader asked for a clean slate.
+            var profiler = new RecordingProfiler(new ScriptedClock(0));
+
+            var scope = profiler.open(ProfileSection.registerSection(PARENT_SECTION));
+
+            profiler.reset();
+            scope.close();
 
             assertThat(profiler.snapshot())
                 .isEmpty();
@@ -357,8 +426,10 @@ final class RecordingProfilerTest {
         outer.close();
     }
 
-    // Returns the supplied values in order on successive calls, so a measure()
-    // sees a known start then end and thus a known delta.
+    // Returns the supplied values in order on successive calls - one reading per open and one per
+    // close - so every span below is a literal rather than a wall-clock delta. A script shorter
+    // than the readings a case takes fails that case, which is how "records without reading the
+    // clock" is stated.
     private static final class ScriptedClock implements LongSupplier {
 
         private final long[] readings;

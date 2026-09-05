@@ -25,8 +25,8 @@ final class RecordingProfileScope implements ProfileScope {
         profiler.closeScope(this);
     }
 
-    ProfileNodeAccumulator getNode() {
-        return node;
+    ProfileNodeAccumulator resolveChildNode(ProfileSection childSection) {
+        return node.resolveChildNode(childSection);
     }
 
     ProfileSection getSection() {

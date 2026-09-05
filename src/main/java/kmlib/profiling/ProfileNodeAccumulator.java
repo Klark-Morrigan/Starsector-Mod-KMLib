@@ -18,8 +18,8 @@ final class ProfileNodeAccumulator {
 
     private long count;
     private long totalNanos;
-    private long minNanos = Long.MAX_VALUE;
-    private long maxNanos = Long.MIN_VALUE;
+    private long minNanos;
+    private long maxNanos;
 
     ProfileNodeAccumulator(ProfileSection section) {
         this.section = section;
@@ -65,10 +65,19 @@ final class ProfileNodeAccumulator {
 
     void addSpan(long elapsedNanos) {
 
+        // The first span sets both bounds rather than being folded into
+        // sentinels the snapshot would then have to undo. A node with no span -
+        // opened while the snapshot was taken, or left open by a caller - then
+        // reads as the zeroes it holds, with no rule about what a row means.
+        if (count == 0) {
+            minNanos = elapsedNanos;
+            maxNanos = elapsedNanos;
+        } else {
+            minNanos = Math.min(minNanos, elapsedNanos);
+            maxNanos = Math.max(maxNanos, elapsedNanos);
+        }
         count++;
         totalNanos += elapsedNanos;
-        minNanos = Math.min(minNanos, elapsedNanos);
-        maxNanos = Math.max(maxNanos, elapsedNanos);
     }
 
     /**
@@ -82,12 +91,6 @@ final class ProfileNodeAccumulator {
         for (var child : children) {
             childNodes.add(child.buildNode());
         }
-        // A node opened while the snapshot was taken, or left open by a caller,
-        // has no span of its own yet: it reports zeroes rather than the
-        // sentinels min and max start at, so an unclosed scope reads as
-        // "nothing recorded" instead of as a row of nonsense.
-        return count == 0
-            ? new ProfileNode(section, 0, 0, 0, 0, childNodes)
-            : new ProfileNode(section, count, totalNanos, minNanos, maxNanos, childNodes);
+        return new ProfileNode(section, count, totalNanos, minNanos, maxNanos, childNodes);
     }
 }
