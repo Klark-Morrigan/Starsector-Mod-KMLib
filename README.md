@@ -344,7 +344,14 @@ No Starsector API on the signature.
   script registration helpers.
 - [`starsector/settings/`](src/main/java/kmlib/starsector/settings/) - the
   game's own settings: whether a mod is enabled, answered the same way for
-  every optional-mod gate and answering "not installed" before the game is up.
+  every optional-mod gate and answering "not installed" before the game is up;
+  and the common-data folder behind a preference about the interface, which is
+  per user and per install rather than per save, so a choice made once holds
+  for every campaign afterwards. A port rather than a static reach, and one
+  that fails open at both ends - a file that is absent, will not open or was
+  hand-edited into nonsense answers nothing, and a write that will not land is
+  reported rather than thrown, neither being worth an exception to a caller
+  whose subject is a preference.
 - [`starsector/strings/`](src/main/java/kmlib/starsector/strings/) - defensive
   wrapper around settings.json localisation lookups (loud REDACTED on missing
   or malformed entries), plus the number-to-copy shaping that fills their
@@ -794,7 +801,11 @@ those ports report, the market and colony shapes a "who is here" read is posed
 against, and
 [`starsector/settings/`](src/testFixtures/java/kmlib/testfixtures/starsector/settings/)'s
 no-op `SettingsAPI` proxy, which a test installs into `Global` before touching `Misc`
-(whose static initialiser would otherwise NPE).
+(whose static initialiser would otherwise NPE), and beside it a common-data folder that
+really holds what is written into it - map-backed rather than stubbed, so a file written
+under one name and read under another fails there rather than passing on two stubs that
+agree, and posable as a folder that will not open or will not take a write, failing open
+being the port's contract rather than an accident of it.
 
 They are a source set of their own, published as a variant beside the jar. A consumer
 takes them with `testCompileOnly testFixtures('kmlib:KMLib')`, which resolves through
