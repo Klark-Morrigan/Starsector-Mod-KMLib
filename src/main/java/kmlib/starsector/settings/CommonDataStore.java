@@ -12,11 +12,9 @@ import org.json.JSONObject;
  * could only ever run inside a running game. Named as a role, what keeps the file is the caller's
  * to choose.
  *
- * <p>Both halves fail open. A common-data file is one the player may not have, may have emptied,
- * or may have hand-edited into something unreadable, and none of those is worth an exception to a
- * caller whose subject is a preference: a read that cannot be made answers nothing, and the caller
- * carries on with whatever it does without one. A write that cannot be made is reported rather
- * than thrown, so a caller may say so once and go on.
+ * <p>Both halves fail open, which is what the two return types are for. A common-data file is one
+ * the player may not have, may have emptied, or may have hand-edited into something unreadable, and
+ * none of those is worth an exception to a caller whose subject is a preference.
  */
 public interface CommonDataStore {
 

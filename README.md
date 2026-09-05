@@ -346,12 +346,10 @@ No Starsector API on the signature.
   game's own settings: whether a mod is enabled, answered the same way for
   every optional-mod gate and answering "not installed" before the game is up;
   and the common-data folder behind a preference about the interface, which is
-  per user and per install rather than per save, so a choice made once holds
-  for every campaign afterwards. A port rather than a static reach, and one
-  that fails open at both ends - a file that is absent, will not open or was
-  hand-edited into nonsense answers nothing, and a write that will not land is
-  reported rather than thrown, neither being worth an exception to a caller
-  whose subject is a preference.
+  per user and per install rather than per save. A port rather than a static
+  reach, and one that fails open at both ends - an absent, unopenable or
+  hand-edited file answers nothing, and a write that will not land is reported
+  rather than thrown.
 - [`starsector/strings/`](src/main/java/kmlib/starsector/strings/) - defensive
   wrapper around settings.json localisation lookups (loud REDACTED on missing
   or malformed entries), plus the number-to-copy shaping that fills their

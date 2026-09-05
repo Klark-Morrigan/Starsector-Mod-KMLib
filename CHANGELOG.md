@@ -190,7 +190,11 @@ No Starsector API on the signature.
   sector only when one of its type is not already there.
 - **`kmlib.starsector.settings`** - whether a mod is enabled, answered the
   same way for every optional-mod gate and answering "not installed" before
-  the game is up.
+  the game is up; and the common-data folder a preference about the interface
+  is kept in, which is per user and per install rather than per save. A port,
+  so what keeps the file is the caller's to choose, and one that fails open at
+  both ends - an absent, unopenable or hand-edited file answers nothing, and a
+  write that will not land is reported rather than thrown.
 - **`kmlib.starsector.strings`** - settings.json lookups reporting a loud
   REDACTED on a missing or malformed entry, formatted lookups filling numeric
   slots, and the truncating percent those slots use.
