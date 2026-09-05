@@ -94,21 +94,15 @@ No Starsector API on the signature.
   whether Fast Rendering is in force plus how to read its matrix.
 - **`kmlib.opengl.hatch`** - hatch fills across a polygon, with a tally of how
   cleanly the runs join.
-- **`kmlib.profiling`** - the profiler a mod binds to hear what the library
-  measures, silent until one does: named sections opened as nesting scopes or
-  collected by measure or record, the counters a scope tallies, and the tag a
-  caller names one call by.
-- **`kmlib.profiling.snapshot`** - what a capture hands back: the section tree
-  with each row's count, total, min, max, average and self time, the counters
-  it accumulated with their spread per call, the slowest call kept with its tag
-  and what its counters stood at, and where the row's calls fell across
-  duration bands doubling from a microsecond up.
-- **`kmlib.profiling.recording`** - the profiler that keeps what it is handed,
-  holding the open scope stack that makes a row a path, and repairing a scope
-  closed out of order by unwinding to it.
-- **`kmlib.profiling.report`** - a capture as an indented table: a row per
-  section per parent, its durations and counters, where its calls fell, and
-  what its slowest call was doing.
+- **`kmlib.profiling`**, with `snapshot`, `recording` and `report` under it -
+  the profiler a mod binds to hear what the library measures, silent until one
+  does: named sections opened as nesting scopes or collected by measure or
+  record, the counters a scope tallies, and the tag a caller names one call by.
+  A capture comes back as a tree of rows, each carrying its count, total, min,
+  max, average and self time, its counters with their spread per call, its
+  slowest call kept with that call's tag and counters, and where its calls fell
+  across duration bands doubling from a microsecond up - rendered as an
+  indented table.
 - **`kmlib.settings`** - LunaLib settings read and write, immediate and
   deferred with flush and removal, change callbacks, and resolving a labelled
   choice back from its label.
