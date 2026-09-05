@@ -167,8 +167,8 @@ public final class TimingReport {
         for (var node : nodes) {
 
             var cells = new ArrayList<String>(columns.size() + 1);
-
             cells.add(indentSectionName(node, depth));
+
             for (var column : columns) {
                 cells.add(column.renderCell(node));
             }
@@ -198,12 +198,8 @@ public final class TimingReport {
         line.append(formatMillis(worstCall.getDurationNanos()));
         line.append(MILLIS_UNIT);
 
-        if (KmlibStrings.hasText(worstCall.getTag())) {
-            // Quoted, because a tag is whatever the caller wrote - spaces
-            // included - and its end has to be tellable from the counters after
-            // it.
-            line.append(COLUMN_GAP).append(TAG_QUOTE).append(worstCall.getTag()).append(TAG_QUOTE);
-        }
+        appendQuotedTag(line, worstCall.getTag());
+
         for (var count : worstCall.getCounts()) {
             line.append(COLUMN_GAP);
             line.append(count.getCounter().getName());
@@ -230,27 +226,43 @@ public final class TimingReport {
         var line = new StringBuilder();
 
         line.append(indentSpanningLine(depth));
-        line.append(ITERATION_COUNT_LABEL).append(COUNT_ASSIGNMENT).append(iterations.getCount());
+
+        line.append(ITERATION_COUNT_LABEL)
+            .append(COUNT_ASSIGNMENT)
+            .append(iterations.getCount());
 
         for (var phaseTotal : iterations.getPhaseTotals()) {
+
             line.append(COLUMN_GAP);
             line.append(phaseTotal.getPhase().getName());
             line.append(COUNT_ASSIGNMENT);
             line.append(formatMicrosPerIteration(phaseTotal.getTotalNanos(), iterations.getCount()));
         }
         line.append(COLUMN_GAP);
-        line.append(SLOWEST_ITERATION_LABEL).append(COUNT_ASSIGNMENT);
-        line.append(formatMillis(iterations.getSlowestNanos())).append(MILLIS_UNIT);
 
-        if (KmlibStrings.hasText(iterations.getSlowestTag())) {
-            // Quoted for the reason a call's tag is: it is whatever the caller
-            // wrote, and where it ends has to be tellable.
+        line.append(SLOWEST_ITERATION_LABEL)
+            .append(COUNT_ASSIGNMENT);
+
+        line.append(formatMillis(iterations.getSlowestNanos()))
+            .append(MILLIS_UNIT);
+
+        appendQuotedTag(line, iterations.getSlowestTag());
+
+        table.add(List.of(line.toString()));
+    }
+
+    // Quoted, because a tag is whatever the caller wrote - spaces included -
+    // and its end has to be tellable from whatever follows it. Nothing at all
+    // where the caller named nothing.
+    private static void appendQuotedTag(StringBuilder line, String tag) {
+
+        if (KmlibStrings.hasText(tag)) {
+
             line.append(COLUMN_GAP)
                 .append(TAG_QUOTE)
-                .append(iterations.getSlowestTag())
+                .append(tag)
                 .append(TAG_QUOTE);
         }
-        table.add(List.of(line.toString()));
     }
 
     // The columns after the section name. The timing ones are always there; the
@@ -264,17 +276,21 @@ public final class TimingReport {
             COUNT_HEADER,
             CALL_COUNT_COLUMN_FLOOR,
             node -> Long.toString(node.getTiming().getCount())));
+
         columns.add(buildTimingColumn(AVERAGE_HEADER, ProfileTiming::getAverageNanos));
         columns.add(buildTimingColumn(MINIMUM_HEADER, ProfileTiming::getMinNanos));
         columns.add(buildTimingColumn(MAXIMUM_HEADER, ProfileTiming::getMaxNanos));
+
         columns.add(new ReportColumn(
             SELF_HEADER,
             DURATION_COLUMN_FLOOR,
             node -> formatMillis(node.getSelfNanos())));
+
         columns.add(new ReportColumn(
             TOTAL_HEADER,
             TOTAL_COLUMN_FLOOR,
             node -> formatMillis(node.getTiming().getTotalNanos())));
+
         columns.add(new ReportColumn(
             SPREAD_HEADER,
             SPREAD_COLUMN_FLOOR,
@@ -291,11 +307,18 @@ public final class TimingReport {
         var name = counter.getName().toUpperCase(Locale.ROOT);
 
         return List.of(
-            buildCounterColumn(name, counter, count -> count.getTotals().getTotal()),
             buildCounterColumn(
-                name + COUNTER_MINIMUM_SUFFIX, counter, count -> count.getSpread().getMinPerCall()),
+                name,
+                counter,
+                count -> count.getTotals().getTotal()),
             buildCounterColumn(
-                name + COUNTER_MAXIMUM_SUFFIX, counter, count -> count.getSpread().getMaxPerCall()),
+                name + COUNTER_MINIMUM_SUFFIX,
+                counter,
+                count -> count.getSpread().getMinPerCall()),
+            buildCounterColumn(
+                name + COUNTER_MAXIMUM_SUFFIX,
+                counter,
+                count -> count.getSpread().getMaxPerCall()),
             new ReportColumn(
                 name + COUNTER_PER_ITEM_SUFFIX,
                 NO_COLUMN_FLOOR,
@@ -308,8 +331,12 @@ public final class TimingReport {
             ToLongFunction<ProfileCount> readAmount) {
 
         return new ReportColumn(header, NO_COLUMN_FLOOR, node -> {
+
             var count = node.findCount(counter);
-            return count == null ? ABSENT_CELL : Long.toString(readAmount.applyAsLong(count));
+
+            return count == null
+                ? ABSENT_CELL
+                : Long.toString(readAmount.applyAsLong(count));
         });
     }
 
@@ -326,9 +353,10 @@ public final class TimingReport {
     private static List<String> buildHeaderRow(List<ReportColumn> columns) {
 
         var headers = new ArrayList<String>(columns.size() + 1);
-
         headers.add(SECTION_HEADER);
+
         for (var column : columns) {
+
             headers.add(column.getHeader());
         }
         return headers;

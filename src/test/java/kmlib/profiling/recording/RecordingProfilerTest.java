@@ -50,8 +50,8 @@ final class RecordingProfilerTest {
 
     // The two steps every loop below declares, which is the smallest pair that can show one step's
     // time landing in the other's slot.
-    private static final String PLAN_PHASE = "plan";
-    private static final String TRACE_PHASE = "trace";
+    private static final String PLAN_PHASE_NAME = "plan";
+    private static final String TRACE_PHASE_NAME = "trace";
 
     private static final String FIRST_CALL_TAG = "test.firstCall";
     private static final String SLOWEST_CALL_TAG = "test.slowestCall";
@@ -670,8 +670,8 @@ final class RecordingProfilerTest {
 
             try (var loop = profiler.openIterations(section)) {
                 loop.beginIteration(FIRST_CALL_TAG);
-                loop.markPhase(section.resolvePhase(PLAN_PHASE));
-                loop.markPhase(section.resolvePhase(TRACE_PHASE));
+                loop.markPhase(section.resolvePhase(PLAN_PHASE_NAME));
+                loop.markPhase(section.resolvePhase(TRACE_PHASE_NAME));
                 loop.endIteration();
             }
 
@@ -747,8 +747,8 @@ final class RecordingProfilerTest {
 
             try (var loop = profiler.openIterations(section)) {
                 loop.beginIteration(FIRST_CALL_TAG);
-                loop.markPhase(section.resolvePhase(TRACE_PHASE));
-                loop.markPhase(section.resolvePhase(PLAN_PHASE));
+                loop.markPhase(section.resolvePhase(TRACE_PHASE_NAME));
+                loop.markPhase(section.resolvePhase(PLAN_PHASE_NAME));
                 loop.endIteration();
             }
 
@@ -768,13 +768,13 @@ final class RecordingProfilerTest {
 
             try (var loop = profiler.openIterations(section)) {
                 loop.beginIteration(FIRST_CALL_TAG);
-                loop.markPhase(otherSection.resolvePhase(PLAN_PHASE));
-                loop.markPhase(section.resolvePhase(PLAN_PHASE));
+                loop.markPhase(otherSection.resolvePhase(PLAN_PHASE_NAME));
+                loop.markPhase(section.resolvePhase(PLAN_PHASE_NAME));
                 loop.endIteration();
             }
 
             // The whole 10ns since the turn began, since the dropped mark moved no boundary.
-            assertThat(readPhaseNanos(profiler, PLAN_PHASE))
+            assertThat(readPhaseNanos(profiler, PLAN_PHASE_NAME))
                 .isEqualTo(10);
         }
 
@@ -786,14 +786,41 @@ final class RecordingProfilerTest {
             var profiler = new RecordingProfiler(new ScriptedClock(0, 5, 10, 14, 14, 14));
 
             try (var loop = profiler.openIterations(section)) {
-                loop.markPhase(section.resolvePhase(PLAN_PHASE));
+                loop.markPhase(section.resolvePhase(PLAN_PHASE_NAME));
                 loop.beginIteration(FIRST_CALL_TAG);
-                loop.markPhase(section.resolvePhase(PLAN_PHASE));
+                loop.markPhase(section.resolvePhase(PLAN_PHASE_NAME));
                 loop.endIteration();
             }
 
-            assertThat(readPhaseNanos(profiler, PLAN_PHASE))
+            assertThat(readPhaseNanos(profiler, PLAN_PHASE_NAME))
                 .isEqualTo(4);
+        }
+
+        @Test
+        void sumsTheTurnsOfEveryCallOfTheRow() {
+            // A row is every call of it, for its loop as for its span: two bakes of a cell each are
+            // two turns on the one row, with the slower of the two kept whichever call ran it.
+            var section = registerBakeSection("test.iterations.twoCalls");
+            // A turn of 20ns in the first call and one of 9ns in the second, each charging 1ns to
+            // the plan.
+            var profiler = new RecordingProfiler(
+                new ScriptedClock(0, 10, 11, 12, 30, 40, 50, 51, 52, 55, 60, 70));
+
+            try (var loop = profiler.openIterations(section)) {
+                runOneTurnOf(loop, section, SLOWEST_CALL_TAG);
+            }
+            try (var loop = profiler.openIterations(section)) {
+                runOneTurnOf(loop, section, LAST_CALL_TAG);
+            }
+
+            var iterations = profiler.snapshot().get(0).getIterations();
+
+            assertThat(iterations.getCount())
+                .isEqualTo(2);
+            assertThat(readPhaseNanos(profiler, PLAN_PHASE_NAME))
+                .isEqualTo(2);
+            assertThat(iterations.getSlowestTag())
+                .isEqualTo(SLOWEST_CALL_TAG);
         }
 
         @Test
@@ -912,7 +939,7 @@ final class RecordingProfilerTest {
     // Named per case, since a registered section is one instance for the life of the JVM and two
     // cases sharing one would be two captures of the same row.
     private static PhasedSection registerBakeSection(String name) {
-        return PhasedSection.registerPhasedSection(name, PLAN_PHASE, TRACE_PHASE);
+        return PhasedSection.registerPhasedSection(name, PLAN_PHASE_NAME, TRACE_PHASE_NAME);
     }
 
     // One turn of that loop, marking both its steps - the shape a per-item loop has, and four
@@ -920,8 +947,8 @@ final class RecordingProfilerTest {
     private static void runOneTurnOf(IterationScope loop, PhasedSection section, String tag) {
 
         loop.beginIteration(tag);
-        loop.markPhase(section.resolvePhase(PLAN_PHASE));
-        loop.markPhase(section.resolvePhase(TRACE_PHASE));
+        loop.markPhase(section.resolvePhase(PLAN_PHASE_NAME));
+        loop.markPhase(section.resolvePhase(TRACE_PHASE_NAME));
         loop.endIteration();
     }
 

@@ -1,5 +1,7 @@
 package kmlib.profiling.snapshot;
 
+import kmlib.text.KmlibStrings;
+
 import java.util.List;
 
 /**
@@ -41,6 +43,21 @@ public final class WorstCall {
         this.durationNanos = durationNanos;
         this.tag = tag;
         this.counts = List.copyOf(counts);
+    }
+
+    /**
+     * Resolves what a caller handed over as a name to what a record carries: the
+     * name, or {@link #NO_TAG} where it was blank.
+     *
+     * <p>A blank name is no name. A caller composing one out of what it happens
+     * to hold can end up with an empty string, and a record whose name is a run
+     * of spaces reads as a name that was lost rather than as one never given.
+     *
+     * @param tag what the caller named a call or a turn, possibly nothing
+     * @return the name a record keeps for it
+     */
+    public static String normaliseTag(String tag) {
+        return KmlibStrings.hasText(tag) ? tag : NO_TAG;
     }
 
     public long getDurationNanos() {

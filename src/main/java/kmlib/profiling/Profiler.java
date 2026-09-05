@@ -22,9 +22,8 @@ import java.util.function.Supplier;
  * taken out - which is what says whether to look at a row or below it.
  *
  * <p>A section that runs a per-item loop is opened through
- * {@link #openIterations} instead, which measures the turns of that loop inside
- * the one span - a scope per item would cost about what the item's own work
- * costs.
+ * {@link #openIterations} instead, which measures the loop's turns inside the
+ * one span.
  *
  * <p>A seam rather than a class, so what profiling costs is a binding rather
  * than a rebuild. Library code measures through {@link ActiveProfiler} without

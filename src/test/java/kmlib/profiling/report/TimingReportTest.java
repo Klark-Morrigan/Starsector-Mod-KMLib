@@ -307,6 +307,19 @@ final class TimingReportTest {
         }
 
         @Test
+        void formatWritesTheLoopLineUnderTheWorstCallLine() {
+            // Both say something the columns do not, about different denominators - the call and
+            // the turn - so both are written, the call's first since the columns are per call.
+            var report = TimingReport.format(List.of(nodeIterating(
+                LOOP_TURNS, PHASE_TOTAL_NANOS, SLOWEST_TURN_TAG, WORST_CALL_TAG)));
+
+            assertThat(report.lines())
+                .containsSequence(
+                    "  worst 3.000ms  \"" + WORST_CALL_TAG + "\"",
+                    "  iterations=2  plan=100.0us/ea  slowest=3.000ms  \"" + SLOWEST_TURN_TAG + "\"");
+        }
+
+        @Test
         void formatWritesNoLoopLineForARowThatRanNone() {
             // Most rows, which would otherwise each carry a line saying they iterated over
             // nothing.
@@ -321,7 +334,7 @@ final class TimingReportTest {
             // The loop line belongs to no column for the same reason the worst call's does: its
             // numbers are per turn, and its tag is a caller's own text of a caller's own length.
             var report = TimingReport.format(List.of(nodeIterating(
-                LOOP_TURNS, PHASE_TOTAL_NANOS, LONG_WORST_CALL_TAG)));
+                LOOP_TURNS, PHASE_TOTAL_NANOS, LONG_WORST_CALL_TAG, WorstCall.NO_TAG)));
 
             assertThat(readRow(report, PARENT_SECTION).length())
                 .isEqualTo(PARENT_SECTION.length() + NUMERIC_COLUMNS_WIDTH);
@@ -397,15 +410,20 @@ final class TimingReportTest {
     }
 
     // A row whose one call ran a loop of one step, which is the smallest tree with a per-turn cost
-    // to divide out and a slowest turn to name.
-    private static ProfileNode nodeIterating(long turns, long phaseNanos, String slowestTag) {
+    // to divide out and a slowest turn to name. The call is named too where a case is about the
+    // two lines standing together.
+    private static ProfileNode nodeIterating(
+            long turns,
+            long phaseNanos,
+            String slowestTag,
+            String worstCallTag) {
 
         var bakeSection = PhasedSection.registerPhasedSection(PARENT_SECTION, PLAN_PHASE_NAME);
 
         return new ProfileNode(
             ProfileSection.registerSection(PARENT_SECTION),
             oneCallOf(PARENT_TOTAL_NANOS),
-            WorstCall.NO_CALL,
+            new WorstCall(PARENT_TOTAL_NANOS, worstCallTag, List.of()),
             new ProfileIterations(
                 turns,
                 List.of(new PhaseTotal(bakeSection.resolvePhase(PLAN_PHASE_NAME), phaseNanos)),

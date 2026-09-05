@@ -2,6 +2,7 @@ package kmlib.profiling.recording;
 
 import kmlib.profiling.ProfileSection;
 import kmlib.profiling.snapshot.ProfileCount;
+import kmlib.profiling.snapshot.ProfileIterations;
 import kmlib.profiling.snapshot.ProfileNode;
 
 import java.util.ArrayList;
@@ -23,7 +24,11 @@ final class ProfileNodeAccumulator {
     private final List<ProfileCountAccumulator> countAccumulators = new ArrayList<>();
     private final SpanAccumulator spans = new SpanAccumulator();
     private final WorstCallAccumulator worstCall = new WorstCallAccumulator();
-    private final IterationAccumulator iterations = new IterationAccumulator();
+
+    // Created when the first loop closes here rather than with the node, since
+    // its slots are sized by the section that loop was opened on - and since
+    // most rows never run one.
+    private IterationTally iterations;
 
     ProfileNodeAccumulator(ProfileSection section) {
         this.section = section;
@@ -94,8 +99,12 @@ final class ProfileNodeAccumulator {
      *
      * @param callIterations what the call's turns came to
      */
-    void addIterations(ScopeIterations callIterations) {
-        iterations.addIterations(callIterations);
+    void addIterations(IterationTally callIterations) {
+
+        if (iterations == null) {
+            iterations = new IterationTally(callIterations.getSection());
+        }
+        iterations.addTally(callIterations);
     }
 
     /**
@@ -117,7 +126,7 @@ final class ProfileNodeAccumulator {
             section,
             spans.buildTiming(),
             worstCall.buildWorstCall(),
-            iterations.buildIterations(),
+            iterations == null ? ProfileIterations.NO_ITERATIONS : iterations.buildIterations(),
             counts,
             childNodes);
     }

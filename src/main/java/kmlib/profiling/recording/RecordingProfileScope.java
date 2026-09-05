@@ -5,7 +5,6 @@ import kmlib.profiling.ProfileCounter;
 import kmlib.profiling.ProfilePhase;
 import kmlib.profiling.ProfileSection;
 import kmlib.profiling.snapshot.WorstCall;
-import kmlib.text.KmlibStrings;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -64,18 +63,13 @@ final class RecordingProfileScope implements IterationScope {
 
     @Override
     public void tagCall(String tag) {
-        // A blank name is no name: a caller composing one out of what it
-        // happens to hold may end up with an empty string, and a record whose
-        // name is a run of spaces reads as a name that was lost rather than as
-        // one that was never given.
-        this.tag = KmlibStrings.hasText(tag) ? tag : WorstCall.NO_TAG;
+        this.tag = WorstCall.normaliseTag(tag);
     }
 
     @Override
     public void beginIteration(String tag) {
-        // Null only on a scope no caller can reach as an iteration scope, since
-        // that is what an open over no loop hands back - so the guard is here
-        // rather than in a state a caller could be in.
+        // Null only where no caller holds this as an iteration scope, which is
+        // what an open over no loop hands back.
         if (iterations != null) {
             iterations.beginIteration(profiler.readClockNanos(), tag);
         }
@@ -136,7 +130,7 @@ final class RecordingProfileScope implements IterationScope {
         // as one thing, and a loop half way through its cells is not a fact
         // about what a call of that row costs.
         if (iterations != null) {
-            node.addIterations(iterations);
+            node.addIterations(iterations.getTally());
         }
     }
 }
