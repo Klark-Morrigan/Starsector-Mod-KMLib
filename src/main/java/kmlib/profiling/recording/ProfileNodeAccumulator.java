@@ -1,12 +1,8 @@
 package kmlib.profiling.recording;
 
 import kmlib.profiling.ProfileSection;
-import kmlib.profiling.snapshot.CallCount;
-import kmlib.profiling.snapshot.DurationBuckets;
 import kmlib.profiling.snapshot.ProfileCount;
 import kmlib.profiling.snapshot.ProfileNode;
-import kmlib.profiling.snapshot.ProfileTiming;
-import kmlib.profiling.snapshot.WorstCall;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,16 +21,8 @@ final class ProfileNodeAccumulator {
     private final ProfileSection section;
     private final List<ProfileNodeAccumulator> children = new ArrayList<>();
     private final List<ProfileCountAccumulator> countAccumulators = new ArrayList<>();
-    private final long[] callsPerBucket = new long[DurationBuckets.countBuckets()];
-
-    private long count;
-    private long totalNanos;
-    private long minNanos;
-    private long maxNanos;
-
-    private long worstNanos;
-    private String worstTag = WorstCall.NO_TAG;
-    private List<CallCount> worstCounts = List.of();
+    private final SpanAccumulator spans = new SpanAccumulator();
+    private final WorstCallAccumulator worstCall = new WorstCallAccumulator();
 
     ProfileNodeAccumulator(ProfileSection section) {
         this.section = section;
@@ -83,31 +71,17 @@ final class ProfileNodeAccumulator {
      *
      * @param elapsedNanos how long the call took
      * @param callCounts   what the call counted, empty when it counted nothing
-     * @param tag          what the caller named the call, {@link WorstCall#NO_TAG}
-     *                     when it named nothing
+     * @param tag          what the caller named the call, empty when it named
+     *                     nothing
      */
     void addSpan(long elapsedNanos, List<ScopeCount> callCounts, String tag) {
 
-        // Before the call is counted, since a counter first added to in this
-        // call has to know how many calls preceded it without it - and since
-        // the worst call is told from the others by there being none before it.
+        // Before the span is folded in, since a counter first added to in this
+        // call has to know how many calls preceded it without it, and the spans
+        // are what remember that.
         recordCallCounts(callCounts);
-        recordWorstCall(elapsedNanos, callCounts, tag);
-
-        // The first span sets both bounds rather than being folded into
-        // sentinels the snapshot would then have to undo. A node with no span -
-        // opened while the snapshot was taken, or left open by a caller - then
-        // reads as the zeroes it holds, with no rule about what a row means.
-        if (count == 0) {
-            minNanos = elapsedNanos;
-            maxNanos = elapsedNanos;
-        } else {
-            minNanos = Math.min(minNanos, elapsedNanos);
-            maxNanos = Math.max(maxNanos, elapsedNanos);
-        }
-        count++;
-        totalNanos += elapsedNanos;
-        callsPerBucket[DurationBuckets.resolveBucketIndex(elapsedNanos)]++;
+        worstCall.addCall(elapsedNanos, callCounts, tag);
+        spans.addSpan(elapsedNanos);
     }
 
     /**
@@ -127,32 +101,10 @@ final class ProfileNodeAccumulator {
         }
         return new ProfileNode(
             section,
-            new ProfileTiming(count, totalNanos, minNanos, maxNanos, buildBuckets()),
-            count == 0 ? WorstCall.NO_CALL : new WorstCall(worstNanos, worstTag, worstCounts),
+            spans.buildTiming(),
+            worstCall.buildWorstCall(),
             counts,
             childNodes);
-    }
-
-    // The shared empty spread where no call has finished, so a tree full of
-    // rows a snapshot caught mid-call copies no arrays of zeroes.
-    private DurationBuckets buildBuckets() {
-        return count == 0 ? DurationBuckets.NO_CALLS : new DurationBuckets(callsPerBucket);
-    }
-
-    // What one call's counters stood at, frozen out of the tallies the ended
-    // scope was still adding to. Copied only when a call turns out to be the
-    // worst so far, which after the first few calls of a row is rare.
-    private static List<CallCount> copyCallCounts(List<ScopeCount> callCounts) {
-
-        if (callCounts.isEmpty()) {
-            return List.of();
-        }
-        var counts = new ArrayList<CallCount>(callCounts.size());
-
-        for (var callCount : callCounts) {
-            counts.add(new CallCount(callCount.getCounter(), callCount.getTotalAmount()));
-        }
-        return List.copyOf(counts);
     }
 
     // Every counter this node has ever seen takes a value for the call that has
@@ -183,25 +135,11 @@ final class ProfileNodeAccumulator {
             if (alreadyOpened != null) {
                 continue;
             }
-            var opened = new ProfileCountAccumulator(callCount.getCounter(), count);
+            var opened =
+                new ProfileCountAccumulator(callCount.getCounter(), spans.getCallCount());
 
             opened.addCall(callCount.getSelfAmount(), callCount.getTotalAmount());
             countAccumulators.add(opened);
         }
-    }
-
-    // Kept only while nothing slower has closed, so what is held is always the
-    // call the row's maximum reports - and so what that call was doing is read
-    // beside the duration rather than looked for in a log afterwards. The first
-    // call takes the record by the same rule the bounds are set by: there is
-    // nothing before it to be slower than.
-    private void recordWorstCall(long elapsedNanos, List<ScopeCount> callCounts, String tag) {
-
-        if (count > 0 && elapsedNanos <= worstNanos) {
-            return;
-        }
-        worstNanos = elapsedNanos;
-        worstTag = tag;
-        worstCounts = copyCallCounts(callCounts);
     }
 }

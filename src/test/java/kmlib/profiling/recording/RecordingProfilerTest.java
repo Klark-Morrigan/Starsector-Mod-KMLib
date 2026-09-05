@@ -3,6 +3,8 @@ package kmlib.profiling.recording;
 import kmlib.profiling.ProfileCounter;
 import kmlib.profiling.ProfileSection;
 import kmlib.profiling.snapshot.CallCount;
+import kmlib.profiling.snapshot.CountSpread;
+import kmlib.profiling.snapshot.CountTotals;
 import kmlib.profiling.snapshot.DurationBuckets;
 import kmlib.profiling.snapshot.ProfileCount;
 import kmlib.profiling.snapshot.ProfileNode;
@@ -189,8 +191,8 @@ final class RecordingProfilerTest {
             // 8 systems - not the 11 the row has walked in all, which price nothing.
             var profiler = new RecordingProfiler(new ScriptedClock(0, 10, 10, 110));
 
-            countInACall(profiler, 3);
-            countInACall(profiler, 8);
+            countInACallOf(profiler, PARENT_SECTION, 3);
+            countInACallOf(profiler, PARENT_SECTION, 8);
 
             var worstCall = profiler.snapshot().get(0).getWorstCall();
 
@@ -269,11 +271,11 @@ final class RecordingProfilerTest {
             var parentNode = profiler.snapshot().get(0);
             var childNode = parentNode.getChildren().get(0);
 
-            assertThat(readCount(parentNode, SYSTEMS_COUNTER))
-                .extracting(ProfileCount::getTotal, ProfileCount::getSelfTotal)
+            assertThat(readCount(parentNode, SYSTEMS_COUNTER).getTotals())
+                .extracting(CountTotals::getTotal, CountTotals::getSelfTotal)
                 .containsExactly(7L, 0L);
-            assertThat(readCount(childNode, SYSTEMS_COUNTER))
-                .extracting(ProfileCount::getTotal, ProfileCount::getSelfTotal)
+            assertThat(readCount(childNode, SYSTEMS_COUNTER).getTotals())
+                .extracting(CountTotals::getTotal, CountTotals::getSelfTotal)
                 .containsExactly(7L, 7L);
         }
 
@@ -285,18 +287,17 @@ final class RecordingProfilerTest {
 
             var parent = profiler.open(ProfileSection.registerSection(PARENT_SECTION));
 
-            countInAChildCall(profiler, 3);
-            countInAChildCall(profiler, 8);
+            countInACallOf(profiler, CHILD_SECTION, 3);
+            countInACallOf(profiler, CHILD_SECTION, 8);
             parent.close();
 
-            var childNode = profiler.snapshot().get(0).getChildren().get(0);
+            var count = readCount(profiler.snapshot().get(0).getChildren().get(0), SYSTEMS_COUNTER);
 
-            assertThat(readCount(childNode, SYSTEMS_COUNTER))
-                .extracting(
-                    ProfileCount::getTotal,
-                    ProfileCount::getMinPerCall,
-                    ProfileCount::getMaxPerCall)
-                .containsExactly(11L, 3L, 8L);
+            assertThat(count.getTotals().getTotal())
+                .isEqualTo(11L);
+            assertThat(count.getSpread())
+                .extracting(CountSpread::getMinPerCall, CountSpread::getMaxPerCall)
+                .containsExactly(3L, 8L);
         }
 
         @Test
@@ -307,18 +308,17 @@ final class RecordingProfilerTest {
 
             var parent = profiler.open(ProfileSection.registerSection(PARENT_SECTION));
 
-            countInAChildCall(profiler, 5);
+            countInACallOf(profiler, CHILD_SECTION, 5);
             profiler.open(ProfileSection.registerSection(CHILD_SECTION)).close();
             parent.close();
 
-            var childNode = profiler.snapshot().get(0).getChildren().get(0);
+            var count = readCount(profiler.snapshot().get(0).getChildren().get(0), SYSTEMS_COUNTER);
 
-            assertThat(readCount(childNode, SYSTEMS_COUNTER))
-                .extracting(
-                    ProfileCount::getTotal,
-                    ProfileCount::getMinPerCall,
-                    ProfileCount::getMaxPerCall)
-                .containsExactly(5L, 0L, 5L);
+            assertThat(count.getTotals().getTotal())
+                .isEqualTo(5L);
+            assertThat(count.getSpread())
+                .extracting(CountSpread::getMinPerCall, CountSpread::getMaxPerCall)
+                .containsExactly(0L, 5L);
         }
 
         @Test
@@ -330,13 +330,13 @@ final class RecordingProfilerTest {
             var parent = profiler.open(ProfileSection.registerSection(PARENT_SECTION));
 
             profiler.open(ProfileSection.registerSection(CHILD_SECTION)).close();
-            countInAChildCall(profiler, 5);
+            countInACallOf(profiler, CHILD_SECTION, 5);
             parent.close();
 
             var childNode = profiler.snapshot().get(0).getChildren().get(0);
 
-            assertThat(readCount(childNode, SYSTEMS_COUNTER))
-                .extracting(ProfileCount::getMinPerCall, ProfileCount::getMaxPerCall)
+            assertThat(readCount(childNode, SYSTEMS_COUNTER).getSpread())
+                .extracting(CountSpread::getMinPerCall, CountSpread::getMaxPerCall)
                 .containsExactly(0L, 5L);
         }
 
@@ -357,8 +357,8 @@ final class RecordingProfilerTest {
             child.close();
             parent.close();
 
-            assertThat(readCount(profiler.snapshot().get(0), SYSTEMS_COUNTER))
-                .extracting(ProfileCount::getTotal, ProfileCount::getSelfTotal)
+            assertThat(readCount(profiler.snapshot().get(0), SYSTEMS_COUNTER).getTotals())
+                .extracting(CountTotals::getTotal, CountTotals::getSelfTotal)
                 .containsExactly(9L, 2L);
         }
 
@@ -374,12 +374,13 @@ final class RecordingProfilerTest {
             scope.addCount(ProfileCounter.registerCounter(SYSTEMS_COUNTER), 4);
             scope.close();
 
-            assertThat(readCount(profiler.snapshot().get(0), SYSTEMS_COUNTER))
-                .extracting(
-                    ProfileCount::getTotal,
-                    ProfileCount::getMinPerCall,
-                    ProfileCount::getMaxPerCall)
-                .containsExactly(7L, 7L, 7L);
+            var count = readCount(profiler.snapshot().get(0), SYSTEMS_COUNTER);
+
+            assertThat(count.getTotals().getTotal())
+                .isEqualTo(7L);
+            assertThat(count.getSpread())
+                .extracting(CountSpread::getMinPerCall, CountSpread::getMaxPerCall)
+                .containsExactly(7L, 7L);
         }
 
         @Test
@@ -402,18 +403,16 @@ final class RecordingProfilerTest {
 
             var node = profiler.snapshot().get(0);
 
-            assertThat(readCount(node, SYSTEMS_COUNTER))
-                .extracting(
-                    ProfileCount::getTotal,
-                    ProfileCount::getMinPerCall,
-                    ProfileCount::getMaxPerCall)
-                .containsExactly(3L, 0L, 3L);
-            assertThat(readCount(node, MARKETS_COUNTER))
-                .extracting(
-                    ProfileCount::getTotal,
-                    ProfileCount::getMinPerCall,
-                    ProfileCount::getMaxPerCall)
-                .containsExactly(14L, 4L, 10L);
+            assertThat(readCount(node, SYSTEMS_COUNTER).getTotals().getTotal())
+                .isEqualTo(3L);
+            assertThat(readCount(node, SYSTEMS_COUNTER).getSpread())
+                .extracting(CountSpread::getMinPerCall, CountSpread::getMaxPerCall)
+                .containsExactly(0L, 3L);
+            assertThat(readCount(node, MARKETS_COUNTER).getTotals().getTotal())
+                .isEqualTo(14L);
+            assertThat(readCount(node, MARKETS_COUNTER).getSpread())
+                .extracting(CountSpread::getMinPerCall, CountSpread::getMaxPerCall)
+                .containsExactly(4L, 10L);
         }
 
         @Test
@@ -431,10 +430,12 @@ final class RecordingProfilerTest {
 
             var outerNode = profiler.snapshot().get(0);
 
-            assertThat(readCount(outerNode, SYSTEMS_COUNTER))
-                .extracting(ProfileCount::getTotal, ProfileCount::getSelfTotal)
+            assertThat(readCount(outerNode, SYSTEMS_COUNTER).getTotals())
+                .extracting(CountTotals::getTotal, CountTotals::getSelfTotal)
                 .containsExactly(5L, 0L);
-            assertThat(readCount(outerNode.getChildren().get(0), SYSTEMS_COUNTER).getSelfTotal())
+            assertThat(readCount(outerNode.getChildren().get(0), SYSTEMS_COUNTER)
+                .getTotals()
+                .getSelfTotal())
                 .isEqualTo(5L);
         }
 
@@ -740,10 +741,14 @@ final class RecordingProfilerTest {
         return names;
     }
 
-    // One call of the parent section counting what it was handed, for the cases about what one
-    // call left behind rather than about where it sat in the tree.
-    private static void countInACall(RecordingProfiler profiler, long systems) {
-        try (var call = profiler.open(ProfileSection.registerSection(PARENT_SECTION))) {
+    // One call of a section that counts what it was handed, which is the shape a walker under a
+    // scope has: the count and the call it belongs to end together.
+    private static void countInACallOf(
+            RecordingProfiler profiler,
+            String sectionName,
+            long systems) {
+
+        try (var call = profiler.open(ProfileSection.registerSection(sectionName))) {
             call.addCount(ProfileCounter.registerCounter(SYSTEMS_COUNTER), systems);
         }
     }
@@ -753,14 +758,6 @@ final class RecordingProfilerTest {
     private static void openTaggedCall(RecordingProfiler profiler, String tag) {
         try (var call = profiler.open(ProfileSection.registerSection(PARENT_SECTION))) {
             call.tagCall(tag);
-        }
-    }
-
-    // One call of the child section that counts what it was handed, which is the shape a walker
-    // under a scope has: the count and the call it belongs to end together.
-    private static void countInAChildCall(RecordingProfiler profiler, long systems) {
-        try (var child = profiler.open(ProfileSection.registerSection(CHILD_SECTION))) {
-            child.addCount(ProfileCounter.registerCounter(SYSTEMS_COUNTER), systems);
         }
     }
 

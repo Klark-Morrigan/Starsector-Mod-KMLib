@@ -235,9 +235,11 @@ public final class TimingReport {
         var name = counter.getName().toUpperCase(Locale.ROOT);
 
         return List.of(
-            buildCounterColumn(name, counter, ProfileCount::getTotal),
-            buildCounterColumn(name + COUNTER_MINIMUM_SUFFIX, counter, ProfileCount::getMinPerCall),
-            buildCounterColumn(name + COUNTER_MAXIMUM_SUFFIX, counter, ProfileCount::getMaxPerCall),
+            buildCounterColumn(name, counter, count -> count.getTotals().getTotal()),
+            buildCounterColumn(
+                name + COUNTER_MINIMUM_SUFFIX, counter, count -> count.getSpread().getMinPerCall()),
+            buildCounterColumn(
+                name + COUNTER_MAXIMUM_SUFFIX, counter, count -> count.getSpread().getMaxPerCall()),
             new ReportColumn(
                 name + COUNTER_PER_ITEM_SUFFIX,
                 NO_COLUMN_FLOOR,
@@ -343,13 +345,13 @@ public final class TimingReport {
         // A row whose children did all the counting has no per-item cost of its
         // own, and dividing by their items would price its self time against
         // work it did not do.
-        if (count == null || count.getSelfTotal() == 0) {
+        if (count == null || count.getTotals().getSelfTotal() == 0) {
             return ABSENT_CELL;
         }
         return String.format(
             Locale.ROOT,
             PER_ITEM_FORMAT,
-            Timings.convertNanosToMicros(node.getSelfNanos()) / count.getSelfTotal());
+            Timings.convertNanosToMicros(node.getSelfNanos()) / count.getTotals().getSelfTotal());
     }
 
     // Whether the record says anything the table does not already carry. Its

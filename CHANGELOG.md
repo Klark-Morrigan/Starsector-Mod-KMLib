@@ -96,10 +96,19 @@ No Starsector API on the signature.
   cleanly the runs join.
 - **`kmlib.profiling`** - the profiler a mod binds to hear what the library
   measures, silent until one does: named sections opened as nesting scopes or
-  collected by measure or record, their count, total, min, max, average and
-  self time snapshotted as a tree, the counters a scope tallies and rolls up
-  beside those durations with their spread per call, an indented report over
-  both, and nanosecond conversions.
+  collected by measure or record, the counters a scope tallies, and the tag a
+  caller names one call by.
+- **`kmlib.profiling.snapshot`** - what a capture hands back: the section tree
+  with each row's count, total, min, max, average and self time, the counters
+  it accumulated with their spread per call, the slowest call kept with its tag
+  and what its counters stood at, and where the row's calls fell across
+  duration bands doubling from a microsecond up.
+- **`kmlib.profiling.recording`** - the profiler that keeps what it is handed,
+  holding the open scope stack that makes a row a path, and repairing a scope
+  closed out of order by unwinding to it.
+- **`kmlib.profiling.report`** - a capture as an indented table: a row per
+  section per parent, its durations and counters, where its calls fell, and
+  what its slowest call was doing.
 - **`kmlib.settings`** - LunaLib settings read and write, immediate and
   deferred with flush and removal, change callbacks, and resolving a labelled
   choice back from its label.
@@ -110,6 +119,8 @@ No Starsector API on the signature.
   is there text here, what are its words, initials, whole-word search, and
   dropping the stutter left where one phrase was appended to another ending on
   the same word.
+- **`kmlib.time`** - nanosecond conversion to microseconds, milliseconds and
+  seconds and back, and the duration formats a diagnostic line prints.
 
 #### Starsector-facing wrappers and seams
 

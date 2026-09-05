@@ -1,5 +1,6 @@
 package kmlib.profiling.snapshot;
 
+import kmlib.profiling.ProfileCounter;
 import kmlib.profiling.ProfileSection;
 
 import org.junit.jupiter.api.Nested;
@@ -11,13 +12,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Pins what a snapshot row derives rather than receives: self time is the total less what ran
- * inside it, and a row whose children outlast it - a scope still open when the snapshot was taken -
- * reports no self time rather than a negative duration.
+ * inside it, a row whose children outlast it - a scope still open when the snapshot was taken -
+ * reports no self time rather than a negative duration, and a row answers what it counted of a
+ * given counter rather than handing its list over to be searched.
  */
 final class ProfileNodeTest {
 
     private static final long PARENT_TOTAL_NANOS = 100L;
     private static final long CHILD_TOTAL_NANOS = 30L;
+
+    private static final String SYSTEMS_COUNTER = "test.profileNode.systems";
+    private static final String MARKETS_COUNTER = "test.profileNode.markets";
+    private static final long SYSTEMS_TOTAL = 48L;
 
     @Nested
     class GetSelfNanos {
@@ -57,6 +63,53 @@ final class ProfileNodeTest {
             assertThat(unclosed.getSelfNanos())
                 .isEqualTo(0L);
         }
+    }
+
+    @Nested
+    class FindCount {
+
+        @Test
+        void answersWhatTheRowCountedOfTheCounterAsked() {
+            // The row answers about its own contents, so a reader states a counter rather than
+            // scanning the list it was handed for one.
+            var counted = nodeCounting(countOf(SYSTEMS_COUNTER, SYSTEMS_TOTAL));
+
+            assertThat(counted.findCount(ProfileCounter.registerCounter(SYSTEMS_COUNTER)))
+                .isNotNull()
+                .extracting(count -> count.getTotals().getTotal())
+                .isEqualTo(SYSTEMS_TOTAL);
+        }
+
+        @Test
+        void answersNothingForACounterTheRowNeverTouched() {
+            // Absent rather than a zero: "counted none of it" and "does not count this" are
+            // different facts, and a reader prints the second as a blank.
+            var counted = nodeCounting(countOf(SYSTEMS_COUNTER, SYSTEMS_TOTAL));
+
+            assertThat(counted.findCount(ProfileCounter.registerCounter(MARKETS_COUNTER)))
+                .isNull();
+        }
+    }
+
+    private static ProfileCount countOf(String counterName, long total) {
+        return new ProfileCount(
+            ProfileCounter.registerCounter(counterName),
+            new CountTotals(total, total),
+            new CountSpread(total, total));
+    }
+
+    private static ProfileNode nodeCounting(ProfileCount count) {
+        return new ProfileNode(
+            ProfileSection.registerSection("test.profileNode.counting"),
+            new ProfileTiming(
+                1,
+                PARENT_TOTAL_NANOS,
+                PARENT_TOTAL_NANOS,
+                PARENT_TOTAL_NANOS,
+                DurationBuckets.NO_CALLS),
+            WorstCall.NO_CALL,
+            List.of(count),
+            List.of());
     }
 
     private static ProfileNode childNode(String name, long totalNanos) {

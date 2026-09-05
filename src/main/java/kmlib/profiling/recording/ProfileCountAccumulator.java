@@ -1,6 +1,8 @@
 package kmlib.profiling.recording;
 
 import kmlib.profiling.ProfileCounter;
+import kmlib.profiling.snapshot.CountSpread;
+import kmlib.profiling.snapshot.CountTotals;
 import kmlib.profiling.snapshot.ProfileCount;
 
 /**
@@ -66,6 +68,9 @@ final class ProfileCountAccumulator {
      * @return this tally copied into the immutable form a snapshot is read from
      */
     ProfileCount buildCount() {
-        return new ProfileCount(counter, total, selfTotal, minPerCall, maxPerCall);
+        return new ProfileCount(
+            counter,
+            new CountTotals(total, selfTotal),
+            new CountSpread(minPerCall, maxPerCall));
     }
 }

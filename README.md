@@ -221,15 +221,15 @@ No Starsector API on the signature.
 - [`profiling/`](src/main/java/kmlib/profiling/) - the vocabulary a caller
   names: the profiler seam a mod binds, silent until it does, the sections and
   counters a call is filed under, and the scope a section is opened as.
-- [`profiling/snapshot/`](src/main/java/kmlib/profiling/snapshot/) - what a
-  reader is handed after a capture: the section tree, each row's count, total,
-  min, max, average and self time, what it counted, what its slowest call was
-  doing, and how its calls fell across doubling duration bands.
 - [`profiling/recording/`](src/main/java/kmlib/profiling/recording/) - the
   profiler that keeps what it is handed, and the open stack and per-row tallies
   it accumulates a capture in.
 - [`profiling/report/`](src/main/java/kmlib/profiling/report/) - the indented
   table over a capture.
+- [`profiling/snapshot/`](src/main/java/kmlib/profiling/snapshot/) - what a
+  reader is handed after a capture: the section tree, each row's count, total,
+  min, max, average and self time, what it counted, what its slowest call was
+  doing, and how its calls fell across doubling duration bands.
 - [`settings/`](src/main/java/kmlib/settings/) - LunaLib settings read and
   write, immediate and deferred, change callbacks, and labelled choices.
 - [`text/`](src/main/java/kmlib/text/) - string and number formatting, plus

@@ -3,6 +3,8 @@ package kmlib.profiling.report;
 import kmlib.profiling.ProfileCounter;
 import kmlib.profiling.ProfileSection;
 import kmlib.profiling.snapshot.CallCount;
+import kmlib.profiling.snapshot.CountSpread;
+import kmlib.profiling.snapshot.CountTotals;
 import kmlib.profiling.snapshot.DurationBuckets;
 import kmlib.profiling.snapshot.ProfileCount;
 import kmlib.profiling.snapshot.ProfileNode;
@@ -67,6 +69,10 @@ final class TimingReportTest {
     // Those two bands marked by how many digits each tally has - 4 for the thousand, 1 for the
     // three - with a dot in each of the twenty bands nothing landed in.
     private static final String EXPECTED_BAND_MARKS = ".4.........1..........";
+
+    // Eleven digits' worth of calls in the quick band, which the mark caps at the widest digit.
+    private static final long UNCOUNTABLY_MANY_CALLS = 10_000_000_000L;
+    private static final String EXPECTED_CAPPED_BAND_MARKS = ".9.........1..........";
 
     private static final String WORST_CALL_TAG = "eos";
     private static final long WORST_CALL_SYSTEMS = 48L;
@@ -237,6 +243,33 @@ final class TimingReportTest {
         }
 
         @Test
+        void formatWritesTheSlowestCallsCountersWhereItWasNamedNothing() {
+            // A call is worth a line for what it counted alone: most of the paths that count are
+            // walkers, which have a tally to report and no name to give it.
+            var report = TimingReport.format(List.of(nodeWhoseWorstCall(new WorstCall(
+                PARENT_TOTAL_NANOS,
+                WorstCall.NO_TAG,
+                List.of(new CallCount(
+                    ProfileCounter.registerCounter(SYSTEMS_COUNTER), WORST_CALL_SYSTEMS))))));
+
+            assertThat(report)
+                .contains("\n  worst 3.000ms")
+                .contains(SYSTEMS_COUNTER + "=" + WORST_CALL_SYSTEMS)
+                .doesNotContain("\"");
+        }
+
+        @Test
+        void formatMarksABandHoldingMoreCallsThanADigitCanCountAtItsWidest() {
+            // The mark is a digit, so a tally past nine digits has to stop widening it: a column
+            // that grew with the capture could not be read against the capture before it.
+            var report = TimingReport.format(List.of(nodeSpreadOver(
+                bandsHolding(UNCOUNTABLY_MANY_CALLS, FEW_CALLS))));
+
+            assertThat(readFilledCells(report, PARENT_SECTION))
+                .contains(EXPECTED_CAPPED_BAND_MARKS);
+        }
+
+        @Test
         void formatWritesNoWorstCallLineWhereItRepeatsTheMaximumColumn() {
             // A call named nothing and counting nothing has only its duration to state, and the
             // table has already stated it - so the rows whose calls are all alike stay one line.
@@ -329,7 +362,9 @@ final class TimingReportTest {
             long maxPerCall) {
 
         return new ProfileCount(
-            ProfileCounter.registerCounter(counterName), total, selfTotal, minPerCall, maxPerCall);
+            ProfileCounter.registerCounter(counterName),
+            new CountTotals(total, selfTotal),
+            new CountSpread(minPerCall, maxPerCall));
     }
 
     // The cells a row actually fills, blank ones excluded - a blank cell is whitespace and so

@@ -3,42 +3,25 @@ package kmlib.profiling.snapshot;
 import kmlib.profiling.ProfileCounter;
 
 /**
- * What one counter accumulated at one place in the tree: the total across every
- * call of that row, how much of it the row counted itself, and the spread of
- * one call's worth.
+ * What one counter accumulated at one place in the tree: which counter it was,
+ * how much of it the row holds, and how far one call's worth spread.
  *
- * <p>The total is inclusive, by the same rule a row's time is: it holds what
- * the row counted plus what everything opened inside it counted, so a rebuild's
- * row says how many sector walks happened beneath it whoever performed them.
- *
- * <p>The self total is the divisor of a per-item cost. Only the items a row
- * handled with its own hands can be priced against its self time; the ones its
- * children handled are their rows' to price.
- *
- * <p>The per-call minimum and maximum are over every call of the row, calls
- * that counted none of it included - so a row that usually walks once and
- * occasionally not at all reads as a minimum of zero rather than as one.
+ * <p>The two halves are held as their own values rather than as four longs on
+ * this one, for the reason {@link ProfileTiming} groups the durations it
+ * reports: numbers of the same type that only mean anything in pairs are
+ * numbers a call site can transpose, and a row claiming it counted everything
+ * itself reads as a fact rather than as a mistake.
  */
 public final class ProfileCount {
 
     private final ProfileCounter counter;
-    private final long total;
-    private final long selfTotal;
-    private final long minPerCall;
-    private final long maxPerCall;
+    private final CountTotals totals;
+    private final CountSpread spread;
 
-    public ProfileCount(
-            ProfileCounter counter,
-            long total,
-            long selfTotal,
-            long minPerCall,
-            long maxPerCall) {
-
+    public ProfileCount(ProfileCounter counter, CountTotals totals, CountSpread spread) {
         this.counter = counter;
-        this.total = total;
-        this.selfTotal = selfTotal;
-        this.minPerCall = minPerCall;
-        this.maxPerCall = maxPerCall;
+        this.totals = totals;
+        this.spread = spread;
     }
 
     public ProfileCounter getCounter() {
@@ -46,32 +29,16 @@ public final class ProfileCount {
     }
 
     /**
-     * @return everything counted under this row, its own adds and its
-     *         children's alike
+     * @return how much of this counter the row holds, inclusive and its own
      */
-    public long getTotal() {
-        return total;
+    public CountTotals getTotals() {
+        return totals;
     }
 
     /**
-     * @return what this row counted itself, which is what its self time is
-     *         spread over
+     * @return how far one call's worth of it spread across the row's calls
      */
-    public long getSelfTotal() {
-        return selfTotal;
-    }
-
-    /**
-     * @return the least this row counted in any one call
-     */
-    public long getMinPerCall() {
-        return minPerCall;
-    }
-
-    /**
-     * @return the most this row counted in any one call
-     */
-    public long getMaxPerCall() {
-        return maxPerCall;
+    public CountSpread getSpread() {
+        return spread;
     }
 }
