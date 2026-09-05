@@ -4,6 +4,7 @@ import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.rules.MemoryAPI;
 
+import org.apache.log4j.Logger;
 import org.mockito.MockedStatic;
 import org.mockito.invocation.InvocationOnMock;
 
@@ -40,6 +41,9 @@ import static org.mockito.Mockito.when;
  * <p>Holds the static stand-in for {@code Global} open for its lifetime, so the suite that opened it
  * closes it - as a try-with-resources, or from the teardown matching the setup it was made in. Left
  * open, the stand-in outlives its case and the next one reaches this sector instead of posing its own.
+ *
+ * <p>That stand-in answers the logger as well as the sector, because a static logger field resolved
+ * while it is open keeps its answer for the rest of the JVM - see the constructor.
  */
 public final class SectorMemoryFake implements AutoCloseable {
 
@@ -67,6 +71,16 @@ public final class SectorMemoryFake implements AutoCloseable {
         globalMock
             .when(Global::getSector)
             .thenReturn(sectorMock);
+
+        // A real logger rather than the mock's null, and this is not optional: a class whose static
+        // LOG field is first resolved while this stand-in is open keeps whatever it was handed for
+        // the rest of the JVM. Left null, every later suite that logs through that class faults on
+        // it - a failure that reads as belonging to whichever suite happened to run after this one,
+        // and that comes and goes with the order they run in. Named for this fixture, the name
+        // reaching nothing any suite asserts.
+        globalMock
+            .when(() -> Global.getLogger(any(Class.class)))
+            .thenReturn(Logger.getLogger(SectorMemoryFake.class));
     }
 
     /** The memory the posed sector carries, for a caller that has to hand one over directly. */
