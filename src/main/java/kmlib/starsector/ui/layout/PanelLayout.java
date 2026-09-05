@@ -67,9 +67,7 @@ public final class PanelLayout {
             - padding.bottom();
 
         var bodyStrip = CappedStripLayout.layoutBodyStrip(
-            origin.contentX(),
-            origin.contentTopY(),
-            maxBodyHeight,
+            origin.limitBodyTo(maxBodyHeight),
             chrome.scrollbarThickness(),
             bodyControls,
             measurer,
@@ -179,5 +177,17 @@ public final class PanelLayout {
         float boxTopY,
         float contentX,
         float contentTopY) {
+
+        /**
+         * Pairs this origin with a height limit as the room a body is laid into. The only place a {@link
+         * BodyRoom} is built in production: its two coordinates come straight off this value rather than
+         * being taken apart and passed on, so no caller ever holds them loose beside a third float.
+         *
+         * @param maxHeight the most the body may stand before its scrolling control caps
+         * @return the body's content anchor and its height limit as one value
+         */
+        BodyRoom limitBodyTo(float maxHeight) {
+            return new BodyRoom(contentX, contentTopY, maxHeight);
+        }
     }
 }

@@ -228,8 +228,6 @@ final class CappedStripLayoutTest {
 
             assertThat(capped.scrollOverflow())
                 .isZero();
-            assertThat(capped.isScrollbarNeeded())
-                .isFalse();
         }
 
         @Test
@@ -238,12 +236,10 @@ final class CappedStripLayoutTest {
             var strip = measure(buildHeaderFlexFooterStrip());
             var capped = layoutControlsIn(buildBodyFor(strip, 0f), strip, 0f);
 
-            // At full height the list fills its viewport exactly - no overflow, no scrollbar, and the
-            // viewport is as tall as the list's natural rows.
+            // At full height the list fills its viewport exactly - no overflow, so nothing to scroll and
+            // no bar due, and the viewport is as tall as the list's natural rows.
             assertThat(capped.scrollOverflow())
                 .isCloseTo(0f, within(TOLERANCE));
-            assertThat(capped.isScrollbarNeeded())
-                .isFalse();
             assertThat(capped.flexViewport().height())
                 .isCloseTo(strip.measureFlexRowHeight(), within(TOLERANCE));
         }
@@ -290,8 +286,6 @@ final class CappedStripLayoutTest {
             // that much and a scrollbar is due.
             assertThat(capped.scrollOverflow())
                 .isCloseTo(40f, within(TOLERANCE));
-            assertThat(capped.isScrollbarNeeded())
-                .isTrue();
         }
 
         @Test
@@ -532,9 +526,7 @@ final class CappedStripLayoutTest {
             ScrollbarThickness thickness) {
 
         return CappedStripLayout.layoutBodyStrip(
-            BODY_LEFT_X,
-            BODY_TOP_Y,
-            UNCAPPED_BODY_HEIGHT,
+            new BodyRoom(BODY_LEFT_X, BODY_TOP_Y, UNCAPPED_BODY_HEIGHT),
             thickness,
             specs,
             measurerFake,

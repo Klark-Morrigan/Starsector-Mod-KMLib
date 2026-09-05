@@ -23,13 +23,12 @@ import java.util.List;
  * the leftover height. The body is as wide as the widest control, so a flex list narrower than the widest
  * header row spreads to the frame instead of leaving a strip of dead space between it and the scrollbar.
  *
- * <p>Across, the body reserves the gutter its scrollbar stands in. {@link ControlStripLayout#BODY_PADDING}
- * already insets the controls by as much as a default-thickness bar occupies, so a bar no fatter than that
- * costs the body nothing; a fatter one has nowhere to grow but over the rows, so the body widens by the
- * excess instead and the controls keep the width they measured to. Reserved on the strip HAVING a scrolling
- * region rather than on that region currently overrunning: a list crossing the overflow threshold is an
- * ordinary thing, and a body that changed width when it did would read as the panel twitching. A strip with
- * no scrolling control reserves nothing, having no bar to reserve for.
+ * <p>Across, the body reserves the gutter its scrollbar stands in, growing rightward by whatever the bar
+ * overruns the padding by ({@link #measureGutterExcess}) so the controls keep the width they measured to.
+ * Reserved on the strip HAVING a scrolling region rather than on that region currently overrunning: a list
+ * crossing the overflow threshold is an ordinary thing, and a body that changed width when it did would
+ * read as the panel twitching. A strip with no scrolling control reserves nothing, having no bar to reserve
+ * for.
  *
  * <p>Pure geometry in UI coordinates (origin bottom-left, y grows up), split into the same measure-then-
  * place shape as the strip it caps: {@link #capBodyHeight} shrinks the measured body height for the host
@@ -54,17 +53,14 @@ public final class CappedStripLayout {
     }
 
     /**
-     * Measures, caps, and places a scrollable control strip into a body region hung from {@code bodyTopY}
-     * down to at most {@code maxBodyHeight}: the shared body composition a plain panel and a tab panel
-     * both frame (the plain panel wraps it in a border, the tab panel hangs it beneath a header), so the
-     * two size and lay their body the same way and only their outer framing differs. The body is as wide
-     * as the measured strip plus whatever gutter its bar needs past the padding, as tall as the capped
-     * height, left-aligned at {@code originX}, and the strip's one scrolling control gives up the
-     * overshoot past {@code maxBodyHeight}.
+     * Measures, caps, and places a scrollable control strip into the room it was given: the shared body
+     * composition a plain panel and a tab panel both frame (the plain panel wraps it in a border, the tab
+     * panel hangs it beneath a header), so the two size and lay their body the same way and only their
+     * outer framing differs. The body is as wide as the measured strip plus whatever gutter its bar needs
+     * past the padding, as tall as the capped height, left-aligned at the room's content edge, and the
+     * strip's one scrolling control gives up the overshoot past the room's height.
      *
-     * @param originX         the body's left edge (the content inset), in UI coordinates
-     * @param bodyTopY        the body's top edge, in UI coordinates (below a header, or the content top)
-     * @param maxBodyHeight   the most the body may stand before its scrolling control caps
+     * @param room            where the body's content starts and how far down it may run
      * @param thickness       how wide the scrolling control's bar draws; a bar wider than the padding
      *                        already holds clear widens the body by the excess
      * @param bodyControls    the body controls, top to bottom (empty for no body)
@@ -73,21 +69,23 @@ public final class CappedStripLayout {
      * @return the framed body rectangle and the capped, placed controls inside it
      */
     public static BodyStrip layoutBodyStrip(
-            float originX,
-            float bodyTopY,
-            float maxBodyHeight,
+            BodyRoom room,
             ScrollbarThickness thickness,
             List<ControlSpec> bodyControls,
             LineWidthMeasurer measurer,
             float rawScrollOffset) {
 
         var strip = measureStrip(bodyControls, measurer);
-        var bodyHeight = capBodyHeight(strip, maxBodyHeight);
+        var bodyHeight = capBodyHeight(strip, room.maxHeight());
 
         // Grow rightward for a bar the padding cannot swallow, which is the direction a panel already
         // grows: the list keeps its measured width and its left edge, and the frame moves out around it.
         var bodyWidth = strip.measurement().bodyWidth() + measureGutterExcess(strip, thickness);
-        var bounds = new Rectangle(originX, bodyTopY - bodyHeight, bodyWidth, bodyHeight);
+        var bounds = new Rectangle(
+            room.contentX(),
+            room.contentTopY() - bodyHeight,
+            bodyWidth,
+            bodyHeight);
 
         return new BodyStrip(
             bounds,
@@ -201,19 +199,11 @@ public final class CappedStripLayout {
         var originX = body.x() + ControlStripLayout.BODY_PADDING;
         var topInsetY = body.y() + body.height() - ControlStripLayout.BODY_PADDING;
         var bottomInsetY = body.y() + ControlStripLayout.BODY_PADDING;
-        var gap = ControlStripLayout.ROW_GAP;
 
         // Header: the controls above the flex row, stacked from the top inset. A capped strip only
         // shrinks the flex region, so the header lands exactly where an uncapped strip would place it.
         var header = strip.sliceRows(0, flexIndex);
         var headerRows = layoutPinnedRows(header, originX, topInsetY, body);
-
-        // The flex viewport's top edge is where the flex row starts: one gap below the last header row,
-        // read straight off the laid-out header rather than re-summing their heights. With no header the
-        // flex row heads the strip at the top inset.
-        var flexViewportTopY = headerRows.isEmpty()
-            ? topInsetY
-            : headerRows.get(headerRows.size() - 1).y() - gap;
 
         // Footer: the controls below the flex row, pinned to the bottom inset as a block, so they never
         // scroll and always sit flush at the body bottom regardless of the list's length.
@@ -221,9 +211,8 @@ public final class CappedStripLayout {
         var footerTopY = bottomInsetY + ControlStripLayout.measureStackedHeight(footer.rowHeights());
         var footerRows = layoutPinnedRows(footer, originX, footerTopY, body);
 
-        // The viewport's bottom edge sits one gap above the footer block, or at the bottom inset when
-        // there is no footer.
-        var flexViewportBottomY = footer.isEmpty() ? bottomInsetY : footerTopY + gap;
+        var flexViewportTopY = resolveFlexViewportTopY(headerRows, topInsetY);
+        var flexViewportBottomY = resolveFlexViewportBottomY(footer, footerTopY, bottomInsetY);
         var flexViewportHeight = Math.max(0f, flexViewportTopY - flexViewportBottomY);
         var flexNatural = strip.measureFlexRowHeight();
         var flexWidth = measureFlexWidth(body, strip, thickness);
@@ -250,6 +239,30 @@ public final class CappedStripLayout {
             overflow);
     }
 
+    // The flex viewport's top edge, which is where the flex row starts: one gap below the last header row,
+    // read straight off the laid-out header rather than re-summing their heights. With no header the flex
+    // row heads the strip at the top inset.
+    private static float resolveFlexViewportTopY(List<Rectangle> headerRows, float topInsetY) {
+        if (headerRows.isEmpty()) {
+            return topInsetY;
+        }
+        return headerRows.get(headerRows.size() - 1).y() - ControlStripLayout.ROW_GAP;
+    }
+
+    // The flex viewport's bottom edge: one gap above the footer block, or at the bottom inset when there
+    // is no footer. Measured off the footer's own top rather than off the body, so the list stops where
+    // the pinned block actually starts.
+    private static float resolveFlexViewportBottomY(
+            RowRun footer,
+            float footerTopY,
+            float bottomInsetY) {
+
+        if (footer.isEmpty()) {
+            return bottomInsetY;
+        }
+        return footerTopY + ControlStripLayout.ROW_GAP;
+    }
+
     // One pinned run of the strip - the header above the flex region or the footer below it - laid from
     // topY with its dividers spanned to the framed body, so a rule on either side of the list reaches the
     // frame the way an uncapped strip's does. The two runs differ only in where they hang from, so they
@@ -273,10 +286,9 @@ public final class CappedStripLayout {
     // wide as the widest control, so this only ever grows the list - a list already that wide is
     // unchanged.
     //
-    // The right side is held clear by the padding plus whatever the bar overruns it by, which is the same
-    // excess layoutBodyStrip widened the body by. So the two cancel and the list comes out at its
-    // measured content width at every thickness: the growth is absorbed by the box, not taken out of the
-    // content.
+    // The right side is held clear by the padding plus the same excess layoutBodyStrip widened the body
+    // by, so the two cancel and the list comes out at its measured content width at every thickness: the
+    // growth is absorbed by the box, not taken out of the content.
     private static float measureFlexWidth(
             Rectangle body,
             MeasuredStrip strip,
@@ -402,17 +414,10 @@ public final class CappedStripLayout {
      * @param scrollOverflow how far the flex list overruns its viewport, zero when it fits
      */
     public record CappedStripPlacement(
-            List<Control> controls,
-            Rectangle flexViewport,
-            float scrollOffset,
-            float scrollOverflow) {
-        /**
-         * @return whether the flex list overruns its viewport, so the host draws a scrollbar and scrolls
-         *         on a wheel event
-         */
-        public boolean isScrollbarNeeded() {
-            return scrollOverflow > 0f;
-        }
+        List<Control> controls,
+        Rectangle flexViewport,
+        float scrollOffset,
+        float scrollOverflow) {
     }
 
     /**

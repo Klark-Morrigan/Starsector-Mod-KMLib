@@ -581,14 +581,15 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementLeavesABodylessPanelAtTheDefaultThickness() {
+        void computePlacementLeavesABodylessPanelWithNoBarAtAll() {
 
             var placement = placeAtThickness(List.of(), THICK_BAR);
 
-            // A tab row with nothing under it has no body to scroll and so no bar to size; the placement
-            // must still name a thickness, and the default is what it names.
+            // A tab row with nothing under it has no body to scroll and nowhere to draw a bar, so the
+            // thickness the placement must still name is the one that says there is no bar - not the
+            // caller's, which describes a bar this panel never stands.
             assertThat(placement.body().scrollbarThickness())
-                .isEqualTo(ScrollbarThickness.DEFAULT);
+                .isEqualTo(ScrollbarThickness.NONE);
         }
 
         @Test

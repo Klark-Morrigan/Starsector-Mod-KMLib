@@ -153,9 +153,7 @@ public final class TabPanelLayout {
             - padding.bottom();
 
         var bodyStrip = CappedStripLayout.layoutBodyStrip(
-            origin.contentX(),
-            origin.contentTopY(),
-            maxBodyHeight,
+            origin.limitBodyTo(maxBodyHeight),
             chrome.scrollbarThickness(),
             bodyControls,
             measurer,
@@ -235,8 +233,9 @@ public final class TabPanelLayout {
     // claim under the row - framing a zero body would instead leave a border-sized square hanging off the
     // row's left end, drawn and clickable with nothing in it.
     //
-    // It carries the default thickness rather than the caller's: there is no body to scroll and so no bar
-    // to size, and a placement must still name one.
+    // It names no bar rather than the caller's thickness: there is no body to scroll, so there is nothing
+    // for a bar to stand beside, and a placement must still state a thickness. NONE is that state said
+    // outright, where any width would describe a bar this panel has nowhere to draw.
     private static PanelPlacement buildBodylessPlacement(int leftX, float boxTopY) {
 
         var emptyBox = new Rectangle(leftX, boxTopY, 0f, 0f);
@@ -248,7 +247,7 @@ public final class TabPanelLayout {
             emptyBox,
             0f,
             0f,
-            ScrollbarThickness.DEFAULT);
+            ScrollbarThickness.NONE);
     }
 
     // The collapse-handle notch: a rect protruding past the box's right border edge, vertically centred on
