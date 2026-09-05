@@ -55,19 +55,16 @@ public final class TimingReport {
     // Floors, not fixed widths: a column is widened by anything that does not
     // fit, and these keep the timing columns from closing up around small
     // numbers, where a table that reflows between two captures cannot be
-    // compared against the one before it by eye.
-    private static final int SECTION_COLUMN_FLOOR = 0;
+    // compared against the one before it by eye. The section and counter
+    // columns take no floor - how long a section is named, what a counter is
+    // called and how big it gets are the caller's, not this table's.
+    private static final int NO_COLUMN_FLOOR = 0;
     private static final int CALL_COUNT_COLUMN_FLOOR = 8;
     private static final int DURATION_COLUMN_FLOOR = 10;
     private static final int TOTAL_COLUMN_FLOOR = 11;
 
-    // A counter column is as wide as its header and its widest number: what a
-    // counter is called and how big it gets are the caller's, not this table's.
-    private static final int COUNTER_COLUMN_FLOOR = 0;
-
-    // Left blank where a subtree never touched a counter. A zero would say the
-    // row counted none of it, which is a different fact and the one worth
-    // seeing; a table of zeroes hides the rows that count.
+    // Blank where a row never touched a counter - see ProfileNode#getCounts for
+    // why that is not a zero.
     private static final String ABSENT_CELL = "";
 
     private static final String MILLIS_FORMAT = "%.3f";
@@ -153,7 +150,7 @@ public final class TimingReport {
             buildCounterColumn(name + COUNTER_MAXIMUM_SUFFIX, counter, ProfileCount::getMaxPerCall),
             new ReportColumn(
                 name + COUNTER_PER_ITEM_SUFFIX,
-                COUNTER_COLUMN_FLOOR,
+                NO_COLUMN_FLOOR,
                 node -> formatSelfMicrosPerItem(node, counter)));
     }
 
@@ -162,7 +159,7 @@ public final class TimingReport {
             ProfileCounter counter,
             ToLongFunction<ProfileCount> readAmount) {
 
-        return new ReportColumn(header, COUNTER_COLUMN_FLOOR, node -> {
+        return new ReportColumn(header, NO_COLUMN_FLOOR, node -> {
             var count = findCount(node, counter);
             return count == null ? ABSENT_CELL : Long.toString(readAmount.applyAsLong(count));
         });
@@ -252,7 +249,7 @@ public final class TimingReport {
 
         var widths = new int[columns.size() + 1];
 
-        widths[0] = SECTION_COLUMN_FLOOR;
+        widths[0] = NO_COLUMN_FLOOR;
         for (var index = 0; index < columns.size(); index++) {
             widths[index + 1] = columns.get(index).getFloorWidth();
         }
