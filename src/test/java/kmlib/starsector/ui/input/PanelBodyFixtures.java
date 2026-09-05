@@ -22,6 +22,11 @@ import java.util.List;
  * <p>Every control is laid at {@link #ROW}, so a case states which kind of control it is about and where it
  * points, never the geometry. The viewport and the box are the two gates a walk gets to fail on, so each
  * has a builder that widens one to nothing and narrows the other to what the case is exercising.
+ *
+ * <p>Beside them the bodies with somewhere to scroll, for the cases about the wheel and the scrollbar: one
+ * whose viewport is the whole row, and one with the row narrowed off the box's right edge to leave the gutter
+ * a drag grabs the bar by. Shared by the end that moves the list and the controller that routes to it, since
+ * a case about the routing has to lay the same body the rule it routes to was pinned on.
  */
 final class PanelBodyFixtures {
 
@@ -34,7 +39,146 @@ final class PanelBodyFixtures {
      */
     static final Rectangle FULL_VIEWPORT = new Rectangle(0f, 0f, 10000f, 10000f);
 
+    /**
+     * How far the scrolling bodies overrun their viewport: less than one wheel notch scrolls, so a single
+     * wheel turn takes the list to its end and the one after it has nowhere to go. That pair is what tells a
+     * list that moved from a list already against its stop.
+     */
+    static final float SHORT_SCROLL_OVERFLOW = 20f;
+
+    /**
+     * How wide a gutter the guttered body leaves right of its list, so a press there lands in the column a
+     * drag grabs the scrollbar by. Wider than the track, which is what the real grab column is.
+     */
+    static final float SCROLLBAR_GUTTER_WIDTH = 20f;
+
+    /**
+     * A point over the list itself - inside the box and inside the scroll region, the only place a wheel
+     * reaches the list at all.
+     */
+    static final float ON_LIST_X = ROW.x() + ROW.width() / 2f;
+    static final float ON_LIST_Y = ROW.y() + ROW.height() / 2f;
+
+    /**
+     * A point in the guttered body's grab column: right of the list and still inside the box, and low in the
+     * row so a drag mapped from it carries the list toward its end rather than leaving it where it was.
+     */
+    static final float IN_GRAB_COLUMN_X = ROW.x() + ROW.width() - SCROLLBAR_GUTTER_WIDTH / 2f;
+    static final float IN_GRAB_COLUMN_Y = ROW.y() + 1f;
+
+    // A body whose content fits, which is what leaves a panel with no scrollbar and a wheel with nothing to
+    // move.
+    private static final float NO_SCROLL_OVERFLOW = 0f;
+
     private PanelBodyFixtures() {
+    }
+
+    /**
+     * A panel whose body has somewhere to scroll and nothing laid in it: its viewport is the row and its
+     * content overruns it by {@link #SHORT_SCROLL_OVERFLOW}, so one notch takes the list to its end and the
+     * next has nowhere to go.
+     *
+     * @return the placement
+     */
+    static PanelPlacement buildScrollingPlacement() {
+        return buildScrollingPlacementOver();
+    }
+
+    /**
+     * The same panel with the given controls laid in it, for a case that has to tell what the wheel and the
+     * scrollbar answer from what a control does - a body with nothing in it would be silent either way.
+     *
+     * @param bodyControls the controls laid in the body, top to bottom
+     * @return the placement
+     */
+    static PanelPlacement buildScrollingPlacementOver(Control... bodyControls) {
+        return buildScrollingPlacementAtThickness(ScrollbarThickness.DEFAULT, bodyControls);
+    }
+
+    /**
+     * The same panel with the bar's width named, for the cases about a host that has set it away. Taken as
+     * an argument rather than written into a second placement, so a barless case and the cases above differ
+     * in that one number and in nothing else.
+     *
+     * @param thickness    how wide the bar draws
+     * @param bodyControls the controls laid in the body, top to bottom
+     * @return the placement
+     */
+    static PanelPlacement buildScrollingPlacementAtThickness(
+            ScrollbarThickness thickness,
+            Control... bodyControls) {
+
+        return new PanelPlacement(
+            ROW,
+            ROW,
+            List.of(bodyControls),
+            ROW,
+            0f,
+            SHORT_SCROLL_OVERFLOW,
+            thickness);
+    }
+
+    /**
+     * The same panel whose content fits, so there is no scrollbar and the wheel moves nothing.
+     *
+     * @return the placement
+     */
+    static PanelPlacement buildUnscrollablePlacement() {
+        return new PanelPlacement(
+            ROW,
+            ROW,
+            List.of(),
+            ROW,
+            0f,
+            NO_SCROLL_OVERFLOW,
+            ScrollbarThickness.DEFAULT);
+    }
+
+    /**
+     * The same scrolling panel with its list narrowed off the box's right edge, leaving the gutter a drag
+     * grabs the scrollbar by. The scrolling body above lays the viewport across the whole box, which leaves
+     * no gutter at all - so the drag and the off-the-list wheel need a body shaped like the real one.
+     *
+     * @return the placement
+     */
+    static PanelPlacement buildGutteredPlacement() {
+        return buildGutteredPlacementOver();
+    }
+
+    /**
+     * The guttered panel with the given controls laid across the whole row, gutter included - which is where
+     * the real ones sit, the grab column being drawn over the body rather than beside it. What a press in
+     * that column answers is then a question the placement can actually pose.
+     *
+     * @param bodyControls the controls laid in the body, top to bottom
+     * @return the placement
+     */
+    static PanelPlacement buildGutteredPlacementOver(Control... bodyControls) {
+        return buildGutteredPlacementAtThickness(ScrollbarThickness.DEFAULT, bodyControls);
+    }
+
+    /**
+     * The guttered panel with the bar's width named, for the same reason the scrolling one takes it: the
+     * barless cases have to be the drawn ones with one number changed, the gutter and the list being where
+     * they always were.
+     *
+     * @param thickness    how wide the bar draws
+     * @param bodyControls the controls laid in the body, top to bottom
+     * @return the placement
+     */
+    static PanelPlacement buildGutteredPlacementAtThickness(
+            ScrollbarThickness thickness,
+            Control... bodyControls) {
+
+        var list = new Rectangle(ROW.x(), ROW.y(), ROW.width() - SCROLLBAR_GUTTER_WIDTH, ROW.height());
+        return new PanelPlacement(
+            ROW,
+            ROW,
+            List.of(bodyControls),
+            list,
+            0f,
+            SHORT_SCROLL_OVERFLOW,
+            thickness);
     }
 
     /**
