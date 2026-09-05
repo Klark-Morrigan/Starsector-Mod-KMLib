@@ -108,7 +108,10 @@ final class ProfileNodeAccumulator {
             counts.add(countAccumulator.buildCount());
         }
         return new ProfileNode(
-            section, count, totalNanos, minNanos, maxNanos, counts, childNodes);
+            section,
+            new ProfileTiming(count, totalNanos, minNanos, maxNanos),
+            counts,
+            childNodes);
     }
 
     // Identity scans over two handfuls, for the same reason a section is

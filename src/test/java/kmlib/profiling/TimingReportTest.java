@@ -56,10 +56,7 @@ final class TimingReportTest {
             // 2 calls, total 3_000_000ns = 3.000ms, avg 1.500ms.
             var node = new ProfileNode(
                 ProfileSection.registerSection("render"),
-                2,
-                3_000_000,
-                1_000_000,
-                2_000_000,
+                new ProfileTiming(2, 3_000_000, 1_000_000, 2_000_000),
                 List.of(),
                 List.of());
             var report = TimingReport.format(List.of(node));
@@ -169,17 +166,11 @@ final class TimingReportTest {
     private static ProfileNode parentHoldingOneChild(String parentName, String childName) {
         return new ProfileNode(
             ProfileSection.registerSection(parentName),
-            1,
-            PARENT_TOTAL_NANOS,
-            PARENT_TOTAL_NANOS,
-            PARENT_TOTAL_NANOS,
+            new ProfileTiming(1, PARENT_TOTAL_NANOS, PARENT_TOTAL_NANOS, PARENT_TOTAL_NANOS),
             List.of(),
             List.of(new ProfileNode(
                 ProfileSection.registerSection(childName),
-                1,
-                CHILD_TOTAL_NANOS,
-                CHILD_TOTAL_NANOS,
-                CHILD_TOTAL_NANOS,
+                new ProfileTiming(1, CHILD_TOTAL_NANOS, CHILD_TOTAL_NANOS, CHILD_TOTAL_NANOS),
                 List.of(),
                 List.of())));
     }
@@ -189,10 +180,7 @@ final class TimingReportTest {
     private static ProfileNode nodeCounting(String sectionName, ProfileCount count) {
         return new ProfileNode(
             ProfileSection.registerSection(sectionName),
-            1,
-            PARENT_TOTAL_NANOS,
-            PARENT_TOTAL_NANOS,
-            PARENT_TOTAL_NANOS,
+            new ProfileTiming(1, PARENT_TOTAL_NANOS, PARENT_TOTAL_NANOS, PARENT_TOTAL_NANOS),
             List.of(count),
             List.of());
     }

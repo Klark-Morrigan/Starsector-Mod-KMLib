@@ -124,15 +124,20 @@ public final class TimingReport {
         var columns = new ArrayList<ReportColumn>();
 
         columns.add(new ReportColumn(
-            COUNT_HEADER, CALL_COUNT_COLUMN_FLOOR, node -> Long.toString(node.getCount())));
-        columns.add(buildDurationColumn(AVERAGE_HEADER, ProfileNode::getAverageNanos));
-        columns.add(buildDurationColumn(MINIMUM_HEADER, ProfileNode::getMinNanos));
-        columns.add(buildDurationColumn(MAXIMUM_HEADER, ProfileNode::getMaxNanos));
-        columns.add(buildDurationColumn(SELF_HEADER, ProfileNode::getSelfNanos));
+            COUNT_HEADER,
+            CALL_COUNT_COLUMN_FLOOR,
+            node -> Long.toString(node.getTiming().getCount())));
+        columns.add(buildTimingColumn(AVERAGE_HEADER, ProfileTiming::getAverageNanos));
+        columns.add(buildTimingColumn(MINIMUM_HEADER, ProfileTiming::getMinNanos));
+        columns.add(buildTimingColumn(MAXIMUM_HEADER, ProfileTiming::getMaxNanos));
+        columns.add(new ReportColumn(
+            SELF_HEADER,
+            DURATION_COLUMN_FLOOR,
+            node -> formatMillis(node.getSelfNanos())));
         columns.add(new ReportColumn(
             TOTAL_HEADER,
             TOTAL_COLUMN_FLOOR,
-            node -> formatMillis(node.getTotalNanos())));
+            node -> formatMillis(node.getTiming().getTotalNanos())));
 
         for (var counter : collectCounters(roots)) {
             columns.addAll(buildCounterColumns(counter));
@@ -165,14 +170,14 @@ public final class TimingReport {
         });
     }
 
-    private static ReportColumn buildDurationColumn(
+    private static ReportColumn buildTimingColumn(
             String header,
-            ToLongFunction<ProfileNode> readNanos) {
+            ToLongFunction<ProfileTiming> readNanos) {
 
         return new ReportColumn(
             header,
             DURATION_COLUMN_FLOOR,
-            node -> formatMillis(readNanos.applyAsLong(node)));
+            node -> formatMillis(readNanos.applyAsLong(node.getTiming())));
     }
 
     private static List<String> buildHeaderRow(List<ReportColumn> columns) {

@@ -3,10 +3,9 @@ package kmlib.profiling;
 import java.util.List;
 
 /**
- * One section's accumulated timings at one place in the tree: how often it ran
- * under this parent, its total, fastest and slowest span, how much of that
- * total it spent itself rather than beneath it, what it counted while it ran,
- * and the sections opened inside it.
+ * One section at one place in the tree: what its calls cost, how much of that
+ * it spent itself rather than beneath it, what it counted while it ran, and the
+ * sections opened inside it.
  *
  * <p>A node is inclusive by construction - its total is everything that ran
  * under it - so self time is what the section costs on its own, which is the
@@ -22,51 +21,34 @@ import java.util.List;
 public final class ProfileNode {
 
     private final ProfileSection section;
-    private final long count;
-    private final long totalNanos;
-    private final long minNanos;
-    private final long maxNanos;
+    private final ProfileTiming timing;
     private final long selfNanos;
     private final List<ProfileCount> counts;
     private final List<ProfileNode> children;
 
     public ProfileNode(
             ProfileSection section,
-            long count,
-            long totalNanos,
-            long minNanos,
-            long maxNanos,
+            ProfileTiming timing,
             List<ProfileCount> counts,
             List<ProfileNode> children) {
 
         this.section = section;
-        this.count = count;
-        this.totalNanos = totalNanos;
-        this.minNanos = minNanos;
-        this.maxNanos = maxNanos;
+        this.timing = timing;
         this.counts = List.copyOf(counts);
         this.children = List.copyOf(children);
-        this.selfNanos = subtractChildNanos(totalNanos, this.children);
+        this.selfNanos = subtractChildNanos(timing.getTotalNanos(), this.children);
     }
 
     public ProfileSection getSection() {
         return section;
     }
 
-    public long getCount() {
-        return count;
-    }
-
-    public long getTotalNanos() {
-        return totalNanos;
-    }
-
-    public long getMinNanos() {
-        return minNanos;
-    }
-
-    public long getMaxNanos() {
-        return maxNanos;
+    /**
+     * @return how often this section ran here and what those calls cost,
+     *         inclusive of everything opened inside it
+     */
+    public ProfileTiming getTiming() {
+        return timing;
     }
 
     /**
@@ -95,14 +77,6 @@ public final class ProfileNode {
         return children;
     }
 
-    /**
-     * @return the mean nanoseconds per run, or 0 when nothing was recorded
-     *         (guards the divide so an empty snapshot is still printable)
-     */
-    public long getAverageNanos() {
-        return count == 0 ? 0 : totalNanos / count;
-    }
-
     // Derived rather than accumulated, so self time cannot drift from the two
     // totals it is the difference of. Clamped at zero because a scope left open
     // never received the time of the children that closed under it, and a
@@ -110,7 +84,7 @@ public final class ProfileNode {
     private static long subtractChildNanos(long totalNanos, List<ProfileNode> children) {
         var childNanos = 0L;
         for (var child : children) {
-            childNanos += child.totalNanos;
+            childNanos += child.timing.getTotalNanos();
         }
         return Math.max(0, totalNanos - childNanos);
     }

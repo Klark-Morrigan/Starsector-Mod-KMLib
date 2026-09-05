@@ -50,11 +50,11 @@ final class RecordingProfilerTest {
 
             var parentNode = profiler.snapshot().get(0);
 
-            assertThat(parentNode.getTotalNanos())
+            assertThat(parentNode.getTiming().getTotalNanos())
                 .isEqualTo(100);
             assertThat(readSectionNames(parentNode.getChildren()))
                 .containsExactly(CHILD_SECTION);
-            assertThat(parentNode.getChildren().get(0).getTotalNanos())
+            assertThat(parentNode.getChildren().get(0).getTiming().getTotalNanos())
                 .isEqualTo(30);
         }
 
@@ -80,9 +80,9 @@ final class RecordingProfilerTest {
 
             assertThat(readSectionNames(roots))
                 .containsExactly(PARENT_SECTION, OTHER_PARENT_SECTION);
-            assertThat(roots.get(0).getChildren().get(0).getTotalNanos())
+            assertThat(roots.get(0).getChildren().get(0).getTiming().getTotalNanos())
                 .isEqualTo(5);
-            assertThat(roots.get(1).getChildren().get(0).getTotalNanos())
+            assertThat(roots.get(1).getChildren().get(0).getTiming().getTotalNanos())
                 .isEqualTo(9);
         }
 
@@ -118,13 +118,13 @@ final class RecordingProfilerTest {
 
             var childNode = profiler.snapshot().get(0).getChildren().get(0);
 
-            assertThat(childNode.getCount())
+            assertThat(childNode.getTiming().getCount())
                 .isEqualTo(2);
-            assertThat(childNode.getTotalNanos())
+            assertThat(childNode.getTiming().getTotalNanos())
                 .isEqualTo(6);
-            assertThat(childNode.getMinNanos())
+            assertThat(childNode.getTiming().getMinNanos())
                 .isEqualTo(2);
-            assertThat(childNode.getMaxNanos())
+            assertThat(childNode.getTiming().getMaxNanos())
                 .isEqualTo(4);
         }
 
@@ -142,9 +142,9 @@ final class RecordingProfilerTest {
 
             assertThat(roots)
                 .hasSize(1);
-            assertThat(roots.get(0).getCount())
+            assertThat(roots.get(0).getTiming().getCount())
                 .isEqualTo(2);
-            assertThat(roots.get(0).getTotalNanos())
+            assertThat(roots.get(0).getTiming().getTotalNanos())
                 .isEqualTo(12);
         }
     }
@@ -362,13 +362,13 @@ final class RecordingProfilerTest {
             profiler.measure("build", () -> {
             });
 
-            var timing = profiler.snapshot().get(0);
+            var node = profiler.snapshot().get(0);
 
-            assertThat(timing.getSection().getName())
+            assertThat(node.getSection().getName())
                 .isEqualTo("build");
-            assertThat(timing.getCount())
+            assertThat(node.getTiming().getCount())
                 .isEqualTo(1);
-            assertThat(timing.getTotalNanos())
+            assertThat(node.getTiming().getTotalNanos())
                 .isEqualTo(150);
         }
 
@@ -384,7 +384,7 @@ final class RecordingProfilerTest {
             profiler.measure("render", () -> {
             });
 
-            var timing = profiler.snapshot().get(0);
+            var timing = profiler.snapshot().get(0).getTiming();
 
             assertThat(timing.getCount())
                 .isEqualTo(2);
@@ -407,7 +407,7 @@ final class RecordingProfilerTest {
 
             assertThat(result)
                 .isEqualTo("value");
-            assertThat(profiler.snapshot().get(0).getTotalNanos())
+            assertThat(profiler.snapshot().get(0).getTiming().getTotalNanos())
                 .isEqualTo(42);
         }
 
@@ -427,7 +427,7 @@ final class RecordingProfilerTest {
 
             assertThat(readSectionNames(parentNode.getChildren()))
                 .containsExactly(CHILD_SECTION);
-            assertThat(parentNode.getChildren().get(0).getTotalNanos())
+            assertThat(parentNode.getChildren().get(0).getTiming().getTotalNanos())
                 .isEqualTo(20);
         }
     }
@@ -450,7 +450,7 @@ final class RecordingProfilerTest {
 
             assertThat(parentNode.getSelfNanos())
                 .isEqualTo(30);
-            assertThat(parentNode.getChildren().get(0).getTotalNanos())
+            assertThat(parentNode.getChildren().get(0).getTiming().getTotalNanos())
                 .isEqualTo(20);
         }
 
@@ -466,7 +466,7 @@ final class RecordingProfilerTest {
 
             assertThat(readSectionNames(roots))
                 .containsExactly(PARENT_SECTION);
-            assertThat(roots.get(0).getTotalNanos())
+            assertThat(roots.get(0).getTiming().getTotalNanos())
                 .isEqualTo(20);
         }
     }
@@ -487,9 +487,9 @@ final class RecordingProfilerTest {
 
             var outerNode = profiler.snapshot().get(0);
 
-            assertThat(outerNode.getTotalNanos())
+            assertThat(outerNode.getTiming().getTotalNanos())
                 .isEqualTo(50);
-            assertThat(outerNode.getChildren().get(0).getTotalNanos())
+            assertThat(outerNode.getChildren().get(0).getTiming().getTotalNanos())
                 .isEqualTo(40);
         }
 
@@ -542,7 +542,7 @@ final class RecordingProfilerTest {
             scope.close();
             scope.close();
 
-            assertThat(profiler.snapshot().get(0).getCount())
+            assertThat(profiler.snapshot().get(0).getTiming().getCount())
                 .isEqualTo(1);
         }
     }
@@ -574,11 +574,11 @@ final class RecordingProfilerTest {
 
             var openNode = profiler.snapshot().get(0);
 
-            assertThat(openNode.getCount())
+            assertThat(openNode.getTiming().getCount())
                 .isEqualTo(0);
-            assertThat(openNode.getMinNanos())
+            assertThat(openNode.getTiming().getMinNanos())
                 .isEqualTo(0);
-            assertThat(openNode.getMaxNanos())
+            assertThat(openNode.getTiming().getMaxNanos())
                 .isEqualTo(0);
         }
     }
