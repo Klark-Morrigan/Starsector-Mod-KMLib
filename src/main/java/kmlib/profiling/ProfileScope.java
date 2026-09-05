@@ -1,8 +1,8 @@
 package kmlib.profiling;
 
 /**
- * An open section: work runs inside it, and closing it records how long that
- * took under whatever scope was open when this one was opened.
+ * An open section: work runs inside it and counts what it handled, and closing
+ * it records both under whatever scope was open when this one was opened.
  *
  * <p>{@link AutoCloseable} so a caller opens it in try-with-resources and the
  * language closes it - including down a throwing path, which is where a

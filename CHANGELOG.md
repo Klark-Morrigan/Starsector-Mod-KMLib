@@ -97,8 +97,9 @@ No Starsector API on the signature.
 - **`kmlib.profiling`** - the profiler a mod binds to hear what the library
   measures, silent until one does: named sections opened as nesting scopes or
   collected by measure or record, their count, total, min, max, average and
-  self time snapshotted as a tree, an indented report over it, and nanosecond
-  conversions.
+  self time snapshotted as a tree, the counters a scope tallies and rolls up
+  beside those durations with their spread per call, an indented report over
+  both, and nanosecond conversions.
 - **`kmlib.settings`** - LunaLib settings read and write, immediate and
   deferred with flush and removal, change callbacks, and resolving a labelled
   choice back from its label.

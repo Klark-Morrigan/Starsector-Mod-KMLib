@@ -5,7 +5,8 @@ import java.util.List;
 
 /**
  * The mutable node {@link RecordingProfiler} adds to - one section under one
- * parent - together with the nodes opened inside it, in first-opened order.
+ * parent - together with what its calls counted and the nodes opened inside it,
+ * both in first-seen order.
  *
  * <p>Kept apart from the {@link ProfileNode} a snapshot hands out: what a
  * reader is given must not change while it is being read, and what the profiler
