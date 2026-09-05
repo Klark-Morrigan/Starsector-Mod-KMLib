@@ -218,8 +218,9 @@ No Starsector API on the signature.
   [Rendering environment](#rendering-environment).
 - [`opengl/hatch/`](src/main/java/kmlib/opengl/hatch/) - hatch fills across a
   polygon, with a tally of how cleanly the runs join.
-- [`profiling/`](src/main/java/kmlib/profiling/) - named section timings,
-  their count, total, min, max and average snapshot, and the report over them.
+- [`profiling/`](src/main/java/kmlib/profiling/) - the profiler seam a mod
+  binds, silent until it does; named section timings, their count, total, min,
+  max and average snapshot, and the report over them.
 - [`settings/`](src/main/java/kmlib/settings/) - LunaLib settings read and
   write, immediate and deferred, change callbacks, and labelled choices.
 - [`text/`](src/main/java/kmlib/text/) - string and number formatting, plus

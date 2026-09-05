@@ -1,10 +1,6 @@
 package kmlib.profiling;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 /**
@@ -17,32 +13,17 @@ import java.util.function.Supplier;
  * each. Read the result with {@link #snapshot()} and format it with
  * {@link TimingReport}.
  *
- * <p>The clock is injected (defaulting to {@link System#nanoTime()}) so the
- * accumulation reads whatever time source its caller names rather than the
- * system clock. Not synchronised: intended for the single game thread that
- * drives campaign advance and rendering; sharing one instance across threads
- * would need external synchronisation.
+ * <p>A seam rather than a class so the cost of profiling is a binding: library
+ * code measures through {@link ActiveProfiler} without knowing whether anything
+ * is listening, and a mod that wants a readout binds a {@link RecordingProfiler}
+ * while everything else runs against the {@link SilentProfiler}, which keeps
+ * nothing and allocates nothing.
+ *
+ * <p>Not synchronised: intended for the single game thread that drives campaign
+ * advance and rendering; sharing one instance across threads would need
+ * external synchronisation.
  */
-public final class Profiler {
-    private final Map<String, MutableStat> statsBySection = new LinkedHashMap<>();
-    private final LongSupplier clockNanos;
-
-    /**
-     * Creates a profiler timing against the system nanosecond clock.
-     */
-    public Profiler() {
-        this(System::nanoTime);
-    }
-
-    /**
-     * Creates a profiler timing against {@code clockNanos}, for a caller that
-     * supplies its own time source rather than reading the system clock.
-     *
-     * @param clockNanos source of the current time in nanoseconds
-     */
-    public Profiler(LongSupplier clockNanos) {
-        this.clockNanos = clockNanos;
-    }
+public interface Profiler {
 
     /**
      * Times {@code work} and records its duration under {@code section}.
@@ -50,16 +31,7 @@ public final class Profiler {
      * @param section the name to accumulate the duration under
      * @param work    the block to time
      */
-    public void measure(String section, Runnable work) {
-        var start = clockNanos.getAsLong();
-        try {
-            work.run();
-        } finally {
-            // Record in finally so a throwing block still contributes its
-            // (partial) duration rather than vanishing from the stats.
-            record(section, clockNanos.getAsLong() - start);
-        }
-    }
+    void measure(String section, Runnable work);
 
     /**
      * Times {@code work}, records its duration under {@code section}, and
@@ -70,14 +42,7 @@ public final class Profiler {
      * @param <T>     the result type
      * @return whatever {@code work} returns
      */
-    public <T> T measure(String section, Supplier<T> work) {
-        var start = clockNanos.getAsLong();
-        try {
-            return work.get();
-        } finally {
-            record(section, clockNanos.getAsLong() - start);
-        }
-    }
+    <T> T measure(String section, Supplier<T> work);
 
     /**
      * Records a pre-measured duration under {@code section}, for callers that
@@ -86,51 +51,16 @@ public final class Profiler {
      * @param section      the name to accumulate the duration under
      * @param elapsedNanos the duration to add
      */
-    public void record(String section, long elapsedNanos) {
-        statsBySection
-            .computeIfAbsent(section, key -> new MutableStat())
-            .add(elapsedNanos);
-    }
+    void record(String section, long elapsedNanos);
 
     /**
      * @return an immutable snapshot of every section's stats, in the order the
      *         sections were first recorded
      */
-    public List<SectionTiming> snapshot() {
-        var timings = new ArrayList<SectionTiming>();
-        for (var entry : statsBySection.entrySet()) {
-            var stat = entry.getValue();
-            timings.add(new SectionTiming(
-                entry.getKey(),
-                stat.count,
-                stat.totalNanos,
-                stat.minNanos,
-                stat.maxNanos));
-        }
-        return timings;
-    }
+    List<SectionTiming> snapshot();
 
     /**
      * Clears all accumulated timings, so the next measurements start fresh.
      */
-    public void reset() {
-        statsBySection.clear();
-    }
-
-    // Running totals for one section. Mutable and package-free on purpose: it is
-    // an internal accumulator, never handed out (snapshot() copies into the
-    // immutable SectionTiming instead).
-    private static final class MutableStat {
-        private long count;
-        private long totalNanos;
-        private long minNanos = Long.MAX_VALUE;
-        private long maxNanos = Long.MIN_VALUE;
-
-        private void add(long elapsedNanos) {
-            count++;
-            totalNanos += elapsedNanos;
-            minNanos = Math.min(minNanos, elapsedNanos);
-            maxNanos = Math.max(maxNanos, elapsedNanos);
-        }
-    }
+    void reset();
 }

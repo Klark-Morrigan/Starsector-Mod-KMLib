@@ -9,11 +9,11 @@ import java.util.function.LongSupplier;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Pins the accumulation contract of {@link Profiler}: measure() captures the
- * clock delta, repeated sections aggregate into count/total/min/max, snapshot
+ * Pins the accumulation contract of {@link RecordingProfiler}: measure() captures
+ * the clock delta, repeated sections aggregate into count/total/min/max, snapshot
  * order follows first-record order, and reset() clears everything.
  */
-final class ProfilerTest {
+final class RecordingProfilerTest {
 
     @Nested
     class Measure {
@@ -22,7 +22,7 @@ final class ProfilerTest {
         void measureRecordsTheClockDeltaForASection() {
 
             var clock = new ScriptedClock(100, 250);
-            var profiler = new Profiler(clock);
+            var profiler = new RecordingProfiler(clock);
 
             profiler.measure("build", () -> {
             });
@@ -41,7 +41,7 @@ final class ProfilerTest {
         void repeatedMeasuresAggregateCountTotalMinAndMax() {
             // Two runs of "render": 100->150 (50ns) then 150->350 (200ns).
             var clock = new ScriptedClock(100, 150, 150, 350);
-            var profiler = new Profiler(clock);
+            var profiler = new RecordingProfiler(clock);
 
             profiler.measure("render", () -> {
             });
@@ -67,7 +67,7 @@ final class ProfilerTest {
         void measureSupplierReturnsTheWorkResultAndStillTimesIt() {
 
             var clock = new ScriptedClock(0, 42);
-            var profiler = new Profiler(clock);
+            var profiler = new RecordingProfiler(clock);
             var result = profiler.measure("compute", () -> "value");
 
             assertThat(result)
@@ -83,7 +83,7 @@ final class ProfilerTest {
         @Test
         void snapshotFollowsFirstRecordOrder() {
 
-            var profiler = new Profiler(new ScriptedClock(0, 0, 0, 0));
+            var profiler = new RecordingProfiler(new ScriptedClock(0, 0, 0, 0));
 
             profiler.measure("second", () -> {
             });
@@ -101,7 +101,7 @@ final class ProfilerTest {
         @Test
         void resetClearsAllSections() {
 
-            var profiler = new Profiler(new ScriptedClock(0, 10));
+            var profiler = new RecordingProfiler(new ScriptedClock(0, 10));
 
             profiler.measure("build", () -> {
             });

@@ -1,0 +1,71 @@
+package kmlib.profiling;
+
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * Pins {@link SilentProfiler}: the work it is handed still runs and still
+ * returns its result, and nothing it is handed is kept - the snapshot is empty
+ * after any sequence of calls.
+ */
+final class SilentProfilerTest {
+
+    @Nested
+    class Measure {
+
+        @Test
+        void measureRunsTheWorkItIsHanded() {
+
+            var runs = new AtomicInteger();
+
+            SilentProfiler.INSTANCE.measure("build", runs::incrementAndGet);
+
+            assertThat(runs.get())
+                .isEqualTo(1);
+        }
+
+        @Test
+        void measureSupplierReturnsTheWorkResult() {
+
+            var result = SilentProfiler.INSTANCE.measure("compute", () -> "value");
+
+            assertThat(result)
+                .isEqualTo("value");
+        }
+    }
+
+    @Nested
+    class Snapshot {
+
+        @Test
+        void snapshotIsEmptyAfterMeasuringAndRecording() {
+
+            SilentProfiler.INSTANCE.measure("build", () -> {
+            });
+            SilentProfiler.INSTANCE.measure("compute", () -> "value");
+            SilentProfiler.INSTANCE.record("render", 2_000_000);
+
+            assertThat(SilentProfiler.INSTANCE.snapshot())
+                .isEmpty();
+        }
+    }
+
+    @Nested
+    class Reset {
+
+        @Test
+        void resetLeavesTheSnapshotEmpty() {
+
+            SilentProfiler.INSTANCE.record("render", 2_000_000);
+
+            SilentProfiler.INSTANCE.reset();
+
+            assertThat(SilentProfiler.INSTANCE.snapshot())
+                .isEmpty();
+        }
+    }
+}
