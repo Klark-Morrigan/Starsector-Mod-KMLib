@@ -1,5 +1,7 @@
 package kmlib.profiling;
 
+import kmlib.profiling.snapshot.ProfileNode;
+
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -8,10 +10,9 @@ import java.util.function.Supplier;
  *
  * <p>A caller opens a section with {@link #open}, wraps a block in
  * {@link #measure}, or hands a raw duration to {@link #record}, then reads
- * {@link #snapshot()} and formats it with {@link TimingReport}. What comes back
- * is one row per section per parent rather than one per call, the shape per-frame
- * work needs: thousands of calls collapse into a count and a spread instead of
- * thousands of log lines.
+ * {@link #snapshot()}. What comes back is one row per section per parent rather
+ * than one per call, the shape per-frame work needs: thousands of calls collapse
+ * into a count and a spread instead of thousands of log lines.
  *
  * <p>Rows are a tree, not a list, because a duration on its own says little: a
  * section that ran under a rebuild and the same section under a hover are two
@@ -23,7 +24,7 @@ import java.util.function.Supplier;
  * <p>A seam rather than a class, so what profiling costs is a binding rather
  * than a rebuild. Library code measures through {@link ActiveProfiler} without
  * knowing whether anything is listening; a mod that wants a readout binds a
- * {@link RecordingProfiler}, and everything else runs against the
+ * recording implementation, and everything else runs against the
  * {@link SilentProfiler}, which keeps nothing and allocates nothing.
  *
  * <p>Not synchronised: intended for the single game thread that drives campaign

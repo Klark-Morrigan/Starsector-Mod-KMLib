@@ -1,4 +1,4 @@
-package kmlib.profiling;
+package kmlib.profiling.snapshot;
 
 /**
  * How often a section ran at one place in the tree and what its calls cost: the

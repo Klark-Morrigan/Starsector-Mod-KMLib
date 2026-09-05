@@ -1,5 +1,9 @@
-package kmlib.profiling;
+package kmlib.profiling.recording;
 
+import kmlib.profiling.ProfileCounter;
+import kmlib.profiling.ProfileScope;
+import kmlib.profiling.ProfileSection;
+import kmlib.profiling.snapshot.WorstCall;
 import kmlib.text.KmlibStrings;
 
 import java.util.ArrayList;

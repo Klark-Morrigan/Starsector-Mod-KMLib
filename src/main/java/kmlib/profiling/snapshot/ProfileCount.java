@@ -1,4 +1,6 @@
-package kmlib.profiling;
+package kmlib.profiling.snapshot;
+
+import kmlib.profiling.ProfileCounter;
 
 /**
  * What one counter accumulated at one place in the tree: the total across every

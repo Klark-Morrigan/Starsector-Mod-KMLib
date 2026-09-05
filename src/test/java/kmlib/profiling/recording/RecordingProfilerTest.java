@@ -1,4 +1,12 @@
-package kmlib.profiling;
+package kmlib.profiling.recording;
+
+import kmlib.profiling.ProfileCounter;
+import kmlib.profiling.ProfileSection;
+import kmlib.profiling.snapshot.CallCount;
+import kmlib.profiling.snapshot.DurationBuckets;
+import kmlib.profiling.snapshot.ProfileCount;
+import kmlib.profiling.snapshot.ProfileNode;
+import kmlib.profiling.snapshot.WorstCall;
 
 import org.apache.log4j.AppenderSkeleton;
 import org.apache.log4j.Logger;

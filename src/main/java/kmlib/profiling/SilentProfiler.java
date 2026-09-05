@@ -1,5 +1,7 @@
 package kmlib.profiling;
 
+import kmlib.profiling.snapshot.ProfileNode;
+
 import java.util.List;
 import java.util.function.Supplier;
 

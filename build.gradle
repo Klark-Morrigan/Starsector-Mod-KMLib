@@ -58,51 +58,31 @@ enforceNoTestVocabulary {
 }
 
 enforcePackageLayering {
-    // A star system is described in terms of the markets in it, so systems sits above markets
-    // and the arrow only ever points that way. Closing the reverse edge is what keeps the two
-    // separable: one import back would make them a single unit nothing could split again, and
-    // the compiler accepts that direction as readily as this one.
+
+    forbidImport under: 'kmlib.starsector.colonies', of: 'kmlib.starsector.systems'
+
+    forbidImport under: 'kmlib.profiling.recording', of: 'kmlib.profiling.report'
+
+    forbidImport under: 'kmlib.profiling.report', of: 'kmlib.profiling.recording'
+
+    forbidImport under: 'kmlib.profiling.snapshot', of: 'kmlib.profiling.recording'
+    forbidImport under: 'kmlib.profiling.snapshot', of: 'kmlib.profiling.report'
+
+    forbidImport under: 'kmlib.starsector', of: 'kmlib.mods'
+
+    forbidImport under: 'kmlib.starsector.markets', of: 'kmlib.starsector.colonies'
     forbidImport under: 'kmlib.starsector.markets', of: 'kmlib.starsector.systems'
 
-    // Colonies are selected out of markets and know nothing of the systems that hold them - a
-    // colony read takes the location it is asked about as a vanilla type. Closing this edge is
-    // what lets a star system be described in terms of its colonies without the reverse
-    // becoming possible, which is the shape that would collapse the two into one unit again.
-    forbidImport under: 'kmlib.starsector.colonies', of: 'kmlib.starsector.systems'
-    forbidImport under: 'kmlib.starsector.markets', of: 'kmlib.starsector.colonies'
-
-    // Founding a colony ends in an ownership change, so colonisation is stated in terms of the
-    // ownership rule and the arrow points that way. Closing the reverse edge is what keeps the
-    // ownership rule usable on its own - it is what every operation on a colony ends in, and one
-    // import back would make it inseparable from the one operation that happens to be its
-    // neighbour.
     forbidImport under: 'kmlib.starsector.markets.ownership',
             of: 'kmlib.starsector.markets.colonisation'
 
-    // What a market is, read without changing it, is stated a package above what may be done to
-    // one - so the reads may not reach down into either operation, while the operations are free
-    // to read. Closed at the narrow width because the roots being closed off are this package's
-    // own subpackages: as a subtree the same edge would shut the operations off from each other
-    // too, and colonisation ends in an ownership change.
+    forbidImport exactly: 'kmlib.profiling', of: 'kmlib.profiling.recording'
+    forbidImport exactly: 'kmlib.profiling', of: 'kmlib.profiling.report'
+
     forbidImport exactly: 'kmlib.starsector.markets',
             of: 'kmlib.starsector.markets.colonisation'
     forbidImport exactly: 'kmlib.starsector.markets',
             of: 'kmlib.starsector.markets.ownership'
-
-    // What this library does is its own; which mods on this install might do it instead is not, and
-    // a class naming one has decided something it cannot see the inputs to. Every adapter to a
-    // third-party mod is gathered under kmlib.mods, so the arrow runs from an adapter to the work
-    // it takes over and never back - see kmlib/extensions/README.md for how one is written.
-    //
-    // Stated at the subtree width rather than per package that defers work today: a new adapter
-    // would otherwise need its own line here, and the one nobody remembers to add is the one that
-    // inverts an arrow. kmlib.mods sits beside kmlib.starsector rather than inside it so that this
-    // edge can be written at all - under it, the rule would close the adapters to their own
-    // package, since Java spells a same-package static import as an import like any other.
-    //
-    // Leaves kmlib itself open, which is what lets KMLib_ModPlugin bind the adapters it is the only
-    // place allowed to name, and kmlib.testfixtures with it.
-    forbidImport under: 'kmlib.starsector', of: 'kmlib.mods'
 }
 
 // LunaLib backs KmLogging's in-game log-level binding. compileOnly, and

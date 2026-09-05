@@ -1,4 +1,6 @@
-package kmlib.profiling;
+package kmlib.profiling.snapshot;
+
+import kmlib.profiling.ProfileCounter;
 
 /**
  * What one counter stood at on one ended call: the counter, and the amount that

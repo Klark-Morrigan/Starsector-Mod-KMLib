@@ -1,4 +1,4 @@
-package kmlib.profiling;
+package kmlib.time;
 
 import java.util.Locale;
 
@@ -6,12 +6,13 @@ import java.util.Locale;
  * Duration conversion and formatting.
  *
  * <p>The single home for the nanosecond divisors and the "{@code 1.23ms}" format,
- * shared by {@link TimingReport} (the profiler's table), any diagnostic trace that
- * times a span with {@link System#nanoTime()}, and anything else reading that clock -
- * an animation phased off it converts the same way a measured span does. Kept
- * beside {@link Profiler} because it is a timing concern, not general number
- * formatting; pure math and text, with no profiling state and no Starsector
- * dependency.
+ * for anything reading {@link System#nanoTime()}: a measured span, a diagnostic
+ * trace, an animation phased off the clock. All three convert the same way, so
+ * the divisors are written once.
+ *
+ * <p>Its own package rather than a profiler's, because reading a clock is not
+ * profiling - the profiler is one caller of this and not its owner. Pure maths
+ * and text, with no state and no Starsector dependency.
  */
 public final class Timings {
 

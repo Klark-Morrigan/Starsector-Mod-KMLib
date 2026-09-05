@@ -1,4 +1,6 @@
-package kmlib.profiling;
+package kmlib.profiling.snapshot;
+
+import kmlib.profiling.ProfileSection;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

@@ -1,6 +1,14 @@
-package kmlib.profiling;
+package kmlib.profiling.report;
 
+import kmlib.profiling.ProfileCounter;
+import kmlib.profiling.Profiler;
+import kmlib.profiling.snapshot.DurationBuckets;
+import kmlib.profiling.snapshot.ProfileCount;
+import kmlib.profiling.snapshot.ProfileNode;
+import kmlib.profiling.snapshot.ProfileTiming;
+import kmlib.profiling.snapshot.WorstCall;
 import kmlib.text.KmlibStrings;
+import kmlib.time.Timings;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -242,7 +250,7 @@ public final class TimingReport {
             ToLongFunction<ProfileCount> readAmount) {
 
         return new ReportColumn(header, NO_COLUMN_FLOOR, node -> {
-            var count = findCount(node, counter);
+            var count = node.findCount(counter);
             return count == null ? ABSENT_CELL : Long.toString(readAmount.applyAsLong(count));
         });
     }
@@ -288,10 +296,6 @@ public final class TimingReport {
         }
     }
 
-    private static ProfileCount findCount(ProfileNode node, ProfileCounter counter) {
-        return CounterLookup.findByCounter(node.getCounts(), ProfileCount::getCounter, counter);
-    }
-
     // A band's mark is how many digits its tally has, so a band holding
     // thousands of calls reads taller than one holding three while the column
     // stays as wide as it was - a shape that can be compared between two
@@ -334,7 +338,7 @@ public final class TimingReport {
     // row worth no further attention.
     private static String formatSelfMicrosPerItem(ProfileNode node, ProfileCounter counter) {
 
-        var count = findCount(node, counter);
+        var count = node.findCount(counter);
 
         // A row whose children did all the counting has no per-item cost of its
         // own, and dividing by their items would price its self time against

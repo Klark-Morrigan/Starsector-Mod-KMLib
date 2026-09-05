@@ -1,4 +1,13 @@
-package kmlib.profiling;
+package kmlib.profiling.report;
+
+import kmlib.profiling.ProfileCounter;
+import kmlib.profiling.ProfileSection;
+import kmlib.profiling.snapshot.CallCount;
+import kmlib.profiling.snapshot.DurationBuckets;
+import kmlib.profiling.snapshot.ProfileCount;
+import kmlib.profiling.snapshot.ProfileNode;
+import kmlib.profiling.snapshot.ProfileTiming;
+import kmlib.profiling.snapshot.WorstCall;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

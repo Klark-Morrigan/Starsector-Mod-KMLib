@@ -1,4 +1,7 @@
-package kmlib.profiling;
+package kmlib.profiling.snapshot;
+
+import kmlib.profiling.ProfileCounter;
+import kmlib.profiling.ProfileSection;
 
 import java.util.List;
 
@@ -16,7 +19,7 @@ import java.util.List;
  * under a hover are two facts, and one row averaging them is neither.
  *
  * <p>Immutable, and holding raw nanoseconds (the clock's unit) so the reader
- * decides how to present them; {@link TimingReport} converts to milliseconds.
+ * decides how to present them.
  */
 public final class ProfileNode {
 
@@ -91,6 +94,27 @@ public final class ProfileNode {
      */
     public List<ProfileNode> getChildren() {
         return children;
+    }
+
+    /**
+     * @param counter what is being looked for
+     * @return what this row counted of it, or {@code null} where nothing under
+     *         this row counted it at all - which a reader states as a blank
+     *         rather than treats as an error
+     */
+    public ProfileCount findCount(ProfileCounter counter) {
+
+        // An indexed identity scan: a counter is a registered value, so a match
+        // is a reference comparison, and a row holds a handful of counts. Asked
+        // of the row itself, so a reader is not left scanning the list it was
+        // handed.
+        for (var index = 0; index < counts.size(); index++) {
+            var count = counts.get(index);
+            if (count.getCounter() == counter) {
+                return count;
+            }
+        }
+        return null;
     }
 
     // Derived rather than accumulated, so self time cannot drift from the two

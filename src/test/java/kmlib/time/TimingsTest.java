@@ -1,4 +1,4 @@
-package kmlib.profiling;
+package kmlib.time;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

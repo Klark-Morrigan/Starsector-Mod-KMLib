@@ -1,4 +1,6 @@
-package kmlib.profiling;
+package kmlib.profiling.recording;
+
+import kmlib.profiling.ProfileCounter;
 
 import java.util.List;
 import java.util.function.Function;
@@ -13,10 +15,9 @@ import java.util.function.Function;
  * being counted.
  *
  * <p>It takes how to read the key rather than making the entries share a type,
- * because they are three different shapes - what one call has tallied, what a
- * row has accumulated over its calls, and the immutable value a reader is
- * handed - and the only thing they have in common is the counter each is filed
- * under.
+ * because they are two different shapes - what one open call has tallied, and
+ * what a row has accumulated over its calls - and the only thing they have in
+ * common is the counter each is filed under.
  */
 final class CounterLookup {
 

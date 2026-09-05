@@ -218,18 +218,27 @@ No Starsector API on the signature.
   [Rendering environment](#rendering-environment).
 - [`opengl/hatch/`](src/main/java/kmlib/opengl/hatch/) - hatch fills across a
   polygon, with a tally of how cleanly the runs join.
-- [`profiling/`](src/main/java/kmlib/profiling/) - the profiler seam a mod
-  binds, silent until it does; sections opened as nesting scopes, their count,
-  total, min, max, average and self time snapshotted as a tree, the counters a
-  scope tallies and rolls up beside those durations, what the slowest call of a
-  row was doing and how a row's calls fell across doubling duration bands, and
-  the indented report over it.
+- [`profiling/`](src/main/java/kmlib/profiling/) - the vocabulary a caller
+  names: the profiler seam a mod binds, silent until it does, the sections and
+  counters a call is filed under, and the scope a section is opened as.
+- [`profiling/snapshot/`](src/main/java/kmlib/profiling/snapshot/) - what a
+  reader is handed after a capture: the section tree, each row's count, total,
+  min, max, average and self time, what it counted, what its slowest call was
+  doing, and how its calls fell across doubling duration bands.
+- [`profiling/recording/`](src/main/java/kmlib/profiling/recording/) - the
+  profiler that keeps what it is handed, and the open stack and per-row tallies
+  it accumulates a capture in.
+- [`profiling/report/`](src/main/java/kmlib/profiling/report/) - the indented
+  table over a capture.
 - [`settings/`](src/main/java/kmlib/settings/) - LunaLib settings read and
   write, immediate and deferred, change callbacks, and labelled choices.
 - [`text/`](src/main/java/kmlib/text/) - string and number formatting, plus
   the reads over a string every surface shares: is there text here, what are
   its words, and the stutter left where one phrase was appended to another
   ending on the same word.
+- [`time/`](src/main/java/kmlib/time/) - nanosecond conversion and duration
+  formatting, for anything reading the clock: a measured span, a diagnostic
+  trace, an animation phased off it.
 
 #### Starsector-facing wrappers and seams
 

@@ -1,4 +1,4 @@
-package kmlib.profiling;
+package kmlib.profiling.snapshot;
 
 /**
  * How a row's calls were spread over duration bands: one tally per band, each

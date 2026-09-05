@@ -1,4 +1,7 @@
-package kmlib.profiling;
+package kmlib.profiling.recording;
+
+import kmlib.profiling.ProfileCounter;
+import kmlib.profiling.snapshot.ProfileCount;
 
 /**
  * The mutable tally one node keeps for one counter, folding each ended call's

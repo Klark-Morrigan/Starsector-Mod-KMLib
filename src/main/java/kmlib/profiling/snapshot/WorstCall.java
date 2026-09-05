@@ -1,4 +1,4 @@
-package kmlib.profiling;
+package kmlib.profiling.snapshot;
 
 import java.util.List;
 

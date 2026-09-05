@@ -1,7 +1,7 @@
 package kmlib.animation;
 
 import kmlib.math.hashing.StableFractions;
-import kmlib.profiling.Timings;
+import kmlib.time.Timings;
 
 import java.util.function.LongSupplier;
 

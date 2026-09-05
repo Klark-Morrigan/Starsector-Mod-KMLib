@@ -1,4 +1,10 @@
-package kmlib.profiling;
+package kmlib.profiling.recording;
+
+import kmlib.profiling.ProfileScope;
+import kmlib.profiling.ProfileSection;
+import kmlib.profiling.Profiler;
+import kmlib.profiling.snapshot.ProfileNode;
+import kmlib.profiling.snapshot.WorstCall;
 
 import org.apache.log4j.Logger;
 

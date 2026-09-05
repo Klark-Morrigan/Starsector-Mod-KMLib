@@ -1,4 +1,6 @@
-package kmlib.profiling;
+package kmlib.profiling.recording;
+
+import kmlib.profiling.ProfileCounter;
 
 import java.util.List;
 
