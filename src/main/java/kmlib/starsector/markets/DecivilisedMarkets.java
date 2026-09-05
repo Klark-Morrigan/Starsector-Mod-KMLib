@@ -31,10 +31,9 @@ import com.fs.starfarer.api.impl.campaign.ids.Conditions;
  * repeating it. The condition's own rule stays where it is, so raising the bar can only ever
  * withhold more than vanilla would and never show what vanilla would not.
  *
- * <p>The bar is also published without a market, for a caller that holds somebody's word that the
- * world is standing there rather than a survey of it: {@link #SIGHTING_SURVEY_LEVEL} says what
- * that word is worth and {@link #isMetBySighting} compares it. Same ordering, same rule for an
- * unstated level - the two differ only in where the level being tested came from.
+ * <p>The same bar is published without a market too, for a caller holding somebody's word that the
+ * world is standing there rather than a survey of it: {@link #SIGHTING_SURVEY_LEVEL} is what that
+ * word is worth, and {@link #isMetBySighting} compares it on the same ordering.
  *
  * <p>That reveal is a survey rather than a discovery, which is why it is stated here rather than
  * left to the entity's discovery flag: a planet the player has flown past is discovered whether or
@@ -106,17 +105,12 @@ public final class DecivilisedMarkets {
      * caller holding somebody's word rather than the player's own survey has to answer before it
      * may repeat it.
      *
-     * <p>Stated here, beside the level it compares, because the meaning of "at least this far" is
-     * the enum's declared order and that order is read in one place. A caller doing the comparison
-     * itself would be restating both the bar a sighting reaches and the rule for reading a level
-     * nobody set.
+     * <p>Takes no market, because what a sighting is worth is a property of sightings and not of
+     * the world sighted. Whether this particular world has actually been surveyed that far is
+     * {@link #isRevealedDecivilised}'s question, and the two are separate routes to the same bar
+     * rather than one narrowing the other.
      *
-     * <p>Takes no market: what a sighting is worth is a property of sightings, not of the world
-     * sighted. A caller wanting to know whether this particular world has actually been surveyed
-     * that far asks {@link #isRevealedDecivilised} instead, and the two are separate routes to the
-     * same bar rather than one narrowing the other.
-     *
-     * @param requiredSurveyLevel how far the world must have been surveyed; null reads as
+     * @param requiredSurveyLevel the survey the caller asks for; null reads as
      *                            {@link #DEFAULT_SURVEY_LEVEL}, since an unstated bar must not be
      *                            read as no bar at all
      * @return true when being seen is survey enough for the level asked for
@@ -150,7 +144,7 @@ public final class DecivilisedMarkets {
             MarketAPI market,
             MarketAPI.SurveyLevel requiredSurveyLevel) {
 
-        if (market == null || !hasReachedSurveyLevel(market, requiredSurveyLevel)) {
+        if (market == null || !hasReachedLevel(market.getSurveyLevel(), requiredSurveyLevel)) {
             return false;
         }
         // getFirstCondition, not getSpecificCondition: the latter matches on a
@@ -163,13 +157,15 @@ public final class DecivilisedMarkets {
             && (!condition.requiresSurveying() || condition.isSurveyed());
     }
 
-    // Whether a level reaches at least as far as the caller asks.
+    // Whether a level reaches at least as far as the caller asks - the one place the ordering is
+    // read, so every bar in this class means the same thing whatever produced the level.
     //
-    // The one place the ordering is read, so every bar in this class means the same thing.
-    // Compared on the enum's declared order, which runs from never seen to fully surveyed - the
-    // one ordering vanilla states, and the only thing that makes "at least this far" mean
-    // anything. A level nobody stated is read as the fog's own rather than as no bar at all,
-    // because the direction a missing argument may not take is the widening one.
+    // Compared on the enum's declared order, which runs from never seen to fully surveyed: the one
+    // ordering vanilla states, and the only thing that makes "at least this far" mean anything.
+    //
+    // The two nulls differ. A bar nobody stated is read as the fog's own rather than as no bar at
+    // all, because the direction a missing argument may not take is the widening one; a level
+    // nobody reached clears nothing, not even a bar of NONE.
     private static boolean hasReachedLevel(
             MarketAPI.SurveyLevel reachedSurveyLevel,
             MarketAPI.SurveyLevel requiredSurveyLevel) {
@@ -179,13 +175,5 @@ public final class DecivilisedMarkets {
             : requiredSurveyLevel;
 
         return reachedSurveyLevel != null && reachedSurveyLevel.compareTo(requiredLevel) >= 0;
-    }
-
-    // Whether the world itself has been surveyed at least as far as the caller asks.
-    private static boolean hasReachedSurveyLevel(
-            MarketAPI market,
-            MarketAPI.SurveyLevel requiredSurveyLevel) {
-
-        return hasReachedLevel(market.getSurveyLevel(), requiredSurveyLevel);
     }
 }

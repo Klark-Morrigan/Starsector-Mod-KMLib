@@ -203,6 +203,16 @@ final class DecivilisedMarketsTest {
         }
 
         @Test
+        void refusesAWorldCarryingNoSurveyLevelAtAll() {
+            // A level nobody reached clears nothing - not even a bar of NONE, which a world
+            // sitting at NONE does clear.
+            var market = buildSurveyedMarket(null, false, false);
+
+            assertThat(DecivilisedMarkets.isRevealedDecivilised(market, NONE))
+                .isFalse();
+        }
+
+        @Test
         void refusesAWorldCarryingNoDecivilisedCondition() {
 
             var marketMock = mock(MarketAPI.class);

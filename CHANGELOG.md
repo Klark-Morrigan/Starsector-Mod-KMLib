@@ -167,7 +167,8 @@ No Starsector API on the signature.
   ownership, settlement, military and station status, stability, submarket
   plugins and nameplate; visibility as a colony or an ungoverned one and
   player discovery; patrol counts by size; decivilised and revealed
-  decivilised worlds; colocation and largest-per-faction selection; and the
+  decivilised worlds, and what a bare sighting of one is worth against the
+  survey bar; colocation and largest-per-faction selection; and the
   searches over a location, including the nearest market meeting a predicate.
 - **`kmlib.starsector.markets.colonisation`** - whether a body carrying only
   survey data can be colonised, the owner-neutral founding sequence, the owner
