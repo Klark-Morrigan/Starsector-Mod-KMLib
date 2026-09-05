@@ -8,8 +8,8 @@ import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 /**
- * The {@link Profiler} that keeps what it measures: per section name, the call
- * count and the total, fastest, and slowest durations.
+ * The {@link Profiler} that keeps what it is handed, accumulating each section's
+ * stats in memory until they are read or cleared.
  *
  * <p>The clock is injected (defaulting to {@link System#nanoTime()}) so the
  * accumulation reads whatever time source its caller names rather than the

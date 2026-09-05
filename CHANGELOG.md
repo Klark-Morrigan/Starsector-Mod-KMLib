@@ -94,8 +94,9 @@ No Starsector API on the signature.
   whether Fast Rendering is in force plus how to read its matrix.
 - **`kmlib.opengl.hatch`** - hatch fills across a polygon, with a tally of how
   cleanly the runs join.
-- **`kmlib.profiling`** - named section timings collected by measure or
-  record, their count, total, min, max and average snapshot, a formatted
+- **`kmlib.profiling`** - the profiler a mod binds to hear what the library
+  measures, silent until one does: named section timings collected by measure
+  or record, their count, total, min, max and average snapshot, a formatted
   report, and nanosecond conversions.
 - **`kmlib.settings`** - LunaLib settings read and write, immediate and
   deferred with flush and removal, change callbacks, and resolving a labelled
