@@ -16,8 +16,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Pins the accumulation contract of {@link RecordingProfiler}: a scope's span lands under whatever
  * was open when it opened, repeated calls on one row aggregate into count/total/min/max, a row's
- * self time is what it did not spend in its children, snapshot order follows first-record order,
- * a scope closed out of order takes the scopes inside it with it, and reset() clears everything.
+ * self time is what it did not spend in its children, a count added on a scope rolls into every
+ * scope it was open inside and spreads over the calls of its own row, snapshot order follows
+ * first-record order, a scope closed out of order takes the scopes inside it with it, and reset()
+ * clears everything.
  */
 final class RecordingProfilerTest {
 
@@ -26,6 +28,7 @@ final class RecordingProfilerTest {
     private static final String OTHER_PARENT_SECTION = "test.otherParent";
     private static final String OUTER_SECTION = "test.outer";
     private static final String INNER_SECTION = "test.inner";
+    private static final String SYSTEMS_COUNTER = "test.systems";
 
     @Nested
     class Open {
@@ -142,6 +145,109 @@ final class RecordingProfilerTest {
                 .isEqualTo(2);
             assertThat(roots.get(0).getTotalNanos())
                 .isEqualTo(12);
+        }
+    }
+
+    @Nested
+    class AddCount {
+
+        @Test
+        void countsWhatAChildCountedInTheParentsTotalButNotItsSelfTotal() {
+            // The point of counting at chokepoints: a rebuild's row states how many systems were
+            // walked beneath it whoever walked them, while the per-item cost of its own self time
+            // stays priced against the items it handled itself - here, none.
+            var profiler = new RecordingProfiler(new ScriptedClock(0, 0, 0, 0));
+
+            var parent = profiler.open(ProfileSection.registerSection(PARENT_SECTION));
+            var child = profiler.open(ProfileSection.registerSection(CHILD_SECTION));
+
+            child.addCount(ProfileCounter.registerCounter(SYSTEMS_COUNTER), 7);
+            child.close();
+            parent.close();
+
+            var parentNode = profiler.snapshot().get(0);
+            var childNode = parentNode.getChildren().get(0);
+
+            assertThat(readCount(parentNode, SYSTEMS_COUNTER))
+                .extracting(ProfileCount::getTotal, ProfileCount::getSelfTotal)
+                .containsExactly(7L, 0L);
+            assertThat(readCount(childNode, SYSTEMS_COUNTER))
+                .extracting(ProfileCount::getTotal, ProfileCount::getSelfTotal)
+                .containsExactly(7L, 7L);
+        }
+
+        @Test
+        void spreadsACountOverTheCallsOfTheRowRatherThanTheRowsTotal() {
+            // Two calls of one row counting 3 and 8. A total of 11 says the row is worth looking
+            // at; that one call did 8 of it says which call to look at.
+            var profiler = new RecordingProfiler(new ScriptedClock(0, 0, 0, 0, 0, 0));
+
+            var parent = profiler.open(ProfileSection.registerSection(PARENT_SECTION));
+
+            countInAChildCall(profiler, 3);
+            countInAChildCall(profiler, 8);
+            parent.close();
+
+            var childNode = profiler.snapshot().get(0).getChildren().get(0);
+
+            assertThat(readCount(childNode, SYSTEMS_COUNTER))
+                .extracting(
+                    ProfileCount::getTotal,
+                    ProfileCount::getMinPerCall,
+                    ProfileCount::getMaxPerCall)
+                .containsExactly(11L, 3L, 8L);
+        }
+
+        @Test
+        void readsACallThatCountedNoneOfItAsAZeroRatherThanSkippingIt() {
+            // A row that usually walks and sometimes does not has a minimum of zero. A spread that
+            // only saw the calls which counted would report a floor no call ever went under.
+            var profiler = new RecordingProfiler(new ScriptedClock(0, 0, 0, 0, 0, 0));
+
+            var parent = profiler.open(ProfileSection.registerSection(PARENT_SECTION));
+
+            countInAChildCall(profiler, 5);
+            profiler.open(ProfileSection.registerSection(CHILD_SECTION)).close();
+            parent.close();
+
+            var childNode = profiler.snapshot().get(0).getChildren().get(0);
+
+            assertThat(readCount(childNode, SYSTEMS_COUNTER))
+                .extracting(
+                    ProfileCount::getTotal,
+                    ProfileCount::getMinPerCall,
+                    ProfileCount::getMaxPerCall)
+                .containsExactly(5L, 0L, 5L);
+        }
+
+        @Test
+        void countsTheCallsThatRanBeforeACounterWasFirstAddedTo() {
+            // The same rule from the other side: a counter first seen on the second call did not
+            // start existing then, and the call before it counted none of it.
+            var profiler = new RecordingProfiler(new ScriptedClock(0, 0, 0, 0, 0, 0));
+
+            var parent = profiler.open(ProfileSection.registerSection(PARENT_SECTION));
+
+            profiler.open(ProfileSection.registerSection(CHILD_SECTION)).close();
+            countInAChildCall(profiler, 5);
+            parent.close();
+
+            var childNode = profiler.snapshot().get(0).getChildren().get(0);
+
+            assertThat(readCount(childNode, SYSTEMS_COUNTER))
+                .extracting(ProfileCount::getMinPerCall, ProfileCount::getMaxPerCall)
+                .containsExactly(0L, 5L);
+        }
+
+        @Test
+        void leavesACounterOffARowThatNeverTouchedIt() {
+            // Absent rather than zero, so a wide capture's rows carry only what they can answer.
+            var profiler = new RecordingProfiler(new ScriptedClock(0, 0));
+
+            profiler.open(ProfileSection.registerSection(PARENT_SECTION)).close();
+
+            assertThat(profiler.snapshot().get(0).getCounts())
+                .isEmpty();
         }
     }
 
@@ -417,6 +523,23 @@ final class RecordingProfilerTest {
             names.add(node.getSection().getName());
         }
         return names;
+    }
+
+    // One call of the child section that counts what it was handed, which is the shape a walker
+    // under a scope has: the count and the call it belongs to end together.
+    private static void countInAChildCall(RecordingProfiler profiler, long systems) {
+        try (var child = profiler.open(ProfileSection.registerSection(CHILD_SECTION))) {
+            child.addCount(ProfileCounter.registerCounter(SYSTEMS_COUNTER), systems);
+        }
+    }
+
+    private static ProfileCount readCount(ProfileNode node, String counterName) {
+        return node
+            .getCounts()
+            .stream()
+            .filter(count -> count.getCounter().getName().equals(counterName))
+            .findFirst()
+            .orElseThrow();
     }
 
     private static void closeAnOuterScopeWithAnInnerStillOpen(RecordingProfiler profiler) {

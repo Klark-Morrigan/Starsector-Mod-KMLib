@@ -220,8 +220,9 @@ No Starsector API on the signature.
   polygon, with a tally of how cleanly the runs join.
 - [`profiling/`](src/main/java/kmlib/profiling/) - the profiler seam a mod
   binds, silent until it does; sections opened as nesting scopes, their count,
-  total, min, max, average and self time snapshotted as a tree, and the
-  indented report over it.
+  total, min, max, average and self time snapshotted as a tree, the counters a
+  scope tallies and rolls up beside those durations, and the indented report
+  over it.
 - [`settings/`](src/main/java/kmlib/settings/) - LunaLib settings read and
   write, immediate and deferred, change callbacks, and labelled choices.
 - [`text/`](src/main/java/kmlib/text/) - string and number formatting, plus
@@ -822,7 +823,7 @@ is a thin front on work a consuming mod would otherwise have to expose itself.
 | `kmlib_list_map_spoilers` | _no arguments_ | Lists faction-owned systems as a tree of system, entities and factions, flagging cut-off systems and undiscovered markets. |
 | `kmlib_list_system_entities` | `[gates]` | Lists the current system's entities as an orbit tree, then the unorbited ones and fleets with coordinates. |
 | `kmlib_spawn` | `<kind> [orbit_focus_id] [speed] [jitter=<frac>]` | Spawns a gate or a jump point at the fleet position, orbiting a focus. |
-| `kmlib_transfer_market` | `[entity-id] [faction-id]` | Hands an existing colony to another owner - something the game itself has no way to do. |
+| `kmlib_transfer_market` | `[entity-id] [faction-id]` | Hands an existing colony to another owner. |
 
 Both colony commands defer to Nexerelin's own colonisation and transfer where that mod
 is enabled, through the registers in

@@ -15,6 +15,7 @@ final class ProfileNodeAccumulator {
 
     private final ProfileSection section;
     private final List<ProfileNodeAccumulator> children = new ArrayList<>();
+    private final List<ProfileCountAccumulator> countAccumulators = new ArrayList<>();
 
     private long count;
     private long totalNanos;
@@ -63,7 +64,17 @@ final class ProfileNodeAccumulator {
         return resolveNodeIn(children, childSection);
     }
 
-    void addSpan(long elapsedNanos) {
+    /**
+     * Folds one ended call into this node.
+     *
+     * @param elapsedNanos how long the call took
+     * @param callCounts   what the call counted, empty when it counted nothing
+     */
+    void addSpan(long elapsedNanos, List<ScopeCount> callCounts) {
+
+        // Before the call is counted, since a counter first added to in this
+        // call has to know how many calls preceded it without it.
+        recordCallCounts(callCounts);
 
         // The first span sets both bounds rather than being folded into
         // sentinels the snapshot would then have to undo. A node with no span -
@@ -87,10 +98,61 @@ final class ProfileNodeAccumulator {
     ProfileNode buildNode() {
 
         var childNodes = new ArrayList<ProfileNode>(children.size());
+        var counts = new ArrayList<ProfileCount>(countAccumulators.size());
 
         for (var child : children) {
             childNodes.add(child.buildNode());
         }
-        return new ProfileNode(section, count, totalNanos, minNanos, maxNanos, childNodes);
+        for (var countAccumulator : countAccumulators) {
+            counts.add(countAccumulator.buildCount());
+        }
+        return new ProfileNode(
+            section, count, totalNanos, minNanos, maxNanos, counts, childNodes);
+    }
+
+    // Identity scans over two handfuls, for the same reason a section is
+    // resolved by one: these run on every close of every row.
+    private static ScopeCount findCallCount(List<ScopeCount> callCounts, ProfileCounter counter) {
+        for (var index = 0; index < callCounts.size(); index++) {
+            var callCount = callCounts.get(index);
+            if (callCount.getCounter() == counter) {
+                return callCount;
+            }
+        }
+        return null;
+    }
+
+    private ProfileCountAccumulator findCountAccumulator(ProfileCounter counter) {
+        for (var index = 0; index < countAccumulators.size(); index++) {
+            var countAccumulator = countAccumulators.get(index);
+            if (countAccumulator.getCounter() == counter) {
+                return countAccumulator;
+            }
+        }
+        return null;
+    }
+
+    // Every counter this node has ever seen takes a value for the call that has
+    // just ended, zero included: a call that counted none of something is what
+    // makes a minimum zero, and a spread that only saw the calls which counted
+    // would read as a floor no call ever went under.
+    private void recordCallCounts(List<ScopeCount> callCounts) {
+
+        for (var countAccumulator : countAccumulators) {
+            var callCount = findCallCount(callCounts, countAccumulator.getCounter());
+            if (callCount == null) {
+                countAccumulator.addCall(0, 0);
+            } else {
+                countAccumulator.addCall(callCount.getSelfAmount(), callCount.getTotalAmount());
+            }
+        }
+        for (var callCount : callCounts) {
+            if (findCountAccumulator(callCount.getCounter()) != null) {
+                continue;
+            }
+            var opened = new ProfileCountAccumulator(callCount.getCounter(), count);
+            opened.addCall(callCount.getSelfAmount(), callCount.getTotalAmount());
+            countAccumulators.add(opened);
+        }
     }
 }

@@ -29,6 +29,7 @@ final class ProfileNodeTest {
                 PARENT_TOTAL_NANOS,
                 PARENT_TOTAL_NANOS,
                 PARENT_TOTAL_NANOS,
+                List.of(),
                 List.of(
                     childNode("test.profileNode.firstChild", CHILD_TOTAL_NANOS),
                     childNode("test.profileNode.secondChild", CHILD_TOTAL_NANOS)));
@@ -47,6 +48,7 @@ final class ProfileNodeTest {
                 0,
                 0,
                 0,
+                List.of(),
                 List.of(childNode("test.profileNode.closedChild", CHILD_TOTAL_NANOS)));
 
             assertThat(unclosed.getSelfNanos())
@@ -61,6 +63,7 @@ final class ProfileNodeTest {
             totalNanos,
             totalNanos,
             totalNanos,
+            List.of(),
             List.of());
     }
 }

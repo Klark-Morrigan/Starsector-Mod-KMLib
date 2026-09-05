@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Pins {@link SilentProfiler}: the work it is handed still runs and still
  * returns its result, and nothing it is handed is kept - the snapshot is empty
- * after any sequence of calls.
+ * after any sequence of calls, counts included.
  */
 final class SilentProfilerTest {
 
@@ -36,6 +36,23 @@ final class SilentProfilerTest {
 
             assertThat(SilentProfiler.INSTANCE.open(ProfileSection.registerSection("render")))
                 .isSameAs(scope);
+        }
+    }
+
+    @Nested
+    class AddCount {
+
+        @Test
+        void addCountOnTheSharedScopeKeepsNothing() {
+            // What lets a walker count what it traverses unconditionally: with no readout bound
+            // the count goes nowhere, so the counting is a call and not a tally.
+            var scope = SilentProfiler.INSTANCE.open(ProfileSection.registerSection("walk"));
+
+            scope.addCount(ProfileCounter.registerCounter("systems"), 400);
+            scope.close();
+
+            assertThat(SilentProfiler.INSTANCE.snapshot())
+                .isEmpty();
         }
     }
 

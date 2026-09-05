@@ -9,8 +9,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Pins {@link TimingReport}: empty input yields a notice, a section renders a row with its name,
- * count, and nanos converted to milliseconds, and a section that ran inside another is printed
- * indented under it with its own self time.
+ * count, and nanos converted to milliseconds, a section that ran inside another is printed
+ * indented under it with its own self time, and every counter the tree touched heads a group of
+ * columns that stays blank on the rows which never touched it.
  */
 final class TimingReportTest {
 
@@ -19,6 +20,9 @@ final class TimingReportTest {
 
     private static final String SHORT_PARENT_SECTION = "rebuild";
     private static final String LONGER_CHILD_SECTION = "walkTheWholeSector";
+
+    private static final String SYSTEMS_COUNTER = "systems";
+    private static final String MARKETS_COUNTER = "markets";
 
     // 3.000ms holding 2.000ms, so the parent's self time is a third number again.
     private static final long PARENT_TOTAL_NANOS = 3_000_000;
@@ -29,6 +33,10 @@ final class TimingReportTest {
 
     // The six numeric columns: two spaces then 8, 10, 10, 10, 10 and 11 characters.
     private static final int NUMERIC_COLUMNS_WIDTH = 71;
+
+    // The section name, the six timing columns, and the four of the one counter group that row
+    // filled - the second group in the table stays blank on it.
+    private static final int FILLED_CELLS_PER_ROW_WITH_ONE_COUNTER = 11;
 
     @Nested
     class Format {
@@ -49,6 +57,7 @@ final class TimingReportTest {
                 3_000_000,
                 1_000_000,
                 2_000_000,
+                List.of(),
                 List.of());
             var report = TimingReport.format(List.of(node));
 
@@ -98,6 +107,45 @@ final class TimingReportTest {
                 .extracting(String::length)
                 .containsOnly(WIDEST_NAME_WIDTH + NUMERIC_COLUMNS_WIDTH);
         }
+
+        @Test
+        void formatHeadsAColumnGroupForEveryCounterTheTreeTouched() {
+            // What a duration is read against: the row states how much it counted in all and how
+            // far one call's worth spread, beside the milliseconds it took to do it.
+            var report = TimingReport.format(List.of(nodeCounting(
+                PARENT_SECTION, countOf(SYSTEMS_COUNTER, 300, 300, 100, 200))));
+
+            assertThat(report)
+                .contains("SYSTEMS", "SYSTEMS MIN", "SYSTEMS MAX", "SYSTEMS us/ea");
+            assertThat(readFilledCells(report, PARENT_SECTION))
+                .contains("300", "100", "200");
+        }
+
+        @Test
+        void formatDividesSelfTimeByTheItemsTheRowCountedItself() {
+            // 3.000ms of self time over 300 systems is 10 microseconds each - the number an
+            // optimisation is judged against, and one milliseconds would round away.
+            var report = TimingReport.format(List.of(nodeCounting(
+                PARENT_SECTION, countOf(SYSTEMS_COUNTER, 300, 300, 300, 300))));
+
+            assertThat(readFilledCells(report, PARENT_SECTION))
+                .contains("10.0");
+        }
+
+        @Test
+        void formatLeavesACounterBlankOnARowThatNeverTouchedIt() {
+            // A zero would say the row counted none of that thing, which is a fact worth seeing.
+            // A row that does not count it at all has nothing to say, and a wide tree where every
+            // row answers every counter is a table of zeroes hiding the rows that count.
+            var report = TimingReport.format(List.of(
+                nodeCounting(PARENT_SECTION, countOf(SYSTEMS_COUNTER, 300, 300, 300, 300)),
+                nodeCounting(CHILD_SECTION, countOf(MARKETS_COUNTER, 40, 40, 40, 40))));
+
+            assertThat(readFilledCells(report, PARENT_SECTION))
+                .hasSize(FILLED_CELLS_PER_ROW_WITH_ONE_COUNTER);
+            assertThat(readFilledCells(report, CHILD_SECTION))
+                .hasSize(FILLED_CELLS_PER_ROW_WITH_ONE_COUNTER);
+        }
     }
 
     // One call of a parent holding one call of a child, which is the smallest tree that has a
@@ -109,12 +157,50 @@ final class TimingReportTest {
             PARENT_TOTAL_NANOS,
             PARENT_TOTAL_NANOS,
             PARENT_TOTAL_NANOS,
+            List.of(),
             List.of(new ProfileNode(
                 ProfileSection.registerSection(childName),
                 1,
                 CHILD_TOTAL_NANOS,
                 CHILD_TOTAL_NANOS,
                 CHILD_TOTAL_NANOS,
+                List.of(),
                 List.of())));
+    }
+
+    // One 3.000ms call that counted something, which is the smallest tree with a counter group to
+    // render and a per-item cost to divide out.
+    private static ProfileNode nodeCounting(String sectionName, ProfileCount count) {
+        return new ProfileNode(
+            ProfileSection.registerSection(sectionName),
+            1,
+            PARENT_TOTAL_NANOS,
+            PARENT_TOTAL_NANOS,
+            PARENT_TOTAL_NANOS,
+            List.of(count),
+            List.of());
+    }
+
+    private static ProfileCount countOf(
+            String counterName,
+            long total,
+            long selfTotal,
+            long minPerCall,
+            long maxPerCall) {
+
+        return new ProfileCount(
+            ProfileCounter.registerCounter(counterName), total, selfTotal, minPerCall, maxPerCall);
+    }
+
+    // The cells a row actually fills, blank ones excluded - a blank cell is whitespace and so
+    // splits away with the padding, which is what "prints nothing" has to mean in a fixed table.
+    private static List<String> readFilledCells(String report, String sectionName) {
+        return List.of(report
+            .lines()
+            .filter(line -> line.startsWith(sectionName))
+            .findFirst()
+            .orElseThrow()
+            .trim()
+            .split("\\s+"));
     }
 }

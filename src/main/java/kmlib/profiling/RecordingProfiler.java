@@ -89,8 +89,9 @@ public final class RecordingProfiler implements Profiler {
     @Override
     public void record(String section, long elapsedNanos) {
         // A span the caller timed itself still belongs under whatever is open,
-        // so it lands on the same node an open()/close() pair would have.
-        resolveNode(ProfileSection.registerSection(section)).addSpan(elapsedNanos);
+        // so it lands on the same node an open()/close() pair would have. It
+        // counted nothing: there was no scope to count on.
+        resolveNode(ProfileSection.registerSection(section)).addSpan(elapsedNanos, List.of());
     }
 
     @Override
@@ -133,11 +134,25 @@ public final class RecordingProfiler implements Profiler {
         // every row under it a lie. So the younger ones end here too.
         for (var youngerIndex = openScopes.size() - 1; youngerIndex > closingIndex; youngerIndex--) {
             var abandoned = openScopes.remove(youngerIndex);
-            abandoned.recordSpan(endNanos);
+            endScope(abandoned, endNanos);
             reportOutOfOrderClose(abandoned.getSection());
         }
         openScopes.remove(closingIndex);
+        endScope(scope, endNanos);
+    }
+
+    // Records the span and hands what the scope counted to whatever it was open
+    // inside, which is what makes a row's counts inclusive the way its time is.
+    // Taken off the stack first, so the scope now on top is the one the ended
+    // scope ran inside - including down an unwind, where the scopes above the
+    // one being closed end into it before it ends into its own parent.
+    private void endScope(RecordingProfileScope scope, long endNanos) {
+
         scope.recordSpan(endNanos);
+
+        if (!openScopes.isEmpty()) {
+            openScopes.get(openScopes.size() - 1).receiveChildCounts(scope);
+        }
     }
 
     // The node a section opened right now belongs to: a child of whatever is

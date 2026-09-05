@@ -17,6 +17,12 @@ final class SilentProfileScope implements ProfileScope {
     }
 
     @Override
+    public void addCount(ProfileCounter counter, long amount) {
+        // Adds to nothing, so a walker may count what it traverses on a
+        // per-frame path with no readout bound and pay only the call.
+    }
+
+    @Override
     public void close() {
         // Nothing was timed, so there is nothing to attribute.
     }

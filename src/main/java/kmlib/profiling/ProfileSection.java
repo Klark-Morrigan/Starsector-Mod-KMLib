@@ -1,9 +1,5 @@
 package kmlib.profiling;
 
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-
 /**
  * A profiled section's identity: the name its rows are reported under,
  * resolved once and held in a {@code static final} rather than spelled at
@@ -20,10 +16,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class ProfileSection {
 
-    // Registration runs from static initialisers, and which thread runs one is
-    // whichever first touched the class holding the constant - the single place
-    // in profiling that cannot assume the game thread, hence a concurrent table.
-    private static final Map<String, ProfileSection> SECTIONS_BY_NAME = new ConcurrentHashMap<>();
+    private static final NameRegistry<ProfileSection> SECTIONS_BY_NAME =
+        new NameRegistry<>(ProfileSection::new);
 
     private final String name;
 
@@ -39,9 +33,7 @@ public final class ProfileSection {
      * @return the one section carrying that name
      */
     public static ProfileSection registerSection(String name) {
-        return SECTIONS_BY_NAME.computeIfAbsent(
-            Objects.requireNonNull(name, "name"),
-            ProfileSection::new);
+        return SECTIONS_BY_NAME.resolveByName(name);
     }
 
     public String getName() {

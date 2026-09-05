@@ -5,8 +5,8 @@ import java.util.List;
 /**
  * One section's accumulated timings at one place in the tree: how often it ran
  * under this parent, its total, fastest and slowest span, how much of that
- * total it spent itself rather than beneath it, and the sections opened inside
- * it.
+ * total it spent itself rather than beneath it, what it counted while it ran,
+ * and the sections opened inside it.
  *
  * <p>A node is inclusive by construction - its total is everything that ran
  * under it - so self time is what the section costs on its own, which is the
@@ -27,6 +27,7 @@ public final class ProfileNode {
     private final long minNanos;
     private final long maxNanos;
     private final long selfNanos;
+    private final List<ProfileCount> counts;
     private final List<ProfileNode> children;
 
     public ProfileNode(
@@ -35,6 +36,7 @@ public final class ProfileNode {
             long totalNanos,
             long minNanos,
             long maxNanos,
+            List<ProfileCount> counts,
             List<ProfileNode> children) {
 
         this.section = section;
@@ -42,6 +44,7 @@ public final class ProfileNode {
         this.totalNanos = totalNanos;
         this.minNanos = minNanos;
         this.maxNanos = maxNanos;
+        this.counts = List.copyOf(counts);
         this.children = List.copyOf(children);
         this.selfNanos = subtractChildNanos(totalNanos, this.children);
     }
@@ -72,6 +75,16 @@ public final class ProfileNode {
      */
     public long getSelfNanos() {
         return selfNanos;
+    }
+
+    /**
+     * @return what this section counted while it ran, in the order the counters
+     *         were first added to; a counter nothing under this section ever
+     *         touched is absent rather than present at zero, since "counted
+     *         none" and "does not count this" are different facts
+     */
+    public List<ProfileCount> getCounts() {
+        return counts;
     }
 
     /**
