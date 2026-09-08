@@ -1,5 +1,7 @@
 package kmlib.profiling;
 
+import kmlib.profiling.budget.ProfileBudget;
+
 /**
  * A profiled section's identity: the name its rows are reported under,
  * resolved once and held in a {@code static final} rather than spelled at

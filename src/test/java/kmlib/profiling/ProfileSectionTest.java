@@ -1,5 +1,7 @@
 package kmlib.profiling;
 
+import kmlib.profiling.budget.ProfileBudget;
+
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 

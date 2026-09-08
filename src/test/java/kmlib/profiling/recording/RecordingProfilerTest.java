@@ -1,12 +1,12 @@
 package kmlib.profiling.recording;
 
-import kmlib.profiling.BudgetBreach;
 import kmlib.profiling.IterationScope;
 import kmlib.profiling.PhasedSection;
-import kmlib.profiling.ProfileBudget;
 import kmlib.profiling.ProfileCounter;
 import kmlib.profiling.ProfileOrigin;
 import kmlib.profiling.ProfileSection;
+import kmlib.profiling.budget.ProfileBudget;
+import kmlib.profiling.snapshot.BudgetBreach;
 import kmlib.profiling.snapshot.CallCount;
 import kmlib.profiling.snapshot.CountSpread;
 import kmlib.profiling.snapshot.CountTotals;

@@ -1,6 +1,8 @@
-package kmlib.profiling;
+package kmlib.profiling.budget;
 
-import java.util.Locale;
+import kmlib.profiling.ProfileCounter;
+import kmlib.profiling.snapshot.BudgetBreach;
+
 import java.util.function.ToLongFunction;
 
 /**
@@ -11,11 +13,6 @@ import java.util.function.ToLongFunction;
  * nobody meant to make, which no duration column can be read as.
  */
 final class CountPerCallBudget implements ProfileBudget {
-
-    // What a call reached against what it was allowed. The amount is stated
-    // because no column of the report carries one call's worth of a counter, so
-    // the breach is the only place it is said.
-    private static final String BREACH_FORMAT = "%d %s, %d allowed per call";
 
     private final ProfileCounter counter;
     private final long maxAmountPerCall;
@@ -35,7 +32,6 @@ final class CountPerCallBudget implements ProfileBudget {
         if (amount <= maxAmountPerCall) {
             return BudgetBreach.NO_BREACH;
         }
-        return BudgetBreach.reportBreach(String.format(
-            Locale.ROOT, BREACH_FORMAT, amount, counter.getName(), maxAmountPerCall));
+        return BudgetBreach.reportCountBreach(counter, amount, maxAmountPerCall);
     }
 }

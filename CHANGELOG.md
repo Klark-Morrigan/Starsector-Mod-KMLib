@@ -94,13 +94,14 @@ No Starsector API on the signature.
   whether Fast Rendering is in force plus how to read its matrix.
 - **`kmlib.opengl.hatch`** - hatch fills across a polygon, with a tally of how
   cleanly the runs join.
-- **`kmlib.profiling`**, with `snapshot`, `recording` and `report` under it -
-  the profiler a mod binds to hear what the library measures, silent until one
-  does: named sections opened as nesting scopes or collected by measure or
-  record, the counters a scope tallies, the tag a caller names one call by, and
-  the sections whose calls run a loop, declared with the steps one turn is
-  split into and opened as a scope that counts the turns and charges each step
-  to its slot. A root names the origin it and everything under it was measured
+- **`kmlib.profiling`**, with `budget`, `snapshot`, `recording` and `report`
+  under it - the profiler a mod binds to hear what the library measures, silent
+  until one does: named sections opened as nesting scopes or collected by
+  measure or record, the counters a scope tallies, the tag a caller names one
+  call by, and the sections whose calls run a loop, declared with the steps one
+  turn is split into and opened as a scope that counts the turns and charges
+  each step to its slot. A root names the origin it and everything under it was
+  measured
   in, and a section opened under no root lands in a reserved group rather than
   being dropped. A shared read holding no scope of its own counts onto whatever
   section is open, and onto a reserved row of that group when none is. A

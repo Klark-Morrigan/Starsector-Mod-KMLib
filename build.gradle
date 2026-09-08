@@ -61,10 +61,15 @@ enforcePackageLayering {
 
     forbidImport under: 'kmlib.starsector.colonies', of: 'kmlib.starsector.systems'
 
+    forbidImport under: 'kmlib.profiling.budget', of: 'kmlib.profiling.recording'
+    forbidImport under: 'kmlib.profiling.budget', of: 'kmlib.profiling.report'
+
     forbidImport under: 'kmlib.profiling.recording', of: 'kmlib.profiling.report'
 
+    forbidImport under: 'kmlib.profiling.report', of: 'kmlib.profiling.budget'
     forbidImport under: 'kmlib.profiling.report', of: 'kmlib.profiling.recording'
 
+    forbidImport under: 'kmlib.profiling.snapshot', of: 'kmlib.profiling.budget'
     forbidImport under: 'kmlib.profiling.snapshot', of: 'kmlib.profiling.recording'
     forbidImport under: 'kmlib.profiling.snapshot', of: 'kmlib.profiling.report'
 

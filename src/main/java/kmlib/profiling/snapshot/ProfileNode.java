@@ -1,6 +1,5 @@
 package kmlib.profiling.snapshot;
 
-import kmlib.profiling.BudgetBreach;
 import kmlib.profiling.ProfileCounter;
 import kmlib.profiling.ProfileSection;
 

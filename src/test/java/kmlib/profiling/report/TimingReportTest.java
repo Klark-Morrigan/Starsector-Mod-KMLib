@@ -1,11 +1,10 @@
 package kmlib.profiling.report;
 
-import kmlib.profiling.BudgetBreach;
 import kmlib.profiling.PhasedSection;
-import kmlib.profiling.ProfileBudget;
 import kmlib.profiling.ProfileCounter;
 import kmlib.profiling.ProfileOrigin;
 import kmlib.profiling.ProfileSection;
+import kmlib.profiling.snapshot.BudgetBreach;
 import kmlib.profiling.snapshot.CallCount;
 import kmlib.profiling.snapshot.CountSpread;
 import kmlib.profiling.snapshot.CountTotals;
@@ -536,12 +535,12 @@ final class TimingReportTest {
         return nodeWhoseWorstCall(worstCall, BudgetBreach.NO_BREACH);
     }
 
-    // A bound of one system broken by the 48 the worst call reached, made through the budget that
-    // judges it rather than stated as text - what a reader sees is what a real capture would carry.
+    // A bound of one system broken by the 48 the worst call reached, stated as the measurements a
+    // bound would have produced rather than as prose - a view renders what a capture holds, and a
+    // sentence typed here could pass while the one a real breach carries drifted.
     private static BudgetBreach breachOfOneAllowedSystem() {
-        return ProfileBudget
-            .allowingCountPerCall(ProfileCounter.registerCounter(SYSTEMS_COUNTER), ONE_SYSTEM)
-            .findBreachInCall(PARENT_TOTAL_NANOS, counter -> WORST_CALL_SYSTEMS);
+        return BudgetBreach.reportCountBreach(
+            ProfileCounter.registerCounter(SYSTEMS_COUNTER), WORST_CALL_SYSTEMS, ONE_SYSTEM);
     }
 
     // The same row with a bound broken on it, which is what makes the line under it a finding

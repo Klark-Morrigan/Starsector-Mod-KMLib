@@ -1,6 +1,5 @@
 package kmlib.profiling.recording;
 
-import kmlib.profiling.BudgetBreach;
 import kmlib.profiling.IterationScope;
 import kmlib.profiling.PhasedSection;
 import kmlib.profiling.ProfileCounter;
@@ -8,6 +7,7 @@ import kmlib.profiling.ProfileOrigin;
 import kmlib.profiling.ProfileScope;
 import kmlib.profiling.ProfileSection;
 import kmlib.profiling.Profiler;
+import kmlib.profiling.snapshot.BudgetBreach;
 import kmlib.profiling.snapshot.ProfileOriginTree;
 import kmlib.profiling.snapshot.WorstCall;
 import kmlib.text.KmlibStrings;

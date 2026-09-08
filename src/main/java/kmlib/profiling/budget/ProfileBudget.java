@@ -1,4 +1,7 @@
-package kmlib.profiling;
+package kmlib.profiling.budget;
+
+import kmlib.profiling.ProfileCounter;
+import kmlib.profiling.snapshot.BudgetBreach;
 
 import java.util.function.LongSupplier;
 import java.util.function.ToLongFunction;
@@ -21,6 +24,11 @@ import java.util.function.ToLongFunction;
  * machine. A duration's bound is read when the call closes, because what a frame
  * can afford is a knob, and a bound fixed when a constant was first touched
  * would ignore every later move of it.
+ *
+ * <p>Its own package because a bound is a rule rather than a name: the sections
+ * and counters a caller spells are vocabulary, while what may be done with them
+ * is a judgement made in one place and reached only from the accumulation that
+ * applies it. Nothing here knows how a span is tallied or how a row is printed.
  */
 public interface ProfileBudget {
 

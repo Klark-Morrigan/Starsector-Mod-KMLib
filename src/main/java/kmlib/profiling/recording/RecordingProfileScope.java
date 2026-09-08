@@ -1,10 +1,10 @@
 package kmlib.profiling.recording;
 
-import kmlib.profiling.BudgetBreach;
 import kmlib.profiling.IterationScope;
 import kmlib.profiling.ProfileCounter;
 import kmlib.profiling.ProfilePhase;
 import kmlib.profiling.ProfileSection;
+import kmlib.profiling.snapshot.BudgetBreach;
 import kmlib.profiling.snapshot.WorstCall;
 
 import java.util.ArrayList;

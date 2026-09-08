@@ -1,9 +1,9 @@
 package kmlib.profiling.recording;
 
-import kmlib.profiling.BudgetBreach;
-import kmlib.profiling.ProfileBudget;
 import kmlib.profiling.ProfileCounter;
 import kmlib.profiling.ProfileSection;
+import kmlib.profiling.budget.ProfileBudget;
+import kmlib.profiling.snapshot.BudgetBreach;
 import kmlib.profiling.snapshot.ProfileCount;
 import kmlib.profiling.snapshot.ProfileIterations;
 import kmlib.profiling.snapshot.ProfileNode;

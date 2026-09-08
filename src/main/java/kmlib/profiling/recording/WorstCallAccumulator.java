@@ -1,6 +1,6 @@
 package kmlib.profiling.recording;
 
-import kmlib.profiling.BudgetBreach;
+import kmlib.profiling.snapshot.BudgetBreach;
 import kmlib.profiling.snapshot.CallCount;
 import kmlib.profiling.snapshot.WorstCall;
 

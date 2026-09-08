@@ -1,4 +1,7 @@
-package kmlib.profiling;
+package kmlib.profiling.budget;
+
+import kmlib.profiling.ProfileCounter;
+import kmlib.profiling.snapshot.BudgetBreach;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

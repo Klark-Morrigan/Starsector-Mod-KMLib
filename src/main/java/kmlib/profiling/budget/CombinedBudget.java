@@ -1,4 +1,7 @@
-package kmlib.profiling;
+package kmlib.profiling.budget;
+
+import kmlib.profiling.ProfileCounter;
+import kmlib.profiling.snapshot.BudgetBreach;
 
 import java.util.function.ToLongFunction;
 
