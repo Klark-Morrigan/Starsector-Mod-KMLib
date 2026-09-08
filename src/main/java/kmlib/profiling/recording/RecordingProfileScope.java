@@ -1,5 +1,6 @@
 package kmlib.profiling.recording;
 
+import kmlib.profiling.BudgetBreach;
 import kmlib.profiling.IterationScope;
 import kmlib.profiling.ProfileCounter;
 import kmlib.profiling.ProfilePhase;
@@ -110,6 +111,15 @@ final class RecordingProfileScope implements IterationScope {
     }
 
     /**
+     * @return what the caller named this call, or {@link WorstCall#NO_TAG} where
+     *         it named nothing - which is what says which call a budget breach
+     *         was reported for
+     */
+    String getTag() {
+        return tag;
+    }
+
+    /**
      * Rolls what this scope counted into the scope it ran inside, so that row is
      * inclusive of it while its self total stays what it counted itself.
      *
@@ -124,9 +134,14 @@ final class RecordingProfileScope implements IterationScope {
         }
     }
 
-    void recordSpan(long endNanos) {
+    /**
+     * @return what this call broke of its section's budget, or
+     *         {@link BudgetBreach#NO_BREACH} where it broke nothing
+     */
+    BudgetBreach recordSpan(long endNanos) {
 
-        node.addSpan(endNanos - startNanos, counts == null ? List.of() : counts, tag);
+        var breach =
+            node.addSpan(endNanos - startNanos, counts == null ? List.of() : counts, tag);
 
         // The turns go in with the span rather than as they run: a row is read
         // as one thing, and a loop half way through its cells is not a fact
@@ -134,6 +149,7 @@ final class RecordingProfileScope implements IterationScope {
         if (iterations != null) {
             node.addIterations(iterations.getTally());
         }
+        return breach;
     }
 
     // Takes on what a scope opened inside this one counted. Its totals rather

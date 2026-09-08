@@ -104,11 +104,15 @@ No Starsector API on the signature.
   in, and a section opened under no root lands in a reserved group rather than
   being dropped. A shared read holding no scope of its own counts onto whatever
   section is open, and onto a reserved row of that group when none is. A
-  capture comes back as a tree of rows per origin, each row carrying its count,
-  total, min, max, average and self time, its counters with their spread per
-  call, its slowest call kept with that call's tag and counters, what its loops
-  ran per step and per turn with the slowest turn named, and where its calls
-  fell across duration bands doubling from a microsecond up - rendered as an
+  section may state what one of its calls is allowed - an amount of a counter,
+  a duration the caller states as the call closes, or both - and a call that
+  breaks it marks the row, takes the row's worst-call record whatever it took,
+  and is reported once. A capture comes back as a tree of rows per origin, each
+  row carrying its count, total, min, max, average and self time, its counters
+  with their spread per call, its worst call kept with that call's tag and
+  counters, what it broke of what its section allows, what its loops ran per
+  step and per turn with the slowest turn named, and where its calls fell
+  across duration bands doubling from a microsecond up - rendered as an
   indented table, one group of roots per origin.
 - **`kmlib.settings`** - LunaLib settings read and write, immediate and
   deferred with flush and removal, change callbacks, and resolving a labelled

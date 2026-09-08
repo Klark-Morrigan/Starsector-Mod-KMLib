@@ -1,6 +1,8 @@
 package kmlib.profiling.report;
 
+import kmlib.profiling.BudgetBreach;
 import kmlib.profiling.PhasedSection;
+import kmlib.profiling.ProfileBudget;
 import kmlib.profiling.ProfileCounter;
 import kmlib.profiling.ProfileOrigin;
 import kmlib.profiling.ProfileSection;
@@ -28,8 +30,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * count, and nanos converted to milliseconds, a section that ran inside another is printed
  * indented under it with its own self time, every counter the tree touched heads a group of
  * columns that stays blank on the rows which never touched it, the duration bands are marked by
- * how many calls landed in each, a row whose slowest call has more to say than its duration carries
- * a second line saying it, a row whose calls ran a loop carries a line stating what one turn of it
+ * how many calls landed in each, a row whose worst call has more to say than its duration carries
+ * a second line saying it, a row that went over what its section allows always carries that line
+ * with the bound it broke, a row whose calls ran a loop carries a line stating what one turn of it
  * cost, each group of roots is headed by the origin it was measured in, and none of those lines
  * disturbs the columns.
  */
@@ -101,6 +104,9 @@ final class TimingReportTest {
     private static final String WORST_CALL_TAG = "eos";
     private static final long WORST_CALL_SYSTEMS = 48L;
 
+    // What the case about a flagged row allows that call, so its 48 systems are 47 too many.
+    private static final long ONE_SYSTEM = 1L;
+
     // Longer than the section column and every number beside it, so a table that measured the line
     // would be visibly pulled out of shape by it.
     private static final String LONG_WORST_CALL_TAG =
@@ -127,6 +133,7 @@ final class TimingReportTest {
                 ProfileSection.registerSection("render"),
                 new ProfileTiming(2, 3_000_000, 1_000_000, 2_000_000, DurationBuckets.NO_CALLS),
                 WorstCall.NO_CALL,
+                BudgetBreach.NO_BREACH,
                 ProfileIterations.NO_ITERATIONS,
                 List.of(),
                 List.of());
@@ -311,6 +318,36 @@ final class TimingReportTest {
         }
 
         @Test
+        void formatWritesWhatARowWentOverBudgetByBesideTheCallThatBrokeIt() {
+            // A finding and its evidence on one line: the bound that was broken says what is wrong,
+            // and the call beside it is what a reader would otherwise go looking for.
+            var report = formatOneOrigin(List.of(nodeWhoseWorstCall(
+                new WorstCall(
+                    PARENT_TOTAL_NANOS,
+                    WORST_CALL_TAG,
+                    List.of(new CallCount(
+                        ProfileCounter.registerCounter(SYSTEMS_COUNTER), WORST_CALL_SYSTEMS))),
+                breachOfOneAllowedSystem())));
+
+            assertThat(report)
+                .contains("\n  worst 3.000ms  over budget: 48 " + SYSTEMS_COUNTER
+                    + ", 1 allowed per call")
+                .contains("\"" + WORST_CALL_TAG + "\"");
+        }
+
+        @Test
+        void formatWritesTheBreachEvenWhereTheCallHasNothingElseToAdd() {
+            // A row is one line while its calls are alike, but a broken bound is never a repeat of
+            // the maximum column: it is the reason to look at the row at all.
+            var report = formatOneOrigin(List.of(nodeWhoseWorstCall(
+                new WorstCall(PARENT_TOTAL_NANOS, WorstCall.NO_TAG, List.of()),
+                breachOfOneAllowedSystem())));
+
+            assertThat(report.lines())
+                .hasSize(ROWS_OF_A_HEADER_AN_ORIGIN_AND_ONE_SECTION + 1);
+        }
+
+        @Test
         void formatWritesWhatOneTurnOfTheLoopCostInEachStep() {
             // What the row's own columns cannot say: they are per call, and a bake's cost scales
             // with the cells it turned over rather than with how often it ran.
@@ -417,12 +454,14 @@ final class TimingReportTest {
             ProfileSection.registerSection(parentName),
             oneCallOf(PARENT_TOTAL_NANOS),
             WorstCall.NO_CALL,
+            BudgetBreach.NO_BREACH,
             ProfileIterations.NO_ITERATIONS,
             List.of(),
             List.of(new ProfileNode(
                 ProfileSection.registerSection(childName),
                 oneCallOf(CHILD_TOTAL_NANOS),
                 WorstCall.NO_CALL,
+                BudgetBreach.NO_BREACH,
                 ProfileIterations.NO_ITERATIONS,
                 List.of(),
                 List.of())));
@@ -435,6 +474,7 @@ final class TimingReportTest {
             ProfileSection.registerSection(sectionName),
             oneCallOf(PARENT_TOTAL_NANOS),
             WorstCall.NO_CALL,
+            BudgetBreach.NO_BREACH,
             ProfileIterations.NO_ITERATIONS,
             List.of(count),
             List.of());
@@ -461,6 +501,7 @@ final class TimingReportTest {
             new ProfileTiming(
                 1, PARENT_TOTAL_NANOS, PARENT_TOTAL_NANOS, PARENT_TOTAL_NANOS, buckets),
             WorstCall.NO_CALL,
+            BudgetBreach.NO_BREACH,
             ProfileIterations.NO_ITERATIONS,
             List.of(),
             List.of());
@@ -481,6 +522,7 @@ final class TimingReportTest {
             ProfileSection.registerSection(PARENT_SECTION),
             oneCallOf(PARENT_TOTAL_NANOS),
             new WorstCall(PARENT_TOTAL_NANOS, worstCallTag, List.of()),
+            BudgetBreach.NO_BREACH,
             new ProfileIterations(
                 turns,
                 List.of(new PhaseTotal(bakeSection.resolvePhase(PLAN_PHASE_NAME), phaseNanos)),
@@ -491,10 +533,25 @@ final class TimingReportTest {
     }
 
     private static ProfileNode nodeWhoseWorstCall(WorstCall worstCall) {
+        return nodeWhoseWorstCall(worstCall, BudgetBreach.NO_BREACH);
+    }
+
+    // A bound of one system broken by the 48 the worst call reached, made through the budget that
+    // judges it rather than stated as text - what a reader sees is what a real capture would carry.
+    private static BudgetBreach breachOfOneAllowedSystem() {
+        return ProfileBudget
+            .allowingCountPerCall(ProfileCounter.registerCounter(SYSTEMS_COUNTER), ONE_SYSTEM)
+            .findBreachInCall(PARENT_TOTAL_NANOS, counter -> WORST_CALL_SYSTEMS);
+    }
+
+    // The same row with a bound broken on it, which is what makes the line under it a finding
+    // rather than a remark about the slowest call.
+    private static ProfileNode nodeWhoseWorstCall(WorstCall worstCall, BudgetBreach breach) {
         return new ProfileNode(
             ProfileSection.registerSection(PARENT_SECTION),
             oneCallOf(PARENT_TOTAL_NANOS),
             worstCall,
+            breach,
             ProfileIterations.NO_ITERATIONS,
             List.of(),
             List.of());

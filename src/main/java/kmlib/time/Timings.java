@@ -51,6 +51,18 @@ public final class Timings {
     }
 
     /**
+     * Converts a duration in milliseconds to nanoseconds, against the same divisor the
+     * reading above uses - so a bound stated in the unit frame budgets are talked about
+     * in reaches a clock counting in nanoseconds without a second spelling of the
+     * conversion.
+     *
+     * <p>Truncated for the reason the seconds conversion below is.
+     */
+    public static long convertMillisToNanos(double millis) {
+        return (long) (millis * NANOS_PER_MILLISECOND);
+    }
+
+    /**
      * Converts a duration in seconds to nanoseconds, against the same divisor the
      * reading above uses - so a span stated in the unit a rate or a period is written
      * in reaches a clock counting in nanoseconds without a second spelling of the

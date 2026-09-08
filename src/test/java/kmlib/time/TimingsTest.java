@@ -56,6 +56,32 @@ class TimingsTest {
     }
 
     @Nested
+    class ConvertMillisToNanos {
+
+        @Test
+        void convertMillisToNanosMultipliesByAMillion() {
+
+            assertThat(Timings.convertMillisToNanos(2.5))
+                .isEqualTo(2_500_000L);
+        }
+
+        @Test
+        void convertMillisToNanosKeepsSubMillisecondPrecision() {
+            // A frame budget is stated in whole milliseconds, but the knob behind one moves in
+            // fractions of one, so the fraction is the case that matters.
+            assertThat(Timings.convertMillisToNanos(0.25))
+                .isEqualTo(250_000L);
+        }
+
+        @Test
+        void convertMillisToNanosIsZeroForZero() {
+
+            assertThat(Timings.convertMillisToNanos(0))
+                .isZero();
+        }
+    }
+
+    @Nested
     class ConvertSecondsToNanos {
 
         @Test

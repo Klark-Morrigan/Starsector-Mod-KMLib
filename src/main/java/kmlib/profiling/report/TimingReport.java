@@ -50,10 +50,13 @@ import java.util.function.ToLongFunction;
  * sit in one band costs what it costs; a row with an outlier band stalled, and
  * the two want different fixes.
  *
- * <p>Under a row whose slowest call has something to say beyond its duration
+ * <p>Under a row whose worst call has something to say beyond its duration
  * goes a second line naming that call and what its counters stood at, since the
  * maximum column already carries the duration and nothing else could carry the
- * rest.
+ * rest. A row that went over what its section allows always gets that line,
+ * carrying what it broke: a budget is what turns the table into findings, and a
+ * finding printed apart from the call that produced it is a claim without its
+ * evidence.
  *
  * <p>Under a row whose calls ran a loop goes a line for the loop: how many turns
  * it took, what one turn cost in each of the section's steps, and the slowest
@@ -123,9 +126,14 @@ public final class TimingReport {
     // than as one more tag written across the columns.
     private static final String ORIGIN_PREFIX = "origin ";
 
-    // The second line under a row: what its slowest call took, what it was
+    // The second line under a row: what its worst call took, what it was
     // called, and what each counter stood at when it ended.
     private static final String WORST_CALL_PREFIX = "worst ";
+
+    // What the row broke, written on that same line: the call it names is the
+    // breaching one, and the two apart would be a finding and its evidence on
+    // two lines.
+    private static final String OVER_BUDGET_PREFIX = "over budget: ";
     private static final String MILLIS_UNIT = "ms";
     private static final String TAG_QUOTE = "\"";
     private static final String COUNT_ASSIGNMENT = "=";
@@ -196,16 +204,19 @@ public final class TimingReport {
         }
     }
 
-    // What the row's slowest call was doing, on a line of its own under it: the
+    // What the row's worst call was doing, on a line of its own under it: the
     // counters it carries are that one call's values rather than the row's, so
     // they belong to no column, and a tag is free text of the caller's length.
     // Written only where it says something the maximum column does not, so the
-    // rows whose calls are all alike stay one line each.
+    // rows whose calls are all alike stay one line each - and always on a row
+    // that went over budget, where the finding is the thing worth saying and the
+    // call beside it is what broke the bound.
     private static void appendWorstCallLine(List<List<String>> table, ProfileNode node, int depth) {
 
         var worstCall = node.getWorstCall();
+        var breach = node.getBudgetBreach();
 
-        if (!hasContextBeyondItsDuration(worstCall)) {
+        if (!breach.hasBreached() && !hasContextBeyondItsDuration(worstCall)) {
             return;
         }
         var line = new StringBuilder();
@@ -215,6 +226,12 @@ public final class TimingReport {
         line.append(formatMillis(worstCall.getDurationNanos()));
         line.append(MILLIS_UNIT);
 
+        if (breach.hasBreached()) {
+
+            line.append(COLUMN_GAP)
+                .append(OVER_BUDGET_PREFIX)
+                .append(breach.describeBreach());
+        }
         appendQuotedTag(line, worstCall.getTag());
 
         for (var count : worstCall.getCounts()) {

@@ -15,6 +15,8 @@ final class ProfileSectionTest {
 
     private static final String SECTION_NAME = "test.profileSection.render";
 
+    private static final long ONE_MILLISECOND_IN_NANOS = 1_000_000L;
+
     @Nested
     class RegisterSection {
 
@@ -46,6 +48,31 @@ final class ProfileSectionTest {
 
             assertThatNullPointerException()
                 .isThrownBy(() -> ProfileSection.registerSection(null));
+        }
+
+        @Test
+        void keepsTheBudgetTheNameWasFirstRegisteredWith() {
+            // A section states what its calls are allowed once, beside the constant holding it, so
+            // a later resolve of the name gets the bound rather than replacing it.
+            var budget = ProfileBudget.allowingDurationPerCall(() -> ONE_MILLISECOND_IN_NANOS);
+            var section = ProfileSection.registerSection("test.profileSection.bounded", budget);
+
+            assertThat(ProfileSection.registerSection("test.profileSection.bounded"))
+                .isSameAs(section);
+            assertThat(section.getBudget())
+                .isSameAs(budget);
+        }
+    }
+
+    @Nested
+    class GetBudget {
+
+        @Test
+        void answersTheSharedNothingForASectionThatStatedNoBound() {
+            // Most sections, and the answer a caller tells by reference: a close on a per-frame path
+            // costs one comparison rather than a check nobody stated.
+            assertThat(ProfileSection.registerSection(SECTION_NAME).getBudget())
+                .isSameAs(ProfileBudget.NO_BUDGET);
         }
     }
 }

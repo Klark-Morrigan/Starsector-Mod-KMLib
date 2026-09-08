@@ -1,7 +1,9 @@
 package kmlib.profiling.recording;
 
+import kmlib.profiling.BudgetBreach;
 import kmlib.profiling.IterationScope;
 import kmlib.profiling.PhasedSection;
+import kmlib.profiling.ProfileBudget;
 import kmlib.profiling.ProfileCounter;
 import kmlib.profiling.ProfileOrigin;
 import kmlib.profiling.ProfileSection;
@@ -39,7 +41,9 @@ import static org.assertj.core.api.Assertions.tuple;
  * a loop counts its turns and charges each step of one to its own slot, roots group by the origin
  * they were opened under with everything below a root belonging to it and everything opened under
  * no root at all landing in the reserved group, snapshot order follows first-record order, a scope
- * closed out of order takes the scopes inside it with it, and reset() clears everything.
+ * closed out of order takes the scopes inside it with it, a call that breaks what its section
+ * allows marks the row, is reported once and takes the record however fast it was, and reset()
+ * clears everything.
  */
 final class RecordingProfilerTest {
 
@@ -74,6 +78,12 @@ final class RecordingProfilerTest {
 
     private static final long ONE_MICROSECOND_IN_NANOS = 1_000L;
     private static final long ONE_MILLISECOND_IN_NANOS = 1_000_000L;
+    private static final long TEN_MILLISECONDS_IN_NANOS = 10_000_000L;
+
+    // A bound of one, and the two a call breaks it with - the smallest pair that tells a call which
+    // kept a rule from one which did not.
+    private static final long ONE_ITEM = 1L;
+    private static final long TWO_ITEMS = 2L;
 
     @Nested
     class Open {
@@ -255,6 +265,80 @@ final class RecordingProfilerTest {
                 .singleElement()
                 .extracting(ProfileOriginTree::getOrigin)
                 .isSameAs(ProfileOrigin.UNSCOPED);
+        }
+
+        @Test
+        void marksAndReportsOnceARowWhoseCallReachedMoreThanItsSectionAllows() {
+            // The finding a table cannot state on its own, and the reason it is a warning as well
+            // as a row: a pass that walked the sector twice does it on every frame it runs, so the
+            // second line would say nothing the first did not.
+            var section = registerBoundedSection(
+                "test.budget.walksCounted",
+                ProfileBudget.allowingCountPerCall(
+                    ProfileCounter.registerCounter(SYSTEMS_COUNTER), ONE_ITEM));
+
+            var profiler = new RecordingProfiler(new ScriptedClock(0, 10, 10, 20));
+            var messages = captureLogWhile(() -> {
+                countInACallOf(profiler, section.getName(), TWO_ITEMS);
+                countInACallOf(profiler, section.getName(), TWO_ITEMS);
+            });
+
+            assertThat(readRoots(profiler).get(0).getBudgetBreach().describeBreach())
+                .isEqualTo("2 " + SYSTEMS_COUNTER + ", 1 allowed per call");
+            assertThat(messages)
+                .hasSize(1);
+            assertThat(messages.get(0))
+                .contains(section.getName());
+        }
+
+        @Test
+        void marksARowWhoseCallRanLongerThanItsSectionAllows() {
+
+            var section = registerBoundedSection(
+                "test.budget.durationRun",
+                ProfileBudget.allowingDurationPerCall(() -> ONE_MILLISECOND_IN_NANOS));
+
+            var profiler = new RecordingProfiler(new ScriptedClock(0, TEN_MILLISECONDS_IN_NANOS));
+
+            profiler.open(section).close();
+
+            assertThat(readRoots(profiler).get(0).getBudgetBreach().describeBreach())
+                .isEqualTo("1.00ms allowed per call");
+        }
+
+        @Test
+        void marksNothingOnARowWhoseCallsStayedInsideItsBudget() {
+
+            var section = registerBoundedSection(
+                "test.budget.inside",
+                ProfileBudget.allowingDurationPerCall(() -> ONE_MILLISECOND_IN_NANOS));
+
+            var profiler = new RecordingProfiler(new ScriptedClock(0, ONE_MICROSECOND_IN_NANOS));
+
+            profiler.open(section).close();
+
+            assertThat(readRoots(profiler).get(0).getBudgetBreach())
+                .isSameAs(BudgetBreach.NO_BREACH);
+        }
+
+        @Test
+        void keepsABreachingCallAsTheWorstOneHoweverFastItWas() {
+            // What is worth looking at on a flagged row is the call that broke the bound, and a
+            // walk too many can be over in microseconds while the calls that behaved took longer.
+            var section = registerBoundedSection(
+                "test.budget.worstCall",
+                ProfileBudget.allowingCountPerCall(
+                    ProfileCounter.registerCounter(SYSTEMS_COUNTER), ONE_ITEM));
+
+            // The breaching call runs 10ns, the well-behaved one after it 100ns.
+            var profiler = new RecordingProfiler(new ScriptedClock(0, 10, 10, 110));
+
+            countInACallOf(profiler, section.getName(), TWO_ITEMS);
+            countInACallOf(profiler, section.getName(), ONE_ITEM);
+
+            assertThat(readRoots(profiler).get(0).getWorstCall())
+                .extracting(WorstCall::getDurationNanos)
+                .isEqualTo(10L);
         }
     }
 
@@ -790,21 +874,15 @@ final class RecordingProfilerTest {
         void warnsOncePerSectionLeftOpenHoweverOftenItHappens() {
             // These sites run every frame, so a line per occurrence would be the log rather than a
             // note in it - and the second says nothing the first did not.
-            var appenderFake = new LogAppenderFake();
-            var logger = Logger.getLogger(RecordingProfiler.class);
             var profiler = new RecordingProfiler(new ScriptedClock(0, 0, 0, 0, 0, 0));
-
-            logger.addAppender(appenderFake);
-            try {
+            var messages = captureLogWhile(() -> {
                 closeAnOuterScopeWithAnInnerStillOpen(profiler);
                 closeAnOuterScopeWithAnInnerStillOpen(profiler);
-            } finally {
-                logger.removeAppender(appenderFake);
-            }
+            });
 
-            assertThat(appenderFake.getMessages())
+            assertThat(messages)
                 .hasSize(1);
-            assertThat(appenderFake.getMessages().get(0))
+            assertThat(messages.get(0))
                 .contains(INNER_SECTION);
         }
 
@@ -1100,6 +1178,29 @@ final class RecordingProfilerTest {
             assertThat(profiler.snapshot())
                 .isEmpty();
         }
+    }
+
+    // A section stating what one of its calls is allowed. Named per case, a registered section
+    // being one instance for the life of the JVM and its bound the one it was first registered
+    // with.
+    private static ProfileSection registerBoundedSection(String name, ProfileBudget budget) {
+        return ProfileSection.registerSection(name, budget);
+    }
+
+    // What the profiler wrote while the work ran. The appender is removed afterwards whatever the
+    // work did, so a failing case does not leave the logger collecting into a dead list.
+    private static List<String> captureLogWhile(Runnable work) {
+
+        var appenderFake = new LogAppenderFake();
+        var logger = Logger.getLogger(RecordingProfiler.class);
+
+        logger.addAppender(appenderFake);
+        try {
+            work.run();
+        } finally {
+            logger.removeAppender(appenderFake);
+        }
+        return appenderFake.getMessages();
     }
 
     // A section whose calls run a loop of two steps, which is what every case above opens over.

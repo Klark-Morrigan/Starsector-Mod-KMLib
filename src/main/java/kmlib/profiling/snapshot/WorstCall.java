@@ -14,8 +14,11 @@ import java.util.List;
  * hand. That is the fact which would say what to optimise, so it is kept beside
  * the duration rather than dropped and looked for in a log afterwards.
  *
- * <p>Replaced only by a slower call, so what is held here is always the call
- * the row's maximum reports.
+ * <p>Replaced only by a slower call, so what is held here is the call the row's
+ * maximum reports - until one breaks the section's budget, which takes the
+ * record whatever it took and keeps it. A row that broke a bound is read for the
+ * call that broke it, and a fault can be over faster than the calls that
+ * behaved.
  */
 public final class WorstCall {
 

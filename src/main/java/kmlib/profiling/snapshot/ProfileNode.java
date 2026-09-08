@@ -1,5 +1,6 @@
 package kmlib.profiling.snapshot;
 
+import kmlib.profiling.BudgetBreach;
 import kmlib.profiling.ProfileCounter;
 import kmlib.profiling.ProfileSection;
 
@@ -8,8 +9,9 @@ import java.util.List;
 /**
  * One section at one place in the tree: what its calls cost, how much of that
  * it spent itself rather than beneath it, what it counted while it ran, what
- * its slowest call was doing, what the loops inside those calls ran, and the
- * sections opened inside it.
+ * its slowest call was doing, whether any call went over what the section
+ * allows, what the loops inside those calls ran, and the sections opened inside
+ * it.
  *
  * <p>A node is inclusive by construction - its total is everything that ran
  * under it - so self time is what the section costs on its own, which is the
@@ -27,22 +29,27 @@ public final class ProfileNode {
     private final ProfileSection section;
     private final ProfileTiming timing;
     private final WorstCall worstCall;
+    private final BudgetBreach budgetBreach;
     private final ProfileIterations iterations;
     private final long selfNanos;
     private final List<ProfileCount> counts;
     private final List<ProfileNode> children;
 
     /**
-     * @param worstCall  what the slowest call of this row was doing, or
-     *                   {@link WorstCall#NO_CALL} where none has finished here
-     * @param iterations what the loops of this row ran, or
-     *                   {@link ProfileIterations#NO_ITERATIONS} where its calls
-     *                   ran none
+     * @param worstCall    what the slowest call of this row was doing, or the
+     *                     call that broke its budget where one did, or
+     *                     {@link WorstCall#NO_CALL} where none has finished here
+     * @param budgetBreach what a call of this row broke of its section's budget,
+     *                     or {@link BudgetBreach#NO_BREACH} where none did
+     * @param iterations   what the loops of this row ran, or
+     *                     {@link ProfileIterations#NO_ITERATIONS} where its
+     *                     calls ran none
      */
     public ProfileNode(
             ProfileSection section,
             ProfileTiming timing,
             WorstCall worstCall,
+            BudgetBreach budgetBreach,
             ProfileIterations iterations,
             List<ProfileCount> counts,
             List<ProfileNode> children) {
@@ -50,6 +57,7 @@ public final class ProfileNode {
         this.section = section;
         this.timing = timing;
         this.worstCall = worstCall;
+        this.budgetBreach = budgetBreach;
         this.iterations = iterations;
         this.counts = List.copyOf(counts);
         this.children = List.copyOf(children);
@@ -69,12 +77,26 @@ public final class ProfileNode {
     }
 
     /**
-     * @return what the slowest call of this row was doing - its duration, its
+     * @return what the worst call of this row was doing - its duration, its
      *         counters and its tag - or {@link WorstCall#NO_CALL} where a
-     *         snapshot caught the row before any call of it had finished
+     *         snapshot caught the row before any call of it had finished. The
+     *         slowest call, until one breaks the section's budget: from then on
+     *         it is the breach, which is the call a flagged row is read for
      */
     public WorstCall getWorstCall() {
         return worstCall;
+    }
+
+    /**
+     * @return what a call of this row broke of its section's budget, or
+     *         {@link BudgetBreach#NO_BREACH} where every call stayed inside it -
+     *         which is every row of a capture nobody stated a bound in. The row
+     *         is read as a finding rather than as a number wherever this says
+     *         something, and the call that broke it is the one
+     *         {@link #getWorstCall()} holds
+     */
+    public BudgetBreach getBudgetBreach() {
+        return budgetBreach;
     }
 
     /**

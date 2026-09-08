@@ -226,7 +226,10 @@ No Starsector API on the signature.
   capture says which game each row was measured in. A shared read holding no
   scope of its own counts onto whichever section is open, and onto a reserved
   row of the reserved origin when none is, so work from an unprofiled path is
-  seen rather than dropped.
+  seen rather than dropped. A section may state what one of its calls is
+  allowed - an amount of a counter, a duration the caller states as the call
+  closes, or both - and a call that breaks it marks the row, takes the row's
+  worst-call record whatever it took, and is reported once.
 - [`profiling/recording/`](src/main/java/kmlib/profiling/recording/) - the
   profiler that keeps what it is handed, and the open stack and per-row tallies
   it accumulates a capture in.
@@ -235,8 +238,9 @@ No Starsector API on the signature.
 - [`profiling/snapshot/`](src/main/java/kmlib/profiling/snapshot/) - what a
   reader is handed after a capture: one section tree per origin, each row's
   count, total, min, max, average and self time, what it counted, what its
-  slowest call was doing, what the loops inside its calls ran, and how its
-  calls fell across doubling duration bands.
+  worst call was doing, what it broke of what its section allows, what the
+  loops inside its calls ran, and how its calls fell across doubling duration
+  bands.
 - [`settings/`](src/main/java/kmlib/settings/) - LunaLib settings read and
   write, immediate and deferred, change callbacks, and labelled choices.
 - [`text/`](src/main/java/kmlib/text/) - string and number formatting, plus

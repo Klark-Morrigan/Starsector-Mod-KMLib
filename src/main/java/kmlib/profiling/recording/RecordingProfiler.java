@@ -1,5 +1,6 @@
 package kmlib.profiling.recording;
 
+import kmlib.profiling.BudgetBreach;
 import kmlib.profiling.IterationScope;
 import kmlib.profiling.PhasedSection;
 import kmlib.profiling.ProfileCounter;
@@ -9,6 +10,7 @@ import kmlib.profiling.ProfileSection;
 import kmlib.profiling.Profiler;
 import kmlib.profiling.snapshot.ProfileOriginTree;
 import kmlib.profiling.snapshot.WorstCall;
+import kmlib.text.KmlibStrings;
 
 import org.apache.log4j.Logger;
 
@@ -54,6 +56,7 @@ public final class RecordingProfiler implements Profiler {
     private final List<ProfileOriginAccumulator> originGroups = new ArrayList<>();
     private final List<RecordingProfileScope> openScopes = new ArrayList<>();
     private final Set<ProfileSection> sectionsReportedOutOfOrder = new HashSet<>();
+    private final Set<ProfileSection> sectionsReportedOverBudget = new HashSet<>();
 
     private final LongSupplier clockNanos;
 
@@ -134,8 +137,12 @@ public final class RecordingProfiler implements Profiler {
         // A span the caller timed itself still belongs under whatever is open,
         // so it lands on the same node an open()/close() pair would have. It
         // counted nothing and named nothing: there was no scope to do either on.
-        resolveNode(ProfileSection.registerSection(section))
-            .addSpan(elapsedNanos, List.of(), WorstCall.NO_TAG);
+        var recordedSection = ProfileSection.registerSection(section);
+
+        reportBreachOnce(
+            recordedSection,
+            resolveNode(recordedSection).addSpan(elapsedNanos, List.of(), WorstCall.NO_TAG),
+            WorstCall.NO_TAG);
     }
 
     @Override
@@ -155,6 +162,9 @@ public final class RecordingProfiler implements Profiler {
         // which is the right answer: its node no longer exists.
         openScopes.clear();
         sectionsReportedOutOfOrder.clear();
+        // Said again after a clear, since the capture a breach was reported
+        // against is gone and the next one has to stand on its own.
+        sectionsReportedOverBudget.clear();
     }
 
     /**
@@ -224,7 +234,7 @@ public final class RecordingProfiler implements Profiler {
     // row it actually ran inside.
     private void endScope(RecordingProfileScope scope, long endNanos) {
 
-        scope.recordSpan(endNanos);
+        reportBreachOnce(scope.getSection(), scope.recordSpan(endNanos), scope.getTag());
         scope.handCountsToParentScope();
     }
 
@@ -235,8 +245,12 @@ public final class RecordingProfiler implements Profiler {
         var callCounts = new ArrayList<ScopeCount>(1);
 
         ScopeCount.resolveCountIn(callCounts, counter).addSelfAmount(amount);
-        resolveRootNode(ProfileOrigin.UNSCOPED, ProfileSection.UNSCOPED_COUNTS)
-            .addSpan(UNTIMED_CALL_NANOS, callCounts, WorstCall.NO_TAG);
+
+        reportBreachOnce(
+            ProfileSection.UNSCOPED_COUNTS,
+            resolveRootNode(ProfileOrigin.UNSCOPED, ProfileSection.UNSCOPED_COUNTS)
+                .addSpan(UNTIMED_CALL_NANOS, callCounts, WorstCall.NO_TAG),
+            WorstCall.NO_TAG);
     }
 
     // The node a section opened right now belongs to: a child of whatever is
@@ -261,6 +275,26 @@ public final class RecordingProfiler implements Profiler {
         return ProfileOriginAccumulator
             .resolveOriginIn(originGroups, origin)
             .resolveRootNode(section);
+    }
+
+    // A breach is a finding, so it is said where a reader is already looking -
+    // in the log, as it happens - as well as on the row afterwards. Once per
+    // section, since the pass that broke a bound breaks it on every frame it
+    // runs and the tenth line says nothing the first did not.
+    private void reportBreachOnce(ProfileSection section, BudgetBreach breach, String tag) {
+
+        if (!breach.hasBreached() || !sectionsReportedOverBudget.add(section)) {
+            return;
+        }
+        LOG.warn("Profiling section '" + section.getName() + "' went over budget: "
+            + breach.describeBreach() + describeBreachingCall(tag)
+            + ". Reported once; the row carries every later breach of it.");
+    }
+
+    // What the caller named the breaching call, where it named anything. Quoted,
+    // a tag being free text whose end has to be tellable from the prose after it.
+    private static String describeBreachingCall(String tag) {
+        return KmlibStrings.hasText(tag) ? ", on call \"" + tag + "\"" : "";
     }
 
     // Once per section, because the sites this happens on run every frame and
