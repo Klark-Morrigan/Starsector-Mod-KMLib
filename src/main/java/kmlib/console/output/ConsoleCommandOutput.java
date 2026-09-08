@@ -13,6 +13,7 @@ import org.lazywizard.console.Console;
  * for the live sources backing its other ports).
  */
 public enum ConsoleCommandOutput implements CommandOutput {
+
     INSTANCE;
 
     @Override

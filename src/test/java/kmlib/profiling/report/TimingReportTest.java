@@ -34,6 +34,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  * with the bound it broke, a row whose calls ran a loop carries a line stating what one turn of it
  * cost, each group of roots is headed by the origin it was measured in, and none of those lines
  * disturbs the columns.
+ *
+ * <p>And what a request makes of the same capture: a listing names each row by its whole path and
+ * puts the row that spent the time first, a listing over a counter drops the rows that never
+ * counted it, a frame beat divides the totals and says in the heading how many frames they were
+ * divided by, a beat that never ran leaves them as captured, and a request that keeps nothing says
+ * so rather than reading as an empty capture.
  */
 final class TimingReportTest {
 
@@ -45,6 +51,16 @@ final class TimingReportTest {
 
     private static final String SYSTEMS_COUNTER = "systems";
     private static final String MARKETS_COUNTER = "markets";
+    private static final String WALKS_COUNTER = "walks";
+
+    // A namespace nothing in these cases is named under, and a beat none of them opened: what a
+    // request that keeps nothing and a capture with no frames in it are asked with.
+    private static final String UNUSED_NAMESPACE = "someOtherMod.";
+    private static final String UNOPENED_FRAME_BEAT = "mapLayer.prepare";
+
+    // Two calls of the beat, so a total divided by them is a third figure again rather than the
+    // total itself.
+    private static final long FRAMES_MEASURED = 2;
 
     // The game every case below is reported as having been measured in, and a second for the case
     // about two of them. Spelled without a full stop, since one case reads a pair of them as the
@@ -121,8 +137,21 @@ final class TimingReportTest {
         @Test
         void formatReturnsANoticeWhenNothingWasRecorded() {
 
-            assertThat(TimingReport.format(List.of()))
+            assertThat(formatTree(List.of()))
                 .isEqualTo("No timings recorded.");
+        }
+
+        @Test
+        void formatReturnsADifferentNoticeWhereTheRequestKeptNothing() {
+            // Not the same answer as an empty capture: one says nothing was measured, the other
+            // says the question found nothing, and a reader narrowing a filter needs to know which.
+            var report = TimingReport.format(
+                List.of(new ProfileOriginTree(
+                    ProfileOrigin.registerOrigin(ORIGIN_LABEL),
+                    List.of(nodeWhoseWorstCall(WorstCall.NO_CALL)))),
+                ProfileReportRequest.showTree().limitToNamespace(UNUSED_NAMESPACE));
+
+            assertThat(report).isEqualTo("No rows matched.");
         }
 
         @Test
@@ -411,7 +440,7 @@ final class TimingReportTest {
             // Two games in one capture: without the headings a reader has two rows spelled alike
             // and no way to say which save either came from, which is the one thing that would let
             // them go back and reproduce it.
-            var report = TimingReport.format(List.of(
+            var report = formatTree(List.of(
                 new ProfileOriginTree(
                     ProfileOrigin.registerOrigin(ORIGIN_LABEL),
                     List.of(nodeWhoseWorstCall(WorstCall.NO_CALL))),
@@ -427,10 +456,84 @@ final class TimingReportTest {
         }
 
         @Test
+        void formatNamesEachRowByItsWholePathInAListing() {
+            // A listing has taken the rows out of the tree, so the indent that said what a row ran
+            // inside is gone: without the path, two rows of one section under two parents would be
+            // one name printed twice.
+            var report = TimingReport.format(
+                oneOriginOf(List.of(parentHoldingOneChild(PARENT_SECTION, CHILD_SECTION))),
+                ProfileReportRequest.showRowsBySelfTime());
+
+            assertThat(readRowNames(report))
+                .contains(PARENT_SECTION + "/" + CHILD_SECTION);
+        }
+
+        @Test
+        void formatSortsAListingByWhatEachRowSpentItself() {
+            // The 2.000ms walk before the 3.000ms rebuild that was waiting on it: what a reader
+            // hunting for time to save opens next is the row that spent it, not the row above it.
+            var report = TimingReport.format(
+                oneOriginOf(List.of(parentHoldingOneChild(PARENT_SECTION, CHILD_SECTION))),
+                ProfileReportRequest.showRowsBySelfTime());
+
+            assertThat(readRowNames(report))
+                .containsSequence(PARENT_SECTION + "/" + CHILD_SECTION, PARENT_SECTION);
+        }
+
+        @Test
+        void formatShowsOnlyTheRowsThatCountedInACounterListing() {
+            // A listing of what walked is unreadable beside the rows that never walked: the
+            // question is which pass went looking for the sector, and a row that never did is not
+            // an answer at zero.
+            var report = TimingReport.format(
+                oneOriginOf(List.of(
+                    nodeCounting(PARENT_SECTION, countOf(WALKS_COUNTER, 2, 2, 2, 2)),
+                    nodeCounting(CHILD_SECTION, countOf(MARKETS_COUNTER, 40, 40, 40, 40)))),
+                ProfileReportRequest.showRowsCounting(
+                    ProfileCounter.registerCounter(WALKS_COUNTER)));
+
+            assertThat(readRowNames(report))
+                .contains(PARENT_SECTION)
+                .doesNotContain(CHILD_SECTION);
+        }
+
+        @Test
+        void formatDividesTotalsByTheFramesTheBeatRanFor() {
+            // What a reader is after: 3.000ms over two frames is 1.500ms a frame, which is a figure
+            // that means the same whether the capture ran for four seconds or four minutes.
+            var beat = ProfileSection.registerSection(PARENT_SECTION);
+            var report = TimingReport.format(
+                oneOriginOf(List.of(nodeCalledTwice())),
+                ProfileReportRequest.showTree().divideByFramesOf(beat));
+
+            assertThat(report)
+                .contains("COUNT/f", "SELF ms/f", "TOTAL ms/f")
+                .contains("per frame, over 2 of " + PARENT_SECTION);
+            assertThat(readFilledCells(report, PARENT_SECTION))
+                .contains("1.00", "1.500");
+        }
+
+        @Test
+        void formatReportsAsCapturedWhereTheFrameBeatNeverRanInThatGame() {
+            // A capture holding no frame of the beat cannot say what one cost, and dividing by
+            // nothing would report a figure no frame ever had - so it says so and leaves the
+            // totals alone.
+            var report = TimingReport.format(
+                oneOriginOf(List.of(nodeCalledTwice())),
+                ProfileReportRequest.showTree().divideByFramesOf(
+                    ProfileSection.registerSection(UNOPENED_FRAME_BEAT)));
+
+            assertThat(report)
+                .contains(UNOPENED_FRAME_BEAT + " never ran here; totals as captured");
+            assertThat(readFilledCells(report, PARENT_SECTION))
+                .contains("3.000");
+        }
+
+        @Test
         void formatKeepsTheColumnsAlignedAroundAnOriginHeading() {
             // The heading belongs to no column and carries a label a caller composed, so measuring
             // it would widen the section column by however long that label was.
-            var report = TimingReport.format(List.of(new ProfileOriginTree(
+            var report = formatTree(List.of(new ProfileOriginTree(
                 ProfileOrigin.registerOrigin(LONG_ORIGIN_LABEL),
                 List.of(nodeWhoseWorstCall(WorstCall.NO_CALL)))));
 
@@ -442,8 +545,46 @@ final class TimingReportTest {
     // The report of one game's roots, which is what every case not about the grouping itself is
     // reading: what a row says is no different for having a second game's rows below it.
     private static String formatOneOrigin(List<ProfileNode> roots) {
-        return TimingReport.format(
-            List.of(new ProfileOriginTree(ProfileOrigin.registerOrigin(ORIGIN_LABEL), roots)));
+        return formatTree(oneOriginOf(roots));
+    }
+
+    // The capture as it was measured, over every row of it, which is what a reader opens first and
+    // what every case not about another reading is reading.
+    private static String formatTree(List<ProfileOriginTree> originTrees) {
+        return TimingReport.format(originTrees, ProfileReportRequest.showTree());
+    }
+
+    // One game's roots as a capture, for the cases that ask a request of them rather than the tree
+    // reading formatOneOrigin takes.
+    private static List<ProfileOriginTree> oneOriginOf(List<ProfileNode> roots) {
+        return List.of(new ProfileOriginTree(ProfileOrigin.registerOrigin(ORIGIN_LABEL), roots));
+    }
+
+    // Two 1.500ms calls, which is a total a frame count divides into a figure the row itself never
+    // reported.
+    private static ProfileNode nodeCalledTwice() {
+        return new ProfileNode(
+            ProfileSection.registerSection(PARENT_SECTION),
+            new ProfileTiming(
+                FRAMES_MEASURED,
+                PARENT_TOTAL_NANOS,
+                CHILD_TOTAL_NANOS,
+                CHILD_TOTAL_NANOS,
+                DurationBuckets.NO_CALLS),
+            WorstCall.NO_CALL,
+            BudgetBreach.NO_BREACH,
+            ProfileIterations.NO_ITERATIONS,
+            List.of(),
+            List.of());
+    }
+
+    // What each line is about: the first word of it, which is the section column for a row and the
+    // heading's own first word for the lines that are not rows.
+    private static List<String> readRowNames(String report) {
+        return report
+            .lines()
+            .map(line -> line.trim().split("\\s+")[0])
+            .toList();
     }
 
     // One call of a parent holding one call of a child, which is the smallest tree that has a

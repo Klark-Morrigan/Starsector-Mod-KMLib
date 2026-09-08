@@ -17,6 +17,23 @@ public final class ParameterValues {
         return raw -> raw;
     }
 
+    // A whole number greater than zero: what a "how many of them" parameter takes,
+    // where zero and below would ask for nothing rather than for some.
+    public static ValueParser<Integer> positiveWholeNumber(String expected) {
+        return raw -> {
+            int value;
+            try {
+                value = Integer.parseInt(raw);
+            } catch (NumberFormatException malformed) {
+                throw new ValueParseException(expected);
+            }
+            if (value <= 0) {
+                throw new ValueParseException(expected);
+            }
+            return value;
+        };
+    }
+
     // A decimal number, rejecting non-numeric input with the given clause.
     public static ValueParser<Float> decimal(String expected) {
         return raw -> {

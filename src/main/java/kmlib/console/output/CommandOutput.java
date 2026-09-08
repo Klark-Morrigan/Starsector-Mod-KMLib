@@ -8,5 +8,6 @@ package kmlib.console.output;
  * console at runtime.
  */
 public interface CommandOutput {
+
     void showMessage(String message);
 }

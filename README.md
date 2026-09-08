@@ -238,8 +238,13 @@ No Starsector API on the signature.
 - [`profiling/recording/`](src/main/java/kmlib/profiling/recording/) - the
   profiler that keeps what it is handed, and the open stack and per-row tallies
   it accumulates a capture in.
-- [`profiling/report/`](src/main/java/kmlib/profiling/report/) - the indented
-  table over a capture.
+- [`profiling/report/`](src/main/java/kmlib/profiling/report/) - the readings
+  of a capture, and the request naming one. The capture as it was measured, as
+  a listing worst first with each row named by its whole path, or as what one
+  counter says with the rows that never counted it dropped - narrowed to a
+  namespace and to however many rows are wanted, the rows those rows ran inside
+  kept either way, and optionally divided by the calls of a named beat so a
+  total reads as what one frame spends.
 - [`profiling/snapshot/`](src/main/java/kmlib/profiling/snapshot/) - what a
   reader is handed after a capture: one section tree per origin, each row's
   count, total, min, max, average and self time, what it counted, what its
@@ -251,7 +256,10 @@ No Starsector API on the signature.
 - [`text/`](src/main/java/kmlib/text/) - string and number formatting, plus
   the reads over a string every surface shares: is there text here, what are
   its words, and the stutter left where one phrase was appended to another
-  ending on the same word.
+  ending on the same word. Plus the grid a monospaced table is laid out in:
+  cells padded into columns that never close below a floor, so one capture's
+  columns sit where the last one's did, and lines written across the whole
+  width for what belongs to no column.
 - [`time/`](src/main/java/kmlib/time/) - nanosecond conversion and duration
   formatting, for anything reading the clock: a measured span, a diagnostic
   trace, an animation phased off it.
@@ -270,7 +278,8 @@ No Starsector API on the signature.
   invocation, its context, argument text and output channel, with the
   requirements a command states before parsing.
 - [`console/output/`](src/main/java/kmlib/console/output/) - where a command's
-  messages go, behind an interface so a test can take them.
+  messages go, behind an interface so a test can take them: the live overlay,
+  or the game log for what a player was asked to send on rather than read now.
 - [`console/parsing/`](src/main/java/kmlib/console/parsing/) - declarative
   parameter specs with required and defaulted parameters, typed value parsers,
   and a parsed result reporting validity and which parameters were supplied.
