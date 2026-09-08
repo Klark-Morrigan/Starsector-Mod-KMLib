@@ -56,4 +56,25 @@ public record WidgetStyle(
     TabStyle tabStyle,
     NotchColours notchColours,
     UiSoundScheme soundScheme) {
+
+    /**
+     * This look with a different tab style in it, everything else carried over. What a pass drawing two
+     * tab-shaped things in one panel wants - a row of tabs and the panel's own band button beside them,
+     * which wears a chrome of its own - so the second is drawn through the one control renderer rather
+     * than through a second path that would have to be kept matching this one.
+     *
+     * @param tabStyle the tab look to draw with
+     * @return this look, drawing tabs in that style
+     */
+    public WidgetStyle withTabStyle(TabStyle tabStyle) {
+        return new WidgetStyle(
+            boxColours,
+            accentColours,
+            controlHoverWash,
+            controlPressLight,
+            bodyFont,
+            tabStyle,
+            notchColours,
+            soundScheme);
+    }
 }

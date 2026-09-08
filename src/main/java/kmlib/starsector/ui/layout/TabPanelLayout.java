@@ -8,6 +8,8 @@ import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.widgets.PanelChrome;
 import kmlib.starsector.ui.widgets.PanelPlacement;
 import kmlib.starsector.ui.widgets.scroll.ScrollbarThickness;
+import kmlib.starsector.ui.widgets.tabs.BandButtonPlacement;
+import kmlib.starsector.ui.widgets.tabs.BandButtonSpec;
 import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
 import kmlib.starsector.ui.widgets.tabs.TabPanelViewState;
 import kmlib.starsector.ui.widgets.tabs.style.TabStyle;
@@ -35,9 +37,11 @@ import java.util.List;
  *
  * <p>A panel may fly one button of its own after the last tab - chrome belonging to the panel rather than to
  * any tab, for whatever the row itself has to offer. It is laid through the same header call the tabs are, so
- * it is sized, styled and hit exactly as they are; it is not a segment of the tabs control, which would shift
- * every index the selection and any bound keys are resolved by. The band the panel reports is the two
- * together, so the fold wipes them as one piece.
+ * it is measured, split and hit exactly as they are, but at a look of its own: a button is not a tab, so it
+ * wears a button's chrome and sizes to its own word rather than inheriting a fixed tab box it would sit in
+ * half-empty. It is not a segment of the tabs control either, which would shift every index the selection and
+ * any bound keys are resolved by. The band the panel reports is the two together, so the fold wipes them as
+ * one piece.
  *
  * <p>The header is laid through {@link TabsControlLayout#layoutHeaderControl}, so a header tab measures,
  * draws, and hit-tests through the same tabs-row geometry a body {@link ControlSpec.Tabs} control uses. UI
@@ -88,9 +92,10 @@ public final class TabPanelLayout {
      *                       layout can still stand their tab rows at different heights; the band height is
      *                       content-space, standing under the top border rather than including it
      * @param tabsSpec       the tabs control (labels + per-tab shortcuts) drawn across the header band
-     * @param bandButtonSpec the panel's own chrome button standing after the last tab, as a one-cell tabs
-     *                       control so it is sized and styled exactly as the tabs beside it, or null for a
-     *                       band of tabs alone
+     * @param bandButtonSpec the panel's own chrome button standing after the last tab, with the look it
+     *                       wears - its own rather than the tabs', so it reads as a button and snaps to its
+     *                       own word beside a fixed-width row - or null for a band of tabs alone. Only its
+     *                       band height is not honoured: the button stands in this panel's band
      * @param bodyControls   the active tab's body controls, top to bottom (empty for no body)
      * @param measurer       measures each label's rendered width for text snapping
      * @param viewState      how far the panel is scrolled and folded
@@ -105,7 +110,7 @@ public final class TabPanelLayout {
             PanelChrome chrome,
             TabStyle tabStyle,
             ControlSpec.Tabs tabsSpec,
-            ControlSpec.Tabs bandButtonSpec,
+            BandButtonSpec bandButtonSpec,
             List<ControlSpec> bodyControls,
             LineWidthMeasurer measurer,
             TabPanelViewState viewState) {
@@ -148,18 +153,20 @@ public final class TabPanelLayout {
             tabStyle,
             measurer);
 
-        // The panel's own button, laid where the tabs leave off so the band simply grows by one box. Laid
-        // through the same header call rather than boxed here, so it is snapped, split and hit exactly as a
-        // tab is and wears whatever look the host's style names - which is the whole reason it reads as
-        // part of the row without being a tab in it.
-        var bandButton = bandButtonSpec == null
-            ? null
-            : TabsControlLayout.layoutHeaderControl(
-                bandButtonSpec,
-                tabsHeader.bounds().x() + tabsHeader.bounds().width(),
-                bandTopY,
-                tabStyle,
-                measurer);
+        // The panel's own button, laid where the tabs leave off so the band simply grows by one box, and at
+        // its own look rather than the row's: it is a button standing beside tabs, so it wears a button's
+        // chrome and sizes to its own word while a fixed-width row beside it does not. Laid through the same
+        // header call all the same, which is what keeps it measured, split and hit exactly as a tab is.
+        //
+        // Its style is pinned to the panel's band rather than trusted to name it, the band being the room
+        // the panel was given and not the button's to choose - the one part of its look the caller does not
+        // decide.
+        var bandButton = layOutBandButton(
+            bandButtonSpec,
+            tabsHeader.bounds().x() + tabsHeader.bounds().width(),
+            bandTopY,
+            tabStyle.headerBandHeight(),
+            measurer);
 
         // Body: the same shared composition a plain panel frames, hung beneath the header band and capped so
         // the row and the box together clear the bottom margin - the band height counted against the
@@ -234,16 +241,41 @@ public final class TabPanelLayout {
             notch);
     }
 
+    // The panel's own button where one was asked for, laid at the caller's look but in the panel's band.
+    // The style is carried out on the placement rather than left with the caller, so the pass that paints
+    // the button wears the very look this measured it against.
+    private static BandButtonPlacement layOutBandButton(
+            BandButtonSpec bandButtonSpec,
+            float bandLeftX,
+            float bandTopY,
+            float bandHeight,
+            LineWidthMeasurer measurer) {
+
+        if (bandButtonSpec == null) {
+            return null;
+        }
+        var buttonStyle = bandButtonSpec.style().withHeaderBandHeight(bandHeight);
+
+        return new BandButtonPlacement(
+            TabsControlLayout.layoutHeaderControl(
+                bandButtonSpec.spec(),
+                bandLeftX,
+                bandTopY,
+                buttonStyle,
+                measurer),
+            buttonStyle);
+    }
+
     // The whole band the panel flies: its tabs, plus the button standing after them where it has one. One
     // rect rather than two, because everything downstream asks the band a single question - what does the
     // fold leave of it, is the pointer on it, how far does the panel reach - and a band that named only its
     // tabs would leave the button outside every one of those answers: unclipped by the fold, on screen the
     // panel does not claim, and beyond the bound a backdrop is drawn to.
-    private static Rectangle computeBandBounds(Control tabsHeader, Control bandButton) {
+    private static Rectangle computeBandBounds(Control tabsHeader, BandButtonPlacement bandButton) {
 
         return bandButton == null
             ? tabsHeader.bounds()
-            : tabsHeader.bounds().unionWith(bandButton.bounds());
+            : tabsHeader.bounds().unionWith(bandButton.control().bounds());
     }
 
     // What the fold leaves of the tab row on screen. While the body is folding, the row is wiped with it -

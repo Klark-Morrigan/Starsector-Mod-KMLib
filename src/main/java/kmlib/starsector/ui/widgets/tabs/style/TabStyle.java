@@ -86,4 +86,25 @@ public record TabStyle(
     public float resolveTabHeight() {
         return tabBox.resolveTabHeight(headerBandHeight);
     }
+
+    /**
+     * This style standing in a band of a given height, everything else about it carried over. What a
+     * caller wants where a look is chosen for one thing and the room it stands in is another's to state -
+     * a panel's band button wearing its own chrome inside the band the panel was given - so the two are
+     * not left to be kept agreeing by hand.
+     *
+     * @param bandHeight the band the style is to stand in
+     * @return this style at that band height
+     */
+    public TabStyle withHeaderBandHeight(float bandHeight) {
+        return new TabStyle(
+            chrome,
+            bandHeight,
+            tabBox,
+            palette,
+            hotkey,
+            face,
+            textHalo,
+            pixelFaceSharpness);
+    }
 }

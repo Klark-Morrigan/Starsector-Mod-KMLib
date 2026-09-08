@@ -1,5 +1,6 @@
 package kmlib.starsector.ui.render.gl.tabs;
 
+import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.BodyInteractionSources;
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlInteractionSources;
@@ -27,8 +28,10 @@ import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
  * both skipped and it paints as its tab row alone.
  *
  * <p>The panel's own band button, where it flies one, is painted with the tabs as one piece of chrome: same
- * clip, same state save, same alpha, and its hover fraction taken off the same reading of the pointer. It
- * carries no lift, being a single cell that acts on the press rather than holding one.
+ * clip, same state save, same alpha, and its hover fraction taken off the same reading of the pointer. What
+ * it does not share is the tab style: it carries its own, so a button stands beside a strip of tabs looking
+ * like the button it is. It carries no lift either, being a single cell that acts on the press rather than
+ * holding one.
  *
  * <p>Nothing is laid under the row: its tabs are opaque surfaces of their own (see {@link
  * kmlib.starsector.ui.widgets.tabs.style.TabPalette#createMapTabPalette}), so the row reads the same wherever it
@@ -151,10 +154,7 @@ public final class TabPanelRenderer {
         // would drop exactly those borders. The fold still wipes the row, the reach travelling with the
         // narrowing band.
         UiScissor.runClippedTo(
-            TabChromeRenderer.computePaintedRegionFor(
-                style.tabStyle().chrome(),
-                placement.drawnHeaderBand(),
-                style.tabStyle().resolveTabHeight()),
+            computeBandClip(placement, style),
             () -> GlStateGuard.bracket(() -> {
 
                 drawBandControl(
@@ -164,15 +164,42 @@ public final class TabPanelRenderer {
                     alpha);
 
                 // The panel's own button, drawn in the same bracket and after the tabs so the two are one
-                // piece of chrome under one state save. A panel asked for none simply has nothing here.
-                if (placement.bandButton() != null) {
+                // piece of chrome under one state save, but in its own tab style - it wears a button's
+                // chrome beside whatever the tabs wear, which is the whole of what makes it read as a
+                // button. A panel asked for none simply has nothing here.
+                var bandButton = placement.bandButton();
+                if (bandButton != null) {
                     drawBandControl(
-                        placement.bandButton(),
-                        style,
+                        bandButton.control(),
+                        style.withTabStyle(bandButton.style()),
                         interactions.resolveBandButtonSources(),
                         alpha);
                 }
             }));
+    }
+
+    // The screen the band is allowed to write to: what the tabs' own chrome paints over the drawn band,
+    // widened to what the button's chrome paints over the button where there is one. Two readings rather
+    // than one because the two wear different chromes and each reaches past its own boxes by its own
+    // margin - a clip cut to the tabs' reach alone would shave the frame off a raised button standing
+    // beside a seamless strip.
+    private static Rectangle computeBandClip(TabPanelPlacement placement, WidgetStyle style) {
+
+        var tabsClip = TabChromeRenderer.computePaintedRegionFor(
+            style.tabStyle().chrome(),
+            placement.drawnHeaderBand(),
+            style.tabStyle().resolveTabHeight());
+
+        var bandButton = placement.bandButton();
+        if (bandButton == null) {
+            return tabsClip;
+        }
+        // Over the button's own box rather than over the whole band: its chrome's reach is measured from
+        // what it actually paints, and the band it stands in is mostly somebody else's tabs.
+        return tabsClip.unionWith(TabChromeRenderer.computePaintedRegionFor(
+            bandButton.style().chrome(),
+            bandButton.control().bounds(),
+            bandButton.style().resolveTabHeight()));
     }
 
     // One control of the header band, drawn as the chrome it is. Both the tabs and the button beside them go

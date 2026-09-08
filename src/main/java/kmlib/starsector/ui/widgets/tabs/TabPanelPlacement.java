@@ -25,10 +25,11 @@ import java.util.List;
  *
  * <p>The {@code bandButton} is the panel's own chrome standing after the last tab: a button that belongs to
  * the panel rather than to any tab, so pressing it fires its own action and never moves the selection. It is
- * laid out, drawn and hit-tested as a one-cell tabs control, which is what makes it read as part of the row
- * it stands in without being a tab in it - a segment inside the tabs control would shift every index the
- * selection, the lit tab and any bound keys are resolved by. Null when the host asks for none, and consumers
- * reading it must null-check.
+ * laid out, drawn and hit-tested through the same one-cell tabs geometry a tab uses, which is what stands it
+ * in the row without making it a segment of the tabs control - a segment there would shift every index the
+ * selection, the lit tab and any bound keys are resolved by. It wears a look of its own rather than the
+ * tabs', so it reads as the button it is and sizes to its own word; it carries that look with it. Null when
+ * the host asks for none, and consumers reading it must null-check.
  *
  * <p>The {@code drawnHeaderBand} is how much of the row is on screen: the whole row - tabs and the band
  * button together - at rest, and the part the fold has not yet wiped while the body is folding. One rect the
@@ -51,8 +52,8 @@ import java.util.List;
  * has a resolved position; the width is not.
  *
  * @param tabsHeader      the laid-out tabs control across the header band, its segments split per tab
- * @param bandButton      the panel's own one-cell button standing after the last tab, or null when the host
- *                        asks for none
+ * @param bandButton      the panel's own one-cell button standing after the last tab, with the look it was
+ *                        laid at, or null when the host asks for none
  * @param drawnHeaderBand the part of that row currently on screen - the whole row at rest, narrowed to the
  *                        box's span while the fold wipes it
  * @param body            the headerless panel placement beneath the row (its box frames the body alone)
@@ -62,7 +63,7 @@ import java.util.List;
  */
 public record TabPanelPlacement(
     Control tabsHeader,
-    Control bandButton,
+    BandButtonPlacement bandButton,
     Rectangle drawnHeaderBand,
     PanelPlacement body,
     BoxBorder border,
@@ -136,7 +137,7 @@ public record TabPanelPlacement(
      * @return whether the point is on the band button
      */
     public boolean containsPointInBandButton(float pointX, float pointY) {
-        return bandButton != null && bandButton.bounds().containsPoint(pointX, pointY);
+        return bandButton != null && bandButton.containsPoint(pointX, pointY);
     }
 
     /**

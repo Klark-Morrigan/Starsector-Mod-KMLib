@@ -16,7 +16,10 @@ import kmlib.starsector.ui.sound.UiSoundScheme;
 import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.PanelPlacement;
 import kmlib.starsector.ui.widgets.scroll.ScrollbarThickness;
+import kmlib.starsector.ui.widgets.tabs.BandButtonPlacement;
 import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
+import kmlib.starsector.ui.widgets.tabs.style.TabStyle;
+import kmlib.starsector.ui.widgets.tabs.style.TabStyles;
 import kmlib.testfixtures.starsector.ui.sound.UiSoundPlayerFake;
 
 import org.junit.jupiter.api.Nested;
@@ -64,7 +67,13 @@ final class TabPanelControllerTest {
     private static final float INSIDE_BAND_BUTTON_X = 290f;
 
     // What a placement carries where the host asked for no button at all.
-    private static final Control NO_BAND_BUTTON = null;
+    private static final BandButtonPlacement NO_BAND_BUTTON = null;
+
+    // The look the button was laid at, which the routing cases never read - they ask what a press reaches
+    // and where the pointer is, and neither is a question about paint. It rides along because a laid-out
+    // button carries the style it was measured against.
+    private static final TabStyle BAND_BUTTON_STYLE =
+        TabStyles.buildAtBandHeight(TabStyle.DEFAULT_HEADER_BAND_HEIGHT);
 
     // The framed body, standing beneath the row and meeting its bottom edge, as the layout lays it. Apart
     // from the row on the y axis, so a point on the tabs is a point the body does not also claim - which is
@@ -2367,10 +2376,12 @@ final class TabPanelControllerTest {
 
         return new TabPanelPlacement(
             new Control(tabsSpec, HEADER_BAND, List.of(FIRST_TAB, SECOND_TAB)),
-            new Control(
-                buildBandButtonSpec(buttonAction),
-                BAND_BUTTON_BOX,
-                List.of(BAND_BUTTON_BOX)),
+            new BandButtonPlacement(
+                new Control(
+                    buildBandButtonSpec(buttonAction),
+                    BAND_BUTTON_BOX,
+                    List.of(BAND_BUTTON_BOX)),
+                BAND_BUTTON_STYLE),
             BAND_WITH_BUTTON,
             buildBody(BODY_BOX, List.of(buildBodyControl())),
             new BoxBorder(BORDER_WIDTH),

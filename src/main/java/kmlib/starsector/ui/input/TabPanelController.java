@@ -577,7 +577,7 @@ public final class TabPanelController {
         if (!isBandButtonHoveredAt(placement, pointX, pointY)) {
             return false;
         }
-        ControlActivation.activateCellIfActionable(placement.bandButton(), BAND_BUTTON_CELL);
+        ControlActivation.activateCellIfActionable(placement.bandButton().control(), BAND_BUTTON_CELL);
         return true;
     }
 

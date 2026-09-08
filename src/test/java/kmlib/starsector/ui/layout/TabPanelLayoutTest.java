@@ -9,6 +9,7 @@ import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.PanelChrome;
 import kmlib.starsector.ui.widgets.scroll.ScrollbarThickness;
+import kmlib.starsector.ui.widgets.tabs.BandButtonSpec;
 import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
 import kmlib.starsector.ui.widgets.tabs.TabPanelViewState;
 import kmlib.starsector.ui.widgets.tabs.style.TabBox;
@@ -98,19 +99,30 @@ final class TabPanelLayoutTest {
 
     // What a host asking for no band button passes, named so the call sites read as a panel of tabs alone
     // rather than as a null among specs.
-    private static final ControlSpec.Tabs NO_BAND_BUTTON = null;
+    private static final BandButtonSpec NO_BAND_BUTTON = null;
 
-    // A band button, unlit because it is a button rather than a tab. "Edit" is 4 chars, so it snaps to the
-    // minimum tab width - which is what the assertions about where it lands are measured against.
-    private static final ControlSpec.Tabs BAND_BUTTON = new ControlSpec.Tabs(
-        List.of("Edit"),
-        List.of(),
-        ControlSpec.NO_SELECTION,
-        ControlAction.NONE);
+    // The band the button's own style names, deliberately not the panel's: the layout pins the button to
+    // the panel's band, and a style agreeing with it by coincidence could not show that.
+    private static final float BAND_BUTTON_STYLE_BAND_HEIGHT = 33f;
+
+    // A band button, unlit because it is a button rather than a tab, and snapped rather than boxed - which
+    // is the difference from TABS that the width assertions turn on, the panel's own style below being a
+    // fixed-width one. "Edit" is 4 chars, so it snaps to the minimum tab width.
+    private static final BandButtonSpec BAND_BUTTON = new BandButtonSpec(
+        new ControlSpec.Tabs(
+            List.of("Edit"),
+            List.of(),
+            ControlSpec.NO_SELECTION,
+            ControlAction.NONE),
+        TabStyles.buildAtBandHeightInBox(BAND_BUTTON_STYLE_BAND_HEIGHT, TabBox.SNAPPED));
 
     private static final float BAND_BUTTON_WIDTH = Math.max(
         4 * WIDTH_PER_CHAR + TabsControlLayout.TAB_TEXT_PADDING,
         TabsControlLayout.MIN_TAB_WIDTH);
+
+    // A tab box wide enough that a button inheriting it would be visibly padded out, so the case about the
+    // button keeping its own box cannot pass on two numbers that happen to be close.
+    private static final float FIXED_TAB_WIDTH = 130f;
 
     // A one-checkbox body, so the body has a definite non-zero height beneath the header.
     private static final List<ControlSpec> BODY = List.of(
@@ -588,7 +600,7 @@ final class TabPanelLayoutTest {
         void computePlacementLaysTheBandButtonWhereTheTabsLeaveOff() {
             // Appended to the row rather than pinned somewhere of its own, so the button stands beside the
             // last tab at the same height and the band simply grows by one box.
-            var button = placeWithBandButton(BODY).bandButton().bounds();
+            var button = placeWithBandButton(BODY).bandButton().control().bounds();
 
             assertThat(button.x())
                 .isCloseTo(CONTENT_X + HEADER_WIDTH, within(TOLERANCE));
@@ -612,6 +624,37 @@ final class TabPanelLayoutTest {
                 .isEqualTo(withoutButton.bounds());
             assertThat(withButton.segments())
                 .isEqualTo(withoutButton.segments());
+        }
+
+        @Test
+        void computePlacementSnapsTheBandButtonToItsWordBesideFixedWidthTabs() {
+            // The button wears its own box, not the row's. Under a fixed-width tab style - the sector map's,
+            // whose boxes are wide enough for a layer name - a button that inherited the row would stand in
+            // a box several times the width of its word, which is what makes it read as a tab rather than
+            // as a control that ends where its label does.
+            var fixedWidthTabs = TabStyles.buildAtBandHeightInBox(
+                DEFAULT_BAND_HEIGHT,
+                new TabBox(FIXED_TAB_WIDTH, 0f, 0f));
+
+            var button = placeStyledWithBandButton(fixedWidthTabs, BODY).bandButton().control().bounds();
+
+            assertThat(button.width())
+                .isCloseTo(BAND_BUTTON_WIDTH, within(TOLERANCE));
+            assertThat(button.width())
+                .isLessThan(FIXED_TAB_WIDTH);
+        }
+
+        @Test
+        void computePlacementStandsTheBandButtonInThePanelsBandRatherThanItsOwn() {
+            // The band is the room the panel was given, so it is the one part of its look the button does
+            // not choose. Left to its own, a button carrying a style built for another panel would stand
+            // taller or shorter than the tabs it sits beside.
+            var placement = placeWithBandButton(BODY);
+
+            assertThat(placement.bandButton().style().headerBandHeight())
+                .isCloseTo(DEFAULT_BAND_HEIGHT, within(TOLERANCE));
+            assertThat(placement.bandButton().control().bounds().height())
+                .isCloseTo(DEFAULT_BAND_HEIGHT, within(TOLERANCE));
         }
 
         @Test
@@ -719,11 +762,19 @@ final class TabPanelLayoutTest {
         // The same panel with a band button asked for, so the button's cases differ from the baseline in
         // that one argument and nothing else - which is what lets them assert the tabs are unchanged.
         private TabPanelPlacement placeWithBandButton(List<ControlSpec> bodyControls) {
+            return placeStyledWithBandButton(DEFAULT_TAB_STYLE, bodyControls);
+        }
+
+        // The same again under a stated panel style, for the cases about the button not inheriting it.
+        private TabPanelPlacement placeStyledWithBandButton(
+                TabStyle tabStyle,
+                List<ControlSpec> bodyControls) {
+
             return TabPanelLayout.computePlacement(
                 SCREEN_HEIGHT,
                 new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT),
                 new PanelChrome(new BoxBorder(BORDER_WIDTH), ScrollbarThickness.DEFAULT),
-                DEFAULT_TAB_STYLE,
+                tabStyle,
                 TABS,
                 BAND_BUTTON,
                 bodyControls,

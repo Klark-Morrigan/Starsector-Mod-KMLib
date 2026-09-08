@@ -8,6 +8,8 @@ import kmlib.starsector.ui.controls.LabelledControlSpecs;
 import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.PanelPlacement;
 import kmlib.starsector.ui.widgets.scroll.ScrollbarThickness;
+import kmlib.starsector.ui.widgets.tabs.style.TabStyle;
+import kmlib.starsector.ui.widgets.tabs.style.TabStyles;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -46,7 +48,7 @@ final class TabPanelPlacementTest {
     private static final float INSIDE_BAND_BUTTON_X = 430f;
 
     // What a placement carries where the host asked for no button at all.
-    private static final Control NO_BAND_BUTTON = null;
+    private static final BandButtonPlacement NO_BAND_BUTTON = null;
 
     private static final float INSIDE_BODY_X = 150f;
     private static final float INSIDE_BODY_Y = 250f;
@@ -257,14 +259,16 @@ final class TabPanelPlacementTest {
 
         return new TabPanelPlacement(
             placement.tabsHeader(),
-            new Control(
-                new ControlSpec.Tabs(
-                    List.of("Edit"),
-                    List.of(),
-                    ControlSpec.NO_SELECTION,
-                    ControlAction.NONE),
-                BAND_BUTTON_BOX,
-                List.of(BAND_BUTTON_BOX)),
+            new BandButtonPlacement(
+                new Control(
+                    new ControlSpec.Tabs(
+                        List.of("Edit"),
+                        List.of(),
+                        ControlSpec.NO_SELECTION,
+                        ControlAction.NONE),
+                    BAND_BUTTON_BOX,
+                    List.of(BAND_BUTTON_BOX)),
+                TabStyles.buildAtBandHeight(TabStyle.DEFAULT_HEADER_BAND_HEIGHT)),
             placement.drawnHeaderBand(),
             placement.body(),
             placement.border(),
