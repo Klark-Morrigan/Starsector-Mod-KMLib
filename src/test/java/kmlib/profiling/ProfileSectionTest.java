@@ -64,6 +64,32 @@ final class ProfileSectionTest {
             assertThat(section.getBudget())
                 .isSameAs(budget);
         }
+
+        @Test
+        void keepsTheLevelTheNameWasFirstRegisteredWith() {
+            // Stated once beside the constant holding the section, like the bound above: a later
+            // resolve of the name is a call site asking for the row, not one redeclaring it.
+            var section = ProfileSection.registerSection(
+                "test.profileSection.perItem",
+                ProfileLevel.FINE);
+
+            assertThat(ProfileSection.registerSection("test.profileSection.perItem").getLevel())
+                .isEqualTo(ProfileLevel.FINE);
+            assertThat(section.getLevel())
+                .isEqualTo(ProfileLevel.FINE);
+        }
+    }
+
+    @Nested
+    class GetLevel {
+
+        @Test
+        void answersCoarseForASectionThatStatedNoLevel() {
+            // The beats and passes a frame is made of, which is nearly every section: they are
+            // timed by any capture that is running at all.
+            assertThat(ProfileSection.registerSection(SECTION_NAME).getLevel())
+                .isEqualTo(ProfileLevel.COARSE);
+        }
     }
 
     @Nested

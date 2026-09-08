@@ -3,10 +3,12 @@ package kmlib.profiling.recording;
 import kmlib.profiling.IterationScope;
 import kmlib.profiling.PhasedSection;
 import kmlib.profiling.ProfileCounter;
+import kmlib.profiling.ProfileLevel;
 import kmlib.profiling.ProfileOrigin;
 import kmlib.profiling.ProfileScope;
 import kmlib.profiling.ProfileSection;
 import kmlib.profiling.Profiler;
+import kmlib.profiling.SilentProfiler;
 import kmlib.profiling.snapshot.BudgetBreach;
 import kmlib.profiling.snapshot.ProfileOriginTree;
 import kmlib.profiling.snapshot.WorstCall;
@@ -39,6 +41,12 @@ import java.util.function.Supplier;
  * accumulation reads whatever time source its caller names rather than the
  * system clock.
  *
+ * <p>How much it keeps is a level (defaulting to {@link ProfileLevel#FINE}, a
+ * profiler asked for with no level keeping everything it is handed). A section
+ * registered finer than that is opened on the {@link SilentProfiler} instead, so
+ * the section costs a comparison and no clock read - which is what lets a
+ * per-item section exist at all without a reader of whole frames paying for it.
+ *
  * <p>The logger is asked of log4j directly rather than of the game, which is
  * the same logger under the same name - the game's own helper is that call and
  * nothing more. A package that knows nothing about Starsector then stays that
@@ -58,27 +66,56 @@ public final class RecordingProfiler implements Profiler {
     private final Set<ProfileSection> sectionsReportedOutOfOrder = new HashSet<>();
     private final Set<ProfileSection> sectionsReportedOverBudget = new HashSet<>();
 
+    private final ProfileLevel recordedLevel;
     private final LongSupplier clockNanos;
 
     /**
-     * Creates a profiler timing against the system nanosecond clock.
+     * Creates a profiler keeping every level of detail, timing against the
+     * system nanosecond clock.
      */
     public RecordingProfiler() {
-        this(System::nanoTime);
+        this(ProfileLevel.FINE, System::nanoTime);
     }
 
     /**
-     * Creates a profiler timing against {@code clockNanos}, for a caller that
-     * supplies its own time source rather than reading the system clock.
+     * Creates a profiler keeping every level of detail, timing against
+     * {@code clockNanos}, for a caller that supplies its own time source rather
+     * than reading the system clock.
      *
      * @param clockNanos source of the current time in nanoseconds
      */
     public RecordingProfiler(LongSupplier clockNanos) {
+        this(ProfileLevel.FINE, clockNanos);
+    }
+
+    /**
+     * Creates a profiler keeping detail down to {@code recordedLevel}, timing
+     * against the system nanosecond clock.
+     *
+     * @param recordedLevel the finest detail this capture keeps
+     */
+    public RecordingProfiler(ProfileLevel recordedLevel) {
+        this(recordedLevel, System::nanoTime);
+    }
+
+    /**
+     * Creates a profiler keeping detail down to {@code recordedLevel}, timing
+     * against {@code clockNanos}.
+     *
+     * @param recordedLevel the finest detail this capture keeps
+     * @param clockNanos    source of the current time in nanoseconds
+     */
+    public RecordingProfiler(ProfileLevel recordedLevel, LongSupplier clockNanos) {
+        this.recordedLevel = recordedLevel;
         this.clockNanos = clockNanos;
     }
 
     @Override
     public ProfileScope open(ProfileSection section) {
+
+        if (!canRecordSection(section)) {
+            return SilentProfiler.INSTANCE.open(section);
+        }
         // No loop under this scope, so there is no per-turn state to carry: what
         // a plain section costs to open is the scope itself.
         return openNestedScope(section, null);
@@ -86,6 +123,10 @@ public final class RecordingProfiler implements Profiler {
 
     @Override
     public ProfileScope openRoot(ProfileOrigin origin, ProfileSection section) {
+
+        if (!canRecordSection(section)) {
+            return SilentProfiler.INSTANCE.openRoot(origin, section);
+        }
         // No parent scope, whatever is open: the node hangs off the origin's
         // group, and nothing above it answers for what runs inside it.
         return pushScope(resolveRootNode(origin, section), null, null);
@@ -93,7 +134,18 @@ public final class RecordingProfiler implements Profiler {
 
     @Override
     public IterationScope openIterations(PhasedSection section) {
-        return openNestedScope(section.getSection(), new ScopeIterations(section));
+
+        var loopSection = section.getSection();
+
+        if (!canRecordSection(loopSection)) {
+            return SilentProfiler.INSTANCE.openIterations(section);
+        }
+        // The turns are the finest thing a loop offers - a clock read per step
+        // per item - so a capture reading whole frames still gets the loop's own
+        // span and pays nothing per turn.
+        return openNestedScope(
+            loopSection,
+            canRecordIterations() ? new ScopeIterations(section) : null);
     }
 
     @Override
@@ -138,10 +190,19 @@ public final class RecordingProfiler implements Profiler {
         // so it lands on the same node an open()/close() pair would have. It
         // counted nothing and named nothing: there was no scope to do either on.
         var recordedSection = ProfileSection.registerSection(section);
+
+        if (!canRecordSection(recordedSection)) {
+            return;
+        }
         var breach = resolveNode(recordedSection)
             .addSpan(elapsedNanos, List.of(), WorstCall.NO_TAG);
 
         reportBreachOnce(recordedSection, breach, WorstCall.NO_TAG);
+    }
+
+    @Override
+    public ProfileLevel getRecordedLevel() {
+        return recordedLevel;
     }
 
     @Override
@@ -201,6 +262,20 @@ public final class RecordingProfiler implements Profiler {
      */
     long readClockNanos() {
         return clockNanos.getAsLong();
+    }
+
+    // Whether this capture is keeping the detail the section states it is worth
+    // timing at. Asked before the clock is read, so a section the capture is not
+    // reading costs this comparison and nothing else.
+    private boolean canRecordSection(ProfileSection section) {
+        return recordedLevel.canAdmitLevel(section.getLevel());
+    }
+
+    // Whether the turns inside a loop's span are measured. Apart from the
+    // section's own level because a loop's span is worth keeping at the level
+    // its caller runs it at, while a clock read per step per item is not.
+    private boolean canRecordIterations() {
+        return recordedLevel.canAdmitLevel(ProfileLevel.FINE);
     }
 
     // Both opens that nest, since what differs between them is only the per-turn

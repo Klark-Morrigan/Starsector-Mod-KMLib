@@ -226,7 +226,10 @@ No Starsector API on the signature.
   capture says which game each row was measured in. A shared read holding no
   scope of its own counts onto whichever section is open, and onto a reserved
   row of the reserved origin when none is, so work from an unprofiled path is
-  seen rather than dropped.
+  seen rather than dropped. Also the level a section states it is only worth
+  timing at, against the level a bound profiler is keeping: a section on a
+  per-item path opens silently under a capture taken to read whole frames, so it
+  costs a comparison rather than a clock read per item.
 - [`profiling/budget/`](src/main/java/kmlib/profiling/budget/) - what one call
   of a section is allowed: an amount of a counter, a duration read as the call
   closes, or both. A call that breaks one is warned about once and becomes the

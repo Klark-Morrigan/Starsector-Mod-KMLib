@@ -66,6 +66,13 @@ public final class SilentProfiler implements Profiler {
     }
 
     @Override
+    public ProfileLevel getRecordedLevel() {
+        // Nothing is kept at any detail, which is the answer a caller choosing
+        // what to bind compares against: this profiler already is the off state.
+        return ProfileLevel.OFF;
+    }
+
+    @Override
     public List<ProfileOriginTree> snapshot() {
         // A shared immutable empty list, so reporting through a silent profiler
         // allocates nothing either.

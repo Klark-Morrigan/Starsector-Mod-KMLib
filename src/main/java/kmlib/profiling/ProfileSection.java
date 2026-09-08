@@ -17,9 +17,9 @@ import kmlib.profiling.budget.ProfileBudget;
  * land on one row rather than on two rows spelled alike.
  *
  * <p>A section may also state what one of its calls is allowed, which is what
- * turns its rows into findings rather than numbers. The budget is the one the
- * name was first registered with - a section states it once, beside the constant
- * holding it.
+ * turns its rows into findings rather than numbers, and how much detail it is
+ * worth timing at. Both are the ones the name was first registered with - a
+ * section states them once, beside the constant holding it.
  */
 public final class ProfileSection {
 
@@ -40,14 +40,16 @@ public final class ProfileSection {
     public static final ProfileSection UNSCOPED_COUNTS = registerSection("counts");
 
     private final String name;
+    private final ProfileLevel level;
     private final ProfileBudget budget;
 
     private ProfileSection(String name) {
-        this(name, ProfileBudget.NO_BUDGET);
+        this(name, ProfileLevel.COARSE, ProfileBudget.NO_BUDGET);
     }
 
-    private ProfileSection(String name, ProfileBudget budget) {
+    private ProfileSection(String name, ProfileLevel level, ProfileBudget budget) {
         this.name = name;
+        this.level = level;
         this.budget = budget;
     }
 
@@ -55,11 +57,32 @@ public final class ProfileSection {
      * Resolves the section {@code name} identifies, creating it the first time
      * the name is seen.
      *
+     * <p>Timed by any capture that is running at all: a section stating no level
+     * is one opened a handful of times per frame, which is what a reader looking
+     * for where a frame went reads first.
+     *
      * @param name what the section is called in a report
      * @return the one section carrying that name
      */
     public static ProfileSection registerSection(String name) {
         return SECTIONS_BY_NAME.resolveByName(name, ProfileSection::new);
+    }
+
+    /**
+     * Resolves the section {@code name} identifies, declaring it at
+     * {@code level} the first time the name is seen.
+     *
+     * <p>What a section on a per-item path declares, so that a capture taken to
+     * read whole frames skips it for a comparison rather than timing it once per
+     * item.
+     *
+     * @param name  what the section is called in a report
+     * @param level how much detail a capture has to be keeping to time it
+     * @return the one section carrying that name
+     */
+    public static ProfileSection registerSection(String name, ProfileLevel level) {
+        return SECTIONS_BY_NAME.resolveByName(
+            name, resolvedName -> new ProfileSection(resolvedName, level, ProfileBudget.NO_BUDGET));
     }
 
     /**
@@ -72,11 +95,20 @@ public final class ProfileSection {
      */
     public static ProfileSection registerSection(String name, ProfileBudget budget) {
         return SECTIONS_BY_NAME.resolveByName(
-            name, resolvedName -> new ProfileSection(resolvedName, budget));
+            name, resolvedName -> new ProfileSection(resolvedName, ProfileLevel.COARSE, budget));
     }
 
     public String getName() {
         return name;
+    }
+
+    /**
+     * @return how much detail a capture has to be keeping for this section's
+     *         spans to be timed at all; {@link ProfileLevel#COARSE} where it
+     *         stated nothing
+     */
+    public ProfileLevel getLevel() {
+        return level;
     }
 
     /**

@@ -165,6 +165,18 @@ final class SilentProfilerTest {
     }
 
     @Nested
+    class GetRecordedLevel {
+
+        @Test
+        void answersOffBecauseNothingIsKeptAtAnyDetail() {
+            // What a caller choosing what to bind compares its knob against, so "off" resolves to
+            // this profiler and asking for off again rebinds nothing.
+            assertThat(SilentProfiler.INSTANCE.getRecordedLevel())
+                .isEqualTo(ProfileLevel.OFF);
+        }
+    }
+
+    @Nested
     class Snapshot {
 
         @Test

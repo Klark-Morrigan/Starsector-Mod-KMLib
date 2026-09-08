@@ -3,6 +3,7 @@ package kmlib.profiling.recording;
 import kmlib.profiling.IterationScope;
 import kmlib.profiling.PhasedSection;
 import kmlib.profiling.ProfileCounter;
+import kmlib.profiling.ProfileLevel;
 import kmlib.profiling.ProfileOrigin;
 import kmlib.profiling.ProfileSection;
 import kmlib.profiling.budget.ProfileBudget;
@@ -42,8 +43,9 @@ import static org.assertj.core.api.Assertions.tuple;
  * they were opened under with everything below a root belonging to it and everything opened under
  * no root at all landing in the reserved group, snapshot order follows first-record order, a scope
  * closed out of order takes the scopes inside it with it, a call that breaks what its section
- * allows marks the row, is reported once and takes the record however fast it was, and reset()
- * clears everything.
+ * allows marks the row, is reported once and takes the record however fast it was, a section
+ * registered finer than the capture is keeping opens without the clock being read at all, and
+ * reset() clears everything.
  */
 final class RecordingProfilerTest {
 
@@ -54,6 +56,9 @@ final class RecordingProfilerTest {
     private static final String INNER_SECTION = "test.inner";
     private static final String SYSTEMS_COUNTER = "test.systems";
     private static final String MARKETS_COUNTER = "test.markets";
+
+    // A section on a per-item path, which is what a capture reading whole frames skips.
+    private static final String FINE_SECTION = "test.perItem";
 
     // Two games one profiler could be measuring across a session, which is the smallest capture
     // that has to keep its rows apart.
@@ -339,6 +344,54 @@ final class RecordingProfilerTest {
             assertThat(readRoots(profiler).get(0).getWorstCall())
                 .extracting(WorstCall::getDurationNanos)
                 .isEqualTo(10L);
+        }
+
+        @Test
+        void opensASectionFinerThanTheCaptureWithoutReadingTheClock() {
+            // The whole of what the level buys: a section on a per-item path costs a comparison
+            // under a capture taken to read whole frames. The clock is scripted with no readings
+            // at all, so a reading here would fail the case rather than pass it quietly.
+            var section = ProfileSection.registerSection(FINE_SECTION, ProfileLevel.FINE);
+            var profiler = new RecordingProfiler(ProfileLevel.COARSE, new ScriptedClock());
+
+            profiler.open(section).close();
+
+            assertThat(profiler.snapshot())
+                .isEmpty();
+        }
+
+        @Test
+        void recordsASectionTheCaptureIsCoarseEnoughToKeep() {
+            // The other side of the same comparison: a beat states no level, so it is timed by any
+            // capture that is running at all.
+            var profiler = new RecordingProfiler(ProfileLevel.COARSE, new ScriptedClock(0, 20));
+
+            profiler.open(ProfileSection.registerSection(PARENT_SECTION)).close();
+
+            assertThat(readRoots(profiler).get(0).getTiming().getTotalNanos())
+                .isEqualTo(20);
+        }
+
+        @Test
+        void keepsASectionOpenedInsideASkippedOneUnderTheRowAround() {
+            // A skipped section leaves no row, so what ran inside it belongs to the call that is
+            // actually being timed - the alternative being work that vanishes with the row.
+            var skipped = ProfileSection.registerSection(
+                "test.level.skippedParent",
+                ProfileLevel.FINE);
+
+            var profiler =
+                new RecordingProfiler(ProfileLevel.COARSE, new ScriptedClock(0, 5, 20, 30));
+
+            var beat = profiler.open(ProfileSection.registerSection(PARENT_SECTION));
+            var perItem = profiler.open(skipped);
+
+            profiler.open(ProfileSection.registerSection(CHILD_SECTION)).close();
+            perItem.close();
+            beat.close();
+
+            assertThat(readSectionNames(readRoots(profiler).get(0).getChildren()))
+                .containsExactly(CHILD_SECTION);
         }
     }
 
@@ -847,6 +900,42 @@ final class RecordingProfilerTest {
             assertThat(readRoots(profiler).get(0).getBudgetBreach().describeBreach())
                 .isEqualTo("1.00ms allowed per call");
         }
+
+        @Test
+        void dropsAHandedOverSpanOfASectionFinerThanTheCapture() {
+            // A span the caller timed itself is a call of that section like any other, so a
+            // capture not reading that section does not keep it either - a row appearing only for
+            // the sites that hand a duration over would be read as the section having run there
+            // and nowhere else.
+            ProfileSection.registerSection(FINE_SECTION, ProfileLevel.FINE);
+
+            var profiler = new RecordingProfiler(ProfileLevel.COARSE, new ScriptedClock());
+
+            profiler.record(FINE_SECTION, 20);
+
+            assertThat(profiler.snapshot())
+                .isEmpty();
+        }
+    }
+
+    @Nested
+    class GetRecordedLevel {
+
+        @Test
+        void answersTheLevelItWasBuiltAt() {
+            // What a caller choosing what to bind compares its knob against, so an unrelated
+            // settings change does not throw the capture away and start a new one.
+            assertThat(new RecordingProfiler(ProfileLevel.COARSE).getRecordedLevel())
+                .isEqualTo(ProfileLevel.COARSE);
+        }
+
+        @Test
+        void keepsEveryLevelWhereTheCallerNamedNone() {
+            // A profiler asked for without a level keeps what it is handed: the level is a
+            // reader's restriction, not a default the library imposes.
+            assertThat(new RecordingProfiler().getRecordedLevel())
+                .isEqualTo(ProfileLevel.FINE);
+        }
     }
 
     @Nested
@@ -1108,6 +1197,42 @@ final class RecordingProfilerTest {
 
             assertThat(readRoots(profiler).get(0).getIterations())
                 .isSameAs(ProfileIterations.NO_ITERATIONS);
+        }
+
+        @Test
+        void keepsALoopsOwnSpanButNotItsTurnsUnderACoarseCapture() {
+            // The two are worth keeping at different levels: a bake is one call of a rebuild's step
+            // and worth a row whenever anything is being read, while a clock read per step per cell
+            // is only worth it when the cell is what is being read. Two readings scripted - the
+            // loop's own ends - so a turn timed here would fail the case.
+            var section = registerBakeSection("test.level.bakeTurns");
+            var profiler = new RecordingProfiler(ProfileLevel.COARSE, new ScriptedClock(0, 40));
+
+            try (var loop = profiler.openIterations(section)) {
+                runOneTurnOf(loop, section, FIRST_CALL_TAG);
+            }
+
+            var bakeNode = readRoots(profiler).get(0);
+
+            assertThat(bakeNode.getTiming().getTotalNanos())
+                .isEqualTo(40);
+            assertThat(bakeNode.getIterations())
+                .isSameAs(ProfileIterations.NO_ITERATIONS);
+        }
+
+        @Test
+        void opensALoopOnASectionFinerThanTheCaptureSilently() {
+            // A phased section holds the interned section of its name, so a loop declared on a name
+            // registered as a per-item section is skipped exactly as a plain open of it would be.
+            ProfileSection.registerSection(FINE_SECTION, ProfileLevel.FINE);
+
+            var section = registerBakeSection(FINE_SECTION);
+            var profiler = new RecordingProfiler(ProfileLevel.COARSE, new ScriptedClock());
+
+            profiler.openIterations(section).close();
+
+            assertThat(profiler.snapshot())
+                .isEmpty();
         }
     }
 

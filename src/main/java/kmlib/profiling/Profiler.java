@@ -35,6 +35,10 @@ import java.util.function.Supplier;
  * recording implementation, and everything else runs against the
  * {@link SilentProfiler}, which keeps nothing and allocates nothing.
  *
+ * <p>How much a bound profiler keeps is a level rather than a switch: a section
+ * on a per-item path states the detail it is only worth timing at, and a capture
+ * taken to read whole frames opens it silently. See {@link #getRecordedLevel()}.
+ *
  * <p>Not synchronised: intended for the single game thread that drives campaign
  * advance and rendering; sharing one instance across threads would need
  * external synchronisation.
@@ -135,6 +139,13 @@ public interface Profiler {
      * @param elapsedNanos the duration to add
      */
     void record(String section, long elapsedNanos);
+
+    /**
+     * @return the finest detail this profiler keeps, which is what decides
+     *         whether a section registered at a level is timed or opened
+     *         silently; {@link ProfileLevel#OFF} where nothing is kept at all
+     */
+    ProfileLevel getRecordedLevel();
 
     /**
      * @return an immutable snapshot of the capture - one tree per origin, each
