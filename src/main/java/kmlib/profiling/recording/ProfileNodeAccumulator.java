@@ -50,18 +50,8 @@ final class ProfileNodeAccumulator {
             List<ProfileNodeAccumulator> siblings,
             ProfileSection section) {
 
-        // An indexed identity scan rather than a map lookup: a node holds a
-        // handful of children, a section is a registered value, and this runs on
-        // every open - so no name is hashed and no iterator allocated.
-        for (var index = 0; index < siblings.size(); index++) {
-            var sibling = siblings.get(index);
-            if (sibling.section == section) {
-                return sibling;
-            }
-        }
-        var opened = new ProfileNodeAccumulator(section);
-        siblings.add(opened);
-        return opened;
+        return IdentityLookup.resolveByKey(
+            siblings, ProfileNodeAccumulator::getSection, section, ProfileNodeAccumulator::new);
     }
 
     ProfileSection getSection() {
@@ -139,7 +129,7 @@ final class ProfileNodeAccumulator {
 
         for (var countAccumulator : countAccumulators) {
 
-            var callCount = CounterLookup.findByCounter(
+            var callCount = IdentityLookup.findByKey(
                 callCounts, ScopeCount::getCounter, countAccumulator.getCounter());
 
             if (callCount == null) {
@@ -153,7 +143,7 @@ final class ProfileNodeAccumulator {
         // is the first of this row's to touch.
         for (var callCount : callCounts) {
 
-            var alreadyOpened = CounterLookup.findByCounter(
+            var alreadyOpened = IdentityLookup.findByKey(
                 countAccumulators, ProfileCountAccumulator::getCounter, callCount.getCounter());
 
             if (alreadyOpened != null) {

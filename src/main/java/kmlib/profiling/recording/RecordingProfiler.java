@@ -73,19 +73,19 @@ public final class RecordingProfiler implements Profiler {
     public ProfileScope open(ProfileSection section) {
         // No loop under this scope, so there is no per-turn state to carry: what
         // a plain section costs to open is the scope itself.
-        return openScope(resolveNode(section), null, openScopes.isEmpty());
+        return openNestedScope(section, null);
     }
 
     @Override
     public ProfileScope openRoot(ProfileOrigin origin, ProfileSection section) {
-        return openScope(resolveRootNode(origin, section), null, true);
+        // No parent scope, whatever is open: the node hangs off the origin's
+        // group, and nothing above it answers for what runs inside it.
+        return pushScope(resolveRootNode(origin, section), null, null);
     }
 
     @Override
     public IterationScope openIterations(PhasedSection section) {
-
-        return openScope(
-            resolveNode(section.getSection()), new ScopeIterations(section), openScopes.isEmpty());
+        return openNestedScope(section.getSection(), new ScopeIterations(section));
     }
 
     @Override
@@ -177,46 +177,56 @@ public final class RecordingProfiler implements Profiler {
         return clockNanos.getAsLong();
     }
 
-    // Every open, since what differs between them is which node the span lands
-    // on and what state the scope carries, not what opening one means: the clock
-    // is read and the scope goes on the stack.
-    private RecordingProfileScope openScope(
+    // Both opens that nest, since what differs between them is only the per-turn
+    // state the scope carries: the section lands under whatever is already open,
+    // and that scope is the one its counts will roll into.
+    private RecordingProfileScope openNestedScope(
+            ProfileSection section,
+            ScopeIterations iterations) {
+
+        return pushScope(resolveNode(section), iterations, resolveInnermostOpenScope());
+    }
+
+    // Times from now and puts the scope on the stack.
+    private RecordingProfileScope pushScope(
             ProfileNodeAccumulator node,
             ScopeIterations iterations,
-            boolean isRoot) {
+            RecordingProfileScope parentScope) {
 
         var scope = new RecordingProfileScope(
-            this, node, clockNanos.getAsLong(), iterations, isRoot);
+            this, node, clockNanos.getAsLong(), iterations, parentScope);
 
         openScopes.add(scope);
         return scope;
     }
 
-    // Records the span and hands what the scope counted to whatever it was open
-    // inside, which is what makes a row's counts inclusive the way its time is.
-    // Taken off the stack first, so the scope now on top is the one the ended
-    // scope ran inside - including down an unwind, where the scopes above the
-    // one being closed end into it before it ends into its own parent.
-    //
-    // A root's counts stop with it however deep it was opened: its node sits
-    // under an origin rather than under a row, so handing them on would add them
-    // to a row that is not its parent and cannot answer for them.
+    // Records the span and rolls what the scope counted into the scope it names
+    // as its parent, which is what makes a row's counts inclusive the way its
+    // time is. Named rather than read off the top of the stack, so an unwind -
+    // where several scopes end at one close - charges each one's counts to the
+    // row it actually ran inside.
     private void endScope(RecordingProfileScope scope, long endNanos) {
 
         scope.recordSpan(endNanos);
-
-        if (!scope.isRoot() && !openScopes.isEmpty()) {
-            openScopes.get(openScopes.size() - 1).receiveChildCounts(scope);
-        }
+        scope.handCountsToParentScope();
     }
 
     // The node a section opened right now belongs to: a child of whatever is
     // open, or a root of the reserved origin when nothing is - which is where a
     // walk from a path that named no origin is seen rather than lost.
     private ProfileNodeAccumulator resolveNode(ProfileSection section) {
-        return openScopes.isEmpty()
+
+        var parentScope = resolveInnermostOpenScope();
+
+        return parentScope == null
             ? resolveRootNode(ProfileOrigin.UNSCOPED, section)
-            : openScopes.get(openScopes.size() - 1).resolveChildNode(section);
+            : parentScope.resolveChildNode(section);
+    }
+
+    // What a section opened now would be opened inside, or null when nothing is
+    // open and it would be a root.
+    private RecordingProfileScope resolveInnermostOpenScope() {
+        return openScopes.isEmpty() ? null : openScopes.get(openScopes.size() - 1);
     }
 
     private ProfileNodeAccumulator resolveRootNode(ProfileOrigin origin, ProfileSection section) {

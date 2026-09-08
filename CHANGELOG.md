@@ -100,12 +100,15 @@ No Starsector API on the signature.
   record, the counters a scope tallies, the tag a caller names one call by, and
   the sections whose calls run a loop, declared with the steps one turn is
   split into and opened as a scope that counts the turns and charges each step
-  to its slot. A capture comes back as a tree of rows, each carrying its count,
-  total, min, max, average and self time, its counters with their spread per
-  call, its slowest call kept with that call's tag and counters, what its loops
-  ran per step and per turn with the slowest turn named, and where its calls
-  fell across duration bands doubling from a microsecond up - rendered as an
-  indented table.
+  to its slot. A root names the origin it and everything under it was measured
+  in, and a section opened under no root lands in a reserved group rather than
+  being dropped. A capture comes back as a tree of rows per origin, each row
+  carrying its count, total, min, max, average and self time, its counters with
+  their spread per call, its slowest call kept with that call's tag and
+  counters, what its loops ran per step and per turn with the slowest turn
+  named, and where its calls fell across duration bands doubling from a
+  microsecond up - rendered as an indented table, one group of roots per
+  origin.
 - **`kmlib.settings`** - LunaLib settings read and write, immediate and
   deferred with flush and removal, change callbacks, and resolving a labelled
   choice back from its label.
@@ -148,6 +151,9 @@ No Starsector API on the signature.
 - **`kmlib.mods.rat`** - Random Assortment of Things: Abyssal Fracture
   matching registered as a means of arrival, and the campaign-minimap role
   answered for its mini-map.
+- **`kmlib.starsector`** - describing a sector to a reader who has to match it
+  back to a save: its seed with the player's name beside it, the pair a save
+  browser shows, and the seed alone where there is no player yet.
 - **`kmlib.starsector.colonies`** - the shared colony set every "who is here"
   read selects through, stated once over a location and read per kind of place
   above it: a star system, hyperspace, and the whole sector. Each colony

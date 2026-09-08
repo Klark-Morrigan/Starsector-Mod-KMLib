@@ -13,14 +13,12 @@ import kmlib.text.KmlibStrings;
  * character playing it - is, because it is the pair the player already reads
  * their saves by.
  *
- * <p>A label rather than an identity: two games could in principle read the
- * same, and nothing here depends on their being told apart. What it has to do
- * is be recognised.
+ * <p>A label rather than an identity. Two games could read the same, and
+ * nothing here depends on telling them apart; what it has to do is be
+ * recognised.
  */
 public final class SectorLabels {
 
-    // What sits between the two facts, wide enough to be seen inside a seed
-    // that carries digits and letters of its own.
     private static final String SEED_AND_PLAYER_SEPARATOR = " - ";
 
     private SectorLabels() {

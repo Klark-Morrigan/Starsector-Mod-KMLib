@@ -1005,7 +1005,8 @@ final class RecordingProfilerTest {
 
         @Test
         void resetClearsAllSections() {
-
+            // Read as the whole capture rather than through one origin's roots: a group left
+            // behind would still be holding the tree it was grouping.
             var profiler = new RecordingProfiler(new ScriptedClock(0, 10));
 
             profiler.measure("build", () -> {
@@ -1013,7 +1014,7 @@ final class RecordingProfilerTest {
 
             profiler.reset();
 
-            assertThat(readRoots(profiler))
+            assertThat(profiler.snapshot())
                 .isEmpty();
         }
 
@@ -1028,7 +1029,7 @@ final class RecordingProfilerTest {
             profiler.reset();
             scope.close();
 
-            assertThat(readRoots(profiler))
+            assertThat(profiler.snapshot())
                 .isEmpty();
         }
     }

@@ -30,9 +30,9 @@ final class ProfileOriginAccumulator {
      * Finds the group {@code origin} holds among {@code groups}, appending one
      * the first time a root is opened under that origin.
      *
-     * <p>Appended on first use rather than made up front, so a capture where
-     * every root named its origin carries no empty reserved group, and a
-     * capture that lost one has it stated first among its groups.
+     * <p>Appended on first use, so a capture where every root named its origin
+     * carries no empty reserved group - and one that lost a root has that group
+     * stated among the rest rather than always present and usually empty.
      *
      * @param groups the groups of one capture, in first-opened order
      * @param origin the origin a root is being opened under
@@ -42,18 +42,15 @@ final class ProfileOriginAccumulator {
             List<ProfileOriginAccumulator> groups,
             ProfileOrigin origin) {
 
-        // An indexed identity scan, as everywhere else on this path: an origin
-        // is a registered value and a session holds one or two of them, so no
-        // label is hashed and no iterator allocated.
-        for (var index = 0; index < groups.size(); index++) {
-            var group = groups.get(index);
-            if (group.origin == origin) {
-                return group;
-            }
-        }
-        var opened = new ProfileOriginAccumulator(origin);
-        groups.add(opened);
-        return opened;
+        return IdentityLookup.resolveByKey(
+            groups,
+            ProfileOriginAccumulator::getOrigin,
+            origin,
+            ProfileOriginAccumulator::new);
+    }
+
+    ProfileOrigin getOrigin() {
+        return origin;
     }
 
     ProfileNodeAccumulator resolveRootNode(ProfileSection section) {

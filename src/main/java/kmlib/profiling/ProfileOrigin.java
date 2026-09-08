@@ -1,20 +1,16 @@
 package kmlib.profiling;
 
 /**
- * Which game a capture's roots came from: the label a reader matches back to
- * the save the numbers were taken in.
+ * Which game a capture's roots came from: the label a reader recognises one by.
  *
  * <p>Diagnostics isolate nothing - one profiler, one tree - but they do have to
- * attribute. Two games' roots are two groups, because a row averaging a walk of
- * one sector with a walk of another describes neither, and a reader who cannot
+ * attribute. Two games' roots are two groups, because a row averaging work done
+ * in one with work done in another describes neither, and a reader who cannot
  * say which game a maximum came from cannot go back and reproduce it.
  *
- * <p>What a label is made of is the caller's to say: profiling knows nothing of
- * sectors or saves, and takes whatever describes one well enough to be
- * recognised.
- *
- * <p>One instance per label, like a section, so a root opened every frame finds
- * its group by comparing references rather than by hashing a string.
+ * <p>What a label is made of is the caller's to say; this knows only that it is
+ * a name. One instance per label, like a section, so a root opened every frame
+ * finds its group by comparing references rather than by hashing a string.
  */
 public final class ProfileOrigin {
 

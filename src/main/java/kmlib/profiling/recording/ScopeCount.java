@@ -37,16 +37,8 @@ final class ScopeCount {
      * @return the tally that scope keeps for the counter
      */
     static ScopeCount resolveCountIn(List<ScopeCount> counts, ProfileCounter counter) {
-
-        var tallied = CounterLookup.findByCounter(counts, ScopeCount::getCounter, counter);
-
-        if (tallied != null) {
-            return tallied;
-        }
-        var opened = new ScopeCount(counter);
-
-        counts.add(opened);
-        return opened;
+        return IdentityLookup.resolveByKey(
+            counts, ScopeCount::getCounter, counter, ScopeCount::new);
     }
 
     ProfileCounter getCounter() {

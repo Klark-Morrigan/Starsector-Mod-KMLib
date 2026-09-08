@@ -11,8 +11,8 @@ import java.util.List;
 
 /**
  * One entry on {@link RecordingProfiler}'s open stack: the node the span will
- * land on, whether that node is a root of its origin, when it started, what it
- * has counted so far, and what the caller has named it.
+ * land on, the scope it was opened inside, when it started, what it has counted
+ * so far, and what the caller has named it.
  *
  * <p>Closing is handed back to the profiler rather than settled here, because
  * what a close means depends on the whole stack - a scope closed while a
@@ -30,9 +30,10 @@ final class RecordingProfileScope implements IterationScope {
     private final ProfileNodeAccumulator node;
     private final long startNanos;
 
-    // Whether this scope's node is a root of its origin rather than a child of
-    // an open row, which is what says where its counts stop.
-    private final boolean isRoot;
+    // The scope this one was opened inside, and so the one its counts roll into
+    // when it ends. Null on a root, whose node hangs off an origin rather than
+    // off a row, and whose counts therefore stop with it.
+    private final RecordingProfileScope parentScope;
 
     // What this scope's loop has run, or null on a scope opened over no loop -
     // which is nearly all of them, and which is why the state is not carried
@@ -50,13 +51,13 @@ final class RecordingProfileScope implements IterationScope {
             ProfileNodeAccumulator node,
             long startNanos,
             ScopeIterations iterations,
-            boolean isRoot) {
+            RecordingProfileScope parentScope) {
 
         this.profiler = profiler;
         this.node = node;
         this.startNanos = startNanos;
         this.iterations = iterations;
-        this.isRoot = isRoot;
+        this.parentScope = parentScope;
     }
 
     @Override
@@ -100,15 +101,6 @@ final class RecordingProfileScope implements IterationScope {
         profiler.closeScope(this);
     }
 
-    /**
-     * @return whether this scope has no parent - a root opened under an origin,
-     *         or a section opened with nothing else open - so that what it
-     *         counted is not handed on to a row it did not run inside
-     */
-    boolean isRoot() {
-        return isRoot;
-    }
-
     ProfileNodeAccumulator resolveChildNode(ProfileSection childSection) {
         return node.resolveChildNode(childSection);
     }
@@ -118,22 +110,17 @@ final class RecordingProfileScope implements IterationScope {
     }
 
     /**
-     * Takes on what a scope opened inside this one counted, so this scope's row
-     * is inclusive of it while its self total stays what this scope counted.
+     * Rolls what this scope counted into the scope it ran inside, so that row is
+     * inclusive of it while its self total stays what it counted itself.
      *
-     * @param child the scope that has just ended inside this one
+     * <p>Nothing to do on a root: its node hangs off an origin rather than off a
+     * row, so whatever happened to be open when it was opened is not a call that
+     * can answer for what it counted.
      */
-    void receiveChildCounts(RecordingProfileScope child) {
+    void handCountsToParentScope() {
 
-        if (child.counts == null) {
-            return;
-        }
-        if (counts == null) {
-            counts = new ArrayList<>();
-        }
-        for (var childCount : child.counts) {
-            ScopeCount.resolveCountIn(counts, childCount.getCounter())
-                .addChildAmount(childCount.getTotalAmount());
+        if (parentScope != null) {
+            parentScope.receiveChildCounts(this);
         }
     }
 
@@ -146,6 +133,23 @@ final class RecordingProfileScope implements IterationScope {
         // about what a call of that row costs.
         if (iterations != null) {
             node.addIterations(iterations.getTally());
+        }
+    }
+
+    // Takes on what a scope opened inside this one counted. Its totals rather
+    // than its self amounts, so a count added three levels down reaches every
+    // row above it exactly once.
+    private void receiveChildCounts(RecordingProfileScope child) {
+
+        if (child.counts == null) {
+            return;
+        }
+        if (counts == null) {
+            counts = new ArrayList<>();
+        }
+        for (var childCount : child.counts) {
+            ScopeCount.resolveCountIn(counts, childCount.getCounter())
+                .addChildAmount(childCount.getTotalAmount());
         }
     }
 }
