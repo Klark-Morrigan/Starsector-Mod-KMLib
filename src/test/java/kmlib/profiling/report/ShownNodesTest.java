@@ -185,7 +185,7 @@ final class ShownNodesTest {
     }
 
     private static ProfileCount countOfWalks() {
-        
+
         return new ProfileCount(
             ProfileCounter.registerCounter(WALKS_COUNTER),
             new CountTotals(TWO_WALKS, TWO_WALKS),

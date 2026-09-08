@@ -1,5 +1,6 @@
 package kmlib.profiling.recording;
 
+import kmlib.profiling.CallLogThreshold;
 import kmlib.profiling.IterationScope;
 import kmlib.profiling.PhasedSection;
 import kmlib.profiling.ProfileCounter;
@@ -41,9 +42,10 @@ import static org.assertj.core.api.Assertions.tuple;
  * they were opened under with everything below a root belonging to it and everything opened under
  * no root at all landing in the reserved group, snapshot order follows first-record order, a scope
  * closed out of order takes the scopes inside it with it, a call that breaks what its section
- * allows marks the row, is reported once and takes the record however fast it was, a section
- * registered finer than the capture is keeping opens without the clock being read at all, and
- * reset() clears everything.
+ * allows marks the row, is reported once and takes the record however fast it was, a call of a
+ * section stating a threshold it ran over writes one line carrying its counts and its tag, a
+ * section registered finer than the capture is keeping opens without the clock being read at all,
+ * and reset() clears everything.
  */
 final class RecordingProfilerTest {
 
@@ -82,6 +84,10 @@ final class RecordingProfilerTest {
     private static final long ONE_MICROSECOND_IN_NANOS = 1_000L;
     private static final long ONE_MILLISECOND_IN_NANOS = 1_000_000L;
     private static final long TEN_MILLISECONDS_IN_NANOS = 10_000_000L;
+
+    // The same bound stated as a section states one, which is in the unit a duration worth
+    // noticing is written in.
+    private static final double ONE_MILLISECOND = 1.0;
 
     // A bound of one, and the two a call breaks it with - the smallest pair that tells a call which
     // kept a rule from one which did not.
@@ -1017,6 +1023,100 @@ final class RecordingProfilerTest {
 
             assertThat(readRoots(profiler).get(0).getTiming().getCount())
                 .isEqualTo(1);
+        }
+
+        @Test
+        void writesTheClosingLineOfACallOverItsSectionsThreshold() {
+            // The line the site used to write by hand, off the span the row was accumulated from
+            // rather than off a second clock read beside it.
+            var section = ProfileSection.registerSection(
+                "test.closeLine.overThreshold",
+                CallLogThreshold.loggingOverMillis(ONE_MILLISECOND));
+
+            var profiler = new RecordingProfiler(
+                new ScriptedClock(0, TEN_MILLISECONDS_IN_NANOS));
+
+            var messages = captureLogWhile(() -> profiler.open(section).close());
+
+            assertThat(messages)
+                .hasSize(1);
+            assertThat(messages.get(0))
+                .contains("test.closeLine.overThreshold")
+                .contains("10.00ms");
+        }
+
+        @Test
+        void keepsACallUnderItsSectionsThresholdOutOfTheLog() {
+            // The whole point of a threshold: a pass that ran as it should says nothing, so what
+            // is in the log is what somebody has to look at.
+            var section = ProfileSection.registerSection(
+                "test.closeLine.underThreshold",
+                CallLogThreshold.loggingOverMillis(ONE_MILLISECOND));
+
+            var profiler = new RecordingProfiler(new ScriptedClock(0, ONE_MICROSECOND_IN_NANOS));
+
+            assertThat(captureLogWhile(() -> profiler.open(section).close()))
+                .isEmpty();
+        }
+
+        @Test
+        void writesNothingForASectionThatStatedNoThreshold() {
+
+            var profiler = new RecordingProfiler(
+                new ScriptedClock(0, TEN_MILLISECONDS_IN_NANOS));
+
+            assertThat(captureLogWhile(() ->
+                    profiler.open(ProfileSection.registerSection(PARENT_SECTION)).close()))
+                .isEmpty();
+        }
+
+        @Test
+        void carriesTheCallsCountsAndTagOnTheClosingLine() {
+            // A duration on its own cannot be judged, which is why these lines existed at all:
+            // the counts the site used to print beside its "took=" come off the scope instead.
+            var section = ProfileSection.registerSection(
+                "test.closeLine.counted",
+                CallLogThreshold.LOGGING_EVERY_CALL);
+
+            var profiler = new RecordingProfiler(new ScriptedClock(0, ONE_MILLISECOND_IN_NANOS));
+
+            var messages = captureLogWhile(() -> {
+                var scope = profiler.open(section);
+
+                scope.addCount(ProfileCounter.registerCounter(SYSTEMS_COUNTER), TWO_ITEMS);
+                scope.tagCall(FIRST_CALL_TAG);
+                scope.close();
+            });
+
+            assertThat(messages.get(0))
+                .contains(SYSTEMS_COUNTER + "=" + TWO_ITEMS)
+                .contains('"' + FIRST_CALL_TAG + '"');
+        }
+
+        @Test
+        void countsWhatWasCountedInsideTheCallOnItsClosingLine() {
+            // The inclusive amount, which is the quantity the call's own duration covered - a
+            // pass that walked the sector through a collaborator still walked it.
+            var outerSection = ProfileSection.registerSection(
+                "test.closeLine.inclusive",
+                CallLogThreshold.LOGGING_EVERY_CALL);
+
+            var profiler = new RecordingProfiler(
+                new ScriptedClock(0, 0, 0, ONE_MILLISECOND_IN_NANOS));
+
+            var messages = captureLogWhile(() -> {
+                var outer = profiler.open(outerSection);
+                var inner = profiler.open(ProfileSection.registerSection(INNER_SECTION));
+
+                inner.addCount(ProfileCounter.registerCounter(MARKETS_COUNTER), TWO_ITEMS);
+                inner.close();
+                outer.close();
+            });
+
+            assertThat(messages)
+                .hasSize(1);
+            assertThat(messages.get(0))
+                .contains(MARKETS_COUNTER + "=" + TWO_ITEMS);
         }
     }
 

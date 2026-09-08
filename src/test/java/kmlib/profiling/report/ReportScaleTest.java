@@ -153,7 +153,7 @@ final class ReportScaleTest {
     }
 
     private static ProfileNode nodeOf(String name, ProfileNode... children) {
-        
+
         return new ProfileNode(
             ProfileSection.registerSection(name),
             new ProfileTiming(

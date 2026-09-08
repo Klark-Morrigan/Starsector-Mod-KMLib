@@ -31,8 +31,12 @@ public final class PhasedSection {
     private final ProfileSection section;
     private final List<ProfilePhase> phases;
 
-    private PhasedSection(String name, String[] phaseNames) {
-        this.section = ProfileSection.registerSection(name);
+    private PhasedSection(
+            String name,
+            CallLogThreshold callLogThreshold,
+            String[] phaseNames) {
+
+        this.section = ProfileSection.registerSection(name, callLogThreshold);
         this.phases = createPhases(phaseNames);
     }
 
@@ -46,8 +50,32 @@ public final class PhasedSection {
      * @return the one phased section carrying that name
      */
     public static PhasedSection registerPhasedSection(String name, String... phaseNames) {
+        return registerPhasedSection(name, CallLogThreshold.NO_LOGGING, phaseNames);
+    }
+
+    /**
+     * Resolves the phased section {@code name} identifies, declaring it with
+     * {@code callLogThreshold} and {@code phaseNames} the first time the name is
+     * seen.
+     *
+     * <p>A loop reports the whole pass in that line, not a turn of it: the line
+     * is written once per call however many items the loop ran over, and what
+     * one turn cost is what the row's own steps are read for.
+     *
+     * @param name             what the section is called in a report
+     * @param callLogThreshold how slow one call of the loop has to be to say so
+     *                         in the log
+     * @param phaseNames       what one turn of its loop is split into, in the
+     *                         order a turn pays them
+     * @return the one phased section carrying that name
+     */
+    public static PhasedSection registerPhasedSection(
+            String name,
+            CallLogThreshold callLogThreshold,
+            String... phaseNames) {
+
         return PHASED_SECTIONS_BY_NAME.resolveByName(
-            name, resolvedName -> new PhasedSection(resolvedName, phaseNames));
+            name, resolvedName -> new PhasedSection(resolvedName, callLogThreshold, phaseNames));
     }
 
     /**

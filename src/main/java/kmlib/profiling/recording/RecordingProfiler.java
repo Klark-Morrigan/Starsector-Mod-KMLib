@@ -47,6 +47,12 @@ import java.util.function.Supplier;
  * the section costs a comparison and no clock read - which is what lets a
  * per-item section exist at all without a reader of whole frames paying for it.
  *
+ * <p>Some of what it accumulates is also said as it happens: a call that broke
+ * what its section allows, and a call of a section that states a threshold it
+ * ran over. Both are written under this class's own name rather than the
+ * caller's, so a reader raising the level to follow one pass raises it on
+ * profiling rather than on whichever package happened to open the scope.
+ *
  * <p>The logger is asked of log4j directly rather than of the game, which is
  * the same logger under the same name - the game's own helper is that call and
  * nothing more. A package that knows nothing about Starsector then stays that
@@ -308,8 +314,28 @@ public final class RecordingProfiler implements Profiler {
     // row it actually ran inside.
     private void endScope(RecordingProfileScope scope, long endNanos) {
 
-        reportBreachOnce(scope.getSection(), scope.recordSpan(endNanos), scope.getTag());
+        var elapsedNanos = endNanos - scope.getStartNanos();
+
+        reportBreachOnce(scope.getSection(), scope.recordSpan(elapsedNanos), scope.getTag());
+        reportClosedCall(scope, elapsedNanos);
         scope.handCountsToParentScope();
+    }
+
+    // The line a section that states a threshold writes as one of its calls
+    // ends. Asked of the section rather than of the caller, so a site states
+    // once that its passes are worth following through the log and then keeps
+    // nothing of the clock, the format or the counts it prints.
+    private void reportClosedCall(RecordingProfileScope scope, long elapsedNanos) {
+
+        var section = scope.getSection();
+
+        // The threshold first: nearly every section states none, and that answer
+        // is a comparison where asking log4j is a lookup.
+        if (!section.getCallLogThreshold().shouldLogCall(elapsedNanos) || !LOG.isDebugEnabled()) {
+            return;
+        }
+        LOG.debug(ClosedCallLine.describeClosedCall(
+            section, elapsedNanos, scope.getCounts(), scope.getTag()));
     }
 
     // One call of the reserved row per count that arrives with nothing open,

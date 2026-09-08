@@ -110,6 +110,18 @@ final class RecordingProfileScope implements IterationScope {
         return node.getSection();
     }
 
+    long getStartNanos() {
+        return startNanos;
+    }
+
+    /**
+     * @return what this call has counted, its children's amounts included - the
+     *         quantities its span covered; empty where it counted nothing
+     */
+    List<ScopeCount> getCounts() {
+        return counts == null ? List.of() : counts;
+    }
+
     /**
      * @return what the caller named this call, or {@link WorstCall#NO_TAG} where
      *         it named nothing - which is what says which call a budget breach
@@ -135,13 +147,14 @@ final class RecordingProfileScope implements IterationScope {
     }
 
     /**
+     * @param elapsedNanos how long this call took, measured by the profiler so
+     *                     every span of one capture is read off one clock
      * @return what this call broke of its section's budget, or
      *         {@link BudgetBreach#NO_BREACH} where it broke nothing
      */
-    BudgetBreach recordSpan(long endNanos) {
+    BudgetBreach recordSpan(long elapsedNanos) {
 
-        var breach =
-            node.addSpan(endNanos - startNanos, counts == null ? List.of() : counts, tag);
+        var breach = node.addSpan(elapsedNanos, getCounts(), tag);
 
         // The turns go in with the span rather than as they run: a row is read
         // as one thing, and a loop half way through its cells is not a fact

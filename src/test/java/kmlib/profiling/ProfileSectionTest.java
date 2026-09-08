@@ -78,6 +78,20 @@ final class ProfileSectionTest {
             assertThat(section.getLevel())
                 .isEqualTo(ProfileLevel.FINE);
         }
+
+        @Test
+        void keepsTheCallLogThresholdTheNameWasFirstRegisteredWith() {
+            // Stated once like the two above, so a site opening the section does not have to
+            // repeat - or contradict - what makes one of its calls worth a line.
+            var section = ProfileSection.registerSection(
+                "test.profileSection.logged",
+                CallLogThreshold.LOGGING_EVERY_CALL);
+
+            assertThat(ProfileSection.registerSection("test.profileSection.logged"))
+                .isSameAs(section);
+            assertThat(section.getCallLogThreshold())
+                .isSameAs(CallLogThreshold.LOGGING_EVERY_CALL);
+        }
     }
 
     @Nested
@@ -101,6 +115,18 @@ final class ProfileSectionTest {
             // costs one comparison rather than a check nobody stated.
             assertThat(ProfileSection.registerSection(SECTION_NAME).getBudget())
                 .isSameAs(ProfileBudget.NO_BUDGET);
+        }
+    }
+
+    @Nested
+    class GetCallLogThreshold {
+
+        @Test
+        void answersTheSharedNothingForASectionThatStatedNoThreshold() {
+            // Most sections: their calls are read in the report, and a line per call of every
+            // section would bury the few passes somebody registered to follow.
+            assertThat(ProfileSection.registerSection(SECTION_NAME).getCallLogThreshold())
+                .isSameAs(CallLogThreshold.NO_LOGGING);
         }
     }
 }

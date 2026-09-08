@@ -17,9 +17,10 @@ import kmlib.profiling.budget.ProfileBudget;
  * land on one row rather than on two rows spelled alike.
  *
  * <p>A section may also state what one of its calls is allowed, which is what
- * turns its rows into findings rather than numbers, and how much detail it is
- * worth timing at. Both are the ones the name was first registered with - a
- * section states them once, beside the constant holding it.
+ * turns its rows into findings rather than numbers, how much detail it is worth
+ * timing at, and how slow a call has to be before it says so in the log. All
+ * three are the ones the name was first registered with - a section states them
+ * once, beside the constant holding it.
  */
 public final class ProfileSection {
 
@@ -42,11 +43,18 @@ public final class ProfileSection {
     private final String name;
     private final ProfileLevel level;
     private final ProfileBudget budget;
+    private final CallLogThreshold callLogThreshold;
 
-    private ProfileSection(String name, ProfileLevel level, ProfileBudget budget) {
+    private ProfileSection(
+            String name,
+            ProfileLevel level,
+            ProfileBudget budget,
+            CallLogThreshold callLogThreshold) {
+
         this.name = name;
         this.level = level;
         this.budget = budget;
+        this.callLogThreshold = callLogThreshold;
     }
 
     /**
@@ -61,7 +69,8 @@ public final class ProfileSection {
      * @return the one section carrying that name
      */
     public static ProfileSection registerSection(String name) {
-        return resolveSection(name, ProfileLevel.COARSE, ProfileBudget.NO_BUDGET);
+        return resolveSection(
+            name, ProfileLevel.COARSE, ProfileBudget.NO_BUDGET, CallLogThreshold.NO_LOGGING);
     }
 
     /**
@@ -77,7 +86,7 @@ public final class ProfileSection {
      * @return the one section carrying that name
      */
     public static ProfileSection registerSection(String name, ProfileLevel level) {
-        return resolveSection(name, level, ProfileBudget.NO_BUDGET);
+        return resolveSection(name, level, ProfileBudget.NO_BUDGET, CallLogThreshold.NO_LOGGING);
     }
 
     /**
@@ -89,7 +98,27 @@ public final class ProfileSection {
      * @return the one section carrying that name
      */
     public static ProfileSection registerSection(String name, ProfileBudget budget) {
-        return resolveSection(name, ProfileLevel.COARSE, budget);
+        return resolveSection(name, ProfileLevel.COARSE, budget, CallLogThreshold.NO_LOGGING);
+    }
+
+    /**
+     * Resolves the section {@code name} identifies, declaring it with
+     * {@code callLogThreshold} the first time the name is seen.
+     *
+     * <p>What a step of a rebuild states, so the line it used to write by hand -
+     * a clock read either side of the block and the counts printed beside the
+     * duration - is written from the scope it opens anyway.
+     *
+     * @param name             what the section is called in a report
+     * @param callLogThreshold how slow one call has to be to say so in the log
+     * @return the one section carrying that name
+     */
+    public static ProfileSection registerSection(
+            String name,
+            CallLogThreshold callLogThreshold) {
+
+        return resolveSection(
+            name, ProfileLevel.COARSE, ProfileBudget.NO_BUDGET, callLogThreshold);
     }
 
     public String getName() {
@@ -115,6 +144,16 @@ public final class ProfileSection {
         return budget;
     }
 
+    /**
+     * @return how slow one call of this section has to be before it writes a
+     *         line of its own, or {@link CallLogThreshold#NO_LOGGING} where it
+     *         stated nothing - which is most sections, whose calls are read in
+     *         the report alone
+     */
+    public CallLogThreshold getCallLogThreshold() {
+        return callLogThreshold;
+    }
+
     @Override
     public String toString() {
         return name;
@@ -126,9 +165,11 @@ public final class ProfileSection {
     private static ProfileSection resolveSection(
             String name,
             ProfileLevel level,
-            ProfileBudget budget) {
+            ProfileBudget budget,
+            CallLogThreshold callLogThreshold) {
 
         return SECTIONS_BY_NAME.resolveByName(
-            name, resolvedName -> new ProfileSection(resolvedName, level, budget));
+            name,
+            resolvedName -> new ProfileSection(resolvedName, level, budget, callLogThreshold));
     }
 }

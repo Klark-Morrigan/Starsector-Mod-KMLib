@@ -111,7 +111,12 @@ No Starsector API on the signature.
   measured only by a capture keeping that. A
   section may state what one of its calls is allowed - an amount of a counter,
   a duration read as the call closes, or both - and a call that breaks it is
-  warned about once and becomes the row's worst call whatever it took. A
+  warned about once and becomes the row's worst call whatever it took. It may
+  also state how slow one of its calls has to be before it says so in the game
+  log as it closes - never, over a stated number of milliseconds, or every call
+  - and the line it then writes carries the span the row was accumulated from,
+  what that call counted, and what it named itself, so a step timed by hand
+  beside a profiled one becomes one measurement rather than two. A
   capture comes back as a tree of rows per origin, each row carrying its count,
   total, min, max, average and self time, its counters with their spread per
   call, its worst call kept with that call's tag and counters, what it broke of

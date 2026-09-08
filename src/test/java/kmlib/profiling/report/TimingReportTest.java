@@ -166,7 +166,7 @@ final class TimingReportTest {
                 ProfileIterations.NO_ITERATIONS,
                 List.of(),
                 List.of());
-                
+
             var report = formatOneOrigin(List.of(node));
 
             assertThat(report)

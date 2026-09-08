@@ -153,7 +153,7 @@ final class ProfileViewTest {
     }
 
     private static ProfileNode nodeOf(String name, List<ProfileCount> counts, long totalNanos) {
-    
+
         return new ProfileNode(
             ProfileSection.registerSection(name),
             new ProfileTiming(1, totalNanos, totalNanos, totalNanos, DurationBuckets.NO_CALLS),
