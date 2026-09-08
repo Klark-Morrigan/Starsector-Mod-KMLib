@@ -220,19 +220,20 @@ No Starsector API on the signature.
   polygon, with a tally of how cleanly the runs join.
 - [`profiling/`](src/main/java/kmlib/profiling/) - the vocabulary a caller
   names: the profiler seam a mod binds, silent until it does, the sections and
-  counters a call is filed under, the scope a section is opened as, and the
+  counters a call is filed under, the scope a section is opened as, the
   sections whose calls run a loop, declared with the steps one turn is split
-  into.
+  into, and the origin a root and everything under it is grouped by, so a
+  capture says which game each row was measured in.
 - [`profiling/recording/`](src/main/java/kmlib/profiling/recording/) - the
   profiler that keeps what it is handed, and the open stack and per-row tallies
   it accumulates a capture in.
 - [`profiling/report/`](src/main/java/kmlib/profiling/report/) - the indented
   table over a capture.
 - [`profiling/snapshot/`](src/main/java/kmlib/profiling/snapshot/) - what a
-  reader is handed after a capture: the section tree, each row's count, total,
-  min, max, average and self time, what it counted, what its slowest call was
-  doing, what the loops inside its calls ran, and how its calls fell across
-  doubling duration bands.
+  reader is handed after a capture: one section tree per origin, each row's
+  count, total, min, max, average and self time, what it counted, what its
+  slowest call was doing, what the loops inside its calls ran, and how its
+  calls fell across doubling duration bands.
 - [`settings/`](src/main/java/kmlib/settings/) - LunaLib settings read and
   write, immediate and deferred, change callbacks, and labelled choices.
 - [`text/`](src/main/java/kmlib/text/) - string and number formatting, plus
@@ -291,6 +292,9 @@ No Starsector API on the signature.
   `starsector/systems/` at load as a means of arrival, and only where the mod
   is enabled; plus the campaign-minimap role answered for its mini-map, which
   a caller holds directly rather than reaching through a register.
+- [`starsector/`](src/main/java/kmlib/starsector/) - how a sector is named to a
+  reader who has to match it back to a save: the seed it was generated from
+  with the player beside it, which is the pair a save browser shows.
 - [`starsector/colonies/`](src/main/java/kmlib/starsector/colonies/) - the
   shared colony set every "who is here" read selects through - one rule, one
   entry per place and owner, unfogged - stated once over a location and read

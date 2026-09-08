@@ -5,6 +5,7 @@ import kmlib.profiling.Profiler;
 import kmlib.profiling.snapshot.DurationBuckets;
 import kmlib.profiling.snapshot.ProfileCount;
 import kmlib.profiling.snapshot.ProfileNode;
+import kmlib.profiling.snapshot.ProfileOriginTree;
 import kmlib.profiling.snapshot.ProfileTiming;
 import kmlib.profiling.snapshot.WorstCall;
 import kmlib.text.KmlibStrings;
@@ -32,6 +33,11 @@ import java.util.function.ToLongFunction;
  * of sits under it. Beside the inclusive total is self time, which is what the
  * section spent outside its children - the two columns together are what say
  * whether a slow row is slow itself or slow because of something below it.
+ *
+ * <p>Above each group of roots is the origin they were measured in, so a table
+ * taken across two games reads as two captures side by side rather than as one
+ * whose numbers cannot be traced to a save. The columns are shared across the
+ * groups, which is what lets one game's row be read against the other's.
  *
  * <p>Every counter anything in the tree touched adds a group of columns: what
  * the row counted in all, the spread of one call's worth, and what one item
@@ -112,6 +118,11 @@ public final class TimingReport {
     private static final char FIRST_DIGIT_MARK = '0';
     private static final int WIDEST_MARKED_TALLY = 9;
 
+    // The line above a group of roots, naming the game they were measured in.
+    // Unquoted, so a label a caller composed reads as the heading it is rather
+    // than as one more tag written across the columns.
+    private static final String ORIGIN_PREFIX = "origin ";
+
     // The second line under a row: what its slowest call took, what it was
     // called, and what each counter stood at when it ended.
     private static final String WORST_CALL_PREFIX = "worst ";
@@ -135,24 +146,30 @@ public final class TimingReport {
     }
 
     /**
-     * Renders {@code roots} as a table with one row per section per parent,
-     * children indented under it: call count and average / minimum / maximum /
+     * Renders {@code originTrees} as a table with one row per section per
+     * parent, children indented under it and each group of roots headed by the
+     * origin it was measured in: call count and average / minimum / maximum /
      * self / total milliseconds, then a group of columns per counter touched.
      *
-     * @param roots the section tree to report, e.g. {@link Profiler#snapshot()}
+     * @param originTrees the capture to report, e.g. {@link Profiler#snapshot()}
      * @return the formatted table, or a short notice when nothing was recorded
      */
-    public static String format(List<ProfileNode> roots) {
+    public static String format(List<ProfileOriginTree> originTrees) {
 
-        if (roots.isEmpty()) {
+        if (originTrees.isEmpty()) {
             return NO_TIMINGS_NOTICE;
         }
 
-        var columns = buildColumns(roots);
+        var columns = buildColumns(originTrees);
         var table = new ArrayList<List<String>>();
 
         table.add(buildHeaderRow(columns));
-        appendNodeRows(table, roots, 0, columns);
+
+        for (var originTree : originTrees) {
+
+            table.add(List.of(ORIGIN_PREFIX + originTree.getOrigin().getLabel()));
+            appendNodeRows(table, originTree.getRoots(), 0, columns);
+        }
         return renderTable(table, measureColumnWidths(table, columns));
     }
 
@@ -268,7 +285,10 @@ public final class TimingReport {
     // The columns after the section name. The timing ones are always there; the
     // counter ones are whatever the capture happened to count, so a tree that
     // counted nothing renders exactly the table it did before counters existed.
-    private static List<ReportColumn> buildColumns(List<ProfileNode> roots) {
+    // Taken over every origin at once, since the groups share one set of columns
+    // and a column present for one game only would leave the other's rows
+    // unreadable against it.
+    private static List<ReportColumn> buildColumns(List<ProfileOriginTree> originTrees) {
 
         var columns = new ArrayList<ReportColumn>();
 
@@ -296,7 +316,7 @@ public final class TimingReport {
             SPREAD_COLUMN_FLOOR,
             TimingReport::formatBands));
 
-        for (var counter : collectCounters(roots)) {
+        for (var counter : collectCounters(originTrees)) {
             columns.addAll(buildCounterColumns(counter));
         }
         return columns;
@@ -362,11 +382,16 @@ public final class TimingReport {
         return headers;
     }
 
-    // In the order the tree first counted them, which is the order the rows
+    // In the order the capture first counted them, which is the order the rows
     // themselves are in, so a column group sits near the rows that fill it.
-    private static Collection<ProfileCounter> collectCounters(List<ProfileNode> roots) {
+    private static Collection<ProfileCounter> collectCounters(
+            List<ProfileOriginTree> originTrees) {
+
         var counters = new LinkedHashSet<ProfileCounter>();
-        collectCountersInto(roots, counters);
+
+        for (var originTree : originTrees) {
+            collectCountersInto(originTree.getRoots(), counters);
+        }
         return counters;
     }
 
@@ -488,9 +513,10 @@ public final class TimingReport {
         }
         for (var row : table) {
 
-            // A worst-call line is one cell spanning the whole width, so
-            // measuring it would widen the section column by however long a
-            // caller's tag was and push every number away from its header.
+            // An origin heading, a worst-call line and a loop line are each one
+            // cell spanning the whole width, so measuring one would widen the
+            // section column by however long a caller's own text was and push
+            // every number away from its header.
             if (isSpanningLine(row)) {
                 continue;
             }

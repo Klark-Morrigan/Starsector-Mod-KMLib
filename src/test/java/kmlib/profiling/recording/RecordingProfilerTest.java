@@ -3,6 +3,7 @@ package kmlib.profiling.recording;
 import kmlib.profiling.IterationScope;
 import kmlib.profiling.PhasedSection;
 import kmlib.profiling.ProfileCounter;
+import kmlib.profiling.ProfileOrigin;
 import kmlib.profiling.ProfileSection;
 import kmlib.profiling.snapshot.CallCount;
 import kmlib.profiling.snapshot.CountSpread;
@@ -12,6 +13,7 @@ import kmlib.profiling.snapshot.PhaseTotal;
 import kmlib.profiling.snapshot.ProfileCount;
 import kmlib.profiling.snapshot.ProfileIterations;
 import kmlib.profiling.snapshot.ProfileNode;
+import kmlib.profiling.snapshot.ProfileOriginTree;
 import kmlib.profiling.snapshot.WorstCall;
 
 import org.apache.log4j.AppenderSkeleton;
@@ -34,9 +36,10 @@ import static org.assertj.core.api.Assertions.tuple;
  * self time is what it did not spend in its children, a count added on a scope rolls into every
  * scope it was open inside and spreads over the calls of its own row, the slowest call is kept with
  * the counters and the tag it ended on, every span is placed in a duration band, a scope opened over
- * a loop counts its turns and charges each step of one to its own slot, snapshot order follows
- * first-record order, a scope closed out of order takes the scopes inside it with it, and reset()
- * clears everything.
+ * a loop counts its turns and charges each step of one to its own slot, roots group by the origin
+ * they were opened under with everything below a root belonging to it and everything opened under
+ * no root at all landing in the reserved group, snapshot order follows first-record order, a scope
+ * closed out of order takes the scopes inside it with it, and reset() clears everything.
  */
 final class RecordingProfilerTest {
 
@@ -47,6 +50,15 @@ final class RecordingProfilerTest {
     private static final String INNER_SECTION = "test.inner";
     private static final String SYSTEMS_COUNTER = "test.systems";
     private static final String MARKETS_COUNTER = "test.markets";
+
+    // Two games one profiler could be measuring across a session, which is the smallest capture
+    // that has to keep its rows apart.
+    private static final String FIRST_ORIGIN_LABEL = "test.firstSector";
+    private static final String SECOND_ORIGIN_LABEL = "test.secondSector";
+    private static final ProfileOrigin FIRST_ORIGIN =
+        ProfileOrigin.registerOrigin(FIRST_ORIGIN_LABEL);
+    private static final ProfileOrigin SECOND_ORIGIN =
+        ProfileOrigin.registerOrigin(SECOND_ORIGIN_LABEL);
 
     // The two steps every loop below declares, which is the smallest pair that can show one step's
     // time landing in the other's slot.
@@ -77,10 +89,10 @@ final class RecordingProfilerTest {
             child.close();
             parent.close();
 
-            assertThat(readSectionNames(profiler.snapshot()))
+            assertThat(readSectionNames(readRoots(profiler)))
                 .containsExactly(PARENT_SECTION);
 
-            var parentNode = profiler.snapshot().get(0);
+            var parentNode = readRoots(profiler).get(0);
 
             assertThat(parentNode.getTiming().getTotalNanos())
                 .isEqualTo(100);
@@ -108,7 +120,7 @@ final class RecordingProfilerTest {
             otherChild.close();
             otherParent.close();
 
-            var roots = profiler.snapshot();
+            var roots = readRoots(profiler);
 
             assertThat(readSectionNames(roots))
                 .containsExactly(PARENT_SECTION, OTHER_PARENT_SECTION);
@@ -129,7 +141,7 @@ final class RecordingProfilerTest {
             child.close();
             parent.close();
 
-            var parentNode = profiler.snapshot().get(0);
+            var parentNode = readRoots(profiler).get(0);
 
             assertThat(parentNode.getSelfNanos())
                 .isEqualTo(70);
@@ -148,7 +160,7 @@ final class RecordingProfilerTest {
             profiler.open(ProfileSection.registerSection(CHILD_SECTION)).close();
             parent.close();
 
-            var childNode = profiler.snapshot().get(0).getChildren().get(0);
+            var childNode = readRoots(profiler).get(0).getChildren().get(0);
 
             assertThat(childNode.getTiming().getCount())
                 .isEqualTo(2);
@@ -170,7 +182,7 @@ final class RecordingProfilerTest {
             });
             profiler.open(ProfileSection.registerSection(PARENT_SECTION)).close();
 
-            var roots = profiler.snapshot();
+            var roots = readRoots(profiler);
 
             assertThat(roots)
                 .hasSize(1);
@@ -190,7 +202,7 @@ final class RecordingProfilerTest {
             openTaggedCall(profiler, SLOWEST_CALL_TAG);
             openTaggedCall(profiler, LAST_CALL_TAG);
 
-            assertThat(profiler.snapshot().get(0).getWorstCall())
+            assertThat(readRoots(profiler).get(0).getWorstCall())
                 .extracting(WorstCall::getDurationNanos, WorstCall::getTag)
                 .containsExactly(100L, SLOWEST_CALL_TAG);
         }
@@ -204,7 +216,7 @@ final class RecordingProfilerTest {
             countInACallOf(profiler, PARENT_SECTION, 3);
             countInACallOf(profiler, PARENT_SECTION, 8);
 
-            var worstCall = profiler.snapshot().get(0).getWorstCall();
+            var worstCall = readRoots(profiler).get(0).getWorstCall();
 
             assertThat(worstCall.getCounts())
                 .extracting(count -> count.getCounter().getName(), CallCount::getAmount)
@@ -221,7 +233,7 @@ final class RecordingProfilerTest {
             profiler.open(ProfileSection.registerSection(PARENT_SECTION)).close();
             profiler.open(ProfileSection.registerSection(PARENT_SECTION)).close();
 
-            var buckets = profiler.snapshot().get(0).getTiming().getBuckets();
+            var buckets = readRoots(profiler).get(0).getTiming().getBuckets();
 
             assertThat(buckets.getCallsInBucket(
                 DurationBuckets.resolveBucketIndex(ONE_MICROSECOND_IN_NANOS)))
@@ -229,6 +241,92 @@ final class RecordingProfilerTest {
             assertThat(buckets.getCallsInBucket(
                 DurationBuckets.resolveBucketIndex(ONE_MILLISECOND_IN_NANOS)))
                 .isEqualTo(1);
+        }
+
+        @Test
+        void landsASectionOpenedWithNoRootOpenUnderTheReservedOrigin() {
+            // A walk from a path nobody profiled has to be seen: dropping it would leave the one
+            // traversal a reader most wants to find as the only one the capture never mentions.
+            var profiler = new RecordingProfiler(new ScriptedClock(0, 10));
+
+            profiler.open(ProfileSection.registerSection(PARENT_SECTION)).close();
+
+            assertThat(profiler.snapshot())
+                .singleElement()
+                .extracting(ProfileOriginTree::getOrigin)
+                .isSameAs(ProfileOrigin.UNSCOPED);
+        }
+    }
+
+    @Nested
+    class OpenRoot {
+
+        @Test
+        void keepsTwoOriginsAsTwoTrees() {
+            // The same section measured in two games: one row averaging them would say a beat cost
+            // the mean of two sectors' worth of work, which describes neither and cannot be taken
+            // back to either save.
+            var profiler = new RecordingProfiler(new ScriptedClock(0, 5, 5, 12));
+
+            profiler.openRoot(FIRST_ORIGIN, ProfileSection.registerSection(PARENT_SECTION)).close();
+            profiler.openRoot(SECOND_ORIGIN, ProfileSection.registerSection(PARENT_SECTION)).close();
+
+            var originTrees = profiler.snapshot();
+
+            assertThat(originTrees)
+                .extracting(originTree -> originTree.getOrigin().getLabel())
+                .containsExactly(FIRST_ORIGIN_LABEL, SECOND_ORIGIN_LABEL);
+            assertThat(originTrees.get(0).getRoots().get(0).getTiming().getTotalNanos())
+                .isEqualTo(5);
+            assertThat(originTrees.get(1).getRoots().get(0).getTiming().getTotalNanos())
+                .isEqualTo(7);
+        }
+
+        @Test
+        void landsWhatOpensInsideARootUnderThatRootsOrigin() {
+            // Which is what lets a caller name the origin once a beat rather than at every section
+            // beneath it - and what makes a layer's own scopes its sector's without the layer
+            // knowing there are origins at all.
+            var profiler = new RecordingProfiler(new ScriptedClock(0, 10, 40, 100));
+
+            var beat =
+                profiler.openRoot(FIRST_ORIGIN, ProfileSection.registerSection(PARENT_SECTION));
+            var walk = profiler.open(ProfileSection.registerSection(CHILD_SECTION));
+
+            walk.close();
+            beat.close();
+
+            var originTree = profiler.snapshot().get(0);
+
+            assertThat(originTree.getOrigin())
+                .isSameAs(FIRST_ORIGIN);
+            assertThat(readSectionNames(originTree.getRoots().get(0).getChildren()))
+                .containsExactly(CHILD_SECTION);
+        }
+
+        @Test
+        void keepsARootOffWhateverHappenedToBeOpenWhenItWasOpened() {
+            // A root has no parent whatever the stack looks like. Opened inside a scope somebody
+            // left running, its counts would otherwise roll into a row that never ran it and could
+            // not answer for them.
+            var profiler = new RecordingProfiler(new ScriptedClock(0, 10, 40, 100));
+
+            var strayScope = profiler.open(ProfileSection.registerSection(OUTER_SECTION));
+
+            try (var beat =
+                    profiler.openRoot(FIRST_ORIGIN, ProfileSection.registerSection(PARENT_SECTION))) {
+
+                beat.addCount(ProfileCounter.registerCounter(SYSTEMS_COUNTER), 3);
+            }
+            strayScope.close();
+
+            var originTrees = profiler.snapshot();
+
+            assertThat(originTrees.get(0).getRoots().get(0).getCounts())
+                .isEmpty();
+            assertThat(readCount(originTrees.get(1).getRoots().get(0), SYSTEMS_COUNTER).getTotals())
+                .extracting(CountTotals::getTotal)
+                .isEqualTo(3L);
         }
     }
 
@@ -244,7 +342,7 @@ final class RecordingProfilerTest {
             openTaggedCall(profiler, SLOWEST_CALL_TAG);
             profiler.open(ProfileSection.registerSection(PARENT_SECTION)).close();
 
-            assertThat(profiler.snapshot().get(0).getWorstCall().getTag())
+            assertThat(readRoots(profiler).get(0).getWorstCall().getTag())
                 .isEqualTo(SLOWEST_CALL_TAG);
         }
 
@@ -256,7 +354,7 @@ final class RecordingProfilerTest {
 
             openTaggedCall(profiler, BLANK_TAG);
 
-            assertThat(profiler.snapshot().get(0).getWorstCall().getTag())
+            assertThat(readRoots(profiler).get(0).getWorstCall().getTag())
                 .isEqualTo(WorstCall.NO_TAG);
         }
     }
@@ -278,7 +376,7 @@ final class RecordingProfilerTest {
             child.close();
             parent.close();
 
-            var parentNode = profiler.snapshot().get(0);
+            var parentNode = readRoots(profiler).get(0);
             var childNode = parentNode.getChildren().get(0);
 
             assertThat(readCount(parentNode, SYSTEMS_COUNTER).getTotals())
@@ -301,7 +399,7 @@ final class RecordingProfilerTest {
             countInACallOf(profiler, CHILD_SECTION, 8);
             parent.close();
 
-            var count = readCount(profiler.snapshot().get(0).getChildren().get(0), SYSTEMS_COUNTER);
+            var count = readCount(readRoots(profiler).get(0).getChildren().get(0), SYSTEMS_COUNTER);
 
             assertThat(count.getTotals().getTotal())
                 .isEqualTo(11L);
@@ -322,7 +420,7 @@ final class RecordingProfilerTest {
             profiler.open(ProfileSection.registerSection(CHILD_SECTION)).close();
             parent.close();
 
-            var count = readCount(profiler.snapshot().get(0).getChildren().get(0), SYSTEMS_COUNTER);
+            var count = readCount(readRoots(profiler).get(0).getChildren().get(0), SYSTEMS_COUNTER);
 
             assertThat(count.getTotals().getTotal())
                 .isEqualTo(5L);
@@ -343,7 +441,7 @@ final class RecordingProfilerTest {
             countInACallOf(profiler, CHILD_SECTION, 5);
             parent.close();
 
-            var childNode = profiler.snapshot().get(0).getChildren().get(0);
+            var childNode = readRoots(profiler).get(0).getChildren().get(0);
 
             assertThat(readCount(childNode, SYSTEMS_COUNTER).getSpread())
                 .extracting(CountSpread::getMinPerCall, CountSpread::getMaxPerCall)
@@ -367,7 +465,7 @@ final class RecordingProfilerTest {
             child.close();
             parent.close();
 
-            assertThat(readCount(profiler.snapshot().get(0), SYSTEMS_COUNTER).getTotals())
+            assertThat(readCount(readRoots(profiler).get(0), SYSTEMS_COUNTER).getTotals())
                 .extracting(CountTotals::getTotal, CountTotals::getSelfTotal)
                 .containsExactly(9L, 2L);
         }
@@ -384,7 +482,7 @@ final class RecordingProfilerTest {
             scope.addCount(ProfileCounter.registerCounter(SYSTEMS_COUNTER), 4);
             scope.close();
 
-            var count = readCount(profiler.snapshot().get(0), SYSTEMS_COUNTER);
+            var count = readCount(readRoots(profiler).get(0), SYSTEMS_COUNTER);
 
             assertThat(count.getTotals().getTotal())
                 .isEqualTo(7L);
@@ -411,7 +509,7 @@ final class RecordingProfilerTest {
             second.addCount(ProfileCounter.registerCounter(MARKETS_COUNTER), 4);
             second.close();
 
-            var node = profiler.snapshot().get(0);
+            var node = readRoots(profiler).get(0);
 
             assertThat(readCount(node, SYSTEMS_COUNTER).getTotals().getTotal())
                 .isEqualTo(3L);
@@ -438,7 +536,7 @@ final class RecordingProfilerTest {
                 .addCount(ProfileCounter.registerCounter(SYSTEMS_COUNTER), 5);
             outer.close();
 
-            var outerNode = profiler.snapshot().get(0);
+            var outerNode = readRoots(profiler).get(0);
 
             assertThat(readCount(outerNode, SYSTEMS_COUNTER).getTotals())
                 .extracting(CountTotals::getTotal, CountTotals::getSelfTotal)
@@ -456,7 +554,7 @@ final class RecordingProfilerTest {
 
             profiler.open(ProfileSection.registerSection(PARENT_SECTION)).close();
 
-            assertThat(profiler.snapshot().get(0).getCounts())
+            assertThat(readRoots(profiler).get(0).getCounts())
                 .isEmpty();
         }
     }
@@ -473,7 +571,7 @@ final class RecordingProfilerTest {
             profiler.measure("build", () -> {
             });
 
-            var node = profiler.snapshot().get(0);
+            var node = readRoots(profiler).get(0);
 
             assertThat(node.getSection().getName())
                 .isEqualTo("build");
@@ -495,7 +593,7 @@ final class RecordingProfilerTest {
             profiler.measure("render", () -> {
             });
 
-            var timing = profiler.snapshot().get(0).getTiming();
+            var timing = readRoots(profiler).get(0).getTiming();
 
             assertThat(timing.getCount())
                 .isEqualTo(2);
@@ -518,7 +616,7 @@ final class RecordingProfilerTest {
 
             assertThat(result)
                 .isEqualTo("value");
-            assertThat(profiler.snapshot().get(0).getTiming().getTotalNanos())
+            assertThat(readRoots(profiler).get(0).getTiming().getTotalNanos())
                 .isEqualTo(42);
         }
 
@@ -534,7 +632,7 @@ final class RecordingProfilerTest {
             });
             parent.close();
 
-            var parentNode = profiler.snapshot().get(0);
+            var parentNode = readRoots(profiler).get(0);
 
             assertThat(readSectionNames(parentNode.getChildren()))
                 .containsExactly(CHILD_SECTION);
@@ -557,7 +655,7 @@ final class RecordingProfilerTest {
             profiler.record(CHILD_SECTION, 20);
             parent.close();
 
-            var parentNode = profiler.snapshot().get(0);
+            var parentNode = readRoots(profiler).get(0);
 
             assertThat(parentNode.getSelfNanos())
                 .isEqualTo(30);
@@ -573,7 +671,7 @@ final class RecordingProfilerTest {
 
             profiler.record(PARENT_SECTION, 20);
 
-            var roots = profiler.snapshot();
+            var roots = readRoots(profiler);
 
             assertThat(readSectionNames(roots))
                 .containsExactly(PARENT_SECTION);
@@ -596,7 +694,7 @@ final class RecordingProfilerTest {
             profiler.open(ProfileSection.registerSection(INNER_SECTION));
             outer.close();
 
-            var outerNode = profiler.snapshot().get(0);
+            var outerNode = readRoots(profiler).get(0);
 
             assertThat(outerNode.getTiming().getTotalNanos())
                 .isEqualTo(50);
@@ -616,7 +714,7 @@ final class RecordingProfilerTest {
             outer.close();
             profiler.open(ProfileSection.registerSection(PARENT_SECTION)).close();
 
-            assertThat(readSectionNames(profiler.snapshot()))
+            assertThat(readSectionNames(readRoots(profiler)))
                 .containsExactly(OUTER_SECTION, PARENT_SECTION);
         }
 
@@ -653,7 +751,7 @@ final class RecordingProfilerTest {
             scope.close();
             scope.close();
 
-            assertThat(profiler.snapshot().get(0).getTiming().getCount())
+            assertThat(readRoots(profiler).get(0).getTiming().getCount())
                 .isEqualTo(1);
         }
     }
@@ -675,7 +773,7 @@ final class RecordingProfilerTest {
                 loop.endIteration();
             }
 
-            assertThat(profiler.snapshot().get(0).getIterations().getPhaseTotals())
+            assertThat(readRoots(profiler).get(0).getIterations().getPhaseTotals())
                 .extracting(phaseTotal -> phaseTotal.getPhase().getName(), PhaseTotal::getTotalNanos)
                 .containsExactly(tuple("plan", 3L), tuple("trace", 5L));
         }
@@ -692,7 +790,7 @@ final class RecordingProfilerTest {
                 runOneTurnOf(loop, section, "cell.second");
             }
 
-            var bakeNode = profiler.snapshot().get(0);
+            var bakeNode = readRoots(profiler).get(0);
 
             assertThat(bakeNode.getTiming().getCount())
                 .isEqualTo(1);
@@ -715,7 +813,7 @@ final class RecordingProfilerTest {
                 runOneTurnOf(loop, section, SLOWEST_CALL_TAG);
             }
 
-            var iterations = profiler.snapshot().get(0).getIterations();
+            var iterations = readRoots(profiler).get(0).getIterations();
 
             assertThat(iterations.getSlowestNanos())
                 .isEqualTo(20);
@@ -734,7 +832,7 @@ final class RecordingProfilerTest {
                 runOneTurnOf(loop, section, BLANK_TAG);
             }
 
-            assertThat(profiler.snapshot().get(0).getIterations().getSlowestTag())
+            assertThat(readRoots(profiler).get(0).getIterations().getSlowestTag())
                 .isEqualTo(WorstCall.NO_TAG);
         }
 
@@ -752,7 +850,7 @@ final class RecordingProfilerTest {
                 loop.endIteration();
             }
 
-            assertThat(profiler.snapshot().get(0).getIterations().getPhaseTotals())
+            assertThat(readRoots(profiler).get(0).getIterations().getPhaseTotals())
                 .extracting(phaseTotal -> phaseTotal.getPhase().getName(), PhaseTotal::getTotalNanos)
                 .containsExactly(tuple("plan", 2L), tuple("trace", 7L));
         }
@@ -813,7 +911,7 @@ final class RecordingProfilerTest {
                 runOneTurnOf(loop, section, LAST_CALL_TAG);
             }
 
-            var iterations = profiler.snapshot().get(0).getIterations();
+            var iterations = readRoots(profiler).get(0).getIterations();
 
             assertThat(iterations.getCount())
                 .isEqualTo(2);
@@ -833,7 +931,7 @@ final class RecordingProfilerTest {
 
             profiler.openIterations(section).close();
 
-            assertThat(profiler.snapshot().get(0).getIterations())
+            assertThat(readRoots(profiler).get(0).getIterations())
                 .isSameAs(ProfileIterations.NO_ITERATIONS);
         }
 
@@ -845,7 +943,7 @@ final class RecordingProfilerTest {
 
             profiler.open(ProfileSection.registerSection(PARENT_SECTION)).close();
 
-            assertThat(profiler.snapshot().get(0).getIterations())
+            assertThat(readRoots(profiler).get(0).getIterations())
                 .isSameAs(ProfileIterations.NO_ITERATIONS);
         }
     }
@@ -863,7 +961,7 @@ final class RecordingProfilerTest {
             profiler.measure("first", () -> {
             });
 
-            assertThat(readSectionNames(profiler.snapshot()))
+            assertThat(readSectionNames(readRoots(profiler)))
                 .containsExactly("second", "first");
         }
 
@@ -875,7 +973,7 @@ final class RecordingProfilerTest {
 
             profiler.open(ProfileSection.registerSection(PARENT_SECTION));
 
-            var openNode = profiler.snapshot().get(0);
+            var openNode = readRoots(profiler).get(0);
 
             assertThat(openNode.getTiming().getCount())
                 .isEqualTo(0);
@@ -893,7 +991,7 @@ final class RecordingProfilerTest {
 
             profiler.open(ProfileSection.registerSection(PARENT_SECTION));
 
-            var openNode = profiler.snapshot().get(0);
+            var openNode = readRoots(profiler).get(0);
 
             assertThat(openNode.getWorstCall())
                 .isSameAs(WorstCall.NO_CALL);
@@ -915,7 +1013,7 @@ final class RecordingProfilerTest {
 
             profiler.reset();
 
-            assertThat(profiler.snapshot())
+            assertThat(readRoots(profiler))
                 .isEmpty();
         }
 
@@ -930,7 +1028,7 @@ final class RecordingProfilerTest {
             profiler.reset();
             scope.close();
 
-            assertThat(profiler.snapshot())
+            assertThat(readRoots(profiler))
                 .isEmpty();
         }
     }
@@ -953,8 +1051,7 @@ final class RecordingProfilerTest {
     }
 
     private static long readPhaseNanos(RecordingProfiler profiler, String phaseName) {
-        return profiler
-            .snapshot()
+        return readRoots(profiler)
             .get(0)
             .getIterations()
             .getPhaseTotals()
@@ -963,6 +1060,16 @@ final class RecordingProfilerTest {
             .mapToLong(PhaseTotal::getTotalNanos)
             .findFirst()
             .orElseThrow();
+    }
+
+    // The roots of the one origin a case records under. Nearly every case here opens no root of
+    // its own, so what it records lands under the reserved origin and the tree beneath that is
+    // what the case is about; the grouping itself is pinned in Origins below.
+    private static List<ProfileNode> readRoots(RecordingProfiler profiler) {
+
+        var originTrees = profiler.snapshot();
+
+        return originTrees.isEmpty() ? List.of() : originTrees.get(0).getRoots();
     }
 
     private static List<String> readSectionNames(List<ProfileNode> nodes) {

@@ -40,6 +40,26 @@ final class SilentProfilerTest {
     }
 
     @Nested
+    class OpenRoot {
+
+        @Test
+        void openRootHandsBackTheSameSharedScopeAndKeepsNoOrigin() {
+            // A beat naming the game it runs in costs the same nothing as any other section here:
+            // there is no tree for an origin to head, so the label goes nowhere.
+            var scope = SilentProfiler.INSTANCE.openRoot(
+                ProfileOrigin.registerOrigin("test.silent.sector"),
+                ProfileSection.registerSection("frame"));
+
+            scope.close();
+
+            assertThat(scope)
+                .isSameAs(SilentProfiler.INSTANCE.open(ProfileSection.registerSection("build")));
+            assertThat(SilentProfiler.INSTANCE.snapshot())
+                .isEmpty();
+        }
+    }
+
+    @Nested
     class AddCount {
 
         @Test

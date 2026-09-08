@@ -97,11 +97,14 @@ No Starsector API on the signature.
 - **`kmlib.profiling`**, with `snapshot`, `recording` and `report` under it -
   the profiler a mod binds to hear what the library measures, silent until one
   does: named sections opened as nesting scopes or collected by measure or
-  record, the counters a scope tallies, and the tag a caller names one call by.
-  A capture comes back as a tree of rows, each carrying its count, total, min,
-  max, average and self time, its counters with their spread per call, its
-  slowest call kept with that call's tag and counters, and where its calls fell
-  across duration bands doubling from a microsecond up - rendered as an
+  record, the counters a scope tallies, the tag a caller names one call by, and
+  the sections whose calls run a loop, declared with the steps one turn is
+  split into and opened as a scope that counts the turns and charges each step
+  to its slot. A capture comes back as a tree of rows, each carrying its count,
+  total, min, max, average and self time, its counters with their spread per
+  call, its slowest call kept with that call's tag and counters, what its loops
+  ran per step and per turn with the slowest turn named, and where its calls
+  fell across duration bands doubling from a microsecond up - rendered as an
   indented table.
 - **`kmlib.settings`** - LunaLib settings read and write, immediate and
   deferred with flush and removal, change callbacks, and resolving a labelled

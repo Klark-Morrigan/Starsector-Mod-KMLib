@@ -11,8 +11,8 @@ import java.util.List;
 
 /**
  * One entry on {@link RecordingProfiler}'s open stack: the node the span will
- * land on, when it started, what it has counted so far, and what the caller
- * has named it.
+ * land on, whether that node is a root of its origin, when it started, what it
+ * has counted so far, and what the caller has named it.
  *
  * <p>Closing is handed back to the profiler rather than settled here, because
  * what a close means depends on the whole stack - a scope closed while a
@@ -30,6 +30,10 @@ final class RecordingProfileScope implements IterationScope {
     private final ProfileNodeAccumulator node;
     private final long startNanos;
 
+    // Whether this scope's node is a root of its origin rather than a child of
+    // an open row, which is what says where its counts stop.
+    private final boolean isRoot;
+
     // What this scope's loop has run, or null on a scope opened over no loop -
     // which is nearly all of them, and which is why the state is not carried
     // where it would never be filled in.
@@ -45,12 +49,14 @@ final class RecordingProfileScope implements IterationScope {
             RecordingProfiler profiler,
             ProfileNodeAccumulator node,
             long startNanos,
-            ScopeIterations iterations) {
+            ScopeIterations iterations,
+            boolean isRoot) {
 
         this.profiler = profiler;
         this.node = node;
         this.startNanos = startNanos;
         this.iterations = iterations;
+        this.isRoot = isRoot;
     }
 
     @Override
@@ -92,6 +98,15 @@ final class RecordingProfileScope implements IterationScope {
     @Override
     public void close() {
         profiler.closeScope(this);
+    }
+
+    /**
+     * @return whether this scope has no parent - a root opened under an origin,
+     *         or a section opened with nothing else open - so that what it
+     *         counted is not handed on to a row it did not run inside
+     */
+    boolean isRoot() {
+        return isRoot;
     }
 
     ProfileNodeAccumulator resolveChildNode(ProfileSection childSection) {

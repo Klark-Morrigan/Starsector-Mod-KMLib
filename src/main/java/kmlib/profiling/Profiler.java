@@ -1,6 +1,6 @@
 package kmlib.profiling;
 
-import kmlib.profiling.snapshot.ProfileNode;
+import kmlib.profiling.snapshot.ProfileOriginTree;
 
 import java.util.List;
 import java.util.function.Supplier;
@@ -24,6 +24,10 @@ import java.util.function.Supplier;
  * <p>A section that runs a per-item loop is opened through
  * {@link #openIterations} instead, which measures the loop's turns inside the
  * one span.
+ *
+ * <p>Rows group by origin above that, so a capture taken across two games says
+ * which one each tree came from: {@link #openRoot} names the origin a beat and
+ * everything beneath it belongs to.
  *
  * <p>A seam rather than a class, so what profiling costs is a binding rather
  * than a rebuild. Library code measures through {@link ActiveProfiler} without
@@ -49,6 +53,25 @@ public interface Profiler {
      * @return the open scope, closed to record the span
      */
     ProfileScope open(ProfileSection section);
+
+    /**
+     * Opens {@code section} as a root of {@code origin} - a span with no parent,
+     * whatever else happens to be open - timing until the returned scope is
+     * closed.
+     *
+     * <p>How a caller states which game a beat was measured in. Everything
+     * opened inside the returned scope is that origin's too, so a caller names
+     * the origin once per beat rather than at every section beneath it.
+     *
+     * <p>What a section opened with no root open lands under is
+     * {@link ProfileOrigin#UNSCOPED}, so a walk from a path nobody profiled is
+     * seen rather than dropped.
+     *
+     * @param origin  the game this span and everything under it was measured in
+     * @param section the section this span belongs to
+     * @return the open scope, closed to record the span
+     */
+    ProfileScope openRoot(ProfileOrigin origin, ProfileSection section);
 
     /**
      * Opens {@code section} the way {@link #open} does, over a loop whose turns
@@ -94,11 +117,11 @@ public interface Profiler {
     void record(String section, long elapsedNanos);
 
     /**
-     * @return an immutable snapshot of the section tree - the sections opened
-     *         with nothing else open, each holding what ran inside it, in the
-     *         order they were first recorded
+     * @return an immutable snapshot of the capture - one tree per origin, each
+     *         holding the sections opened with nothing else open under it and
+     *         what ran inside those, both in the order they were first recorded
      */
-    List<ProfileNode> snapshot();
+    List<ProfileOriginTree> snapshot();
 
     /**
      * Clears all accumulated timings, so the next measurements start fresh.

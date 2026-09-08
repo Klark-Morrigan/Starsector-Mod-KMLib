@@ -2,10 +2,11 @@ package kmlib.profiling.recording;
 
 import kmlib.profiling.IterationScope;
 import kmlib.profiling.PhasedSection;
+import kmlib.profiling.ProfileOrigin;
 import kmlib.profiling.ProfileScope;
 import kmlib.profiling.ProfileSection;
 import kmlib.profiling.Profiler;
-import kmlib.profiling.snapshot.ProfileNode;
+import kmlib.profiling.snapshot.ProfileOriginTree;
 import kmlib.profiling.snapshot.WorstCall;
 
 import org.apache.log4j.Logger;
@@ -26,6 +27,11 @@ import java.util.function.Supplier;
  * one's child, and its time is part of the parent's total as well as its own.
  * A section opened with nothing open is a root.
  *
+ * <p>Roots are grouped by the origin they were opened under, so one profiler
+ * spanning two games keeps two trees rather than one that averages them. A root
+ * nobody named an origin for is the reserved
+ * {@link ProfileOrigin#UNSCOPED} one's.
+ *
  * <p>The clock is injected (defaulting to {@link System#nanoTime()}) so the
  * accumulation reads whatever time source its caller names rather than the
  * system clock.
@@ -40,7 +46,7 @@ public final class RecordingProfiler implements Profiler {
 
     private static final Logger LOG = Logger.getLogger(RecordingProfiler.class);
 
-    private final List<ProfileNodeAccumulator> rootNodes = new ArrayList<>();
+    private final List<ProfileOriginAccumulator> originGroups = new ArrayList<>();
     private final List<RecordingProfileScope> openScopes = new ArrayList<>();
     private final Set<ProfileSection> sectionsReportedOutOfOrder = new HashSet<>();
 
@@ -67,12 +73,19 @@ public final class RecordingProfiler implements Profiler {
     public ProfileScope open(ProfileSection section) {
         // No loop under this scope, so there is no per-turn state to carry: what
         // a plain section costs to open is the scope itself.
-        return openScope(section, null);
+        return openScope(resolveNode(section), null, openScopes.isEmpty());
+    }
+
+    @Override
+    public ProfileScope openRoot(ProfileOrigin origin, ProfileSection section) {
+        return openScope(resolveRootNode(origin, section), null, true);
     }
 
     @Override
     public IterationScope openIterations(PhasedSection section) {
-        return openScope(section.getSection(), new ScopeIterations(section));
+
+        return openScope(
+            resolveNode(section.getSection()), new ScopeIterations(section), openScopes.isEmpty());
     }
 
     @Override
@@ -109,17 +122,17 @@ public final class RecordingProfiler implements Profiler {
     }
 
     @Override
-    public List<ProfileNode> snapshot() {
-        var roots = new ArrayList<ProfileNode>(rootNodes.size());
-        for (var rootNode : rootNodes) {
-            roots.add(rootNode.buildNode());
+    public List<ProfileOriginTree> snapshot() {
+        var trees = new ArrayList<ProfileOriginTree>(originGroups.size());
+        for (var originGroup : originGroups) {
+            trees.add(originGroup.buildTree());
         }
-        return roots;
+        return trees;
     }
 
     @Override
     public void reset() {
-        rootNodes.clear();
+        originGroups.clear();
         // The open scopes go with the tree they were pointing into. A scope
         // closing after this finds itself off the stack and records nothing,
         // which is the right answer: its node no longer exists.
@@ -164,13 +177,16 @@ public final class RecordingProfiler implements Profiler {
         return clockNanos.getAsLong();
     }
 
-    // Both opens, since what differs between them is the state the scope carries
-    // and not what opening one means: the section lands under whatever is
-    // already open, and the scope goes on the stack.
-    private RecordingProfileScope openScope(ProfileSection section, ScopeIterations iterations) {
+    // Every open, since what differs between them is which node the span lands
+    // on and what state the scope carries, not what opening one means: the clock
+    // is read and the scope goes on the stack.
+    private RecordingProfileScope openScope(
+            ProfileNodeAccumulator node,
+            ScopeIterations iterations,
+            boolean isRoot) {
 
         var scope = new RecordingProfileScope(
-            this, resolveNode(section), clockNanos.getAsLong(), iterations);
+            this, node, clockNanos.getAsLong(), iterations, isRoot);
 
         openScopes.add(scope);
         return scope;
@@ -181,21 +197,32 @@ public final class RecordingProfiler implements Profiler {
     // Taken off the stack first, so the scope now on top is the one the ended
     // scope ran inside - including down an unwind, where the scopes above the
     // one being closed end into it before it ends into its own parent.
+    //
+    // A root's counts stop with it however deep it was opened: its node sits
+    // under an origin rather than under a row, so handing them on would add them
+    // to a row that is not its parent and cannot answer for them.
     private void endScope(RecordingProfileScope scope, long endNanos) {
 
         scope.recordSpan(endNanos);
 
-        if (!openScopes.isEmpty()) {
+        if (!scope.isRoot() && !openScopes.isEmpty()) {
             openScopes.get(openScopes.size() - 1).receiveChildCounts(scope);
         }
     }
 
     // The node a section opened right now belongs to: a child of whatever is
-    // open, or a root when nothing is.
+    // open, or a root of the reserved origin when nothing is - which is where a
+    // walk from a path that named no origin is seen rather than lost.
     private ProfileNodeAccumulator resolveNode(ProfileSection section) {
         return openScopes.isEmpty()
-            ? ProfileNodeAccumulator.resolveNodeIn(rootNodes, section)
+            ? resolveRootNode(ProfileOrigin.UNSCOPED, section)
             : openScopes.get(openScopes.size() - 1).resolveChildNode(section);
+    }
+
+    private ProfileNodeAccumulator resolveRootNode(ProfileOrigin origin, ProfileSection section) {
+        return ProfileOriginAccumulator
+            .resolveOriginIn(originGroups, origin)
+            .resolveRootNode(section);
     }
 
     // Once per section, because the sites this happens on run every frame and

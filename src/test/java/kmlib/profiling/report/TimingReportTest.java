@@ -2,6 +2,7 @@ package kmlib.profiling.report;
 
 import kmlib.profiling.PhasedSection;
 import kmlib.profiling.ProfileCounter;
+import kmlib.profiling.ProfileOrigin;
 import kmlib.profiling.ProfileSection;
 import kmlib.profiling.snapshot.CallCount;
 import kmlib.profiling.snapshot.CountSpread;
@@ -11,6 +12,7 @@ import kmlib.profiling.snapshot.PhaseTotal;
 import kmlib.profiling.snapshot.ProfileCount;
 import kmlib.profiling.snapshot.ProfileIterations;
 import kmlib.profiling.snapshot.ProfileNode;
+import kmlib.profiling.snapshot.ProfileOriginTree;
 import kmlib.profiling.snapshot.ProfileTiming;
 import kmlib.profiling.snapshot.WorstCall;
 
@@ -28,7 +30,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * columns that stays blank on the rows which never touched it, the duration bands are marked by
  * how many calls landed in each, a row whose slowest call has more to say than its duration carries
  * a second line saying it, a row whose calls ran a loop carries a line stating what one turn of it
- * cost, and neither of those lines disturbs the columns.
+ * cost, each group of roots is headed by the origin it was measured in, and none of those lines
+ * disturbs the columns.
  */
 final class TimingReportTest {
 
@@ -40,6 +43,16 @@ final class TimingReportTest {
 
     private static final String SYSTEMS_COUNTER = "systems";
     private static final String MARKETS_COUNTER = "markets";
+
+    // The game every case below is reported as having been measured in, and a second for the case
+    // about two of them. Spelled without a full stop, since one case reads a pair of them as the
+    // mark of an empty duration band.
+    private static final String ORIGIN_LABEL = "MN-6220 - Marat";
+    private static final String OTHER_ORIGIN_LABEL = "PQ-1183 - Ceres";
+
+    // What a group of roots is headed by, which is also how a case tells that heading from the
+    // rows it heads.
+    private static final String ORIGIN_HEADING_PREFIX = "origin ";
 
     // 3.000ms holding 2.000ms, so the parent's self time is a third number again.
     private static final long PARENT_TOTAL_NANOS = 3_000_000;
@@ -59,9 +72,9 @@ final class TimingReportTest {
     // The same row less its cost-each cell, which a row that counted nothing itself cannot state.
     private static final int FILLED_CELLS_PER_ROW_WITH_NO_PER_ITEM_COST = 10;
 
-    // The header and the one section under it, which is all a row with nothing to add about its
-    // slowest call may print.
-    private static final int ROWS_OF_A_HEADER_AND_ONE_SECTION = 2;
+    // The column header, the origin heading under it and the one section under that, which is all
+    // a row with nothing to add about its slowest call may print.
+    private static final int ROWS_OF_A_HEADER_AN_ORIGIN_AND_ONE_SECTION = 3;
 
     // A thousand calls in the band a microsecond opens, and three a thousand times slower in the
     // band around a millisecond - two rows a mean of 4us cannot tell apart.
@@ -93,6 +106,10 @@ final class TimingReportTest {
     private static final String LONG_WORST_CALL_TAG =
         "a tag longer than the whole row it was written under";
 
+    // The same, for the heading a group of roots is written under.
+    private static final String LONG_ORIGIN_LABEL =
+        "a seed and a name longer than the whole row beneath them";
+
     @Nested
     class Format {
 
@@ -113,7 +130,7 @@ final class TimingReportTest {
                 ProfileIterations.NO_ITERATIONS,
                 List.of(),
                 List.of());
-            var report = TimingReport.format(List.of(node));
+            var report = formatOneOrigin(List.of(node));
 
             assertThat(report)
                 .contains("SECTION", "COUNT", "AVG ms", "MIN ms", "MAX ms", "SELF ms", "TOTAL ms");
@@ -129,7 +146,7 @@ final class TimingReportTest {
         void formatIndentsASectionUnderTheOneItRanInside() {
             // The whole point of the tree in text: a reader follows a row to what it is made of by
             // reading down and to the right, rather than by matching spelled-alike prefixes.
-            var report = TimingReport.format(
+            var report = formatOneOrigin(
                 List.of(parentHoldingOneChild(PARENT_SECTION, CHILD_SECTION)));
 
             assertThat(report)
@@ -142,7 +159,7 @@ final class TimingReportTest {
         void formatSeparatesSelfTimeFromTheInclusiveTotal() {
             // A parent of 3.000ms holding a 2.000ms walk spent 1.000ms itself, which is what says
             // whether to look at the row or below it.
-            var report = TimingReport.format(
+            var report = formatOneOrigin(
                 List.of(parentHoldingOneChild(PARENT_SECTION, CHILD_SECTION)));
 
             assertThat(report)
@@ -154,10 +171,11 @@ final class TimingReportTest {
             // The name column is sized from the deepest row, not the shallowest: a child indented
             // past its parent's width would otherwise push its own numbers out of the columns the
             // header names, and a table whose rows disagree on where a column starts is unreadable.
-            var report = TimingReport.format(
+            var report = formatOneOrigin(
                 List.of(parentHoldingOneChild(SHORT_PARENT_SECTION, LONGER_CHILD_SECTION)));
 
             assertThat(List.of(report.split("\n")))
+                .filteredOn(line -> !line.startsWith(ORIGIN_HEADING_PREFIX))
                 .extracting(String::length)
                 .containsOnly(WIDEST_NAME_WIDTH + NUMERIC_COLUMNS_WIDTH);
         }
@@ -166,7 +184,7 @@ final class TimingReportTest {
         void formatHeadsAColumnGroupForEveryCounterTheTreeTouched() {
             // What a duration is read against: the row states how much it counted in all and how
             // far one call's worth spread, beside the milliseconds it took to do it.
-            var report = TimingReport.format(List.of(nodeCounting(
+            var report = formatOneOrigin(List.of(nodeCounting(
                 PARENT_SECTION, countOf(SYSTEMS_COUNTER, 300, 300, 100, 200))));
 
             assertThat(report)
@@ -179,7 +197,7 @@ final class TimingReportTest {
         void formatDividesSelfTimeByTheItemsTheRowCountedItself() {
             // 3.000ms of self time over 300 systems is 10 microseconds each - the number an
             // optimisation is judged against, and one milliseconds would round away.
-            var report = TimingReport.format(List.of(nodeCounting(
+            var report = formatOneOrigin(List.of(nodeCounting(
                 PARENT_SECTION, countOf(SYSTEMS_COUNTER, 300, 300, 300, 300))));
 
             assertThat(readFilledCells(report, PARENT_SECTION))
@@ -191,7 +209,7 @@ final class TimingReportTest {
             // A zero would say the row counted none of that thing, which is a fact worth seeing.
             // A row that does not count it at all has nothing to say, and a wide tree where every
             // row answers every counter is a table of zeroes hiding the rows that count.
-            var report = TimingReport.format(List.of(
+            var report = formatOneOrigin(List.of(
                 nodeCounting(PARENT_SECTION, countOf(SYSTEMS_COUNTER, 300, 300, 300, 300)),
                 nodeCounting(CHILD_SECTION, countOf(MARKETS_COUNTER, 40, 40, 40, 40))));
 
@@ -206,7 +224,7 @@ final class TimingReportTest {
             // The row still states the 7 counted beneath it, because that is what it is answerable
             // for. It states no cost each, because its self time bought none of those 7 - pricing
             // one against the other would charge this row for work a row below it did.
-            var report = TimingReport.format(List.of(nodeCounting(
+            var report = formatOneOrigin(List.of(nodeCounting(
                 PARENT_SECTION, countOf(SYSTEMS_COUNTER, 7, 0, 7, 7))));
 
             assertThat(readFilledCells(report, PARENT_SECTION))
@@ -219,7 +237,7 @@ final class TimingReportTest {
             // The shape a mean and a maximum cannot show: the band holding the thousand quick calls
             // reads taller than the one holding the single stall, so a row that stalled once is
             // told apart from a row that is always this slow.
-            var report = TimingReport.format(List.of(nodeSpreadOver(
+            var report = formatOneOrigin(List.of(nodeSpreadOver(
                 bandsHolding(THOUSAND_CALLS, FEW_CALLS))));
 
             assertThat(readFilledCells(report, PARENT_SECTION))
@@ -230,7 +248,7 @@ final class TimingReportTest {
         void formatShowsNoBandsForARowNoCallHasFinishedOn() {
             // A line of dots would read as calls that were all too fast to matter, which is the
             // opposite of what a row caught mid-call holds.
-            var report = TimingReport.format(List.of(nodeCounting(
+            var report = formatOneOrigin(List.of(nodeCounting(
                 PARENT_SECTION, countOf(SYSTEMS_COUNTER, 300, 300, 100, 200))));
 
             // Two dots in a row can only be empty bands: a millisecond figure carries one.
@@ -242,7 +260,7 @@ final class TimingReportTest {
         void formatWritesWhatTheSlowestCallWasDoingUnderTheRow() {
             // The one fact that says what to optimise: the maximum column carries the duration, and
             // the tag and the counters it was reached over have nowhere else to go.
-            var report = TimingReport.format(List.of(nodeWhoseWorstCall(new WorstCall(
+            var report = formatOneOrigin(List.of(nodeWhoseWorstCall(new WorstCall(
                 PARENT_TOTAL_NANOS,
                 WORST_CALL_TAG,
                 List.of(new CallCount(
@@ -258,7 +276,7 @@ final class TimingReportTest {
         void formatWritesTheSlowestCallsCountersWhereItWasNamedNothing() {
             // A call is worth a line for what it counted alone: most of the paths that count are
             // walkers, which have a tally to report and no name to give it.
-            var report = TimingReport.format(List.of(nodeWhoseWorstCall(new WorstCall(
+            var report = formatOneOrigin(List.of(nodeWhoseWorstCall(new WorstCall(
                 PARENT_TOTAL_NANOS,
                 WorstCall.NO_TAG,
                 List.of(new CallCount(
@@ -274,7 +292,7 @@ final class TimingReportTest {
         void formatMarksABandHoldingMoreCallsThanADigitCanCountAtItsWidest() {
             // The mark is a digit, so a tally past nine digits has to stop widening it: a column
             // that grew with the capture could not be read against the capture before it.
-            var report = TimingReport.format(List.of(nodeSpreadOver(
+            var report = formatOneOrigin(List.of(nodeSpreadOver(
                 bandsHolding(UNCOUNTABLY_MANY_CALLS, FEW_CALLS))));
 
             assertThat(readFilledCells(report, PARENT_SECTION))
@@ -285,19 +303,19 @@ final class TimingReportTest {
         void formatWritesNoWorstCallLineWhereItRepeatsTheMaximumColumn() {
             // A call named nothing and counting nothing has only its duration to state, and the
             // table has already stated it - so the rows whose calls are all alike stay one line.
-            var report = TimingReport.format(List.of(nodeWhoseWorstCall(
+            var report = formatOneOrigin(List.of(nodeWhoseWorstCall(
                 new WorstCall(PARENT_TOTAL_NANOS, WorstCall.NO_TAG, List.of()))));
 
             assertThat(report.lines())
-                .hasSize(ROWS_OF_A_HEADER_AND_ONE_SECTION);
+                .hasSize(ROWS_OF_A_HEADER_AN_ORIGIN_AND_ONE_SECTION);
         }
 
         @Test
         void formatWritesWhatOneTurnOfTheLoopCostInEachStep() {
             // What the row's own columns cannot say: they are per call, and a bake's cost scales
             // with the cells it turned over rather than with how often it ran.
-            var report = TimingReport.format(List.of(nodeIterating(
-                LOOP_TURNS, PHASE_TOTAL_NANOS, SLOWEST_TURN_TAG)));
+            var report = formatOneOrigin(List.of(nodeIterating(
+                LOOP_TURNS, PHASE_TOTAL_NANOS, SLOWEST_TURN_TAG, WorstCall.NO_TAG)));
 
             assertThat(report)
                 .contains("\n  iterations=2")
@@ -310,7 +328,7 @@ final class TimingReportTest {
         void formatWritesTheLoopLineUnderTheWorstCallLine() {
             // Both say something the columns do not, about different denominators - the call and
             // the turn - so both are written, the call's first since the columns are per call.
-            var report = TimingReport.format(List.of(nodeIterating(
+            var report = formatOneOrigin(List.of(nodeIterating(
                 LOOP_TURNS, PHASE_TOTAL_NANOS, SLOWEST_TURN_TAG, WORST_CALL_TAG)));
 
             assertThat(report.lines())
@@ -323,17 +341,17 @@ final class TimingReportTest {
         void formatWritesNoLoopLineForARowThatRanNone() {
             // Most rows, which would otherwise each carry a line saying they iterated over
             // nothing.
-            var report = TimingReport.format(List.of(nodeWhoseWorstCall(WorstCall.NO_CALL)));
+            var report = formatOneOrigin(List.of(nodeWhoseWorstCall(WorstCall.NO_CALL)));
 
             assertThat(report.lines())
-                .hasSize(ROWS_OF_A_HEADER_AND_ONE_SECTION);
+                .hasSize(ROWS_OF_A_HEADER_AN_ORIGIN_AND_ONE_SECTION);
         }
 
         @Test
         void formatKeepsTheColumnsAlignedAroundALoopLine() {
             // The loop line belongs to no column for the same reason the worst call's does: its
             // numbers are per turn, and its tag is a caller's own text of a caller's own length.
-            var report = TimingReport.format(List.of(nodeIterating(
+            var report = formatOneOrigin(List.of(nodeIterating(
                 LOOP_TURNS, PHASE_TOTAL_NANOS, LONG_WORST_CALL_TAG, WorstCall.NO_TAG)));
 
             assertThat(readRow(report, PARENT_SECTION).length())
@@ -345,12 +363,51 @@ final class TimingReportTest {
             // The line belongs to no column and carries a caller's own text, so measuring it would
             // widen the section column by however long that text was and push every number away
             // from the header it sits under.
-            var report = TimingReport.format(List.of(nodeWhoseWorstCall(new WorstCall(
+            var report = formatOneOrigin(List.of(nodeWhoseWorstCall(new WorstCall(
                 PARENT_TOTAL_NANOS, LONG_WORST_CALL_TAG, List.of()))));
 
             assertThat(readRow(report, PARENT_SECTION).length())
                 .isEqualTo(PARENT_SECTION.length() + NUMERIC_COLUMNS_WIDTH);
         }
+
+        @Test
+        void formatHeadsEachGroupOfRootsWithTheOriginItWasMeasuredIn() {
+            // Two games in one capture: without the headings a reader has two rows spelled alike
+            // and no way to say which save either came from, which is the one thing that would let
+            // them go back and reproduce it.
+            var report = TimingReport.format(List.of(
+                new ProfileOriginTree(
+                    ProfileOrigin.registerOrigin(ORIGIN_LABEL),
+                    List.of(nodeWhoseWorstCall(WorstCall.NO_CALL))),
+                new ProfileOriginTree(
+                    ProfileOrigin.registerOrigin(OTHER_ORIGIN_LABEL),
+                    List.of(nodeWhoseWorstCall(WorstCall.NO_CALL)))));
+
+            assertThat(report.lines())
+                .containsSequence(
+                    ORIGIN_HEADING_PREFIX + ORIGIN_LABEL,
+                    readRow(report, PARENT_SECTION),
+                    ORIGIN_HEADING_PREFIX + OTHER_ORIGIN_LABEL);
+        }
+
+        @Test
+        void formatKeepsTheColumnsAlignedAroundAnOriginHeading() {
+            // The heading belongs to no column and carries a label a caller composed, so measuring
+            // it would widen the section column by however long that label was.
+            var report = TimingReport.format(List.of(new ProfileOriginTree(
+                ProfileOrigin.registerOrigin(LONG_ORIGIN_LABEL),
+                List.of(nodeWhoseWorstCall(WorstCall.NO_CALL)))));
+
+            assertThat(readRow(report, PARENT_SECTION).length())
+                .isEqualTo(PARENT_SECTION.length() + NUMERIC_COLUMNS_WIDTH);
+        }
+    }
+
+    // The report of one game's roots, which is what every case not about the grouping itself is
+    // reading: what a row says is no different for having a second game's rows below it.
+    private static String formatOneOrigin(List<ProfileNode> roots) {
+        return TimingReport.format(
+            List.of(new ProfileOriginTree(ProfileOrigin.registerOrigin(ORIGIN_LABEL), roots)));
     }
 
     // One call of a parent holding one call of a child, which is the smallest tree that has a

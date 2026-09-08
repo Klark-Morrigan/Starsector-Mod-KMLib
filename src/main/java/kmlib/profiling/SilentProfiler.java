@@ -1,6 +1,6 @@
 package kmlib.profiling;
 
-import kmlib.profiling.snapshot.ProfileNode;
+import kmlib.profiling.snapshot.ProfileOriginTree;
 
 import java.util.List;
 import java.util.function.Supplier;
@@ -30,6 +30,13 @@ public final class SilentProfiler implements Profiler {
     }
 
     @Override
+    public ProfileScope openRoot(ProfileOrigin origin, ProfileSection section) {
+        // The origin is dropped with the span it would have grouped: nothing is
+        // accumulating, so there is no tree for it to head.
+        return SilentProfileScope.INSTANCE;
+    }
+
+    @Override
     public IterationScope openIterations(PhasedSection section) {
         // The same shared scope: a loop's turns are as free to leave unmeasured
         // as the section holding them, and the caller marks them either way.
@@ -52,7 +59,7 @@ public final class SilentProfiler implements Profiler {
     }
 
     @Override
-    public List<ProfileNode> snapshot() {
+    public List<ProfileOriginTree> snapshot() {
         // A shared immutable empty list, so reporting through a silent profiler
         // allocates nothing either.
         return List.of();
