@@ -223,7 +223,10 @@ No Starsector API on the signature.
   counters a call is filed under, the scope a section is opened as, the
   sections whose calls run a loop, declared with the steps one turn is split
   into, and the origin a root and everything under it is grouped by, so a
-  capture says which game each row was measured in.
+  capture says which game each row was measured in. A shared read holding no
+  scope of its own counts onto whichever section is open, and onto a reserved
+  row of the reserved origin when none is, so work from an unprofiled path is
+  seen rather than dropped.
 - [`profiling/recording/`](src/main/java/kmlib/profiling/recording/) - the
   profiler that keeps what it is handed, and the open stack and per-row tallies
   it accumulates a capture in.
@@ -294,7 +297,12 @@ No Starsector API on the signature.
   a caller holds directly rather than reaching through a register.
 - [`starsector/`](src/main/java/kmlib/starsector/) - how a sector is named to a
   reader who has to match it back to a save: the seed it was generated from
-  with the player beside it, which is the pair a save browser shows.
+  with the player beside it, which is the pair a save browser shows. Plus what
+  the reads below report having traversed - the walks they made, and the
+  systems, markets, entities and colonies those walks touched - counted where
+  the sector is actually walked, so a caller states how much it touched without
+  having written a profiling line, and a second traversal shows on the row that
+  made it.
 - [`starsector/colonies/`](src/main/java/kmlib/starsector/colonies/) - the
   shared colony set every "who is here" read selects through - one rule, one
   entry per place and owner, unfogged - stated once over a location and read

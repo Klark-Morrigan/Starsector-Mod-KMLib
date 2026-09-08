@@ -5,6 +5,7 @@ import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
+import kmlib.starsector.SectorWalkCounters;
 import kmlib.starsector.geometry.StarsectorPoints;
 
 import java.util.ArrayList;
@@ -55,7 +56,16 @@ public final class LocationMarkets {
             return List.of();
         }
         var markets = sector.getEconomy().getMarkets(location);
-        return markets == null ? List.of() : markets;
+
+        if (markets == null) {
+            return List.of();
+        }
+        // Every read of the economy's listing is counted, this one included when a
+        // caller above has already made it: two reads of one place are two reads,
+        // and a row that reported them as one would hide the second.
+        SectorWalkCounters.countMarketsRead(markets.size());
+
+        return markets;
     }
 
     /**
@@ -100,7 +110,9 @@ public final class LocationMarkets {
         var seenMarkets = new ArrayList<>(listedMarkets);
         var unlistedMarkets = new ArrayList<MarketAPI>();
 
-        for (var entity : location.getAllEntities()) {
+        var entities = location.getAllEntities();
+
+        for (var entity : entities) {
             var market = entity == null ? null : entity.getMarket();
 
             if (market != null && !isAlreadyPresent(seenMarkets, market)) {
@@ -108,6 +120,13 @@ public final class LocationMarkets {
                 unlistedMarkets.add(market);
             }
         }
+        // The entities are what this read costs - everything in the place is looked
+        // at - while the markets are what it produced. Both, since neither answers
+        // the other: a place with one unlisted colony among two thousand bodies is
+        // a cheap answer to state and an expensive one to find.
+        SectorWalkCounters.countEntitiesVisited(entities.size());
+        SectorWalkCounters.countMarketsRead(unlistedMarkets.size());
+
         return unlistedMarkets;
     }
 

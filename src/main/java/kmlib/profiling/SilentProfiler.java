@@ -44,6 +44,13 @@ public final class SilentProfiler implements Profiler {
     }
 
     @Override
+    public void addCountToOpenScope(ProfileCounter counter, long amount) {
+        // Dropped like every other span and amount here, which is what lets a
+        // walker count what it traverses unconditionally: with nothing bound the
+        // counting is a call and never a tally.
+    }
+
+    @Override
     public void measure(String section, Runnable work) {
         work.run();
     }

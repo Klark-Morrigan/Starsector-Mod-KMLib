@@ -16,7 +16,21 @@ package kmlib.profiling;
  */
 public final class ProfileSection {
 
+    // Declared before the reserved section below, since that constant is
+    // registered through it and static fields initialise in the order they are
+    // written.
     private static final NameRegistry<ProfileSection> SECTIONS_BY_NAME = new NameRegistry<>();
+
+    /**
+     * Where a count added with no scope open lands, under
+     * {@link ProfileOrigin#UNSCOPED}.
+     *
+     * <p>Each such count is one call of this row, timed at nothing: no scope
+     * bracketed it, so there is no duration to report and only the amount is
+     * worth having. Kept rather than dropped, since a traversal from a path
+     * nobody profiled is the first thing a reader hunting stray work looks for.
+     */
+    public static final ProfileSection UNSCOPED_COUNTS = registerSection("counts");
 
     private final String name;
 

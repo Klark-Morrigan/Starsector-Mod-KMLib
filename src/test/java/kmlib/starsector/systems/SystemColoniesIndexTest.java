@@ -2,6 +2,8 @@ package kmlib.starsector.systems;
 
 import com.fs.starfarer.api.campaign.SectorAPI;
 
+import kmlib.starsector.SectorWalkCounters;
+import kmlib.starsector.WalkCountCapture;
 import kmlib.starsector.colonies.Colonies;
 import kmlib.starsector.colonies.Colony;
 import kmlib.starsector.colonies.SystemColonies;
@@ -81,6 +83,23 @@ final class SystemColoniesIndexTest {
             index.readColoniesIn(fixture.getSystem());
 
             verify(fixture.getSystem(), times(1)).getAllEntities();
+        }
+
+        @Test
+        void counts_one_system_visited_however_often_it_is_asked_about() {
+            // The counter a pass reads to check the one-walk-per-system rule it was given the
+            // index for - and it is the walk that is counted, not the ask, so a memo hit adds
+            // nothing.
+            var fixture = buildCorvusHoldingOneColony();
+            var index = new SystemColoniesIndex(fixture.getSector());
+
+            var counts = WalkCountCapture.captureCountsOf(() -> {
+                index.readColoniesIn(fixture.getSystem());
+                index.readColoniesIn(fixture.getSystem());
+            });
+
+            assertThat(counts.readCount(SectorWalkCounters.SYSTEMS_VISITED))
+                .isEqualTo(1L);
         }
 
         @Test

@@ -6,6 +6,8 @@ import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.econ.EconomyAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
+import kmlib.starsector.SectorWalkCounters;
+import kmlib.starsector.WalkCountCapture;
 import kmlib.testfixtures.starsector.markets.MarketPlacementFixture;
 import kmlib.testfixtures.starsector.markets.MarketStateFixture;
 
@@ -105,6 +107,23 @@ final class LocationMarketsTest {
 
             assertThat(LocationMarkets.readMarkets(sectorMock, locationMock))
                 .isEmpty();
+        }
+
+        @Test
+        void counts_the_listing_on_every_read_of_it() {
+            // Two reads of one place are two reads, whoever made them: the row that asked states
+            // both, which is what makes a place read twice for one answer visible at all.
+            var colony = MarketStateFixture.buildColony("hegemony");
+            var locationMock = mock(LocationAPI.class);
+            var sector = buildSectorListing(locationMock, colony);
+
+            var counts = WalkCountCapture.captureCountsOf(() -> {
+                LocationMarkets.readMarkets(sector, locationMock);
+                LocationMarkets.readMarkets(sector, locationMock);
+            });
+
+            assertThat(counts.readCount(SectorWalkCounters.MARKETS_READ))
+                .isEqualTo(2L);
         }
     }
 
@@ -234,6 +253,28 @@ final class LocationMarketsTest {
                     sectorMock,
                     mock(LocationAPI.class)))
                 .isEmpty();
+        }
+
+        @Test
+        void counts_the_entities_it_scanned_beside_the_markets_it_produced() {
+            // The entities are what this read costs and the markets are what it yielded, and
+            // neither answers the other: a place with one unlisted colony among many bodies is a
+            // cheap answer to state and an expensive one to find.
+            var listed = MarketPlacementFixture.buildMarketOnBody("ancyra");
+            var academy = MarketPlacementFixture.buildMarketOnBody("academy_station");
+            var locationMock = mock(LocationAPI.class);
+            var sector = buildSectorListing(locationMock, listed);
+
+            MarketPlacementFixture.placeMarketsIn(locationMock, listed, academy);
+
+            var counts = WalkCountCapture.captureCountsOf(
+                () -> LocationMarkets.readMarketsUnlistedByEconomy(sector, locationMock));
+
+            assertThat(counts.readCount(SectorWalkCounters.ENTITIES_VISITED))
+                .isEqualTo(2L);
+            // The listing this read makes of its own, plus the one unlisted market it found.
+            assertThat(counts.readCount(SectorWalkCounters.MARKETS_READ))
+                .isEqualTo(2L);
         }
     }
 

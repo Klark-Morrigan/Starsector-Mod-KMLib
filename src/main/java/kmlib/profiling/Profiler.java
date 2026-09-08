@@ -89,6 +89,26 @@ public interface Profiler {
     IterationScope openIterations(PhasedSection section);
 
     /**
+     * Adds {@code amount} to what the innermost open scope has counted of
+     * {@code counter}, for the shared reads that count what they traverse
+     * without owning a scope of their own.
+     *
+     * <p>What lets the places the sector is actually walked report their size on
+     * whichever row asked for the walk. The count is added once, where the
+     * traversal happens, and rolls up like any other: a caller that never wrote
+     * a profiling line still says how much it touched, and a second traversal
+     * nobody meant to make shows on the row that made it.
+     *
+     * <p>A count arriving with nothing open lands on
+     * {@link ProfileSection#UNSCOPED_COUNTS} under
+     * {@link ProfileOrigin#UNSCOPED} rather than being dropped.
+     *
+     * @param counter what is being counted
+     * @param amount  how many to add to what the open scope has counted already
+     */
+    void addCountToOpenScope(ProfileCounter counter, long amount);
+
+    /**
      * Times {@code work} and records its duration under {@code section}.
      *
      * @param section the name to accumulate the duration under

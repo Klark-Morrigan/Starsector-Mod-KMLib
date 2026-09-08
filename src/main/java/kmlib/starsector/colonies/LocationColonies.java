@@ -4,6 +4,7 @@ import com.fs.starfarer.api.campaign.LocationAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
+import kmlib.starsector.SectorWalkCounters;
 import kmlib.starsector.markets.DecivilisedMarkets;
 import kmlib.starsector.markets.LocationMarkets;
 import kmlib.starsector.markets.MarketColocation;
@@ -71,6 +72,10 @@ public final class LocationColonies {
             // cannot arrive at a second.
             colonies.add(new Colony(market, isListedByEconomy(listedMarkets, market)));
         }
+        // Counted on the one read every colony set is selected through, so a row
+        // states the colonies it went over however many places it asked about.
+        SectorWalkCounters.countColoniesRead(colonies.size());
+
         return new Colonies(colonies);
     }
 

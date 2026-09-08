@@ -3,6 +3,7 @@ package kmlib.starsector.systems;
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 
+import kmlib.starsector.SectorWalkCounters;
 import kmlib.starsector.colonies.Colonies;
 import kmlib.starsector.colonies.SystemColonies;
 import kmlib.text.KmlibStrings;
@@ -31,6 +32,9 @@ import java.util.Map;
  * has since moved on. Not safe for concurrent use, a pass being one thread's work.
  */
 public final class SystemColoniesIndex {
+
+    // A read is of one system, and the counter takes an amount rather than a call.
+    private static final long ONE_SYSTEM = 1L;
 
     private final Map<String, Colonies> coloniesBySystemId = new HashMap<>();
     private final SectorAPI sector;
@@ -80,11 +84,11 @@ public final class SystemColoniesIndex {
             // Nothing to key the memo on. Reading afresh costs a walk a second ask would have
             // saved, which is the honest price of an unkeyable system - pooling every one of
             // them under a shared key would hand one system's colonies to another.
-            return SystemColonies.readColoniesIn(sector, system);
+            return readAndCountColoniesIn(system);
         }
         return coloniesBySystemId.computeIfAbsent(
             systemId,
-            id -> SystemColonies.readColoniesIn(sector, system));
+            id -> readAndCountColoniesIn(system));
     }
 
     /**
@@ -109,6 +113,16 @@ public final class SystemColoniesIndex {
             return memoisedColonies;
         }
         return readColoniesIn(findSystemById(systemId));
+    }
+
+    // One system read for real, counted as the visit it is. Only the misses reach here, which is
+    // what makes the counter say how many systems a pass actually walked rather than how many
+    // times it asked - the difference between the two being the whole point of holding an index.
+    private Colonies readAndCountColoniesIn(StarSystemAPI system) {
+
+        SectorWalkCounters.countSystemsVisited(ONE_SYSTEM);
+
+        return SystemColonies.readColoniesIn(sector, system);
     }
 
     // The system carrying this id, resolving the sector's systems once and keeping the result.

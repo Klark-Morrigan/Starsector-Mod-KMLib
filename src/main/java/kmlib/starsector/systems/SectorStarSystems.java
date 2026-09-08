@@ -3,6 +3,7 @@ package kmlib.starsector.systems;
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 
+import kmlib.starsector.SectorWalkCounters;
 import kmlib.text.KmlibStrings;
 
 import java.util.ArrayList;
@@ -48,12 +49,18 @@ public final class SectorStarSystems {
         if (sector == null) {
             return positions;
         }
-        for (var system : sector.getStarSystems()) {
+        var systems = sector.getStarSystems();
+
+        for (var system : systems) {
             var location = system.getLocation();
             if (location != null) {
                 positions.add(new double[] {location.x, location.y});
             }
         }
+        // Counted where the traversal happens, so the row that asked for the layout
+        // states it whether or not that caller ever opened a section of its own.
+        SectorWalkCounters.countSectorWalk(systems.size());
+
         return positions;
     }
 
@@ -80,7 +87,9 @@ public final class SectorStarSystems {
         if (sector == null) {
             return positions;
         }
-        for (var system : sector.getStarSystems()) {
+        var systems = sector.getStarSystems();
+
+        for (var system : systems) {
             var location = system.getLocation();
             if (location == null) {
                 continue;
@@ -94,6 +103,10 @@ public final class SectorStarSystems {
                 system.getId(),
                 new double[] {location.x, location.y});
         }
+        // The whole list was gone over whatever the predicate kept, so the walk is
+        // charged at what it reached rather than at what survived the filter.
+        SectorWalkCounters.countSectorWalk(systems.size());
+
         return positions;
     }
 
@@ -131,9 +144,13 @@ public final class SectorStarSystems {
         if (sector == null) {
             return systemById;
         }
-        for (var system : sector.getStarSystems()) {
+        var systems = sector.getStarSystems();
+
+        for (var system : systems) {
             systemById.put(system.getId(), system);
         }
+        SectorWalkCounters.countSectorWalk(systems.size());
+
         return systemById;
     }
 
@@ -153,11 +170,22 @@ public final class SectorStarSystems {
         if (sector == null || !KmlibStrings.hasText(id)) {
             return null;
         }
+        StarSystemAPI found = null;
+        var systemsExamined = 0;
+
         for (var system : sector.getStarSystems()) {
+            systemsExamined++;
             if (id.equals(system.getId())) {
-                return system;
+                found = system;
+                break;
             }
         }
-        return null;
+        // Left on one exit so a match part way through still reports the walk, and
+        // reports it at what it actually went over: a lookup that stops at the
+        // first system did not visit the sector, and a row saying it did would hide
+        // the very cost this counts - many lookups each walking from the start.
+        SectorWalkCounters.countSectorWalk(systemsExamined);
+
+        return found;
     }
 }

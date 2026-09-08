@@ -102,7 +102,8 @@ No Starsector API on the signature.
   split into and opened as a scope that counts the turns and charges each step
   to its slot. A root names the origin it and everything under it was measured
   in, and a section opened under no root lands in a reserved group rather than
-  being dropped. A capture comes back as a tree of rows per origin, each row
+  being dropped. A shared read holding no scope of its own counts onto whatever
+  section is open, and onto a reserved row of that group when none is. A capture comes back as a tree of rows per origin, each row
   carrying its count, total, min, max, average and self time, its counters with
   their spread per call, its slowest call kept with that call's tag and
   counters, what its loops ran per step and per turn with the slowest turn
@@ -153,7 +154,10 @@ No Starsector API on the signature.
   answered for its mini-map.
 - **`kmlib.starsector`** - describing a sector to a reader who has to match it
   back to a save: its seed with the player's name beside it, the pair a save
-  browser shows, and the seed alone where there is no player yet.
+  browser shows, and the seed alone where there is no player yet. Plus what the
+  sector's shared reads report having traversed - the walks they made, and the
+  systems, markets, entities and colonies those walks touched - counted where
+  the sector is walked and charged to whichever section the caller had open.
 - **`kmlib.starsector.colonies`** - the shared colony set every "who is here"
   read selects through, stated once over a location and read per kind of place
   above it: a star system, hyperspace, and the whole sector. Each colony

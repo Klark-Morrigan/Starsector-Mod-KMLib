@@ -6,6 +6,8 @@ import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.campaign.econ.EconomyAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
+import kmlib.starsector.SectorWalkCounters;
+import kmlib.starsector.WalkCountCapture;
 import kmlib.testfixtures.starsector.colonies.ColonyMarketFixture;
 import kmlib.testfixtures.starsector.colonies.ColonyPlacementFixture;
 
@@ -134,6 +136,27 @@ final class SectorColoniesTest {
         void yields_nothing_for_a_null_sector() {
             assertThat(SectorColonies.readColonies(null))
                 .isEmpty();
+        }
+
+        @Test
+        void counts_one_walk_over_the_systems_and_the_colonies_it_selected() {
+            // The sector-wide read walks the system list itself rather than through the system
+            // reader, so what it costs is stated here or nowhere. The colonies come from the one
+            // selection every set is read through, hyperspace's included.
+            var sector = new SectorFixture();
+
+            sector.addSystemHolding(ColonyMarketFixture.buildVisibleColony("hegemony"));
+            sector.setHyperspaceHolding(ColonyMarketFixture.buildVisibleColony("independent"));
+
+            var counts = WalkCountCapture.captureCountsOf(
+                () -> SectorColonies.readColonies(sector.getSector()));
+
+            assertThat(counts.readCount(SectorWalkCounters.SECTOR_WALKS))
+                .isEqualTo(1L);
+            assertThat(counts.readCount(SectorWalkCounters.SYSTEMS_VISITED))
+                .isEqualTo(1L);
+            assertThat(counts.readCount(SectorWalkCounters.COLONIES_READ))
+                .isEqualTo(2L);
         }
     }
 

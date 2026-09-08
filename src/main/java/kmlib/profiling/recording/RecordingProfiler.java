@@ -2,6 +2,7 @@ package kmlib.profiling.recording;
 
 import kmlib.profiling.IterationScope;
 import kmlib.profiling.PhasedSection;
+import kmlib.profiling.ProfileCounter;
 import kmlib.profiling.ProfileOrigin;
 import kmlib.profiling.ProfileScope;
 import kmlib.profiling.ProfileSection;
@@ -46,6 +47,11 @@ public final class RecordingProfiler implements Profiler {
 
     private static final Logger LOG = Logger.getLogger(RecordingProfiler.class);
 
+    // What a call nothing timed is worth: a count that arrived with no scope open
+    // has a size but no span, and reporting a duration nobody measured would put
+    // a number in the one column that is meant to be read as measured.
+    private static final long UNTIMED_CALL_NANOS = 0L;
+
     private final List<ProfileOriginAccumulator> originGroups = new ArrayList<>();
     private final List<RecordingProfileScope> openScopes = new ArrayList<>();
     private final Set<ProfileSection> sectionsReportedOutOfOrder = new HashSet<>();
@@ -86,6 +92,18 @@ public final class RecordingProfiler implements Profiler {
     @Override
     public IterationScope openIterations(PhasedSection section) {
         return openNestedScope(section.getSection(), new ScopeIterations(section));
+    }
+
+    @Override
+    public void addCountToOpenScope(ProfileCounter counter, long amount) {
+
+        var openScope = resolveInnermostOpenScope();
+
+        if (openScope == null) {
+            recordUnscopedCount(counter, amount);
+            return;
+        }
+        openScope.addCount(counter, amount);
     }
 
     @Override
@@ -209,6 +227,19 @@ public final class RecordingProfiler implements Profiler {
 
         scope.recordSpan(endNanos);
         scope.handCountsToParentScope();
+    }
+
+    // What a count with nothing open is kept as: one call of the reserved row,
+    // timed at nothing, no scope having bracketed it. Kept rather than dropped -
+    // a traversal from a path nobody profiled is the one number a capture most
+    // needs to name, and a reader cannot go looking for what was never reported.
+    private void recordUnscopedCount(ProfileCounter counter, long amount) {
+
+        var callCounts = new ArrayList<ScopeCount>(1);
+
+        ScopeCount.resolveCountIn(callCounts, counter).addSelfAmount(amount);
+        resolveRootNode(ProfileOrigin.UNSCOPED, ProfileSection.UNSCOPED_COUNTS)
+            .addSpan(UNTIMED_CALL_NANOS, callCounts, WorstCall.NO_TAG);
     }
 
     // The node a section opened right now belongs to: a child of whatever is

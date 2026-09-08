@@ -2,6 +2,8 @@ package kmlib.starsector.colonies;
 
 import com.fs.starfarer.api.campaign.SectorAPI;
 
+import kmlib.starsector.SectorWalkCounters;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -69,6 +71,9 @@ public final class SectorColonies {
             for (var system : systems) {
                 colonies.addAll(SystemColonies.readColoniesIn(sector, system).colonies());
             }
+            // The sector-wide read walks the system list itself rather than through
+            // the system reader, so the walk is counted here or nowhere.
+            SectorWalkCounters.countSectorWalk(systems.size());
         }
         colonies.addAll(HyperspaceColonies.readColonies(sector).colonies());
 

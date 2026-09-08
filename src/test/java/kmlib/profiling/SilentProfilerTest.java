@@ -77,6 +77,22 @@ final class SilentProfilerTest {
     }
 
     @Nested
+    class AddCountToOpenScope {
+
+        @Test
+        void countingWithNothingOpenKeepsNothing() {
+            // What makes a shared read free to count what it traverses: with no readout bound
+            // there is no open scope to charge and no reserved row to fall back to.
+            SilentProfiler.INSTANCE.addCountToOpenScope(
+                ProfileCounter.registerCounter("systems"),
+                400);
+
+            assertThat(SilentProfiler.INSTANCE.snapshot())
+                .isEmpty();
+        }
+    }
+
+    @Nested
     class TagCall {
 
         @Test
