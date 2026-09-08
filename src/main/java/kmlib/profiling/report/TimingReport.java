@@ -129,14 +129,14 @@ public final class TimingReport {
     // The second line under a row: what its worst call took, what it was
     // called, and what each counter stood at when it ended.
     private static final String WORST_CALL_PREFIX = "worst ";
+    private static final String MILLIS_UNIT = "ms";
+    private static final String TAG_QUOTE = "\"";
+    private static final String COUNT_ASSIGNMENT = "=";
 
     // What the row broke, written on that same line: the call it names is the
     // breaching one, and the two apart would be a finding and its evidence on
     // two lines.
     private static final String OVER_BUDGET_PREFIX = "over budget: ";
-    private static final String MILLIS_UNIT = "ms";
-    private static final String TAG_QUOTE = "\"";
-    private static final String COUNT_ASSIGNMENT = "=";
 
     // The loop line under a row: the turns, what one of them cost in each step,
     // and the slowest of them.

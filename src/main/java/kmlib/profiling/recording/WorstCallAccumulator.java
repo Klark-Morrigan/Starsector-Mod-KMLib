@@ -1,5 +1,6 @@
 package kmlib.profiling.recording;
 
+import kmlib.profiling.BudgetBreach;
 import kmlib.profiling.snapshot.CallCount;
 import kmlib.profiling.snapshot.WorstCall;
 
@@ -7,58 +8,56 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The slowest call one node has seen so far, kept with what it was doing.
+ * The worst call one node has seen so far, kept with what it was doing: the
+ * slowest, until one breaks what the section allows.
  *
  * <p>Holds whether it has seen a call itself rather than reading the node's
  * tally of them: what makes a call the worst is that nothing slower has closed,
  * which has nothing to do with how a span or a counter is folded in, and a rule
  * sharing another's state is a rule that breaks when that other one moves.
  *
- * <p>A call that broke the section's budget displaces that rule. Once one has
- * been kept, the record is the breach's and duration decides nothing: what a
- * reader wants beside a flagged row is the call that broke it, and a fault can
- * be over faster than the calls that behaved.
+ * <p>The breach it is holding is what says the rule has changed, rather than a
+ * flag beside it: once one has been kept the record is the breach's and duration
+ * decides nothing, and a row's finding and the call that produced it can never
+ * come apart because they are one answer.
  */
 final class WorstCallAccumulator {
 
     private boolean hasObservedCall;
-    private boolean hasKeptBreachingCall;
     private long durationNanos;
     private String tag = WorstCall.NO_TAG;
     private List<CallCount> counts = List.of();
+    private BudgetBreach budgetBreach = BudgetBreach.NO_BREACH;
 
     /**
-     * Offers one ended call, which is kept only while nothing slower has
-     * closed - so what is held is always the call the row's maximum reports,
-     * and what it was doing is read beside that duration rather than looked for
-     * in a log afterwards.
+     * Offers one ended call, kept while nothing slower has closed - so what is
+     * held is the call the row's maximum reports, and what it was doing is read
+     * beside that duration rather than looked for in a log afterwards - and kept
+     * unconditionally where it broke its budget, since a fault can be over
+     * faster than the calls that behaved.
      *
      * @param elapsedNanos how long the call took
      * @param callCounts   what the call counted, empty when it counted nothing
      * @param tag          what the caller named the call, {@link WorstCall#NO_TAG}
      *                     when it named nothing
+     * @param breach       what the call broke of its section's budget,
+     *                     {@link BudgetBreach#NO_BREACH} when it broke nothing
      */
-    void addCall(long elapsedNanos, List<ScopeCount> callCounts, String tag) {
+    void addCall(
+            long elapsedNanos,
+            List<ScopeCount> callCounts,
+            String tag,
+            BudgetBreach breach) {
 
-        if (hasKeptBreachingCall || (hasObservedCall && elapsedNanos <= durationNanos)) {
+        if (breach.hasBreached()) {
+            budgetBreach = breach;
+        } else if (!isWorseThanTheRecord(elapsedNanos)) {
             return;
         }
-        keepCall(elapsedNanos, callCounts, tag);
-    }
-
-    /**
-     * Takes one ended call that broke its section's budget, which becomes the
-     * record whatever it took and whatever has closed before it.
-     *
-     * @param elapsedNanos how long the call took
-     * @param callCounts   what the call counted, empty when it counted nothing
-     * @param tag          what the caller named the call, {@link WorstCall#NO_TAG}
-     *                     when it named nothing
-     */
-    void keepBreachingCall(long elapsedNanos, List<ScopeCount> callCounts, String tag) {
-
-        hasKeptBreachingCall = true;
-        keepCall(elapsedNanos, callCounts, tag);
+        hasObservedCall = true;
+        durationNanos = elapsedNanos;
+        this.tag = tag;
+        counts = copyCallCounts(callCounts);
     }
 
     /**
@@ -69,12 +68,20 @@ final class WorstCallAccumulator {
         return hasObservedCall ? new WorstCall(durationNanos, tag, counts) : WorstCall.NO_CALL;
     }
 
-    private void keepCall(long elapsedNanos, List<ScopeCount> callCounts, String tag) {
+    /**
+     * @return what the kept call broke, which is what marks the row a snapshot
+     *         is built from, or {@link BudgetBreach#NO_BREACH} where no call
+     *         here has broken anything
+     */
+    BudgetBreach getBudgetBreach() {
+        return budgetBreach;
+    }
 
-        hasObservedCall = true;
-        durationNanos = elapsedNanos;
-        this.tag = tag;
-        counts = copyCallCounts(callCounts);
+    // A call takes the record while nothing slower has closed - and never once a
+    // breach has been kept, a call that stayed inside the budget not being what
+    // a flagged row is read for.
+    private boolean isWorseThanTheRecord(long elapsedNanos) {
+        return !budgetBreach.hasBreached() && (!hasObservedCall || elapsedNanos > durationNanos);
     }
 
     // What one call's counters stood at, frozen out of the tallies the ended

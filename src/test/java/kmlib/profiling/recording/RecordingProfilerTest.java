@@ -272,7 +272,7 @@ final class RecordingProfilerTest {
             // The finding a table cannot state on its own, and the reason it is a warning as well
             // as a row: a pass that walked the sector twice does it on every frame it runs, so the
             // second line would say nothing the first did not.
-            var section = registerBoundedSection(
+            var section = ProfileSection.registerSection(
                 "test.budget.walksCounted",
                 ProfileBudget.allowingCountPerCall(
                     ProfileCounter.registerCounter(SYSTEMS_COUNTER), ONE_ITEM));
@@ -294,7 +294,7 @@ final class RecordingProfilerTest {
         @Test
         void marksARowWhoseCallRanLongerThanItsSectionAllows() {
 
-            var section = registerBoundedSection(
+            var section = ProfileSection.registerSection(
                 "test.budget.durationRun",
                 ProfileBudget.allowingDurationPerCall(() -> ONE_MILLISECOND_IN_NANOS));
 
@@ -309,7 +309,7 @@ final class RecordingProfilerTest {
         @Test
         void marksNothingOnARowWhoseCallsStayedInsideItsBudget() {
 
-            var section = registerBoundedSection(
+            var section = ProfileSection.registerSection(
                 "test.budget.inside",
                 ProfileBudget.allowingDurationPerCall(() -> ONE_MILLISECOND_IN_NANOS));
 
@@ -325,7 +325,7 @@ final class RecordingProfilerTest {
         void keepsABreachingCallAsTheWorstOneHoweverFastItWas() {
             // What is worth looking at on a flagged row is the call that broke the bound, and a
             // walk too many can be over in microseconds while the calls that behaved took longer.
-            var section = registerBoundedSection(
+            var section = ProfileSection.registerSection(
                 "test.budget.worstCall",
                 ProfileBudget.allowingCountPerCall(
                     ProfileCounter.registerCounter(SYSTEMS_COUNTER), ONE_ITEM));
@@ -830,6 +830,23 @@ final class RecordingProfilerTest {
             assertThat(roots.get(0).getTiming().getTotalNanos())
                 .isEqualTo(20);
         }
+
+        @Test
+        void marksARowWhoseHandedOverSpanBrokeItsSectionsBudget() {
+            // A span the caller timed itself is a call of that section like any other, so the
+            // bound holds over it too - a site that has not been converted to a scope is not a
+            // site the budget stops applying to.
+            var section = ProfileSection.registerSection(
+                "test.budget.recordedSpan",
+                ProfileBudget.allowingDurationPerCall(() -> ONE_MILLISECOND_IN_NANOS));
+
+            var profiler = new RecordingProfiler(new ScriptedClock());
+
+            profiler.record(section.getName(), TEN_MILLISECONDS_IN_NANOS);
+
+            assertThat(readRoots(profiler).get(0).getBudgetBreach().describeBreach())
+                .isEqualTo("1.00ms allowed per call");
+        }
     }
 
     @Nested
@@ -1165,6 +1182,28 @@ final class RecordingProfilerTest {
         }
 
         @Test
+        void reportsABreachAgainInTheCaptureAfterAClearedOne() {
+            // "Said once" is once per capture, not once per session: the capture a breach was
+            // reported against is gone, and a reader who cleared the timings to watch one pass
+            // would otherwise be told nothing about the pass they cleared for.
+            var section = ProfileSection.registerSection(
+                "test.budget.acrossAReset",
+                ProfileBudget.allowingDurationPerCall(() -> ONE_MILLISECOND_IN_NANOS));
+
+            var profiler = new RecordingProfiler(
+                new ScriptedClock(0, TEN_MILLISECONDS_IN_NANOS, 0, TEN_MILLISECONDS_IN_NANOS));
+
+            var messages = captureLogWhile(() -> {
+                profiler.open(section).close();
+                profiler.reset();
+                profiler.open(section).close();
+            });
+
+            assertThat(messages)
+                .hasSize(2);
+        }
+
+        @Test
         void dropsAScopeThatWasOpenWhenTheTimingsWereCleared() {
             // Its node went with the tree, so its close has nowhere to land and must not raise a
             // new root out of a call that began before the reader asked for a clean slate.
@@ -1178,13 +1217,6 @@ final class RecordingProfilerTest {
             assertThat(profiler.snapshot())
                 .isEmpty();
         }
-    }
-
-    // A section stating what one of its calls is allowed. Named per case, a registered section
-    // being one instance for the life of the JVM and its bound the one it was first registered
-    // with.
-    private static ProfileSection registerBoundedSection(String name, ProfileBudget budget) {
-        return ProfileSection.registerSection(name, budget);
     }
 
     // What the profiler wrote while the work ran. The appender is removed afterwards whatever the

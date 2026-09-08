@@ -33,11 +33,6 @@ final class ProfileNodeAccumulator {
     // most rows never run one.
     private IterationTally iterations;
 
-    // What the last call to break this section's budget did. Kept once broken:
-    // a finding is about the pass that produced it, and a later call staying
-    // inside the bound does not undo the one that did not.
-    private BudgetBreach budgetBreach = BudgetBreach.NO_BREACH;
-
     ProfileNodeAccumulator(ProfileSection section) {
         this.section = section;
     }
@@ -89,17 +84,12 @@ final class ProfileNodeAccumulator {
         // are what remember that.
         recordCallCounts(callCounts);
 
+        // The verdict goes to the record rather than being kept beside it: a
+        // breaching call is what the row is read for, so it is the record's job
+        // to know that it is holding one.
         var breach = findBreachInCall(elapsedNanos, callCounts);
 
-        // A breaching call is what the row is read for, so it takes the record
-        // whether or not it was the slowest: a walk too many can be over in
-        // microseconds and still be the only call worth looking at.
-        if (breach.hasBreached()) {
-            budgetBreach = breach;
-            worstCall.keepBreachingCall(elapsedNanos, callCounts, tag);
-        } else {
-            worstCall.addCall(elapsedNanos, callCounts, tag);
-        }
+        worstCall.addCall(elapsedNanos, callCounts, tag, breach);
         spans.addSpan(elapsedNanos);
         return breach;
     }
@@ -140,7 +130,7 @@ final class ProfileNodeAccumulator {
             section,
             spans.buildTiming(),
             worstCall.buildWorstCall(),
-            budgetBreach,
+            worstCall.getBudgetBreach(),
             iterations == null ? ProfileIterations.NO_ITERATIONS : iterations.buildIterations(),
             counts,
             childNodes);

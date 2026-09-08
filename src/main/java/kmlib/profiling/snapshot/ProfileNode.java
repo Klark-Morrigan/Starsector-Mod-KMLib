@@ -9,9 +9,8 @@ import java.util.List;
 /**
  * One section at one place in the tree: what its calls cost, how much of that
  * it spent itself rather than beneath it, what it counted while it ran, what
- * its slowest call was doing, whether any call went over what the section
- * allows, what the loops inside those calls ran, and the sections opened inside
- * it.
+ * its worst call was doing, whether any call went over what the section allows,
+ * what the loops inside those calls ran, and the sections opened inside it.
  *
  * <p>A node is inclusive by construction - its total is everything that ran
  * under it - so self time is what the section costs on its own, which is the
@@ -36,9 +35,10 @@ public final class ProfileNode {
     private final List<ProfileNode> children;
 
     /**
-     * @param worstCall    what the slowest call of this row was doing, or the
-     *                     call that broke its budget where one did, or
-     *                     {@link WorstCall#NO_CALL} where none has finished here
+     * @param worstCall    what the worst call of this row was doing - the
+     *                     slowest, or the one that broke its budget where one
+     *                     did - or {@link WorstCall#NO_CALL} where none has
+     *                     finished here
      * @param budgetBreach what a call of this row broke of its section's budget,
      *                     or {@link BudgetBreach#NO_BREACH} where none did
      * @param iterations   what the loops of this row ran, or

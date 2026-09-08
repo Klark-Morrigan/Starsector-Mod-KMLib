@@ -138,11 +138,10 @@ public final class RecordingProfiler implements Profiler {
         // so it lands on the same node an open()/close() pair would have. It
         // counted nothing and named nothing: there was no scope to do either on.
         var recordedSection = ProfileSection.registerSection(section);
+        var breach = resolveNode(recordedSection)
+            .addSpan(elapsedNanos, List.of(), WorstCall.NO_TAG);
 
-        reportBreachOnce(
-            recordedSection,
-            resolveNode(recordedSection).addSpan(elapsedNanos, List.of(), WorstCall.NO_TAG),
-            WorstCall.NO_TAG);
+        reportBreachOnce(recordedSection, breach, WorstCall.NO_TAG);
     }
 
     @Override
@@ -246,11 +245,10 @@ public final class RecordingProfiler implements Profiler {
 
         ScopeCount.resolveCountIn(callCounts, counter).addSelfAmount(amount);
 
-        reportBreachOnce(
-            ProfileSection.UNSCOPED_COUNTS,
-            resolveRootNode(ProfileOrigin.UNSCOPED, ProfileSection.UNSCOPED_COUNTS)
-                .addSpan(UNTIMED_CALL_NANOS, callCounts, WorstCall.NO_TAG),
-            WorstCall.NO_TAG);
+        var breach = resolveRootNode(ProfileOrigin.UNSCOPED, ProfileSection.UNSCOPED_COUNTS)
+            .addSpan(UNTIMED_CALL_NANOS, callCounts, WorstCall.NO_TAG);
+
+        reportBreachOnce(ProfileSection.UNSCOPED_COUNTS, breach, WorstCall.NO_TAG);
     }
 
     // The node a section opened right now belongs to: a child of whatever is
@@ -288,7 +286,7 @@ public final class RecordingProfiler implements Profiler {
         }
         LOG.warn("Profiling section '" + section.getName() + "' went over budget: "
             + breach.describeBreach() + describeBreachingCall(tag)
-            + ". Reported once; the row carries every later breach of it.");
+            + ". Said once; the row carries the latest breach of it.");
     }
 
     // What the caller named the breaching call, where it named anything. Quoted,
