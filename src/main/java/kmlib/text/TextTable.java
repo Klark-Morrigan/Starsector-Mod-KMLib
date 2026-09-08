@@ -41,8 +41,21 @@ public final class TextTable {
      * Adds a row of cells, one per column in the order the columns were given.
      *
      * @param cells what the row says in each column
+     * @throws IllegalArgumentException where the row does not carry exactly one
+     *                                  cell per column - refused at the call that
+     *                                  built it rather than papered over at
+     *                                  render, where a cell with no column to sit
+     *                                  in would come out unpadded and every row
+     *                                  after it would read against columns that
+     *                                  are no longer where the header put them
      */
     public void addRow(List<String> cells) {
+
+        if (cells.size() != columns.size()) {
+            throw new IllegalArgumentException(
+                "A row carries one cell per column: " + columns.size()
+                    + " expected, " + cells.size() + " given.");
+        }
         lines.add(new TableLine(List.copyOf(cells), false));
     }
 
@@ -109,21 +122,15 @@ public final class TextTable {
             }
             var cells = line.getCells();
 
-            for (var index = 0; index < cells.size() && index < widths.length; index++) {
+            for (var index = 0; index < cells.size(); index++) {
                 widths[index] = Math.max(widths[index], cells.get(index).length());
             }
         }
         return widths;
     }
 
-    // A cell past the declared columns is written as it stands rather than
-    // dropped: a row carrying more than it was told to is the caller's mistake,
-    // and losing what it said would hide it.
     private String padCell(String cell, int width, int index) {
 
-        if (index >= columns.size()) {
-            return cell;
-        }
         var alignment = columns.get(index).isPaddedOnTheLeft() ? "%" : "%-";
 
         return String.format(Locale.ROOT, alignment + width + "s", cell);

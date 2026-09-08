@@ -1,14 +1,10 @@
 package kmlib.console.output;
 
-import org.apache.log4j.AppenderSkeleton;
+import kmlib.testfixtures.logging.LogAppenderFake;
+
 import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.apache.log4j.spi.LoggingEvent;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -29,45 +25,15 @@ final class GameLogCommandOutputTest {
         @Test
         void writesTheWholeMessageToTheGameLogInOneEntryAtInfo() {
 
-            var events = new ArrayList<LoggingEvent>();
-            var appenderFake = new LogAppenderFake(events);
-            var logger = Logger.getLogger(GameLogCommandOutput.class);
+            var appenderFake = LogAppenderFake.captureLogOf(
+                GameLogCommandOutput.class, () -> GameLogCommandOutput.INSTANCE.showMessage(TABLE));
 
-            logger.addAppender(appenderFake);
-            try {
-                GameLogCommandOutput.INSTANCE.showMessage(TABLE);
-            } finally {
-                logger.removeAppender(appenderFake);
-            }
-
-            assertThat(events).hasSize(1);
-            assertThat(events.get(0).getLevel()).isEqualTo(Level.INFO);
-            assertThat(events.get(0).getRenderedMessage()).isEqualTo(TABLE);
-        }
-    }
-
-    // Stands in for the game's own appender, keeping what was written so a case can read it.
-    private static final class LogAppenderFake extends AppenderSkeleton {
-
-        private final List<LoggingEvent> events;
-
-        private LogAppenderFake(List<LoggingEvent> events) {
-            this.events = events;
-        }
-
-        @Override
-        public void close() {
-            // Nothing is held open: what was written is the list the case reads.
-        }
-
-        @Override
-        public boolean requiresLayout() {
-            return false;
-        }
-
-        @Override
-        protected void append(LoggingEvent event) {
-            events.add(event);
+            assertThat(appenderFake.getEvents())
+                .hasSize(1);
+            assertThat(appenderFake.getEvents().get(0).getLevel())
+                .isEqualTo(Level.INFO);
+            assertThat(appenderFake.getMessages())
+                .containsExactly(TABLE);
         }
     }
 }

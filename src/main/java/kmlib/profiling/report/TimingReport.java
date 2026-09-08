@@ -6,7 +6,6 @@ import kmlib.profiling.snapshot.ProfileOriginTree;
 import kmlib.profiling.snapshot.WorstCall;
 import kmlib.text.KmlibStrings;
 import kmlib.text.TextTable;
-import kmlib.time.Timings;
 
 import java.util.List;
 
@@ -14,26 +13,20 @@ import java.util.List;
  * Formats a {@link Profiler} snapshot into an aligned, human-readable table.
  *
  * <p>Pure text transform, no profiling state of its own: it takes the trees of
- * {@link ProfileNode} and a {@link ProfileReportRequest} and returns a string,
- * so it is reusable by any output sink - a console command, the game log.
- * Durations are shown in milliseconds (via {@link Timings#convertNanosToMillis}),
- * the useful scale for frame-time work.
+ * {@link ProfileNode} and a {@link ProfileReportRequest} and returns a string, so
+ * it is reusable by any output sink - a console command, the game log.
  *
  * <p>What is written is the request's: which reading of the capture, over which
  * rows, how many of them, and whether the totals are what a frame spent or what
- * the session came to. What every reading has in common is here - the groups, the
- * columns, and the lines written under a row - so two readings of one capture
- * differ in what they say and never in how it is laid out.
+ * the session came to. What every reading has in common is here - the groups and
+ * the lines written under a row - so two readings of one capture differ in what
+ * they say and never in how it is laid out. Which columns they are laid out in
+ * is {@link ReportColumns}.
  *
  * <p>Above each group of rows is the origin they were measured in, so a table
  * taken across two games reads as two captures side by side rather than as one
  * whose numbers cannot be traced to a save. The columns are shared across the
  * groups, which is what lets one game's row be read against the other's.
- *
- * <p>Every counter anything in the capture touched adds a group of columns: what
- * the row counted in all, the spread of one call's worth, and what one item cost
- * it. A duration is judged against the work it covered, so the two are read on
- * one line rather than in a table and a log.
  *
  * <p>Under a row whose worst call has something to say beyond its duration goes
  * a second line naming that call and what its counters stood at, since the
@@ -270,9 +263,7 @@ public final class TimingReport {
     // slowest turn each happened once, and dividing either by a frame count would
     // report a duration nothing ever took.
     private static String formatCallMillis(long nanos) {
-
-        return ReportFormats.formatMillis(Timings.convertNanosToMillis(nanos))
-            + ReportFormats.MILLIS_UNIT;
+        return ReportFormats.formatNanosAsMillis(nanos) + ReportFormats.MILLIS_UNIT;
     }
 
     // Whether the record says anything the table does not already carry. Its

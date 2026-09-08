@@ -28,6 +28,11 @@ final class ReportFormats {
     // and two would read as two different measures.
     static final String PER_ITEM_UNIT = "us/ea";
 
+    // Marks the columns a frame count was divided into, so a reader meeting a
+    // total of 0.41 knows it is what a frame spent rather than what the session
+    // did.
+    private static final String PER_FRAME_SUFFIX = "/f";
+
     // Two spaces per level of nesting: enough for the eye to follow a row to its
     // parent, narrow enough that a deep tree still fits a console line.
     private static final int INDENT_SPACES_PER_DEPTH = 2;
@@ -46,6 +51,17 @@ final class ReportFormats {
 
     static String formatMillis(double millis) {
         return String.format(Locale.ROOT, MILLIS_FORMAT, millis);
+    }
+
+    /**
+     * The clock's own unit written in the one a frame is judged in - what every
+     * duration in a report goes through that nothing is dividing.
+     *
+     * @param nanos what was measured
+     * @return the milliseconds it came to
+     */
+    static String formatNanosAsMillis(long nanos) {
+        return formatMillis(Timings.convertNanosToMillis(nanos));
     }
 
     /**
@@ -68,5 +84,18 @@ final class ReportFormats {
 
     static String indentToDepth(int depth) {
         return " ".repeat(depth * INDENT_SPACES_PER_DEPTH);
+    }
+
+    /**
+     * Marks a header whose column a frame count is divided into.
+     *
+     * @param header     what the column is called
+     * @param isPerFrame whether its totals are being divided
+     * @return the header, said to be per frame where it is - a column of
+     *         fractions read as a session's totals would be off by however long
+     *         the player left the map open
+     */
+    static String markPerFrame(String header, boolean isPerFrame) {
+        return isPerFrame ? header + PER_FRAME_SUFFIX : header;
     }
 }

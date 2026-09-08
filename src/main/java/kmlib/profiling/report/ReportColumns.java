@@ -1,35 +1,30 @@
 package kmlib.profiling.report;
 
-import kmlib.profiling.ProfileCounter;
 import kmlib.profiling.snapshot.DurationBuckets;
-import kmlib.profiling.snapshot.ProfileCount;
 import kmlib.profiling.snapshot.ProfileNode;
 import kmlib.profiling.snapshot.ProfileOriginTree;
 import kmlib.profiling.snapshot.ProfileTiming;
 import kmlib.text.TextTableColumn;
-import kmlib.time.Timings;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
-import java.util.Set;
-import java.util.function.BiFunction;
 import java.util.function.ToLongFunction;
 
 /**
  * Which columns a capture has, and what each of them says about a row.
  *
- * <p>Decided from the capture rather than fixed, because the counter columns are
- * whatever the capture happened to count: a tree that counted nothing renders
- * the table it did before counters existed, and one that counted five things
- * carries a group of columns per thing.
+ * <p>The timing columns are always there and the counter groups
+ * ({@link CounterColumns}) are whatever the capture happened to count, so the
+ * set is decided once from the whole capture: the groups are shared across its
+ * origins, and a column present for one game only would leave the other's rows
+ * unreadable against it. What each origin's totals are divided by is still its
+ * own, so a cell is asked for the scale of the group it is being written in.
  *
- * <p>Taken over every origin at once, since the groups share one set of columns
- * and a column present for one game only would leave the other's rows unreadable
- * against it. What each origin's totals are divided by is still its own, so a
- * cell is asked for the scale of the group it is being written in.
+ * <p>The last column is where the row's calls fell in duration: one character
+ * per band, the bands doubling from a microsecond up, a dot where no call landed
+ * and otherwise how many digits that band's tally has. A row whose calls sit in
+ * one band costs what it costs; a row with an outlier band stalled, and the two
+ * want different fixes.
  */
 final class ReportColumns {
 
@@ -46,23 +41,11 @@ final class ReportColumns {
     // thing a reader needs to place a mark in the column.
     private static final String SPREAD_HEADER = "us>ms>s";
 
-    // Suffixed onto the counter's own name, so a reader can tell which group a
-    // spread belongs to when several counters are in the table at once.
-    private static final String COUNTER_MINIMUM_SUFFIX = " MIN";
-    private static final String COUNTER_MAXIMUM_SUFFIX = " MAX";
-    private static final String COUNTER_PER_ITEM_SUFFIX = " " + ReportFormats.PER_ITEM_UNIT;
-
-    // Marks the columns a frame count was divided into, so a reader meeting a
-    // total of 0.41 knows it is what a frame spent rather than what the session
-    // did.
-    private static final String PER_FRAME_SUFFIX = "/f";
-
     // Floors, not fixed widths: a column is widened by anything that does not
     // fit, and these keep the timing columns from closing up around small
     // numbers, where a table that reflows between two captures cannot be compared
-    // against the one before it by eye. The section and counter columns take no
-    // floor - how long a section is named, what a counter is called and how big
-    // it gets are the caller's, not this table's.
+    // against the one before it by eye. The section column takes no floor - how
+    // long a section is named is the caller's, not this table's.
     private static final int NO_COLUMN_FLOOR = 0;
     private static final int CALL_COUNT_COLUMN_FLOOR = 8;
     private static final int DURATION_COLUMN_FLOOR = 10;
@@ -98,43 +81,36 @@ final class ReportColumns {
 
         var columns = new ArrayList<ReportColumn>();
 
-        columns.add(new ReportColumn(
+        columns.add(ReportColumn.describeTextColumn(
             SECTION_HEADER,
             NO_COLUMN_FLOOR,
-            true,
             (row, scale) -> ReportFormats.indentToDepth(row.getDepth()) + row.getName()));
 
-        columns.add(new ReportColumn(
-            scaledHeader(COUNT_HEADER, isPerFrame),
+        columns.add(ReportColumn.describeNumberColumn(
+            ReportFormats.markPerFrame(COUNT_HEADER, isPerFrame),
             CALL_COUNT_COLUMN_FLOOR,
-            false,
             (row, scale) -> scale.formatCount(row.getNode().getTiming().getCount())));
 
         columns.add(buildCallDurationColumn(AVERAGE_HEADER, ProfileTiming::getAverageNanos));
         columns.add(buildCallDurationColumn(MINIMUM_HEADER, ProfileTiming::getMinNanos));
         columns.add(buildCallDurationColumn(MAXIMUM_HEADER, ProfileTiming::getMaxNanos));
 
-        columns.add(new ReportColumn(
-            scaledHeader(SELF_HEADER, isPerFrame),
+        columns.add(ReportColumn.describeNumberColumn(
+            ReportFormats.markPerFrame(SELF_HEADER, isPerFrame),
             DURATION_COLUMN_FLOOR,
-            false,
             (row, scale) -> scale.formatMillis(row.getNode().getSelfNanos())));
 
-        columns.add(new ReportColumn(
-            scaledHeader(TOTAL_HEADER, isPerFrame),
+        columns.add(ReportColumn.describeNumberColumn(
+            ReportFormats.markPerFrame(TOTAL_HEADER, isPerFrame),
             TOTAL_COLUMN_FLOOR,
-            false,
             (row, scale) -> scale.formatMillis(row.getNode().getTiming().getTotalNanos())));
 
-        columns.add(new ReportColumn(
+        columns.add(ReportColumn.describeNumberColumn(
             SPREAD_HEADER,
             SPREAD_COLUMN_FLOOR,
-            false,
             (row, scale) -> formatBands(row.getNode())));
 
-        for (var counter : collectCounters(originTrees)) {
-            columns.addAll(buildCounterColumns(counter, isPerFrame));
-        }
+        columns.addAll(CounterColumns.buildColumnsForEveryCounter(originTrees, isPerFrame));
         return new ReportColumns(columns);
     }
 
@@ -143,7 +119,7 @@ final class ReportColumns {
         var described = new ArrayList<TextTableColumn>(columns.size());
 
         for (var column : columns) {
-            described.add(column.describeTableColumn());
+            described.add(column.getTableColumn());
         }
         return described;
     }
@@ -173,48 +149,6 @@ final class ReportColumns {
         return cells;
     }
 
-    private static List<ReportColumn> buildCounterColumns(
-            ProfileCounter counter,
-            boolean isPerFrame) {
-
-        var name = counter.getName().toUpperCase(Locale.ROOT);
-
-        return List.of(
-            new ReportColumn(
-                scaledHeader(name, isPerFrame),
-                NO_COLUMN_FLOOR,
-                false,
-                (row, scale) -> formatCounterTotal(row.getNode(), counter, scale)),
-            buildCounterSpreadColumn(
-                name + COUNTER_MINIMUM_SUFFIX,
-                counter,
-                count -> count.getSpread().getMinPerCall()),
-            buildCounterSpreadColumn(
-                name + COUNTER_MAXIMUM_SUFFIX,
-                counter,
-                count -> count.getSpread().getMaxPerCall()),
-            new ReportColumn(
-                name + COUNTER_PER_ITEM_SUFFIX,
-                NO_COLUMN_FLOOR,
-                false,
-                (row, scale) -> formatSelfMicrosPerItem(row.getNode(), counter)));
-    }
-
-    private static ReportColumn buildCounterSpreadColumn(
-            String header,
-            ProfileCounter counter,
-            ToLongFunction<ProfileCount> readAmount) {
-
-        return new ReportColumn(header, NO_COLUMN_FLOOR, false, (row, scale) -> {
-
-            var count = row.getNode().findCount(counter);
-
-            return count == null
-                ? ReportFormats.ABSENT_CELL
-                : Long.toString(readAmount.applyAsLong(count));
-        });
-    }
-
     // A minimum, a maximum and an average are per call already, so no frame count
     // divides them: a call is not a frame, and a beat that ran twice in one would
     // report half of what one call took.
@@ -222,34 +156,11 @@ final class ReportColumns {
             String header,
             ToLongFunction<ProfileTiming> readNanos) {
 
-        return new ReportColumn(header, DURATION_COLUMN_FLOOR, false, (row, scale) ->
-            ReportFormats.formatMillis(
-                Timings.convertNanosToMillis(readNanos.applyAsLong(row.getNode().getTiming()))));
-    }
-
-    // In the order the capture first counted them, which is the order the rows
-    // themselves are in, so a column group sits near the rows that fill it.
-    private static Collection<ProfileCounter> collectCounters(
-            List<ProfileOriginTree> originTrees) {
-
-        var counters = new LinkedHashSet<ProfileCounter>();
-
-        for (var originTree : originTrees) {
-            collectCountersInto(originTree.getRoots(), counters);
-        }
-        return counters;
-    }
-
-    private static void collectCountersInto(
-            List<ProfileNode> nodes,
-            Set<ProfileCounter> counters) {
-
-        for (var node : nodes) {
-            for (var count : node.getCounts()) {
-                counters.add(count.getCounter());
-            }
-            collectCountersInto(node.getChildren(), counters);
-        }
+        return ReportColumn.describeNumberColumn(
+            header,
+            DURATION_COLUMN_FLOOR,
+            (row, scale) ->
+                ReportFormats.formatNanosAsMillis(readNanos.applyAsLong(row.getNode().getTiming())));
     }
 
     // A band's mark is how many digits its tally has, so a band holding thousands
@@ -281,82 +192,5 @@ final class ReportColumns {
             bands.append(formatBandMark(buckets.getCallsInBucket(index)));
         }
         return bands.toString();
-    }
-
-    private static String formatCounterTotal(
-            ProfileNode node,
-            ProfileCounter counter,
-            ReportScale scale) {
-
-        var count = node.findCount(counter);
-
-        return count == null
-            ? ReportFormats.ABSENT_CELL
-            : scale.formatCount(count.getTotals().getTotal());
-    }
-
-    // Self time over what the row counted itself: what one system, market or cell
-    // cost here, which is the number an optimisation is judged against. Per item
-    // whatever the table is divided by, a frame count having nothing to say about
-    // what one item cost.
-    private static String formatSelfMicrosPerItem(ProfileNode node, ProfileCounter counter) {
-
-        var count = node.findCount(counter);
-
-        // A row whose children did all the counting has no per-item cost of its
-        // own, and dividing by their items would price its self time against work
-        // it did not do.
-        if (count == null || count.getTotals().getSelfTotal() == 0) {
-            return ReportFormats.ABSENT_CELL;
-        }
-        return ReportFormats.formatMicrosPerItem(
-            node.getSelfNanos(), count.getTotals().getSelfTotal());
-    }
-
-    private static String scaledHeader(String header, boolean isPerFrame) {
-        return isPerFrame ? header + PER_FRAME_SUFFIX : header;
-    }
-
-    /**
-     * One column of the table: what it is headed, how narrow it may get, which
-     * side its cells are padded on, and what it says about a row.
-     *
-     * <p>A column rather than a format string per row shape, because the counter
-     * columns are not known until the capture is in hand and a row has to fill
-     * whatever columns it turned out to need.
-     */
-    private static final class ReportColumn {
-
-        private final String header;
-        private final int floorWidth;
-        private final boolean isTextColumn;
-        private final BiFunction<ProfileReportRow, ReportScale, String> readCell;
-
-        private ReportColumn(
-                String header,
-                int floorWidth,
-                boolean isTextColumn,
-                BiFunction<ProfileReportRow, ReportScale, String> readCell) {
-
-            this.header = header;
-            this.floorWidth = floorWidth;
-            this.isTextColumn = isTextColumn;
-            this.readCell = readCell;
-        }
-
-        private String getHeader() {
-            return header;
-        }
-
-        private TextTableColumn describeTableColumn() {
-
-            return isTextColumn
-                ? TextTableColumn.alignCellsLeft(floorWidth)
-                : TextTableColumn.alignCellsRight(floorWidth);
-        }
-
-        private String renderCell(ProfileReportRow row, ReportScale scale) {
-            return readCell.apply(row, scale);
-        }
     }
 }

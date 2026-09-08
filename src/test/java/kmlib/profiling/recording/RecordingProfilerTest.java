@@ -18,10 +18,8 @@ import kmlib.profiling.snapshot.ProfileIterations;
 import kmlib.profiling.snapshot.ProfileNode;
 import kmlib.profiling.snapshot.ProfileOriginTree;
 import kmlib.profiling.snapshot.WorstCall;
+import kmlib.testfixtures.logging.LogAppenderFake;
 
-import org.apache.log4j.AppenderSkeleton;
-import org.apache.log4j.Logger;
-import org.apache.log4j.spi.LoggingEvent;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -1358,20 +1356,9 @@ final class RecordingProfilerTest {
         }
     }
 
-    // What the profiler wrote while the work ran. The appender is removed afterwards whatever the
-    // work did, so a failing case does not leave the logger collecting into a dead list.
+    // What the profiler wrote while the work ran.
     private static List<String> captureLogWhile(Runnable work) {
-
-        var appenderFake = new LogAppenderFake();
-        var logger = Logger.getLogger(RecordingProfiler.class);
-
-        logger.addAppender(appenderFake);
-        try {
-            work.run();
-        } finally {
-            logger.removeAppender(appenderFake);
-        }
-        return appenderFake.getMessages();
+        return LogAppenderFake.captureLogOf(RecordingProfiler.class, work).getMessages();
     }
 
     // A section whose calls run a loop of two steps, which is what every case above opens over.
@@ -1476,28 +1463,4 @@ final class RecordingProfilerTest {
         }
     }
 
-    // Collects what the profiler wrote to log4j, so "said once" can be counted rather than read.
-    private static final class LogAppenderFake extends AppenderSkeleton {
-
-        private final List<String> messages = new ArrayList<>();
-
-        @Override
-        public void close() {
-            // Nothing is held open; the messages stay readable after the appender is removed.
-        }
-
-        @Override
-        public boolean requiresLayout() {
-            return false;
-        }
-
-        @Override
-        protected void append(LoggingEvent event) {
-            messages.add(String.valueOf(event.getMessage()));
-        }
-
-        private List<String> getMessages() {
-            return messages;
-        }
-    }
 }

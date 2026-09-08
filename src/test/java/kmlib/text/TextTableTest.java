@@ -6,12 +6,14 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Pins {@link TextTable}: a cell is padded into its column on the side the column states, a column
  * is never narrower than its floor and always wide enough for its widest cell, a line written
- * across the whole table is left exactly as it stands and widens no column, and a table nobody
- * wrote a row into renders nothing.
+ * across the whole table is left exactly as it stands and widens no column, a table nobody wrote a
+ * row into renders nothing, and a row that does not carry one cell per column is refused where it
+ * was built.
  */
 final class TextTableTest {
 
@@ -98,6 +100,24 @@ final class TextTableTest {
             var table = new TextTable(List.of(TextTableColumn.alignCellsLeft(NO_FLOOR)));
 
             assertThat(table.renderAligned()).isEmpty();
+        }
+    }
+
+    @Nested
+    class AddRow {
+
+        @Test
+        void refusesARowThatDoesNotCarryOneCellPerColumn() {
+            // Refused where the row was built rather than papered over at render: a cell with no
+            // column to sit in would come out unpadded, and every row after it would read against
+            // columns that are no longer where the header put them.
+            var table = new TextTable(List.of(
+                TextTableColumn.alignCellsLeft(NO_FLOOR),
+                TextTableColumn.alignCellsRight(NUMBER_COLUMN_FLOOR)));
+
+            assertThatThrownBy(() -> table.addRow(List.of("name")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("2 expected, 1 given");
         }
     }
 }

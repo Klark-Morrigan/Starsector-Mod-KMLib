@@ -52,7 +52,8 @@ final class ReportScaleTest {
                     nodeOf(REBUILD_SECTION, beatNode(ONE_CALL))),
                 dividedByTheBeat());
 
-            assertThat(scale.getFrames()).isEqualTo(FRAMES);
+            assertThat(scale.getFrames())
+                .isEqualTo(FRAMES);
         }
 
         @Test
@@ -61,7 +62,8 @@ final class ReportScaleTest {
             var scale = ReportScale.resolveScale(
                 originTreeOf(beatNode(FRAMES)), ProfileReportRequest.showTree());
 
-            assertThat(scale.isPerFrame()).isFalse();
+            assertThat(scale.isPerFrame())
+                .isFalse();
         }
 
         @Test
@@ -73,7 +75,8 @@ final class ReportScaleTest {
                 ProfileReportRequest.showTree().divideByFramesOf(
                     ProfileSection.registerSection(UNOPENED_SECTION)));
 
-            assertThat(scale.isPerFrame()).isFalse();
+            assertThat(scale.isPerFrame())
+                .isFalse();
         }
     }
 
@@ -83,7 +86,8 @@ final class ReportScaleTest {
         @Test
         void writesAWholeNumberWhereNothingIsBeingDivided() {
 
-            assertThat(ReportScale.PER_CAPTURE.formatCount(FIVE_ITEMS)).isEqualTo("5");
+            assertThat(ReportScale.PER_CAPTURE.formatCount(FIVE_ITEMS))
+                .isEqualTo("5");
         }
 
         @Test
@@ -91,7 +95,8 @@ final class ReportScaleTest {
             // Five over two frames is 2.5 of them a frame: rounded to a whole number it would read
             // as two, and a pass that walks the sector every other frame has to read as something
             // other than nothing.
-            assertThat(perFrameScale().formatCount(FIVE_ITEMS)).isEqualTo("2.50");
+            assertThat(perFrameScale().formatCount(FIVE_ITEMS))
+                .isEqualTo("2.50");
         }
     }
 
@@ -108,25 +113,30 @@ final class ReportScaleTest {
         @Test
         void writesWhatOneFrameSpentWhereTheTotalsAreDivided() {
 
-            assertThat(perFrameScale().formatMillis(THREE_MILLIS_IN_NANOS)).isEqualTo("1.500");
+            assertThat(perFrameScale().formatMillis(THREE_MILLIS_IN_NANOS))
+                .isEqualTo("1.500");
         }
     }
 
     private static ReportScale perFrameScale() {
+
         return ReportScale.resolveScale(originTreeOf(beatNode(FRAMES)), dividedByTheBeat());
     }
 
     private static ProfileReportRequest dividedByTheBeat() {
+
         return ProfileReportRequest.showTree().divideByFramesOf(
             ProfileSection.registerSection(FRAME_BEAT_SECTION));
     }
 
     private static ProfileOriginTree originTreeOf(ProfileNode... roots) {
+
         return new ProfileOriginTree(
             ProfileOrigin.registerOrigin(ORIGIN_LABEL), List.of(roots));
     }
 
     private static ProfileNode beatNode(long calls) {
+
         return new ProfileNode(
             ProfileSection.registerSection(FRAME_BEAT_SECTION),
             new ProfileTiming(
@@ -143,6 +153,7 @@ final class ReportScaleTest {
     }
 
     private static ProfileNode nodeOf(String name, ProfileNode... children) {
+        
         return new ProfileNode(
             ProfileSection.registerSection(name),
             new ProfileTiming(

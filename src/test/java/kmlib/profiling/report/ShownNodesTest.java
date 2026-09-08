@@ -63,7 +63,8 @@ final class ShownNodesTest {
             var shown = ShownNodes.selectShownNodes(
                 List.of(rebuild), ProfileReportRequest.showTree());
 
-            assertThat(shown).containsExactlyInAnyOrder(rebuild, walk);
+            assertThat(shown)
+                .containsExactlyInAnyOrder(rebuild, walk);
         }
 
         @Test
@@ -77,7 +78,8 @@ final class ShownNodesTest {
                 List.of(mine, theirs),
                 ProfileReportRequest.showTree().limitToNamespace(NAMESPACE));
 
-            assertThat(shown).containsExactly(mine);
+            assertThat(shown)
+                .containsExactly(mine);
         }
 
         @Test
@@ -91,7 +93,8 @@ final class ShownNodesTest {
                 List.of(frame),
                 ProfileReportRequest.showTree().limitToNamespace(NAMESPACE));
 
-            assertThat(shown).containsExactlyInAnyOrder(frame, rebuild);
+            assertThat(shown)
+                .containsExactlyInAnyOrder(frame, rebuild);
         }
 
         @Test
@@ -105,7 +108,8 @@ final class ShownNodesTest {
                 List.of(rebuild),
                 ProfileReportRequest.showTree().limitToNamespace(NAMESPACE));
 
-            assertThat(shown).containsExactlyInAnyOrder(rebuild, foreign);
+            assertThat(shown)
+                .containsExactlyInAnyOrder(rebuild, foreign);
         }
 
         @Test
@@ -120,7 +124,8 @@ final class ShownNodesTest {
                 List.of(slow, middling, quick),
                 ProfileReportRequest.showTree().limitToTopRows(TOP_TWO_ROWS));
 
-            assertThat(shown).containsExactlyInAnyOrder(slow, middling);
+            assertThat(shown)
+                .containsExactlyInAnyOrder(slow, middling);
         }
 
         @Test
@@ -134,7 +139,8 @@ final class ShownNodesTest {
                 List.of(frame),
                 ProfileReportRequest.showTree().limitToTopRows(TOP_ONE_ROW));
 
-            assertThat(shown).containsExactlyInAnyOrder(frame, walk);
+            assertThat(shown)
+                .containsExactlyInAnyOrder(frame, walk);
         }
 
         @Test
@@ -149,11 +155,13 @@ final class ShownNodesTest {
                 ProfileReportRequest.showRowsCounting(
                     ProfileCounter.registerCounter(WALKS_COUNTER)));
 
-            assertThat(shown).containsExactly(walked);
+            assertThat(shown)
+                .containsExactly(walked);
         }
     }
 
     private static ProfileNode nodeOf(String name, long totalNanos, ProfileNode... children) {
+
         return new ProfileNode(
             ProfileSection.registerSection(name),
             new ProfileTiming(1, totalNanos, totalNanos, totalNanos, DurationBuckets.NO_CALLS),
@@ -165,6 +173,7 @@ final class ShownNodesTest {
     }
 
     private static ProfileNode countingNodeOf(String name, ProfileCount count) {
+
         return new ProfileNode(
             ProfileSection.registerSection(name),
             new ProfileTiming(1, SLOW_NANOS, SLOW_NANOS, SLOW_NANOS, DurationBuckets.NO_CALLS),
@@ -176,6 +185,7 @@ final class ShownNodesTest {
     }
 
     private static ProfileCount countOfWalks() {
+        
         return new ProfileCount(
             ProfileCounter.registerCounter(WALKS_COUNTER),
             new CountTotals(TWO_WALKS, TWO_WALKS),

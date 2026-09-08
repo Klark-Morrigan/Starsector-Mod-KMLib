@@ -839,7 +839,10 @@ that depends on it - see [Requirements](#requirements).
 [`testfixtures/`](src/testFixtures/java/kmlib/testfixtures/) holds what a consuming
 mod's tests stand their subjects on: fakes of KMLib's own ports (claims, fonts, the
 intel screen, the modelview, console output, a console overlay up or down as a test
-says), the core-UI hops and widget tree a layout rule walks, builders for the values
+says), a recording appender that keeps what a class wrote to the game log - attached for
+the length of one call and detached whatever that call did, since an appender left on a
+logger goes on collecting what the rest of a suite writes - the core-UI hops and widget
+tree a layout rule walks, builders for the values
 those ports report, the market and colony shapes a "who is here" read is posed
 against, and
 [`starsector/settings/`](src/testFixtures/java/kmlib/testfixtures/starsector/settings/)'s

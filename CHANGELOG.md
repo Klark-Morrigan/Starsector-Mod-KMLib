@@ -12,9 +12,9 @@ section here.
 
 ## Index
 
-- [0.1.0](#010---2026-08-30)
+- [0.1.0](#010---2026-09-08)
 
-## [0.1.0] - 2026-08-30
+## [0.1.0] - 2026-09-08
 
 First tagged release, so there is no prior version to diff against: this is
 the whole public surface - the console commands a player types, then one entry
@@ -117,8 +117,14 @@ No Starsector API on the signature.
   call, its worst call kept with that call's tag and counters, what it broke of
   what its section allows, what its loops ran per step and per turn with the
   slowest turn named, and where its calls fell across duration bands doubling
-  from a microsecond up - rendered as an indented table, one group of roots per
-  origin.
+  from a microsecond up. A reader states what they are asking of it: the capture
+  as it was measured, as a listing worst self time first with each row named by
+  its whole path, or as what one counter says with the rows that never counted
+  it dropped and the row that reached most of it in a single call first -
+  narrowed to a namespace and to however many rows are wanted, the rows those
+  rows ran inside kept either way, and optionally divided by the calls of a
+  named beat so a total reads as what one frame spends. Whichever is asked for
+  comes back as one aligned table, a group of rows per origin.
 - **`kmlib.settings`** - LunaLib settings read and write, immediate and
   deferred with flush and removal, change callbacks, and resolving a labelled
   choice back from its label.
@@ -128,7 +134,10 @@ No Starsector API on the signature.
   shares:
   is there text here, what are its words, initials, whole-word search, and
   dropping the stutter left where one phrase was appended to another ending on
-  the same word.
+  the same word. Plus the grid a monospaced table is laid out in: cells padded
+  into columns that never close below a floor, so one table's columns sit where
+  the last one's did, and lines written across the whole width for what belongs
+  to no column.
 - **`kmlib.time`** - nanosecond conversion to microseconds, milliseconds and
   seconds and back, and the duration formats a diagnostic line prints.
 
@@ -140,11 +149,12 @@ No Starsector API on the signature.
   text and output channel, with the campaign and star-system requirements a
   command states before parsing.
 - **`kmlib.console.output`** - where a command's messages go, behind an
-  interface so a test can take them.
+  interface so a test can take them: the live overlay, or the game log for what
+  a player was asked to send on rather than read now.
 - **`kmlib.console.parsing`** - declarative parameter specs with required and
-  defaulted parameters, typed value parsers (text, decimal, non-negative
-  decimal), and a parsed result reporting validity and which parameters were
-  supplied.
+  defaulted parameters, typed value parsers (text, whole number above zero,
+  decimal, non-negative decimal), and a parsed result reporting validity and
+  which parameters were supplied.
 - **`kmlib.console.targets`** - what a command was pointed at, found or
   refused with a reason under one sealed answer: a market by id or the nearest
   one meeting a stated requirement, its owner, and the faction the command

@@ -25,11 +25,19 @@ import java.util.Set;
  *
  * <p>Held by identity: a node is one section at one place in one tree, and two
  * rows of one section must not collapse into each other.
+ *
+ * <p>One selection is one instance, holding what the walk gathers, so the
+ * recursion carries only what changes as it descends - which node it is under,
+ * and whether the namespace has already been matched above.
  */
 final class ShownNodes {
 
-    private ShownNodes() {
-        // utility class, no instances.
+    private final ProfileReportRequest request;
+    private final Map<ProfileNode, ProfileNode> parentsByNode = new IdentityHashMap<>();
+    private final List<ProfileNode> candidates = new ArrayList<>();
+
+    private ShownNodes(ProfileReportRequest request) {
+        this.request = request;
     }
 
     /**
@@ -41,17 +49,18 @@ final class ShownNodes {
             List<ProfileNode> roots,
             ProfileReportRequest request) {
 
-        var parentsByNode = new IdentityHashMap<ProfileNode, ProfileNode>();
-        var candidates = new ArrayList<ProfileNode>();
+        return new ShownNodes(request).select(roots);
+    }
 
-        collectCandidates(roots, null, request, false, parentsByNode, candidates);
+    private Set<ProfileNode> select(List<ProfileNode> roots) {
+
+        collectCandidates(roots, null, false);
         candidates.sort(request.getView().resolveRanking());
 
         var shownNodes = Collections.<ProfileNode>newSetFromMap(new IdentityHashMap<>());
-        var keptCount = countKept(candidates.size(), request.getTopRows());
 
-        for (var index = 0; index < keptCount; index++) {
-            addWithAncestors(candidates.get(index), parentsByNode, shownNodes);
+        for (var index = 0; index < countKept(); index++) {
+            addWithAncestors(candidates.get(index), shownNodes);
         }
         return shownNodes;
     }
@@ -59,34 +68,27 @@ final class ShownNodes {
     // Every row the request could keep, and the way back up from each. A row
     // under a named row is itself under the namespace, whatever it is called:
     // what a kept row is made of is part of reading it.
-    private static void collectCandidates(
+    private void collectCandidates(
             List<ProfileNode> nodes,
             ProfileNode parent,
-            ProfileReportRequest request,
-            boolean isUnderNamespace,
-            Map<ProfileNode, ProfileNode> parentsByNode,
-            List<ProfileNode> candidates) {
+            boolean isUnderNamespace) {
 
         for (var node : nodes) {
 
             parentsByNode.put(node, parent);
-            var isNamed = isUnderNamespace || isNamedUnder(node, request.getNamespace());
+            var isNamed = isUnderNamespace || isNamedUnderTheNamespace(node);
 
             if (isNamed && request.getView().isWorthShowing(node)) {
                 candidates.add(node);
             }
-            collectCandidates(
-                node.getChildren(), node, request, isNamed, parentsByNode, candidates);
+            collectCandidates(node.getChildren(), node, isNamed);
         }
     }
 
     // Up to the root, stopping at the first row already kept: everything above
     // that one is kept as well, since a row is only ever added with its whole
     // way up.
-    private static void addWithAncestors(
-            ProfileNode node,
-            Map<ProfileNode, ProfileNode> parentsByNode,
-            Set<ProfileNode> shownNodes) {
+    private void addWithAncestors(ProfileNode node, Set<ProfileNode> shownNodes) {
 
         for (var kept = node; kept != null; kept = parentsByNode.get(kept)) {
 
@@ -96,18 +98,20 @@ final class ShownNodes {
         }
     }
 
-    private static int countKept(int candidateCount, int topRows) {
+    private int countKept() {
 
-        return topRows == ProfileReportRequest.EVERY_ROW
-            ? candidateCount
-            : Math.min(topRows, candidateCount);
+        return request.getTopRows() == ProfileReportRequest.EVERY_ROW
+            ? candidates.size()
+            : Math.min(request.getTopRows(), candidates.size());
     }
 
     // By prefix, which is what a namespace is in a dotted section name. A prefix
     // rather than a whole leading name, so asking for one section's rows and
     // asking for a family of them are the same question asked with more or less
     // of the name.
-    private static boolean isNamedUnder(ProfileNode node, String namespace) {
+    private boolean isNamedUnderTheNamespace(ProfileNode node) {
+
+        var namespace = request.getNamespace();
 
         return namespace.equals(ProfileReportRequest.EVERY_NAMESPACE)
             || node.getSection().getName().startsWith(namespace);
