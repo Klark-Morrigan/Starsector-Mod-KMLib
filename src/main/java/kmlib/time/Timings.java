@@ -52,8 +52,8 @@ public final class Timings {
 
     /**
      * Converts a duration in milliseconds to nanoseconds, against the same divisor the
-     * millisecond reading uses - so a span stated in the unit a frame-scale bound is
-     * written in reaches a clock counting in nanoseconds without a second spelling of
+     * millisecond reading uses - so a span stated in the unit a short duration is
+     * reported in reaches a clock counting in nanoseconds without a second spelling of
      * the conversion.
      *
      * <p>Truncated rather than rounded, since the result is a count of nanoseconds and
