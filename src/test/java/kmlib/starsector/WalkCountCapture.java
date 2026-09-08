@@ -7,6 +7,8 @@ import kmlib.profiling.SilentProfiler;
 import kmlib.profiling.recording.RecordingProfiler;
 import kmlib.profiling.snapshot.ProfileNode;
 
+import java.util.function.Consumer;
+
 /**
  * Runs a sector read under a recording profiler and hands back what it counted, so a suite over
  * one reader states what that reader reports without binding, opening and unbinding by hand.
@@ -35,16 +37,11 @@ public final class WalkCountCapture {
      */
     public static WalkCounts captureCountsOf(Runnable read) {
 
-        var profiler = new RecordingProfiler(() -> FIXED_CLOCK_NANOS);
-
-        ActiveProfiler.bindProfiler(profiler);
-
-        try (var call = profiler.open(ProfileSection.registerSection(CALLER_SECTION))) {
-            read.run();
-        } finally {
-            ActiveProfiler.bindProfiler(SilentProfiler.INSTANCE);
-        }
-        return readFirstRow(profiler);
+        return captureCountsWhile(profiler -> {
+            try (var call = profiler.open(ProfileSection.registerSection(CALLER_SECTION))) {
+                read.run();
+            }
+        });
     }
 
     /**
@@ -55,20 +52,22 @@ public final class WalkCountCapture {
      */
     public static WalkCounts captureUnscopedCountsOf(Runnable read) {
 
+        return captureCountsWhile(profiler -> read.run());
+    }
+
+    // The capture both forms are: bind, run the read against the profiler it was
+    // bound to, and leave the holder silent however the read ended.
+    private static WalkCounts captureCountsWhile(Consumer<RecordingProfiler> read) {
+
         var profiler = new RecordingProfiler(() -> FIXED_CLOCK_NANOS);
 
         ActiveProfiler.bindProfiler(profiler);
 
         try {
-            read.run();
+            read.accept(profiler);
         } finally {
             ActiveProfiler.bindProfiler(SilentProfiler.INSTANCE);
         }
-        return readFirstRow(profiler);
-    }
-
-    private static WalkCounts readFirstRow(RecordingProfiler profiler) {
-
         var originTrees = profiler.snapshot();
 
         return new WalkCounts(

@@ -47,9 +47,8 @@ public final class RecordingProfiler implements Profiler {
 
     private static final Logger LOG = Logger.getLogger(RecordingProfiler.class);
 
-    // What a call nothing timed is worth: a count that arrived with no scope open
-    // has a size but no span, and reporting a duration nobody measured would put
-    // a number in the one column that is meant to be read as measured.
+    // A count that arrived with no scope open has a size but no span, and a
+    // duration nobody measured must not appear in a column read as measured.
     private static final long UNTIMED_CALL_NANOS = 0L;
 
     private final List<ProfileOriginAccumulator> originGroups = new ArrayList<>();
@@ -229,10 +228,8 @@ public final class RecordingProfiler implements Profiler {
         scope.handCountsToParentScope();
     }
 
-    // What a count with nothing open is kept as: one call of the reserved row,
-    // timed at nothing, no scope having bracketed it. Kept rather than dropped -
-    // a traversal from a path nobody profiled is the one number a capture most
-    // needs to name, and a reader cannot go looking for what was never reported.
+    // One call of the reserved row per count that arrives with nothing open,
+    // there being no scope to gather several into one call.
     private void recordUnscopedCount(ProfileCounter counter, long amount) {
 
         var callCounts = new ArrayList<ScopeCount>(1);

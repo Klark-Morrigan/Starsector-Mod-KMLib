@@ -4,6 +4,7 @@ import com.fs.starfarer.api.campaign.CampaignFleetAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 
+import kmlib.profiling.ProfileSection;
 import kmlib.starsector.SectorWalkCounters;
 import kmlib.starsector.WalkCountCapture;
 
@@ -306,6 +307,24 @@ final class SectorStarSystemsTest {
         }
 
         @Test
+        void counts_the_whole_list_for_an_id_no_system_carries() {
+            // The other half of the same rule: a lookup that matched nothing did go over every
+            // system, and that is the expensive case a row has to be able to show.
+            var corvus = buildSystemAt("corvus", 1, 1);
+            var yma = buildSystemAt("yma", 2, 2);
+            var sectorMock = mock(SectorAPI.class);
+
+            when(sectorMock.getStarSystems())
+                .thenReturn(List.of(corvus, yma));
+
+            var counts = WalkCountCapture.captureCountsOf(
+                () -> SectorStarSystems.findById(sectorMock, "nowhere"));
+
+            assertThat(counts.readCount(SectorWalkCounters.SYSTEMS_VISITED))
+                .isEqualTo(2L);
+        }
+
+        @Test
         void returns_null_for_a_blank_id() {
             // A blank id short-circuits before the walk, so a stubbed system list is not even
             // needed - a blank query matches nothing rather than the first system by accident.
@@ -377,6 +396,8 @@ final class SectorStarSystemsTest {
             var counts = WalkCountCapture.captureUnscopedCountsOf(
                 () -> SectorStarSystems.indexById(sectorMock));
 
+            assertThat(counts.getSection())
+                .isSameAs(ProfileSection.UNSCOPED_COUNTS);
             assertThat(counts.readCount(SectorWalkCounters.SECTOR_WALKS))
                 .isEqualTo(1L);
         }

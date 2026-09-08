@@ -1,7 +1,5 @@
 package kmlib.starsector;
 
-import kmlib.profiling.ProfileSection;
-
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -9,8 +7,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Pins what the sector's shared reads report: each count lands on whichever section is open, a
- * walk states both the traversal and its size, an amount of nothing opens no counter, and a count
- * made with nothing open is kept under the profiler's reserved row rather than dropped.
+ * walk states both the traversal and its size, and an amount of nothing opens no counter. Where
+ * a count with nothing open at all lands is pinned against a real walk, in
+ * {@code SectorStarSystemsTest}.
  */
 final class SectorWalkCountersTest {
 
@@ -96,19 +95,6 @@ final class SectorWalkCountersTest {
                 .isEqualTo(1L);
             assertThat(counts.hasCount(SectorWalkCounters.SYSTEMS_VISITED))
                 .isFalse();
-        }
-
-        @Test
-        void keeps_a_walk_made_with_nothing_open_under_the_reserved_row() {
-            // A traversal from a path nobody profiled is the first thing a reader hunting stray
-            // walks looks for, so it is kept rather than charged to nobody.
-            var counts = WalkCountCapture.captureUnscopedCountsOf(
-                () -> SectorWalkCounters.countSectorWalk(48));
-
-            assertThat(counts.getSection())
-                .isSameAs(ProfileSection.UNSCOPED_COUNTS);
-            assertThat(counts.readCount(SectorWalkCounters.SECTOR_WALKS))
-                .isEqualTo(1L);
         }
     }
 

@@ -24,6 +24,10 @@ import java.util.function.Predicate;
  * moments: a pass resolves the sector's layout once and then asks about systems many times over.
  * Kept together they read as one grab-bag that any new system read could be added to.
  *
+ * <p>Every read here traverses the sector's system list, and each one reports that through
+ * {@link SectorWalkCounters}, so a caller's row states the walks it caused without the caller
+ * having asked for any of them to be counted.
+ *
  * <p>Final class with a private constructor: pure-function utility, no instance state. Matches
  * {@link kmlib.starsector.scripts.SectorScripts}'s shape, and is null-sector defensive like the
  * rest of the library.
@@ -57,8 +61,6 @@ public final class SectorStarSystems {
                 positions.add(new double[] {location.x, location.y});
             }
         }
-        // Counted where the traversal happens, so the row that asked for the layout
-        // states it whether or not that caller ever opened a section of its own.
         SectorWalkCounters.countSectorWalk(systems.size());
 
         return positions;
@@ -180,10 +182,9 @@ public final class SectorStarSystems {
                 break;
             }
         }
-        // Left on one exit so a match part way through still reports the walk, and
-        // reports it at what it actually went over: a lookup that stops at the
-        // first system did not visit the sector, and a row saying it did would hide
-        // the very cost this counts - many lookups each walking from the start.
+        // One exit, so a match part way through still reports its walk - and reports
+        // it at what it went over, a lookup that stopped at the first system not
+        // having visited the sector.
         SectorWalkCounters.countSectorWalk(systemsExamined);
 
         return found;
