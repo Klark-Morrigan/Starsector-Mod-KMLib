@@ -3,6 +3,8 @@ package kmlib.mods.rat;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 
+import kmlib.starsector.SectorWalkCounters;
+
 import assortment_of_things.abyss.entities.hyper.AbyssalFracture;
 
 /**
@@ -46,12 +48,23 @@ public final class RandomAssortmentOfThingsMatcher {
     private static final class RatTypes {
 
         private static boolean hasAbyssalFracture(StarSystemAPI system) {
+
+            var hasFracture = false;
+            var entitiesExamined = 0;
+
             for (var entity : system.getAllEntities()) {
+                entitiesExamined++;
                 if (isAbyssalFracture(entity)) {
-                    return true;
+                    hasFracture = true;
+                    break;
                 }
             }
-            return false;
+            // One exit, so a scan that stopped at the fracture still reports what it
+            // went over: this runs per system inside a reachability read, and what it
+            // costs is the entities examined rather than the answer.
+            SectorWalkCounters.countEntitiesVisited(entitiesExamined);
+
+            return hasFracture;
         }
 
         private static boolean isAbyssalFracture(SectorEntityToken entity) {

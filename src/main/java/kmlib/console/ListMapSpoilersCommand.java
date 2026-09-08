@@ -7,6 +7,8 @@ import com.fs.starfarer.api.impl.campaign.ids.Tags;
 
 import kmlib.console.output.CommandOutput;
 import kmlib.console.parsing.ParameterSpec;
+import kmlib.starsector.SectorWalkCounters;
+import kmlib.starsector.markets.LocationMarkets;
 import kmlib.starsector.markets.Markets;
 import kmlib.starsector.systems.StarSystems;
 
@@ -73,7 +75,9 @@ public final class ListMapSpoilersCommand extends KmlibBaseConsoleCommand {
         var report = new StringBuilder(
             "Map spoilers - cut-off systems and undiscovered markets:");
         var systemCount = 0;
-        for (var system : sector.getStarSystems()) {
+        var systems = sector.getStarSystems();
+
+        for (var system : systems) {
             var ownedMarkets = collectOwnedMarkets(sector, system);
 
             var isSystemCutOff = system.hasTag(Tags.SYSTEM_CUT_OFF_FROM_HYPER);
@@ -100,6 +104,10 @@ public final class ListMapSpoilersCommand extends KmlibBaseConsoleCommand {
                     .append(getVisibilitySuffix(market));
             }
         }
+        // No shared reader stands between this listing and the system list, so the traversal
+        // reports itself: a command walking the sector should show as a walk like any other.
+        SectorWalkCounters.countSectorWalk(systems.size());
+
         if (systemCount == 0) {
             report.append("\n  (none)");
         }
@@ -118,9 +126,13 @@ public final class ListMapSpoilersCommand extends KmlibBaseConsoleCommand {
     // The systems worth spoiling are the ones somebody has settled, so the listing asks the same
     // question the colony commands do rather than restating it as a loop of its own - a place
     // flying the neutral flag is somewhere nobody lives, and nothing about it is a spoiler.
+    //
+    // Read through the shared reader rather than off the economy directly, so a system's markets
+    // are found the one way every other listing finds them - counted like the rest, and answering
+    // an unreachable economy as an empty place rather than failing on it.
     private static List<MarketAPI> collectOwnedMarkets(SectorAPI sector, StarSystemAPI system) {
         var ownedMarkets = new ArrayList<MarketAPI>();
-        for (var market : sector.getEconomy().getMarkets(system)) {
+        for (var market : LocationMarkets.readMarkets(sector, system)) {
             if (Markets.isSettledColony(market)) {
                 ownedMarkets.add(market);
             }

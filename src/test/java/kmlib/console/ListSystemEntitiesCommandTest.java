@@ -8,6 +8,8 @@ import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
 
+import kmlib.starsector.SectorWalkCounters;
+import kmlib.starsector.WalkCountCapture;
 import kmlib.starsector.systems.SectorStarSystems;
 import kmlib.starsector.systems.StarSystems;
 import kmlib.testfixtures.console.output.CommandOutputFake;
@@ -64,6 +66,22 @@ final class ListSystemEntitiesCommandTest {
             assertThat(report).contains("Probe [probe]  (500, 0)");
             assertThat(report).contains("Fleets (nearest center first):");
             assertThat(report).contains("Patrol [Patrol]  (2000, 0)");
+        }
+
+        @Test
+        void countsTheEntitiesItScannedIncludingTheFleetsItDropped() {
+            // Charged at what the scan went over rather than what the tree kept: the fleets are
+            // looked at to be left out, and a count of the survivors would under-price the read.
+            var star = buildEntity("star", "Star", 0f, 0f, null, 0f, false);
+            var planet = buildEntity("planet", "Planet", 1000f, 0f, star, 360f, false);
+            var fleet = buildFleet("Patrol", 2000f, 0f);
+            var system = buildSystem(star, List.of(star, planet, fleet), List.of(fleet));
+
+            var counts = WalkCountCapture.captureCountsOf(
+                () -> ListSystemEntitiesCommand.buildReport(system, false));
+
+            assertThat(counts.readCount(SectorWalkCounters.ENTITIES_VISITED))
+                .isEqualTo(3L);
         }
 
         @Test

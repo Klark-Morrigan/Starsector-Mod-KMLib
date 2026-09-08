@@ -10,6 +10,8 @@ import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Factions;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
 
+import kmlib.starsector.SectorWalkCounters;
+import kmlib.starsector.WalkCountCapture;
 import kmlib.testfixtures.console.output.CommandOutputFake;
 
 import org.junit.jupiter.api.AfterEach;
@@ -75,6 +77,28 @@ final class ListMapSpoilersCommandTest {
                 .contains("Black Site  [cut off]");
             assertThat(report)
                 .contains("Station  (Tri-Tachyon)");
+        }
+
+        @Test
+        void countsOneWalkOverTheSystemsAndTheMarketsItRead() {
+            // A command walking the sector shows as a walk like any other, so a capture taken
+            // while one ran says what it cost rather than leaving a traversal unaccounted for.
+            var sector = buildSectorWith(
+                buildSystem("Corvus", false, buildOwnedMarket(
+                    "Jangala", "Hegemony", Visibility.SHOWN)),
+                buildSystem("Hideout", false, buildOwnedMarket(
+                    "Pirate Base", "Pirates", Visibility.UNDISCOVERED)));
+
+            var counts = WalkCountCapture.captureCountsOf(
+                () -> ListMapSpoilersCommand.buildReport(sector));
+
+            assertThat(counts.readCount(SectorWalkCounters.SECTOR_WALKS))
+                .isEqualTo(1L);
+            assertThat(counts.readCount(SectorWalkCounters.SYSTEMS_VISITED))
+                .isEqualTo(2L);
+            // One market read per system, through the shared reader the listing goes to.
+            assertThat(counts.readCount(SectorWalkCounters.MARKETS_READ))
+                .isEqualTo(2L);
         }
 
         @Test

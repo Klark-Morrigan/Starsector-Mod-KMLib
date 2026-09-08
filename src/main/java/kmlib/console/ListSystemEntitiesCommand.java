@@ -8,6 +8,7 @@ import com.fs.starfarer.api.impl.campaign.ids.Tags;
 import kmlib.console.output.CommandOutput;
 import kmlib.console.parsing.Parameter;
 import kmlib.console.parsing.ParameterSpec;
+import kmlib.starsector.SectorWalkCounters;
 import kmlib.starsector.entities.EntityOrbits;
 import kmlib.starsector.geometry.StarsectorPoints;
 import kmlib.starsector.systems.SectorStarSystems;
@@ -72,12 +73,17 @@ public final class ListSystemEntitiesCommand extends KmlibBaseConsoleCommand {
      */
     static String buildReport(StarSystemAPI system, boolean isGatesOnly) {
         var center = system.getCenter();
+        var systemEntities = system.getAllEntities();
         var entities = new ArrayList<SectorEntityToken>();
-        for (var entity : system.getAllEntities()) {
+
+        for (var entity : systemEntities) {
             if (!(entity instanceof CampaignFleetAPI)) {
                 entities.add(entity);
             }
         }
+        // Charged at what the scan went over rather than what it kept, the fleets it
+        // drops having been looked at all the same.
+        SectorWalkCounters.countEntitiesVisited(systemEntities.size());
 
         var childrenByFocus = new LinkedHashMap<SectorEntityToken, List<SectorEntityToken>>();
         for (var entity : entities) {

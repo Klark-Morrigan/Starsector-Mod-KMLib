@@ -4,6 +4,8 @@ import com.fs.starfarer.api.campaign.CustomCampaignEntityPlugin;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 
+import kmlib.starsector.SectorWalkCounters;
+import kmlib.starsector.WalkCountCapture;
 import kmlib.testfixtures.starsector.settings.ModStateScopes;
 
 import org.junit.jupiter.api.Nested;
@@ -65,6 +67,39 @@ final class RandomAssortmentOfThingsMatcherTest {
             ModStateScopes.runWithModEnabled(RANDOM_ASSORTMENT_OF_THINGS, true, () ->
                 assertThat(RandomAssortmentOfThingsMatcher.hasAbyssalFracture(systemMock))
                     .isFalse());
+        }
+
+        @Test
+        void counts_the_entities_it_examined_before_the_fracture() {
+            // The scan runs per system inside a reachability read, so what it went over belongs
+            // on that read's row - and a scan that stopped at the fracture went over two, not
+            // the three the system holds.
+            var systemMock = buildSystemWithEntities(
+                buildEntityWithPlugin(mock(CustomCampaignEntityPlugin.class)),
+                buildEntityWithPlugin(mock(AbyssalFracture.class)),
+                buildEntityWithPlugin(mock(CustomCampaignEntityPlugin.class)));
+
+            var counts = WalkCountCapture.captureCountsOf(() ->
+                ModStateScopes.runWithModEnabled(RANDOM_ASSORTMENT_OF_THINGS, true, () ->
+                    RandomAssortmentOfThingsMatcher.hasAbyssalFracture(systemMock)));
+
+            assertThat(counts.readCount(SectorWalkCounters.ENTITIES_VISITED))
+                .isEqualTo(2L);
+        }
+
+        @Test
+        void counts_nothing_where_the_mod_is_disabled() {
+            // The gate returns before any scan, so there is nothing to charge - a counter that
+            // reported entities here would price a read that never happened.
+            var systemMock = buildSystemWithEntities(
+                buildEntityWithPlugin(mock(AbyssalFracture.class)));
+
+            var counts = WalkCountCapture.captureCountsOf(() ->
+                ModStateScopes.runWithModEnabled(RANDOM_ASSORTMENT_OF_THINGS, false, () ->
+                    RandomAssortmentOfThingsMatcher.hasAbyssalFracture(systemMock)));
+
+            assertThat(counts.hasCount(SectorWalkCounters.ENTITIES_VISITED))
+                .isFalse();
         }
 
         @Test
