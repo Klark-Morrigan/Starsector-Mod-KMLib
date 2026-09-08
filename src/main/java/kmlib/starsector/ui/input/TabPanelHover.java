@@ -1,8 +1,9 @@
 package kmlib.starsector.ui.input;
 
 /**
- * What the pointer is on this frame, over one tab panel's hoverable parts: which header tab, which cell of
- * which body control, and whether the collapse handle. One reading of the cursor resolved into one value,
+ * What the pointer is on this frame, over one tab panel's hoverable parts: which header tab, whether the
+ * band button beside them, which cell of which body control, and whether the collapse handle. One reading
+ * of the cursor resolved into one value,
  * so every motion and every moment the panel answers with is charged against the same pointer rather than
  * against hit-tests taken a line apart.
  *
@@ -18,6 +19,9 @@ package kmlib.starsector.ui.input;
  * @param tabIndex       the header tab the pointer is on, in row order, or null when it is on none -
  *                       which is also what a panel not presenting its tabs reports, whatever is laid
  *                       out under the cursor
+ * @param isBandButtonHovered whether the pointer is on the panel's own band button - false as well for a
+ *                            panel flying none, and for one not presenting its band, the button being wiped
+ *                            by the fold with the tabs it stands beside
  * @param bodyCell       the body cell the pointer is on and what kind of thing it is, or null when it is
  *                       on none - which is also what a point outside the box the body is drawn inside
  *                       reports, whatever is laid out under the cursor
@@ -25,6 +29,7 @@ package kmlib.starsector.ui.input;
  */
 public record TabPanelHover(
     Integer tabIndex,
+    boolean isBandButtonHovered,
     HoveredBodyCell bodyCell,
     boolean isNotchHovered) {
 
@@ -33,7 +38,7 @@ public record TabPanelHover(
      * reports, and the reading a consumer stepping a panel by hand wants when it is driving
      * something other than hover.
      */
-    public static final TabPanelHover NOTHING_HOVERED = new TabPanelHover(null, null, false);
+    public static final TabPanelHover NOTHING_HOVERED = new TabPanelHover(null, false, null, false);
 
     /**
      * Where on the strip the hovered cell sits, for the readers that hold a cell against its place and

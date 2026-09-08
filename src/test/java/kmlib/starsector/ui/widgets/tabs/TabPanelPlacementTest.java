@@ -39,6 +39,15 @@ final class TabPanelPlacementTest {
 
     private static final float BORDER_WIDTH = 1f;
 
+    // The panel's own button, standing after the tabs where the layout lays it, and a point inside it. The
+    // band the containment test reads takes both in, so a point here is a point on the panel.
+    private static final Rectangle BAND_BUTTON_BOX = new Rectangle(400f, 600f, 60f, 20f);
+    private static final Rectangle BAND_WITH_BUTTON = new Rectangle(100f, 600f, 360f, 20f);
+    private static final float INSIDE_BAND_BUTTON_X = 430f;
+
+    // What a placement carries where the host asked for no button at all.
+    private static final Control NO_BAND_BUTTON = null;
+
     private static final float INSIDE_BODY_X = 150f;
     private static final float INSIDE_BODY_Y = 250f;
     private static final float INSIDE_HEADER_X = 150f;
@@ -66,6 +75,15 @@ final class TabPanelPlacementTest {
             // The row is drawn above the box, so a footprint that stopped at the box would leave the
             // surface behind the panel reading a pointer parked on the tabs.
             assertThat(placePanel(NOTCH, HEADER_BAND).containsPoint(INSIDE_HEADER_X, INSIDE_HEADER_Y))
+                .isTrue();
+        }
+
+        @Test
+        void containsPointAnswersYesOnTheBandButtonPastTheTabs() {
+            // The button rides in the band the footprint already reads, so it is claimed with the tabs
+            // rather than as a piece of its own - and the map under it stops answering the pointer.
+            assertThat(placePanelWithBandButton()
+                    .containsPoint(INSIDE_BAND_BUTTON_X, INSIDE_HEADER_Y))
                 .isTrue();
         }
 
@@ -201,10 +219,63 @@ final class TabPanelPlacementTest {
         }
     }
 
+    @Nested
+    class ContainsPointInBandButton {
+
+        @Test
+        void containsPointInBandButtonAnswersYesOnTheButton() {
+            assertThat(placePanelWithBandButton()
+                    .containsPointInBandButton(INSIDE_BAND_BUTTON_X, INSIDE_HEADER_Y))
+                .isTrue();
+        }
+
+        @Test
+        void containsPointInBandButtonAnswersNoOnATabBesideIt() {
+            // The button and the tabs share a band and nothing else. Answering yes here would open the
+            // panel's own dialog on a press meant for a tab.
+            assertThat(placePanelWithBandButton()
+                    .containsPointInBandButton(INSIDE_HEADER_X, INSIDE_HEADER_Y))
+                .isFalse();
+        }
+
+        @Test
+        void containsPointInBandButtonAnswersNoWhereThePanelFliesNoButton() {
+            // The absent button absorbs the point the way the absent handle does: with no rect to be over,
+            // no point is over it, so a caller needs no null check of its own.
+            assertThat(placePanel(NOTCH, HEADER_BAND)
+                    .containsPointInBandButton(INSIDE_BAND_BUTTON_X, INSIDE_HEADER_Y))
+                .isFalse();
+        }
+    }
+
+    // The same panel flying a band button after its tabs, its drawn band covering the two together - which
+    // is what the footprint reads, so the button is on the panel without being a piece of its own in the
+    // list of drawn parts.
+    private static TabPanelPlacement placePanelWithBandButton() {
+
+        var placement = placePanel(NOTCH, BAND_WITH_BUTTON);
+
+        return new TabPanelPlacement(
+            placement.tabsHeader(),
+            new Control(
+                new ControlSpec.Tabs(
+                    List.of("Edit"),
+                    List.of(),
+                    ControlSpec.NO_SELECTION,
+                    ControlAction.NONE),
+                BAND_BUTTON_BOX,
+                List.of(BAND_BUTTON_BOX)),
+            placement.drawnHeaderBand(),
+            placement.body(),
+            placement.border(),
+            placement.notch());
+    }
+
     // A placement carrying what a containment test reads: the drawn row, the body's box, and the notch.
     private static TabPanelPlacement placePanel(Rectangle notch, Rectangle drawnHeaderBand) {
         return new TabPanelPlacement(
             buildHeaderControl(),
+            NO_BAND_BUTTON,
             drawnHeaderBand,
             new PanelPlacement(
                 BODY_BOX,
@@ -228,6 +299,7 @@ final class TabPanelPlacementTest {
 
         return new TabPanelPlacement(
             buildHeaderControl(),
+            NO_BAND_BUTTON,
             HEADER_BAND,
             new PanelPlacement(
                 emptyBox,

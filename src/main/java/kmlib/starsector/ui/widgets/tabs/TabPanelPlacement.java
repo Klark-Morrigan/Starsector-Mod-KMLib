@@ -23,9 +23,17 @@ import java.util.List;
  * plus the drawn row (plus the handle) rather than the box alone - {@link #containsPoint} tests it piece
  * by piece, and {@link #computeOuterBound} encloses the same pieces in one rect.
  *
- * <p>The {@code drawnHeaderBand} is how much of the row is on screen: the whole row at rest, and the part
- * the fold has not yet wiped while the body is folding. One rect the draw pass clips the row to and the
- * containment test reads, so the panel cannot claim a strip of screen where its tabs are no longer painted.
+ * <p>The {@code bandButton} is the panel's own chrome standing after the last tab: a button that belongs to
+ * the panel rather than to any tab, so pressing it fires its own action and never moves the selection. It is
+ * laid out, drawn and hit-tested as a one-cell tabs control, which is what makes it read as part of the row
+ * it stands in without being a tab in it - a segment inside the tabs control would shift every index the
+ * selection, the lit tab and any bound keys are resolved by. Null when the host asks for none, and consumers
+ * reading it must null-check.
+ *
+ * <p>The {@code drawnHeaderBand} is how much of the row is on screen: the whole row - tabs and the band
+ * button together - at rest, and the part the fold has not yet wiped while the body is folding. One rect the
+ * draw pass clips the row to and the containment test reads, so the panel cannot claim a strip of screen
+ * where its tabs are no longer painted.
  *
  * <p>The {@code notch} is the collapse handle: a rect protruding past the box's right border edge, centred
  * on the frame. It rides that edge as the body collapses, so the render pass draws it and the input pass
@@ -43,6 +51,8 @@ import java.util.List;
  * has a resolved position; the width is not.
  *
  * @param tabsHeader      the laid-out tabs control across the header band, its segments split per tab
+ * @param bandButton      the panel's own one-cell button standing after the last tab, or null when the host
+ *                        asks for none
  * @param drawnHeaderBand the part of that row currently on screen - the whole row at rest, narrowed to the
  *                        box's span while the fold wipes it
  * @param body            the headerless panel placement beneath the row (its box frames the body alone)
@@ -52,6 +62,7 @@ import java.util.List;
  */
 public record TabPanelPlacement(
     Control tabsHeader,
+    Control bandButton,
     Rectangle drawnHeaderBand,
     PanelPlacement body,
     BoxBorder border,
@@ -110,6 +121,22 @@ public record TabPanelPlacement(
      */
     public boolean hasBody() {
         return !body.bodyControls().isEmpty();
+    }
+
+    /**
+     * Whether the point lands on the panel's band button. A panel asked for none absorbs the null the same
+     * way the handle's test does: with no button to be over, no point is over it.
+     *
+     * <p>Geometry alone, like every other containment test here. Whether the row is being presented at all
+     * is the panel's live fold, which this value knows nothing about - so a caller routing a press asks that
+     * question beside this one, exactly as it does for a tab.
+     *
+     * @param pointX the point's x in UI coordinates
+     * @param pointY the point's y in UI coordinates
+     * @return whether the point is on the band button
+     */
+    public boolean containsPointInBandButton(float pointX, float pointY) {
+        return bandButton != null && bandButton.bounds().containsPoint(pointX, pointY);
     }
 
     /**

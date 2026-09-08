@@ -9,7 +9,7 @@ import kmlib.math.geometry.Rectangle;
 import kmlib.testfixtures.starsector.ui.layout.PositionFake;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -44,9 +44,10 @@ public final class CoreUiPanelFake implements UIPanelAPI {
 
     private final List<UIComponentAPI> raisedComponents = new ArrayList<>();
 
-    // Keyed by identity so two children that compare equal still get positions of their own, which is
-    // what the engine's own child list does.
-    private final Map<UIComponentAPI, PositionAPI> componentPlacements = new LinkedHashMap<>();
+    // Keyed by identity rather than by equality, so two children that compare equal still get positions
+    // of their own - which is what the engine's own child list does, a panel holding widgets rather than
+    // values.
+    private final Map<UIComponentAPI, PositionAPI> componentPlacements = new IdentityHashMap<>();
 
     /**
      * @return the children added to this panel, in the order they were added and including any since
@@ -76,8 +77,13 @@ public final class CoreUiPanelFake implements UIPanelAPI {
     public List<UIComponentAPI> getStandingComponents() {
 
         var standing = new ArrayList<>(addedComponents);
-        standing.removeAll(removedComponents);
 
+        // One removal takes off one occurrence, by identity. Removing every equal child at once would
+        // read a panel holding the same widget twice as empty after a single remove, and mocks standing
+        // in for widgets compare equal far more readily than widgets do.
+        for (var removedComponent : removedComponents) {
+            removeFirstOccurrenceOf(standing, removedComponent);
+        }
         return List.copyOf(standing);
     }
 
@@ -134,5 +140,21 @@ public final class CoreUiPanelFake implements UIPanelAPI {
     @Override
     public float getOpacity() {
         throw new UnsupportedOperationException(NOT_A_SCREEN);
+    }
+
+    // The first child that is this very object, dropped. Quiet where there is none: a panel asked to
+    // remove something it never held is what a caller closing twice does, and the fixture models the
+    // engine rather than policing it.
+    private static void removeFirstOccurrenceOf(
+            List<UIComponentAPI> components,
+            UIComponentAPI removedComponent) {
+
+        for (var index = 0; index < components.size(); index++) {
+
+            if (components.get(index) == removedComponent) {
+                components.remove(index);
+                return;
+            }
+        }
     }
 }

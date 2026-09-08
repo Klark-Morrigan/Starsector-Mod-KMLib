@@ -14,11 +14,15 @@ import kmlib.starsector.ui.controls.BodyInteractionSources;
  * one value here is the reading, not the treatment.
  *
  * @param headerTabs    how far each header tab has travelled onto the hovered shade, and what lift it carries
+ * @param bandButtonHover how far the panel's own band button has travelled onto that same shade - one
+ *                        fraction rather than a channel pair, the button being a single cell that answers
+ *                        the pointer and nothing else
  * @param bodyControls  how far onto its hovered look, and how far through its press lift, each cell of each
  *                      body control stands
  */
 public record TabPanelInteractionSources(
     TabInteractionSources headerTabs,
+    float bandButtonHover,
     BodyInteractionSources bodyControls) {
 
     /**
@@ -28,5 +32,20 @@ public record TabPanelInteractionSources(
      */
     public static final TabPanelInteractionSources RESTING = new TabPanelInteractionSources(
         TabInteractionSources.RESTING,
+        TabHoverSource.NOT_HOVERED,
         BodyInteractionSources.RESTING);
+
+    /**
+     * The band button's fraction as the channel pair a strip is drawn from: it answers the pointer and
+     * carries no lift, so the pulse channel rests. Composed here rather than at the pass that draws it, so
+     * "a one-cell control has one channel" is stated where the fraction is carried rather than restated by
+     * every consumer painting one.
+     *
+     * @return the band button's paint channels
+     */
+    public TabInteractionSources resolveBandButtonSources() {
+        return new TabInteractionSources(
+            tabIndex -> bandButtonHover,
+            TabPulseSource.createRestingPulseSource());
+    }
 }

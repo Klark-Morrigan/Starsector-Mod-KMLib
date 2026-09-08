@@ -32,7 +32,8 @@ takes when that rule has to be exercisable without a display.
 
 `PanelController` drives a headerless panel: it routes each pointer event to the end that answers it
 and holds what the body's cells are doing. `TabPanelController` stands a header on top - the tab row's
-own hits, the collapse handle, a bound key's blink - and delegates everything else to a
+own hits, the panel's own band button, the collapse handle, a bound key's blink - and delegates
+everything else to a
 `PanelController` for the body, so a tab panel's scroll and press behaviour is the plain panel's,
 unchanged. What the header is doing is held as one value on `TabHeaderMotions`; what the body is doing
 is held on the body's own controller, the end a body press actually lands on.
@@ -63,6 +64,15 @@ showing while firing nothing there.
 A hit is reduced to a `BodyCellSlot` - the control's place in the strip and the cell within it - and,
 while the walk still holds the control, to what kind of thing was reached and where that control wants
 the reading told (`HoveredBodyCell`), so nothing downstream asks the control a second time.
+
+A tab panel's own band button is a hit-test beside the tabs rather than inside them
+(`isBandButtonHoveredAt`, read by the fade that lights it and by the press that fires it). It has to
+be: every index the row's selection, its lit tab and any bound keys resolve by is a position in the
+tabs control, so a cell in that control which is not a tab would move all three one along. It is
+gated exactly as the tabs are, standing in their row and being wiped with them by the fold - unlike
+the handle, which draws past the fold because it is what brings a docked panel back. It carries a
+lone fade rather than an entry in the row's keyed set, and no lift at all: it acts on the way down,
+so there is nothing for a held lift to report by the release.
 
 ## What a body cell is doing
 

@@ -1,6 +1,7 @@
 package kmlib.starsector.ui.render.gl.tabs;
 
 import kmlib.starsector.ui.controls.BodyInteractionSources;
+import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlInteractionSources;
 import kmlib.starsector.ui.render.gl.GlStateGuard;
 import kmlib.starsector.ui.render.gl.UiScissor;
@@ -24,6 +25,10 @@ import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
  * single frame is the body placement's box, so there is one border, drawn once by the delegate. A bodyless
  * panel has no box and no notch (nothing to frame, nothing to collapse), so the frame and the handle are
  * both skipped and it paints as its tab row alone.
+ *
+ * <p>The panel's own band button, where it flies one, is painted with the tabs as one piece of chrome: same
+ * clip, same state save, same alpha, and its hover fraction taken off the same reading of the pointer. It
+ * carries no lift, being a single cell that acts on the press rather than holding one.
  *
  * <p>Nothing is laid under the row: its tabs are opaque surfaces of their own (see {@link
  * kmlib.starsector.ui.widgets.tabs.style.TabPalette#createMapTabPalette}), so the row reads the same wherever it
@@ -88,7 +93,7 @@ public final class TabPanelRenderer {
         if (placement.hasBody()) {
             drawFramedBody(placement, style, border, interactions.bodyControls(), notchState, alpha);
         }
-        drawHeaderBand(placement, style, interactions.headerTabs(), alpha);
+        drawHeaderBand(placement, style, interactions, alpha);
 
         // The handle draws last and unclipped, over the map beyond the frame's right edge, so it stays
         // reachable to expand the panel even when the body has wiped away to the docked rail. A bodyless
@@ -138,7 +143,7 @@ public final class TabPanelRenderer {
     private static void drawHeaderBand(
             TabPanelPlacement placement,
             WidgetStyle style,
-            TabInteractionSources tabInteractions,
+            TabPanelInteractionSources interactions,
             PanelAlpha alpha) {
 
         // Clipped to what the chrome paints rather than to the band alone: a chrome whose buttons lay their
@@ -150,17 +155,46 @@ public final class TabPanelRenderer {
                 style.tabStyle().chrome(),
                 placement.drawnHeaderBand(),
                 style.tabStyle().resolveTabHeight()),
-            () -> GlStateGuard.bracket(() -> ControlRenderer.render(
-                placement.tabsHeader(),
-                style,
-                // The chrome channel throughout: the row stands opaque on a see-through body, so it
-                // takes none of the body's opacity - but it goes with the panel as that panel arrives or
-                // leaves. Handed on as the pair rather than as the one number, so the words inside it
-                // keep telling body paint from chrome paint the way every other control's do.
-                alpha.withOpaqueBody(),
-                tabInteractions,
-                // The row answers the pointer and a press through its own palette - a tab meets a shade
-                // rather than taking the body's cell wash - so it is drawn with those channels at rest.
-                ControlInteractionSources.RESTING)));
+            () -> GlStateGuard.bracket(() -> {
+
+                drawBandControl(
+                    placement.tabsHeader(),
+                    style,
+                    interactions.headerTabs(),
+                    alpha);
+
+                // The panel's own button, drawn in the same bracket and after the tabs so the two are one
+                // piece of chrome under one state save. A panel asked for none simply has nothing here.
+                if (placement.bandButton() != null) {
+                    drawBandControl(
+                        placement.bandButton(),
+                        style,
+                        interactions.resolveBandButtonSources(),
+                        alpha);
+                }
+            }));
+    }
+
+    // One control of the header band, drawn as the chrome it is. Both the tabs and the button beside them go
+    // through it, so the two cannot come to be drawn at different alphas or with the body's cell wash
+    // reaching one of them.
+    private static void drawBandControl(
+            Control bandControl,
+            WidgetStyle style,
+            TabInteractionSources tabInteractions,
+            PanelAlpha alpha) {
+
+        ControlRenderer.render(
+            bandControl,
+            style,
+            // The chrome channel throughout: the row stands opaque on a see-through body, so it
+            // takes none of the body's opacity - but it goes with the panel as that panel arrives or
+            // leaves. Handed on as the pair rather than as the one number, so the words inside it
+            // keep telling body paint from chrome paint the way every other control's do.
+            alpha.withOpaqueBody(),
+            tabInteractions,
+            // The row answers the pointer and a press through its own palette - a tab meets a shade
+            // rather than taking the body's cell wash - so it is drawn with those channels at rest.
+            ControlInteractionSources.RESTING);
     }
 }

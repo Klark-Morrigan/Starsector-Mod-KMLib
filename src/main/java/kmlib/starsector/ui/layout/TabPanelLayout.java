@@ -2,6 +2,7 @@ package kmlib.starsector.ui.layout;
 
 import kmlib.math.geometry.BoxEdge;
 import kmlib.math.geometry.Rectangle;
+import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.widgets.PanelChrome;
@@ -31,6 +32,12 @@ import java.util.List;
  * <p>A tab whose body is empty is its tab row and nothing else: no frame is laid out beneath it, so the
  * panel claims no footprint under a row it does not fill, and the row alone is what the passes draw and
  * hit-test.
+ *
+ * <p>A panel may fly one button of its own after the last tab - chrome belonging to the panel rather than to
+ * any tab, for whatever the row itself has to offer. It is laid through the same header call the tabs are, so
+ * it is sized, styled and hit exactly as they are; it is not a segment of the tabs control, which would shift
+ * every index the selection and any bound keys are resolved by. The band the panel reports is the two
+ * together, so the fold wipes them as one piece.
  *
  * <p>The header is laid through {@link TabsControlLayout#layoutHeaderControl}, so a header tab measures,
  * draws, and hit-tests through the same tabs-row geometry a body {@link ControlSpec.Tabs} control uses. UI
@@ -70,24 +77,27 @@ public final class TabPanelLayout {
      * it. An empty {@code bodyControls} leaves the tab row standing alone: no box, and, with nothing to
      * collapse, no notch either - the placement's collapse handle is absent.
      *
-     * @param screenHeight the UI-coordinate screen height, giving the top edge to hang from
-     * @param padding      the panel's edge margins: the top-left anchor and the bottom keep-clear
-     *                     margin the body caps to (the right inset is unused - a panel grows rightward)
-     * @param chrome       the room the panel spends on chrome rather than content: the border framing the
-     *                     footprint, where an open edge reserves no inset so the box sits flush against a
-     *                     neighbour, and the bar thickness the body reserves a gutter for - a bar past
-     *                     what the body's own padding holds clear widens the body and with it the box
-     * @param tabStyle     the tab dimensions the header band is laid to, so two panels sharing this one
-     *                     layout can still stand their tab rows at different heights; the band height is
-     *                     content-space, standing under the top border rather than including it
-     * @param tabsSpec     the tabs control (labels + per-tab shortcuts) drawn across the header band
-     * @param bodyControls the active tab's body controls, top to bottom (empty for no body)
-     * @param measurer     measures each label's rendered width for text snapping
-     * @param viewState    how far the panel is scrolled and folded
-     * @return the laid-out tabs header, how much of that header the fold leaves on screen, the body
-     *         placement carrying the framed box, the border it was framed around, and the collapse-handle
-     *         notch on the box's right border edge - null when {@code bodyControls} is empty, since a
-     *         bodyless panel has nothing to collapse
+     * @param screenHeight   the UI-coordinate screen height, giving the top edge to hang from
+     * @param padding        the panel's edge margins: the top-left anchor and the bottom keep-clear
+     *                       margin the body caps to (the right inset is unused - a panel grows rightward)
+     * @param chrome         the room the panel spends on chrome rather than content: the border framing the
+     *                       footprint, where an open edge reserves no inset so the box sits flush against a
+     *                       neighbour, and the bar thickness the body reserves a gutter for - a bar past
+     *                       what the body's own padding holds clear widens the body and with it the box
+     * @param tabStyle       the tab dimensions the header band is laid to, so two panels sharing this one
+     *                       layout can still stand their tab rows at different heights; the band height is
+     *                       content-space, standing under the top border rather than including it
+     * @param tabsSpec       the tabs control (labels + per-tab shortcuts) drawn across the header band
+     * @param bandButtonSpec the panel's own chrome button standing after the last tab, as a one-cell tabs
+     *                       control so it is sized and styled exactly as the tabs beside it, or null for a
+     *                       band of tabs alone
+     * @param bodyControls   the active tab's body controls, top to bottom (empty for no body)
+     * @param measurer       measures each label's rendered width for text snapping
+     * @param viewState      how far the panel is scrolled and folded
+     * @return the laid-out tabs header, the band button standing after it (null where none was asked for),
+     *         how much of that whole band the fold leaves on screen, the body placement carrying the framed
+     *         box, the border it was framed around, and the collapse-handle notch on the box's right border
+     *         edge - null when {@code bodyControls} is empty, since a bodyless panel has nothing to collapse
      */
     public static TabPanelPlacement computePlacement(
             float screenHeight,
@@ -95,6 +105,7 @@ public final class TabPanelLayout {
             PanelChrome chrome,
             TabStyle tabStyle,
             ControlSpec.Tabs tabsSpec,
+            ControlSpec.Tabs bandButtonSpec,
             List<ControlSpec> bodyControls,
             LineWidthMeasurer measurer,
             TabPanelViewState viewState) {
@@ -129,12 +140,26 @@ public final class TabPanelLayout {
         // origin rather than re-derived here, so the row and the body beneath it cannot come to disagree
         // about where the panel's content starts; an unstroked left edge insets by nothing, and both follow
         // it together.
+        var bandTopY = screenHeight - padding.top();
         var tabsHeader = TabsControlLayout.layoutHeaderControl(
             tabsSpec,
             origin.contentX(),
-            screenHeight - padding.top(),
+            bandTopY,
             tabStyle,
             measurer);
+
+        // The panel's own button, laid where the tabs leave off so the band simply grows by one box. Laid
+        // through the same header call rather than boxed here, so it is snapped, split and hit exactly as a
+        // tab is and wears whatever look the host's style names - which is the whole reason it reads as
+        // part of the row without being a tab in it.
+        var bandButton = bandButtonSpec == null
+            ? null
+            : TabsControlLayout.layoutHeaderControl(
+                bandButtonSpec,
+                tabsHeader.bounds().x() + tabsHeader.bounds().width(),
+                bandTopY,
+                tabStyle,
+                measurer);
 
         // Body: the same shared composition a plain panel frames, hung beneath the header band and capped so
         // the row and the box together clear the bottom margin - the band height counted against the
@@ -197,8 +222,9 @@ public final class TabPanelLayout {
         // agree.
         return new TabPanelPlacement(
             tabsHeader,
+            bandButton,
             computeDrawnHeaderBand(
-                tabsHeader.bounds(),
+                computeBandBounds(tabsHeader, bandButton),
                 bodyPlacement.box(),
                 // A panel with no body never folds - there is nothing to fold and no handle to ask for it -
                 // so a fraction another tab's body left standing in the animation cannot wipe this row.
@@ -206,6 +232,18 @@ public final class TabPanelLayout {
             bodyPlacement,
             border,
             notch);
+    }
+
+    // The whole band the panel flies: its tabs, plus the button standing after them where it has one. One
+    // rect rather than two, because everything downstream asks the band a single question - what does the
+    // fold leave of it, is the pointer on it, how far does the panel reach - and a band that named only its
+    // tabs would leave the button outside every one of those answers: unclipped by the fold, on screen the
+    // panel does not claim, and beyond the bound a backdrop is drawn to.
+    private static Rectangle computeBandBounds(Control tabsHeader, Control bandButton) {
+
+        return bandButton == null
+            ? tabsHeader.bounds()
+            : tabsHeader.bounds().unionWith(bandButton.bounds());
     }
 
     // What the fold leaves of the tab row on screen. While the body is folding, the row is wiped with it -

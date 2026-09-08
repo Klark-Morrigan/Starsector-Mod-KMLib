@@ -56,6 +56,16 @@ final class TabPanelControllerTest {
     private static final Rectangle SECOND_TAB = new Rectangle(180f, 500f, 80f, 20f);
     private static final Rectangle HEADER_BAND = new Rectangle(100f, 500f, 160f, 20f);
 
+    // The panel's own button, laid where the tabs leave off, and the band the two make together. Clear of
+    // both tabs on the x axis, so a point on the button cannot also read as a point on a tab - which is what
+    // makes a crossed-over routing show as the wrong thing firing rather than as two answers that agree.
+    private static final Rectangle BAND_BUTTON_BOX = new Rectangle(260f, 500f, 60f, 20f);
+    private static final Rectangle BAND_WITH_BUTTON = new Rectangle(100f, 500f, 220f, 20f);
+    private static final float INSIDE_BAND_BUTTON_X = 290f;
+
+    // What a placement carries where the host asked for no button at all.
+    private static final Control NO_BAND_BUTTON = null;
+
     // The framed body, standing beneath the row and meeting its bottom edge, as the layout lays it. Apart
     // from the row on the y axis, so a point on the tabs is a point the body does not also claim - which is
     // what tells the row's own answer apart from the body's.
@@ -124,6 +134,8 @@ final class TabPanelControllerTest {
     // as a pointer position rather than as two nulls and a false.
     private static final Integer NO_TAB_HOVERED = null;
     private static final HoveredBodyCell NO_BODY_CELL_HOVERED = null;
+    private static final boolean BAND_BUTTON_HOVERED = true;
+    private static final boolean BAND_BUTTON_NOT_HOVERED = false;
     private static final boolean NOTCH_HOVERED = true;
     private static final boolean NOTCH_NOT_HOVERED = false;
 
@@ -247,7 +259,7 @@ final class TabPanelControllerTest {
             // together.
             var controller = new TabPanelController();
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(FIRST_TAB_INDEX, MID_STRIP_SEGMENT_CELL, NOTCH_NOT_HOVERED),
+                new TabPanelHover(FIRST_TAB_INDEX, BAND_BUTTON_NOT_HOVERED, MID_STRIP_SEGMENT_CELL, NOTCH_NOT_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
 
@@ -280,6 +292,28 @@ final class TabPanelControllerTest {
                     .resolvePressFractionAt(FIRST_BODY_SLOT.cell()))
                 .isCloseTo(1f, within(TOLERANCE));
         }
+
+        @Test
+        void getInteractionSourcesCarriesTheBandButtonsOwnHoverChannel() {
+            // Its own channel rather than an entry in the row's, so the button lights while every tab beside
+            // it stays at rest - which is what a fraction keyed into the row's own space could not say.
+            var controller = new TabPanelController();
+            controller.advanceInputMotionsForFrame(
+                new TabPanelHover(
+                    NO_TAB_HOVERED,
+                    BAND_BUTTON_HOVERED,
+                    NO_BODY_CELL_HOVERED,
+                    NOTCH_NOT_HOVERED),
+                FULL_STEP_SECONDS,
+                DURATIONS);
+
+            var interactions = controller.getInteractionSources();
+
+            assertThat(interactions.bandButtonHover())
+                .isCloseTo(1f, within(TOLERANCE));
+            assertThat(interactions.headerTabs().hoverSource().resolveHoverFractionAt(FIRST_TAB_INDEX))
+                .isCloseTo(0f, within(TOLERANCE));
+        }
     }
 
     @Nested
@@ -303,7 +337,7 @@ final class TabPanelControllerTest {
             // be the pair the fade is keyed by.
             var controller = new TabPanelController();
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(NO_TAB_HOVERED, MID_STRIP_SEGMENT_CELL, NOTCH_NOT_HOVERED),
+                new TabPanelHover(NO_TAB_HOVERED, BAND_BUTTON_NOT_HOVERED, MID_STRIP_SEGMENT_CELL, NOTCH_NOT_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
 
@@ -321,7 +355,7 @@ final class TabPanelControllerTest {
             // above, which names a slot whose halves differ.
             var controller = new TabPanelController();
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(NO_TAB_HOVERED, MID_STRIP_SEGMENT_CELL, NOTCH_NOT_HOVERED),
+                new TabPanelHover(NO_TAB_HOVERED, BAND_BUTTON_NOT_HOVERED, MID_STRIP_SEGMENT_CELL, NOTCH_NOT_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
 
@@ -489,6 +523,49 @@ final class TabPanelControllerTest {
         }
 
         @Test
+        void handlePointerFiresTheBandButtonAndNoTabForAPressOnTheButton() {
+            // The routing the whole band-button seam exists for: the panel's own action runs and the
+            // selection does not move, so the player opens the dialog without their layer changing under it.
+            var firedTabs = new ArrayList<Integer>();
+            var firedButtonCells = new ArrayList<Integer>();
+            var pressMock = PointerEventMocks.mockLeftPressAt(INSIDE_BAND_BUTTON_X, ON_TAB_ROW_Y);
+
+            new TabPanelController().handlePointer(
+                pressMock,
+                buildPlacementWithBandButton(
+                    buildTabsSpecShowing(FIRST_TAB_INDEX, firedTabs::add),
+                    firedButtonCells::add));
+
+            assertThat(firedButtonCells)
+                .containsExactly(0);
+            assertThat(firedTabs)
+                .isEmpty();
+            Mockito
+                .verify(pressMock)
+                .consume();
+        }
+
+        @Test
+        void handlePointerStillSwitchesTheTabBesideTheBandButton() {
+            // The other half of the same pairing. A button standing in the row must leave every tab in it
+            // firing exactly as it did, or the row's indexing has moved after all.
+            var firedTabs = new ArrayList<Integer>();
+            var firedButtonCells = new ArrayList<Integer>();
+            var pressMock = PointerEventMocks.mockLeftPressAt(INSIDE_SECOND_TAB_X, ON_TAB_ROW_Y);
+
+            new TabPanelController().handlePointer(
+                pressMock,
+                buildPlacementWithBandButton(
+                    buildTabsSpecShowing(FIRST_TAB_INDEX, firedTabs::add),
+                    firedButtonCells::add));
+
+            assertThat(firedTabs)
+                .containsExactly(SECOND_TAB_INDEX);
+            assertThat(firedButtonCells)
+                .isEmpty();
+        }
+
+        @Test
         void handlePointerLeavesAnEventOverAWipedTabRowAlone() {
             // Mid-fold the drawn band is narrower than the row was laid out; the panel claims only what it
             // still paints, so the screen its tabs have wiped off goes back to whatever is behind.
@@ -617,6 +694,119 @@ final class TabPanelControllerTest {
     }
 
     @Nested
+    class ActivateBandButtonAtPoint {
+
+        @Test
+        void activateBandButtonAtPointFiresTheButtonsOwnActionAndNoTabsAction() {
+            // The whole reason the button is not a segment of the tabs row: a press on it reaches the
+            // panel's own action and leaves the selection exactly where it was. As a segment it would both
+            // fire the row's action and shift every index behind it.
+            var firedTabs = new ArrayList<Integer>();
+            var firedButtonCells = new ArrayList<Integer>();
+            var controller = new TabPanelController();
+
+            var hasActed = controller.activateBandButtonAtPoint(
+                buildPlacementWithBandButton(
+                    buildTabsSpecShowing(FIRST_TAB_INDEX, firedTabs::add),
+                    firedButtonCells::add),
+                INSIDE_BAND_BUTTON_X,
+                ON_TAB_ROW_Y);
+
+            assertThat(hasActed)
+                .isTrue();
+            assertThat(firedButtonCells)
+                .containsExactly(0);
+            assertThat(firedTabs)
+                .isEmpty();
+        }
+
+        @Test
+        void activateBandButtonAtPointActsOnNothingForAPressOnATab() {
+            // The tabs keep their own row. Reported as not acted so the press falls through to the tab
+            // path, which is what still switches the layer under the button's neighbour.
+            var firedButtonCells = new ArrayList<Integer>();
+            var controller = new TabPanelController();
+
+            var hasActed = controller.activateBandButtonAtPoint(
+                buildPlacementWithBandButton(TABS_SHOWING_FIRST_TAB, firedButtonCells::add),
+                INSIDE_SECOND_TAB_X,
+                ON_TAB_ROW_Y);
+
+            assertThat(hasActed)
+                .isFalse();
+            assertThat(firedButtonCells)
+                .isEmpty();
+        }
+
+        @Test
+        void activateBandButtonAtPointActsOnNothingWhileTheTabsAreNotPresented() {
+            // Wiped with the row it stands in. Folding clips the band at paint time and leaves every hit box
+            // where it was laid, so without the gate a press behind the docked rail would open the panel's
+            // own dialog with nothing on screen to explain it.
+            var firedButtonCells = new ArrayList<Integer>();
+            var controller = TabPanelController.createStartingDocked();
+
+            var hasActed = controller.activateBandButtonAtPoint(
+                buildPlacementWithBandButton(TABS_SHOWING_FIRST_TAB, firedButtonCells::add),
+                INSIDE_BAND_BUTTON_X,
+                ON_TAB_ROW_Y);
+
+            assertThat(hasActed)
+                .isFalse();
+            assertThat(firedButtonCells)
+                .isEmpty();
+        }
+
+        @Test
+        void activateBandButtonAtPointActsOnNothingWhereThePanelFliesNoButton() {
+            // A panel asked for none has nothing there to press, so the point is bare band and the press
+            // goes on to whatever else claims it.
+            var hasActed = new TabPanelController().activateBandButtonAtPoint(
+                buildTwoTabPlacement(),
+                INSIDE_BAND_BUTTON_X,
+                ON_TAB_ROW_Y);
+
+            assertThat(hasActed)
+                .isFalse();
+        }
+    }
+
+    @Nested
+    class IsBandButtonHoveredAt {
+
+        @Test
+        void isBandButtonHoveredAtReportsAPointerOnTheButton() {
+            assertThat(new TabPanelController().isBandButtonHoveredAt(
+                buildPlacementWithBandButton(TABS_SHOWING_FIRST_TAB, ControlAction.NONE),
+                INSIDE_BAND_BUTTON_X,
+                ON_TAB_ROW_Y))
+                .isTrue();
+        }
+
+        @Test
+        void isBandButtonHoveredAtReportsNoPointerOnATabBesideIt() {
+            // The pairing a crossed hit-test would break: the button lighting for a pointer on a tab would
+            // read as the tab having moved.
+            assertThat(new TabPanelController().isBandButtonHoveredAt(
+                buildPlacementWithBandButton(TABS_SHOWING_FIRST_TAB, ControlAction.NONE),
+                INSIDE_SECOND_TAB_X,
+                ON_TAB_ROW_Y))
+                .isFalse();
+        }
+
+        @Test
+        void isBandButtonHoveredAtReportsNoPointerWhileTheTabsAreNotPresented() {
+            // Read by the fade as well as by the press, so the same gate keeps a docked panel from lighting
+            // a button the player cannot see.
+            assertThat(TabPanelController.createStartingDocked().isBandButtonHoveredAt(
+                buildPlacementWithBandButton(TABS_SHOWING_FIRST_TAB, ControlAction.NONE),
+                INSIDE_BAND_BUTTON_X,
+                ON_TAB_ROW_Y))
+                .isFalse();
+        }
+    }
+
+    @Nested
     class StartHotkeyBlinkAt {
 
         @Test
@@ -657,7 +847,7 @@ final class TabPanelControllerTest {
             controller.startHotkeyBlinkAt(FIRST_TAB_INDEX);
 
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(NO_TAB_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
+                new TabPanelHover(NO_TAB_HOVERED, BAND_BUTTON_NOT_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
                 TabPanelController.HOTKEY_BLINK_DURATIONS.riseSeconds(),
                 DURATIONS);
 
@@ -673,13 +863,13 @@ final class TabPanelControllerTest {
             var controller = new TabPanelController();
 
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(FIRST_TAB_INDEX, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
+                new TabPanelHover(FIRST_TAB_INDEX, BAND_BUTTON_NOT_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
 
             controller.startHotkeyBlinkAt(FIRST_TAB_INDEX);
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(FIRST_TAB_INDEX, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
+                new TabPanelHover(FIRST_TAB_INDEX, BAND_BUTTON_NOT_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
                 TabPanelController.HOTKEY_BLINK_DURATIONS.riseSeconds(),
                 DURATIONS);
 
@@ -697,12 +887,12 @@ final class TabPanelControllerTest {
             controller.startHotkeyBlinkAt(FIRST_TAB_INDEX);
 
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(NO_TAB_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
+                new TabPanelHover(NO_TAB_HOVERED, BAND_BUTTON_NOT_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
                 TabPanelController.HOTKEY_BLINK_DURATIONS.riseSeconds(),
                 DURATIONS);
 
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(FIRST_TAB_INDEX, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
+                new TabPanelHover(FIRST_TAB_INDEX, BAND_BUTTON_NOT_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
                 HALF_OF_THE_BLINKS_FALL_SECONDS,
                 DURATIONS);
 
@@ -719,12 +909,12 @@ final class TabPanelControllerTest {
             controller.startHotkeyBlinkAt(SECOND_TAB_INDEX);
 
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(NO_TAB_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
+                new TabPanelHover(NO_TAB_HOVERED, BAND_BUTTON_NOT_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
                 TabPanelController.HOTKEY_BLINK_DURATIONS.riseSeconds(),
                 DURATIONS);
 
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(NO_TAB_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
+                new TabPanelHover(NO_TAB_HOVERED, BAND_BUTTON_NOT_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
                 TabPanelController.HOTKEY_BLINK_DURATIONS.fallSeconds(),
                 DURATIONS);
 
@@ -755,7 +945,7 @@ final class TabPanelControllerTest {
             // interaction sources, or the strip paints a row that never moves however long it is hovered.
             var controller = new TabPanelController();
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(FIRST_TAB_INDEX, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
+                new TabPanelHover(FIRST_TAB_INDEX, BAND_BUTTON_NOT_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
 
@@ -771,12 +961,12 @@ final class TabPanelControllerTest {
             var controller = new TabPanelController();
 
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(FIRST_TAB_INDEX, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
+                new TabPanelHover(FIRST_TAB_INDEX, BAND_BUTTON_NOT_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
 
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(SECOND_TAB_INDEX, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
+                new TabPanelHover(SECOND_TAB_INDEX, BAND_BUTTON_NOT_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
 
@@ -793,7 +983,7 @@ final class TabPanelControllerTest {
             // fold is asked once, not twice.
             var controller = TabPanelController.createStartingDocked();
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(FIRST_TAB_INDEX, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
+                new TabPanelHover(FIRST_TAB_INDEX, BAND_BUTTON_NOT_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
 
@@ -808,7 +998,7 @@ final class TabPanelControllerTest {
             // slot at rest.
             var controller = new TabPanelController();
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(NO_TAB_HOVERED, FIRST_BODY_CELL, NOTCH_NOT_HOVERED),
+                new TabPanelHover(NO_TAB_HOVERED, BAND_BUTTON_NOT_HOVERED, FIRST_BODY_CELL, NOTCH_NOT_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
 
@@ -824,12 +1014,12 @@ final class TabPanelControllerTest {
             var controller = new TabPanelController();
 
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(NO_TAB_HOVERED, FIRST_BODY_CELL, NOTCH_NOT_HOVERED),
+                new TabPanelHover(NO_TAB_HOVERED, BAND_BUTTON_NOT_HOVERED, FIRST_BODY_CELL, NOTCH_NOT_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
 
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(NO_TAB_HOVERED, SECOND_BODY_CELL, NOTCH_NOT_HOVERED),
+                new TabPanelHover(NO_TAB_HOVERED, BAND_BUTTON_NOT_HOVERED, SECOND_BODY_CELL, NOTCH_NOT_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
 
@@ -846,7 +1036,7 @@ final class TabPanelControllerTest {
             // control 0 and tab 0 would light together and every case above would still pass.
             var controller = new TabPanelController();
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(NO_TAB_HOVERED, FIRST_BODY_CELL, NOTCH_NOT_HOVERED),
+                new TabPanelHover(NO_TAB_HOVERED, BAND_BUTTON_NOT_HOVERED, FIRST_BODY_CELL, NOTCH_NOT_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
 
@@ -860,7 +1050,7 @@ final class TabPanelControllerTest {
 
             var controller = new TabPanelController();
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(NO_TAB_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_HOVERED),
+                new TabPanelHover(NO_TAB_HOVERED, BAND_BUTTON_NOT_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
 
@@ -874,12 +1064,12 @@ final class TabPanelControllerTest {
             var controller = new TabPanelController();
 
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(NO_TAB_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_HOVERED),
+                new TabPanelHover(NO_TAB_HOVERED, BAND_BUTTON_NOT_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
 
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(NO_TAB_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
+                new TabPanelHover(NO_TAB_HOVERED, BAND_BUTTON_NOT_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
 
@@ -893,7 +1083,7 @@ final class TabPanelControllerTest {
             // back - so the gate that silences the tabs must not reach it.
             var controller = TabPanelController.createStartingDocked();
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(NO_TAB_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_HOVERED),
+                new TabPanelHover(NO_TAB_HOVERED, BAND_BUTTON_NOT_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
 
@@ -1157,7 +1347,7 @@ final class TabPanelControllerTest {
             var controller = new TabPanelController();
 
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(FIRST_TAB_INDEX, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
+                new TabPanelHover(FIRST_TAB_INDEX, BAND_BUTTON_NOT_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
                 HALF_STEP_SECONDS,
                 DURATIONS);
 
@@ -1175,7 +1365,7 @@ final class TabPanelControllerTest {
             var controller = new TabPanelController();
 
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(NO_TAB_HOVERED, FIRST_BODY_CELL, NOTCH_NOT_HOVERED),
+                new TabPanelHover(NO_TAB_HOVERED, BAND_BUTTON_NOT_HOVERED, FIRST_BODY_CELL, NOTCH_NOT_HOVERED),
                 HALF_STEP_SECONDS,
                 DURATIONS);
 
@@ -1197,7 +1387,7 @@ final class TabPanelControllerTest {
                 buildTwoTabPlacement());
 
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(NO_TAB_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
+                new TabPanelHover(NO_TAB_HOVERED, BAND_BUTTON_NOT_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
                 HALF_STEP_SECONDS,
                 DURATIONS);
 
@@ -1214,7 +1404,7 @@ final class TabPanelControllerTest {
             var controller = new TabPanelController();
 
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(NO_TAB_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_HOVERED),
+                new TabPanelHover(NO_TAB_HOVERED, BAND_BUTTON_NOT_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_HOVERED),
                 HALF_STEP_SECONDS,
                 DURATIONS);
 
@@ -1236,7 +1426,7 @@ final class TabPanelControllerTest {
                 ON_TAB_ROW_Y);
 
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(NO_TAB_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
+                new TabPanelHover(NO_TAB_HOVERED, BAND_BUTTON_NOT_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
                 HALF_STEP_SECONDS,
                 DURATIONS);
 
@@ -1281,7 +1471,7 @@ final class TabPanelControllerTest {
 
             controller.startHotkeyBlinkAt(SECOND_TAB_INDEX);
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(NO_TAB_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
+                new TabPanelHover(NO_TAB_HOVERED, BAND_BUTTON_NOT_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
                 HALF_STEP_SECONDS,
                 DURATIONS);
 
@@ -1815,18 +2005,18 @@ final class TabPanelControllerTest {
 
         // The pointer on one tab and off the handle.
         private static TabPanelHover buildHoverOnTab(Integer tabIndex) {
-            return new TabPanelHover(tabIndex, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED);
+            return new TabPanelHover(tabIndex, BAND_BUTTON_NOT_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED);
         }
 
         // The pointer on one body cell and off both the row and the handle, so what sounds can only have
         // come from the body.
         private static TabPanelHover buildHoverOnBodyCell(HoveredBodyCell bodyCell) {
-            return new TabPanelHover(NO_TAB_HOVERED, bodyCell, NOTCH_NOT_HOVERED);
+            return new TabPanelHover(NO_TAB_HOVERED, BAND_BUTTON_NOT_HOVERED, bodyCell, NOTCH_NOT_HOVERED);
         }
 
         // The pointer on the handle and off every tab, so what sounds can only have come from the handle.
         private static TabPanelHover buildHoverOnNotch() {
-            return new TabPanelHover(NO_TAB_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_HOVERED);
+            return new TabPanelHover(NO_TAB_HOVERED, BAND_BUTTON_NOT_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_HOVERED);
         }
 
         // A controller recording into this case's fake and answering by the engine's own scheme - the look
@@ -1938,7 +2128,7 @@ final class TabPanelControllerTest {
         // One frame with the pointer where the given reading puts it, on none of the panel's other parts.
         private void advanceWithPointerOn(TabPanelController controller, HoveredBodyCell bodyCell) {
             controller.advanceInputMotionsForFrame(
-                new TabPanelHover(NO_TAB_HOVERED, bodyCell, NOTCH_NOT_HOVERED),
+                new TabPanelHover(NO_TAB_HOVERED, BAND_BUTTON_NOT_HOVERED, bodyCell, NOTCH_NOT_HOVERED),
                 FULL_STEP_SECONDS,
                 DURATIONS);
         }
@@ -1993,7 +2183,7 @@ final class TabPanelControllerTest {
     // cannot be mistaken for the lift being asked about.
     private static void advanceAWholeTraverse(TabPanelController controller) {
         controller.advanceInputMotionsForFrame(
-            new TabPanelHover(NO_TAB_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
+            new TabPanelHover(NO_TAB_HOVERED, BAND_BUTTON_NOT_HOVERED, NO_BODY_CELL_HOVERED, NOTCH_NOT_HOVERED),
             FULL_STEP_SECONDS,
             DURATIONS);
     }
@@ -2161,10 +2351,40 @@ final class TabPanelControllerTest {
 
         return new TabPanelPlacement(
             new Control(spec, HEADER_BAND, List.of(FIRST_TAB, SECOND_TAB)),
+            NO_BAND_BUTTON,
             drawnHeaderBand,
             body,
             new BoxBorder(BORDER_WIDTH),
             notch);
+    }
+
+    // A panel flying a band button after its tabs, the only shape the button's own cases lay. The button's
+    // action is the parameter because every one of those cases is about what a press reaches: the row's
+    // action is recorded separately, so a case can say the button fired and the tabs did not.
+    private static TabPanelPlacement buildPlacementWithBandButton(
+            ControlSpec.Tabs tabsSpec,
+            ControlAction buttonAction) {
+
+        return new TabPanelPlacement(
+            new Control(tabsSpec, HEADER_BAND, List.of(FIRST_TAB, SECOND_TAB)),
+            new Control(
+                buildBandButtonSpec(buttonAction),
+                BAND_BUTTON_BOX,
+                List.of(BAND_BUTTON_BOX)),
+            BAND_WITH_BUTTON,
+            buildBody(BODY_BOX, List.of(buildBodyControl())),
+            new BoxBorder(BORDER_WIDTH),
+            NOTCH);
+    }
+
+    // The button's spec: one unlit cell, which is what makes every press on it fire - a lit cell of a tabs
+    // control is inert, and a button that was ever the lit one would stop answering.
+    private static ControlSpec.Tabs buildBandButtonSpec(ControlAction action) {
+        return new ControlSpec.Tabs(
+            List.of("Edit"),
+            List.of(),
+            ControlSpec.NO_SELECTION,
+            action);
     }
 
     // The body beneath the row: the controls, and the box they are drawn inside - which is what a fold

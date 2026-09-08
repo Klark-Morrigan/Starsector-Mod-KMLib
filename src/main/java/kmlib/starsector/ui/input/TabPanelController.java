@@ -18,11 +18,12 @@ import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
 
 /**
  * Drives one tab panel's pointer input: it routes a left press on a header tab to that tab's own action,
- * flips the collapse handle on a press of the notch, and delegates everything else - the body control hits,
- * the scrollbar drag, the wheel scroll - to a {@link PanelController} for the body. A tab panel is a panel
- * plus a header plus a collapse handle, so its input is the panel's input plus a header hit-test and a notch
- * hit-test on top; the tab's action is baked into its spec (the host wires it), so this controller stays
- * agnostic to what selecting a tab does.
+ * routes a left press on the panel's own band button to the button's action, flips the collapse handle on a
+ * press of the notch, and delegates everything else - the body control hits, the scrollbar drag, the wheel
+ * scroll - to a {@link PanelController} for the body. A tab panel is a panel plus a header plus a collapse
+ * handle, so its input is the panel's input plus a header hit-test and a notch hit-test on top; each action
+ * is baked into its own spec (the host wires it), so this controller stays agnostic to what selecting a tab
+ * or pressing the button does.
  *
  * <p>One controller per panel, since it holds that panel's runtime state across frames: the collapse
  * animation and its handle's fade, and the routing that decides which of the panel's parts a frame's reading
@@ -60,6 +61,11 @@ public final class TabPanelController {
      */
     public static final TraverseDurations HOTKEY_BLINK_DURATIONS = TabHeaderMotions.HOTKEY_BLINK_DURATIONS;
 
+    // The band button's one cell. It is laid out as a one-cell control so it wears the row's look, so the
+    // press that fires it names that cell rather than resolving one: a hit-test would answer the same
+    // number for the only box there is, and the two readers would then have to agree about it.
+    private static final int BAND_BUTTON_CELL = 0;
+
     // The body's controller, owning the scroll and drag state; this routes everything but a header-tab or
     // notch press to it, so the panel's scroll and drag behaviour is the plain panel's, unchanged. Built
     // with this panel's own player and scheme, the wheel being a moment it answers: a body sounding by the
@@ -81,6 +87,15 @@ public final class TabPanelController {
     // there being one handle per panel, and a fraction rather than a flag so the notch lights and dims at
     // the pace the tabs do rather than switching on the frame the pointer arrives.
     private final HoverFade notchHoverFade = new HoverFade();
+
+    // How far the panel's own band button has travelled onto the hovered shade. A lone fade like the
+    // handle's rather than an entry in the row's keyed set, because it is one cell that is not a tab: keyed
+    // alongside them it would take an index out of the row's space, and every index there is a tab's.
+    private final HoverFade bandButtonHoverFade = new HoverFade();
+
+    // When the pointer reaches the band button - its own latch beside its own fade, for the same reason the
+    // handle keeps one.
+    private final HoverArrival bandButtonHoverArrival = new HoverArrival();
 
     // What this panel sounds like in answer to the moments it detects, so a KM tab answers a press the way
     // the engine's own controls do. One value for the whole panel, handed down to the body beneath, so its
@@ -223,6 +238,7 @@ public final class TabPanelController {
     public TabPanelInteractionSources getInteractionSources() {
         return new TabPanelInteractionSources(
             getTabInteractionSources(),
+            bandButtonHoverFade.getHoverFraction(),
             new BodyInteractionSources(
                 getBodyHoverSource(),
                 getBodyPressSource()));
@@ -304,12 +320,14 @@ public final class TabPanelController {
         // call to the end that holds all of it.
         headerMotions.resetTabMotions();
         notchHoverFade.resetFade();
+        bandButtonHoverFade.resetFade();
 
-        // Forgetting what was announced, so a panel re-opening under a still pointer sounds that handle's
-        // arrival afresh. It is an arrival to the player - the handle was not there a moment ago - even
-        // though the pointer never moved, and the alternative is a control that lights in silence for the one
-        // case where the panel came to the cursor rather than the other way about.
+        // Forgetting what was announced, so a panel re-opening under a still pointer sounds that part's
+        // arrival afresh. It is an arrival to the player - the handle and the button were not there a moment
+        // ago - even though the pointer never moved, and the alternative is a control that lights in silence
+        // for the one case where the panel came to the cursor rather than the other way about.
         notchHoverArrival.resetArrival();
+        bandButtonHoverArrival.resetArrival();
 
         // Everything the body holds - its fades, its lifts, what it announced, and what it told the host
         // answering its hover - goes in one call to the end that holds all of it.
@@ -317,9 +335,10 @@ public final class TabPanelController {
     }
 
     /**
-     * Handles one pointer event over the tab panel: a left press on the collapse notch flips the fold and a
-     * left press on a fully expanded panel's header tab fires that tab's own action and pulses it (each
-     * consumed); every other event - body control hits, the scrollbar drag, the wheel - is the body's,
+     * Handles one pointer event over the tab panel: a left press on the collapse notch flips the fold, a left
+     * press on a fully expanded panel's band button fires the panel's own action, and a left press on such a
+     * panel's header tab fires that tab's own action and pulses it (each consumed); every other event - body
+     * control hits, the scrollbar drag, the wheel - is the body's,
      * delegated to its {@link PanelController}. What claiming means differs by the kind of event: a press
      * or a wheel is consumed, while a move is claimed by {@linkplain PointerParking parking the pointer},
      * so the screen behind hears that the pointer left whatever it had lit. Hover is none of its own
@@ -364,6 +383,18 @@ public final class TabPanelController {
             // sound follows the moment the control acts and the handle acts immediately: the fold is
             // already moving. A tab's lift is held until the button comes up, so its press is not over
             // until then; the handle holds nothing and has nothing left to report by the release.
+            sounds.soundPress();
+            event.consume();
+            return;
+        }
+        // A left press on the panel's own band button fires the button's action. No two of the panel's parts
+        // occupy the same point, so the order among these branches decides nothing about which one answers;
+        // it sits here because it reads with the notch above it, both being chrome that acts on the press
+        // rather than tabs that hold a lift.
+        //
+        // Sounded on the way down like the handle, and for the same reason: the button acts at once and has
+        // nothing left to report by the release, where a tab holds its lift until the button comes up.
+        if (event.isLMBDownEvent() && activateBandButtonAtPoint(placement, event.getX(), event.getY())) {
             sounds.soundPress();
             event.consume();
             return;
@@ -528,6 +559,49 @@ public final class TabPanelController {
     }
 
     /**
+     * Fires the panel's band button when a press landed on it, reporting whether it acted. Split from the
+     * event above for the reason the tab activation is: what the button does can be checked without an
+     * engine input event to raise.
+     *
+     * <p>No lift and no reselect rule. The button is one cell that is never the lit one, so it fires on
+     * every press that reaches it; and it acts at once - whatever it opens is already on screen by the
+     * release - so there is nothing for a held lift to report.
+     *
+     * @param placement the laid-out tab panel the renderer drew this frame
+     * @param pointX    the press x in UI coordinates, the coordinates the placement is laid out in
+     * @param pointY    the press y in UI coordinates
+     * @return whether the press landed on the band button; false leaves the press to the tabs and the body
+     */
+    boolean activateBandButtonAtPoint(TabPanelPlacement placement, float pointX, float pointY) {
+
+        if (!isBandButtonHoveredAt(placement, pointX, pointY)) {
+            return false;
+        }
+        ControlActivation.activateCellIfActionable(placement.bandButton(), BAND_BUTTON_CELL);
+        return true;
+    }
+
+    /**
+     * Whether the pointer is on the panel's band button - the one hit-test the button answers, read by the
+     * fade that lights it and by the press that fires it, so the two cannot come to disagree.
+     *
+     * <p>Gated on the panel presenting its band at all, exactly as the tabs are: the button stands in their
+     * row and is wiped with them by the fold, so a point on a button behind the docked rail is a point on
+     * bare screen. That is also why it is not gated the way the handle is - the handle draws past the fold
+     * and is what brings a docked panel back, while the button goes behind it.
+     *
+     * @param placement the laid-out tab panel to test against
+     * @param pointX    the point's x in UI coordinates
+     * @param pointY    the point's y in UI coordinates
+     * @return whether the pointer is on a band button the panel is presenting
+     */
+    boolean isBandButtonHoveredAt(TabPanelPlacement placement, float pointX, float pointY) {
+
+        return isPresentingTabsOf(placement)
+            && placement.containsPointInBandButton(pointX, pointY);
+    }
+
+    /**
      * Steps the input motions for a pointer at a given point, hit-testing the panel's hoverable parts
      * against the placement being drawn. Split from the cursor read above for the same reason {@link
      * UiCursor} keeps its scaling separable from its LWJGL read: this is where each part is paired with the
@@ -554,6 +628,7 @@ public final class TabPanelController {
         advanceInputMotionsForFrame(
             new TabPanelHover(
                 resolveTabIndexAtPoint(placement, pointX, pointY),
+                isBandButtonHoveredAt(placement, pointX, pointY),
                 resolveHoveredBodyCellAtPoint(placement, pointX, pointY),
                 placement.containsPointInNotch(pointX, pointY)),
             elapsedSeconds,
@@ -597,6 +672,10 @@ public final class TabPanelController {
         // of what the panel shares between its parts: what a fraction lifts a checkbox toward is that
         // widget's own paint, and a panel answering the pointer at two speeds reads as two panels.
         bodyController.advanceBodyInputMotionsForFrame(hover.bodyCell(), elapsedSeconds, durations);
+
+        // The band button travels at the row's pace like the tabs it stands beside, the reading behind it
+        // already gated with theirs.
+        bandButtonHoverFade.advanceTowardHover(hover.isBandButtonHovered(), elapsedSeconds, durations);
 
         // The handle is never gated with the tabs - it draws past the fold and outlives it, being what brings
         // a docked panel back.
@@ -670,10 +749,10 @@ public final class TabPanelController {
     }
 
     // Answers the pointer reaching any of the panel's hoverable parts, once per arrival, at the level its
-    // own kind of thing is owed. A tab and the handle answer alike because both are the panel's own
-    // furniture - each moves the player between whole views - while a body cell answers as whatever it is,
-    // which the walk that found it settled. No part needed a detection of its own: every one of them is
-    // already resolved once a frame for its fade.
+    // own kind of thing is owed. A tab, the band button and the handle answer alike because all three are
+    // the panel's own furniture - each moves the player between whole views - while a body cell answers as
+    // whatever it is, which the walk that found it settled. No part needed a detection of its own: every one
+    // of them is already resolved once a frame for its fade.
     //
     // A moment rather than a position, which is why none is read off a fade: the pointer resting on a part
     // holds its fade at the top for as long as it stays, and a sound taken from that would be a tone rather
@@ -684,6 +763,7 @@ public final class TabPanelController {
         // short-circuit would leave the unread ones holding a stale reading - and then stay silent on the
         // frame the pointer did come back to one of them, that stale latch saying it never left.
         var hasReachedTab = headerMotions.detectTabArrivalAt(hover.tabIndex());
+        var hasReachedBandButton = bandButtonHoverArrival.detectArrival(hover.isBandButtonHovered());
         var hasReachedNotch = notchHoverArrival.detectArrival(hover.isNotchHovered());
         var hasReachedBodyCell = bodyController.detectBodyCellArrivalAt(hover.resolveBodyCellSlot());
 
@@ -691,7 +771,7 @@ public final class TabPanelController {
         // the same point. So this picks the cue of whatever was reached rather than composing an answer out
         // of several, and a second arrival in one frame would be a hit-test fault rather than a moment two
         // sounds are owed for.
-        if (hasReachedTab || hasReachedNotch) {
+        if (hasReachedTab || hasReachedBandButton || hasReachedNotch) {
             sounds.soundPointerArrivalAt(PointerArrivalTarget.PANEL_CHROME);
             return;
         }

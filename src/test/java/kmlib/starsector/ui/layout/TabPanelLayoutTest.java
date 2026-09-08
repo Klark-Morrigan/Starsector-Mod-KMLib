@@ -96,6 +96,22 @@ final class TabPanelLayoutTest {
         0,
         ControlAction.NONE);
 
+    // What a host asking for no band button passes, named so the call sites read as a panel of tabs alone
+    // rather than as a null among specs.
+    private static final ControlSpec.Tabs NO_BAND_BUTTON = null;
+
+    // A band button, unlit because it is a button rather than a tab. "Edit" is 4 chars, so it snaps to the
+    // minimum tab width - which is what the assertions about where it lands are measured against.
+    private static final ControlSpec.Tabs BAND_BUTTON = new ControlSpec.Tabs(
+        List.of("Edit"),
+        List.of(),
+        ControlSpec.NO_SELECTION,
+        ControlAction.NONE);
+
+    private static final float BAND_BUTTON_WIDTH = Math.max(
+        4 * WIDTH_PER_CHAR + TabsControlLayout.TAB_TEXT_PADDING,
+        TabsControlLayout.MIN_TAB_WIDTH);
+
     // A one-checkbox body, so the body has a definite non-zero height beneath the header.
     private static final List<ControlSpec> BODY = List.of(
         LabelledControlSpecs.buildCheckbox("X", false, ControlAction.NONE));
@@ -440,6 +456,7 @@ final class TabPanelLayoutTest {
                 new PanelChrome(new BoxBorder(0f), ScrollbarThickness.DEFAULT),
                 DEFAULT_TAB_STYLE,
                 TABS,
+                NO_BAND_BUTTON,
                 BODY,
                 measurerFake,
                 new TabPanelViewState(0f, 1f));
@@ -556,6 +573,61 @@ final class TabPanelLayoutTest {
         }
 
         @Test
+        void computePlacementFliesNoBandButtonWhereNoneWasAskedFor() {
+            // The band a panel of tabs alone lays, unchanged: the button is something a host asks for, so a
+            // host that does not gets exactly the row it had before there was one to ask for.
+            var placement = place(BODY);
+
+            assertThat(placement.bandButton())
+                .isNull();
+            assertThat(placement.drawnHeaderBand())
+                .isEqualTo(placement.tabsHeader().bounds());
+        }
+
+        @Test
+        void computePlacementLaysTheBandButtonWhereTheTabsLeaveOff() {
+            // Appended to the row rather than pinned somewhere of its own, so the button stands beside the
+            // last tab at the same height and the band simply grows by one box.
+            var button = placeWithBandButton(BODY).bandButton().bounds();
+
+            assertThat(button.x())
+                .isCloseTo(CONTENT_X + HEADER_WIDTH, within(TOLERANCE));
+            assertThat(button.y())
+                .isCloseTo(HEADER_TOP_Y - DEFAULT_BAND_HEIGHT, within(TOLERANCE));
+            assertThat(button.height())
+                .isCloseTo(DEFAULT_BAND_HEIGHT, within(TOLERANCE));
+            assertThat(button.width())
+                .isCloseTo(BAND_BUTTON_WIDTH, within(TOLERANCE));
+        }
+
+        @Test
+        void computePlacementLeavesTheTabsRowExactlyAsItWasUnderABandButton() {
+            // The one thing a button in the row may not do. Every index the pick, the lit tab and the
+            // shortcut walk are resolved by is a position in this control, so a button that moved a segment
+            // by a pixel would move what a click on it selects.
+            var withButton = placeWithBandButton(BODY).tabsHeader();
+            var withoutButton = place(BODY).tabsHeader();
+
+            assertThat(withButton.bounds())
+                .isEqualTo(withoutButton.bounds());
+            assertThat(withButton.segments())
+                .isEqualTo(withoutButton.segments());
+        }
+
+        @Test
+        void computePlacementDrawsTheBandOverTheButtonAsWellAsTheTabs() {
+            // One band for both, so the fold wipes them together, the footprint claims the button, and the
+            // panel's outer bound reaches it. A band naming only its tabs would leave the button unclipped
+            // and on screen the panel does not own.
+            var drawn = placeWithBandButton(BODY).drawnHeaderBand();
+
+            assertThat(drawn.x())
+                .isCloseTo(CONTENT_X, within(TOLERANCE));
+            assertThat(drawn.width())
+                .isCloseTo(HEADER_WIDTH + BAND_BUTTON_WIDTH, within(TOLERANCE));
+        }
+
+        @Test
         void computePlacementCarriesTheBorderItFramedTheBoxAround() {
             // The width a later stroke must use: handed back on the placement so the pass that paints
             // the frame spends exactly the inset this layout reserved for it, rather than re-reading
@@ -644,6 +716,21 @@ final class TabPanelLayoutTest {
             return place(bodyControls, 0f);
         }
 
+        // The same panel with a band button asked for, so the button's cases differ from the baseline in
+        // that one argument and nothing else - which is what lets them assert the tabs are unchanged.
+        private TabPanelPlacement placeWithBandButton(List<ControlSpec> bodyControls) {
+            return TabPanelLayout.computePlacement(
+                SCREEN_HEIGHT,
+                new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT),
+                new PanelChrome(new BoxBorder(BORDER_WIDTH), ScrollbarThickness.DEFAULT),
+                DEFAULT_TAB_STYLE,
+                TABS,
+                BAND_BUTTON,
+                bodyControls,
+                measurerFake,
+                TabPanelViewState.RESTING);
+        }
+
         private TabPanelPlacement placeAtThickness(
                 List<ControlSpec> bodyControls,
                 ScrollbarThickness scrollbarThickness) {
@@ -662,6 +749,7 @@ final class TabPanelLayoutTest {
                 new PanelChrome(new BoxBorder(BORDER_WIDTH), scrollbarThickness),
                 DEFAULT_TAB_STYLE,
                 TABS,
+                NO_BAND_BUTTON,
                 bodyControls,
                 measurerFake,
                 new TabPanelViewState(0f, collapseFraction));
@@ -674,6 +762,7 @@ final class TabPanelLayoutTest {
                 new PanelChrome(new BoxBorder(BORDER_WIDTH), ScrollbarThickness.DEFAULT),
                 tabStyle,
                 TABS,
+                NO_BAND_BUTTON,
                 bodyControls,
                 measurerFake,
                 TabPanelViewState.RESTING);
@@ -693,6 +782,7 @@ final class TabPanelLayoutTest {
                 new PanelChrome(new BoxBorder(BORDER_WIDTH, borderedEdges), ScrollbarThickness.DEFAULT),
                 DEFAULT_TAB_STYLE,
                 TABS,
+                NO_BAND_BUTTON,
                 bodyControls,
                 measurerFake,
                 new TabPanelViewState(0f, collapseFraction));
