@@ -10,6 +10,7 @@ import kmlib.starsector.ui.widgets.PanelPlacement;
 import kmlib.starsector.ui.widgets.scroll.ScrollbarThickness;
 import kmlib.starsector.ui.widgets.tabs.BandButtonPlacement;
 import kmlib.starsector.ui.widgets.tabs.BandButtonSpec;
+import kmlib.starsector.ui.widgets.tabs.HeaderBandSpec;
 import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
 import kmlib.starsector.ui.widgets.tabs.TabPanelViewState;
 import kmlib.starsector.ui.widgets.tabs.style.TabStyle;
@@ -88,14 +89,10 @@ public final class TabPanelLayout {
      *                       footprint, where an open edge reserves no inset so the box sits flush against a
      *                       neighbour, and the bar thickness the body reserves a gutter for - a bar past
      *                       what the body's own padding holds clear widens the body and with it the box
-     * @param tabStyle       the tab dimensions the header band is laid to, so two panels sharing this one
-     *                       layout can still stand their tab rows at different heights; the band height is
-     *                       content-space, standing under the top border rather than including it
-     * @param tabsSpec       the tabs control (labels + per-tab shortcuts) drawn across the header band
-     * @param bandButtonSpec the panel's own chrome button standing after the last tab, with the look it
-     *                       wears - its own rather than the tabs', so it reads as a button and snaps to its
-     *                       own word beside a fixed-width row - or null for a band of tabs alone. Only its
-     *                       band height is not honoured: the button stands in this panel's band
+     * @param headerBand     the band this panel flies: the look its tabs are laid to (whose band height is
+     *                       content-space, standing under the top border rather than including it), the
+     *                       tabs themselves, and the panel's own button after them. The button's own band
+     *                       height is not honoured - it stands in this panel's band, not one of its own
      * @param bodyControls   the active tab's body controls, top to bottom (empty for no body)
      * @param measurer       measures each label's rendered width for text snapping
      * @param viewState      how far the panel is scrolled and folded
@@ -108,12 +105,12 @@ public final class TabPanelLayout {
             float screenHeight,
             Padding padding,
             PanelChrome chrome,
-            TabStyle tabStyle,
-            ControlSpec.Tabs tabsSpec,
-            BandButtonSpec bandButtonSpec,
+            HeaderBandSpec headerBand,
             List<ControlSpec> bodyControls,
             LineWidthMeasurer measurer,
             TabPanelViewState viewState) {
+
+        var tabStyle = headerBand.style();
 
         // How tall the tabs stand, which is what everything below frames against. Not the band: the two
         // part where a chrome states a box shorter than its band, and the pixel between them is the row's
@@ -147,7 +144,7 @@ public final class TabPanelLayout {
         // it together.
         var bandTopY = screenHeight - padding.top();
         var tabsHeader = TabsControlLayout.layoutHeaderControl(
-            tabsSpec,
+            headerBand.tabs(),
             origin.contentX(),
             bandTopY,
             tabStyle,
@@ -162,7 +159,7 @@ public final class TabPanelLayout {
         // the panel was given and not the button's to choose - the one part of its look the caller does not
         // decide.
         var bandButton = layOutBandButton(
-            bandButtonSpec,
+            headerBand.bandButton(),
             tabsHeader.bounds().x() + tabsHeader.bounds().width(),
             bandTopY,
             tabStyle.headerBandHeight(),

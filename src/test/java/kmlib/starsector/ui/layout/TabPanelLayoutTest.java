@@ -11,6 +11,7 @@ import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.PanelChrome;
 import kmlib.starsector.ui.widgets.scroll.ScrollbarThickness;
 import kmlib.starsector.ui.widgets.tabs.BandButtonSpec;
+import kmlib.starsector.ui.widgets.tabs.HeaderBandSpec;
 import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
 import kmlib.starsector.ui.widgets.tabs.TabPanelViewState;
 import kmlib.starsector.ui.widgets.tabs.style.TabBox;
@@ -472,9 +473,7 @@ final class TabPanelLayoutTest {
                 SCREEN_HEIGHT,
                 new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT),
                 new PanelChrome(new BoxBorder(0f), ScrollbarThickness.DEFAULT),
-                DEFAULT_TAB_STYLE,
-                TABS,
-                NO_BAND_BUTTON,
+                new HeaderBandSpec(DEFAULT_TAB_STYLE, TABS, NO_BAND_BUTTON),
                 BODY,
                 measurerFake,
                 new TabPanelViewState(0f, 1f));
@@ -805,9 +804,7 @@ final class TabPanelLayoutTest {
                 SCREEN_HEIGHT,
                 new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT),
                 new PanelChrome(new BoxBorder(BORDER_WIDTH), ScrollbarThickness.DEFAULT),
-                tabStyle,
-                TABS,
-                BAND_BUTTON,
+                new HeaderBandSpec(tabStyle, TABS, BAND_BUTTON),
                 bodyControls,
                 measurerFake,
                 TabPanelViewState.RESTING);
@@ -829,9 +826,7 @@ final class TabPanelLayoutTest {
                 SCREEN_HEIGHT,
                 new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT),
                 new PanelChrome(new BoxBorder(BORDER_WIDTH), scrollbarThickness),
-                DEFAULT_TAB_STYLE,
-                TABS,
-                NO_BAND_BUTTON,
+                new HeaderBandSpec(DEFAULT_TAB_STYLE, TABS, NO_BAND_BUTTON),
                 bodyControls,
                 measurerFake,
                 new TabPanelViewState(0f, collapseFraction));
@@ -842,9 +837,7 @@ final class TabPanelLayoutTest {
                 SCREEN_HEIGHT,
                 new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT),
                 new PanelChrome(new BoxBorder(BORDER_WIDTH), ScrollbarThickness.DEFAULT),
-                tabStyle,
-                TABS,
-                NO_BAND_BUTTON,
+                new HeaderBandSpec(tabStyle, TABS, NO_BAND_BUTTON),
                 bodyControls,
                 measurerFake,
                 TabPanelViewState.RESTING);
@@ -862,9 +855,7 @@ final class TabPanelLayoutTest {
                 SCREEN_HEIGHT,
                 new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT),
                 new PanelChrome(new BoxBorder(BORDER_WIDTH, borderedEdges), ScrollbarThickness.DEFAULT),
-                DEFAULT_TAB_STYLE,
-                TABS,
-                NO_BAND_BUTTON,
+                new HeaderBandSpec(DEFAULT_TAB_STYLE, TABS, NO_BAND_BUTTON),
                 bodyControls,
                 measurerFake,
                 new TabPanelViewState(0f, collapseFraction));

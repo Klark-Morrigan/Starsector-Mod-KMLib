@@ -240,6 +240,12 @@ No Starsector API on the signature.
   anyone can see. What it says there is the game's own rule for a key: the key's
   name lit where the words already hold it, spelled out after them where they do
   not. Not finding the words costs what was going to be said and nothing else.
+  Beside that, the ID a caller put on a widget found again in the pair of
+  objects the game hands an action listener: the API names neither position and
+  which one carries the ID depends on the widget, so it is looked for handed
+  over directly in either and carried by a button in either. A reader that
+  committed to one position answers some of its controls and silently drops
+  every press from the rest.
 - **`kmlib.starsector.ui.colour`** - the UI palette enum resolving through
   Misc, and the dark, base and bright accent triple a look is built from.
 - **`kmlib.starsector.ui.controls`** - declarative control specs - label,
@@ -292,8 +298,10 @@ No Starsector API on the signature.
   band inside a region chord under name and band specifications.
 - **`kmlib.starsector.ui.layout`** - pure placement maths: padding, row
   stacks, control strips and their measurement, height-capped strips with a
-  flex region, panel and tab-panel placement, tab header layout, tooltip box
-  placement and the height a box wraps a content stack to, and vanilla
+  flex region, panel and tab-panel placement, tab header layout - including the
+  panel's own band button, laid where the tabs leave off so the band grows by
+  one box, at its own look but pinned to the band the panel was given - tooltip
+  box placement and the height a box wraps a content stack to, and vanilla
   PositionAPI to rectangle. It is also where a scrollbar's gutter is spent: a
   capped strip knows what its own padding already holds clear, so a bar no
   fatter than that costs the body nothing, while a fatter one widens the body -
@@ -346,12 +354,18 @@ No Starsector API on the signature.
 - **`kmlib.starsector.ui.render.gl.style`** - the look a host hands in: box
   colours, accents, hover wash and press light resolved to a paint at a
   fraction, notch colours, body font, tab style and sound scheme, gathered
-  into one widget style.
+  into one widget style - restatable with a different tab style in it, so a
+  panel drawing two tab-shaped things in different chromes draws both through
+  the one control renderer.
 - **`kmlib.starsector.ui.render.gl.tabs`** - painting both tab chromes,
   vanilla strip and raised button, the panel they head, and centred tab
   labels, behind one chrome-selecting renderer. Each surface of a tab panel
   takes its own channel from the panel's alpha, so a row opaque over a
-  translucent body still fades out with the panel around it.
+  translucent body still fades out with the panel around it. The panel's own
+  band button is painted with the tabs as one piece of chrome - same clip, same
+  state save, same alpha - but in its own tab style, and with its image drawn
+  into the tab it stands as rather than over the whole band, which would cover
+  the line a chrome keeps under its tabs.
 - **`kmlib.starsector.ui.render.gl.tooltip`** - painting a cursor tooltip and
   the leader lines ruling its rows, with redaction darkening, and the box
   height and screen budget a caller weighs its content against before the box
@@ -417,11 +431,22 @@ No Starsector API on the signature.
 - **`kmlib.starsector.ui.widgets.tabs`** - tab strip geometry for both
   chromes, collapse with a docked start, hotkey lookup, shortcut text runs,
   and the hover, pulse, look, wash and light sources a tab header and its
-  panel read.
+  panel read. A panel's band travels as one value - the row's look, its tabs,
+  and the panel's own button after them - because a layout can use none of the
+  three alone. That button is the panel's own chrome rather than any tab's, so
+  a press on it fires the panel's action and moves no selection; it is laid and
+  hit through the same one-cell tabs geometry a tab is, carries a look of its
+  own (usually the row's with only the box changed, a button being as wide as
+  the one thing it shows), and may show an image in place of a word. It sits
+  outside the tabs control on purpose: a cell in that control which is not a tab
+  would shift every index the selection, the lit tab and any bound keys are
+  resolved by.
 - **`kmlib.starsector.ui.widgets.tabs.style`** - the tab look a host varies:
   chrome choice, tab box sizing, palette with hover and click states, hotkey
   underlining, text halo, and the vanilla tab and button fills a glow is
-  resolved against.
+  resolved against. A look can be restated in a different band or a different
+  tab box without its other six components being rebuilt by hand, which is what
+  lets one row's chrome and colours be worn at a width of their own.
 - **`kmlib.starsector.ui.widgets.tooltip`** - cursor tooltip content and
   layout: table and centred rows carrying crests, values and indentation,
   nested sections, per-level line gaps and section breaks, the header,
